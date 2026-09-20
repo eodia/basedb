@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // F5 : compile, démarre PostgreSQL, l'API et l'interface, puis ouvre le navigateur.
+      // Ctrl+C ou l'arrêt du débogage retire le conteneur.
+      "name": "basedb — lancer l'application",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/start.mjs",
+      "cwd": "${workspaceFolder}",
+      // Terminal intégré, et non console de débogage : le script écrit les identifiants
+      // et les ports en couleurs, et attend un Ctrl+C pour nettoyer.
+      "console": "integratedTerminal",
+      "preLaunchTask": "Compiler l'API et l'interface",
+      // L'API et Next sont des processus enfants : sans cela, un point d'arrêt posé dans
+      // le noyau ne serait jamais atteint.
+      "autoAttachChildProcesses": true,
+      "skipFiles": ["<node_internals>/**"],
+      // Le script ouvre lui-même le navigateur : le port est choisi à chaque lancement,
+      // et lui seul sait quand l'interface répond.
+      "env": { "BASEDB_OPEN": "1" }
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@basedb/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/server.js",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dev": "node --watch dist/server.js",
+    "start": "node dist/server.js",
+    "test:unit": "vitest run test/unit",
+    "test:int": "vitest run test/int"
+  },
+  "dependencies": {
+    "@basedb/catalog-schema": "workspace:*",
+    "@basedb/contracts": "workspace:*",
+    "@basedb/core": "workspace:*",
+    "@hono/node-server": "^1.13.7",
+    "hono": "^4.6.14"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^10.16.0",
+    "@types/node": "^22.10.2",
+    "testcontainers": "^10.16.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "pg": "^8.13.1",
+    "@types/pg": "^8.11.10"
+  }
+}

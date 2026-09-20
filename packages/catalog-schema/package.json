@@ -1,0 +1,30 @@
+{
+  "name": "@basedb/catalog-schema",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "migrations", "sql"],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:int": "vitest run",
+    "generate": "node ../../scripts/extract-catalog-ddl.mjs --write"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^10.16.0",
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "pg": "^8.13.1",
+    "testcontainers": "^10.16.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

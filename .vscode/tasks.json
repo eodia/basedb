@@ -1,0 +1,75 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // Ce que `scripts/start.mjs` exige avant de démarrer : il refuse de lancer une
+      // API qui n'est pas compilée plutôt que de servir une version d'hier.
+      "label": "Compiler l'API et l'interface",
+      "type": "shell",
+      "command": "corepack pnpm exec tsc -b apps/api apps/web",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": ["$tsc"],
+      "presentation": { "reveal": "silent", "panel": "shared", "clear": true },
+      "group": "build"
+    },
+    {
+      "label": "Compiler @basedb/naming",
+      "type": "shell",
+      "command": "corepack pnpm exec tsc -b packages/naming",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": ["$tsc"],
+      "presentation": { "reveal": "silent", "panel": "shared", "clear": true },
+      "group": "build"
+    },
+    {
+      "label": "Tests — @basedb/naming",
+      "type": "shell",
+      "command": "corepack pnpm exec vitest run",
+      "options": { "cwd": "${workspaceFolder}/packages/naming" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+      "group": { "kind": "test", "isDefault": true }
+    },
+    {
+      "label": "Tests — sous locale turque",
+      "type": "shell",
+      "command": "corepack pnpm exec vitest run",
+      "options": {
+        "cwd": "${workspaceFolder}/packages/naming",
+        "env": { "LC_ALL": "tr_TR.UTF-8", "LANG": "tr_TR.UTF-8" }
+      },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+      "group": "test"
+    },
+    {
+      "label": "Lint et format",
+      "type": "shell",
+      "command": "corepack pnpm exec biome check packages tooling scripts",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+    },
+    {
+      "label": "Graphe de dépendances",
+      "type": "shell",
+      "command": "corepack pnpm exec depcruise packages --config tooling/dependency-cruiser/.dependency-cruiser.cjs",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+    },
+    {
+      "label": "Tout vérifier",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Compiler @basedb/naming",
+        "Lint et format",
+        "Tests — @basedb/naming",
+        "Tests — sous locale turque",
+        "Graphe de dépendances"
+      ],
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": true }
+    }
+  ]
+}

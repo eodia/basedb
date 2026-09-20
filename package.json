@@ -1,0 +1,37 @@
+{
+  "name": "basedb",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "test": "turbo run test:unit",
+    "test:unit": "turbo run test:unit",
+    "test:int": "turbo run test:int",
+    "test:vol": "turbo run test:vol",
+    "test:panne": "turbo run test:panne",
+    "graph": "depcruise packages apps --config tooling/dependency-cruiser/.dependency-cruiser.cjs",
+    "demo": "node scripts/demo.mjs",
+    "start": "node scripts/start.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@testcontainers/postgresql": "^10.16.0",
+    "dependency-cruiser": "^16.9.0",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild"]
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.2.1"
+  }
+}

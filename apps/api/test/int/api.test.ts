@@ -1,0 +1,1012 @@
+import { type Kernel, startKernel } from '@basedb/core'
+import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createApp } from '../../src/app.js'
+
+/**
+ * The API, end to end.
+ *
+ * The tests run WITHOUT OPENING A SOCKET: Hono manipulates the standard `Request` and
+ * `Response` objects, so `app.request()` is enough. This is one of the three reasons it
+ * was preferred to Fastify (chapter 10 §1.4), and it makes the suite parallelizable
+ * without coordinating ports.
+ *
+ * URL plan of §1.4: `/api/v1/{tenantRef}`, then `/data/`, `/meta/` or `/admin/`. The
+ * paths here are written the way an integrator writes them — with logical names, not
+ * identifiers — because that is exactly the promise being tested.
+ */
+
+const TENANT_REF = 't4z56fq'
+const V1 = `/api/v1/${TENANT_REF}`
+
+let container: StartedPostgreSqlContainer
+let kernel: Kernel
+let app: ReturnType<typeof createApp>
+let actor: string
+/** The access token every `/api/v1` call carries, obtained once by logging in. */
+let access = ''
+let cookie = ''
+let csrf = ''
+
+const PASSWORD = 'les chaussettes de larchiduchesse'
+
+const auth = () => ({ authorization: `Bearer ${access}` })
+
+const json = (body: unknown) => ({
+  method: 'POST',
+  headers: { 'content-type': 'application/json', ...auth() },
+  body: JSON.stringify(body),
+})
+
+/** `GET` on an authenticated route. */
+const GET = (path: string, headers: Record<string, string> = {}) =>
+  app.request(path, { headers: { ...auth(), ...headers } })
+
+const DEL = (path: string) => app.request(path, { method: 'DELETE', headers: auth() })
+
+/** Creates a base and returns its logical name. */
+async function makeBase(label: string): Promise<string> {
+  const r = await app.request(`${V1}/admin/bases`, json({ label }))
+  const body = (await r.json()) as { data: { name: string } }
+  return body.data.name
+}
+
+beforeAll(async () => {
+  container = await new PostgreSqlContainer('postgres:16-alpine').start()
+  kernel = startKernel({
+    connectionString: container.getConnectionUri(),
+    encryptionKey: 'cle-instance-de-test-0123456789',
+  })
+  await kernel.migrateCatalog()
+
+  // Bootstrap: the only moment when the catalog is written without going through an
+  // operation — it is the first start, and no actor exists yet.
+  const { Client } = await import('pg')
+  const client = new Client({ connectionString: container.getConnectionUri() })
+  await client.connect()
+  await client.query('BEGIN')
+  const { rows } = await client.query(
+    `INSERT INTO _basedb.tenant (ref, label, is_system, created_by)
+     VALUES ($1, 'Bootstrap', true, _basedb_local.uuid_generate_v7())
+     RETURNING id, created_by`,
+    [TENANT_REF],
+  )
+  await client.query(
+    `INSERT INTO _basedb.app_user
+       (id, tenant_id, email, display_name, is_system, is_instance_admin, created_by, updated_by)
+     VALUES ($1, $2, 'bootstrap@basedb.local', 'Bootstrap', true, true, $1, $1)`,
+    [rows[0].created_by, rows[0].id],
+  )
+  await client.query('COMMIT')
+  await client.end()
+
+  actor = rows[0].created_by
+  app = createApp({ kernel })
+
+  // From here on, every `/api/v1` call carries an access token — the crutch of
+  // `?actor=<uuid>` is gone, and with it a bearer credential that sat in query strings,
+  // access logs and browser history, never expiring and never revocable.
+  await kernel.setPassword({ userId: actor, password: PASSWORD })
+  const login = await app.request('/auth/password/login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'bootstrap@basedb.local', password: PASSWORD }),
+  })
+  cookie = login.headers.get('set-cookie')?.split(';')[0] ?? ''
+  csrf = ((await login.json()) as { data: { csrf: string } }).data.csrf
+
+  const issued = await app.request('/auth/session/access', {
+    method: 'POST',
+    headers: { cookie, 'x-basedb-csrf': csrf },
+  })
+  access = ((await issued.json()) as { data: { token: string } }).data.token
+}, 180_000)
+
+afterAll(async () => {
+  await kernel?.close()
+  await container?.stop()
+})
+
+describe('entry points outside the catalog', () => {
+  it('the liveness probe answers', async () => {
+    const r = await app.request('/healthz')
+    expect(r.status).toBe(200)
+    await expect(r.json()).resolves.toEqual({ status: 'ok' })
+  })
+
+  it('every response carries a request identifier', async () => {
+    const r = await app.request('/healthz')
+    expect(r.headers.get('x-request-id')).toBeTruthy()
+  })
+
+  it('the identifier supplied by the caller is preserved', async () => {
+    // End-to-end correlation: a client that already holds a trace keeps it.
+    const r = await app.request('/healthz', { headers: { 'x-request-id': 'trace-42' } })
+    expect(r.headers.get('x-request-id')).toBe('trace-42')
+  })
+
+  it('the code registry is published', async () => {
+    const r = await app.request('/api/v1/codes')
+    const body = (await r.json()) as { codes: Array<{ code: string }> }
+    expect(body.codes.length).toBeGreaterThan(200)
+    expect(body.codes.map((c) => c.code)).toContain('RESOURCE_NOT_FOUND')
+  })
+})
+
+describe('full cycle over HTTP', () => {
+  let base: string
+
+  it('creates a base and returns the assigned physical name', async () => {
+    const r = await app.request(`${V1}/admin/bases`, json({ label: 'CRM' }))
+    expect(r.status).toBe(201)
+    const body = (await r.json()) as { data: { id: string; name: string } }
+    // The name is returned: it is the one the caller will write in their SQL queries —
+    // and, from now on, in their URLs.
+    expect(body.data.name).toBe(`b_${TENANT_REF}_crm`)
+    base = body.data.name
+  })
+
+  it('creates a table and returns its qualified SQL name', async () => {
+    const r = await app.request(
+      `${V1}/admin/bases/${base}/tables`,
+      json({
+        label: 'Factures',
+        fields: [
+          { label: 'Numéro', kind: 'short_text', required: true },
+          { label: 'Montant', kind: 'number' },
+        ],
+      }),
+    )
+    expect(r.status).toBe(201)
+    const body = (await r.json()) as {
+      data: { name: string; sql: string; fields: Array<{ name: string }> }
+    }
+    expect(body.data.sql).toBe(`"b_${TENANT_REF}_crm"."factures"`)
+    expect(body.data.name).toBe('factures')
+    expect(body.data.fields.map((f) => f.name)).toEqual(['numero', 'montant'])
+  })
+
+  it('writes then reads back a record, addressed by NAME', async () => {
+    const creation = await app.request(
+      `${V1}/data/${base}/factures`,
+      json({ values: { numero: 'F-2026-001', montant: 1234.56 } }),
+    )
+    expect(creation.status).toBe(201)
+    const created = (await creation.json()) as { data: Record<string, unknown> }
+    expect(created.data.numero).toBe('F-2026-001')
+    // `_created_by` is filled in by the kernel, never by the caller.
+    expect(created.data._created_by).toBe(actor)
+
+    const read = await GET(`${V1}/data/${base}/factures`)
+    expect(read.status).toBe(200)
+    const body = (await read.json()) as { data: unknown[]; meta: { columns: string[] } }
+    expect(body.data).toHaveLength(1)
+    expect(body.meta.columns).toContain('numero')
+  })
+
+  it('accepts the identifier just as well as the name', async () => {
+    // Two namespaces that cannot collide: a canonical UUID carries dashes, which the
+    // logical-name alphabet forbids. An integration surviving a rename uses the UUID.
+    const meta = await GET(`${V1}/meta/bases/${base}`)
+    const described = (await meta.json()) as {
+      data: { id: string; tables: Array<{ id: string; name: string }> }
+    }
+    const table = described.data.tables.find((t) => t.name === 'factures')
+
+    const read = await GET(`${V1}/data/${described.data.id}/${table?.id}`)
+    expect(read.status).toBe(200)
+    const body = (await read.json()) as { data: unknown[] }
+    expect(body.data).toHaveLength(1)
+  })
+})
+
+describe('/meta — the catalog projection', () => {
+  it('lists the visible bases', async () => {
+    const r = await GET(`${V1}/meta/bases`)
+    expect(r.status).toBe(200)
+    const body = (await r.json()) as {
+      data: Array<{ name: string; label: string; table_count: number }>
+    }
+    const crm = body.data.find((b) => b.name === `b_${TENANT_REF}_crm`)
+    expect(crm?.label).toBe('CRM')
+    expect(crm?.table_count).toBeGreaterThanOrEqual(1)
+  })
+
+  it('describes the tables, their fields and their SQL name', async () => {
+    const r = await GET(`${V1}/meta/bases/b_${TENANT_REF}_crm`)
+    expect(r.status).toBe(200)
+    const body = (await r.json()) as {
+      data: {
+        tables: Array<{
+          name: string
+          sql: string
+          actions: string[]
+          fields: Array<{ name: string; system: boolean; read_only: boolean }>
+        }>
+      }
+    }
+    const table = body.data.tables.find((t) => t.name === 'factures')
+    expect(table?.sql).toBe(`"b_${TENANT_REF}_crm"."factures"`)
+    // The administrator holds every verb.
+    expect(table?.actions).toEqual(['read', 'create', 'update', 'delete'])
+    // System columns are always described, and always read-only (A18).
+    expect(table?.fields.find((f) => f.name === '_id')?.read_only).toBe(true)
+    expect(table?.fields.find((f) => f.name === 'numero')?.system).toBe(false)
+  })
+
+  it('describes a table so it can be addressed DIRECTLY, with no extra lookup', async () => {
+    // The description carries the base name beside the table name, because `{base}/{table}`
+    // is what addresses it. Without it the caller holds a description they cannot turn
+    // into a URL — which is how the interface ended up calling `/data/undefined/factures`.
+    const meta = await GET(`${V1}/meta/bases/b_${TENANT_REF}_crm`)
+    const body = (await meta.json()) as {
+      data: { tables: Array<{ base: string; name: string }> }
+    }
+    const table = body.data.tables.find((t) => t.name === 'factures')
+    expect(table?.base).toBe(`b_${TENANT_REF}_crm`)
+
+    const read = await GET(`${V1}/data/${table?.base}/${table?.name}`)
+    expect(read.status).toBe(200)
+  })
+
+  it('answers 404 for a base that does not exist', async () => {
+    const r = await GET(`${V1}/meta/bases/b_t4z56fq_fantome`)
+    expect(r.status).toBe(404)
+    await expect(r.json()).resolves.toMatchObject({ code: 'RESOURCE_NOT_FOUND' })
+  })
+
+  it('serves an OpenAPI 3.1 document whose paths are callable as printed', async () => {
+    const r = await GET(`${V1}/meta/bases/b_${TENANT_REF}_crm/openapi.json`)
+    expect(r.status).toBe(200)
+    const spec = (await r.json()) as {
+      openapi: string
+      servers: Array<{ url: string }>
+      paths: Record<string, unknown>
+    }
+    expect(spec.openapi).toBe('3.1.0')
+    // The tenant is in every path: a specification one cannot call as printed is worth
+    // nothing.
+    expect(spec.servers[0].url).toBe(V1)
+
+    const path = Object.keys(spec.paths).find((p) => p.endsWith('/factures'))
+    expect(path).toBe(`/data/b_${TENANT_REF}_crm/factures`)
+    const read = await GET(`${V1}${path}`)
+    expect(read.status).toBe(200)
+  })
+
+  it('serves a readable documentation describing every visible relation', async () => {
+    const r = await GET(`${V1}/meta/bases/b_${TENANT_REF}_crm/doc`)
+    expect(r.status).toBe(200)
+    const body = (await r.json()) as {
+      data: { title: string; sections: Array<{ id: string; markdown: string }> }
+    }
+    expect(body.data.sections.map((s) => s.id)).toContain('factures')
+    // It says the one thing a machine contract cannot: what happens in direct SQL.
+    const sql = body.data.sections.find((s) => s.id === 'ecrire-en-sql')
+    expect(sql?.markdown).toContain('ne s’appliquent pas en SQL direct')
+  })
+
+  it('carries a validator, and answers 304 when the caller sends it back', async () => {
+    const path = `${V1}/meta/bases/b_${TENANT_REF}_crm`
+    const first = await GET(path)
+    const etag = first.headers.get('etag')
+    expect(etag).toBeTruthy()
+
+    // NOT `no-store`: that would forbid the client from keeping the response, hence the
+    // validator, hence from ever sending `If-None-Match` — and this 304 would never
+    // happen.
+    expect(first.headers.get('cache-control')).toBe('private, max-age=0, must-revalidate')
+    expect(first.headers.get('vary')).toContain('Authorization')
+
+    const again = await GET(path, { 'if-none-match': etag ?? '' })
+    expect(again.status).toBe(304)
+    expect(await again.text()).toBe('')
+  })
+
+  it('invalidates the validator when the structure changes', async () => {
+    const path = `${V1}/meta/bases/b_${TENANT_REF}_crm`
+    const before = (await GET(path)).headers.get('etag') ?? ''
+
+    await app.request(
+      `${V1}/admin/bases/b_${TENANT_REF}_crm/tables`,
+      json({ label: 'Avoirs', fields: [{ label: 'Numéro', kind: 'short_text' }] }),
+    )
+
+    const stale = await GET(path, { 'if-none-match': before })
+    expect(stale.status).toBe(200)
+    expect(stale.headers.get('etag')).not.toBe(before)
+  })
+
+  it('protects both serializations exactly like /meta', async () => {
+    // A carefully filtered specification served without authentication filters nothing.
+    for (const suffix of ['/openapi.json', '/doc']) {
+      const r = await app.request(`${V1}/meta/bases/b_${TENANT_REF}_crm${suffix}`)
+      expect(r.status).toBe(401)
+    }
+  })
+
+  it('requires authentication like the rest of the API', async () => {
+    // `/meta/*` is the first target of a reconnaissance: it has no reason to be less
+    // protected than `/data/*`.
+    const r = await app.request(`${V1}/meta/bases`)
+    expect(r.status).toBe(401)
+  })
+})
+
+describe('refusals — one single place of translation', () => {
+  it('without a credential it is 401, never 404', async () => {
+    // Missing authentication is never disguised as a missing resource: a client must be
+    // able to reconnect.
+    const r = await app.request(`${V1}/admin/bases`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ label: 'X' }),
+    })
+    expect(r.status).toBe(401)
+    await expect(r.json()).resolves.toMatchObject({ code: 'AUTHENTICATION_REQUIRED' })
+  })
+
+  it('answers the same to an absent, a malformed and a forged access token', async () => {
+    // Three different situations, one answer. Telling them apart would say which of the
+    // caller's attempts got further than the others.
+    const codes: string[] = []
+    for (const header of [undefined, 'Bearer pas-un-jeton', 'Bearer bda_bnVsbA', 'Basic abc']) {
+      const r = await app.request(
+        `${V1}/data/b_${TENANT_REF}_crm/factures`,
+        header === undefined ? {} : { headers: { authorization: header } },
+      )
+      expect(r.status).toBe(401)
+      codes.push(((await r.json()) as { code: string }).code)
+    }
+    expect(new Set(codes).size).toBe(1)
+    expect(codes[0]).toBe('AUTHENTICATION_REQUIRED')
+  })
+
+  it('an empty label is refused with 422', async () => {
+    const r = await app.request(`${V1}/admin/bases`, json({ label: '   ' }))
+    expect(r.status).toBe(422)
+    await expect(r.json()).resolves.toMatchObject({ code: 'LABEL_EMPTY' })
+  })
+
+  it('a non-existent table returns 404, with the registry code', async () => {
+    const r = await GET(`${V1}/data/b_${TENANT_REF}_crm/fantome`)
+    expect(r.status).toBe(404)
+    await expect(r.json()).resolves.toMatchObject({ code: 'RESOURCE_NOT_FOUND' })
+  })
+
+  it('a caller carried onto another tenant gets 404, never 403', async () => {
+    // Answering "you have no right here" would confirm that the tenant exists.
+    const r = await GET('/api/v1/tautre1/meta/bases')
+    expect(r.status).toBe(404)
+    await expect(r.json()).resolves.toMatchObject({ code: 'RESOURCE_NOT_FOUND' })
+  })
+})
+
+describe('development account', () => {
+  it('is not published when the server bootstrapped nothing', async () => {
+    // Not an access check, an absence: without bootstrap the route is not mounted, and
+    // the URL answers like any other unknown URL.
+    const r = await app.request('/api/v1/dev/account')
+    expect(r.status).toBe(404)
+  })
+
+  it('publishes the ADDRESS alone when the server has just bootstrapped', async () => {
+    const inDevelopment = createApp({ kernel, developmentEmail: 'admin@basedb.local' })
+    const r = await inDevelopment.request('/api/v1/dev/account')
+    expect(r.status).toBe(200)
+    const body = await r.json()
+    // The address, so the login form can prefill it. Never the password.
+    expect(body).toEqual({ email: 'admin@basedb.local' })
+    expect(JSON.stringify(body)).not.toContain('password')
+  })
+
+  it('every error carries the request identifier', async () => {
+    const r = await app.request(`${V1}/admin/bases`, json({ label: '' }))
+    const body = (await r.json()) as { request_id: string }
+    expect(body.request_id).toBeTruthy()
+    expect(r.headers.get('x-request-id')).toBe(body.request_id)
+  })
+})
+
+describe('temporal types — no time-zone drift', () => {
+  it('a `date` comes back as the calendar day, not as an instant', async () => {
+    // The driver returns a PostgreSQL `date` as a JavaScript `Date` interpreted in the
+    // process's local time zone: under `Europe/Paris`, March 1st becomes February 29th
+    // at 11 p.m. A date is a calendar day, and no time zone applies to it.
+    const base = await makeBase('Temporal')
+
+    await app.request(
+      `${V1}/admin/bases/${base}/tables`,
+      json({
+        label: 'Events',
+        fields: [
+          { label: 'Nom', kind: 'short_text', required: true },
+          { label: 'Jour', kind: 'date' },
+        ],
+      }),
+    )
+
+    await app.request(
+      `${V1}/data/${base}/events`,
+      json({ values: { nom: 'Rentrée', jour: '2024-03-01' } }),
+    )
+
+    const read = await GET(`${V1}/data/${base}/events`)
+    const body = (await read.json()) as { data: Array<Record<string, unknown>> }
+    expect(body.data[0].jour).toBe('2024-03-01')
+  })
+})
+
+describe('full CRUD cycle', () => {
+  let base: string
+  let recordId: string
+
+  it('creates the table used by the cycle', async () => {
+    base = await makeBase('Stock')
+    const table = await app.request(
+      `${V1}/admin/bases/${base}/tables`,
+      json({
+        label: 'Articles',
+        fields: [
+          { label: 'Référence', kind: 'short_text', required: true },
+          { label: 'Quantité', kind: 'number' },
+        ],
+      }),
+    )
+    expect(table.status).toBe(201)
+  })
+
+  it('creates a record', async () => {
+    const r = await app.request(
+      `${V1}/data/${base}/articles`,
+      json({ values: { reference: 'ART-1', quantite: 10 } }),
+    )
+    expect(r.status).toBe(201)
+    const body = (await r.json()) as { data: { _id: string } }
+    recordId = body.data._id
+  })
+
+  it('updates only the supplied field', async () => {
+    const r = await app.request(`${V1}/data/${base}/articles/${recordId}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json', ...auth() },
+      body: JSON.stringify({ values: { quantite: 42 } }),
+    })
+    expect(r.status).toBe(200)
+    const body = (await r.json()) as { data: Record<string, unknown> }
+    expect(Number(body.data.quantite)).toBe(42)
+    // The untouched field keeps its value: an update is never a full replacement.
+    expect(body.data.reference).toBe('ART-1')
+  })
+
+  it('deletes the record and answers 204', async () => {
+    const r = await DEL(`${V1}/data/${base}/articles/${recordId}`)
+    expect(r.status).toBe(204)
+
+    const read = await GET(`${V1}/data/${base}/articles`)
+    const body = (await read.json()) as { data: unknown[] }
+    expect(body.data).toHaveLength(0)
+  })
+
+  it('deleting twice returns 404', async () => {
+    const r = await DEL(`${V1}/data/${base}/articles/${recordId}`)
+    expect(r.status).toBe(404)
+  })
+})
+
+describe('links and inverse links over HTTP', () => {
+  let base: string
+  let clientId: string
+
+  it('creates two tables and a real foreign key between them', async () => {
+    base = await makeBase('Relations')
+    await app.request(
+      `${V1}/admin/bases/${base}/tables`,
+      json({
+        label: 'Clients',
+        fields: [{ label: 'Raison sociale', kind: 'short_text', required: true }],
+      }),
+    )
+    await app.request(
+      `${V1}/admin/bases/${base}/tables`,
+      json({
+        label: 'Commandes',
+        fields: [{ label: 'Référence', kind: 'short_text', required: true }],
+      }),
+    )
+
+    // The target is designated by NAME here too.
+    const link = await app.request(
+      `${V1}/admin/bases/${base}/tables/commandes/links`,
+      json({ label: 'Client', target: 'clients' }),
+    )
+    expect(link.status).toBe(201)
+    const body = (await link.json()) as { data: { name: string; target: string } }
+    expect(body.data.name).toBe('clients_id')
+    expect(body.data.target).toBe('clients')
+  })
+
+  it('shows the link in the projected description', async () => {
+    const r = await GET(`${V1}/meta/bases/${base}`)
+    const body = (await r.json()) as {
+      data: {
+        tables: Array<{
+          name: string
+          referenced_by: boolean
+          fields: Array<{ name: string; link?: { target: string; expandable: boolean } }>
+        }>
+      }
+    }
+    const orders = body.data.tables.find((t) => t.name === 'commandes')
+    const link = orders?.fields.find((f) => f.link !== undefined)
+    expect(link?.link?.target).toBe('clients')
+    expect(link?.link?.expandable).toBe(true)
+    // `clients` is referenced, `commandes` is not.
+    expect(body.data.tables.find((t) => t.name === 'clients')?.referenced_by).toBe(true)
+    expect(orders?.referenced_by).toBe(false)
+  })
+
+  it('returns the referencing rows on referenced_by', async () => {
+    await app.request(`${V1}/admin/bases/${base}/tables/clients/display`, json({ field: null }))
+    const client = await app.request(
+      `${V1}/data/${base}/clients`,
+      json({ values: { raison_sociale: 'Dupont SARL' } }),
+    )
+    clientId = ((await client.json()) as { data: { _id: string } }).data._id
+
+    await app.request(
+      `${V1}/data/${base}/commandes`,
+      json({ values: { reference: 'C-001', clients_id: clientId } }),
+    )
+
+    const r = await GET(`${V1}/data/${base}/clients/${clientId}/referenced_by`)
+    expect(r.status).toBe(200)
+    const body = (await r.json()) as { data: Array<{ label: string; count: number }> }
+    expect(body.data).toHaveLength(1)
+    expect(body.data[0].label).toBe('Commandes · Client')
+    expect(body.data[0].count).toBe(1)
+  })
+
+  it('expands the link into `included`, not into the row', async () => {
+    const r = await GET(`${V1}/data/${base}/commandes?expand=clients_id`)
+    expect(r.status).toBe(200)
+    const body = (await r.json()) as {
+      data: Array<Record<string, unknown>>
+      included: Record<string, Record<string, Record<string, unknown>>>
+    }
+    expect(body.data[0].clients_id).toMatchObject({ id: clientId })
+    expect(body.included.clients?.[clientId]).toMatchObject({ raison_sociale: 'Dupont SARL' })
+  })
+})
+
+describe('/auth — chapter 13, over HTTP', () => {
+  it('plants a cookie a foreign page cannot reach', async () => {
+    const r = await app.request('/auth/password/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'bootstrap@basedb.local', password: PASSWORD }),
+    })
+    expect(r.status).toBe(200)
+
+    const planted = r.headers.get('set-cookie') ?? ''
+    // `__Host-` is enforced BY THE BROWSER: it refuses the cookie unless it is Secure,
+    // path `/`, and carries no Domain — so a sibling host cannot write it.
+    expect(planted).toContain('__Host-basedb_session=')
+    expect(planted).toContain('HttpOnly')
+    expect(planted).toContain('Secure')
+    expect(planted).toContain('SameSite=Strict')
+    expect(planted).toContain('Path=/')
+    expect(planted).not.toContain('Domain=')
+
+    // The session token itself never appears in the body.
+    const body = (await r.json()) as { data: { csrf: string; tenant: string } }
+    expect(JSON.stringify(body)).not.toContain('bds_')
+    expect(body.data.tenant).toBe(TENANT_REF)
+  }, 30_000)
+
+  it('plants the CSRF token in a READABLE cookie, so a reload can still mint a token', async () => {
+    const r = await app.request('/auth/password/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'bootstrap@basedb.local', password: PASSWORD }),
+    })
+    const planted = r.headers.get('set-cookie') ?? ''
+
+    // Two cookies, and only one of them is HttpOnly. The CSRF token must be readable by
+    // the page — a foreign origin cannot read it, which is the whole protection, and
+    // memory alone would not survive a reload.
+    expect(planted).toContain('__Host-basedb_csrf=')
+    const csrfPart = planted.split('__Host-basedb_csrf=')[1] ?? ''
+    const csrfAttributes = csrfPart.split(',')[0] ?? ''
+    expect(csrfAttributes).not.toContain('HttpOnly')
+    expect(csrfAttributes).toContain('SameSite=Strict')
+    expect(csrfAttributes).toContain('Secure')
+
+    // And with the two of them a returning visitor mints a token without logging in.
+    const cookies = (r.headers.get('set-cookie') ?? '')
+      .split(/,(?=\s*__Host-)/)
+      .map((c) => c.split(';')[0].trim())
+      .join('; ')
+    const value = /__Host-basedb_csrf=([^;\s]+)/.exec(cookies)?.[1] ?? ''
+    const issued = await app.request('/auth/session/access', {
+      method: 'POST',
+      headers: { cookie: cookies, 'x-basedb-csrf': decodeURIComponent(value) },
+    })
+    expect(issued.status).toBe(200)
+  }, 30_000)
+
+  it('answers 401 for a wrong password and for an unknown address alike', async () => {
+    const codes: string[] = []
+    for (const credentials of [
+      { email: 'bootstrap@basedb.local', password: 'mauvais mot de passe' },
+      { email: 'personne@basedb.local', password: PASSWORD },
+      { email: 'bootstrap@basedb.local' },
+    ]) {
+      const r = await app.request('/auth/password/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(credentials),
+      })
+      expect(r.status).toBe(401)
+      codes.push(((await r.json()) as { code: string }).code)
+    }
+    // One code for three situations: nothing here says which account exists.
+    expect(new Set(codes)).toEqual(new Set(['CREDENTIALS_INVALID']))
+  }, 60_000)
+
+  it('refuses to mint an access token from the cookie alone', async () => {
+    // The cookie travels on its own; the header does not. That asymmetry is the whole
+    // CSRF defence, and it is demanded on this route only.
+    const r = await app.request('/auth/session/access', { method: 'POST', headers: { cookie } })
+    expect(r.status).toBe(401)
+  })
+
+  it('says who the caller is, with either credential', async () => {
+    const byCookie = await app.request('/auth/me', { headers: { cookie } })
+    const byToken = await GET('/auth/me')
+    expect(byCookie.status).toBe(200)
+    expect(byToken.status).toBe(200)
+
+    const me = (await byToken.json()) as { data: { email: string; tenant: string } }
+    expect(me.data.email).toBe('bootstrap@basedb.local')
+    expect(me.data.tenant).toBe(TENANT_REF)
+    expect(JSON.stringify(me)).not.toContain('bds_')
+  })
+
+  it('lists the live sessions and marks the current one', async () => {
+    const r = await app.request('/auth/sessions', { headers: { cookie } })
+    expect(r.status).toBe(200)
+    const body = (await r.json()) as { data: Array<{ id: string; current: boolean }> }
+    expect(body.data.filter((s) => s.current)).toHaveLength(1)
+    // The token never appears in a list its owner is shown.
+    expect(JSON.stringify(body)).not.toContain('bds_')
+  })
+
+  it('closes the session, and the access tokens with it', async () => {
+    // An isolated session, so the suite's own credential survives.
+    const login = await app.request('/auth/password/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'bootstrap@basedb.local', password: PASSWORD }),
+    })
+    const isolated = login.headers.get('set-cookie')?.split(';')[0] ?? ''
+    const isolatedCsrf = ((await login.json()) as { data: { csrf: string } }).data.csrf
+
+    const issued = await app.request('/auth/session/access', {
+      method: 'POST',
+      headers: { cookie: isolated, 'x-basedb-csrf': isolatedCsrf },
+    })
+    const token = ((await issued.json()) as { data: { token: string } }).data.token
+    expect(
+      (
+        await app.request(`${V1}/meta/bases`, {
+          headers: { authorization: `Bearer ${token}` },
+        })
+      ).status,
+    ).toBe(200)
+
+    const out = await app.request('/auth/session', {
+      method: 'DELETE',
+      headers: { cookie: isolated },
+    })
+    expect(out.status).toBe(204)
+    expect(out.headers.get('set-cookie')).toContain('__Host-basedb_session=;')
+
+    // Nothing was walked to do this: the token is derived from the session, so revoking
+    // the session invalidates every token ever minted from it.
+    expect(
+      (
+        await app.request(`${V1}/meta/bases`, {
+          headers: { authorization: `Bearer ${token}` },
+        })
+      ).status,
+    ).toBe(401)
+  }, 60_000)
+
+  it('refuses to READ or revoke without the cookie', async () => {
+    for (const [path, method] of [
+      ['/auth/sessions', 'GET'],
+      ['/auth/sessions', 'DELETE'],
+      ['/auth/password/change', 'POST'],
+    ] as const) {
+      const r = await app.request(path, {
+        method,
+        headers: { 'content-type': 'application/json' },
+        body: method === 'POST' ? '{}' : undefined,
+      })
+      expect(r.status).toBe(401)
+    }
+  })
+
+  it('lets a logout succeed even with no session at all', async () => {
+    // The chapter lists `204` as the only answer for this route, and rightly: a client
+    // whose session has expired must still be able to clear its own state. It discloses
+    // nothing — there is nothing to disclose.
+    const r = await app.request('/auth/session', { method: 'DELETE' })
+    expect(r.status).toBe(204)
+    expect(r.headers.get('set-cookie')).toContain('__Host-basedb_session=;')
+  })
+})
+
+describe('/auth — elevation and reset, over HTTP', () => {
+  /** Opens an isolated session, so the suite's own credential is never disturbed. */
+  async function freshSession(): Promise<{ cookie: string; csrf: string }> {
+    const r = await app.request('/auth/password/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'bootstrap@basedb.local', password: PASSWORD }),
+    })
+    const raw = (r.headers.get('set-cookie') ?? '')
+      .split(/,(?=\s*__Host-)/)
+      .map((c) => c.split(';')[0].trim())
+      .join('; ')
+    const value = /__Host-basedb_csrf=([^;\s]+)/.exec(raw)?.[1] ?? ''
+    return { cookie: raw, csrf: decodeURIComponent(value) }
+  }
+
+  it('raises a session for five minutes and hands back a new cookie', async () => {
+    const session = await freshSession()
+    const r = await app.request('/auth/elevate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: session.cookie },
+      body: JSON.stringify({ password: PASSWORD }),
+    })
+    expect(r.status).toBe(200)
+
+    const body = (await r.json()) as { data: { elevated_until: string } }
+    expect(Date.parse(body.data.elevated_until)).toBeGreaterThan(Date.now())
+    // The token rotates with the elevation, so a new cookie must be planted.
+    expect(r.headers.get('set-cookie')).toContain('__Host-basedb_session=')
+  }, 60_000)
+
+  it('refuses to raise a session on a wrong password', async () => {
+    const session = await freshSession()
+    const r = await app.request('/auth/elevate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: session.cookie },
+      body: JSON.stringify({ password: 'mauvais mot de passe' }),
+    })
+    expect(r.status).toBe(401)
+    await expect(r.json()).resolves.toMatchObject({ code: 'CREDENTIALS_INVALID' })
+  }, 60_000)
+
+  it('answers 202 to a reset request, whatever the address', async () => {
+    // The same answer for a real account, an unknown one and a malformed body: the point
+    // of the `202` is that it says nothing at all.
+    for (const body of [
+      { email: 'bootstrap@basedb.local' },
+      { email: 'fantome@basedb.local' },
+      {},
+    ]) {
+      const r = await app.request('/auth/password/reset/request', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      expect(r.status).toBe(202)
+      expect(await r.text()).toBe('')
+    }
+  }, 60_000)
+
+  it('refuses an unknown reset secret with one code', async () => {
+    const r = await app.request('/auth/password/reset/confirm', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ secret: 'inconnu', password: 'un mot de passe suffisamment long' }),
+    })
+    expect(r.status).toBe(400)
+    await expect(r.json()).resolves.toMatchObject({ code: 'RESET_TOKEN_INVALID' })
+  })
+})
+
+describe('§6 — the token bucket on /auth', () => {
+  it('answers 429 with Retry-After past ten attempts from one address', async () => {
+    // A FRESH app, hence a fresh bucket: the limiter lives in process memory, so the
+    // suite's own logins would otherwise have spent the allowance.
+    const isolated = createApp({ kernel })
+    const attempt = () =>
+      isolated.request('/auth/password/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-forwarded-for': '198.51.100.7' },
+        body: JSON.stringify({ email: 'bootstrap@basedb.local', password: 'mauvais' }),
+      })
+
+    let last = await attempt()
+    for (let i = 0; i < 12 && last.status !== 429; i++) last = await attempt()
+
+    expect(last.status).toBe(429)
+    expect(Number(last.headers.get('retry-after'))).toBeGreaterThan(0)
+    await expect(last.json()).resolves.toMatchObject({ code: 'RATE_LIMIT_EXCEEDED' })
+  }, 180_000)
+
+  it('counts each address separately', async () => {
+    const isolated = createApp({ kernel })
+    const from = (address: string) =>
+      isolated.request('/auth/password/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-forwarded-for': address },
+        body: JSON.stringify({ email: 'bootstrap@basedb.local', password: 'mauvais' }),
+      })
+
+    let last = await from('198.51.100.8')
+    for (let i = 0; i < 12 && last.status !== 429; i++) last = await from('198.51.100.8')
+    expect(last.status).toBe(429)
+
+    // A neighbour is untouched: one exhausted address must not close the door on
+    // everyone behind the same proxy-less internet.
+    expect((await from('198.51.100.9')).status).toBe(401)
+  }, 180_000)
+})
+
+describe('/admin — adding a field to a live table', () => {
+  let schema: string
+
+  it('creates the table this section works on', async () => {
+    schema = await makeBase('Schéma')
+    const r = await app.request(
+      `${V1}/admin/bases/${schema}/tables`,
+      json({ label: 'Contacts', fields: [{ label: 'Nom', kind: 'short_text', required: true }] }),
+    )
+    expect(r.status).toBe(201)
+    await app.request(`${V1}/data/${schema}/contacts`, json({ values: { nom: 'Camille' } }))
+  }, 60_000)
+
+  it('adds a column, nullable, and says so', async () => {
+    const r = await app.request(
+      `${V1}/admin/bases/${schema}/tables/contacts/fields`,
+      json({ label: 'Ville', kind: 'short_text' }),
+    )
+    expect(r.status).toBe(201)
+
+    const body = (await r.json()) as {
+      data: { name: string; kind: string; required: boolean }
+      meta: { sql: string[] }
+    }
+    expect(body.data.name).toBe('ville')
+    // Nullable, whatever anyone asked: the table already holds a row.
+    expect(body.data.required).toBe(false)
+    expect(body.meta.sql[0]).toContain('ADD COLUMN "ville" text NULL')
+    expect(body.meta.sql[1]).toContain('COMMENT ON COLUMN')
+  }, 60_000)
+
+  it('shows the new column in the description immediately', async () => {
+    // The catalog counter moved with the column, so nothing served a stale shape.
+    const r = await GET(`${V1}/meta/bases/${schema}`)
+    const body = (await r.json()) as {
+      data: { tables: Array<{ name: string; fields: Array<{ name: string }> }> }
+    }
+    const contacts = body.data.tables.find((t) => t.name === 'contacts')
+    expect(contacts?.fields.map((f) => f.name)).toContain('ville')
+  })
+
+  it('accepts a value in the new column straight away', async () => {
+    const r = await app.request(
+      `${V1}/data/${schema}/contacts`,
+      json({ values: { nom: 'Thomas', ville: 'Lyon' } }),
+    )
+    expect(r.status).toBe(201)
+    await expect(r.json()).resolves.toMatchObject({ data: { ville: 'Lyon' } })
+  }, 30_000)
+
+  it('runs the four steps when the column is made required', async () => {
+    // Fill it first: the obligation is a promise about existing rows, not only future
+    // ones, and v1 has no default to fill them with.
+    const page = await GET(`${V1}/data/${schema}/contacts`)
+    const rows = (await page.json()) as { data: Array<{ _id: string; ville: string | null }> }
+    for (const row of rows.data) {
+      if (row.ville === null) {
+        await app.request(`${V1}/data/${schema}/contacts/${row._id}`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json', ...auth() },
+          body: JSON.stringify({ values: { ville: 'Paris' } }),
+        })
+      }
+    }
+
+    const r = await app.request(
+      `${V1}/admin/bases/${schema}/tables/contacts/fields/ville/required`,
+      json({ required: true }),
+    )
+    expect(r.status).toBe(200)
+
+    const body = (await r.json()) as { data: { required: boolean }; meta: { sql: string[] } }
+    expect(body.data.required).toBe(true)
+    expect(body.meta.sql).toHaveLength(4)
+    expect(body.meta.sql[1]).toContain('VALIDATE CONSTRAINT')
+    expect(body.meta.sql[2]).toContain('SET NOT NULL')
+
+    // And the obligation is now real: an empty value is refused.
+    const refused = await app.request(
+      `${V1}/data/${schema}/contacts`,
+      json({ values: { nom: 'Sans ville' } }),
+    )
+    expect(refused.status).toBe(422)
+  }, 120_000)
+
+  it('REFUSES the obligation when a row would break it, and leaves the column alone', async () => {
+    await app.request(
+      `${V1}/admin/bases/${schema}/tables/contacts/fields`,
+      json({ label: 'Téléphone', kind: 'short_text' }),
+    )
+    const r = await app.request(
+      `${V1}/admin/bases/${schema}/tables/contacts/fields/telephone/required`,
+      json({ required: true }),
+    )
+    expect(r.status).toBeGreaterThanOrEqual(400)
+
+    // Still writable without it: a half-applied obligation would be worse than none.
+    const after = await app.request(
+      `${V1}/data/${schema}/contacts`,
+      json({ values: { nom: 'Léa', ville: 'Lille' } }),
+    )
+    expect(after.status).toBe(201)
+  }, 120_000)
+
+  it('makes a select a CHECK the database itself enforces', async () => {
+    const created = await app.request(
+      `${V1}/admin/bases/${schema}/tables/contacts/fields`,
+      json({
+        label: 'Statut',
+        kind: 'select',
+        options: [
+          { value: 'actif', label: 'Actif' },
+          { value: 'inactif', label: 'Inactif' },
+        ],
+      }),
+    )
+    expect(created.status).toBe(201)
+    const body = (await created.json()) as { meta: { sql: string[] } }
+    expect(body.meta.sql.join(' ')).toContain('CHECK ("statut" IN')
+
+    const ok = await app.request(
+      `${V1}/data/${schema}/contacts`,
+      json({ values: { nom: 'Hugo', ville: 'Nantes', statut: 'actif' } }),
+    )
+    expect(ok.status).toBe(201)
+
+    // Outside the list: refused, and by PostgreSQL rather than by a check written here.
+    const refused = await app.request(
+      `${V1}/data/${schema}/contacts`,
+      json({ values: { nom: 'Emma', ville: 'Brest', statut: 'inventé' } }),
+    )
+    expect(refused.status).toBeGreaterThanOrEqual(400)
+  }, 120_000)
+
+  it('refuses a field on a table the caller cannot see, as if it did not exist', async () => {
+    const r = await app.request(
+      `${V1}/admin/bases/${schema}/tables/fantome/fields`,
+      json({ label: 'X', kind: 'short_text' }),
+    )
+    expect(r.status).toBe(404)
+    await expect(r.json()).resolves.toMatchObject({ code: 'RESOURCE_NOT_FOUND' })
+  })
+
+  it('refuses a link here, and names the operation that does it', async () => {
+    const r = await app.request(
+      `${V1}/admin/bases/${schema}/tables/contacts/fields`,
+      json({ label: 'Client', kind: 'link' }),
+    )
+    expect(r.status).toBe(400)
+    await expect(r.json()).resolves.toMatchObject({ code: 'REQUEST_INVALID' })
+  })
+})
