@@ -1010,3 +1010,493 @@ describe('/admin — adding a field to a live table', () => {
     await expect(r.json()).resolves.toMatchObject({ code: 'REQUEST_INVALID' })
   })
 })
+
+describe('/admin — descriptions over HTTP', () => {
+  const patch = (path: string, body: unknown) =>
+    app.request(`${V1}${path}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json', ...auth() },
+      body: JSON.stringify(body),
+    })
+
+  let schema = ''
+  let table = ''
+
+  it('takes a description on a base, a table and its fields, and answers with it', async () => {
+    const base = await app.request(
+      `${V1}/admin/bases`,
+      json({ label: 'Descriptions', description: 'Ce que fait cette base.' }),
+    )
+    expect(base.status).toBe(201)
+    const created = (await base.json()) as { data: { name: string; description: string } }
+    expect(created.data.description).toBe('Ce que fait cette base.')
+    schema = created.data.name
+
+    const r = await app.request(
+      `${V1}/admin/bases/${schema}/tables`,
+      json({
+        label: 'Factures',
+        description: 'Une ligne par facture.',
+        fields: [{ label: 'Numéro', kind: 'short_text', description: 'Numéro unique.' }],
+      }),
+    )
+    expect(r.status).toBe(201)
+    const body = (await r.json()) as {
+      data: { name: string; description: string; fields: Array<{ description: string | null }> }
+    }
+    expect(body.data.description).toBe('Une ligne par facture.')
+    expect(body.data.fields[0].description).toBe('Numéro unique.')
+    table = body.data.name
+
+    const field = await app.request(
+      `${V1}/admin/bases/${schema}/tables/${table}/fields`,
+      json({ label: 'Montant', kind: 'number', description: 'Hors taxes.' }),
+    )
+    expect(field.status).toBe(201)
+    await expect(field.json()).resolves.toMatchObject({ data: { description: 'Hors taxes.' } })
+  })
+
+  it('serves it in /meta, in OpenAPI and in the readable documentation', async () => {
+    const meta = (await (await GET(`${V1}/meta/bases/${schema}`)).json()) as {
+      data: {
+        description: string
+        tables: Array<{ description: string; fields: Array<{ name: string; description: string }> }>
+      }
+    }
+    expect(meta.data.description).toBe('Ce que fait cette base.')
+    expect(meta.data.tables[0].description).toBe('Une ligne par facture.')
+    expect(meta.data.tables[0].fields.find((f) => f.name === 'numero')?.description).toBe(
+      'Numéro unique.',
+    )
+
+    const list = (await (await GET(`${V1}/meta/bases`)).json()) as {
+      data: Array<{ name: string; description: string | null }>
+    }
+    expect(list.data.find((b) => b.name === schema)?.description).toBe('Ce que fait cette base.')
+
+    const openapi = (await (await GET(`${V1}/meta/bases/${schema}/openapi.json`)).json()) as {
+      components: { schemas: Record<string, { description: string }> }
+    }
+    expect(openapi.components.schemas.FacturesRead.description).toBe('Une ligne par facture.')
+
+    const doc = (await (await GET(`${V1}/meta/bases/${schema}/doc`)).json()) as {
+      data: { sections: Array<{ id: string; group: string; markdown: string }> }
+    }
+    const factures = doc.data.sections.find((s) => s.id === 'factures')
+    expect(factures?.group).toBe('Tables')
+    expect(factures?.markdown).toContain('Une ligne par facture.')
+    expect(factures?.markdown).toContain('| Numéro unique. |')
+  })
+
+  it('edits the description of a base, without touching its label', async () => {
+    const r = await patch(`/admin/bases/${schema}`, { description: 'Remplacée.' })
+    expect(r.status).toBe(200)
+    await expect(r.json()).resolves.toMatchObject({
+      data: { label: 'Descriptions', description: 'Remplacée.' },
+    })
+    // Visible on the very next read: nothing waits for a cache to expire.
+    const meta = (await (await GET(`${V1}/meta/bases/${schema}`)).json()) as {
+      data: { description: string }
+    }
+    expect(meta.data.description).toBe('Remplacée.')
+  })
+
+  it('edits the description of a table and of a field', async () => {
+    const t = await patch(`/admin/bases/${schema}/tables/${table}`, { description: 'Nouvelle.' })
+    expect(t.status).toBe(200)
+    await expect(t.json()).resolves.toMatchObject({
+      data: { name: table, description: 'Nouvelle.' },
+    })
+
+    const f = await patch(`/admin/bases/${schema}/tables/${table}/fields/numero`, {
+      description: 'Identifiant lisible.',
+    })
+    expect(f.status).toBe(200)
+    await expect(f.json()).resolves.toMatchObject({
+      data: { name: 'numero', description: 'Identifiant lisible.' },
+    })
+
+    const meta = (await (await GET(`${V1}/meta/bases/${schema}`)).json()) as {
+      data: {
+        tables: Array<{ description: string; fields: Array<{ name: string; description: string }> }>
+      }
+    }
+    expect(meta.data.tables[0].description).toBe('Nouvelle.')
+    expect(meta.data.tables[0].fields.find((x) => x.name === 'numero')?.description).toBe(
+      'Identifiant lisible.',
+    )
+  })
+
+  it('clears a description with null, or with an empty string', async () => {
+    for (const empty of [null, '']) {
+      await patch(`/admin/bases/${schema}/tables/${table}`, { description: 'À effacer.' })
+      const r = await patch(`/admin/bases/${schema}/tables/${table}`, { description: empty })
+      expect(r.status).toBe(200)
+      await expect(r.json()).resolves.toMatchObject({ data: { description: null } })
+    }
+  })
+
+  it('refuses a description that is too long, with the field and the bound', async () => {
+    const r = await patch(`/admin/bases/${schema}/tables/${table}`, {
+      description: 'x'.repeat(1001),
+    })
+    expect(r.status).toBe(422)
+    await expect(r.json()).resolves.toMatchObject({
+      code: 'TEXT_TOO_LONG',
+      details: { field: 'description', maximum: 1000 },
+    })
+  })
+
+  it('refuses a PATCH that says nothing, rather than answering as if it had worked', async () => {
+    for (const path of [
+      `/admin/bases/${schema}`,
+      `/admin/bases/${schema}/tables/${table}`,
+      `/admin/bases/${schema}/tables/${table}/fields/numero`,
+    ]) {
+      const r = await patch(path, {})
+      expect(r.status).toBe(400)
+      await expect(r.json()).resolves.toMatchObject({ code: 'REQUEST_INVALID' })
+    }
+  })
+
+  it('refuses a description that is not text', async () => {
+    const r = await patch(`/admin/bases/${schema}/tables/${table}`, { description: 42 })
+    expect(r.status).toBe(400)
+    await expect(r.json()).resolves.toMatchObject({
+      code: 'REQUEST_INVALID',
+      details: { field: 'description' },
+    })
+  })
+
+  it('answers a table or a field it cannot see as if it did not exist', async () => {
+    const t = await patch(`/admin/bases/${schema}/tables/fantome`, { description: 'x' })
+    expect(t.status).toBe(404)
+    const f = await patch(`/admin/bases/${schema}/tables/${table}/fields/fantome`, {
+      description: 'x',
+    })
+    expect(f.status).toBe(404)
+  })
+
+  it('needs a token, like every other admin route', async () => {
+    const r = await app.request(`${V1}/admin/bases/${schema}/tables/${table}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ description: 'x' }),
+    })
+    expect(r.status).toBe(401)
+  })
+})
+
+describe('/admin — editing a field over HTTP', () => {
+  const send = (method: 'PATCH' | 'PUT', path: string, body: unknown) =>
+    app.request(`${V1}${path}`, {
+      method,
+      headers: { 'content-type': 'application/json', ...auth() },
+      body: JSON.stringify(body),
+    })
+
+  const PIXEL =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+
+  let schema = ''
+  let table = ''
+  let fieldPath = ''
+
+  type Meta = {
+    data: {
+      tables: Array<{
+        name: string
+        fields: Array<{
+          name: string
+          label: string
+          options?: Array<{
+            value: string
+            label: string
+            color: string | null
+            icon: string | null
+            image: string | null
+          }>
+        }>
+      }>
+    }
+  }
+  const field = async (name: string) => {
+    const meta = (await (await GET(`${V1}/meta/bases/${schema}`)).json()) as Meta
+    return meta.data.tables.find((t) => t.name === table)?.fields.find((f) => f.name === name)
+  }
+
+  it('creates a list of choices that already carries its look', async () => {
+    const base = await app.request(`${V1}/admin/bases`, json({ label: 'Édition de champ' }))
+    schema = ((await base.json()) as { data: { name: string } }).data.name
+    const t = await app.request(
+      `${V1}/admin/bases/${schema}/tables`,
+      json({ label: 'Tickets', fields: [{ label: 'Titre', kind: 'short_text' }] }),
+    )
+    table = ((await t.json()) as { data: { name: string } }).data.name
+
+    const created = await app.request(
+      `${V1}/admin/bases/${schema}/tables/${table}/fields`,
+      json({
+        label: 'Priorité',
+        kind: 'select',
+        options: [
+          { value: 'haute', label: 'Haute', color: '#DC2626', icon: 'flame' },
+          { value: 'basse', label: 'Basse', image: PIXEL },
+        ],
+      }),
+    )
+    expect(created.status).toBe(201)
+    fieldPath = `/admin/bases/${schema}/tables/${table}/fields/priorite`
+
+    expect((await field('priorite'))?.options).toEqual([
+      { value: 'haute', label: 'Haute', color: '#dc2626', icon: 'flame', image: null },
+      { value: 'basse', label: 'Basse', color: null, icon: null, image: PIXEL },
+    ])
+  })
+
+  it('renames a field — its label only, never its column', async () => {
+    const r = await send('PATCH', fieldPath, { label: 'Urgence' })
+    expect(r.status).toBe(200)
+    await expect(r.json()).resolves.toMatchObject({ data: { name: 'priorite', label: 'Urgence' } })
+
+    // Still `priorite` for psql, `Urgence` for people.
+    expect((await field('priorite'))?.label).toBe('Urgence')
+  })
+
+  it('takes a label and a description in one call, and answers with both', async () => {
+    const r = await send('PATCH', fieldPath, {
+      label: 'Priorité',
+      description: 'Niveau d’urgence.',
+    })
+    expect(r.status).toBe(200)
+    await expect(r.json()).resolves.toMatchObject({
+      data: { name: 'priorite', label: 'Priorité', description: 'Niveau d’urgence.' },
+    })
+  })
+
+  it('refuses a label already taken, an empty one and one that is not text', async () => {
+    const taken = await send('PATCH', fieldPath, { label: 'titre' })
+    expect(taken.status).toBe(422)
+    await expect(taken.json()).resolves.toMatchObject({ code: 'LABEL_DUPLICATE' })
+
+    const empty = await send('PATCH', fieldPath, { label: '   ' })
+    await expect(empty.json()).resolves.toMatchObject({ code: 'LABEL_EMPTY' })
+
+    const notText = await send('PATCH', fieldPath, { label: 42 })
+    expect(notText.status).toBe(400)
+    await expect(notText.json()).resolves.toMatchObject({
+      code: 'REQUEST_INVALID',
+      details: { field: 'label' },
+    })
+  })
+
+  it('replaces the options: the look alone emits no SQL, a new value regenerates the CHECK', async () => {
+    const look = await send('PUT', `${fieldPath}/options`, {
+      options: [
+        { value: 'basse', label: 'Basse', color: '#16a34a', icon: 'arrow-down' },
+        { value: 'haute', label: 'Haute', color: '#dc2626', icon: 'flame' },
+      ],
+    })
+    expect(look.status).toBe(200)
+    await expect(look.json()).resolves.toMatchObject({
+      data: { added: [], removed: [] },
+      meta: { sql: [] },
+    })
+    // Reordered: `basse` now comes first.
+    expect((await field('priorite'))?.options?.map((o) => o.value)).toEqual(['basse', 'haute'])
+
+    const widened = await send('PUT', `${fieldPath}/options`, {
+      options: [{ value: 'basse' }, { value: 'haute' }, { value: 'critique', color: '#000' }],
+    })
+    expect(widened.status).toBe(200)
+    const body = (await widened.json()) as {
+      data: { added: string[]; options: Array<{ value: string; color: string | null }> }
+      meta: { sql: string[] }
+    }
+    expect(body.data.added).toEqual(['critique'])
+    expect(body.data.options[2]).toMatchObject({ value: 'critique', color: '#000000' })
+    expect(body.meta.sql).toHaveLength(2)
+
+    // The new value is now writable through /data — the CHECK follows the list.
+    const row = await app.request(
+      `${V1}/data/${schema}/${table}`,
+      json({ values: { priorite: 'critique' } }),
+    )
+    expect(row.status).toBe(201)
+  })
+
+  it('refuses to drop an option that rows still carry, with the count', async () => {
+    const r = await send('PUT', `${fieldPath}/options`, {
+      options: [{ value: 'basse' }, { value: 'haute' }],
+    })
+    expect(r.status).toBe(422)
+    await expect(r.json()).resolves.toMatchObject({
+      code: 'OPTION_IN_USE',
+      details: { options: [{ value: 'critique', count: 1 }] },
+    })
+    expect((await field('priorite'))?.options?.map((o) => o.value)).toEqual([
+      'basse',
+      'haute',
+      'critique',
+    ])
+  })
+
+  it('refuses a list that is not one, and a look the catalog would not hold', async () => {
+    const notList = await send('PUT', `${fieldPath}/options`, { options: 'haute' })
+    expect(notList.status).toBe(400)
+
+    const badColor = await send('PUT', `${fieldPath}/options`, {
+      options: [{ value: 'basse', color: 'rouge' }],
+    })
+    expect(badColor.status).toBe(400)
+    await expect(badColor.json()).resolves.toMatchObject({
+      code: 'REQUEST_INVALID',
+      details: { reason: 'couleur_invalide' },
+    })
+
+    const notASelect = await send(
+      'PUT',
+      `/admin/bases/${schema}/tables/${table}/fields/titre/options`,
+      { options: [{ value: 'a' }] },
+    )
+    expect(notASelect.status).toBe(400)
+  })
+
+  it('needs a token, and lets a browser preflight a PUT', async () => {
+    const anonymous = await app.request(`${V1}${fieldPath}/options`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ options: [{ value: 'a' }] }),
+    })
+    expect(anonymous.status).toBe(401)
+
+    const preflight = await app.request(`${V1}${fieldPath}/options`, {
+      method: 'OPTIONS',
+      headers: {
+        origin: 'http://localhost:3000',
+        'access-control-request-method': 'PUT',
+      },
+    })
+    expect(preflight.headers.get('access-control-allow-methods')).toContain('PUT')
+  })
+})
+
+describe('/data — a batch over HTTP', () => {
+  let schema = ''
+  let table = ''
+
+  const batch = (body: unknown, headers: Record<string, string> = auth()) =>
+    app.request(`${V1}/data/${schema}/${table}/batch`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...headers },
+      body: JSON.stringify(body),
+    })
+  const created = (rows: Array<Record<string, unknown>>) => ({
+    operations: rows.map((data) => ({ op: 'create', data })),
+  })
+  const total = async () => {
+    const r = await GET(`${V1}/data/${schema}/${table}?count=exact&limit=1`)
+    return ((await r.json()) as { meta: { count: number } }).meta.count
+  }
+
+  it('sets up a table', async () => {
+    const base = await app.request(`${V1}/admin/bases`, json({ label: 'Lots' }))
+    schema = ((await base.json()) as { data: { name: string } }).data.name
+    const t = await app.request(
+      `${V1}/admin/bases/${schema}/tables`,
+      json({
+        label: 'Contacts',
+        fields: [
+          { label: 'Nom', kind: 'short_text' },
+          { label: 'Age', kind: 'number' },
+        ],
+      }),
+    )
+    table = ((await t.json()) as { data: { name: string } }).data.name
+    expect(table).toBe('contacts')
+  })
+
+  it('creates every row and answers with the shape of chapter 08 §3.5', async () => {
+    const r = await batch(created([{ nom: 'Camille', age: 31 }, { nom: 'Thomas' }, { nom: 'Léa' }]))
+    expect(r.status).toBe(200)
+    const body = (await r.json()) as {
+      atomic: boolean
+      results: Array<{ index: number; status: string; id: string }>
+      summary: Record<string, number>
+    }
+    expect(body.atomic).toBe(true)
+    expect(body.results.map((x) => [x.index, x.status])).toEqual([
+      [0, 'created'],
+      [1, 'created'],
+      [2, 'created'],
+    ])
+    expect(body.results.every((x) => /^[0-9a-f-]{36}$/.test(x.id))).toBe(true)
+    expect(body.summary).toEqual({ created: 3, updated: 0, deleted: 0, failed: 0 })
+    expect(await total()).toBe(3)
+  })
+
+  it('is all or nothing, and names the row that failed', async () => {
+    const r = await batch(
+      created([{ nom: 'Bon' }, { nom: 'Mauvais', age: 'vingt' }, { nom: 'Bon 2' }]),
+    )
+    expect(r.status).toBe(422)
+    await expect(r.json()).resolves.toMatchObject({
+      code: 'VALUE_INVALID',
+      details: { index: 1 },
+    })
+    // The good row that came BEFORE the bad one was not kept.
+    expect(await total()).toBe(3)
+  })
+
+  it('refuses a field that does not exist, naming the row and the field', async () => {
+    const r = await batch(created([{ nom: 'Ok' }, { fantome: 1 }]))
+    expect(r.status).toBeGreaterThanOrEqual(400)
+    await expect(r.json()).resolves.toMatchObject({
+      code: 'FILTER_FIELD_UNKNOWN',
+      details: { index: 1, field: 'fantome' },
+    })
+    expect(await total()).toBe(3)
+  })
+
+  it('refuses by name what it does not do yet, instead of answering as if it had', async () => {
+    const update = await batch({ operations: [{ op: 'update', id: 'x', data: { nom: 'y' } }] })
+    expect(update.status).toBe(400)
+    await expect(update.json()).resolves.toMatchObject({
+      code: 'REQUEST_INVALID',
+      details: { index: 0, reason: 'seul_create_est_pris_en_charge' },
+    })
+
+    const partial = await batch({ atomic: false, ...created([{ nom: 'x' }]) })
+    expect(partial.status).toBe(400)
+    await expect(partial.json()).resolves.toMatchObject({
+      code: 'REQUEST_INVALID',
+      details: { field: 'atomic' },
+    })
+
+    for (const bad of [
+      {},
+      { operations: 'oui' },
+      { operations: [] },
+      { operations: [{ op: 'create' }] },
+    ]) {
+      expect((await batch(bad)).status).toBe(400)
+    }
+    expect(await total()).toBe(3)
+  })
+
+  it('refuses more than a thousand operations with 413', async () => {
+    const r = await batch(created(Array.from({ length: 1001 }, (_, i) => ({ nom: `n${i}` }))))
+    expect(r.status).toBe(413)
+    await expect(r.json()).resolves.toMatchObject({ code: 'BATCH_TOO_LARGE' })
+    expect(await total()).toBe(3)
+  })
+
+  it('needs a token, and is described in OpenAPI', async () => {
+    expect((await batch(created([{ nom: 'x' }]), {})).status).toBe(401)
+
+    const openapi = (await (await GET(`${V1}/meta/bases/${schema}/openapi.json`)).json()) as {
+      paths: Record<string, { post?: { summary: string } }>
+    }
+    expect(openapi.paths[`/data/${schema}/${table}/batch`]?.post?.summary).toContain('plusieurs')
+  })
+})

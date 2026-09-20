@@ -11,6 +11,7 @@ import { BasedbError } from '../errors/index.js'
 import { allocateName } from '../naming/allocation.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
+import { commentText, normalizeDescription } from './description.js'
 import { labelKey } from './operations.js'
 
 /**
@@ -35,11 +36,14 @@ export interface CreateLinkFieldRequest {
   readonly required?: boolean
   readonly onDelete?: OnDelete
   readonly technicalName?: string
+  /** What the link means — "the client invoiced", not "a link to Clients". Plain text. */
+  readonly description?: string | null
 }
 
 export interface CreatedLinkField {
   readonly fieldId: string
   readonly label: string
+  readonly description: string | null
   /** Physical column name, frozen at creation and never recomputed. */
   readonly name: string
   readonly targetTableName: string
@@ -94,6 +98,7 @@ export async function createLinkField(
 ): Promise<CreatedLinkField> {
   const onDelete = request.onDelete ?? 'restrict'
   const required = request.required ?? false
+  const description = normalizeDescription(request.description)
 
   // ── Step 1: catalog and non-blocking DDL ──────────────────────────────────
   const plan = await withTransaction(pools, 'ddl', ctx, async (exec) => {
@@ -123,15 +128,16 @@ export async function createLinkField(
 
     const [field] = await exec.query<{ id: string }>(
       `INSERT INTO _basedb.field
-         (table_id, base_id, kind, name_id, label, label_key, is_required, position,
-          created_by, updated_by)
-       VALUES ($1, $2, 'link', $3, $4, $5, $6, $7, $8, $8) RETURNING id`,
+         (table_id, base_id, kind, name_id, label, label_key, description, is_required,
+          position, created_by, updated_by)
+       VALUES ($1, $2, 'link', $3, $4, $5, $6, $7, $8, $9, $9) RETURNING id`,
       [
         source.tableId,
         source.baseId,
         columnName.nameId,
         request.label,
         labelKey(request.label),
+        description,
         required,
         position.n,
         ctx.actor.id,
@@ -183,7 +189,7 @@ export async function createLinkField(
     // step, after the column has been filled.
     const sql = [
       `ALTER TABLE ${relation} ADD COLUMN ${column} uuid NULL;`,
-      `COMMENT ON COLUMN ${relation}.${column} IS ${literal(`Lien vers ${target.label}`)};`,
+      `COMMENT ON COLUMN ${relation}.${column} IS ${literal(commentText(`Lien vers ${target.label}`, description))};`,
       `ALTER TABLE ${relation}
   ADD CONSTRAINT ${quoteIdentifier(fkName)}
   FOREIGN KEY (${column}) REFERENCES ${qualify(target.schemaName, target.tableName)} ("_id")
@@ -235,6 +241,7 @@ export async function createLinkField(
   return {
     fieldId: plan.fieldId,
     label: request.label,
+    description,
     name: plan.name,
     targetTableName: plan.targetTableName,
     constraintName: plan.fkName,

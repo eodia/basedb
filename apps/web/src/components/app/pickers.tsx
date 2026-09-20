@@ -1,0 +1,247 @@
+'use client'
+
+import { OptionBadge, hasLook } from '@/components/app/option-badge'
+import { Badge } from '@/components/ui/badge'
+import { Combobox, type ComboboxOption, filterOptions } from '@/components/ui/combobox'
+import type { Field, LinkOption } from '@/lib/api/client'
+import { Link2 } from 'lucide-react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
+
+/**
+ * The two ways to choose a value — from a list of choices, and from the rows of another
+ * table.
+ *
+ * Both are the same combobox: type to narrow, arrows and Enter to choose. A column that
+ * holds three values and one that points at ten thousand rows are handled alike, which
+ * is the reason neither gets a plain dropdown.
+ */
+
+export interface LinkSearchResult {
+  readonly options: readonly LinkOption[]
+  /** True when the target holds more rows than `options` carries. */
+  readonly truncated: boolean
+  /**
+   * True when the server already applied the text. False means `options` is only the
+   * first rows of the target, for the picker to narrow itself — which is what happens
+   * when the display column is not text, and so cannot be searched.
+   */
+  readonly filtered: boolean
+}
+
+/**
+ * Asks the server for the rows of a link's target that match a text. An empty text lists
+ * the first rows in the target's own order.
+ */
+export type SearchLink = (field: Field, query: string) => Promise<LinkSearchResult>
+
+interface PickerProps {
+  readonly field: Field
+  readonly value: string | null
+  readonly onChange: (value: string | null) => void
+  /** `cell` is the compact chip of a grid; `form` is the bordered field of a form. */
+  readonly appearance: 'cell' | 'form'
+  /** Shown while nothing is chosen. */
+  readonly placeholder?: string
+}
+
+/** In a grid the chevron stays out of sight until the row is hovered or the list is open. */
+const TRIGGER: Readonly<Record<PickerProps['appearance'], string>> = {
+  cell: 'h-7 border-transparent bg-transparent px-1.5 text-xs shadow-none hover:bg-muted [&>svg]:opacity-0 group-hover/row:[&>svg]:opacity-50 data-[state=open]:[&>svg]:opacity-100',
+  form: '',
+}
+
+/** A field that may be empty offers a way to empty it; a required one must not. */
+const clearLabelOf = (field: Field) => (field.required === true ? undefined : 'Aucune valeur')
+
+function Shown({
+  label,
+  appearance,
+  icon,
+  placeholder,
+}: {
+  readonly label: string | null
+  readonly appearance: PickerProps['appearance']
+  readonly icon: ReactNode
+  readonly placeholder: string
+}) {
+  if (label === null) return <span className="text-muted-foreground">{placeholder}</span>
+  if (appearance === 'form') return <span className="truncate">{label}</span>
+  return (
+    <Badge variant="secondary" className="min-w-0 shrink gap-1.5 overflow-hidden font-normal">
+      {icon}
+      <span className="truncate">{label}</span>
+    </Badge>
+  )
+}
+
+/**
+ * A `select` field: the choices are declared by the catalog, so they are all here.
+ *
+ * A choice that has a look — a colour, a pictogram, a picture — is drawn as its chip, in
+ * the list and once chosen; one that has none keeps the plain rendering it always had, so
+ * a list nobody dressed does not change.
+ */
+export function EnumPicker({ field, value, onChange, appearance, placeholder = '—' }: PickerProps) {
+  const options = field.options ?? []
+  const chosen = value === null ? undefined : options.find((o) => o.value === value)
+  // A value the list does not carry is shown as stored, not as if nothing were chosen.
+  const label = value === null ? null : (chosen?.label ?? value)
+
+  const choices: ComboboxOption[] = options.map((o) => ({
+    value: o.value,
+    label: o.label,
+    render: hasLook(o) ? <OptionBadge option={o} /> : undefined,
+  }))
+
+  return (
+    <Combobox
+      value={value}
+      onValueChange={onChange}
+      options={choices}
+      clearLabel={clearLabelOf(field)}
+      searchPlaceholder="Rechercher une valeur…"
+      className={TRIGGER[appearance]}
+      aria-label={field.label}
+    >
+      {chosen !== undefined && hasLook(chosen) ? (
+        <OptionBadge option={chosen} />
+      ) : (
+        <Shown
+          label={label}
+          appearance={appearance}
+          placeholder={placeholder}
+          icon={<span className="size-1.5 shrink-0 rounded-full bg-muted-foreground" />}
+        />
+      )}
+    </Combobox>
+  )
+}
+
+interface LinkPickerProps extends PickerProps {
+  /** What the row itself calls the linked row: the display value the server resolved. */
+  readonly display?: string | null
+  /**
+   * The first rows of the target, loaded with the table. They fill the list the instant
+   * it opens, and stand in for the server when it cannot search.
+   */
+  readonly options: readonly LinkOption[]
+  readonly onSearch: SearchLink
+}
+
+/** How long a pause in typing means "search now". */
+const TYPING_PAUSE_MS = 200
+
+const toChoice = (option: LinkOption): ComboboxOption => ({
+  value: option.id,
+  label: option.display,
+})
+
+/**
+ * A link field: the rows of the target table, searched on the server.
+ *
+ * Searching there is not an optimisation. The rows loaded with the table are one page,
+ * and a target with more rows than that would simply not offer the ones past it — a
+ * search that cannot find a row that exists is worse than no search.
+ */
+export function LinkPicker({
+  field,
+  value,
+  display,
+  options,
+  onSearch,
+  onChange,
+  appearance,
+  placeholder = '—',
+}: LinkPickerProps) {
+  const [query, setQuery] = useState('')
+  const [found, setFound] = useState<{
+    readonly query: string
+    readonly result: LinkSearchResult
+  } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const [picked, setPicked] = useState<LinkOption | null>(null)
+  const latest = useRef(0)
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => () => clearTimeout(timer.current), [])
+
+  const search = (text: string) => {
+    setQuery(text)
+    clearTimeout(timer.current)
+
+    const run = () => {
+      // Only the newest request may answer: a slow reply for "du" must not overwrite the
+      // list already shown for "dup".
+      const mine = ++latest.current
+      setLoading(true)
+      onSearch(field, text).then(
+        (result) => {
+          if (mine !== latest.current) return
+          setFound({ query: text, result })
+          setFailed(false)
+          setLoading(false)
+        },
+        () => {
+          if (mine !== latest.current) return
+          setFound(null)
+          setFailed(true)
+          setLoading(false)
+        },
+      )
+    }
+
+    // An empty text is the list OPENING, not someone typing: there is nothing to wait for.
+    if (text === '') run()
+    else timer.current = setTimeout(run, TYPING_PAUSE_MS)
+  }
+
+  // What the server said about THIS text. A reply for an earlier one is not shown: until
+  // the right one arrives, the rows already loaded are narrowed locally.
+  const settled = found !== null && found.query === query ? found.result : null
+  const listed = (settled === null ? options : settled.options).map(toChoice)
+  const shown = settled?.filtered === true ? listed : filterOptions(listed, query)
+
+  const notice = failed
+    ? 'Recherche indisponible : seuls les choix déjà chargés sont filtrés.'
+    : settled?.truncated !== true
+      ? null
+      : settled.filtered
+        ? 'D’autres résultats existent : précisez la recherche.'
+        : 'Liste incomplète : la colonne d’affichage n’est pas du texte, elle ne se recherche pas.'
+
+  const label =
+    value === null
+      ? null
+      : (display ??
+        (picked?.id === value ? picked.display : undefined) ??
+        options.find((o) => o.id === value)?.display ??
+        value.slice(0, 8))
+
+  return (
+    <Combobox
+      value={value}
+      onValueChange={(next) => {
+        const chosen = next === null ? undefined : shown.find((o) => o.value === next)
+        setPicked(chosen === undefined ? null : { id: chosen.value, display: chosen.label })
+        onChange(next)
+      }}
+      options={shown}
+      onQueryChange={search}
+      loading={loading}
+      notice={notice}
+      clearLabel={clearLabelOf(field)}
+      searchPlaceholder="Rechercher un enregistrement…"
+      emptyLabel="Aucun enregistrement trouvé"
+      className={TRIGGER[appearance]}
+      aria-label={field.label}
+    >
+      <Shown
+        label={label}
+        appearance={appearance}
+        placeholder={placeholder}
+        icon={<Link2 className="size-3" />}
+      />
+    </Combobox>
+  )
+}

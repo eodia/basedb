@@ -22,12 +22,14 @@ Le socle est PostgreSQL 16 (A1), contrôlé au démarrage avec `POSTGRES_VERSION
 |---|---|---|
 | Vit dans | le catalogue seulement | `_basedb.physical_name` **et** PostgreSQL |
 | Modifiable par | tout rôle portant `manage_schema` sur la portée de l'objet | rôle d'administration seulement |
-| Effet en base | aucun | `ALTER … RENAME`, verrou `ACCESS EXCLUSIVE` |
+| Effet en base | aucun, hors le `COMMENT ON` d'un objet sans description (ci-dessous) | `ALTER … RENAME`, verrou `ACCESS EXCLUSIVE` |
 | Contraintes | `label_key` non vide, ≤ 255 caractères NFC, unique parmi les objets vivants du parent | alphabets, budgets et mots réservés du chapitre 01 |
 | Libéré à la suppression | **oui, immédiatement** | **jamais**, y compris après la purge |
 | Trace | `audit_log` | `audit_log` + `_basedb.migration` + ligne de registre |
 
-Renommer un libellé est un `UPDATE` d'une ligne de catalogue et rien d'autre. C'est délibérément banal : c'est l'opération la plus fréquente, elle ne prend aucun verrou sur une table de données, et elle n'est pas une migration. Le `COMMENT ON COLUMN` du schéma `b_*` porte la colonne `description` du champ, pas son libellé : il n'est donc pas régénéré à chaque renommage de libellé.
+Renommer un libellé est un `UPDATE` d'une ligne de catalogue et rien d'autre. C'est délibérément banal : c'est l'opération la plus fréquente, elle ne prend aucun verrou sur une table de données — à une exception, dite plus bas —, et elle n'est pas une migration. Le `COMMENT ON` du schéma `b_*` porte la `description` de l'objet et son libellé seulement à défaut (chapitre 04 §1.1) : renommer un objet **décrit** ne touche donc pas au commentaire. Renommer un objet **sans description** le réécrit avec le nouveau libellé, dans la même transaction, par un unique `COMMENT ON` de la classe « Pose » du chapitre 03 §2.2 : c'est l'exception, un verrou bref sur la table, mais un énoncé et non un plan, aucune étape à reprendre, et toujours pas une migration.
+
+**Éditer une description** est du même registre : une ligne de catalogue, `manage_schema` sur la portée de l'objet, aucune migration. Le `COMMENT ON` de la table ou de la colonne est réécrit **dans la transaction de l'édition**, sur le pool `ddl`, jamais avant ni après elle — le catalogue et le commentaire ne se contredisent à aucun instant observable, ce que vérifie `CAT-CMT`. L'opération incrémente `base.catalog_version` (§1.3) : la description est projetée par la documentation, la spécification OpenAPI et le MCP, qui doivent la suivre sans qu'on vide un cache. La description d'une base, sans contrepartie physique, ne réécrit aucun commentaire. La valeur elle-même — texte brut, 1 000 caractères au plus, refusée au-delà et jamais tronquée — suit les règles du chapitre 02.
 
 ### 1.2 Ce que « rôle d'administration » signifie ici
 
@@ -144,7 +146,7 @@ Le découpage par lots de dix n'est pas un choix de ce chapitre : le chapitre 03
 
 **Ce qui casse, c'est la convention `<table_cible>_id` de la colonne référençante.** Décision : **la colonne de clé étrangère n'est jamais renommée en cascade**, conformément à A7, qui fige le nom à la création. Une cascade transformerait un renommage administratif en opération à N objets, cassant N consommateurs pour un gain cosmétique ; la colonne peut déjà ne pas suivre la convention, le deuxième lien vers une même cible étant nommé d'après le libellé du champ ; et le nom de la colonne n'est pas la source de vérité du lien — le catalogue l'est.
 
-Ce que voit un consommateur SQL après coup : `b_t4z56fq_crm.factures.clients_id` référence `b_t4z56fq_crm.comptes._id`. Incohérent à l'œil, correct à l'exécution. Trois atténuations : le `COMMENT ON COLUMN` de la colonne de lien est régénéré et porte « Lien vers "comptes" (anciennement "clients") » ; la documentation générée et les outils MCP affichent la cible réelle, jamais le nom de la colonne comme indice ; l'écran de renommage liste les colonnes qui deviendront désalignées avec, pour chacune, un bouton de renommage **séparé**, chacun étant un renommage physique de champ à part entière, donc sans alias et avec son propre écran d'impact.
+Ce que voit un consommateur SQL après coup : `b_t4z56fq_crm.factures.clients_id` référence `b_t4z56fq_crm.comptes._id`. Incohérent à l'œil, correct à l'exécution. Trois atténuations : le `COMMENT ON COLUMN` de la colonne de lien, quand le champ n'a pas de description, est régénéré et porte « Lien vers "comptes" (anciennement "clients") » ; la documentation générée et les outils MCP affichent la cible réelle, jamais le nom de la colonne comme indice ; l'écran de renommage liste les colonnes qui deviendront désalignées avec, pour chacune, un bouton de renommage **séparé**, chacun étant un renommage physique de champ à part entière, donc sans alias et avec son propre écran d'impact.
 
 **Ce que l'alias couvre dans ce cas.** L'alias du renommage de table occupe l'ancien nom de table ; la colonne, elle, n'a pas bougé. Un consommateur qui écrivait `FROM clients` et joignait `f.clients_id = c._id` continue de fonctionner intégralement à travers la vue. L'alias couvre donc exactement le cas nominal, et rien de plus.
 

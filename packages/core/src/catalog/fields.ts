@@ -4,7 +4,9 @@ import { BasedbError } from '../errors/index.js'
 import { allocateName } from '../naming/allocation.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
+import { commentText, normalizeDescription } from './description.js'
 import { labelKey } from './operations.js'
+import { type SelectOptionInput, normalizeOptions } from './select-options.js'
 
 /**
  * Adding a field to an existing table — chapter 04 §1.3 and §1.10.
@@ -22,17 +24,20 @@ export interface AddFieldRequest {
   readonly label: string
   readonly kind: FieldKind
   readonly technicalName?: string
+  /** What the field is for — shown in the documentation and to agents. Plain text. */
+  readonly description?: string | null
   /**
    * The choices of a `select`. The list is not decoration: it becomes a CHECK
    * constraint, so direct SQL is held to it exactly as the API is.
    */
-  readonly options?: ReadonlyArray<{ readonly value: string; readonly label?: string }>
+  readonly options?: readonly SelectOptionInput[]
 }
 
 export interface AddedField {
   readonly fieldId: string
   readonly name: string
   readonly label: string
+  readonly description: string | null
   readonly kind: FieldKind
   /** What was emitted, in order — shown to the caller as every DDL operation does. */
   readonly sql: readonly string[]
@@ -79,6 +84,7 @@ export async function addField(
   request: AddFieldRequest,
 ): Promise<AddedField> {
   if (request.label.trim() === '') throw new BasedbError('LABEL_EMPTY')
+  const description = normalizeDescription(request.description)
 
   if (request.kind === 'link') {
     // A link is a three-step sequence with a step outside the transaction, and it has
@@ -122,9 +128,9 @@ export async function addField(
 
     const [field] = await exec.query<{ id: string }>(
       `INSERT INTO _basedb.field
-         (table_id, base_id, kind, name_id, label, label_key, is_required, position,
-          created_by, updated_by)
-       VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8, $8) RETURNING id`,
+         (table_id, base_id, kind, name_id, label, label_key, description, is_required,
+          position, created_by, updated_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8, $9, $9) RETURNING id`,
       [
         where.tableId,
         where.baseId,
@@ -132,6 +138,7 @@ export async function addField(
         column.nameId,
         request.label,
         labelKey(request.label),
+        description,
         position.n,
         ctx.actor.id,
       ],
@@ -147,7 +154,7 @@ export async function addField(
       where.schemaName,
       where.tableName,
       column.name,
-      request.label,
+      commentText(request.label, description),
     )
     await exec.query(comment, [], 'ddl')
     sql.push(comment)
@@ -164,6 +171,7 @@ export async function addField(
       fieldId: field.id,
       name: column.name,
       label: request.label,
+      description,
       kind: request.kind,
       sql,
     }
@@ -183,18 +191,9 @@ async function addSelectOptions(
   where: Location,
   fieldId: string,
   columnName: string,
-  options: ReadonlyArray<{ readonly value: string; readonly label?: string }>,
+  input: readonly SelectOptionInput[],
 ): Promise<readonly string[]> {
-  const seen = new Set<string>()
-  for (const option of options) {
-    if (option.value.trim() === '') {
-      throw new BasedbError('REQUEST_INVALID', { details: { field: 'options', reason: 'vide' } })
-    }
-    if (seen.has(option.value)) {
-      throw new BasedbError('DUPLICATE_VALUE', { details: { option: option.value } })
-    }
-    seen.add(option.value)
-  }
+  const options = normalizeOptions(input)
 
   const name = await allocateName(exec, ctx, {
     derivedName: checkConstraintName(where.tableName, columnName, 'enum'),
@@ -225,9 +224,9 @@ async function addSelectOptions(
 
   for (const [index, option] of options.entries()) {
     await exec.query(
-      `INSERT INTO _basedb.select_option (field_id, value, label, position)
-       VALUES ($1, $2, $3, $4)`,
-      [fieldId, option.value, option.label ?? option.value, index + 1],
+      `INSERT INTO _basedb.select_option (field_id, value, label, color, icon, image, position)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [fieldId, option.value, option.label, option.color, option.icon, option.image, index + 1],
       'insert',
     )
   }

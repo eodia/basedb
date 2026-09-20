@@ -34,6 +34,15 @@ let invoices: { tableId: string; amountFieldId: string }
 let salaries: { tableId: string }
 let tenantId: string
 
+/**
+ * A HOSTILE description, like the hostile label below: a tag, Markdown emphasis, a pipe
+ * that would close a table cell, and a second line opening with a list marker.
+ */
+const HOSTILE_DESCRIPTION =
+  "Les clients <script>alert(1)</script> de l'entreprise, **tous** | sans exception.\n- puis une ligne qui ressemble à une liste"
+const AMOUNT_DESCRIPTION = 'Montant hors taxes, en euros.'
+const INVOICES_DESCRIPTION = 'Factures émises aux clients.'
+
 /** What the three serializations must agree on, and nothing else. */
 interface Described {
   readonly tables: readonly string[]
@@ -96,21 +105,29 @@ function fromOpenApi(document: Record<string, unknown>, baseName: string): Descr
   return sorted({ tables, fields, linkTargets })
 }
 
-/** Reads the documentation as a human would: its sections, its bullets. */
+/** Reads the documentation as a human would: its sections, its column tables. */
 function fromDocumentation(doc: Documentation): Described {
-  // A table section is one that states an SQL name. The others — intro, conventions,
+  // A table section is one filed under "Tables". The others — overview, conventions,
   // relations, direct SQL — describe the base, not a table.
-  const tableSections = doc.sections.filter((s) => s.markdown.includes('En SQL : '))
+  const tableSections = doc.sections.filter((s) => s.group === 'Tables')
 
   const fields: string[] = []
   for (const section of tableSections) {
+    // Only the rows of the two column tables count: the endpoint table above them also
+    // opens each row with an inline code cell (`GET`), and is not a list of fields.
+    let inColumns = false
     for (const line of section.markdown.split('\n')) {
-      const match = /^- `([^`]+)` — /.exec(line)
+      if (line.startsWith('### ')) {
+        inColumns = line.startsWith('### Colonnes')
+        continue
+      }
+      if (!inColumns) continue
+      const match = /^\| `([^`]+)` \|/.exec(line)
       if (match !== null) fields.push(`${section.id}.${match[1]}`)
     }
   }
 
-  const relations = doc.sections.find((s) => s.id === 'relations')
+  const relations = doc.sections.find((s) => s.id === 'api-relations')
   const linkTargets: string[] = []
   for (const line of relations?.markdown.split('\n') ?? []) {
     const match = /^- `([^`]+)\.([^`.]+)` → `([^`]+)`$/.exec(line)
@@ -221,6 +238,7 @@ beforeAll(async () => {
   const c = await createTable(pools, admin, {
     baseId: crm.baseId,
     label: 'Clients',
+    description: HOSTILE_DESCRIPTION,
     fields: [
       // A HOSTILE label: injected as-is into a `title` rendered by a documentation
       // viewer, it executes its script on whoever reads it (§7.6 decision 4).
@@ -229,7 +247,7 @@ beforeAll(async () => {
         kind: 'short_text',
         required: true,
       },
-      { label: 'Ville', kind: 'short_text' },
+      { label: 'Ville', kind: 'short_text', description: 'Ville du siège social.' },
     ],
   })
   await setDisplayColumn(pools, admin, { tableId: c.tableId, fieldId: c.fields[0].fieldId })
@@ -238,9 +256,10 @@ beforeAll(async () => {
   const f = await createTable(pools, admin, {
     baseId: crm.baseId,
     label: 'Factures',
+    description: INVOICES_DESCRIPTION,
     fields: [
       { label: 'Numéro', kind: 'short_text', required: true },
-      { label: 'Montant', kind: 'number' },
+      { label: 'Montant', kind: 'number', description: AMOUNT_DESCRIPTION },
       { label: 'Commentaire', kind: 'long_text' },
     ],
   })
@@ -368,6 +387,89 @@ describe('§7.6 — a hostile label is neutralized in all three', () => {
     expect(section?.markdown).toContain(
       'Raison &lt;img src=x onerror=alert\\(1\\)&gt; \\*\\*sociale\\*\\*',
     )
+  })
+})
+
+describe('descriptions — one source, three serializations', () => {
+  it('reach /meta, OpenAPI and the documentation', async () => {
+    const base = await projectBase(pools, admin, crmSchema)
+    const invoices = base.tables.find((t) => t.name === 'factures')
+    const amount = invoices?.fields.find((f) => f.name === 'montant')
+
+    // The projection holds the text as it was typed...
+    expect(invoices?.description).toBe(INVOICES_DESCRIPTION)
+    expect(amount?.description).toBe(AMOUNT_DESCRIPTION)
+
+    // ...and each serialization carries it, by its own means.
+    const openapi = toOpenApi(base, TENANT_REF)
+    const schemas = (openapi.components as { schemas: Record<string, Record<string, unknown>> })
+      .schemas
+    expect(schemas.FacturesRead.description).toBe(INVOICES_DESCRIPTION)
+    const properties = schemas.FacturesRead.properties as Record<string, Record<string, unknown>>
+    expect(properties.montant.description).toBe(AMOUNT_DESCRIPTION)
+
+    const doc = toDocumentation(base, TENANT_REF)
+    const section = doc.sections.find((s) => s.id === 'factures')
+    expect(section?.markdown).toContain(INVOICES_DESCRIPTION)
+    expect(section?.markdown).toContain(
+      `| \`montant\` | Montant | nombre (chaîne décimale) | ${AMOUNT_DESCRIPTION} |`,
+    )
+  })
+
+  it('leave a system column with a description too', async () => {
+    const base = await projectBase(pools, admin, crmSchema)
+    const id = base.tables[0].fields.find((f) => f.name === '_id')
+    // Without it the documentation would explain every column but the one a link needs.
+    expect(id?.description).toContain('UUID')
+  })
+
+  it('are neutralized in the two documents a human renders, and raw in /meta', async () => {
+    const base = await projectBase(pools, admin, crmSchema)
+    const meta = JSON.stringify(base)
+    // `/meta` is data consumed by a program: the text survives as typed.
+    expect(meta).toContain('<script>alert(1)</script>')
+
+    for (const document of [
+      JSON.stringify(toOpenApi(base, TENANT_REF)),
+      JSON.stringify(toDocumentation(base, TENANT_REF)),
+    ]) {
+      expect(document).not.toContain('<script')
+      expect(document).toContain('&lt;script')
+      expect(document).not.toContain('**tous**')
+    }
+  })
+
+  it('cannot open a table cell, a list, or a second paragraph in the documentation', async () => {
+    const base = await projectBase(pools, admin, crmSchema)
+    const section = toDocumentation(base, TENANT_REF).sections.find((s) => s.id === 'clients')
+    const lede = section?.markdown.split('\n')[0] ?? ''
+
+    // ONE line: the newline of the description became a space, so the second line — which
+    // opens with a list marker — cannot start a list.
+    expect(lede).toContain('sans exception. - puis une ligne')
+    expect(lede).not.toMatch(/^- /)
+    // The pipe is escaped: it would otherwise close the cell of a table.
+    expect(lede).toContain('\\|')
+  })
+
+  it('go with the field, so a masked field takes its description along', async () => {
+    const hidden = await actorReading(
+      'discret@basedb.local',
+      [clients.tableId, invoices.tableId],
+      [invoices.amountFieldId],
+    )
+    const base = await projectBase(pools, hidden, crmSchema)
+
+    for (const document of [
+      JSON.stringify(base),
+      JSON.stringify(toOpenApi(base, TENANT_REF)),
+      JSON.stringify(toDocumentation(base, TENANT_REF)),
+    ]) {
+      // A description is the first thing a reconnaissance would read about a hidden column.
+      expect(document).not.toContain(AMOUNT_DESCRIPTION)
+    }
+    // The table's own description is still there: the reader may read the table.
+    expect(JSON.stringify(base)).toContain(INVOICES_DESCRIPTION)
   })
 })
 

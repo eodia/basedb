@@ -18,13 +18,13 @@ Le plancher est **PostgreSQL 16** (A1) : `pg_input_is_valid` rend les conversion
 
 Un champ se projette sur **exactement une colonne** de la table de sa base. Aucun type ne produit de colonne annexe, de table de débordement ou de colonne miroir. La valeur d'affichage d'un lien, le libellé d'une option de liste de choix, le format d'affichage d'un nombre sont des données de catalogue, jamais des colonnes de la table utilisateur. *Alternative rejetée* : dénormaliser la valeur d'affichage dans la table source — exigerait un déclencheur de synchronisation par table cible et créerait une seconde vérité.
 
-Chaque colonne générée reçoit un `COMMENT ON COLUMN` construit depuis `field.label` et `field.description` : c'est la seule passerelle entre le libellé et la base pour l'humain qui explore le schéma en SQL direct, et la dérive `CAT-CMT` du chapitre 02 en vérifie la conformité.
+Chaque colonne générée reçoit un `COMMENT ON COLUMN` dont le texte est `field.description` ou, quand il n'y en a pas, `field.label` ; la table reçoit de même un `COMMENT ON TABLE`, tiré de `table_def`. C'est la seule passerelle entre le catalogue et la base pour l'humain qui explore le schéma en SQL direct : `\d+` ne doit jamais montrer un commentaire vide là où le catalogue sait quelque chose. Le commentaire est réécrit dans la transaction de toute modification de la description (chapitre 06 §1.1), et la dérive `CAT-CMT` du chapitre 02 en vérifie la conformité. Une colonne de lien sans description porte le texte généré du §4.1 (« Lien vers Clients… ») plutôt que son libellé.
 
-**Règle d'émission des littéraux, valable pour tout le DDL de ce chapitre.** Le chapitre 01 §10.2 pose l'invariant sur les *identifiants* : aucune chaîne utilisateur n'est concaténée, seuls des noms issus du registre le sont, les valeurs passent par des paramètres liés. Le DDL n'accepte cependant aucun paramètre lié. **Trois** littéraux de ce chapitre proviennent de données utilisateur : le texte d'un `COMMENT ON COLUMN`, les valeurs d'options dans `ck_…__enum` (§3), les constantes d'une expression de formule (§7.6). Pour ces trois, et pour eux seuls :
+**Règle d'émission des littéraux, valable pour tout le DDL de ce chapitre.** Le chapitre 01 §10.2 pose l'invariant sur les *identifiants* : aucune chaîne utilisateur n'est concaténée, seuls des noms issus du registre le sont, les valeurs passent par des paramètres liés. Le DDL n'accepte cependant aucun paramètre lié. **Trois** littéraux de ce chapitre proviennent de données utilisateur : le texte d'un `COMMENT ON` (table ou colonne), les valeurs d'options dans `ck_…__enum` (§3), les constantes d'une expression de formule (§7.6). Pour ces trois, et pour eux seuls :
 
 1. le littéral est produit par `quote_literal()` côté serveur ou par l'équivalent exact de `format('%L', …)` côté application — jamais par concaténation de guillemets simples ;
 2. le caractère nul `U+0000` est refusé avant émission (`VALUE_INVALID`) : PostgreSQL ne peut pas le stocker en `text` et sa présence dans un littéral tronque la commande ;
-3. le texte de commentaire est borné à 1 024 caractères après normalisation NFC, tronqué avec `…` au-delà ;
+3. le texte de commentaire est borné à **1 000 caractères** — la borne de `field.description` (chapitre 02), la même que celle du chapitre 03 §6.2 — et l'est déjà à la saisie : une description plus longue est **refusée** (`TEXT_TOO_LONG`), jamais tronquée, si bien que le générateur n'a rien à couper. Le libellé, qui sert de repli, est borné à 255 caractères (`LABEL_TOO_LONG`) ; les valeurs d'option des `ck_…__enum` (§3, chapitre 03 §6.2) et les constantes de formule (§7.6) ont leurs propres bornes ;
 4. toute autre valeur est **réémise depuis sa valeur typée**, jamais recopiée depuis la saisie.
 
 Aucun octet brut de l'utilisateur ne traverse le générateur de DDL.
@@ -37,7 +37,7 @@ Un champ fabrique en base un ensemble fini d'objets, entièrement déterminé pa
 |---|---|---|
 | Colonne | `field`, nom par `field.name_id` | toujours |
 | `NOT NULL` | `field.required_state` | `field.is_required` |
-| `COMMENT ON COLUMN` | `field.description` | toujours |
+| `COMMENT ON COLUMN` | `field.description`, à défaut `field.label` | toujours |
 | `ck_<table>__<colonne>__not_empty` | `table_constraint`, `rule = 'not_empty'` | `short_text`, `long_text`, `select` |
 | `ck_<table>__<colonne>__length` | `rule = 'length'` | `short_text`, `long_text` |
 | `ck_<table>__<colonne>__range` | `rule = 'range'` | `number`, `date`, `datetime` |
@@ -432,7 +432,7 @@ Piège à documenter : `extract(year from …)` sur un `timestamptz` dépend du 
 **Décision : colonne `text`, valeurs contraintes par un `CHECK` régénéré**, dont la ligne de `table_constraint` est désignée par `field_select_config.enum_constraint_id`. Options rejetées :
 
 - **Type énuméré PostgreSQL** : on ne peut pas retirer une valeur d'un `ENUM`, le renommage impose un `ALTER TYPE` global, c'est un objet partagé dont l'évolution est transverse à des tables que l'utilisateur n'a pas touchées, et chaque base utilisateur peuplerait `pg_type` de types jetables.
-- **Table de référence et clé étrangère** : ajoute une table technique dans le schéma de l'utilisateur, une jointure à toute lecture, et rend `SELECT statut FROM factures` illisible. Si le besoin dépasse une liste plate — couleurs, responsable, attributs par option — l'utilisateur crée une vraie table et un champ lien : c'est déjà l'outil, il n'a pas à être dupliqué.
+- **Table de référence et clé étrangère** : ajoute une table technique dans le schéma de l'utilisateur, une jointure à toute lecture, et rend `SELECT statut FROM factures` illisible. Si le besoin dépasse une liste plate — responsable, attributs métier par option — l'utilisateur crée une vraie table et un champ lien : c'est déjà l'outil, il n'a pas à être dupliqué. *Décision révisée* : cette phrase rangeait aussi les **couleurs** parmi ce qu'il fallait aller chercher dans une table. L'apparence d'une option n'est pas un attribut métier — la colonne ne la porte pas, aucune requête ne la lit — et exiger une table pour cela contraignait à déshabiller `SELECT statut FROM factures` pour habiller un écran. Elle vit donc au catalogue, voir « Apparence des options » plus bas.
 
 La valeur stockée dans `select_option.value` est un **slug ASCII** produit par les règles du chapitre 01, `select_option.label` restant libre. `WHERE "statut" = 'en_retard'` se lit et s'écrit à la main, ce qui est la promesse du produit. Contrainte générée, dont les littéraux sont émis selon la règle du §1.1 :
 
@@ -450,10 +450,13 @@ S'y ajoute `ck_factures__statut__not_empty`, comme pour tout champ texte (§1.3)
 |---|---|---|
 | **Ajouter** une option | `DROP CONSTRAINT` puis `ADD … NOT VALID` dans une étape, `VALIDATE` dans la suivante | aucun effet ; la nouvelle contrainte est plus permissive et ne peut invalider aucune ligne |
 | **Renommer le libellé** | aucune écriture | aucun effet |
+| **Changer l'apparence** (couleur, pictogramme, image) | aucune écriture | aucun effet |
 | **Renommer la valeur** | `UPDATE` de masse puis régénération du `CHECK` | migration de données, réservée au droit de gestion du schéma, nombre de lignes affiché avant confirmation, règles de volume du §1.10 |
 | **Réordonner** | aucune écriture | change l'ordre de tri (voir ci-dessous) |
 | **Supprimer une option inutilisée** | régénération du `CHECK` ; la validation remonte l'échantillon des lignes fautives s'il en reste | aucun |
 | **Supprimer une option utilisée** | refus `OPTION_IN_USE` avec le décompte | aucune |
+
+**Une seule opération, la liste entière.** L'interface édite une liste, et un JSON collé en porte une : l'API expose donc `PUT …/fields/{field}/options` (chapitre 08) qui reçoit la liste **dans l'ordre voulu** et compare aux valeurs existantes. Celles qui restent sont **mises à jour** (libellé, apparence, place) ; les nouvelles sont **ajoutées** ; les absentes sont **retirées**, ce qui est refusé (`OPTION_IN_USE`, avec le décompte par valeur) tant que des lignes les portent. La valeur d'une option n'est **jamais renommée** par cette opération : renommer, c'est retirer une valeur et en ajouter une, donc refusé tant que la première est utilisée — la migration de données du tableau ci-dessus reste un acte distinct. Quand l'ensemble des valeurs bouge, le `CHECK` est régénéré en trois temps (chapitre 03) : l'ancienne contrainte et la nouvelle `NOT VALID` dans un même énoncé, de sorte que la colonne n'est jamais sans liste ; puis `VALIDATE` hors transaction. Le retrait comptabilise les lignes **sous un verrou qui écarte les écrivains** (`SHARE ROW EXCLUSIVE`) : sans lui, une ligne écrite entre le décompte et la nouvelle contrainte porterait une valeur que la liste n'autorise plus, et `VALIDATE` la trouverait alors que l'ancienne contrainte a disparu. Ce verrou ne pèse que sur un retrait, et pour la durée d'un parcours. Quand seule l'apparence bouge, **rien** n'est émis contre le schéma de l'utilisateur.
 
 Chaque régénération **consomme un nouveau nom de contrainte** (`ck_…__enum`, puis `_2`, `_3`…), le registre ne libérant jamais un nom. C'est visible dans les messages d'erreur PostgreSQL et c'est normal ; `field_select_config.enum_constraint_id` désigne la ligne courante, et c'est elle qui sert aux `DROP` ultérieurs.
 
@@ -470,6 +473,18 @@ ORDER BY array_position($1::text[], "statut") NULLS LAST, "_id"
 Le paramètre d'un filtre est validé contre la liste des options connues avant émission ; une valeur inconnue renvoie zéro ligne, pas une erreur.
 
 **Choix multiple : hors périmètre v1.** Aucune colonne `is_multiple` n'existe au catalogue et l'interface ne l'expose pas. Le multiple imposerait `text[]`, des opérateurs de filtre différents (`@>`, `&&`), un index GIN, un tri sans définition naturelle et un export CSV dégradé ; comme le « plusieurs vers plusieurs », il est renvoyé en v2, et aucune surface — API, MCP, OpenAPI — n'expose d'opérateur qui le supposerait. *Alternative rejetée* : une chaîne à séparateurs, qui casse le filtrage et l'intégrité.
+
+### Apparence des options
+
+Une option porte, en plus de sa valeur et de son libellé, une **couleur**, et **un pictogramme ou une image** — jamais les deux, ce que le catalogue tient lui-même (`ck_option_glyph`) :
+
+| Colonne de `select_option` | Contenu | Borne |
+|---|---|---|
+| `color` | Une couleur quelconque, `#rrggbb` en minuscules (`#abc` est complétée à l'écriture) | `ck_option_color` |
+| `icon` | Le nom d'un pictogramme de la bibliothèque d'icônes de l'interface, en `kebab-case` | `ck_option_icon`, 64 caractères |
+| `image` | Une adresse `https` ou une URL `data:image/{png,jpeg,webp,gif};base64,…` — jamais du SVG, qui porte des scripts | `ck_option_image`, 16 384 caractères |
+
+Les trois sont **nulles par défaut** et publiées par la projection avec une forme stable : une clé toujours présente, `null` quand elle n'est pas posée. **Le plafond de l'image n'est pas une politesse** : la liste entière voyage avec chaque lecture du catalogue, et deux cents options portant chacune une image sans borne feraient de `/meta/bases` une réponse de mégaoctets. L'interface réduit donc un fichier choisi à 64 pixels avant l'envoi (chapitre 11 §6.2). Un nom de pictogramme que l'interface ne connaît pas s'affiche sans pictogramme au lieu de faire échouer l'écran : le nom reste au catalogue, et une liste collée d'ailleurs n'est pas cassée pour autant.
 
 ---
 
@@ -644,7 +659,7 @@ FROM "b_t4z56fq_crm"."factures" f
 JOIN "b_t4z56fq_crm"."clients" c ON c."_id" = f."clients_id";
 ```
 
-Le `COMMENT ON COLUMN` de `clients_id` porte « Lien vers Clients (affichage : Raison sociale) ». **Aucune vue SQL de confort n'est générée** : elle doublerait chaque table, se désynchroniserait au premier ajout de champ, et le chapitre 01 réserve les vues SQL aux alias de compatibilité.
+Le `COMMENT ON COLUMN` de `clients_id` porte « Lien vers Clients (affichage : Raison sociale) » tant que le champ n'a pas de description, et cette description dès qu'il en a une (§1.1). **Aucune vue SQL de confort n'est générée** : elle doublerait chaque table, se désynchroniserait au premier ajout de champ, et le chapitre 01 réserve les vues SQL aux alias de compatibilité.
 
 ---
 

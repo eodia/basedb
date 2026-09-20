@@ -69,6 +69,14 @@ Toutes les routes sont préfixées de `/api/v1/{tenantRef}`. La colonne « droit
 | `GET` | `/data/{base}/{table}/{id}/referenced_by` | Résumé des liens inverses (§5.6) | `read` | session, jeton |
 | `GET` | `/data/{base}/{table}/{id}/referenced_by/{source_table}.{field}` | Liste paginée d'un groupe inverse | `read` source + cible | session, jeton |
 | `GET` | `/data/{base}/{table}/{id}/history` | Historique de l'enregistrement (§7.7) | `read` | session, jeton |
+| `POST` | `/admin/bases` | Créer une base : `label`, `description?` (§9.5) | `manage_schema` (portée tenant) | **session seule** |
+| `POST` | `/admin/bases/{base}/tables` | Créer une table et ses champs initiaux : `description?` sur la table et sur chaque champ | `manage_schema` | **session seule** |
+| `POST` | `/admin/bases/{base}/tables/{table}/fields` | Ajouter un champ : `description?` | `manage_schema` | **session seule** |
+| `POST` | `/admin/bases/{base}/tables/{table}/links` | Ajouter un champ lien : `description?` | `manage_schema` + `read` sur la cible | **session seule** |
+| `PATCH` | `/admin/bases/{base}` | Libellé et/ou description d'une base : `{label?, description?}`, l'un des deux au moins | `manage_schema` | **session seule** |
+| `PATCH` | `/admin/bases/{base}/tables/{table}` | Description d'une table : `{description}` | `manage_schema` | **session seule** |
+| `PATCH` | `/admin/bases/{base}/tables/{table}/fields/{field}` | Libellé et/ou description d'un champ : `{label?, description?}`, l'un des deux au moins. Le libellé seul change, jamais la colonne (chapitre 06 §1.1) ; `LABEL_DUPLICATE` (422) si un frère le porte déjà | `manage_schema` | **session seule** |
+| `PUT` | `/admin/bases/{base}/tables/{table}/fields/{field}/options` | Remplace **en bloc et dans l'ordre** la liste d'une liste de choix : `{options: [{value, label?, color?, icon?, image?}]}` (chapitre 04 §3). Réponse : `data.options`, `data.added`, `data.removed`, et `meta.sql` (vide quand seule l'apparence change). `OPTION_IN_USE` (422) avec le décompte par valeur si une option retirée est portée par des lignes | `manage_schema` | **session seule** |
 | `GET` `POST` | `/admin/tokens` | Jetons d'intégration (§11) | `manage_tokens` | **session seule** |
 | `DELETE` | `/admin/tokens/{id}` | Révocation immédiate | `manage_tokens` | **session seule** |
 | `POST` | `/admin/tokens/{id}/rotate` | Rotation avec grâce (§11.4) | `manage_tokens` | **session seule** |
@@ -79,6 +87,8 @@ Toutes les routes sont préfixées de `/api/v1/{tenantRef}`. La colonne « droit
 | `GET` | `/admin/webhooks/{id}/deliveries/{delivery}` | Inspection reprojetée (§10.9) | `manage_tokens` + droits de données du lecteur | **session seule** |
 | `POST` | `/admin/webhooks/{id}/deliveries/{delivery}/replay` | Rejeu ciblé | `manage_tokens` | **session seule** |
 | `POST` | `/admin/webhooks/{id}/deliveries/abandon` | Abandon d'une file (portée explicite) | `manage_tokens` | **session seule** |
+
+Les routes `/admin/bases/…` ne sont énumérées ici que pour ce qu'elles portent de descriptions : leurs effets, leurs verrous et leurs refus sont ceux des chapitres 03 et 06, et une modification de description n'est pas une migration (chapitre 06 §1.1). Comme toute route `/admin/*`, elles sont fermées aux jetons (§11.2). Un `PATCH` qui ne change rien — pas de `description` pour une table ou un champ, ni `label` ni `description` pour une base — est refusé par `REQUEST_INVALID` : un corps ignoré en silence ressemblerait à un succès. `null` ou la chaîne vide **efface** la description ; l'omettre dans le `PATCH` d'une base la laisse en l'état.
 
 `manage_tokens` couvre les deux formes d'intégration, jetons et webhooks : ce sont les deux manières d'ouvrir une porte vers l'extérieur avec les droits d'un rôle. Il est indépendant des droits sur les données. Les opérations dont le titulaire est l'administrateur d'instance (`_basedb.app_user.is_instance_admin`) — gestion des tenants, réglages d'instance — n'appartiennent pas à cette surface.
 
@@ -266,6 +276,8 @@ POST /api/v1/t4z56fq/data/crm/factures/batch
 ```
 
 Le code HTTP est `200` dès lors que le lot a été traité : un `207` ou un `4xx` global ferait échouer le nœud n8n entier alors que 999 lignes sur 1 000 sont passées, et `207 Multi-Status` est mal supporté par les clients HTTP génériques.
+
+**Ce qui est implémenté.** Le lot d'`create` en `atomic: true`, et rien d'autre : c'est ce dont l'import de fichier a besoin (chapitre 11 §6.7). Une transaction sur le pool `donnees`, une `INSERT` par ligne — et non une seule multi-lignes, parce que PostgreSQL rapporte une erreur contre l'énoncé et non contre la ligne, et que l'indice de la ligne fautive est la moitié utile de la réponse. Les lignes sont d'abord confrontées aux masques, en une lecture du catalogue, de sorte qu'un champ non inscriptible est refusé avant qu'aucune ne soit écrite ; ce que seul PostgreSQL décide — un texte dans un nombre, une valeur hors liste — remonte de la ligne qui l'a causé. **Tout refus porte `details.index`**, la position de l'opération. Les opérations `update` et `delete`, `atomic: false`, `Idempotency-Key` et le décompte de jetons sont refusés **par leur nom** (`REQUEST_INVALID`, `details.reason`) plutôt qu'à moitié honorés : un `update` ignoré en silence répondrait comme s'il avait été fait. La réponse a la forme du §3.5 (`atomic`, `results`, `summary`), **sans** l'enveloppe `data` des autres routes : c'est celle que ce paragraphe donne.
 
 **Bornes** : 1 000 opérations ou 8 Mio par lot (`413 BATCH_TOO_LARGE`). Un lot `atomic: true` de 1 000 lignes tient un verrou sur chacune : la limite est aussi une limite de durée, et le budget de 30 s du §13.4 s'y applique.
 
@@ -709,7 +721,7 @@ La confusion volontaire `404` pour « inexistant » et « invisible » est la tr
 
 **`X-Request-Id` est toujours généré par le serveur** (UUIDv7) et n'est jamais lu depuis la requête : accepter une valeur de l'appelant permettrait de noyer une opération dans le bruit, d'imputer une trace à un autre utilisateur, ou d'injecter des sauts de ligne qui forgent de fausses lignes dans un agrégateur de journaux. Une valeur du client est acceptée dans `X-Correlation-Id`, validée contre `^[A-Za-z0-9._-]{1,64}$`, stockée à part et jamais utilisée comme identité de la trace d'audit. **`X-RateLimit-*` ne reflète que le seau de l'acteur** (§13.1).
 
-### 7.6 HTML riche et libellés
+### 7.6 HTML riche, libellés et descriptions
 
 Le texte long riche est assaini côté serveur **avant stockage** (« Types de champs »). Cette mesure ne suffit pas : la promesse du produit est que les données soient exploitables directement en SQL, donc tout `INSERT`/`UPDATE` émis par un script ou un administrateur contourne l'assainisseur, et le stock écrit avant la correction d'une faille reste empoisonné.
 
@@ -718,7 +730,7 @@ Décisions :
 1. **L'API ne réassainit pas à la lecture.** Le coût CPU serait proportionnel au volume servi, sur le chemin le plus chaud de l'API, pour un défaut qui se corrige une fois. À la place : le champ est décrit en OpenAPI avec `x-basedb-unsafe-html: true`, **le contrat est que tout consommateur assainit au rendu**, et l'interface passe obligatoirement par un assainisseur.
 2. **Une reprise de stock est fournie** : une tâche d'administration réassainit en masse les colonnes riches d'une table, alimentée par le catalogue, exécutée après toute correction de l'assainisseur.
 3. **Les réponses de l'API ne peuvent pas exécuter de script** : `Content-Type: application/json` sans exception, `nosniff`, CSP `default-src 'none'; sandbox` (§2.3).
-4. **Les libellés du catalogue sont échappés** à la génération OpenAPI, dans la documentation lisible et dans les messages d'erreur. Injecté tel quel dans `title`/`description` d'une spécification rendue par une interface qui interprète Markdown et une partie du HTML, `Client <img src=x onerror=…>` exécute son script chez le lecteur de la documentation. La neutralisation est testée (§17.1).
+4. **Les libellés du catalogue sont échappés** à la génération OpenAPI, dans la documentation lisible et dans les messages d'erreur. Injecté tel quel dans `title`/`description` d'une spécification rendue par une interface qui interprète Markdown et une partie du HTML, `Client <img src=x onerror=…>` exécute son script chez le lecteur de la documentation. La neutralisation est testée (§17.1). **Les descriptions le sont de la même façon**, dans la spécification OpenAPI et dans la documentation lisible : plus longues et plus bavardes qu'un libellé, elles offrent davantage de place à la même attaque. Une description est du **texte brut précisément pour que cet échappement soit sans perte** : ni Markdown ni HTML n'y sont admis, donc rien de ce que son auteur a voulu n'est détruit quand chaque caractère qui ouvrirait une construction est neutralisé, et le lecteur voit exactement les caractères saisis. *Alternative rejetée* : admettre un sous-ensemble de Markdown dans les descriptions — cela exigerait d'assainir un rendu à chaque génération, un assainisseur de plus à tenir contre les contournements, là où l'échappement est une fonction totale de quelques lignes. `/meta` sert le texte tel que stocké, en donnée pour un programme, et le consommateur qui l'affiche l'affiche comme du texte (chapitre 11 §3.2).
 
 ### 7.7 Historique d'un enregistrement
 
@@ -822,6 +834,7 @@ C'est une exigence de sécurité, pas d'élégance : une spécification OpenAPI 
 | Champ non lisible | Absent des schémas, absent de l'`enum` de `sort`, `fields`, `expand` et des chemins de filtre |
 | Champ lisible non écrivable | `readOnly: true` dans le schéma d'écriture |
 | Colonnes système | Toujours décrites en lecture, toujours `readOnly` (A18) |
+| Description d'une base, d'une table, d'un champ | Suit son objet : visible exactement quand il l'est, absente avec lui (§9.5) |
 
 Conséquence opérationnelle : la spécification n'est **jamais** un document public. Elle n'est pas servie sans authentification, n'est pas publiée dans un dépôt, et l'interface qui propose de la télécharger avertit qu'elle correspond aux droits de la session courante.
 
@@ -831,13 +844,17 @@ Conséquence opérationnelle : la spécification n'est **jamais** un document pu
 - si la table cible est lisible, `x-basedb-link.target_schema` porte un `$ref` vers son schéma, le champ figure dans l'`enum` du paramètre `expand`, et la réponse de liste décrit `included` avec la propriété nommée d'après la table cible ;
 - si elle ne l'est pas, le champ reste décrit — il fait partie de la table que le lecteur peut lire — mais `x-basedb-link` est réduit à `{on_delete, is_required}`, sans aucun nom de table cible, le champ **n'apparaît pas** dans l'`enum` de `expand`, et `id` est décrit comme toujours nul avec `masked: true`, exactement dans la forme du §5.5 ;
 - le chemin `…/{id}/referenced_by` n'est décrit que si au moins un groupe inverse est visible ;
-- les libellés injectés dans `title` et `description` sont échappés (§7.6).
+- les libellés et les descriptions injectés dans `title` et `description` sont échappés (§7.6).
 
 ### 9.4 Documentation lisible
 
-`GET /meta/bases/{base}/doc` sert la **documentation lisible par un humain**, dans la même enveloppe JSON que le reste de l'API — un arbre de sections en Markdown assaini, que l'interface rend et qu'un intégrateur peut lire tel quel. Elle est distincte de la sérialisation OpenAPI, contrat machine destiné à un générateur de client, mais issue de la **même projection** (§9.1) et filtrée par les **mêmes droits** (§9.3).
+`GET /meta/bases/{base}/doc` sert la **documentation lisible par un humain**, dans la même enveloppe JSON que le reste de l'API — un arbre de sections en Markdown, `{title, sections: [{id, title, group, markdown}]}`, que l'interface rend et qu'un intégrateur peut lire tel quel. Tout texte d'utilisateur y est échappé à la génération (§7.6). Elle est distincte de la sérialisation OpenAPI, contrat machine destiné à un générateur de client, mais issue de la **même projection** (§9.1) et filtrée par les **mêmes droits** (§9.3).
 
 Deux documents et non un seul, parce que les deux publics ne demandent pas la même chose : un générateur de client veut des schémas, des `enum` et des codes de retour ; un intégrateur humain veut savoir ce qu'est un champ lien, pourquoi une suppression est refusée et ce qui l'attend s'il écrit en SQL direct. Fusionner reviendrait à noyer le contrat machine sous de la prose, ou à renvoyer l'humain vers une spécification qu'il ne sait pas lire.
+
+**Le Markdown est un sous-ensemble fermé, et l'interface rend exactement celui-là.** Le générateur n'émet que : les titres `###` et `####` (le titre de la section est `title`, pas un titre du corps) ; des paragraphes, des listes, du code en ligne et du gras ; des tableaux GFM dont les cellules ne portent que du texte en ligne ; des encarts `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]` et `> [!WARNING]` ; des blocs de code clôturés, dont deux blocs consécutifs forment un groupe d'onglets par langage — le même exemple en cURL puis en JavaScript —, une cellule de code réduite à un verbe HTTP se dessinant en pastille de méthode. Tout le reste est affiché comme du texte, ce qui est l'issue sûre. Chaque élément se dégrade en quelque chose de lisible dans n'importe quel autre visionneur Markdown, et c'est ce qui a décidé du choix. *Alternative rejetée* : un arbre de blocs typés, plus strict pour le rendu mais illisible pour l'intégrateur qui lit le JSON tel quel, ce que ce document est fait pour permettre.
+
+**Les sections sont groupées.** `group` est ce qu'une navigation donne pour titre, dans l'ordre de première apparition : « Prise en main » (vue d'ensemble, authentification, conventions), « Tables » (une section par table visible) et « Référence » (relations, codes de réponse, écriture en SQL direct). L'interface les rend en trois colonnes — navigation par groupe, article, sommaire « sur cette page » tiré des titres du corps. Une table visible y est décrite par sa description, son nom SQL, les verbes que le lecteur détient, le **tableau de ses points d'accès** — les seuls verbes ouverts au lecteur y figurent, une table sans `create` n'a pas de ligne `POST` (§9.3) —, le tableau de ses colonnes (nom, libellé, type et marques, description et valeurs d'option), ses champs lien, ses colonnes système une à une, puis des **exemples** : lister et créer, en cURL et en JavaScript, avec la réponse.
 
 Contenu, par base et par table :
 
@@ -850,8 +867,32 @@ Contenu, par base et par table :
 | Cycles réflexifs non contrôlés, et ce qu'ils impliquent | « Types de champs » |
 | Alias de compatibilité actifs sur la base, avec leur date de fin annoncée | « Cycle de vie » |
 | Valeur de recouvrement à appliquer au filigrane de reprise (§6.5) | Ce chapitre |
+| Description de la base, de chaque table, de chaque colonne (§9.5) | `base.description`, `table_def.description`, `field.description` |
+| Points d'accès de chaque table, limités aux verbes du lecteur | Projection des droits effectifs (§9.3) |
+| Exemples de requête et de réponse, en cURL et en JavaScript | Construits depuis le type de chaque champ (ci-dessous) |
+| Authentification, enveloppe, pagination, ressource invisible, codes de réponse | Ce chapitre (§2, §6, §7) |
 
-Le cadrage exige que les relations apparaissent dans la documentation générée : c'est la deuxième ligne de ce tableau, et elle n'est pas optionnelle. Aucune de ces sections n'est rédigée à la main : chacune est une projection, ce qui garantit qu'elle ne peut pas devenir fausse, et interdit d'y ajouter un contenu que le catalogue ne porte pas.
+Le cadrage exige que les relations apparaissent dans la documentation générée : c'est la deuxième ligne de ce tableau, et elle n'est pas optionnelle. Aucune de ces sections n'est rédigée à la main : chacune est soit une projection du catalogue, soit un texte fixe du produit sur son propre comportement — authentification, enveloppe, codes de réponse, ceux de ce chapitre —, ce qui garantit qu'elle ne peut pas devenir fausse, et interdit d'y ajouter un contenu que ni l'un ni l'autre ne portent. Les **exemples** sont construits depuis le *type* de chaque champ et jamais depuis une donnée : une documentation qui citait une cellule réelle la publierait à quiconque peut la lire. La seule valeur tirée du catalogue est la première option d'une liste de choix, et seulement si elle est faite de lettres, de chiffres et de ponctuation simple : une option d'utilisateur peut contenir une apostrophe ou un accent grave, et l'exemple est fait pour être collé dans un terminal.
+
+### 9.5 Les descriptions
+
+Le libellé dit comment un objet s'appelle ; la **description** dit à quoi il sert, pour que celui qui ne l'a pas conçu — un intégrateur qui lit la documentation, un agent qui appelle `describe_table` — n'ait pas à le deviner. Elle est portée par la base, par chaque table et par chaque champ (chapitre 02), et les trois sérialisations la projettent chacune à leur façon :
+
+| Sérialisation | Où | Forme |
+|---|---|---|
+| `/meta/bases`, `/meta/bases/{base}` | Clé `description` de la base, de chaque table, de chaque champ | Telle que stockée ; `null` quand personne n'en a écrit |
+| OpenAPI | `info.description` (celle de la base, avant l'avertissement de portée), `description` des schémas de lecture et d'écriture d'une table, de chaque propriété et de l'opération de liste | **Échappée** comme un libellé (§7.6) ; clé **absente**, jamais vide, quand il n'y en a pas |
+| Documentation | Premier paragraphe de la vue d'ensemble et de chaque table ; colonne « Description » du tableau des colonnes | **Échappée**, ramenée à une seule ligne |
+
+Deux choix de ce tableau demandent leur raison. **`/meta` sert le texte tel que stocké**, parce que c'est une donnée pour un programme et non un document rendu : l'échapper l'abîmerait pour l'interface, qui l'affiche comme du texte, et l'exposerait à un double échappement. **OpenAPI omet la clé plutôt que de la vider** : un client généré imprimerait sinon un commentaire vide au-dessus de chaque propriété. Dans la documentation, les sauts de ligne deviennent des espaces et un marqueur de liste en tête de texte est neutralisé : une description ne peut ni ouvrir une liste, ni fermer la cellule d'un tableau, ni commencer un second paragraphe.
+
+**Les cinq colonnes système**, qui n'ont pas de ligne de catalogue, portent dans les trois sérialisations une description fixe posée par le noyau. Celle de `_id` dit que c'est la valeur à fournir dans un champ lien : sans elle, une documentation expliquerait chaque colonne sauf celle dont un lien a besoin.
+
+**Une description suit son objet, exactement.** Elle est visible si et seulement si l'objet l'est : une table invisible emporte la sienne, un champ masqué la sienne (§9.3). La projection ne contient jamais que ce que le lecteur peut voir, et aucune sérialisation ne porte une description sans son objet — c'est ce que vérifie l'égalité des trois sérialisations (§17.1, point 4).
+
+**Une description est du texte d'utilisateur, lu par des humains *et* par des agents.** Deux lecteurs, deux risques, une réponse de forme. Un humain la lit dans un document rendu par un visionneur qui interprète du Markdown et une partie du HTML : d'où l'échappement à la génération (§7.6, décision 4). Un agent la lit dans le résultat d'un outil MCP et peut prendre pour une consigne une phrase qui s'y trouve : d'où l'étiquetage `user_data`, l'absence de toute description dans le texte des outils, et la règle de « Serveur MCP » §4.2 — une description est de l'information sur les données, jamais une instruction. Aucun des deux risques ne se réduit par un filtre sur le contenu, car il n'existe pas de filtre fiable pour du texte naturel. Ce qui tient, c'est la forme — texte brut, 1 000 caractères, échappement, étiquette — et la portée. *Alternative rejetée* : refuser à la saisie les descriptions « suspectes » ; le critère n'existe pas, et le premier refus d'une phrase légitime coûterait plus que le filtre ne protège.
+
+**Ce que cette règle ne couvre pas.** Une description suit son objet ; elle ne suit pas ce qu'elle *dit* d'un autre. Celle d'un champ lien peut nommer une table que le lecteur ne voit pas, celle d'une table peut citer un champ masqué, et aucune projection ne peut le détecter dans un texte libre. C'est une limite assumée, de même nature que le nom de colonne `<table_cible>_id`, qui révèle l'existence de la cible sans en révéler le contenu (chapitre 09 §4.3).
 
 ---
 
@@ -1289,9 +1330,9 @@ Ces chiffres justifient trois décisions prises plus haut : le corps des événe
 1. **Marque de prédicat.** Toute instruction émise sur le pool `donnees` est interceptée en test et doit contenir le marqueur `/*predicat_lignes:<table>*/` pour chaque table qu'elle nomme ; sinon la suite échoue. Couvre la requête principale, les `EXISTS`, les requêtes de lot, les comptages inverses, les jointures de tri, les décomptes de cascade et les `EXPLAIN`. Le test est écrivable parce que A20 fait exister le prédicat dans la signature.
 2. **Champ masqué indistinguable d'un champ inexistant.** Pour chaque champ masqué, un filtre, un tri, une expansion et une projection le nommant doivent renvoyer **exactement** la réponse obtenue avec un nom de champ inventé : même code, même corps, mêmes en-têtes.
 3. **Colonnes système toujours lisibles.** Un rôle ayant un champ masqué lit `_id`, `_created_at`, `_updated_at`, `_created_by`, `_updated_by`, trie et filtre dessus, et mène une reprise incrémentale complète (§6.5).
-4. **Égalité des trois sérialisations.** Pour chaque rôle d'essai, l'ensemble (tables, champs, cibles de lien) décrit par `/meta/bases/{base}`, par `openapi.json` et par `/doc` est rigoureusement égal. Tout écart fait échouer la suite. La documentation lisible doit en particulier décrire chaque relation visible.
+4. **Égalité des trois sérialisations.** Pour chaque rôle d'essai, l'ensemble (tables, champs, cibles de lien) décrit par `/meta/bases/{base}`, par `openapi.json` et par `/doc` est rigoureusement égal. Tout écart fait échouer la suite. La documentation lisible doit en particulier décrire chaque relation visible, et une description accompagne son objet dans les trois sérialisations comme elle disparaît avec lui (§9.5).
 5. **Conformité des lignes au schéma.** Pour chaque table de la base de démonstration, une ligne réellement lue par l'API est validée contre le schéma généré, nombres en chaîne compris.
-6. **Corpus SQLSTATE et libellé hostile.** Un corpus d'erreurs rejouées (23503, 23505, 23502, 23514, 22001, 42703, 42P01, 53300, 57014) ne doit jamais faire apparaître une chaîne présente dans `pg_class`/`pg_constraint` et absente des noms logiques visibles ; un libellé contenant du HTML et du Markdown, relu via OpenAPI, `/meta`, `/doc` et un message d'erreur, doit ressortir neutralisé.
+6. **Corpus SQLSTATE et libellé hostile.** Un corpus d'erreurs rejouées (23503, 23505, 23502, 23514, 22001, 42703, 42P01, 53300, 57014) ne doit jamais faire apparaître une chaîne présente dans `pg_class`/`pg_constraint` et absente des noms logiques visibles ; un libellé contenant du HTML et du Markdown, relu via OpenAPI, `/meta`, `/doc` et un message d'erreur, doit ressortir neutralisé. Une description hostile — balise, emphase, barre verticale qui fermerait une cellule de tableau, seconde ligne ouvrant par un marqueur de liste — ne doit ouvrir aucune construction dans OpenAPI ni dans `/doc`, et ressortir telle que saisie dans `/meta`.
 7. **Invariance de l'`ETag`.** Une écriture portant uniquement sur un champ masqué ne change ni l'`ETag` servi au lecteur restreint, ni le résultat de son `If-Match`.
 8. **Indiscernabilité temporelle.** La distribution des durées de réponse des `404` d'absence et des `404` d'invisibilité est statistiquement indistinguable.
 9. **Non-élévation.** Un acteur ne peut créer ni jeton ni webhook portant un rôle dont les permissions ne sont pas incluses dans les siennes ; la vérification est rejouée après réduction des droits du créateur.
@@ -1407,6 +1448,7 @@ Ces codes sont en anglais et en majuscules ASCII (A2), à raison d'un par condit
 | `SET LOCAL` + budget de délai par requête HTTP | Un réglage de session survit dans le pool et se perd derrière un mutualiseur | `statement_timeout` de session |
 | Trois sérialisations d'une projection unique, documentation lisible comprise | Une route voisine non filtrée annule tout le filtrage ; la doc est juste par construction | Documentation rédigée à part |
 | Assainissement HTML à l'écriture + contrat de rendu | Le coût à la lecture est payé sur chaque requête pour un défaut qui se corrige une fois | Réassainir chaque réponse |
+| Descriptions en texte brut, échappées à la génération, jamais tronquées ; `/meta` les sert telles que stockées | L'échappement d'un texte brut est sans perte, là où du Markdown exigerait un assainisseur de plus ; une phrase coupée est pire que le refus qui laisse son auteur la raccourcir | Sous-ensemble de Markdown assaini ; troncature à 1 000 caractères |
 
 ## Risques et limites connues
 
@@ -1422,6 +1464,7 @@ Ces codes sont en anglais et en majuscules ASCII (A2), à raison d'un par condit
 10. **La limitation de débit est approximative avec plusieurs instances** (§13.1, A4) : correcte à un facteur près du nombre de processus sans affinité de répartition, et perturbée quelques minutes à chaque redéploiement. Le garde-fou de coût, lui, dépend des statistiques : un refus `QUERY_TOO_EXPENSIVE` peut apparaître ou disparaître après un `ANALYZE`.
 11. **Le HTML riche est servi non réassaini** (§7.6) : la sécurité du rendu repose sur le contrat côté consommateur.
 12. **La fenêtre d'idempotence n'est pas transactionnelle** (§3.3) : la revendication et l'écriture métier vivent sur deux pools. Le `bulk_id` reporté par la capture permet de constater l'état réel après expiration du bail, mais la réponse exacte de la requête interrompue n'est pas reconstituable.
+13. **Une description peut nommer ce que le lecteur ne voit pas** (§9.5) : elle suit son objet, pas ce qu'elle dit d'un autre. Un champ lien décrit par « le contrat signé avec Salaires » nomme une table masquée sans que la projection puisse s'en apercevoir. Du texte d'utilisateur, relu par des agents, reste par ailleurs un vecteur d'injection persistant, que la forme borne sans le supprimer.
 
 ## Questions ouvertes
 

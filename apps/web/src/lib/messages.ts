@@ -51,6 +51,10 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   // Chapter 06 — lifecycle.
   LABEL_DUPLICATE: 'Ce libellé est déjà pris dans cette base.',
   LABEL_TOO_LONG: 'Libellé trop long : 255 caractères au maximum.',
+  OPTION_IN_USE: 'Ce choix est encore porté par des lignes.',
+  // The registry has one code for every text the API bounds, so this is only the fallback:
+  // `messageFor` says WHICH text when `details.field` tells it.
+  TEXT_TOO_LONG: 'Texte trop long.',
   BASE_NOT_EMPTY: 'Cette base contient encore des tables vivantes.',
   BASE_STRUCTURE_FROZEN:
     'La structure de cette base est gelée : une dérive a été constatée et les opérations de structure sont suspendues.',
@@ -85,9 +89,59 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   AI_PAYLOAD_TOO_LARGE: 'Cette base est trop grande pour tenir dans une demande.',
 }
 
+/** Why a list of choices was refused: the `reason` the kernel gives for `REQUEST_INVALID`. */
+const OPTION_REASONS: Readonly<Record<string, string>> = {
+  liste_vide: 'Une liste de choix ne peut pas être vide.',
+  trop_d_options: 'Trop de choix : 200 au maximum.',
+  vide: 'Un choix n’a ni libellé ni valeur.',
+  valeur_absente: 'Un choix n’a pas de valeur.',
+  trop_long: 'Un choix est trop long : 200 caractères au maximum.',
+  caractere_nul: 'Un choix contient un caractère interdit.',
+  couleur_invalide: 'Couleur invalide : attendu #rrggbb.',
+  icone_invalide: 'Nom de pictogramme invalide.',
+  image_invalide: 'Image invalide : une adresse https ou une image png, jpeg, webp ou gif.',
+  image_trop_grande: 'Image trop lourde : choisissez-en une plus petite.',
+  icone_et_image: 'Un choix porte un pictogramme ou une image, pas les deux.',
+  pas_une_liste_de_choix: 'Ce champ n’est pas une liste de choix.',
+}
+
+/**
+ * The sentence for a code, refined by what the refusal carries when the code alone is
+ * ambiguous. `TEXT_TOO_LONG` is the case: it is raised for any bounded text, and "trop
+ * long" is no help to someone who has not been told which box to shorten.
+ */
+function explain(e: ApiError): string {
+  // A choice that rows still carry cannot leave the list. The count is the whole point of
+  // the refusal: it says how much data stands in the way.
+  if (e.code === 'OPTION_IN_USE' && Array.isArray(e.details.options)) {
+    const used = (e.details.options as Array<{ value?: unknown; count?: unknown }>)
+      .map(
+        (o) => `« ${String(o.value)} » (${String(o.count)} ${o.count === 1 ? 'ligne' : 'lignes'})`,
+      )
+      .join(', ')
+    return `Impossible de retirer ${used} : des lignes portent encore ce choix. Changez-les d’abord.`
+  }
+
+  // `description`, or the path to one inside a payload — `fields[0].description` when a
+  // table is created with its columns.
+  const field = e.details.field
+  if (e.code === 'REQUEST_INVALID') {
+    const reason = e.details.reason
+    const known = typeof reason === 'string' ? OPTION_REASONS[reason] : undefined
+    if (known !== undefined) return known
+    if (field === 'options') return 'Liste de choix invalide.'
+  }
+  if (e.code === 'TEXT_TOO_LONG' && typeof field === 'string' && /(^|\.)description$/.test(field)) {
+    // The bound comes from the refusal, so the sentence follows the server if it moves.
+    const maximum = typeof e.details.maximum === 'number' ? e.details.maximum : 1000
+    return `Description trop longue : ${maximum} caractères au maximum.`
+  }
+  return EXPLANATIONS[e.code] ?? 'Erreur inattendue.'
+}
+
 export function messageFor(e: unknown): string {
   if (e instanceof ApiError) {
-    const detail = EXPLANATIONS[e.code] ?? 'Erreur inattendue.'
+    const detail = explain(e)
     // The login refusal carries no code and no trace: the one thing this screen must
     // not do is give a stranger something to tell two attempts apart by.
     if (e.code === 'CREDENTIALS_INVALID') return detail

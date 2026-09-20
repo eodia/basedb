@@ -3,7 +3,7 @@ import {
   AlignLeft,
   Calendar,
   CaseSensitive,
-  CircleCheck,
+  CircleChevronDown,
   Clock,
   Hash,
   Link2,
@@ -26,7 +26,7 @@ const ICONS = {
   boolean: ToggleLeft,
   date: Calendar,
   datetime: Clock,
-  select: CircleCheck,
+  select: CircleChevronDown,
   link: Link2,
   formula: Sigma,
   system: Lock,
@@ -52,4 +52,14 @@ export const KIND_LABELS: Readonly<Record<string, string>> = {
   link: 'Lien',
   formula: 'Formule',
   system: 'Colonne système',
+}
+
+/** A type as one picks it: its glyph and its name, side by side. */
+export function KindLabel({ kind }: { readonly kind: string }) {
+  return (
+    <span className="flex items-center gap-2">
+      <FieldIcon kind={kind} />
+      {KIND_LABELS[kind] ?? kind}
+    </span>
+  )
 }

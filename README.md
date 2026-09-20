@@ -50,7 +50,7 @@ La **phase 2** — le noyau — est en cours.
 | `@basedb/catalog-schema` | DDL du catalogue `_basedb`, extrait du chapitre 02 | fait |
 | `@basedb/core` | Pools, transactions, allocation, moteur DDL, RBAC, enregistrements, filtres, liens | partiel |
 | `apps/api` | API REST sur Hono | partiel |
-| `apps/web` | Interface Next.js — onglets, grille virtualisée, éditeur d'expressions | partiel |
+| `apps/web` | Interface Next.js — onglets, grille virtualisée, éditeur d'expressions, visionneuse de documentation | partiel |
 
 Ce qui fonctionne : création de bases et de tables, CRUD, permissions au champ près,
 filtres et tri (treize opérateurs, grammaire du chapitre 08), et les **relations** —
@@ -61,6 +61,15 @@ son lecteur), le comptage borné à la demande, la **machine à états des migra
 le **cycle de vie d'une base** — renommage de libellé, suppression logique par lots avec
 relégation `zz_supprime_`, restauration. Rien n'est détruit : les tables gardent leurs
 lignes et restent lisibles en SQL direct sous leur nom relégué.
+
+Le catalogue sait aussi **à quoi sert** ce qu'il décrit : une base, une table et un champ
+portent une **description** (texte brut, 1 000 caractères au plus, modifiable sans
+migration), recopiée pour les tables et les champs dans le `COMMENT ON` que lit `psql`.
+C'est elle qui donne son sens à la **documentation générée** — un document à trois
+colonnes (navigation, article, « sur cette page »), avec pour chaque table ses points
+d'accès, ses colonnes et des exemples en cURL et en JavaScript — et à la spécification
+OpenAPI. C'est aussi ce qu'un agent lira dans `describe_table` quand le serveur MCP
+existera.
 
 L'**intégration IA** du chapitre 12 est là, dans son périmètre exact et pas un pas plus
 loin : deux usages, `structure_draft` et `expression_draft`, où le noyau décide et

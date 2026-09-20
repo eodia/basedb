@@ -79,6 +79,7 @@ export async function serveMeta(
         id: b.id,
         name: b.name,
         label: b.label,
+        description: b.description,
         tableCount: b.tables.length,
       })),
     )

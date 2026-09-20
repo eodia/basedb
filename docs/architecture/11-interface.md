@@ -79,6 +79,11 @@ enregistrée — largeur tirée à la souris, colonne masquée à la volée — 
 navigateur et n'est jamais envoyée au serveur. `field.position` donne l'ordre initial et
 n'est pas modifié par un réarrangement local.
 
+L'en-tête d'une colonne affiche le libellé du champ ; sa **description**, quand il y en
+a une, s'ouvre en infobulle au survol et au focus clavier, jamais en permanence : une
+grille dont chaque titre traîne une phrase n'est plus une grille. Une colonne sans
+description ne montre rien de plus : jamais une infobulle vide.
+
 ### 1.5 Au-delà de 100 000 lignes
 
 Le coût d'une page ne change pas, la reprise par curseur étant un parcours d'index à
@@ -191,6 +196,12 @@ qu'il se produit aussi lors d'une suppression faite directement en SQL.
 ### 3.1 Liste de choix
 
 La cellule affiche le **libellé** de l'option ; la valeur envoyée est le slug stocké.
+Une option qui a une apparence — une couleur, un pictogramme ou une image — s'affiche
+comme une **pastille** dans la cellule, la vue détail et le menu ; une option qui n'en
+a pas garde le texte simple, de sorte qu'une liste que personne n'a habillée ne change
+pas. La pastille est la couleur à 14 % sur la surface, et son texte est cette couleur
+mêlée au texte courant : quelle que soit la teinte choisie, y compris un jaune pâle,
+le texte reste lisible en clair comme en sombre, sans calcul de contraste.
 L'ordre du menu est celui de `position`, jamais l'ordre alphabétique — c'est aussi
 l'ordre de tri émis par le serveur. Une option archivée n'est plus proposée à la saisie
 mais reste affichée, marquée comme archivée, sur les lignes qui la portent : la
@@ -208,8 +219,8 @@ contrat du consommateur :
 2. Le vocabulaire retenu au rendu est **au plus** celui du profil `riche_v1` ; l'éditeur
    ne produit pas autre chose. Le fragment est rendu dans un conteneur à politique de
    contenu restreinte, jamais inséré comme HTML brut ; les images ne sont pas rendues.
-3. Les **libellés** du catalogue sont du texte, jamais du Markdown ni du HTML : ils sont
-   échappés partout, titres de colonnes compris.
+3. Les **libellés et les descriptions** du catalogue sont du texte, jamais du Markdown ni
+   du HTML : ils sont échappés partout, titres et infobulles de colonnes compris.
 
 ---
 
@@ -301,6 +312,13 @@ L'édition suit les règles du §2, champ par champ, avec l'`ETag` de la ligne. 
 données et des structures » ; une entrée dont tous les champs modifiés sont masqués
 n'étant pas renvoyée, l'interface n'affiche aucun compteur de révisions masquées.
 
+Sous la ligne d'un champ, sur toute la largeur de la fiche, sa **description** s'affiche
+en texte d'aide discret, limité à trois lignes, le texte entier restant dans l'infobulle.
+Elle est rendue comme du texte (§3.2), jamais interprétée. Un champ sans description n'a
+pas de ligne d'aide vide : sa ligne garde la hauteur qu'elle a toujours eue. Les colonnes
+système, dont la description est fixe, s'expliquent de la même façon : c'est là qu'on
+apprend que `_id` est la valeur à fournir dans un lien.
+
 ### 5.2 Les lignes référençantes
 
 Un appel : `GET …/{id}/referenced_by`, qui rend le résumé groupé. L'interface ne
@@ -349,6 +367,65 @@ supprimer logiquement le champ désigné est refusé par `DISPLAY_FIELD_IN_USE` 
 propose d'en désigner un autre, ou aucun, et **ne bascule jamais tout seul**. L'absence de
 colonne d'affichage est un état valide, présenté comme tel.
 
+La **description** est proposée à côté du libellé à la création d'une base, d'une table,
+d'un champ et d'un lien, et **jamais exigée**. C'est une zone de texte simple qui dit à
+quoi sert l'objet, non comment il s'appelle, et dont l'aide dit qui la lira : la
+documentation et les agents. Elle est du **texte brut** : ni mise en forme ni aperçu, et
+un saut de ligne reste un saut de ligne. Un compteur n'apparaît qu'à l'approche des
+1 000 caractères — sur une zone presque toujours à moitié vide, il ne serait que du
+bruit — et le formulaire refuse d'envoyer un texte qu'il sait trop long ; c'est pourtant
+le serveur qui tranche : `TEXT_TOO_LONG` s'affiche à côté de la zone concernée, avec la
+borne, jamais en « trop long » sans dire quoi, et le texte saisi est conservé.
+*Alternative écartée* : la rendre obligatoire — on obtiendrait des descriptions qui
+répètent le libellé, pire qu'un vide, qui dit honnêtement que personne n'a rien écrit.
+
+Elle se modifie ensuite **en place**, là où elle se lit : au-dessus des champs pour une
+table, sur la ligne du champ pour un champ, dans la fenêtre de modification pour une
+base. Un clic ouvre la zone ; `Ctrl+Entrée` ou un clic ailleurs enregistre, `Échap`
+renonce, et un texte inchangé ne fait aucun aller-retour. L'enregistrement est un
+`PATCH` d'une seule ligne de catalogue, sans récapitulatif ni migration (§6.4) ; vider la
+zone efface la description. Un refus laisse la zone ouverte, la raison du serveur à côté :
+le texte tapé n'est jamais jeté. Les colonnes système ont une description fixe, montrée
+et jamais modifiable. Le changement gagne la documentation générée, la spécification
+OpenAPI et le commentaire de la colonne en SQL sans qu'on republie rien (chapitre 06
+§1.1).
+
+**Modifier un champ.** Chaque champ non système porte un bouton « Modifier » qui ouvre une
+fenêtre : le **libellé**, le type (affiché, jamais proposé : le changer est une copie de
+toute la colonne, chapitre 03, et non un réglage), et pour une liste de choix, ses **choix**.
+Renommer ne touche que le catalogue : le nom de la colonne reste celui que voit `psql`, et
+la fenêtre le dit. Les descriptions continuent de se modifier en place, sur la ligne.
+
+**L'éditeur de choix** sert à la création comme à la modification. Une ligne par choix :
+un **libellé**, un bouton d'**apparence**, la **valeur stockée** en légende, et deux
+flèches pour l'ordre — pas de glisser-déposer, qui n'aurait pas d'équivalent au clavier.
+La valeur d'un choix nouveau est **dérivée du libellé** (slug ASCII, `_2`, `_3` si un autre
+l'a prise) et montrée avant l'envoi ; celle d'un choix existant est affichée **verrouillée**,
+parce que la renommer réécrirait les données de la table (chapitre 04 §3). Entrée dans un
+libellé ajoute une ligne. L'apparence s'ouvre dans une fenêtre flottante : une **couleur**
+quelconque (treize teintes proposées, le sélecteur du navigateur pour toute autre, donc
+n'importe quel hexadécimal), puis un **pictogramme** de la bibliothèque d'icônes de
+l'interface — un jeu restreint, cherchable par des mots français (« urgent » trouve la
+flamme) — **ou** une **image**, jamais les deux. Une image choisie dans un fichier est
+réduite à 64 pixels puis ré-encodée avant l'envoi (32 si elle ne tient pas encore) : elle est
+gardée dans le catalogue et voyage avec chaque lecture de la base, elle doit rester petite ;
+une image vectorielle ressort en pixels, ce qui la prive de tout script. Une adresse `https`
+est acceptée à la place d'un fichier.
+
+**La même liste, en JSON.** Sous les lignes, une zone de texte porte la liste entière. Le
+bouton **Copier** la place dans le presse-papiers et devient, deux secondes, une coche
+« Copié » : c'est la confirmation qu'un clic silencieux ne donnerait pas. Coller une liste
+dans la zone **remplace** les lignes aussitôt ; le format accepté est celui que produit
+l'éditeur, une simple liste de textes (`["Actif", "Inactif"]`) ou la réponse de l'API
+(`{"options": […]}`). Un JSON invalide affiche sa raison sous la zone et **laisse les
+lignes telles quelles**. Une valeur collée qui existe déjà au catalogue reste verrouillée.
+
+**Ce que le serveur refuse, l'écran le dit.** L'envoi est un `PUT` de la liste entière
+(chapitre 08) ; retirer un choix que des lignes portent encore revient en `OPTION_IN_USE`
+avec le décompte par valeur, et la fenêtre reste ouverte sur la liste telle qu'elle était
+saisie. Le renommage et les choix sont deux appels : un libellé accepté reste affiché même si
+les choix qui suivent sont refusés.
+
 ### 6.3 Créer un lien
 
 | Réglage | Écran |
@@ -357,6 +434,7 @@ colonne d'affichage est un état valide, présenté comme tel.
 | Obligatoire | Cocher désactive `set_null`, avec la raison affichée |
 | À la suppression | `restrict` par défaut, `set_null`, `cascade` |
 | `cascade` | N'apparaît que pour un porteur du droit de gestion du schéma, avec confirmation saisie. L'écran énonce que la suppression d'une ligne cible supprimera les lignes qui la référencent, **y compris lors d'une suppression faite directement en SQL** (A14), et que l'effet est récursif |
+| Description | Facultative, comme celle d'un champ (§6.2). C'est là qu'on dit ce que le lien signifie — « le client facturé » — et non ce que le nom de la colonne dit déjà : « un lien vers Clients » |
 | Nom de la colonne | **Restitué avant validation** (A7) |
 
 Le dernier point est un comportement d'interface à part entière. L'écran affiche le nom
@@ -376,7 +454,7 @@ générée et dans les réponses de l'API.
 
 | Sans migration (catalogue seul) | Avec migration |
 |---|---|
-| Libellé, description, position d'un champ ou d'une table | Création, suppression ou conversion d'une table ou d'un champ |
+| Libellé et description d'une base, d'une table ou d'un champ ; position d'une table ou d'un champ | Création, suppression ou conversion d'une table ou d'un champ |
 | Désignation de la colonne d'affichage | Obligatoire, unique, triable, recherchable |
 | Ordre et libellé des options d'une liste | Valeur d'une option, longueur maximale, bornes, valeur par défaut |
 | `expose_to_agents`, permissions et rôles | Cible ou comportement de suppression d'un lien ; création ou modification d'une formule |
@@ -385,6 +463,10 @@ Tout réglage de la colonne de droite ouvre un **récapitulatif avant validation
 touchés, pré-contrôles qui seront exécutés, et l'avertissement de verrou quand le moteur
 l'annonce pour une table volumineuse. Aucune migration ne part d'un simple basculement
 d'interrupteur.
+
+Modifier une description réécrit aussi le `COMMENT ON` de la table ou de la colonne, dans
+la même transaction (chapitre 06 §1.1) : c'est un énoncé et non un plan, donc un réglage
+de la colonne de gauche, sans récapitulatif.
 
 ### 6.5 Une opération longue
 
@@ -417,6 +499,72 @@ par l'interface.
 | `MIGRATION_TOO_LARGE` | « Cette opération touche plus de dix tables. » Invitation à la découper |
 
 ---
+
+### 6.7 Importer un fichier, et le menu d'une table
+
+**Le menu d'une table.** Dans la barre latérale, un clic droit sur une table ouvre son menu
+— *Ouvrir*, *Importer…*, *Supprimer la table* — et un « ⋯ » au survol ouvre les mêmes trois
+entrées : le clic gauche reste ce qu'il était, ouvrir la table, et un écran tactile n'a pas de
+clic droit. *Supprimer* mène à la confirmation de §6.4 — la table est renommée, non détruite —
+et non à un raccourci qui la contournerait. *Importer* mène à l'assistant que la barre d'outils
+de la grille ouvre aussi : **une fonction qu'un menu contextuel est seul à offrir est une
+fonction que personne ne trouve.**
+
+**L'assistant, en trois étapes** — aucune ne se saute, aucune n'envoie quoi que ce soit avant la
+dernière.
+
+1. **Le fichier.** Déposé ou choisi : CSV, TSV, TXT ou JSON, 20 Mio et 50 000 lignes au plus. Le
+   séparateur d'un texte est **deviné** — le candidat qui découpe les premières lignes en un même
+   nombre de cellules, plus d'une, le plus souvent, les guillemets respectés : compter les virgules
+   choisirait `,` pour un export français en `;` dont les décimales s'écrivent `12,5` — et se
+   change à la main. Le fichier est lu en UTF-8, puis en Windows-1252 s'il n'en est pas : c'est ce
+   qu'un tableur français exporte quand personne n'a rien demandé. Un JSON est une liste
+   d'objets (les clés sont les colonnes), une liste de listes, ou l'un des deux sous une clé
+   `data`, `rows`, `records`, `items` ou `results`, ou encore une valeur par ligne. Les cinq
+   premières lignes sont montrées, avec « la première ligne est l'en-tête » à cocher.
+2. **La destination.** *Une table existante* — proposée : celle dont le menu ou la barre d'outils
+   a été utilisé — ou *une nouvelle table*.
+   - Pour une table existante, chaque colonne du fichier est rapprochée d'un champ, par libellé
+     puis par nom, sans casse ni accents, **un champ recevant au plus une colonne** ; l'écran
+     montre trois valeurs de chaque colonne, parce que « Colonne 3 » ne dit rien. Ce qui n'est pas
+     rapproché n'est pas importé. Seuls les champs qu'on saisit sont proposés : **les liens et les
+     formules ne s'importent pas encore.** Un champ obligatoire sans colonne est signalé, la base
+     refusera les lignes où il est vide.
+   - Pour une nouvelle table, le libellé est celui du fichier (`clients_2026.csv` donne
+     « Clients 2026 »), et chaque colonne devient un champ dont le **type est deviné d'après toutes
+     ses valeurs** — une seule valeur étrangère dans mille nombres fait un texte, ce qui est la
+     réponse honnête ; `0` et `1` seuls sont des nombres et non une case à cocher ; `007` reste un
+     texte — et se corrige avant l'envoi. Les champs sont créés facultatifs (chapitre 04 §1.3).
+3. **L'import.** Par lots de 500, avec une progression et un bouton pour interrompre entre deux
+   lots. Une nouvelle table est créée d'abord ; ses champs prennent le nom physique que le
+   serveur leur a donné, dans l'ordre.
+
+**La conversion se fait dans le navigateur, et se décide par le champ, jamais par le texte.**
+`007` reste `007` dans un champ texte et devient `7` dans un champ nombre. Un nombre s'écrit
+`12,5`, `1 234,56`, `1.234,56` ou `1,234.56` — le dernier séparateur est la virgule décimale
+—, une date `2026-03-05` ou `05/03/2026` (**le jour d'abord** : `03/05` est le 3 mai), avec ou
+sans heure, un booléen `oui/non`, `vrai/faux` ou `1/0`. Une valeur de liste de choix est
+retrouvée par sa valeur stockée **ou** par son libellé, sans casse ni accents. Un jour que le
+calendrier n'a pas (`30/02`) est refusé, non reporté en mars ; une heure sans fuseau est lue en
+UTC, ce que dit le contrat de connexion. Une cellule vide est *rien*, quel que soit le type.
+
+**Ce qui ne passe pas est dit avant l'envoi**, pas après : « Ligne 41, « Montant » : nombre
+invalide (« douze ») », avec le compte et cinq exemples. L'import reste bloqué tant qu'on n'a pas
+coché *importer quand même, en laissant ces cellules vides* — un choix qu'il faut faire, pas un
+défaut qui s'applique. Les lignes sans aucune valeur dans les colonnes retenues sont comptées et
+ignorées, l'API refusant une ligne vide.
+
+**L'atomicité est celle d'un lot, et l'écran ne prétend pas mieux.** Chaque lot est tout ou rien
+(chapitre 08 §3.5), mais un import est une *suite* de lots : si le troisième est refusé, les deux
+premiers sont dans la table. Le refus dit alors la ligne du fichier qui l'a causé (`details.index`
+du lot, retraduit en numéro de ligne, en-tête compris) et **combien de lignes sont déjà entrées**.
+Faire croire à un import atomique laisserait chacun deviner l'état de sa table. *Alternative
+écartée* : un seul lot de 50 000 lignes — le chapitre 08 §3.5 borne un lot à 1 000, et la
+transaction tiendrait un verrou sur chacune pendant tout le temps de l'envoi.
+
+**Ensuite.** L'import d'une table nouvelle rafraîchit la base, ouvre la table, et l'import dans
+une table ouverte la recharge sans qu'on le demande : une grille qui montre ce qu'elle contenait
+avant l'import est une grille dont on ne se fie plus à rien.
 
 ## 7. Les permissions vues de l'interface
 
@@ -500,6 +648,7 @@ des jetons et des webhooks, renommage physique et alias, vues de grille partagé
 | Création de la cible depuis le sélecteur, **réduite et conditionnelle** | Le besoin est réel ; un formulaire complet imbriqué dans une cellule en édition ne l'est pas | Formulaire complet superposé ; interdiction totale |
 | Désambiguïsateur `_id` systématique dans les sélecteurs, conditionnel en cellule | Deux `display` identiques sont fréquents, la colonne d'affichage n'étant pas unique | Rendre la colonne d'affichage unique |
 | Aucune barre de progression en pourcentage | Une validation de contrainte n'a pas d'avancement observable | Une barre estimée, donc fausse |
+| Description facultative, en texte brut, modifiable en place sans migration ; infobulle d'en-tête et aide de la fiche | Elle documente pour qui n'a pas conçu l'objet, humains et agents ; l'exiger produirait des descriptions qui répètent le libellé | Description obligatoire ; éditeur riche |
 | Un champ invisible n'a **aucune** trace à l'écran | Une case grisée est un oracle d'existence | Afficher les champs masqués en lecture seule |
 | Les états vides proviennent de l'API ; largeur et ordre des colonnes non enregistrés restent locaux | Exigence du cadrage, vérifiée sur base vide ; une vue enregistrée est `view_def`, seule la surcharge locale non enregistrée reste dans le navigateur | États vides codés dans les composants ; tout état de colonne persisté au catalogue, y compris non nommé |
 
@@ -530,4 +679,6 @@ des jetons et des webhooks, renommage physique et alias, vues de grille partagé
    l'API, et un agrégat sur champ masqué est refusé.
 2. **Annulation après écriture** : elle supposerait une pile côté serveur, donc une surface
    d'API et une interaction avec l'historique des enregistrements.
-3. **Import de fichier** dans une table : hors phase 2 côté noyau, donc sans écran en v1.
+3. **Import de fichier** : traité au §6.7 pour le CSV, le TSV, le TXT et le JSON. Restent ouverts
+   les fichiers Excel et XML, l'import des champs lien (par la colonne d'affichage de leur cible),
+   les lots partiels (`atomic: false`) et un import asynchrone au-delà de 50 000 lignes.

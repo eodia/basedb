@@ -277,6 +277,11 @@ filtrer.
 | `structure_draft` | Le libellé de la base ; pour chaque table et champ sélectionnés, le libellé, le type, le caractère obligatoire, et pour un lien la table cible désignée par son ordinal ; la phrase saisie |
 | `expression_draft` | Le libellé de la table visée ; pour chaque champ, libellé, type, caractère obligatoire ; la phrase saisie ; le cas échéant le message du validateur sur l'essai précédent |
 
+**Les descriptions du catalogue ne partent pas.** Un libellé est une étiquette ; une
+description est un texte libre de mille caractères, où l'on écrit volontiers un nom de
+client, une règle de gestion ou un seuil. La charge utile s'en tient aux libellés et aux
+types, et le brouillon qui en revient n'en propose pas non plus.
+
 Les objets sont désignés par un **ordinal éphémère** propre à l'appel, jamais par leur
 identifiant ni par leur nom physique ; le noyau reprojette la réponse sur les
 identifiants réels.

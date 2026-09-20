@@ -16,6 +16,7 @@ import { type ActorGrants, TENANT_SCOPE } from '../rbac/decide.js'
 import { loadGrants } from '../rbac/loader.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
+import { normalizeDescription } from './description.js'
 import { labelKey } from './operations.js'
 
 /**
@@ -64,42 +65,88 @@ export async function renameBaseLabel(
   ctx: RequestContext,
   request: { readonly baseId: string; readonly label: string },
 ): Promise<{ readonly label: string }> {
-  const label = request.label.trim()
-  if (label === '') throw new BasedbError('LABEL_EMPTY', { details: { base: request.baseId } })
-  if ([...label].length > 255) {
-    throw new BasedbError('LABEL_TOO_LONG', { details: { maximum: 255 } })
+  const { label } = await updateBase(pools, ctx, request)
+  return { label }
+}
+
+/**
+ * Changes what a base is CALLED and/or what it is FOR, in one catalog write.
+ *
+ * Each field is optional and `undefined` means "leave as is" — which is why a description
+ * is cleared with `null` or an empty string, never by omitting it. Both belong to the
+ * catalog register of §1.1: no DDL, no migration, no lock on a data table.
+ *
+ * `catalog_version` moves here, by hand: unlike a table or a field, `base` has no trigger
+ * for it, and the projection reads both columns. Without the bump, a reader served from
+ * cache would keep seeing the old label and description until the snapshot aged out.
+ */
+export async function updateBase(
+  pools: Pools,
+  ctx: RequestContext,
+  request: {
+    readonly baseId: string
+    readonly label?: string
+    readonly description?: string | null
+  },
+): Promise<{ readonly label: string; readonly description: string | null }> {
+  const label = request.label?.trim()
+  if (label !== undefined) {
+    if (label === '') throw new BasedbError('LABEL_EMPTY', { details: { base: request.baseId } })
+    if ([...label].length > 255) {
+      throw new BasedbError('LABEL_TOO_LONG', { details: { maximum: 255 } })
+    }
   }
+  const setsDescription = request.description !== undefined
+  const description = setsDescription ? normalizeDescription(request.description) : null
 
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
     const grants = await loadGrants(exec, ctx)
     await assertManageSchema(exec, ctx, grants, request.baseId)
 
-    // The uniqueness index is partial on `deleted_at IS NULL`: a label freed by a
-    // deletion is available again, immediately (§4.4). Caught here to name the conflict
-    // rather than surface a constraint violation.
-    const clash = await exec.query<{ id: string }>(
-      `SELECT b.id FROM _basedb.base b
-         JOIN _basedb.tenant t ON t.id = b.tenant_id
-        WHERE t.ref = $1 AND b.label_key = $2 AND b.deleted_at IS NULL AND b.id <> $3`,
-      [ctx.tenantId, labelKey(label), request.baseId],
-    )
-    if (clash.length > 0) {
-      throw new BasedbError('LABEL_DUPLICATE', { details: { label } })
+    if (label !== undefined) {
+      // The uniqueness index is partial on `deleted_at IS NULL`: a label freed by a
+      // deletion is available again, immediately (§4.4). Caught here to name the conflict
+      // rather than surface a constraint violation.
+      const clash = await exec.query<{ id: string }>(
+        `SELECT b.id FROM _basedb.base b
+           JOIN _basedb.tenant t ON t.id = b.tenant_id
+          WHERE t.ref = $1 AND b.label_key = $2 AND b.deleted_at IS NULL AND b.id <> $3`,
+        [ctx.tenantId, labelKey(label), request.baseId],
+      )
+      if (clash.length > 0) {
+        throw new BasedbError('LABEL_DUPLICATE', { details: { label } })
+      }
     }
 
-    const updated = await exec.query<{ label: string }>(
+    const updated = await exec.query<{ label: string; description: string | null }>(
       `UPDATE _basedb.base
-          SET label = $2, label_key = $3, updated_at = clock_timestamp(), updated_by = $4
+          SET label = CASE WHEN $2::boolean THEN $3::text ELSE label END,
+              label_key = CASE WHEN $2::boolean THEN $4::text ELSE label_key END,
+              description = CASE WHEN $5::boolean THEN $6::text ELSE description END,
+              catalog_version = catalog_version + 1,
+              updated_at = clock_timestamp(), updated_by = $7
         WHERE id = $1 AND deleted_at IS NULL
-        RETURNING label`,
-      [request.baseId, label, labelKey(label), ctx.actor.id],
+        RETURNING label, description`,
+      [
+        request.baseId,
+        label !== undefined,
+        label ?? null,
+        label === undefined ? null : labelKey(label),
+        setsDescription,
+        description,
+        ctx.actor.id,
+      ],
       'update',
     )
     const row = updated[0]
     if (row === undefined) {
       throw new BasedbError('RESOURCE_NOT_FOUND', { details: { base: request.baseId } })
     }
-    return { label: row.label }
+
+    // Same signal the version triggers send for a table or a field, so other processes
+    // reload instead of waiting for their snapshot to expire.
+    await exec.query("SELECT pg_notify('basedb_catalog', $1::text)", [request.baseId])
+    return { label: row.label, description: row.description }
   })
 }
 
@@ -1025,7 +1072,7 @@ function assertAdministration(grants: ActorGrants, baseId: string): void {
 }
 
 /** `manage_schema` at any scope covering the base — enough to rename a label (§1.1). */
-async function assertManageSchema(
+export async function assertManageSchema(
   exec: Executor,
   ctx: RequestContext,
   grants: ActorGrants,

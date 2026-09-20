@@ -1,5 +1,6 @@
 'use client'
 
+import { DescriptionField, isTooLong } from '@/components/app/description'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -46,8 +47,9 @@ import { useCallback, useEffect, useState } from 'react'
  *   renommer = un `UPDATE` de catalogue, aucun verrou, pas une migration ;
  *   supprimer = un plan à plusieurs étapes passant par la machine à états.
  *
- * So renaming is a one-field dialog that closes in a second, and deleting spells out
- * what will happen and asks the label to be typed. That difference is the honest one.
+ * So renaming is a two-field dialog — the label, and the description that documentation
+ * and agents read — that closes in a second, and deleting spells out what will happen and
+ * asks the label to be typed. That difference is the honest one.
  */
 
 interface Props {
@@ -69,7 +71,7 @@ export function BaseMenu({
   onChanged,
   onDeleted,
 }: Props) {
-  const [renaming, setRenaming] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleted, setDeleted] = useState<readonly DeletedBase[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -133,9 +135,9 @@ export function BaseMenu({
 
           {base !== null && (
             <>
-              <DropdownMenuItem onSelect={() => setRenaming(true)}>
+              <DropdownMenuItem onSelect={() => setEditing(true)}>
                 <Pencil className="size-4" />
-                Renommer « {base.label} »
+                Modifier « {base.label} »
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => setDeleting(true)}
@@ -197,12 +199,12 @@ export function BaseMenu({
 
       {base !== null && (
         <>
-          <RenameDialog
-            open={renaming}
+          <EditDialog
+            open={editing}
             base={base}
-            onClose={() => setRenaming(false)}
+            onClose={() => setEditing(false)}
             onDone={() => {
-              setRenaming(false)
+              setEditing(false)
               onChanged()
             }}
           />
@@ -222,7 +224,7 @@ export function BaseMenu({
   )
 }
 
-function RenameDialog({
+function EditDialog({
   open,
   base,
   onClose,
@@ -234,23 +236,37 @@ function RenameDialog({
   readonly onDone: () => void
 }) {
   const [label, setLabel] = useState(base.label)
+  const [description, setDescription] = useState(base.description ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) {
       setLabel(base.label)
+      setDescription(base.description ?? '')
       setError(null)
     }
-  }, [open, base.label])
+  }, [open, base.label, base.description])
 
   const submit = async () => {
     const trimmed = label.trim()
-    if (trimmed === '' || busy) return
+    if (trimmed === '' || isTooLong(description) || busy) return
+
+    // Only what changed is sent, and an emptied description is a `null` — "clear it" —
+    // not an omission, which would leave the old one in place.
+    const patch: { label?: string; description?: string | null } = {}
+    if (trimmed !== base.label) patch.label = trimmed
+    const nextDescription = description.trim() === '' ? null : description.trim()
+    if (nextDescription !== (base.description ?? null)) patch.description = nextDescription
+    if (Object.keys(patch).length === 0) {
+      onClose()
+      return
+    }
+
     setBusy(true)
     setError(null)
     try {
-      await api.renameBase(base.name, trimmed)
+      await api.updateBase(base.name, patch)
       onDone()
     } catch (e) {
       setError(messageFor(e))
@@ -263,23 +279,35 @@ function RenameDialog({
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Renommer la base</DialogTitle>
+          <DialogTitle>Modifier la base</DialogTitle>
           <DialogDescription>
-            Le libellé seulement. Le schéma garde son nom{' '}
+            Le libellé et la description seulement. Le schéma garde son nom{' '}
             <span className="font-mono text-xs">{base.name}</span> : aucune requête SQL écrite
             ailleurs ne casse, et rien n’est migré.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="base-label">Libellé</Label>
-          <Input
-            id="base-label"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && void submit()}
-            autoFocus
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="base-label">Libellé</Label>
+            <Input
+              id="base-label"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void submit()}
+              autoFocus
+            />
+          </div>
+
+          <DescriptionField
+            id="base-description"
+            value={description}
+            onChange={setDescription}
+            onSubmit={() => void submit()}
+            placeholder="À quoi sert cette base ? Visible dans la documentation et par les agents."
+            disabled={busy}
           />
+
           {error !== null && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
@@ -287,8 +315,11 @@ function RenameDialog({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             Annuler
           </Button>
-          <Button onClick={() => void submit()} disabled={label.trim() === '' || busy}>
-            {busy ? 'Enregistrement…' : 'Renommer'}
+          <Button
+            onClick={() => void submit()}
+            disabled={label.trim() === '' || isTooLong(description) || busy}
+          >
+            {busy ? 'Enregistrement…' : 'Enregistrer'}
           </Button>
         </DialogFooter>
       </DialogContent>

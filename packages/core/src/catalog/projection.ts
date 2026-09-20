@@ -6,6 +6,7 @@ import { loadGrants } from '../rbac/loader.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { type CatalogVersions, catalogCache, grantsCache, readVersions } from './cache.js'
+import { SYSTEM_COLUMN_DESCRIPTIONS } from './description.js'
 
 /**
  * Catalog projection — chapter 08 §9.
@@ -43,6 +44,11 @@ export interface ProjectedLink {
 export interface ProjectedField {
   readonly name: string
   readonly label: string
+  /**
+   * What the field is FOR, in the words of whoever designed it — `null` when nobody said.
+   * Plain text, bounded (`description.ts`): every serialization shows it as-is, escaped.
+   */
+  readonly description: string | null
   readonly kind: string
   readonly required: boolean
   /** Readable but not writable. System columns are ALWAYS read-only (A18). */
@@ -59,7 +65,7 @@ export interface ProjectedField {
    * Published because they are a CHECK constraint on a column the reader can already
    * see: a client that does not know them can only write values the database refuses.
    */
-  readonly options?: ReadonlyArray<{ readonly value: string; readonly label: string }>
+  readonly options?: ReadonlyArray<ProjectedOption>
   readonly link?: ProjectedLink
 }
 
@@ -67,6 +73,8 @@ export interface ProjectedTable {
   readonly id: string
   readonly name: string
   readonly label: string
+  /** What the table holds and what it is used for; `null` when nobody said. */
+  readonly description: string | null
   /** What the caller writes in psql — the point of the whole product. */
   readonly sql: string
   /** Only the verbs the reader holds: `read` alone means only the GETs are described. */
@@ -89,6 +97,8 @@ export interface ProjectedBase {
   /** Logical name — the one in the URL and in the SQL schema. */
   readonly name: string
   readonly label: string
+  /** What this base is for; `null` when nobody said. */
+  readonly description: string | null
   readonly tables: readonly ProjectedTable[]
 }
 
@@ -97,6 +107,7 @@ export interface VisibleBase {
   readonly id: string
   readonly name: string
   readonly label: string
+  readonly description: string | null
   /** Readable tables only: the count must not betray those that are masked. */
   readonly tableCount: number
 }
@@ -104,6 +115,7 @@ export interface VisibleBase {
 interface BaseRow extends Record<string, unknown> {
   readonly id: string
   readonly label: string
+  readonly description: string | null
   readonly schema_name: string
 }
 
@@ -111,6 +123,7 @@ interface TableRow extends Record<string, unknown> {
   readonly id: string
   readonly base_id: string
   readonly label: string
+  readonly description: string | null
   readonly table_name: string
   readonly schema_name: string
   readonly display_field_id: string | null
@@ -120,16 +133,28 @@ interface FieldRow extends Record<string, unknown> {
   readonly id: string
   readonly table_id: string
   readonly label: string
+  readonly description: string | null
   readonly kind: string
   readonly is_required: boolean
   readonly column: string
   readonly is_rich: boolean
 }
 
-interface OptionRow extends Record<string, unknown> {
-  readonly field_id: string
+/**
+ * A choice of a `select`, and how it looks. The look is the catalog's alone: no column of
+ * the user's table carries it, which is why it can change without a migration. The keys
+ * are always present, `null` when unset, so a client reads one shape.
+ */
+export interface ProjectedOption {
   readonly value: string
   readonly label: string
+  readonly color: string | null
+  readonly icon: string | null
+  readonly image: string | null
+}
+
+interface OptionRow extends Record<string, unknown>, ProjectedOption {
+  readonly field_id: string
 }
 
 interface LinkRow extends Record<string, unknown> {
@@ -143,7 +168,7 @@ interface RawCatalog {
   readonly tables: readonly TableRow[]
   readonly fields: readonly FieldRow[]
   readonly links: readonly LinkRow[]
-  readonly options: ReadonlyMap<string, ReadonlyArray<{ value: string; label: string }>>
+  readonly options: ReadonlyMap<string, ReadonlyArray<ProjectedOption>>
   readonly applications: ReadonlyMap<string, readonly string[]>
 }
 
@@ -159,7 +184,7 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
   const tenant = [ctx.tenantId]
 
   const bases = await exec.query<BaseRow>(
-    `SELECT b.id, b.label, sn.name AS schema_name
+    `SELECT b.id, b.label, b.description, sn.name AS schema_name
        FROM _basedb.base b
        JOIN _basedb.tenant t         ON t.id = b.tenant_id
        JOIN _basedb.db_schema s      ON s.base_id = b.id AND s.role = 'current'
@@ -171,7 +196,7 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
   )
 
   const tables = await exec.query<TableRow>(
-    `SELECT t.id, t.base_id, t.label, tn.name AS table_name,
+    `SELECT t.id, t.base_id, t.label, t.description, tn.name AS table_name,
             sn.name AS schema_name, t.display_field_id
        FROM _basedb.table_def t
        JOIN _basedb.base b           ON b.id = t.base_id
@@ -186,7 +211,7 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
   )
 
   const fields = await exec.query<FieldRow>(
-    `SELECT f.id, f.table_id, f.label, f.kind, f.is_required, n.name AS column,
+    `SELECT f.id, f.table_id, f.label, f.description, f.kind, f.is_required, n.name AS column,
             coalesce(tc.is_rich, false) AS is_rich
        FROM _basedb.field f
        JOIN _basedb.physical_name n ON n.id = f.name_id
@@ -211,7 +236,7 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
   )
 
   const optionRows = await exec.query<OptionRow>(
-    `SELECT o.field_id, o.value, o.label
+    `SELECT o.field_id, o.value, o.label, o.color, o.icon, o.image
        FROM _basedb.select_option o
        JOIN _basedb.field f     ON f.id = o.field_id
        JOIN _basedb.table_def t ON t.id = f.table_id
@@ -221,10 +246,16 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
       ORDER BY o.position`,
     tenant,
   )
-  const options = new Map<string, Array<{ value: string; label: string }>>()
+  const options = new Map<string, ProjectedOption[]>()
   for (const row of optionRows) {
     const list = options.get(row.field_id) ?? []
-    list.push({ value: row.value, label: row.label })
+    list.push({
+      value: row.value,
+      label: row.label,
+      color: row.color,
+      icon: row.icon,
+      image: row.image,
+    })
     options.set(row.field_id, list)
   }
 
@@ -333,6 +364,7 @@ export function project(
       const fields: ProjectedField[] = SYSTEM_COLUMNS.map((name) => ({
         name,
         label: name,
+        description: SYSTEM_COLUMN_DESCRIPTIONS[name] ?? null,
         kind: 'system',
         required: false,
         readOnly: true,
@@ -383,6 +415,7 @@ export function project(
         fields.push({
           name: field.column,
           label: field.label,
+          description: field.description,
           kind: field.kind,
           required: field.is_required,
           readOnly: !writable.has(field.id),
@@ -402,6 +435,7 @@ export function project(
         id: table.id,
         name: table.table_name,
         label: table.label,
+        description: table.description,
         sql: qualify(table.schema_name, table.table_name),
         actions,
         fields,
@@ -413,7 +447,13 @@ export function project(
     // A base appears if and only if the caller holds `read` on at least one of its
     // tables (§9.1). A base with none is therefore absent, not empty.
     if (tables.length > 0) {
-      projected.push({ id: base.id, name: base.schema_name, label: base.label, tables })
+      projected.push({
+        id: base.id,
+        name: base.schema_name,
+        label: base.label,
+        description: base.description,
+        tables,
+      })
     }
   }
 
@@ -485,6 +525,7 @@ export async function listVisibleBases(
     id: base.id,
     name: base.name,
     label: base.label,
+    description: base.description,
     tableCount: base.tables.length,
   }))
 }

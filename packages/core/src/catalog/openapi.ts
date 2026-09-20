@@ -97,10 +97,22 @@ function scalarSchema(field: ProjectedField): Schema {
   }
 }
 
+/**
+ * The description of an object, as an OpenAPI `description`.
+ *
+ * Absent rather than empty when nobody wrote one: a generated client would otherwise print
+ * an empty comment above every property. Escaped like a label — the field is rendered by
+ * Swagger UI or Redoc, which interpret Markdown and part of HTML.
+ */
+function describe(description: string | null): Schema {
+  return description === null ? {} : { description: escapeLabel(description) }
+}
+
 function fieldSchema(field: ProjectedField): Schema {
   const schema = field.kind === 'link' ? linkReadSchema(field) : scalarSchema(field)
   return {
     ...schema,
+    ...describe(field.description),
     // The choices are a CHECK in the database, so they belong in the contract: a
     // generated client that offers anything else offers a value that will be refused.
     ...(field.options === undefined ? {} : { enum: field.options.map((o) => o.value) }),
@@ -119,6 +131,7 @@ function readSchema(table: ProjectedTable): Schema {
   return {
     type: 'object',
     title: escapeLabel(table.label),
+    ...describe(table.description),
     properties,
   }
 }
@@ -140,6 +153,7 @@ function writeSchema(table: ProjectedTable): Schema {
       field.kind === 'link'
         ? {
             title: escapeLabel(field.label),
+            ...describe(field.description),
             oneOf: [
               { type: 'string', format: 'uuid' },
               { type: 'null' },
@@ -154,6 +168,7 @@ function writeSchema(table: ProjectedTable): Schema {
   return {
     type: 'object',
     title: `${escapeLabel(table.label)} (écriture)`,
+    ...describe(table.description),
     properties,
     ...(required.length === 0 ? {} : { required }),
   }
@@ -239,6 +254,7 @@ export function toOpenApi(base: ProjectedBase, tenantRef: string): Record<string
     if (table.actions.includes('read')) {
       collection.get = {
         summary: `Lister ${escapeLabel(table.label)}`,
+        ...describe(table.description),
         parameters: [
           {
             name: 'filter',
@@ -338,6 +354,79 @@ export function toOpenApi(base: ProjectedBase, tenantRef: string): Record<string
       }
     }
 
+    // The batch, chapter 08 §3.5: described where — and only where — a single `POST` is,
+    // since it is the same right repeated. Only what is implemented is promised: creations,
+    // all or nothing.
+    if (table.actions.includes('create')) {
+      paths[`${root}/batch`] = {
+        post: {
+          summary: `Créer plusieurs lignes dans ${escapeLabel(table.label)}`,
+          description:
+            'Tout ou rien : une seule transaction, et si une ligne est refusée aucune n’est créée. ' +
+            'Le refus porte `details.index`, la position de la ligne fautive. ' +
+            'Seules les opérations `create` sont prises en charge, avec `atomic: true`.',
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['operations'],
+                  properties: {
+                    atomic: { type: 'boolean', enum: [true] },
+                    operations: {
+                      type: 'array',
+                      // Chapter 08 §3.6 — the same bound as the kernel's own.
+                      maxItems: 1000,
+                      items: {
+                        type: 'object',
+                        required: ['op', 'data'],
+                        properties: {
+                          op: { type: 'string', enum: ['create'] },
+                          data: { $ref: `#/components/schemas/${name}Write` },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            '200': {
+              description: 'Toutes les lignes ont été créées, dans l’ordre.',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      atomic: { type: 'boolean' },
+                      results: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            index: { type: 'integer' },
+                            status: { type: 'string', enum: ['created'] },
+                            id: { type: 'string', format: 'uuid' },
+                          },
+                        },
+                      },
+                      summary: { type: 'object' },
+                    },
+                  },
+                },
+              },
+            },
+            '413': {
+              description: 'Plus de 1 000 opérations.',
+              content: { 'application/json': { schema: ERROR_RESPONSE } },
+            },
+            ...commonResponses(),
+          },
+        },
+      }
+    }
+
     // Described ONLY when at least one inverse group is visible: the path would
     // otherwise answer an empty list, and that emptiness would itself say something.
     if (table.referencedBy && table.actions.includes('read')) {
@@ -358,9 +447,11 @@ export function toOpenApi(base: ProjectedBase, tenantRef: string): Record<string
     info: {
       title: `${escapeLabel(base.label)} — basedb`,
       version: '1',
-      description:
+      description: [
+        ...(base.description === null ? [] : [escapeLabel(base.description)]),
         'Cette spécification décrit ce que VOUS pouvez voir : deux lecteurs en obtiennent ' +
-        'deux versions différentes. Elle ne doit donc jamais être publiée telle quelle.',
+          'deux versions différentes. Elle ne doit donc jamais être publiée telle quelle.',
+      ].join('\n\n'),
     },
     servers: [{ url: `/api/v1/${tenantRef}` }],
     paths,

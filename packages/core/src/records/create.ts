@@ -41,7 +41,10 @@ export async function createRecord(
     pools,
     'catalog',
     ctx,
-    (exec) => buildWritePlan(exec, ctx, options),
+    async (exec) => {
+      const context = await loadWriteContext(exec, ctx, options.tableId)
+      return planRow(context, options.values, context.returning)
+    },
     { readOnly: true },
   )
 
@@ -56,35 +59,141 @@ export async function createRecord(
   return { row, sql: plan.sql }
 }
 
+/** Chapter 08 §3.6: a batch carries at most this many operations (`BATCH_TOO_LARGE`). */
+export const BATCH_MAX_OPERATIONS = 1000
+
+export interface CreateRecordsOptions {
+  readonly tableId: string
+  /** One entry per row to create, in order: values by physical field name. */
+  readonly records: ReadonlyArray<Readonly<Record<string, unknown>>>
+}
+
+export interface CreatedRecords {
+  /** The identifiers of the rows created, aligned with `records`. */
+  readonly ids: readonly string[]
+  /** The statement of the first row, as every write shows what it emitted. */
+  readonly sql: string
+}
+
+/**
+ * Creates many records at once, ALL OR NOTHING — chapter 08 §3.5, `atomic: true`.
+ *
+ * One transaction on the data pool: either every row is written or none is, so a file
+ * that is half good never leaves half a table behind. The rows are checked against the
+ * masks first, in one catalog read, so a refusal for a field a caller may not write is
+ * raised before any row is inserted; what only PostgreSQL can decide — a value that is
+ * not a number, a list that does not hold the choice — comes back from the row that
+ * caused it.
+ *
+ * Every refusal names the row: `details.index` is its position in `records`. Without it
+ * a 1 000-row batch that fails would say "a value is invalid" and leave the caller to
+ * find which of a thousand.
+ *
+ * One `INSERT` per row inside the transaction, and not one multi-row `INSERT`. A single
+ * statement would be faster, but PostgreSQL reports an error against the statement and
+ * not the row, so the index — the part of the answer a person needs — would be lost, and
+ * rows naming different columns would have to be padded with `DEFAULT`. The bound of
+ * 1 000 rows keeps the cost of the round trips inside the request's budget.
+ */
+export async function createRecords(
+  pools: Pools,
+  ctx: RequestContext,
+  options: CreateRecordsOptions,
+): Promise<CreatedRecords> {
+  const { records } = options
+  if (records.length === 0) {
+    throw new BasedbError('REQUEST_INVALID', {
+      details: { field: 'operations', reason: 'lot_vide' },
+    })
+  }
+  if (records.length > BATCH_MAX_OPERATIONS) {
+    throw new BasedbError('BATCH_TOO_LARGE', {
+      details: { operations: records.length, maximum: BATCH_MAX_OPERATIONS },
+    })
+  }
+
+  const plans = await withTransaction(
+    pools,
+    'catalog',
+    ctx,
+    async (exec) => {
+      const context = await loadWriteContext(exec, ctx, options.tableId)
+      return records.map((values, index) => {
+        try {
+          return planRow(context, values, quoteIdentifier('_id'))
+        } catch (error) {
+          throw withIndex(error, index)
+        }
+      })
+    },
+    { readOnly: true },
+  )
+
+  const ids = await withTransaction(pools, 'data', ctx, async (exec) => {
+    const created: string[] = []
+    for (const [index, plan] of plans.entries()) {
+      try {
+        const [row] = await exec.query<{ _id: string }>(plan.sql, plan.params, 'insert')
+        created.push(row._id)
+      } catch (error) {
+        throw withIndex(error, index)
+      }
+    }
+    return created
+  })
+
+  return { ids, sql: plans[0].sql }
+}
+
+/** The same refusal, now carrying the position of the row that caused it. */
+function withIndex(error: unknown, index: number): unknown {
+  if (!(error instanceof BasedbError)) return error
+  return new BasedbError(error.code, {
+    details: { ...error.details, index },
+    cause: error.cause,
+    incidentId: error.incidentId,
+  })
+}
+
 interface WritePlan {
   readonly sql: string
   readonly params: readonly unknown[]
 }
 
-async function buildWritePlan(
+/** What one catalog read settles for every row written to a table by one actor. */
+interface WriteContext {
+  readonly relation: string
+  /** Physical names the actor may READ — a field outside it is unknown, not merely refused. */
+  readonly readable: ReadonlySet<string>
+  readonly writable: ReadonlySet<string>
+  readonly actorId: string
+  /** The `RETURNING` list of a single-row write: the READ mask, never the write one. */
+  readonly returning: string
+}
+
+async function loadWriteContext(
   exec: Executor,
   ctx: RequestContext,
-  options: CreateRecordOptions,
-): Promise<WritePlan> {
+  tableId: string,
+): Promise<WriteContext> {
   const grants = await loadGrants(exec, ctx)
-  const target = await loadTarget(exec, ctx, options.tableId)
+  const target = await loadTarget(exec, ctx, tableId)
 
   if (target === null) {
-    throw new BasedbError('RESOURCE_NOT_FOUND', { details: { table: options.tableId } })
+    throw new BasedbError('RESOURCE_NOT_FOUND', { details: { table: tableId } })
   }
 
   const decision = decide(ctx, grants, 'create', target)
   if (decision.verdict === 'INVISIBLE') {
-    throw new BasedbError('RESOURCE_NOT_FOUND', { details: { table: options.tableId } })
+    throw new BasedbError('RESOURCE_NOT_FOUND', { details: { table: tableId } })
   }
   if (decision.verdict === 'FORBIDDEN') {
     throw new BasedbError('ADMIN_REQUIRED', {
-      details: { table: options.tableId, action: 'create' },
+      details: { table: tableId, action: 'create' },
     })
   }
 
-  const names = await loadFieldNames(exec, options.tableId)
-  const byName = new Map([...names].map(([id, name]) => [name, id]))
+  const names = await loadFieldNames(exec, tableId)
 
   const location = await exec.query<{ schema_name: string; table_name: string }>(
     `SELECT sn.name AS schema_name, tn.name AS table_name
@@ -93,22 +202,41 @@ async function buildWritePlan(
        JOIN _basedb.db_schema s      ON s.id = t.schema_id
        JOIN _basedb.physical_name sn ON sn.id = s.name_id
       WHERE t.id = $1`,
-    [options.tableId],
+    [tableId],
   )
 
+  // RETURNING projected with the READ mask: writing to a field does not grant the right
+  // to read it back.
+  const readable = [...names].filter(([id]) => decision.readableFields.has(id)).map(([, n]) => n)
+
+  return {
+    relation: qualify(location[0].schema_name, location[0].table_name),
+    readable: new Set(readable),
+    writable: new Set(
+      [...names].filter(([id]) => decision.writableFields.has(id)).map(([, n]) => n),
+    ),
+    actorId: ctx.actor.id,
+    returning: [...SYSTEM_COLUMNS, ...readable].map((c) => quoteIdentifier(c)).join(', '),
+  }
+}
+
+/** One row against the masks: the statement to run and its parameters. */
+function planRow(
+  context: WriteContext,
+  values: Readonly<Record<string, unknown>>,
+  returning: string,
+): WritePlan {
   const columns: string[] = []
   const params: unknown[] = []
 
-  for (const [name, value] of Object.entries(options.values)) {
-    const fieldId = byName.get(name)
-
+  for (const [name, value] of Object.entries(values)) {
     // An unknown field and an invisible field get the same response: without this, a
     // write request would become a way to enumerate hidden columns.
-    if (fieldId === undefined || !decision.readableFields.has(fieldId)) {
+    if (!context.readable.has(name)) {
       throw new BasedbError('FILTER_FIELD_UNKNOWN', { details: { field: name } })
     }
 
-    if (!decision.writableFields.has(fieldId)) {
+    if (!context.writable.has(name)) {
       throw new BasedbError('FIELD_NOT_WRITABLE', { details: { field: name } })
     }
 
@@ -125,20 +253,13 @@ async function buildWritePlan(
   // `_created_by` and `_updated_by` are filled in by the kernel, never by the caller:
   // they appear in no write mask (A18).
   columns.push('_created_by', '_updated_by')
-  params.push(ctx.actor.id, ctx.actor.id)
+  params.push(context.actorId, context.actorId)
 
   const projection = columns.map((c) => quoteIdentifier(c)).join(', ')
   const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ')
 
-  // RETURNING projected with the READ mask: writing to a field does not grant the right
-  // to read it back.
-  const readable = [...names].filter(([id]) => decision.readableFields.has(id)).map(([, n]) => n)
-  const returning = [...SYSTEM_COLUMNS, ...readable].map((c) => quoteIdentifier(c)).join(', ')
-
-  const relation = qualify(location[0].schema_name, location[0].table_name)
-
   return {
-    sql: `INSERT INTO ${relation} (${projection})
+    sql: `INSERT INTO ${context.relation} (${projection})
 VALUES (${placeholders})
 RETURNING ${returning};`,
     params,

@@ -18,6 +18,7 @@ export function toBaseList(bases: readonly VisibleBase[]): unknown {
     id: b.id,
     name: b.name,
     label: b.label,
+    description: b.description,
     table_count: b.tableCount,
   }))
 }
@@ -27,10 +28,12 @@ export function toMeta(base: ProjectedBase): unknown {
     id: base.id,
     name: base.name,
     label: base.label,
+    description: base.description,
     tables: base.tables.map((t) => ({
       id: t.id,
       name: t.name,
       label: t.label,
+      description: t.description,
       // The base name travels WITH the table: `{base}/{table}` is what addresses it, and
       // a description a caller cannot turn into a URL is half a description.
       base: base.name,
@@ -43,6 +46,7 @@ export function toMeta(base: ProjectedBase): unknown {
       fields: t.fields.map((f) => ({
         name: f.name,
         label: f.label,
+        description: f.description,
         kind: f.kind,
         required: f.required,
         read_only: f.readOnly,

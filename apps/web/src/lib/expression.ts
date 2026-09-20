@@ -31,6 +31,17 @@ export const VALUELESS = new Set(['is_null'])
 /** Operators taking a LIST rather than a scalar. */
 export const LIST_OPERATORS = new Set(['in', 'between'])
 
+/**
+ * A text as a string literal of the grammar.
+ *
+ * The grammar has exactly two escapes, `\"` and `\\`, and a text typed by a person must
+ * go through them: an unescaped quote would end the literal early and turn the rest of
+ * what was typed into filter syntax.
+ */
+export function quoteLiteral(text: string): string {
+  return `"${text.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}
+
 export type TokenKind =
   | 'field'
   | 'operator'

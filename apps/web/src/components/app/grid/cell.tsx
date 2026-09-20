@@ -1,14 +1,8 @@
 'use client'
 
+import { EnumPicker, LinkPicker, type SearchLink } from '@/components/app/pickers'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import type { Field, LinkOption } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 import { Link2 } from 'lucide-react'
@@ -45,6 +39,7 @@ interface CellProps {
   readonly row: Row
   readonly field: Field
   readonly options?: readonly LinkOption[]
+  readonly onSearchLink: SearchLink
   readonly emphasis: boolean
   readonly editing: boolean
   readonly onStartEdit: () => void
@@ -56,6 +51,7 @@ export function Cell({
   row,
   field,
   options,
+  onSearchLink,
   emphasis,
   editing,
   onStartEdit,
@@ -113,35 +109,15 @@ export function Cell({
     }
     return (
       <span className="flex w-full items-center px-1">
-        <Select
-          value={link?.id ?? ''}
-          onValueChange={(next) => void onCommit(next === '' ? null : next)}
-        >
-          <SelectTrigger
-            className={cn(
-              'h-7 border-transparent bg-transparent px-1.5 text-xs shadow-none hover:bg-muted',
-              '[&>svg]:opacity-0 group-hover/row:[&>svg]:opacity-50 data-[state=open]:[&>svg]:opacity-100',
-            )}
-          >
-            <SelectValue placeholder="—">
-              {link?.id == null ? (
-                <span className="text-muted-foreground">—</span>
-              ) : (
-                <Badge variant="secondary" className="gap-1.5 font-normal">
-                  <Link2 className="size-3" />
-                  {link.display ?? link.id.slice(0, 8)}
-                </Badge>
-              )}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                {option.display}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <LinkPicker
+          field={field}
+          value={link?.id ?? null}
+          display={link?.display ?? null}
+          options={options}
+          onSearch={onSearchLink}
+          onChange={(next) => void onCommit(next)}
+          appearance="cell"
+        />
       </span>
     )
   }
@@ -160,36 +136,14 @@ export function Cell({
   }
 
   if (field.kind === 'select' && field.options !== undefined) {
-    const current = typeof value === 'string' ? value : ''
-    const chosen = field.options.find((o) => o.value === current)
     return (
       <span className="flex w-full items-center px-1">
-        <Select value={current} onValueChange={(next) => void onCommit(next)}>
-          <SelectTrigger
-            className={cn(
-              'h-7 border-transparent bg-transparent px-1.5 text-xs shadow-none hover:bg-muted',
-              '[&>svg]:opacity-0 group-hover/row:[&>svg]:opacity-50 data-[state=open]:[&>svg]:opacity-100',
-            )}
-          >
-            <SelectValue placeholder="—">
-              {chosen === undefined ? (
-                <span className="text-muted-foreground">—</span>
-              ) : (
-                <Badge variant="secondary" className="gap-1.5 font-normal">
-                  <span className="size-1.5 rounded-full bg-muted-foreground" />
-                  {chosen.label}
-                </Badge>
-              )}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {field.options.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <EnumPicker
+          field={field}
+          value={typeof value === 'string' && value !== '' ? value : null}
+          onChange={(next) => void onCommit(next)}
+          appearance="cell"
+        />
       </span>
     )
   }

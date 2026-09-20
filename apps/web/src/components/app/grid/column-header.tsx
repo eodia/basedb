@@ -1,5 +1,6 @@
 'use client'
 
+import { hasDescription } from '@/components/app/description'
 import { FieldIcon } from '@/components/app/field-icon'
 import {
   ContextMenu,
@@ -10,6 +11,7 @@ import {
   ContextMenuShortcut,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Field } from '@/lib/api/client'
 import type { SortTerm } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
@@ -83,6 +85,51 @@ export function ColumnHeader({
   const rank = sorts.findIndex((s) => s.field === field.name)
   const term = rank === -1 ? null : sorts[rank]
 
+  const hint = sortable
+    ? 'Trier — Maj+clic pour ajouter au tri en cours'
+    : 'Ce champ n’est pas triable au catalogue.'
+
+  // The same node with or without a description: only a wrapper and a tooltip come and go,
+  // so a column that has none is laid out exactly as before.
+  const label = (
+    // The wrapper, not the button, carries the hover: a disabled button raises no pointer
+    // events, and a column that cannot be sorted would never show its description. It also
+    // holds the native hint of a column WITHOUT a description; a described one shows the
+    // hint inside its tooltip instead, rather than two tooltips at once.
+    <div
+      className="flex min-w-0 flex-1"
+      title={hasDescription(field.description) ? undefined : hint}
+    >
+      <button
+        type="button"
+        onClick={(e) => {
+          if (sortable) onSort(e.shiftKey)
+        }}
+        disabled={!sortable}
+        className="flex min-w-0 flex-1 items-center gap-1.5 text-left disabled:pointer-events-none"
+      >
+        {pinned && <Pin className="size-2.5 shrink-0 text-primary" />}
+        <FieldIcon kind={field.kind} />
+        <span className="truncate text-xs font-medium">{field.label}</span>
+        {term === null ? (
+          sortable && <ArrowUpDown className="ml-auto size-3 shrink-0 text-muted-foreground/25" />
+        ) : (
+          <span className="ml-auto flex shrink-0 items-center gap-0.5">
+            {term.direction === 'asc' ? (
+              <ArrowUp className="size-3 text-primary" />
+            ) : (
+              <ArrowDown className="size-3 text-primary" />
+            )}
+            {/* The rank is shown only when there IS a second term to rank against. */}
+            {sorts.length > 1 && (
+              <span className="text-[9px] font-bold tabular-nums text-primary">{rank + 1}</span>
+            )}
+          </span>
+        )}
+      </button>
+    </div>
+  )
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -115,40 +162,17 @@ export function ColumnHeader({
             <GripVertical className="size-3" />
           </span>
 
-          <button
-            type="button"
-            onClick={(e) => {
-              if (sortable) onSort(e.shiftKey)
-            }}
-            disabled={!sortable}
-            className="flex min-w-0 flex-1 items-center gap-1.5 text-left disabled:cursor-default"
-            title={
-              sortable
-                ? 'Trier — Maj+clic pour ajouter au tri en cours'
-                : 'Ce champ n’est pas triable au catalogue.'
-            }
-          >
-            {pinned && <Pin className="size-2.5 shrink-0 text-primary" />}
-            <FieldIcon kind={field.kind} />
-            <span className="truncate text-xs font-medium">{field.label}</span>
-            {term === null ? (
-              sortable && (
-                <ArrowUpDown className="ml-auto size-3 shrink-0 text-muted-foreground/25" />
-              )
-            ) : (
-              <span className="ml-auto flex shrink-0 items-center gap-0.5">
-                {term.direction === 'asc' ? (
-                  <ArrowUp className="size-3 text-primary" />
-                ) : (
-                  <ArrowDown className="size-3 text-primary" />
-                )}
-                {/* The rank is shown only when there IS a second term to rank against. */}
-                {sorts.length > 1 && (
-                  <span className="text-[9px] font-bold tabular-nums text-primary">{rank + 1}</span>
-                )}
-              </span>
-            )}
-          </button>
+          {hasDescription(field.description) ? (
+            <Tooltip>
+              <TooltipTrigger asChild>{label}</TooltipTrigger>
+              <TooltipContent side="bottom" align="start" className="max-w-xs">
+                <p className="whitespace-pre-line break-words">{field.description}</p>
+                <p className="mt-1.5 text-background/60">{hint}</p>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            label
+          )}
 
           <ResizeHandle onResizeStart={onResizeStart} onResize={onResize} onFit={onFitWidth} />
         </div>

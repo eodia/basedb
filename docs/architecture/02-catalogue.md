@@ -170,6 +170,10 @@ Le bloc n'est pas universel, et sa portée est une décision.
 - `label_key` est la **clé de comparaison de libellé** calculée par l'application (chapitre 01 §2.2), stockée, en `COLLATE "C"`, et porteuse d'un index d'unicité partiel sur les objets vivants. Toute unicité de libellé fondée sur `lower()` côté serveur est interdite.
 - `is_live` et `is_purged` sont des colonnes ordinaires contraintes par `CHECK (is_live = (deleted_at IS NULL))` et `CHECK (is_purged = (purged_at IS NOT NULL))`, mises à jour dans la même instruction que l'horodatage. Ce ne sont pas des colonnes générées : une colonne générée ne peut pas servir de cible à une clé étrangère avec propagation.
 - `definition_state` vaut `pending` ou `active`. Une définition créée au milieu d'un plan à plusieurs étapes reste `pending` — invisible de l'API, du MCP et de la documentation générée — jusqu'à l'étape qui la bascule en `active`. C'est ce qui rend une opération de structure atomique **du point de vue du consommateur** alors qu'elle ne l'est pas du point de vue de PostgreSQL (A11).
+- `description` dit **à quoi sert** l'objet, là où le libellé dit comment il s'appelle. C'est un texte facultatif, **brut** — ni Markdown ni HTML, ce qui permet à chaque consommateur de l'échapper sans rien en perdre (chapitre 08 §7.6) —, normalisé à l'écriture : espaces de tête et de fin retirés, NFC, `CRLF` et `CR` ramenés à `LF`. Une valeur absente ou blanche est stockée `NULL` et rendue `null` : il n'existe pas de chaîne vide, pas plus qu'au chapitre 04 §1.3. La borne est de **1 000 caractères**, comptés en caractères et non en octets ; au-delà, l'écriture est **refusée** par `TEXT_TOO_LONG` (`details = {field: 'description', maximum: 1000}`) et jamais tronquée, car une phrase coupée est pire que le refus qui laisse son auteur la raccourcir. `U+0000` est refusé (`VALUE_INVALID`), tout type JSON autre que la chaîne aussi (`REQUEST_INVALID`).
+- La description se pose **à la création** et se modifie ensuite, sur la portée de l'objet, par tout rôle portant `manage_schema` : c'est une ligne de catalogue comme un libellé, donc **sans migration** (chapitre 06 §1.1). Elle incrémente `base.catalog_version` et émet `NOTIFY basedb_catalog`, puisque la documentation, la spécification OpenAPI et `/meta` la projettent et que leur `ETag` dérive de cette version (chapitre 08 §9.2). **Aucune règle de permission, de nommage, de projection ou de migration ne lit une description** : elle est écrite par des personnes, lue par des personnes et par des agents, et n'est jamais la source d'une décision.
+
+**Qui lit la description.** Quatre consommateurs, tous à partir du catalogue et jamais de `pg_catalog` : la documentation lisible, la spécification OpenAPI et `/meta` (chapitre 08 §9) ; les outils `describe_base` et `describe_table` du serveur MCP (chapitre 09 §4) ; et le `COMMENT ON TABLE` / `COMMENT ON COLUMN` du schéma `b_*`, ce que lit l'humain qui explore la base en `psql`. Le commentaire porte la description ou, à défaut, le libellé (chapitre 04 §1.1) ; il est réécrit **dans la transaction** de toute modification, et `CAT-CMT` en vérifie la conformité. La description d'une base n'a pas de contrepartie physique : elle ne vit qu'au catalogue. Les cinq colonnes système, qui n'ont pas de ligne de catalogue, portent une description fixe, en français, posée par le noyau : sans elle, la documentation expliquerait toutes les colonnes sauf `_id`, la seule dont un champ lien ait besoin. **Une description suit son objet** : elle est visible exactement quand l'objet l'est, et la projection n'en contient jamais que pour ce que le lecteur voit (chapitre 08 §9.3).
 
 ### Le patron miroir, énoncé une fois
 
@@ -192,7 +196,7 @@ PostgreSQL indexe le côté **référencé** d'une clé étrangère, jamais le c
 
 La liste n'est pas tenue à la main : la dérive `CAT-IDX` l'établit mécaniquement et signale toute omission. Les blocs DDL qui suivent omettent ces index, où ils noieraient la structure.
 
-Ces blocs sont **groupés par domaine pour la lecture**, pas par ordre de création : la migration de catalogue `0001` crée toutes les tables, puis toutes les contraintes, puis tous les index. Les quelques références croisées entre domaines — `field_select_config` vers `table_constraint`, `base` vers `migration` — sont donc posées après coup, ce que le DDL signale là où c'est le cas. Convention interne : tables au singulier, `snake_case`, sans préfixe puisque le schéma cloisonne ; `table_def` et non `table`, `app_user` et non `user`, ces deux mots étant réservés par SQL. Toute table et toute colonne porte un `COMMENT ON` destiné aux développeurs ; les commentaires destinés aux consommateurs SQL sont générés dans les schémas `b_*` depuis les colonnes `description`, et leur conformité est vérifiée par la dérive `CAT-CMT`.
+Ces blocs sont **groupés par domaine pour la lecture**, pas par ordre de création : la migration de catalogue `0001` crée toutes les tables, puis toutes les contraintes, puis tous les index. Les quelques références croisées entre domaines — `field_select_config` vers `table_constraint`, `base` vers `migration` — sont donc posées après coup, ce que le DDL signale là où c'est le cas. Convention interne : tables au singulier, `snake_case`, sans préfixe puisque le schéma cloisonne ; `table_def` et non `table`, `app_user` et non `user`, ces deux mots étant réservés par SQL. Toute table et toute colonne porte un `COMMENT ON` destiné aux développeurs ; les commentaires destinés aux consommateurs SQL sont générés dans les schémas `b_*` depuis les colonnes `description` (à défaut, depuis le libellé), et leur conformité est vérifiée par la dérive `CAT-CMT`.
 
 ### États physiques
 
@@ -876,9 +880,15 @@ CREATE TABLE _basedb.select_option (
   field_id   uuid NOT NULL REFERENCES _basedb.field(id) ON DELETE CASCADE,
   value      text COLLATE "C" NOT NULL,   -- valeur stockee dans la colonne PostgreSQL
   label      text NOT NULL,
-  color      text NULL,
+  color      text NULL,                   -- #rrggbb, minuscules
+  icon       text NULL,                   -- nom d'un pictogramme de la bibliotheque de l'interface
+  image      text NULL,                   -- URL https ou data URL, 16 384 caracteres au plus
   position   integer NOT NULL,
-  deleted_at timestamptz NULL
+  deleted_at timestamptz NULL,
+  CONSTRAINT ck_option_color CHECK (color IS NULL OR color ~ '^#[0-9a-f]{6}$'),
+  CONSTRAINT ck_option_icon  CHECK (icon IS NULL OR icon ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  CONSTRAINT ck_option_image CHECK (image IS NULL OR char_length(image) <= 16384),
+  CONSTRAINT ck_option_glyph CHECK (icon IS NULL OR image IS NULL)
 );
 CREATE UNIQUE INDEX uq_option_value_live
   ON _basedb.select_option (field_id, value) WHERE deleted_at IS NULL;
@@ -1780,7 +1790,7 @@ Les classes sont préfixées par leur chapitre d'origine, et une lettre nue ne d
 | `CAT-NAME` | Nom de registre `active`/`relegated`/`alias` sans objet physique, ou objet physique sans nom de registre |
 | `CAT-CK` | Contrainte de liste de choix manquante, divergente des options actives, ou non validée |
 | `CAT-STATE` | État physique non terminal depuis plus de 24 heures, ou index `indisvalid = false` |
-| `CAT-CMT` | `COMMENT ON` physique divergent de la colonne `description` du catalogue |
+| `CAT-CMT` | `COMMENT ON` physique divergent du texte attendu : la colonne `description` du catalogue, à défaut le libellé |
 | `CAT-IDX` | Clé étrangère du catalogue sans index non partiel utilisable côté référençant |
 
 ### Régime d'exécution

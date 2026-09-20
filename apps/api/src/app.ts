@@ -95,7 +95,7 @@ export function createApp(options: AppOptions) {
         if (origins !== undefined) return origins.includes(origin) ? origin : null
         return /^http:\/\/localhost(:\d+)?$/.test(origin) ? origin : null
       },
-      allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowHeaders: ['content-type', 'x-request-id', 'authorization', 'x-basedb-csrf'],
       exposeHeaders: ['x-request-id'],
       // The session cookie travels between two ports of the same site; without this the
@@ -608,6 +608,49 @@ export function createApp(options: AppOptions) {
     return c.json({ data: created.row }, 201)
   })
 
+  // A batch, chapter 08 §3.5 — for now the part a file import needs: `create` operations,
+  // all or nothing. What the spec also describes (`update`, `delete`, `atomic: false`,
+  // `Idempotency-Key`) is refused by name rather than half-honoured: an `update` quietly
+  // ignored would answer as if it had been done.
+  app.post('/api/v1/:tenantRef/data/:base/:table/batch', async (c) => {
+    const body = await c.req.json<{ atomic?: unknown; operations?: unknown }>()
+    if (!Array.isArray(body.operations)) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'operations' } })
+    }
+    if (body.atomic !== undefined && body.atomic !== true) {
+      throw new BasedbError('REQUEST_INVALID', {
+        details: { field: 'atomic', reason: 'seul_atomique_est_pris_en_charge' },
+      })
+    }
+
+    const records: Array<Record<string, unknown>> = []
+    for (const [index, operation] of body.operations.entries()) {
+      const { op, data } = (operation ?? {}) as { op?: unknown; data?: unknown }
+      if (op !== 'create') {
+        throw new BasedbError('REQUEST_INVALID', {
+          details: { field: 'operations', index, reason: 'seul_create_est_pris_en_charge' },
+        })
+      }
+      if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+        throw new BasedbError('REQUEST_INVALID', {
+          details: { field: 'operations', index, reason: 'data_attendu' },
+        })
+      }
+      records.push(data as Record<string, unknown>)
+    }
+
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const created = await options.kernel.createRecords(ctx, { tableId: table.tableId, records })
+
+    // 200, with the shape of §3.5: a caller reads `summary` to know what happened.
+    return c.json({
+      atomic: true,
+      results: created.ids.map((id, index) => ({ index, status: 'created', id })),
+      summary: { created: created.ids.length, updated: 0, deleted: 0, failed: 0 },
+    })
+  })
+
   app.patch('/api/v1/:tenantRef/data/:base/:table/:id', async (c) => {
     const body = await c.req.json<{ actor?: string; values?: Record<string, unknown> }>()
     const ctx = await contextFor(c, await bearer(c))
@@ -663,13 +706,19 @@ export function createApp(options: AppOptions) {
   // ---------------------------------------------------------------------------------
 
   app.post('/api/v1/:tenantRef/admin/bases', async (c) => {
-    const body = await c.req.json<{ label?: string; actor?: string }>()
+    const body = await c.req.json<{ label?: string; description?: string | null; actor?: string }>()
     if (typeof body.label !== 'string' || body.label.trim() === '') {
       throw new BasedbError('LABEL_EMPTY')
     }
     const ctx = await contextFor(c, await bearer(c))
-    const base = await options.kernel.createBase(ctx, { label: body.label })
-    return c.json({ data: { id: base.baseId, name: base.schemaName } }, 201)
+    const base = await options.kernel.createBase(ctx, {
+      label: body.label,
+      description: body.description,
+    })
+    return c.json(
+      { data: { id: base.baseId, name: base.schemaName, description: base.description } },
+      201,
+    )
   })
 
   // ---------------------------------------------------------------------------------
@@ -753,20 +802,33 @@ export function createApp(options: AppOptions) {
     })
   })
 
-  // Renaming a LABEL — chapter 06 §1.1. One catalog row, no DDL, no migration; the
-  // physical schema name does not move, so nothing an SQL consumer wrote breaks.
+  // Renaming a LABEL and/or describing the base — chapter 06 §1.1. One catalog row, no
+  // DDL, no migration; the physical schema name does not move, so nothing an SQL consumer
+  // wrote breaks. Either field may be omitted, but not both: a PATCH that changes nothing
+  // is a mistake worth naming.
   app.patch('/api/v1/:tenantRef/admin/bases/:base', async (c) => {
-    const body = await c.req.json<{ label?: string }>()
-    if (typeof body.label !== 'string' || body.label.trim() === '') {
+    const body = await c.req.json<{ label?: string; description?: string | null }>()
+    if (body.label === undefined && body.description === undefined) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'label, description' } })
+    }
+    if (body.label !== undefined && (typeof body.label !== 'string' || body.label.trim() === '')) {
       throw new BasedbError('LABEL_EMPTY')
     }
     const ctx = await contextFor(c, await bearer(c))
     const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
-    const result = await options.kernel.renameBase(ctx, {
+    const result = await options.kernel.updateBase(ctx, {
       baseId: base.baseId,
       label: body.label,
+      description: body.description,
     })
-    return c.json({ data: { id: base.baseId, name: base.baseName, label: result.label } })
+    return c.json({
+      data: {
+        id: base.baseId,
+        name: base.baseName,
+        label: result.label,
+        description: result.description,
+      },
+    })
   })
 
   // Logical deletion — chapter 06 §4.3. Answers with the migration, not with 204: the
@@ -828,8 +890,14 @@ export function createApp(options: AppOptions) {
   app.post('/api/v1/:tenantRef/admin/bases/:base/tables', async (c) => {
     const body = await c.req.json<{
       label?: string
+      description?: string | null
       actor?: string
-      fields?: ReadonlyArray<{ label: string; kind: string; required?: boolean }>
+      fields?: ReadonlyArray<{
+        label: string
+        kind: string
+        required?: boolean
+        description?: string | null
+      }>
     }>()
     if (typeof body.label !== 'string' || body.label.trim() === '') {
       throw new BasedbError('LABEL_EMPTY')
@@ -842,6 +910,7 @@ export function createApp(options: AppOptions) {
     const table = await options.kernel.createTable(ctx, {
       baseId: base.baseId,
       label: body.label,
+      description: body.description,
       fields: (body.fields ?? []) as never,
     })
     return c.json(
@@ -851,11 +920,13 @@ export function createApp(options: AppOptions) {
           name: table.tableName,
           base: table.schemaName,
           sql: table.qualifiedName,
+          description: table.description,
           fields: table.fields.map((f) => ({
             id: f.fieldId,
             label: f.label,
             name: f.name,
             kind: f.kind,
+            description: f.description,
           })),
         },
       },
@@ -869,6 +940,7 @@ export function createApp(options: AppOptions) {
     const body = await c.req.json<{
       actor?: string
       label?: string
+      description?: string | null
       target?: string
       required?: boolean
       on_delete?: 'restrict' | 'set_null' | 'cascade'
@@ -892,6 +964,7 @@ export function createApp(options: AppOptions) {
       tableId: source.tableId,
       targetTableId: target.tableId,
       label: body.label,
+      description: body.description,
       required: body.required,
       onDelete: body.on_delete,
     })
@@ -902,6 +975,7 @@ export function createApp(options: AppOptions) {
           id: link.fieldId,
           label: link.label,
           name: link.name,
+          description: link.description,
           kind: 'link',
           target: link.targetTableName,
           constraint: link.constraintName,
@@ -919,8 +993,15 @@ export function createApp(options: AppOptions) {
   app.post('/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields', async (c) => {
     const body = await c.req.json<{
       label?: string
+      description?: string | null
       kind?: string
-      options?: Array<{ value: string; label?: string }>
+      options?: Array<{
+        value: string
+        label?: string
+        color?: string | null
+        icon?: string | null
+        image?: string | null
+      }>
     }>()
     const ctx = await contextFor(c, await bearer(c))
 
@@ -935,6 +1016,7 @@ export function createApp(options: AppOptions) {
     const field = await options.kernel.addField(ctx, {
       tableId: table.tableId,
       label: body.label,
+      description: body.description,
       kind: body.kind as never,
       options: body.options,
     })
@@ -945,6 +1027,7 @@ export function createApp(options: AppOptions) {
           id: field.fieldId,
           name: field.name,
           label: field.label,
+          description: field.description,
           kind: field.kind,
           required: false,
         },
@@ -952,6 +1035,86 @@ export function createApp(options: AppOptions) {
       },
       201,
     )
+  })
+
+  // What a table is FOR. Its own route rather than a field of some larger PATCH: the label
+  // of a table is not renamed here yet, and a body that silently ignored `label` would
+  // look like it had worked.
+  app.patch('/api/v1/:tenantRef/admin/bases/:base/tables/:table', async (c) => {
+    const body = await c.req.json<{ description?: string | null }>()
+    if (body.description === undefined) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'description' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const result = await options.kernel.setTableDescription(ctx, {
+      tableId: table.tableId,
+      description: body.description,
+    })
+    return c.json({ data: { name: table.tableName, description: result.description } })
+  })
+
+  // What a field is CALLED and what it is FOR: two catalog writes, no migration. The label
+  // goes first — it is the one that can clash with a sibling — so a refusal leaves the
+  // description as it was.
+  app.patch('/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field', async (c) => {
+    const body = await c.req.json<{ label?: string; description?: string | null }>()
+    if (body.label === undefined && body.description === undefined) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'label, description' } })
+    }
+    if (body.label !== undefined && typeof body.label !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'label' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const field = await options.kernel.resolveField(
+      ctx,
+      c.req.param('base'),
+      c.req.param('table'),
+      c.req.param('field'),
+    )
+    const written: { label?: string; description?: string | null } = {}
+    if (body.label !== undefined) {
+      written.label = (
+        await options.kernel.setFieldLabel(ctx, {
+          fieldId: field.fieldId,
+          label: body.label,
+        })
+      ).label
+    }
+    if (body.description !== undefined) {
+      written.description = (
+        await options.kernel.setFieldDescription(ctx, {
+          fieldId: field.fieldId,
+          description: body.description,
+        })
+      ).description
+    }
+    return c.json({ data: { name: field.name, ...written } })
+  })
+
+  // The choices of a `select`, replaced AS A WHOLE (chapter 04 §3): the list is what a
+  // person edits and what a pasted JSON carries, and a PUT says so. Regenerating the
+  // CHECK is a migration in three steps, hence `meta.sql`.
+  app.put('/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field/options', async (c) => {
+    const body = await c.req.json<{ options?: unknown }>()
+    if (!Array.isArray(body.options)) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'options' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const field = await options.kernel.resolveField(
+      ctx,
+      c.req.param('base'),
+      c.req.param('table'),
+      c.req.param('field'),
+    )
+    const result = await options.kernel.setSelectOptions(ctx, {
+      fieldId: field.fieldId,
+      options: body.options,
+    })
+    return c.json({
+      data: { options: result.options, added: result.added, removed: result.removed },
+      meta: { sql: result.sql },
+    })
   })
 
   // The obligation, in the four steps of §1.3 — which is why it has a route of its own.

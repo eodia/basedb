@@ -7,9 +7,11 @@ import { rawText } from '@/components/app/grid/cell'
 import { DataGrid } from '@/components/app/grid/data-grid'
 import { PaginationBar } from '@/components/app/grid/pagination-bar'
 import { SelectionBar } from '@/components/app/grid/selection-bar'
+import type { SearchLink } from '@/components/app/pickers'
 import { RecordPanel } from '@/components/app/record-panel'
 import { SqlEditor } from '@/components/app/sql-editor'
 import { TabBar } from '@/components/app/tab-bar'
+import { useTableActions } from '@/components/app/table-actions'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -30,6 +32,7 @@ import {
   api,
 } from '@/lib/api/client'
 import { type ExportFormat, copy, download, serialize } from '@/lib/export'
+import { quoteLiteral } from '@/lib/expression'
 import { messageFor } from '@/lib/messages'
 import {
   DEFAULT_PAGE_SIZE,
@@ -51,6 +54,7 @@ import {
   PanelLeft,
   Play,
   Plus,
+  Upload,
   Wand2,
   X,
 } from 'lucide-react'
@@ -92,6 +96,17 @@ function kindOfPgType(dataType: string): string {
   return 'short_text'
 }
 
+/** How many rows of a link's target a picker lists at once. The API's own default page. */
+const LINK_PAGE = 50
+
+/** A row of a link's target as a picker lists it: its identifier and what to call it. */
+function linkOptionOf(row: Record<string, unknown>, display: string | null): LinkOption {
+  return {
+    id: String(row._id),
+    display: display === null ? String(row._id).slice(0, 8) : String(row[display] ?? ''),
+  }
+}
+
 interface Props {
   readonly base: DescribedBase
   readonly tables: readonly Table[]
@@ -109,6 +124,8 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
   const cells = useWorkspace((s) => s.cells)
   const setCells = useWorkspace((s) => s.setCells)
   const copilotOpen = useWorkspace((s) => s.copilotOpen)
+  const reloadTick = useWorkspace((s) => s.reloadTick)
+  const { importInto } = useTableActions()
   const setCopilotOpen = useWorkspace((s) => s.setCopilotOpen)
 
   const [rows, setRows] = useState<readonly Row[]>([])
@@ -124,6 +141,15 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
   const [editorHeight, setEditorHeight] = useState(180)
   const [opened, setOpened] = useState<Row | null>(null)
   const [referenced, setReferenced] = useState<readonly ReferencedBlock[]>([])
+
+  // The panel shows the row as the LAST LOAD returned it, not as it was when the panel
+  // opened: a commit reloads the page, and a snapshot would keep displaying the value that
+  // was just changed — a checkbox that refuses to uncheck. The snapshot only stands in for
+  // a row that has left the page (filtered out, on another page).
+  const openedRow = useMemo(
+    () => (opened === null ? null : (rows.find((r) => r._id === opened._id) ?? opened)),
+    [opened, rows],
+  )
 
   // ── SQL tab ──────────────────────────────────────────────────────────────────
   const [sqlResult, setSqlResult] = useState<SqlResult | null>(null)
@@ -159,6 +185,8 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
         return {
           name: key,
           label: column.name,
+          // A column of a result set is not in the catalog, so there is nothing to describe.
+          description: null,
           kind: kindOfPgType(column.dataType),
           read_only: true,
           system: false,
@@ -273,9 +301,12 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
     [tab, base.name, view.pageSize],
   )
 
+  // `reloadTick` is not read: it moves when rows were written from outside the grid — an
+  // import — and it is what makes the open table fetch them.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   useEffect(() => {
     void load()
-  }, [load])
+  }, [load, reloadTick])
 
   /** The options of every link column — so no cell ever asks anyone to type a UUID. */
   const resolveLinks = useCallback(async () => {
@@ -290,10 +321,7 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
           { base: table.base, name: target },
           display === null ? {} : { sort: display },
         )
-        resolved[field.name] = page.data.map((row) => ({
-          id: String(row._id),
-          display: display === null ? String(row._id).slice(0, 8) : String(row[display] ?? ''),
-        }))
+        resolved[field.name] = page.data.map((row) => linkOptionOf(row, display))
       } catch {
         // A target the reader cannot read has no options: the cell falls back to
         // showing what it has, which is the display value the server resolved.
@@ -305,6 +333,48 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
   useEffect(() => {
     void resolveLinks()
   }, [resolveLinks])
+
+  /**
+   * The rows of a link's target that match a text — what a link picker asks for as it is
+   * typed into.
+   *
+   * The server does the matching whenever it can. The rows loaded above are one page, and
+   * a target longer than that would never offer the rows past it. It can when the target's
+   * display column is text, because `contains` is a text operator and refuses any other
+   * type; for a number, a date or no display column at all, the first rows come back
+   * as they are and the picker narrows them, saying so.
+   */
+  const searchLink = useCallback<SearchLink>(
+    async (field, query) => {
+      const target = field.link?.target
+      if (table === null || target === undefined) {
+        return { options: [], truncated: false, filtered: true }
+      }
+
+      const display = field.link?.target_display_field ?? null
+      const displayKind = base.tables
+        .find((t) => t.name === target)
+        ?.fields.find((f) => f.name === display)?.kind
+      const needle = query.trim()
+      const server =
+        display !== null && needle !== '' && ['short_text', 'long_text'].includes(displayKind ?? '')
+
+      const page = await api.list(
+        { base: table.base, name: target },
+        {
+          ...(display === null ? {} : { sort: display }),
+          ...(server ? { filter: `${display} contains ${quoteLiteral(needle)}` } : {}),
+          limit: LINK_PAGE,
+        },
+      )
+      return {
+        options: page.data.map((row) => linkOptionOf(row, display)),
+        truncated: page.meta.has_next_page,
+        filtered: server || needle === '',
+      }
+    },
+    [table, base],
+  )
 
   // ── Acts ─────────────────────────────────────────────────────────────────────
 
@@ -601,6 +671,7 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
             onShow={(name) => patch({ hidden: view.hidden.filter((h) => h !== name) })}
             onShowAll={() => patch({ hidden: [] })}
             onAdd={() => void create({})}
+            onImport={() => importInto(table)}
           />
         )}
 
@@ -689,6 +760,7 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
             rows={rows}
             view={view}
             linkOptions={linkOptions}
+            onSearchLink={searchLink}
             sortableFields={sortableFields}
             checked={checked}
             cells={cells}
@@ -750,16 +822,17 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
         />
       </div>
 
-      {opened !== null && table !== null && (
+      {openedRow !== null && table !== null && (
         <RecordPanel
           table={table}
-          row={opened}
+          row={openedRow}
           fields={businessFields}
           linkOptions={linkOptions}
+          onSearchLink={searchLink}
           referenced={referenced}
           onClose={() => setOpened(null)}
           onCommit={async (field, value) => {
-            await commit(opened._id, field, value)
+            await commit(openedRow._id, field, value)
           }}
         />
       )}
@@ -848,6 +921,7 @@ function Toolbar({
   onShow,
   onShowAll,
   onAdd,
+  onImport,
 }: {
   readonly table: Table | null
   readonly view: ViewState
@@ -861,6 +935,7 @@ function Toolbar({
   readonly onShow: (name: string) => void
   readonly onShowAll: () => void
   readonly onAdd: () => void
+  readonly onImport: () => void
 }) {
   return (
     <div className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
@@ -936,6 +1011,21 @@ function Toolbar({
       <div className="flex-1" />
 
       {loading && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
+
+      {/* The second way in to the import: the menu of a table in the sidebar is the first,
+          and a feature that only a right-click reaches is one most people never find. */}
+      {editable && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1.5 px-2 text-xs"
+          onClick={onImport}
+          disabled={table === null}
+        >
+          <Upload className="size-3.5" />
+          Importer
+        </Button>
+      )}
 
       {editable && (
         <Button

@@ -1,8 +1,23 @@
 'use client'
 
 import { BaseMenu } from '@/components/app/base-menu'
+import { useTableActions } from '@/components/app/table-actions'
 import { UserMenu } from '@/components/app/user-menu'
 import { Button } from '@/components/ui/button'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Base, DescribedBase, Table } from '@/lib/api/client'
@@ -11,6 +26,8 @@ import { cn } from '@/lib/utils'
 import {
   BookOpen,
   Clock,
+  Ellipsis,
+  FolderOpen,
   Layers,
   type LucideIcon,
   Plus,
@@ -20,6 +37,8 @@ import {
   Shield,
   Table2,
   Terminal,
+  Trash2,
+  Upload,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -136,13 +155,11 @@ export function Sidebar({
           }
         >
           {shown.map((t) => (
-            <Item
+            <TableRow
               key={t.id}
-              icon={Table2}
-              label={t.label}
-              hint={t.name}
+              table={t as Table}
               active={section === 'data' && active?.kind === 'table' && active.table === t.name}
-              onClick={() => {
+              onOpen={() => {
                 onSection('data')
                 openTable(t as Table, t.label)
               }}
@@ -237,6 +254,95 @@ function Group({
       </div>
       <div className="space-y-0.5">{children}</div>
     </div>
+  )
+}
+
+/**
+ * A table in the list, and what can be done to it.
+ *
+ * Right-click opens the menu; a « ⋯ » on hover opens the same three entries for anyone who
+ * looks for them with the left button, and for a touch screen, which has no right-click.
+ * The click itself still opens the table: the menu is an addition to the most frequent
+ * gesture, never a replacement.
+ *
+ * « Supprimer » leads to the same confirmation as the structure screen — the table is
+ * renamed, not destroyed, and the dialog says so — and « Importer » to the assistant that
+ * the grid's toolbar also opens: a verb reachable only from a menu is one nobody finds.
+ */
+function TableRow({
+  table,
+  active,
+  onOpen,
+}: {
+  readonly table: Table
+  readonly active: boolean
+  readonly onOpen: () => void
+}) {
+  const { importInto, deleteTable } = useTableActions()
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div className="group/table relative">
+          <Item
+            icon={Table2}
+            label={table.label}
+            hint={table.name}
+            active={active}
+            onClick={onOpen}
+          />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label={`Actions sur la table ${table.label}`}
+                className="absolute top-1/2 right-1 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/table:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+              >
+                <Ellipsis className="size-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-52">
+              <DropdownMenuItem onSelect={onOpen}>
+                <FolderOpen className="size-4" />
+                Ouvrir
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => importInto(table)}>
+                <Upload className="size-4" />
+                Importer…
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => deleteTable(table)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="size-4" />
+                Supprimer la table
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </ContextMenuTrigger>
+
+      <ContextMenuContent className="w-52">
+        <ContextMenuItem onSelect={onOpen}>
+          <FolderOpen className="size-4" />
+          Ouvrir
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={() => importInto(table)}>
+          <Upload className="size-4" />
+          Importer…
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          onSelect={() => deleteTable(table)}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 className="size-4 text-destructive" />
+          Supprimer la table
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   )
 }
 

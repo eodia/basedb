@@ -10,6 +10,7 @@ import { BasedbError } from '../errors/index.js'
 import { SCOPE_INSTANCE, allocateName } from '../naming/allocation.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
+import { commentText, normalizeDescription } from './description.js'
 
 /**
  * Structure operations — chapter 03.
@@ -30,6 +31,7 @@ export function labelKey(label: string): string {
 
 export interface CreateBaseResult {
   readonly baseId: string
+  readonly description: string | null
   readonly schemaId: string
   /** Assigned physical name, to be returned to the caller (chapter 01 §2.5). */
   readonly schemaName: string
@@ -45,15 +47,23 @@ export interface CreateBaseResult {
 export async function createBase(
   pools: Pools,
   ctx: RequestContext,
-  request: { readonly label: string; readonly technicalName?: string },
+  request: {
+    readonly label: string
+    readonly technicalName?: string
+    readonly description?: string | null
+  },
 ): Promise<CreateBaseResult> {
+  // Validated before the transaction opens: a description that is too long is a refusal,
+  // and there is no reason to allocate a name only to roll it back.
+  const description = normalizeDescription(request.description)
+
   return withTransaction(pools, 'ddl', ctx, async (exec) => {
     const tenant = await resolveTenant(exec, ctx)
 
     const [base] = await exec.query<{ id: string }>(
-      `INSERT INTO _basedb.base (tenant_id, label, label_key, created_by, updated_by)
-       VALUES ($1, $2, $3, $4, $4) RETURNING id`,
-      [tenant.id, request.label, labelKey(request.label), ctx.actor.id],
+      `INSERT INTO _basedb.base (tenant_id, label, label_key, description, created_by, updated_by)
+       VALUES ($1, $2, $3, $4, $5, $5) RETURNING id`,
+      [tenant.id, request.label, labelKey(request.label), description, ctx.actor.id],
       'insert',
     )
 
@@ -75,7 +85,7 @@ export async function createBase(
 
     await exec.query(sqlCreateSchema(name.name), [], 'ddl')
 
-    return { baseId: base.id, schemaId: schema.id, schemaName: name.name }
+    return { baseId: base.id, description, schemaId: schema.id, schemaName: name.name }
   })
 }
 
@@ -84,17 +94,21 @@ export interface FieldRequest {
   readonly kind: FieldKind
   readonly required?: boolean
   readonly technicalName?: string
+  /** What the field is for — shown in the documentation and to agents. Plain text. */
+  readonly description?: string | null
 }
 
 export interface CreatedField {
   readonly fieldId: string
   readonly label: string
+  readonly description: string | null
   readonly name: string
   readonly kind: FieldKind
 }
 
 export interface CreateTableResult {
   readonly tableId: string
+  readonly description: string | null
   readonly tableName: string
   readonly schemaName: string
   readonly fields: readonly CreatedField[]
@@ -116,9 +130,17 @@ export async function createTable(
     readonly baseId: string
     readonly label: string
     readonly technicalName?: string
+    readonly description?: string | null
     readonly fields: readonly FieldRequest[]
   },
 ): Promise<CreateTableResult> {
+  // Every description is checked BEFORE the transaction: the third field's being too long
+  // must not be discovered after the first two have been inserted and named.
+  const tableDescription = normalizeDescription(request.description)
+  const fieldDescriptions = request.fields.map((f, i) =>
+    normalizeDescription(f.description, `fields[${i}].description`),
+  )
+
   return withTransaction(pools, 'ddl', ctx, async (exec) => {
     const schema = await resolveSchema(exec, request.baseId)
 
@@ -137,14 +159,16 @@ export async function createTable(
 
     const [table] = await exec.query<{ id: string }>(
       `INSERT INTO _basedb.table_def
-         (base_id, schema_id, name_id, label, label_key, position, created_by, updated_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $7) RETURNING id`,
+         (base_id, schema_id, name_id, label, label_key, description, position,
+          created_by, updated_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8) RETURNING id`,
       [
         request.baseId,
         schema.id,
         tableName.nameId,
         request.label,
         labelKey(request.label),
+        tableDescription,
         position.n,
         ctx.actor.id,
       ],
@@ -173,7 +197,8 @@ export async function createTable(
     const fields: CreatedField[] = []
     const columns: ColumnSpec[] = []
 
-    for (const field of request.fields) {
+    for (const [index, field] of request.fields.entries()) {
+      const description = fieldDescriptions[index] ?? null
       const fieldName = await allocateName(exec, ctx, {
         label: field.label,
         technicalName: field.technicalName,
@@ -184,9 +209,9 @@ export async function createTable(
 
       const [row] = await exec.query<{ id: string }>(
         `INSERT INTO _basedb.field
-           (table_id, base_id, kind, name_id, label, label_key, is_required, position,
-            created_by, updated_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9) RETURNING id`,
+           (table_id, base_id, kind, name_id, label, label_key, description, is_required,
+            position, created_by, updated_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10) RETURNING id`,
         [
           table.id,
           request.baseId,
@@ -194,6 +219,7 @@ export async function createTable(
           fieldName.nameId,
           field.label,
           labelKey(field.label),
+          description,
           field.required ?? false,
           fields.length + 1,
           ctx.actor.id,
@@ -206,6 +232,7 @@ export async function createTable(
       fields.push({
         fieldId: row.id,
         label: field.label,
+        description,
         name: fieldName.name,
         kind: field.kind,
       })
@@ -215,13 +242,27 @@ export async function createTable(
     await exec.query(sqlCreateTable(schema.name, tableName.name, columns), [], 'ddl')
 
     // Comments make the database readable in psql without opening the product.
-    await exec.query(sqlCommentOnTable(schema.name, tableName.name, request.label), [], 'ddl')
+    await exec.query(
+      sqlCommentOnTable(schema.name, tableName.name, commentText(request.label, tableDescription)),
+      [],
+      'ddl',
+    )
     for (const f of fields) {
-      await exec.query(sqlCommentOnColumn(schema.name, tableName.name, f.name, f.label), [], 'ddl')
+      await exec.query(
+        sqlCommentOnColumn(
+          schema.name,
+          tableName.name,
+          f.name,
+          commentText(f.label, f.description),
+        ),
+        [],
+        'ddl',
+      )
     }
 
     return {
       tableId: table.id,
+      description: tableDescription,
       tableName: tableName.name,
       schemaName: schema.name,
       fields,

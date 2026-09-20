@@ -1,18 +1,14 @@
 'use client'
 
 import { type Row, display } from '@/components/app/data-grid'
+import { hasDescription } from '@/components/app/description'
+import { FieldIcon } from '@/components/app/field-icon'
+import { EnumPicker, LinkPicker, type SearchLink } from '@/components/app/pickers'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import type { Field, LinkOption, ReferencedBlock, Table } from '@/lib/api/client'
@@ -34,6 +30,7 @@ interface Props {
   readonly row: Row
   readonly fields: readonly Field[]
   readonly linkOptions: Readonly<Record<string, readonly LinkOption[]>>
+  readonly onSearchLink: SearchLink
   readonly referenced: readonly ReferencedBlock[]
   readonly onClose: () => void
   readonly onCommit: (field: Field, value: unknown) => Promise<void>
@@ -44,6 +41,7 @@ export function RecordPanel({
   row,
   fields,
   linkOptions,
+  onSearchLink,
   referenced,
   onClose,
   onCommit,
@@ -94,18 +92,37 @@ export function RecordPanel({
 
         <dl className="space-y-3.5 px-5 py-5">
           {fields.map((field) => (
-            <div key={field.name} className="grid grid-cols-[110px_1fr] items-center gap-3">
-              <dt className="truncate text-sm text-muted-foreground" title={field.label}>
-                {field.label}
+            <div
+              key={field.name}
+              className="grid grid-cols-[130px_1fr] items-center gap-x-3 gap-y-1"
+            >
+              <dt
+                className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground"
+                title={field.label}
+              >
+                <FieldIcon kind={field.kind} />
+                <span className="truncate">{field.label}</span>
               </dt>
               <dd className="min-w-0">
                 <PanelField
                   field={field}
                   row={row}
                   options={linkOptions[field.name]}
+                  onSearchLink={onSearchLink}
                   onCommit={(value) => onCommit(field, value)}
                 />
               </dd>
+              {/* What the field is for, under the row and across both columns: the label
+                  column is too narrow to wrap a sentence in. A field with no description
+                  renders nothing here, so its row is the height it always was. */}
+              {hasDescription(field.description) && (
+                <dd
+                  className="col-span-2 line-clamp-3 whitespace-pre-line break-words text-xs leading-snug text-muted-foreground"
+                  title={field.description}
+                >
+                  {field.description}
+                </dd>
+              )}
             </div>
           ))}
         </dl>
@@ -163,11 +180,13 @@ function PanelField({
   field,
   row,
   options,
+  onSearchLink,
   onCommit,
 }: {
   readonly field: Field
   readonly row: Row
   readonly options?: readonly LinkOption[]
+  readonly onSearchLink: SearchLink
   readonly onCommit: (value: unknown) => Promise<void>
 }) {
   const present = Object.hasOwn(row, field.name)
@@ -198,41 +217,26 @@ function PanelField({
       )
     }
     return (
-      <Select
-        value={link?.id ?? ''}
-        onValueChange={(next) => void onCommit(next === '' ? null : next)}
-      >
-        <SelectTrigger>
-          <SelectValue placeholder="—" />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.id} value={option.id}>
-              {option.display}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <LinkPicker
+        field={field}
+        value={link?.id ?? null}
+        display={link?.display ?? null}
+        options={options}
+        onSearch={onSearchLink}
+        onChange={(next) => void onCommit(next)}
+        appearance="form"
+      />
     )
   }
 
   if (field.kind === 'select' && field.options !== undefined) {
     return (
-      <Select
-        value={typeof value === 'string' ? value : ''}
-        onValueChange={(next) => void onCommit(next)}
-      >
-        <SelectTrigger>
-          <SelectValue placeholder="—" />
-        </SelectTrigger>
-        <SelectContent>
-          {field.options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <EnumPicker
+        field={field}
+        value={typeof value === 'string' && value !== '' ? value : null}
+        onChange={(next) => void onCommit(next)}
+        appearance="form"
+      />
     )
   }
 

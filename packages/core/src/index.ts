@@ -39,7 +39,10 @@ import {
 } from './auth/operations.js'
 import { loginWithOidc } from './auth/operations.js'
 import { elevated, listLiveSessions, loadSessionByToken } from './auth/session.js'
+import { DESCRIPTION_MAX_CHARS } from './catalog/description.js'
+import { setFieldDescription, setTableDescription } from './catalog/descriptions.js'
 import { type Documentation, toDocumentation } from './catalog/documentation.js'
+import { setFieldLabel } from './catalog/field-label.js'
 import {
   type AddFieldRequest,
   type AddedField,
@@ -55,6 +58,7 @@ import {
   previewTableDeletion,
   renameBaseLabel,
   restoreBase,
+  updateBase,
 } from './catalog/lifecycle.js'
 import {
   type CreateLinkFieldRequest,
@@ -80,6 +84,11 @@ import {
   resolveField,
   resolveTable,
 } from './catalog/projection.js'
+import {
+  type SelectOptionInput,
+  type SetOptionsResult,
+  setSelectOptions,
+} from './catalog/select-options.js'
 import { type MetaKind, type ServedMeta, serveMeta } from './catalog/serve.js'
 import {
   type Migration,
@@ -89,7 +98,14 @@ import {
   reclaimStaleMigrations,
 } from './ddl/migration.js'
 import { BasedbError } from './errors/index.js'
-import { type CreateRecordOptions, type CreatedRecord, createRecord } from './records/create.js'
+import {
+  type CreateRecordOptions,
+  type CreateRecordsOptions,
+  type CreatedRecord,
+  type CreatedRecords,
+  createRecord,
+  createRecords,
+} from './records/create.js'
 import {
   type InverseLinkBlock,
   type InverseLinks,
@@ -136,6 +152,13 @@ export type {
 } from './catalog/operations.js'
 export type { CreateLinkFieldRequest, CreatedLinkField, OnDelete } from './catalog/links.js'
 export type { AddFieldRequest, AddedField, RequiredResult } from './catalog/fields.js'
+export type { SelectOption, SelectOptionInput, SetOptionsResult } from './catalog/select-options.js'
+export {
+  MAX_IMAGE_CHARS,
+  MAX_LABEL_CHARS,
+  MAX_OPTIONS,
+  MAX_OPTION_CHARS,
+} from './catalog/select-options.js'
 export type { ListOptions, ListResult } from './records/list.js'
 export { COUNT_CEILING } from './records/list.js'
 export type { BaseSummary } from './catalog/lifecycle.js'
@@ -152,6 +175,7 @@ export type {
   StructureDraftRequest,
   UsageKind,
 } from './ai/draft.js'
+export { DESCRIPTION_MAX_CHARS }
 export type { DocSection, Documentation } from './catalog/documentation.js'
 export { toDocumentation } from './catalog/documentation.js'
 export { CACHE_CONTROL, VARY } from './catalog/serve.js'
@@ -168,7 +192,13 @@ export type {
   VisibleBase,
 } from './catalog/projection.js'
 export type { InverseLinkBlock, InverseLinks, ReferencingRow } from './records/inverse-links.js'
-export type { CreateRecordOptions, CreatedRecord } from './records/create.js'
+export type {
+  CreateRecordOptions,
+  CreateRecordsOptions,
+  CreatedRecord,
+  CreatedRecords,
+} from './records/create.js'
+export { BATCH_MAX_OPERATIONS } from './records/create.js'
 export type { DeleteRecordOptions, UpdateRecordOptions, UpdatedRecord } from './records/update.js'
 export type { Action, Decision, Verdict } from './rbac/decide.js'
 export type {
@@ -346,7 +376,7 @@ export interface Kernel {
   }): Promise<RequestContext>
   createBase(
     ctx: RequestContext,
-    request: { label: string; technicalName?: string },
+    request: { label: string; technicalName?: string; description?: string | null },
   ): Promise<CreateBaseResult>
   createTable(
     ctx: RequestContext,
@@ -354,6 +384,7 @@ export interface Kernel {
       baseId: string
       label: string
       technicalName?: string
+      description?: string | null
       fields: readonly FieldRequest[]
     },
   ): Promise<CreateTableResult>
@@ -449,6 +480,46 @@ export interface Kernel {
     request: { baseId: string; label: string },
   ): Promise<{ readonly label: string }>
   /**
+   * Changes a base's label and/or description in one catalog write.
+   *
+   * `undefined` leaves a field as it is; a description is cleared with `null`. Same
+   * register as `renameBase`: no DDL, no migration.
+   */
+  updateBase(
+    ctx: RequestContext,
+    request: { baseId: string; label?: string; description?: string | null },
+  ): Promise<{ readonly label: string; readonly description: string | null }>
+  /**
+   * Sets or clears the description of a table — what it is FOR, for the documentation
+   * and for agents. Rewrites the `COMMENT ON TABLE` in the same transaction.
+   */
+  setTableDescription(
+    ctx: RequestContext,
+    request: { tableId: string; description: string | null },
+  ): Promise<{ readonly description: string | null }>
+  /** Same, for one field — and its `COMMENT ON COLUMN`. */
+  setFieldDescription(
+    ctx: RequestContext,
+    request: { fieldId: string; description: string | null },
+  ): Promise<{ readonly description: string | null }>
+  /**
+   * Renames a field's LABEL — chapter 06 §1.1. The column keeps its physical name: only
+   * what a person reads changes, and the `COMMENT ON COLUMN` with it.
+   */
+  setFieldLabel(
+    ctx: RequestContext,
+    request: { fieldId: string; label: string },
+  ): Promise<{ readonly label: string }>
+  /**
+   * Replaces the options of a `select`, in the given order — chapter 04 §3: the values
+   * already there are updated, the new ones added, the absent ones removed (`OPTION_IN_USE`
+   * while rows still carry them). Regenerates the `CHECK` only when the set of values moves.
+   */
+  setSelectOptions(
+    ctx: RequestContext,
+    request: { fieldId: string; options: readonly SelectOptionInput[] },
+  ): Promise<SetOptionsResult>
+  /**
    * Deletes a base LOGICALLY — chapter 06 §4.3.
    *
    * A multi-step plan, run by the migration state machine: links, then tables ten at a
@@ -518,6 +589,11 @@ export interface Kernel {
     options: { tableId: string; recordId: string },
   ): Promise<InverseLinks>
   createRecord(ctx: RequestContext, options: CreateRecordOptions): Promise<CreatedRecord>
+  /**
+   * Creates many records, ALL OR NOTHING — chapter 08 §3.5 (`atomic: true`). Every refusal
+   * carries `details.index`, the position of the row that caused it.
+   */
+  createRecords(ctx: RequestContext, options: CreateRecordsOptions): Promise<CreatedRecords>
   updateRecord(ctx: RequestContext, options: UpdateRecordOptions): Promise<UpdatedRecord>
   deleteRecord(
     ctx: RequestContext,
@@ -810,6 +886,11 @@ export function startKernel(config: KernelConfig): Kernel {
     resolveField: (ctx, baseRef, tableRef, fieldRef) =>
       resolveField(pools, ctx, baseRef, tableRef, fieldRef),
     renameBase: (ctx, request) => renameBaseLabel(pools, ctx, request),
+    updateBase: (ctx, request) => updateBase(pools, ctx, request),
+    setTableDescription: (ctx, request) => setTableDescription(pools, ctx, request),
+    setFieldDescription: (ctx, request) => setFieldDescription(pools, ctx, request),
+    setFieldLabel: (ctx, request) => setFieldLabel(pools, ctx, request),
+    setSelectOptions: (ctx, request) => setSelectOptions(pools, ctx, request),
     deleteBase: (ctx, request) => deleteBase(pools, ctx, request),
     deleteTable: (ctx, request) => deleteTable(pools, ctx, request),
     previewTableDeletion: (ctx, tableId) => previewTableDeletion(pools, ctx, tableId),
@@ -824,6 +905,7 @@ export function startKernel(config: KernelConfig): Kernel {
     listRecords: (ctx, options) => listRecords(pools, ctx, options),
     listInverseLinks: (ctx, options) => listInverseLinks(pools, ctx, options),
     createRecord: (ctx, options) => createRecord(pools, ctx, options),
+    createRecords: (ctx, options) => createRecords(pools, ctx, options),
     updateRecord: (ctx, options) => updateRecord(pools, ctx, options),
     deleteRecord: (ctx, options) => deleteRecord(pools, ctx, options),
     close: async () => {

@@ -1,27 +1,20 @@
 'use client'
 
+import { ApiDocs } from '@/components/api-reference/api-docs'
+import { NewTableDialog } from '@/components/app/new-table-dialog'
 import { SchemaEditor } from '@/components/app/schema-editor'
+import { TableDialogs } from '@/components/app/table-actions'
 import { type Section, Sidebar } from '@/components/app/sidebar'
 import { Workspace } from '@/components/app/workspace'
 import { Login } from '@/components/login'
-import { Markdown } from '@/components/markdown'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { type Base, type DescribedBase, api } from '@/lib/api/client'
+import { type ApiDocumentation, type Base, type DescribedBase, api } from '@/lib/api/client'
 import { messageFor } from '@/lib/messages'
 import { hydrateWorkspace, useActiveTab, useWorkspace } from '@/lib/store/workspace'
 import { useTheme } from '@/lib/theme'
 import { useTitle } from '@/lib/use-title'
-import { BookOpen, Clock, Database, Layers, Plus, Shield } from 'lucide-react'
+import { Clock, Database, Layers, Plus, Shield } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 /**
@@ -46,11 +39,51 @@ const SECTION_TITLES: Readonly<Record<Section, string | undefined>> = {
   doc: 'Documentation API',
 }
 
-const SAMPLE_FIELDS: ReadonlyArray<{ label: string; kind: string; required?: boolean }> = [
-  { label: 'Numéro', kind: 'short_text', required: true },
-  { label: 'Montant', kind: 'number' },
-  { label: 'Payée', kind: 'boolean' },
-  { label: "Date d'émission", kind: 'date' },
+// The demonstration base describes itself on purpose: its descriptions are what the
+// generated documentation and the agents read, so they show what a well-described base
+// looks like — the purpose, the format, the unit — rather than repeating the label.
+const SAMPLE_BASE_DESCRIPTION =
+  'Base de démonstration : des clients et les factures qui leur sont adressées. ' +
+  'Elle sert à explorer les liens entre tables, la documentation générée et l’API.'
+
+const SAMPLE_CLIENTS_DESCRIPTION =
+  'Les entreprises et organisations à qui l’on facture. Une ligne par client, quel que ' +
+  'soit le nombre de factures qui lui ont été adressées.'
+
+const SAMPLE_INVOICES_DESCRIPTION =
+  'Les factures émises, une ligne par facture. Chaque facture est adressée à un seul client ; ' +
+  'un client peut en avoir plusieurs.'
+
+const SAMPLE_FIELDS: ReadonlyArray<{
+  label: string
+  kind: string
+  required?: boolean
+  description: string
+}> = [
+  {
+    label: 'Numéro',
+    kind: 'short_text',
+    required: true,
+    description:
+      'Référence de la facture telle qu’imprimée sur le document, par exemple F-2026-0042. ' +
+      'Elle identifie la facture quand un autre enregistrement y renvoie.',
+  },
+  {
+    label: 'Montant',
+    kind: 'number',
+    description: 'Montant total de la facture, en euros, taxes comprises.',
+  },
+  {
+    label: 'Payée',
+    kind: 'boolean',
+    description:
+      'Cochée dès que le règlement a été reçu en totalité ; décochée tant que la facture reste due.',
+  },
+  {
+    label: "Date d'émission",
+    kind: 'date',
+    description: 'Jour où la facture a été émise au client, au format AAAA-MM-JJ.',
+  },
 ]
 
 export default function App() {
@@ -67,9 +100,7 @@ export default function App() {
   const [naming, setNaming] = useState(false)
   const [sidebar, setSidebar] = useState(true)
 
-  const [doc, setDoc] = useState<{
-    sections: ReadonlyArray<{ id: string; title: string; markdown: string }>
-  } | null>(null)
+  const [doc, setDoc] = useState<ApiDocumentation | null>(null)
 
   const openTable = useWorkspace((s) => s.openTable)
   const dropBase = useWorkspace((s) => s.dropBase)
@@ -144,17 +175,29 @@ export default function App() {
     void loadBases()
   }, [loadBases])
 
-  /** Rereads the open base — a rename, a restore, a table added. */
+  /**
+   * Rereads the generated documentation without waiting for it.
+   *
+   * It is built from the same catalog as the description of the base, so it goes stale
+   * with it — and a description is the very thing it exists to show, which makes a stale
+   * page the first place someone would notice an edit that "did not take".
+   */
+  const refreshDoc = useCallback((name: string) => {
+    void api.documentation(name).then(setDoc, () => undefined)
+  }, [])
+
+  /** Rereads the open base — a rename, a description, a restore, a table added. */
   const refreshBase = useCallback(async () => {
     setBases(await api.bases().catch(() => bases))
     if (base === null) return
     try {
       setBase(await api.describeBase(base.name))
+      refreshDoc(base.name)
     } catch {
       // The base is no longer visible: fall back to whatever else there is.
       setBase(null)
     }
-  }, [base, bases])
+  }, [base, bases, refreshDoc])
 
   /**
    * A new table IN THE OPEN BASE — which is what the button says, and what it had
@@ -162,16 +205,17 @@ export default function App() {
    * created a whole demonstration base beside the one being read.
    */
   const createTable = useCallback(
-    async (label: string) => {
+    async (label: string, description?: string) => {
       if (base === null) return
       setCreating(true)
       setError(null)
       try {
-        const created = await api.createTableIn(base.name, label)
+        const created = await api.createTableIn(base.name, label, description)
         // The description is read back rather than patched: the catalog decides the
         // table's name, its system columns and the order it appears in.
         const refreshed = await api.describeBase(base.name)
         setBase(refreshed)
+        refreshDoc(base.name)
         const opened = refreshed.tables.find((t) => t.name === created.name)
         if (opened !== undefined) openTable(opened, opened.label)
       } catch (e) {
@@ -180,20 +224,50 @@ export default function App() {
         setCreating(false)
       }
     },
-    [base, openTable],
+    [base, openTable, refreshDoc],
   )
 
   const createSample = useCallback(async () => {
     setCreating(true)
     setError(null)
     try {
-      const created = await api.createBase(`Démo ${new Date().toISOString().slice(11, 19)}`)
-      const clients = await api.createTable(created.name, 'Clients', [
-        { label: 'Raison sociale', kind: 'short_text', required: true },
-        { label: 'Ville', kind: 'short_text' },
-      ])
-      const invoices = await api.createTable(created.name, 'Factures', SAMPLE_FIELDS)
-      await api.createLink({ base: created.name, name: invoices.name }, 'Client', clients.name)
+      const created = await api.createBase(
+        `Démo ${new Date().toISOString().slice(11, 19)}`,
+        SAMPLE_BASE_DESCRIPTION,
+      )
+      const clients = await api.createTable(
+        created.name,
+        'Clients',
+        [
+          {
+            label: 'Raison sociale',
+            kind: 'short_text',
+            required: true,
+            description:
+              'Nom légal du client, tel qu’il figure sur ses factures. C’est aussi ce qui le ' +
+              'désigne quand une facture renvoie vers lui.',
+          },
+          {
+            label: 'Ville',
+            kind: 'short_text',
+            description: 'Ville du siège ou de l’établissement facturé, en texte libre.',
+          },
+        ],
+        SAMPLE_CLIENTS_DESCRIPTION,
+      )
+      const invoices = await api.createTable(
+        created.name,
+        'Factures',
+        SAMPLE_FIELDS,
+        SAMPLE_INVOICES_DESCRIPTION,
+      )
+      await api.createLink(
+        { base: created.name, name: invoices.name },
+        'Client',
+        clients.name,
+        'Client à qui la facture est adressée. Une facture vise un seul client ; ' +
+          'un client peut recevoir plusieurs factures.',
+      )
 
       // Both tables get a display column: without one on `factures`, the inverse links
       // shown on a client would read as truncated UUIDs — correct, and useless.
@@ -308,8 +382,8 @@ export default function App() {
             base={base}
             busy={creating}
             onClose={() => setNaming(false)}
-            onSubmit={async (label) => {
-              await createTable(label)
+            onSubmit={async (label, description) => {
+              await createTable(label, description)
               setNaming(false)
             }}
           />
@@ -331,74 +405,9 @@ export default function App() {
           </div>
         )}
       </div>
+
+      <TableDialogs base={base} onBaseChanged={refreshBase} />
     </TooltipProvider>
-  )
-}
-
-/** Names a table, and nothing more: its first column is added from the structure editor. */
-function NewTableDialog({
-  open,
-  base,
-  busy,
-  onClose,
-  onSubmit,
-}: {
-  readonly open: boolean
-  readonly base: DescribedBase
-  readonly busy: boolean
-  readonly onClose: () => void
-  readonly onSubmit: (label: string) => Promise<void>
-}) {
-  const [label, setLabel] = useState('')
-  const ready = label.trim() !== '' && !busy
-
-  // Reopening the dialog opens an empty one: the name of the table created a minute ago
-  // is not a suggestion for the next.
-  useEffect(() => {
-    if (open) setLabel('')
-  }, [open])
-
-  const submit = () => {
-    if (ready) void onSubmit(label.trim())
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(next) => !next && !busy && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nouvelle table dans {base.label}</DialogTitle>
-          <DialogDescription>
-            Une vraie table PostgreSQL dans le schéma{' '}
-            <span className="font-mono text-xs">{base.name}</span>, avec ses colonnes système et une
-            colonne <span className="font-mono text-xs">Nom</span>. Les autres s’ajoutent depuis la
-            structure.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-1.5">
-          <label htmlFor="table-label" className="text-sm text-muted-foreground">
-            Libellé
-          </label>
-          <Input
-            id="table-label"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && submit()}
-            placeholder="Factures"
-            autoFocus
-          />
-        </div>
-
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
-          </Button>
-          <Button disabled={!ready} onClick={submit}>
-            {busy ? 'Création…' : 'Créer la table'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
 
@@ -455,7 +464,7 @@ function SectionPanel({
 }: {
   readonly section: Section
   readonly base: DescribedBase
-  readonly doc: { sections: ReadonlyArray<{ id: string; title: string; markdown: string }> } | null
+  readonly doc: ApiDocumentation | null
   readonly onBack: () => void
   readonly onToggle: () => void
   readonly onChanged: () => Promise<void>
@@ -499,33 +508,19 @@ function SectionPanel({
         </Button>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto scroll-discret px-6 py-6">
+      {/* The documentation lays out its own columns and scrolls each of them: it gets the whole
+          area, where every other section sits in one padded column that scrolls as a piece. */}
+      <div
+        className={
+          section === 'doc'
+            ? 'flex min-h-0 flex-1 flex-col'
+            : 'min-h-0 flex-1 overflow-y-auto scroll-discret px-6 py-6'
+        }
+      >
         {section === 'structure' ? (
           <SchemaEditor base={base} onChanged={onChanged} />
         ) : section === 'doc' ? (
-          <div className="mx-auto max-w-3xl">
-            <div className="mb-6 flex items-start gap-3 rounded-lg border bg-muted/40 p-4">
-              <BookOpen className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                Engendrée depuis le catalogue et filtrée par vos droits : un autre lecteur en
-                obtient une autre version. Ne la publiez pas telle quelle.{' '}
-                <a
-                  href={api.openApiUrl(base.name)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-medium text-primary underline-offset-4 hover:underline"
-                >
-                  openapi.json
-                </a>
-              </p>
-            </div>
-            {doc?.sections.map((s) => (
-              <section key={s.id} className="mb-8">
-                <h2 className="mb-3 text-lg font-semibold tracking-tight">{s.title}</h2>
-                <Markdown source={s.markdown} />
-              </section>
-            ))}
-          </div>
+          <ApiDocs base={base} doc={doc} />
         ) : (
           <div className="mx-auto max-w-lg pt-16 text-center">
             {(() => {

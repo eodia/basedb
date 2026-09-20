@@ -1,6 +1,18 @@
 'use client'
 
-import { FieldIcon, KIND_LABELS } from '@/components/app/field-icon'
+import {
+  AddDescription,
+  DescriptionEditor,
+  DescriptionField,
+  DescriptionText,
+  hasDescription,
+  isTooLong,
+  useDescriptionEdit,
+} from '@/components/app/description'
+import { FieldIcon, KIND_LABELS, KindLabel } from '@/components/app/field-icon'
+import { NewTableDialog } from '@/components/app/new-table-dialog'
+import { OptionBadge } from '@/components/app/option-badge'
+import { OptionsEditor } from '@/components/app/options-editor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,11 +32,18 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { type DescribedBase, type Field, type Table, api } from '@/lib/api/client'
+import {
+  type DescribedBase,
+  type Field,
+  type FieldOptionInput,
+  type Table,
+  api,
+} from '@/lib/api/client'
 import { messageFor } from '@/lib/messages'
+import { type OptionDraft, draftsOf, emptyDraft, optionsOf } from '@/lib/options'
 import { cn } from '@/lib/utils'
-import { Check, Key, Link2, Plus, Star, Table2, Trash2, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { Check, Key, Link2, Pencil, Plus, Star, Table2, Trash2, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 /**
  * The schema editor — chapter 11 §6.
@@ -37,6 +56,11 @@ import { useCallback, useEffect, useState } from 'react'
  * making it required is a distinct act on a table that may already hold rows. The form
  * says so, and the obligation is a switch on the row rather than a checkbox in the
  * creation dialog.
+ *
+ * Descriptions are the opposite kind of act: a catalog `UPDATE` that touches no data, so
+ * they are edited in place — click the text, type, click away — on the table and on each
+ * field. They are what the generated documentation and the agents read, which is why
+ * this is the screen that asks for them, not an afterthought reached through a menu.
  */
 
 /** The types one can create here. `formula` needs an expression nothing writes yet. */
@@ -60,7 +84,9 @@ export function SchemaEditor({ base, onChanged }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [naming, setNaming] = useState(false)
   const [deleting, setDeleting] = useState<Table | null>(null)
+  const [editing, setEditing] = useState<Field | null>(null)
 
   const table = base.tables.find((t) => t.name === openTable) ?? base.tables[0] ?? null
 
@@ -86,8 +112,8 @@ export function SchemaEditor({ base, onChanged }: Props) {
         <h1 className="text-xl font-semibold tracking-tight">Structure de {base.label}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Ce que vous voyez ici est le catalogue lui-même. Une colonne ajoutée apparaît dans{' '}
-          <span className="font-mono text-xs">psql</span> à la seconde suivante, avec son libellé en
-          commentaire.
+          <span className="font-mono text-xs">psql</span> à la seconde suivante, avec sa description
+          en commentaire — à défaut, son libellé.
         </p>
       </div>
 
@@ -119,13 +145,7 @@ export function SchemaEditor({ base, onChanged }: Props) {
             size="sm"
             className="w-full justify-start text-muted-foreground"
             disabled={busy}
-            onClick={() =>
-              void run(async () => {
-                const label = window.prompt('Libellé de la table')
-                if (label === null || label.trim() === '') return
-                await api.createTableIn(base.name, label)
-              })
-            }
+            onClick={() => setNaming(true)}
           >
             <Plus className="size-4" />
             Nouvelle table
@@ -156,7 +176,16 @@ export function SchemaEditor({ base, onChanged }: Props) {
               </Button>
             </div>
 
-            <div className="overflow-hidden rounded-xl border">
+            {/* Keyed by table: a half-typed description must not follow one to the next. The
+                key is prefixed because the list of fields below is keyed by the same name. */}
+            <TableDescription
+              key={`description:${table.name}`}
+              table={table}
+              busy={busy}
+              onChanged={onChanged}
+            />
+
+            <div key={table.name} className="overflow-hidden rounded-xl border">
               {table.fields.map((field, index) => (
                 <FieldRow
                   key={field.name}
@@ -168,6 +197,13 @@ export function SchemaEditor({ base, onChanged }: Props) {
                     void run(() => api.setFieldRequired(table, field.name, required))
                   }
                   onDisplay={() => void run(() => api.setDisplayColumn(table, field.name))}
+                  onEdit={() => setEditing(field)}
+                  onDescription={async (next) => {
+                    // Not through `run`: it locks the whole screen, and rewriting a sentence
+                    // is no reason to. The editor shows its own refusal, in place.
+                    await api.setFieldDescription(table, field.name, next)
+                    await onChanged()
+                  }}
                 />
               ))}
             </div>
@@ -189,17 +225,25 @@ export function SchemaEditor({ base, onChanged }: Props) {
               onSubmit={async (field) => {
                 await run(async () => {
                   if (field.kind === 'link') {
-                    await api.createLink(table, field.label, field.target ?? '')
+                    await api.createLink(table, field.label, field.target ?? '', field.description)
                   } else {
                     await api.addField(table, {
                       label: field.label,
                       kind: field.kind,
+                      description: field.description,
                       options: field.options,
                     })
                   }
                 })
                 setAdding(false)
               }}
+            />
+
+            <EditFieldDialog
+              field={editing}
+              table={table}
+              onClose={() => setEditing(null)}
+              onSaved={onChanged}
             />
 
             <DeleteTableDialog
@@ -216,6 +260,74 @@ export function SchemaEditor({ base, onChanged }: Props) {
           </div>
         )}
       </div>
+
+      <NewTableDialog
+        open={naming}
+        base={base}
+        busy={busy}
+        onClose={() => setNaming(false)}
+        onSubmit={async (label, description) => {
+          await run(async () => {
+            const created = await api.createTableIn(base.name, label, description)
+            // Land on the table just made: it is what was asked for, and its description
+            // is one click away instead of behind a search for the right table.
+            setOpenTable(created.name)
+          })
+          setNaming(false)
+        }}
+      />
+    </div>
+  )
+}
+
+/**
+ * The description of the open table, above its fields — the same in-place editing as on a
+ * field row, at the size of a paragraph because it is read as one.
+ *
+ * Empty, it shows the invitation in full and not on hover: there is exactly one per
+ * screen, and it is the description that gives every field below it its context.
+ */
+function TableDescription({
+  table,
+  busy,
+  onChanged,
+}: {
+  readonly table: Table
+  readonly busy: boolean
+  readonly onChanged: () => Promise<void>
+}) {
+  const subject = `la table ${table.label}`
+  const edit = useDescriptionEdit(table.description, async (next) => {
+    await api.setTableDescription(table, next)
+    await onChanged()
+  })
+
+  return (
+    <div className="mb-4">
+      {edit.editing ? (
+        <DescriptionEditor
+          edit={edit}
+          subject={subject}
+          size="md"
+          placeholder="À quoi sert cette table ? Visible dans la documentation et par les agents."
+        />
+      ) : hasDescription(table.description) ? (
+        <DescriptionText
+          text={table.description}
+          subject={subject}
+          size="md"
+          lines={3}
+          onEdit={edit.begin}
+          disabled={busy}
+        />
+      ) : (
+        <AddDescription
+          onClick={edit.begin}
+          subject={subject}
+          disabled={busy}
+          className="text-sm"
+        />
+      )}
     </div>
   )
 }
@@ -233,7 +345,7 @@ export function SchemaEditor({ base, onChanged }: Props) {
  * renamed and remains readable in direct SQL. People hesitate over the right decision
  * for the wrong reason when "supprimer" is left to mean "détruire".
  */
-function DeleteTableDialog({
+export function DeleteTableDialog({
   table,
   onClose,
   onDeleted,
@@ -379,6 +491,8 @@ function FieldRow({
   busy,
   onRequired,
   onDisplay,
+  onEdit,
+  onDescription,
 }: {
   readonly field: Field
   readonly table: Table
@@ -386,11 +500,19 @@ function FieldRow({
   readonly busy: boolean
   readonly onRequired: (required: boolean) => void
   readonly onDisplay: () => void
+  readonly onEdit: () => void
+  readonly onDescription: (next: string | null) => Promise<void>
 }) {
   const isDisplay = table.display_field === field.name
 
+  // A system column carries a description of the server's own, shown and never edited.
+  const editable = field.system !== true
+  const subject = `le champ ${field.label}`
+  const edit = useDescriptionEdit(field.description, onDescription)
+  const described = hasDescription(field.description)
+
   return (
-    <div className={cn('flex items-center gap-3 px-3 py-2.5', !first && 'border-t')}>
+    <div className={cn('group/row flex items-center gap-3 px-3 py-2.5', !first && 'border-t')}>
       <FieldIcon kind={field.kind} className="size-4" />
 
       <div className="min-w-0 flex-1">
@@ -408,7 +530,57 @@ function FieldRow({
             </Badge>
           )}
         </div>
-        <span className="truncate font-mono text-xs text-muted-foreground">{field.name}</span>
+
+        <div className="flex items-center gap-2">
+          <span className="truncate font-mono text-xs text-muted-foreground">{field.name}</span>
+          {/* The invitation shares the line the technical name already occupies and shows
+              on hover or focus: a table of twenty fields does not want twenty of them, and
+              a row that grows when the pointer arrives is worse than either. */}
+          {editable && !described && !edit.editing && (
+            <AddDescription
+              onClick={edit.begin}
+              subject={subject}
+              disabled={busy}
+              className="opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+            />
+          )}
+        </div>
+
+        {edit.editing ? (
+          <div className="mt-1.5">
+            <DescriptionEditor
+              edit={edit}
+              subject={subject}
+              placeholder="Que contient ce champ ? Sens, format, unité… Visible dans la documentation et par les agents."
+            />
+          </div>
+        ) : (
+          described && (
+            <div className="mt-1">
+              <DescriptionText
+                text={field.description}
+                subject={subject}
+                onEdit={editable ? edit.begin : undefined}
+                disabled={busy}
+              />
+            </div>
+          )
+        )}
+
+        {/* The choices as they will look, so the colours picked in the editor are seen where
+            the field is read — and a list nobody dressed stays as quiet as it was. */}
+        {field.kind === 'select' && (field.options?.length ?? 0) > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {field.options?.slice(0, 8).map((o) => (
+              <OptionBadge key={o.value} option={o} />
+            ))}
+            {(field.options?.length ?? 0) > 8 && (
+              <span className="self-center text-xs text-muted-foreground">
+                +{(field.options?.length ?? 0) - 8}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <span className="w-32 shrink-0 text-sm text-muted-foreground">
@@ -453,6 +625,29 @@ function FieldRow({
         </Tooltip>
       )}
 
+      {/* A system column is the server's own: nothing here to edit, and no button that would
+          only ever be disabled. The slot is kept so the columns of the list stay aligned. */}
+      {editable ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              disabled={busy}
+              onClick={onEdit}
+              aria-label={`Modifier le champ ${field.label}`}
+            >
+              <Pencil className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Modifier le libellé{field.kind === 'select' ? ' et les choix' : ''}
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <span className="size-8 shrink-0" />
+      )}
+
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -473,11 +668,158 @@ function FieldRow({
   )
 }
 
+/**
+ * Editing a field: what it is called and, for a list of choices, the choices.
+ *
+ * The label is renamed in the catalog and never in the column, so this is safe on a table of
+ * any size and for any script written against the column. The type is shown and not offered:
+ * changing it is a copy of the whole column (chapter 03), a different act from this one, and
+ * a dialog that pretended otherwise would be worse than one that says so.
+ *
+ * The list is sent whole. Which values were added, re-dressed or removed is the server's to
+ * work out — and its to refuse: dropping a choice that rows still carry comes back as
+ * `OPTION_IN_USE` with the count, and the dialog stays open on the list as it was typed.
+ */
+function EditFieldDialog({
+  field,
+  table,
+  onClose,
+  onSaved,
+}: {
+  readonly field: Field | null
+  readonly table: Table
+  readonly onClose: () => void
+  readonly onSaved: () => Promise<void>
+}) {
+  const [label, setLabel] = useState('')
+  const [drafts, setDrafts] = useState<OptionDraft[]>([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Opening the dialog opens the field as it is NOW: nothing typed for another field, or
+  // before a refusal, is carried over.
+  useEffect(() => {
+    if (field === null) return
+    setLabel(field.label)
+    setDrafts(draftsOf(field.options))
+    setError(null)
+  }, [field])
+
+  const isSelect = field?.kind === 'select'
+  const known = useMemo(() => new Set((field?.options ?? []).map((o) => o.value)), [field])
+  const original = useMemo(() => JSON.stringify(optionsOf(draftsOf(field?.options))), [field])
+
+  const next = optionsOf(drafts)
+  const optionsChanged = isSelect && JSON.stringify(next) !== original
+  const labelChanged = field !== null && label.trim() !== field.label
+  const ready =
+    field !== null &&
+    label.trim() !== '' &&
+    (!isSelect || next.length > 0) &&
+    (labelChanged || optionsChanged) &&
+    !busy
+
+  const save = async () => {
+    if (field === null || !ready) return
+    setBusy(true)
+    setError(null)
+    try {
+      // Each step refreshes the screen: a rename that went through must show even when
+      // the choices that follow are refused.
+      if (labelChanged) {
+        await api.setFieldLabel(table, field.name, label.trim())
+        await onSaved()
+      }
+      if (optionsChanged) {
+        await api.setFieldOptions(table, field.name, next)
+        await onSaved()
+      }
+      onClose()
+    } catch (e) {
+      setError(messageFor(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog open={field !== null} onOpenChange={(open) => !open && !busy && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Modifier {field?.label}</DialogTitle>
+          <DialogDescription>
+            Le libellé change dans le catalogue, pas dans la colonne :{' '}
+            <span className="font-mono text-xs">{field?.name}</span> reste le nom que voit{' '}
+            <span className="font-mono text-xs">psql</span>.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="edit-field-label" className="text-sm text-muted-foreground">
+              Libellé
+            </label>
+            <Input
+              id="edit-field-label"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void save()}
+              disabled={busy}
+              autoFocus
+            />
+          </div>
+
+          <p className="text-sm text-muted-foreground">
+            Type :{' '}
+            <span className="font-medium text-foreground">
+              {field === null ? '' : (KIND_LABELS[field.kind] ?? field.kind)}
+            </span>{' '}
+            — un type ne se change pas depuis cet écran.
+          </p>
+
+          {isSelect && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Choix</p>
+              <OptionsEditor value={drafts} onChange={setDrafts} known={known} disabled={busy} />
+              <p className="text-xs text-muted-foreground">
+                La liste est une contrainte <span className="font-mono">CHECK</span> : ajouter ou
+                retirer un choix la régénère, sans bloquer les écritures. Retirer un choix que des
+                lignes portent encore est refusé, avec leur nombre. La couleur, le pictogramme et
+                l’image ne concernent que l’écran : la colonne ne les connaît pas.
+              </p>
+            </div>
+          )}
+
+          {error !== null && (
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-sm text-destructive"
+            >
+              {error}
+            </p>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            Annuler
+          </Button>
+          <Button disabled={!ready} onClick={() => void save()}>
+            {busy ? 'Enregistrement…' : 'Enregistrer'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 interface Draft {
   readonly label: string
   readonly kind: string
+  /** Absent, not empty, when the box was left blank. */
+  readonly description?: string
   readonly target?: string
-  readonly options?: ReadonlyArray<{ value: string; label?: string }>
+  readonly options?: readonly FieldOptionInput[]
 }
 
 function AddFieldDialog({
@@ -496,23 +838,36 @@ function AddFieldDialog({
   const [label, setLabel] = useState('')
   const [kind, setKind] = useState<string>('short_text')
   const [target, setTarget] = useState('')
-  const [options, setOptions] = useState('')
+  const [choices, setChoices] = useState<OptionDraft[]>(() => [emptyDraft()])
+  const [description, setDescription] = useState('')
 
   const targets = base.tables.filter((t) => t.name !== table.name)
-  const parsed = options
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line !== '')
-    .map((line) => ({ value: line }))
+  const parsed = optionsOf(choices)
 
   const ready =
     label.trim() !== '' &&
     (kind !== 'link' || target !== '') &&
-    (kind !== 'select' || parsed.length > 0)
+    (kind !== 'select' || parsed.length > 0) &&
+    !isTooLong(description)
+
+  const submit = () => {
+    if (!ready) return
+    void onSubmit({
+      label,
+      kind,
+      description: description.trim() === '' ? undefined : description.trim(),
+      target: kind === 'link' ? target : undefined,
+      options: kind === 'select' ? parsed : undefined,
+    })
+    setLabel('')
+    setChoices([emptyDraft()])
+    setTarget('')
+    setDescription('')
+  }
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Nouveau champ dans {table.label}</DialogTitle>
           <DialogDescription>
@@ -546,10 +901,14 @@ function AddFieldDialog({
               <SelectContent>
                 {CREATABLE.map((k) => (
                   <SelectItem key={k} value={k}>
-                    {KIND_LABELS[k]}
+                    <KindLabel kind={k} />
                   </SelectItem>
                 ))}
-                {targets.length > 0 && <SelectItem value="link">Lien</SelectItem>}
+                {targets.length > 0 && (
+                  <SelectItem value="link">
+                    <KindLabel kind="link" />
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -579,44 +938,30 @@ function AddFieldDialog({
           )}
 
           {kind === 'select' && (
-            <div className="space-y-1.5">
-              <label htmlFor="field-options" className="text-sm text-muted-foreground">
-                Choix, un par ligne
-              </label>
-              <textarea
-                id="field-options"
-                value={options}
-                onChange={(e) => setOptions(e.target.value)}
-                rows={4}
-                placeholder={'actif\na_contacter\ninactif'}
-                className="flex w-full rounded-md border bg-transparent px-3 py-2 font-mono text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25"
-              />
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Choix</p>
+              <OptionsEditor value={choices} onChange={setChoices} />
               <p className="text-xs text-muted-foreground">
                 La liste devient une contrainte <span className="font-mono">CHECK</span> : une
                 valeur hors liste est refusée par PostgreSQL, pas seulement par l’écran.
               </p>
             </div>
           )}
+
+          <DescriptionField
+            id="field-description"
+            value={description}
+            onChange={setDescription}
+            onSubmit={submit}
+            placeholder="Que contient ce champ ? Sens, format, unité… Visible dans la documentation et par les agents."
+          />
         </div>
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
             Annuler
           </Button>
-          <Button
-            disabled={!ready}
-            onClick={() => {
-              void onSubmit({
-                label,
-                kind,
-                target: kind === 'link' ? target : undefined,
-                options: kind === 'select' ? parsed : undefined,
-              })
-              setLabel('')
-              setOptions('')
-              setTarget('')
-            }}
-          >
+          <Button disabled={!ready} onClick={submit}>
             Créer
           </Button>
         </DialogFooter>

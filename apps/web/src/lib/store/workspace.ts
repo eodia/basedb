@@ -93,6 +93,11 @@ interface WorkspaceState {
   /** Cells selected in the active tab, keyed `rowId:fieldName`. Never persisted. */
   readonly cells: ReadonlySet<string>
   readonly copilotOpen: boolean
+  /**
+   * Moves when rows were written from OUTSIDE the grid — an import — so an open table
+   * reloads instead of showing what it held before. Never persisted.
+   */
+  readonly reloadTick: number
 
   openTable: (table: Table, label: string) => string
   openSql: (base: string, table: string | null, label: string) => string
@@ -111,6 +116,10 @@ interface WorkspaceState {
   setCopilotOpen: (open: boolean) => void
   /** Drops every tab of a base — called when that base is deleted or renamed away. */
   dropBase: (base: string) => void
+  /** Drops the tabs of one table — called when it is deleted: they would only fail to load. */
+  dropTable: (base: string, table: string) => void
+  /** Asks the open table to reload its rows. */
+  reload: () => void
 }
 
 const STORAGE_KEY = 'basedb.workspace.v1'
@@ -160,6 +169,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   checked: new Set<string>(),
   cells: new Set<string>(),
   copilotOpen: false,
+  reloadTick: 0,
 
   openTable: (table, label) => {
     // Opening a table already open ACTIVATES it rather than duplicating it: two tabs on
@@ -292,6 +302,16 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
     set({ tabs: next, activeId: nextActive, checked: new Set(), cells: new Set() })
     persist(next, nextActive)
   },
+
+  dropTable: (base, table) => {
+    const { tabs, activeId } = get()
+    const next = tabs.filter((t) => !(t.base === base && t.table === table))
+    const nextActive = next.some((t) => t.id === activeId) ? activeId : (next[0]?.id ?? null)
+    set({ tabs: next, activeId: nextActive, checked: new Set(), cells: new Set() })
+    persist(next, nextActive)
+  },
+
+  reload: () => set((s) => ({ reloadTick: s.reloadTick + 1 })),
 }))
 
 /**

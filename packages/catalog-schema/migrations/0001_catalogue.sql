@@ -977,9 +977,15 @@ CREATE TABLE _basedb.select_option (
   field_id   uuid NOT NULL REFERENCES _basedb.field(id) ON DELETE CASCADE,
   value      text COLLATE "C" NOT NULL,   -- valeur stockee dans la colonne PostgreSQL
   label      text NOT NULL,
-  color      text NULL,
+  color      text NULL,                   -- #rrggbb, minuscules
+  icon       text NULL,                   -- nom d'un pictogramme de la bibliotheque de l'interface
+  image      text NULL,                   -- URL https ou data URL, 16 384 caracteres au plus
   position   integer NOT NULL,
-  deleted_at timestamptz NULL
+  deleted_at timestamptz NULL,
+  CONSTRAINT ck_option_color CHECK (color IS NULL OR color ~ '^#[0-9a-f]{6}$'),
+  CONSTRAINT ck_option_icon  CHECK (icon IS NULL OR icon ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  CONSTRAINT ck_option_image CHECK (image IS NULL OR char_length(image) <= 16384),
+  CONSTRAINT ck_option_glyph CHECK (icon IS NULL OR image IS NULL)
 );
 
 CREATE UNIQUE INDEX uq_option_value_live

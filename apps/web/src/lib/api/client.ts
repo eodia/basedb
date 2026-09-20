@@ -178,13 +178,49 @@ export interface Base {
   readonly id: string
   readonly name: string
   readonly label: string
+  /**
+   * What this base is FOR, in the author's words — plain text, `null` when never written.
+   *
+   * The same sentence feeds the generated documentation and the agents reading the
+   * catalog, which is why the screens that design a base, a table or a field ask for it.
+   */
+  readonly description: string | null
   readonly table_count: number
+}
+
+/**
+ * One choice of a `select`, and how it looks.
+ *
+ * The look — a colour of any hue, and either a pictogram or a picture — belongs to the
+ * catalog alone: the column stores the `value`, and nothing about how it is dressed. The
+ * keys are always there and `null` when unset.
+ */
+export interface FieldOption {
+  readonly value: string
+  readonly label: string
+  /** `#rrggbb`. */
+  readonly color: string | null
+  /** The name of a pictogram of the interface's library, in kebab case. */
+  readonly icon: string | null
+  /** An `https` URL or a `data:image/…` URL. Exclusive with `icon`. */
+  readonly image: string | null
+}
+
+/** What the API takes for a choice: only `value` is required, keys are sent when set. */
+export interface FieldOptionInput {
+  readonly value: string
+  readonly label?: string
+  readonly color?: string | null
+  readonly icon?: string | null
+  readonly image?: string | null
 }
 
 export interface Field {
   readonly id?: string
   readonly label: string
   readonly name: string
+  /** Plain text, `null` when never written. System columns carry a fixed one. */
+  readonly description: string | null
   /** The type comes from the CATALOG: converting an input is never guessed. */
   readonly kind: string
   readonly required?: boolean
@@ -199,7 +235,7 @@ export interface Field {
   readonly operators?: readonly string[]
   readonly sortable?: boolean
   /** The choices of a `select`, which the database itself holds the column to. */
-  readonly options?: ReadonlyArray<{ value: string; label: string }>
+  readonly options?: readonly FieldOption[]
   readonly link?: {
     readonly target?: string
     readonly target_display_field?: string | null
@@ -218,6 +254,7 @@ export interface TableRef {
 export interface Table extends TableRef {
   readonly id: string
   readonly label: string
+  readonly description: string | null
   readonly sql: string
   readonly actions: readonly string[]
   readonly referenced_by: boolean
@@ -230,7 +267,36 @@ export interface DescribedBase {
   readonly id: string
   readonly name: string
   readonly label: string
+  readonly description: string | null
   readonly tables: readonly Table[]
+}
+
+/**
+ * The longest description the API accepts, in characters.
+ *
+ * The server is the judge (`TEXT_TOO_LONG`); this copy only lets a form warn BEFORE the
+ * round trip, and a drift between the two costs one refusal, never a corrupted value.
+ */
+export const DESCRIPTION_MAX = 1000
+
+/**
+ * One page of the readable documentation — what the viewer lists in its navigation.
+ *
+ * `title` is ESCAPED, like the Markdown: it comes from a label somebody typed, and the
+ * generator neutralizes it for viewers that interpret HTML. The viewer undoes that with
+ * `unescapeText` before showing it.
+ */
+export interface DocSection {
+  readonly id: string
+  readonly title: string
+  /** The navigation group, in order of first appearance. */
+  readonly group: string
+  readonly markdown: string
+}
+
+export interface ApiDocumentation {
+  readonly title: string
+  readonly sections: readonly DocSection[]
 }
 
 export interface Page {
@@ -421,30 +487,47 @@ export const api = {
 
   /** The readable documentation of the same projection — third serialization (§9.4). */
   documentation: (base: string) =>
-    data<{
-      title: string
-      sections: ReadonlyArray<{ id: string; title: string; markdown: string }>
-    }>(`${v1()}/meta/bases/${encodeURIComponent(base)}/doc`),
+    data<ApiDocumentation>(`${v1()}/meta/bases/${encodeURIComponent(base)}/doc`),
 
-  /** The OpenAPI 3.1 serialization. Returned whole — it is a contract, not a view. */
-  openApiUrl: (base: string) =>
-    `${BASE}${v1()}/meta/bases/${encodeURIComponent(base)}/openapi.json`,
+  /**
+   * The OpenAPI 3.1 serialization. Returned whole — it is a contract, not a view.
+   *
+   * Fetched rather than linked: the route wants the Bearer token, which lives in memory,
+   * so a link opened in a new tab would only ever meet a 401.
+   */
+  openApi: (base: string) =>
+    call<Record<string, unknown>>(`${v1()}/meta/bases/${encodeURIComponent(base)}/openapi.json`),
 
-  createBase: (label: string) =>
-    data<{ id: string; name: string }>(`${v1()}/admin/bases`, {
+  // Every `description` below is optional and travels only when given: `JSON.stringify`
+  // drops an `undefined`, and the server reads a missing one as "none".
+  createBase: (label: string, description?: string) =>
+    data<{ id: string; name: string; description: string | null }>(`${v1()}/admin/bases`, {
       method: 'POST',
-      body: JSON.stringify({ label }),
+      body: JSON.stringify({ label, description }),
     }),
 
   createTable: (
     base: string,
     label: string,
-    fields: ReadonlyArray<{ label: string; kind: string; required?: boolean }>,
+    fields: ReadonlyArray<{
+      label: string
+      kind: string
+      required?: boolean
+      description?: string
+    }>,
+    description?: string,
   ) =>
-    data<{ id: string; name: string; base: string; sql: string; fields: readonly Field[] }>(
-      `${v1()}/admin/bases/${base}/tables`,
-      { method: 'POST', body: JSON.stringify({ label, fields }) },
-    ),
+    data<{
+      id: string
+      name: string
+      base: string
+      sql: string
+      description: string | null
+      fields: readonly Field[]
+    }>(`${v1()}/admin/bases/${base}/tables`, {
+      method: 'POST',
+      body: JSON.stringify({ label, description, fields }),
+    }),
 
   /**
    * Adds a column to an existing table.
@@ -457,12 +540,42 @@ export const api = {
     field: {
       label: string
       kind: string
-      options?: ReadonlyArray<{ value: string; label?: string }>
+      description?: string
+      options?: readonly FieldOptionInput[]
     },
   ) =>
-    data<{ id: string; name: string; label: string; kind: string }>(
+    data<{ id: string; name: string; label: string; kind: string; description: string | null }>(
       `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields`,
       { method: 'POST', body: JSON.stringify(field) },
+    ),
+
+  /** Rewrites a field's description. `null` — or an empty text — clears it. */
+  setFieldDescription: (table: TableRef, field: string, description: string | null) =>
+    data<{ name: string; description: string | null }>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}`,
+      { method: 'PATCH', body: JSON.stringify({ description }) },
+    ),
+
+  /**
+   * Renames a field: its LABEL. The column keeps its physical name, so a script written
+   * against it in SQL keeps working.
+   */
+  setFieldLabel: (table: TableRef, field: string, label: string) =>
+    data<{ name: string; label: string }>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}`,
+      { method: 'PATCH', body: JSON.stringify({ label }) },
+    ),
+
+  /**
+   * Replaces the choices of a `select`, as a whole and in order.
+   *
+   * Values already there are re-dressed, new ones added, absent ones removed — refused
+   * with `OPTION_IN_USE` while rows still carry them.
+   */
+  setFieldOptions: (table: TableRef, field: string, options: readonly FieldOptionInput[]) =>
+    data<{ options: readonly FieldOption[]; added: readonly string[]; removed: readonly string[] }>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}/options`,
+      { method: 'PUT', body: JSON.stringify({ options }) },
     ),
 
   setFieldRequired: (table: TableRef, field: string, required: boolean) =>
@@ -471,16 +584,30 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ required }) },
     ),
 
-  createTableIn: (base: string, label: string) =>
-    data<{ id: string; name: string }>(`${v1()}/admin/bases/${base}/tables`, {
-      method: 'POST',
-      body: JSON.stringify({ label, fields: [{ label: 'Nom', kind: 'short_text' }] }),
-    }),
+  createTableIn: (base: string, label: string, description?: string) =>
+    data<{ id: string; name: string; description: string | null }>(
+      `${v1()}/admin/bases/${base}/tables`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          label,
+          description,
+          fields: [{ label: 'Nom', kind: 'short_text' }],
+        }),
+      },
+    ),
 
-  createLink: (table: TableRef, label: string, target: string) =>
+  /** Rewrites a table's description. `null` — or an empty text — clears it. */
+  setTableDescription: (table: TableRef, description: string | null) =>
+    data<{ name: string; description: string | null }>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}`,
+      { method: 'PATCH', body: JSON.stringify({ description }) },
+    ),
+
+  createLink: (table: TableRef, label: string, target: string, description?: string) =>
     data<Field & { target: string }>(
       `${v1()}/admin/bases/${table.base}/tables/${table.name}/links`,
-      { method: 'POST', body: JSON.stringify({ label, target }) },
+      { method: 'POST', body: JSON.stringify({ label, target, description }) },
     ),
 
   /** Designates the column read instead of the identifier in link cells. */
@@ -503,11 +630,16 @@ export const api = {
     return call<Page>(`${path(table)}?${q}`)
   },
 
-  /** Renames a base's LABEL. Not a migration: the schema keeps its name (ch. 06 §1.1). */
-  renameBase: (base: string, label: string) =>
-    data<{ id: string; name: string; label: string }>(
+  /**
+   * Changes a base's LABEL and/or its description — what is absent stays as it was.
+   *
+   * Not a migration: the schema keeps its name (ch. 06 §1.1). An ABSENT description is
+   * left alone and a `null` one clears it — callers must not conflate the two.
+   */
+  updateBase: (base: string, patch: { label?: string; description?: string | null }) =>
+    data<{ id: string; name: string; label: string; description: string | null }>(
       `${v1()}/admin/bases/${encodeURIComponent(base)}`,
-      { method: 'PATCH', body: JSON.stringify({ label }) },
+      { method: 'PATCH', body: JSON.stringify(patch) },
     ),
 
   /** Deletes a base logically. Returns the migration, which may have failed on a step. */
@@ -553,6 +685,22 @@ export const api = {
     data<Record<string, unknown>>(path(table), {
       method: 'POST',
       body: JSON.stringify({ values }),
+    }),
+
+  /**
+   * Creates rows in ONE all-or-nothing batch — chapter 08 §3.5, at most 1 000 per call.
+   *
+   * A refusal names the row: `ApiError.details.index` is its position in `rows`. The
+   * response is not wrapped in `data`, unlike every other route: that is the shape §3.5 gives.
+   */
+  createRecords: (table: TableRef, rows: ReadonlyArray<Record<string, unknown>>) =>
+    call<{
+      readonly atomic: true
+      readonly results: ReadonlyArray<{ index: number; status: string; id: string }>
+      readonly summary: { readonly created: number }
+    }>(`${path(table)}/batch`, {
+      method: 'POST',
+      body: JSON.stringify({ operations: rows.map((data) => ({ op: 'create', data })) }),
     }),
 
   updateRecord: (table: TableRef, recordId: string, values: Record<string, unknown>) =>

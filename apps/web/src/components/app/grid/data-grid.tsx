@@ -3,6 +3,7 @@
 import { Cell, ROW_HEIGHT, type Row, isTextual, rawText } from '@/components/app/grid/cell'
 import { ColumnHeader } from '@/components/app/grid/column-header'
 import { cellKey, useCellSelection } from '@/components/app/grid/use-selection'
+import { EnumPicker, LinkPicker, type SearchLink } from '@/components/app/pickers'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -13,13 +14,6 @@ import {
   ContextMenuShortcut,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import type { Field, LinkOption } from '@/lib/api/client'
 import { copy as copyText } from '@/lib/export'
 import {
@@ -64,6 +58,7 @@ interface Props {
   readonly rows: readonly Row[]
   readonly view: ViewState
   readonly linkOptions: Readonly<Record<string, readonly LinkOption[]>>
+  readonly onSearchLink: SearchLink
   /** Names the catalog declares sortable. Everything else has no sort affordance. */
   readonly sortableFields: ReadonlySet<string>
   readonly checked: ReadonlySet<string>
@@ -91,6 +86,7 @@ export function DataGrid({
   rows,
   view,
   linkOptions,
+  onSearchLink,
   sortableFields,
   checked,
   cells,
@@ -501,6 +497,7 @@ export function DataGrid({
                             row={row}
                             field={field}
                             options={linkOptions[field.name]}
+                            onSearchLink={onSearchLink}
                             emphasis={columnIndex === 0}
                             editing={isEditing}
                             onStartEdit={() =>
@@ -593,6 +590,7 @@ export function DataGrid({
                 <DraftCell
                   field={field}
                   options={linkOptions[field.name]}
+                  onSearchLink={onSearchLink}
                   value={draft[field.name] ?? ''}
                   placeholder={index === 0 ? 'Ajouter un enregistrement' : field.label}
                   onChange={(value) => setDraft({ ...draft, [field.name]: value })}
@@ -631,6 +629,7 @@ export function DataGrid({
 function DraftCell({
   field,
   options,
+  onSearchLink,
   value,
   placeholder,
   onChange,
@@ -638,26 +637,25 @@ function DraftCell({
 }: {
   readonly field: Field
   readonly options?: readonly LinkOption[]
+  readonly onSearchLink: SearchLink
   readonly value: string
   readonly placeholder: string
   readonly onChange: (value: string) => void
   readonly onSubmit: () => void
 }) {
+  // The draft holds text only, and `''` means "not filled in": a cleared picker is that.
   if (field.kind === 'link' && options !== undefined) {
     return (
       <span className="flex w-full items-center px-1">
-        <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className="h-7 border-transparent bg-transparent px-1.5 text-xs text-muted-foreground shadow-none hover:bg-muted">
-            <SelectValue placeholder={field.label} />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                {option.display}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <LinkPicker
+          field={field}
+          value={value === '' ? null : value}
+          options={options}
+          onSearch={onSearchLink}
+          onChange={(next) => onChange(next ?? '')}
+          appearance="cell"
+          placeholder={field.label}
+        />
       </span>
     )
   }
@@ -665,18 +663,13 @@ function DraftCell({
   if (field.kind === 'select' && field.options !== undefined) {
     return (
       <span className="flex w-full items-center px-1">
-        <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className="h-7 border-transparent bg-transparent px-1.5 text-xs text-muted-foreground shadow-none hover:bg-muted">
-            <SelectValue placeholder={field.label} />
-          </SelectTrigger>
-          <SelectContent>
-            {field.options.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <EnumPicker
+          field={field}
+          value={value === '' ? null : value}
+          onChange={(next) => onChange(next ?? '')}
+          appearance="cell"
+          placeholder={field.label}
+        />
       </span>
     )
   }
