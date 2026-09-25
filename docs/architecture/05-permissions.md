@@ -149,7 +149,7 @@ Raison d'être : le cadrage prévoit un texte long « HTML riche assaini côté 
 | `delete` | **Autorisé**, s'il figure explicitement dans le rôle. L'interdire pousserait les intégrateurs vers un compte utilisateur partagé, qui est pire. |
 | Portée | `api_token.tenant_id` obligatoire ; `api_token.base_id` facultatif — s'il est renseigné, toute cible hors de cette base est `INVISIBLE`. |
 | Surfaces | `api_token.allowed_surfaces`, sous-ensemble non vide de `{rest, mcp}` (§1.2). |
-| Expiration | `expires_at` **obligatoire** par le catalogue, au maximum un an après la création, comparée à l'horloge du serveur. Au-delà, refus `TOKEN_EXPIRY_REQUIRED`. |
+| Expiration | *Décision révisée* : `expires_at` est **nul par défaut** — le jeton vit jusqu'à sa révocation. Une durée donnée à la création va de 1 à 365 jours, sinon refus `TOKEN_EXPIRY_REQUIRED` ; l'échéance posée est comparée à l'horloge du serveur à chaque décision. Ce qui borne un jeton sans échéance est ailleurs : une seule base, jamais `delete` ni `manage_*`, inerte dès que son créateur est désactivé, dernière utilisation affichée, révocable à tout moment. |
 | Secret | Seule l'empreinte `token_hash` est stockée. La valeur en clair n'est affichée qu'une fois, à la création ; `token_prefix` sert à l'identifier ensuite. La comparaison d'empreinte est faite en temps constant. |
 
 ---
@@ -208,7 +208,7 @@ Certaines combinaisons ne sont pas résolues à la décision : elles sont **inte
 |---|---|
 | `create`, `update` ou `delete` accordé sans `read` à une portée couvrante | `PERMISSION_INCONSISTENT` |
 | Rôle porté par un jeton contenant `manage_schema`, `manage_permissions` ou `manage_tokens` | `TOKEN_PRIVILEGE_REFUSED` |
-| `api_token` sans `expires_at`, ou au-delà d'un an | `TOKEN_EXPIRY_REQUIRED` |
+| `api_token` créé avec une durée hors de 1 à 365 jours | `TOKEN_EXPIRY_REQUIRED` |
 | `field_permission` sur un champ d'une table hors de la portée du rôle | `PERMISSION_OUT_OF_SCOPE` |
 | Accorder plus que ce qu'on détient — `permission`, `role_member`, `api_token.role_id`, `webhook.role_id` | `PRIVILEGE_ESCALATION` |
 | Webhook dont le rôle n'a pas un masque de lecture **complet** sur une table abonnée | `WEBHOOK_MASK_INCOMPLETE` |
@@ -500,7 +500,8 @@ Quatre cas, assumés et documentés plutôt que dissimulés.
 
 | Opération | Exigence |
 |---|---|
-| Créer une base | `manage_schema` @ tenant |
+| Créer ou supprimer un projet (vide) | `manage_schema` @ tenant (§15.1) |
+| Créer une base | `manage_schema` @ projet (§15.1) |
 | Créer une table, une application, une vue enregistrée | `manage_schema` @ base |
 | Créer ou modifier un champ, désigner la colonne d'affichage | `manage_schema` @ table |
 | Créer un champ lien, choisir `restrict` ou `set_null` | `manage_schema` @ source **et** @ cible |
@@ -511,7 +512,7 @@ Quatre cas, assumés et documentés plutôt que dissimulés.
 | **Purger** | opération réservée. Les conditions temporelles et l'ordonnancement sont fixés par « 06 — Cycle de vie » ; ce chapitre ne statue que sur le droit requis |
 | Approuver une migration proposée | `manage_schema` @ base, session élevée, **et jeton de confirmation** délivré depuis `ui` ou `rest` (§2.2). L'auto-approbation est permise : l'objet du double temps est la relecture humaine, pas la séparation des tâches |
 | Gérer les jetons ; créer ou modifier un webhook | `manage_tokens` @ portée, élévation, non-escalade sur le rôle porté, plus les règles de §4.4 |
-| Gérer les utilisateurs du tenant, les rôles, les permissions | `manage_permissions` @ tenant (utilisateurs) ou @ portée visée, élévation, règle de non-escalade |
+| Gérer les utilisateurs du tenant, les rôles, les permissions | `manage_permissions` @ tenant (utilisateurs) ou @ portée visée, élévation, règle de non-escalade ; en pratique, les membres du groupe « Administrateurs » (§15.2) |
 | **Consulter** utilisateurs, rôles, membres, lignes `permission` et `field_permission`, et l'écran de masque effectif de §3.3 | `manage_permissions` @ portée examinée |
 | **Consulter** jetons et webhooks — métadonnées, portée, préfixe, jamais le secret | `manage_tokens` @ portée |
 | **Consulter** `audit_log` et l'historique brut | opération réservée : `is_instance_admin` ou `tenant_admin`, filtré par tenant, la consultation étant elle-même journalisée |
@@ -641,14 +642,90 @@ Conformément à A2 et A23, ces codes sont en anglais, en majuscules ASCII, insc
 | `PERMISSION_OUT_OF_SCOPE` | règle de champ hors de la portée du rôle | 422 |
 | `PRIVILEGE_ESCALATION` | accorder plus que ce qu'on détient ; rôle de jeton ou de webhook hors des capacités du créateur ; ajout à un rôle système | 403 |
 | `TOKEN_PRIVILEGE_REFUSED` | rôle de jeton portant `manage_schema`, `manage_permissions` ou `manage_tokens` | 422 |
-| `TOKEN_EXPIRY_REQUIRED` | `api_token.expires_at` absente ou au-delà d'un an | 422 |
+| `TOKEN_EXPIRY_REQUIRED` | Durée de vie d'un jeton donnée hors de 1 à 365 jours (l'absence de durée vaut « sans échéance ») | 422 |
 | `WEBHOOK_MASK_INCOMPLETE` | rôle de webhook sans masque de lecture complet sur une table abonnée | 422 |
 | `MASK_REDUCED_MID_READ` | droits réduits pendant une lecture longue | 409 |
 | `LAST_TENANT_ADMIN` | retrait du dernier membre d'un `tenant_admin` | 409 |
+| `EMAIL_TAKEN` | création d'un compte à une adresse déjà portée dans le tenant (§15.5) | 409 |
+| `GROUP_SYSTEM_IMMUTABLE` | renommage ou suppression d'un groupe système, retrait d'un membre de « Tous les utilisateurs », niveau posé sur « Administrateurs » (§15.2) | 409 |
 | `TENANT_ISOLATION_VIOLATED` | requête visant le schéma d'un autre tenant | incident, 500 générique |
 | `INTERNAL_ERROR` | `SQLSTATE` non cartographié | 500 |
 
-Repris tels quels, définis ailleurs : `LINK_CROSS_DATABASE` (chapitre 01) ; `TABLE_REFERENCED`, `DISPLAY_FIELD_IN_USE`, `LAST_INSTANCE_ADMIN` (chapitre 02) ; `TOKEN_EXPIRED`, `TOKEN_REVOKED` (chapitre 08 ; leur emploi est fixé en §7.1) ; `LINK_TARGET_NOT_FOUND`, `LINK_ORPHAN_VALUES`, `ROW_REFERENCED`, `DUPLICATE_VALUE`, `VALIDATION_FAILED` (registre unique, A23).
+Repris tels quels, définis ailleurs : `LINK_CROSS_DATABASE` (chapitre 01) ; `TABLE_REFERENCED`, `DISPLAY_FIELD_IN_USE`, `LAST_INSTANCE_ADMIN`, `PROJECT_NOT_EMPTY` (chapitre 02) ; `ADMIN_REQUIRED` (chapitre 06) ; `TOKEN_EXPIRED`, `TOKEN_REVOKED` (chapitre 08 ; leur emploi est fixé en §7.1) ; `LINK_TARGET_NOT_FOUND`, `LINK_ORPHAN_VALUES`, `ROW_REFERENCED`, `DUPLICATE_VALUE`, `VALIDATION_FAILED` (registre unique, A23).
+
+---
+
+## 15. Projets, groupes et niveaux d'accès
+
+Le modèle des sections précédentes — sept verbes, rôles additifs, portées emboîtées — reste le seul qui décide. Cette section fixe la façon dont il est **présenté et administré** : au-dessus de la base, une portée *projet* ; des *groupes* de personnes auxquels on accorde des droits ; quatre *niveaux* qui regroupent les verbes. Le parti pris est celui des permissions de données de Metabase : on accorde à un groupe un niveau sur un nœud de l'arborescence, et ce niveau descend.
+
+### 15.1 Le projet, portée au-dessus de la base
+
+L'arborescence devient **tenant ⊃ projet ⊃ base ⊃ table**. Le projet est une ligne de `_basedb.project` sans existence physique (chapitre 02) : il ne nomme aucun schéma, et une base garde son schéma quel que soit le projet qui la porte. Il est l'unité de navigation de l'interface — on choisit un projet, on y crée des bases, et dans chaque base des tables — et une portée de permission : `permission.scope_kind = 'project'`, avec `scope_project_id`.
+
+Le décideur n'a qu'un cas de plus. À l'étape de correspondance de portée, une permission de portée projet s'applique à toute cible dont le `projectId` est ce projet : le projet lui-même, chacune de ses bases, chacune de leurs tables. Aucun autre chemin de décision n'est ajouté ; `decide` reste le point d'application unique (§6).
+
+| Opération | Exigence |
+|---|---|
+| Créer un projet | `manage_schema` @ tenant |
+| Renommer un projet, changer sa description | `manage_schema` @ projet |
+| Supprimer un projet | `manage_schema` @ tenant, projet **vide** (`PROJECT_NOT_EMPTY` sinon) |
+| Créer une base dans un projet | `manage_schema` @ projet |
+| Créer une table dans une base | `manage_schema` @ base (ou au-dessus) |
+
+**Un projet ne se supprime que vide.** Ses bases sont de vrais schémas portant de vraies lignes ; chacune se supprime par son propre plan (chapitre 06), jamais emportée par un regroupement qui n'a pas d'existence physique. Les lignes `permission` qui visent le projet disparaissent avec lui : une portée que plus personne ne peut atteindre survivrait sinon comme un fantôme dans l'écran des permissions. Une base supprimée dont le projet a disparu entre-temps est restaurée dans le premier projet du tenant.
+
+**Visibilité.** Un projet apparaît à qui détient un droit sur lui (accordé sur lui ou sur le tenant) ou voit au moins une de ses bases ; une base apparaît à qui lit une de ses tables ou détient `read` sur elle. Un projet que personne n'a ouvert et où rien n'est visible est **absent**, pas vide — la règle de §7, un niveau plus haut. Corollaire : un refus sur une base ou un projet que l'acteur voit à travers une table lisible répond `ADMIN_REQUIRED`, pas `RESOURCE_NOT_FOUND` — l'objet existe pour lui, le taire serait mentir sans rien protéger.
+
+L'amorçage crée un projet « Projet principal » ; une base créée sans projet désigné (route antérieure aux projets) y est rangée.
+
+### 15.2 Groupes
+
+Un **groupe** est un rôle (`role.kind = 'group'`) dont les membres sont des personnes (`role_member`). Les droits s'accordent aux groupes, jamais à une personne : pour ouvrir un accès à une personne, on la place dans un groupe qui l'a. Deux groupes existent dans chaque tenant et ne peuvent être ni renommés ni supprimés (`GROUP_SYSTEM_IMMUTABLE`) :
+
+- **« Administrateurs »** (`tenant_admin`) porte les sept verbes sur le tenant. Ses membres voient tous les projets, et ce sont eux qui administrent comptes, groupes, permissions et projets. Il n'apparaît dans la grille qu'en lecture seule : un administrateur sans droits serait une contradiction que l'écran ne sait pas exprimer. Le retrait ou la désactivation de son dernier membre actif est refusé (`LAST_TENANT_ADMIN`, §12).
+- **« Tous les utilisateurs »** (`all_users`) contient chaque compte du tenant, d'office ; son appartenance ne se modifie pas. **Il ne reçoit rien par défaut** : les droits étant additifs (§3.3), ce qui lui est accordé, personne ne peut en être privé. Pour réserver un accès, on l'accorde à un groupe dédié.
+
+### 15.3 Les quatre niveaux
+
+| Niveau | Verbes | Ce que l'on peut faire |
+|---|---|---|
+| Aucun accès | — | rien : le nœud est invisible (§7) |
+| Lecture | `read` | lire les lignes |
+| Édition | `read`, `create`, `update`, `delete` | créer, modifier, supprimer des lignes |
+| Gestion | Édition + `manage_schema`, `manage_tokens` | changer la structure, créer des jetons d'intégration |
+
+Un niveau n'est pas une notion du catalogue : il est écrit comme autant de lignes `permission` que de verbes, et relu comme **le plus haut niveau dont tous les verbes sont présents**. `manage_permissions` n'entre dans aucun niveau : administrer les droits reste l'affaire du groupe « Administrateurs ». Tout niveau non nul contient `read` — c'est ce qui rend visibles les objets sur lesquels on agit ; une ligne `manage_schema` sans `read`, qu'on ne pourrait poser qu'à la main, ne montre rien.
+
+### 15.4 Héritage et « Granulaire »
+
+Un niveau posé sur un nœud vaut pour tout ce qui est dessous, **y compris ce qui sera créé plus tard** : « Lecture » sur un projet lit la table ajoutée demain dans une de ses bases. Poser un niveau sur un nœud suit trois règles, dans l'ordre :
+
+1. **Explosion.** Si un ancêtre accorde plus que le niveau choisi, son octroi est redescendu sur chacun de ses enfants, pour que le nœud visé puisse être abaissé seul.
+2. **Affectation.** Le nœud reçoit le niveau ; ses descendants perdent leurs octrois propres — un niveau choisi sur une base est celui de chacune de ses tables.
+3. **Élagage.** Un octroi qui n'accorde pas plus que ce que donnent déjà ses ancêtres est supprimé comme redondant.
+
+La grille montre pour chaque nœud le niveau effectif du groupe, marqué **hérité** lorsqu'il vient d'un ancêtre, et **Granulaire** lorsque les enfants du nœud n'ont pas tous ce qu'il a lui-même. Conséquence assumée, identique à Metabase : après une explosion, une table créée dans la base « granulaire » n'hérite de rien, puisque chaque table y a été réglée pour elle-même.
+
+Chaque changement s'applique immédiatement, dans une transaction qui réécrit les lignes `permission` du groupe sur le projet concerné, écrit une entrée `audit_log` (`permission.set`) et fait avancer `tenant.authz_version` : toute décision en cache tombe (§11). Il n'y a pas de brouillon à enregistrer — et donc pas de brouillon oublié.
+
+### 15.5 Comptes utilisateurs
+
+Un administrateur crée un compte avec une adresse (unique dans le tenant sans égard à la casse, `EMAIL_TAKEN`), un nom affiché et ses groupes. basedb n'envoyant pas de courrier en v1, le compte reçoit un **mot de passe temporaire** tiré dans un alphabet sans caractères ambigus, montré une seule fois à l'administrateur qui le transmet, et `app_user.must_change_password = true` : l'interface n'ouvre rien d'autre tant que la personne n'a pas choisi le sien (« 13 — Authentification »). La réinitialisation suit le même chemin et ferme les sessions ouvertes. C'est le parcours de Metabase, sans l'invitation par courrier.
+
+Un compte se **désactive**, il ne se supprime pas : ses sessions et ses jetons cessent immédiatement, ses écritures restent signées de son nom, et il peut être réactivé. Un administrateur ne peut pas désactiver son propre compte (`ACTION_FORBIDDEN`).
+
+### 15.6 Élévation et non-divulgation
+
+- **Toute écriture d'administration** — compte, groupe, appartenance, niveau — exige une session élevée depuis moins de cinq minutes (§2.2) et répond `ELEVATION_REQUIRED` sinon. L'interface demande alors le mot de passe et rejoue l'action : on n'est pas prévenu à l'avance, on est interrompu au moment où c'est nécessaire, une fois par tranche de cinq minutes.
+- **Les listes de comptes, de groupes et la grille** ne sont lisibles que par les administrateurs. À tout autre acteur, ces routes répondent `RESOURCE_NOT_FOUND` (§8) : la liste nominative des comptes n'est pas une chose qu'un non-administrateur apprend exister.
+- Un **contexte système** (`actor.kind = 'system'`, §6.4) détient tous les verbes dans son tenant : les tâches de fond n'ont pas de groupe.
+
+### 15.7 Ce que ce modèle ne fait pas
+
+- Pas de niveau « bloqué » ni de filtrage de lignes par groupe (le « sandboxing » de Metabase) : `predicat_lignes` reste constamment vrai en v1 (§6), et l'union des rôles interdit tout `deny`.
+- Pas de permissions de champ dans la grille : `field_permission` reste réglée par les écrans de §3, la grille ne connaît que les tables et au-dessus.
+- Pas de délégation : un membre de groupe ne peut pas accorder à un autre ce qu'il a ; seul le groupe « Administrateurs » administre.
 
 ---
 
@@ -686,6 +763,11 @@ Repris tels quels, définis ailleurs : `LINK_CROSS_DATABASE` (chapitre 01) ; `TA
 | Codes d'erreur en anglais, registre unique `_basedb.error_code` (A2, A23) | Un registre bilingue diverge dès le chapitre suivant | Codes machine en français |
 | Les vues enregistrées existent en v1 et suivent le régime de leur table ; pas de vue SQL | Une présentation n'a pas de droits propres ; une vue SQL exposerait des colonnes non gouvernables par `field_permission` | Sortir `view_def` du périmètre v1, ou lui donner ses permissions |
 | Délai avant purge renvoyé à « 06 — Cycle de vie », rétentions à `retention_policy` | Une valeur fixée à deux endroits diverge | Imposer les durées ici |
+| Portée *projet* au-dessus de la base, sans existence physique (§15.1) | Naviguer et accorder par regroupement sans renommer aucun schéma | Base de bases, ou schéma par projet |
+| Droits accordés à des groupes, quatre niveaux fermés écrits comme des lignes `permission` (§15.3) | L'administrateur raisonne en « qui peut lire ou modifier quoi », le décideur continue de raisonner en verbes | Nouvelle table de niveaux, ou grille verbe par verbe |
+| « Granulaire » par explosion de l'octroi parent, comme Metabase (§15.4) | Abaisser un seul enfant sans introduire de `deny` | Refus explicite sur l'enfant |
+| Mot de passe temporaire montré une fois et changement obligatoire (§15.5) | Aucun courrier en v1, et l'administrateur ne doit pas connaître un mot de passe en usage | Mot de passe choisi par l'administrateur |
+| Changements de la grille appliqués immédiatement, sous élévation (§15.4, §15.6) | Un brouillon non enregistré est un droit que l'on croit posé | Brouillon à valider |
 
 ---
 

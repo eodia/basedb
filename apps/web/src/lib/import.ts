@@ -393,6 +393,7 @@ export const IMPORTABLE_KINDS: ReadonlySet<string> = new Set([
   'date',
   'datetime',
   'select',
+  'multi_select',
 ])
 
 export const isImportable = (field: Field) =>
@@ -455,6 +456,22 @@ export function convert(
       return found === undefined
         ? fail('valeur absente de la liste')
         : { ok: true, value: found.value }
+    }
+
+    // Several choices in one cell, as a spreadsheet writes them: `urgent, client` or
+    // `urgent; client`. Each is found as a single choice is — by value or by label.
+    case 'multi_select': {
+      const values: string[] = []
+      for (const part of String(cell).split(/[;,\n]/)) {
+        const wanted = fold(part)
+        if (wanted === '') continue
+        const found = (options ?? []).find(
+          (o) => fold(o.value) === wanted || fold(o.label) === wanted,
+        )
+        if (found === undefined) return fail(`« ${part.trim()} » absent de la liste`)
+        if (!values.includes(found.value)) values.push(found.value)
+      }
+      return { ok: true, value: values.length === 0 ? null : values }
     }
 
     default:

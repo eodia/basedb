@@ -33,6 +33,21 @@ function freePort() {
   })
 }
 
+/**
+ * A port asked for by name, when it is free — else any free port.
+ *
+ * The MCP entry point prefers a FIXED port: an MCP client's configuration names it, and
+ * a port that changed at every launch would mean editing that configuration each time.
+ */
+function preferredPort(port) {
+  return new Promise((resolve) => {
+    const s = createServer()
+    s.unref()
+    s.once('error', () => resolve(freePort()))
+    s.listen(port, () => s.close(() => resolve(port)))
+  })
+}
+
 function require_(condition, message) {
   if (!condition) {
     console.error(`${red('✗')} ${message}`)
@@ -53,6 +68,9 @@ const CONTAINER = 'basedb-local'
 const pgPort = await freePort()
 const apiPort = await freePort()
 const webPort = await freePort()
+// The MCP entry point is optional: compiled, it starts; otherwise the stack runs without.
+const withMcp = existsSync(`${ROOT}apps/mcp/dist/server.js`)
+const mcpPort = withMcp ? await preferredPort(8788) : null
 
 console.log(`\n${bold('basedb')} ${grey('— local stack')}\n`)
 
@@ -135,6 +153,9 @@ api.stdout.on('data', (chunk) => {
     announced = true
     console.log(`\n  ${green('✓')} API            ${cyan(`http://localhost:${apiPort}`)}`)
     console.log(`  ${green('✓')} Interface      ${cyan(`http://localhost:${webPort}`)}`)
+    if (mcpPort !== null) {
+      console.log(`  ${green('✓')} MCP            ${cyan(`http://localhost:${mcpPort}/mcp`)}`)
+    }
     console.log(`\n  ${bold('Connexion')}   ${cyan(found[1])}   ${cyan(DEV_PASSWORD)}`)
     console.log(grey(`\n  psql "${DATABASE_URL}"`))
     console.log(grey('  Ctrl+C stops everything, container included.\n'))
@@ -164,19 +185,36 @@ const web = start(
   'web',
   'node',
   ['node_modules/next/dist/bin/next', 'dev', '--port', String(webPort)],
-  { BASEDB_API: `http://localhost:${apiPort}` },
+  {
+    BASEDB_API: `http://localhost:${apiPort}`,
+    ...(mcpPort === null ? {} : { BASEDB_MCP: `http://localhost:${mcpPort}/mcp` }),
+  },
   `${ROOT}apps/web`,
 )
+
+// The MCP entry point: its own process on the same database, as chapter 10 wants
+// (`apps/api` and `apps/mcp` never reference each other). It applies nothing — the API
+// owns the catalog — and opens no connection before its first request, so it can start
+// alongside the API.
+const mcp =
+  mcpPort === null
+    ? null
+    : start('mcp', 'node', ['apps/mcp/dist/server.js'], {
+        DATABASE_URL,
+        BASEDB_MCP_PORT: String(mcpPort),
+        BASEDB_ENCRYPTION_KEY: process.env.BASEDB_ENCRYPTION_KEY ?? DEV_KEY,
+      })
+const children = [api, web, ...(mcp === null ? [] : [mcp])]
 
 let stopping = false
 function stop() {
   if (stopping) return
   stopping = true
   console.log(grey('\n  stopping…'))
-  for (const p of [api, web]) p.kill()
+  for (const p of children) p.kill()
   spawnSync('docker', ['rm', '-f', CONTAINER], { stdio: 'ignore' })
   process.exit(0)
 }
 
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, stop)
-for (const p of [api, web]) p.on('exit', stop)
+for (const p of children) p.on('exit', stop)

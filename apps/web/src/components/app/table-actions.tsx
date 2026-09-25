@@ -1,5 +1,6 @@
 'use client'
 
+import { EditTableDialog } from '@/components/app/edit-table-dialog'
 import { ImportDialog } from '@/components/app/import-dialog'
 import { DeleteTableDialog } from '@/components/app/schema-editor'
 import type { DescribedBase, Table } from '@/lib/api/client'
@@ -8,7 +9,8 @@ import { useEffect, useState } from 'react'
 import { create } from 'zustand'
 
 /**
- * What can be done to a table from wherever it is shown: import a file into it, delete it.
+ * What can be done to a table from wherever it is shown: import a file into it, edit its
+ * label and look, delete it.
  *
  * The sidebar offers both in the menu of a table and the grid's toolbar offers the import,
  * so the dialogs cannot live in either: two owners would mean two copies of a flow that
@@ -23,26 +25,33 @@ import { create } from 'zustand'
 interface State {
   readonly importing: { readonly table: Table | null } | null
   readonly deleting: Table | null
+  readonly editing: Table | null
   /** Opens the import assistant aimed at `table`, or at none — then a new table is proposed. */
   readonly importInto: (table: Table | null) => void
   readonly deleteTable: (table: Table) => void
+  readonly editTable: (table: Table) => void
   readonly closeImport: () => void
   readonly closeDelete: () => void
+  readonly closeEdit: () => void
 }
 
 const useDialogs = create<State>((set) => ({
   importing: null,
   deleting: null,
+  editing: null,
   importInto: (table) => set({ importing: { table } }),
   deleteTable: (table) => set({ deleting: table }),
+  editTable: (table) => set({ editing: table }),
   closeImport: () => set({ importing: null }),
   closeDelete: () => set({ deleting: null }),
+  closeEdit: () => set({ editing: null }),
 }))
 
 export function useTableActions() {
   const importInto = useDialogs((s) => s.importInto)
   const deleteTable = useDialogs((s) => s.deleteTable)
-  return { importInto, deleteTable }
+  const editTable = useDialogs((s) => s.editTable)
+  return { importInto, deleteTable, editTable }
 }
 
 export function TableDialogs({
@@ -57,6 +66,9 @@ export function TableDialogs({
   const deleting = useDialogs((s) => s.deleting)
   const closeImport = useDialogs((s) => s.closeImport)
   const closeDelete = useDialogs((s) => s.closeDelete)
+  const editing = useDialogs((s) => s.editing)
+  const closeEdit = useDialogs((s) => s.closeEdit)
+  const renameTab = useWorkspace((s) => s.rename)
 
   const openTable = useWorkspace((s) => s.openTable)
   const dropTable = useWorkspace((s) => s.dropTable)
@@ -90,6 +102,22 @@ export function TableDialogs({
           }}
         />
       )}
+
+      <EditTableDialog
+        table={editing}
+        onClose={closeEdit}
+        onSaved={async (label) => {
+          // The tabs open on it carry the label they were opened with.
+          if (editing !== null) {
+            for (const tab of useWorkspace.getState().tabs) {
+              if (tab.kind === 'table' && tab.base === editing.base && tab.table === editing.name) {
+                renameTab(tab.id, label)
+              }
+            }
+          }
+          await onBaseChanged()
+        }}
+      />
 
       <DeleteTableDialog
         table={deleting}

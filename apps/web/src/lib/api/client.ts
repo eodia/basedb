@@ -13,7 +13,17 @@
 declare global {
   interface Window {
     __BASEDB_API__?: string
+    __BASEDB_MCP__?: string
   }
+}
+
+/**
+ * The MCP entry point's address, for the configuration an agent's client needs — handed
+ * over by the layout like the API's, else the port `scripts/start.mjs` prefers.
+ */
+export function mcpEndpoint(): string {
+  const given = typeof window === 'undefined' ? undefined : window.__BASEDB_MCP__
+  return given !== undefined && given !== '' ? given : 'http://localhost:8788/mcp'
 }
 
 /**
@@ -60,6 +70,14 @@ function csrfToken(): string {
 }
 
 const v1 = () => `/api/v1/${tenant}`
+
+/**
+ * The absolute root of this tenant's routes — what a program outside the interface calls,
+ * as the token dialog writes it into an example.
+ */
+export function restRoot(): string {
+  return `${BASE}${v1()}`
+}
 
 /** Chapter 13 §4.2: renewed before the end, never used up to it. */
 const RENEW_BEFORE_MS = 60_000
@@ -174,10 +192,135 @@ async function data<T>(path: string, init?: RequestInit): Promise<T> {
   return body.data
 }
 
-export interface Base {
+/** The project a base belongs to — a grouping with no physical existence (ch. 05 §15). */
+export interface ProjectRef {
+  readonly id: string
+  readonly label: string
+}
+
+/**
+ * The verbs of chapter 05 §1.3, as the catalog projection lists them on a table, a base
+ * or a project. `manage_schema` on a project lets a base be added to it; on a base, a table.
+ */
+export type Action =
+  | 'read'
+  | 'create'
+  | 'update'
+  | 'delete'
+  | 'manage_schema'
+  | 'manage_tokens'
+  | 'manage_permissions'
+
+/**
+ * How a base or a table looks — the same three keys as a choice of a list: a colour, and a
+ * pictogram or a picture. Catalog only; the keys are always present, `null` when unset.
+ */
+export interface Look {
+  readonly color: string | null
+  readonly icon: string | null
+  readonly image: string | null
+}
+
+/** A base of a project, as the navigation lists it. */
+export interface ProjectBase extends Look {
   readonly id: string
   readonly name: string
   readonly label: string
+  readonly description: string | null
+  readonly actions: readonly Action[]
+  readonly tables: ReadonlyArray<
+    {
+      readonly id: string
+      readonly name: string
+      readonly label: string
+      readonly actions: readonly Action[]
+    } & Look
+  >
+}
+
+/** A project as the navigation shows it: the bases and tables the caller can see in it. */
+export interface Project {
+  readonly id: string
+  readonly label: string
+  readonly description: string | null
+  readonly actions: readonly Action[]
+  readonly bases: readonly ProjectBase[]
+}
+
+/** Who is signed in, and what the screen must know about them before drawing anything. */
+export interface Me {
+  readonly email: string
+  readonly displayName: string
+  readonly tenant: string
+  /** Member of the Administrators: sees the administration and every project. */
+  readonly isAdmin: boolean
+  /** Signed in with a temporary password an administrator handed over. */
+  readonly mustChangePassword: boolean
+}
+
+/** A person, as the administration lists them. */
+export interface AdminUser {
+  readonly id: string
+  readonly email: string
+  readonly display_name: string
+  readonly is_admin: boolean
+  readonly disabled: boolean
+  readonly must_change_password: boolean
+  readonly created_at: string
+  readonly last_seen_at: string | null
+  readonly groups: ReadonlyArray<{ readonly id: string; readonly label: string }>
+}
+
+/** A group of people — what permissions are granted to (ch. 05 §15). */
+export interface Group {
+  readonly id: string
+  readonly label: string
+  /** `admins` and `everyone` are the two groups every tenant has; `null` otherwise. */
+  readonly system: 'admins' | 'everyone' | null
+  readonly member_count: number
+}
+
+/** The four levels of the permission grid — Metabase's, over projects, bases, tables. */
+export type AccessLevel = 'none' | 'read' | 'edit' | 'manage'
+
+export interface AccessCell {
+  /** `granular` when the node's children do not all have what the node itself has. */
+  readonly level: AccessLevel | 'granular'
+  /** True when granted ON this node rather than inherited from above. */
+  readonly direct: boolean
+}
+
+export interface AccessGraph {
+  readonly groups: readonly Group[]
+  readonly projects: ReadonlyArray<{
+    readonly id: string
+    readonly label: string
+    readonly bases: ReadonlyArray<{
+      readonly id: string
+      readonly name: string
+      readonly label: string
+      readonly tables: ReadonlyArray<{
+        readonly id: string
+        readonly name: string
+        readonly label: string
+      }>
+    }>
+  }>
+  /** Group → `project:<id>` / `base:<id>` / `table:<id>` → cell. */
+  readonly cells: Readonly<Record<string, Readonly<Record<string, AccessCell>>>>
+}
+
+export interface AccessChange {
+  readonly group: string
+  readonly scope: { readonly kind: 'project' | 'base' | 'table'; readonly id: string }
+  readonly level: AccessLevel
+}
+
+export interface Base extends Look {
+  readonly id: string
+  readonly name: string
+  readonly label: string
+  readonly project: ProjectRef
   /**
    * What this base is FOR, in the author's words — plain text, `null` when never written.
    *
@@ -213,6 +356,35 @@ export interface FieldOptionInput {
   readonly color?: string | null
   readonly icon?: string | null
   readonly image?: string | null
+}
+
+/**
+ * One file of a `file` or `image` field, as a read returns it.
+ *
+ * Name, type and size come from the catalog, never from whoever wrote the row. `url` is
+ * a signed link RELATIVE to the API, valid a few hours: it is what an `<img src>` uses,
+ * since it needs no `Authorization` header — pass it through `fileHref` first.
+ */
+export interface StoredFile {
+  readonly id: string
+  readonly name: string
+  readonly type: string
+  readonly size: number
+  readonly url?: string
+}
+
+/** The absolute address of a file's link, on the API's origin. */
+export function fileHref(url: string, download = false): string {
+  const absolute = /^https?:\/\//.test(url) ? url : `${BASE}${url}`
+  return download ? `${absolute}${absolute.includes('?') ? '&' : '?'}download=1` : absolute
+}
+
+/** The files a cell holds, whatever the wire brought: anything else reads as none. */
+export function filesOf(value: unknown): readonly StoredFile[] {
+  if (!Array.isArray(value)) return []
+  return value.filter(
+    (v): v is StoredFile => typeof v === 'object' && v !== null && typeof v.id === 'string',
+  )
 }
 
 export interface Field {
@@ -251,7 +423,7 @@ export interface TableRef {
   readonly name: string
 }
 
-export interface Table extends TableRef {
+export interface Table extends TableRef, Look {
   readonly id: string
   readonly label: string
   readonly description: string | null
@@ -263,11 +435,14 @@ export interface Table extends TableRef {
   readonly fields: readonly Field[]
 }
 
-export interface DescribedBase {
+export interface DescribedBase extends Look {
   readonly id: string
   readonly name: string
   readonly label: string
   readonly description: string | null
+  readonly project: ProjectRef
+  /** The verbs held on the base itself: `manage_schema` lets a table be added to it. */
+  readonly actions: readonly Action[]
   readonly tables: readonly Table[]
 }
 
@@ -332,6 +507,26 @@ export interface Migration {
 }
 
 /** A base the tenant deleted logically, and can bring back (ch. 06 §6). */
+/** Where an integration token is accepted: the REST API, the MCP server, or both. */
+export type TokenSurface = 'rest' | 'mcp'
+
+/** An integration token as the administration shows it: never its secret. */
+export interface ApiToken {
+  readonly id: string
+  readonly label: string
+  /** The eight characters after `bdb_`, enough to recognize a token. */
+  readonly prefix: string
+  readonly base_id: string | null
+  readonly access: 'read' | 'write'
+  readonly surfaces: readonly string[]
+  readonly created_at: string
+  /** `null`: no expiry — the token lives until it is revoked. */
+  readonly expires_at: string | null
+  readonly last_used_at: string | null
+  readonly revoked_at: string | null
+  readonly suspended_at: string | null
+}
+
 export interface DeletedBase {
   readonly id: string
   readonly name: string
@@ -416,16 +611,24 @@ export const api = {
   },
 
   /** Re-opens a session left by a previous page load, from the cookie alone. */
-  resume: async (): Promise<{ email: string; displayName: string; tenant: string } | null> => {
+  resume: async (): Promise<Me | null> => {
     try {
       const body = await call<{
-        data: { email: string; display_name: string; tenant: string }
+        data: {
+          email: string
+          display_name: string
+          tenant: string
+          is_admin?: boolean
+          must_change_password?: boolean
+        }
       }>('/auth/me')
       tenant = body.data.tenant
       return {
         email: body.data.email,
         displayName: body.data.display_name,
         tenant: body.data.tenant,
+        isAdmin: body.data.is_admin === true,
+        mustChangePassword: body.data.must_change_password === true,
       }
     } catch {
       return null
@@ -470,6 +673,49 @@ export const api = {
       headers: { 'x-basedb-csrf': csrfToken() },
     }),
 
+  /**
+   * Proves the password again — five minutes during which integration tokens may be
+   * minted or revoked (chapter 05 §2.2).
+   *
+   * The session token ROTATES with it, which kills the access token held here: the next
+   * call mints a fresh one against the new cookie.
+   */
+  elevate: async (password: string): Promise<{ elevatedUntil: number }> => {
+    const body = await call<{ data: { elevated_until: string } }>('/auth/elevate', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    })
+    access = null
+    return { elevatedUntil: Date.parse(body.data.elevated_until) }
+  },
+
+  /** A base's integration tokens — metadata and prefix, never a secret (chapter 08 §11). */
+  tokens: (base: string) =>
+    data<readonly ApiToken[]>(`${v1()}/admin/tokens?base=${encodeURIComponent(base)}`),
+
+  /** Mints a token for the agent surface. The secret is in this answer and nowhere else. */
+  createToken: (request: {
+    readonly base: string
+    readonly label: string
+    readonly access: 'read' | 'write'
+    readonly surfaces: readonly TokenSurface[]
+    /** 1 to 365 days, or `null`: no expiry. */
+    readonly expiresInDays: number | null
+  }) =>
+    data<ApiToken & { readonly secret: string }>(`${v1()}/admin/tokens`, {
+      method: 'POST',
+      body: JSON.stringify({
+        base: request.base,
+        label: request.label,
+        access: request.access,
+        surfaces: request.surfaces,
+        expires_in_days: request.expiresInDays,
+      }),
+    }),
+
+  revokeToken: (id: string) =>
+    call<void>(`${v1()}/admin/tokens/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
   logout: async (): Promise<void> => {
     try {
       await call<void>('/auth/session', { method: 'DELETE' })
@@ -498,13 +744,33 @@ export const api = {
   openApi: (base: string) =>
     call<Record<string, unknown>>(`${v1()}/meta/bases/${encodeURIComponent(base)}/openapi.json`),
 
-  // Every `description` below is optional and travels only when given: `JSON.stringify`
-  // drops an `undefined`, and the server reads a missing one as "none".
-  createBase: (label: string, description?: string) =>
-    data<{ id: string; name: string; description: string | null }>(`${v1()}/admin/bases`, {
+  /** The projects the caller can see, each with its visible bases and tables. */
+  projects: () => data<readonly Project[]>(`${v1()}/meta/projects`),
+
+  createProject: (label: string, description?: string) =>
+    data<{ id: string; label: string; description: string | null }>(`${v1()}/admin/projects`, {
       method: 'POST',
       body: JSON.stringify({ label, description }),
     }),
+
+  /** What is absent stays as it was; a `null` description clears it. */
+  updateProject: (id: string, patch: { label?: string; description?: string | null }) =>
+    data<{ label: string; description: string | null }>(
+      `${v1()}/admin/projects/${encodeURIComponent(id)}`,
+      { method: 'PATCH', body: JSON.stringify(patch) },
+    ),
+
+  /** Refused with `PROJECT_NOT_EMPTY` while a base is still in it. */
+  deleteProject: (id: string) =>
+    call<void>(`${v1()}/admin/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
+  // Every `description` below is optional and travels only when given: `JSON.stringify`
+  // drops an `undefined`, and the server reads a missing one as "none".
+  createBase: (label: string, description?: string, project?: string) =>
+    data<{ id: string; name: string; description: string | null; project: string }>(
+      `${v1()}/admin/bases`,
+      { method: 'POST', body: JSON.stringify({ label, description, project }) },
+    ),
 
   createTable: (
     base: string,
@@ -547,6 +813,20 @@ export const api = {
     data<{ id: string; name: string; label: string; kind: string; description: string | null }>(
       `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields`,
       { method: 'POST', body: JSON.stringify(field) },
+    ),
+
+  /**
+   * Deposits a file for a `file` or `image` field. The body is the file itself; the
+   * identifier returned is then written into the row, which is what attaches it.
+   */
+  uploadFile: (table: TableRef, field: string, file: File) =>
+    data<StoredFile>(
+      `${v1()}/files/${table.base}/${table.name}/${field}?name=${encodeURIComponent(file.name)}`,
+      {
+        method: 'POST',
+        body: file,
+        headers: { 'content-type': file.type === '' ? 'application/octet-stream' : file.type },
+      },
     ),
 
   /** Rewrites a field's description. `null` — or an empty text — clears it. */
@@ -604,6 +884,20 @@ export const api = {
       { method: 'PATCH', body: JSON.stringify({ description }) },
     ),
 
+  /**
+   * Renames a table — its LABEL, the relation keeps its name —, rewrites its description,
+   * and/or changes its look. The look travels whole: naming any of its three keys replaces
+   * all three.
+   */
+  updateTable: (
+    table: TableRef,
+    patch: { label?: string; description?: string | null } & Partial<Look>,
+  ) =>
+    data<{ name: string; label?: string; description?: string | null } & Partial<Look>>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}`,
+      { method: 'PATCH', body: JSON.stringify(patch) },
+    ),
+
   createLink: (table: TableRef, label: string, target: string, description?: string) =>
     data<Field & { target: string }>(
       `${v1()}/admin/bases/${table.base}/tables/${table.name}/links`,
@@ -636,8 +930,11 @@ export const api = {
    * Not a migration: the schema keeps its name (ch. 06 §1.1). An ABSENT description is
    * left alone and a `null` one clears it — callers must not conflate the two.
    */
-  updateBase: (base: string, patch: { label?: string; description?: string | null }) =>
-    data<{ id: string; name: string; label: string; description: string | null }>(
+  updateBase: (
+    base: string,
+    patch: { label?: string; description?: string | null } & Partial<Look>,
+  ) =>
+    data<{ id: string; name: string; label: string; description: string | null } & Look>(
       `${v1()}/admin/bases/${encodeURIComponent(base)}`,
       { method: 'PATCH', body: JSON.stringify(patch) },
     ),
@@ -771,4 +1068,78 @@ export const api = {
   /** The rows referencing a given row — a dedicated sub-path, never an expansion. */
   referencedBy: (table: TableRef, recordId: string) =>
     data<readonly ReferencedBlock[]>(`${path(table)}/${recordId}/referenced_by`),
+
+  // ── Administration: people, groups, permissions (ch. 05 §15) ──────────────────────
+  // Reading is open to administrators; every write also wants a session elevated within
+  // the last five minutes, and answers `ELEVATION_REQUIRED` otherwise.
+
+  users: () => data<readonly AdminUser[]>(`${v1()}/admin/users`),
+
+  /** The temporary password is in this answer and nowhere else, ever. */
+  createUser: (request: {
+    readonly email: string
+    readonly displayName: string
+    readonly groups: readonly string[]
+  }) =>
+    data<{ user: AdminUser; temporary_password: string }>(`${v1()}/admin/users`, {
+      method: 'POST',
+      body: JSON.stringify({
+        email: request.email,
+        display_name: request.displayName,
+        groups: request.groups,
+      }),
+    }),
+
+  updateUser: (id: string, patch: { display_name?: string; disabled?: boolean }) =>
+    data<AdminUser>(`${v1()}/admin/users/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    }),
+
+  /** Replaces the password with a temporary one, to be changed at the next sign-in. */
+  resetUserPassword: (id: string) =>
+    data<{ temporary_password: string }>(`${v1()}/admin/users/${encodeURIComponent(id)}/password`, {
+      method: 'POST',
+    }),
+
+  setUserGroups: (id: string, groups: readonly string[]) =>
+    data<AdminUser>(`${v1()}/admin/users/${encodeURIComponent(id)}/groups`, {
+      method: 'PUT',
+      body: JSON.stringify({ groups }),
+    }),
+
+  groups: () => data<readonly Group[]>(`${v1()}/admin/groups`),
+
+  createGroup: (label: string) =>
+    data<Group>(`${v1()}/admin/groups`, { method: 'POST', body: JSON.stringify({ label }) }),
+
+  renameGroup: (id: string, label: string) =>
+    data<unknown>(`${v1()}/admin/groups/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ label }),
+    }),
+
+  deleteGroup: (id: string) =>
+    call<void>(`${v1()}/admin/groups/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
+  groupMembers: (id: string) =>
+    data<ReadonlyArray<{ id: string; email: string; display_name: string }>>(
+      `${v1()}/admin/groups/${encodeURIComponent(id)}/members`,
+    ),
+
+  setGroupMember: (group: string, user: string, member: boolean) =>
+    call<void>(
+      `${v1()}/admin/groups/${encodeURIComponent(group)}/members/${encodeURIComponent(user)}`,
+      { method: member ? 'PUT' : 'DELETE' },
+    ),
+
+  /** The permission grid: every group's level on every project, base and table. */
+  access: () => data<AccessGraph>(`${v1()}/admin/access`),
+
+  /** Applies levels and returns the grid as it now stands. */
+  setAccess: (changes: readonly AccessChange[]) =>
+    data<AccessGraph>(`${v1()}/admin/access`, {
+      method: 'POST',
+      body: JSON.stringify({ changes }),
+    }),
 }

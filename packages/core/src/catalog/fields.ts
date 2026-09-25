@@ -1,7 +1,16 @@
 import { checkConstraintName, qualify, quoteIdentifier } from '@basedb/naming'
-import { type FieldKind, pgTypeOf, quoteLiteral, sqlCommentOnColumn } from '../ddl/emit.js'
+import {
+  type FieldKind,
+  choiceCheck,
+  fileShapeCheck,
+  isChoiceKind,
+  isFileKind,
+  pgTypeOf,
+  sqlCommentOnColumn,
+} from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { allocateName } from '../naming/allocation.js'
+import { requireOnField, requireOnTable } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { commentText, normalizeDescription } from './description.js'
@@ -27,8 +36,8 @@ export interface AddFieldRequest {
   /** What the field is for — shown in the documentation and to agents. Plain text. */
   readonly description?: string | null
   /**
-   * The choices of a `select`. The list is not decoration: it becomes a CHECK
-   * constraint, so direct SQL is held to it exactly as the API is.
+   * The choices of a `select` or a `multi_select`. The list is not decoration: it becomes
+   * a CHECK constraint, so direct SQL is held to it exactly as the API is.
    */
   readonly options?: readonly SelectOptionInput[]
 }
@@ -101,7 +110,7 @@ export async function addField(
       details: { field: 'kind', reason: 'formule_sans_expression' },
     })
   }
-  if (request.kind === 'select' && (request.options ?? []).length === 0) {
+  if (isChoiceKind(request.kind) && (request.options ?? []).length === 0) {
     // A select with no option is a column nothing can be written into. Refusing it here
     // is kinder than letting the CHECK refuse every later insert.
     throw new BasedbError('REQUEST_INVALID', {
@@ -110,6 +119,8 @@ export async function addField(
   }
 
   return withTransaction(pools, 'ddl', ctx, async (exec) => {
+    // Building is `manage_schema` on the table (chapter 05 §8).
+    await requireOnTable(exec, ctx, 'manage_schema', request.tableId)
     const where = await locate(exec, request.tableId)
     const sql: string[] = []
 
@@ -159,9 +170,26 @@ export async function addField(
     await exec.query(comment, [], 'ddl')
     sql.push(comment)
 
-    if (request.kind === 'select') {
+    if (isChoiceKind(request.kind)) {
       sql.push(
-        ...(await addSelectOptions(exec, ctx, where, field.id, column.name, request.options ?? [])),
+        ...(await addSelectOptions(
+          exec,
+          ctx,
+          where,
+          { id: field.id, kind: request.kind },
+          column.name,
+          request.options ?? [],
+        )),
+      )
+    } else if (isFileKind(request.kind)) {
+      sql.push(
+        ...(await addFileShape(
+          exec,
+          ctx,
+          where,
+          { id: field.id, kind: request.kind },
+          column.name,
+        )),
       )
     } else {
       await insertSatellite(exec, field.id, request.kind)
@@ -179,7 +207,8 @@ export async function addField(
 }
 
 /**
- * The options of a `select`, and the constraint that makes them true in the database.
+ * The options of a `select` or a `multi_select`, and the constraint that makes them true
+ * in the database.
  *
  * Without `ck_…__enum` a select is a text column with a list drawn on the screen, and
  * the product's central promise — the tables are real, and direct SQL is held to the
@@ -189,10 +218,11 @@ async function addSelectOptions(
   exec: Executor,
   ctx: RequestContext,
   where: Location,
-  fieldId: string,
+  field: { readonly id: string; readonly kind: 'select' | 'multi_select' },
   columnName: string,
   input: readonly SelectOptionInput[],
 ): Promise<readonly string[]> {
+  const fieldId = field.id
   const options = normalizeOptions(input)
 
   const name = await allocateName(exec, ctx, {
@@ -217,8 +247,8 @@ async function addSelectOptions(
   )
 
   await exec.query(
-    'INSERT INTO _basedb.field_select_config (field_id, enum_constraint_id) VALUES ($1, $2)',
-    [fieldId, constraint.id],
+    'INSERT INTO _basedb.field_select_config (field_id, kind, enum_constraint_id) VALUES ($1, $2, $3)',
+    [fieldId, field.kind, constraint.id],
     'insert',
   )
 
@@ -233,8 +263,59 @@ async function addSelectOptions(
 
   // The column is empty — it was created a moment ago — so the constraint is born valid
   // and needs no scaffolding.
-  const values = options.map((o) => quoteLiteral(o.value)).join(', ')
-  const statement = `ALTER TABLE ${qualify(where.schemaName, where.tableName)} ADD CONSTRAINT ${quoteIdentifier(name.name)} CHECK (${quoteIdentifier(columnName)} IN (${values}));`
+  const check = choiceCheck(
+    field.kind,
+    quoteIdentifier(columnName),
+    options.map((o) => o.value),
+  )
+  const statement = `ALTER TABLE ${qualify(where.schemaName, where.tableName)} ADD CONSTRAINT ${quoteIdentifier(name.name)} CHECK (${check});`
+  await exec.query(statement, [], 'ddl')
+  return [statement]
+}
+
+/**
+ * The shape of a `file` or `image` column, held by the database: a JSON array of one to
+ * twenty entries, or `NULL`.
+ *
+ * What each entry says is the kernel's to guarantee — it copies it from `stored_file`
+ * on every write. The constraint is the floor under direct SQL: an `UPDATE` written in
+ * psql may put the wrong file in a cell, not a string where a list is read.
+ */
+async function addFileShape(
+  exec: Executor,
+  ctx: RequestContext,
+  where: Location,
+  field: { readonly id: string; readonly kind: 'file' | 'image' },
+  columnName: string,
+): Promise<readonly string[]> {
+  const name = await allocateName(exec, ctx, {
+    derivedName: checkConstraintName(where.tableName, columnName, 'files'),
+    objectKind: 'constraint',
+    scopeKind: 'table',
+    scopeId: where.tableId,
+  })
+
+  const [constraint] = await exec.query<{ id: string }>(
+    `INSERT INTO _basedb.table_constraint
+       (table_id, base_id, kind, name_id, rule, origin, state, created_by)
+     VALUES ($1, $2, 'check', $3, 'files', 'system', 'active', $4) RETURNING id`,
+    [where.tableId, where.baseId, name.nameId, ctx.actor.id],
+    'insert',
+  )
+  await exec.query(
+    `INSERT INTO _basedb.table_constraint_member (constraint_id, field_id, table_id, position)
+     VALUES ($1, $2, $3, 1)`,
+    [constraint.id, field.id, where.tableId],
+    'insert',
+  )
+  await exec.query(
+    'INSERT INTO _basedb.field_file_config (field_id, kind, shape_constraint_id) VALUES ($1, $2, $3)',
+    [field.id, field.kind, constraint.id],
+    'insert',
+  )
+
+  // Born on an empty column, hence valid at once, like the list of a select.
+  const statement = `ALTER TABLE ${qualify(where.schemaName, where.tableName)} ADD CONSTRAINT ${quoteIdentifier(name.name)} CHECK (${fileShapeCheck(quoteIdentifier(columnName))});`
   await exec.query(statement, [], 'ddl')
   return [statement]
 }
@@ -298,6 +379,8 @@ export async function setFieldRequired(
   request: { readonly fieldId: string; readonly required: boolean },
 ): Promise<RequiredResult> {
   const plan = await withTransaction(pools, 'ddl', ctx, async (exec) => {
+    // Building is `manage_schema` on the table (chapter 05 §8).
+    await requireOnField(exec, ctx, 'manage_schema', request.fieldId)
     const rows = await exec.query<{
       table_id: string
       base_id: string

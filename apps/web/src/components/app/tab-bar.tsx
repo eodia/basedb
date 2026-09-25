@@ -1,5 +1,6 @@
 'use client'
 
+import { LookIcon, type OptionLook } from '@/components/app/option-badge'
 import { Button } from '@/components/ui/button'
 import {
   ContextMenu,
@@ -10,6 +11,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import type { Table } from '@/lib/api/client'
 import { type Tab, useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
 import {
@@ -23,7 +25,7 @@ import {
 import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Plus, Sparkles, Table2, Terminal, X } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 
 /**
  * The tab strip.
@@ -41,11 +43,14 @@ interface Props {
   readonly onNewSql: () => void
   readonly copilotOpen: boolean
   readonly onToggleCopilot: () => void
+  /** The tables whose look a tab wears; a tab of a table not listed keeps the plain glyph. */
+  readonly tables?: readonly Table[]
 }
 
-export function TabBar({ onNewSql, copilotOpen, onToggleCopilot }: Props) {
+export function TabBar({ onNewSql, copilotOpen, onToggleCopilot, tables = [] }: Props) {
   const tabs = useWorkspace((s) => s.tabs)
   const activeId = useWorkspace((s) => s.activeId)
+  const looks = useMemo(() => new Map(tables.map((t) => [`${t.base}.${t.name}`, t])), [tables])
   const { activate, close, closeOthers, closeToLeft, closeToRight, closeAll, reorder } =
     useWorkspace()
 
@@ -96,6 +101,7 @@ export function TabBar({ onNewSql, copilotOpen, onToggleCopilot }: Props) {
               <SortableTab
                 key={tab.id}
                 tab={tab}
+                look={tab.kind === 'table' ? looks.get(`${tab.base}.${tab.table}`) : undefined}
                 active={tab.id === activeId}
                 onActivate={() => activate(tab.id)}
                 onClose={() => close(tab.id)}
@@ -140,6 +146,7 @@ export function TabBar({ onNewSql, copilotOpen, onToggleCopilot }: Props) {
 
 function SortableTab({
   tab,
+  look,
   active,
   onActivate,
   onClose,
@@ -149,6 +156,8 @@ function SortableTab({
   onCloseAll,
 }: {
   readonly tab: Tab
+  /** The table's look, when the tab is a table's and the table is known here. */
+  readonly look?: OptionLook
   readonly active: boolean
   readonly onActivate: () => void
   readonly onClose: () => void
@@ -192,7 +201,7 @@ function SortableTab({
             onClick={onActivate}
             className="flex cursor-pointer items-center gap-1.5"
           >
-            <Icon className="size-3 shrink-0 opacity-70" />
+            <LookIcon look={look ?? {}} fallback={Icon} className="size-3 opacity-70" />
             <span className={cn('max-w-[140px] truncate', tab.kind === 'table' && 'font-mono')}>
               {tab.label}
             </span>

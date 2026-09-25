@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -30,7 +29,7 @@ export function NewTableDialog({
   onSubmit,
 }: {
   readonly open: boolean
-  readonly base: DescribedBase
+  readonly base: Pick<DescribedBase, 'label'>
   readonly busy: boolean
   readonly onClose: () => void
   /** `description` is absent, not empty, when the box was left blank. */
@@ -56,15 +55,9 @@ export function NewTableDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && !busy && onClose()}>
-      <DialogContent>
+      <DialogContent aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Nouvelle table dans {base.label}</DialogTitle>
-          <DialogDescription>
-            Une vraie table PostgreSQL dans le schéma{' '}
-            <span className="font-mono text-xs">{base.name}</span>, avec ses colonnes système et une
-            colonne <span className="font-mono text-xs">Nom</span>. Les autres s’ajoutent depuis la
-            structure.
-          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -87,7 +80,7 @@ export function NewTableDialog({
             value={description}
             onChange={setDescription}
             onSubmit={submit}
-            placeholder="À quoi sert cette table ? Visible dans la documentation et par les agents."
+            placeholder="À quoi sert cette table ?"
             disabled={busy}
           />
         </div>

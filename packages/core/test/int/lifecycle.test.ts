@@ -355,12 +355,15 @@ describe('§1.2 — the administration role', () => {
         [r.id, u.id, admin.actor.id],
         'insert',
       )
-      await exec.query(
-        `INSERT INTO _basedb.permission (role_id, scope_kind, scope_base_id, action, granted_by)
-         VALUES ($1, 'base', $2, 'manage_schema', $3)`,
-        [r.id, base.baseId, admin.actor.id],
-        'insert',
-      )
+      // `read` with it: without reading a base, no other verb reaches it (05 §3.2, step 9).
+      for (const action of ['read', 'manage_schema']) {
+        await exec.query(
+          `INSERT INTO _basedb.permission (role_id, scope_kind, scope_base_id, action, granted_by)
+           VALUES ($1, 'base', $2, $3, $4)`,
+          [r.id, base.baseId, action, admin.actor.id],
+          'insert',
+        )
+      }
       return u.id
     })
 

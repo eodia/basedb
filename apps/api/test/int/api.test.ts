@@ -1500,3 +1500,151 @@ describe('/data — a batch over HTTP', () => {
     expect(openapi.paths[`/data/${schema}/${table}/batch`]?.post?.summary).toContain('plusieurs')
   })
 })
+
+// Last in the file on purpose: elevating ROTATES the session token, which invalidates
+// every access token minted from it, the suite's shared one included.
+describe('integration tokens — chapter 08 §11', () => {
+  // The session elevated by the second test, reused by the third: `/auth` is rate limited,
+  // and a fresh sign-in this late in the file would meet the bucket, not the feature.
+  const elevatedSession = { cookie: '', csrf: '' }
+
+  it('refuses to mint a token without a recent elevation', async () => {
+    const base = await makeBase('Jetons sans élévation')
+    const r = await app.request(
+      `${V1}/admin/tokens`,
+      json({ label: 'Agent', base, access: 'read' }),
+    )
+    expect(r.status).toBe(403)
+    expect(((await r.json()) as { code: string }).code).toBe('ELEVATION_REQUIRED')
+  })
+
+  it('mints once, for both doors by default, lists without the secret, and revokes', async () => {
+    const base = await makeBase('Jetons élevés')
+    const elevated = await app.request('/auth/elevate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ password: PASSWORD }),
+    })
+    expect(elevated.status).toBe(200)
+    const planted = elevated.headers.getSetCookie()
+    const session = planted.find((c) => c.includes('basedb_session'))?.split(';')[0] ?? ''
+    const csrfValue =
+      planted
+        .find((c) => c.includes('basedb_csrf'))
+        ?.split(';')[0]
+        ?.split('=')[1] ?? ''
+    const issued = await app.request('/auth/session/access', {
+      method: 'POST',
+      headers: { cookie: session, 'x-basedb-csrf': csrfValue },
+    })
+    const fresh = ((await issued.json()) as { data: { token: string } }).data.token
+    elevatedSession.cookie = session
+    elevatedSession.csrf = csrfValue
+    const as = (init: RequestInit = {}) => ({
+      ...init,
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${fresh}` },
+    })
+
+    const r = await app.request(
+      `${V1}/admin/tokens`,
+      as({ method: 'POST', body: JSON.stringify({ label: 'Agent CRM', base, access: 'write' }) }),
+    )
+    expect(r.status).toBe(201)
+    const token = ((await r.json()) as { data: Record<string, unknown> }).data
+    expect(token.secret).toMatch(/^bdb_[a-z0-9]{8}_[0-9A-Za-z]{43}$/)
+    expect(token).toMatchObject({
+      label: 'Agent CRM',
+      access: 'write',
+      surfaces: ['rest', 'mcp'],
+    })
+
+    const listed = await app.request(`${V1}/admin/tokens?base=${base}`, as())
+    const rows = ((await listed.json()) as { data: Array<Record<string, unknown>> }).data
+    expect(rows).toHaveLength(1)
+    expect(rows[0].prefix).toBe(String(token.secret).slice(4, 12))
+    expect(JSON.stringify(rows)).not.toContain(String(token.secret))
+
+    const unknown = await app.request(
+      `${V1}/admin/tokens`,
+      as({
+        method: 'POST',
+        body: JSON.stringify({ label: 'Autre', base, access: 'read', surfaces: ['webhook'] }),
+      }),
+    )
+    expect(unknown.status).toBe(400)
+
+    const revoked = await app.request(`${V1}/admin/tokens/${token.id}`, as({ method: 'DELETE' }))
+    expect(revoked.status).toBe(204)
+    const after = await app.request(`${V1}/admin/tokens?base=${base}`, as())
+    const [row] = ((await after.json()) as { data: Array<Record<string, unknown>> }).data
+    expect(row.revoked_at).not.toBeNull()
+  })
+  it('opens the data routes of its base to a program — and nothing else', async () => {
+    const issued = await app.request('/auth/session/access', {
+      method: 'POST',
+      headers: { cookie: elevatedSession.cookie, 'x-basedb-csrf': elevatedSession.csrf },
+    })
+    const person = ((await issued.json()) as { data: { token: string } }).data.token
+    const bearing = (credential: string) => (method: string, path: string, body?: unknown) =>
+      app.request(path, {
+        method,
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${credential}` },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      })
+    const asPerson = bearing(person)
+
+    const baseOf = async (label: string) => {
+      const r = await asPerson('POST', `${V1}/admin/bases`, { label })
+      const name = ((await r.json()) as { data: { name: string } }).data.name
+      await asPerson('POST', `${V1}/admin/bases/${name}/tables`, {
+        label: 'Contacts',
+        fields: [{ label: 'Nom', kind: 'short_text' }],
+      })
+      return name
+    }
+    const base = await baseOf('Jetons REST')
+    const other = await baseOf('Jetons REST autre')
+
+    const mint = async (body: Record<string, unknown>) => {
+      const r = await asPerson('POST', `${V1}/admin/tokens`, { base, ...body })
+      expect(r.status).toBe(201)
+      return ((await r.json()) as { data: { secret: string } }).data.secret
+    }
+    const writer = bearing(await mint({ label: 'Synchro', access: 'write' }))
+    const agentOnly = bearing(await mint({ label: 'Agent', access: 'read', surfaces: ['mcp'] }))
+
+    // Its base, and only its base, exists for it.
+    const listed = await writer('GET', `${V1}/meta/bases`)
+    expect(listed.status).toBe(200)
+    const names = ((await listed.json()) as { data: Array<{ name: string }> }).data.map(
+      (b) => b.name,
+    )
+    expect(names).toEqual([base])
+
+    // Read, create, modify.
+    const created = await writer('POST', `${V1}/data/${base}/contacts`, { values: { nom: 'ACME' } })
+    expect(created.status).toBe(201)
+    const row = ((await created.json()) as { data: { _id: string } }).data
+    const read = await writer('GET', `${V1}/data/${base}/contacts`)
+    expect(((await read.json()) as { data: unknown[] }).data).toHaveLength(1)
+    const updated = await writer('PATCH', `${V1}/data/${base}/contacts/${row._id}`, {
+      values: { nom: 'ACME SA' },
+    })
+    expect(updated.status).toBe(200)
+
+    // Never delete; another base does not exist.
+    const deleted = await writer('DELETE', `${V1}/data/${base}/contacts/${row._id}`)
+    expect(deleted.status).toBe(403)
+    expect((await writer('GET', `${V1}/data/${other}/contacts`)).status).toBe(404)
+
+    // The routes of a person stay a person's: administration, SQL console.
+    expect((await writer('GET', `${V1}/admin/tokens?base=${base}`)).status).toBe(401)
+    expect((await writer('POST', `${V1}/sql/${base}`, { sql: 'SELECT 1' })).status).toBe(401)
+    expect((await writer('GET', `${V1}/meta/projects`)).status).toBe(401)
+
+    // A token minted for MCP alone is refused here, and says why.
+    const refused = await agentOnly('GET', `${V1}/data/${base}/contacts`)
+    expect(refused.status).toBe(401)
+    expect(((await refused.json()) as { code: string }).code).toBe('TOKEN_INVALID')
+  })
+})

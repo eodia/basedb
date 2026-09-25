@@ -19,6 +19,10 @@ export function toBaseList(bases: readonly VisibleBase[]): unknown {
     name: b.name,
     label: b.label,
     description: b.description,
+    color: b.color,
+    icon: b.icon,
+    image: b.image,
+    project: b.project,
     table_count: b.tableCount,
   }))
 }
@@ -29,11 +33,21 @@ export function toMeta(base: ProjectedBase): unknown {
     name: base.name,
     label: base.label,
     description: base.description,
+    // How the base and its tables look: catalog only, keys always present.
+    color: base.color,
+    icon: base.icon,
+    image: base.image,
+    project: base.project,
+    // The verbs held on the base itself: `manage_schema` is what lets a table be added.
+    actions: base.baseActions,
     tables: base.tables.map((t) => ({
       id: t.id,
       name: t.name,
       label: t.label,
       description: t.description,
+      color: t.color,
+      icon: t.icon,
+      image: t.image,
       // The base name travels WITH the table: `{base}/{table}` is what addresses it, and
       // a description a caller cannot turn into a URL is half a description.
       base: base.name,

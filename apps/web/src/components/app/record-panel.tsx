@@ -1,9 +1,18 @@
 'use client'
 
-import { type Row, display } from '@/components/app/data-grid'
+import { DateInput } from '@/components/app/date-picker'
 import { hasDescription } from '@/components/app/description'
 import { FieldIcon } from '@/components/app/field-icon'
-import { EnumPicker, LinkPicker, type SearchLink } from '@/components/app/pickers'
+import { FilesField, type Upload } from '@/components/app/files'
+import { type Row, display } from '@/components/app/grid/cell'
+import {
+  ChoiceChips,
+  EnumPicker,
+  LinkPicker,
+  MultiEnumPicker,
+  type SearchLink,
+  choicesOf,
+} from '@/components/app/pickers'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,10 +20,17 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import type { Field, LinkOption, ReferencedBlock, Table } from '@/lib/api/client'
+import {
+  type Field,
+  type LinkOption,
+  type ReferencedBlock,
+  type Table,
+  filesOf,
+} from '@/lib/api/client'
+import { isDateKind, storedFromText } from '@/lib/dates'
 import { cn } from '@/lib/utils'
-import { Calendar, ExternalLink, Link2, Maximize2, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { ExternalLink, Link2, Maximize2, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 /**
  * The detail view — chapter 11 §5.
@@ -34,6 +50,8 @@ interface Props {
   readonly referenced: readonly ReferencedBlock[]
   readonly onClose: () => void
   readonly onCommit: (field: Field, value: unknown) => Promise<void>
+  /** Deposits files for a `file` or `image` field, which then commits the list. */
+  readonly onUpload?: Upload
 }
 
 export function RecordPanel({
@@ -45,6 +63,7 @@ export function RecordPanel({
   referenced,
   onClose,
   onCommit,
+  onUpload,
 }: Props) {
   const title = headline(row, fields)
   const subtitle = secondLine(row, fields)
@@ -90,42 +109,14 @@ export function RecordPanel({
           </Tabs>
         </div>
 
-        <dl className="space-y-3.5 px-5 py-5">
-          {fields.map((field) => (
-            <div
-              key={field.name}
-              className="grid grid-cols-[130px_1fr] items-center gap-x-3 gap-y-1"
-            >
-              <dt
-                className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground"
-                title={field.label}
-              >
-                <FieldIcon kind={field.kind} />
-                <span className="truncate">{field.label}</span>
-              </dt>
-              <dd className="min-w-0">
-                <PanelField
-                  field={field}
-                  row={row}
-                  options={linkOptions[field.name]}
-                  onSearchLink={onSearchLink}
-                  onCommit={(value) => onCommit(field, value)}
-                />
-              </dd>
-              {/* What the field is for, under the row and across both columns: the label
-                  column is too narrow to wrap a sentence in. A field with no description
-                  renders nothing here, so its row is the height it always was. */}
-              {hasDescription(field.description) && (
-                <dd
-                  className="col-span-2 line-clamp-3 whitespace-pre-line break-words text-xs leading-snug text-muted-foreground"
-                  title={field.description}
-                >
-                  {field.description}
-                </dd>
-              )}
-            </div>
-          ))}
-        </dl>
+        <FieldList
+          fields={fields}
+          row={row}
+          linkOptions={linkOptions}
+          onSearchLink={onSearchLink}
+          onCommit={onCommit}
+          onUpload={onUpload}
+        />
 
         {referenced.length > 0 && (
           <div className="border-t px-5 py-5">
@@ -160,7 +151,7 @@ export function RecordPanel({
                 </div>
                 {block.capped && (
                   <p className="mt-1.5 text-xs text-muted-foreground">
-                    Plus de {block.count} lignes : le décompte est plafonné.
+                    Plus de {block.count} lignes.
                   </p>
                 )}
               </div>
@@ -176,27 +167,244 @@ export function RecordPanel({
   )
 }
 
+/** A row of the table, label on the left and its editor on the right, for every field given. */
+function FieldList({
+  fields,
+  row,
+  linkOptions,
+  onSearchLink,
+  onCommit,
+  onUpload,
+}: {
+  readonly fields: readonly Field[]
+  readonly row: Row
+  readonly linkOptions: Readonly<Record<string, readonly LinkOption[]>>
+  readonly onSearchLink: SearchLink
+  readonly onCommit: (field: Field, value: unknown) => Promise<void>
+  readonly onUpload?: Upload
+}) {
+  return (
+    <dl className="space-y-3.5 px-5 py-5">
+      {fields.map((field) => (
+        <div
+          key={field.name}
+          className={cn(
+            'grid grid-cols-[130px_1fr] gap-x-3 gap-y-1',
+            // A list of files grows downwards: its label stays with the first line.
+            isFileField(field) ? 'items-start' : 'items-center',
+          )}
+        >
+          <dt
+            className={cn(
+              'flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground',
+              isFileField(field) && 'pt-2',
+            )}
+            title={field.label}
+          >
+            <FieldIcon kind={field.kind} />
+            <span className="truncate">{field.label}</span>
+            {field.required === true && (
+              <span className="text-destructive" title="Obligatoire">
+                *
+              </span>
+            )}
+          </dt>
+          <dd className="min-w-0">
+            <PanelField
+              field={field}
+              row={row}
+              options={linkOptions[field.name]}
+              onSearchLink={onSearchLink}
+              onCommit={(value) => onCommit(field, value)}
+              onUpload={onUpload}
+            />
+          </dd>
+          {/* What the field is for, under the row and across both columns: the label
+              column is too narrow to wrap a sentence in. A field with no description
+              renders nothing here, so its row is the height it always was. */}
+          {hasDescription(field.description) && (
+            <dd
+              className="col-span-2 line-clamp-3 whitespace-pre-line break-words text-xs leading-snug text-muted-foreground"
+              title={field.description}
+            >
+              {field.description}
+            </dd>
+          )}
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+/**
+ * A record being created — the same panel, filled BEFORE anything is written.
+ *
+ * Each editor writes into a local draft instead of the API, and "Créer" sends the whole
+ * row in one `POST`: a row created empty and then filled field by field would exist,
+ * half-made, the moment the first field was typed — and a table with a required field
+ * could not take it at all. The draft holds values in the shape a READ gives them, so the
+ * editors cannot tell a draft from a row; they are turned into the shape a WRITE takes only
+ * when the row is sent.
+ *
+ * Files are the one thing deposited before the row exists: a deposit changes no row, and
+ * the identifiers it returns are what the `POST` cites.
+ */
+export function NewRecordPanel({
+  table,
+  fields,
+  linkOptions,
+  onSearchLink,
+  onUpload,
+  onClose,
+  onCreate,
+}: {
+  readonly table: Table
+  readonly fields: readonly Field[]
+  readonly linkOptions: Readonly<Record<string, readonly LinkOption[]>>
+  readonly onSearchLink: SearchLink
+  readonly onUpload?: Upload
+  readonly onClose: () => void
+  /** Writes the row; resolves to the refusal to show, or `null` once it is created. */
+  readonly onCreate: (values: Record<string, unknown>) => Promise<string | null>
+}) {
+  // A formula, or a field this reader may not write, has nothing to be filled with.
+  const writable = fields.filter((f) => f.read_only !== true && f.system !== true)
+
+  const [draft, setDraft] = useState<Row>(() => emptyDraft(writable))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  // The click on "Créer" blurs the text being typed, and that blur is what commits it:
+  // the handler reads the draft through a ref so it sees that last commit.
+  const latest = useRef(draft)
+  latest.current = draft
+
+  const commit = async (field: Field, value: unknown) => {
+    // The refusal was about the draft as it was; once it changes, it no longer applies.
+    setError(null)
+    setDraft((current) => {
+      const next = {
+        ...current,
+        // A link reads as `{ id, display }`; the picker hands back the identifier alone.
+        [field.name]:
+          field.kind === 'link' && typeof value === 'string' ? { id: value, display: null } : value,
+      }
+      latest.current = next
+      return next
+    })
+  }
+
+  const create = async () => {
+    const values = writeValues(writable, latest.current)
+    if (Object.keys(values).length === 0) {
+      setError('Renseignez au moins un champ.')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    const refusal = await onCreate(values)
+    setBusy(false)
+    if (refusal !== null) setError(refusal)
+  }
+
+  return (
+    <aside className="flex w-[400px] shrink-0 flex-col border-l bg-background">
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b px-5">
+        <h2 className="flex-1 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Nouvelle fiche · {table.label}
+        </h2>
+        <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Fermer">
+          <X className="size-4" />
+        </Button>
+      </header>
+
+      <div className="min-h-0 flex-1 overflow-y-auto scroll-discret">
+        <FieldList
+          fields={writable}
+          row={draft}
+          linkOptions={linkOptions}
+          onSearchLink={onSearchLink}
+          onCommit={commit}
+          onUpload={onUpload}
+        />
+      </div>
+
+      <footer className="shrink-0 space-y-2 border-t px-5 py-3">
+        {error !== null && (
+          <p
+            role="alert"
+            className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-sm text-destructive"
+          >
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            Annuler
+          </Button>
+          <Button onClick={() => void create()} disabled={busy}>
+            {busy ? 'Création…' : 'Créer'}
+          </Button>
+        </div>
+      </footer>
+    </aside>
+  )
+}
+
+/** Every field present and empty: an absent key would read as a MASKED field. */
+function emptyDraft(fields: readonly Field[]): Row {
+  const row: Record<string, unknown> = { _id: '' }
+  for (const field of fields) row[field.name] = null
+  return row as Row
+}
+
+/**
+ * The draft in the shape a write takes: a link by its identifier, files by theirs, and
+ * nothing for what was left empty — the database's defaults and `NOT NULL` decide those.
+ */
+function writeValues(fields: readonly Field[], draft: Row): Record<string, unknown> {
+  const values: Record<string, unknown> = {}
+  for (const field of fields) {
+    const value = draft[field.name]
+    if (value === null || value === undefined || value === '') continue
+    if (field.kind === 'link') {
+      const id = (value as { id?: unknown }).id
+      if (typeof id === 'string') values[field.name] = id
+    } else if (isFileField(field)) {
+      const files = filesOf(value)
+      if (files.length > 0) values[field.name] = files.map((f) => ({ id: f.id }))
+    } else {
+      values[field.name] = value
+    }
+  }
+  return values
+}
+
 function PanelField({
   field,
   row,
   options,
   onSearchLink,
   onCommit,
+  onUpload,
 }: {
   readonly field: Field
   readonly row: Row
   readonly options?: readonly LinkOption[]
   readonly onSearchLink: SearchLink
   readonly onCommit: (value: unknown) => Promise<void>
+  readonly onUpload?: Upload
 }) {
   const present = Object.hasOwn(row, field.name)
   const value = row[field.name]
 
   const [typed, setTyped] = useState('')
+  /** A date already sent and not yet read back: Enter then the blur must not write it twice. */
+  const sent = useRef<string | null>(null)
   useEffect(() => {
     // The same reading as in the grid: `487.5000000000` is what the column holds, and
     // the trailing zeros are noise wherever a person is looking.
     setTyped(value === null || value === undefined ? '' : display(String(value), field))
+    sent.current = null
   }, [value, field])
 
   if (!present) {
@@ -240,6 +448,23 @@ function PanelField({
     )
   }
 
+  if (field.kind === 'multi_select') {
+    return field.options === undefined || field.read_only === true ? (
+      <ChoiceChips field={field} values={choicesOf(value)} wrap />
+    ) : (
+      <MultiEnumPicker
+        field={field}
+        value={choicesOf(value)}
+        onChange={(next) => void onCommit(next)}
+        appearance="form"
+      />
+    )
+  }
+
+  if (field.kind === 'file' || field.kind === 'image') {
+    return <FilesField field={field} value={value} onUpload={onUpload} onCommit={onCommit} />
+  }
+
   if (field.kind === 'boolean') {
     return (
       <Checkbox
@@ -257,6 +482,28 @@ function PanelField({
     void onCommit(typed === '' ? null : typed)
   }
 
+  if (isDateKind(field.kind)) {
+    const kind = field.kind
+    const shown = value === null || value === undefined ? '' : display(String(value), field)
+    return (
+      <DateInput
+        kind={kind}
+        text={typed}
+        onTextChange={setTyped}
+        onCommit={(next) => {
+          if (next === shown || next === sent.current) return
+          sent.current = next
+          void onCommit(storedFromText(next, kind))
+        }}
+        onCancel={() => setTyped(shown)}
+        appearance="form"
+        clearable={field.required !== true}
+        readOnly={field.read_only === true}
+        aria-label={field.label}
+      />
+    )
+  }
+
   if (field.kind === 'long_text') {
     return (
       <Textarea
@@ -272,9 +519,6 @@ function PanelField({
 
   return (
     <div className="relative">
-      {(field.kind === 'date' || field.kind === 'datetime') && (
-        <Calendar className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-      )}
       <Input
         value={typed}
         readOnly={field.read_only === true}
@@ -283,15 +527,14 @@ function PanelField({
         onKeyDown={(e) => {
           if (e.key === 'Enter') e.currentTarget.blur()
         }}
-        className={cn(
-          field.read_only === true && 'text-muted-foreground',
-          (field.kind === 'date' || field.kind === 'datetime') && 'pl-8',
-        )}
+        className={cn(field.read_only === true && 'text-muted-foreground')}
         aria-label={field.label}
       />
     </div>
   )
 }
+
+const isFileField = (field: Field) => field.kind === 'file' || field.kind === 'image'
 
 /** The row's own name: the display column when there is one, else its identifier. */
 function headline(row: Row, fields: readonly Field[]): string {

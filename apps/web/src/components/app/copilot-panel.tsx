@@ -72,7 +72,7 @@ export function CopilotPanel({ base, table, fields, onClose, onUseExpression, la
     try {
       if (mode === 'expression') {
         if (table === null) {
-          setError('Ouvrez une table : un filtre se rédige contre des champs.')
+          setError('Ouvrez d’abord une table.')
           return
         }
         setStructure(null)
@@ -117,16 +117,12 @@ export function CopilotPanel({ base, table, fields, onClose, onUseExpression, la
             someone what they already gave away. */}
         <div className="flex gap-2 rounded-lg border bg-muted/40 p-2.5 text-xs text-muted-foreground">
           <Shield className="mt-0.5 size-3.5 shrink-0" />
-          <p>
-            {mode === 'expression'
-              ? 'Partent : le libellé de la table, le nom et le type de ses champs lisibles, et votre phrase. Aucune valeur de cellule, aucun identifiant.'
-              : 'Partent : les libellés des tables et de leurs champs, leurs types, et votre phrase. Aucune donnée, aucun nom physique.'}
-          </p>
+          <p>Seuls votre demande et les noms des champs sont envoyés, jamais les données.</p>
         </div>
 
         {mode === 'expression' && table === null && (
           <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-            Ouvrez une table pour rédiger un filtre contre ses champs.
+            Ouvrez une table pour rédiger un filtre.
           </p>
         )}
 
@@ -149,7 +145,7 @@ export function CopilotPanel({ base, table, fields, onClose, onUseExpression, la
             <p className="text-xs text-muted-foreground">{expression.explanation}</p>
             {expression.filter === '' ? (
               <p className="text-xs italic text-muted-foreground">
-                Aucun filtre proposé : la demande ne s’exprime pas dans cette grammaire.
+                Aucun filtre ne correspond à cette demande.
               </p>
             ) : (
               <>
@@ -169,10 +165,6 @@ export function CopilotPanel({ base, table, fields, onClose, onUseExpression, la
                   <ArrowRight className="size-3.5" />
                   Mettre dans l’éditeur
                 </Button>
-                <p className="text-[10px] leading-relaxed text-muted-foreground">
-                  Rien n’est exécuté : l’expression passe par le validateur ordinaire, comme si vous
-                  l’aviez tapée.
-                </p>
               </>
             )}
           </div>
@@ -206,9 +198,8 @@ export function CopilotPanel({ base, table, fields, onClose, onUseExpression, la
                 </ul>
               </div>
             ))}
-            <p className="rounded-lg border border-dashed p-2.5 text-[10px] leading-relaxed text-muted-foreground">
-              Une proposition, pas une migration. Elle s’amende dans l’éditeur de structure, et son
-              enregistrement produit une migration approuvée à part.
+            <p className="px-0.5 text-[10px] text-muted-foreground">
+              Proposition seulement : rien n’est créé.
             </p>
           </div>
         )}

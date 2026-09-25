@@ -610,7 +610,7 @@ La raison n'est pas le confort mais la théorie de la confiance. Une confirmatio
 
 Le relais MCP tourne sur le poste de l'utilisateur, lancé par son client. Sa configuration comporte deux valeurs : l'origine du back et une **référence** au jeton d'intégration.
 
-Le jeton est une ligne de `_basedb.api_token`, créée depuis l'interface par l'utilisateur lui-même, avec `expires_at` obligatoire et portée `base_id` **obligatoire pour un jeton MCP** (la portée est une contrainte dure, §3.2 ; un jeton sans portée serait une exception permanente au filtre le plus simple du produit).
+Le jeton est une ligne de `_basedb.api_token`, créée depuis l'interface par l'utilisateur lui-même, sans échéance par défaut (`expires_at` nul, durée de 1 à 365 jours au choix) et avec une portée `base_id` **obligatoire pour un jeton MCP** (la portée est une contrainte dure, §3.2 ; un jeton sans portée serait une exception permanente au filtre le plus simple du produit).
 
 ### 9.2 Hygiène du secret
 
@@ -641,7 +641,7 @@ L'identité portée par les opérations est celle du jeton : `actor_kind = 'toke
 | Revalidation | Le jeton est revalidé — existence, expiration, révocation, suspension, portée, surface, intersection des droits — à **chaque** message, avec une mise en cache de **5 secondes au plus** |
 | Disparition du jeton | La session est terminée explicitement, sans attendre le message suivant si une notification de fermeture est possible : `TOKEN_REVOKED` si le jeton est révoqué, `TOKEN_EXPIRED` si sa date d'expiration est dépassée, `TOKEN_INVALID` s'il est devenu inconnu ou ne porte plus `mcp` dans ses surfaces autorisées |
 | Inactivité | Le back invalide une session inactive depuis 30 minutes ; le client rejoue `initialize` |
-| Durée maximale | Une session ne survit jamais à `api_token.expires_at` |
+| Durée maximale | Une session ne survit jamais à `api_token.expires_at` quand le jeton en porte une, ni à sa révocation |
 | Appels simultanés | 4 requêtes en vol par session ; au-delà, `QUOTA_EXCEEDED` avec `retry_after` |
 
 Ces règles ne sont pas décoratives : en stdio, une session vit des heures. Sans revalidation par message, l'expiration obligatoire du jeton et l'intersection « au moment de l'appel » seraient vides de sens.

@@ -1,6 +1,7 @@
 import { sqlCommentOnColumn, sqlCommentOnTable } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { loadGrants } from '../rbac/loader.js'
+import { requireOnField, requireOnTable } from '../rbac/require.js'
 import type { Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { commentText, normalizeDescription } from './description.js'
@@ -37,6 +38,8 @@ export async function setTableDescription(
   const description = normalizeDescription(request.description)
 
   return withTransaction(pools, 'ddl', ctx, async (exec) => {
+    // Building is `manage_schema` on the table (chapter 05 §8).
+    await requireOnTable(exec, ctx, 'manage_schema', request.tableId)
     const [table] = await exec.query<TableLocation>(
       `SELECT t.base_id, t.label, tn.name AS table_name, sn.name AS schema_name
          FROM _basedb.table_def t
@@ -82,6 +85,8 @@ export async function setFieldDescription(
   const description = normalizeDescription(request.description)
 
   return withTransaction(pools, 'ddl', ctx, async (exec) => {
+    // Building is `manage_schema` on the table (chapter 05 §8).
+    await requireOnField(exec, ctx, 'manage_schema', request.fieldId)
     const [field] = await exec.query<FieldLocation>(
       `SELECT f.base_id, f.label AS field_label, t.label,
               cn.name AS column_name, tn.name AS table_name, sn.name AS schema_name

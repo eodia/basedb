@@ -60,17 +60,26 @@ export async function readVersions(
   exec: Executor,
   tenantRef: string,
 ): Promise<CatalogVersions | null> {
+  // The projects enter the fingerprint too, and a base's project with it: creating,
+  // renaming or deleting a project, or moving a base into another, changes no
+  // `catalog_version`, yet changes what every reader is shown.
   const rows = await exec.query<{ authz_version: string; catalog: string }>(
     `SELECT t.authz_version,
             coalesce(
-              md5(string_agg(b.id::text || ':' || b.catalog_version::text, ',' ORDER BY b.id)),
+              md5(string_agg(b.id::text || ':' || b.catalog_version::text || ':'
+                             || b.project_id::text, ',' ORDER BY b.id)),
               'aucune-base'
+            ) || ':' || coalesce(
+              (SELECT md5(string_agg(p.id::text || ':' || p.updated_at::text, ',' ORDER BY p.id))
+                 FROM _basedb.project p
+                WHERE p.tenant_id = t.id AND p.deleted_at IS NULL),
+              'aucun-projet'
             ) AS catalog
        FROM _basedb.tenant t
        LEFT JOIN _basedb.base b
               ON b.tenant_id = t.id AND b.is_live AND b.deleted_at IS NULL
       WHERE t.ref = $1
-      GROUP BY t.authz_version`,
+      GROUP BY t.id, t.authz_version`,
     [tenantRef],
   )
 

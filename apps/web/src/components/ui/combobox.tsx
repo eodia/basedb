@@ -61,6 +61,12 @@ interface ComboboxProps {
   readonly clearLabel?: string
   readonly searchPlaceholder?: string
   readonly emptyLabel?: string
+  /**
+   * Makes the list a MULTIPLE choice: the values checked are these, choosing an option
+   * toggles it (`onValueChange` receives it) and the list stays open for the next one.
+   * The clear entry, when offered, empties the whole set (`onValueChange(null)`).
+   */
+  readonly selected?: ReadonlySet<string>
   /** Styles the trigger, which otherwise looks like a `SelectTrigger`. */
   readonly className?: string
   readonly 'aria-label'?: string
@@ -86,10 +92,13 @@ export function Combobox({
   clearLabel,
   searchPlaceholder = 'Rechercher…',
   emptyLabel = 'Aucun résultat',
+  selected: checked,
   className,
   'aria-label': ariaLabel,
   children,
 }: ComboboxProps) {
+  const multiple = checked !== undefined
+  const filled = multiple ? checked.size > 0 : value !== null
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [highlighted, setHighlighted] = useState(0)
@@ -101,7 +110,7 @@ export function Combobox({
   // `null` is the entry that empties the value. It leads the list only while nothing is
   // typed: once there is a text, the list is a list of matches and this is not one.
   const entries: readonly (ComboboxOption | null)[] =
-    clearLabel !== undefined && value !== null && query === '' ? [null, ...visible] : visible
+    clearLabel !== undefined && filled && query === '' ? [null, ...visible] : visible
 
   // Clamped at render, not corrected in an effect: results that arrive late can shorten
   // the list under the highlight, and one frame pointing past the end must not happen.
@@ -113,7 +122,8 @@ export function Combobox({
 
   const choose = (entry: ComboboxOption | null) => {
     onValueChange(entry === null ? null : entry.value)
-    setOpen(false)
+    // A multiple choice is made one option after another: only emptying it closes.
+    if (!multiple || entry === null) setOpen(false)
   }
 
   const type = (text: string) => {
@@ -195,9 +205,15 @@ export function Combobox({
 
         {/* biome-ignore lint/a11y/useSemanticElements: a <select> cannot host a search box — see the trigger */}
         {/* biome-ignore lint/a11y/useFocusableInteractive: focus stays in the search box, which points at the highlighted option with aria-activedescendant */}
-        <div id={listId} role="listbox" className="scroll-discret max-h-64 overflow-y-auto p-1">
+        <div
+          id={listId}
+          role="listbox"
+          aria-multiselectable={multiple || undefined}
+          className="scroll-discret max-h-64 overflow-y-auto p-1"
+        >
           {entries.map((entry, index) => {
-            const selected = entry !== null && entry.value === value
+            const selected =
+              entry !== null && (multiple ? checked.has(entry.value) : entry.value === value)
             return (
               // biome-ignore lint/a11y/useFocusableInteractive: the options never take focus — see the list
               // biome-ignore lint/a11y/useKeyWithClickEvents: the keyboard belongs to the search box, which drives this list through aria-activedescendant

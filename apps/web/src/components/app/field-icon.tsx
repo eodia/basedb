@@ -6,8 +6,11 @@ import {
   CircleChevronDown,
   Clock,
   Hash,
+  Image as ImageIcon,
   Link2,
+  ListChecks,
   Lock,
+  Paperclip,
   Sigma,
   ToggleLeft,
 } from 'lucide-react'
@@ -27,8 +30,11 @@ const ICONS = {
   date: Calendar,
   datetime: Clock,
   select: CircleChevronDown,
+  multi_select: ListChecks,
   link: Link2,
   formula: Sigma,
+  file: Paperclip,
+  image: ImageIcon,
   system: Lock,
 } as const
 
@@ -49,8 +55,11 @@ export const KIND_LABELS: Readonly<Record<string, string>> = {
   date: 'Date',
   datetime: 'Date et heure',
   select: 'Liste de choix',
+  multi_select: 'Choix multiple',
   link: 'Lien',
   formula: 'Formule',
+  file: 'Document',
+  image: 'Image',
   system: 'Colonne système',
 }
 

@@ -1,5 +1,47 @@
+import { createHmac, randomBytes } from 'node:crypto'
 import { catalogMigrations } from '@basedb/catalog-schema'
 import { ALL_ERROR_CODES, ERROR_CODES } from '@basedb/contracts'
+import {
+  type AccessChange,
+  type AccessGraph,
+  accessGraph,
+  applyAccessChanges,
+} from './admin/access.js'
+import {
+  type GroupSummary,
+  createGroup,
+  deleteGroup,
+  ensureSystemGroups,
+  listGroupMembers,
+  listGroups,
+  renameGroup,
+  setGroupMembership,
+} from './admin/groups.js'
+import {
+  type UserSummary,
+  createUser,
+  listUsers,
+  resetUserPassword,
+  setUserGroups,
+  updateUser,
+} from './admin/users.js'
+import { type AgentCall, recordAgentCall } from './agent/audit.js'
+import {
+  agentDescribeBase,
+  agentDescribeTable,
+  agentListBases,
+  agentWhoAmI,
+} from './agent/describe.js'
+import {
+  type AgentListRequest,
+  type AgentRows,
+  type AgentWriteRequest,
+  agentCreateRecord,
+  agentGetRecord,
+  agentListRecords,
+  agentLookupRecords,
+  agentUpdateRecord,
+} from './agent/records.js'
 import {
   type ExpressionDraft,
   type ExpressionDraftRequest,
@@ -39,6 +81,15 @@ import {
 } from './auth/operations.js'
 import { loginWithOidc } from './auth/operations.js'
 import { elevated, listLiveSessions, loadSessionByToken } from './auth/session.js'
+import {
+  type ApiTokenSummary,
+  type CreateApiTokenRequest,
+  type IssuedApiToken,
+  createApiToken,
+  listApiTokens,
+  revokeApiToken,
+  verifyApiToken,
+} from './auth/tokens.js'
 import { DESCRIPTION_MAX_CHARS } from './catalog/description.js'
 import { setFieldDescription, setTableDescription } from './catalog/descriptions.js'
 import { type Documentation, toDocumentation } from './catalog/documentation.js'
@@ -66,6 +117,7 @@ import {
   createLinkField,
   setDisplayColumn,
 } from './catalog/links.js'
+import type { Look, LookInput } from './catalog/look.js'
 import { toOpenApi } from './catalog/openapi.js'
 import {
   type CreateBaseResult,
@@ -85,11 +137,19 @@ import {
   resolveTable,
 } from './catalog/projection.js'
 import {
+  type ProjectSummary,
+  createProject,
+  deleteProject,
+  listProjects,
+  updateProject,
+} from './catalog/projects.js'
+import {
   type SelectOptionInput,
   type SetOptionsResult,
   setSelectOptions,
 } from './catalog/select-options.js'
 import { type MetaKind, type ServedMeta, serveMeta } from './catalog/serve.js'
+import { type UpdatedTable, updateTable } from './catalog/table-edit.js'
 import {
   type Migration,
   applyMigration,
@@ -98,6 +158,17 @@ import {
   reclaimStaleMigrations,
 } from './ddl/migration.js'
 import { BasedbError } from './errors/index.js'
+import {
+  DEFAULT_MAX_FILE_BYTES,
+  type FileDeps,
+  type OpenedFile,
+  type UploadRequest,
+  type UploadedFile,
+  openFile,
+  uploadFile,
+  withFileLinks,
+} from './files/operations.js'
+import { type FileStorageConfig, createFileStorage } from './files/storage.js'
 import {
   type CreateRecordOptions,
   type CreateRecordsOptions,
@@ -119,7 +190,7 @@ import {
   deleteRecord,
   updateRecord,
 } from './records/update.js'
-import { Pools } from './runtime/pool.js'
+import { Pools, type PoolsOptions } from './runtime/pool.js'
 import {
   type SqlConsoleRequest,
   type SqlConsoleResult,
@@ -152,7 +223,13 @@ export type {
 } from './catalog/operations.js'
 export type { CreateLinkFieldRequest, CreatedLinkField, OnDelete } from './catalog/links.js'
 export type { AddFieldRequest, AddedField, RequiredResult } from './catalog/fields.js'
+export type { Look, LookInput } from './catalog/look.js'
+export type { UpdatedTable } from './catalog/table-edit.js'
 export type { SelectOption, SelectOptionInput, SetOptionsResult } from './catalog/select-options.js'
+export type { FileStorageConfig } from './files/storage.js'
+export type { OpenedFile, UploadRequest, UploadedFile } from './files/operations.js'
+export { DEFAULT_MAX_FILE_BYTES } from './files/operations.js'
+export { MAX_FILES_PER_VALUE } from './ddl/emit.js'
 export {
   MAX_IMAGE_CHARS,
   MAX_LABEL_CHARS,
@@ -177,7 +254,7 @@ export type {
 } from './ai/draft.js'
 export { DESCRIPTION_MAX_CHARS }
 export type { DocSection, Documentation } from './catalog/documentation.js'
-export { toDocumentation } from './catalog/documentation.js'
+export { DOCUMENTED_MCP_TOOLS, toDocumentation } from './catalog/documentation.js'
 export { CACHE_CONTROL, VARY } from './catalog/serve.js'
 export type { MetaKind, ServedMeta } from './catalog/serve.js'
 export { clearCaches, SNAPSHOT_TTL_MS, DOCUMENT_MAX_BYTES } from './catalog/cache.js'
@@ -216,6 +293,55 @@ export { seal } from './auth/sealing.js'
 export { normalizeEmail } from './auth/operations.js'
 export { CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE, SESSION_ABSOLUTE_MS } from './auth/session.js'
 export { PASSWORD_MIN, PASSWORD_MAX } from './auth/password.js'
+export type {
+  ApiTokenSummary,
+  CreateApiTokenRequest,
+  IssuedApiToken,
+  TokenAccess,
+} from './auth/tokens.js'
+export { TOKEN_DEFAULT_DAYS, TOKEN_MAX_DAYS, forgetVerifiedTokens } from './auth/tokens.js'
+export type { AgentCall } from './agent/audit.js'
+export type {
+  AccessCell,
+  AccessChange,
+  AccessGraph,
+  AccessLevel,
+  AccessProject,
+} from './admin/access.js'
+export { ACCESS_LEVELS, LEVEL_ACTIONS } from './admin/access.js'
+export type { GroupSummary, SystemGroup } from './admin/groups.js'
+export type { UserSummary } from './admin/users.js'
+export type { ProjectBase, ProjectSummary } from './catalog/projects.js'
+export type { AgentNotice } from './agent/describe.js'
+export { ON_DELETE_MEANING } from './agent/describe.js'
+export type {
+  AgentColumn,
+  AgentListRequest,
+  AgentPredicate,
+  AgentRows,
+  AgentWriteRequest,
+  AgentWriteResult,
+} from './agent/records.js'
+export { AGENT_BOUNDS } from './agent/records.js'
+export { OPERATORS } from './records/filter.js'
+
+/**
+ * The write budgets of chapter 09 §6.4, evaluated AFTER THE FACT by the process that
+ * drains the journals — never counted on the request path. Published by `whoami` so an
+ * agent knows the bound it runs under.
+ */
+export const AGENT_WRITE_BUDGETS = Object.freeze({
+  rows_written_per_hour: 500,
+  rows_written_per_table_per_hour: 200,
+})
+
+/** What the agent-surface description operations return, as the adapter receives them. */
+export type AgentBaseList = Awaited<ReturnType<typeof agentListBases>>
+export type AgentBaseDescription = Awaited<ReturnType<typeof agentDescribeBase>>
+export type AgentTableDescription = Awaited<ReturnType<typeof agentDescribeTable>>
+export type AgentIdentity = Awaited<ReturnType<typeof agentWhoAmI>>
+export type AgentLookup = Awaited<ReturnType<typeof agentLookupRecords>>
+export type AgentWrite = Awaited<ReturnType<typeof agentCreateRecord>>
 
 export interface KernelConfig {
   readonly connectionString: string
@@ -237,6 +363,22 @@ export interface KernelConfig {
    * that serves as the way back in.
    */
   readonly mailer?: Mailer
+  /**
+   * Pool sizing and timeouts, per pool — for an entry point whose surface demands
+   * shorter ones than the defaults (the agent surface: 5 s statements, 1 s locks,
+   * chapter 09 §11.3).
+   */
+  readonly poolSettings?: PoolsOptions['settings']
+  /**
+   * Where the bytes of `file` and `image` fields go, and the largest one accepted.
+   *
+   * Absent, a local directory under the working directory: enough for one host in
+   * development, and said at startup so nobody runs production on it by accident.
+   */
+  readonly files?: {
+    readonly storage: FileStorageConfig
+    readonly maxBytes?: number
+  }
 }
 
 /**
@@ -276,6 +418,10 @@ export interface Kernel {
     readonly displayName: string
     readonly tenantRef: string
     readonly isInstanceAdmin: boolean
+    /** Member of the Administrators, or an instance administrator. */
+    readonly isAdmin: boolean
+    /** A temporary password is in use: a new one is asked for before anything else. */
+    readonly mustChangePassword: boolean
     readonly elevatedUntil: string | null
   }>
   listSessions(authenticated: Authenticated): Promise<
@@ -374,10 +520,169 @@ export interface Kernel {
     readonly surface: Surface
     readonly timeoutMs?: number
   }): Promise<RequestContext>
+  /**
+   * Believes an integration token on one surface, and opens its context — chapter 05
+   * §2.3, chapter 09 §9.3.
+   *
+   * The actor is the token: `actor.kind = 'token'`, `actor.tokenId` the token,
+   * `actor.id` its creator. What it may do is its role intersected with its creator's
+   * rights, recomputed at every decision. Refusals name why: `TOKEN_INVALID`,
+   * `TOKEN_EXPIRED`, `TOKEN_REVOKED`, `TOKEN_SUSPENDED`.
+   */
+  openTokenContext(credential: {
+    readonly secret: string | undefined
+    readonly surface: Surface
+    readonly requestId: string
+    readonly timeoutMs?: number
+    readonly ip?: string | null
+  }): Promise<RequestContext>
+  /**
+   * Mints an integration token — chapter 08 §11. The secret is in the result and
+   * nowhere else, ever. Demands a session elevated minutes ago and `manage_tokens` on
+   * the base; the token's role never carries more than its creator holds there.
+   */
+  createApiToken(ctx: RequestContext, request: CreateApiTokenRequest): Promise<IssuedApiToken>
+  /** A base's tokens — metadata, prefix, state; never a secret. */
+  listApiTokens(
+    ctx: RequestContext,
+    request: { readonly baseId: string },
+  ): Promise<readonly ApiTokenSummary[]>
+  /** Revokes a token at once and for good. Demands an elevated session. */
+  revokeApiToken(
+    ctx: RequestContext,
+    request: { readonly tokenId: string; readonly sessionId: string },
+  ): Promise<void>
+  /** `whoami` of the agent surface — chapter 09 §2.2. */
+  agentWhoAmI(
+    ctx: RequestContext,
+    budgets?: Readonly<Record<string, number>>,
+  ): Promise<AgentIdentity>
+  /** `list_bases`: the bases with at least one readable table, open to agents. */
+  agentListBases(ctx: RequestContext): Promise<AgentBaseList>
+  /** `describe_base` — §4.1. */
+  agentDescribeBase(ctx: RequestContext, base: string): Promise<AgentBaseDescription>
+  /** `describe_table` — §4.2. */
+  agentDescribeTable(
+    ctx: RequestContext,
+    base: string,
+    table: string,
+  ): Promise<AgentTableDescription>
+  /** `list_records` — §5.1. */
+  agentListRecords(ctx: RequestContext, request: AgentListRequest): Promise<AgentRows>
+  /** `get_record` — §5.2. */
+  agentGetRecord(
+    ctx: RequestContext,
+    request: {
+      readonly base: string
+      readonly table: string
+      readonly id: string
+      readonly select?: readonly string[]
+      readonly expand?: readonly string[]
+      readonly expandFields?: readonly string[]
+    },
+  ): Promise<AgentRows>
+  /** `lookup_records` — §5.3. */
+  agentLookupRecords(
+    ctx: RequestContext,
+    request: {
+      readonly base: string
+      readonly table: string
+      readonly value: string
+      readonly limit?: number
+    },
+  ): Promise<AgentLookup>
+  /** `create_record` — §6.1. */
+  agentCreateRecord(ctx: RequestContext, request: AgentWriteRequest): Promise<AgentWrite>
+  /** `update_record` — §6.2. */
+  agentUpdateRecord(
+    ctx: RequestContext,
+    request: AgentWriteRequest & { readonly id: string },
+  ): Promise<AgentWrite>
+  /** The audit line of one agent call — the shape of its parameters, never their values. */
+  recordAgentCall(ctx: RequestContext, call: AgentCall): Promise<void>
   createBase(
     ctx: RequestContext,
-    request: { label: string; technicalName?: string; description?: string | null },
+    request: {
+      label: string
+      technicalName?: string
+      description?: string | null
+      /** The project to create it in — the tenant's first when absent. */
+      projectId?: string
+    },
   ): Promise<CreateBaseResult>
+  /**
+   * The projects the caller can see, with the bases and tables they can see in each —
+   * the navigation of the interface (chapter 05 §15).
+   */
+  listProjects(ctx: RequestContext): Promise<readonly ProjectSummary[]>
+  /** Creates a project. `manage_schema` on the tenant: the Administrators. */
+  createProject(
+    ctx: RequestContext,
+    request: { label: string; description?: string | null },
+  ): Promise<{ readonly id: string; readonly label: string; readonly description: string | null }>
+  /** Renames a project, or changes what it is for. `manage_schema` on the project. */
+  updateProject(
+    ctx: RequestContext,
+    request: { projectId: string; label?: string; description?: string | null },
+  ): Promise<{ readonly label: string; readonly description: string | null }>
+  /** Deletes an empty project (`PROJECT_NOT_EMPTY` otherwise). */
+  deleteProject(ctx: RequestContext, request: { projectId: string }): Promise<void>
+  /** The tenant's accounts — administration only. */
+  listUsers(ctx: RequestContext): Promise<readonly UserSummary[]>
+  /**
+   * Creates an account and returns its temporary password, shown this once. Every
+   * administration write demands a session elevated minutes ago (05 §2.2).
+   */
+  createUser(
+    ctx: RequestContext,
+    request: {
+      email: string
+      displayName: string
+      groupIds?: readonly string[]
+      sessionId: string
+    },
+  ): Promise<{ readonly user: UserSummary; readonly temporaryPassword: string }>
+  /** Renames, deactivates or reactivates an account. */
+  updateUser(
+    ctx: RequestContext,
+    request: { userId: string; displayName?: string; disabled?: boolean; sessionId: string },
+  ): Promise<UserSummary>
+  /** A new temporary password; every session of the account is closed. */
+  resetUserPassword(
+    ctx: RequestContext,
+    request: { userId: string; sessionId: string },
+  ): Promise<{ readonly temporaryPassword: string }>
+  /** Sets the groups of an account — « Tous les utilisateurs » always included. */
+  setUserGroups(
+    ctx: RequestContext,
+    request: { userId: string; groupIds: readonly string[]; sessionId: string },
+  ): Promise<UserSummary>
+  /** The tenant's groups, the two system groups first. */
+  listGroups(ctx: RequestContext): Promise<readonly GroupSummary[]>
+  createGroup(
+    ctx: RequestContext,
+    request: { label: string; sessionId: string },
+  ): Promise<GroupSummary>
+  renameGroup(
+    ctx: RequestContext,
+    request: { groupId: string; label: string; sessionId: string },
+  ): Promise<{ readonly label: string }>
+  deleteGroup(ctx: RequestContext, request: { groupId: string; sessionId: string }): Promise<void>
+  listGroupMembers(
+    ctx: RequestContext,
+    request: { groupId: string },
+  ): Promise<ReadonlyArray<{ id: string; email: string; displayName: string }>>
+  setGroupMembership(
+    ctx: RequestContext,
+    request: { groupId: string; userId: string; member: boolean; sessionId: string },
+  ): Promise<void>
+  /** The permission grid: every group, every project, base and table, and each level. */
+  accessGraph(ctx: RequestContext): Promise<AccessGraph>
+  /** Sets levels on the grid, Metabase-style, and returns the new grid. */
+  applyAccessChanges(
+    ctx: RequestContext,
+    request: { changes: readonly AccessChange[]; sessionId: string },
+  ): Promise<AccessGraph>
   createTable(
     ctx: RequestContext,
     request: {
@@ -480,15 +785,24 @@ export interface Kernel {
     request: { baseId: string; label: string },
   ): Promise<{ readonly label: string }>
   /**
-   * Changes a base's label and/or description in one catalog write.
+   * Changes a base's label, description and/or look in one catalog write.
    *
-   * `undefined` leaves a field as it is; a description is cleared with `null`. Same
-   * register as `renameBase`: no DDL, no migration.
+   * `undefined` leaves a field as it is; a description is cleared with `null`. The look —
+   * colour, pictogram, picture — is replaced whole as soon as one of its keys is named.
+   * Same register as `renameBase`: no DDL, no migration.
    */
   updateBase(
     ctx: RequestContext,
-    request: { baseId: string; label?: string; description?: string | null },
-  ): Promise<{ readonly label: string; readonly description: string | null }>
+    request: { baseId: string; label?: string; description?: string | null; look?: LookInput },
+  ): Promise<{ readonly label: string; readonly description: string | null } & Look>
+  /**
+   * Changes a table's label and/or look. The relation keeps its physical name; the
+   * `COMMENT ON TABLE` follows a new label in the same transaction.
+   */
+  updateTable(
+    ctx: RequestContext,
+    request: { tableId: string; label?: string; look?: LookInput },
+  ): Promise<UpdatedTable>
   /**
    * Sets or clears the description of a table — what it is FOR, for the documentation
    * and for agents. Rewrites the `COMMENT ON TABLE` in the same transaction.
@@ -599,6 +913,23 @@ export interface Kernel {
     ctx: RequestContext,
     options: DeleteRecordOptions,
   ): Promise<{ readonly deleted: string; readonly sql: string }>
+  /**
+   * Deposits a file for a `file` or `image` field — chapter 04 §3 bis. The file is
+   * attached to nothing until a row write cites the identifier returned.
+   */
+  uploadFile(ctx: RequestContext, request: UploadRequest): Promise<UploadedFile>
+  /**
+   * Opens a file through a link a read handed out. No context: the signed link IS the
+   * credential, which is what lets an `<img src>` show a picture.
+   */
+  openFile(request: {
+    tenant: string
+    id: string
+    expires: string | undefined
+    signature: string | undefined
+  }): Promise<OpenedFile>
+  /** Where the files go, for the startup log; and the largest deposit, for the adapter. */
+  readonly files: { readonly storage: string; readonly maxBytes: number }
   close(): Promise<void>
 }
 
@@ -627,7 +958,39 @@ const DEFAULT_TIMEOUT_MS = 30_000
  * closure. That is what makes lock 1 true by construction rather than by convention.
  */
 export function startKernel(config: KernelConfig): Kernel {
-  const pools = new Pools({ connectionString: config.connectionString })
+  const pools = new Pools({
+    connectionString: config.connectionString,
+    settings: config.poolSettings,
+  })
+
+  /**
+   * The key of the audit's value digests. Without an instance key, one drawn per
+   * process: digests then correlate calls within a run only, which degrades the
+   * correlation and never discloses a value.
+   */
+  const digestKey = config.encryptionKey || randomBytes(32).toString('base64')
+
+  /**
+   * Files: the storage, and the key file links are signed with — derived from the
+   * instance key by domain separation, or, without one, from the per-process key above:
+   * links then die with the process, which breaks nothing a reload does not repair.
+   */
+  const storage = createFileStorage(
+    config.files?.storage ?? { driver: 'local', directory: '.basedb/files' },
+  )
+  const files: FileDeps = {
+    pools,
+    storage,
+    maxBytes: config.files?.maxBytes ?? DEFAULT_MAX_FILE_BYTES,
+    linkKey: createHmac('sha256', digestKey).update('basedb/files/link/v1').digest(),
+  }
+  const linked = <T extends { readonly fileColumns: readonly string[] }>(
+    ctx: RequestContext,
+    result: T & { readonly row: Record<string, unknown> },
+  ): T =>
+    result.fileColumns.length === 0
+      ? result
+      : { ...result, row: withFileLinks(files.linkKey, ctx, [result.row], result.fileColumns)[0] }
 
   /**
    * The instance key, demanded at the moment it is needed.
@@ -750,6 +1113,15 @@ export function startKernel(config: KernelConfig): Kernel {
           [t.created_by, t.id, request.email],
           'insert',
         )
+        // The two system groups — the first account is an Administrator, and belongs to
+        // everyone — and a first project to create bases in (chapter 05 §15).
+        await ensureSystemGroups(exec, request.tenantRef, t.created_by)
+        await exec.query(
+          `INSERT INTO _basedb.project (tenant_id, label, label_key, created_by, updated_by)
+           VALUES ($1, 'Projet principal', 'projet principal', $2, $2)`,
+          [t.id, t.created_by],
+          'insert',
+        )
         await exec.query('COMMIT')
         return { tenantId: t.id, userId: t.created_by, alreadyDone: false }
       })
@@ -784,6 +1156,39 @@ export function startKernel(config: KernelConfig): Kernel {
         permissions: { version: '1', rowPredicate: 'TRUE' },
       })
     },
+
+    async openTokenContext(credential) {
+      const token = await verifyApiToken(pools, credential.secret, credential.surface, {
+        requestId: credential.requestId,
+        ip: credential.ip,
+      })
+      const now = new Date()
+      return sealContext({
+        requestId: credential.requestId,
+        actor: { kind: 'token', id: token.userId, tokenId: token.tokenId },
+        tenantId: token.tenantRef,
+        surface: credential.surface,
+        timestamp: now,
+        deadline: new Date(now.getTime() + (credential.timeoutMs ?? DEFAULT_TIMEOUT_MS)),
+        permissions: { version: '1', rowPredicate: 'TRUE' },
+      })
+    },
+
+    createApiToken: (ctx, request) => createApiToken(pools, ctx, request),
+    listApiTokens: (ctx, request) => listApiTokens(pools, ctx, request),
+    revokeApiToken: (ctx, request) => revokeApiToken(pools, ctx, request),
+
+    agentWhoAmI: (ctx, budgets) =>
+      agentWhoAmI(pools, ctx, { ...AGENT_WRITE_BUDGETS, ...(budgets ?? {}) }),
+    agentListBases: (ctx) => agentListBases(pools, ctx),
+    agentDescribeBase: (ctx, base) => agentDescribeBase(pools, ctx, base),
+    agentDescribeTable: (ctx, base, table) => agentDescribeTable(pools, ctx, base, table),
+    agentListRecords: (ctx, request) => agentListRecords(pools, ctx, request),
+    agentGetRecord: (ctx, request) => agentGetRecord(pools, ctx, request),
+    agentLookupRecords: (ctx, request) => agentLookupRecords(pools, ctx, request),
+    agentCreateRecord: (ctx, request) => agentCreateRecord(pools, ctx, request),
+    agentUpdateRecord: (ctx, request) => agentUpdateRecord(pools, ctx, request),
+    recordAgentCall: (ctx, call) => recordAgentCall(pools, ctx, digestKey, call),
 
     login: (request) => login(pools, instanceKey(), request),
     authenticateCookie: (token) => authenticateCookie(pools, token),
@@ -868,6 +1273,23 @@ export function startKernel(config: KernelConfig): Kernel {
     },
 
     createBase: (ctx, request) => createBase(pools, ctx, request),
+    listProjects: (ctx) => listProjects(pools, ctx),
+    createProject: (ctx, request) => createProject(pools, ctx, request),
+    updateProject: (ctx, request) => updateProject(pools, ctx, request),
+    deleteProject: (ctx, request) => deleteProject(pools, ctx, request),
+    listUsers: (ctx) => listUsers(pools, ctx),
+    createUser: (ctx, request) => createUser(pools, ctx, instanceKey(), request),
+    updateUser: (ctx, request) => updateUser(pools, ctx, request),
+    resetUserPassword: (ctx, request) => resetUserPassword(pools, ctx, instanceKey(), request),
+    setUserGroups: (ctx, request) => setUserGroups(pools, ctx, request),
+    listGroups: (ctx) => listGroups(pools, ctx),
+    createGroup: (ctx, request) => createGroup(pools, ctx, request),
+    renameGroup: (ctx, request) => renameGroup(pools, ctx, request),
+    deleteGroup: (ctx, request) => deleteGroup(pools, ctx, request),
+    listGroupMembers: (ctx, request) => listGroupMembers(pools, ctx, request),
+    setGroupMembership: (ctx, request) => setGroupMembership(pools, ctx, request),
+    accessGraph: (ctx) => accessGraph(pools, ctx),
+    applyAccessChanges: (ctx, request) => applyAccessChanges(pools, ctx, request),
     createTable: (ctx, request) => createTable(pools, ctx, request),
     createLinkField: (ctx, request) => createLinkField(pools, ctx, request),
     addField: (ctx, request) => addField(pools, ctx, request),
@@ -887,6 +1309,7 @@ export function startKernel(config: KernelConfig): Kernel {
       resolveField(pools, ctx, baseRef, tableRef, fieldRef),
     renameBase: (ctx, request) => renameBaseLabel(pools, ctx, request),
     updateBase: (ctx, request) => updateBase(pools, ctx, request),
+    updateTable: (ctx, request) => updateTable(pools, ctx, request),
     setTableDescription: (ctx, request) => setTableDescription(pools, ctx, request),
     setFieldDescription: (ctx, request) => setFieldDescription(pools, ctx, request),
     setFieldLabel: (ctx, request) => setFieldLabel(pools, ctx, request),
@@ -902,11 +1325,19 @@ export function startKernel(config: KernelConfig): Kernel {
     draftStructure: (ctx, transport, request) => draftStructure(pools, ctx, transport, request),
     runSql: (ctx, request) =>
       runConsoleSql(pools, ctx, config.encryptionKey, config.connectionString, request),
-    listRecords: (ctx, options) => listRecords(pools, ctx, options),
+    listRecords: async (ctx, options) => {
+      const result = await listRecords(pools, ctx, options)
+      return result.fileColumns.length === 0
+        ? result
+        : { ...result, rows: withFileLinks(files.linkKey, ctx, result.rows, result.fileColumns) }
+    },
     listInverseLinks: (ctx, options) => listInverseLinks(pools, ctx, options),
-    createRecord: (ctx, options) => createRecord(pools, ctx, options),
+    createRecord: async (ctx, options) => linked(ctx, await createRecord(pools, ctx, options)),
     createRecords: (ctx, options) => createRecords(pools, ctx, options),
-    updateRecord: (ctx, options) => updateRecord(pools, ctx, options),
+    updateRecord: async (ctx, options) => linked(ctx, await updateRecord(pools, ctx, options)),
+    uploadFile: (ctx, request) => uploadFile(files, ctx, request),
+    openFile: (request) => openFile(files, request, new Date()),
+    files: { storage: storage.description, maxBytes: files.maxBytes },
     deleteRecord: (ctx, options) => deleteRecord(pools, ctx, options),
     close: async () => {
       await closeConsolePools()

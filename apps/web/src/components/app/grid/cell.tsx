@@ -1,12 +1,22 @@
 'use client'
 
-import { EnumPicker, LinkPicker, type SearchLink } from '@/components/app/pickers'
+import { DateInput } from '@/components/app/date-picker'
+import { FilesCell, type Upload } from '@/components/app/files'
+import {
+  ChoiceChips,
+  EnumPicker,
+  LinkPicker,
+  MultiEnumPicker,
+  type SearchLink,
+  choicesOf,
+} from '@/components/app/pickers'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import type { Field, LinkOption } from '@/lib/api/client'
+import { type Field, type LinkOption, filesOf } from '@/lib/api/client'
+import { type DateKind, displayStored, isDateKind, storedFromText } from '@/lib/dates'
 import { cn } from '@/lib/utils'
 import { Link2 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 /**
  * One cell — chapter 11 §2 and §3.
@@ -45,6 +55,8 @@ interface CellProps {
   readonly onStartEdit: () => void
   readonly onEndEdit: () => void
   readonly onCommit: (value: unknown) => Promise<void>
+  /** Deposits files for a `file` or `image` cell. Absent, such a cell only shows its files. */
+  readonly onUpload?: Upload
 }
 
 export function Cell({
@@ -57,16 +69,14 @@ export function Cell({
   onStartEdit,
   onEndEdit,
   onCommit,
+  onUpload,
 }: CellProps) {
   const present = Object.hasOwn(row, field.name)
   const value = row[field.name]
 
   if (!present) {
     return (
-      <span
-        className="flex w-full items-center px-2 text-muted-foreground/60"
-        title="Champ masqué : il n’a pas été lu, donc il n’est pas ici."
-      >
+      <span className="flex w-full items-center px-2 text-muted-foreground/60" title="Champ masqué">
         ···
       </span>
     )
@@ -148,7 +158,48 @@ export function Cell({
     )
   }
 
+  if (field.kind === 'multi_select') {
+    if (field.options === undefined || field.read_only === true) {
+      return (
+        <span className="flex w-full min-w-0 items-center px-2">
+          <ChoiceChips field={field} values={choicesOf(value)} />
+        </span>
+      )
+    }
+    return (
+      <span className="flex w-full min-w-0 items-center px-1">
+        <MultiEnumPicker
+          field={field}
+          value={choicesOf(value)}
+          onChange={(next) => void onCommit(next)}
+          appearance="cell"
+        />
+      </span>
+    )
+  }
+
+  if (field.kind === 'file' || field.kind === 'image') {
+    return <FilesCell field={field} value={value} onUpload={onUpload} onCommit={onCommit} />
+  }
+
   const initial = value === null || value === undefined ? '' : String(value)
+
+  if (editing && isDateKind(field.kind)) {
+    const shown = display(initial, field)
+    return (
+      <DateEditor
+        initial={shown}
+        kind={field.kind}
+        field={field}
+        onCancel={onEndEdit}
+        onCommit={async (next) => {
+          onEndEdit()
+          if (next === shown) return
+          await onCommit(next === '' ? null : convert(next, field))
+        }}
+      />
+    )
+  }
 
   if (editing) {
     return (
@@ -223,6 +274,57 @@ function TextEditor({
   )
 }
 
+/**
+ * A `date` or `datetime` cell being edited: typed day first, or picked from the calendar
+ * that opens under it.
+ */
+function DateEditor({
+  initial,
+  kind,
+  field,
+  onCommit,
+  onCancel,
+}: {
+  readonly initial: string
+  readonly kind: DateKind
+  readonly field: Field
+  readonly onCommit: (value: string) => Promise<void>
+  readonly onCancel: () => void
+}) {
+  const [typed, setTyped] = useState(initial)
+  // The editor ends at its first word: Enter, a day picked, a blur and the popup closing
+  // can all say "done" for the same edit, and only one of them writes.
+  const settled = useRef(false)
+  const settle = (act: () => void) => {
+    if (settled.current) return
+    settled.current = true
+    act()
+  }
+
+  return (
+    <DateInput
+      kind={kind}
+      text={typed}
+      onTextChange={setTyped}
+      onCommit={(next) => settle(() => void onCommit(next))}
+      onCancel={() => settle(onCancel)}
+      onKeyDown={(e) => {
+        // As in the text editor: the grid listens on `window`, and Tab ends the edit here.
+        e.stopPropagation()
+        if (e.key === 'Tab') {
+          e.preventDefault()
+          settle(() => void onCommit(typed))
+        }
+      }}
+      appearance="cell"
+      clearable={field.required !== true}
+      autoFocus
+      className="bg-background"
+      aria-label={field.label}
+    />
+  )
+}
+
 /** How a stored value reads on screen. */
 export function display(raw: string, field: Field): string {
   if (field.kind === 'number') {
@@ -230,10 +332,8 @@ export function display(raw: string, field: Field): string {
     // the column holds, and trailing zeros are noise to a reader.
     return raw.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '')
   }
-  if (field.kind === 'datetime') {
-    const parsed = Date.parse(raw)
-    return Number.isNaN(parsed) ? raw : new Date(parsed).toLocaleString('fr-FR')
-  }
+  // Day first, as the field is typed: `25/09/2026`, `25/09/2026 14:30` in the reader's time.
+  if (isDateKind(field.kind)) return displayStored(raw, field.kind)
   return raw
 }
 
@@ -246,6 +346,7 @@ export function convert(typed: string, field: Field): unknown {
     return Number.isFinite(parsed) ? parsed : typed
   }
   if (field.kind === 'boolean') return typed === 'true' || typed === 'oui'
+  if (isDateKind(field.kind)) return storedFromText(typed, field.kind)
   return typed
 }
 
@@ -256,6 +357,18 @@ export function rawText(row: Row, field: Field): string {
   if (field.kind === 'link') {
     const link = value as { id: string | null; display: string | null }
     return link.display ?? link.id ?? ''
+  }
+  // What a person reads in the cell, as a spreadsheet would paste it back: the labels of
+  // the choices, the names of the files.
+  if (field.kind === 'multi_select') {
+    return choicesOf(value)
+      .map((v) => field.options?.find((o) => o.value === v)?.label ?? v)
+      .join(', ')
+  }
+  if (field.kind === 'file' || field.kind === 'image') {
+    return filesOf(value)
+      .map((f) => f.name)
+      .join(', ')
   }
   if (typeof value === 'object') return JSON.stringify(value)
   return String(value)

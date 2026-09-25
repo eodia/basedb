@@ -9,9 +9,10 @@ import {
   isTooLong,
   useDescriptionEdit,
 } from '@/components/app/description'
+import { EditTableDialog } from '@/components/app/edit-table-dialog'
 import { FieldIcon, KIND_LABELS, KindLabel } from '@/components/app/field-icon'
 import { NewTableDialog } from '@/components/app/new-table-dialog'
-import { OptionBadge } from '@/components/app/option-badge'
+import { LookIcon, OptionBadge } from '@/components/app/option-badge'
 import { OptionsEditor } from '@/components/app/options-editor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -41,6 +42,7 @@ import {
 } from '@/lib/api/client'
 import { messageFor } from '@/lib/messages'
 import { type OptionDraft, draftsOf, emptyDraft, optionsOf } from '@/lib/options'
+import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
 import { Check, Key, Link2, Pencil, Plus, Star, Table2, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -72,7 +74,19 @@ const CREATABLE = [
   'date',
   'datetime',
   'select',
+  'multi_select',
+  'file',
+  'image',
 ] as const
+
+/** The kinds whose values come from a list of choices, edited in the same way. */
+const hasChoices = (kind: string | undefined) => kind === 'select' || kind === 'multi_select'
+
+/**
+ * The kinds that cannot be a table's display column — the catalog's `can_be_display`
+ * says no, so the star is not offered rather than refused after a click.
+ */
+const NOT_DISPLAYABLE = new Set(['link', 'long_text', 'boolean', 'multi_select', 'file', 'image'])
 
 interface Props {
   readonly base: DescribedBase
@@ -86,6 +100,7 @@ export function SchemaEditor({ base, onChanged }: Props) {
   const [adding, setAdding] = useState(false)
   const [naming, setNaming] = useState(false)
   const [deleting, setDeleting] = useState<Table | null>(null)
+  const [renaming, setRenaming] = useState<Table | null>(null)
   const [editing, setEditing] = useState<Field | null>(null)
 
   const table = base.tables.find((t) => t.name === openTable) ?? base.tables[0] ?? null
@@ -110,11 +125,6 @@ export function SchemaEditor({ base, onChanged }: Props) {
     <div className="mx-auto max-w-5xl">
       <div className="mb-6">
         <h1 className="text-xl font-semibold tracking-tight">Structure de {base.label}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Ce que vous voyez ici est le catalogue lui-même. Une colonne ajoutée apparaît dans{' '}
-          <span className="font-mono text-xs">psql</span> à la seconde suivante, avec sa description
-          en commentaire — à défaut, son libellé.
-        </p>
       </div>
 
       {error !== null && (
@@ -136,7 +146,7 @@ export function SchemaEditor({ base, onChanged }: Props) {
                 table?.name === t.name && 'bg-accent font-medium',
               )}
             >
-              <Table2 className="size-4 shrink-0 text-muted-foreground" />
+              <LookIcon look={t} fallback={Table2} className="text-muted-foreground" />
               <span className="truncate">{t.label}</span>
             </button>
           ))}
@@ -158,11 +168,20 @@ export function SchemaEditor({ base, onChanged }: Props) {
             <div className="mb-3 flex items-center gap-3">
               <div className="min-w-0 flex-1">
                 <h2 className="truncate text-base font-semibold">{table.label}</h2>
-                <p className="truncate font-mono text-xs text-muted-foreground">{table.sql}</p>
+                <p className="truncate font-mono text-xs text-muted-foreground">{table.name}</p>
               </div>
               <Button size="sm" onClick={() => setAdding(true)} disabled={busy}>
                 <Plus className="size-4" />
                 Champ
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRenaming(table)}
+                disabled={busy}
+              >
+                <Pencil className="size-4" />
+                Modifier
               </Button>
               <Button
                 variant="outline"
@@ -208,15 +227,6 @@ export function SchemaEditor({ base, onChanged }: Props) {
               ))}
             </div>
 
-            <p className="mt-3 text-xs text-muted-foreground">
-              Les colonnes système — <span className="font-mono">_id</span>,{' '}
-              <span className="font-mono">_created_at</span>,{' '}
-              <span className="font-mono">_updated_at</span>,{' '}
-              <span className="font-mono">_created_by</span>,{' '}
-              <span className="font-mono">_updated_by</span> — existent sur chaque table et ne se
-              règlent pas : elles portent la pagination par curseur et la reprise incrémentale.
-            </p>
-
             <AddFieldDialog
               open={adding}
               table={table}
@@ -244,6 +254,28 @@ export function SchemaEditor({ base, onChanged }: Props) {
               table={table}
               onClose={() => setEditing(null)}
               onSaved={onChanged}
+            />
+
+            <EditTableDialog
+              table={renaming}
+              onClose={() => setRenaming(null)}
+              onSaved={async (label) => {
+                // The tabs open on it carry the label they were opened with.
+                const renamed = renaming
+                if (renamed !== null) {
+                  const { tabs, rename } = useWorkspace.getState()
+                  for (const tab of tabs) {
+                    if (
+                      tab.kind === 'table' &&
+                      tab.base === renamed.base &&
+                      tab.table === renamed.name
+                    ) {
+                      rename(tab.id, label)
+                    }
+                  }
+                }
+                await onChanged()
+              }}
             />
 
             <DeleteTableDialog
@@ -309,7 +341,7 @@ function TableDescription({
           edit={edit}
           subject={subject}
           size="md"
-          placeholder="À quoi sert cette table ? Visible dans la documentation et par les agents."
+          placeholder="À quoi sert cette table ?"
         />
       ) : hasDescription(table.description) ? (
         <DescriptionText
@@ -406,44 +438,23 @@ export function DeleteTableDialog({
         <DialogHeader>
           <DialogTitle>Supprimer la table « {table?.label} » ?</DialogTitle>
           <DialogDescription>
-            Elle sera renommée{' '}
-            <span className="font-mono text-xs">{preview?.relegated_name ?? '…'}</span> dans le
-            schéma <span className="font-mono text-xs">{table?.base}</span>, et ses champs suivront
-            dans la même étape.
+            {preview?.row_count != null && preview.row_count > 0
+              ? `Ses données (environ ${preview.row_count.toLocaleString('fr-FR')} lignes) restent lisibles en SQL.`
+              : 'Ses données restent lisibles en SQL.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 text-sm">
-          <div className="rounded-lg border bg-muted/40 p-3 text-muted-foreground">
-            <p>
-              <span className="font-medium text-foreground">Rien n’est détruit.</span> Les lignes
-              {preview?.row_count != null && preview.row_count > 0 && (
-                <> — environ {preview.row_count.toLocaleString('fr-FR')} —</>
-              )}{' '}
-              et les index sont conservés, et la table reste lisible en SQL direct sous son nom
-              relégué.
-            </p>
-            <p className="mt-2">
-              Le libellé « {table?.label} » redevient disponible immédiatement. Le nom physique,
-              lui, n’est jamais rendu : une table recréée sous ce libellé prendra{' '}
-              <span className="font-mono text-xs">{table?.name}_2</span>.
-            </p>
-          </div>
-
           {blocked && (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-destructive">
-              <p className="font-medium">Un lien actif vise encore cette table.</p>
-              <p className="mt-1">
-                Retirez d’abord {preview?.referenced_by.join(', ')} — la base refuserait une cible
-                morte sous un lien vivant.
-              </p>
-            </div>
+            <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-destructive">
+              Retirez d’abord les liens qui pointent vers cette table :{' '}
+              {preview?.referenced_by.join(', ')}.
+            </p>
           )}
 
           {!blocked && (preview?.locked_tables.length ?? 0) > 0 && (
             <p className="text-muted-foreground">
-              L’étape gèlera brièvement {preview?.locked_tables.join(', ')} : détacher une clé
-              étrangère prend aussi un verrou sur la table référencée.
+              Tables verrouillées brièvement : {preview?.locked_tables.join(', ')}.
             </p>
           )}
 
@@ -551,7 +562,7 @@ function FieldRow({
             <DescriptionEditor
               edit={edit}
               subject={subject}
-              placeholder="Que contient ce champ ? Sens, format, unité… Visible dans la documentation et par les agents."
+              placeholder="Que contient ce champ ?"
             />
           </div>
         ) : (
@@ -569,7 +580,7 @@ function FieldRow({
 
         {/* The choices as they will look, so the colours picked in the editor are seen where
             the field is read — and a list nobody dressed stays as quiet as it was. */}
-        {field.kind === 'select' && (field.options?.length ?? 0) > 0 && (
+        {hasChoices(field.kind) && (field.options?.length ?? 0) > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
             {field.options?.slice(0, 8).map((o) => (
               <OptionBadge key={o.value} option={o} />
@@ -619,8 +630,8 @@ function FieldRow({
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
             {field.required === true
-              ? 'Retirer l’obligation : une seule instruction, aucun balayage.'
-              : 'Rendre obligatoire : échafaudage, validation, puis SET NOT NULL — la table n’est jamais bloquée le temps d’un balayage. Échoue si une ligne est vide.'}
+              ? 'Rendre facultatif'
+              : 'Rendre obligatoire (refusé si une ligne est vide)'}
           </TooltipContent>
         </Tooltip>
       )}
@@ -641,7 +652,7 @@ function FieldRow({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            Modifier le libellé{field.kind === 'select' ? ' et les choix' : ''}
+            Modifier le libellé{hasChoices(field.kind) ? ' et les choix' : ''}
           </TooltipContent>
         </Tooltip>
       ) : (
@@ -653,7 +664,7 @@ function FieldRow({
           <Button
             variant="ghost"
             size="icon-sm"
-            disabled={busy || field.system === true || field.kind === 'link'}
+            disabled={busy || field.system === true || NOT_DISPLAYABLE.has(field.kind)}
             onClick={onDisplay}
             aria-label="Désigner comme colonne d’affichage"
           >
@@ -661,7 +672,7 @@ function FieldRow({
           </Button>
         </TooltipTrigger>
         <TooltipContent className="max-w-xs">
-          Colonne d’affichage : ce qui est montré à la place d’un UUID dans une cellule de lien.
+          Colonne d’affichage, montrée dans les liens
         </TooltipContent>
       </Tooltip>
     </div>
@@ -705,7 +716,7 @@ function EditFieldDialog({
     setError(null)
   }, [field])
 
-  const isSelect = field?.kind === 'select'
+  const isSelect = hasChoices(field?.kind)
   const known = useMemo(() => new Set((field?.options ?? []).map((o) => o.value)), [field])
   const original = useMemo(() => JSON.stringify(optionsOf(draftsOf(field?.options))), [field])
 
@@ -748,9 +759,7 @@ function EditFieldDialog({
         <DialogHeader>
           <DialogTitle>Modifier {field?.label}</DialogTitle>
           <DialogDescription>
-            Le libellé change dans le catalogue, pas dans la colonne :{' '}
-            <span className="font-mono text-xs">{field?.name}</span> reste le nom que voit{' '}
-            <span className="font-mono text-xs">psql</span>.
+            {field === null ? '' : (KIND_LABELS[field.kind] ?? field.kind)}
           </DialogDescription>
         </DialogHeader>
 
@@ -769,24 +778,10 @@ function EditFieldDialog({
             />
           </div>
 
-          <p className="text-sm text-muted-foreground">
-            Type :{' '}
-            <span className="font-medium text-foreground">
-              {field === null ? '' : (KIND_LABELS[field.kind] ?? field.kind)}
-            </span>{' '}
-            — un type ne se change pas depuis cet écran.
-          </p>
-
           {isSelect && (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Choix</p>
               <OptionsEditor value={drafts} onChange={setDrafts} known={known} disabled={busy} />
-              <p className="text-xs text-muted-foreground">
-                La liste est une contrainte <span className="font-mono">CHECK</span> : ajouter ou
-                retirer un choix la régénère, sans bloquer les écritures. Retirer un choix que des
-                lignes portent encore est refusé, avec leur nombre. La couleur, le pictogramme et
-                l’image ne concernent que l’écran : la colonne ne les connaît pas.
-              </p>
             </div>
           )}
 
@@ -847,7 +842,7 @@ function AddFieldDialog({
   const ready =
     label.trim() !== '' &&
     (kind !== 'link' || target !== '') &&
-    (kind !== 'select' || parsed.length > 0) &&
+    (!hasChoices(kind) || parsed.length > 0) &&
     !isTooLong(description)
 
   const submit = () => {
@@ -857,7 +852,7 @@ function AddFieldDialog({
       kind,
       description: description.trim() === '' ? undefined : description.trim(),
       target: kind === 'link' ? target : undefined,
-      options: kind === 'select' ? parsed : undefined,
+      options: hasChoices(kind) ? parsed : undefined,
     })
     setLabel('')
     setChoices([emptyDraft()])
@@ -867,14 +862,12 @@ function AddFieldDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto sm:max-w-xl"
+        aria-describedby={undefined}
+      >
         <DialogHeader>
           <DialogTitle>Nouveau champ dans {table.label}</DialogTitle>
-          <DialogDescription>
-            Le champ est créé <strong>facultatif</strong>, toujours. Une colonne obligatoire ne peut
-            pas naître sur une table qui contient déjà des lignes — remplissez-la, puis rendez-la
-            obligatoire depuis la liste.
-          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -930,22 +923,24 @@ function AddFieldDialog({
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                Une vraie clé étrangère PostgreSQL, vérifiée par la base : supprimer une ligne
-                encore référencée sera refusé, y compris en SQL direct.
-              </p>
             </div>
           )}
 
-          {kind === 'select' && (
+          {hasChoices(kind) && (
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Choix</p>
-              <OptionsEditor value={choices} onChange={setChoices} />
-              <p className="text-xs text-muted-foreground">
-                La liste devient une contrainte <span className="font-mono">CHECK</span> : une
-                valeur hors liste est refusée par PostgreSQL, pas seulement par l’écran.
+              <p className="text-sm text-muted-foreground">
+                {kind === 'multi_select' ? 'Choix (plusieurs par ligne)' : 'Choix'}
               </p>
+              <OptionsEditor value={choices} onChange={setChoices} />
             </div>
+          )}
+
+          {(kind === 'file' || kind === 'image') && (
+            <p className="rounded-md bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+              {kind === 'image'
+                ? 'Des images PNG, JPEG, GIF, WebP ou AVIF, jusqu’à 20 par ligne. Le type est vérifié sur le contenu, pas sur le nom.'
+                : 'Des fichiers de tout type, jusqu’à 20 par ligne. Ils s’ouvrent dans le navigateur quand c’est sûr (PDF, images), sinon se téléchargent.'}
+            </p>
           )}
 
           <DescriptionField
@@ -953,7 +948,7 @@ function AddFieldDialog({
             value={description}
             onChange={setDescription}
             onSubmit={submit}
-            placeholder="Que contient ce champ ? Sens, format, unité… Visible dans la documentation et par les agents."
+            placeholder="Que contient ce champ ?"
           />
         </div>
 

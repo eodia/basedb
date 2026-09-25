@@ -422,11 +422,26 @@ export async function whoAmI(
   readonly displayName: string
   readonly tenantRef: string
   readonly isInstanceAdmin: boolean
+  /** Member of the Administrators group, or an instance administrator. */
+  readonly isAdmin: boolean
+  /** A temporary password is in use: the interface asks for a new one before anything. */
+  readonly mustChangePassword: boolean
   readonly elevatedUntil: string | null
 }> {
   const rows = await pools.withConnection('catalog', (exec) =>
-    exec.query<{ email: string; display_name: string; is_instance_admin: boolean }>(
-      'SELECT email, display_name, is_instance_admin FROM _basedb.app_user WHERE id = $1',
+    exec.query<{
+      email: string
+      display_name: string
+      is_instance_admin: boolean
+      must_change_password: boolean
+      in_admins: boolean
+    }>(
+      `SELECT u.email, u.display_name, u.is_instance_admin, u.must_change_password,
+              EXISTS (SELECT 1 FROM _basedb.role_member m
+                        JOIN _basedb.role r ON r.id = m.role_id
+                       WHERE m.user_id = u.id AND r.name = 'tenant_admin'
+                         AND r.is_system AND r.deleted_at IS NULL) AS in_admins
+         FROM _basedb.app_user u WHERE u.id = $1`,
       [authenticated.userId],
     ),
   )
@@ -439,6 +454,8 @@ export async function whoAmI(
     displayName: user.display_name,
     tenantRef: authenticated.tenantRef,
     isInstanceAdmin: user.is_instance_admin,
+    isAdmin: user.is_instance_admin || user.in_admins,
+    mustChangePassword: user.must_change_password,
     elevatedUntil: authenticated.elevatedUntil?.toISOString() ?? null,
   }
 }

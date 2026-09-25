@@ -489,6 +489,9 @@ CREATE TABLE _basedb.role (
   label_key text COLLATE "C" NOT NULL,
   name      text COLLATE "C" NOT NULL,
   is_system boolean NOT NULL DEFAULT false,
+  -- group : un groupe d'utilisateurs, administre depuis l'ecran des permissions ;
+  -- token : le role propre d'un jeton d'integration, sans membre, jamais liste.
+  kind      text COLLATE "C" NOT NULL DEFAULT 'group' CHECK (kind IN ('group','token')),
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   deleted_at timestamptz NULL,
@@ -509,7 +512,9 @@ CREATE TABLE _basedb.role_member (
 CREATE TABLE _basedb.permission (
   id uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
   role_id uuid NOT NULL REFERENCES _basedb.role(id) ON DELETE CASCADE,
-  scope_kind text NOT NULL CHECK (scope_kind IN ('tenant','base','application','table')),
+  scope_kind text NOT NULL
+    CHECK (scope_kind IN ('tenant','project','base','application','table')),
+  scope_project_id     uuid NULL REFERENCES _basedb.project(id)     ON DELETE CASCADE,
   scope_base_id        uuid NULL REFERENCES _basedb.base(id)        ON DELETE CASCADE,
   scope_application_id uuid NULL REFERENCES _basedb.application(id) ON DELETE CASCADE,
   scope_table_id       uuid NULL REFERENCES _basedb.table_def(id)   ON DELETE CASCADE,
@@ -518,13 +523,15 @@ CREATE TABLE _basedb.permission (
   granted_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   granted_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   CONSTRAINT ck_permission_scope CHECK (
-    num_nonnulls(scope_base_id, scope_application_id, scope_table_id)
+    num_nonnulls(scope_project_id, scope_base_id, scope_application_id, scope_table_id)
       = CASE scope_kind WHEN 'tenant' THEN 0 ELSE 1 END
+    AND (scope_kind <> 'project'     OR scope_project_id     IS NOT NULL)
     AND (scope_kind <> 'base'        OR scope_base_id        IS NOT NULL)
     AND (scope_kind <> 'application' OR scope_application_id IS NOT NULL)
     AND (scope_kind <> 'table'       OR scope_table_id       IS NOT NULL)),
   CONSTRAINT uq_permission UNIQUE NULLS NOT DISTINCT
-    (role_id, scope_kind, scope_base_id, scope_application_id, scope_table_id, action)
+    (role_id, scope_kind, scope_project_id, scope_base_id, scope_application_id,
+     scope_table_id, action)
 );
 
 CREATE TABLE _basedb.field_permission (
@@ -536,7 +543,7 @@ CREATE TABLE _basedb.field_permission (
 );
 ```
 
-**La portée d'une permission n'est pas polymorphe.** `permission` est la table la plus sensible du catalogue ; un `scope_id uuid` sans clé étrangère autoriserait une permission désignant un objet inexistant, ou une base purgée puis un homonyme recréé. Les trois colonnes typées portent chacune une vraie clé étrangère `ON DELETE CASCADE` ; `scope_kind` subsiste parce que l'API et l'interface raisonnent dessus, et `ck_permission_scope` garantit qu'il ne peut pas mentir. `UNIQUE NULLS NOT DISTINCT` est indispensable : sans lui, deux permissions identiques de portée `tenant` seraient réputées distinctes et insérables en double.
+**La portée d'une permission n'est pas polymorphe.** `permission` est la table la plus sensible du catalogue ; un `scope_id uuid` sans clé étrangère autoriserait une permission désignant un objet inexistant, ou une base purgée puis un homonyme recréé. Les quatre colonnes typées portent chacune une vraie clé étrangère `ON DELETE CASCADE` ; `scope_kind` subsiste parce que l'API et l'interface raisonnent dessus, et `ck_permission_scope` garantit qu'il ne peut pas mentir. `UNIQUE NULLS NOT DISTINCT` est indispensable : sans lui, deux permissions identiques de portée `tenant` seraient réputées distinctes et insérables en double.
 
 La sémantique — additivité, absence de règle `deny`, résolution de l'effectif, signature du décideur d'autorisation et prédicat de lignes constamment vrai (A20) — appartient au chapitre 05. Le catalogue ne connaît que les lignes.
 
@@ -544,15 +551,38 @@ La sémantique — additivité, absence de règle `deny`, résolution de l'effec
 
 ## Domaine 3 — Structure
 
-### Bases, schémas, alias
+### Projets, bases, schémas, alias
 
 ```sql
-CREATE TABLE _basedb.base (
+CREATE TABLE _basedb.project (
   id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
   tenant_id   uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
   label       text NOT NULL,
   label_key   text COLLATE "C" NOT NULL,
   description text NULL,
+  position    integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  updated_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  deleted_at timestamptz NULL,
+  deleted_by uuid NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  CONSTRAINT uq_project_id_tenant UNIQUE (id, tenant_id)   -- cible : base
+);
+CREATE UNIQUE INDEX uq_project_label_live
+  ON _basedb.project (tenant_id, label_key) WHERE deleted_at IS NULL;
+
+CREATE TABLE _basedb.base (
+  id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id   uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  project_id  uuid NOT NULL,
+  label       text NOT NULL,
+  label_key   text COLLATE "C" NOT NULL,
+  description text NULL,
+  -- Apparence : celle d'une option de liste (chapitre 04 §3), memes bornes.
+  color       text NULL,                  -- #rrggbb, minuscules
+  icon        text NULL,                  -- nom d'un pictogramme de la bibliotheque de l'interface
+  image       text NULL,                  -- URL https ou data URL, 16 384 caracteres au plus
   definition_state text NOT NULL DEFAULT 'active'
                      CHECK (definition_state IN ('pending','active')),
   catalog_version bigint NOT NULL DEFAULT 1,
@@ -574,12 +604,19 @@ CREATE TABLE _basedb.base (
   CONSTRAINT uq_base_lock_key  UNIQUE (lock_key),
   CONSTRAINT uq_base_id_tenant UNIQUE (id, tenant_id),   -- cible : api_token
   CONSTRAINT uq_base_id_live   UNIQUE (id, is_live),     -- cible : table_def
+  -- Un projet et ses bases appartiennent au meme tenant.
+  CONSTRAINT fk_base_project FOREIGN KEY (project_id, tenant_id)
+    REFERENCES _basedb.project (id, tenant_id) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT ck_base_live  CHECK (is_live = (deleted_at IS NULL)),
   CONSTRAINT ck_base_purge CHECK (is_purged = (purged_at IS NOT NULL)
-                                  AND (purged_at IS NULL OR deleted_at IS NOT NULL))
+                                  AND (purged_at IS NULL OR deleted_at IS NOT NULL)),
+  CONSTRAINT ck_base_color CHECK (color IS NULL OR color ~ '^#[0-9a-f]{6}$'),
+  CONSTRAINT ck_base_icon  CHECK (icon IS NULL OR icon ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  CONSTRAINT ck_base_image CHECK (image IS NULL OR char_length(image) <= 16384),
+  CONSTRAINT ck_base_glyph CHECK (icon IS NULL OR image IS NULL)
 );
 CREATE UNIQUE INDEX uq_base_label_live
-  ON _basedb.base (tenant_id, label_key) WHERE deleted_at IS NULL;
+  ON _basedb.base (project_id, label_key) WHERE deleted_at IS NULL;
 
 COMMENT ON COLUMN _basedb.base.catalog_version IS
   'Incremente a chaque migration appliquee. Les processus API comparent ce compteur
@@ -629,6 +666,8 @@ CREATE TABLE _basedb.sql_view_alias (
 );
 ```
 
+**Le projet regroupe des bases ; il n'a aucune existence physique.** Une base reste un schéma PostgreSQL, et un projet n'est qu'une ligne du catalogue : il ne change ni le nom d'un schéma, ni celui d'une table, et déplacer une base d'un projet à un autre ne touche pas une ligne de données. Il est à la fois l'unité de navigation de l'interface — on choisit un projet, puis on y crée des bases et, dans chaque base, des tables — et une **portée de permission** au-dessus de la base (chapitre 05 §15). Le libellé d'une base est unique dans son projet, non plus dans le tenant ; le nom physique, lui, reste alloué à l'échelle de l'instance par la boucle de suffixes du chapitre 01.
+
 C'est le **schéma**, et non la base, qui porte l'espace de noms des relations (chapitre 01 §6.2) : un schéma d'alias contient des vues SQL portant exactement les noms des tables du schéma courant, et cette reprise ne serait pas exprimable si la portée d'unicité était la base. Le cycle de vie des alias — création, durée de vie, avertissement au renommage — appartient au chapitre 06.
 
 **Les compteurs d'accès aux alias ne mesurent que ce qui passe par l'application, et leur nom le dit.** L'exécution d'un `SELECT` sur une vue ne laisse aucune trace exploitable dans le périmètre de privilèges retenu : les vues n'apparaissent pas dans `pg_stat_user_tables`, et `pg_stat_statements` comme `pgaudit` exigent `shared_preload_libraries`. L'écran de renommage liste donc les jetons actifs, les webhooks abonnés et les rôles ayant lu le schéma sur 30 jours, et **avertit que les connexions SQL directes ne sont pas observables** au lieu de laisser croire l'inverse. *Alternative rejetée* : rendre la vue d'alias écrivante par un appel en `InitPlan`, qui place une écriture sur un chemin de lecture et interdit toute transaction `READ ONLY`.
@@ -645,6 +684,9 @@ CREATE TABLE _basedb.table_def (
   label        text NOT NULL,
   label_key    text COLLATE "C" NOT NULL,
   description  text NULL,
+  color        text NULL,                 -- apparence, bornee comme celle d'une base
+  icon         text NULL,
+  image        text NULL,
   position     integer NOT NULL DEFAULT 0,
   definition_state text NOT NULL DEFAULT 'active'
                      CHECK (definition_state IN ('pending','active')),
@@ -688,7 +730,11 @@ CREATE TABLE _basedb.table_def (
     num_nonnulls(display_field_id, display_field_kind,
                  display_field_is_live, display_field_can_be_display) IN (0, 4)),
   CONSTRAINT ck_display_live CHECK (display_field_id IS NULL OR display_field_is_live),
-  CONSTRAINT ck_display_kind CHECK (display_field_id IS NULL OR display_field_can_be_display)
+  CONSTRAINT ck_display_kind CHECK (display_field_id IS NULL OR display_field_can_be_display),
+  CONSTRAINT ck_table_color CHECK (color IS NULL OR color ~ '^#[0-9a-f]{6}$'),
+  CONSTRAINT ck_table_icon  CHECK (icon IS NULL OR icon ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  CONSTRAINT ck_table_image CHECK (image IS NULL OR char_length(image) <= 16384),
+  CONSTRAINT ck_table_glyph CHECK (icon IS NULL OR image IS NULL)
 );
 CREATE UNIQUE INDEX uq_table_label_live
   ON _basedb.table_def (base_id, label_key) WHERE deleted_at IS NULL;
@@ -697,6 +743,8 @@ CREATE INDEX idx_table_by_base
 ```
 
 `fk_table_base` fait trois choses d'un coup : la table appartient à une base existante, une base ne peut pas être épurée tant qu'une table la référence, et **supprimer logiquement une base dont une table est encore vivante est refusé par la base de données**, avec le nom `ck_table_base_live`, que le service traduit en `BASE_NOT_EMPTY`.
+
+**Une base et une table ont une apparence**, celle d'une option de liste (chapitre 04 §3, « Apparence des options ») : une couleur, et un pictogramme ou une image, jamais les deux, tenus par les mêmes contraintes. Elle ne vit qu'au catalogue — ni le schéma ni la table PostgreSQL n'en savent rien — et la changer n'écrit rien d'autre qu'une ligne du catalogue.
 
 ### Champs
 
@@ -718,8 +766,11 @@ INSERT INTO _basedb.field_kind (code, label, can_be_display, has_config) VALUES
  ('date',      'Date',           true,  true),
  ('datetime',  'Date-heure',     true,  true),
  ('select',    'Liste de choix', true,  true),
+ ('multi_select', 'Choix multiple', false, true),
  ('link',      'Lien',           false, true),
- ('formula',   'Formule',        true,  true);
+ ('formula',   'Formule',        true,  true),
+ ('file',      'Document',       false, true),
+ ('image',     'Image',          false, true);
 
 CREATE TABLE _basedb.field (
   id            uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -854,12 +905,24 @@ CREATE TABLE _basedb.field_boolean_config (
 
 CREATE TABLE _basedb.field_select_config (
   field_id uuid PRIMARY KEY,
-  kind     text COLLATE "C" NOT NULL DEFAULT 'select' CHECK (kind = 'select'),
+  kind     text COLLATE "C" NOT NULL DEFAULT 'select'
+             CHECK (kind IN ('select','multi_select')),
   enum_constraint_id uuid NOT NULL REFERENCES _basedb.table_constraint(id)
                        ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT fk_select_field FOREIGN KEY (field_id, kind)
     REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT uq_select_enum UNIQUE (enum_constraint_id)
+);
+
+CREATE TABLE _basedb.field_file_config (
+  field_id uuid PRIMARY KEY,
+  kind     text COLLATE "C" NOT NULL CHECK (kind IN ('file','image')),
+  -- `ck_<table>__<colonne>__files` : la forme de la colonne `jsonb` (chapitre 04 §3 bis).
+  shape_constraint_id uuid NOT NULL REFERENCES _basedb.table_constraint(id)
+                        ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT fk_file_field FOREIGN KEY (field_id, kind)
+    REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT uq_file_shape UNIQUE (shape_constraint_id)
 );
 
 CREATE TABLE _basedb.field_formula_config (
@@ -872,7 +935,8 @@ CREATE TABLE _basedb.field_formula_config (
   is_stored   boolean NOT NULL DEFAULT true,
   CONSTRAINT fk_formula_field FOREIGN KEY (field_id, kind)
     REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
-  CONSTRAINT ck_formula_result CHECK (result_kind NOT IN ('formula','link'))
+  CONSTRAINT ck_formula_result
+    CHECK (result_kind NOT IN ('formula','link','multi_select','file','image'))
 );
 
 CREATE TABLE _basedb.select_option (
@@ -915,13 +979,41 @@ Quatre précisions.
 
 **La présence ou l'absence de l'heure n'est pas dupliquée** : elle est portée par `kind` (`date` ou `datetime`) et par rien d'autre. *Alternative rejetée* : une colonne `with_time boolean`, qui autorise la combinaison absurde `kind = 'date'` + heure. Les chapitres qui attendent un tel drapeau lisent `kind = 'datetime'`.
 
-**La liste de choix v1 est mono-valuée** : une colonne `text` et une contrainte de vérification. Aucune colonne `is_multiple` n'existe — un paramètre qu'aucun type physique ne sait honorer n'a pas sa place au catalogue. Le choix multiple est hors périmètre v1, au même titre que le « plusieurs vers plusieurs » et que la relation « un vers un », qui n'est que l'unicité d'un champ lien et ne constitue pas un type de relation distinct.
+**Le choix multiple est un type, pas un drapeau** : `select` est une colonne `text`, `multi_select` une colonne `text[]`, et les deux partagent `field_select_config` et `select_option`. Aucune colonne `is_multiple` n'existe — le type étant immuable, un drapeau qui changerait le type physique de la colonne serait un second `kind` déguisé. Le « plusieurs vers plusieurs » reste hors périmètre v1, comme la relation « un vers un », qui n'est que l'unicité d'un champ lien et ne constitue pas un type de relation distinct.
+
+**Un document ou une image n'est pas stocké dans la table.** La colonne `jsonb` d'un champ `file` ou `image` porte la liste des fichiers — identifiant, nom, type, taille — et les octets vivent dans le stockage de fichiers de l'instance (chapitre 04 §3 bis). `field_file_config` ne porte que la contrainte de forme, dont le nom est au registre comme toute contrainte système.
 
 **`field_formula_config.ast` est la seule colonne `jsonb` qui alimente du DDL.** Elle le peut parce qu'elle n'est pas une chaîne libre : c'est la forme canonique produite par l'analyseur du chapitre 04, et **toute référence qu'elle contient est doublée d'une ligne typée** dans `field_formula_dependency`. C'est cette ligne, et non le `jsonb`, qui porte la garantie référentielle.
 
 **`field_formula_dependency` porte `table_id` une seule fois**, partagé par les deux clés étrangères : une formule v1 ne dépend que de champs de sa propre table, conséquence directe du choix de matérialiser les formules stockées par une colonne générée. Le couple de miroirs avec `ck_dep_purge_order` exprime l'invariant utile : purger un champ dont dépend une formule encore vivante est refusé, et le devient dès que la formule elle-même est purgée.
 
 **Présence obligatoire du satellite.** Un champ de type `link` sans ligne dans `field_link_config` est un champ lien sans cible : le moteur ne peut rien en faire. La règle vaut pour tout `kind` dont `field_kind.has_config` est vrai. C'est une contrainte d'existence (« au moins une ligne ») que PostgreSQL ne sait pas déclarer ; elle est portée par un déclencheur de contrainte différé, listé dans « Les déclencheurs du catalogue ».
+
+### Fichiers déposés
+
+Un fichier est déposé **pour un champ** avant d'être écrit dans une ligne : le dépôt rend un identifiant, et c'est cet identifiant que l'écriture de la ligne cite. Le noyau n'accepte dans la colonne que des identifiants déposés pour **ce** champ, et recopie depuis cette table le nom, le type et la taille — ce que la ligne affiche ne vient donc jamais du client.
+
+```sql
+CREATE TABLE _basedb.stored_file (
+  id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  base_id     uuid NOT NULL REFERENCES _basedb.base(id)  ON DELETE CASCADE,
+  field_id    uuid NOT NULL REFERENCES _basedb.field(id) ON DELETE CASCADE,
+  storage_key text COLLATE "C" NOT NULL,   -- clé dans le stockage de fichiers, jamais montrée
+  name        text NOT NULL,               -- nom d'origine, affiché et proposé au téléchargement
+  mime_type   text COLLATE "C" NOT NULL,
+  size_bytes  bigint NOT NULL,
+  sha256      text COLLATE "C" NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  CONSTRAINT uq_stored_file_key  UNIQUE (storage_key),
+  CONSTRAINT ck_stored_file_name CHECK (char_length(name) BETWEEN 1 AND 255),
+  CONSTRAINT ck_stored_file_mime CHECK (mime_type ~ '^[a-z0-9.+-]+/[a-z0-9.+-]+$'),
+  CONSTRAINT ck_stored_file_size CHECK (size_bytes >= 0),
+  CONSTRAINT ck_stored_file_hash CHECK (sha256 ~ '^[0-9a-f]{64}$')
+);
+```
+
+**Aucune clé étrangère ne va de la table utilisateur vers `stored_file`** : elle traverserait la frontière `_basedb` (A9). Un fichier retiré d'une ligne reste donc au catalogue et dans le stockage ; les rattacher à nouveau à leurs lignes, puis purger ceux qui n'en ont plus, relève d'une épuration à venir, pas de l'écriture.
 
 ### Contraintes et index des tables utilisateur
 
@@ -1196,7 +1288,7 @@ CREATE TABLE _basedb.api_token (
   role_id uuid NOT NULL,
   base_id uuid NULL,
   allowed_surfaces text[] NOT NULL DEFAULT ARRAY['rest']::text[],
-  expires_at timestamptz NOT NULL,    -- obligatoire, sans exception
+  expires_at timestamptz NULL,        -- NULL : sans échéance, le défaut ; sinon un an au plus
   last_used_at timestamptz NULL,      -- ecriture bridee, non indexee
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
@@ -1758,7 +1850,7 @@ Les déclencheurs posés sur les **tables utilisateur** des schémas `b_*` sont 
 | I18 | Un jeton, son rôle et sa base appartiennent au même tenant ; une session au tenant de son porteur | FK composites vers `role(id, tenant_id)`, `base(id, tenant_id)`, `app_user(id, tenant_id)` |
 | I19 | Une application ne référence que des tables de sa base | `base_id` partagé par les deux FK composites |
 | I20 | Une permission ne désigne que des objets existants | Trois FK typées `ON DELETE CASCADE` + `ck_permission_scope` |
-| I21 | Tout jeton d'intégration a une date d'expiration | `NOT NULL` + `CHECK` |
+| I21 | Un jeton d'intégration n'expire pas, sauf échéance donnée à sa création, postérieure à celle-ci et à un an au plus | `CHECK` ; la borne d'un an, par le noyau |
 | I22 | Une migration d'origine MCP n'atteint `applied` qu'avec approbation humaine horodatée | `ck_migration_mcp_approved` |
 | I23 | Une migration en exécution porte un numéro d'ordre, un bail et un exécuteur, et elle est seule sur sa base | `ck_migration_sequence`, `ck_migration_lease`, `uq_migration_running` |
 | I24 | Les colonnes participant à une contrainte composite sont connues et de la même table | `table_constraint_member`, `table_id` partagé |

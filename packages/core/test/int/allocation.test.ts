@@ -74,9 +74,17 @@ beforeAll(async () => {
       [t.created_by, t.id],
       'insert',
     )
+    // A base belongs to a project (chapter 02).
+    await exec.query(
+      `INSERT INTO _basedb.project (tenant_id, label, label_key, created_by, updated_by)
+       VALUES ($1, 'Projet', 'projet', $2, $2)`,
+      [t.id, u.id],
+      'insert',
+    )
     const [b] = await exec.query<{ id: string }>(
-      `INSERT INTO _basedb.base (tenant_id, label, label_key, created_by, updated_by)
-       VALUES ($1, 'CRM', 'crm', $2, $2) RETURNING id`,
+      `INSERT INTO _basedb.base (tenant_id, project_id, label, label_key, created_by, updated_by)
+       VALUES ($1, (SELECT id FROM _basedb.project WHERE tenant_id = $1), 'CRM', 'crm', $2, $2)
+       RETURNING id`,
       [t.id, u.id],
       'insert',
     )
@@ -216,8 +224,9 @@ describe('uniqueness scope (§6.2)', () => {
     // bearing exactly the names of the current schema's tables.
     const otherSchema = await withTransaction(pools, 'ddl', ctx, async (exec) => {
       const [b] = await exec.query<{ id: string }>(
-        `INSERT INTO _basedb.base (tenant_id, label, label_key, created_by, updated_by)
-         VALUES ($1, 'Autre', 'autre', $2, $2) RETURNING id`,
+        `INSERT INTO _basedb.base (tenant_id, project_id, label, label_key, created_by, updated_by)
+         VALUES ($1, (SELECT id FROM _basedb.project WHERE tenant_id = $1), 'Autre', 'autre', $2, $2)
+         RETURNING id`,
         [tenantId, ctx.actor.id],
         'insert',
       )
@@ -258,9 +267,16 @@ describe('uniqueness scope (§6.2)', () => {
         [ctx.actor.id],
         'insert',
       )
+      await exec.query(
+        `INSERT INTO _basedb.project (tenant_id, label, label_key, created_by, updated_by)
+         VALUES ($1, 'Projet', 'projet', $2, $2)`,
+        [t.id, ctx.actor.id],
+        'insert',
+      )
       const [b] = await exec.query<{ id: string }>(
-        `INSERT INTO _basedb.base (tenant_id, label, label_key, created_by, updated_by)
-         VALUES ($1, 'CRM', 'crm', $2, $2) RETURNING id`,
+        `INSERT INTO _basedb.base (tenant_id, project_id, label, label_key, created_by, updated_by)
+         VALUES ($1, (SELECT id FROM _basedb.project WHERE tenant_id = $1), 'CRM', 'crm', $2, $2)
+         RETURNING id`,
         [t.id, ctx.actor.id],
         'insert',
       )

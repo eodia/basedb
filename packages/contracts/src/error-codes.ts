@@ -7,7 +7,7 @@
 // to it, never rename one." The "Normative chapter" column alone is authoritative on a
 // code's parentage.
 //
-// 213 codes, 8 domains.
+// 216 codes, 8 domains.
 //
 // The `condition` strings are quoted verbatim from the French document, which is
 // authoritative on their wording.
@@ -85,6 +85,7 @@ export type ErrorCode =
   | 'PARENT_DELETED'
   | 'PLAN_CYCLIC'
   | 'PLAN_LOCK_CONFLICT'
+  | 'PROJECT_NOT_EMPTY'
   | 'PURGE_TOO_EARLY'
   | 'REQUIRED_NULL_VALUES'
   | 'RESIDUAL_SCHEMA'
@@ -119,10 +120,12 @@ export type ErrorCode =
   | 'CONFIRMATION_REQUIRED'
   | 'CONFLICT'
   | 'CREATE_IMPOSSIBLE'
+  | 'EMAIL_TAKEN'
   | 'EXPAND_UNAVAILABLE'
   | 'FIELD_NOT_WRITABLE'
   | 'FIELD_UNKNOWN'
   | 'FILTER_NOT_SUPPORTED'
+  | 'GROUP_SYSTEM_IMMUTABLE'
   | 'LAST_INSTANCE_ADMIN'
   | 'LAST_TENANT_ADMIN'
   | 'MASK_REDUCED_MID_READ'
@@ -676,6 +679,13 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     chapter: '03',
     domain: 'structure_et_migrations',
   }),
+  PROJECT_NOT_EMPTY: Object.freeze({
+    condition: "Suppression d'un projet qui porte encore une base vivante",
+    httpStatus: 409,
+    httpStatusNote: null,
+    chapter: '02',
+    domain: 'structure_et_migrations',
+  }),
   PURGE_TOO_EARLY: Object.freeze({
     condition: 'Purge demandée avant le délai minimal',
     httpStatus: 409,
@@ -918,6 +928,13 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     chapter: '05',
     domain: 'permissions_et_non_divulgation',
   }),
+  EMAIL_TAKEN: Object.freeze({
+    condition: 'Adresse déjà portée par un compte du tenant',
+    httpStatus: 409,
+    httpStatusNote: null,
+    chapter: '05',
+    domain: 'permissions_et_non_divulgation',
+  }),
   EXPAND_UNAVAILABLE: Object.freeze({
     condition: "Expansion d'un champ non expansible ou dont la cible est invisible",
     httpStatus: 422,
@@ -943,6 +960,14 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     condition:
       'Opérateur autre que « renseigné » / « non renseigné », ou tri, sur un lien à cible illisible (A16)',
     httpStatus: 422,
+    httpStatusNote: null,
+    chapter: '05',
+    domain: 'permissions_et_non_divulgation',
+  }),
+  GROUP_SYSTEM_IMMUTABLE: Object.freeze({
+    condition:
+      "Renommage ou suppression d'un groupe système, retrait d'un membre du groupe de tous les utilisateurs, ou niveau d'accès posé sur le groupe des administrateurs",
+    httpStatus: 409,
     httpStatusNote: null,
     chapter: '05',
     domain: 'permissions_et_non_divulgation',
@@ -1718,7 +1743,8 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     domain: 'authentification',
   }),
   TOKEN_EXPIRY_REQUIRED: Object.freeze({
-    condition: "api_token.expires_at absente ou au-delà d'un an",
+    condition:
+      "Durée de vie d'un jeton donnée hors de 1 à 365 jours (l'absence de durée vaut « sans échéance »)",
     httpStatus: 422,
     httpStatusNote: null,
     chapter: '05',

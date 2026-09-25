@@ -1,9 +1,11 @@
 import { qualify, quoteIdentifier } from '@basedb/naming'
+import { isFileKind } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { type Action, SYSTEM_COLUMNS, decide } from '../rbac/decide.js'
-import { loadFieldNames, loadGrants, loadTarget } from '../rbac/loader.js'
+import { loadFields, loadGrants, loadTarget } from '../rbac/loader.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
+import { type ShapedField, shapeValues, shapedFields } from './values.js'
 
 /**
  * Record updates and deletions — chapter 05 §4.3, chapter 08 §2.
@@ -27,6 +29,8 @@ export interface DeleteRecordOptions {
 export interface UpdatedRecord {
   readonly row: Record<string, unknown>
   readonly sql: string
+  /** The readable `file` and `image` columns of `row`, whose entries a reader links to. */
+  readonly fileColumns: readonly string[]
 }
 
 /** Physical location and mask, resolved once for any row operation. */
@@ -36,6 +40,8 @@ interface RowContext {
   readonly readable: readonly string[]
   readonly writable: ReadonlySet<string>
   readonly readableNames: ReadonlySet<string>
+  readonly shaped: ReadonlyMap<string, ShapedField>
+  readonly fileColumns: readonly string[]
 }
 
 async function prepare(
@@ -57,7 +63,8 @@ async function prepare(
     throw new BasedbError('ADMIN_REQUIRED', { details: { table: tableId, action } })
   }
 
-  const names = await loadFieldNames(exec, tableId)
+  const fields = await loadFields(exec, tableId)
+  const names = new Map([...fields].map(([id, f]) => [id, f.name]))
   const location = await exec.query<{ schema_name: string; table_name: string }>(
     `SELECT sn.name AS schema_name, tn.name AS table_name
        FROM _basedb.table_def t
@@ -78,6 +85,10 @@ async function prepare(
       [...names].filter(([id]) => decision.writableFields.has(id)).map(([, n]) => n),
     ),
     readableNames: new Set(readable),
+    shaped: shapedFields(fields),
+    fileColumns: [...fields]
+      .filter(([id, f]) => decision.readableFields.has(id) && isFileKind(f.kind))
+      .map(([, f]) => f.name),
   }
 }
 
@@ -96,8 +107,9 @@ export async function updateRecord(
 
       const assignments: string[] = []
       const params: unknown[] = []
+      const values = await shapeValues(exec, c.shaped, c.writable, options.values)
 
-      for (const [name, value] of Object.entries(options.values)) {
+      for (const [name, value] of Object.entries(values)) {
         // Unknown field and invisible field: same response. Without this, an update
         // would become a way to enumerate hidden columns.
         if (!c.readableNames.has(name)) {
@@ -130,6 +142,7 @@ export async function updateRecord(
  WHERE "_id" = $${params.length}
 RETURNING ${returning};`,
         params,
+        fileColumns: c.fileColumns,
       }
     },
     { readOnly: true },
@@ -145,7 +158,7 @@ RETURNING ${returning};`,
   if (row === undefined) {
     throw new BasedbError('RESOURCE_NOT_FOUND', { details: { record: options.recordId } })
   }
-  return { row, sql: plan.sql }
+  return { row, sql: plan.sql, fileColumns: plan.fileColumns }
 }
 
 /**

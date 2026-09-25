@@ -9,6 +9,7 @@ import {
 } from '@basedb/naming'
 import { BasedbError } from '../errors/index.js'
 import { allocateName } from '../naming/allocation.js'
+import { requireOnTable } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { commentText, normalizeDescription } from './description.js'
@@ -102,6 +103,10 @@ export async function createLinkField(
 
   // ── Step 1: catalog and non-blocking DDL ──────────────────────────────────
   const plan = await withTransaction(pools, 'ddl', ctx, async (exec) => {
+    // A link constrains BOTH tables: `manage_schema` on the source and on the target
+    // (chapter 05 §8), whatever surface asks.
+    await requireOnTable(exec, ctx, 'manage_schema', request.tableId)
+    await requireOnTable(exec, ctx, 'manage_schema', request.targetTableId)
     const source = await resolveTable(exec, request.tableId)
     const target = await resolveTable(exec, request.targetTableId)
 
@@ -416,6 +421,8 @@ export async function setDisplayColumn(
   request: { readonly tableId: string; readonly fieldId: string | null },
 ): Promise<{ readonly fieldId: string | null; readonly name: string | null }> {
   return withTransaction(pools, 'ddl', ctx, async (exec) => {
+    // Building is `manage_schema` on the table (chapter 05 §8).
+    await requireOnTable(exec, ctx, 'manage_schema', request.tableId)
     // A null designation is a VALID state (A15): a table with no displayable field
     // remains a legitimate link target, its links simply yield `display: null`.
     if (request.fieldId === null) {

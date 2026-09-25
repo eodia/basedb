@@ -8,7 +8,8 @@ import { DataGrid } from '@/components/app/grid/data-grid'
 import { PaginationBar } from '@/components/app/grid/pagination-bar'
 import { SelectionBar } from '@/components/app/grid/selection-bar'
 import type { SearchLink } from '@/components/app/pickers'
-import { RecordPanel } from '@/components/app/record-panel'
+import { NewRecordPanel, RecordPanel } from '@/components/app/record-panel'
+import { SidebarToggle } from '@/components/app/sidebar'
 import { SqlEditor } from '@/components/app/sql-editor'
 import { TabBar } from '@/components/app/tab-bar'
 import { useTableActions } from '@/components/app/table-actions'
@@ -28,6 +29,7 @@ import {
   type Field,
   type LinkOption,
   type ReferencedBlock,
+  type StoredFile,
   type Table,
   api,
 } from '@/lib/api/client'
@@ -51,7 +53,6 @@ import {
   Eye,
   Filter,
   Loader2,
-  PanelLeft,
   Play,
   Plus,
   Upload,
@@ -110,11 +111,10 @@ function linkOptionOf(row: Record<string, unknown>, display: string | null): Lin
 interface Props {
   readonly base: DescribedBase
   readonly tables: readonly Table[]
-  readonly onToggleSidebar: () => void
   readonly onOpenDoc: () => void
 }
 
-export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
+export function Workspace({ base, tables, onOpenDoc }: Props) {
   const tab = useActiveTab()
   const patchView = useWorkspace((s) => s.patchView)
   const setDraft = useWorkspace((s) => s.setDraft)
@@ -140,6 +140,8 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
   const [filterOpen, setFilterOpen] = useState(false)
   const [editorHeight, setEditorHeight] = useState(180)
   const [opened, setOpened] = useState<Row | null>(null)
+  /** True while the right panel holds a record being created rather than an existing one. */
+  const [drafting, setDrafting] = useState(false)
   const [referenced, setReferenced] = useState<readonly ReferencedBlock[]>([])
 
   // The panel shows the row as the LAST LOAD returned it, not as it was when the panel
@@ -396,6 +398,29 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
     [table, load],
   )
 
+  /**
+   * Deposits files for a field, one after the other. What made it is returned — the cell
+   * then writes it into the row —, and the first refusal is said in the banner and stops
+   * the rest: a file too large is usually one of several picked together.
+   */
+  const upload = useCallback(
+    async (field: Field, files: readonly File[]): Promise<readonly StoredFile[]> => {
+      if (table === null) return []
+      setError(null)
+      const done: StoredFile[] = []
+      for (const file of files) {
+        try {
+          done.push(await api.uploadFile(table, field.name, file))
+        } catch (e) {
+          setError(`${file.name} : ${messageFor(e)}`)
+          break
+        }
+      }
+      return done
+    },
+    [table],
+  )
+
   const create = useCallback(
     async (values: Record<string, unknown>) => {
       if (table === null) return
@@ -430,6 +455,7 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
   /** Opens the detail view, and asks for the rows that reference this one (§5.2). */
   const openRecord = useCallback(
     async (row: Row) => {
+      setDrafting(false)
       setOpened(row)
       setReferenced([])
       if (table === null) return
@@ -442,6 +468,31 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
     },
     [table],
   )
+
+  /**
+   * Writes the record the panel drafted, then shows it as any other: the panel turns into
+   * the new row's detail view, which is where one checks what the database kept. A refusal
+   * is handed back to the panel, which stays open on what was typed.
+   */
+  const createFromPanel = useCallback(
+    async (values: Record<string, unknown>): Promise<string | null> => {
+      if (table === null) return null
+      try {
+        const created = (await api.createRecord(table, values)) as Row
+        await load()
+        void openRecord(created)
+        return null
+      } catch (e) {
+        return messageFor(e)
+      }
+    },
+    [table, load, openRecord],
+  )
+
+  // A draft belongs to the table it was opened on.
+  const tableName = table?.name
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the draft is closed WHEN the table changes, which is what the dependency says
+  useEffect(() => setDrafting(false), [tableName])
 
   /**
    * Deletes the selected rows.
@@ -525,12 +576,11 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
   if (tab === null) {
     return (
       <div className="flex min-w-0 flex-1 flex-col">
-        <Header base={base} onToggleSidebar={onToggleSidebar} onOpenDoc={onOpenDoc} />
+        <Header base={base} onOpenDoc={onOpenDoc} />
         <div className="flex flex-1 items-center justify-center p-6 text-center">
           <div className="max-w-sm">
             <p className="text-sm text-muted-foreground">
-              Choisissez une table à gauche, ou ouvrez un onglet SQL pour interroger la base
-              directement.
+              Choisissez une table ou ouvrez une requête SQL.
             </p>
             <Button
               variant="outline"
@@ -553,9 +603,10 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
   return (
     <div className="flex min-w-0 flex-1">
       <div className="flex min-w-0 flex-1 flex-col">
-        <Header base={base} table={table} onToggleSidebar={onToggleSidebar} onOpenDoc={onOpenDoc} />
+        <Header base={base} table={table} onOpenDoc={onOpenDoc} />
 
         <TabBar
+          tables={tables}
           onNewSql={() =>
             openSql(
               base.name,
@@ -576,7 +627,7 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
             >
               <div className="flex h-9 shrink-0 items-center gap-2 border-b px-3">
                 <span className="text-xs text-muted-foreground">
-                  Sur <span className="font-mono text-foreground">{base.name}</span>
+                  Sur <span className="text-foreground">{base.label}</span>
                 </span>
                 {sqlResult !== null && (
                   <span className="text-xs tabular-nums text-muted-foreground">
@@ -600,7 +651,7 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
                       Mettre en forme
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Maj+Alt+F — la sélection, ou tout</TooltipContent>
+                  <TooltipContent>Maj+Alt+F</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -618,7 +669,7 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
                       Exécuter
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Ctrl+Entrée — la sélection, ou tout</TooltipContent>
+                  <TooltipContent>Ctrl+Entrée</TooltipContent>
                 </Tooltip>
               </div>
 
@@ -663,6 +714,8 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
             // result, not a table: offering a second filter control and an "Ajouter"
             // button would be two ways in for one thing, and one verb with nowhere to go.
             editable={!isSql}
+            // Adding and importing write rows: not offered where the reader may not.
+            writable={table?.actions.includes('create') === true}
             onToggleFilter={() => setFilterOpen((o) => !o)}
             onClearSort={() => patch({ sorts: [], cursors: [] })}
             onDropSort={(field) =>
@@ -670,7 +723,10 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
             }
             onShow={(name) => patch({ hidden: view.hidden.filter((h) => h !== name) })}
             onShowAll={() => patch({ hidden: [] })}
-            onAdd={() => void create({})}
+            onAdd={() => {
+              setOpened(null)
+              setDrafting(true)
+            }}
             onImport={() => importInto(table)}
           />
         )}
@@ -708,11 +764,7 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
               )}
             </div>
             <p className="mt-1.5 text-[11px] text-muted-foreground">
-              Treize opérateurs —{' '}
-              <span className="font-mono">eq ne eq_ci contains starts_with</span>{' '}
-              <span className="font-mono">ends_with in is_null gt gte lt lte between</span> —
-              combinés par <span className="font-mono">and or not</span>. Ctrl+Espace complète,
-              Maj+Alt+F met en forme.
+              Ctrl+Espace pour l’autocomplétion.
             </p>
           </div>
         )}
@@ -727,31 +779,22 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
             missing-table message belongs to a table tab whose table was deleted. */}
         {!isSql && table === null ? (
           <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            Cette table n’existe plus dans la base.
+            Cette table n’existe plus.
           </div>
         ) : isSql && sqlError !== null ? (
           // The refusal goes HERE, not only in the gutter. A marker in the margin says
           // that something is wrong; a console user needs to read what.
           <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto scroll-discret p-6">
             <div className="w-full max-w-2xl rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-              <p className="text-sm font-medium text-destructive">L’ordre a été refusé</p>
+              <p className="text-sm font-medium text-destructive">Erreur SQL</p>
               <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs text-destructive">
                 {sqlError.message}
               </pre>
-              <p className="mt-3 text-xs text-muted-foreground">
-                Le message vient de PostgreSQL. La console lit et écrit les lignes du schéma{' '}
-                <span className="font-mono">{base.name}</span> et rien d’autre : le catalogue{' '}
-                <span className="font-mono">_basedb</span> lui est fermé, et les ordres de structure
-                passent par l’éditeur de structure.
-              </p>
             </div>
           </div>
         ) : isSql && sqlResult === null ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-1 text-sm text-muted-foreground">
             <p>Écrivez une requête, puis Ctrl+Entrée.</p>
-            <p className="text-xs">
-              Ctrl+Espace complète les tables et les colonnes, Maj+Alt+F met en forme.
-            </p>
           </div>
         ) : (
           <DataGrid
@@ -771,6 +814,7 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
             onChecked={setChecked}
             onCells={setCells}
             onCommit={commit}
+            onUpload={upload}
             onCreate={create}
             onDelete={remove}
             // A result row is not a record: it has no identity in the catalog, so there
@@ -805,7 +849,6 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
           counting={counting}
           loading={isSql ? running : loading}
           countable={!isSql}
-          schemaName={isSql ? (sqlResult?.schema ?? base.name) : base.name}
           onPageSize={(size) => patch({ pageSize: size, cursors: [] })}
           onFirst={() => patch({ cursors: [] })}
           onPrevious={() => patch({ cursors: view.cursors.slice(0, -1) })}
@@ -822,7 +865,21 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
         />
       </div>
 
-      {openedRow !== null && table !== null && (
+      {drafting && table !== null && (
+        <NewRecordPanel
+          // A fresh draft for each table: the panel's state is its draft.
+          key={table.name}
+          table={table}
+          fields={businessFields}
+          linkOptions={linkOptions}
+          onSearchLink={searchLink}
+          onUpload={upload}
+          onClose={() => setDrafting(false)}
+          onCreate={createFromPanel}
+        />
+      )}
+
+      {!drafting && openedRow !== null && table !== null && (
         <RecordPanel
           table={table}
           row={openedRow}
@@ -834,6 +891,7 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
           onCommit={async (field, value) => {
             await commit(openedRow._id, field, value)
           }}
+          onUpload={upload}
         />
       )}
 
@@ -869,40 +927,28 @@ export function Workspace({ base, tables, onToggleSidebar, onOpenDoc }: Props) {
 function Header({
   base,
   table,
-  onToggleSidebar,
   onOpenDoc,
 }: {
   readonly base: DescribedBase
   readonly table?: Table | null
-  readonly onToggleSidebar: () => void
   readonly onOpenDoc: () => void
 }) {
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={onToggleSidebar}
-        aria-label="Replier le panneau"
-      >
-        <PanelLeft className="size-4" />
-      </Button>
+      <SidebarToggle />
       <nav className="flex min-w-0 items-center gap-2 text-sm" aria-label="Fil d’Ariane">
         <span className="truncate text-muted-foreground">{base.label}</span>
         {table !== null && table !== undefined && (
           <>
             <span className="text-muted-foreground">/</span>
             <span className="truncate font-medium">{table.label}</span>
-            <span className="truncate font-mono text-[11px] text-muted-foreground">
-              {table.sql}
-            </span>
           </>
         )}
       </nav>
       <div className="flex-1" />
       <Button variant="outline" size="sm" onClick={onOpenDoc}>
         <Code2 className="size-4" />
-        API
+        API · MCP
       </Button>
     </header>
   )
@@ -915,6 +961,7 @@ function Toolbar({
   filterOpen,
   loading,
   editable,
+  writable,
   onToggleFilter,
   onClearSort,
   onDropSort,
@@ -929,6 +976,7 @@ function Toolbar({
   readonly filterOpen: boolean
   readonly loading: boolean
   readonly editable: boolean
+  readonly writable: boolean
   readonly onToggleFilter: () => void
   readonly onClearSort: () => void
   readonly onDropSort: (field: string) => void
@@ -1014,7 +1062,7 @@ function Toolbar({
 
       {/* The second way in to the import: the menu of a table in the sidebar is the first,
           and a feature that only a right-click reaches is one most people never find. */}
-      {editable && (
+      {editable && writable && (
         <Button
           variant="ghost"
           size="sm"
@@ -1027,7 +1075,7 @@ function Toolbar({
         </Button>
       )}
 
-      {editable && (
+      {editable && writable && (
         <Button
           size="sm"
           className="h-7 gap-1.5 px-2 text-xs"

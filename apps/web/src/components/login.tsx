@@ -133,8 +133,8 @@ export function Login({ onSignedIn }: { readonly onSignedIn: () => void }) {
           )}
 
           <p className="mt-5 text-xs text-zinc-500">
-            Au premier démarrage, le serveur affiche une fois le mot de passe de l’administrateur
-            dans son terminal.
+            Premier démarrage : le mot de passe administrateur s’affiche dans le terminal du
+            serveur.
           </p>
         </div>
       </main>

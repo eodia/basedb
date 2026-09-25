@@ -30,15 +30,18 @@ export const dynamic = 'force-dynamic'
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const api = process.env.BASEDB_API ?? 'http://localhost:8787'
+  // The MCP entry point, shown in the configuration an agent's client needs.
+  const mcp = process.env.BASEDB_MCP ?? ''
 
   return (
     <html lang="fr">
       <head>
-        {/* An origin, not code: serialized as JSON so that no value can close the
-            tag. */}
+        {/* Origins, not code: serialized as JSON so that no value can close the tag. */}
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: passing runtime configuration to the client has no other path in Next 15
-          dangerouslySetInnerHTML={{ __html: `window.__BASEDB_API__=${JSON.stringify(api)}` }}
+          dangerouslySetInnerHTML={{
+            __html: `window.__BASEDB_API__=${JSON.stringify(api)};window.__BASEDB_MCP__=${JSON.stringify(mcp)}`,
+          }}
         />
       </head>
       <body>{children}</body>

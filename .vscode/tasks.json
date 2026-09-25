@@ -6,7 +6,7 @@
       // API qui n'est pas compilée plutôt que de servir une version d'hier.
       "label": "Compiler l'API et l'interface",
       "type": "shell",
-      "command": "corepack pnpm exec tsc -b apps/api apps/web",
+      "command": "corepack pnpm exec tsc -b apps/api apps/mcp apps/web",
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": ["$tsc"],
       "presentation": { "reveal": "silent", "panel": "shared", "clear": true },

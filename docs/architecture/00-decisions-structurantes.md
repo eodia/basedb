@@ -495,6 +495,7 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `PARENT_DELETED` | Restauration d'un objet dont le parent est supprimé | 409 | 06 |
 | `PLAN_CYCLIC` | Cycle résiduel en phase 1 du tri du plan | 500 | 03 |
 | `PLAN_LOCK_CONFLICT` | Violation de l'invariant I-DDL-5 détectée à la planification | 500 | 03 |
+| `PROJECT_NOT_EMPTY` | Suppression d'un projet qui porte encore une base vivante | 409 | 02 |
 | `PURGE_TOO_EARLY` | Purge demandée avant le délai minimal | 409 | 06 |
 | `REQUIRED_NULL_VALUES` | Passage à obligatoire d'une colonne contenant des nuls, avec échantillon (A23) | 422 | 04 |
 | `RESIDUAL_SCHEMA` | `DROP SCHEMA` final d'une base purgée en échec ; état affiché, jamais renvoyé à une écriture | — | 06 |
@@ -539,10 +540,12 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `CONFIRMATION_REQUIRED` | Opération réservée présentée sans jeton de confirmation | 409 | 05 |
 | `CONFLICT` | Violation d'unicité ou de `CHECK` touchant un champ masqué ; réponse anonyme | 409 | 05 |
 | `CREATE_IMPOSSIBLE` | Champ obligatoire non inscriptible par l'acteur | 403 | 05 |
+| `EMAIL_TAKEN` | Adresse déjà portée par un compte du tenant | 409 | 05 |
 | `EXPAND_UNAVAILABLE` | Expansion d'un champ non expansible ou dont la cible est invisible | 422 | 05 |
 | `FIELD_NOT_WRITABLE` | Champ visible mais non inscriptible, colonnes système comprises (A18) | 403 | 05 |
 | `FIELD_UNKNOWN` | Champ inexistant, masqué, ou filtre et tri sur un champ masqué | 422 | 05 |
 | `FILTER_NOT_SUPPORTED` | Opérateur autre que « renseigné » / « non renseigné », ou tri, sur un lien à cible illisible (A16) | 422 | 05 |
+| `GROUP_SYSTEM_IMMUTABLE` | Renommage ou suppression d'un groupe système, retrait d'un membre du groupe de tous les utilisateurs, ou niveau d'accès posé sur le groupe des administrateurs | 409 | 05 |
 | `LAST_INSTANCE_ADMIN` | Retrait, désactivation ou suppression du dernier administrateur d'instance | 409 | 02 |
 | `LAST_TENANT_ADMIN` | Retrait du dernier membre d'un rôle `tenant_admin` | 409 | 05 |
 | `MASK_REDUCED_MID_READ` | Droits réduits pendant une lecture longue | 409 | 05 |
@@ -667,7 +670,7 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `RESET_TOKEN_INVALID` | Défi de réinitialisation inconnu, expiré ou consommé | 400 | 13 |
 | `SESSION_EXPIRED` | Session révoquée, inactive depuis 12 h, ou parvenue à son terme absolu | 401 | 05 |
 | `TOKEN_EXPIRED` | Jeton connu, date d'expiration dépassée | 401 | 08 |
-| `TOKEN_EXPIRY_REQUIRED` | `api_token.expires_at` absente ou au-delà d'un an | 422 | 05 |
+| `TOKEN_EXPIRY_REQUIRED` | Durée de vie d'un jeton donnée hors de 1 à 365 jours (l'absence de durée vaut « sans échéance ») | 422 | 05 |
 | `TOKEN_INVALID` | Jeton inconnu, ou présenté hors de `allowed_surfaces` | 401 | 05 |
 | `TOKEN_PRIVILEGE_REFUSED` | Rôle de jeton portant `manage_schema`, `manage_permissions` ou `manage_tokens` | 422 | 05 |
 | `TOKEN_READ_ONLY` | Écriture avec un jeton dont le rôle ne porte que `read` | — | 09 |

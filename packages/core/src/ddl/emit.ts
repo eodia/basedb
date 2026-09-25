@@ -10,7 +10,7 @@ import { BasedbError } from '../errors/index.js'
  * an assertion, not sanitization.
  */
 
-/** The nine field types of v1. */
+/** The nine field types of v1, the multiple choice, and the two kinds that carry files. */
 export type FieldKind =
   | 'short_text'
   | 'long_text'
@@ -19,8 +19,19 @@ export type FieldKind =
   | 'date'
   | 'datetime'
   | 'select'
+  | 'multi_select'
   | 'link'
   | 'formula'
+  | 'file'
+  | 'image'
+
+/** True when the column holds a list of files rather than a value (chapter 04 §3 bis). */
+export const isFileKind = (kind: string): kind is 'file' | 'image' =>
+  kind === 'file' || kind === 'image'
+
+/** True for the two kinds whose values are drawn from a list of options. */
+export const isChoiceKind = (kind: string): kind is 'select' | 'multi_select' =>
+  kind === 'select' || kind === 'multi_select'
 
 export interface NumberConfig {
   readonly precision?: number
@@ -49,6 +60,15 @@ export function pgTypeOf(kind: FieldKind, config: NumberConfig = {}): string {
       }
       return `numeric(${p},${s})`
     }
+    // An array, never a string with separators: the list stays filterable with `&&` and
+    // `@>`, and its CHECK is written against the elements themselves.
+    case 'multi_select':
+      return 'text[]'
+    // The bytes live in the file storage; the column holds what a reader needs to list
+    // them — identifier, name, type, size — as a JSON array.
+    case 'file':
+    case 'image':
+      return 'jsonb'
     case 'boolean':
       return 'boolean'
     case 'date':
@@ -64,6 +84,42 @@ export function pgTypeOf(kind: FieldKind, config: NumberConfig = {}): string {
         details: { reason: 'a formula type comes from its result', kind },
       })
   }
+}
+
+/**
+ * The body of the `ck_…__enum` of a choice column, given its column already quoted.
+ *
+ * `IN` for one value. For several, `<@` holds every element to the list, and two more
+ * terms close the gaps containment leaves open: an empty array — which `NOT NULL` would
+ * let through as "filled" — and a nested one, which `<@` flattens without complaint.
+ * A `NULL` element needs no term of its own: it is contained in nothing.
+ */
+export function choiceCheck(
+  kind: 'select' | 'multi_select',
+  column: string,
+  values: readonly string[],
+): string {
+  const list = values.map(quoteLiteral).join(', ')
+  return kind === 'select'
+    ? `${column} IN (${list})`
+    : `cardinality(${column}) > 0 AND array_ndims(${column}) = 1 AND ${column} <@ ARRAY[${list}]::text[]`
+}
+
+/** The most files one cell holds — the bound of the `ck_…__files` of every file column. */
+export const MAX_FILES_PER_VALUE = 20
+
+/**
+ * The body of the `ck_…__files` of a `file` or `image` column: a JSON ARRAY of one to
+ * {@link MAX_FILES_PER_VALUE} entries. Empty is written `NULL`, so that `NOT NULL` means
+ * "at least one file".
+ *
+ * A `CASE`, not an `AND`: PostgreSQL does not promise to evaluate an `AND` left to right,
+ * and `jsonb_array_length` raises on a scalar instead of answering false. And `IS NULL`
+ * first, spelled out: the `CASE` answers false for a `NULL`, and the column is born `NULL`
+ * on every row of a table that already has some.
+ */
+export function fileShapeCheck(column: string): string {
+  return `${column} IS NULL OR CASE WHEN jsonb_typeof(${column}) = 'array' THEN jsonb_array_length(${column}) BETWEEN 1 AND ${MAX_FILES_PER_VALUE} ELSE false END`
 }
 
 /** `CREATE SCHEMA` for a base (chapter 03 §7.1). */

@@ -377,7 +377,13 @@ describe('edited afterwards', () => {
       label: 'Encore',
       description: 'Les deux.',
     })
-    expect(both).toEqual({ label: 'Encore', description: 'Les deux.' })
+    expect(both).toEqual({
+      label: 'Encore',
+      description: 'Les deux.',
+      color: null,
+      icon: null,
+      image: null,
+    })
 
     // ...and `null` is how a description is cleared: leaving it out means "keep".
     await updateBase(pools, admin, { baseId: base.baseId, description: null })

@@ -85,9 +85,7 @@ export function ColumnHeader({
   const rank = sorts.findIndex((s) => s.field === field.name)
   const term = rank === -1 ? null : sorts[rank]
 
-  const hint = sortable
-    ? 'Trier — Maj+clic pour ajouter au tri en cours'
-    : 'Ce champ n’est pas triable au catalogue.'
+  const hint = sortable ? 'Trier (Maj+clic pour un tri secondaire)' : 'Non triable'
 
   // The same node with or without a description: only a wrapper and a tooltip come and go,
   // so a column that has none is laid out exactly as before.

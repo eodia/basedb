@@ -1,0 +1,11 @@
+{
+  // Les tâches (dont la preLaunchTask de F5) et le terminal de débogage s'ouvrent dans
+  // ce profil, et non dans le terminal par défaut de chacun. Un profil WSL, par exemple,
+  // n'a pas le `node` de Windows avec lequel `node_modules` a été installé : la
+  // compilation échouait avant même de lancer `scripts/start.mjs`.
+  // Le terminal ouvert à la main garde le profil par défaut.
+  "terminal.integrated.automationProfile.windows": {
+    "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "args": ["-NoProfile"]
+  }
+}

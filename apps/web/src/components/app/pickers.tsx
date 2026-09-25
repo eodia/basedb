@@ -4,6 +4,7 @@ import { OptionBadge, hasLook } from '@/components/app/option-badge'
 import { Badge } from '@/components/ui/badge'
 import { Combobox, type ComboboxOption, filterOptions } from '@/components/ui/combobox'
 import type { Field, LinkOption } from '@/lib/api/client'
+import { cn } from '@/lib/utils'
 import { Link2 } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 
@@ -117,6 +118,112 @@ export function EnumPicker({ field, value, onChange, appearance, placeholder = '
   )
 }
 
+/**
+ * A `multi_select` field: the same list, every choice a toggle.
+ *
+ * The value is sent WHOLE on each toggle — the list after the click, in the order the
+ * catalog declares, not the order clicked — so two quick clicks cannot interleave into a
+ * list neither of them meant. Empty is `null`: the column holds no empty array.
+ */
+export function MultiEnumPicker({
+  field,
+  value,
+  onChange,
+  appearance,
+  placeholder = '—',
+}: {
+  readonly field: Field
+  readonly value: readonly string[]
+  readonly onChange: (value: readonly string[] | null) => void
+  readonly appearance: PickerProps['appearance']
+  readonly placeholder?: string
+}) {
+  const options = field.options ?? []
+  const chosen = new Set(value)
+
+  const choices: ComboboxOption[] = options.map((o) => ({
+    value: o.value,
+    label: o.label,
+    render: hasLook(o) ? <OptionBadge option={o} /> : undefined,
+  }))
+
+  const toggle = (picked: string | null) => {
+    if (picked === null) return onChange(null)
+    const next = new Set(chosen)
+    if (next.has(picked)) next.delete(picked)
+    else next.add(picked)
+    // Declared order first; a value the list no longer carries keeps its place at the end.
+    const ordered = [
+      ...options.map((o) => o.value).filter((v) => next.has(v)),
+      ...value.filter((v) => next.has(v) && !options.some((o) => o.value === v)),
+    ]
+    onChange(ordered.length === 0 ? null : ordered)
+  }
+
+  return (
+    <Combobox
+      value={null}
+      selected={chosen}
+      onValueChange={toggle}
+      options={choices}
+      clearLabel={field.required === true ? undefined : 'Tout retirer'}
+      searchPlaceholder="Rechercher une valeur…"
+      className={cn(TRIGGER[appearance], appearance === 'form' && 'h-auto min-h-9 py-1.5')}
+      aria-label={field.label}
+    >
+      <ChoiceChips
+        field={field}
+        values={value}
+        placeholder={placeholder}
+        wrap={appearance === 'form'}
+      />
+    </Combobox>
+  )
+}
+
+/**
+ * The chosen values of a multiple choice, as chips. On one line in a grid — the cell is
+ * a row's height, and what does not fit is counted — and wrapped in a form.
+ */
+export function ChoiceChips({
+  field,
+  values,
+  placeholder = '—',
+  wrap = false,
+}: {
+  readonly field: Field
+  readonly values: readonly string[]
+  readonly placeholder?: string
+  readonly wrap?: boolean
+}) {
+  if (values.length === 0) return <span className="text-muted-foreground">{placeholder}</span>
+  const shown = wrap ? values : values.slice(0, 3)
+  return (
+    <span className={cn('flex min-w-0 items-center gap-1', wrap ? 'flex-wrap' : 'overflow-hidden')}>
+      {shown.map((v) => {
+        const option = field.options?.find((o) => o.value === v)
+        return option !== undefined && hasLook(option) ? (
+          <OptionBadge key={v} option={option} className="shrink-0" />
+        ) : (
+          <Badge key={v} variant="secondary" className="shrink-0 font-normal">
+            {option?.label ?? v}
+          </Badge>
+        )
+      })}
+      {values.length > shown.length && (
+        <span className="shrink-0 text-xs text-muted-foreground">
+          +{values.length - shown.length}
+        </span>
+      )}
+    </span>
+  )
+}
+
+/** The values of a multiple choice, whatever the wire brought: anything else reads as none. */
+export function choicesOf(value: unknown): readonly string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : []
+}
+
 interface LinkPickerProps extends PickerProps {
   /** What the row itself calls the linked row: the display value the server resolved. */
   readonly display?: string | null
@@ -203,12 +310,12 @@ export function LinkPicker({
   const shown = settled?.filtered === true ? listed : filterOptions(listed, query)
 
   const notice = failed
-    ? 'Recherche indisponible : seuls les choix déjà chargés sont filtrés.'
+    ? 'Recherche indisponible.'
     : settled?.truncated !== true
       ? null
       : settled.filtered
-        ? 'D’autres résultats existent : précisez la recherche.'
-        : 'Liste incomplète : la colonne d’affichage n’est pas du texte, elle ne se recherche pas.'
+        ? 'Précisez la recherche pour voir d’autres résultats.'
+        : 'Liste incomplète.'
 
   const label =
     value === null

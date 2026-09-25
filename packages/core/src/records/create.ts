@@ -1,9 +1,11 @@
 import { qualify, quoteIdentifier } from '@basedb/naming'
+import { isFileKind } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { SYSTEM_COLUMNS, decide } from '../rbac/decide.js'
-import { loadFieldNames, loadGrants, loadTarget } from '../rbac/loader.js'
+import { loadFields, loadGrants, loadTarget } from '../rbac/loader.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
+import { type ShapedField, shapeValues, shapedFields } from './values.js'
 
 /**
  * Record writes — chapter 05 §4.3, chapter 08 §2.
@@ -23,6 +25,8 @@ export interface CreateRecordOptions {
 export interface CreatedRecord {
   readonly row: Record<string, unknown>
   readonly sql: string
+  /** The readable `file` and `image` columns of `row`, whose entries a reader links to. */
+  readonly fileColumns: readonly string[]
 }
 
 /**
@@ -43,7 +47,8 @@ export async function createRecord(
     ctx,
     async (exec) => {
       const context = await loadWriteContext(exec, ctx, options.tableId)
-      return planRow(context, options.values, context.returning)
+      const values = await shapeValues(exec, context.shaped, context.writable, options.values)
+      return { ...planRow(context, values, context.returning), fileColumns: context.fileColumns }
     },
     { readOnly: true },
   )
@@ -56,7 +61,7 @@ export async function createRecord(
   if (row === undefined) {
     throw new BasedbError('INTERNAL_ERROR', { details: { reason: 'insert without RETURNING' } })
   }
-  return { row, sql: plan.sql }
+  return { row, sql: plan.sql, fileColumns: plan.fileColumns }
 }
 
 /** Chapter 08 §3.6: a batch carries at most this many operations (`BATCH_TOO_LARGE`). */
@@ -118,13 +123,16 @@ export async function createRecords(
     ctx,
     async (exec) => {
       const context = await loadWriteContext(exec, ctx, options.tableId)
-      return records.map((values, index) => {
+      const planned: WritePlan[] = []
+      for (const [index, raw] of records.entries()) {
         try {
-          return planRow(context, values, quoteIdentifier('_id'))
+          const values = await shapeValues(exec, context.shaped, context.writable, raw)
+          planned.push(planRow(context, values, quoteIdentifier('_id')))
         } catch (error) {
           throw withIndex(error, index)
         }
-      })
+      }
+      return planned
     },
     { readOnly: true },
   )
@@ -169,6 +177,10 @@ interface WriteContext {
   readonly actorId: string
   /** The `RETURNING` list of a single-row write: the READ mask, never the write one. */
   readonly returning: string
+  /** The fields whose value is reshaped before it is written, by physical name. */
+  readonly shaped: ReadonlyMap<string, ShapedField>
+  /** The readable `file` and `image` columns. */
+  readonly fileColumns: readonly string[]
 }
 
 async function loadWriteContext(
@@ -193,7 +205,8 @@ async function loadWriteContext(
     })
   }
 
-  const names = await loadFieldNames(exec, tableId)
+  const fields = await loadFields(exec, tableId)
+  const names = new Map([...fields].map(([id, f]) => [id, f.name]))
 
   const location = await exec.query<{ schema_name: string; table_name: string }>(
     `SELECT sn.name AS schema_name, tn.name AS table_name
@@ -217,6 +230,10 @@ async function loadWriteContext(
     ),
     actorId: ctx.actor.id,
     returning: [...SYSTEM_COLUMNS, ...readable].map((c) => quoteIdentifier(c)).join(', '),
+    shaped: shapedFields(fields),
+    fileColumns: [...fields]
+      .filter(([id, f]) => decision.readableFields.has(id) && isFileKind(f.kind))
+      .map(([, f]) => f.name),
   }
 }
 

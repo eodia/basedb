@@ -2,6 +2,8 @@
 
 import { optionIcon } from '@/lib/option-icons'
 import { cn } from '@/lib/utils'
+import type { LucideIcon } from 'lucide-react'
+import type { CSSProperties } from 'react'
 
 /**
  * How a choice of a list looks: a colour of any hue, and either a pictogram or a picture.
@@ -69,6 +71,37 @@ export function OptionGlyph({
     )
   }
   return null
+}
+
+/**
+ * A base or a table as the navigation draws it: its picture, else its pictogram, else the
+ * glyph of its kind — a pictogram and a kind's glyph both wearing the colour, when there is
+ * one. Unlike `OptionGlyph`, it never draws nothing: a line of the tree needs an icon.
+ */
+export function LookIcon({
+  look,
+  fallback: Fallback,
+  className,
+}: {
+  readonly look: OptionLook
+  readonly fallback: LucideIcon
+  readonly className?: string
+}) {
+  const image = look.image ?? null
+  if (image !== null) {
+    return (
+      <img
+        src={image}
+        alt=""
+        draggable={false}
+        className={cn('size-4 shrink-0 rounded-sm object-cover', className)}
+      />
+    )
+  }
+  const color = look.color ?? null
+  const Icon = optionIcon(look.icon)?.Icon ?? Fallback
+  const style: CSSProperties | undefined = color === null ? undefined : { color }
+  return <Icon aria-hidden className={cn('size-4 shrink-0', className)} style={style} />
 }
 
 /**

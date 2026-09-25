@@ -1,6 +1,7 @@
 'use client'
 
 import { DescriptionField, isTooLong } from '@/components/app/description'
+import { LookButton, type LookValue, lookOf, sameLook } from '@/components/app/look-picker'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -10,39 +11,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { type Base, type DeletedBase, type DescribedBase, api } from '@/lib/api/client'
+import { type DescribedBase, api } from '@/lib/api/client'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import {
-  Check,
-  ChevronsUpDown,
-  Database,
-  History,
-  Loader2,
-  Pencil,
-  Plus,
-  Trash2,
-} from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 /**
- * The base switcher, top-left — and the two verbs that live nowhere else.
+ * What one does to a base as a whole: create it, rename it, delete it.
  *
- * Renaming and deleting sit here because this is where one names a base, and chapter 06
- * makes them wildly asymmetric acts that the menu should not flatten:
+ * They open from the menu of a base in the sidebar's tree, and chapter 06 makes them
+ * wildly asymmetric acts that the dialogs should not flatten:
  *
  *   renommer = un `UPDATE` de catalogue, aucun verrou, pas une migration ;
  *   supprimer = un plan à plusieurs étapes passant par la machine à états.
@@ -52,191 +33,26 @@ import { useCallback, useEffect, useState } from 'react'
  * asks the label to be typed. That difference is the honest one.
  */
 
-interface Props {
-  readonly bases: readonly Base[]
-  readonly base: DescribedBase | null
-  readonly busy: boolean
-  readonly onOpenBase: (name: string) => void
-  readonly onNewBase: () => void
-  readonly onChanged: () => void
-  readonly onDeleted: (name: string) => void
-}
+/** What these dialogs read of a base: the tree's line holds it as well as a description. */
+export type BaseLike = Pick<
+  DescribedBase,
+  'name' | 'label' | 'description' | 'color' | 'icon' | 'image'
+>
 
-export function BaseMenu({
-  bases,
-  base,
-  busy,
-  onOpenBase,
-  onNewBase,
-  onChanged,
-  onDeleted,
-}: Props) {
-  const [editing, setEditing] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [deleted, setDeleted] = useState<readonly DeletedBase[]>([])
-  const [error, setError] = useState<string | null>(null)
-
-  const loadDeleted = useCallback(async () => {
-    try {
-      setDeleted(await api.deletedBases())
-    } catch {
-      // Without the administration role the route answers an absence, not a refusal:
-      // the submenu simply does not appear.
-      setDeleted([])
-    }
-  }, [])
-
-  useEffect(() => {
-    void loadDeleted()
-  }, [loadDeleted])
-
-  return (
-    <div className="p-3">
-      <DropdownMenu onOpenChange={(open) => open && void loadDeleted()}>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2.5 rounded-lg p-2 text-left transition-colors hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent"
-          >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-foreground text-background">
-              <Database className="size-4.5" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold">
-                {base?.label ?? 'Aucune base'}
-              </span>
-              <span className="block truncate font-mono text-[10px] text-muted-foreground">
-                {base?.name ?? 'Base de données'}
-              </span>
-            </span>
-            <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
-          </button>
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent align="start" className="w-64">
-          <DropdownMenuLabel>Mes bases</DropdownMenuLabel>
-          {bases.length === 0 && (
-            <div className="px-2 py-1.5 text-sm text-muted-foreground">Aucune base visible.</div>
-          )}
-          {bases.map((b) => (
-            <DropdownMenuItem key={b.id} onSelect={() => onOpenBase(b.name)}>
-              <Database className="size-4" />
-              <span className="min-w-0 flex-1 truncate">{b.label}</span>
-              {base?.name === b.name && <Check className="size-4 text-primary" />}
-            </DropdownMenuItem>
-          ))}
-
-          <DropdownMenuSeparator />
-
-          <DropdownMenuItem onSelect={onNewBase} disabled={busy}>
-            <Plus className="size-4" />
-            Nouvelle base
-          </DropdownMenuItem>
-
-          {base !== null && (
-            <>
-              <DropdownMenuItem onSelect={() => setEditing(true)}>
-                <Pencil className="size-4" />
-                Modifier « {base.label} »
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => setDeleting(true)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="size-4" />
-                Supprimer « {base.label} »
-              </DropdownMenuItem>
-            </>
-          )}
-
-          {deleted.length > 0 && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <History className="size-4" />
-                  Bases supprimées ({deleted.length})
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="w-64">
-                  <DropdownMenuLabel className="font-normal leading-relaxed">
-                    Rien n’a été détruit : les tables ont gardé leurs lignes et leurs index.
-                    Restaurer les renomme, ça ne les réimporte pas.
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {deleted.map((d) => (
-                    <DropdownMenuItem
-                      key={d.id}
-                      onSelect={async () => {
-                        setError(null)
-                        try {
-                          await api.restoreBase(d.name)
-                          await loadDeleted()
-                          onChanged()
-                        } catch (e) {
-                          setError(messageFor(e))
-                        }
-                      }}
-                    >
-                      <History className="size-4" />
-                      <span className="min-w-0 flex-1 truncate">{d.label}</span>
-                      <span className="text-[10px] tabular-nums text-muted-foreground">
-                        {new Date(d.deleted_at).toLocaleDateString('fr-FR')}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {error !== null && (
-        <p className="mt-2 rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
-          {error}
-        </p>
-      )}
-
-      {base !== null && (
-        <>
-          <EditDialog
-            open={editing}
-            base={base}
-            onClose={() => setEditing(false)}
-            onDone={() => {
-              setEditing(false)
-              onChanged()
-            }}
-          />
-          <DeleteDialog
-            open={deleting}
-            base={base}
-            onClose={() => setDeleting(false)}
-            onDone={() => {
-              setDeleting(false)
-              onDeleted(base.name)
-              void loadDeleted()
-            }}
-          />
-        </>
-      )}
-    </div>
-  )
-}
-
-function EditDialog({
+export function EditBaseDialog({
   open,
   base,
   onClose,
   onDone,
 }: {
   readonly open: boolean
-  readonly base: DescribedBase
+  readonly base: BaseLike
   readonly onClose: () => void
   readonly onDone: () => void
 }) {
   const [label, setLabel] = useState(base.label)
   const [description, setDescription] = useState(base.description ?? '')
+  const [look, setLook] = useState<LookValue>(lookOf(base))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -244,20 +60,22 @@ function EditDialog({
     if (open) {
       setLabel(base.label)
       setDescription(base.description ?? '')
+      setLook(lookOf({ color: base.color, icon: base.icon, image: base.image }))
       setError(null)
     }
-  }, [open, base.label, base.description])
+  }, [open, base.label, base.description, base.color, base.icon, base.image])
 
   const submit = async () => {
     const trimmed = label.trim()
     if (trimmed === '' || isTooLong(description) || busy) return
 
     // Only what changed is sent, and an emptied description is a `null` — "clear it" —
-    // not an omission, which would leave the old one in place.
-    const patch: { label?: string; description?: string | null } = {}
+    // not an omission, which would leave the old one in place. The look travels whole.
+    const patch: { label?: string; description?: string | null } & Partial<LookValue> = {}
     if (trimmed !== base.label) patch.label = trimmed
     const nextDescription = description.trim() === '' ? null : description.trim()
     if (nextDescription !== (base.description ?? null)) patch.description = nextDescription
+    if (!sameLook(look, lookOf(base))) Object.assign(patch, look)
     if (Object.keys(patch).length === 0) {
       onClose()
       return
@@ -277,26 +95,34 @@ function EditDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent>
+      <DialogContent aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Modifier la base</DialogTitle>
-          <DialogDescription>
-            Le libellé et la description seulement. Le schéma garde son nom{' '}
-            <span className="font-mono text-xs">{base.name}</span> : aucune requête SQL écrite
-            ailleurs ne casse, et rien n’est migré.
-          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="base-label">Libellé</Label>
-            <Input
-              id="base-label"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && void submit()}
-              autoFocus
-            />
+            <div className="flex items-center gap-2">
+              {/* The look sits before the name, where the tree draws it. */}
+              <LookButton
+                look={look}
+                label={`Apparence de la base ${label}`.trim()}
+                onChange={(patch) => setLook((current) => ({ ...current, ...patch }))}
+                disabled={busy}
+                className="size-9"
+              />
+              <Input
+                id="base-label"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && void submit()}
+                autoFocus
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Couleur, pictogramme ou image : ce qui distingue la base dans la navigation.
+            </p>
           </div>
 
           <DescriptionField
@@ -304,7 +130,7 @@ function EditDialog({
             value={description}
             onChange={setDescription}
             onSubmit={() => void submit()}
-            placeholder="À quoi sert cette base ? Visible dans la documentation et par les agents."
+            placeholder="À quoi sert cette base ?"
             disabled={busy}
           />
 
@@ -338,27 +164,25 @@ function EditDialog({
  * SQL under a `zz_supprime_…` name, and the base can be restored — people who believe
  * "supprimer" means "détruire" hesitate over the right decision for the wrong reason.
  */
-function DeleteDialog({
+export function DeleteBaseDialog({
   open,
   base,
   onClose,
   onDone,
 }: {
   readonly open: boolean
-  readonly base: DescribedBase
+  readonly base: BaseLike
   readonly onClose: () => void
   readonly onDone: () => void
 }) {
   const [typed, setTyped] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [progress, setProgress] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
     setTyped('')
     setError(null)
-    setProgress(null)
   }, [open])
 
   const ready = typed.trim() === base.label && !busy
@@ -367,7 +191,6 @@ function DeleteDialog({
     if (!ready) return
     setBusy(true)
     setError(null)
-    setProgress('Exécution du plan…')
     try {
       const migration = await api.deleteBase(base.name)
       if (migration.status !== 'applied') {
@@ -377,13 +200,11 @@ function DeleteDialog({
           `La migration s’est arrêtée à l’étape « ${migration.step_label ?? '?'} » ` +
             `(${migration.error_code ?? 'inconnue'}).`,
         )
-        setProgress(null)
         return
       }
       onDone()
     } catch (e) {
       setError(messageFor(e))
-      setProgress(null)
     } finally {
       setBusy(false)
     }
@@ -395,26 +216,11 @@ function DeleteDialog({
         <DialogHeader>
           <DialogTitle>Supprimer « {base.label} » ?</DialogTitle>
           <DialogDescription>
-            {base.tables.length} table{base.tables.length > 1 ? 's' : ''}{' '}
-            {base.tables.length > 1 ? 'seront reléguées' : 'sera reléguée'}, par lots de dix, puis
-            le schéma <span className="font-mono text-xs">{base.name}</span> sera renommé en{' '}
-            <span className="font-mono text-xs">…zz_supprime_…</span>.
+            Ses données sont conservées : vous pourrez la restaurer depuis le menu du projet.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 text-sm">
-          <div className="rounded-lg border bg-muted/40 p-3 text-muted-foreground">
-            <p>
-              <span className="font-medium text-foreground">Rien n’est détruit.</span> Les lignes,
-              les index et les numéros d’attribut sont conservés, et les tables restent lisibles en
-              SQL direct sous leur nom relégué. La base peut être restaurée.
-            </p>
-            <p className="mt-2">
-              Le libellé « {base.label} » redevient disponible immédiatement. Le nom physique, lui,
-              n’est jamais rendu : une base recréée sous ce libellé prendra un autre schéma.
-            </p>
-          </div>
-
           <div className="space-y-1.5">
             <Label htmlFor="confirm-label">
               Saisissez <span className="font-medium text-foreground">{base.label}</span> pour
@@ -430,12 +236,6 @@ function DeleteDialog({
             />
           </div>
 
-          {progress !== null && (
-            <p className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" />
-              {progress}
-            </p>
-          )}
           {error !== null && (
             <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-destructive">
               {error}
@@ -453,7 +253,110 @@ function DeleteDialog({
             disabled={!ready}
             className={cn(busy && 'opacity-80')}
           >
+            {busy && <Loader2 className="size-4 animate-spin" />}
             {busy ? 'Suppression…' : 'Supprimer la base'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * A new, empty base in a project: a label and what it is for. Its tables are added next,
+ * from the base's own menu — or all at once with the demonstration, for a first look.
+ */
+export function NewBaseDialog({
+  open,
+  project,
+  onClose,
+  onDone,
+}: {
+  readonly open: boolean
+  readonly project: { readonly id: string; readonly label: string }
+  readonly onClose: () => void
+  /** Receives the logical name of the base created. */
+  readonly onDone: (name: string) => void
+}) {
+  const [label, setLabel] = useState('')
+  const [description, setDescription] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    setLabel('')
+    setDescription('')
+    setError(null)
+  }, [open])
+
+  const ready = label.trim() !== '' && !isTooLong(description) && !busy
+
+  const submit = async () => {
+    if (!ready) return
+    setBusy(true)
+    setError(null)
+    try {
+      const created = await api.createBase(
+        label.trim(),
+        description.trim() === '' ? undefined : description.trim(),
+        project.id,
+      )
+      onDone(created.name)
+    } catch (e) {
+      setError(messageFor(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Nouvelle base dans {project.label}</DialogTitle>
+          <DialogDescription>
+            Une base est un schéma PostgreSQL : ses tables y sont de vraies tables, lisibles en SQL.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="new-base-label">Libellé</Label>
+            <Input
+              id="new-base-label"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void submit()}
+              placeholder="Ex. Ventes"
+              autoFocus
+              disabled={busy}
+            />
+          </div>
+
+          <DescriptionField
+            id="new-base-description"
+            value={description}
+            onChange={setDescription}
+            onSubmit={() => void submit()}
+            placeholder="À quoi sert cette base ?"
+            disabled={busy}
+          />
+
+          {error !== null && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            Annuler
+          </Button>
+          <Button
+            onClick={() => void submit()}
+            disabled={!ready}
+            className={cn(busy && 'opacity-80')}
+          >
+            {busy && <Loader2 className="size-4 animate-spin" />}
+            {busy ? 'Création…' : 'Créer la base'}
           </Button>
         </DialogFooter>
       </DialogContent>

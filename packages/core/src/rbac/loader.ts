@@ -1,10 +1,11 @@
 import type { FieldKind } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import type { Executor } from '../runtime/pool.js'
-import type { RequestContext } from '../tx/context.js'
+import type { RequestContext, Surface } from '../tx/context.js'
 import {
   type Action,
   type ActorGrants,
+  type FieldRestriction,
   type Permission,
   type Role,
   type ScopeKind,
@@ -24,6 +25,7 @@ interface PermissionRow extends Record<string, unknown> {
   readonly role_id: string
   readonly action: Action | null
   readonly scope_kind: ScopeKind | null
+  readonly scope_project_id: string | null
   readonly scope_base_id: string | null
   readonly scope_application_id: string | null
   readonly scope_table_id: string | null
@@ -32,7 +34,18 @@ interface PermissionRow extends Record<string, unknown> {
 interface FieldPermissionRow extends Record<string, unknown> {
   readonly role_id: string
   readonly field_id: string
-  readonly access: 'hidden' | 'read_only'
+  /** The catalog's vocabulary (`_basedb.field_permission`), not the decider's. */
+  readonly access: 'hidden' | 'read' | 'write'
+}
+
+/**
+ * The catalog says `read` where the decider says `read_only`, and `write` — no
+ * restriction at all — has no decider counterpart: a restriction only ever subtracts.
+ */
+function restrictionOf(row: FieldPermissionRow): FieldRestriction | null {
+  if (row.access === 'hidden') return { fieldId: row.field_id, mode: 'hidden' }
+  if (row.access === 'read') return { fieldId: row.field_id, mode: 'read_only' }
+  return null
 }
 
 /**
@@ -43,6 +56,11 @@ interface FieldPermissionRow extends Record<string, unknown> {
  * would then have to deduplicate — more rows on the wire, for an identical result.
  */
 export async function loadGrants(exec: Executor, ctx: RequestContext): Promise<ActorGrants> {
+  // A system context — an internal process, never an adapter, since only the kernel seals
+  // one — has no verb removed inside its tenant (§6.4). Partitioning still holds: the
+  // decider compares every target's tenant with the context's before anything else.
+  if (ctx.actor.kind === 'system') return { isInstanceAdmin: true, roles: [] }
+
   const users = await exec.query<{ is_instance_admin: boolean; tenant_ref: string }>(
     `SELECT u.is_instance_admin, t.ref AS tenant_ref
        FROM _basedb.app_user u
@@ -67,7 +85,7 @@ export async function loadGrants(exec: Executor, ctx: RequestContext): Promise<A
 
   const rows = await exec.query<PermissionRow>(
     `SELECT p.role_id, p.action, p.scope_kind,
-            p.scope_base_id, p.scope_application_id, p.scope_table_id
+            p.scope_project_id, p.scope_base_id, p.scope_application_id, p.scope_table_id
        FROM _basedb.role_member m
        JOIN _basedb.role r ON r.id = m.role_id AND r.deleted_at IS NULL
        LEFT JOIN _basedb.permission p ON p.role_id = r.id
@@ -83,10 +101,70 @@ export async function loadGrants(exec: Executor, ctx: RequestContext): Promise<A
     [ctx.actor.id],
   )
 
-  const byRole = new Map<
-    string,
-    { permissions: Permission[]; restrictions: FieldPermissionRow[] }
-  >()
+  const roles = rolesOf(rows, fieldRows)
+  const grants: ActorGrants = { isInstanceAdmin: user.is_instance_admin, roles }
+
+  // A user acts with their roles; a token with its creator's roles AND its own, the two
+  // intersected by the decider at every decision (05 §2.3).
+  if (ctx.actor.kind !== 'token' || ctx.actor.tokenId === undefined) return grants
+  return { ...grants, ...(await loadTokenBounds(exec, ctx.actor.id, ctx.actor.tokenId)) }
+}
+
+/**
+ * The bounds a token adds to its creator's grants: its one role, its base, its surfaces.
+ *
+ * Read at every snapshot, never carried by the context: the context says WHO acts, the
+ * catalog says what that token may still do. A token revoked, expired or suspended since
+ * the context was opened is refused here — the revocation writes `api_token`, which moves
+ * `authz_version` and so empties every cached snapshot.
+ */
+async function loadTokenBounds(
+  exec: Executor,
+  userId: string,
+  tokenId: string,
+): Promise<Pick<ActorGrants, 'tokenRole' | 'tokenBaseId' | 'tokenAllowedSurfaces'>> {
+  const tokens = await exec.query<{
+    role_id: string
+    base_id: string | null
+    allowed_surfaces: Surface[]
+  }>(
+    `SELECT tk.role_id, tk.base_id, tk.allowed_surfaces
+       FROM _basedb.api_token tk
+       JOIN _basedb.role r ON r.id = tk.role_id AND r.deleted_at IS NULL
+      WHERE tk.id = $1 AND tk.created_by = $2
+        AND tk.revoked_at IS NULL AND tk.suspended_at IS NULL
+        AND (tk.expires_at IS NULL OR tk.expires_at > clock_timestamp())`,
+    [tokenId, userId],
+  )
+  const token = tokens[0]
+  if (token === undefined) throw new BasedbError('TOKEN_INVALID')
+
+  const rows = await exec.query<PermissionRow>(
+    `SELECT p.role_id, p.action, p.scope_kind,
+            p.scope_project_id, p.scope_base_id, p.scope_application_id, p.scope_table_id
+       FROM _basedb.permission p
+      WHERE p.role_id = $1`,
+    [token.role_id],
+  )
+  const fieldRows = await exec.query<FieldPermissionRow>(
+    'SELECT fp.role_id, fp.field_id, fp.access FROM _basedb.field_permission fp WHERE fp.role_id = $1',
+    [token.role_id],
+  )
+
+  return {
+    tokenRole: rolesOf(rows, fieldRows)[0] ?? {
+      id: token.role_id,
+      permissions: [],
+      fieldRestrictions: [],
+    },
+    tokenBaseId: token.base_id,
+    tokenAllowedSurfaces: token.allowed_surfaces,
+  }
+}
+
+/** Groups permission and restriction rows by role. */
+function rolesOf(rows: readonly PermissionRow[], fieldRows: readonly FieldPermissionRow[]): Role[] {
+  const byRole = new Map<string, { permissions: Permission[]; restrictions: FieldRestriction[] }>()
 
   for (const row of rows) {
     const entry = byRole.get(row.role_id) ?? { permissions: [], restrictions: [] }
@@ -100,17 +178,16 @@ export async function loadGrants(exec: Executor, ctx: RequestContext): Promise<A
 
   for (const row of fieldRows) {
     const entry = byRole.get(row.role_id) ?? { permissions: [], restrictions: [] }
-    entry.restrictions.push(row)
+    const restriction = restrictionOf(row)
+    if (restriction !== null) entry.restrictions.push(restriction)
     byRole.set(row.role_id, entry)
   }
 
-  const roles: Role[] = [...byRole].map(([id, e]) => ({
+  return [...byRole].map(([id, e]) => ({
     id,
     permissions: e.permissions,
-    fieldRestrictions: e.restrictions.map((r) => ({ fieldId: r.field_id, mode: r.access })),
+    fieldRestrictions: e.restrictions,
   }))
-
-  return { isInstanceAdmin: user.is_instance_admin, roles }
 }
 
 /**
@@ -122,6 +199,8 @@ function scopeIdOf(row: PermissionRow): string | null {
     case 'tenant':
       // The tenant scope names no object: it holds for the role's tenant.
       return TENANT_SCOPE
+    case 'project':
+      return row.scope_project_id
     case 'base':
       return row.scope_base_id
     case 'application':
@@ -145,9 +224,11 @@ export async function loadTarget(
     tenant_ref: string
     table_name: string
     schema_name: string
+    mcp_enabled: boolean
+    project_id: string
   }>(
     `SELECT t.id, t.base_id, ten.ref AS tenant_ref,
-            tn.name AS table_name, sn.name AS schema_name
+            tn.name AS table_name, sn.name AS schema_name, b.mcp_enabled, b.project_id
        FROM _basedb.table_def t
        JOIN _basedb.base b        ON b.id = t.base_id
        JOIN _basedb.tenant ten    ON ten.id = b.tenant_id
@@ -163,8 +244,8 @@ export async function loadTarget(
   // hence returning `null` rather than throwing here.
   if (table === undefined) return null
 
-  const fields = await exec.query<{ id: string; name: string }>(
-    `SELECT f.id, n.name
+  const fields = await exec.query<{ id: string; name: string; expose_to_agents: boolean }>(
+    `SELECT f.id, n.name, f.expose_to_agents
        FROM _basedb.field f
        JOIN _basedb.physical_name n ON n.id = f.name_id
       WHERE f.table_id = $1 AND f.is_live
@@ -183,9 +264,12 @@ export async function loadTarget(
     kind: 'table',
     id: table.id,
     tenantId: table.tenant_ref,
+    projectId: table.project_id,
     baseId: table.base_id,
     applicationIds: applications.map((a) => a.application_id),
     fieldIds: fields.map((f) => f.id),
+    agentHiddenFieldIds: fields.filter((f) => !f.expose_to_agents).map((f) => f.id),
+    agentsExcluded: !table.mcp_enabled,
   }
 }
 

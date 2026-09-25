@@ -50,7 +50,6 @@ interface Props {
   readonly loading: boolean
   /** False on a SQL tab: a result already knows its size, so there is nothing to count. */
   readonly countable: boolean
-  readonly schemaName: string
   readonly onPageSize: (size: number) => void
   readonly onFirst: () => void
   readonly onPrevious: () => void
@@ -72,7 +71,6 @@ export function PaginationBar({
   counting,
   loading,
   countable,
-  schemaName,
   onPageSize,
   onFirst,
   onPrevious,
@@ -105,11 +103,6 @@ export function PaginationBar({
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel className="font-normal leading-relaxed">
-            Il n’y a pas de « tout charger » : le coût d’une page est constant, et c’est ce qui le
-            garde constant.
-          </DropdownMenuLabel>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -149,10 +142,7 @@ export function PaginationBar({
               Compter
             </Button>
           </TooltipTrigger>
-          <TooltipContent>
-            Émet <span className="font-mono">count=exact</span>. Il n’est pas calculé par défaut :
-            un total sur une grande table coûte un parcours complet.
-          </TooltipContent>
+          <TooltipContent>Calculer le nombre total de lignes</TooltipContent>
         </Tooltip>
       )}
 
@@ -165,11 +155,8 @@ export function PaginationBar({
             <ChevronDown className="size-3 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuLabel className="font-normal leading-relaxed">
-            La page affichée, telle qu’elle a été lue. Un champ masqué n’y est pas, parce qu’il n’a
-            jamais été transporté.
-          </DropdownMenuLabel>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuLabel>Exporter la page</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => onExport('csv')}>CSV</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => onExport('json')}>JSON</DropdownMenuItem>
@@ -226,11 +213,6 @@ export function PaginationBar({
       >
         <ChevronRight className="size-3.5" />
       </Button>
-
-      <div className="mx-1 h-4 w-px bg-border" />
-      <span className="hidden font-mono text-[10px] text-muted-foreground md:block">
-        {schemaName}
-      </span>
     </footer>
   )
 }

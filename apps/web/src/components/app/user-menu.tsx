@@ -25,9 +25,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { api } from '@/lib/api/client'
 import { messageFor } from '@/lib/messages'
 import { type ThemePreference, useTheme } from '@/lib/theme'
+import { cn } from '@/lib/utils'
 import {
   ChevronsUpDown,
   KeyRound,
@@ -50,10 +52,12 @@ import { useCallback, useEffect, useState } from 'react'
 
 interface Props {
   readonly user: { readonly displayName: string; readonly email: string }
+  /** The reduced sidebar: the avatar alone, the name in a tooltip. */
+  readonly compact?: boolean
   readonly onSignedOut: () => void
 }
 
-export function UserMenu({ user, onSignedOut }: Props) {
+export function UserMenu({ user, compact = false, onSignedOut }: Props) {
   const preference = useTheme((s) => s.preference)
   const setPreference = useTheme((s) => s.setPreference)
   const [passwordOpen, setPasswordOpen] = useState(false)
@@ -65,26 +69,43 @@ export function UserMenu({ user, onSignedOut }: Props) {
     .map((part) => part.charAt(0).toUpperCase())
     .join('')
 
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2.5 rounded-lg p-2 text-left transition-colors hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent"
-          >
-            <Avatar className="size-8">
-              <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+  const trigger = (
+    <DropdownMenuTrigger asChild>
+      <button
+        type="button"
+        aria-label={compact ? user.displayName : undefined}
+        className={cn(
+          'flex w-full items-center gap-2.5 rounded-lg p-2 text-left transition-colors hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent',
+          compact && 'justify-center p-1',
+        )}
+      >
+        <Avatar className="size-8">
+          <AvatarFallback className="bg-primary/10 text-xs text-primary">{initials}</AvatarFallback>
+        </Avatar>
+        {!compact && (
+          <>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium">{user.displayName}</span>
               <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
             </span>
             <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
-          </button>
-        </DropdownMenuTrigger>
+          </>
+        )}
+      </button>
+    </DropdownMenuTrigger>
+  )
+
+  return (
+    <>
+      <DropdownMenu>
+        {compact ? (
+          <Tooltip>
+            <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+            <TooltipContent side="right">{user.displayName}</TooltipContent>
+          </Tooltip>
+        ) : (
+          trigger
+        )}
 
         {/* `side="top"`: the trigger sits at the bottom of the window, and a menu opening
             downwards would be clipped by it. */}
@@ -198,16 +219,11 @@ function PasswordDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Changer le mot de passe</DialogTitle>
-          <DialogDescription>
-            Vos autres sessions seront fermées ; celle-ci reste ouverte. C’est en général la raison
-            pour laquelle on change un mot de passe.
-          </DialogDescription>
+          <DialogDescription>Vos autres sessions seront déconnectées.</DialogDescription>
         </DialogHeader>
 
         {done ? (
-          <p className="text-sm">
-            Mot de passe changé. Les autres appareils devront se reconnecter.
-          </p>
+          <p className="text-sm">Mot de passe changé.</p>
         ) : (
           <div className="space-y-3">
             <div className="space-y-1.5">
@@ -298,10 +314,7 @@ function SessionsDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Sessions ouvertes</DialogTitle>
-          <DialogDescription>
-            Chaque ligne est un navigateur où votre compte est ouvert. En fermer une déconnecte cet
-            appareil immédiatement.
-          </DialogDescription>
+          <DialogDescription>Les appareils connectés à votre compte.</DialogDescription>
         </DialogHeader>
 
         {error !== null && <p className="text-sm text-destructive">{error}</p>}

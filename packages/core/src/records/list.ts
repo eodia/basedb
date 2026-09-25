@@ -1,9 +1,10 @@
 import { qualify, quoteIdentifier } from '@basedb/naming'
+import { isFileKind } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { type Decision, SYSTEM_COLUMNS, decide } from '../rbac/decide.js'
 import { loadFields, loadGrants, loadTarget } from '../rbac/loader.js'
 import type { Executor, Pools } from '../runtime/pool.js'
-import { type RequestContext, withTransaction } from '../tx/context.js'
+import { type RequestContext, actorKey, withTransaction } from '../tx/context.js'
 import {
   decodeCursor,
   encodeCursor,
@@ -73,6 +74,15 @@ export interface ListOptions {
    * `clients_id(raison_sociale,ville),commerciaux_id`.
    */
   readonly expand?: string
+  /**
+   * The columns to return, by physical name — every readable one when absent.
+   *
+   * Resolved against the READ mask like a filter: a column the reader cannot see is an
+   * unknown column. `_id` is always returned, since it is what designates the row.
+   */
+  readonly select?: readonly string[]
+  /** Where an exact count stops, below the kernel's own ceiling. */
+  readonly countCeiling?: number
 }
 
 export interface ListResult {
@@ -93,6 +103,8 @@ export interface ListResult {
   readonly linkSql: readonly string[]
   /** Expanded rows, indexed by table name then identifier. Empty without `expand`. */
   readonly included: Readonly<Record<string, Readonly<Record<string, Record<string, unknown>>>>>
+  /** The projected `file` and `image` columns, whose entries a reader links to. */
+  readonly fileColumns: readonly string[]
 }
 
 /** Default page bound (chapter 08). */
@@ -142,8 +154,9 @@ export async function listRecords(
     },
   )
 
-  const query = buildSelect(plan, options, limit, {
-    actorId: ctx.actor.id,
+  const selected = { ...plan, columns: selectColumns(plan, options.select) }
+  const query = buildSelect(selected, options, limit, {
+    actorId: actorKey(ctx),
     tableId: options.tableId,
   })
 
@@ -153,13 +166,13 @@ export async function listRecords(
     exec.query<Record<string, unknown>>(query.sql, query.params),
   )
 
-  const page = raw.slice(0, limit)
+  const fetched = raw.slice(0, limit)
   const hasNextPage = raw.length > limit
 
   // The cursor is minted from the LAST ROW OF THE PAGE, before link resolution rewrites
   // its link columns into display objects: the key values must be the ones the database
   // compared, not the ones a reader sees.
-  const lastRow = page[page.length - 1]
+  const lastRow = fetched[fetched.length - 1]
   const nextCursor =
     hasNextPage && lastRow !== undefined
       ? encodeCursor(
@@ -168,16 +181,28 @@ export async function listRecords(
             keys: query.sortTerms.map((term) => lastRow[term.name] ?? null),
             id: String(lastRow._id),
           },
-          { actorId: ctx.actor.id, tableId: options.tableId, fingerprint: query.fingerprint },
+          { actorId: actorKey(ctx), tableId: options.tableId, fingerprint: query.fingerprint },
         )
       : null
+
+  // A sort column read only to mint the cursor leaves with it: the reader asked for the
+  // columns of `select`, and nothing else is returned.
+  const page =
+    query.sortOnly.length === 0
+      ? fetched
+      : fetched.map((row) => {
+          const copy = { ...row }
+          for (const column of query.sortOnly) delete copy[column]
+          return copy
+        })
 
   const counted =
     options.count === 'exact'
       ? await pools.withConnection('data', async (exec) => {
           const rows = await exec.query<{ n: string }>(query.countSql, query.countParams)
           const n = Number(rows[0]?.n ?? 0)
-          return { total: Math.min(n, COUNT_CEILING), capped: n > COUNT_CEILING }
+          const ceiling = Math.min(options.countCeiling ?? COUNT_CEILING, COUNT_CEILING)
+          return { total: Math.min(n, ceiling), capped: n > ceiling }
         })
       : { total: null, capped: false }
 
@@ -206,7 +231,7 @@ export async function listRecords(
 
   return {
     rows: resolved.rows,
-    columns: plan.columns,
+    columns: selected.columns,
     sql: query.sql,
     hasNextPage,
     nextCursor,
@@ -214,6 +239,7 @@ export async function listRecords(
     totalCapped: counted.capped,
     linkSql: resolved.sql,
     included: resolved.included,
+    fileColumns: selected.columns.filter((c) => isFileKind(plan.filterable.get(c)?.kind ?? '')),
   }
 }
 
@@ -343,6 +369,23 @@ async function buildPlan(exec: Executor, ctx: RequestContext, tableId: string): 
   }
 }
 
+/**
+ * The columns a `select` keeps, in catalog order, `_id` always first.
+ *
+ * A name outside the read mask is refused exactly like an unknown one: a `select` that
+ * answered differently for a masked column would enumerate the mask.
+ */
+function selectColumns(plan: Plan, select: readonly string[] | undefined): readonly string[] {
+  if (select === undefined) return plan.columns
+  for (const name of select) {
+    if (!plan.columns.includes(name)) {
+      throw new BasedbError('FILTER_FIELD_UNKNOWN', { details: { field: name } })
+    }
+  }
+  const wanted = new Set(['_id', ...select])
+  return plan.columns.filter((c) => wanted.has(c))
+}
+
 /** Alias of the main table, so that every emitted column is qualified. */
 const ALIAS = 't'
 
@@ -366,9 +409,10 @@ export function buildSelect(
   readonly countParams: readonly unknown[]
   readonly sortTerms: readonly SortTermPlan[]
   readonly fingerprint: string
+  /** Sort columns read for the cursor alone, outside the requested projection. */
+  readonly sortOnly: readonly string[]
 } {
   const prefix = `${quoteIdentifier(ALIAS)}.`
-  const projection = plan.columns.map((c) => `${prefix}${quoteIdentifier(c)}`).join(', ')
   const relation = qualify(plan.schemaName, plan.tableName)
 
   const params: unknown[] = []
@@ -398,7 +442,7 @@ export function buildSelect(
   FROM (SELECT 1
           FROM ${relation} AS ${quoteIdentifier(ALIAS)}
          WHERE ${clauses.join('\n   AND ')}
-         LIMIT ${COUNT_CEILING + 1}) AS bounded;`
+         LIMIT ${Math.min(options.countCeiling ?? COUNT_CEILING, COUNT_CEILING) + 1}) AS bounded;`
 
   const fingerprint = fingerprintOf({
     sort: options.sort ?? '',
@@ -424,13 +468,20 @@ export function buildSelect(
     )
   }
 
+  // The cursor is minted from the sort-key values of the last row, so every sort column
+  // is read — even one a `select` left out, which the caller then drops.
+  const sortOnly = sort.terms.map((t) => t.name).filter((name) => !plan.columns.includes(name))
+  const projection = [...plan.columns, ...sortOnly]
+    .map((c) => `${prefix}${quoteIdentifier(c)}`)
+    .join(', ')
+
   const sql = `SELECT ${projection}
   FROM ${relation} AS ${quoteIdentifier(ALIAS)}
  WHERE ${clauses.join('\n   AND ')}
  ORDER BY ${sort.sql}
  LIMIT ${limit + 1};`
 
-  return { sql, params, countSql, countParams, sortTerms: sort.terms, fingerprint }
+  return { sql, params, countSql, countParams, sortTerms: sort.terms, fingerprint, sortOnly }
 }
 
 /** Exposes field-name resolution, for tests and neighbouring callers. */

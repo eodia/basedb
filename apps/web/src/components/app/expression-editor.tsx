@@ -180,7 +180,10 @@ function completions(fields: readonly Field[]) {
           { label: 'true', type: 'constant', detail: 'vrai' },
           { label: 'false', type: 'constant', detail: 'faux' },
         )
-      } else if (field.kind === 'select' && field.options !== undefined) {
+      } else if (
+        (field.kind === 'select' || field.kind === 'multi_select') &&
+        field.options !== undefined
+      ) {
         for (const option of field.options) {
           options.push({
             label: `"${option.value}"`,
@@ -286,6 +289,8 @@ const OPERATOR_HELP: Readonly<Record<string, string>> = {
   lt: 'inférieur à',
   lte: 'inférieur ou égal',
   between: 'entre deux bornes',
+  has_any: 'contient au moins une des valeurs',
+  has_all: 'contient toutes les valeurs',
 }
 
 // ── The component ────────────────────────────────────────────────────────────

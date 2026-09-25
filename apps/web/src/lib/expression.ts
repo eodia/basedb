@@ -28,8 +28,11 @@ export const KEYWORDS = ['and', 'or', 'not'] as const
 /** `is_null` is the only operator without a value; its negation is written `not`. */
 export const VALUELESS = new Set(['is_null'])
 
-/** Operators taking a LIST rather than a scalar. */
-export const LIST_OPERATORS = new Set(['in', 'between'])
+/**
+ * Operators taking a LIST rather than a scalar. `has_any` and `has_all` also take a lone
+ * value, but a multiple choice is usually asked about several.
+ */
+export const LIST_OPERATORS = new Set(['in', 'between', 'has_any', 'has_all'])
 
 /**
  * A text as a string literal of the grammar.
@@ -244,7 +247,7 @@ export function check(input: string, fields: readonly Field[]): Problem[] {
         problems.push({
           from: token.from,
           to: token.to,
-          message: `Champ inconnu : « ${token.text} ». Un champ masqué se comporte comme un champ absent.`,
+          message: `Champ inconnu : « ${token.text} ».`,
           severity: 'error',
         })
       }

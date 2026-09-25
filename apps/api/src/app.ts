@@ -14,6 +14,7 @@ import {
   VARY,
 } from '@basedb/core'
 import { type Context, Hono } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { cors } from 'hono/cors'
 import { providerTransport } from './ai-transport.js'
@@ -78,6 +79,9 @@ interface ErrorBody {
 
 /** Variables carried by the Hono context, declared to stay typed. */
 type Variables = { requestId: string }
+
+/** What every integration token starts with (`bdb_` + prefix + secret, 08 §11.3). */
+const INTEGRATION_TOKEN_PREFIX = 'bdb_'
 
 export function createApp(options: AppOptions) {
   const app = new Hono<{ Variables: Variables }>()
@@ -166,11 +170,40 @@ export function createApp(options: AppOptions) {
    * origin, including those a foreign page provokes; an `Authorization` header is not.
    * Two surfaces, two credentials, and the data API out of reach of a cookie alone.
    */
-  const bearer = async (c: { req: { header: (k: string) => string | undefined } }) => {
+  const bearerWho = async (c: { req: { header: (k: string) => string | undefined } }) => {
     const header = c.req.header('authorization')
     const token = header?.toLowerCase().startsWith('bearer ') ? header.slice(7).trim() : undefined
-    const who = await options.kernel.authenticateAccessToken(token)
-    return who.userId
+    return options.kernel.authenticateAccessToken(token)
+  }
+  const bearer = async (c: { req: { header: (k: string) => string | undefined } }) =>
+    (await bearerWho(c)).userId
+
+  /**
+   * The credential of the DATA routes — `/meta/bases`, `/data` and a file deposit: a
+   * person's access token, or an integration token issued for the `rest` surface
+   * (chapter 08 §11). The token is its own actor: its base, its role intersected with
+   * its creator's rights at every decision — never its creator's session.
+   *
+   * Every other route — administration, SQL console, AI, projects — stays a person's: a
+   * token opens one base's rows to a program, not the instance. There, `bearer` refuses
+   * it like any credential it does not know.
+   */
+  const dataContext = async (c: Context<{ Variables: Variables }, string>) => {
+    const header = c.req.header('authorization')
+    const secret = header?.toLowerCase().startsWith('bearer ') ? header.slice(7).trim() : undefined
+    if (secret?.startsWith(INTEGRATION_TOKEN_PREFIX) !== true) return contextFor(c, await bearer(c))
+
+    const ctx = await options.kernel.openTokenContext({
+      secret,
+      surface: 'rest',
+      requestId: c.get('requestId'),
+    })
+    // The same check as a person's: a token carried onto another tenant finds nothing.
+    const tenantRef = c.req.param('tenantRef')
+    if (tenantRef !== undefined && tenantRef !== ctx.tenantId) {
+      throw new BasedbError('RESOURCE_NOT_FOUND', { details: { tenant: tenantRef } })
+    }
+    return ctx
   }
 
   /** The credential of `/auth/*`: the session cookie, and it alone. */
@@ -375,6 +408,8 @@ export function createApp(options: AppOptions) {
         display_name: me.displayName,
         tenant: me.tenantRef,
         is_instance_admin: me.isInstanceAdmin,
+        is_admin: me.isAdmin,
+        must_change_password: me.mustChangePassword,
         elevated_until: me.elevatedUntil,
       },
     })
@@ -526,7 +561,7 @@ export function createApp(options: AppOptions) {
   type MetaContext = Context<{ Variables: Variables }, string>
 
   const meta = (kind: MetaKind, parameter?: string) => async (c: MetaContext) => {
-    const ctx = await contextFor(c, await bearer(c))
+    const ctx = await dataContext(c)
     const reference = parameter === undefined ? '' : (c.req.param(parameter) ?? '')
     const served = await options.kernel.serveMeta(
       ctx,
@@ -564,7 +599,7 @@ export function createApp(options: AppOptions) {
   // ---------------------------------------------------------------------------------
 
   app.get('/api/v1/:tenantRef/data/:base/:table', async (c) => {
-    const ctx = await contextFor(c, await bearer(c))
+    const ctx = await dataContext(c)
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
     const limit = c.req.query('limit')
     const result = await options.kernel.listRecords(ctx, {
@@ -599,7 +634,7 @@ export function createApp(options: AppOptions) {
 
   app.post('/api/v1/:tenantRef/data/:base/:table', async (c) => {
     const body = await c.req.json<{ actor?: string; values?: Record<string, unknown> }>()
-    const ctx = await contextFor(c, await bearer(c))
+    const ctx = await dataContext(c)
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
     const created = await options.kernel.createRecord(ctx, {
       tableId: table.tableId,
@@ -639,7 +674,7 @@ export function createApp(options: AppOptions) {
       records.push(data as Record<string, unknown>)
     }
 
-    const ctx = await contextFor(c, await bearer(c))
+    const ctx = await dataContext(c)
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
     const created = await options.kernel.createRecords(ctx, { tableId: table.tableId, records })
 
@@ -653,7 +688,7 @@ export function createApp(options: AppOptions) {
 
   app.patch('/api/v1/:tenantRef/data/:base/:table/:id', async (c) => {
     const body = await c.req.json<{ actor?: string; values?: Record<string, unknown> }>()
-    const ctx = await contextFor(c, await bearer(c))
+    const ctx = await dataContext(c)
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
     const updated = await options.kernel.updateRecord(ctx, {
       tableId: table.tableId,
@@ -664,7 +699,7 @@ export function createApp(options: AppOptions) {
   })
 
   app.delete('/api/v1/:tenantRef/data/:base/:table/:id', async (c) => {
-    const ctx = await contextFor(c, await bearer(c))
+    const ctx = await dataContext(c)
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
     await options.kernel.deleteRecord(ctx, {
       tableId: table.tableId,
@@ -678,7 +713,7 @@ export function createApp(options: AppOptions) {
   // an inverse link has unbounded cardinality, and including it in `expand` would put a
   // paginated list inside a row of another paginated list (§5.6).
   app.get('/api/v1/:tenantRef/data/:base/:table/:id/referenced_by', async (c) => {
-    const ctx = await contextFor(c, await bearer(c))
+    const ctx = await dataContext(c)
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
     const result = await options.kernel.listInverseLinks(ctx, {
       tableId: table.tableId,
@@ -698,6 +733,72 @@ export function createApp(options: AppOptions) {
   })
 
   // ---------------------------------------------------------------------------------
+  // /files — the bytes of `file` and `image` fields (chapter 04 §3 bis)
+  //
+  // A namespace of its own, like `/data/` and `/meta/`: `/data/{base}/{table}/files`
+  // would read as the record whose identifier is `files`.
+  // ---------------------------------------------------------------------------------
+
+  // A deposit: the body IS the file, its type in `Content-Type`, its name in `?name=`.
+  // Not multipart: one file per request is what the interface sends, and a raw body
+  // needs no parser between the socket and the size bound.
+  app.post(
+    '/api/v1/:tenantRef/files/:base/:table/:field',
+    bodyLimit({
+      maxSize: options.kernel.files.maxBytes,
+      onError: () => {
+        throw new BasedbError('BODY_TOO_LARGE', {
+          details: { maximum: options.kernel.files.maxBytes },
+        })
+      },
+    }),
+    async (c) => {
+      const ctx = await dataContext(c)
+      const table = await options.kernel.resolveTable(
+        ctx,
+        c.req.param('base'),
+        c.req.param('table'),
+      )
+      const file = await options.kernel.uploadFile(ctx, {
+        tableId: table.tableId,
+        field: c.req.param('field'),
+        name: c.req.query('name') ?? '',
+        type: c.req.header('content-type'),
+        bytes: new Uint8Array(await c.req.arrayBuffer()),
+      })
+      return c.json({ data: file }, 201)
+    },
+  )
+
+  // A download, through the signed link a read handed out — no `Authorization`, which an
+  // `<img src>` cannot send. The link is the credential; the kernel checks it.
+  app.get('/api/v1/:tenantRef/files/:id/:name', async (c) => {
+    const file = await options.kernel.openFile({
+      tenant: c.req.param('tenantRef'),
+      id: c.req.param('id'),
+      expires: c.req.query('exp'),
+      signature: c.req.query('sig'),
+    })
+    const inline = file.inline && c.req.query('download') !== '1'
+    return c.body(file.body, 200, {
+      'content-type': file.type,
+      'content-length': String(file.size),
+      'content-disposition': disposition(inline ? 'inline' : 'attachment', file.name),
+      // The link is a capability: a shared cache must not keep it, and the browser may
+      // for as long as the link lives — which is what keeps a grid's thumbnails cached.
+      'cache-control': `private, max-age=${file.maxAge}, immutable`,
+      etag: `"${file.sha256}"`,
+      // What the file claims to be is what it is served as, never sniffed into HTML.
+      'x-content-type-options': 'nosniff',
+      // A document opened in place runs nothing: no script, no form, no plugin. Not for
+      // a PDF, whose viewer a sandbox would refuse to start.
+      ...(file.type === 'application/pdf'
+        ? {}
+        : { 'content-security-policy': "default-src 'none'; img-src 'self'; sandbox" }),
+    })
+  })
+
+  // ---------------------------------------------------------------------------------
   // /admin — product operations
   //
   // Chapter 08 §1.4 does not give schema editing a route in the v1 plan; it does fix
@@ -706,19 +807,242 @@ export function createApp(options: AppOptions) {
   // ---------------------------------------------------------------------------------
 
   app.post('/api/v1/:tenantRef/admin/bases', async (c) => {
-    const body = await c.req.json<{ label?: string; description?: string | null; actor?: string }>()
+    const body = await c.req.json<{
+      label?: string
+      description?: string | null
+      project?: string
+    }>()
     if (typeof body.label !== 'string' || body.label.trim() === '') {
       throw new BasedbError('LABEL_EMPTY')
     }
     const ctx = await contextFor(c, await bearer(c))
+    // In the project named — the tenant's first when none is, as before projects existed.
     const base = await options.kernel.createBase(ctx, {
       label: body.label,
       description: body.description,
+      projectId: typeof body.project === 'string' && body.project !== '' ? body.project : undefined,
     })
     return c.json(
-      { data: { id: base.baseId, name: base.schemaName, description: base.description } },
+      {
+        data: {
+          id: base.baseId,
+          name: base.schemaName,
+          description: base.description,
+          project: base.projectId,
+        },
+      },
       201,
     )
+  })
+
+  // ---------------------------------------------------------------------------------
+  // Projects — the level above the base (chapter 05 §15). Listed under /meta like the
+  // bases: what the caller sees is a projection of their rights.
+  // ---------------------------------------------------------------------------------
+
+  app.get('/api/v1/:tenantRef/meta/projects', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const projects = await options.kernel.listProjects(ctx)
+    return c.json({ data: projects })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/projects', async (c) => {
+    const body = await c.req.json<{ label?: string; description?: string | null }>()
+    const ctx = await contextFor(c, await bearer(c))
+    const project = await options.kernel.createProject(ctx, {
+      label: typeof body.label === 'string' ? body.label : '',
+      description: body.description,
+    })
+    return c.json({ data: project }, 201)
+  })
+
+  app.patch('/api/v1/:tenantRef/admin/projects/:id', async (c) => {
+    const body = await c.req.json<{ label?: string; description?: string | null }>()
+    if (body.label === undefined && body.description === undefined) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'label, description' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const result = await options.kernel.updateProject(ctx, {
+      projectId: c.req.param('id'),
+      label: body.label,
+      description: body.description,
+    })
+    return c.json({ data: result })
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/projects/:id', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    await options.kernel.deleteProject(ctx, { projectId: c.req.param('id') })
+    return c.body(null, 204)
+  })
+
+  // ---------------------------------------------------------------------------------
+  // /admin/users, /admin/groups, /admin/access — people, groups and the permission grid
+  // (chapter 05 §8, §15). Administrators only, and every write demands a session
+  // elevated minutes ago: the kernel checks it on the session itself.
+  // ---------------------------------------------------------------------------------
+
+  const serializeUser = (u: Awaited<ReturnType<typeof options.kernel.listUsers>>[number]) => ({
+    id: u.id,
+    email: u.email,
+    display_name: u.displayName,
+    is_admin: u.isAdmin,
+    disabled: u.disabled,
+    must_change_password: u.mustChangePassword,
+    created_at: u.createdAt,
+    last_seen_at: u.lastSeenAt,
+    groups: u.groups,
+  })
+
+  const serializeGroup = (g: Awaited<ReturnType<typeof options.kernel.listGroups>>[number]) => ({
+    id: g.id,
+    label: g.label,
+    system: g.system,
+    member_count: g.memberCount,
+  })
+
+  /** The acting context and the session the request came from, for elevation. */
+  const administering = async (c: Context<{ Variables: Variables }, string>) => {
+    const who = await bearerWho(c)
+    return { ctx: await contextFor(c, who.userId), sessionId: who.sessionId }
+  }
+
+  app.get('/api/v1/:tenantRef/admin/users', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const users = await options.kernel.listUsers(ctx)
+    return c.json({ data: users.map(serializeUser) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/users', async (c) => {
+    const body = await c.req.json<{ email?: unknown; display_name?: unknown; groups?: unknown }>()
+    const { ctx, sessionId } = await administering(c)
+    const created = await options.kernel.createUser(ctx, {
+      email: typeof body.email === 'string' ? body.email : '',
+      displayName: typeof body.display_name === 'string' ? body.display_name : '',
+      groupIds: Array.isArray(body.groups) ? (body.groups as string[]) : [],
+      sessionId,
+    })
+    // The temporary password is in this response and nowhere else, ever.
+    return c.json(
+      {
+        data: {
+          user: serializeUser(created.user),
+          temporary_password: created.temporaryPassword,
+        },
+      },
+      201,
+    )
+  })
+
+  app.patch('/api/v1/:tenantRef/admin/users/:id', async (c) => {
+    const body = await c.req.json<{ display_name?: unknown; disabled?: unknown }>()
+    const { ctx, sessionId } = await administering(c)
+    const user = await options.kernel.updateUser(ctx, {
+      userId: c.req.param('id'),
+      displayName: typeof body.display_name === 'string' ? body.display_name : undefined,
+      disabled: typeof body.disabled === 'boolean' ? body.disabled : undefined,
+      sessionId,
+    })
+    return c.json({ data: serializeUser(user) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/users/:id/password', async (c) => {
+    const { ctx, sessionId } = await administering(c)
+    const reset = await options.kernel.resetUserPassword(ctx, {
+      userId: c.req.param('id'),
+      sessionId,
+    })
+    return c.json({ data: { temporary_password: reset.temporaryPassword } })
+  })
+
+  app.put('/api/v1/:tenantRef/admin/users/:id/groups', async (c) => {
+    const body = await c.req.json<{ groups?: unknown }>()
+    if (!Array.isArray(body.groups)) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'groups' } })
+    }
+    const { ctx, sessionId } = await administering(c)
+    const user = await options.kernel.setUserGroups(ctx, {
+      userId: c.req.param('id'),
+      groupIds: body.groups as string[],
+      sessionId,
+    })
+    return c.json({ data: serializeUser(user) })
+  })
+
+  app.get('/api/v1/:tenantRef/admin/groups', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const groups = await options.kernel.listGroups(ctx)
+    return c.json({ data: groups.map(serializeGroup) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/groups', async (c) => {
+    const body = await c.req.json<{ label?: unknown }>()
+    const { ctx, sessionId } = await administering(c)
+    const group = await options.kernel.createGroup(ctx, {
+      label: typeof body.label === 'string' ? body.label : '',
+      sessionId,
+    })
+    return c.json({ data: serializeGroup(group) }, 201)
+  })
+
+  app.patch('/api/v1/:tenantRef/admin/groups/:id', async (c) => {
+    const body = await c.req.json<{ label?: unknown }>()
+    const { ctx, sessionId } = await administering(c)
+    const result = await options.kernel.renameGroup(ctx, {
+      groupId: c.req.param('id'),
+      label: typeof body.label === 'string' ? body.label : '',
+      sessionId,
+    })
+    return c.json({ data: result })
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/groups/:id', async (c) => {
+    const { ctx, sessionId } = await administering(c)
+    await options.kernel.deleteGroup(ctx, { groupId: c.req.param('id'), sessionId })
+    return c.body(null, 204)
+  })
+
+  app.get('/api/v1/:tenantRef/admin/groups/:id/members', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const members = await options.kernel.listGroupMembers(ctx, { groupId: c.req.param('id') })
+    return c.json({
+      data: members.map((m) => ({ id: m.id, email: m.email, display_name: m.displayName })),
+    })
+  })
+
+  const membership = (member: boolean) => async (c: Context<{ Variables: Variables }, string>) => {
+    const { ctx, sessionId } = await administering(c)
+    await options.kernel.setGroupMembership(ctx, {
+      groupId: c.req.param('id') ?? '',
+      userId: c.req.param('user') ?? '',
+      member,
+      sessionId,
+    })
+    return c.body(null, 204)
+  }
+  app.put('/api/v1/:tenantRef/admin/groups/:id/members/:user', membership(true))
+  app.delete('/api/v1/:tenantRef/admin/groups/:id/members/:user', membership(false))
+
+  app.get('/api/v1/:tenantRef/admin/access', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const graph = await options.kernel.accessGraph(ctx)
+    return c.json({ data: { ...graph, groups: graph.groups.map(serializeGroup) } })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/access', async (c) => {
+    const body = await c.req.json<{ changes?: unknown }>()
+    if (!Array.isArray(body.changes)) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'changes' } })
+    }
+    const { ctx, sessionId } = await administering(c)
+    // Each change names its group as `group`: the wire speaks snake case, the kernel not.
+    const changes = (body.changes as Array<Record<string, unknown> | null>).map((change) => ({
+      groupId: typeof change?.group === 'string' ? change.group : '',
+      scope: change?.scope as { kind: 'project' | 'base' | 'table'; id: string },
+      level: change?.level as 'none' | 'read' | 'edit' | 'manage',
+    }))
+    const graph = await options.kernel.applyAccessChanges(ctx, { changes, sessionId })
+    return c.json({ data: { ...graph, groups: graph.groups.map(serializeGroup) } })
   })
 
   // ---------------------------------------------------------------------------------
@@ -802,14 +1126,17 @@ export function createApp(options: AppOptions) {
     })
   })
 
-  // Renaming a LABEL and/or describing the base — chapter 06 §1.1. One catalog row, no
-  // DDL, no migration; the physical schema name does not move, so nothing an SQL consumer
-  // wrote breaks. Either field may be omitted, but not both: a PATCH that changes nothing
-  // is a mistake worth naming.
+  // Renaming a LABEL, describing the base, dressing it — chapter 06 §1.1. One catalog row,
+  // no DDL, no migration; the physical schema name does not move, so nothing an SQL
+  // consumer wrote breaks. Any field may be omitted, but not all: a PATCH that changes
+  // nothing is a mistake worth naming.
   app.patch('/api/v1/:tenantRef/admin/bases/:base', async (c) => {
-    const body = await c.req.json<{ label?: string; description?: string | null }>()
-    if (body.label === undefined && body.description === undefined) {
-      throw new BasedbError('REQUEST_INVALID', { details: { field: 'label, description' } })
+    const body = await c.req.json<{ label?: string; description?: string | null } & LookBody>()
+    const look = lookOf(body)
+    if (body.label === undefined && body.description === undefined && look === undefined) {
+      throw new BasedbError('REQUEST_INVALID', {
+        details: { field: 'label, description, color, icon, image' },
+      })
     }
     if (body.label !== undefined && (typeof body.label !== 'string' || body.label.trim() === '')) {
       throw new BasedbError('LABEL_EMPTY')
@@ -820,6 +1147,7 @@ export function createApp(options: AppOptions) {
       baseId: base.baseId,
       label: body.label,
       description: body.description,
+      look,
     })
     return c.json({
       data: {
@@ -827,6 +1155,9 @@ export function createApp(options: AppOptions) {
         name: base.baseName,
         label: result.label,
         description: result.description,
+        color: result.color,
+        icon: result.icon,
+        image: result.image,
       },
     })
   })
@@ -1037,21 +1368,40 @@ export function createApp(options: AppOptions) {
     )
   })
 
-  // What a table is FOR. Its own route rather than a field of some larger PATCH: the label
-  // of a table is not renamed here yet, and a body that silently ignored `label` would
-  // look like it had worked.
+  // What a table is called, what it is FOR, how it looks. The label is renamed in the
+  // catalog alone — the relation keeps its physical name — and the three are written in
+  // that order, so a label that clashes leaves the rest as it was.
   app.patch('/api/v1/:tenantRef/admin/bases/:base/tables/:table', async (c) => {
-    const body = await c.req.json<{ description?: string | null }>()
-    if (body.description === undefined) {
-      throw new BasedbError('REQUEST_INVALID', { details: { field: 'description' } })
+    const body = await c.req.json<{ label?: string; description?: string | null } & LookBody>()
+    const look = lookOf(body)
+    if (body.label === undefined && body.description === undefined && look === undefined) {
+      throw new BasedbError('REQUEST_INVALID', {
+        details: { field: 'label, description, color, icon, image' },
+      })
+    }
+    if (body.label !== undefined && typeof body.label !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'label' } })
     }
     const ctx = await contextFor(c, await bearer(c))
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
-    const result = await options.kernel.setTableDescription(ctx, {
-      tableId: table.tableId,
-      description: body.description,
-    })
-    return c.json({ data: { name: table.tableName, description: result.description } })
+    const written: Record<string, unknown> = {}
+    if (body.label !== undefined || look !== undefined) {
+      const updated = await options.kernel.updateTable(ctx, {
+        tableId: table.tableId,
+        label: body.label,
+        look,
+      })
+      Object.assign(written, updated)
+    }
+    if (body.description !== undefined) {
+      written.description = (
+        await options.kernel.setTableDescription(ctx, {
+          tableId: table.tableId,
+          description: body.description,
+        })
+      ).description
+    }
+    return c.json({ data: { name: table.tableName, ...written } })
   })
 
   // What a field is CALLED and what it is FOR: two catalog writes, no migration. The label
@@ -1137,6 +1487,97 @@ export function createApp(options: AppOptions) {
     },
   )
 
+  // ---------------------------------------------------------------------------------
+  // /admin/tokens — integration tokens, chapter 08 §11. SESSION ONLY: the access token
+  // these routes accept is minted from a session, never an integration token, so a
+  // leaked token can neither mint another nor outlive its own revocation. Creating and
+  // revoking demand an elevated session, which the kernel checks on the session itself.
+  // ---------------------------------------------------------------------------------
+
+  const serializeToken = (t: {
+    id: string
+    label: string
+    prefix: string
+    baseId: string | null
+    access: string
+    surfaces: readonly string[]
+    createdAt: string
+    expiresAt: string | null
+    lastUsedAt: string | null
+    revokedAt: string | null
+    suspendedAt: string | null
+  }) => ({
+    id: t.id,
+    label: t.label,
+    prefix: t.prefix,
+    base_id: t.baseId,
+    access: t.access,
+    surfaces: t.surfaces,
+    created_at: t.createdAt,
+    expires_at: t.expiresAt,
+    last_used_at: t.lastUsedAt,
+    revoked_at: t.revokedAt,
+    suspended_at: t.suspendedAt,
+  })
+
+  app.get('/api/v1/:tenantRef/admin/tokens', async (c) => {
+    const baseRef = c.req.query('base')
+    if (baseRef === undefined || baseRef === '') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'base' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, baseRef)
+    const tokens = await options.kernel.listApiTokens(ctx, { baseId: base.baseId })
+    return c.json({ data: tokens.map(serializeToken) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/tokens', async (c) => {
+    const body = await c.req.json<{
+      label?: unknown
+      base?: unknown
+      access?: unknown
+      surfaces?: unknown
+      expires_in_days?: unknown
+    }>()
+    if (typeof body.base !== 'string' || body.base === '') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'base' } })
+    }
+    // Absent or `null`: no expiry. Anything else must be a number of days — a `"90"` sent
+    // as text must not quietly become a token that never expires.
+    const lifetime = body.expires_in_days
+    if (lifetime !== undefined && lifetime !== null && typeof lifetime !== 'number') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'expires_in_days' } })
+    }
+    const who = await bearerWho(c)
+    const ctx = await contextFor(c, who.userId)
+    const base = await options.kernel.resolveBase(ctx, body.base)
+    const issued = await options.kernel.createApiToken(ctx, {
+      label: typeof body.label === 'string' ? body.label : '',
+      baseId: base.baseId,
+      // Checked by the kernel, which refuses anything but `read` and `write`, and any
+      // surface but `rest` and `mcp`. Absent: both doors — the API for a program, MCP
+      // for an agent — since one base's integration usually wants both.
+      access: body.access as 'read' | 'write',
+      surfaces: Array.isArray(body.surfaces)
+        ? (body.surfaces as ('rest' | 'mcp')[])
+        : ['rest', 'mcp'],
+      expiresInDays: lifetime ?? null,
+      sessionId: who.sessionId,
+    })
+    // The secret is in this response and nowhere else, ever.
+    return c.json({ data: { ...serializeToken(issued), secret: issued.secret } }, 201)
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/tokens/:id', async (c) => {
+    const who = await bearerWho(c)
+    const ctx = await contextFor(c, who.userId)
+    await options.kernel.revokeApiToken(ctx, {
+      tokenId: c.req.param('id'),
+      sessionId: who.sessionId,
+    })
+    return c.body(null, 204)
+  })
+
   // The display column: what is shown instead of a UUID in a link cell. A null
   // designation is a valid state — the table remains a legitimate target.
   app.post('/api/v1/:tenantRef/admin/bases/:base/tables/:table/display', async (c) => {
@@ -1188,6 +1629,50 @@ function serializeMigration(m: Migration): Record<string, unknown> {
     finished_at: m.finishedAt,
     duration_ms: m.durationMs,
   }
+}
+
+/** The look of a base or a table, as a body carries it: three keys, each optional. */
+interface LookBody {
+  readonly color?: unknown
+  readonly icon?: unknown
+  readonly image?: unknown
+}
+
+/**
+ * The look a body asks for, or `undefined` when it names none of its keys. A key given
+ * something else than a string or `null` is refused by name rather than dropped.
+ */
+function lookOf(
+  body: LookBody,
+): { color?: string | null; icon?: string | null; image?: string | null } | undefined {
+  const keys = ['color', 'icon', 'image'] as const
+  if (keys.every((k) => body[k] === undefined)) return undefined
+  const out: { color?: string | null; icon?: string | null; image?: string | null } = {}
+  for (const key of keys) {
+    const value = body[key]
+    if (value === undefined) continue
+    if (value !== null && typeof value !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: key } })
+    }
+    out[key] = value
+  }
+  return out
+}
+
+/**
+ * `Content-Disposition` with the file's own name — RFC 6266.
+ *
+ * Twice: `filename*` carries the name as typed, accents and all, for every current
+ * browser; `filename` an ASCII stand-in for the rest. The quote and the backslash are
+ * replaced in the stand-in, since either would end the header's quoted string early.
+ */
+function disposition(kind: 'inline' | 'attachment', name: string): string {
+  const ascii = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_')
+  const encoded = encodeURIComponent(name).replace(
+    /['()*]/g,
+    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
+  )
+  return `${kind}; filename="${ascii}"; filename*=UTF-8''${encoded}`
 }
 
 export { isErrorCode }

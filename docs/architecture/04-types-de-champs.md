@@ -2,7 +2,7 @@
 
 ## Rôle de ce chapitre
 
-Ce chapitre est normatif sur un point unique : **comment un champ du catalogue devient une colonne PostgreSQL**. Il fixe, pour chacun des neuf types de la v1, le type SQL émis, les contraintes et index générés, les paramètres exposés, la validation à l'écriture, la représentation JSON, les opérateurs de filtre, l'indexation, les plans d'évolution et les conversions. Il fixe aussi ce que devient chacun de ces objets à la suppression logique du champ.
+Ce chapitre est normatif sur un point unique : **comment un champ du catalogue devient une colonne PostgreSQL**. Il fixe, pour chacun des neuf types de la v1 et des trois qui s’y sont ajoutés (choix multiple, document, image), le type SQL émis, les contraintes et index générés, les paramètres exposés, la validation à l'écriture, la représentation JSON, les opérateurs de filtre, l'indexation, les plans d'évolution et les conversions. Il fixe aussi ce que devient chacun de ces objets à la suppression logique du champ.
 
 Il réutilise sans les redéfinir : les deux alphabets, les budgets d'octets, la procédure d'allocation, les motifs de noms dérivés et le contrat SQL et de connexion du chapitre 01 ; le registre `_basedb.physical_name`, les tables d'objets, les satellites de configuration, le vocabulaire de `_basedb.physical_state` et le registre des codes d'erreur du chapitre 02. **Tout nom de table, de colonne, de contrainte ou d'état employé ici est celui du chapitre 02**, en anglais conformément à A2 ; les libellés restent côté produit.
 
@@ -472,7 +472,26 @@ ORDER BY array_position($1::text[], "statut") NULLS LAST, "_id"
 
 Le paramètre d'un filtre est validé contre la liste des options connues avant émission ; une valeur inconnue renvoie zéro ligne, pas une erreur.
 
-**Choix multiple : hors périmètre v1.** Aucune colonne `is_multiple` n'existe au catalogue et l'interface ne l'expose pas. Le multiple imposerait `text[]`, des opérateurs de filtre différents (`@>`, `&&`), un index GIN, un tri sans définition naturelle et un export CSV dégradé ; comme le « plusieurs vers plusieurs », il est renvoyé en v2, et aucune surface — API, MCP, OpenAPI — n'expose d'opérateur qui le supposerait. *Alternative rejetée* : une chaîne à séparateurs, qui casse le filtrage et l'intégrité.
+### 3.1 `multi_select` — choix multiple
+
+*Décision révisée* : ce paragraphe renvoyait le choix multiple en v2. Il est un **type à part entière**, pas un drapeau `is_multiple` sur `select` : le type d'un champ est immuable (chapitre 02), et un drapeau qui changerait le type physique de la colonne serait un second `kind` déguisé.
+
+**Colonne `text[]`**, les options étant celles d'un `select` — mêmes tables (`field_select_config`, `select_option`), même apparence, même opération `PUT …/options`, même refus `OPTION_IN_USE`, le décompte se faisant **par valeur** (`unnest`). *Alternative rejetée* : une chaîne à séparateurs, qui casse le filtrage et l'intégrité. Contrainte générée :
+
+```sql
+ALTER TABLE "b_t4z56fq_crm"."factures"
+  ADD CONSTRAINT "ck_factures__etiquettes__enum"
+  CHECK (cardinality("etiquettes") > 0 AND array_ndims("etiquettes") = 1
+         AND "etiquettes" <@ ARRAY['urgent','client']::text[]) NOT VALID;
+```
+
+`<@` tient chaque élément à la liste — un élément `NULL` n'est contenu dans rien et est donc refusé. Les deux autres termes ferment ce que `<@` laisse passer : le tableau **vide**, que `NOT NULL` compterait comme « renseigné », et le tableau **imbriqué**, que `<@` aplatit. Vide s'écrit donc `NULL`, et « obligatoire » veut dire « au moins une valeur ».
+
+**À l'écriture**, le noyau reçoit une liste JSON de chaînes (une chaîne seule vaut une liste d'une valeur), retire les doublons en gardant le premier rang, et écrit `NULL` pour une liste vide. Que chaque valeur soit dans la liste, c'est le `CHECK` qui le dit — la seule règle, celle à laquelle le SQL direct est aussi tenu.
+
+**Filtres** : `has_any` (au moins une des valeurs, `&&`) et `has_all` (toutes, `@>`), qui prennent une valeur ou une liste, plus `is_null`. « N'en contient aucune » s'écrit `not … has_any`. Aucun des treize opérateurs de §9 n'a de sens sur une liste : `eq` comparerait le tableau entier, ordre compris. **Pas de tri** (`SORT_UNAVAILABLE`) : l'ordre de deux listes n'est pas un ordre qu'un lecteur reconnaît. Pas d'index par défaut ; un GIN sur la colonne sert `&&` et `@>` si le volume l'exige.
+
+**Lisibilité en SQL direct** : `WHERE 'urgent' = ANY("etiquettes")` ou `WHERE "etiquettes" && ARRAY['urgent']`.
 
 ### Apparence des options
 
@@ -485,6 +504,45 @@ Une option porte, en plus de sa valeur et de son libellé, une **couleur**, et *
 | `image` | Une adresse `https` ou une URL `data:image/{png,jpeg,webp,gif};base64,…` — jamais du SVG, qui porte des scripts | `ck_option_image`, 16 384 caractères |
 
 Les trois sont **nulles par défaut** et publiées par la projection avec une forme stable : une clé toujours présente, `null` quand elle n'est pas posée. **Le plafond de l'image n'est pas une politesse** : la liste entière voyage avec chaque lecture du catalogue, et deux cents options portant chacune une image sans borne feraient de `/meta/bases` une réponse de mégaoctets. L'interface réduit donc un fichier choisi à 64 pixels avant l'envoi (chapitre 11 §6.2). Un nom de pictogramme que l'interface ne connaît pas s'affiche sans pictogramme au lieu de faire échouer l'écran : le nom reste au catalogue, et une liste collée d'ailleurs n'est pas cassée pour autant.
+
+---
+
+## 3 bis. `file` et `image` — documents et images
+
+*Décision révisée* : le §2.2 excluait `img` du HTML riche parce que « la v1 n'a pas de gestion de fichiers ». Elle en a désormais une, limitée à ces deux types ; l'exclusion d'`img` dans le HTML riche demeure, pour la raison du pisteur.
+
+**Les octets ne sont pas dans la table.** Un champ `file` ou `image` est une colonne **`jsonb`** qui porte la **liste** des fichiers de la cellule, de une à vingt entrées :
+
+```json
+[{"id": "0192…", "name": "devis été.pdf", "type": "application/pdf", "size": 48213}]
+```
+
+Les octets vont au **stockage de fichiers** de l'instance, et le catalogue garde une ligne par fichier dans `_basedb.stored_file` (chapitre 02, « Fichiers déposés »). *Alternatives rejetées* : `bytea` dans la table, qui ferait porter chaque sauvegarde, chaque `VACUUM` et chaque réplique par des mégaoctets de PDF ; `uuid[]` vers le catalogue, illisible en SQL direct et qui imposerait une jointure à travers la frontière `_basedb` à chaque lecture.
+
+**Deux pilotes de stockage, un contrat** : un **répertoire local** (`BASEDB_FILES_DIR`, par défaut `.basedb/files`), qui suffit à un hôte unique ; et **S3** (`BASEDB_S3_BUCKET`, `BASEDB_S3_ENDPOINT`, `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY`, `BASEDB_S3_REGION`, `BASEDB_S3_FORCE_PATH_STYLE=0` pour l'adressage par sous-domaine), le protocole que parlent AWS, Scaleway, OVH, Cloudflare R2, Garage ou SeaweedFS. Le pilote S3 signe lui-même ses requêtes (Signature Version 4) : trois verbes sur un compartiment ne justifient pas un SDK. *Alternative écartée* : imposer MinIO — son édition communautaire est archivée depuis 2026 et ses images ne sont plus publiées ; une instance existante reste utilisable par le pilote S3.
+
+**Le cycle d'un fichier, en trois temps.**
+
+1. **Dépôt** : `POST /api/v1/{tenant}/files/{base}/{table}/{champ}?name=…`, le corps étant le fichier lui-même. Il faut pouvoir **écrire** le champ (en création ou en mise à jour) ; un champ masqué est un champ inconnu. Taille bornée (`BASEDB_FILES_MAX_MB`, 25 Mo par défaut, `BODY_TOO_LARGE`). Pour `image`, le type est lu **dans les octets** — PNG, JPEG, GIF, WebP, AVIF — et rien d'autre n'est accepté (`CONTENT_TYPE_INVALID`) : SVG est refusé, il porte des scripts. Le dépôt rend un identifiant et ne modifie aucune ligne.
+2. **Écriture** : la ligne cite les identifiants (seuls, ou dans des objets `{id, …}` — ce qu'une lecture a rendu, renvoyé tel quel). Le noyau n'accepte que des fichiers déposés **pour ce champ** (`VALUE_INVALID`, `fichier_inconnu` sinon) et **recopie depuis le catalogue** nom, type et taille : ce que la cellule dit d'un fichier ne vient jamais du client. Liste vide = `NULL`.
+3. **Lecture** : chaque fichier d'une ligne lue porte un `url` **signé et temporaire** vers `GET /api/v1/{tenant}/files/{id}/{nom}?exp=…&sig=…`. Cette route ne prend **aucun jeton** — une balise `<img>` ne sait pas en envoyer — : le lien est la preuve. Il n'est émis que par une lecture passée par le point d'application des droits (table, masque de champs, prédicat de lignes), il est lié au tenant, et il expire entre six et douze heures après son émission, l'échéance étant arrondie à la fenêtre de six heures pour que toutes les lectures d'une même fenêtre émettent le **même** lien et que le navigateur garde les vignettes en cache.
+
+**Servir un fichier sans rien exécuter.** Les images acceptées et le PDF sont servis `inline`, tout le reste en pièce jointe ; toujours `X-Content-Type-Options: nosniff`, et, sauf pour le PDF dont la visionneuse refuserait de démarrer, `Content-Security-Policy: default-src 'none'; sandbox`. Un fichier HTML déposé comme document ne s'exécute donc jamais sur l'origine de l'API, à côté du cookie de session.
+
+**Contrainte générée** — la forme, pas le contenu, que le noyau garantit à l'écriture :
+
+```sql
+ALTER TABLE "b_t4z56fq_crm"."factures"
+  ADD CONSTRAINT "ck_factures__pieces_jointes__files"
+  CHECK ("pieces_jointes" IS NULL OR CASE WHEN jsonb_typeof("pieces_jointes") = 'array'
+         THEN jsonb_array_length("pieces_jointes") BETWEEN 1 AND 20 ELSE false END);
+```
+
+Un `CASE` et non un `AND` : PostgreSQL ne promet pas l'ordre d'évaluation d'un `AND`, et `jsonb_array_length` lève une erreur sur un scalaire au lieu de répondre faux. `IS NULL` en tête, explicitement : le `CASE` répond faux pour `NULL`, et la colonne naît `NULL` sur toutes les lignes d'une table qui en a déjà. La règle `files` rejoint le vocabulaire fermé des suffixes `<regle>`.
+
+**Filtres** : `is_null` seul. **Pas de tri.** Pas d'index. Les **agents** (MCP) lisent les fichiers mais n'en écrivent pas : ils n'ont pas d'octets à déposer.
+
+**Ce qui n'est pas encore fait.** Un fichier retiré d'une cellule, ou déposé et jamais cité, reste au catalogue et dans le stockage : aucune clé étrangère ne va de la table vers `stored_file` (A9), et le rattachement des fichiers à leurs lignes pour purger les orphelins relève d'une épuration à écrire. Le lien n'est pas révoqué quand un droit est retiré : il s'éteint à son échéance.
 
 ---
 
@@ -895,8 +953,10 @@ Ce tableau est la **liste de référence** des opérateurs, des contraintes et d
 | `is_null` | non renseigné | `"c" IS NULL` |
 | `gt` / `gte` / `lt` / `lte` | comparaisons ordonnées, **dates comprises** | `>` `>=` `<` `<=` |
 | `between` | encadrement, bornes incluses | `BETWEEN $1 AND $2` |
+| `has_any` | la liste contient au moins une des valeurs (choix multiple) | `"c" && $1::text[]` |
+| `has_all` | la liste contient toutes les valeurs (choix multiple) | `"c" @> $1::text[]` |
 
-Treize opérateurs, et aucun autre. La négation d'`is_null` est exprimée par la négation du filtre, pas par un quatorzième opérateur. Il n'existe pas d'opérateur d'appartenance à un tableau, le choix multiple étant hors périmètre v1 (§3).
+Quinze opérateurs, et aucun autre : les treize de la v1, et les deux du choix multiple (§3.1), qui n'ont de sens sur aucun autre type. La négation d'`is_null` est exprimée par la négation du filtre, pas par un opérateur de plus ; « ne contient aucune » s'écrit `not … has_any`.
 
 | Type | Type PostgreSQL | Contraintes générées | Opérateurs | Index |
 |---|---|---|---|---|
@@ -907,6 +967,8 @@ Treize opérateurs, et aucun autre. La négation d'`is_null` est exprimée par l
 | `date` | `date` | `ck__range` (finitude) | `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `between`, `is_null` | btree `("c","_id")` si `is_sortable` |
 | `datetime` | `timestamptz` | `ck__range` (finitude) | idem `date` | btree `("c","_id")` si `is_sortable` |
 | `select` | `text` | `ck__not_empty`, `ck__enum` | `eq`, `ne`, `in`, `is_null` | aucun ; btree si `is_sortable` |
+| `multi_select` | `text[]` | `ck__enum` (`<@`, non vide, à une dimension) | `has_any`, `has_all`, `is_null` | aucun ; GIN si le volume l'exige. Pas de tri |
+| `file` / `image` | `jsonb` (liste de fichiers) | `ck__files` (tableau de 1 à 20 entrées) | `is_null` | aucun. Pas de tri |
 | `link` | `uuid` | `fk_<table>__<colonne>` (`NO ACTION` pour `restrict`, `SET NULL` en option, `CASCADE` réservé) | `eq`, `ne`, `in`, `is_null` ; sur la valeur d'affichage de la cible : `contains`, `starts_with`, `eq_ci`, avec jointure, un seul niveau | **`ix_<table>__<colonne>` systématique**, sur `("c","_id")` — remplacé par `uq_<table>__<colonne>` si le champ est unique |
 | `formula` | type du résultat, généré `STORED` | celles du type de résultat | ceux du type de résultat | selon `is_sortable` et l'unicité |
 
@@ -1020,6 +1082,7 @@ Codes d'autres chapitres réutilisés tels quels, sans redéfinition : `TABLE_RE
 | Forme unique `{"id": null, "display": null, "masked": true}` pour une cible illisible (A16) | Un UUIDv7 porte un horodatage, qui révélerait la date de création d'une ligne interdite au lecteur | Identifiant en clair, ou identifiant opaque calculé par HMAC |
 | Liens inter-bases refusés | Préserve le déplacement futur d'un schéma vers une autre instance | Autoriser la clé étrangère inter-schémas |
 | Liste de choix en `text` + `CHECK` régénéré, valeurs slugifiées ; multiple hors v1 | `SELECT … WHERE statut = 'paye'` reste lisible et écrivable à la main | `ENUM`, table de référence, ou chaîne à séparateurs |
+| Choix multiple en `text[]` + `CHECK` par `<@` ; fichiers en `jsonb` décrivant des octets tenus hors de la base, servis par lien signé | `WHERE 'urgent' = ANY(etiquettes)` reste lisible ; les sauvegardes ne portent pas les PDF | chaîne à séparateurs, `bytea`, `uuid[]` vers le catalogue |
 | Suppression d'une option utilisée refusée ; archivage et remplacement proposés | Deux contrats d'API différents ; le refus explicite est celui qui informe | Convertir silencieusement en archivage |
 | Formule en colonne générée **stockée**, fonctions de date restreintes aux champs `date` | Visible en SQL direct, indexable, calculée une fois ; aucune expression ne dépend d'un fuseau ni de tzdata | Calcul à la lecture, ou `AT TIME ZONE` concaténé |
 | Expression de formule stockée en arbre (`ast`), réémise pour l'affichage | Le renommage n'est plus une substitution textuelle ; le texte utilisateur ne retraverse jamais le générateur | Stocker la chaîne saisie et la réécrire par substitution |

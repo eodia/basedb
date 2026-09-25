@@ -1,5 +1,6 @@
 'use client'
 
+import { TokenDialog } from '@/components/app/token-dialog'
 import { Markdown, headings, unescapeText } from '@/components/markdown'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -13,6 +14,7 @@ import {
   ChevronDown,
   ChevronRight,
   FileJson,
+  Plug,
   Search,
   ShieldCheck,
   TextAlignStart,
@@ -20,7 +22,8 @@ import {
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
- * The documentation of a base, laid out as a documentation site — chapter 08 §9.4.
+ * The documentation of a base, laid out as a documentation site — chapter 08 §9.4 for the
+ * REST API, chapter 09 for the agents: one document for the two doors of a base.
  *
  * Three columns that scroll on their own: the sections, grouped by topic, on the left; ONE
  * section at a time in the middle; and the headings of that section on the right, with the
@@ -391,8 +394,7 @@ function Reminder() {
         </button>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
-        Engendrée depuis le catalogue et filtrée par vos droits : un autre lecteur en obtient une
-        autre version. Ne la publiez pas telle quelle.
+        Générée selon vos droits : un autre utilisateur en voit une autre version.
       </TooltipContent>
     </Tooltip>
   )
@@ -447,11 +449,42 @@ function SpecDownload({ base }: { readonly base: string }) {
   )
 }
 
+/** The base as the documentation needs it: what to call it, and what the reader may do. */
+interface DocBase {
+  readonly name: string
+  readonly label: string
+  /** Verbs held on the base: `manage_tokens` offers the MCP connection from here. */
+  readonly actions?: readonly string[]
+}
+
+/**
+ * The integration tokens, one click from the pages that explain them — offered only to
+ * whoever may mint a token for this base, which is what the dialog would demand anyway.
+ */
+function TokenButton({ base }: { readonly base: DocBase }) {
+  const [open, setOpen] = useState(false)
+  if (base.actions?.includes('manage_tokens') !== true) return null
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen(true)}
+        title="Créer un jeton pour l’API REST ou le MCP"
+      >
+        <Plug />
+        Jetons
+      </Button>
+      <TokenDialog open={open} base={base} onClose={() => setOpen(false)} />
+    </>
+  )
+}
+
 function DocsBody({
   base,
   pages,
 }: {
-  readonly base: { readonly name: string; readonly label: string }
+  readonly base: DocBase
   readonly pages: readonly DocPage[]
 }) {
   const groups = useMemo(() => toGroups(pages), [pages])
@@ -577,6 +610,7 @@ function DocsBody({
 
           <div className="flex shrink-0 items-center gap-2">
             <Reminder />
+            <TokenButton base={base} />
             <SpecDownload base={base.name} />
           </div>
         </div>
@@ -640,7 +674,7 @@ export function ApiDocs({
   base,
   doc,
 }: {
-  readonly base: { readonly name: string; readonly label: string }
+  readonly base: DocBase
   /** What was fetched when the base opened — shown at once, then replaced by a fresh read. */
   readonly doc: ApiDocumentation | null
 }) {

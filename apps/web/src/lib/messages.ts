@@ -17,12 +17,12 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   PASSWORD_POLICY_VIOLATION:
     'Mot de passe refusé : au moins 12 caractères, et sans reprendre votre adresse ni votre nom.',
   EXPAND_UNAVAILABLE: 'Ce champ ne peut pas être développé, ou sa cible n’est pas visible.',
-  RESOURCE_NOT_FOUND: 'Ressource introuvable, ou invisible pour cet acteur.',
+  RESOURCE_NOT_FOUND: 'Élément introuvable.',
   LABEL_EMPTY: 'Le libellé ne peut pas être vide.',
   REQUIRED_VALUE_MISSING: 'Un champ obligatoire est vide.',
-  FIELD_NOT_WRITABLE: 'Ce champ n’est pas modifiable par cet acteur.',
-  FILTER_FIELD_UNKNOWN: 'Champ inconnu, ou masqué pour cet acteur.',
-  SORT_FIELD_UNKNOWN: 'Champ de tri inconnu, ou masqué pour cet acteur.',
+  FIELD_NOT_WRITABLE: 'Vous ne pouvez pas modifier ce champ.',
+  FILTER_FIELD_UNKNOWN: 'Champ inconnu.',
+  SORT_FIELD_UNKNOWN: 'Champ de tri inconnu.',
   SORT_UNAVAILABLE: 'Ce champ ne peut pas servir de tri.',
   FILTER_OPERATOR_INVALID: 'Cet opérateur ne s’applique pas à ce type de champ.',
   FILTER_VALUE_INVALID: 'La valeur du filtre ne correspond pas au type du champ.',
@@ -33,8 +33,8 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   EXPAND_TOO_DEEP: 'Un chemin de lien ne peut traverser qu’une seule relation.',
   // A cursor is bound to its reader and to its query (ch. 08 §6.2), so these two say
   // what to DO rather than what went wrong: one is unrecoverable, the other reloads.
-  CURSOR_INVALID: 'Ce curseur de pagination n’est plus valable. Revenez à la première page.',
-  CURSOR_STALE: 'Le tri ou le filtre ont changé depuis cette page : la liste repart du début.',
+  CURSOR_INVALID: 'Page expirée : revenez à la première page.',
+  CURSOR_STALE: 'Le tri ou le filtre ont changé : retour au début de la liste.',
   REQUEST_INVALID: 'Expression mal formée : vérifiez la syntaxe du filtre.',
   DUPLICATE_VALUE: 'Cette valeur existe déjà.',
   VALUE_INVALID: 'Valeur invalide pour ce type de champ.',
@@ -49,31 +49,27 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   VALIDATION_FAILED: 'Valeur refusée par une règle métier.',
 
   // Chapter 06 — lifecycle.
-  LABEL_DUPLICATE: 'Ce libellé est déjà pris dans cette base.',
+  LABEL_DUPLICATE: 'Ce libellé est déjà pris.',
   LABEL_TOO_LONG: 'Libellé trop long : 255 caractères au maximum.',
   OPTION_IN_USE: 'Ce choix est encore porté par des lignes.',
   // The registry has one code for every text the API bounds, so this is only the fallback:
   // `messageFor` says WHICH text when `details.field` tells it.
   TEXT_TOO_LONG: 'Texte trop long.',
   BASE_NOT_EMPTY: 'Cette base contient encore des tables vivantes.',
-  BASE_STRUCTURE_FROZEN:
-    'La structure de cette base est gelée : une dérive a été constatée et les opérations de structure sont suspendues.',
+  BASE_STRUCTURE_FROZEN: 'La structure de cette base est gelée : une dérive a été détectée.',
   TABLE_REFERENCED: 'Cette table est encore visée par un lien actif.',
-  DEPENDENT_OBJECT:
-    'Un objet extérieur au produit dépend de ce qui allait être supprimé — une vue construite en SQL direct, le plus souvent.',
+  DEPENDENT_OBJECT: 'Un objet créé en SQL (une vue, par exemple) en dépend encore.',
   ALIAS_DEPENDENT: 'Un alias de compatibilité est encore utilisé.',
   TARGET_PURGED: 'Cet objet a été purgé : il n’est plus restaurable.',
   RESTORE_TARGET_MISSING: 'Il n’y a rien à restaurer ici.',
   RESTORE_OUT_OF_RETENTION:
     'La période de rétention est dépassée : la restauration n’est plus possible.',
-  NAME_COLLISION_UNRESOLVED:
-    'Impossible de trouver un nom physique libre. Un nom n’est jamais rendu, même après suppression.',
+  NAME_COLLISION_UNRESOLVED: 'Impossible de trouver un nom libre.',
 
   // Chapter 03 — migrations.
   MIGRATION_IN_PROGRESS: 'Une migration est déjà en cours sur cette base.',
   MIGRATION_STALE: 'Cette migration n’est plus dans un état où elle peut être appliquée.',
-  MIGRATION_TAMPERED:
-    'Le plan a changé depuis sa proposition : il est refusé plutôt qu’appliqué à moitié.',
+  MIGRATION_TAMPERED: 'Le plan a changé depuis sa proposition. Réessayez.',
   MIGRATION_TOO_LARGE: 'Ce plan dépasse la taille qu’une migration peut porter.',
   MIGRATION_EXPIRED: 'Cette proposition de migration a expiré.',
 
@@ -81,12 +77,36 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   AI_DISABLED: 'L’IA n’est pas activée sur cette instance.',
   AI_CONSENT_REQUIRED: 'Le consentement à l’envoi de données au fournisseur n’a pas été donné.',
   AI_NOT_CONFIGURED: 'Aucun fournisseur d’IA n’est configuré, ou sa clé est absente.',
-  AI_QUOTA_EXCEEDED:
-    'Le plafond d’appels a été atteint. Les éditeurs restent utilisables à la main.',
+  AI_QUOTA_EXCEEDED: 'Plafond d’appels à l’IA atteint.',
   AI_PROVIDER_UNAVAILABLE: 'Le fournisseur d’IA ne répond pas. Réessayez dans un instant.',
-  AI_RESPONSE_UNUSABLE:
-    'La réponse du modèle n’était pas conforme et a été rejetée : rien n’en est repris.',
+  AI_RESPONSE_UNUSABLE: 'Réponse de l’IA inutilisable. Reformulez la demande.',
   AI_PAYLOAD_TOO_LARGE: 'Cette base est trop grande pour tenir dans une demande.',
+
+  // Chapter 08 §11 — integration tokens.
+  ELEVATION_REQUIRED: 'Confirmez votre mot de passe pour faire cela.',
+  ROLE_NOT_DELEGABLE: 'Vous ne pouvez pas accorder à un jeton des droits que vous n’avez pas.',
+  TOKEN_EXPIRY_REQUIRED: 'La validité d’un jeton va de 1 à 365 jours.',
+
+  // Chapter 05 §15 — projects, people and groups.
+  PROJECT_NOT_EMPTY: 'Ce projet contient encore des bases : supprimez-les d’abord.',
+  EMAIL_TAKEN: 'Un compte existe déjà avec cette adresse.',
+  GROUP_SYSTEM_IMMUTABLE:
+    'Ce groupe est fourni par basedb : il ne peut être ni renommé ni supprimé.',
+  LAST_TENANT_ADMIN: 'Il doit rester au moins un administrateur actif.',
+  ACTION_FORBIDDEN: 'Cette action n’est pas permise.',
+
+  // Chapter 04 §3 bis — files.
+  BODY_TOO_LARGE: 'Fichier trop lourd.',
+  CONTENT_TYPE_INVALID: 'Ce fichier n’est pas une image acceptée : PNG, JPEG, GIF, WebP ou AVIF.',
+  VALUE_OUT_OF_CONSTRAINT: 'Valeur refusée par la base : elle ne respecte pas la règle du champ.',
+  SERVICE_UNAVAILABLE: 'Service momentanément indisponible. Réessayez dans un instant.',
+}
+
+/** Why a value was refused: the `reason` the kernel gives for `VALUE_INVALID`. */
+const VALUE_REASONS: Readonly<Record<string, string>> = {
+  fichier_inconnu: 'Ce fichier n’a pas été déposé pour ce champ.',
+  reference_de_fichier: 'Référence de fichier invalide.',
+  liste_de_textes: 'Un choix multiple attend une liste de valeurs.',
 }
 
 /** Why a list of choices was refused: the `reason` the kernel gives for `REQUEST_INVALID`. */
@@ -119,17 +139,31 @@ function explain(e: ApiError): string {
         (o) => `« ${String(o.value)} » (${String(o.count)} ${o.count === 1 ? 'ligne' : 'lignes'})`,
       )
       .join(', ')
-    return `Impossible de retirer ${used} : des lignes portent encore ce choix. Changez-les d’abord.`
+    return `Impossible de retirer ${used} : ce choix est encore utilisé.`
   }
 
   // `description`, or the path to one inside a payload — `fields[0].description` when a
   // table is created with its columns.
   const field = e.details.field
+  if (e.code === 'ACTION_FORBIDDEN' && e.details.reason === 'soi_meme') {
+    return 'Vous ne pouvez pas désactiver votre propre compte.'
+  }
   if (e.code === 'REQUEST_INVALID') {
+    if (field === 'email') return 'Adresse électronique invalide.'
     const reason = e.details.reason
     const known = typeof reason === 'string' ? OPTION_REASONS[reason] : undefined
     if (known !== undefined) return known
     if (field === 'options') return 'Liste de choix invalide.'
+  }
+  if (e.code === 'VALUE_INVALID' && typeof e.details.reason === 'string') {
+    const known = VALUE_REASONS[e.details.reason]
+    if (known !== undefined) return known
+  }
+  if (e.code === 'BODY_TOO_LARGE' && typeof e.details.maximum === 'number') {
+    return `Fichier trop lourd : ${Math.floor(e.details.maximum / (1024 * 1024))} Mo au maximum.`
+  }
+  if (e.code === 'VALUE_OUT_OF_RANGE' && e.details.reason === 'trop_de_fichiers') {
+    return `Trop de fichiers dans ce champ : ${String(e.details.maximum)} au maximum.`
   }
   if (e.code === 'TEXT_TOO_LONG' && typeof field === 'string' && /(^|\.)description$/.test(field)) {
     // The bound comes from the refusal, so the sentence follows the server if it moves.

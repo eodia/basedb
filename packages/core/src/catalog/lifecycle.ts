@@ -12,12 +12,14 @@ import { type MigrationStep, runMigration } from '../ddl/migration.js'
 import type { Migration } from '../ddl/migration.js'
 import { BasedbError } from '../errors/index.js'
 import { SCOPE_INSTANCE } from '../naming/allocation.js'
-import { type ActorGrants, TENANT_SCOPE } from '../rbac/decide.js'
+import { type ActorGrants, TENANT_SCOPE, decide } from '../rbac/decide.js'
 import { loadGrants } from '../rbac/loader.js'
+import { loadBaseTarget, visibleInside } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { normalizeDescription } from './description.js'
-import { labelKey } from './operations.js'
+import { type Look, type LookInput, normalizeLook, touchesLook } from './look.js'
+import { defaultProjectId, labelKey } from './operations.js'
 
 /**
  * Lifecycle of a base — chapter 06.
@@ -87,8 +89,14 @@ export async function updateBase(
     readonly baseId: string
     readonly label?: string
     readonly description?: string | null
+    /**
+     * How the base looks. The three keys are one value: naming any of them replaces the
+     * whole look, a key left out being `null` — so a colour cannot outlive the pictogram it
+     * was picked for.
+     */
+    readonly look?: LookInput
   },
-): Promise<{ readonly label: string; readonly description: string | null }> {
+): Promise<{ readonly label: string; readonly description: string | null } & Look> {
   const label = request.label?.trim()
   if (label !== undefined) {
     if (label === '') throw new BasedbError('LABEL_EMPTY', { details: { base: request.baseId } })
@@ -98,6 +106,13 @@ export async function updateBase(
   }
   const setsDescription = request.description !== undefined
   const description = setsDescription ? normalizeDescription(request.description) : null
+  const setsLook = request.look !== undefined && touchesLook(request.look)
+  const look = setsLook
+    ? normalizeLook(
+        request.look as LookInput,
+        (reason) => new BasedbError('REQUEST_INVALID', { details: { field: 'look', reason } }),
+      )
+    : null
 
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
     const grants = await loadGrants(exec, ctx)
@@ -107,26 +122,33 @@ export async function updateBase(
       // The uniqueness index is partial on `deleted_at IS NULL`: a label freed by a
       // deletion is available again, immediately (§4.4). Caught here to name the conflict
       // rather than surface a constraint violation.
+      // Unique within the base's project (chapter 02).
       const clash = await exec.query<{ id: string }>(
         `SELECT b.id FROM _basedb.base b
-           JOIN _basedb.tenant t ON t.id = b.tenant_id
-          WHERE t.ref = $1 AND b.label_key = $2 AND b.deleted_at IS NULL AND b.id <> $3`,
-        [ctx.tenantId, labelKey(label), request.baseId],
+           JOIN _basedb.base self ON self.id = $2
+          WHERE b.project_id = self.project_id AND b.label_key = $1
+            AND b.deleted_at IS NULL AND b.id <> $2`,
+        [labelKey(label), request.baseId],
       )
       if (clash.length > 0) {
         throw new BasedbError('LABEL_DUPLICATE', { details: { label } })
       }
     }
 
-    const updated = await exec.query<{ label: string; description: string | null }>(
+    const updated = await exec.query<
+      { label: string; description: string | null } & Look & Record<string, unknown>
+    >(
       `UPDATE _basedb.base
           SET label = CASE WHEN $2::boolean THEN $3::text ELSE label END,
               label_key = CASE WHEN $2::boolean THEN $4::text ELSE label_key END,
               description = CASE WHEN $5::boolean THEN $6::text ELSE description END,
+              color = CASE WHEN $8::boolean THEN $9::text ELSE color END,
+              icon = CASE WHEN $8::boolean THEN $10::text ELSE icon END,
+              image = CASE WHEN $8::boolean THEN $11::text ELSE image END,
               catalog_version = catalog_version + 1,
               updated_at = clock_timestamp(), updated_by = $7
         WHERE id = $1 AND deleted_at IS NULL
-        RETURNING label, description`,
+        RETURNING label, description, color, icon, image`,
       [
         request.baseId,
         label !== undefined,
@@ -135,6 +157,10 @@ export async function updateBase(
         setsDescription,
         description,
         ctx.actor.id,
+        setsLook,
+        look?.color ?? null,
+        look?.icon ?? null,
+        look?.image ?? null,
       ],
       'update',
     )
@@ -146,7 +172,13 @@ export async function updateBase(
     // Same signal the version triggers send for a table or a field, so other processes
     // reload instead of waiting for their snapshot to expire.
     await exec.query("SELECT pg_notify('basedb_catalog', $1::text)", [request.baseId])
-    return { label: row.label, description: row.description }
+    return {
+      label: row.label,
+      description: row.description,
+      color: row.color,
+      icon: row.icon,
+      image: row.image,
+    }
   })
 }
 
@@ -868,9 +900,14 @@ async function buildRestorationPlan(
     deleted_at: string | null
     is_purged: boolean
     tenant_ref: string
+    project_id: string
+    project_live: boolean
   }>(
-    `SELECT b.label, b.label_key, b.deleted_at, b.is_purged, t.ref AS tenant_ref
-       FROM _basedb.base b JOIN _basedb.tenant t ON t.id = b.tenant_id
+    `SELECT b.label, b.label_key, b.deleted_at, b.is_purged, t.ref AS tenant_ref,
+            b.project_id, p.deleted_at IS NULL AS project_live
+       FROM _basedb.base b
+       JOIN _basedb.tenant t  ON t.id = b.tenant_id
+       JOIN _basedb.project p ON p.id = b.project_id
       WHERE b.id = $1`,
     [baseId],
   )
@@ -881,10 +918,15 @@ async function buildRestorationPlan(
     throw new BasedbError('TARGET_PURGED', { details: { base: baseId } })
   }
 
+  // A base comes back into its project — or, when that project was deleted meanwhile,
+  // into the tenant's first: a base does not return into a grouping nobody can reach.
+  const projectId = base.project_live ? base.project_id : await defaultProjectId(exec, ctx)
+
+  // A label is unique within a project (chapter 02), so that is where the clash is sought.
   const taken = await exec.query<{ id: string }>(
-    `SELECT b.id FROM _basedb.base b JOIN _basedb.tenant t ON t.id = b.tenant_id
-      WHERE t.ref = $1 AND b.label_key = $2 AND b.deleted_at IS NULL`,
-    [ctx.tenantId, base.label_key],
+    `SELECT b.id FROM _basedb.base b
+      WHERE b.project_id = $1 AND b.label_key = $2 AND b.deleted_at IS NULL`,
+    [projectId, base.label_key],
   )
   if (taken.length > 0) {
     throw new BasedbError('LABEL_DUPLICATE', { details: { label: base.label } })
@@ -948,6 +990,7 @@ VALUES (${quoteLiteral(schemaNameId)}::uuid, 'instance', ${quoteLiteral(SCOPE_IN
  WHERE id = ${quoteLiteral(schema.id)}::uuid;`,
       `UPDATE _basedb.base
    SET deleted_at = NULL, deleted_by = NULL, is_live = true,
+       project_id = ${quoteLiteral(projectId)}::uuid,
        updated_at = ${stamp}::timestamptz, updated_by = ${actor}::uuid
  WHERE id = ${quoteLiteral(baseId)}::uuid;`,
     ],
@@ -1071,7 +1114,11 @@ function assertAdministration(grants: ActorGrants, baseId: string): void {
   throw new BasedbError('ADMIN_REQUIRED', { details: { base: baseId } })
 }
 
-/** `manage_schema` at any scope covering the base — enough to rename a label (§1.1). */
+/**
+ * `manage_schema` at any scope covering the base — the base itself, its project or the
+ * tenant — enough to rename a label (§1.1). Decided by the decider, like every other
+ * right: a hand-written scope test here once ignored the project level entirely.
+ */
 export async function assertManageSchema(
   exec: Executor,
   ctx: RequestContext,
@@ -1079,21 +1126,13 @@ export async function assertManageSchema(
   baseId: string,
 ): Promise<void> {
   if (isAdministration(grants)) return
-  const allowed = grants.roles.some((role) =>
-    role.permissions.some(
-      (p) =>
-        p.action === 'manage_schema' &&
-        ((p.scopeKind === 'tenant' && p.scopeId === TENANT_SCOPE) ||
-          (p.scopeKind === 'base' && p.scopeId === baseId)),
-    ),
-  )
-  if (allowed) return
-
-  const visible = await exec.query<{ id: string }>(
-    'SELECT id FROM _basedb.base WHERE id = $1 AND deleted_at IS NULL',
-    [baseId],
-  )
-  throw new BasedbError(visible.length > 0 ? 'ADMIN_REQUIRED' : 'RESOURCE_NOT_FOUND', {
+  const target = await loadBaseTarget(exec, ctx, baseId)
+  const verdict =
+    target === null ? 'INVISIBLE' : decide(ctx, grants, 'manage_schema', target).verdict
+  if (verdict === 'ALLOWED') return
+  const visible =
+    verdict === 'FORBIDDEN' || (target !== null && (await visibleInside(exec, ctx, grants, target)))
+  throw new BasedbError(visible ? 'ADMIN_REQUIRED' : 'RESOURCE_NOT_FOUND', {
     details: { base: baseId },
   })
 }

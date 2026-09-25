@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
-import { startKernel } from '@basedb/core'
+import { fileURLToPath } from 'node:url'
+import { type FileStorageConfig, startKernel } from '@basedb/core'
 import { serve } from '@hono/node-server'
 import { createApp } from './app.js'
 
@@ -32,11 +33,56 @@ const mailer =
       }
     : undefined
 
+/**
+ * Where the files of `file` and `image` fields go.
+ *
+ * `BASEDB_S3_BUCKET` set: an S3-compatible store — AWS, Scaleway, OVH, R2, Garage,
+ * SeaweedFS… Otherwise a directory, `BASEDB_FILES_DIR`, by default `.basedb/files` at the
+ * root of the repository: enough for one host, and said at startup.
+ */
+function fileStorage(): FileStorageConfig {
+  const env = process.env
+  if (env.BASEDB_S3_BUCKET !== undefined && env.BASEDB_S3_BUCKET !== '') {
+    const missing = [
+      'BASEDB_S3_ENDPOINT',
+      'BASEDB_S3_ACCESS_KEY_ID',
+      'BASEDB_S3_SECRET_ACCESS_KEY',
+    ].filter((name) => (env[name] ?? '') === '')
+    if (missing.length > 0) {
+      console.error(
+        `BASEDB_S3_BUCKET is set, but ${missing.join(', ')} ${missing.length > 1 ? 'are' : 'is'} not.`,
+      )
+      process.exit(1)
+    }
+    return {
+      driver: 's3',
+      endpoint: env.BASEDB_S3_ENDPOINT as string,
+      bucket: env.BASEDB_S3_BUCKET,
+      region: env.BASEDB_S3_REGION ?? 'us-east-1',
+      accessKeyId: env.BASEDB_S3_ACCESS_KEY_ID as string,
+      secretAccessKey: env.BASEDB_S3_SECRET_ACCESS_KEY as string,
+      forcePathStyle: env.BASEDB_S3_FORCE_PATH_STYLE !== '0',
+    }
+  }
+  return {
+    driver: 'local',
+    directory:
+      env.BASEDB_FILES_DIR ?? fileURLToPath(new URL('../../../.basedb/files', import.meta.url)),
+  }
+}
+
+const maxFileMb = Number(process.env.BASEDB_FILES_MAX_MB ?? '')
+
 const kernel = startKernel({
   connectionString,
   encryptionKey: process.env.BASEDB_ENCRYPTION_KEY,
   mailer,
+  files: {
+    storage: fileStorage(),
+    maxBytes: Number.isFinite(maxFileMb) && maxFileMb > 0 ? maxFileMb * 1024 * 1024 : undefined,
+  },
 })
+console.log(`Fichiers : ${kernel.files.storage}.`)
 const port = Number(process.env.PORT ?? 8787)
 
 if (process.env.BASEDB_MIGRATE === '1') {

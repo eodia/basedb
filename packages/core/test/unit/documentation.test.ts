@@ -53,8 +53,22 @@ function table(overrides: Partial<ProjectedTable> & { name: string }): Projected
   }
 }
 
-function base(tables: ProjectedTable[], description: string | null = null): ProjectedBase {
-  return { id: 'base-1', name: `b_${TENANT}_crm`, label: 'CRM', description, tables }
+function base(
+  tables: ProjectedTable[],
+  description: string | null = null,
+  overrides: Partial<ProjectedBase> = {},
+): ProjectedBase {
+  return {
+    id: 'base-1',
+    name: `b_${TENANT}_crm`,
+    label: 'CRM',
+    description,
+    project: { id: 'project-1', label: 'Commercial' },
+    baseActions: ['read', 'create', 'update', 'delete', 'manage_schema', 'manage_tokens'],
+    agentsEnabled: true,
+    tables,
+    ...overrides,
+  }
 }
 
 const section = (doc: ReturnType<typeof toDocumentation>, id: string) =>
@@ -68,7 +82,7 @@ describe('the shape of the document', () => {
 
   it('files every section under a navigation group, in the order a sidebar shows them', () => {
     const groups = [...new Set(doc.sections.map((s) => s.group))]
-    expect(groups).toEqual(['Prise en main', 'Tables', 'Référence'])
+    expect(groups).toEqual(['Prise en main', 'API REST', 'Agents (MCP)', 'Tables', 'Référence'])
     // One "Tables" section per table, between the introduction and the reference.
     expect(doc.sections.filter((s) => s.group === 'Tables').map((s) => s.id)).toEqual([
       'factures',
@@ -85,6 +99,9 @@ describe('the shape of the document', () => {
         'api-relations',
         'codes-de-reponse',
         'ecrire-en-sql',
+        'mcp-connexion',
+        'mcp-outils',
+        'mcp-perimetre',
       ]),
     )
   })
@@ -292,5 +309,103 @@ describe('section identifiers', () => {
     // A logical name has no hyphen (alphabet B of chapter 01): that is the whole argument.
     const guide = toDocumentation(base([]), TENANT).sections.filter((s) => s.group !== 'Tables')
     for (const s of guide) expect(s.id).toContain('-')
+  })
+})
+
+describe('the agent surface (MCP)', () => {
+  const invoices = table({
+    name: 'factures',
+    displayField: 'numero',
+    fields: [
+      ...system,
+      field({ name: 'numero', label: 'Numéro' }),
+      field({ name: 'montant', label: 'Montant', kind: 'number' }),
+      field({ name: 'marge', label: 'Marge', kind: 'number', hiddenFromAgents: true }),
+      field({ name: 'total', kind: 'formula', readOnly: true }),
+    ],
+  })
+  const doc = toDocumentation(base([invoices]), TENANT)
+  const md = section(doc, 'factures')?.markdown ?? ''
+  const agent = md.split('### Depuis un agent (MCP)')[1] ?? ''
+
+  it('says, on every table page, which tools reach the table', () => {
+    for (const tool of ['describe_table', 'list_records', 'get_record', 'create_record']) {
+      expect(agent).toContain(`| \`${tool}\` |`)
+    }
+    // A display column is what `lookup_records` resolves: offered because there is one.
+    expect(agent).toContain('| `lookup_records` |')
+    // No tool deletes: the page says where deleting happens instead.
+    expect(agent).toContain('aucun outil MCP ne supprime')
+  })
+
+  it('offers only the tools the reader holds, and lookup only with a display column', () => {
+    const readOnly = toDocumentation(base([table({ name: 'factures', actions: ['read'] })]), TENANT)
+    const part = section(readOnly, 'factures')?.markdown.split('### Depuis un agent (MCP)')[1] ?? ''
+    expect(part).toContain('| `list_records` |')
+    expect(part).not.toContain('create_record')
+    expect(part).not.toContain('update_record')
+    expect(part).not.toContain('lookup_records')
+  })
+
+  it('names the columns an agent will not see, and keeps them out of its examples', () => {
+    expect(agent).toContain('**Invisibles pour un agent :** `marge`')
+    expect(md).toContain('invisible pour les agents')
+    const creation = agent.split('title="create_record"')[1] ?? ''
+    expect(creation).toContain('"numero": "Exemple"')
+    expect(creation).not.toContain('"marge"')
+    expect(creation).not.toContain('"total"')
+    expect(section(doc, 'mcp-perimetre')?.markdown).toContain('`factures.marge`')
+  })
+
+  it('gives the arguments of a call as JSON, built from kinds and never from data', () => {
+    expect(agent).toContain('```json title="list_records"')
+    expect(agent).toContain(`"base": "b_${TENANT}_crm"`)
+    expect(agent).toContain('"montant": "1240.00"')
+  })
+
+  it('says it plainly when the base is closed to agents', () => {
+    const closed = toDocumentation(base([invoices], null, { agentsEnabled: false }), TENANT)
+    expect(section(closed, 'factures')?.markdown).toContain('n’est pas ouverte aux agents')
+    expect(section(closed, 'factures')?.markdown).not.toContain('title="list_records"')
+    expect(section(closed, 'mcp-connexion')?.markdown).toContain('> [!WARNING]')
+    expect(section(closed, 'lire-cette-base')?.markdown).toContain('fermée aux agents')
+  })
+
+  it('tells who may not mint a token to ask someone who may', () => {
+    const connect = (actions: ProjectedBase['baseActions']) =>
+      section(
+        toDocumentation(base([invoices], null, { baseActions: actions }), TENANT),
+        'mcp-connexion',
+      )?.markdown ?? ''
+    expect(connect(['read', 'manage_tokens'])).toContain('**Jetons API et MCP…**')
+    expect(connect(['read'])).not.toContain('**Jetons API et MCP…**')
+    expect(connect(['read'])).toContain('Demandez-en un')
+  })
+
+  it('keeps the token out of the client configuration', () => {
+    const connect = section(doc, 'mcp-connexion')?.markdown ?? ''
+    expect(connect).toContain("SetEnvironmentVariable('BASEDB_TOKEN'")
+    expect(connect).toContain('--token-env BASEDB_TOKEN')
+    expect(connect).toContain('claude mcp add basedb')
+    expect(connect).not.toMatch(/bdb_[a-z0-9]{8}_/)
+  })
+
+  it('tells a program how to get and present an integration token', () => {
+    const auth = section(doc, 'api-authentification')?.markdown ?? ''
+    expect(auth).toContain('### Jeton d’intégration')
+    expect(auth).toContain('**ne supprime jamais**')
+    expect(auth).toContain('**Jetons API et MCP…**')
+    const withoutRight = section(
+      toDocumentation(base([invoices], null, { baseActions: ['read'] }), TENANT),
+      'api-authentification',
+    )?.markdown
+    expect(withoutRight).not.toContain('**Jetons API et MCP…**')
+  })
+
+  it('lists every tool once, with whether it writes', () => {
+    const tools = section(doc, 'mcp-outils')?.markdown ?? ''
+    expect(tools).toContain('| `create_record` | Créer une ligne. | oui |')
+    expect(tools).toContain('| `list_records` |')
+    expect(tools).toContain('MCP_OPERATION_EXCLUDED')
   })
 })

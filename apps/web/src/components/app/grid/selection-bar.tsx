@@ -91,11 +91,8 @@ export function SelectionBar({
             <ChevronDown className="size-3 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuLabel className="font-normal leading-relaxed">
-            Les lignes sélectionnées, telles qu’elles ont été lues. Le produit n’a pas de route
-            d’export (décision A21) : rien n’est relu du serveur.
-          </DropdownMenuLabel>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuLabel>Exporter la sélection</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => onExport('csv')}>CSV</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => onExport('json')}>JSON</DropdownMenuItem>

@@ -99,16 +99,18 @@ BEGIN
   ligne := CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
 
   -- Le chemin vers le tenant diffère selon la table : direct quand la colonne existe,
-  -- par le rôle ou par l'utilisateur sinon.
+  -- par le rôle, l'utilisateur ou la base sinon. Chaque branche ne nomme que des
+  -- colonnes que SA table porte : plpgsql ne résout un champ de record qu'à l'exécution,
+  -- et une colonne absente ferait échouer toute écriture sur la table.
   CASE TG_TABLE_NAME
-    WHEN 'role', 'app_user' THEN
+    WHEN 'role', 'app_user', 'api_token' THEN
       cible := ligne.tenant_id;
     WHEN 'permission', 'field_permission', 'role_member' THEN
       SELECT r.tenant_id INTO cible FROM _basedb.role r WHERE r.id = ligne.role_id;
-    WHEN 'session', 'api_token' THEN
+    WHEN 'session' THEN
       SELECT u.tenant_id INTO cible FROM _basedb.app_user u WHERE u.id = ligne.user_id;
     WHEN 'webhook' THEN
-      cible := ligne.tenant_id;
+      SELECT b.tenant_id INTO cible FROM _basedb.base b WHERE b.id = ligne.base_id;
     ELSE
       cible := NULL;
   END CASE;
@@ -148,8 +150,14 @@ CREATE TRIGGER tg_authz_version_session
   AFTER INSERT OR UPDATE OR DELETE ON _basedb.session
   FOR EACH ROW EXECUTE FUNCTION _basedb.bump_authz_version();
 
+-- Les colonnes qui décident de ce qu'un jeton peut faire, et elles seules : une mise à
+-- jour de `last_used_at` (au plus une toutes les cinq minutes par jeton, chapitre 08
+-- §11.5) n'est pas une écriture d'autorisation, et viderait sinon les caches de droits
+-- de tout le tenant à chaque passage.
 CREATE TRIGGER tg_authz_version_api_token
-  AFTER INSERT OR UPDATE OR DELETE ON _basedb.api_token
+  AFTER INSERT OR DELETE
+     OR UPDATE OF role_id, base_id, allowed_surfaces, expires_at, revoked_at, suspended_at
+  ON _basedb.api_token
   FOR EACH ROW EXECUTE FUNCTION _basedb.bump_authz_version();
 
 CREATE TRIGGER tg_authz_version_webhook

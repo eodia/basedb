@@ -1,5 +1,15 @@
+import { MAX_FILES_PER_VALUE } from '../ddl/emit.js'
 import { escapeLabel } from './labels.js'
 import type { ProjectedBase, ProjectedField, ProjectedTable } from './projection.js'
+
+/** The kinds `sort` does not offer: a link, and the values that have no order (§4.2). */
+const UNSORTED: ReadonlySet<string> = new Set([
+  'link',
+  'long_text',
+  'multi_select',
+  'file',
+  'image',
+])
 
 /**
  * OpenAPI 3.1 serialization — chapter 08 §9.
@@ -92,6 +102,37 @@ function scalarSchema(field: ProjectedField): Schema {
       // The result type depends on the expression; describing it as a fixed type would
       // be a lie a client could act on.
       return {}
+    case 'multi_select':
+      // The choices go on the ITEMS: an `enum` on the array would describe the array.
+      return {
+        type: nullable ? ['array', 'null'] : 'array',
+        items: {
+          type: 'string',
+          ...(field.options === undefined ? {} : { enum: field.options.map((o) => o.value) }),
+        },
+        minItems: 1,
+        uniqueItems: true,
+      }
+    case 'file':
+    case 'image':
+      // Written with the identifiers a deposit returned; read back with what the catalog
+      // knows of each file, and a signed link that expires.
+      return {
+        type: nullable ? ['array', 'null'] : 'array',
+        items: {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string', readOnly: true },
+            type: { type: 'string', readOnly: true },
+            size: { type: 'integer', readOnly: true },
+            url: { type: 'string', readOnly: true },
+          },
+        },
+        minItems: 1,
+        maxItems: MAX_FILES_PER_VALUE,
+      }
     default:
       return of('string')
   }
@@ -115,7 +156,9 @@ function fieldSchema(field: ProjectedField): Schema {
     ...describe(field.description),
     // The choices are a CHECK in the database, so they belong in the contract: a
     // generated client that offers anything else offers a value that will be refused.
-    ...(field.options === undefined ? {} : { enum: field.options.map((o) => o.value) }),
+    ...(field.options === undefined || field.kind === 'multi_select'
+      ? {}
+      : { enum: field.options.map((o) => o.value) }),
     title: escapeLabel(field.label),
     ...(field.readOnly ? { readOnly: true } : {}),
     // The API does not re-sanitize on read: the contract is that the consumer does it
@@ -241,7 +284,7 @@ export function toOpenApi(base: ProjectedBase, tenantRef: string): Record<string
     const expandable = table.fields.filter((f) => f.link?.expandable === true).map((f) => f.name)
     // Unreadable fields are absent from the description, hence from every enum: there
     // is one single list, so they cannot drift apart.
-    const sortable = table.fields.filter((f) => f.kind !== 'link').map((f) => f.name)
+    const sortable = table.fields.filter((f) => !UNSORTED.has(f.kind)).map((f) => f.name)
 
     schemas[`${name}Read`] = readSchema(table)
     if (table.actions.includes('create') || table.actions.includes('update')) {

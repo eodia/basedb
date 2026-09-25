@@ -6,7 +6,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -183,7 +182,7 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
       if (table.rows.length > MAX_ROWS) {
         return {
           table: null,
-          error: `${table.rows.length.toLocaleString('fr-FR')} lignes : l’import en accepte ${MAX_ROWS.toLocaleString('fr-FR')} au plus. Découpez le fichier.`,
+          error: `${table.rows.length.toLocaleString('fr-FR')} lignes : ${MAX_ROWS.toLocaleString('fr-FR')} au maximum.`,
         }
       }
       return { table, error: null }
@@ -198,9 +197,7 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
     if (picked === undefined) return
     setReadError(null)
     if (picked.size > MAX_BYTES) {
-      setReadError(
-        `${formatBytes(picked.size)} : l’import accepte ${formatBytes(MAX_BYTES)} au plus.`,
-      )
+      setReadError(`Fichier trop volumineux (${formatBytes(MAX_BYTES)} au maximum).`)
       return
     }
     try {
@@ -399,8 +396,8 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
           const where = row === null ? '' : `Ligne ${row} du fichier : `
           const kept =
             done === 0
-              ? 'Rien n’a été importé dans ce lot ni dans les précédents.'
-              : `${done.toLocaleString('fr-FR')} ligne${done > 1 ? 's' : ''} déjà importée${done > 1 ? 's' : ''}, le reste non.`
+              ? 'Aucune ligne importée.'
+              : `${done.toLocaleString('fr-FR')} ligne${done > 1 ? 's' : ''} importée${done > 1 ? 's' : ''}.`
           show({ phase: 'failed', error: `${where}${messageFor(e)} ${kept}` })
           break
         }
@@ -424,15 +421,12 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && !running && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto sm:max-w-3xl"
+        aria-describedby={undefined}
+      >
         <DialogHeader>
           <DialogTitle>Importer un fichier</DialogTitle>
-          <DialogDescription>
-            {step === 'file' &&
-              'Un fichier CSV, TSV, TXT ou JSON. Rien n’est envoyé avant l’étape suivante.'}
-            {step === 'target' && 'Où vont les lignes, et quelle colonne va dans quel champ.'}
-            {step === 'run' && 'Les lignes sont envoyées par lots de 500.'}
-          </DialogDescription>
         </DialogHeader>
 
         {step === 'file' && (
@@ -556,7 +550,7 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
                 stop.current = true
               }}
             >
-              Interrompre après ce lot
+              Interrompre
             </Button>
           )}
           {step === 'run' && !running && (
@@ -823,14 +817,10 @@ function ExistingTarget({
         <p className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           Champ{requiredMissing.length > 1 ? 's' : ''} obligatoire
-          {requiredMissing.length > 1 ? 's' : ''} sans colonne : {requiredMissing.join(', ')}. La
-          base refusera les lignes où il est vide.
+          {requiredMissing.length > 1 ? 's' : ''} non associé
+          {requiredMissing.length > 1 ? 's' : ''} : {requiredMissing.join(', ')}.
         </p>
       )}
-      <p className="text-xs text-muted-foreground">
-        Les champs liens et calculés ne s’importent pas encore : seuls les champs de saisie sont
-        proposés.
-      </p>
     </div>
   )
 }
@@ -922,10 +912,6 @@ function NewTarget({
           Deux colonnes portent le même libellé de champ.
         </p>
       )}
-      <p className="text-xs text-muted-foreground">
-        Les types sont devinés d’après toutes les valeurs de chaque colonne : changez-les au besoin.
-        Les champs sont créés facultatifs ; une liste de choix se crée ensuite depuis la structure.
-      </p>
     </div>
   )
 }

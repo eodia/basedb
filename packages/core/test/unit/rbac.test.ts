@@ -231,3 +231,92 @@ describe('§1.2 — the surface restricts, it never grants', () => {
     expect(d.reason).toBe('TOKEN_INVALID')
   })
 })
+
+describe('§2.3 — a token: its role, intersected with its creator', () => {
+  const tokenContext = context({
+    actor: { kind: 'token', id: 'u-1', tokenId: 'tok-1' },
+    surface: 'mcp',
+  })
+  const role = (
+    actions: readonly Action[],
+    restrictions: ActorGrants['roles'][number]['fieldRestrictions'] = [],
+  ) => ({
+    id: 'r-token',
+    permissions: actions.map((action) => ({ action, scopeKind: 'base' as const, scopeId: BASE })),
+    fieldRestrictions: restrictions,
+  })
+
+  it('a read-only token under a writing creator reads, and is refused a write BY ITS ROLE', () => {
+    const grants = grantsFor(['read', 'create', 'update'], { tokenRole: role(['read']) })
+    expect(decide(tokenContext, grants, 'read', target).verdict).toBe('ALLOWED')
+    const write = decide(tokenContext, grants, 'update', target)
+    expect(write.verdict).toBe('FORBIDDEN')
+    expect(write.reason).toBe('TOKEN_ACTION_NOT_GRANTED')
+  })
+
+  it('a writing token under a creator who lost the right is refused BY ITS CREATOR', () => {
+    const grants = grantsFor(['read'], { tokenRole: role(['read', 'create', 'update']) })
+    const write = decide(tokenContext, grants, 'update', target)
+    expect(write.verdict).toBe('FORBIDDEN')
+    expect(write.reason).toBe('ACTION_NOT_GRANTED')
+  })
+
+  it('a creator with no right left makes the token see nothing', () => {
+    const grants: ActorGrants = { isInstanceAdmin: false, roles: [], tokenRole: role(['read']) }
+    expect(decide(tokenContext, grants, 'read', target).verdict).toBe('INVISIBLE')
+  })
+
+  it('field masks intersect: hidden on either side is hidden', () => {
+    const grants = grantsFor(['read', 'update'], {
+      tokenRole: role(['read', 'update'], [{ fieldId: 'f-salaire', mode: 'hidden' }]),
+    })
+    const d = decide(tokenContext, grants, 'update', target)
+    expect(d.readableFields.has('f-salaire')).toBe(false)
+    expect(d.writableFields.has('f-salaire')).toBe(false)
+    expect(d.writableFields.has('f-numero')).toBe(true)
+  })
+
+  it('an instance administrator’s token keeps its scope and its role', () => {
+    const grants: ActorGrants = {
+      isInstanceAdmin: true,
+      roles: [],
+      tokenRole: role(['read']),
+      tokenBaseId: 'another-base',
+    }
+    expect(decide(tokenContext, grants, 'read', target).reason).toBe('TOKEN_SCOPE')
+    const inScope = decide(tokenContext, { ...grants, tokenBaseId: BASE }, 'update', target)
+    expect(inScope.reason).toBe('TOKEN_ACTION_NOT_GRANTED')
+  })
+})
+
+describe('chapter 09 §12.2 — what is withheld from agents', () => {
+  const agent = context({ surface: 'mcp' })
+  const withheld: Target = { ...target, agentHiddenFieldIds: ['f-salaire'] }
+
+  it('a field closed to agents is unreadable on the mcp surface, and only there', () => {
+    const onMcp = decide(agent, grantsFor(['read', 'update']), 'update', withheld)
+    expect(onMcp.readableFields.has('f-salaire')).toBe(false)
+    expect(onMcp.writableFields.has('f-salaire')).toBe(false)
+    const onRest = decide(context(), grantsFor(['read']), 'read', withheld)
+    expect(onRest.readableFields.has('f-salaire')).toBe(true)
+  })
+
+  it('an administrator does not see it either, on that surface', () => {
+    const admin: ActorGrants = { isInstanceAdmin: true, roles: [] }
+    expect(decide(agent, admin, 'read', withheld).readableFields.has('f-salaire')).toBe(false)
+  })
+
+  it('a table whose every field is withheld does not exist for agents', () => {
+    const all: Target = { ...target, agentHiddenFieldIds: FIELDS }
+    const d = decide(agent, grantsFor(['read']), 'read', all)
+    expect(d.verdict).toBe('INVISIBLE')
+    expect(d.reason).toBe('EMPTY_MASK')
+  })
+
+  it('a base closed to agents does not exist there, whatever the rights', () => {
+    const closed: Target = { ...target, agentsExcluded: true }
+    const admin: ActorGrants = { isInstanceAdmin: true, roles: [] }
+    expect(decide(agent, admin, 'read', closed).verdict).toBe('INVISIBLE')
+    expect(decide(context(), admin, 'read', closed).verdict).toBe('ALLOWED')
+  })
+})

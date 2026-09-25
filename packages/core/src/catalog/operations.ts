@@ -8,6 +8,7 @@ import {
 } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { SCOPE_INSTANCE, allocateName } from '../naming/allocation.js'
+import { loadProjectTarget, requireAction, requireOnBase } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { commentText, normalizeDescription } from './description.js'
@@ -31,6 +32,8 @@ export function labelKey(label: string): string {
 
 export interface CreateBaseResult {
   readonly baseId: string
+  /** The project the base was created in. */
+  readonly projectId: string
   readonly description: string | null
   readonly schemaId: string
   /** Assigned physical name, to be returned to the caller (chapter 01 §2.5). */
@@ -51,6 +54,8 @@ export async function createBase(
     readonly label: string
     readonly technicalName?: string
     readonly description?: string | null
+    /** The project to create it in — the tenant's first when absent. */
+    readonly projectId?: string
   },
 ): Promise<CreateBaseResult> {
   // Validated before the transaction opens: a description that is too long is a refusal,
@@ -60,10 +65,27 @@ export async function createBase(
   return withTransaction(pools, 'ddl', ctx, async (exec) => {
     const tenant = await resolveTenant(exec, ctx)
 
+    // A base is created INSIDE a project, by whoever may build in it: `manage_schema`
+    // on the project, or on the tenant (chapter 05 §8, §15).
+    const projectId = request.projectId ?? (await defaultProjectId(exec, ctx))
+    const project = await loadProjectTarget(exec, ctx, projectId)
+    await requireAction(exec, ctx, 'manage_schema', project, { project: projectId })
+
+    // A label is unique within its project; caught here to name the conflict rather
+    // than surface a constraint violation.
+    const clash = await exec.query<{ id: string }>(
+      'SELECT id FROM _basedb.base WHERE project_id = $1 AND label_key = $2 AND deleted_at IS NULL',
+      [project?.id, labelKey(request.label)],
+    )
+    if (clash.length > 0) {
+      throw new BasedbError('LABEL_DUPLICATE', { details: { label: request.label } })
+    }
+
     const [base] = await exec.query<{ id: string }>(
-      `INSERT INTO _basedb.base (tenant_id, label, label_key, description, created_by, updated_by)
-       VALUES ($1, $2, $3, $4, $5, $5) RETURNING id`,
-      [tenant.id, request.label, labelKey(request.label), description, ctx.actor.id],
+      `INSERT INTO _basedb.base
+         (tenant_id, project_id, label, label_key, description, created_by, updated_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $6) RETURNING id`,
+      [tenant.id, project?.id, request.label, labelKey(request.label), description, ctx.actor.id],
       'insert',
     )
 
@@ -85,7 +107,13 @@ export async function createBase(
 
     await exec.query(sqlCreateSchema(name.name), [], 'ddl')
 
-    return { baseId: base.id, description, schemaId: schema.id, schemaName: name.name }
+    return {
+      baseId: base.id,
+      projectId: project?.id as string,
+      description,
+      schemaId: schema.id,
+      schemaName: name.name,
+    }
   })
 }
 
@@ -142,6 +170,8 @@ export async function createTable(
   )
 
   return withTransaction(pools, 'ddl', ctx, async (exec) => {
+    // A table is added by whoever may build in its base (chapter 05 §8).
+    await requireOnBase(exec, ctx, 'manage_schema', request.baseId)
     const schema = await resolveSchema(exec, request.baseId)
 
     const tableName = await allocateName(exec, ctx, {
@@ -357,4 +387,31 @@ async function resolveSchema(
     throw new BasedbError('RESOURCE_NOT_FOUND', { details: { base: baseId } })
   }
   return schema
+}
+
+/**
+ * The tenant's first project — created, named « Projet principal », when there is none.
+ *
+ * What a base created without naming a project lands in: the first base of a fresh
+ * instance needs a home, and callers written before projects existed name none.
+ */
+export async function defaultProjectId(exec: Executor, ctx: RequestContext): Promise<string> {
+  const rows = await exec.query<{ id: string }>(
+    `SELECT p.id FROM _basedb.project p
+       JOIN _basedb.tenant t ON t.id = p.tenant_id
+      WHERE t.ref = $1 AND p.deleted_at IS NULL
+      ORDER BY p.position, p.created_at
+      LIMIT 1`,
+    [ctx.tenantId],
+  )
+  if (rows[0] !== undefined) return rows[0].id
+  const [created] = await exec.query<{ id: string }>(
+    `INSERT INTO _basedb.project (tenant_id, label, label_key, created_by, updated_by)
+     SELECT t.id, 'Projet principal', 'projet principal', $2, $2
+       FROM _basedb.tenant t WHERE t.ref = $1
+     RETURNING id`,
+    [ctx.tenantId, ctx.actor.id],
+    'insert',
+  )
+  return created.id
 }

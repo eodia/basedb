@@ -28,7 +28,13 @@ import { BasedbError } from '../errors/index.js'
  *   4. every table entering the query brings its own row predicate.
  */
 
-/** The thirteen operators, and no others (chapter 04 §9). */
+/**
+ * The thirteen operators of chapter 04 §9, and the two a multiple choice adds — no others.
+ *
+ * `has_any` and `has_all` exist because none of the thirteen means anything on a list:
+ * `eq` would compare the whole array, order included, and `in` would ask whether the
+ * array is one of several arrays.
+ */
 export const OPERATORS = [
   'eq',
   'ne',
@@ -43,6 +49,8 @@ export const OPERATORS = [
   'lt',
   'lte',
   'between',
+  'has_any',
+  'has_all',
 ] as const
 
 export type Operator = (typeof OPERATORS)[number]
@@ -65,9 +73,14 @@ const ALLOWED: Readonly<Record<FieldKind, readonly Operator[]>> = {
   date: [...EQUALITY, ...ORDERING, 'is_null'],
   datetime: [...EQUALITY, ...ORDERING, 'is_null'],
   select: [...EQUALITY, 'is_null'],
+  // A list is asked what it holds, never compared whole. "Holds none of" is `not has_any`.
+  multi_select: ['has_any', 'has_all', 'is_null'],
   // On a link, identifiers are compared: neither case nor substring apply.
   link: [...EQUALITY, 'is_null'],
   formula: [...EQUALITY, ...ORDERING, 'is_null'],
+  // A list of files is present or absent; what it holds is not a value one filters on.
+  file: ['is_null'],
+  image: ['is_null'],
 }
 
 /**
@@ -83,10 +96,15 @@ export function operatorsFor(kind: FieldKind): readonly Operator[] {
   return ALLOWED[kind] ?? []
 }
 
-/** True if the type can be ordered at all. Long text is searched, never compared. */
+/**
+ * True if the type can be ordered at all. Long text is searched, never compared; a list —
+ * of choices or of files — has no order a reader would recognise as one.
+ */
 export function sortableKind(kind: FieldKind): boolean {
-  return kind !== 'long_text'
+  return !UNSORTABLE.has(kind)
 }
+
+const UNSORTABLE: ReadonlySet<FieldKind> = new Set(['long_text', 'multi_select', 'file', 'image'])
 
 /** The five system columns, filterable and sortable as soon as `read` is granted (A18). */
 const SYSTEM: Readonly<Record<string, FieldKind>> = {
@@ -102,12 +120,16 @@ export const CAST: Readonly<Record<FieldKind, string>> = {
   short_text: 'text',
   long_text: 'text',
   select: 'text',
+  // The cast of an ELEMENT: `has_any` binds `$n::text[]`.
+  multi_select: 'text',
   number: 'numeric',
   boolean: 'boolean',
   date: 'date',
   datetime: 'timestamptz',
   link: 'uuid',
   formula: 'text',
+  file: 'jsonb',
+  image: 'jsonb',
 }
 
 /** Bounds of §4.6, checked DURING parsing and not after. */
@@ -642,6 +664,15 @@ function comparison(
       return `${col} = ANY($${bind(list)}::${cast}[])`
     }
 
+    // A single value is a list of one: `tags has_any "urgent"` reads as it is meant.
+    case 'has_any':
+    case 'has_all': {
+      const items = Array.isArray(node.value) ? node.value : [node.value as Scalar]
+      if (items.length === 0) throw malformed(`"${node.op}" takes at least one value`)
+      const list = items.map((v) => coerce(v, column.kind, node.field))
+      return `${col} ${node.op === 'has_any' ? '&&' : '@>'} $${bind(list)}::${cast}[]`
+    }
+
     case 'between': {
       if (!Array.isArray(node.value) || node.value.length !== 2) {
         throw malformed('"between" takes a list of two bounds')
@@ -735,7 +766,7 @@ export function buildSort(
       // `sort=salaire` would hand over the full ordering of a masked column.
       throw new BasedbError('SORT_FIELD_UNKNOWN', { details: { field: name } })
     }
-    if (column.kind === 'long_text') {
+    if (!sortableKind(column.kind)) {
       throw new BasedbError('SORT_UNAVAILABLE', { details: { field: name, type: column.kind } })
     }
     if (named.includes(column.name)) {

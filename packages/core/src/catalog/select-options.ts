@@ -1,11 +1,13 @@
 import { checkConstraintName, qualify, quoteIdentifier } from '@basedb/naming'
-import { quoteLiteral } from '../ddl/emit.js'
+import { choiceCheck, isChoiceKind } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { allocateName } from '../naming/allocation.js'
 import { loadGrants } from '../rbac/loader.js'
+import { requireOnField } from '../rbac/require.js'
 import type { Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { assertManageSchema } from './lifecycle.js'
+import { MAX_IMAGE_CHARS, normalizeLook } from './look.js'
 
 /**
  * The options of a `select` — chapter 04 §3.
@@ -17,16 +19,11 @@ import { assertManageSchema } from './lifecycle.js'
  * a `CHECK` constraint, and it is regenerated.
  */
 
-/** Bounds of chapter 03 §"Valeurs d'options" — and one of this file's own. */
+/** Bounds of chapter 03 §"Valeurs d'options". The look's own are in `look.ts`. */
 export const MAX_OPTIONS = 200
 export const MAX_OPTION_CHARS = 200
 export const MAX_LABEL_CHARS = 255
-/**
- * The longest picture, as the URL that carries it. A data URL of a 64-pixel icon is a few
- * kilobytes; the ceiling is what keeps a base description from growing by megabytes when
- * two hundred options each carry one, since the whole list travels with every catalog read.
- */
-export const MAX_IMAGE_CHARS = 16_384
+export { MAX_IMAGE_CHARS }
 
 export interface SelectOptionInput {
   readonly value: string
@@ -48,24 +45,10 @@ export interface SelectOption {
   readonly image: string | null
 }
 
-const COLOR = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
-const ICON = /^[a-z0-9]+(-[a-z0-9]+)*$/
-const DATA_IMAGE = /^data:image\/(png|jpeg|webp|gif);base64,[a-z0-9+/]+=*$/i
-const HTTPS_IMAGE = /^https:\/\/[^\s]+$/i
-
 function invalid(reason: string, option?: string): BasedbError {
   return new BasedbError('REQUEST_INVALID', {
     details: { field: 'options', reason, ...(option === undefined ? {} : { option }) },
   })
-}
-
-/** `#abc` becomes `#aabbcc`, and case is folded: what the column's CHECK expects. */
-function normalizeColor(raw: string | null | undefined, option: string): string | null {
-  const text = raw?.trim() ?? ''
-  if (text === '') return null
-  if (!COLOR.test(text)) throw invalid('couleur_invalide', option)
-  const hex = text.slice(1).toLowerCase()
-  return `#${hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex}`
 }
 
 /**
@@ -98,20 +81,9 @@ export function normalizeOptions(options: readonly SelectOptionInput[]): readonl
       throw new BasedbError('LABEL_TOO_LONG', { details: { maximum: MAX_LABEL_CHARS } })
     }
 
-    const icon = (raw.icon ?? '').trim() === '' ? null : (raw.icon as string).trim()
-    if (icon !== null && (!ICON.test(icon) || icon.length > 64)) {
-      throw invalid('icone_invalide', value)
-    }
-
-    const image = (raw.image ?? '').trim() === '' ? null : (raw.image as string).trim()
-    if (image !== null) {
-      if (!DATA_IMAGE.test(image) && !HTTPS_IMAGE.test(image))
-        throw invalid('image_invalide', value)
-      if (image.length > MAX_IMAGE_CHARS) throw invalid('image_trop_grande', value)
-    }
-    if (icon !== null && image !== null) throw invalid('icone_et_image', value)
-
-    return { value, label, color: normalizeColor(raw.color, value), icon, image }
+    // The same look, and the same rules, as a base or a table.
+    const look = normalizeLook(raw, (reason) => invalid(reason, value))
+    return { value, label, ...look }
   })
 }
 
@@ -176,6 +148,8 @@ export async function setSelectOptions(
   let removed: string[] = []
 
   const plan = await withTransaction(pools, 'ddl', ctx, async (exec): Promise<Plan> => {
+    // Building is `manage_schema` on the table (chapter 05 §8).
+    await requireOnField(exec, ctx, 'manage_schema', request.fieldId)
     const [field] = await exec.query<FieldRow>(
       `SELECT f.table_id, f.base_id, f.kind,
               cn.name AS column_name, tn.name AS table_name, sn.name AS schema_name,
@@ -193,11 +167,12 @@ export async function setSelectOptions(
     if (field === undefined) {
       throw new BasedbError('RESOURCE_NOT_FOUND', { details: { field: request.fieldId } })
     }
-    if (field.kind !== 'select') {
+    if (!isChoiceKind(field.kind)) {
       throw new BasedbError('REQUEST_INVALID', {
         details: { field: 'kind', reason: 'pas_une_liste_de_choix' },
       })
     }
+    const kind = field.kind
     await assertManageSchema(exec, ctx, await loadGrants(exec, ctx), field.base_id)
 
     const existing = await exec.query<ExistingOption>(
@@ -219,9 +194,16 @@ export async function setSelectOptions(
     // longer allows — and `VALIDATE` would find it after the old constraint was gone.
     if (removed.length > 0) {
       await exec.query(`LOCK TABLE ${relation} IN SHARE ROW EXCLUSIVE MODE`, [], 'ddl')
+      // A multiple choice is counted per value it holds: a row carrying two removed
+      // values is counted once under each, which is what "still in use" means for each.
       const used = await exec.query<{ value: string; count: number }>(
-        `SELECT ${column} AS value, count(*)::int AS count
-           FROM ${relation} WHERE ${column} = ANY($1::text[]) GROUP BY ${column} ORDER BY 1`,
+        kind === 'select'
+          ? `SELECT ${column} AS value, count(*)::int AS count
+               FROM ${relation} WHERE ${column} = ANY($1::text[]) GROUP BY ${column} ORDER BY 1`
+          : `SELECT v.value, count(*)::int AS count
+               FROM ${relation} CROSS JOIN LATERAL unnest(${column}) AS v(value)
+              WHERE ${column} && $1::text[] AND v.value = ANY($1::text[])
+              GROUP BY v.value ORDER BY 1`,
         [removed],
       )
       if (used.length > 0) {
@@ -272,7 +254,7 @@ export async function setSelectOptions(
 
     // The new constraint allows the archived values too: they are still on rows, and the
     // list a person edits never shows them.
-    const values = [...wanted.map((o) => o.value), ...archived].map(quoteLiteral).join(', ')
+    const values = [...wanted.map((o) => o.value), ...archived]
     const name = await allocateName(exec, ctx, {
       derivedName: checkConstraintName(field.table_name, field.column_name, 'enum'),
       objectKind: 'constraint',
@@ -304,7 +286,7 @@ export async function setSelectOptions(
       )
       drop = `DROP CONSTRAINT ${quoteIdentifier(old.name)}, `
     }
-    const statement = `ALTER TABLE ${relation} ${drop}ADD CONSTRAINT ${quoteIdentifier(name.name)} CHECK (${column} IN (${values})) NOT VALID;`
+    const statement = `ALTER TABLE ${relation} ${drop}ADD CONSTRAINT ${quoteIdentifier(name.name)} CHECK (${choiceCheck(kind, column, values)}) NOT VALID;`
     await exec.query(statement, [], 'ddl')
 
     await exec.query(

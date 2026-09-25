@@ -1,6 +1,7 @@
 import { sqlCommentOnColumn } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { loadGrants } from '../rbac/loader.js'
+import { requireOnField } from '../rbac/require.js'
 import type { Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { commentText } from './description.js'
@@ -44,6 +45,8 @@ export async function setFieldLabel(
   }
 
   return withTransaction(pools, 'ddl', ctx, async (exec) => {
+    // Building is `manage_schema` on the table (chapter 05 §8).
+    await requireOnField(exec, ctx, 'manage_schema', request.fieldId)
     const [field] = await exec.query<FieldRow>(
       `SELECT f.base_id, f.table_id, f.label, f.description,
               cn.name AS column_name, tn.name AS table_name, sn.name AS schema_name

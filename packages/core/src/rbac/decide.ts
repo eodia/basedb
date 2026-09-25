@@ -21,8 +21,8 @@ export const ACTIONS = [
 
 export type Action = (typeof ACTIONS)[number]
 
-/** `instance ⊃ tenant ⊃ base ⊃ {application, table} ⊃ field` (§1.4). */
-export type ScopeKind = 'tenant' | 'base' | 'application' | 'table'
+/** `instance ⊃ tenant ⊃ project ⊃ base ⊃ {application, table} ⊃ field` (§1.4, §15). */
+export type ScopeKind = 'tenant' | 'project' | 'base' | 'application' | 'table'
 
 export type Verdict = 'ALLOWED' | 'INVISIBLE' | 'FORBIDDEN'
 
@@ -57,14 +57,25 @@ export interface Role {
 
 /** The target of a decision, designated by its CATALOG KEY, never by its name. */
 export interface Target {
-  readonly kind: 'table' | 'base' | 'tenant'
+  readonly kind: 'table' | 'base' | 'project' | 'tenant'
   readonly id: string
   readonly tenantId: string | null
+  /** The project a base or a table belongs to: a grant on it covers them (§15). */
+  readonly projectId?: string
   readonly baseId?: string
   /** Applications the table belongs to, evaluated AT DECISION TIME (§1.4). */
   readonly applicationIds?: readonly string[]
   /** Fields of the table, in catalog order. */
   readonly fieldIds?: readonly string[]
+  /**
+   * Fields marked `field.expose_to_agents = false` (chapter 09 §12.2). On the `mcp`
+   * surface they are treated EXACTLY as unreadable fields, whatever the rights: the
+   * content leaves for a third-party model, and a user's right to read a column does not
+   * settle whether an agent should.
+   */
+  readonly agentHiddenFieldIds?: readonly string[]
+  /** `base.mcp_enabled = false`: on the `mcp` surface the target does not exist. */
+  readonly agentsExcluded?: boolean
 }
 
 /** Snapshot of an actor's grants, computed once by the kernel. */
@@ -75,6 +86,13 @@ export interface ActorGrants {
   readonly tokenBaseId?: string | null
   /** Surfaces on which the token is acceptable. */
   readonly tokenAllowedSurfaces?: readonly Surface[]
+  /**
+   * For a token: its one role (`api_token.role_id`). The token's capabilities are the
+   * INTERSECTION of this role and of its creator's grants — `roles` above — recomputed at
+   * every decision (05 §2.3). Without it a token would be a frozen escalation: a creator
+   * demoted since would go on acting through it.
+   */
+  readonly tokenRole?: Role
 }
 
 export interface Decision {
@@ -130,6 +148,8 @@ function scopeCovers(permission: Permission, target: Target): boolean {
         target.tenantId !== null &&
         (permission.scopeId === TENANT_SCOPE || permission.scopeId === target.tenantId)
       )
+    case 'project':
+      return permission.scopeId === (target.kind === 'project' ? target.id : target.projectId)
     case 'base':
       return permission.scopeId === (target.kind === 'base' ? target.id : target.baseId)
     case 'table':
@@ -172,14 +192,8 @@ export function decide(
     return deny('FORBIDDEN', 'TOKEN_INVALID')
   }
 
-  const allFields = target.fieldIds ?? []
-
-  // 3. Instance administrator: full mask, INSIDE the context's tenant.
-  if (grants.isInstanceAdmin) {
-    return mask(allFields, [], 'INSTANCE_ADMIN')
-  }
-
-  // 4. Token scope: bound to one base, it sees nothing beyond it.
+  // 4. Token scope: bound to one base, it sees nothing beyond it. Checked BEFORE the
+  //    instance administrator's full mask: a token keeps its scope whoever created it.
   if (
     grants.tokenBaseId !== undefined &&
     grants.tokenBaseId !== null &&
@@ -188,6 +202,91 @@ export function decide(
     return deny('INVISIBLE', 'TOKEN_SCOPE')
   }
 
+  // The agent surface's two markers (09 §12.2), independent of the permissions: a base
+  // closed to agents does not exist there, and a field withheld from them is exactly an
+  // unreadable field — absent from the mask, hence from every projection, filter, sort,
+  // expansion and display value built on it.
+  if (ctx.surface === 'mcp' && target.agentsExcluded === true) {
+    return deny('INVISIBLE', 'MCP_DISABLED')
+  }
+  const declared = target.fieldIds ?? []
+  const withheld = new Set<string>(ctx.surface === 'mcp' ? (target.agentHiddenFieldIds ?? []) : [])
+  const allFields = declared.filter((f) => !withheld.has(f))
+
+  // 3, 5, 6 and 7. The actor's own reach on the target.
+  const own = reach(grants.isInstanceAdmin, grants.roles, target, allFields)
+
+  // 9. Verdict. `read` first: without it, the target does not exist for this actor.
+  if (own === null) return deny('INVISIBLE', 'NO_READ')
+
+  let { capabilities, readable, writable } = own
+  let reason = grants.isInstanceAdmin ? 'INSTANCE_ADMIN' : 'GRANTED'
+
+  // A token: its role, intersected with its creator's reach, at every decision.
+  if (grants.tokenRole !== undefined) {
+    const bound = reach(false, [grants.tokenRole], target, allFields)
+    if (bound === null) return deny('INVISIBLE', 'NO_READ')
+    capabilities = new Set([...capabilities].filter((a) => bound.capabilities.has(a)))
+    readable = new Set([...readable].filter((f) => bound.readable.has(f)))
+    writable = new Set([...writable].filter((f) => bound.writable.has(f)))
+    reason = 'TOKEN_BOUND'
+  }
+
+  // Table visible, no readable field: the only coherent outcome is `INVISIBLE`.
+  // Otherwise the SQL builder would have to emit an empty column list — invalid SQL —
+  // or fall back on `*`, that is, violate the invariant of §6.2; and a list of n empty
+  // objects would disclose the cardinality of a table we meant to hide.
+  const businessFields = [...readable].filter((f) => !SYSTEM_COLUMNS.includes(f))
+  if (declared.length > 0 && businessFields.length === 0) return deny('INVISIBLE', 'EMPTY_MASK')
+
+  if (!capabilities.has(action)) {
+    // Which side refused matters to the agent surface: a read-only TOKEN is fixed by
+    // issuing another token, a user without the right by asking for it (09 §14.5).
+    const tokenRefused =
+      grants.tokenRole !== undefined && !reachCapabilities(grants.tokenRole, target).has(action)
+    return deny('FORBIDDEN', tokenRefused ? 'TOKEN_ACTION_NOT_GRANTED' : 'ACTION_NOT_GRANTED')
+  }
+
+  // Clearable: readable, not writable. Without this set, the REST adapter would have to
+  // re-test "is this a link with an unreadable target?" itself, that is, carry an
+  // authorization rule outside the enforcement point.
+  const clearable = new Set([...readable].filter((f) => !writable.has(f)))
+
+  return {
+    verdict: 'ALLOWED',
+    readableFields: readable,
+    writableFields: writable,
+    clearableFields: clearable,
+    rowPredicate: 'TRUE',
+    reason,
+  }
+}
+
+/** What some roles can do, and see, on one target — `null` when they cannot read it. */
+interface Reach {
+  readonly capabilities: ReadonlySet<Action>
+  readonly readable: ReadonlySet<string>
+  readonly writable: ReadonlySet<string>
+}
+
+/** The verbs one role holds on the target, scopes resolved. */
+function reachCapabilities(role: Role, target: Target): ReadonlySet<Action> {
+  const capabilities = new Set<Action>()
+  for (const permission of role.permissions) {
+    if (scopeCovers(permission, target)) capabilities.add(permission.action)
+  }
+  return capabilities
+}
+
+function reach(
+  isInstanceAdmin: boolean,
+  roles: readonly Role[],
+  target: Target,
+  allFields: readonly string[],
+): Reach | null {
+  // 3. Instance administrator: full mask, INSIDE the context's tenant.
+  if (isInstanceAdmin) return { capabilities: new Set(ACTIONS), ...mask(allFields, []) }
+
   // 5, 6 and 7. Collect the roles, union their capabilities on the target.
   //
   // Only roles that grant `read` ON THIS TARGET take part in the mask: a role with no
@@ -195,32 +294,16 @@ export function decide(
   const capabilities = new Set<Action>()
   const readingRoles: Role[] = []
 
-  for (const role of grants.roles) {
-    let covers = false
-    for (const permission of role.permissions) {
-      if (!scopeCovers(permission, target)) continue
-      capabilities.add(permission.action)
-      if (permission.action === 'read') covers = true
-    }
-    if (covers) readingRoles.push(role)
+  for (const role of roles) {
+    const held = reachCapabilities(role, target)
+    for (const action of held) capabilities.add(action)
+    if (held.has('read')) readingRoles.push(role)
   }
 
-  // 9. Verdict. `read` first: without it, the target does not exist for this actor.
-  if (!capabilities.has('read')) return deny('INVISIBLE', 'NO_READ')
+  if (!capabilities.has('read')) return null
 
   // 8. Field mask.
-  const decision = mask(allFields, readingRoles, 'GRANTED', capabilities)
-
-  // Table visible, no readable field: the only coherent outcome is `INVISIBLE`.
-  // Otherwise the SQL builder would have to emit an empty column list — invalid SQL —
-  // or fall back on `*`, that is, violate the invariant of §6.2; and a list of n empty
-  // objects would disclose the cardinality of a table we meant to hide.
-  const businessFields = [...decision.readableFields].filter((f) => !SYSTEM_COLUMNS.includes(f))
-  if (allFields.length > 0 && businessFields.length === 0) return deny('INVISIBLE', 'EMPTY_MASK')
-
-  if (!capabilities.has(action)) return deny('FORBIDDEN', 'ACTION_NOT_GRANTED')
-
-  return decision
+  return { capabilities, ...mask(allFields, readingRoles, capabilities) }
 }
 
 /**
@@ -233,9 +316,8 @@ export function decide(
 function mask(
   allFields: readonly string[],
   readingRoles: readonly Role[],
-  reason: string,
   capabilities: ReadonlySet<Action> = new Set(ACTIONS),
-): Decision {
+): { readonly readable: ReadonlySet<string>; readonly writable: ReadonlySet<string> } {
   const hidden = new Set<string>()
   const readOnly = new Set<string>()
 
@@ -264,17 +346,5 @@ function mask(
     canWrite ? allFields.filter((f) => !hidden.has(f) && !readOnly.has(f)) : [],
   )
 
-  // Clearable: readable, not writable. Without this set, the REST adapter would have to
-  // re-test "is this a link with an unreadable target?" itself, that is, carry an
-  // authorization rule outside the enforcement point.
-  const clearable = new Set([...readable].filter((f) => !writable.has(f)))
-
-  return {
-    verdict: 'ALLOWED',
-    readableFields: readable,
-    writableFields: writable,
-    clearableFields: clearable,
-    rowPredicate: 'TRUE',
-    reason,
-  }
+  return { readable, writable }
 }

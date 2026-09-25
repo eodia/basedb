@@ -6,7 +6,7 @@
 -- Chapter 02 is authoritative on the catalog: every correction is made in the
 -- document, never here.
 --
--- 111 statements, topologically sorted. The chapter order is a reading order,
+-- 115 statements, topologically sorted. The chapter order is a reading order,
 -- not an application order: the name registry references `app_user`, which belongs to
 -- the next domain.
 
@@ -76,17 +76,22 @@ BEGIN
   END IF;
 
   -- Un satellite par FAMILLE de types : `short_text` et `long_text` partagent
-  -- `field_text_config`, `date` et `datetime` partagent `field_datetime_config`.
+  -- `field_text_config`, `date` et `datetime` partagent `field_datetime_config`,
+  -- `select` et `multi_select` partagent `field_select_config`, `file` et `image`
+  -- partagent `field_file_config`.
   v_present := CASE NEW.kind
-    WHEN 'short_text' THEN EXISTS (SELECT 1 FROM _basedb.field_text_config     WHERE field_id = NEW.id)
-    WHEN 'long_text'  THEN EXISTS (SELECT 1 FROM _basedb.field_text_config     WHERE field_id = NEW.id)
-    WHEN 'number'     THEN EXISTS (SELECT 1 FROM _basedb.field_number_config   WHERE field_id = NEW.id)
-    WHEN 'boolean'    THEN EXISTS (SELECT 1 FROM _basedb.field_boolean_config  WHERE field_id = NEW.id)
-    WHEN 'date'       THEN EXISTS (SELECT 1 FROM _basedb.field_datetime_config WHERE field_id = NEW.id)
-    WHEN 'datetime'   THEN EXISTS (SELECT 1 FROM _basedb.field_datetime_config WHERE field_id = NEW.id)
-    WHEN 'select'     THEN EXISTS (SELECT 1 FROM _basedb.field_select_config   WHERE field_id = NEW.id)
-    WHEN 'link'       THEN EXISTS (SELECT 1 FROM _basedb.field_link_config     WHERE field_id = NEW.id)
-    WHEN 'formula'    THEN EXISTS (SELECT 1 FROM _basedb.field_formula_config  WHERE field_id = NEW.id)
+    WHEN 'short_text'   THEN EXISTS (SELECT 1 FROM _basedb.field_text_config     WHERE field_id = NEW.id)
+    WHEN 'long_text'    THEN EXISTS (SELECT 1 FROM _basedb.field_text_config     WHERE field_id = NEW.id)
+    WHEN 'number'       THEN EXISTS (SELECT 1 FROM _basedb.field_number_config   WHERE field_id = NEW.id)
+    WHEN 'boolean'      THEN EXISTS (SELECT 1 FROM _basedb.field_boolean_config  WHERE field_id = NEW.id)
+    WHEN 'date'         THEN EXISTS (SELECT 1 FROM _basedb.field_datetime_config WHERE field_id = NEW.id)
+    WHEN 'datetime'     THEN EXISTS (SELECT 1 FROM _basedb.field_datetime_config WHERE field_id = NEW.id)
+    WHEN 'select'       THEN EXISTS (SELECT 1 FROM _basedb.field_select_config   WHERE field_id = NEW.id)
+    WHEN 'multi_select' THEN EXISTS (SELECT 1 FROM _basedb.field_select_config   WHERE field_id = NEW.id)
+    WHEN 'link'         THEN EXISTS (SELECT 1 FROM _basedb.field_link_config     WHERE field_id = NEW.id)
+    WHEN 'formula'      THEN EXISTS (SELECT 1 FROM _basedb.field_formula_config  WHERE field_id = NEW.id)
+    WHEN 'file'         THEN EXISTS (SELECT 1 FROM _basedb.field_file_config     WHERE field_id = NEW.id)
+    WHEN 'image'        THEN EXISTS (SELECT 1 FROM _basedb.field_file_config     WHERE field_id = NEW.id)
     -- Un `kind` ajouté au catalogue sans être câblé ici doit échouer bruyamment,
     -- jamais passer en silence.
     ELSE NULL
@@ -150,7 +155,7 @@ END $$;
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- États physiques (chapter 02, line 202)
+-- États physiques (chapter 02, line 206)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.physical_state (
   code        text COLLATE "C" PRIMARY KEY,
@@ -172,7 +177,7 @@ INSERT INTO _basedb.physical_state VALUES
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Registre des classes de verrous consultatifs (chapter 02, line 341)
+-- Registre des classes de verrous consultatifs (chapter 02, line 345)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.lock_class (
   key         integer PRIMARY KEY,
@@ -195,7 +200,7 @@ CREATE SEQUENCE _basedb.lock_key_seq AS integer START 2;
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Champs (chapter 02, line 702)
+-- Champs (chapter 02, line 754)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.field_kind (
   code           text COLLATE "C" PRIMARY KEY,
@@ -213,12 +218,15 @@ INSERT INTO _basedb.field_kind (code, label, can_be_display, has_config) VALUES
  ('date',      'Date',           true,  true),
  ('datetime',  'Date-heure',     true,  true),
  ('select',    'Liste de choix', true,  true),
+ ('multi_select', 'Choix multiple', false, true),
  ('link',      'Lien',           false, true),
- ('formula',   'Formule',        true,  true);
+ ('formula',   'Formule',        true,  true),
+ ('file',      'Document',       false, true),
+ ('image',     'Image',          false, true);
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 4 — Intégrations et configuration (chapter 02, line 1180)
+-- Domaine 4 — Intégrations et configuration (chapter 02, line 1282)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.idempotency_key (
   actor_kind  text COLLATE "C" NOT NULL CHECK (actor_kind IN ('user','token')),
@@ -241,7 +249,7 @@ CREATE INDEX idx_idempotency_expiry ON _basedb.idempotency_key (expires_at);
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Versionnement du catalogue lui-même (chapter 02, line 1456)
+-- Versionnement du catalogue lui-même (chapter 02, line 1558)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.catalog_migration (
   version     integer PRIMARY KEY,           -- 1, 2, 3... strictement sequentiel
@@ -254,7 +262,7 @@ CREATE TABLE _basedb.catalog_migration (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Journal d'audit (chapter 02, line 1478)
+-- Journal d'audit (chapter 02, line 1580)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.audit_log (
   id uuid NOT NULL DEFAULT _basedb_local.uuid_generate_v7(),
@@ -281,7 +289,7 @@ CREATE INDEX idx_audit_schema_read ON _basedb.audit_log (base_id, occurred_at DE
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Journal de sécurité (chapter 02, line 1511)
+-- Journal de sécurité (chapter 02, line 1613)
 -- ────────────────────────────────────────────────────────────────────────
 -- Journal de securite. Partitionne par mois sur occurred_at, comme audit_log, et
 -- comme lui SANS AUCUNE CLE ETRANGERE : il doit survivre a la suppression, a la
@@ -324,7 +332,7 @@ CREATE INDEX ix_security_log__code__occurred_at
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Capture et drain (chapter 02, line 1560)
+-- Capture et drain (chapter 02, line 1662)
 -- ────────────────────────────────────────────────────────────────────────
 -- Cote donnees : tampons, ecrits par _basedb_local.capture_v1() dans la transaction
 -- de l'utilisateur. Volontairement sans index autre que celui du drain.
@@ -396,7 +404,7 @@ CREATE INDEX idx_delivery_due ON _basedb.webhook_delivery (partition_key, create
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Registre des codes d'erreur et rétentions (chapter 02, line 1654)
+-- Registre des codes d'erreur et rétentions (chapter 02, line 1756)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.error_code (
   code        text COLLATE "C" PRIMARY KEY CHECK (code ~ '^[A-Z][A-Z0-9_]{2,63}$'),
@@ -409,7 +417,7 @@ CREATE TABLE _basedb.error_code (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 4 — Intégrations et configuration (chapter 02, line 1180)
+-- Domaine 4 — Intégrations et configuration (chapter 02, line 1282)
 -- ────────────────────────────────────────────────────────────────────────
 -- Journal des appels sortants aux fournisseurs d'IA : une ligne par tentative.
 CREATE TABLE _basedb.ai_call (
@@ -441,7 +449,7 @@ CREATE INDEX ix_ai_call__tenant_id__occurred_at
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Registre des codes d'erreur et rétentions (chapter 02, line 1685)
+-- Registre des codes d'erreur et rétentions (chapter 02, line 1787)
 -- ────────────────────────────────────────────────────────────────────────
 -- Valeurs semees par la migration de catalogue initiale (A24).
 --  record_revision      24 mois     audit_log            24 mois
@@ -452,7 +460,7 @@ CREATE INDEX ix_ai_call__tenant_id__occurred_at
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Le registre `_basedb.physical_name` (chapter 02, line 267)
+-- Le registre `_basedb.physical_name` (chapter 02, line 271)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.physical_name (
   id           uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -491,7 +499,7 @@ CREATE INDEX idx_physical_name_state ON _basedb.physical_name (state, object_kin
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 2 — Identité, sessions, permissions (chapter 02, line 367)
+-- Domaine 2 — Identité, sessions, permissions (chapter 02, line 371)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.tenant (
   id             uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -614,6 +622,9 @@ CREATE TABLE _basedb.role (
   label_key text COLLATE "C" NOT NULL,
   name      text COLLATE "C" NOT NULL,
   is_system boolean NOT NULL DEFAULT false,
+  -- group : un groupe d'utilisateurs, administre depuis l'ecran des permissions ;
+  -- token : le role propre d'un jeton d'integration, sans membre, jamais liste.
+  kind      text COLLATE "C" NOT NULL DEFAULT 'group' CHECK (kind IN ('group','token')),
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   deleted_at timestamptz NULL,
@@ -635,14 +646,38 @@ CREATE TABLE _basedb.role_member (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Bases, schémas, alias (chapter 02, line 546)
+-- Projets, bases, schémas, alias (chapter 02, line 557)
 -- ────────────────────────────────────────────────────────────────────────
-CREATE TABLE _basedb.base (
+CREATE TABLE _basedb.project (
   id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
   tenant_id   uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
   label       text NOT NULL,
   label_key   text COLLATE "C" NOT NULL,
   description text NULL,
+  position    integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  updated_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  deleted_at timestamptz NULL,
+  deleted_by uuid NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  CONSTRAINT uq_project_id_tenant UNIQUE (id, tenant_id)   -- cible : base
+);
+
+CREATE UNIQUE INDEX uq_project_label_live
+  ON _basedb.project (tenant_id, label_key) WHERE deleted_at IS NULL;
+
+CREATE TABLE _basedb.base (
+  id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id   uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  project_id  uuid NOT NULL,
+  label       text NOT NULL,
+  label_key   text COLLATE "C" NOT NULL,
+  description text NULL,
+  -- Apparence : celle d'une option de liste (chapitre 04 §3), memes bornes.
+  color       text NULL,                  -- #rrggbb, minuscules
+  icon        text NULL,                  -- nom d'un pictogramme de la bibliotheque de l'interface
+  image       text NULL,                  -- URL https ou data URL, 16 384 caracteres au plus
   definition_state text NOT NULL DEFAULT 'active'
                      CHECK (definition_state IN ('pending','active')),
   catalog_version bigint NOT NULL DEFAULT 1,
@@ -664,13 +699,20 @@ CREATE TABLE _basedb.base (
   CONSTRAINT uq_base_lock_key  UNIQUE (lock_key),
   CONSTRAINT uq_base_id_tenant UNIQUE (id, tenant_id),   -- cible : api_token
   CONSTRAINT uq_base_id_live   UNIQUE (id, is_live),     -- cible : table_def
+  -- Un projet et ses bases appartiennent au meme tenant.
+  CONSTRAINT fk_base_project FOREIGN KEY (project_id, tenant_id)
+    REFERENCES _basedb.project (id, tenant_id) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT ck_base_live  CHECK (is_live = (deleted_at IS NULL)),
   CONSTRAINT ck_base_purge CHECK (is_purged = (purged_at IS NOT NULL)
-                                  AND (purged_at IS NULL OR deleted_at IS NOT NULL))
+                                  AND (purged_at IS NULL OR deleted_at IS NOT NULL)),
+  CONSTRAINT ck_base_color CHECK (color IS NULL OR color ~ '^#[0-9a-f]{6}$'),
+  CONSTRAINT ck_base_icon  CHECK (icon IS NULL OR icon ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  CONSTRAINT ck_base_image CHECK (image IS NULL OR char_length(image) <= 16384),
+  CONSTRAINT ck_base_glyph CHECK (icon IS NULL OR image IS NULL)
 );
 
 CREATE UNIQUE INDEX uq_base_label_live
-  ON _basedb.base (tenant_id, label_key) WHERE deleted_at IS NULL;
+  ON _basedb.base (project_id, label_key) WHERE deleted_at IS NULL;
 
 COMMENT ON COLUMN _basedb.base.catalog_version IS
   'Incremente a chaque migration appliquee. Les processus API comparent ce compteur
@@ -713,7 +755,7 @@ CREATE UNIQUE INDEX uq_schema_current
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Tables (chapter 02, line 635)
+-- Tables (chapter 02, line 678)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.table_def (
   id           uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -724,6 +766,9 @@ CREATE TABLE _basedb.table_def (
   label        text NOT NULL,
   label_key    text COLLATE "C" NOT NULL,
   description  text NULL,
+  color        text NULL,                 -- apparence, bornee comme celle d'une base
+  icon         text NULL,
+  image        text NULL,
   position     integer NOT NULL DEFAULT 0,
   definition_state text NOT NULL DEFAULT 'active'
                      CHECK (definition_state IN ('pending','active')),
@@ -767,12 +812,16 @@ CREATE TABLE _basedb.table_def (
     num_nonnulls(display_field_id, display_field_kind,
                  display_field_is_live, display_field_can_be_display) IN (0, 4)),
   CONSTRAINT ck_display_live CHECK (display_field_id IS NULL OR display_field_is_live),
-  CONSTRAINT ck_display_kind CHECK (display_field_id IS NULL OR display_field_can_be_display)
+  CONSTRAINT ck_display_kind CHECK (display_field_id IS NULL OR display_field_can_be_display),
+  CONSTRAINT ck_table_color CHECK (color IS NULL OR color ~ '^#[0-9a-f]{6}$'),
+  CONSTRAINT ck_table_icon  CHECK (icon IS NULL OR icon ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  CONSTRAINT ck_table_image CHECK (image IS NULL OR char_length(image) <= 16384),
+  CONSTRAINT ck_table_glyph CHECK (icon IS NULL OR image IS NULL)
 );
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Vue de confort : le nom qualifié (chapter 02, line 315)
+-- Vue de confort : le nom qualifié (chapter 02, line 319)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE VIEW _basedb.v_physical_name_qualified AS
 SELECT n.id AS name_id,
@@ -794,7 +843,7 @@ LEFT JOIN _basedb.physical_name s ON s.id = sc.name_id;
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Bases, schémas, alias (chapter 02, line 546)
+-- Projets, bases, schémas, alias (chapter 02, line 557)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.sql_view_alias (
   id              uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -808,7 +857,7 @@ CREATE TABLE _basedb.sql_view_alias (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Tables (chapter 02, line 635)
+-- Tables (chapter 02, line 678)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE UNIQUE INDEX uq_table_label_live
   ON _basedb.table_def (base_id, label_key) WHERE deleted_at IS NULL;
@@ -818,7 +867,7 @@ CREATE INDEX idx_table_by_base
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Champs (chapter 02, line 702)
+-- Champs (chapter 02, line 754)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.field (
   id            uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -880,7 +929,7 @@ CREATE TABLE _basedb.field (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 2 — Identité, sessions, permissions (chapter 02, line 481)
+-- Domaine 2 — Identité, sessions, permissions (chapter 02, line 485)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.field_permission (
   id       uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -892,7 +941,7 @@ CREATE TABLE _basedb.field_permission (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Champs (chapter 02, line 702)
+-- Champs (chapter 02, line 754)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE UNIQUE INDEX uq_field_label_live
   ON _basedb.field (table_id, label_key) WHERE deleted_at IS NULL;
@@ -902,7 +951,7 @@ CREATE INDEX idx_field_by_table
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Configuration par type : satellites 1:1, pas de `jsonb` (chapter 02, line 796)
+-- Configuration par type : satellites 1:1, pas de `jsonb` (chapter 02, line 851)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.field_text_config (
   field_id     uuid PRIMARY KEY,
@@ -969,7 +1018,8 @@ CREATE TABLE _basedb.field_formula_config (
   is_stored   boolean NOT NULL DEFAULT true,
   CONSTRAINT fk_formula_field FOREIGN KEY (field_id, kind)
     REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
-  CONSTRAINT ck_formula_result CHECK (result_kind NOT IN ('formula','link'))
+  CONSTRAINT ck_formula_result
+    CHECK (result_kind NOT IN ('formula','link','multi_select','file','image'))
 );
 
 CREATE TABLE _basedb.select_option (
@@ -1010,7 +1060,29 @@ CREATE TABLE _basedb.field_formula_dependency (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Contraintes et index des tables utilisateur (chapter 02, line 921)
+-- Fichiers déposés (chapter 02, line 997)
+-- ────────────────────────────────────────────────────────────────────────
+CREATE TABLE _basedb.stored_file (
+  id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  base_id     uuid NOT NULL REFERENCES _basedb.base(id)  ON DELETE CASCADE,
+  field_id    uuid NOT NULL REFERENCES _basedb.field(id) ON DELETE CASCADE,
+  storage_key text COLLATE "C" NOT NULL,   -- clé dans le stockage de fichiers, jamais montrée
+  name        text NOT NULL,               -- nom d'origine, affiché et proposé au téléchargement
+  mime_type   text COLLATE "C" NOT NULL,
+  size_bytes  bigint NOT NULL,
+  sha256      text COLLATE "C" NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  CONSTRAINT uq_stored_file_key  UNIQUE (storage_key),
+  CONSTRAINT ck_stored_file_name CHECK (char_length(name) BETWEEN 1 AND 255),
+  CONSTRAINT ck_stored_file_mime CHECK (mime_type ~ '^[a-z0-9.+-]+/[a-z0-9.+-]+$'),
+  CONSTRAINT ck_stored_file_size CHECK (size_bytes >= 0),
+  CONSTRAINT ck_stored_file_hash CHECK (sha256 ~ '^[0-9a-f]{64}$')
+);
+
+
+-- ────────────────────────────────────────────────────────────────────────
+-- Contraintes et index des tables utilisateur (chapter 02, line 1023)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.table_constraint (
   id       uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1039,11 +1111,12 @@ CREATE TABLE _basedb.table_constraint (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Configuration par type : satellites 1:1, pas de `jsonb` (chapter 02, line 796)
+-- Configuration par type : satellites 1:1, pas de `jsonb` (chapter 02, line 851)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.field_select_config (
   field_id uuid PRIMARY KEY,
-  kind     text COLLATE "C" NOT NULL DEFAULT 'select' CHECK (kind = 'select'),
+  kind     text COLLATE "C" NOT NULL DEFAULT 'select'
+             CHECK (kind IN ('select','multi_select')),
   enum_constraint_id uuid NOT NULL REFERENCES _basedb.table_constraint(id)
                        ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT fk_select_field FOREIGN KEY (field_id, kind)
@@ -1051,9 +1124,20 @@ CREATE TABLE _basedb.field_select_config (
   CONSTRAINT uq_select_enum UNIQUE (enum_constraint_id)
 );
 
+CREATE TABLE _basedb.field_file_config (
+  field_id uuid PRIMARY KEY,
+  kind     text COLLATE "C" NOT NULL CHECK (kind IN ('file','image')),
+  -- `ck_<table>__<colonne>__files` : la forme de la colonne `jsonb` (chapitre 04 §3 bis).
+  shape_constraint_id uuid NOT NULL REFERENCES _basedb.table_constraint(id)
+                        ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT fk_file_field FOREIGN KEY (field_id, kind)
+    REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT uq_file_shape UNIQUE (shape_constraint_id)
+);
+
 
 -- ────────────────────────────────────────────────────────────────────────
--- Contraintes et index des tables utilisateur (chapter 02, line 921)
+-- Contraintes et index des tables utilisateur (chapter 02, line 1023)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.table_constraint_member (
   constraint_id uuid NOT NULL,
@@ -1107,7 +1191,7 @@ CREATE TABLE _basedb.table_index_member (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Champs lien (chapter 02, line 1004)
+-- Champs lien (chapter 02, line 1106)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.cascade_grant (
   id         uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1158,7 +1242,7 @@ CREATE INDEX idx_link_target
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Colonne d'affichage (chapter 02, line 1066)
+-- Colonne d'affichage (chapter 02, line 1168)
 -- ────────────────────────────────────────────────────────────────────────
 ALTER TABLE _basedb.table_def
   ADD CONSTRAINT fk_display_field
@@ -1175,7 +1259,7 @@ ALTER TABLE _basedb.table_def
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Applications et vues enregistrées (chapter 02, line 1122)
+-- Applications et vues enregistrées (chapter 02, line 1224)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.application (
   id uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1196,12 +1280,14 @@ CREATE TABLE _basedb.application (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 2 — Identité, sessions, permissions (chapter 02, line 481)
+-- Domaine 2 — Identité, sessions, permissions (chapter 02, line 485)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.permission (
   id uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
   role_id uuid NOT NULL REFERENCES _basedb.role(id) ON DELETE CASCADE,
-  scope_kind text NOT NULL CHECK (scope_kind IN ('tenant','base','application','table')),
+  scope_kind text NOT NULL
+    CHECK (scope_kind IN ('tenant','project','base','application','table')),
+  scope_project_id     uuid NULL REFERENCES _basedb.project(id)     ON DELETE CASCADE,
   scope_base_id        uuid NULL REFERENCES _basedb.base(id)        ON DELETE CASCADE,
   scope_application_id uuid NULL REFERENCES _basedb.application(id) ON DELETE CASCADE,
   scope_table_id       uuid NULL REFERENCES _basedb.table_def(id)   ON DELETE CASCADE,
@@ -1210,18 +1296,20 @@ CREATE TABLE _basedb.permission (
   granted_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   granted_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   CONSTRAINT ck_permission_scope CHECK (
-    num_nonnulls(scope_base_id, scope_application_id, scope_table_id)
+    num_nonnulls(scope_project_id, scope_base_id, scope_application_id, scope_table_id)
       = CASE scope_kind WHEN 'tenant' THEN 0 ELSE 1 END
+    AND (scope_kind <> 'project'     OR scope_project_id     IS NOT NULL)
     AND (scope_kind <> 'base'        OR scope_base_id        IS NOT NULL)
     AND (scope_kind <> 'application' OR scope_application_id IS NOT NULL)
     AND (scope_kind <> 'table'       OR scope_table_id       IS NOT NULL)),
   CONSTRAINT uq_permission UNIQUE NULLS NOT DISTINCT
-    (role_id, scope_kind, scope_base_id, scope_application_id, scope_table_id, action)
+    (role_id, scope_kind, scope_project_id, scope_base_id, scope_application_id,
+     scope_table_id, action)
 );
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Applications et vues enregistrées (chapter 02, line 1122)
+-- Applications et vues enregistrées (chapter 02, line 1224)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE UNIQUE INDEX uq_application_label_live
   ON _basedb.application (base_id, label_key) WHERE deleted_at IS NULL;
@@ -1258,7 +1346,7 @@ CREATE UNIQUE INDEX uq_view_label_live
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 4 — Intégrations et configuration (chapter 02, line 1180)
+-- Domaine 4 — Intégrations et configuration (chapter 02, line 1282)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.api_token (
   id uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1269,7 +1357,7 @@ CREATE TABLE _basedb.api_token (
   role_id uuid NOT NULL,
   base_id uuid NULL,
   allowed_surfaces text[] NOT NULL DEFAULT ARRAY['rest']::text[],
-  expires_at timestamptz NOT NULL,    -- obligatoire, sans exception
+  expires_at timestamptz NULL,        -- NULL : sans échéance, le défaut ; sinon un an au plus
   last_used_at timestamptz NULL,      -- ecriture bridee, non indexee
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
@@ -1371,7 +1459,7 @@ CREATE TABLE _basedb.secret (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Migrations de structures utilisateur (chapter 02, line 1355)
+-- Migrations de structures utilisateur (chapter 02, line 1457)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.migration (
   id uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1461,7 +1549,7 @@ ALTER TABLE _basedb.base
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Registre des codes d'erreur et rétentions (chapter 02, line 1685)
+-- Registre des codes d'erreur et rétentions (chapter 02, line 1787)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.retention_policy (
   object           text COLLATE "C" PRIMARY KEY,
@@ -1473,7 +1561,7 @@ CREATE TABLE _basedb.retention_policy (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Les déclencheurs du catalogue (chapter 02, line 1715)
+-- Les déclencheurs du catalogue (chapter 02, line 1817)
 -- ────────────────────────────────────────────────────────────────────────
 -- Verifie au COMMIT, donc compatible avec l'ordre naturel d'ecriture
 -- (champ puis satellite) dans une meme transaction.
@@ -1484,7 +1572,7 @@ CREATE CONSTRAINT TRIGGER ck_field_config_present
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Le registre `_basedb.physical_name` (chapter 02, line 267)
+-- Le registre `_basedb.physical_name` (chapter 02, line 271)
 -- ────────────────────────────────────────────────────────────────────────
 -- Deferred constraint: _basedb.physical_name.allocated_by → _basedb.app_user, creation cycle.
 --
@@ -1500,7 +1588,7 @@ ALTER TABLE _basedb.physical_name
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 2 — Identité, sessions, permissions (chapter 02, line 367)
+-- Domaine 2 — Identité, sessions, permissions (chapter 02, line 371)
 -- ────────────────────────────────────────────────────────────────────────
 -- Deferred constraint: _basedb.tenant.created_by → _basedb.app_user, creation cycle.
 --
@@ -1693,16 +1781,18 @@ BEGIN
   ligne := CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
 
   -- Le chemin vers le tenant diffère selon la table : direct quand la colonne existe,
-  -- par le rôle ou par l'utilisateur sinon.
+  -- par le rôle, l'utilisateur ou la base sinon. Chaque branche ne nomme que des
+  -- colonnes que SA table porte : plpgsql ne résout un champ de record qu'à l'exécution,
+  -- et une colonne absente ferait échouer toute écriture sur la table.
   CASE TG_TABLE_NAME
-    WHEN 'role', 'app_user' THEN
+    WHEN 'role', 'app_user', 'api_token' THEN
       cible := ligne.tenant_id;
     WHEN 'permission', 'field_permission', 'role_member' THEN
       SELECT r.tenant_id INTO cible FROM _basedb.role r WHERE r.id = ligne.role_id;
-    WHEN 'session', 'api_token' THEN
+    WHEN 'session' THEN
       SELECT u.tenant_id INTO cible FROM _basedb.app_user u WHERE u.id = ligne.user_id;
     WHEN 'webhook' THEN
-      cible := ligne.tenant_id;
+      SELECT b.tenant_id INTO cible FROM _basedb.base b WHERE b.id = ligne.base_id;
     ELSE
       cible := NULL;
   END CASE;
@@ -1742,8 +1832,14 @@ CREATE TRIGGER tg_authz_version_session
   AFTER INSERT OR UPDATE OR DELETE ON _basedb.session
   FOR EACH ROW EXECUTE FUNCTION _basedb.bump_authz_version();
 
+-- Les colonnes qui décident de ce qu'un jeton peut faire, et elles seules : une mise à
+-- jour de `last_used_at` (au plus une toutes les cinq minutes par jeton, chapitre 08
+-- §11.5) n'est pas une écriture d'autorisation, et viderait sinon les caches de droits
+-- de tout le tenant à chaque passage.
 CREATE TRIGGER tg_authz_version_api_token
-  AFTER INSERT OR UPDATE OR DELETE ON _basedb.api_token
+  AFTER INSERT OR DELETE
+     OR UPDATE OF role_id, base_id, allowed_surfaces, expires_at, revoked_at, suspended_at
+  ON _basedb.api_token
   FOR EACH ROW EXECUTE FUNCTION _basedb.bump_authz_version();
 
 CREATE TRIGGER tg_authz_version_webhook

@@ -32,17 +32,22 @@ BEGIN
   END IF;
 
   -- Un satellite par FAMILLE de types : `short_text` et `long_text` partagent
-  -- `field_text_config`, `date` et `datetime` partagent `field_datetime_config`.
+  -- `field_text_config`, `date` et `datetime` partagent `field_datetime_config`,
+  -- `select` et `multi_select` partagent `field_select_config`, `file` et `image`
+  -- partagent `field_file_config`.
   v_present := CASE NEW.kind
-    WHEN 'short_text' THEN EXISTS (SELECT 1 FROM _basedb.field_text_config     WHERE field_id = NEW.id)
-    WHEN 'long_text'  THEN EXISTS (SELECT 1 FROM _basedb.field_text_config     WHERE field_id = NEW.id)
-    WHEN 'number'     THEN EXISTS (SELECT 1 FROM _basedb.field_number_config   WHERE field_id = NEW.id)
-    WHEN 'boolean'    THEN EXISTS (SELECT 1 FROM _basedb.field_boolean_config  WHERE field_id = NEW.id)
-    WHEN 'date'       THEN EXISTS (SELECT 1 FROM _basedb.field_datetime_config WHERE field_id = NEW.id)
-    WHEN 'datetime'   THEN EXISTS (SELECT 1 FROM _basedb.field_datetime_config WHERE field_id = NEW.id)
-    WHEN 'select'     THEN EXISTS (SELECT 1 FROM _basedb.field_select_config   WHERE field_id = NEW.id)
-    WHEN 'link'       THEN EXISTS (SELECT 1 FROM _basedb.field_link_config     WHERE field_id = NEW.id)
-    WHEN 'formula'    THEN EXISTS (SELECT 1 FROM _basedb.field_formula_config  WHERE field_id = NEW.id)
+    WHEN 'short_text'   THEN EXISTS (SELECT 1 FROM _basedb.field_text_config     WHERE field_id = NEW.id)
+    WHEN 'long_text'    THEN EXISTS (SELECT 1 FROM _basedb.field_text_config     WHERE field_id = NEW.id)
+    WHEN 'number'       THEN EXISTS (SELECT 1 FROM _basedb.field_number_config   WHERE field_id = NEW.id)
+    WHEN 'boolean'      THEN EXISTS (SELECT 1 FROM _basedb.field_boolean_config  WHERE field_id = NEW.id)
+    WHEN 'date'         THEN EXISTS (SELECT 1 FROM _basedb.field_datetime_config WHERE field_id = NEW.id)
+    WHEN 'datetime'     THEN EXISTS (SELECT 1 FROM _basedb.field_datetime_config WHERE field_id = NEW.id)
+    WHEN 'select'       THEN EXISTS (SELECT 1 FROM _basedb.field_select_config   WHERE field_id = NEW.id)
+    WHEN 'multi_select' THEN EXISTS (SELECT 1 FROM _basedb.field_select_config   WHERE field_id = NEW.id)
+    WHEN 'link'         THEN EXISTS (SELECT 1 FROM _basedb.field_link_config     WHERE field_id = NEW.id)
+    WHEN 'formula'      THEN EXISTS (SELECT 1 FROM _basedb.field_formula_config  WHERE field_id = NEW.id)
+    WHEN 'file'         THEN EXISTS (SELECT 1 FROM _basedb.field_file_config     WHERE field_id = NEW.id)
+    WHEN 'image'        THEN EXISTS (SELECT 1 FROM _basedb.field_file_config     WHERE field_id = NEW.id)
     -- Un `kind` ajouté au catalogue sans être câblé ici doit échouer bruyamment,
     -- jamais passer en silence.
     ELSE NULL

@@ -67,6 +67,12 @@ export interface ProjectedField {
    */
   readonly options?: ReadonlyArray<ProjectedOption>
   readonly link?: ProjectedLink
+  /**
+   * Present and `true` when the field is withheld from agents (09 §12.2): on the MCP
+   * surface it is exactly an unreadable field. The human reader still sees it — this is
+   * what lets the documentation say which columns an agent will not.
+   */
+  readonly hiddenFromAgents?: boolean
 }
 
 export interface ProjectedTable {
@@ -90,6 +96,10 @@ export interface ProjectedTable {
    * since naming it would name a field they may not read.
    */
   readonly displayField: string | null
+  /** How the table looks — a colour, a pictogram or a picture; keys always present. */
+  readonly color: string | null
+  readonly icon: string | null
+  readonly image: string | null
 }
 
 export interface ProjectedBase {
@@ -99,7 +109,20 @@ export interface ProjectedBase {
   readonly label: string
   /** What this base is for; `null` when nobody said. */
   readonly description: string | null
+  /** The project the base belongs to — a catalog grouping, with no physical existence. */
+  readonly project: { readonly id: string; readonly label: string }
+  /**
+   * The verbs the reader holds on the BASE itself — granted on it, its project or the
+   * tenant. `manage_schema` here is what lets them add a table.
+   */
+  readonly baseActions: readonly Action[]
+  /** `false` when the base does not exist on the agent surface at all (09 §12.2). */
+  readonly agentsEnabled: boolean
   readonly tables: readonly ProjectedTable[]
+  /** How the base looks — the same three keys as a table or an option. */
+  readonly color: string | null
+  readonly icon: string | null
+  readonly image: string | null
 }
 
 /** One line of `GET /meta/bases`. */
@@ -108,28 +131,50 @@ export interface VisibleBase {
   readonly name: string
   readonly label: string
   readonly description: string | null
+  readonly color: string | null
+  readonly icon: string | null
+  readonly image: string | null
+  readonly project: { readonly id: string; readonly label: string }
   /** Readable tables only: the count must not betray those that are masked. */
   readonly tableCount: number
 }
 
-interface BaseRow extends Record<string, unknown> {
+export interface BaseRow extends Record<string, unknown> {
   readonly id: string
   readonly label: string
   readonly description: string | null
+  readonly color: string | null
+  readonly icon: string | null
+  readonly image: string | null
   readonly schema_name: string
+  /** `false`: the base does not exist on the agent surface (09 §12.2). */
+  readonly mcp_enabled: boolean
+  readonly catalog_version: string
+  readonly project_id: string
 }
 
-interface TableRow extends Record<string, unknown> {
+/** A project: the grouping of bases the interface navigates by (02, 05 §15). */
+export interface ProjectRow extends Record<string, unknown> {
+  readonly id: string
+  readonly label: string
+  readonly description: string | null
+  readonly position: number
+}
+
+export interface TableRow extends Record<string, unknown> {
   readonly id: string
   readonly base_id: string
   readonly label: string
   readonly description: string | null
+  readonly color: string | null
+  readonly icon: string | null
+  readonly image: string | null
   readonly table_name: string
   readonly schema_name: string
   readonly display_field_id: string | null
 }
 
-interface FieldRow extends Record<string, unknown> {
+export interface FieldRow extends Record<string, unknown> {
   readonly id: string
   readonly table_id: string
   readonly label: string
@@ -138,6 +183,13 @@ interface FieldRow extends Record<string, unknown> {
   readonly is_required: boolean
   readonly column: string
   readonly is_rich: boolean
+  /** `false`: on the agent surface, exactly an unreadable field (09 §12.2). */
+  readonly expose_to_agents: boolean
+  readonly max_length: number | null
+  /** A formula's expression as its author typed it, its result type, and whether stored. */
+  readonly formula_expression: string | null
+  readonly formula_result_kind: string | null
+  readonly formula_is_stored: boolean | null
 }
 
 /**
@@ -157,19 +209,37 @@ interface OptionRow extends Record<string, unknown>, ProjectedOption {
   readonly field_id: string
 }
 
-interface LinkRow extends Record<string, unknown> {
+export interface LinkRow extends Record<string, unknown> {
   readonly field_id: string
   readonly target_table_id: string
   readonly on_delete: 'restrict' | 'set_null' | 'cascade'
+  /** Physical names of the foreign key and its index, as the registry holds them. */
+  readonly fk_constraint: string
+  readonly fk_index: string
 }
 
-interface RawCatalog {
+/** An application of a base: a named grouping of its tables (02). */
+export interface ApplicationRow extends Record<string, unknown> {
+  readonly id: string
+  readonly base_id: string
+  readonly name: string
+  readonly label: string
+}
+
+export interface RawCatalog {
+  readonly projects: readonly ProjectRow[]
   readonly bases: readonly BaseRow[]
   readonly tables: readonly TableRow[]
   readonly fields: readonly FieldRow[]
   readonly links: readonly LinkRow[]
   readonly options: ReadonlyMap<string, ReadonlyArray<ProjectedOption>>
+  /** Table → the applications it belongs to, which take part in the decision (05 §1.4). */
   readonly applications: ReadonlyMap<string, readonly string[]>
+  readonly applicationRows: readonly ApplicationRow[]
+  /** Fields carrying a single-column `UNIQUE` constraint of their own → its name. */
+  readonly unique: ReadonlyMap<string, string>
+  /** Formula field → the fields its expression reads. */
+  readonly formulaSources: ReadonlyMap<string, readonly string[]>
 }
 
 /**
@@ -183,8 +253,18 @@ interface RawCatalog {
 async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCatalog> {
   const tenant = [ctx.tenantId]
 
+  const projects = await exec.query<ProjectRow>(
+    `SELECT p.id, p.label, p.description, p.position
+       FROM _basedb.project p
+       JOIN _basedb.tenant t ON t.id = p.tenant_id
+      WHERE t.ref = $1 AND p.deleted_at IS NULL
+      ORDER BY p.position, p.label`,
+    tenant,
+  )
+
   const bases = await exec.query<BaseRow>(
-    `SELECT b.id, b.label, b.description, sn.name AS schema_name
+    `SELECT b.id, b.label, b.description, b.color, b.icon, b.image, sn.name AS schema_name,
+            b.mcp_enabled, b.catalog_version, b.project_id
        FROM _basedb.base b
        JOIN _basedb.tenant t         ON t.id = b.tenant_id
        JOIN _basedb.db_schema s      ON s.base_id = b.id AND s.role = 'current'
@@ -196,8 +276,8 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
   )
 
   const tables = await exec.query<TableRow>(
-    `SELECT t.id, t.base_id, t.label, t.description, tn.name AS table_name,
-            sn.name AS schema_name, t.display_field_id
+    `SELECT t.id, t.base_id, t.label, t.description, t.color, t.icon, t.image,
+            tn.name AS table_name, sn.name AS schema_name, t.display_field_id
        FROM _basedb.table_def t
        JOIN _basedb.base b           ON b.id = t.base_id
        JOIN _basedb.tenant te        ON te.id = b.tenant_id
@@ -212,10 +292,13 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
 
   const fields = await exec.query<FieldRow>(
     `SELECT f.id, f.table_id, f.label, f.description, f.kind, f.is_required, n.name AS column,
-            coalesce(tc.is_rich, false) AS is_rich
+            coalesce(tc.is_rich, false) AS is_rich, f.expose_to_agents, tc.max_length,
+            fc.input_expression AS formula_expression, fc.result_kind AS formula_result_kind,
+            fc.is_stored AS formula_is_stored
        FROM _basedb.field f
        JOIN _basedb.physical_name n ON n.id = f.name_id
-       LEFT JOIN _basedb.field_text_config tc ON tc.field_id = f.id
+       LEFT JOIN _basedb.field_text_config tc    ON tc.field_id = f.id
+       LEFT JOIN _basedb.field_formula_config fc ON fc.field_id = f.id
        JOIN _basedb.table_def t     ON t.id = f.table_id
        JOIN _basedb.base b          ON b.id = t.base_id
        JOIN _basedb.tenant te       ON te.id = b.tenant_id
@@ -224,14 +307,61 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
     tenant,
   )
 
+  // The names of a link's constraint and index come from the registry, never recomposed
+  // from a pattern: chapter 09 §4.2 publishes them to be quoted in SQL as they are.
   const links = await exec.query<LinkRow>(
-    `SELECT lc.field_id, lc.target_table_id, lc.on_delete
+    `SELECT lc.field_id, lc.target_table_id, lc.on_delete,
+            cn.name AS fk_constraint, xn.name AS fk_index
        FROM _basedb.field_link_config lc
        JOIN _basedb.field f     ON f.id = lc.field_id
        JOIN _basedb.table_def t ON t.id = f.table_id
        JOIN _basedb.base b      ON b.id = t.base_id
        JOIN _basedb.tenant te   ON te.id = b.tenant_id
+       JOIN _basedb.table_constraint c ON c.id = lc.fk_constraint_id
+       JOIN _basedb.physical_name cn   ON cn.id = c.name_id
+       JOIN _basedb.table_index x      ON x.id = lc.fk_index_id
+       JOIN _basedb.physical_name xn   ON xn.id = x.name_id
       WHERE te.ref = $1 AND lc.fk_dropped_at IS NULL AND f.is_live AND t.is_live`,
+    tenant,
+  )
+
+  const uniqueRows = await exec.query<{ field_id: string; name: string }>(
+    `SELECT min(m.field_id::text)::uuid AS field_id, min(cn.name) AS name
+       FROM _basedb.table_constraint c
+       JOIN _basedb.physical_name cn          ON cn.id = c.name_id
+       JOIN _basedb.table_constraint_member m ON m.constraint_id = c.id
+       JOIN _basedb.table_def t ON t.id = c.table_id
+       JOIN _basedb.base b      ON b.id = t.base_id
+       JOIN _basedb.tenant te   ON te.id = b.tenant_id
+      WHERE te.ref = $1 AND c.kind = 'unique' AND c.dropped_at IS NULL AND t.is_live
+      GROUP BY c.id
+     HAVING count(*) = 1`,
+    tenant,
+  )
+
+  const dependencyRows = await exec.query<{ formula_field_id: string; field_id: string }>(
+    `SELECT d.formula_field_id, d.depends_on_field_id AS field_id
+       FROM _basedb.field_formula_dependency d
+       JOIN _basedb.table_def t ON t.id = d.table_id
+       JOIN _basedb.base b      ON b.id = t.base_id
+       JOIN _basedb.tenant te   ON te.id = b.tenant_id
+      WHERE te.ref = $1 AND NOT d.formula_is_purged AND NOT d.depends_on_is_purged`,
+    tenant,
+  )
+  const formulaSources = new Map<string, string[]>()
+  for (const row of dependencyRows) {
+    const list = formulaSources.get(row.formula_field_id) ?? []
+    list.push(row.field_id)
+    formulaSources.set(row.formula_field_id, list)
+  }
+
+  const applicationRows = await exec.query<ApplicationRow>(
+    `SELECT a.id, a.base_id, a.name, a.label
+       FROM _basedb.application a
+       JOIN _basedb.base b    ON b.id = a.base_id
+       JOIN _basedb.tenant te ON te.id = b.tenant_id
+      WHERE te.ref = $1 AND a.deleted_at IS NULL
+      ORDER BY a.position, a.label`,
     tenant,
   )
 
@@ -278,7 +408,18 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
     applications.set(row.table_id, list)
   }
 
-  return { bases, tables, fields, links, options, applications }
+  return {
+    projects,
+    bases,
+    tables,
+    fields,
+    links,
+    options,
+    applications,
+    applicationRows,
+    unique: new Map(uniqueRows.map((r) => [r.field_id, r.name])),
+    formulaSources,
+  }
 }
 
 /**
@@ -291,8 +432,69 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
  */
 const CATALOG_READ = { readOnly: true, isolation: 'repeatable read' } as const
 
+/** The verbs that matter on a base or a project, as the interface offers them. */
+export const BASE_ACTIONS: readonly Action[] = [
+  'read',
+  'create',
+  'update',
+  'delete',
+  'manage_schema',
+  'manage_tokens',
+]
+
+/** A base as a decision target, from its catalog row. */
+export function baseTargetOf(ctx: RequestContext, base: BaseRow): Target {
+  return {
+    kind: 'base',
+    id: base.id,
+    tenantId: ctx.tenantId,
+    projectId: base.project_id,
+    baseId: base.id,
+    agentsExcluded: !base.mcp_enabled,
+  }
+}
+
 /** The four verbs a data route can require. `manage_*` describes no path. */
 const DATA_ACTIONS: readonly Action[] = ['read', 'create', 'update', 'delete']
+
+/** Groups the raw fields by table, in catalog order. */
+export function fieldsByTableOf(raw: RawCatalog): Map<string, FieldRow[]> {
+  const fieldsByTable = new Map<string, FieldRow[]>()
+  for (const field of raw.fields) {
+    const list = fieldsByTable.get(field.table_id) ?? []
+    list.push(field)
+    fieldsByTable.set(field.table_id, list)
+  }
+  return fieldsByTable
+}
+
+/**
+ * The decision target of a table, as the raw catalog describes it — agent markers
+ * included, so that the decider withholds on the `mcp` surface what 09 §12.2 withholds,
+ * on this path exactly as on the data path (`loadTarget`).
+ */
+export function targetFactory(
+  ctx: RequestContext,
+  raw: RawCatalog,
+  fieldsByTable: ReadonlyMap<string, readonly FieldRow[]> = fieldsByTableOf(raw),
+): (table: TableRow) => Target {
+  const agentsExcluded = new Set(raw.bases.filter((b) => !b.mcp_enabled).map((b) => b.id))
+  const projectOf = new Map(raw.bases.map((b) => [b.id, b.project_id]))
+  return (table) => {
+    const fields = fieldsByTable.get(table.id) ?? []
+    return {
+      kind: 'table',
+      id: table.id,
+      tenantId: ctx.tenantId,
+      projectId: projectOf.get(table.base_id),
+      baseId: table.base_id,
+      applicationIds: raw.applications.get(table.id) ?? [],
+      fieldIds: fields.map((f) => f.id),
+      agentHiddenFieldIds: fields.filter((f) => !f.expose_to_agents).map((f) => f.id),
+      agentsExcluded: agentsExcluded.has(table.base_id),
+    }
+  }
+}
 
 /**
  * Builds the projection in memory, from the raw catalog and the actor's grants.
@@ -306,25 +508,12 @@ export function project(
   grants: ActorGrants,
   raw: RawCatalog,
 ): ProjectedBase[] {
-  const fieldsByTable = new Map<string, FieldRow[]>()
-  for (const field of raw.fields) {
-    const list = fieldsByTable.get(field.table_id) ?? []
-    list.push(field)
-    fieldsByTable.set(field.table_id, list)
-  }
-
+  const fieldsByTable = fieldsByTableOf(raw)
+  const projectById = new Map(raw.projects.map((p) => [p.id, p]))
   const linkByField = new Map(raw.links.map((l) => [l.field_id, l]))
   const tableById = new Map(raw.tables.map((t) => [t.id, t]))
   const fieldById = new Map(raw.fields.map((f) => [f.id, f]))
-
-  const targetOf = (table: TableRow): Target => ({
-    kind: 'table',
-    id: table.id,
-    tenantId: ctx.tenantId,
-    baseId: table.base_id,
-    applicationIds: raw.applications.get(table.id) ?? [],
-    fieldIds: (fieldsByTable.get(table.id) ?? []).map((f) => f.id),
-  })
+  const targetOf = targetFactory(ctx, raw, fieldsByTable)
 
   // Readability of every table is settled FIRST: a link's projection depends on whether
   // its target is readable, and that target may sit in a table processed later.
@@ -423,6 +612,7 @@ export function project(
           unsafeHtml: field.is_rich,
           ...(raw.options.has(field.id) ? { options: raw.options.get(field.id) } : {}),
           ...(projectedLink === undefined ? {} : { link: projectedLink }),
+          ...(field.expose_to_agents ? {} : { hiddenFromAgents: true }),
         })
       }
 
@@ -441,18 +631,35 @@ export function project(
         fields,
         referencedBy: referenced.has(table.id),
         displayField: ownDisplay,
+        color: table.color,
+        icon: table.icon,
+        image: table.image,
       })
     }
 
     // A base appears if and only if the caller holds `read` on at least one of its
     // tables (§9.1). A base with none is therefore absent, not empty.
-    if (tables.length > 0) {
+    // A base appears when the caller reads at least one of its tables (§9.1) — or holds
+    // a right on the base itself, granted there, on its project or on the tenant. The
+    // second case is what lets whoever may build a base see it while it is still empty;
+    // it discloses nothing a reconnaissance could not ask for, since the grant names it.
+    const baseActions = BASE_ACTIONS.filter(
+      (action) => decide(ctx, grants, action, baseTargetOf(ctx, base)).verdict === 'ALLOWED',
+    )
+    if (tables.length > 0 || baseActions.includes('read')) {
+      const project = projectById.get(base.project_id)
       projected.push({
         id: base.id,
         name: base.schema_name,
         label: base.label,
         description: base.description,
+        project: { id: base.project_id, label: project?.label ?? '' },
+        baseActions,
+        agentsEnabled: base.mcp_enabled,
         tables,
+        color: base.color,
+        icon: base.icon,
+        image: base.image,
       })
     }
   }
@@ -501,8 +708,9 @@ export async function snapshot(pools: Pools, ctx: RequestContext): Promise<Snaps
       // the description as fast as it closes the data.
       // Keyed by TENANT AND actor, not by actor alone: the counters of two tenants
       // could coincide, and an actor must never be served a snapshot computed under
-      // someone else's partition.
-      const grantsKey = `${ctx.tenantId}|${ctx.actor.id}`
+      // someone else's partition. A token is an actor of its own — its grants are its
+      // creator's intersected with its role — so it never shares its creator's entry.
+      const grantsKey = `${ctx.tenantId}|${ctx.actor.id}|${ctx.actor.tokenId ?? ''}`
       let grants = grantsCache.get(grantsKey, versions, now)
       if (grants === undefined) {
         grants = await loadGrants(exec, ctx)
@@ -526,6 +734,10 @@ export async function listVisibleBases(
     name: base.name,
     label: base.label,
     description: base.description,
+    color: base.color,
+    icon: base.icon,
+    image: base.image,
+    project: base.project,
     tableCount: base.tables.length,
   }))
 }

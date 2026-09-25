@@ -1,9 +1,11 @@
 'use client'
 
+import { DateInput } from '@/components/app/date-picker'
+import type { Upload } from '@/components/app/files'
 import { Cell, ROW_HEIGHT, type Row, isTextual, rawText } from '@/components/app/grid/cell'
 import { ColumnHeader } from '@/components/app/grid/column-header'
 import { cellKey, useCellSelection } from '@/components/app/grid/use-selection'
-import { EnumPicker, LinkPicker, type SearchLink } from '@/components/app/pickers'
+import { EnumPicker, LinkPicker, MultiEnumPicker, type SearchLink } from '@/components/app/pickers'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -15,6 +17,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import type { Field, LinkOption } from '@/lib/api/client'
+import { isDateKind, storedFromText } from '@/lib/dates'
 import { copy as copyText } from '@/lib/export'
 import {
   DEFAULT_COLUMN_WIDTH,
@@ -71,6 +74,8 @@ interface Props {
   readonly onChecked: (next: ReadonlySet<string>) => void
   readonly onCells: (next: ReadonlySet<string>) => void
   readonly onCommit: (id: string, field: Field, value: unknown) => Promise<void>
+  /** Deposits files for a `file` or `image` cell, which then commits the list. */
+  readonly onUpload?: Upload
   readonly onCreate: (values: Record<string, unknown>) => Promise<void>
   readonly onDelete: (id: string) => Promise<void>
   readonly onOpenRecord: (row: Row) => void
@@ -97,6 +102,7 @@ export function DataGrid({
   onChecked,
   onCells,
   onCommit,
+  onUpload,
   onCreate,
   onDelete,
   onOpenRecord,
@@ -350,7 +356,13 @@ export function DataGrid({
     for (const field of fields) {
       const typed = draft[field.name]
       if (typed === undefined || typed === '') continue
-      values[field.name] = typed
+      // A date is typed day first; the API takes it in its own form. A multiple choice
+      // waits in the draft as its JSON list, the draft holding text only.
+      values[field.name] = isDateKind(field.kind)
+        ? storedFromText(typed, field.kind)
+        : field.kind === 'multi_select'
+          ? JSON.parse(typed)
+          : typed
     }
     if (Object.keys(values).length === 0) return
     setAdding(true)
@@ -506,6 +518,7 @@ export function DataGrid({
                             }
                             onEndEdit={() => setEditing(null)}
                             onCommit={(value) => onCommit(id, field, value)}
+                            onUpload={editable ? onUpload : undefined}
                           />
 
                           {/* The way into the record, on the FIRST column and on hover.
@@ -674,8 +687,41 @@ function DraftCell({
     )
   }
 
+  if (field.kind === 'multi_select' && field.options !== undefined) {
+    return (
+      <span className="flex w-full min-w-0 items-center px-1">
+        <MultiEnumPicker
+          field={field}
+          value={value === '' ? [] : (JSON.parse(value) as string[])}
+          onChange={(next) => onChange(next === null ? '' : JSON.stringify(next))}
+          appearance="cell"
+          placeholder={field.label}
+        />
+      </span>
+    )
+  }
+
   if (!isTextual(field)) {
     return <span className="w-full px-2 text-muted-foreground">—</span>
+  }
+
+  if (isDateKind(field.kind)) {
+    return (
+      <DateInput
+        kind={field.kind}
+        text={value}
+        onTextChange={onChange}
+        onKeyDown={(e) => {
+          e.stopPropagation()
+          if (e.key === 'Enter') onSubmit()
+        }}
+        appearance="cell"
+        clearable
+        placeholder={placeholder}
+        className="focus:bg-background"
+        aria-label={field.label}
+      />
+    )
   }
 
   return (

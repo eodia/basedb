@@ -28,3 +28,6 @@ Thumbs.db
 
 # Claude Code (local state)
 .claude/scheduled_tasks.lock
+
+# Files of `file` and `image` fields, local storage in development
+.basedb/

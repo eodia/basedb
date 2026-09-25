@@ -98,6 +98,16 @@ export function sealContext(input: ContextInput): RequestContext {
   }) as RequestContext
 }
 
+/**
+ * Who acts, as a binding key — for a cursor, a cache entry, an idempotency claim.
+ *
+ * A token is an actor of its own, distinct from the person who created it: its rights
+ * are narrower, and a cursor minted for one must not open for the other (08 §6.2).
+ */
+export function actorKey(ctx: RequestContext): string {
+  return ctx.actor.tokenId === undefined ? ctx.actor.id : `${ctx.actor.id}:${ctx.actor.tokenId}`
+}
+
 /** True if the context's deadline has passed: no statement may be issued any more. */
 export function deadlineExceeded(ctx: RequestContext, now: Date): boolean {
   return now.getTime() >= ctx.deadline.getTime()

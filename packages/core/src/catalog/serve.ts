@@ -80,6 +80,10 @@ export async function serveMeta(
         name: b.name,
         label: b.label,
         description: b.description,
+        color: b.color,
+        icon: b.icon,
+        image: b.image,
+        project: b.project,
         tableCount: b.tables.length,
       })),
     )

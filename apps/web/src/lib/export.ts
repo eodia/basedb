@@ -69,7 +69,19 @@ function sqlLiteral(value: unknown, kind: string): string {
   if (value === null || value === undefined) return 'NULL'
   if (kind === 'number') return Number.isFinite(Number(value)) ? String(value) : 'NULL'
   if (kind === 'boolean') return value === true ? 'TRUE' : 'FALSE'
-  return `'${scalar(value).replace(/'/g, "''")}'`
+  const quoted = (text: string) => `'${text.replace(/'/g, "''")}'`
+  if (kind === 'multi_select' && Array.isArray(value)) {
+    return `ARRAY[${value.map((v) => quoted(String(v))).join(', ')}]::text[]`
+  }
+  if ((kind === 'file' || kind === 'image') && Array.isArray(value)) {
+    // The signed links are left out: they expire, and the column never held them.
+    const files = value.map((f) => {
+      const { url: _url, ...stored } = f as Record<string, unknown>
+      return stored
+    })
+    return `${quoted(JSON.stringify(files))}::jsonb`
+  }
+  return quoted(scalar(value))
 }
 
 /**
