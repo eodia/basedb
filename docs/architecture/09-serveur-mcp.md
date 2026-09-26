@@ -933,6 +933,37 @@ Tous ces codes appartiennent au registre unique d'A23 ; ceux marqués « registr
 
 ---
 
+## État de la mise en œuvre (v1)
+
+**Les trois lots sont servis.** Le lot 3 (§7) déclare `propose_create_table`,
+`propose_add_field` — champ simple, liste de choix, lien — et `get_proposal`. Une
+proposition est une ligne `_basedb.migration` d'`origin = 'mcp'` ; elle attend dans la file
+« Propositions » de la base, ouverte à qui détient `manage_schema` sur elle, et que la
+navigation signale par un badge. L'approbation revérifie tout (§7.5, §7.6) — version du
+catalogue (`PROPOSAL_STALE`), délai de 24 heures (`PROPOSAL_EXPIRED`), droits de la
+personne pour qui l'agent agit et validité du jeton (`AUTHORIZATION_REVOKED`) —, réserve la
+proposition (`approved`) dans la transaction qui a vérifié, puis l'exécute par les
+opérations ordinaires du noyau au nom de cette personne ; elle finit `applied`, ou
+`failed` avec le code de l'échec. Plafond de cinq propositions ouvertes par jeton,
+remplacement (`superseded`) d'une proposition sur le même objet, refus d'un jeton en
+lecture seule (`TOKEN_READ_ONLY`) et de `cascade` (`MCP_CASCADE_FORBIDDEN`).
+
+**Écarts assumés.**
+
+- `propose_create_base` n'est pas déclaré : un jeton est borné à une base, et une base se
+  crée dans un projet, par une personne.
+- `up_sql` est un **aperçu** calculé à la proposition ; le DDL réellement émis à
+  l'approbation est celui des opérations du noyau, dont les noms de contrainte et d'index
+  peuvent différer. Pas de `data_precheck` : le champ proposé est toujours une colonne
+  neuve, donc vide, et la contrainte d'un lien est validée à sa pose.
+- Le catalogue ne connaît pas d'état « refusée » : un refus clôt la proposition en
+  `expired` et inscrit la décision — qui, quand — dans `catalog_diff.decision`, ce que la
+  file et `get_proposal` rendent comme `rejected`.
+- L'approbation est un `POST` authentifié par jeton d'accès porté en en-tête, jamais par
+  cookie ; il n'y a pas de jeton d'action à usage unique. L'écran de revue nomme la
+  personne et le jeton, pas le `clientInfo` déclaré, qui n'est pas conservé.
+
+
 ## Décisions retenues
 
 | Décision | Raison | Alternative écartée |

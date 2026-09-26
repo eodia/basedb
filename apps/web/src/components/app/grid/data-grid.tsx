@@ -80,10 +80,36 @@ interface Props {
   readonly onDelete: (id: string) => Promise<void>
   readonly onOpenRecord: (row: Row) => void
   readonly onFilterField: (field: Field) => void
+  /** Opens the row a link cell points at, in its own table. */
+  readonly onFollowLink?: (table: string, id: string) => void
 }
 
 /** Width of the leading gutter: checkbox plus row number. */
 const GUTTER_WIDTH = 64
+
+/**
+ * The background of what stays in place while the row scrolls sideways — the gutter and
+ * the pinned columns.
+ *
+ * The row's own tints are translucent (a stripe, a tick, the open record, the hover), and
+ * a sticky cell that inherited one would let the columns scrolling UNDER it show through.
+ * So these paint the same tint made opaque — mixed into the page's background —, chosen
+ * here in the same order the row's classes resolve in: open, then ticked, then striped.
+ */
+function stickyBackground(odd: boolean, ticked: boolean, opened: boolean): string {
+  const base = opened
+    ? 'bg-[color:color-mix(in_oklab,var(--primary)_10%,var(--background))]'
+    : ticked
+      ? 'bg-[color:color-mix(in_oklab,var(--primary)_5%,var(--background))]'
+      : odd
+        ? 'bg-[color:color-mix(in_oklab,var(--surface)_40%,var(--background))]'
+        : 'bg-background'
+  // The row's hover wins over its other tints, as `hover:` does on the row itself.
+  return `${base} group-hover/row:bg-[color:color-mix(in_oklab,var(--muted)_50%,var(--background))]`
+}
+
+/** A selected pinned cell: the selection's tint, opaque. */
+const STICKY_SELECTED = 'bg-[color:color-mix(in_oklab,var(--primary)_10%,var(--background))]'
 
 export function DataGrid({
   fields,
@@ -107,6 +133,7 @@ export function DataGrid({
   onDelete,
   onOpenRecord,
   onFilterField,
+  onFollowLink,
 }: Props) {
   const scroller = useRef<HTMLDivElement>(null)
   const [editing, setEditing] = useState<{ rowIndex: number; column: string } | null>(null)
@@ -447,6 +474,7 @@ export function DataGrid({
             const id = row._id
             const opened = openedId === id
             const ticked = checked.has(id)
+            const pinnedBackground = stickyBackground(virtual.index % 2 === 1, ticked, opened)
 
             return (
               <ContextMenu key={id}>
@@ -463,7 +491,10 @@ export function DataGrid({
                     style={{ height: ROW_HEIGHT, transform: `translateY(${virtual.start}px)` }}
                   >
                     <div
-                      className="sticky left-0 z-10 flex shrink-0 items-center gap-2 border-r bg-inherit px-2"
+                      className={cn(
+                        'sticky left-0 z-10 flex shrink-0 items-center gap-2 border-r px-2 transition-colors',
+                        pinnedBackground,
+                      )}
                       style={{ width: GUTTER_WIDTH }}
                     >
                       <Checkbox
@@ -492,9 +523,12 @@ export function DataGrid({
                           data-cell={key}
                           className={cn(
                             'relative flex shrink-0 items-center overflow-hidden border border-transparent text-xs transition-colors',
-                            isSelected && 'border-primary/60 bg-primary/10',
+                            isSelected &&
+                              (sticky === undefined
+                                ? 'border-primary/60 bg-primary/10'
+                                : `border-primary/60 ${STICKY_SELECTED}`),
                             isEditing && 'border-primary p-0',
-                            sticky !== undefined && !isSelected && 'bg-inherit',
+                            sticky !== undefined && !isSelected && pinnedBackground,
                           )}
                           style={{
                             width: widthOf(field.name),
@@ -519,6 +553,7 @@ export function DataGrid({
                             onEndEdit={() => setEditing(null)}
                             onCommit={(value) => onCommit(id, field, value)}
                             onUpload={editable ? onUpload : undefined}
+                            onFollowLink={onFollowLink}
                           />
 
                           {/* The way into the record, on the FIRST column and on hover.
@@ -597,8 +632,17 @@ export function DataGrid({
             {fields.map((field, index) => (
               <div
                 key={field.name}
-                className="flex shrink-0 items-center overflow-hidden border-r text-xs"
-                style={{ width: widthOf(field.name) }}
+                className={cn(
+                  'flex shrink-0 items-center overflow-hidden border-r text-xs',
+                  // A pinned column stays pinned here too, painted like the rows above.
+                  stickyOffsets[field.name] !== undefined && 'bg-background',
+                )}
+                style={{
+                  width: widthOf(field.name),
+                  ...(stickyOffsets[field.name] === undefined
+                    ? {}
+                    : { position: 'sticky', left: stickyOffsets[field.name], zIndex: 5 }),
+                }}
               >
                 <DraftCell
                   field={field}

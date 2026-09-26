@@ -14,6 +14,11 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 
+// The operator's own settings — an AI provider and its key, say — from a `.env` at the
+// root, when there is one; git ignores it. What the shell already sets wins:
+// `loadEnvFile` never overrides a variable. The servers inherit them below.
+if (existsSync(`${ROOT}.env`)) process.loadEnvFile(`${ROOT}.env`)
+
 const grey = (s) => `[90m${s}[0m`
 const bold = (s) => `[1m${s}[0m`
 const green = (s) => `[32m${s}[0m`

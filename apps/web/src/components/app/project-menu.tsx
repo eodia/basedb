@@ -1,6 +1,9 @@
 'use client'
 
 import { DescriptionField, isTooLong } from '@/components/app/description'
+import { PurgeDialog, type PurgeTarget } from '@/components/app/lifecycle-dialogs'
+import { LookButton, type LookValue, lookOf, sameLook } from '@/components/app/look-picker'
+import { LookIcon } from '@/components/app/option-badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -78,6 +81,7 @@ export function ProjectMenu({
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleted, setDeleted] = useState<readonly DeletedBase[]>([])
+  const [purging, setPurging] = useState<PurgeTarget | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const loadDeleted = useCallback(async () => {
@@ -95,7 +99,8 @@ export function ProjectMenu({
   }, [loadDeleted])
 
   const canEdit = project?.actions.includes('manage_schema') === true
-  const baseCount = project?.bases.length ?? 0
+  // A base counts once, whatever its number of environments (chapter 14).
+  const baseCount = new Set(project?.bases.map((b) => b.environment.lineage) ?? []).size
 
   const trigger = (
     <DropdownMenuTrigger asChild>
@@ -107,8 +112,23 @@ export function ProjectMenu({
           compact && 'justify-center p-0.5',
         )}
       >
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-foreground text-background">
-          <FolderKanban className="size-4.5" />
+        {/* The project's own look when it has one, like a base or a table in the tree. */}
+        <span
+          className={cn(
+            'flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg',
+            project?.color == null && project?.image == null && 'bg-foreground text-background',
+          )}
+          style={
+            project?.color != null && project.image == null
+              ? { backgroundColor: project.color, color: '#fff' }
+              : undefined
+          }
+        >
+          <LookIcon
+            look={{ icon: project?.icon ?? null, image: project?.image ?? null, color: null }}
+            fallback={FolderKanban}
+            className={project?.image != null ? 'size-full rounded-none' : 'size-4.5'}
+          />
         </span>
         {!compact && (
           <>
@@ -155,7 +175,7 @@ export function ProjectMenu({
           )}
           {projects.map((p) => (
             <DropdownMenuItem key={p.id} onSelect={() => onSelect(p.id)}>
-              <FolderKanban className="size-4" />
+              <LookIcon look={p} fallback={FolderKanban} />
               <span className="min-w-0 flex-1 truncate">{p.label}</span>
               {project?.id === p.id && <Check className="size-4 text-primary" />}
             </DropdownMenuItem>
@@ -218,12 +238,42 @@ export function ProjectMenu({
                       </span>
                     </DropdownMenuItem>
                   ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                    Purger — définitif, après export
+                  </DropdownMenuLabel>
+                  {deleted.map((d) => (
+                    <DropdownMenuItem
+                      key={`purge:${d.id}`}
+                      className="text-destructive focus:text-destructive"
+                      onSelect={() =>
+                        setPurging({
+                          kind: 'base',
+                          id: d.id,
+                          label: d.label,
+                          deletedAt: d.deleted_at,
+                        })
+                      }
+                    >
+                      <Trash2 className="size-4" />
+                      <span className="min-w-0 flex-1 truncate">Purger « {d.label} »…</span>
+                    </DropdownMenuItem>
+                  ))}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             </>
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <PurgeDialog
+        target={purging}
+        onClose={() => setPurging(null)}
+        onDone={() => {
+          setPurging(null)
+          void loadDeleted()
+        }}
+      />
 
       {/* In the reduced column the refusal floats beside it: 40 pixels do not hold a sentence. */}
       {error !== null && (
@@ -277,12 +327,13 @@ export function ProjectDialog({
 }: {
   readonly open: boolean
   /** Absent for a new project. */
-  readonly project?: Pick<Project, 'id' | 'label' | 'description'>
+  readonly project?: Pick<Project, 'id' | 'label' | 'description' | 'color' | 'icon' | 'image'>
   readonly onClose: () => void
   readonly onDone: (id: string) => void
 }) {
   const [label, setLabel] = useState('')
   const [description, setDescription] = useState('')
+  const [look, setLook] = useState<LookValue>(lookOf({}))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -290,8 +341,9 @@ export function ProjectDialog({
     if (!open) return
     setLabel(project?.label ?? '')
     setDescription(project?.description ?? '')
+    setLook(lookOf(project ?? {}))
     setError(null)
-  }, [open, project?.label, project?.description])
+  }, [open, project])
 
   const ready = label.trim() !== '' && !isTooLong(description) && !busy
 
@@ -303,13 +355,19 @@ export function ProjectDialog({
     setError(null)
     try {
       if (project === undefined) {
-        const created = await api.createProject(trimmed, text ?? undefined)
+        const created = await api.createProject(
+          trimmed,
+          text ?? undefined,
+          sameLook(look, lookOf({})) ? undefined : look,
+        )
         onDone(created.id)
       } else {
         // Only what changed is sent, and an emptied description is a `null` — "clear it".
-        const patch: { label?: string; description?: string | null } = {}
+        // The look travels whole: a colour cannot outlive the pictogram it was picked for.
+        const patch: { label?: string; description?: string | null } & Partial<LookValue> = {}
         if (trimmed !== project.label) patch.label = trimmed
         if (text !== (project.description ?? null)) patch.description = text
+        if (!sameLook(look, lookOf(project))) Object.assign(patch, look)
         if (Object.keys(patch).length > 0) await api.updateProject(project.id, patch)
         onDone(project.id)
       }
@@ -336,15 +394,28 @@ export function ProjectDialog({
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="project-label">Libellé</Label>
-            <Input
-              id="project-label"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && void submit()}
-              placeholder="Ex. Commercial"
-              autoFocus
-              disabled={busy}
-            />
+            <div className="flex items-center gap-2">
+              {/* The look sits before the name, where the project switcher draws it. */}
+              <LookButton
+                look={look}
+                label={`Apparence du projet ${label}`.trim()}
+                onChange={(patch) => setLook((current) => ({ ...current, ...patch }))}
+                disabled={busy}
+                className="size-9"
+              />
+              <Input
+                id="project-label"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && void submit()}
+                placeholder="Ex. Commercial"
+                autoFocus
+                disabled={busy}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Couleur, pictogramme ou image : ce qui distingue le projet dans le sélecteur.
+            </p>
           </div>
 
           <DescriptionField
@@ -394,7 +465,7 @@ function DeleteProjectDialog({
     if (open) setError(null)
   }, [open])
 
-  const count = project.bases.length
+  const count = new Set(project.bases.map((b) => b.environment.lineage)).size
 
   const submit = async () => {
     setBusy(true)

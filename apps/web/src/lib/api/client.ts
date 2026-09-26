@@ -221,6 +221,17 @@ export interface Look {
   readonly image: string | null
 }
 
+/**
+ * Which environment of its base a base is — chapter 14. The environments of one base
+ * share its `lineage`; production is the default one.
+ */
+export interface BaseEnvironment {
+  readonly lineage: string
+  readonly label: string
+  readonly production: boolean
+  readonly position: number
+}
+
 /** A base of a project, as the navigation lists it. */
 export interface ProjectBase extends Look {
   readonly id: string
@@ -228,6 +239,9 @@ export interface ProjectBase extends Look {
   readonly label: string
   readonly description: string | null
   readonly actions: readonly Action[]
+  /** Agent proposals awaiting a decision — 0 for whoever does not decide on them. */
+  readonly openProposals: number
+  readonly environment: BaseEnvironment
   readonly tables: ReadonlyArray<
     {
       readonly id: string
@@ -239,7 +253,7 @@ export interface ProjectBase extends Look {
 }
 
 /** A project as the navigation shows it: the bases and tables the caller can see in it. */
-export interface Project {
+export interface Project extends Look {
   readonly id: string
   readonly label: string
   readonly description: string | null
@@ -288,6 +302,43 @@ export interface AccessCell {
   readonly level: AccessLevel | 'granular'
   /** True when granted ON this node rather than inherited from above. */
   readonly direct: boolean
+}
+
+/** A group's rule on one field: hidden, or read-only. No rule: what its level gives. */
+export type FieldRule = 'hidden' | 'read_only'
+
+/** Below the grid: each group's rules on the fields of one table (chapter 05 §4). */
+export interface FieldAccess {
+  readonly table: {
+    readonly id: string
+    readonly name: string
+    readonly label: string
+    readonly base: { readonly id: string; readonly name: string; readonly label: string }
+  }
+  readonly fields: ReadonlyArray<{
+    readonly id: string
+    readonly name: string
+    readonly label: string
+    readonly kind: string
+  }>
+  readonly groups: ReadonlyArray<
+    Group & {
+      readonly level: AccessLevel
+      readonly rules: Readonly<Record<string, FieldRule>>
+    }
+  >
+}
+
+/** What one person ends up with on each field of a table, and through which group (§3.3). */
+export interface EffectiveMask {
+  readonly user: { readonly id: string; readonly display_name: string; readonly email: string }
+  readonly reads_table: boolean
+  readonly fields: ReadonlyArray<{
+    readonly id: string
+    readonly level: 'hidden' | 'read' | 'write'
+    readonly readable_via: readonly string[]
+    readonly restricted_by: ReadonlyArray<{ readonly group: string; readonly rule: FieldRule }>
+  }>
 }
 
 export interface AccessGraph {
@@ -397,6 +448,8 @@ export interface Field {
   readonly kind: string
   readonly required?: boolean
   readonly read_only?: boolean
+  /** Filled by the AI (chapter 12 §1.5): an option of the type, and read-only for people. */
+  readonly ai?: boolean
   readonly system?: boolean
   /**
    * The operators this field accepts, read from the catalog (ch. 11 §1.3).
@@ -415,6 +468,117 @@ export interface Field {
     readonly masked: boolean
     readonly on_delete: string
   }
+}
+
+/**
+ * When an AI field computes: while a cell is empty — a new row, or one whose cited columns
+ * changed, which empties it — or also on a schedule, a cron expression read in the
+ * author's time zone.
+ */
+export interface AiRefresh {
+  readonly mode: 'if_empty' | 'schedule'
+  readonly cron?: string | null
+  readonly timezone?: string | null
+}
+
+/** The prompt, the schedule and the consent an AI field is created or changed with. */
+export interface AiFieldInput {
+  /** Columns cited `{{Libellé}}`; the server keeps them under their physical names. */
+  readonly prompt: string
+  readonly refresh: AiRefresh
+  /** The author's yes to the cited values leaving for the provider. */
+  readonly consent: boolean
+}
+
+export interface AiFieldStatus {
+  /** As stored: citations by PHYSICAL name, `{{notes}}`. */
+  readonly prompt: string
+  readonly cited: ReadonlyArray<{ readonly name: string; readonly label: string }>
+  readonly refresh: {
+    readonly mode: 'if_empty' | 'schedule'
+    readonly cron: string | null
+    readonly timezone: string | null
+  }
+  readonly next_sweep_at: string | null
+  /** A recomputation of every row is under way. */
+  readonly sweeping: boolean
+  readonly last_run_at: string | null
+  /** The code of the last refusal met, `null` after a clean run. */
+  readonly last_error: string | null
+  readonly last_error_at: string | null
+  readonly computed_count: number
+  readonly consented_at: string
+}
+
+// ── The copilot — chapter 12 §1.6 ────────────────────────────────────────────────────
+
+export interface CopilotMessage {
+  readonly role: 'user' | 'assistant'
+  readonly content: string
+}
+
+/** A column the copilot proposes. `target` names a table; `prompt` is an AI column's. */
+export interface CopilotField {
+  readonly label: string
+  readonly kind: string
+  readonly description: string | null
+  readonly options: readonly string[]
+  readonly target: string | null
+  readonly prompt: string | null
+}
+
+/** A link value to resolve on apply: the row's identifier, or its display value. */
+export type CopilotLink = { readonly id: string } | { readonly display: string }
+
+export type CopilotAction =
+  | {
+      readonly type: 'filter'
+      readonly table: string
+      readonly filter: string
+      readonly sort: string | null
+    }
+  | { readonly type: 'sql'; readonly sql: string }
+  | {
+      readonly type: 'add_fields'
+      readonly table: string
+      readonly fields: readonly CopilotField[]
+    }
+  | {
+      readonly type: 'create_table'
+      readonly label: string
+      readonly description: string | null
+      readonly fields: readonly CopilotField[]
+    }
+  | {
+      readonly type: 'insert_records'
+      /** A table name — or, `pending`, the label of a table proposed alongside. */
+      readonly table: string
+      readonly pending: boolean
+      readonly records: ReadonlyArray<Readonly<Record<string, unknown>>>
+    }
+  | {
+      readonly type: 'update_records'
+      readonly table: string
+      readonly updates: ReadonlyArray<{
+        readonly id: string
+        readonly values: Readonly<Record<string, unknown>>
+      }>
+    }
+
+/** A read the copilot made to answer — what left the instance, said on the screen. */
+export interface CopilotRead {
+  readonly kind: 'sql' | 'records'
+  readonly table: string | null
+  readonly text: string
+  readonly rows: number
+  readonly error: string | null
+}
+
+export interface CopilotAnswer {
+  readonly message: string
+  readonly actions: readonly CopilotAction[]
+  readonly reads: readonly CopilotRead[]
+  readonly dropped: readonly string[]
 }
 
 /** What is needed to address a table: its base and its own name. */
@@ -441,9 +605,168 @@ export interface DescribedBase extends Look {
   readonly label: string
   readonly description: string | null
   readonly project: ProjectRef
+  /** Which environment of its base this one is (chapter 14). */
+  readonly environment: BaseEnvironment
   /** The verbs held on the base itself: `manage_schema` lets a table be added to it. */
   readonly actions: readonly Action[]
   readonly tables: readonly Table[]
+}
+
+// ── Environments — chapter 14 ────────────────────────────────────────────────
+
+/** An environment of a base, as its form lists it. */
+export interface EnvironmentSummary {
+  readonly id: string
+  /** The base name of this environment — its URLs, its schema. */
+  readonly name: string
+  readonly environment: string
+  readonly production: boolean
+  readonly position: number
+  readonly tableCount: number
+  readonly createdAt: string
+  readonly forkedFrom: string | null
+}
+
+export interface EnvironmentFamily extends Look {
+  readonly lineageId: string
+  readonly label: string
+  readonly description: string | null
+  readonly environments: readonly EnvironmentSummary[]
+}
+
+export interface ComparedTableCell extends Look {
+  readonly label: string
+  readonly name: string
+  readonly deleted: boolean
+  readonly description: string | null
+  readonly displayField: string | null
+}
+
+export interface ComparedFieldCell {
+  readonly label: string
+  readonly name: string
+  readonly kind: string
+  readonly required: boolean
+  readonly description: string | null
+  readonly options: readonly string[] | null
+  readonly link: string | null
+  readonly ai: boolean
+}
+
+export interface EnvironmentComparison {
+  readonly environments: readonly EnvironmentSummary[]
+  readonly tables: ReadonlyArray<{
+    readonly lineage: string
+    readonly cells: ReadonlyArray<ComparedTableCell | null>
+    readonly differs: boolean
+    readonly fields: ReadonlyArray<{
+      readonly lineage: string
+      readonly cells: ReadonlyArray<ComparedFieldCell | null>
+      readonly differs: boolean
+    }>
+  }>
+}
+
+export type StepStatus = 'ready' | 'target_newer' | 'conflict' | 'needs_consent'
+
+export interface PlanStep {
+  readonly id: string
+  readonly kind: string
+  readonly table: { readonly lineage: string; readonly label: string }
+  readonly field?: { readonly lineage: string; readonly label: string; readonly kind: string }
+  readonly summary: string
+  readonly changes: ReadonlyArray<{
+    readonly attribute: string
+    readonly from: string | null
+    readonly to: string | null
+  }>
+  readonly status: StepStatus
+  readonly selected: boolean
+  readonly destructive: boolean
+  readonly dependsOn: readonly string[]
+}
+
+export interface StructurePlan {
+  readonly source: EnvironmentSummary
+  readonly target: EnvironmentSummary
+  readonly lastSync: string | null
+  readonly steps: readonly PlanStep[]
+  readonly notes: ReadonlyArray<{
+    readonly table: string
+    readonly field?: string
+    readonly message: string
+  }>
+}
+
+export interface ApplyReport {
+  readonly source: EnvironmentSummary
+  readonly target: EnvironmentSummary
+  readonly results: ReadonlyArray<{
+    readonly id: string
+    readonly kind: string
+    readonly summary: string
+    readonly outcome: 'applied' | 'failed' | 'skipped'
+    readonly code?: string
+    readonly note?: string
+  }>
+  readonly applied: number
+  readonly failed: number
+  readonly skipped: number
+}
+
+export interface TableRowCounts {
+  readonly lineage: string
+  readonly label: string
+  readonly source: number | null
+  readonly target: number | null
+}
+
+export interface RowSample {
+  readonly id: string
+  readonly display: string | null
+  readonly changed: readonly string[]
+}
+
+export interface RowComparison {
+  readonly source: EnvironmentSummary
+  readonly target: EnvironmentSummary
+  readonly table: { readonly lineage: string; readonly label: string }
+  readonly columns: ReadonlyArray<{
+    readonly lineage: string
+    readonly label: string
+    readonly kind: string
+  }>
+  readonly skipped: ReadonlyArray<{ readonly label: string; readonly reason: string }>
+  readonly counts: {
+    readonly onlySource: number
+    readonly onlyTarget: number
+    readonly different: number
+    readonly identical: number
+  }
+  readonly samples: {
+    readonly onlySource: readonly RowSample[]
+    readonly onlyTarget: readonly RowSample[]
+    readonly different: readonly RowSample[]
+  }
+  readonly lastSync: string | null
+}
+
+/** One act of the structure history (chapter 07 §8.1), said in words. */
+export interface StructureEvent {
+  readonly id: string
+  readonly at: string
+  readonly op: string
+  readonly object: 'base' | 'table' | 'field' | 'ai' | 'option' | 'config'
+  readonly table: string | null
+  readonly field: string | null
+  readonly summary: string
+  readonly changes: ReadonlyArray<{
+    readonly attribute: string
+    readonly from: string | null
+    readonly to: string | null
+  }>
+  readonly actor: { readonly kind: string; readonly name: string | null }
+  readonly migrationId: string | null
 }
 
 /**
@@ -535,6 +858,219 @@ export interface DeletedBase {
   readonly table_count: number
 }
 
+/** What renaming a base, a table or a field in the database would touch (chapter 06 §2.1). */
+export interface RenameImpact {
+  readonly kind: 'base' | 'table' | 'field'
+  readonly id: string
+  readonly label: string
+  readonly current: string
+  readonly qualified: string
+  readonly suggested: string
+  readonly alias_allowed: boolean
+  readonly live_aliases: number
+  /** An ESTIMATE (`pg_class.reltuples`); `null` when never analysed. */
+  readonly estimated_rows: number | null
+  readonly bytes: number | null
+  readonly webhooks: readonly string[]
+  readonly tokens: ReadonlyArray<{ readonly label: string; readonly last_used_at: string | null }>
+  readonly misaligned_links: ReadonlyArray<{
+    readonly table: string
+    readonly column: string
+    readonly label: string
+  }>
+  readonly dependents: readonly string[]
+  readonly citing_prompts: number
+}
+
+/** A compatibility alias: the old name of a base (a schema) or of a table (a view). */
+export interface CompatibilityAlias {
+  readonly id: string
+  readonly kind: 'schema' | 'view'
+  readonly name: string
+  readonly qualified: string
+  readonly target: string
+  readonly target_label: string
+  readonly created_at: string
+  readonly drop_after: string | null
+  readonly blank_cut: {
+    readonly from: string
+    readonly until: string
+    readonly name: string
+  } | null
+  readonly views: number
+  readonly dependents: readonly string[]
+}
+
+/** A deleted table of a live base, not purged yet. */
+export interface DeletedTable {
+  readonly id: string
+  readonly label: string
+  readonly name: string
+  readonly deleted_at: string
+  readonly deleted_by: string | null
+  readonly purgeable_from: string
+}
+
+/** The export a purge requires (chapter 06 §5.2). */
+export interface PurgeExport {
+  readonly id: string
+  readonly directory: string
+  readonly created_at: string
+  readonly total_rows: number
+  readonly total_bytes: number
+  readonly tables: ReadonlyArray<{
+    readonly id: string
+    readonly label: string
+    readonly name: string
+    readonly file: string
+    readonly rows: number
+    readonly bytes: number
+    readonly sha256: string
+  }>
+}
+
+/** What a webhook is told about: a row created, modified, deleted. */
+export type WebhookEvent = 'create' | 'update' | 'delete'
+
+/** A webhook as the administration shows it — never its secret (chapter 08 §10). */
+export interface Webhook {
+  readonly id: string
+  readonly label: string
+  readonly url: string
+  readonly active: boolean
+  /** Why it stopped: `failures`, `field_masked` or `manual`. */
+  readonly disabled_reason: string | null
+  readonly created_at: string
+  readonly subscriptions: ReadonlyArray<{
+    readonly table: string
+    readonly table_label: string
+    readonly events: readonly WebhookEvent[]
+  }>
+  readonly last_delivery: {
+    readonly status: string
+    readonly at: string
+    readonly response_code: number | null
+  } | null
+}
+
+export interface WebhookDelivery {
+  readonly id: string
+  readonly created_at: string
+  readonly status: 'pending' | 'in_flight' | 'delivered' | 'failed' | 'abandoned'
+  readonly attempts: number
+  readonly next_attempt_at: string | null
+  readonly delivered_at: string | null
+  readonly response_code: number | null
+  readonly error_code: string | null
+  readonly table_label: string | null
+  readonly record_id: string
+  readonly op: string
+}
+
+/** A value typed by someone — an agent included: shown as data, never as text. */
+export interface UserData {
+  readonly value: unknown
+  readonly provenance: 'user_data' | 'system'
+}
+
+/** A table named in a proposal: its physical name first, its label as data. */
+export interface ProposalTable {
+  readonly physical: string
+  readonly label: string
+  readonly provenance: 'user_data'
+}
+
+/** A structure change an agent proposed, awaiting a person — chapter 09 §7. */
+export interface Proposal {
+  readonly id: string
+  readonly status:
+    | 'proposed'
+    | 'approved'
+    | 'applied'
+    | 'rejected'
+    | 'expired'
+    | 'superseded'
+    | 'failed'
+  readonly base: { readonly id: string; readonly name: string; readonly label: string }
+  readonly requested_at: string
+  readonly expires_at: string
+  readonly requested_by: { readonly id: string; readonly name: string | null }
+  readonly token: { readonly id: string | null; readonly label: string | null }
+  readonly summary_template: 'create_table' | 'add_field' | 'add_link_field' | string
+  readonly summary_params: {
+    readonly table_label?: UserData
+    readonly table_description?: UserData
+    readonly fields?: ReadonlyArray<{
+      readonly label: UserData
+      readonly kind: UserData
+      readonly description: UserData
+    }>
+    readonly field_label?: UserData
+    readonly field_description?: UserData
+    readonly kind?: UserData
+    readonly table?: ProposalTable
+    readonly options?: readonly UserData[]
+    readonly source_table?: ProposalTable
+    readonly target_table?: ProposalTable
+    readonly on_delete?: UserData
+  }
+  readonly affected_objects: ReadonlyArray<{
+    readonly role: 'created' | 'modified' | 'referenced'
+    readonly kind: string
+    readonly physical: string
+    readonly effects: readonly string[]
+  }>
+  readonly up_sql: readonly string[]
+  readonly down_sql: readonly string[]
+  readonly decided_by: { readonly id: string; readonly name: string | null } | null
+  readonly decided_at: string | null
+  readonly error: string | null
+}
+
+/** One field of a revision: what it was, what it became — chapter 07 §3. */
+export interface RevisionChange {
+  readonly field_id: string
+  readonly label: string
+  readonly kind: string
+  /** The column, or `null` when the field was deleted since. */
+  readonly name: string | null
+  /** Absent: not concerned — a creation has no "before", a deletion no "after". */
+  readonly before?: unknown
+  readonly after?: unknown
+  /** The label of a choice, the name of a linked row, as they were that day. */
+  readonly before_display: string | null
+  readonly after_display: string | null
+}
+
+/** One entry of the history: a creation, a modification or a deletion of one row. */
+export interface Revision {
+  readonly id: string
+  readonly occurred_at: string
+  readonly op: 'insert' | 'update' | 'delete'
+  /** Caused by the deletion of another row (a link `on delete`), not asked for directly. */
+  readonly cascade: boolean
+  readonly table: { readonly id: string; readonly name: string; readonly label: string }
+  readonly record_id: string
+  readonly record_display: string | null
+  readonly actor: {
+    readonly kind: string
+    readonly user_id: string | null
+    readonly name: string | null
+    readonly token_id: string | null
+    readonly token_label: string | null
+    readonly sql_identity: string | null
+  }
+  readonly changes: readonly RevisionChange[]
+  /** What the reader may do with it now. */
+  readonly actions: ReadonlyArray<'revert' | 'restore'>
+}
+
+export interface RevisionPage {
+  readonly data: readonly Revision[]
+  /** `null` at the end — and only the cursor says so: a page may be short and not last. */
+  readonly meta: { readonly next_cursor: string | null }
+}
+
 /** One block of the inverse-link summary — chapter 04 §6. */
 export interface ReferencedBlock {
   readonly label: string
@@ -563,7 +1099,121 @@ export interface View {
   readonly count?: boolean
 }
 
+/** The six ways a saved view shows a table — or asks for one of its rows. */
+export type ViewKind = 'grid' | 'kanban' | 'calendar' | 'timeline' | 'form' | 'survey'
+
+/**
+ * A saved view of a table (ch. 11 §1.4), shared by everyone who reads the table.
+ *
+ * `spec` has the shape of its `kind` — `lib/views.ts` reads it — and arrives already cut
+ * down to the fields the reader sees. `filter_hidden` says its filter cites one they do
+ * not: the view is then not shown, rather than shown unfiltered.
+ */
+export interface SavedView {
+  readonly id: string
+  readonly label: string
+  readonly kind: ViewKind
+  readonly description: string | null
+  readonly position: number
+  readonly spec: Readonly<Record<string, unknown>>
+  readonly filter_hidden: boolean
+  readonly created_at: string
+  readonly updated_at: string
+}
+
 const path = (t: TableRef) => `${v1()}/data/${t.base}/${t.name}`
+const viewsPath = (t: TableRef) => `${v1()}/admin/bases/${t.base}/tables/${t.name}/views`
+
+// ── Shared forms — chapter 15 ────────────────────────────────────────────────
+
+export type ShareAccess = 'public' | 'members'
+/** Why a share does not take answers — or `open` when it does. */
+export type ShareState = 'open' | 'inactive' | 'closed' | 'full' | 'authority'
+
+export interface FormShare {
+  readonly id: string
+  readonly view_id: string
+  readonly access: ShareAccess
+  readonly active: boolean
+  /** The secret of the link: the page is `/f/<token>`. */
+  readonly token: string
+  readonly closes_at: string | null
+  readonly max_responses: number | null
+  readonly response_count: number
+  readonly last_response_at: string | null
+  readonly published_by: { readonly id: string; readonly name: string | null }
+  readonly groups: readonly string[]
+  readonly state: ShareState
+}
+
+export interface FormSharing {
+  readonly share: FormShare | null
+  readonly groups: ReadonlyArray<{ readonly id: string; readonly label: string }>
+  readonly omitted: ReadonlyArray<{ readonly field: string; readonly reason: string }>
+}
+
+export interface ShareSettings {
+  readonly access: ShareAccess
+  readonly active: boolean
+  readonly closes_at: string | null
+  readonly max_responses: number | null
+  readonly groups: readonly string[]
+}
+
+/** A shared form as the person answering sees it. */
+export interface SharedForm {
+  readonly kind: 'form' | 'survey'
+  readonly title: string
+  readonly description: string
+  readonly submit_label: string
+  readonly success_message: string
+  readonly allow_another: boolean
+  readonly access: ShareAccess
+  readonly respondent: string | null
+  readonly questions: ReadonlyArray<{
+    readonly name: string
+    readonly label: string
+    readonly help: string | null
+    readonly kind: string
+    readonly required: boolean
+    readonly options: readonly FieldOption[] | null
+  }>
+}
+
+/**
+ * A call to a shared form: anonymous first — a public form answers anyone —, then, when
+ * the form wants a signed-in member, once more with the session's access token if there
+ * is a session in this browser.
+ */
+async function formCall<T>(path: string, init?: RequestInit): Promise<T> {
+  const send = (bearer?: string) =>
+    fetch(`${BASE}${path}`, {
+      ...init,
+      headers: {
+        'content-type': 'application/json',
+        ...(bearer === undefined ? {} : { authorization: `Bearer ${bearer}` }),
+      },
+      credentials: 'include',
+      cache: 'no-store',
+    })
+  let r = await send()
+  if (r.status === 401) {
+    const bearer = await accessToken().catch(() => undefined)
+    if (bearer !== undefined) r = await send(bearer)
+  }
+  const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+  if (!r.ok) {
+    throw new ApiError(
+      String(body.code ?? 'INTERNAL_ERROR'),
+      r.status,
+      String(body.request_id ?? ''),
+      typeof body.details === 'object' && body.details !== null
+        ? (body.details as Record<string, unknown>)
+        : {},
+    )
+  }
+  return (body as { data: T }).data
+}
 
 export const api = {
   health: () => call<{ status: string }>('/healthz'),
@@ -747,14 +1397,17 @@ export const api = {
   /** The projects the caller can see, each with its visible bases and tables. */
   projects: () => data<readonly Project[]>(`${v1()}/meta/projects`),
 
-  createProject: (label: string, description?: string) =>
+  createProject: (label: string, description?: string, look?: Partial<Look>) =>
     data<{ id: string; label: string; description: string | null }>(`${v1()}/admin/projects`, {
       method: 'POST',
-      body: JSON.stringify({ label, description }),
+      body: JSON.stringify({ label, description, ...look }),
     }),
 
-  /** What is absent stays as it was; a `null` description clears it. */
-  updateProject: (id: string, patch: { label?: string; description?: string | null }) =>
+  /** What is absent stays as it was; a `null` description clears it. The look travels whole. */
+  updateProject: (
+    id: string,
+    patch: { label?: string; description?: string | null } & Partial<Look>,
+  ) =>
     data<{ label: string; description: string | null }>(
       `${v1()}/admin/projects/${encodeURIComponent(id)}`,
       { method: 'PATCH', body: JSON.stringify(patch) },
@@ -808,12 +1461,53 @@ export const api = {
       kind: string
       description?: string
       options?: readonly FieldOptionInput[]
+      ai?: AiFieldInput
     },
   ) =>
     data<{ id: string; name: string; label: string; kind: string; description: string | null }>(
       `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields`,
       { method: 'POST', body: JSON.stringify(field) },
     ),
+
+  /** How an AI field is set and how it is doing. */
+  aiFieldStatus: (table: TableRef, field: string) =>
+    data<AiFieldStatus>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}/ai`,
+    ),
+
+  /** Changes the prompt or the schedule — a fresh consent — and recomputes if asked. */
+  setAiField: (table: TableRef, field: string, input: AiFieldInput & { recompute?: boolean }) =>
+    data<AiFieldStatus>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}/ai`,
+      { method: 'PUT', body: JSON.stringify(input) },
+    ),
+
+  /** Switches the AI option off: the field is an ordinary one again, its values kept. */
+  disableAiField: (table: TableRef, field: string) =>
+    call<void>(`${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}/ai`, {
+      method: 'DELETE',
+    }),
+
+  /** Computes one row now and returns its value. */
+  runAiCell: (table: TableRef, field: string, record: string) =>
+    data<{ record: string; value: unknown }>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}/ai/run`,
+      { method: 'POST', body: JSON.stringify({ record }) },
+    ),
+
+  /** Recomputes every row, in the background. */
+  runAiSweep: (table: TableRef, field: string) =>
+    data<{ scheduled: boolean }>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}/ai/run`,
+      { method: 'POST', body: JSON.stringify({}) },
+    ),
+
+  /** The next runs of a schedule, or the refusal it would meet. Nothing is written. */
+  previewSchedule: (cron: string, timezone: string) =>
+    data<{ runs: readonly string[] }>(`${v1()}/ai/schedule/preview`, {
+      method: 'POST',
+      body: JSON.stringify({ cron, timezone }),
+    }),
 
   /**
    * Deposits a file for a `file` or `image` field. The body is the file itself; the
@@ -840,6 +1534,85 @@ export const api = {
    * Renames a field: its LABEL. The column keeps its physical name, so a script written
    * against it in SQL keeps working.
    */
+  /**
+   * The order of a table's fields, as the whole list of their names. The catalog's order —
+   * the grid opens with it; PostgreSQL's own column order is not touched.
+   */
+  reorderFields: (table: TableRef, fields: readonly string[]) =>
+    data<{ fields: readonly string[] }>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/order`,
+      { method: 'PUT', body: JSON.stringify({ fields }) },
+    ),
+
+  /** The saved views of a table, in the order of its selector. */
+  views: (table: TableRef) =>
+    data<readonly SavedView[]>(`${v1()}/meta/bases/${table.base}/tables/${table.name}/views`),
+
+  /** Creates a view, placed last. `manage_schema` on the base, like building the table. */
+  createView: (
+    table: TableRef,
+    view: {
+      label: string
+      kind: ViewKind
+      description?: string | null
+      spec: Readonly<Record<string, unknown>>
+    },
+  ) => data<SavedView>(viewsPath(table), { method: 'POST', body: JSON.stringify(view) }),
+
+  /** Renames a view and/or replaces its WHOLE spec. Its kind never changes. */
+  updateView: (
+    table: TableRef,
+    id: string,
+    patch: {
+      label?: string
+      description?: string | null
+      spec?: Readonly<Record<string, unknown>>
+    },
+  ) =>
+    data<SavedView>(`${viewsPath(table)}/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    }),
+
+  deleteView: (table: TableRef, id: string) =>
+    call<void>(`${viewsPath(table)}/${id}`, { method: 'DELETE' }),
+
+  /** How a form view is shared: its link and settings, or none (chapter 15). */
+  formSharing: (table: TableRef, view: string) =>
+    data<FormSharing>(`${viewsPath(table)}/${view}/share`),
+
+  /** Shares a form view, or changes how. Whoever saves becomes its publisher. */
+  saveFormSharing: (table: TableRef, view: string, settings: ShareSettings) =>
+    data<FormSharing>(`${viewsPath(table)}/${view}/share`, {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    }),
+
+  /** A new link: the old one stops working at once. */
+  regenerateFormShare: (table: TableRef, view: string) =>
+    data<FormSharing>(`${viewsPath(table)}/${view}/share/regenerate`, { method: 'POST' }),
+
+  /** Stops sharing a form. The answers already given stay. */
+  deleteFormShare: (table: TableRef, view: string) =>
+    call<void>(`${viewsPath(table)}/${view}/share`, { method: 'DELETE' }),
+
+  /** Opens a shared form by its link — no right on the table needed. */
+  sharedForm: (token: string) => formCall<SharedForm>(`/api/v1/forms/${encodeURIComponent(token)}`),
+
+  /** Answers a shared form: one row. */
+  submitSharedForm: (token: string, values: Readonly<Record<string, unknown>>) =>
+    formCall<{ received: true }>(`/api/v1/forms/${encodeURIComponent(token)}`, {
+      method: 'POST',
+      body: JSON.stringify({ values }),
+    }),
+
+  /** The order of the selector, as the list of the views' identifiers. */
+  reorderViews: (table: TableRef, ids: readonly string[]) =>
+    data<{ views: readonly string[] }>(`${viewsPath(table)}/order`, {
+      method: 'PUT',
+      body: JSON.stringify({ views: ids }),
+    }),
+
   setFieldLabel: (table: TableRef, field: string, label: string) =>
     data<{ name: string; label: string }>(
       `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}`,
@@ -939,9 +1712,85 @@ export const api = {
       { method: 'PATCH', body: JSON.stringify(patch) },
     ),
 
-  /** Deletes a base logically. Returns the migration, which may have failed on a step. */
+  /**
+   * Deletes a base logically — every environment of it, production last. Returns the
+   * migration, which may have failed on a step.
+   */
   deleteBase: (base: string) =>
     data<Migration>(`${v1()}/admin/bases/${encodeURIComponent(base)}`, { method: 'DELETE' }),
+
+  // ── Environments (chapter 14). `base` is any environment of the base. ──
+
+  environments: (base: string) =>
+    data<EnvironmentFamily>(`${v1()}/admin/bases/${encodeURIComponent(base)}/environments`),
+
+  /**
+   * Adds an environment: a copy of the structure of `source` (production when absent).
+   * Its tables are created one by one: the report says which were, and which were not.
+   */
+  createEnvironment: (base: string, environment: string, source?: string) =>
+    data<{ environment: EnvironmentSummary; report: ApplyReport }>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/environments`,
+      { method: 'POST', body: JSON.stringify({ environment, source }) },
+    ),
+
+  renameEnvironment: (base: string, env: string, environment: string) =>
+    data<EnvironmentSummary>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/environments/${encodeURIComponent(env)}`,
+      { method: 'PATCH', body: JSON.stringify({ environment }) },
+    ),
+
+  /** Deletes one environment — never production, which is the base itself. */
+  deleteEnvironment: (base: string, env: string) =>
+    data<Migration>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/environments/${encodeURIComponent(env)}`,
+      { method: 'DELETE' },
+    ),
+
+  compareEnvironments: (base: string) =>
+    data<EnvironmentComparison>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/environments/compare`,
+    ),
+
+  planStructure: (base: string, source: string, target: string) =>
+    data<StructurePlan>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/environments/plan?${new URLSearchParams({ source, target })}`,
+    ),
+
+  applyStructure: (
+    base: string,
+    request: { source: string; target: string; steps: readonly string[]; consent: boolean },
+  ) =>
+    data<ApplyReport>(`${v1()}/admin/bases/${encodeURIComponent(base)}/environments/apply`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    }),
+
+  countRows: (base: string, source: string, target: string) =>
+    data<readonly TableRowCounts[]>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/environments/rows?${new URLSearchParams({ source, target })}`,
+    ),
+
+  compareRows: (base: string, table: string, source: string, target: string) =>
+    data<RowComparison>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/environments/rows/${encodeURIComponent(table)}?${new URLSearchParams({ source, target })}`,
+    ),
+
+  syncRows: (
+    base: string,
+    table: string,
+    request: { source: string; target: string; insert: boolean; update: boolean; delete: boolean },
+  ) =>
+    data<{ inserted: number; updated: number; deleted: number }>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/environments/rows/${encodeURIComponent(table)}/sync`,
+      { method: 'POST', body: JSON.stringify(request) },
+    ),
+
+  /** The structure history of a base, most recent first (chapter 07 §8.1). */
+  structureHistory: (base: string, before?: string) =>
+    data<{ events: readonly StructureEvent[]; next: string | null }>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/structure-history${before === undefined ? '' : `?${new URLSearchParams({ before })}`}`,
+    ),
 
   /**
    * What deleting a table would do, without doing it.
@@ -970,6 +1819,64 @@ export const api = {
   /** Empty for anyone without the administration role — an absence, not a refusal. */
   deletedBases: () => data<readonly DeletedBase[]>(`${v1()}/admin/bases/deleted`),
 
+  /** A live base's deleted tables — where their purge starts. */
+  deletedTables: (base: string) =>
+    data<readonly DeletedTable[]>(`${v1()}/admin/bases/${encodeURIComponent(base)}/deleted-tables`),
+
+  /** What a physical rename would touch — shown before anyone confirms. */
+  renameImpact: (kind: RenameImpact['kind'], id: string) =>
+    data<RenameImpact>(`${v1()}/admin/physical/${kind}/${encodeURIComponent(id)}`),
+
+  renamePhysical: (
+    kind: RenameImpact['kind'],
+    id: string,
+    request: { name: string; confirm: string; alias?: boolean; alias_days?: number },
+  ) =>
+    data<{ name: string; alias: string | null; migration: Migration }>(
+      `${v1()}/admin/physical/${kind}/${encodeURIComponent(id)}/rename`,
+      { method: 'POST', body: JSON.stringify(request) },
+    ),
+
+  aliases: (base: string) =>
+    data<readonly CompatibilityAlias[]>(`${v1()}/admin/aliases?base=${encodeURIComponent(base)}`),
+
+  cutAlias: (id: string, days: number) =>
+    data<CompatibilityAlias | null>(`${v1()}/admin/aliases/${encodeURIComponent(id)}/cut`, {
+      method: 'POST',
+      body: JSON.stringify({ days }),
+    }),
+
+  restoreAlias: (id: string) =>
+    data<CompatibilityAlias | null>(`${v1()}/admin/aliases/${encodeURIComponent(id)}/restore`, {
+      method: 'POST',
+    }),
+
+  dropAlias: (id: string, confirm: string) =>
+    call<void>(`${v1()}/admin/aliases/${encodeURIComponent(id)}/drop`, {
+      method: 'POST',
+      body: JSON.stringify({ confirm }),
+    }),
+
+  /** Writes the export a purge requires, on the application host. */
+  exportForPurge: (kind: 'base' | 'table', id: string) =>
+    data<PurgeExport>(`${v1()}/admin/purge/exports`, {
+      method: 'POST',
+      body: JSON.stringify({ kind, id }),
+    }),
+
+  /** The one irreversible operation. */
+  purge: (request: {
+    kind: 'base' | 'table'
+    id: string
+    export: string
+    confirm: string
+    early_justification?: string
+  }) =>
+    data<{ purged_tables: number; residual_schema: boolean; migration: Migration }>(
+      `${v1()}/admin/purge`,
+      { method: 'POST', body: JSON.stringify(request) },
+    ),
+
   migrations: (base: string) =>
     data<readonly Migration[]>(`${v1()}/admin/bases/${encodeURIComponent(base)}/migrations`),
 
@@ -977,6 +1884,10 @@ export const api = {
     data<Migration>(`${v1()}/admin/migrations/${encodeURIComponent(id)}/resume`, {
       method: 'POST',
     }),
+
+  /** One row, by its identifier — what following a link opens. */
+  getRecord: (table: TableRef, recordId: string) =>
+    data<Record<string, unknown>>(`${path(table)}/${encodeURIComponent(recordId)}`),
 
   createRecord: (table: TableRef, values: Record<string, unknown>) =>
     data<Record<string, unknown>>(path(table), {
@@ -1047,6 +1958,31 @@ export const api = {
       },
     ),
 
+  /**
+   * One turn of the copilot: the whole conversation goes, the answer comes back with its
+   * proposals. `readData` is the person's consent to rows being read for this turn.
+   */
+  copilot: (
+    base: string,
+    request: {
+      table: string | null
+      filter: string | null
+      sort: string | null
+      messages: readonly CopilotMessage[]
+      readData: boolean
+    },
+  ) =>
+    data<CopilotAnswer>(`${v1()}/ai/bases/${encodeURIComponent(base)}/copilot`, {
+      method: 'POST',
+      body: JSON.stringify({
+        table: request.table,
+        filter: request.filter,
+        sort: request.sort,
+        messages: request.messages,
+        read_data: request.readData,
+      }),
+    }),
+
   /** Drafts tables, fields and links from a need — `structure_draft`. */
   draftStructure: (base: string, request: string) =>
     data<{
@@ -1064,6 +2000,80 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ request }),
     }),
+
+  /** A base's webhooks. */
+  webhooks: (base: string) =>
+    data<readonly Webhook[]>(`${v1()}/admin/webhooks?base=${encodeURIComponent(base)}`),
+
+  /** Creates a webhook. The signing secret is in this answer and nowhere else. */
+  createWebhook: (request: {
+    readonly base: string
+    readonly label: string
+    readonly url: string
+    readonly subscriptions: ReadonlyArray<{ table: string; events: readonly WebhookEvent[] }>
+  }) =>
+    data<Webhook & { readonly secret: string }>(`${v1()}/admin/webhooks`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    }),
+
+  setWebhookActive: (id: string, active: boolean) =>
+    data<Webhook>(`${v1()}/admin/webhooks/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ active }),
+    }),
+
+  deleteWebhook: (id: string) =>
+    call<void>(`${v1()}/admin/webhooks/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
+  webhookDeliveries: (id: string) =>
+    data<readonly WebhookDelivery[]>(`${v1()}/admin/webhooks/${encodeURIComponent(id)}/deliveries`),
+
+  /** The « Propositions » queue of a base: what agents proposed, newest first. */
+  proposals: (base: string) =>
+    data<readonly Proposal[]>(`${v1()}/admin/proposals?base=${encodeURIComponent(base)}`),
+
+  /** Approves a proposal: every check is made again, then the change is applied. */
+  approveProposal: (id: string) =>
+    data<Proposal>(`${v1()}/admin/proposals/${encodeURIComponent(id)}/approve`, {
+      method: 'POST',
+    }),
+
+  rejectProposal: (id: string) =>
+    data<Proposal>(`${v1()}/admin/proposals/${encodeURIComponent(id)}/reject`, {
+      method: 'POST',
+    }),
+
+  /** The history of one row, newest first. */
+  recordHistory: (table: TableRef, recordId: string, cursor?: string) =>
+    call<RevisionPage>(
+      `${path(table)}/${recordId}/history${cursor === undefined ? '' : `?cursor=${encodeURIComponent(cursor)}`}`,
+    ),
+
+  /** The activity of a base — or of one of its tables — newest first. */
+  baseHistory: (base: string, options: { table?: string; cursor?: string } = {}) => {
+    const q = new URLSearchParams()
+    if (options.table !== undefined && options.table !== '') q.set('table', options.table)
+    if (options.cursor !== undefined) q.set('cursor', options.cursor)
+    const query = q.toString()
+    return call<RevisionPage>(
+      `${v1()}/meta/bases/${encodeURIComponent(base)}/history${query === '' ? '' : `?${query}`}`,
+    )
+  },
+
+  /** Puts back the values a modification replaced. Refused if a field changed since. */
+  revertRevision: (id: string) =>
+    data<{ table_id: string; record_id: string }>(
+      `${v1()}/history/${encodeURIComponent(id)}/revert`,
+      { method: 'POST' },
+    ),
+
+  /** Brings a deleted row back, under its own identifier. */
+  restoreRevision: (id: string) =>
+    data<{ table_id: string; record_id: string }>(
+      `${v1()}/history/${encodeURIComponent(id)}/restore`,
+      { method: 'POST' },
+    ),
 
   /** The rows referencing a given row — a dedicated sub-path, never an expansion. */
   referencedBy: (table: TableRef, recordId: string) =>
@@ -1142,4 +2152,21 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ changes }),
     }),
+
+  /** Each group's rules on the fields of one table. */
+  fieldAccess: (tableId: string) =>
+    data<FieldAccess>(`${v1()}/admin/access/tables/${encodeURIComponent(tableId)}/fields`),
+
+  /** Sets one group's rule on one field — `null` lifts it. */
+  setFieldRule: (fieldId: string, group: string, rule: FieldRule | null) =>
+    data<FieldAccess>(`${v1()}/admin/access/fields/${encodeURIComponent(fieldId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ group, rule }),
+    }),
+
+  /** What a person ends up with on each field of a table. */
+  effectiveMask: (tableId: string, userId: string) =>
+    data<EffectiveMask>(
+      `${v1()}/admin/access/tables/${encodeURIComponent(tableId)}/mask?user=${encodeURIComponent(userId)}`,
+    ),
 }

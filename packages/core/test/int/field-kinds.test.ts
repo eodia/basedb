@@ -23,7 +23,8 @@ import { Pools } from '../../src/runtime/pool.js'
 import { type RequestContext, sealContext } from '../../src/tx/context.js'
 
 /**
- * The multiple choice, the document and the image — chapter 04 §3 and §3 bis.
+ * The multiple choice, the document, the image and the web address — chapter 04 §3,
+ * §3 bis and §2.7.
  *
  * What only a real PostgreSQL can say: that the columns are the types announced, that
  * their `CHECK` holds direct SQL to the same rules as the API, that a narrowing of the
@@ -44,6 +45,7 @@ let ctx: RequestContext
 let schemaName: string
 let tableId: string
 let tableName: string
+let baseId: string
 let directory: string
 let files: FileDeps
 
@@ -129,6 +131,7 @@ beforeAll(async () => {
   })
   tableId = table.tableId
   tableName = table.tableName
+  baseId = base.baseId
 
   directory = await mkdtemp(join(tmpdir(), 'basedb-files-'))
   files = {
@@ -302,8 +305,11 @@ describe('documents and images', () => {
     expect(opened).toMatchObject({ type: 'application/pdf', inline: true, name: 'devis été.pdf' })
     expect(Buffer.from(await streamText(opened.body)).equals(Buffer.from(PDF))).toBe(true)
 
+    // The last character changed — to one it cannot already be, or one run in 64 would
+    // "tamper" a signature into itself.
+    const last = request.signature?.endsWith('A') ? 'B' : 'A'
     for (const tampered of [
-      { ...request, signature: `${request.signature?.slice(0, -1)}A` },
+      { ...request, signature: `${request.signature?.slice(0, -1)}${last}` },
       { ...request, tenant: 'autre' },
       { ...request, expires: String(Number(request.expires) + 1) },
     ]) {
@@ -414,5 +420,118 @@ describe('documents and images', () => {
     const page = await listRecords(pools, ctx, { tableId, filter: `not ${pieces} is_null` })
     expect(page.fileColumns).toEqual([pieces, photos])
     expect(page.rows.map((r) => r.nom)).toEqual(['F'])
+  })
+})
+
+describe('web address', () => {
+  let suppliers: string
+  let suppliersName: string
+  let contact: string
+
+  beforeAll(async () => {
+    // One address born with its table, one added after: two paths to the same CHECK.
+    const table = await createTable(pools, ctx, {
+      baseId,
+      label: 'Fournisseurs',
+      fields: [
+        { label: 'Nom', kind: 'short_text', required: true },
+        { label: 'Site', kind: 'url' },
+      ],
+    })
+    suppliers = table.tableId
+    suppliersName = table.tableName
+    contact = (await addField(pools, ctx, { tableId: suppliers, label: 'Contact', kind: 'url' }))
+      .name
+  }, 60_000)
+
+  it('is a text column held by a CHECK of its own, whichever way it was created', async () => {
+    const checks = await pools.withConnection('catalog', (exec) =>
+      exec.query<{ conname: string }>(
+        `SELECT c.conname
+           FROM pg_constraint c
+           JOIN pg_class r     ON r.oid = c.conrelid
+           JOIN pg_namespace n ON n.oid = r.relnamespace
+          WHERE n.nspname = $1 AND r.relname = $2 AND c.contype = 'c'
+            AND right(c.conname, 5) = '__url'
+          ORDER BY 1`,
+        [schemaName, suppliersName],
+      ),
+    )
+    expect(checks.map((c) => c.conname)).toEqual([
+      `ck_${suppliersName}__${contact}__url`,
+      `ck_${suppliersName}__site__url`,
+    ])
+    const [registered] = await pools.withConnection('catalog', (exec) =>
+      exec.query<{ n: number }>(
+        `SELECT count(*)::int AS n FROM _basedb.table_constraint
+          WHERE table_id = $1 AND rule = 'url'`,
+        [suppliers],
+      ),
+    )
+    expect(registered.n).toBe(2)
+  })
+
+  it('completes an evident address, and stores what it completed', async () => {
+    const { row } = await createRecord(pools, ctx, {
+      tableId: suppliers,
+      values: { nom: 'Acme', site: 'acme.fr/tarifs', [contact]: 'ventes@acme.fr' },
+    })
+    expect(row.site).toBe('https://acme.fr/tarifs')
+    expect(row[contact]).toBe('mailto:ventes@acme.fr')
+
+    const { row: kept } = await createRecord(pools, ctx, {
+      tableId: suppliers,
+      values: { nom: 'Globex', site: 'HTTP://globex.example/a?b=c#d', [contact]: '  ' },
+    })
+    expect(kept.site).toBe('HTTP://globex.example/a?b=c#d')
+    expect(kept[contact]).toBeNull()
+
+    const { row: changed } = await updateRecord(pools, ctx, {
+      tableId: suppliers,
+      recordId: kept._id as string,
+      values: { site: 'www.globex.example' },
+    })
+    expect(changed.site).toBe('https://www.globex.example')
+  })
+
+  it('refuses what is not an address: a script, a sentence, a number, a wall of text', async () => {
+    for (const value of [
+      'javascript:alert(1)',
+      'data:text/html,x',
+      'voir le site',
+      42,
+      `https://a.fr/${'x'.repeat(2048)}`,
+    ]) {
+      const error = await failure(
+        createRecord(pools, ctx, { tableId: suppliers, values: { nom: 'x', site: value } }),
+      )
+      expect(error.code, String(value).slice(0, 30)).toBe('VALUE_INVALID')
+      expect(error.details?.reason).toBe('adresse_url')
+    }
+  })
+
+  it('holds direct SQL to the same schemes, completing nothing', async () => {
+    const relation = `"${schemaName}"."${suppliersName}"`
+    for (const value of ['acme.fr', 'javascript:alert(1)', 'https://a b.fr']) {
+      const error = await failure(
+        direct(`INSERT INTO ${relation} ("nom", "site") VALUES ('x', $1)`, [value]),
+      )
+      expect(error.code, value).toMatch(/^VALUE_/)
+    }
+    await direct(`INSERT INTO ${relation} ("nom", "site") VALUES ('psql', 'https://psql.example')`)
+  })
+
+  it('is filtered and sorted as a short text', async () => {
+    const page = await listRecords(pools, ctx, {
+      tableId: suppliers,
+      filter: 'site contains "acme"',
+    })
+    expect(page.rows.map((r) => r.nom)).toEqual(['Acme'])
+    const sorted = await listRecords(pools, ctx, {
+      tableId: suppliers,
+      filter: 'not site is_null',
+      sort: 'site',
+    })
+    expect(sorted.rows.map((r) => r.nom)).toEqual(['Acme', 'psql', 'Globex'])
   })
 })

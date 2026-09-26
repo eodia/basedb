@@ -263,9 +263,11 @@ export async function createApiToken(
     )
 
     const roleLabel = `Jeton d'intégration ${prefix}`
+    // `kind = 'token'`: the token's own role, never a group — without it the role would
+    // show among the groups of the administration, and its level could be changed there.
     const [role] = await exec.query<{ id: string }>(
-      `INSERT INTO _basedb.role (tenant_id, label, label_key, name, created_by)
-       VALUES ($1, $2, lower($2), $3, $4) RETURNING id`,
+      `INSERT INTO _basedb.role (tenant_id, label, label_key, name, kind, created_by)
+       VALUES ($1, $2, lower($2), $3, 'token', $4) RETURNING id`,
       [tenant.id, roleLabel, `jeton_${prefix}`, ctx.actor.id],
       'insert',
     )

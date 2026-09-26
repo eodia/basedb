@@ -1,10 +1,13 @@
 'use client'
 
+import { AiEmpty } from '@/components/app/ai-pending'
 import { DateInput } from '@/components/app/date-picker'
 import { hasDescription } from '@/components/app/description'
 import { FieldIcon } from '@/components/app/field-icon'
 import { FilesField, type Upload } from '@/components/app/files'
 import { type Row, display } from '@/components/app/grid/cell'
+import { HistoryList } from '@/components/app/history'
+import { MarkdownEditor, MarkdownView, UrlLink } from '@/components/app/markdown-text'
 import {
   ChoiceChips,
   EnumPicker,
@@ -13,6 +16,7 @@ import {
   type SearchLink,
   choicesOf,
 } from '@/components/app/pickers'
+import { ResizablePanel } from '@/components/app/resizable-panel'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -25,12 +29,13 @@ import {
   type LinkOption,
   type ReferencedBlock,
   type Table,
+  api,
   filesOf,
 } from '@/lib/api/client'
 import { isDateKind, storedFromText } from '@/lib/dates'
 import { cn } from '@/lib/utils'
-import { ExternalLink, Link2, Maximize2, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { ExternalLink, Link2, Maximize2, RefreshCw, X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * The detail view — chapter 11 §5.
@@ -52,6 +57,10 @@ interface Props {
   readonly onCommit: (field: Field, value: unknown) => Promise<void>
   /** Deposits files for a `file` or `image` field, which then commits the list. */
   readonly onUpload?: Upload
+  /** Computes an AI field of this row again. Absent for a reader who may not update it. */
+  readonly onRecompute?: (field: Field) => Promise<void>
+  /** Opens another row — the one a link points at, or one that points here. */
+  readonly onFollowLink?: (table: string, id: string) => void
 }
 
 export function RecordPanel({
@@ -64,13 +73,23 @@ export function RecordPanel({
   onClose,
   onCommit,
   onUpload,
+  onRecompute,
+  onFollowLink,
 }: Props) {
   const title = headline(row, fields)
   const subtitle = secondLine(row, fields)
   const total = referenced.reduce((sum, block) => sum + block.count, 0)
+  const [tab, setTab] = useState<'details' | 'history'>('details')
+  const recordId = String(row._id)
+  // The history of THIS row, reloaded whenever the row changes — a commit in the details
+  // tab is an entry the next time the history tab is looked at.
+  const loadHistory = useCallback(
+    (cursor?: string) => api.recordHistory(table, recordId, cursor),
+    [table, recordId],
+  )
 
   return (
-    <aside className="flex w-[400px] shrink-0 flex-col border-l bg-background">
+    <ResizablePanel panel="record" label="la fiche" className="bg-background">
       <header className="flex h-14 shrink-0 items-center gap-2 border-b px-5">
         <h2 className="flex-1 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Fiche {table.label}
@@ -99,26 +118,39 @@ export function RecordPanel({
         </div>
 
         <div className="px-5 pt-4">
-          <Tabs defaultValue="details">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as 'details' | 'history')}>
             <TabsList className="w-full justify-start">
               <TabsTrigger value="details">Détails</TabsTrigger>
-              <TabsTrigger value="history" disabled>
-                Historique
-              </TabsTrigger>
+              <TabsTrigger value="history">Historique</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
-        <FieldList
-          fields={fields}
-          row={row}
-          linkOptions={linkOptions}
-          onSearchLink={onSearchLink}
-          onCommit={onCommit}
-          onUpload={onUpload}
-        />
+        {tab === 'history' && (
+          <div className="px-5 py-4">
+            <HistoryList
+              load={loadHistory}
+              showTable={false}
+              reloadKey={String(row._updated_at ?? '')}
+              empty="Aucune écriture enregistrée pour cette ligne."
+            />
+          </div>
+        )}
 
-        {referenced.length > 0 && (
+        {tab === 'details' && (
+          <FieldList
+            fields={fields}
+            row={row}
+            linkOptions={linkOptions}
+            onSearchLink={onSearchLink}
+            onCommit={onCommit}
+            onUpload={onUpload}
+            onRecompute={onRecompute}
+            onFollowLink={onFollowLink}
+          />
+        )}
+
+        {tab === 'details' && referenced.length > 0 && (
           <div className="border-t px-5 py-5">
             <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold">
               Éléments liés
@@ -132,10 +164,14 @@ export function RecordPanel({
                 <p className="mb-2 text-sm text-muted-foreground">{block.label}</p>
                 <div className="overflow-hidden rounded-lg border">
                   {block.rows.map((referencing, index) => (
-                    <div
+                    <button
                       key={referencing.id}
+                      type="button"
+                      disabled={onFollowLink === undefined}
+                      onClick={() => onFollowLink?.(block.table, referencing.id)}
+                      title="Ouvrir la fiche"
                       className={cn(
-                        'flex items-center gap-2 px-3 py-2 text-sm',
+                        'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/60 disabled:hover:bg-transparent',
                         index > 0 && 'border-t',
                       )}
                     >
@@ -143,7 +179,7 @@ export function RecordPanel({
                         {referencing.display ?? referencing.id.slice(0, 8)}
                       </span>
                       <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
-                    </div>
+                    </button>
                   ))}
                   {block.rows.length === 0 && (
                     <p className="px-3 py-2 text-sm text-muted-foreground">Aucune ligne.</p>
@@ -163,7 +199,7 @@ export function RecordPanel({
       <footer className="shrink-0 border-t px-5 py-3 text-xs text-muted-foreground">
         {modifiedAt(row)}
       </footer>
-    </aside>
+    </ResizablePanel>
   )
 }
 
@@ -175,6 +211,8 @@ function FieldList({
   onSearchLink,
   onCommit,
   onUpload,
+  onRecompute,
+  onFollowLink,
 }: {
   readonly fields: readonly Field[]
   readonly row: Row
@@ -182,6 +220,8 @@ function FieldList({
   readonly onSearchLink: SearchLink
   readonly onCommit: (field: Field, value: unknown) => Promise<void>
   readonly onUpload?: Upload
+  readonly onRecompute?: (field: Field) => Promise<void>
+  readonly onFollowLink?: (table: string, id: string) => void
 }) {
   return (
     <dl className="space-y-3.5 px-5 py-5">
@@ -191,13 +231,15 @@ function FieldList({
           className={cn(
             'grid grid-cols-[130px_1fr] gap-x-3 gap-y-1',
             // A list of files grows downwards: its label stays with the first line.
-            isFileField(field) ? 'items-start' : 'items-center',
+            isFileField(field) || field.ai === true || field.kind === 'long_text'
+              ? 'items-start'
+              : 'items-center',
           )}
         >
           <dt
             className={cn(
               'flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground',
-              isFileField(field) && 'pt-2',
+              (isFileField(field) || field.ai === true || field.kind === 'long_text') && 'pt-2',
             )}
             title={field.label}
           >
@@ -217,6 +259,8 @@ function FieldList({
               onSearchLink={onSearchLink}
               onCommit={(value) => onCommit(field, value)}
               onUpload={onUpload}
+              onRecompute={onRecompute === undefined ? undefined : () => onRecompute(field)}
+              onFollowLink={onFollowLink}
             />
           </dd>
           {/* What the field is for, under the row and across both columns: the label
@@ -257,6 +301,7 @@ export function NewRecordPanel({
   onUpload,
   onClose,
   onCreate,
+  initial,
 }: {
   readonly table: Table
   readonly fields: readonly Field[]
@@ -264,13 +309,18 @@ export function NewRecordPanel({
   readonly onSearchLink: SearchLink
   readonly onUpload?: Upload
   readonly onClose: () => void
+  /**
+   * Values the row starts with, in the shape a read gives them — the choice of the kanban
+   * column it was added to, the day of the calendar that was clicked.
+   */
+  readonly initial?: Readonly<Record<string, unknown>>
   /** Writes the row; resolves to the refusal to show, or `null` once it is created. */
   readonly onCreate: (values: Record<string, unknown>) => Promise<string | null>
 }) {
   // A formula, or a field this reader may not write, has nothing to be filled with.
   const writable = fields.filter((f) => f.read_only !== true && f.system !== true)
 
-  const [draft, setDraft] = useState<Row>(() => emptyDraft(writable))
+  const [draft, setDraft] = useState<Row>(() => ({ ...emptyDraft(writable), ...initial }) as Row)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // The click on "Créer" blurs the text being typed, and that blur is what commits it:
@@ -307,7 +357,7 @@ export function NewRecordPanel({
   }
 
   return (
-    <aside className="flex w-[400px] shrink-0 flex-col border-l bg-background">
+    <ResizablePanel panel="record" label="la fiche" className="bg-background">
       <header className="flex h-14 shrink-0 items-center gap-2 border-b px-5">
         <h2 className="flex-1 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Nouvelle fiche · {table.label}
@@ -346,12 +396,12 @@ export function NewRecordPanel({
           </Button>
         </div>
       </footer>
-    </aside>
+    </ResizablePanel>
   )
 }
 
 /** Every field present and empty: an absent key would read as a MASKED field. */
-function emptyDraft(fields: readonly Field[]): Row {
+export function emptyDraft(fields: readonly Field[]): Row {
   const row: Record<string, unknown> = { _id: '' }
   for (const field of fields) row[field.name] = null
   return row as Row
@@ -361,7 +411,7 @@ function emptyDraft(fields: readonly Field[]): Row {
  * The draft in the shape a write takes: a link by its identifier, files by theirs, and
  * nothing for what was left empty — the database's defaults and `NOT NULL` decide those.
  */
-function writeValues(fields: readonly Field[], draft: Row): Record<string, unknown> {
+export function writeValues(fields: readonly Field[], draft: Row): Record<string, unknown> {
   const values: Record<string, unknown> = {}
   for (const field of fields) {
     const value = draft[field.name]
@@ -379,13 +429,16 @@ function writeValues(fields: readonly Field[], draft: Row): Record<string, unkno
   return values
 }
 
-function PanelField({
+export function PanelField({
   field,
   row,
   options,
   onSearchLink,
   onCommit,
   onUpload,
+  onRecompute,
+  onFollowLink,
+  live = false,
 }: {
   readonly field: Field
   readonly row: Row
@@ -393,6 +446,13 @@ function PanelField({
   readonly onSearchLink: SearchLink
   readonly onCommit: (value: unknown) => Promise<void>
   readonly onUpload?: Upload
+  readonly onRecompute?: () => Promise<void>
+  readonly onFollowLink?: (table: string, id: string) => void
+  /**
+   * In a form: a long text is taken as it is typed, and its editor stays open. Closed on
+   * leaving it, it would shrink under the send button being clicked, and the click be lost.
+   */
+  readonly live?: boolean
 }) {
   const present = Object.hasOwn(row, field.name)
   const value = row[field.name]
@@ -411,29 +471,62 @@ function PanelField({
     return <span className="text-sm text-muted-foreground">Champ masqué</span>
   }
 
+  if (field.ai === true) {
+    return <AiValue field={field} value={value} onRecompute={onRecompute} />
+  }
+
   if (field.kind === 'link') {
     const link = value as { id: string | null; display: string | null } | null
+    const target = field.link?.target
+    const id = link?.id ?? null
+    const follow =
+      onFollowLink === undefined || target === undefined || id === null
+        ? undefined
+        : () => onFollowLink(target, id)
     if (options === undefined) {
       return link?.id == null ? (
         <span className="text-sm text-muted-foreground">—</span>
       ) : (
-        <Badge variant="secondary" className="gap-1.5 font-normal">
-          <Link2 className="size-3" />
-          {link.display ?? link.id.slice(0, 8)}
-          <ExternalLink className="size-3 text-muted-foreground" />
-        </Badge>
+        // Nothing to edit here: the badge itself is the way to the row.
+        <button
+          type="button"
+          onClick={follow}
+          disabled={follow === undefined}
+          title="Ouvrir la fiche liée"
+        >
+          <Badge variant="secondary" className="gap-1.5 font-normal hover:bg-secondary/70">
+            <Link2 className="size-3" />
+            {link.display ?? link.id.slice(0, 8)}
+            <ExternalLink className="size-3 text-muted-foreground" />
+          </Badge>
+        </button>
       )
     }
     return (
-      <LinkPicker
-        field={field}
-        value={link?.id ?? null}
-        display={link?.display ?? null}
-        options={options}
-        onSearch={onSearchLink}
-        onChange={(next) => void onCommit(next)}
-        appearance="form"
-      />
+      <div className="flex items-center gap-1">
+        <div className="min-w-0 flex-1">
+          <LinkPicker
+            field={field}
+            value={link?.id ?? null}
+            display={link?.display ?? null}
+            options={options}
+            onSearch={onSearchLink}
+            onChange={(next) => void onCommit(next)}
+            appearance="form"
+          />
+        </div>
+        {follow !== undefined && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={follow}
+            aria-label="Ouvrir la fiche liée"
+            title="Ouvrir la fiche liée"
+          >
+            <ExternalLink className="size-4" />
+          </Button>
+        )}
+      </div>
     )
   }
 
@@ -506,14 +599,44 @@ function PanelField({
 
   if (field.kind === 'long_text') {
     return (
-      <Textarea
-        value={typed}
-        rows={3}
-        readOnly={field.read_only === true}
-        onChange={(e) => setTyped(e.target.value)}
-        onBlur={commit}
-        aria-label={field.label}
+      <LongTextField
+        field={field}
+        value={typeof value === 'string' ? value : ''}
+        onCommit={(next) => onCommit(next.trim() === '' ? null : next)}
+        live={live}
       />
+    )
+  }
+
+  if (field.kind === 'url') {
+    return (
+      <div className="flex items-center gap-1">
+        <Input
+          value={typed}
+          readOnly={field.read_only === true}
+          onChange={(e) => setTyped(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur()
+          }}
+          inputMode="url"
+          placeholder="https://…"
+          aria-label={field.label}
+        />
+        {typeof value === 'string' && value !== '' && (
+          <Button variant="ghost" size="icon-sm" asChild>
+            <a
+              href={value}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              aria-label="Ouvrir le lien"
+              title={value}
+            >
+              <ExternalLink className="size-4" />
+            </a>
+          </Button>
+        )}
+      </div>
     )
   }
 
@@ -530,6 +653,143 @@ function PanelField({
         className={cn(field.read_only === true && 'text-muted-foreground')}
         aria-label={field.label}
       />
+    </div>
+  )
+}
+
+/**
+ * A long text: rendered as Markdown, and written in Markdown — a click on the text, or on
+ * « Modifier », opens the editor; leaving it saves, as the other fields of the panel do,
+ * and Échap puts the text back as it was.
+ */
+function LongTextField({
+  field,
+  value,
+  onCommit,
+  live,
+}: {
+  readonly field: Field
+  readonly value: string
+  readonly onCommit: (next: string) => Promise<void>
+  readonly live: boolean
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+  const readOnly = field.read_only === true
+
+  useEffect(() => {
+    if (!editing) setDraft(value)
+  }, [value, editing])
+
+  const close = (save: boolean) => {
+    setEditing(false)
+    if (save && draft !== value) void onCommit(draft)
+    else setDraft(value)
+  }
+
+  if (editing) {
+    return (
+      <MarkdownEditor
+        value={draft}
+        onChange={(next) => {
+          setDraft(next)
+          if (live) void onCommit(next)
+        }}
+        onSubmit={() => close(true)}
+        onCancel={() => close(false)}
+        onBlur={live ? undefined : () => close(true)}
+        autoFocus
+        minHeight={140}
+        label={field.label}
+      />
+    )
+  }
+  return (
+    <div className="group/long relative">
+      {value.trim() === '' ? (
+        <button
+          type="button"
+          disabled={readOnly}
+          onClick={() => setEditing(true)}
+          className="w-full rounded-md border border-dashed px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted/40 disabled:cursor-default"
+        >
+          {readOnly ? '—' : 'Écrire… (Markdown)'}
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled={readOnly}
+          onClick={(e) => {
+            // A link inside the text opens; anywhere else, the editor does.
+            if ((e.target as HTMLElement).closest('a') !== null) return
+            setEditing(true)
+          }}
+          className="block max-h-72 w-full overflow-y-auto rounded-md bg-muted/40 px-3 py-2 text-left hover:bg-muted/60 disabled:cursor-default scroll-discret"
+        >
+          <MarkdownView source={value} />
+        </button>
+      )}
+    </div>
+  )
+}
+
+/** A value computed by the AI, shown as its type shows it. */
+function AiShown({ field, value }: { readonly field: Field; readonly value: unknown }) {
+  if (field.kind === 'select' || field.kind === 'multi_select') {
+    return <ChoiceChips field={field} values={choicesOf(value)} wrap />
+  }
+  if (field.kind === 'url' && typeof value === 'string') return <UrlLink url={value} />
+  if (field.kind === 'long_text' && typeof value === 'string')
+    return <MarkdownView source={value} />
+  const text =
+    field.kind === 'boolean' ? (value === true ? 'Oui' : 'Non') : display(String(value), field)
+  return <span className="whitespace-pre-line break-words">{text}</span>
+}
+
+/**
+ * The value of a field computed by the AI: the model's answer, whole, and the way to ask
+ * for it again. The cell is never typed into — what it holds is what the prompt produced
+ * for this row.
+ */
+function AiValue({
+  field,
+  value,
+  onRecompute,
+}: {
+  readonly field: Field
+  readonly value: unknown
+  readonly onRecompute?: () => Promise<void>
+}) {
+  const [busy, setBusy] = useState(false)
+  const empty = value === null || value === undefined || value === ''
+  return (
+    <div className="space-y-1.5">
+      {empty ? (
+        <AiEmpty value={value ?? null} appearance="panel" />
+      ) : (
+        <div className="rounded-md bg-muted/40 px-3 py-2 text-sm leading-relaxed">
+          <AiShown field={field} value={value} />
+        </div>
+      )}
+      {onRecompute !== undefined && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-2 h-7 text-xs text-muted-foreground"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true)
+            try {
+              await onRecompute()
+            } finally {
+              setBusy(false)
+            }
+          }}
+        >
+          <RefreshCw className={cn('size-3.5', busy && 'animate-spin')} />
+          {busy ? 'Calcul en cours…' : 'Recalculer'}
+        </Button>
+      )}
     </div>
   )
 }

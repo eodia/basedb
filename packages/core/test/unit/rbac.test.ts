@@ -165,6 +165,36 @@ describe('§3.3 — additivity and the trap it sets', () => {
     expect(d.verdict).toBe('ALLOWED')
     expect(d.readableFields.has('f-salaire')).toBe(true)
   })
+
+  it('the level is the highest over the roles, field by field — not a union of verbs', () => {
+    // `lecteurs` reads without a field rule; `saisie` edits, `montant` read-only. The only
+    // role that writes does not write `montant`, and a role that merely reads adds no
+    // write to it: montant = max(read, read) = read (§4.1).
+    const grants: ActorGrants = {
+      isInstanceAdmin: false,
+      roles: [
+        {
+          id: 'lecteurs',
+          permissions: [{ action: 'read', scopeKind: 'base', scopeId: BASE }],
+          fieldRestrictions: [],
+        },
+        {
+          id: 'saisie',
+          permissions: (['read', 'create', 'update'] as const).map((action) => ({
+            action,
+            scopeKind: 'table' as const,
+            scopeId: TABLE,
+          })),
+          fieldRestrictions: [{ fieldId: 'f-montant', mode: 'read_only' }],
+        },
+      ],
+    }
+    const d = decide(context(), grants, 'update', target)
+    expect(d.verdict).toBe('ALLOWED')
+    expect(d.readableFields.has('f-montant')).toBe(true)
+    expect(d.writableFields.has('f-montant')).toBe(false)
+    expect(d.writableFields.has('f-numero')).toBe(true)
+  })
 })
 
 describe('§4 — field mask', () => {

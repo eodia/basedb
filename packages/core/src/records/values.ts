@@ -1,4 +1,10 @@
-import { type FieldKind, MAX_FILES_PER_VALUE, isFileKind } from '../ddl/emit.js'
+import {
+  type FieldKind,
+  MAX_FILES_PER_VALUE,
+  MAX_URL_CHARS,
+  URL_PATTERN,
+  isFileKind,
+} from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import type { Executor } from '../runtime/pool.js'
 
@@ -39,7 +45,7 @@ export function shapedFields(
 ): Map<string, ShapedField> {
   const shaped = new Map<string, ShapedField>()
   for (const [id, field] of fields) {
-    if (field.kind === 'multi_select' || isFileKind(field.kind)) {
+    if (field.kind === 'multi_select' || field.kind === 'url' || isFileKind(field.kind)) {
       shaped.set(field.name, { id, kind: field.kind })
     }
   }
@@ -67,7 +73,9 @@ export async function shapeValues(
     out[name] =
       field.kind === 'multi_select'
         ? shapeChoices(name, value)
-        : await shapeFiles(exec, name, field, value)
+        : field.kind === 'url'
+          ? shapeUrl(name, value)
+          : await shapeFiles(exec, name, field, value)
   }
   return out ?? values
 }
@@ -92,6 +100,30 @@ export function shapeChoices(field: string, value: unknown): readonly string[] |
   // Whether each value is in the list is the column's `CHECK` to say — the one rule
   // direct SQL is held to as well, so there is no second copy of the list here.
   return seen.size === 0 ? null : [...seen]
+}
+
+/**
+ * An address: trimmed, empty is `NULL`, a bare domain — `exemple.fr/tarifs` — gets the
+ * `https://` a person means when they type one, and an e-mail address its `mailto:`.
+ * Anything else that is not an `http(s)` or `mailto:` address is refused by name, before
+ * the column's CHECK would refuse it blind.
+ */
+export function shapeUrl(field: string, value: unknown): string | null {
+  if (value === null || value === undefined) return null
+  if (typeof value !== 'string') throw invalid(field, 'adresse_url')
+  const text = value.trim()
+  if (text === '') return null
+  const withScheme = /^(https?:\/\/|mailto:)/i.test(text)
+    ? text
+    : /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(text)
+      ? `mailto:${text}`
+      : /^[^\s/@:]+\.[a-z]{2,}(:\d+)?([/?#].*)?$/i.test(text)
+        ? `https://${text}`
+        : text
+  if (withScheme.length > MAX_URL_CHARS || !URL_PATTERN.test(withScheme)) {
+    throw invalid(field, 'adresse_url')
+  }
+  return withScheme
 }
 
 /**

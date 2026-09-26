@@ -122,12 +122,13 @@ export async function updateBase(
       // The uniqueness index is partial on `deleted_at IS NULL`: a label freed by a
       // deletion is available again, immediately (§4.4). Caught here to name the conflict
       // rather than surface a constraint violation.
-      // Unique within the base's project (chapter 02).
+      // Unique within the base's project (chapter 02) — among the other bases: the
+      // environments of this one share its label, and are renamed with it.
       const clash = await exec.query<{ id: string }>(
         `SELECT b.id FROM _basedb.base b
            JOIN _basedb.base self ON self.id = $2
           WHERE b.project_id = self.project_id AND b.label_key = $1
-            AND b.deleted_at IS NULL AND b.id <> $2`,
+            AND b.deleted_at IS NULL AND b.lineage_id <> self.lineage_id`,
         [labelKey(label), request.baseId],
       )
       if (clash.length > 0) {
@@ -135,8 +136,10 @@ export async function updateBase(
       }
     }
 
+    // What the base is called, what it is for and how it looks belong to the base, not to
+    // one of its environments (chapter 14): every live environment follows.
     const updated = await exec.query<
-      { label: string; description: string | null } & Look & Record<string, unknown>
+      { id: string; label: string; description: string | null } & Look & Record<string, unknown>
     >(
       `UPDATE _basedb.base
           SET label = CASE WHEN $2::boolean THEN $3::text ELSE label END,
@@ -147,8 +150,9 @@ export async function updateBase(
               image = CASE WHEN $8::boolean THEN $11::text ELSE image END,
               catalog_version = catalog_version + 1,
               updated_at = clock_timestamp(), updated_by = $7
-        WHERE id = $1 AND deleted_at IS NULL
-        RETURNING label, description, color, icon, image`,
+        WHERE deleted_at IS NULL
+          AND (id = $1 OR lineage_id = (SELECT lineage_id FROM _basedb.base WHERE id = $1))
+        RETURNING id, label, description, color, icon, image`,
       [
         request.baseId,
         label !== undefined,
@@ -164,14 +168,16 @@ export async function updateBase(
       ],
       'update',
     )
-    const row = updated[0]
+    const row = updated.find((r) => r.id === request.baseId)
     if (row === undefined) {
       throw new BasedbError('RESOURCE_NOT_FOUND', { details: { base: request.baseId } })
     }
 
     // Same signal the version triggers send for a table or a field, so other processes
     // reload instead of waiting for their snapshot to expire.
-    await exec.query("SELECT pg_notify('basedb_catalog', $1::text)", [request.baseId])
+    for (const base of updated) {
+      await exec.query("SELECT pg_notify('basedb_catalog', $1::text)", [base.id])
+    }
     return {
       label: row.label,
       description: row.description,
@@ -1097,7 +1103,7 @@ export async function listDeletedBases(
  * objects; it never allows a physical rename, dropping an alias, or a purge. The base
  * deletion plan does two of those three, so it demands the full role.
  */
-function isAdministration(grants: ActorGrants): boolean {
+export function isAdministration(grants: ActorGrants): boolean {
   if (grants.isInstanceAdmin) return true
   return grants.roles.some((role) =>
     role.permissions.some(
@@ -1145,7 +1151,10 @@ export async function assertManageSchema(
  * protect (§4.6). Without this check the `DROP` fails mid-plan with a raw `2BP01`
  * message; with it, the refusal is named and carries the dependent's name.
  */
-async function assertNoUnknownDependent(exec: Executor, schemas: readonly string[]): Promise<void> {
+export async function assertNoUnknownDependent(
+  exec: Executor,
+  schemas: readonly string[],
+): Promise<void> {
   if (schemas.length === 0) return
   const rows = await exec.query<{ dependent: string; referenced: string }>(
     `SELECT DISTINCT
@@ -1177,7 +1186,7 @@ async function assertNoUnknownDependent(exec: Executor, schemas: readonly string
  * name IS registered, but the registry is authoritative only over what it knows, and a
  * table relegated by a manual recovery may predate basedb entirely.
  */
-async function freeName(
+export async function freeName(
   exec: Executor,
   scopeId: string,
   wanted: string,
@@ -1244,7 +1253,7 @@ function stripRelegation(name: string): string {
  * produces a name that passes every check here and is silently truncated by the server —
  * which only emits a `NOTICE`, and every driver ignores those.
  */
-function truncateBytes(value: string, max: number): string {
+export function truncateBytes(value: string, max: number): string {
   const buffer = Buffer.from(value, 'utf8')
   if (buffer.length <= max) return value
   // Cut back to a character boundary: a continuation byte at the edge would produce

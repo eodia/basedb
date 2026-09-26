@@ -1,11 +1,19 @@
 import { BasedbError } from '../errors/index.js'
+import { openProposalCounts } from '../proposals/index.js'
 import { type Action, decide } from '../rbac/decide.js'
 import { loadProjectTarget, requireAction, tenantTarget } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { normalizeDescription } from './description.js'
+import { type LookInput, normalizeLook, touchesLook } from './look.js'
 import { defaultProjectId, labelKey } from './operations.js'
-import { BASE_ACTIONS, project, snapshot, targetFactory } from './projection.js'
+import {
+  BASE_ACTIONS,
+  type BaseEnvironment,
+  project,
+  snapshot,
+  targetFactory,
+} from './projection.js'
 
 /**
  * Projects — the level above the base (chapter 02, chapter 05 §15).
@@ -33,6 +41,13 @@ export interface ProjectBase extends Look {
   readonly description: string | null
   /** Verbs held on the base itself: `manage_schema` lets a table be added to it. */
   readonly actions: readonly Action[]
+  /** Agent proposals awaiting a decision — counted for those who decide, 0 for others. */
+  readonly openProposals: number
+  /**
+   * Which environment of its base this one is (chapter 14). The navigation shows one line
+   * per base, and the environments of a base — same `lineage` — behind a badge.
+   */
+  readonly environment: BaseEnvironment
   readonly tables: ReadonlyArray<
     {
       readonly id: string
@@ -44,7 +59,7 @@ export interface ProjectBase extends Look {
   >
 }
 
-export interface ProjectSummary {
+export interface ProjectSummary extends Look {
   readonly id: string
   readonly label: string
   readonly description: string | null
@@ -77,6 +92,15 @@ export async function listProjects(
     return manages ? [...actions, 'manage_schema'] : actions
   }
 
+  // The badge of the « Propositions » queue — for the bases whose structure one manages.
+  const deciding = bases.filter((b) => b.baseActions.includes('manage_schema')).map((b) => b.id)
+  const open =
+    deciding.length === 0
+      ? new Map<string, number>()
+      : await withTransaction(pools, 'catalog', ctx, (exec) => openProposalCounts(exec, deciding), {
+          readOnly: true,
+        })
+
   const out: ProjectSummary[] = []
   for (const row of raw.projects) {
     const target = {
@@ -94,6 +118,9 @@ export async function listProjects(
       id: row.id,
       label: row.label,
       description: row.description,
+      color: row.color,
+      icon: row.icon,
+      image: row.image,
       actions,
       bases: inside.map((b) => ({
         id: b.id,
@@ -104,6 +131,8 @@ export async function listProjects(
         icon: b.icon,
         image: b.image,
         actions: b.baseActions,
+        openProposals: open.get(b.id) ?? 0,
+        environment: b.environment,
         tables: b.tables.map((t) => ({
           id: t.id,
           name: t.name,
@@ -117,6 +146,15 @@ export async function listProjects(
     })
   }
   return out
+}
+
+/** The look of a project, validated like a base's; `null` when the request says nothing of it. */
+function lookOf(raw: LookInput | undefined): Look | null {
+  if (raw === undefined || !touchesLook(raw)) return null
+  return normalizeLook(
+    raw,
+    (reason) => new BasedbError('REQUEST_INVALID', { details: { field: 'look', reason } }),
+  )
 }
 
 function checkLabel(label: string | undefined): string | undefined {
@@ -149,26 +187,43 @@ async function assertLabelFree(
 export async function createProject(
   pools: Pools,
   ctx: RequestContext,
-  request: { readonly label: string; readonly description?: string | null },
-): Promise<{ readonly id: string; readonly label: string; readonly description: string | null }> {
+  request: {
+    readonly label: string
+    readonly description?: string | null
+    readonly look?: LookInput
+  },
+): Promise<
+  { readonly id: string; readonly label: string; readonly description: string | null } & Look
+> {
   const label = checkLabel(request.label) as string
   const description = normalizeDescription(request.description)
+  const look = lookOf(request.look) ?? { color: null, icon: null, image: null }
 
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
     await requireAction(exec, ctx, 'manage_schema', tenantTarget(ctx))
     await assertLabelFree(exec, ctx, label, null)
     const [row] = await exec.query<{ id: string }>(
       `INSERT INTO _basedb.project
-         (tenant_id, label, label_key, description, position, created_by, updated_by)
-       SELECT t.id, $2, $3, $4,
+         (tenant_id, label, label_key, description, color, icon, image, position,
+          created_by, updated_by)
+       SELECT t.id, $2, $3, $4, $6, $7, $8,
               coalesce((SELECT max(position) + 1 FROM _basedb.project WHERE tenant_id = t.id), 0),
               $5, $5
          FROM _basedb.tenant t WHERE t.ref = $1
        RETURNING id`,
-      [ctx.tenantId, label, labelKey(label), description, ctx.actor.id],
+      [
+        ctx.tenantId,
+        label,
+        labelKey(label),
+        description,
+        ctx.actor.id,
+        look.color,
+        look.icon,
+        look.image,
+      ],
       'insert',
     )
-    return { id: row.id, label, description }
+    return { id: row.id, label, description, ...look }
   })
 }
 
@@ -180,24 +235,32 @@ export async function updateProject(
     readonly projectId: string
     readonly label?: string
     readonly description?: string | null
+    /** The three keys are one value, as for a base: naming any of them replaces the look. */
+    readonly look?: LookInput
   },
-): Promise<{ readonly label: string; readonly description: string | null }> {
+): Promise<{ readonly label: string; readonly description: string | null } & Look> {
   const label = checkLabel(request.label)
   const setsDescription = request.description !== undefined
   const description = setsDescription ? normalizeDescription(request.description) : null
+  const look = lookOf(request.look)
 
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
     const target = await loadProjectTarget(exec, ctx, request.projectId)
     await requireAction(exec, ctx, 'manage_schema', target, { project: request.projectId })
     if (label !== undefined) await assertLabelFree(exec, ctx, label, target?.id ?? null)
-    const [row] = await exec.query<{ label: string; description: string | null }>(
+    const [row] = await exec.query<
+      { label: string; description: string | null } & Look & Record<string, unknown>
+    >(
       `UPDATE _basedb.project
           SET label = CASE WHEN $2::boolean THEN $3::text ELSE label END,
               label_key = CASE WHEN $2::boolean THEN $4::text ELSE label_key END,
               description = CASE WHEN $5::boolean THEN $6::text ELSE description END,
+              color = CASE WHEN $8::boolean THEN $9::text ELSE color END,
+              icon = CASE WHEN $8::boolean THEN $10::text ELSE icon END,
+              image = CASE WHEN $8::boolean THEN $11::text ELSE image END,
               updated_at = clock_timestamp(), updated_by = $7
         WHERE id = $1 AND deleted_at IS NULL
-        RETURNING label, description`,
+        RETURNING label, description, color, icon, image`,
       [
         target?.id,
         label !== undefined,
@@ -206,10 +269,20 @@ export async function updateProject(
         setsDescription,
         description,
         ctx.actor.id,
+        look !== null,
+        look?.color ?? null,
+        look?.icon ?? null,
+        look?.image ?? null,
       ],
       'update',
     )
-    return { label: row.label, description: row.description }
+    return {
+      label: row.label,
+      description: row.description,
+      color: row.color,
+      icon: row.icon,
+      image: row.image,
+    }
   })
 }
 

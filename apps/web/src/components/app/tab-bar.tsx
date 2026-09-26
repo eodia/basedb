@@ -1,5 +1,6 @@
 'use client'
 
+import { EnvironmentBadge } from '@/components/app/environment-badge'
 import { LookIcon, type OptionLook } from '@/components/app/option-badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,7 +12,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import type { Table } from '@/lib/api/client'
+import type { BaseEnvironment, Table } from '@/lib/api/client'
 import { type Tab, useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
 import {
@@ -45,9 +46,20 @@ interface Props {
   readonly onToggleCopilot: () => void
   /** The tables whose look a tab wears; a tab of a table not listed keeps the plain glyph. */
   readonly tables?: readonly Table[]
+  /**
+   * The environment of each base that is not production, by base name: a tab of recette
+   * and a tab of production over the same table must not look the same (chapter 14).
+   */
+  readonly environments?: ReadonlyMap<string, BaseEnvironment>
 }
 
-export function TabBar({ onNewSql, copilotOpen, onToggleCopilot, tables = [] }: Props) {
+export function TabBar({
+  onNewSql,
+  copilotOpen,
+  onToggleCopilot,
+  tables = [],
+  environments,
+}: Props) {
   const tabs = useWorkspace((s) => s.tabs)
   const activeId = useWorkspace((s) => s.activeId)
   const looks = useMemo(() => new Map(tables.map((t) => [`${t.base}.${t.name}`, t])), [tables])
@@ -102,6 +114,7 @@ export function TabBar({ onNewSql, copilotOpen, onToggleCopilot, tables = [] }: 
                 key={tab.id}
                 tab={tab}
                 look={tab.kind === 'table' ? looks.get(`${tab.base}.${tab.table}`) : undefined}
+                environment={environments?.get(tab.base)}
                 active={tab.id === activeId}
                 onActivate={() => activate(tab.id)}
                 onClose={() => close(tab.id)}
@@ -147,6 +160,7 @@ export function TabBar({ onNewSql, copilotOpen, onToggleCopilot, tables = [] }: 
 function SortableTab({
   tab,
   look,
+  environment,
   active,
   onActivate,
   onClose,
@@ -158,6 +172,8 @@ function SortableTab({
   readonly tab: Tab
   /** The table's look, when the tab is a table's and the table is known here. */
   readonly look?: OptionLook
+  /** The tab's environment, when it is not production. */
+  readonly environment?: BaseEnvironment
   readonly active: boolean
   readonly onActivate: () => void
   readonly onClose: () => void
@@ -205,6 +221,9 @@ function SortableTab({
             <span className={cn('max-w-[140px] truncate', tab.kind === 'table' && 'font-mono')}>
               {tab.label}
             </span>
+            {environment !== undefined && (
+              <EnvironmentBadge environment={environment} className="h-4 px-1 text-[0.65rem]" />
+            )}
           </div>
 
           <button

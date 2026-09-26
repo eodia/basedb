@@ -740,6 +740,57 @@ Ces codes sont en anglais, à raison d'un par condition (A2, A23), et versés au
 
 ---
 
+## État de la mise en œuvre (v1)
+
+**Fait.** Le renommage physique d'une base, d'une table et d'un champ (§2) : écran d'impact
+(nom qualifié, lignes **estimées** et taille, webhooks abonnés, jetons actifs sur trente
+jours, colonnes de lien qui cesseront de dire leur cible, objets tiers dépendants, consignes
+d'IA qui citent la colonne), confirmation par saisie du nom actuel, et copie de cet impact
+dans la ligne `audit_log` (`physical.rename_<objet>`). `NAME_RETIRED` porte une
+suggestion (`clients_2`), jamais appliquée d'office ; `NAME_TAKEN_OUTSIDE_REGISTRY` nomme
+le type et le propriétaire de l'objet occupant. Les alias de §3 : vue modifiable sous
+l'ancien nom d'une table, schéma d'alias portant une vue par table pour une base (par lots
+de dix étapes), colonnes explicites et `security_invoker`, cinq alias vivants au plus. Le
+renommage d'un champ, sans alias, réécrit dans la même étape les citations `{{nom}}` des
+consignes d'IA de la table. La fin de vie de §3.5 : coupure à blanc (35 jours au moins,
+`zz_alias_<date>_<nom>`, registre `relegated` puis `purged`), rétablissement en une
+opération, suppression confirmée par le nom, refusée par `DEPENDENT_OBJECT` tant qu'un
+objet tiers en dépend, toujours `RESTRICT`. La purge de §5, d'une table supprimée ou d'une
+base supprimée : trente jours (un administrateur d'instance peut les écourter en le
+justifiant — ligne `purge.early`), export préalable, libellé saisi, destruction par lots
+de dix tables sous `structure_state = 'frozen'`, pierres tombales (`purged_at`), noms du
+registre passés `purged`, `DROP SCHEMA … RESTRICT` et, s'il échoue, schéma résiduel
+laissé en place et signalé (`RESIDUAL_SCHEMA`).
+
+**Écarts assumés.**
+
+- **L'export est fait dans la requête**, et non par une tâche différée : le catalogue n'a
+  pas de `deferred_task`. Il est donc plafonné à deux millions de lignes estimées
+  (`EXPORT_UNAVAILABLE`, `details.reason = 'trop_volumineux'`), et la purge sans export
+  n'est pas offerte. Répertoire : `BASEDB_EXPORT_DIR`, par défaut `.basedb/exports` ;
+  absent de la configuration du noyau, aucun export n'est possible.
+- **La détection d'écriture postérieure à l'export** (`EXPORT_STALE`) repose sur une
+  empreinte prise sous l'instantané de l'export — nombre de lignes et plus grand `xmin` —
+  et non sur les seuls compteurs de `pg_stat_user_tables`. Ces compteurs sont publiés en
+  différé par chaque processus serveur (jusqu'à une dizaine de secondes) : une écriture
+  antérieure à l'export, publiée après lui, aurait rendu la purge faussement périmée. Les
+  compteurs restent consignés au manifeste.
+- **Colonnes ajoutées au catalogue**, dans `sql/cycle-de-vie.sql` : l'échéance et la
+  fenêtre de coupure d'un alias de table (`sql_view_alias.drop_after`,
+  `blank_cut_from`, `blank_cut_until`, `blank_cut_name_id`), la fenêtre de coupure d'un
+  alias de base (`db_schema.blank_cut_*`), et la table `purge_export` qui garde, pour
+  chaque export, son répertoire, son manifeste et la purge qui l'a consommé.
+- **Un renommage de base est une seule migration** de 64 étapes au plus, soit 630 tables,
+  plutôt qu'une suite de migrations chaînées de dix tables.
+
+**Pas encore faits.** La restauration d'une table supprimée seule (celle d'une base
+existe) ; la régénération des vues d'alias à la suppression d'un champ (§3.4), sans objet
+tant que le produit ne supprime pas de champ ; le commentaire « anciennement » des colonnes
+de lien désalignées (§2.6) ; la liste des lecteurs de schéma dans l'écran d'impact ; les
+rappels de coupure et le rapport hebdomadaire ; l'épuration de second niveau des pierres
+tombales (§5.4).
+
+
 ## Décisions retenues
 
 | Décision | Raison | Alternative écartée |

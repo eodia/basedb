@@ -1,4 +1,6 @@
 import { checkConstraintName, qualify, quoteIdentifier } from '@basedb/naming'
+import { isAiKind } from '../ai/answer.js'
+import { type AiFieldInput, insertAiConfig } from '../ai/field.js'
 import {
   type FieldKind,
   choiceCheck,
@@ -16,6 +18,7 @@ import { type RequestContext, withTransaction } from '../tx/context.js'
 import { commentText, normalizeDescription } from './description.js'
 import { labelKey } from './operations.js'
 import { type SelectOptionInput, normalizeOptions } from './select-options.js'
+import { addUrlCheck } from './url-field.js'
 
 /**
  * Adding a field to an existing table — chapter 04 §1.3 and §1.10.
@@ -40,6 +43,14 @@ export interface AddFieldRequest {
    * a CHECK constraint, so direct SQL is held to it exactly as the API is.
    */
   readonly options?: readonly SelectOptionInput[]
+  /**
+   * The AI option: the field is computed by a model from this prompt, on this schedule,
+   * and the author consents to the cited values leaving for the provider — chapter 12
+   * §1.5. Offered to the kinds of `AI_KINDS`.
+   */
+  readonly ai?: AiFieldInput
+  /** The field's lineage, when it copies a field of another environment (chapter 14). */
+  readonly lineageId?: string
 }
 
 export interface AddedField {
@@ -118,6 +129,17 @@ export async function addField(
     })
   }
 
+  if (request.ai !== undefined) {
+    // The AI is an option of the kinds whose value a model's answer can hold.
+    if (!isAiKind(request.kind)) {
+      throw new BasedbError('REQUEST_INVALID', {
+        details: { field: 'ai', reason: 'type_sans_ia', kind: request.kind },
+      })
+    }
+    // Asked before anything is written: the answer does not depend on the table.
+    if (request.ai.consent !== true) throw new BasedbError('AI_CONSENT_REQUIRED')
+  }
+
   return withTransaction(pools, 'ddl', ctx, async (exec) => {
     // Building is `manage_schema` on the table (chapter 05 §8).
     await requireOnTable(exec, ctx, 'manage_schema', request.tableId)
@@ -140,8 +162,9 @@ export async function addField(
     const [field] = await exec.query<{ id: string }>(
       `INSERT INTO _basedb.field
          (table_id, base_id, kind, name_id, label, label_key, description, is_required,
-          position, created_by, updated_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8, $9, $9) RETURNING id`,
+          position, created_by, updated_by, lineage_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8, $9, $9,
+               coalesce($10::uuid, _basedb_local.uuid_generate_v7())) RETURNING id`,
       [
         where.tableId,
         where.baseId,
@@ -152,6 +175,7 @@ export async function addField(
         description,
         position.n,
         ctx.actor.id,
+        request.lineageId ?? null,
       ],
       'insert',
     )
@@ -181,6 +205,9 @@ export async function addField(
           request.options ?? [],
         )),
       )
+    } else if (request.kind === 'url') {
+      // No satellite: the address is all there is to it, and the CHECK keeps it one.
+      sql.push(...(await addUrlCheck(exec, ctx, where, field.id, column.name)))
     } else if (isFileKind(request.kind)) {
       sql.push(
         ...(await addFileShape(
@@ -193,6 +220,19 @@ export async function addField(
       )
     } else {
       await insertSatellite(exec, field.id, request.kind)
+    }
+
+    if (request.ai !== undefined) {
+      // The option comes ON TOP of the type's own satellite. The prompt is checked against
+      // the columns as they are now, this one included — which refuses a field citing
+      // itself.
+      await insertAiConfig(exec, ctx, {
+        fieldId: field.id,
+        kind: request.kind,
+        tableId: where.tableId,
+        column: column.name,
+        input: request.ai,
+      })
     }
 
     return {
@@ -410,6 +450,15 @@ export async function setFieldRequired(
     // would be requiring its inputs by another name.
     if (field.kind === 'formula') {
       throw new BasedbError('REQUEST_INVALID', { details: { field: 'kind', reason: 'formule' } })
+    }
+    // Nor a field computed by the AI: only the kernel writes it, AFTER the row exists — a
+    // NOT NULL would refuse every row created, since nobody may give it a value.
+    const [computed] = await exec.query(
+      'SELECT 1 FROM _basedb.field_ai_config WHERE field_id = $1',
+      [request.fieldId],
+    )
+    if (computed !== undefined) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'kind', reason: 'champ_ia' } })
     }
 
     const relation = qualify(field.schema_name, field.table_name)

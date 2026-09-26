@@ -5,6 +5,7 @@ import {
   sqlCommentOnTable,
   sqlCreateSchema,
   sqlCreateTable,
+  sqlTableTriggers,
 } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { SCOPE_INSTANCE, allocateName } from '../naming/allocation.js'
@@ -12,6 +13,7 @@ import { loadProjectTarget, requireAction, requireOnBase } from '../rbac/require
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { commentText, normalizeDescription } from './description.js'
+import { addUrlCheck } from './url-field.js'
 
 /**
  * Structure operations — chapter 03.
@@ -124,6 +126,11 @@ export interface FieldRequest {
   readonly technicalName?: string
   /** What the field is for — shown in the documentation and to agents. Plain text. */
   readonly description?: string | null
+  /**
+   * The field's lineage, when it is the copy of a field of another environment
+   * (chapter 14) — absent, the field starts a lineage of its own.
+   */
+  readonly lineageId?: string
 }
 
 export interface CreatedField {
@@ -160,6 +167,8 @@ export async function createTable(
     readonly technicalName?: string
     readonly description?: string | null
     readonly fields: readonly FieldRequest[]
+    /** The table's lineage, when it copies a table of another environment (chapter 14). */
+    readonly lineageId?: string
   },
 ): Promise<CreateTableResult> {
   // Every description is checked BEFORE the transaction: the third field's being too long
@@ -190,8 +199,9 @@ export async function createTable(
     const [table] = await exec.query<{ id: string }>(
       `INSERT INTO _basedb.table_def
          (base_id, schema_id, name_id, label, label_key, description, position,
-          created_by, updated_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8) RETURNING id`,
+          created_by, updated_by, lineage_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8,
+               coalesce($9::uuid, _basedb_local.uuid_generate_v7())) RETURNING id`,
       [
         request.baseId,
         schema.id,
@@ -201,6 +211,7 @@ export async function createTable(
         tableDescription,
         position.n,
         ctx.actor.id,
+        request.lineageId ?? null,
       ],
       'insert',
     )
@@ -240,8 +251,9 @@ export async function createTable(
       const [row] = await exec.query<{ id: string }>(
         `INSERT INTO _basedb.field
            (table_id, base_id, kind, name_id, label, label_key, description, is_required,
-            position, created_by, updated_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10) RETURNING id`,
+            position, created_by, updated_by, lineage_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10,
+                 coalesce($11::uuid, _basedb_local.uuid_generate_v7())) RETURNING id`,
         [
           table.id,
           request.baseId,
@@ -253,6 +265,7 @@ export async function createTable(
           field.required ?? false,
           fields.length + 1,
           ctx.actor.id,
+          field.lineageId ?? null,
         ],
         'insert',
       )
@@ -270,6 +283,44 @@ export async function createTable(
     }
 
     await exec.query(sqlCreateTable(schema.name, tableName.name, columns), [], 'ddl')
+
+    // A `url` column is held to being an address from its first row on.
+    for (const f of fields) {
+      if (f.kind !== 'url') continue
+      await addUrlCheck(
+        exec,
+        ctx,
+        {
+          tableId: table.id,
+          baseId: request.baseId,
+          tableName: tableName.name,
+          schemaName: schema.name,
+        },
+        f.fieldId,
+        f.name,
+      )
+    }
+
+    // The five triggers of chapter 07 §1.2, in the same step as the table: a table that
+    // exists for one instant without its capture is a table whose first writes vanish
+    // from history. Their names go to the registry like any derived name.
+    const triggers = sqlTableTriggers(schema.name, tableName.name, request.baseId, table.id)
+    for (const triggerName of triggers.names) {
+      await exec.query(
+        `INSERT INTO _basedb.physical_name
+           (scope_kind, scope_id, name, object_kind, state, slug_version, allocated_by)
+         VALUES ('table', $1, $2, 'trigger', 'active', 1, $3)`,
+        [table.id, triggerName, ctx.actor.id],
+        'insert',
+      )
+    }
+    for (const statement of triggers.statements) await exec.query(statement, [], 'ddl')
+    // Nobody listens yet: the change feed stays off until a webhook subscribes (07 §11.3).
+    await exec.query(
+      'INSERT INTO _basedb_local.change_feed_state (table_id, is_active) VALUES ($1, false)',
+      [table.id],
+      'insert',
+    )
 
     // Comments make the database readable in psql without opening the product.
     await exec.query(
@@ -343,6 +394,9 @@ async function insertConfigSatellite(
         [fieldId, kind],
         'insert',
       )
+      return
+    // No satellite for an address: its CHECK is posed with the table.
+    case 'url':
       return
     default:
       // `select`, `link` and `formula` require configuration the caller must supply:

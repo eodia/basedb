@@ -1,4 +1,4 @@
-import type { FieldKind } from '../ddl/emit.js'
+import { COMPUTED_KINDS, type FieldKind } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import type { Executor } from '../runtime/pool.js'
 import type { RequestContext, Surface } from '../tx/context.js'
@@ -60,6 +60,8 @@ export async function loadGrants(exec: Executor, ctx: RequestContext): Promise<A
   // one — has no verb removed inside its tenant (§6.4). Partitioning still holds: the
   // decider compares every target's tenant with the context's before anything else.
   if (ctx.actor.kind === 'system') return { isInstanceAdmin: true, roles: [] }
+  // An answer to a public form holds no right: the share decided on its publisher's.
+  if (ctx.actor.kind === 'form') return { isInstanceAdmin: false, roles: [] }
 
   const users = await exec.query<{ is_instance_admin: boolean; tenant_ref: string }>(
     `SELECT u.is_instance_admin, t.ref AS tenant_ref
@@ -244,8 +246,15 @@ export async function loadTarget(
   // hence returning `null` rather than throwing here.
   if (table === undefined) return null
 
-  const fields = await exec.query<{ id: string; name: string; expose_to_agents: boolean }>(
-    `SELECT f.id, n.name, f.expose_to_agents
+  const fields = await exec.query<{
+    id: string
+    name: string
+    kind: string
+    expose_to_agents: boolean
+    has_ai: boolean
+  }>(
+    `SELECT f.id, n.name, f.kind, f.expose_to_agents,
+            EXISTS (SELECT 1 FROM _basedb.field_ai_config a WHERE a.field_id = f.id) AS has_ai
        FROM _basedb.field f
        JOIN _basedb.physical_name n ON n.id = f.name_id
       WHERE f.table_id = $1 AND f.is_live
@@ -270,6 +279,8 @@ export async function loadTarget(
     fieldIds: fields.map((f) => f.id),
     agentHiddenFieldIds: fields.filter((f) => !f.expose_to_agents).map((f) => f.id),
     agentsExcluded: !table.mcp_enabled,
+    // A formula by its kind; a field computed by the AI by its option.
+    computedFieldIds: fields.filter((f) => COMPUTED_KINDS.has(f.kind) || f.has_ai).map((f) => f.id),
   }
 }
 

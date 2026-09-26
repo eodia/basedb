@@ -6,7 +6,7 @@
 -- Chapter 02 is authoritative on the catalog: every correction is made in the
 -- document, never here.
 --
--- 115 statements, topologically sorted. The chapter order is a reading order,
+-- 122 statements, topologically sorted. The chapter order is a reading order,
 -- not an application order: the name registry references `app_user`, which belongs to
 -- the next domain.
 
@@ -143,19 +143,24 @@ COMMENT ON FUNCTION _basedb_local.uuid_generate_v7() IS
 
 -- Corps de reference unique. clock_timestamp() et non now() : deux ecritures
 -- successives d'une meme transaction doivent rester ordonnables par _updated_at.
+-- Une reponse a un formulaire public (acteur « form », chapitre 15) n'a pas d'auteur :
+-- la personne qui a publie le formulaire en repond, elle ne l'a pas ecrite.
 CREATE FUNCTION _basedb_local.set_updated_at() RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = pg_catalog
 AS $$
 BEGIN
   NEW."_updated_at" := clock_timestamp();
-  NEW."_updated_by" := nullif(current_setting('basedb.actor_id', true), '')::uuid;
+  NEW."_updated_by" := CASE
+    WHEN current_setting('basedb.actor_kind', true) = 'form' THEN NULL
+    ELSE nullif(current_setting('basedb.actor_id', true), '')::uuid
+  END;
   RETURN NEW;
 END $$;
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- États physiques (chapter 02, line 206)
+-- États physiques (chapter 02, line 211)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.physical_state (
   code        text COLLATE "C" PRIMARY KEY,
@@ -177,7 +182,7 @@ INSERT INTO _basedb.physical_state VALUES
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Registre des classes de verrous consultatifs (chapter 02, line 345)
+-- Registre des classes de verrous consultatifs (chapter 02, line 350)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.lock_class (
   key         integer PRIMARY KEY,
@@ -200,7 +205,7 @@ CREATE SEQUENCE _basedb.lock_key_seq AS integer START 2;
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Champs (chapter 02, line 754)
+-- Champs (chapter 02, line 809)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.field_kind (
   code           text COLLATE "C" PRIMARY KEY,
@@ -219,14 +224,15 @@ INSERT INTO _basedb.field_kind (code, label, can_be_display, has_config) VALUES
  ('datetime',  'Date-heure',     true,  true),
  ('select',    'Liste de choix', true,  true),
  ('multi_select', 'Choix multiple', false, true),
- ('link',      'Lien',           false, true),
+ ('link',      'Relation',       false, true),
  ('formula',   'Formule',        true,  true),
  ('file',      'Document',       false, true),
- ('image',     'Image',          false, true);
+ ('image',     'Image',          false, true),
+ ('url',       'Lien URL',       true,  false);
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 4 — Intégrations et configuration (chapter 02, line 1282)
+-- Domaine 4 — Intégrations et configuration (chapter 02, line 1418)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.idempotency_key (
   actor_kind  text COLLATE "C" NOT NULL CHECK (actor_kind IN ('user','token')),
@@ -249,7 +255,7 @@ CREATE INDEX idx_idempotency_expiry ON _basedb.idempotency_key (expires_at);
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Versionnement du catalogue lui-même (chapter 02, line 1558)
+-- Versionnement du catalogue lui-même (chapter 02, line 1694)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.catalog_migration (
   version     integer PRIMARY KEY,           -- 1, 2, 3... strictement sequentiel
@@ -262,7 +268,7 @@ CREATE TABLE _basedb.catalog_migration (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Journal d'audit (chapter 02, line 1580)
+-- Journal d'audit (chapter 02, line 1716)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.audit_log (
   id uuid NOT NULL DEFAULT _basedb_local.uuid_generate_v7(),
@@ -289,7 +295,7 @@ CREATE INDEX idx_audit_schema_read ON _basedb.audit_log (base_id, occurred_at DE
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Journal de sécurité (chapter 02, line 1613)
+-- Journal de sécurité (chapter 02, line 1749)
 -- ────────────────────────────────────────────────────────────────────────
 -- Journal de securite. Partitionne par mois sur occurred_at, comme audit_log, et
 -- comme lui SANS AUCUNE CLE ETRANGERE : il doit survivre a la suppression, a la
@@ -332,7 +338,7 @@ CREATE INDEX ix_security_log__code__occurred_at
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Capture et drain (chapter 02, line 1662)
+-- Capture et drain (chapter 02, line 1798)
 -- ────────────────────────────────────────────────────────────────────────
 -- Cote donnees : tampons, ecrits par _basedb_local.capture_v1() dans la transaction
 -- de l'utilisateur. Volontairement sans index autre que celui du drain.
@@ -404,7 +410,7 @@ CREATE INDEX idx_delivery_due ON _basedb.webhook_delivery (partition_key, create
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Registre des codes d'erreur et rétentions (chapter 02, line 1756)
+-- Registre des codes d'erreur et rétentions (chapter 02, line 1892)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.error_code (
   code        text COLLATE "C" PRIMARY KEY CHECK (code ~ '^[A-Z][A-Z0-9_]{2,63}$'),
@@ -417,7 +423,7 @@ CREATE TABLE _basedb.error_code (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 4 — Intégrations et configuration (chapter 02, line 1282)
+-- Domaine 4 — Intégrations et configuration (chapter 02, line 1418)
 -- ────────────────────────────────────────────────────────────────────────
 -- Journal des appels sortants aux fournisseurs d'IA : une ligne par tentative.
 CREATE TABLE _basedb.ai_call (
@@ -426,9 +432,9 @@ CREATE TABLE _basedb.ai_call (
   tenant_id     uuid NOT NULL,
   base_id       uuid NULL,
   actor_user_id uuid NULL,
-  surface    text COLLATE "C" NOT NULL CHECK (surface IN ('ui','rest')),
+  surface    text COLLATE "C" NOT NULL CHECK (surface IN ('ui','rest','system')),
   usage_kind text COLLATE "C" NOT NULL
-             CHECK (usage_kind IN ('structure_draft','expression_draft')),
+             CHECK (usage_kind IN ('structure_draft','expression_draft','field_compute','copilot')),
   provider   text COLLATE "C" NOT NULL
              CHECK (provider IN ('openai','anthropic','mistral')),
   model      text COLLATE "C" NOT NULL,
@@ -449,7 +455,7 @@ CREATE INDEX ix_ai_call__tenant_id__occurred_at
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Registre des codes d'erreur et rétentions (chapter 02, line 1787)
+-- Registre des codes d'erreur et rétentions (chapter 02, line 1923)
 -- ────────────────────────────────────────────────────────────────────────
 -- Valeurs semees par la migration de catalogue initiale (A24).
 --  record_revision      24 mois     audit_log            24 mois
@@ -460,7 +466,7 @@ CREATE INDEX ix_ai_call__tenant_id__occurred_at
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Le registre `_basedb.physical_name` (chapter 02, line 271)
+-- Le registre `_basedb.physical_name` (chapter 02, line 276)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.physical_name (
   id           uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -499,7 +505,7 @@ CREATE INDEX idx_physical_name_state ON _basedb.physical_name (state, object_kin
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 2 — Identité, sessions, permissions (chapter 02, line 371)
+-- Domaine 2 — Identité, sessions, permissions (chapter 02, line 376)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.tenant (
   id             uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -646,7 +652,7 @@ CREATE TABLE _basedb.role_member (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Projets, bases, schémas, alias (chapter 02, line 557)
+-- Projets, bases, schémas, alias (chapter 02, line 562)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.project (
   id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -654,6 +660,10 @@ CREATE TABLE _basedb.project (
   label       text NOT NULL,
   label_key   text COLLATE "C" NOT NULL,
   description text NULL,
+  -- Apparence : celle d'une base, memes bornes.
+  color       text NULL,
+  icon        text NULL,
+  image       text NULL,
   position    integer NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
@@ -661,7 +671,11 @@ CREATE TABLE _basedb.project (
   updated_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   deleted_at timestamptz NULL,
   deleted_by uuid NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
-  CONSTRAINT uq_project_id_tenant UNIQUE (id, tenant_id)   -- cible : base
+  CONSTRAINT uq_project_id_tenant UNIQUE (id, tenant_id),  -- cible : base
+  CONSTRAINT ck_project_color CHECK (color IS NULL OR color ~ '^#[0-9a-f]{6}$'),
+  CONSTRAINT ck_project_icon  CHECK (icon IS NULL OR icon ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  CONSTRAINT ck_project_image CHECK (image IS NULL OR char_length(image) <= 16384),
+  CONSTRAINT ck_project_glyph CHECK (icon IS NULL OR image IS NULL)
 );
 
 CREATE UNIQUE INDEX uq_project_label_live
@@ -686,6 +700,15 @@ CREATE TABLE _basedb.base (
   structure_state text NOT NULL DEFAULT 'open'
                     CHECK (structure_state IN ('open','frozen')),
   current_migration_id uuid NULL,     -- FK ajoutee apres la creation de migration
+  -- Environnements (chapitre 14). Les declinaisons d'une meme base -- production,
+  -- recette, developpement -- partagent sa lignee ; chacune a son schema, ses tables et
+  -- ses lignes. La production est l'environnement par defaut.
+  lineage_id    uuid NOT NULL DEFAULT _basedb_local.uuid_generate_v7(),
+  environment   text NOT NULL DEFAULT 'Production',
+  environment_key text COLLATE "C" NOT NULL DEFAULT 'production',
+  is_production boolean NOT NULL DEFAULT true,
+  environment_position smallint NOT NULL DEFAULT 0,
+  forked_from_base_id uuid NULL,      -- l'environnement copie a la creation ; cle nue
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -708,11 +731,20 @@ CREATE TABLE _basedb.base (
   CONSTRAINT ck_base_color CHECK (color IS NULL OR color ~ '^#[0-9a-f]{6}$'),
   CONSTRAINT ck_base_icon  CHECK (icon IS NULL OR icon ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
   CONSTRAINT ck_base_image CHECK (image IS NULL OR char_length(image) <= 16384),
-  CONSTRAINT ck_base_glyph CHECK (icon IS NULL OR image IS NULL)
+  CONSTRAINT ck_base_glyph CHECK (icon IS NULL OR image IS NULL),
+  CONSTRAINT ck_base_environment CHECK (char_length(environment) BETWEEN 1 AND 60)
 );
 
+-- Le libelle est celui de la base, que ses environnements partagent : il est unique
+-- dans le projet parmi les productions.
 CREATE UNIQUE INDEX uq_base_label_live
-  ON _basedb.base (project_id, label_key) WHERE deleted_at IS NULL;
+  ON _basedb.base (project_id, label_key) WHERE deleted_at IS NULL AND is_production;
+
+CREATE UNIQUE INDEX uq_base_production_live
+  ON _basedb.base (lineage_id) WHERE deleted_at IS NULL AND is_production;
+
+CREATE UNIQUE INDEX uq_base_environment_live
+  ON _basedb.base (lineage_id, environment_key) WHERE deleted_at IS NULL;
 
 COMMENT ON COLUMN _basedb.base.catalog_version IS
   'Incremente a chaque migration appliquee. Les processus API comparent ce compteur
@@ -753,9 +785,29 @@ CREATE TABLE _basedb.db_schema (
 CREATE UNIQUE INDEX uq_schema_current
   ON _basedb.db_schema (base_id) WHERE role = 'current' AND dropped_at IS NULL;
 
+-- Le point commun de deux environnements : la derniere fois que l'un a ete recopie dans
+-- l'autre. Il sert de base aux comparaisons (chapitre 14) : un objet modifie depuis,
+-- d'un cote et de l'autre, est un conflit.
+CREATE TABLE _basedb.environment_sync (
+  id               uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  lineage_id       uuid NOT NULL,
+  source_base_id   uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  target_base_id   uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  kind             text NOT NULL CHECK (kind IN ('fork','structure','rows')),
+  table_lineage_id uuid NULL,          -- la table dont les lignes ont ete recopiees
+  synced_at        timestamptz NOT NULL DEFAULT clock_timestamp(),
+  synced_by        uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  summary          jsonb NOT NULL DEFAULT '{}'::jsonb,
+  CONSTRAINT ck_sync_pair  CHECK (source_base_id <> target_base_id),
+  CONSTRAINT ck_sync_table CHECK ((kind = 'rows') = (table_lineage_id IS NOT NULL))
+);
+
+CREATE INDEX idx_environment_sync_pair
+  ON _basedb.environment_sync (source_base_id, target_base_id, synced_at DESC);
+
 
 -- ────────────────────────────────────────────────────────────────────────
--- Tables (chapter 02, line 678)
+-- Tables (chapter 02, line 730)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.table_def (
   id           uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -773,6 +825,8 @@ CREATE TABLE _basedb.table_def (
   definition_state text NOT NULL DEFAULT 'active'
                      CHECK (definition_state IN ('pending','active')),
   lock_key     integer NOT NULL DEFAULT nextval('_basedb.lock_key_seq'),
+  -- La meme table d'un environnement a l'autre (chapitre 14).
+  lineage_id   uuid NOT NULL DEFAULT _basedb_local.uuid_generate_v7(),
 
   display_field_id             uuid    NULL,
   display_field_kind           text    NULL,
@@ -803,6 +857,7 @@ CREATE TABLE _basedb.table_def (
 
   CONSTRAINT uq_table_name         UNIQUE (name_id),
   CONSTRAINT uq_table_lock         UNIQUE (lock_key),
+  CONSTRAINT uq_table_lineage      UNIQUE (base_id, lineage_id),
   CONSTRAINT uq_table_id_base_live UNIQUE (id, base_id, is_live),  -- cible : field, lien
   CONSTRAINT uq_table_id_base      UNIQUE (id, base_id),
   CONSTRAINT ck_table_live  CHECK (is_live = (deleted_at IS NULL)),
@@ -821,7 +876,7 @@ CREATE TABLE _basedb.table_def (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Vue de confort : le nom qualifié (chapter 02, line 319)
+-- Vue de confort : le nom qualifié (chapter 02, line 324)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE VIEW _basedb.v_physical_name_qualified AS
 SELECT n.id AS name_id,
@@ -843,7 +898,7 @@ LEFT JOIN _basedb.physical_name s ON s.id = sc.name_id;
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Projets, bases, schémas, alias (chapter 02, line 557)
+-- Projets, bases, schémas, alias (chapter 02, line 562)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.sql_view_alias (
   id              uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -857,7 +912,7 @@ CREATE TABLE _basedb.sql_view_alias (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Tables (chapter 02, line 678)
+-- Tables (chapter 02, line 730)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE UNIQUE INDEX uq_table_label_live
   ON _basedb.table_def (base_id, label_key) WHERE deleted_at IS NULL;
@@ -867,7 +922,7 @@ CREATE INDEX idx_table_by_base
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Champs (chapter 02, line 754)
+-- Champs (chapter 02, line 809)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.field (
   id            uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -891,6 +946,8 @@ CREATE TABLE _basedb.field (
   superseded_by_field_id uuid NULL REFERENCES _basedb.field(id) ON DELETE RESTRICT,
   definition_state text NOT NULL DEFAULT 'active'
                      CHECK (definition_state IN ('pending','active')),
+  -- Le meme champ d'un environnement a l'autre (chapitre 14).
+  lineage_id    uuid NOT NULL DEFAULT _basedb_local.uuid_generate_v7(),
 
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
@@ -914,6 +971,7 @@ CREATE TABLE _basedb.field (
     REFERENCES _basedb.physical_name (id, scope_id) ON DELETE RESTRICT ON UPDATE RESTRICT,
 
   CONSTRAINT uq_field_name                UNIQUE (name_id),
+  CONSTRAINT uq_field_lineage             UNIQUE (table_id, lineage_id),
   CONSTRAINT uq_field_id_kind             UNIQUE (id, kind),
   CONSTRAINT uq_field_id_kind_base_req    UNIQUE (id, kind, base_id, is_required),
   CONSTRAINT uq_field_id_table            UNIQUE (id, table_id),
@@ -929,7 +987,7 @@ CREATE TABLE _basedb.field (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 2 — Identité, sessions, permissions (chapter 02, line 485)
+-- Domaine 2 — Identité, sessions, permissions (chapter 02, line 490)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.field_permission (
   id       uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -941,7 +999,7 @@ CREATE TABLE _basedb.field_permission (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Champs (chapter 02, line 754)
+-- Champs (chapter 02, line 809)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE UNIQUE INDEX uq_field_label_live
   ON _basedb.field (table_id, label_key) WHERE deleted_at IS NULL;
@@ -951,7 +1009,7 @@ CREATE INDEX idx_field_by_table
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Configuration par type : satellites 1:1, pas de `jsonb` (chapter 02, line 851)
+-- Configuration par type : satellites 1:1, pas de `jsonb` (chapter 02, line 912)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.field_text_config (
   field_id     uuid PRIMARY KEY,
@@ -1008,6 +1066,36 @@ CREATE TABLE _basedb.field_boolean_config (
     REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT
 );
 
+-- L'IA n'est pas un type : c'est une OPTION d'un champ, que ce satellite porte. Il
+-- s'attache aux types dont la valeur se lit dans une reponse de modele ; la cle
+-- etrangere composite le lie au type du champ, comme les autres satellites.
+CREATE TABLE _basedb.field_ai_config (
+  field_id uuid PRIMARY KEY,
+  kind     text COLLATE "C" NOT NULL
+             CHECK (kind IN ('short_text','long_text','url','number','select','boolean','date')),
+  -- La consigne ; une colonne de la ligne y est citee {{nom_physique}} (chapitre 12 §9).
+  prompt   text NOT NULL,
+  refresh_mode     text NOT NULL CHECK (refresh_mode IN ('if_empty','schedule')),
+  refresh_cron     text NULL,          -- cinq champs, lus a l'heure de refresh_timezone
+  refresh_timezone text NULL,          -- fuseau IANA, ex. Europe/Paris
+  -- Qui a accepte que les valeurs citees partent chez le fournisseur, et quand.
+  consented_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  consented_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  -- Etat du calcul, ecrit par le processus qui le mene : hors versionnement du catalogue.
+  next_sweep_at  timestamptz NULL,     -- prochain recalcul de toutes les lignes
+  sweep_after    uuid NULL,            -- recalcul en cours : reprend apres cette ligne
+  lease_until    timestamptz NULL,     -- bail du processus qui calcule ce champ
+  last_run_at    timestamptz NULL,
+  last_error     text NULL,
+  last_error_at  timestamptz NULL,
+  computed_count bigint NOT NULL DEFAULT 0,
+  CONSTRAINT fk_ai_field FOREIGN KEY (field_id, kind)
+    REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT ck_ai_prompt   CHECK (char_length(prompt) BETWEEN 1 AND 8000),
+  CONSTRAINT ck_ai_schedule CHECK ((refresh_mode = 'schedule')
+                                   = (refresh_cron IS NOT NULL AND refresh_timezone IS NOT NULL))
+);
+
 CREATE TABLE _basedb.field_formula_config (
   field_id    uuid PRIMARY KEY,
   kind        text COLLATE "C" NOT NULL DEFAULT 'formula' CHECK (kind = 'formula'),
@@ -1060,7 +1148,7 @@ CREATE TABLE _basedb.field_formula_dependency (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Fichiers déposés (chapter 02, line 997)
+-- Fichiers déposés (chapter 02, line 1088)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.stored_file (
   id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1082,7 +1170,7 @@ CREATE TABLE _basedb.stored_file (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Contraintes et index des tables utilisateur (chapter 02, line 1023)
+-- Contraintes et index des tables utilisateur (chapter 02, line 1114)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.table_constraint (
   id       uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1111,7 +1199,7 @@ CREATE TABLE _basedb.table_constraint (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Configuration par type : satellites 1:1, pas de `jsonb` (chapter 02, line 851)
+-- Configuration par type : satellites 1:1, pas de `jsonb` (chapter 02, line 912)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.field_select_config (
   field_id uuid PRIMARY KEY,
@@ -1137,7 +1225,7 @@ CREATE TABLE _basedb.field_file_config (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Contraintes et index des tables utilisateur (chapter 02, line 1023)
+-- Contraintes et index des tables utilisateur (chapter 02, line 1114)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.table_constraint_member (
   constraint_id uuid NOT NULL,
@@ -1191,7 +1279,7 @@ CREATE TABLE _basedb.table_index_member (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Champs lien (chapter 02, line 1106)
+-- Champs lien (chapter 02, line 1197)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.cascade_grant (
   id         uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1242,7 +1330,7 @@ CREATE INDEX idx_link_target
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Colonne d'affichage (chapter 02, line 1168)
+-- Colonne d'affichage (chapter 02, line 1259)
 -- ────────────────────────────────────────────────────────────────────────
 ALTER TABLE _basedb.table_def
   ADD CONSTRAINT fk_display_field
@@ -1259,7 +1347,7 @@ ALTER TABLE _basedb.table_def
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Applications et vues enregistrées (chapter 02, line 1224)
+-- Applications et vues enregistrées (chapter 02, line 1315)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.application (
   id uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1280,7 +1368,7 @@ CREATE TABLE _basedb.application (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 2 — Identité, sessions, permissions (chapter 02, line 485)
+-- Domaine 2 — Identité, sessions, permissions (chapter 02, line 490)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.permission (
   id uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1309,7 +1397,7 @@ CREATE TABLE _basedb.permission (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Applications et vues enregistrées (chapter 02, line 1224)
+-- Applications et vues enregistrées (chapter 02, line 1315)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE UNIQUE INDEX uq_application_label_live
   ON _basedb.application (base_id, label_key) WHERE deleted_at IS NULL;
@@ -1332,11 +1420,16 @@ CREATE TABLE _basedb.view_def (
   label text NOT NULL,
   label_key text COLLATE "C" NOT NULL,
   name  text COLLATE "C" NOT NULL,
-  kind  text NOT NULL DEFAULT 'grid' CHECK (kind IN ('grid')),
-  spec  jsonb NOT NULL DEFAULT '{}'::jsonb,   -- filtres, tri, largeurs, ordre des colonnes
+  description text NULL,
+  kind  text NOT NULL DEFAULT 'grid'
+    CHECK (kind IN ('grid','kanban','calendar','timeline','form','survey')),
+  spec  jsonb NOT NULL DEFAULT '{}'::jsonb,   -- filtre, tri, champs affiches, champs pivots
+  position integer NOT NULL DEFAULT 0,        -- ordre dans le selecteur de vues de la table
   is_invalid boolean NOT NULL DEFAULT false,  -- un champ reference a disparu (chapitre 06)
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  updated_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   deleted_at timestamptz NULL,
   deleted_by uuid NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT
 );
@@ -1344,9 +1437,45 @@ CREATE TABLE _basedb.view_def (
 CREATE UNIQUE INDEX uq_view_label_live
   ON _basedb.view_def (table_id, label_key) WHERE deleted_at IS NULL;
 
+-- Le partage d'un formulaire ou d'un questionnaire (chapitre 15) : un lien qui permet de
+-- repondre sans avoir de droit sur la table, public ou reserve aux membres connectes.
+-- Un seul partage par vue ; regenerer le lien remplace son secret.
+CREATE TABLE _basedb.form_share (
+  id           uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id    uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  view_id      uuid NOT NULL REFERENCES _basedb.view_def(id) ON DELETE CASCADE,
+  table_id     uuid NOT NULL REFERENCES _basedb.table_def(id) ON DELETE CASCADE,
+  access       text NOT NULL CHECK (access IN ('public','members')),
+  -- Le secret du lien : son empreinte pour le retrouver, et le secret scelle par la cle
+  -- d'instance pour le remontrer a qui partage. Jamais en clair.
+  token_hash   bytea NOT NULL,
+  token_sealed text NOT NULL,
+  is_active    boolean NOT NULL DEFAULT true,
+  closes_at    timestamptz NULL,
+  max_responses integer NULL CHECK (max_responses IS NULL OR max_responses > 0),
+  response_count integer NOT NULL DEFAULT 0 CHECK (response_count >= 0),
+  last_response_at timestamptz NULL,
+  -- Au nom de qui les reponses s'ecrivent : la derniere personne qui a enregistre le
+  -- partage. Ses droits sont reverifies a chaque reponse (chapitre 15 §2).
+  published_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  created_at   timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by   uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at   timestamptz NOT NULL DEFAULT clock_timestamp(),
+  CONSTRAINT uq_form_share_view  UNIQUE (view_id),
+  CONSTRAINT uq_form_share_token UNIQUE (token_hash)
+);
+
+-- Un partage « membres » peut etre reserve a des groupes ; sans ligne ici, tout membre
+-- connecte du tenant repond.
+CREATE TABLE _basedb.form_share_role (
+  share_id uuid NOT NULL REFERENCES _basedb.form_share(id) ON DELETE CASCADE,
+  role_id  uuid NOT NULL REFERENCES _basedb.role(id) ON DELETE CASCADE,
+  PRIMARY KEY (share_id, role_id)
+);
+
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 4 — Intégrations et configuration (chapter 02, line 1282)
+-- Domaine 4 — Intégrations et configuration (chapter 02, line 1418)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.api_token (
   id uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1459,7 +1588,7 @@ CREATE TABLE _basedb.secret (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Migrations de structures utilisateur (chapter 02, line 1457)
+-- Migrations de structures utilisateur (chapter 02, line 1593)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.migration (
   id uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1549,7 +1678,7 @@ ALTER TABLE _basedb.base
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Registre des codes d'erreur et rétentions (chapter 02, line 1787)
+-- Registre des codes d'erreur et rétentions (chapter 02, line 1923)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.retention_policy (
   object           text COLLATE "C" PRIMARY KEY,
@@ -1561,7 +1690,7 @@ CREATE TABLE _basedb.retention_policy (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Les déclencheurs du catalogue (chapter 02, line 1817)
+-- Les déclencheurs du catalogue (chapter 02, line 1953)
 -- ────────────────────────────────────────────────────────────────────────
 -- Verifie au COMMIT, donc compatible avec l'ordre naturel d'ecriture
 -- (champ puis satellite) dans une meme transaction.
@@ -1572,7 +1701,7 @@ CREATE CONSTRAINT TRIGGER ck_field_config_present
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Le registre `_basedb.physical_name` (chapter 02, line 271)
+-- Le registre `_basedb.physical_name` (chapter 02, line 276)
 -- ────────────────────────────────────────────────────────────────────────
 -- Deferred constraint: _basedb.physical_name.allocated_by → _basedb.app_user, creation cycle.
 --
@@ -1588,7 +1717,7 @@ ALTER TABLE _basedb.physical_name
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 2 — Identité, sessions, permissions (chapter 02, line 371)
+-- Domaine 2 — Identité, sessions, permissions (chapter 02, line 376)
 -- ────────────────────────────────────────────────────────────────────────
 -- Deferred constraint: _basedb.tenant.created_by → _basedb.app_user, creation cycle.
 --
@@ -1845,3 +1974,584 @@ CREATE TRIGGER tg_authz_version_api_token
 CREATE TRIGGER tg_authz_version_webhook
   AFTER INSERT OR UPDATE OR DELETE ON _basedb.webhook
   FOR EACH ROW EXECUTE FUNCTION _basedb.bump_authz_version();
+
+-- ════════════════════════════════════════════════════════════════════════
+-- Historique des données — chapitre 07 (normatif sur ces objets).
+--
+-- La capture vit dans _basedb_local, colocalisée avec les données (A9) : aucun
+-- déclencheur d'un schéma b_* ne lit ni n'écrit _basedb. Les journaux vivent dans
+-- _basedb, alimentés par le drain et par lui seul.
+-- ════════════════════════════════════════════════════════════════════════
+
+-- Indicateur d'abonnement (§11.3), une ligne par table, colocalisé avec les tampons.
+-- Absente, la capture écrit l'événement : on ne perd jamais un événement par prudence.
+-- Le noyau pose is_active = false à la création de la table, et le chapitre 08 le
+-- bascule avec les abonnements.
+CREATE TABLE _basedb_local.change_feed_state (
+  table_id     uuid PRIMARY KEY,
+  is_active    boolean NOT NULL DEFAULT false,
+  full_payload boolean NOT NULL DEFAULT true,
+  updated_at   timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+
+-- TRUNCATE ne déclenche aucun déclencheur DML : il est donc refusé (§1.5).
+CREATE FUNCTION _basedb_local.assert_no_truncate() RETURNS trigger
+  LANGUAGE plpgsql
+  SET search_path = pg_catalog
+AS $fn$
+BEGIN
+  RAISE EXCEPTION 'TRUNCATE_FORBIDDEN: vider une table passe par DELETE, qui est historisé'
+    USING ERRCODE = 'raise_exception';
+END
+$fn$;
+
+-- La capture (§1.3). SECURITY DEFINER et non INVOKER : la console SQL écrit sous un rôle
+-- restreint qui n'a aucun droit sur _basedb_local, et ne doit pas en avoir — lui donner
+-- l'insertion dans les tampons lui permettrait de fabriquer un historique. La fonction
+-- s'exécute donc avec les droits du propriétaire, et fixe elle-même son environnement.
+CREATE FUNCTION _basedb_local.capture_v1() RETURNS trigger
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = pg_catalog
+  SET "TimeZone" = 'UTC'
+  SET "DateStyle" = 'ISO, YMD'
+  SET "IntervalStyle" = 'iso_8601'
+  SET extra_float_digits = 0
+AS $fn$
+DECLARE
+  v_base      uuid     := TG_ARGV[0]::uuid;
+  v_table     uuid     := TG_ARGV[1]::uuid;
+  v_format    smallint := TG_ARGV[2]::smallint;
+  v_raw_actor text     := nullif(current_setting('basedb.actor_id', true), '');
+  v_raw_kind  text     := nullif(current_setting('basedb.actor_kind', true), '');
+  v_raw_token text     := nullif(current_setting('basedb.token_id', true), '');
+  v_raw_bulk  text     := nullif(current_setting('basedb.bulk_id', true), '');
+  v_kind      text;
+  v_actor     uuid;
+  v_token     uuid;
+  v_bulk      uuid;
+  v_identity  text;
+  v_feed      boolean;
+  v_full      boolean;
+  v_select    text;
+  v_count     bigint;
+  v_total     bigint;
+BEGIN
+  -- Identité (§2) : lue avec tolérance, jamais une raison de refuser l'écriture.
+  IF v_raw_actor IS NULL THEN
+    v_kind := 'sql_direct';
+    v_identity := concat_ws(' · ',
+      'session ' || pg_backend_pid()::text,
+      coalesce(host(inet_client_addr()), 'connexion locale'),
+      nullif(current_setting('application_name', true), ''),
+      session_user::text);
+  ELSE
+    BEGIN
+      v_actor := v_raw_actor::uuid;
+      v_kind := CASE WHEN v_raw_kind IN ('user', 'token', 'mcp', 'system', 'form')
+                     THEN v_raw_kind ELSE 'unknown' END;
+    EXCEPTION WHEN invalid_text_representation THEN
+      v_actor := NULL;
+      v_kind := 'unknown';
+      v_identity := v_raw_actor;
+    END;
+    IF v_raw_token IS NOT NULL THEN
+      BEGIN
+        v_token := v_raw_token::uuid;
+      EXCEPTION WHEN invalid_text_representation THEN
+        v_token := NULL;
+      END;
+    END IF;
+    -- Un jeton sans identifiant exploitable n'est pas un jeton : la contrainte de
+    -- record_revision l'exige, et la ligne ne doit jamais faire échouer l'écriture.
+    IF v_kind = 'token' AND v_token IS NULL THEN
+      v_kind := 'unknown';
+      v_identity := coalesce(v_identity, v_raw_token);
+    END IF;
+  END IF;
+
+  IF v_raw_bulk IS NOT NULL THEN
+    BEGIN
+      v_bulk := v_raw_bulk::uuid;
+    EXCEPTION WHEN invalid_text_representation THEN
+      v_bulk := NULL;
+    END;
+  END IF;
+
+  -- Le SELECT des lignes, selon l'opération. Aucune instruction statique ne cite les
+  -- tables de transition : leur forme change d'une table à l'autre, et un plan mis en
+  -- cache serait celui de la première table capturée.
+  IF TG_OP = 'INSERT' THEN
+    v_select := 'SELECT n."_id" AS record_id, NULL::jsonb AS before, pg_catalog.to_jsonb(n) AS after
+                   FROM new_rows n';
+  ELSIF TG_OP = 'UPDATE' THEN
+    v_select := 'SELECT n."_id" AS record_id, pg_catalog.to_jsonb(o) AS before, pg_catalog.to_jsonb(n) AS after
+                   FROM old_rows o JOIN new_rows n ON n."_id" = o."_id"
+                  WHERE pg_catalog.to_jsonb(o) IS DISTINCT FROM pg_catalog.to_jsonb(n)';
+  ELSE
+    v_select := 'SELECT o."_id" AS record_id, pg_catalog.to_jsonb(o) AS before, NULL::jsonb AS after
+                   FROM old_rows o';
+  END IF;
+
+  EXECUTE
+    'INSERT INTO _basedb_local.revision_buffer
+       (base_id, table_id, record_id, op, is_cascade, actor_kind, actor_user_id,
+        actor_token_id, sql_identity, bulk_id, format_version, before, after)
+     SELECT $1, $2, p.record_id, $3, pg_catalog.pg_trigger_depth() > 1,
+            $4, $5, $6, $7, $8, $9, p.before, p.after
+       FROM (' || v_select || ') p'
+    USING v_base, v_table, lower(TG_OP), v_kind, v_actor, v_token, v_identity, v_bulk, v_format;
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+
+  -- Une table de transition vide (MERGE, UPDATE qui ne change rien) n'écrit rien.
+  IF v_count = 0 THEN
+    RETURN NULL;
+  END IF;
+
+  -- Plafond dur, cumulé par transaction (§5.1) : une cascade émet une instruction par
+  -- ligne parente, et un seuil par instruction n'y verrait rien passer.
+  v_total := coalesce(nullif(current_setting('basedb.rows_written', true), '')::bigint, 0) + v_count;
+  PERFORM pg_catalog.set_config('basedb.rows_written', v_total::text, true);
+  IF v_total > 100000 THEN
+    RAISE EXCEPTION 'BULK_OPERATION_REFUSED: % lignes capturées dans cette transaction', v_total
+      USING ERRCODE = 'raise_exception';
+  END IF;
+
+  -- Le second tampon, si la table est abonnée (§11.3) ; absente, la ligne vaut « oui ».
+  SELECT s.is_active, s.full_payload INTO v_feed, v_full
+    FROM _basedb_local.change_feed_state s WHERE s.table_id = v_table;
+  IF NOT FOUND THEN
+    v_feed := true;
+    v_full := true;
+  END IF;
+
+  IF v_feed THEN
+    EXECUTE
+      'INSERT INTO _basedb_local.change_event_buffer
+         (base_id, table_id, record_id, op, is_cascade, actor_kind, actor_user_id,
+          actor_token_id, sql_identity, bulk_id, format_version, before, after)
+       SELECT $1, $2, p.record_id, $3, pg_catalog.pg_trigger_depth() > 1,
+              $4, $5, $6, $7, $8, $9,
+              CASE WHEN $10 THEN p.before END, CASE WHEN $10 THEN p.after END
+         FROM (' || v_select || ') p'
+      USING v_base, v_table, lower(TG_OP), v_kind, v_actor, v_token, v_identity, v_bulk,
+            v_format, v_full;
+  END IF;
+
+  RETURN NULL;
+END
+$fn$;
+
+COMMENT ON FUNCTION _basedb_local.capture_v1() IS
+  'Capture des écritures d''une table utilisateur vers les tampons (chapitre 07 §1.3). Arguments immuables : base_id, table_id, format_version.';
+
+-- ── Journaux (§3, §6) ────────────────────────────────────────────────────
+-- Partitionnés par mois sur l'instant de l'écriture. La partition DEFAULT reçoit tout
+-- tant que la tâche de maintenance des partitions mensuelles (§10.2) n'existe pas : une
+-- écriture d'historique ne doit jamais échouer faute de partition.
+
+CREATE TABLE _basedb.record_revision (
+  id             uuid        NOT NULL,
+  occurred_at    timestamptz NOT NULL,
+  drained_at     timestamptz NOT NULL DEFAULT clock_timestamp(),
+  xact_id        xid8        NOT NULL,
+  base_id        uuid NOT NULL,
+  table_id       uuid NOT NULL,
+  record_id      uuid NOT NULL,
+  op             text NOT NULL CHECK (op IN ('insert','update','delete')),
+  is_cascade     boolean NOT NULL DEFAULT false,
+  bulk_id        uuid NULL,
+  record_display text NULL,
+  actor_kind     text NOT NULL CHECK (actor_kind IN
+                   ('user','token','mcp','system','form','sql_direct','unknown')),
+  actor_user_id  uuid NULL,
+  actor_token_id uuid NULL,
+  sql_identity   text NULL,
+  format_version smallint NOT NULL,
+  PRIMARY KEY (id, occurred_at),
+  CONSTRAINT ck_revision_user  CHECK (actor_kind <> 'user'  OR actor_user_id  IS NOT NULL),
+  CONSTRAINT ck_revision_token CHECK (actor_kind <> 'token' OR actor_token_id IS NOT NULL)
+) PARTITION BY RANGE (occurred_at);
+
+CREATE TABLE _basedb.record_revision_default PARTITION OF _basedb.record_revision DEFAULT;
+
+CREATE INDEX idx_revision_record ON _basedb.record_revision (table_id, record_id, occurred_at DESC);
+CREATE INDEX idx_revision_actor  ON _basedb.record_revision (actor_user_id, occurred_at DESC)
+  WHERE actor_user_id IS NOT NULL;
+CREATE INDEX idx_revision_base   ON _basedb.record_revision (base_id, occurred_at DESC);
+CREATE INDEX idx_revision_xact   ON _basedb.record_revision (occurred_at, xact_id);
+CREATE INDEX idx_revision_bulk   ON _basedb.record_revision (bulk_id) WHERE bulk_id IS NOT NULL;
+
+-- Une valeur est scalaire, ou un tableau : les choix multiples (text[]) et les champs
+-- Document et Image (liste de fichiers) en produisent, ce que la v1 du chapitre 07
+-- n'avait pas encore — l'extension qu'il prévoyait (§3.3) est faite ici.
+CREATE TABLE _basedb.record_revision_field (
+  revision_id    uuid        NOT NULL,
+  occurred_at    timestamptz NOT NULL,
+  base_id        uuid        NOT NULL,
+  field_id       uuid        NOT NULL,
+  field_kind     text        NOT NULL,
+  before_value   jsonb NULL,
+  after_value    jsonb NULL,
+  before_display text  NULL,
+  after_display  text  NULL,
+  PRIMARY KEY (revision_id, occurred_at, field_id),
+  CONSTRAINT ck_revision_field_value CHECK (
+    (before_value IS NULL OR jsonb_typeof(before_value)
+       IN ('string','number','boolean','null','array')) AND
+    (after_value  IS NULL OR jsonb_typeof(after_value)
+       IN ('string','number','boolean','null','array')))
+) PARTITION BY RANGE (occurred_at);
+
+CREATE TABLE _basedb.record_revision_field_default
+  PARTITION OF _basedb.record_revision_field DEFAULT;
+
+CREATE INDEX idx_revision_field ON _basedb.record_revision_field (field_id, occurred_at DESC);
+
+CREATE TABLE _basedb.record_deletion (
+  base_id     uuid NOT NULL,
+  table_id    uuid NOT NULL,
+  record_id   uuid NOT NULL,
+  deleted_at  timestamptz NOT NULL,
+  deleted_by  uuid NULL,
+  actor_kind  text NOT NULL,
+  is_cascade  boolean NOT NULL DEFAULT false,
+  revision_id uuid NOT NULL,
+  PRIMARY KEY (table_id, deleted_at, record_id)
+) PARTITION BY RANGE (deleted_at);
+
+CREATE TABLE _basedb.record_deletion_default PARTITION OF _basedb.record_deletion DEFAULT;
+
+CREATE VIEW _basedb.v_record_deletion AS
+SELECT d.base_id, d.table_id,
+       d.record_id  AS "_id",
+       d.deleted_at,
+       d.deleted_by,
+       CASE WHEN d.is_cascade THEN 'cascade' ELSE 'direct' END AS cause
+FROM   _basedb.record_deletion d;
+
+-- Les événements sortants et leurs livraisons (chapitres 02, 08) ont eux aussi besoin
+-- d'une partition pour recevoir la première ligne.
+CREATE TABLE _basedb.change_event_default PARTITION OF _basedb.change_event DEFAULT;
+CREATE TABLE _basedb.webhook_delivery_default PARTITION OF _basedb.webhook_delivery DEFAULT;
+
+-- ── Immuabilité (§3.5) ───────────────────────────────────────────────────
+-- Au niveau instruction, sur chaque journal ET sur chaque partition : un déclencheur
+-- d'instruction n'est pas hérité, et une écriture visant la partition le contournerait.
+CREATE FUNCTION _basedb.assert_history_immutable() RETURNS trigger
+  LANGUAGE plpgsql
+  SET search_path = pg_catalog
+AS $fn$
+BEGIN
+  IF current_setting('basedb.maintenance', true) = 'on' THEN
+    RETURN NULL;
+  END IF;
+  RAISE EXCEPTION 'HISTORY_IMMUTABLE: le journal % n''accepte ni UPDATE ni DELETE', TG_TABLE_NAME
+    USING ERRCODE = 'raise_exception';
+END
+$fn$;
+
+CREATE TRIGGER tg_record_revision__immutable
+  BEFORE UPDATE OR DELETE ON _basedb.record_revision
+  FOR EACH STATEMENT EXECUTE FUNCTION _basedb.assert_history_immutable();
+CREATE TRIGGER tg_record_revision_default__immutable
+  BEFORE UPDATE OR DELETE ON _basedb.record_revision_default
+  FOR EACH STATEMENT EXECUTE FUNCTION _basedb.assert_history_immutable();
+CREATE TRIGGER tg_record_revision_field__immutable
+  BEFORE UPDATE OR DELETE ON _basedb.record_revision_field
+  FOR EACH STATEMENT EXECUTE FUNCTION _basedb.assert_history_immutable();
+CREATE TRIGGER tg_record_revision_field_default__immutable
+  BEFORE UPDATE OR DELETE ON _basedb.record_revision_field_default
+  FOR EACH STATEMENT EXECUTE FUNCTION _basedb.assert_history_immutable();
+CREATE TRIGGER tg_record_deletion__immutable
+  BEFORE UPDATE OR DELETE ON _basedb.record_deletion
+  FOR EACH STATEMENT EXECUTE FUNCTION _basedb.assert_history_immutable();
+CREATE TRIGGER tg_record_deletion_default__immutable
+  BEFORE UPDATE OR DELETE ON _basedb.record_deletion_default
+  FOR EACH STATEMENT EXECUTE FUNCTION _basedb.assert_history_immutable();
+
+-- ════════════════════════════════════════════════════════════════════════
+-- Cycle de vie — chapitre 06 : fin de vie des alias, export préalable à la purge.
+--
+-- Le chapitre 06 §3.2 porte l'échéance et la fenêtre de coupure à blanc « par la
+-- ligne d'alias — sur db_schema pour un alias de base et sur sql_view_alias pour un
+-- alias de table ». Le chapitre 02 ne les avait posées que sur db_schema, et à moitié :
+-- elles sont complétées ici, au même endroit que le reste du DDL écrit après lui.
+-- ════════════════════════════════════════════════════════════════════════
+
+-- Toute clé étrangère du catalogue porte un index complet, jamais partiel (CAT-IDX).
+
+-- Alias de table : échéance et coupure à blanc (§3.5). Le nom de coupure est une ligne
+-- du registre, allouée en état `relegated` et passée `purged` à la remise en service.
+ALTER TABLE _basedb.sql_view_alias
+  ADD COLUMN drop_after        timestamptz NULL,
+  ADD COLUMN blank_cut_from    timestamptz NULL,
+  ADD COLUMN blank_cut_until   timestamptz NULL,
+  ADD COLUMN blank_cut_name_id uuid NULL REFERENCES _basedb.physical_name(id) ON DELETE RESTRICT,
+  ADD CONSTRAINT ck_view_alias_cut CHECK (
+    num_nonnulls(blank_cut_from, blank_cut_until, blank_cut_name_id) IN (0, 3)
+    AND (blank_cut_until IS NULL OR blank_cut_until > blank_cut_from));
+
+CREATE INDEX idx_view_alias_cut_name ON _basedb.sql_view_alias (blank_cut_name_id);
+CREATE INDEX idx_view_alias_target ON _basedb.sql_view_alias (target_table_id)
+  WHERE dropped_at IS NULL;
+
+-- Alias de base : la coupure à blanc renomme le schéma d'alias lui-même.
+ALTER TABLE _basedb.db_schema
+  ADD COLUMN blank_cut_from    timestamptz NULL,
+  ADD COLUMN blank_cut_until   timestamptz NULL,
+  ADD COLUMN blank_cut_name_id uuid NULL REFERENCES _basedb.physical_name(id) ON DELETE RESTRICT,
+  ADD CONSTRAINT ck_schema_cut CHECK (
+    (role = 'alias' OR blank_cut_from IS NULL)
+    AND num_nonnulls(blank_cut_from, blank_cut_until, blank_cut_name_id) IN (0, 3)
+    AND (blank_cut_until IS NULL OR blank_cut_until > blank_cut_from));
+
+CREATE INDEX idx_schema_cut_name ON _basedb.db_schema (blank_cut_name_id);
+
+-- Export préalable à la purge (§5.2) : ce qui a été écrit, où, les statistiques de
+-- chaque table au début de l'export, et une empreinte prise sous son instantané (nombre
+-- de lignes, plus grand xmin) que la purge recalcule — `EXPORT_STALE` si quelqu'un a
+-- écrit depuis. Les fichiers ne sont jamais supprimés par basedb ; la ligne non plus :
+-- elle dit à l'exploitant à quoi ils servaient.
+CREATE TABLE _basedb.purge_export (
+  id         uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id  uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  base_id    uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE RESTRICT,
+  -- NULL : la base entière ; sinon, cette table seule.
+  table_id   uuid NULL REFERENCES _basedb.table_def(id) ON DELETE RESTRICT,
+  directory  text NOT NULL,
+  manifest   jsonb NOT NULL,
+  total_rows bigint NOT NULL CHECK (total_rows >= 0),
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  -- La purge qui l'a consommé : un export ne sert qu'une fois.
+  used_at    timestamptz NULL,
+  used_by    uuid NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  CONSTRAINT ck_purge_export_used CHECK ((used_at IS NULL) = (used_by IS NULL)),
+  CONSTRAINT ck_purge_export_manifest CHECK (jsonb_typeof(manifest) = 'object')
+);
+
+CREATE INDEX idx_purge_export_tenant  ON _basedb.purge_export (tenant_id);
+CREATE INDEX idx_purge_export_base    ON _basedb.purge_export (base_id, created_at DESC);
+CREATE INDEX idx_purge_export_table   ON _basedb.purge_export (table_id);
+CREATE INDEX idx_purge_export_creator ON _basedb.purge_export (created_by);
+CREATE INDEX idx_purge_export_user    ON _basedb.purge_export (used_by);
+
+COMMENT ON TABLE _basedb.purge_export IS
+  'Export CSV préalable à une purge (chapitre 06 §5.2) : répertoire, manifeste, empreinte recalculée à la purge.';
+
+-- ════════════════════════════════════════════════════════════════════════
+-- Historique des structures — chapitre 07 §8 (normatif sur ces objets).
+--
+-- FICHIER ÉCRIT À LA MAIN, comme le reste de l'historique : le chapitre 07 possède son
+-- DDL, et `structure_revision` est un journal, pas une table de catalogue.
+--
+-- Une ligne par objet de catalogue modifié : son image avant, son image après, l'acte
+-- et son auteur. C'est ce qui dit comment une table s'appelait, quand une option a
+-- disparu, qui a rendu un champ obligatoire — et ce que la comparaison de deux
+-- environnements (chapitre 14) lit pour savoir qui a changé quoi depuis leur dernier
+-- point commun.
+-- ════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE _basedb.structure_revision (
+  id uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  occurred_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  migration_id uuid NULL,              -- cle de catalogue nue, sans FK (§7.1)
+  base_id uuid NOT NULL,
+  object_kind text NOT NULL CHECK (object_kind IN
+    ('base','db_schema','table_def','field','field_config','select_option',
+     'table_constraint','table_index','application','view_def','role','permission')),
+  -- La table de catalogue dont la ligne est l'image : un satellite de configuration ne
+  -- se reconnaît qu'à elle (`field_text_config`, `field_ai_config`…).
+  catalog_table text NOT NULL,
+  object_id uuid NOT NULL,
+  parent_object_id uuid NULL,
+  op text NOT NULL CHECK (op IN
+    ('create','update','soft_delete','restore','purge','rename_physical','replace')),
+  before_row jsonb NULL,               -- ligne de catalogue avant
+  after_row  jsonb NULL,               -- ligne de catalogue apres
+  replaced_by_object_id uuid NULL,
+  name_id uuid NULL,                   -- ligne de registre en vigueur, cle nue
+  requested_by uuid NULL, approved_by uuid NULL, approved_at timestamptz NULL,
+  actor_kind text NOT NULL, actor_user_id uuid NULL, actor_token_id uuid NULL
+);
+CREATE INDEX idx_structure_revision_object    ON _basedb.structure_revision
+  (object_kind, object_id, occurred_at DESC);
+CREATE INDEX idx_structure_revision_migration ON _basedb.structure_revision (migration_id);
+CREATE INDEX idx_structure_revision_base      ON _basedb.structure_revision
+  (base_id, occurred_at DESC);
+CREATE INDEX idx_structure_revision_parent    ON _basedb.structure_revision
+  (parent_object_id, occurred_at DESC);
+
+COMMENT ON TABLE _basedb.structure_revision IS
+  'Historique des structures (chapitre 07 §8.1) : une ligne par objet de catalogue modifie,
+   images avant et apres, ecrite par _basedb.capture_structure_v1() dans la transaction.';
+
+-- Un journal ne se réécrit pas (§3.5) : même règle que les journaux de données.
+CREATE TRIGGER tg_structure_revision__immutable
+  BEFORE UPDATE OR DELETE ON _basedb.structure_revision
+  FOR EACH STATEMENT EXECUTE FUNCTION _basedb.assert_history_immutable();
+
+-- La capture. *Décision révisée* : le §8.1 la voulait applicative, « en un point
+-- unique ». Les écritures de structure passent en fait par une vingtaine d'opérations
+-- du noyau — libellé, description, options, apparence, IA, ordre des champs, cycle de
+-- vie — et un oubli dans l'une d'elles serait un trou silencieux dans l'historique. Un
+-- déclencheur par table de catalogue ne peut pas en oublier, et il voit aussi l'écriture
+-- faite à la main en psql, attribuée `sql_direct`. `migration_id` n'est pas perdu pour
+-- autant : le moteur de migration le pose en variable de session pendant chaque étape,
+-- comme l'auteur.
+--
+-- Ne sont pas des révisions les colonnes que l'exploitation fait bouger sans que la
+-- structure change : compteurs de version, baux, états physiques d'une contrainte en
+-- cours de validation, avancement d'un calcul d'IA. Une mise à jour qui ne touche
+-- qu'elles n'écrit rien.
+CREATE FUNCTION _basedb.capture_structure_v1() RETURNS trigger
+  LANGUAGE plpgsql
+  SET search_path = pg_catalog
+AS $fn$
+DECLARE
+  v_noise constant text[] := ARRAY[
+    'updated_at', 'updated_by', 'catalog_version', 'current_migration_id', 'lock_key',
+    'state', 'state_changed_at', 'validate_attempts', 'next_attempt_at', 'build_attempts',
+    'required_state', 'definition_state', 'next_sweep_at', 'sweep_after', 'lease_until',
+    'last_run_at', 'last_error', 'last_error_at', 'computed_count'];
+  v_uuid constant text := '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+  v_old     jsonb;
+  v_new     jsonb;
+  v_row     jsonb;
+  v_kind    text;
+  v_object  uuid;
+  v_parent  uuid;
+  v_base    uuid;
+  v_op      text;
+  v_raw     text;
+  v_actor   uuid;
+  v_token   uuid;
+  v_mig     uuid;
+BEGIN
+  IF TG_OP IN ('UPDATE', 'DELETE') THEN v_old := to_jsonb(OLD); END IF;
+  IF TG_OP IN ('INSERT', 'UPDATE') THEN v_new := to_jsonb(NEW); END IF;
+  v_row := coalesce(v_new, v_old);
+
+  IF TG_OP = 'UPDATE' AND (v_old - v_noise) = (v_new - v_noise) THEN
+    RETURN NULL;
+  END IF;
+
+  CASE TG_TABLE_NAME
+    WHEN 'base' THEN
+      v_kind := 'base';
+      v_object := (v_row->>'id')::uuid;
+      v_parent := (v_row->>'project_id')::uuid;
+      v_base := v_object;
+    WHEN 'table_def' THEN
+      v_kind := 'table_def';
+      v_object := (v_row->>'id')::uuid;
+      v_parent := (v_row->>'base_id')::uuid;
+      v_base := v_parent;
+    WHEN 'field' THEN
+      v_kind := 'field';
+      v_object := (v_row->>'id')::uuid;
+      v_parent := (v_row->>'table_id')::uuid;
+      v_base := (v_row->>'base_id')::uuid;
+    WHEN 'select_option' THEN
+      v_kind := 'select_option';
+      v_object := (v_row->>'id')::uuid;
+      v_parent := (v_row->>'field_id')::uuid;
+      SELECT f.base_id INTO v_base FROM _basedb.field f WHERE f.id = v_parent;
+    WHEN 'table_constraint', 'table_index' THEN
+      v_kind := TG_TABLE_NAME;
+      v_object := (v_row->>'id')::uuid;
+      v_parent := (v_row->>'table_id')::uuid;
+      v_base := (v_row->>'base_id')::uuid;
+    ELSE
+      -- Un satellite de configuration : il n'a d'identité que celle de son champ.
+      v_kind := 'field_config';
+      v_object := (v_row->>'field_id')::uuid;
+      SELECT f.base_id, f.table_id INTO v_base, v_parent
+        FROM _basedb.field f WHERE f.id = v_object;
+  END CASE;
+
+  -- Un satellite emporté par la purge de son champ : la ligne du champ a déjà dit l'acte.
+  IF v_base IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  v_op := CASE
+    WHEN TG_OP = 'INSERT' THEN 'create'
+    WHEN TG_OP = 'DELETE' THEN 'purge'
+    WHEN (v_old->>'purged_at') IS NULL AND (v_new->>'purged_at') IS NOT NULL THEN 'purge'
+    WHEN (v_old->>'deleted_at') IS NULL AND (v_new->>'deleted_at') IS NOT NULL THEN 'soft_delete'
+    WHEN (v_old->>'deleted_at') IS NOT NULL AND (v_new->>'deleted_at') IS NULL THEN 'restore'
+    WHEN (v_old->>'dropped_at') IS NULL AND (v_new->>'dropped_at') IS NOT NULL THEN 'soft_delete'
+    WHEN (v_old->>'name_id') IS DISTINCT FROM (v_new->>'name_id') THEN 'rename_physical'
+    ELSE 'update'
+  END;
+
+  v_raw := current_setting('basedb.actor_id', true);
+  IF v_raw ~ v_uuid THEN v_actor := v_raw::uuid; END IF;
+  v_raw := current_setting('basedb.token_id', true);
+  IF v_raw ~ v_uuid THEN v_token := v_raw::uuid; END IF;
+  v_raw := current_setting('basedb.migration_id', true);
+  IF v_raw ~ v_uuid THEN v_mig := v_raw::uuid; END IF;
+
+  INSERT INTO _basedb.structure_revision
+    (migration_id, base_id, object_kind, catalog_table, object_id, parent_object_id, op,
+     before_row, after_row, name_id, actor_kind, actor_user_id, actor_token_id)
+  VALUES
+    (v_mig, v_base, v_kind, TG_TABLE_NAME, v_object, v_parent, v_op,
+     v_old, v_new,
+     CASE WHEN (v_row->>'name_id') ~ v_uuid THEN (v_row->>'name_id')::uuid END,
+     coalesce(nullif(current_setting('basedb.actor_kind', true), ''), 'sql_direct'),
+     v_actor, v_token);
+  RETURN NULL;
+END
+$fn$;
+
+COMMENT ON FUNCTION _basedb.capture_structure_v1() IS
+  'Ecrit une ligne de structure_revision par ligne de catalogue modifiee (chapitre 07 §8.1).';
+
+CREATE TRIGGER tg_structure_base
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.base
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_table_def
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.table_def
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_field
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.field
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_select_option
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.select_option
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_table_constraint
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.table_constraint
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_table_index
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.table_index
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_text_config
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.field_text_config
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_number_config
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.field_number_config
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_datetime_config
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.field_datetime_config
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_boolean_config
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.field_boolean_config
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_select_config
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.field_select_config
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_file_config
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.field_file_config
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_ai_config
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.field_ai_config
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_formula_config
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.field_formula_config
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();
+CREATE TRIGGER tg_structure_link_config
+  AFTER INSERT OR UPDATE OR DELETE ON _basedb.field_link_config
+  FOR EACH ROW EXECUTE FUNCTION _basedb.capture_structure_v1();

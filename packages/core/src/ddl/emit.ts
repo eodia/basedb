@@ -1,4 +1,10 @@
-import { SYSTEM_COLUMNS, primaryKeyName, qualify, quoteIdentifier } from '@basedb/naming'
+import {
+  SYSTEM_COLUMNS,
+  primaryKeyName,
+  qualify,
+  quoteIdentifier,
+  triggerName,
+} from '@basedb/naming'
 import { BasedbError } from '../errors/index.js'
 
 /**
@@ -10,7 +16,10 @@ import { BasedbError } from '../errors/index.js'
  * an assertion, not sanitization.
  */
 
-/** The nine field types of v1, the multiple choice, and the two kinds that carry files. */
+/**
+ * The nine field types of v1, the multiple choice, the two kinds that carry files, and the
+ * field a model fills.
+ */
 export type FieldKind =
   | 'short_text'
   | 'long_text'
@@ -24,6 +33,32 @@ export type FieldKind =
   | 'formula'
   | 'file'
   | 'image'
+  | 'url'
+
+/**
+ * The kinds whose value the kernel computes and nobody writes: a formula, from its
+ * expression. A field computed by the AI is computed too, but that is an OPTION of the
+ * field (`field_ai_config`), not a kind: its readers test the option, not this set. The
+ * decider withholds both from every write mask, whatever a role grants.
+ */
+export const COMPUTED_KINDS: ReadonlySet<string> = new Set(['formula'])
+
+/** The longest address a `url` field holds — what browsers and mail clients all accept. */
+export const MAX_URL_CHARS = 2048
+
+/**
+ * What a `url` field accepts: an `http(s)` address or a `mailto:`, nothing else — never a
+ * `javascript:` a reader would click. The kernel's copy of the column's `CHECK`.
+ */
+export const URL_PATTERN = /^(https?:\/\/[^\s]+|mailto:[^\s@]+@[^\s]+)$/i
+
+/**
+ * The body of the `ck_…__url` of a `url` column: the same rule as {@link URL_PATTERN},
+ * written for PostgreSQL, so that direct SQL is held to it too.
+ */
+export function urlCheck(column: string): string {
+  return `${column} IS NULL OR (char_length(${column}) <= ${MAX_URL_CHARS} AND ${column} ~* '^(https?://[^[:space:]]+|mailto:[^[:space:]@]+@[^[:space:]]+)$')`
+}
 
 /** True when the column holds a list of files rather than a value (chapter 04 §3 bis). */
 export const isFileKind = (kind: string): kind is 'file' | 'image' =>
@@ -51,6 +86,8 @@ export function pgTypeOf(kind: FieldKind, config: NumberConfig = {}): string {
     case 'short_text':
     case 'long_text':
     case 'select':
+    // An address, as text: the interface draws it as a link, the CHECK keeps it one.
+    case 'url':
       return 'text'
     case 'number': {
       const p = config.precision ?? 38
@@ -195,6 +232,57 @@ export function sqlCreateTable(
   ]
 
   return `CREATE TABLE ${qualify(schemaName, tableName)} (\n  ${lines.join(',\n  ')}\n);`
+}
+
+/** The version of the capture contract every trigger of this build references (07 §17). */
+export const CAPTURE_FORMAT_VERSION = 1
+
+/** The five roles of the triggers installed on a user table — the closed list of 07 §1.2. */
+export const TRIGGER_ROLES = [
+  'system',
+  'capture_ins',
+  'capture_upd',
+  'capture_del',
+  'capture_trunc',
+] as const
+
+/**
+ * The five triggers of a user table — chapter 07 §1.2, normative.
+ *
+ * `system` keeps `_updated_at` and `_updated_by` honest whoever writes; the three
+ * `capture_*` feed the history buffers, one per operation since PostgreSQL refuses
+ * transition tables on a multi-event trigger; `capture_trunc` refuses `TRUNCATE`, which
+ * no DML trigger would see. The capture arguments are the table's catalog keys and the
+ * format version: they never change, so no column migration ever recreates a trigger.
+ */
+export function sqlTableTriggers(
+  schemaName: string,
+  tableName: string,
+  baseId: string,
+  tableId: string,
+): { readonly names: readonly string[]; readonly statements: readonly string[] } {
+  const on = qualify(schemaName, tableName)
+  const name = (role: (typeof TRIGGER_ROLES)[number]) =>
+    quoteIdentifier(triggerName(tableName, role))
+  const capture = `_basedb_local.capture_v1(${quoteLiteral(baseId)}, ${quoteLiteral(tableId)}, '${CAPTURE_FORMAT_VERSION}')`
+  return {
+    names: TRIGGER_ROLES.map((role) => triggerName(tableName, role)),
+    statements: [
+      `CREATE TRIGGER ${name('system')} BEFORE INSERT OR UPDATE ON ${on}
+  FOR EACH ROW EXECUTE FUNCTION _basedb_local.set_updated_at();`,
+      `CREATE TRIGGER ${name('capture_ins')} AFTER INSERT ON ${on}
+  REFERENCING NEW TABLE AS new_rows
+  FOR EACH STATEMENT EXECUTE FUNCTION ${capture};`,
+      `CREATE TRIGGER ${name('capture_upd')} AFTER UPDATE ON ${on}
+  REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows
+  FOR EACH STATEMENT EXECUTE FUNCTION ${capture};`,
+      `CREATE TRIGGER ${name('capture_del')} AFTER DELETE ON ${on}
+  REFERENCING OLD TABLE AS old_rows
+  FOR EACH STATEMENT EXECUTE FUNCTION ${capture};`,
+      `CREATE TRIGGER ${name('capture_trunc')} BEFORE TRUNCATE ON ${on}
+  FOR EACH STATEMENT EXECUTE FUNCTION _basedb_local.assert_no_truncate();`,
+    ],
+  }
 }
 
 /** `DROP TABLE … RESTRICT`: undoing a creation, never a cascade. */

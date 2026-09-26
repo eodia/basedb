@@ -60,10 +60,13 @@ curl http://localhost:8787/api/v1/<tenant>/data/<base>/<table> -H "Authorization
 claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js --url http://localhost:8788/mcp --token-env BASEDB_TOKEN
 ```
 
-Le relais stdio transporte les messages du client vers `POST /mcp`. Neuf outils :
+Le relais stdio transporte les messages du client vers `POST /mcp`. Douze outils :
 `whoami`, `list_bases`, `describe_base`, `describe_table`, `list_records`, `get_record`,
-`lookup_records`, `create_record`, `update_record` — aucune suppression, aucune
-modification de structure.
+`lookup_records`, `create_record`, `update_record`, et trois pour **proposer** une
+évolution de structure — `propose_create_table`, `propose_add_field`, `get_proposal`.
+Aucune suppression, et aucune modification de structure directe : une proposition attend
+dans la file « Propositions » de la base (menu « ⋯ »), où une personne qui gère la
+structure l'approuve ou la refuse ; sans décision, elle expire au bout de 24 heures.
 
 La page **Documentation API et MCP** de chaque base reprend tout cela pour la base ouverte :
 les deux accès côte à côte, et pour chaque table les outils qui l’atteignent, les colonnes
@@ -85,6 +88,59 @@ node apps/api/dist/server.js
 `BASEDB_FILES_MAX_MB` borne la taille d'un fichier (25 Mo par défaut). L'API dit au
 démarrage où vont les fichiers. Détails : [chapitre 04 §3 bis](docs/architecture/04-types-de-champs.md).
 
+### Exports avant purge, webhooks en développement
+
+Une purge écrit d'abord un export CSV et son manifeste dans `.basedb/exports`
+(`BASEDB_EXPORT_DIR` pour un autre répertoire), sur l'hôte de l'API et jamais sur le serveur
+PostgreSQL ; basedb n'efface jamais ces fichiers. Les webhooks ne partent que vers des
+adresses HTTPS publiques ; `BASEDB_WEBHOOK_DEV=1` accepte HTTP et les adresses locales,
+pour un récepteur sur le poste — en développement seulement. Détails :
+[chapitre 06 §5](docs/architecture/06-cycle-de-vie.md) et
+[chapitre 08 §10](docs/architecture/08-api-rest-webhooks.md).
+
+### L'option IA d'un champ
+
+L'IA n'est pas un type de champ mais une **option** : l'interrupteur **IA** du formulaire
+d'un champ — texte court ou long, lien URL, nombre, liste de choix, booléen ou date — le
+fait remplir par un modèle, à partir d'une consigne qui cite d'autres colonnes de la ligne
+(`Résume {{Notes}} en une phrase`, `Catégorie de {{Description}}`) : dès que la ligne
+existe, puis de nouveau chaque fois qu'une colonne citée change, et aussi selon un planning
+si on le veut (cron, lu dans le fuseau de l'auteur, au plus toutes les 15 minutes). La
+colonne garde son type : le modèle reçoit le format attendu, et une réponse où rien ne se
+lit dans ce type (un nombre introuvable, un choix qui n'existe pas) est refusée plutôt
+qu'écrite. L'option s'active à la création ou sur un champ existant, et se désactive : le
+champ redevient modifiable à la main, ses valeurs gardées. Les valeurs citées partent chez
+le fournisseur : l'activation demande un consentement explicite. Tant qu'aucun écran de réglage n'existe, le fournisseur se configure
+par l'environnement de l'API — le plus simple, un fichier `.env` à la racine du dépôt (ignoré
+par git), que `scripts/start.mjs` lit au démarrage :
+
+```bash
+BASEDB_AI_PROVIDER=mistral
+BASEDB_AI_MODEL=mistral-small-latest
+MISTRAL_API_KEY=…
+```
+
+`BASEDB_AI_PROVIDER` vaut `anthropic`, `openai` ou `mistral`. La clé se lit sous
+`BASEDB_AI_API_KEY`, ou à défaut sous le nom usuel du fournisseur (`MISTRAL_API_KEY`,
+`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`). Sans le lanceur : `node --env-file=.env
+apps/api/dist/server.js`. `BASEDB_AI_FIELD_QUOTA` borne
+les appels des champs calculés par l'IA par heure et par tenant (300 par défaut) ; `BASEDB_AI_WORKER=0`
+coupe le calcul de fond dans un processus d'API (utile quand plusieurs partagent une base).
+Détails : [chapitre 12 §1.5](docs/architecture/12-integration-ia.md) et
+[chapitre 04 §7 bis](docs/architecture/04-types-de-champs.md).
+
+### Copilot
+
+Le bouton **Copilot** ouvre une conversation sur la base affichée : on demande un filtre,
+une requête, des colonnes, une table, un jeu d'essai… Chaque proposition arrive comme une
+carte (colonnes à cocher, aperçu des lignes, requête) et s'applique d'un clic, par les
+mêmes routes que les formulaires. Par défaut seule la structure part chez le fournisseur ;
+la case « Autoriser la lecture des données » lui permet, pour la conversation, de lire des
+lignes (50 au plus par lecture, en SQL en lecture seule pour qui a la console) et de
+répondre à partir d'elles — chaque lecture est listée sous sa réponse.
+`BASEDB_AI_QUOTA` borne les appels interactifs par heure et par tenant (120 par défaut).
+Détails : [chapitre 12 §1.6](docs/architecture/12-integration-ia.md).
+
 Deux autres points d'entrée, sans interface :
 
 ```bash
@@ -95,7 +151,7 @@ node scripts/naming-playground.mjs  # passe un libellé dans la chaîne de nomma
 ## Où en est le projet
 
 La **phase 1** — le document d'architecture — est dans [docs/architecture](docs/architecture/).
-Quatorze chapitres, dont [00 — Décisions structurantes](docs/architecture/00-decisions-structurantes.md)
+Quinze chapitres, dont [00 — Décisions structurantes](docs/architecture/00-decisions-structurantes.md)
 qui tient en trois pages et suffit à comprendre le reste.
 
 La **phase 2** — le noyau — est en cours.
@@ -107,19 +163,34 @@ La **phase 2** — le noyau — est en cours.
 | `@basedb/catalog-schema` | DDL du catalogue `_basedb`, extrait du chapitre 02 | fait |
 | `@basedb/core` | Pools, transactions, allocation, moteur DDL, RBAC, enregistrements, filtres, liens | partiel |
 | `apps/api` | API REST sur Hono | partiel |
-| `apps/mcp` | Serveur MCP (`POST /mcp`) et relais stdio — lecture et écriture, lots 1 et 2 du chapitre 09 | partiel |
+| `apps/mcp` | Serveur MCP (`POST /mcp`) et relais stdio — lecture, écriture et propositions de structure : les trois lots du chapitre 09 | fait |
 | `apps/web` | Interface Next.js — onglets, grille virtualisée, éditeur d'expressions, visionneuse de documentation | partiel |
 
 Ce qui fonctionne : projets, bases et tables, CRUD, comptes et groupes, permissions par
 niveaux sur les projets, les bases et les tables, et au champ près,
 filtres et tri (treize opérateurs, grammaire du chapitre 08), et les **relations** —
-vraies clés étrangères PostgreSQL, valeur d'affichage, filtres sur chemin de lien.
+vraies clés étrangères PostgreSQL, valeur d'affichage, filtres sur chemin de relation.
+Un champ **Lien URL** garde une adresse web ou de courriel, complétée à la saisie
+(`exemple.fr` → `https://exemple.fr`) et tenue par une contrainte en base ; un **texte
+long** s'écrit en Markdown — un extrait dans la grille, le rendu au survol, un éditeur
+ouvert sur la cellule. Un projet, comme une base ou une table, a son **apparence** :
+couleur, pictogramme ou image.
 S'y ajoutent la **pagination par curseur chiffré** (chapitre 08 §6.2 : le curseur
 transporte des valeurs de données et circule dans une URL, donc il est chiffré et lié à
 son lecteur), le comptage borné à la demande, la **machine à états des migrations** et
 le **cycle de vie d'une base** — renommage de libellé, suppression logique par lots avec
 relégation `zz_supprime_`, restauration. Rien n'est détruit : les tables gardent leurs
-lignes et restent lisibles en SQL direct sous leur nom relégué.
+lignes et restent lisibles en SQL direct sous leur nom relégué — jusqu'à la **purge**,
+réservée à l'administration, trente jours après la suppression et après un export CSV
+vérifié. Le **nom physique** d'une base, d'une table ou d'un champ se renomme aussi, avec
+un écran d'impact, et l'ancien nom d'une base ou d'une table reste servi par un **alias de
+compatibilité** (une vue, modifiable) jusqu'à ce qu'un administrateur décide de le couper
+à blanc puis de le supprimer.
+
+Chaque écriture est **historisée** au chapitre 07 : capturée par des déclencheurs dans la
+transaction même, SQL direct compris, puis versée dans des journaux immuables. L'historique
+d'une ligne ou d'une base se consulte, une modification s'annule, une ligne supprimée se
+restaure. Les **webhooks** (chapitre 08 §10) en partent : signés, ordonnés, réessayés.
 
 Le catalogue sait aussi **à quoi sert** ce qu'il décrit : une base, une table et un champ
 portent une **description** (texte brut, 1 000 caractères au plus, modifiable sans
@@ -134,17 +205,45 @@ résolution d'une valeur d'affichage, création et modification d'enregistrement
 par le même point d'application des permissions que l'API — un jeton y vaut les droits de
 son rôle **intersectés** avec ceux de la personne qui l'a créé —, masque les champs
 marqués `expose_to_agents = false` et les bases `mcp_enabled = false`, et journalise
-chaque appel par la forme de ses paramètres, jamais par leurs valeurs. Les propositions de
-structure (lot 3) restent à faire.
+chaque appel par la forme de ses paramètres, jamais par leurs valeurs. Un agent ne change
+jamais la structure : il la **propose** (`propose_create_table`, `propose_add_field`), et
+une personne approuve ou refuse dans la file « Propositions » de la base.
 
 L'**intégration IA** du chapitre 12 est là, dans son périmètre exact et pas un pas plus
 loin : deux usages, `structure_draft` et `expression_draft`, où le noyau décide et
 l'adaptateur appelle. Ne sortent de l'instance que des libellés, des types et la phrase
 saisie — aucune valeur de cellule, aucun identifiant.
 
-Manquent au noyau : l'historique, les webhooks, la purge et l'épuration, le renommage
-physique et les alias de compatibilité. Manquent au produit : les propositions de
-structure par MCP (lot 3), l'éditeur des permissions de champ.
+Les permissions descendent jusqu'au **champ** : sous la grille des niveaux, « Champs »
+masque une colonne à un groupe ou la rend non modifiable pour lui, et montre ce qu'une
+personne donnée en voit réellement, et par quel groupe.
+
+Une base peut avoir des **environnements** — production, recette, développement —
+([chapitre 14](docs/architecture/14-environnements.md)) : chacun a son schéma, ses tables et
+ses lignes, et tous partagent la **lignée** de la base, de ses tables et de ses champs. La
+navigation montre une ligne par base et, à côté, un badge qui dit l'environnement ouvert et
+permet d'en changer ; le formulaire de la base les ajoute (par copie de la structure), les
+renomme et les supprime. « Comparer les environnements » met la structure de tous côte à
+côte, prépare le plan de migration d'un environnement vers un autre — étape par étape, sans
+jamais cocher d'office ce qui annulerait une modification plus récente de la cible — et
+synchronise les lignes d'une table, par `_id`. Ce que la comparaison sait de qui a changé
+quoi vient de l'**historique des structures** (`structure_revision`, chapitre 07 §8),
+alimenté par déclencheur sur le catalogue et lisible dans l'onglet « Structure » de
+l'historique.
+
+Un formulaire ou un questionnaire se **partage** par un lien `/f/<jeton>`
+([chapitre 15](docs/architecture/15-formulaires-partages.md)) : **public** — quiconque a le
+lien répond, sans compte — ou réservé aux **membres connectés**, au besoin de certains
+groupes. Répondre ne demande aucun droit sur la table : la ligne s'écrit sur l'autorité de
+la personne qui a publié le partage, redécidée à chaque réponse et restreinte aux questions
+du formulaire. L'historique attribue la réponse à la personne qui a répondu, ou au
+formulaire lui-même quand il est public. Le dialogue « Partager » règle l'accès, la date
+limite, le nombre maximal de réponses, et régénère le lien s'il a trop circulé ; les
+relations, documents et images ne sont pas posés par un lien partagé.
+
+Manquent encore : la restauration d'une table supprimée seule, l'épuration des pierres
+tombales, les opérations en masse déclarées du chapitre 07 §5. Chaque chapitre concerné dit, dans sa section « État de la mise
+en œuvre », ce qui est fait et où la v1 s'écarte du texte.
 
 ## Vérifier
 

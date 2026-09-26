@@ -55,7 +55,7 @@ function attemptFor(request: Parameters<ProviderTransport>[0]): Attempt {
         },
         body: {
           model: request.model,
-          max_tokens: 2048,
+          max_tokens: request.maxTokens ?? 2048,
           system,
           messages: [{ role: 'user', content: user }],
         },
@@ -114,6 +114,7 @@ function attemptFor(request: Parameters<ProviderTransport>[0]): Attempt {
         },
         body: {
           model: request.model,
+          ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),
           response_format: { type: 'json_object' },
           messages: [
             { role: 'system', content: system },

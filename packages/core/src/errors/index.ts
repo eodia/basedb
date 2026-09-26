@@ -116,6 +116,13 @@ const BY_SQLSTATE: ReadonlyMap<string, ErrorCode> = new Map<string, ErrorCode>([
   ['42501', 'PRIVILEGES_INSUFFICIENT'],
 ])
 
+/** The codes a function of the catalog raises itself (chapter 07 §18). */
+const RAISED_BY_FUNCTIONS: ReadonlySet<string> = new Set([
+  'TRUNCATE_FORBIDDEN',
+  'BULK_OPERATION_REFUSED',
+  'HISTORY_IMMUTABLE',
+])
+
 /** SQLSTATEs whose translation requires a schema re-read and a retry (§4.4, rule 3). */
 export const SQLSTATES_NEEDING_SCHEMA_REREAD: ReadonlySet<string> = new Set(['42P01', '42703'])
 
@@ -153,6 +160,16 @@ export function translatePgError(
       cause: error,
       details: { sqlstate, note: 'statement issued inside an aborted transaction' },
     })
+  }
+
+  // A catalog or capture function refusing on purpose: `RAISE EXCEPTION 'CODE: …'`.
+  // Only the codes such a function may raise are believed — never whatever a message
+  // happens to start with.
+  if (sqlstate === 'P0001') {
+    const raised = /^([A-Z_]+):/.exec(error.message ?? '')?.[1]
+    if (raised !== undefined && RAISED_BY_FUNCTIONS.has(raised)) {
+      return new BasedbError(raised as ErrorCode, { cause: error })
+    }
   }
 
   const code = BY_SQLSTATE.get(sqlstate)

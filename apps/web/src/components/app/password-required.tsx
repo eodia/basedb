@@ -92,7 +92,7 @@ export function PasswordRequired({
               onChange={(e) => setNext(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Au moins 12 caractères, sans reprendre votre adresse ni votre nom.
+              Au moins 8 caractères, sans reprendre votre adresse ni votre nom.
             </p>
           </div>
           <div className="space-y-1.5">

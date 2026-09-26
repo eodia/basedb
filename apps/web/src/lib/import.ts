@@ -344,7 +344,10 @@ export function parseDateParts(raw: Cell): DateParts | null {
   return { date, time: `${pad(hour)}:${pad(minute)}:${pad(second)}${match[7] ?? ''}${zone}` }
 }
 
-export type Kind = 'short_text' | 'long_text' | 'number' | 'boolean' | 'date' | 'datetime'
+export type Kind = 'short_text' | 'long_text' | 'url' | 'number' | 'boolean' | 'date' | 'datetime'
+
+/** A web address as a cell holds it: with its scheme, or starting with `www.`. */
+const ADDRESS = /^(https?:\/\/|www\.)[^\s]+$/i
 
 /** The longest text a `short_text` is offered for: beyond it a person means a paragraph. */
 export const SHORT_TEXT_MAX = 255
@@ -380,6 +383,8 @@ export function inferKind(values: readonly Cell[]): Kind {
   if (parts.every((p) => p !== null)) {
     return parts.some((p) => p?.time !== null) ? 'datetime' : 'date'
   }
+  // Every value an address: a column of links, drawn as links.
+  if (present.every((v) => typeof v === 'string' && ADDRESS.test(v.trim()))) return 'url'
   const longest = Math.max(...present.map((v) => String(v).length))
   return longest > SHORT_TEXT_MAX ? 'long_text' : 'short_text'
 }
@@ -388,6 +393,7 @@ export function inferKind(values: readonly Cell[]): Kind {
 export const IMPORTABLE_KINDS: ReadonlySet<string> = new Set([
   'short_text',
   'long_text',
+  'url',
   'number',
   'boolean',
   'date',
@@ -422,6 +428,12 @@ export function convert(
     case 'short_text':
     case 'long_text':
       return { ok: true, value: String(cell).trim() }
+
+    case 'url': {
+      // The server gives a bare domain its `https://`, and refuses what is no address.
+      const text = String(cell).trim()
+      return /\s/.test(text) ? fail('adresse web invalide') : { ok: true, value: text }
+    }
 
     case 'number': {
       const n = parseNumber(cell)

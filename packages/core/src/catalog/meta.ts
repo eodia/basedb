@@ -38,6 +38,8 @@ export function toMeta(base: ProjectedBase): unknown {
     icon: base.icon,
     image: base.image,
     project: base.project,
+    // Which environment of its base this one is (chapter 14): production, recette…
+    environment: base.environment,
     // The verbs held on the base itself: `manage_schema` is what lets a table be added.
     actions: base.baseActions,
     tables: base.tables.map((t) => ({
@@ -71,6 +73,8 @@ export function toMeta(base: ProjectedBase): unknown {
         operators: operatorsFor(f.kind as FieldKind),
         sortable: sortableKind(f.kind as FieldKind),
         ...(f.unsafeHtml ? { unsafe_html: true } : {}),
+        // Computed by the AI: read-only, filled by the kernel (chapter 12 §1.5).
+        ...(f.ai === true ? { ai: true } : {}),
         ...(f.options === undefined ? {} : { options: f.options }),
         ...(f.link === undefined
           ? {}

@@ -153,7 +153,7 @@ Il n'y a qu'une connexion PostgreSQL partagée et aucun rôle par utilisateur. L
 
 | Variable | Contenu | Posée par |
 |---|---|---|
-| `basedb.actor_kind` | `user` \| `token` \| `mcp` \| `system` | Noyau, à l'ouverture de la transaction |
+| `basedb.actor_kind` | `user` \| `token` \| `mcp` \| `system` \| `form` | Noyau, à l'ouverture de la transaction |
 | `basedb.actor_id` | Clé de catalogue de l'utilisateur | idem |
 | `basedb.token_id` | Clé de catalogue du jeton d'intégration, le cas échéant | idem |
 | `basedb.bulk_id` | Opération de masse déclarée (§5) | idem |
@@ -206,7 +206,7 @@ CREATE TABLE _basedb.record_revision (
   bulk_id        uuid NULL,
   record_display text NULL,
   actor_kind     text NOT NULL CHECK (actor_kind IN
-                   ('user','token','mcp','system','sql_direct','unknown')),
+                   ('user','token','mcp','system','form','sql_direct','unknown')),
   actor_user_id  uuid NULL,
   actor_token_id uuid NULL,
   sql_identity   text NULL,
@@ -224,7 +224,7 @@ CREATE INDEX idx_revision_xact   ON _basedb.record_revision (occurred_at, xact_i
 CREATE INDEX idx_revision_bulk   ON _basedb.record_revision (bulk_id) WHERE bulk_id IS NOT NULL;
 ```
 
-Quatre points de lecture de ce DDL :
+Cinq points de lecture de ce DDL :
 
 **`occurred_at` est l'instant de l'écriture utilisateur, pas celui du drain.** Il vient de la ligne de tampon, où il vaut `clock_timestamp()` au moment de la capture. `drained_at` porte l'instant de consolidation : c'est le couple des deux qui permet de mesurer le retard du drain après coup et d'expliquer un écran d'historique incomplet.
 
@@ -233,6 +233,8 @@ Quatre points de lecture de ce DDL :
 **L'ordre à l'intérieur d'une transaction est partiel.** Un UUIDv7 ordonne de façon fiable deux instructions successives, pas les N lignes produites par une même instruction ensembliste, qui partagent la milliseconde. L'affichage ordonne par `(occurred_at DESC, id DESC)` et ne prétend rien de plus ; l'unité de regroupement est la transaction, pas la ligne.
 
 **`is_cascade` porte la distinction exigée par A14** : il vaut `pg_trigger_depth() > 1` au moment de la capture. Une suppression en chaîne est donc historisée comme les autres, et distinguée d'une suppression directe sans aucune comparaison à une ligne racine (§4.1). `record_display` est la valeur d'affichage de la ligne au moment de la révision (§4.2) : une liste « ce que Marc a modifié hier » qui affiche des identifiants n'est pas consultable.
+
+**`form` est l'acteur d'une réponse à un formulaire partagé public** (chapitre 15 §2). La ligne n'a été saisie ni par la personne qui a publié le formulaire, ni par quelqu'un de connu : `actor_user_id` porte le publiant, sur l'autorité duquel la réponse est écrite, et `actor_token_id` le partage (`_basedb.form_share`), que l'écran d'historique résout en « Formulaire « libellé de la vue » ». `_created_by` et `_updated_by` restent à `NULL` : le noyau n'écrit pas d'auteur, et `set_updated_at()` n'en déduit pas un de `basedb.actor_id` pour cet acteur. Une réponse à un partage réservé aux membres, elle, est une écriture `user` ordinaire, au nom de la personne qui a répondu.
 
 ### 3.2 `_basedb.record_revision_field` — le détail
 
@@ -590,7 +592,7 @@ CREATE INDEX idx_structure_revision_base      ON _basedb.structure_revision
 
 `requested_by` et `approved_by` sont distincts, et c'est le point qui compte pour le MCP : celui-ci **propose** une migration sans jamais l'appliquer, donc `requested_by` est l'agent et `approved_by` l'humain qui a validé. Quand la demande et l'application viennent de la même personne dans l'interface, les deux colonnes portent la même valeur — ce qui doit rester visible plutôt qu'être élidé.
 
-La capture est **applicative** ici, et non par déclencheur : les écritures de catalogue passent toutes par le moteur DDL, en un point unique, dans la même transaction que l'étape de structure qu'elles décrivent. Un déclencheur sur les tables de catalogue n'apporterait rien et rendrait impossible l'enregistrement de `migration_id`, qui n'existe qu'au niveau du moteur. Une écriture de catalogue faite à la main en SQL n'est pas historisée : c'est une opération d'exploitation exceptionnelle, à consigner dans `audit_log`, et la réconciliation du chapitre 02 la détecte.
+*Décision révisée* : la capture devait être **applicative**, « en un point unique ». Elle est faite **par déclencheur** sur les tables de catalogue — `base`, `table_def`, `field`, ses satellites de configuration, `select_option`, `table_constraint`, `table_index` —, par `_basedb.capture_structure_v1()`, dans la transaction de l'écriture. Les écritures de structure passent en réalité par une vingtaine d'opérations du noyau, et un oubli dans l'une d'elles serait un trou silencieux ; un déclencheur ne peut pas en oublier, et il attribue à `sql_direct` l'écriture faite à la main en psql au lieu de l'ignorer. `migration_id` n'est pas perdu : le moteur de migration le pose en variable de session (`basedb.migration_id`) pendant chaque étape, comme l'auteur. Deux compléments au schéma ci-dessus : `catalog_table`, la table de catalogue dont la ligne est l'image — un satellite ne se reconnaît qu'à elle —, et la valeur `field_config` d'`object_kind`, dont l'`object_id` est le champ. Une mise à jour qui ne touche que des colonnes d'exploitation — compteurs de version, baux, états physiques, avancement d'un calcul d'IA — n'écrit rien. Le journal est immuable comme les autres (`HISTORY_IMMUTABLE`), et c'est lui que la comparaison des environnements lit (chapitre 14 §3.4).
 
 ### 8.2 `_basedb.migration_execution` — ce qui s'est réellement passé
 
@@ -1127,6 +1129,33 @@ Ces codes sont en anglais, à raison d'un par condition (A2, A23), et versés au
 Deux codes employés ici sont définis ailleurs : `LOCK_UNAVAILABLE` (chapitre 01) et `DISPLAY_FIELD_IN_USE` (chapitre 02).
 
 ---
+
+## État de la mise en œuvre (v1)
+
+**Fait.** Les déclencheurs d'instruction à tables de transition posés à la création de
+chaque table (§1.2), la fonction `_basedb_local.capture_v1()`, les tampons, le drain sous
+verrou consultatif qui écrit `record_revision`, `record_revision_field`,
+`record_deletion` et `change_event` dans une seule transaction, l'identité de l'auteur par
+variables de session (`sql_direct` quand elles manquent), l'immuabilité des journaux, le
+refus de `TRUNCATE`, la consultation (historique d'une ligne, d'une base, filtré par les
+droits actuels du lecteur), l'annulation d'une modification (`REVISION_SUPERSEDED` si un
+champ a bougé depuis) et la restauration d'une ligne supprimée.
+
+**Écarts assumés.**
+
+- `capture_v1` est `SECURITY DEFINER`, avec un `search_path` et des réglages de
+  formatage figés : un consommateur SQL direct qui écrit dans une table n'a pas à détenir de
+  droit sur les tampons.
+- Les journaux n'ont qu'une partition `DEFAULT` : pas de partition mensuelle ni de tâche
+  qui les crée d'avance.
+- Le drain ne se réveille pas sur `NOTIFY` : il sonde toutes les deux secondes.
+- Le garde-fou des opérations en masse (§5) se réduit au plafond cumulé de
+  `basedb.rows_written` (100 000 lignes, `BULK_OPERATION_REFUSED`) : pas d'opération en
+  masse déclarée ni de ligne `bulk_operation`.
+- `structure_revision` (§8.1) est alimentée par déclencheur et non par le moteur, et se lit
+  dans l'onglet « Structure » de l'historique d'une base ; sa rétention n'a pas de tâche de
+  purge.
+
 
 ## Décisions retenues
 

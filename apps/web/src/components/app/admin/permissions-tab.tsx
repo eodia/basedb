@@ -1,5 +1,6 @@
 'use client'
 
+import { FieldRulesDialog } from '@/components/app/admin/field-rules-dialog'
 import { cancelled, useElevated } from '@/components/app/elevation'
 import {
   Select,
@@ -19,6 +20,7 @@ import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import {
   ChevronRight,
+  Columns3,
   Database,
   FolderKanban,
   Loader2,
@@ -83,6 +85,7 @@ export function PermissionsTab({
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
   const [saving, setSaving] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [fieldsOf, setFieldsOf] = useState<{ id: string; label: string } | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -150,7 +153,8 @@ export function PermissionsTab({
         <p className="max-w-3xl text-sm text-muted-foreground">
           Le niveau accordé à un groupe sur un projet vaut pour toutes ses bases et toutes leurs
           tables, y compris celles créées plus tard. Les droits s’additionnent : une personne reçoit
-          le niveau le plus élevé que lui donne l’un de ses groupes.
+          le niveau le plus élevé que lui donne l’un de ses groupes. Sous une table, « Champs »
+          masque une colonne à un groupe ou la rend non modifiable pour lui.
         </p>
       </div>
 
@@ -256,6 +260,9 @@ export function PermissionsTab({
                                     onLevel={(level) =>
                                       void set({ kind: 'table', id: table.id }, level)
                                     }
+                                    onFields={() =>
+                                      setFieldsOf({ id: table.id, label: table.label })
+                                    }
                                   />
                                 )
                               })}
@@ -279,6 +286,8 @@ export function PermissionsTab({
           </section>
         </div>
       )}
+
+      <FieldRulesDialog table={fieldsOf} onClose={() => setFieldsOf(null)} />
     </div>
   )
 }
@@ -355,6 +364,7 @@ function Row({
   locked,
   saving,
   onLevel,
+  onFields,
 }: {
   readonly depth: 0 | 1 | 2
   readonly icon: LucideIcon
@@ -368,6 +378,8 @@ function Row({
   readonly locked: boolean
   readonly saving: boolean
   readonly onLevel: (level: AccessLevel) => void
+  /** A table's fields, group by group: offered on table rows only. */
+  readonly onFields?: () => void
 }) {
   const level: Level = cell?.level ?? 'none'
   const inherited = cell !== undefined && !cell.direct && level !== 'none' && level !== 'granular'
@@ -397,6 +409,17 @@ function Row({
 
       {inherited && <span className="text-[11px] text-muted-foreground">hérité</span>}
       {saving && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
+      {onFields !== undefined && (
+        <button
+          type="button"
+          onClick={onFields}
+          aria-label={`Droits des champs de ${label}`}
+          className="flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <Columns3 className="size-3.5" />
+          Champs
+        </button>
+      )}
 
       <Select
         value={level}

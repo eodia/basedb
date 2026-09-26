@@ -236,6 +236,9 @@ export async function applyMigration(
 
     try {
       await withTransaction(pools, 'ddl', ctx, async (exec) => {
+        // The structure history (chapter 07 §8.1) is written by catalog triggers, which
+        // learn the migration they belong to here — as the capture learns its author.
+        await exec.query("SELECT set_config('basedb.migration_id', $1, true)", [migrationId])
         for (const statement of step.statements) {
           await exec.query(statement, [], 'ddl')
         }

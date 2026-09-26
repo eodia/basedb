@@ -2,16 +2,36 @@
 
 import type { AdminTab } from '@/components/app/admin/admin-panel'
 import { DeleteBaseDialog, EditBaseDialog } from '@/components/app/base-menu'
+import {
+  EnvironmentBadge,
+  familiesOf,
+  readEnvironmentChoices,
+  shownEnvironment,
+  writeEnvironmentChoice,
+} from '@/components/app/environment-badge'
+import { EnvironmentsDialog } from '@/components/app/environments-dialog'
+import {
+  AliasesDialog,
+  DeletedTablesDialog,
+  PhysicalRenameDialog,
+  type PhysicalTarget,
+} from '@/components/app/lifecycle-dialogs'
 import { LookIcon, type OptionLook } from '@/components/app/option-badge'
 import { ProjectMenu } from '@/components/app/project-menu'
+import { ProposalDialog } from '@/components/app/proposal-dialog'
 import { TokenDialog } from '@/components/app/token-dialog'
 import { UserMenu } from '@/components/app/user-menu'
+import { WebhookDialog } from '@/components/app/webhook-dialog'
 import { Button } from '@/components/ui/button'
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuLabel,
   ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import {
@@ -20,6 +40,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
@@ -29,13 +52,18 @@ import { useSidebar } from '@/lib/store/sidebar'
 import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
 import {
+  ArchiveX,
   BookOpen,
+  Bot,
   Check,
   ChevronRight,
   Clock,
+  CodeXml,
+  Copy,
   Database,
   Ellipsis,
   FolderOpen,
+  GitCompareArrows,
   Layers,
   type LucideIcon,
   PanelLeft,
@@ -51,6 +79,7 @@ import {
   Trash2,
   Upload,
   Users,
+  Webhook,
 } from 'lucide-react'
 import { createContext, useContext, useEffect, useState } from 'react'
 
@@ -77,7 +106,7 @@ export type Section = 'data' | 'structure' | 'history' | 'doc' | 'admin'
 export type BaseIntent = 'open' | 'structure' | 'doc' | 'sql' | 'new-table'
 
 /** What a table's menu asks of the page. */
-export type TableIntent = 'open' | 'import' | 'edit' | 'delete'
+export type TableIntent = 'open' | 'import' | 'edit' | 'delete' | 'rename-physical'
 
 interface Props {
   readonly projects: readonly Project[]
@@ -99,9 +128,28 @@ interface Props {
   readonly onSection: (section: Section) => void
   readonly onAdmin: (tab: AdminTab) => void
   readonly onSignedOut: () => void
+  /** A base or a table renamed in the database: tabs and URLs carry the old name. */
+  readonly onRenamed?: (change: {
+    readonly kind: 'base' | 'table'
+    readonly base: string
+    readonly from: string
+    readonly to: string
+  }) => void
 }
 
-type BaseDialog = { readonly kind: 'edit' | 'delete' | 'mcp'; readonly base: ProjectBase }
+type BaseDialog = {
+  readonly kind:
+    | 'edit'
+    | 'delete'
+    | 'mcp'
+    | 'webhooks'
+    | 'proposals'
+    | 'rename-physical'
+    | 'aliases'
+    | 'deleted-tables'
+    | 'environments'
+  readonly base: ProjectBase
+}
 
 export function Sidebar({
   projects,
@@ -122,12 +170,17 @@ export function Sidebar({
   onSection,
   onAdmin,
   onSignedOut,
+  onRenamed,
 }: Props) {
   const tabs = useWorkspace((s) => s.tabs)
   const activeId = useWorkspace((s) => s.activeId)
   const [filter, setFilter] = useState('')
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
   const [dialog, setDialog] = useState<BaseDialog | null>(null)
+  const [physicalTable, setPhysicalTable] = useState<{
+    readonly base: string
+    readonly target: PhysicalTarget
+  } | null>(null)
 
   const collapsed = useSidebar((s) => s.collapsed)
 
@@ -144,7 +197,25 @@ export function Sidebar({
       ? { base: active.base, table: active.table }
       : null
 
-  const bases = project?.bases ?? []
+  // One line per base, whatever its number of environments (chapter 14): the line shows
+  // the environment being worked in, or the one last chosen, or production.
+  const [chosen, setChosen] = useState<Readonly<Record<string, string>>>({})
+  useEffect(() => setChosen(readEnvironmentChoices()), [])
+  const families = familiesOf(project?.bases ?? [])
+  const familyOf = new Map(
+    families.flatMap((family) => family.map((b) => [b.name, family] as const)),
+  )
+  const bases = families.flatMap((family) => {
+    const lineage = family[0]?.environment.lineage ?? ''
+    const shownOne = shownEnvironment(family, base?.name ?? null, chosen, lineage)
+    return shownOne === undefined ? [] : [shownOne]
+  })
+  const switchEnvironment = (b: ProjectBase) => {
+    writeEnvironmentChoice(b.environment.lineage, b.name)
+    setChosen((was) => ({ ...was, [b.environment.lineage]: b.name }))
+    onBase(b.name, 'open')
+  }
+
   const needle = filter.trim().toLowerCase()
   const matches = (text: string) => text.toLowerCase().includes(needle)
   const shown =
@@ -221,11 +292,48 @@ export function Sidebar({
           setDialog(null)
           onBaseChanged(dialog.base.name)
         }}
+        onEnvironmentsChanged={() => onBaseChanged(dialog.base.name)}
       />
       <TokenDialog
         open={dialog.kind === 'mcp'}
         base={dialog.base}
         onClose={() => setDialog(null)}
+      />
+      <WebhookDialog
+        open={dialog.kind === 'webhooks'}
+        base={dialog.base}
+        onClose={() => setDialog(null)}
+      />
+      <ProposalDialog
+        open={dialog.kind === 'proposals'}
+        base={dialog.base}
+        onClose={() => setDialog(null)}
+        onApplied={() => onBaseChanged(dialog.base.name)}
+      />
+      <PhysicalRenameDialog
+        target={
+          dialog.kind === 'rename-physical'
+            ? { kind: 'base', id: dialog.base.id, label: dialog.base.label }
+            : null
+        }
+        onClose={() => setDialog(null)}
+        onDone={(change) => {
+          setDialog(null)
+          onRenamed?.({ kind: 'base', base: change.from, ...change })
+        }}
+      />
+      <AliasesDialog
+        base={dialog.kind === 'aliases' ? dialog.base : null}
+        onClose={() => setDialog(null)}
+      />
+      <DeletedTablesDialog
+        base={dialog.kind === 'deleted-tables' ? dialog.base : null}
+        onClose={() => setDialog(null)}
+      />
+      <EnvironmentsDialog
+        base={dialog.kind === 'environments' ? dialog.base : null}
+        onClose={() => setDialog(null)}
+        onChanged={(name) => onBaseChanged(name)}
       />
       <DeleteBaseDialog
         open={dialog.kind === 'delete'}
@@ -237,6 +345,18 @@ export function Sidebar({
         }}
       />
     </>
+  )
+
+  const physicalDialog = (
+    <PhysicalRenameDialog
+      target={physicalTable?.target ?? null}
+      onClose={() => setPhysicalTable(null)}
+      onDone={(change) => {
+        const base = physicalTable?.base ?? ''
+        setPhysicalTable(null)
+        onRenamed?.({ kind: 'table', base, ...change })
+      }}
+    />
   )
 
   if (collapsed) {
@@ -275,6 +395,7 @@ export function Sidebar({
             <UserMenu user={user} compact onSignedOut={onSignedOut} />
           </div>
           {dialogs}
+          {physicalDialog}
         </aside>
       </Compact.Provider>
     )
@@ -333,6 +454,8 @@ export function Sidebar({
             <BaseNode
               key={b.id}
               base={b}
+              family={familyOf.get(b.name) ?? [b]}
+              onEnvironment={switchEnvironment}
               tables={tables}
               current={base?.name === b.name}
               expanded={needle !== '' || expanded.has(b.name)}
@@ -344,8 +467,19 @@ export function Sidebar({
                 onBase(b.name, 'open')
               }}
               onIntent={(intent) => onBase(b.name, intent)}
+              administers={user.isAdmin}
               onDialog={(kind) => setDialog({ kind, base: b })}
-              onTable={(table, intent) => onTable(b.name, table, intent)}
+              onTable={(table, intent) => {
+                const found = b.tables.find((x) => x.name === table)
+                if (intent === 'rename-physical' && found !== undefined) {
+                  setPhysicalTable({
+                    base: b.name,
+                    target: { kind: 'table', id: found.id, label: found.label },
+                  })
+                  return
+                }
+                onTable(b.name, table, intent)
+              }}
             />
           ))}
           {project !== null && shown.length === 0 && (
@@ -380,6 +514,7 @@ export function Sidebar({
         <UserMenu user={user} onSignedOut={onSignedOut} />
       </div>
       {dialogs}
+      {physicalDialog}
     </aside>
   )
 }
@@ -447,15 +582,175 @@ function BottomItems({
 }
 
 /**
+ * The pieces a menu is drawn with. The entries of a base are the same whether they open
+ * from its « ⋯ » or from a right-click — only the primitives differ, and writing the list
+ * twice is how two menus of the same thing drift apart.
+ */
+interface MenuKit {
+  readonly Item: React.ComponentType<{
+    readonly onSelect?: () => void
+    readonly disabled?: boolean
+    readonly className?: string
+    readonly children: React.ReactNode
+  }>
+  readonly Label: React.ComponentType<{
+    readonly className?: string
+    readonly children: React.ReactNode
+  }>
+  readonly Separator: React.ComponentType
+  readonly Sub: React.ComponentType<{ readonly children: React.ReactNode }>
+  readonly SubTrigger: React.ComponentType<{ readonly children: React.ReactNode }>
+  readonly SubContent: React.ComponentType<{
+    readonly className?: string
+    readonly children: React.ReactNode
+  }>
+}
+
+const DROPDOWN_KIT: MenuKit = {
+  Item: DropdownMenuItem,
+  Label: DropdownMenuLabel,
+  Separator: DropdownMenuSeparator,
+  Sub: DropdownMenuSub,
+  SubTrigger: DropdownMenuSubTrigger,
+  SubContent: DropdownMenuSubContent,
+}
+
+const CONTEXT_KIT: MenuKit = {
+  Item: ContextMenuItem,
+  // The right-click menu's label is set like the dropdown's: the base's name, readable.
+  Label: ({ className, children }) => (
+    <ContextMenuLabel className={cn('text-sm text-foreground', className)}>
+      {children}
+    </ContextMenuLabel>
+  ),
+  Separator: ContextMenuSeparator,
+  Sub: ContextMenuSub,
+  SubTrigger: ContextMenuSubTrigger,
+  SubContent: ContextMenuSubContent,
+}
+
+/** What one does to a base: its « ⋯ » menu, and its right-click menu. */
+function BaseMenuEntries({
+  kit: M,
+  base,
+  busy,
+  administers,
+  onIntent,
+  onDialog,
+}: {
+  readonly kit: MenuKit
+  readonly base: ProjectBase
+  readonly busy: boolean
+  readonly administers: boolean
+  readonly onIntent: (intent: BaseIntent) => void
+  readonly onDialog: (kind: BaseDialog['kind']) => void
+}) {
+  const manages = base.actions.includes('manage_schema')
+  return (
+    <>
+      <M.Label className="truncate">{base.label}</M.Label>
+      {manages && (
+        <M.Item onSelect={() => onIntent('new-table')} disabled={busy}>
+          <Plus className="size-4" />
+          Nouvelle table
+        </M.Item>
+      )}
+      <M.Item onSelect={() => onIntent('sql')}>
+        <Terminal className="size-4" />
+        Nouvelle requête SQL
+      </M.Item>
+      <M.Item onSelect={() => onIntent('structure')}>
+        <Layers className="size-4" />
+        Structure
+      </M.Item>
+      <M.Item onSelect={() => onIntent('doc')}>
+        <BookOpen className="size-4" />
+        Documentation API et MCP
+      </M.Item>
+      <M.Separator />
+      <M.Item onSelect={() => onDialog('mcp')}>
+        <Plug className="size-4" />
+        Jetons API et MCP…
+      </M.Item>
+      {/* Like tokens: offered to whoever may manage the base's doors. */}
+      {base.actions.includes('manage_tokens') && (
+        <M.Item onSelect={() => onDialog('webhooks')}>
+          <Webhook className="size-4" />
+          Webhooks…
+        </M.Item>
+      )}
+      {manages && (
+        <>
+          <M.Item onSelect={() => onDialog('proposals')}>
+            <Bot className="size-4" />
+            <span className="flex-1">Propositions des agents…</span>
+            {base.openProposals > 0 && (
+              <span className="text-xs text-amber-700 dark:text-amber-400">
+                {base.openProposals}
+              </span>
+            )}
+          </M.Item>
+          <M.Item onSelect={() => onDialog('edit')}>
+            <Pencil className="size-4" />
+            Modifier la base…
+          </M.Item>
+          <M.Item onSelect={() => onDialog('environments')}>
+            <GitCompareArrows className="size-4" />
+            Comparer les environnements…
+          </M.Item>
+          <M.Item
+            onSelect={() => onDialog('delete')}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="size-4 text-destructive" />
+            Supprimer la base…
+          </M.Item>
+        </>
+      )}
+      {administers && (
+        <>
+          <M.Separator />
+          <M.Sub>
+            <M.SubTrigger>
+              <Shield className="size-4" />
+              Administration
+            </M.SubTrigger>
+            <M.SubContent className="w-56">
+              <M.Item onSelect={() => onDialog('rename-physical')}>
+                <CodeXml className="size-4" />
+                Renommer en base…
+              </M.Item>
+              <M.Item onSelect={() => onDialog('aliases')}>
+                <Copy className="size-4" />
+                Alias de compatibilité…
+              </M.Item>
+              <M.Item onSelect={() => onDialog('deleted-tables')}>
+                <ArchiveX className="size-4" />
+                Tables supprimées…
+              </M.Item>
+            </M.SubContent>
+          </M.Sub>
+        </>
+      )}
+    </>
+  )
+}
+
+/**
  * A base in the tree, its menu, and its tables when unfolded.
  *
  * The chevron folds; a click on the label also makes the base the current one — the one
  * « Structure », « Historique » and the SQL console speak of. The « ⋯ » holds what one does
  * to the base itself; « Nouvelle table » and « Modifier » appear only to whoever holds
- * `manage_schema` on it, which is what the server would demand anyway.
+ * `manage_schema` on it, which is what the server would demand anyway. What only an
+ * administrator does — physical name, aliases, deleted tables — waits in a submenu of its
+ * own, out of the way of the daily entries. A right-click on the line opens the same menu,
+ * as it does on a table.
  */
 function BaseNode({
   base,
+  family,
+  onEnvironment,
   tables,
   current,
   expanded,
@@ -466,8 +761,12 @@ function BaseNode({
   onIntent,
   onDialog,
   onTable,
+  administers,
 }: {
   readonly base: ProjectBase
+  /** Every environment of this base, production first — the base alone when it has one. */
+  readonly family: readonly ProjectBase[]
+  readonly onEnvironment: (environment: ProjectBase) => void
   readonly tables: ProjectBase['tables']
   readonly current: boolean
   readonly expanded: boolean
@@ -478,97 +777,134 @@ function BaseNode({
   readonly onIntent: (intent: BaseIntent) => void
   readonly onDialog: (kind: BaseDialog['kind']) => void
   readonly onTable: (table: string, intent: TableIntent) => void
+  /** The administration role: physical names, aliases, purge (chapter 06 §1.2). */
+  readonly administers: boolean
 }) {
   const manages = base.actions.includes('manage_schema')
 
   return (
     <div>
-      <div className="group/base relative">
-        <div
-          className={cn(
-            'flex h-8 w-full items-center rounded-lg text-sm transition-colors hover:bg-sidebar-accent',
-            current && 'font-medium',
-          )}
-        >
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-label={expanded ? `Replier ${base.label}` : `Déplier ${base.label}`}
-            aria-expanded={expanded}
-            className="flex h-8 w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
-          >
-            <ChevronRight
-              className={cn('size-3.5 transition-transform', expanded && 'rotate-90')}
-            />
-          </button>
-          <button
-            type="button"
-            onClick={onSelect}
-            title={base.name}
-            className="flex h-8 min-w-0 flex-1 items-center gap-2 pr-8 text-left"
-          >
-            <LookIcon
-              look={base}
-              fallback={Database}
-              className={current ? 'text-foreground' : 'text-muted-foreground'}
-            />
-            <span className="truncate">{base.label}</span>
-          </button>
-        </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              aria-label={`Actions sur la base ${base.label}`}
-              className="absolute top-1/2 right-1 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/base:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div className="group/base relative">
+            <div
+              className={cn(
+                'flex h-8 w-full items-center rounded-lg text-sm transition-colors hover:bg-sidebar-accent',
+                current && 'font-medium',
+              )}
             >
-              <Ellipsis className="size-4" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuLabel className="truncate">{base.label}</DropdownMenuLabel>
-            {manages && (
-              <DropdownMenuItem onSelect={() => onIntent('new-table')} disabled={busy}>
-                <Plus className="size-4" />
-                Nouvelle table
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem onSelect={() => onIntent('sql')}>
-              <Terminal className="size-4" />
-              Nouvelle requête SQL
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onIntent('structure')}>
-              <Layers className="size-4" />
-              Structure
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onIntent('doc')}>
-              <BookOpen className="size-4" />
-              Documentation API et MCP
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => onDialog('mcp')}>
-              <Plug className="size-4" />
-              Jetons API et MCP…
-            </DropdownMenuItem>
-            {manages && (
-              <>
-                <DropdownMenuItem onSelect={() => onDialog('edit')}>
-                  <Pencil className="size-4" />
-                  Modifier la base…
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => onDialog('delete')}
-                  className="text-destructive focus:text-destructive"
+              <button
+                type="button"
+                onClick={onToggle}
+                aria-label={expanded ? `Replier ${base.label}` : `Déplier ${base.label}`}
+                aria-expanded={expanded}
+                className="flex h-8 w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
+              >
+                <ChevronRight
+                  className={cn('size-3.5 transition-transform', expanded && 'rotate-90')}
+                />
+              </button>
+              <button
+                type="button"
+                onClick={onSelect}
+                title={base.name}
+                className="flex h-8 min-w-0 flex-1 items-center gap-2 pr-1 text-left"
+              >
+                <LookIcon
+                  look={base}
+                  fallback={Database}
+                  className={current ? 'text-foreground' : 'text-muted-foreground'}
+                />
+                <span className="truncate">{base.label}</span>
+              </button>
+              {/* The environment one works in, and where one changes it (chapter 14). */}
+              {family.length > 1 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label={`Environnement de ${base.label} : ${base.environment.label}`}
+                      title="Changer d’environnement"
+                      className="flex shrink-0 items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <EnvironmentBadge environment={base.environment} className="cursor-pointer" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                      Environnements de {base.label}
+                    </DropdownMenuLabel>
+                    {family.map((env) => (
+                      <DropdownMenuItem key={env.id} onSelect={() => onEnvironment(env)}>
+                        <EnvironmentBadge environment={env.environment} />
+                        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                          {env.name}
+                        </span>
+                        {env.name === base.name && <Check className="size-4 text-primary" />}
+                      </DropdownMenuItem>
+                    ))}
+                    {manages && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => onDialog('environments')}>
+                          <GitCompareArrows className="size-4" />
+                          Comparer les environnements…
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              {/* What agents proposed and awaits a decision: said where one looks, not buried. */}
+              {base.openProposals > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onDialog('proposals')}
+                  title={`${base.openProposals} proposition${base.openProposals > 1 ? 's' : ''} d’agent en attente`}
+                  aria-label={`Propositions en attente sur ${base.label} : ${base.openProposals}`}
+                  className="ml-1 flex h-5 min-w-5 shrink-0 items-center justify-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 text-[0.7rem] font-medium text-amber-700 hover:bg-amber-500/25 dark:text-amber-400"
                 >
-                  <Trash2 className="size-4" />
-                  Supprimer la base…
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+                  <Bot className="size-3" />
+                  {base.openProposals}
+                </button>
+              )}
+              <span className="w-7 shrink-0" aria-hidden />
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`Actions sur la base ${base.label}`}
+                  className="absolute top-1/2 right-1 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/base:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+                >
+                  <Ellipsis className="size-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <BaseMenuEntries
+                  kit={DROPDOWN_KIT}
+                  base={base}
+                  busy={busy}
+                  administers={administers}
+                  onIntent={onIntent}
+                  onDialog={onDialog}
+                />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-64">
+          <BaseMenuEntries
+            kit={CONTEXT_KIT}
+            base={base}
+            busy={busy}
+            administers={administers}
+            onIntent={onIntent}
+            onDialog={onDialog}
+          />
+        </ContextMenuContent>
+      </ContextMenu>
 
       {expanded && (
         <div className="ml-3 space-y-0.5 border-l pl-2">
@@ -577,6 +913,7 @@ function BaseNode({
               key={t.id}
               table={t}
               active={activeTable === t.name}
+              administers={administers}
               onIntent={(intent) => onTable(t.name, intent)}
             />
           ))}
@@ -656,7 +993,8 @@ function BasesMenu({
             {index > 0 && <DropdownMenuSeparator />}
             <DropdownMenuLabel className="flex items-center gap-2">
               <LookIcon look={b} fallback={Database} className="size-3.5 text-muted-foreground" />
-              <span className="truncate">{b.label}</span>
+              <span className="min-w-0 flex-1 truncate">{b.label}</span>
+              {!b.environment.production && <EnvironmentBadge environment={b.environment} />}
             </DropdownMenuLabel>
             {b.tables.map((t) => (
               <DropdownMenuItem key={t.id} onSelect={() => onOpen(b.name, t.name)}>
@@ -726,10 +1064,12 @@ function Group({
 function TableRow({
   table,
   active,
+  administers,
   onIntent,
 }: {
   readonly table: ProjectBase['tables'][number]
   readonly active: boolean
+  readonly administers: boolean
   readonly onIntent: (intent: TableIntent) => void
 }) {
   // Offered only to whoever may: importing writes rows, deleting changes the structure.
@@ -776,6 +1116,12 @@ function TableRow({
                     <Pencil className="size-4" />
                     Modifier la table…
                   </DropdownMenuItem>
+                  {administers && (
+                    <DropdownMenuItem onSelect={() => onIntent('rename-physical')}>
+                      <CodeXml className="size-4" />
+                      Renommer en base…
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onSelect={() => onIntent('delete')}
@@ -808,6 +1154,12 @@ function TableRow({
               <Pencil className="size-4" />
               Modifier la table…
             </ContextMenuItem>
+            {administers && (
+              <ContextMenuItem onSelect={() => onIntent('rename-physical')}>
+                <CodeXml className="size-4" />
+                Renommer en base…
+              </ContextMenuItem>
+            )}
             <ContextMenuSeparator />
             <ContextMenuItem
               onSelect={() => onIntent('delete')}

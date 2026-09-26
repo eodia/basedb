@@ -5,7 +5,7 @@ schéma du catalogue, la stratégie de migration DDL, le modèle de permissions 
 conventions de nommage, de façon assez précise pour que la phase 2 s'écrive sans
 nouvelle décision d'architecture.
 
-Quatorze chapitres, environ 190 000 mots. **Vous n'avez pas à tout lire pour le
+Seize chapitres, environ 197 000 mots. **Vous n'avez pas à tout lire pour le
 valider.** Ce fichier est fait pour ça.
 
 ---
@@ -44,6 +44,8 @@ disponibles, aucune dépendance externe hors PostgreSQL.
 | [11](11-interface.md) | Interface | La grille, l'édition en ligne, la cellule de lien, la vue détail, l'éditeur de schéma |
 | [12](12-integration-ia.md) | Intégration IA | OpenAI, Anthropic et Mistral, la configuration par tenant, les clés côté serveur |
 | [13](13-authentification.md) | Authentification | Mot de passe, OAuth/OIDC, sessions, élévation, amorçage |
+| [14](14-environnements.md) | Environnements | Production, recette, développement : la lignée, la comparaison, le report de structure, la synchronisation des lignes |
+| [15](15-formulaires-partages.md) | Formulaires partagés | Le lien public ou réservé aux membres, l'autorité du publiant, l'attribution des réponses, la fermeture |
 
 ---
 

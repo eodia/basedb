@@ -92,6 +92,9 @@ function scalarSchema(field: ProjectedField): Schema {
       return of('boolean')
     case 'date':
       return of('string', 'date')
+    // An `http(s)` address or a `mailto:`; a bare domain is given its `https://`.
+    case 'url':
+      return { ...of('string', 'uri'), maxLength: 2048 }
     case 'datetime':
       return of('string', 'date-time')
     case 'system':

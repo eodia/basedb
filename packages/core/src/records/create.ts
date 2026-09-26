@@ -53,7 +53,10 @@ export async function createRecord(
     { readOnly: true },
   )
 
-  const rows = await pools.withConnection('data', (exec) =>
+  // In a transaction that carries the actor, never on a bare connection: the capture reads
+  // the author from the session variables `withTransaction` sets (chapter 07 §2.1), and an
+  // autocommitted write would be historised as a direct SQL session.
+  const rows = await withTransaction(pools, 'data', ctx, (exec) =>
     exec.query(plan.sql, plan.params, 'insert'),
   )
 
@@ -62,6 +65,52 @@ export async function createRecord(
     throw new BasedbError('INTERNAL_ERROR', { details: { reason: 'insert without RETURNING' } })
   }
   return { row, sql: plan.sql, fileColumns: plan.fileColumns }
+}
+
+/**
+ * Creates a record on ANOTHER's authority — the answer to a shared form (chapter 15).
+ *
+ * The rights are decided for `authority`, the person who published the form: what they
+ * may create and write, narrowed to `fields`, the form's questions — a field outside them
+ * is unknown, exactly as a hidden one is. The row is written, and historised, as `writer`:
+ * the person who answered when they are signed in, the form itself when it is public.
+ *
+ * Nothing is read back: whoever answers a form is not granted a read of the table.
+ */
+export async function createRecordFor(
+  pools: Pools,
+  authority: RequestContext,
+  writer: RequestContext,
+  options: CreateRecordOptions & { readonly fields: ReadonlySet<string> },
+): Promise<{ readonly id: string }> {
+  const plan = await withTransaction(
+    pools,
+    'catalog',
+    authority,
+    async (exec) => {
+      const context = await loadWriteContext(exec, authority, options.tableId)
+      const asked = (names: ReadonlySet<string>) =>
+        new Set([...names].filter((name) => options.fields.has(name)))
+      const narrowed: WriteContext = {
+        ...context,
+        readable: asked(context.readable),
+        writable: asked(context.writable),
+        // An answer to a public form has no author; a signed-in one has the respondent.
+        actorId: writer.actor.kind === 'user' ? writer.actor.id : null,
+      }
+      const values = await shapeValues(exec, narrowed.shaped, narrowed.writable, options.values)
+      return planRow(narrowed, values, '"_id"')
+    },
+    { readOnly: true },
+  )
+  const rows = await withTransaction(pools, 'data', writer, (exec) =>
+    exec.query<{ _id: string }>(plan.sql, plan.params, 'insert'),
+  )
+  const row = rows[0]
+  if (row === undefined) {
+    throw new BasedbError('INTERNAL_ERROR', { details: { reason: 'insert without RETURNING' } })
+  }
+  return { id: row._id }
 }
 
 /** Chapter 08 §3.6: a batch carries at most this many operations (`BATCH_TOO_LARGE`). */
@@ -174,7 +223,8 @@ interface WriteContext {
   /** Physical names the actor may READ — a field outside it is unknown, not merely refused. */
   readonly readable: ReadonlySet<string>
   readonly writable: ReadonlySet<string>
-  readonly actorId: string
+  /** `_created_by`: `null` for an answer to a public form, which has no author. */
+  readonly actorId: string | null
   /** The `RETURNING` list of a single-row write: the READ mask, never the write one. */
   readonly returning: string
   /** The fields whose value is reshaped before it is written, by physical name. */

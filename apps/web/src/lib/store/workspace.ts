@@ -68,6 +68,16 @@ export interface Tab {
   readonly view: ViewState
   /** The statement being written, for a `sql` tab. */
   readonly draft: string
+  /**
+   * The saved view the tab shows (`_basedb.view_def`), `null` for the table's own grid —
+   * "Toutes les lignes", which no one saved and every reader has.
+   */
+  readonly viewId: string | null
+  /**
+   * The overlay of that own grid, put aside while a saved view is shown: coming back to
+   * it finds the columns as they were dragged, not reset.
+   */
+  readonly ownView: ViewState | null
 }
 
 function emptyView(): ViewState {
@@ -111,6 +121,11 @@ interface WorkspaceState {
   rename: (id: string, label: string) => void
   setDraft: (id: string, draft: string) => void
   patchView: (id: string, patch: Partial<ViewState>) => void
+  /**
+   * Shows another view in a tab: `view` is the overlay it opens with, `null` to find the
+   * table's own grid as it was left. `draft` is the filter editor's text for it.
+   */
+  switchView: (id: string, viewId: string | null, view: ViewState | null, draft: string) => void
   setChecked: (next: ReadonlySet<string>) => void
   setCells: (next: ReadonlySet<string>) => void
   setCopilotOpen: (open: boolean) => void
@@ -140,7 +155,17 @@ function restore(): { tabs: readonly Tab[]; activeId: string | null } {
     if (!Array.isArray(parsed.tabs)) return { tabs: [], activeId: null }
     const tabs = parsed.tabs
       .filter((t): t is Tab => typeof t === 'object' && t !== null && 'id' in t)
-      .map((t) => ({ ...t, view: { ...emptyView(), ...t.view }, draft: t.draft ?? '' }))
+      .map((t) => ({
+        ...t,
+        view: { ...emptyView(), ...t.view },
+        draft: t.draft ?? '',
+        viewId: typeof t.viewId === 'string' ? t.viewId : null,
+        // A tab saved before views existed has neither key.
+        ownView:
+          typeof t.ownView === 'object' && t.ownView !== null
+            ? { ...emptyView(), ...t.ownView }
+            : null,
+      }))
     return {
       tabs,
       activeId: typeof parsed.activeId === 'string' ? parsed.activeId : (tabs[0]?.id ?? null),
@@ -190,6 +215,8 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       label,
       view: emptyView(),
       draft: '',
+      viewId: null,
+      ownView: null,
     }
     const tabs = [...get().tabs, tab]
     set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
@@ -206,6 +233,8 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       label,
       view: emptyView(),
       draft: '',
+      viewId: null,
+      ownView: null,
     }
     const tabs = [...get().tabs, tab]
     set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
@@ -288,6 +317,19 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   patchView: (id, patch) => {
     const tabs = get().tabs.map((t) => (t.id === id ? { ...t, view: { ...t.view, ...patch } } : t))
     set({ tabs })
+    persist(tabs, get().activeId)
+  },
+
+  switchView: (id, viewId, view, draft) => {
+    const tabs = get().tabs.map((t) => {
+      if (t.id !== id) return t
+      // Leaving the table's own grid puts its overlay aside; coming back takes it out.
+      const ownView = t.viewId === null ? t.view : t.ownView
+      const next = view ?? (viewId === null ? (ownView ?? emptyView()) : emptyView())
+      return { ...t, viewId, view: { ...next, cursors: [], total: null }, ownView, draft }
+    })
+    // The selection belonged to the rows of the view left behind.
+    set({ tabs, checked: new Set(), cells: new Set() })
     persist(tabs, get().activeId)
   },
 

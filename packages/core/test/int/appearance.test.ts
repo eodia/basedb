@@ -5,14 +5,15 @@ import { setTableDescription } from '../../src/catalog/descriptions.js'
 import { updateBase } from '../../src/catalog/lifecycle.js'
 import { createBase, createTable } from '../../src/catalog/operations.js'
 import { projectBase } from '../../src/catalog/projection.js'
-import { listProjects } from '../../src/catalog/projects.js'
+import { createProject, listProjects, updateProject } from '../../src/catalog/projects.js'
 import { updateTable } from '../../src/catalog/table-edit.js'
 import type { BasedbError } from '../../src/errors/index.js'
 import { Pools } from '../../src/runtime/pool.js'
 import { type RequestContext, sealContext } from '../../src/tx/context.js'
 
 /**
- * How a base and a table look, and what a table is called — chapter 02, chapter 06 §1.1.
+ * How a project, a base and a table look, and what a table is called — chapter 02,
+ * chapter 06 §1.1.
  *
  * The look is the one a choice of a list wears, under the same rules; it lives in the
  * catalog alone and reaches every reader of it — `/meta`, the navigation — at once. A
@@ -139,6 +140,50 @@ describe('the look of a base', () => {
       )
       expect(error.code, set).toMatch(/^(VALUE_|VALIDATION|CHECK|INTERNAL)/)
     }
+  })
+})
+
+describe('the look of a project', () => {
+  it('is set at creation, published by the navigation, and replaced whole', async () => {
+    const created = await createProject(pools, admin, {
+      label: 'Travaux',
+      look: { color: '#0EA5E9', icon: 'hammer' },
+    })
+    expect(created).toMatchObject({ color: '#0ea5e9', icon: 'hammer', image: null })
+    const listed = (await listProjects(pools, admin)).find((p) => p.id === created.id)
+    expect(listed).toMatchObject({ label: 'Travaux', color: '#0ea5e9', icon: 'hammer' })
+
+    const pictured = await updateProject(pools, admin, {
+      projectId: created.id,
+      look: { image: PIXEL },
+    })
+    expect(pictured).toMatchObject({ color: null, icon: null, image: PIXEL })
+
+    // Saying nothing of the look leaves it; a label change is not a new look.
+    const renamed = await updateProject(pools, admin, {
+      projectId: created.id,
+      label: 'Travaux 26',
+    })
+    expect(renamed).toMatchObject({ label: 'Travaux 26', image: PIXEL })
+
+    // A project without a look has one all the same: three keys, null.
+    const plain = await createProject(pools, admin, { label: 'Sans habit' })
+    expect(plain).toMatchObject({ color: null, icon: null, image: null })
+  })
+
+  it('refuses what a base refuses, and the catalog holds it whoever writes', async () => {
+    const project = await createProject(pools, admin, { label: 'Refus projet' })
+    const refused = await failure(
+      updateProject(pools, admin, { projectId: project.id, look: { color: 'bleu' } }),
+    )
+    expect(refused.details?.reason).toBe('couleur_invalide')
+
+    const error = await failure(
+      pools.withConnection('catalog', (exec) =>
+        exec.query(`UPDATE _basedb.project SET icon = 'A B' WHERE id = $1`, [project.id], 'update'),
+      ),
+    )
+    expect(error.code).toMatch(/^(VALUE_|VALIDATION|CHECK|INTERNAL)/)
   })
 })
 

@@ -1,7 +1,9 @@
 'use client'
 
+import { AiEmpty } from '@/components/app/ai-pending'
 import { DateInput } from '@/components/app/date-picker'
 import { FilesCell, type Upload } from '@/components/app/files'
+import { LongTextCell, UrlLink, markdownExcerpt } from '@/components/app/markdown-text'
 import {
   ChoiceChips,
   EnumPicker,
@@ -38,7 +40,7 @@ export interface Row extends Record<string, unknown> {
 export const ROW_HEIGHT = 36
 
 /** Types whose value is edited as plain text. The others carry their own control. */
-const TEXTUAL = new Set(['short_text', 'long_text', 'number', 'date', 'datetime'])
+const TEXTUAL = new Set(['short_text', 'long_text', 'url', 'number', 'date', 'datetime'])
 
 /** True when this cell opens an editor on double-click rather than on a single one. */
 export function isTextual(field: Field): boolean {
@@ -57,7 +59,15 @@ interface CellProps {
   readonly onCommit: (value: unknown) => Promise<void>
   /** Deposits files for a `file` or `image` cell. Absent, such a cell only shows its files. */
   readonly onUpload?: Upload
+  /** Opens the row a link points at — Ctrl+click, or Cmd+click, on a link cell. */
+  readonly onFollowLink?: (table: string, id: string) => void
 }
+
+/**
+ * The modifier that follows a link rather than editing it: Ctrl, and Cmd on a Mac — the
+ * gesture that opens a link elsewhere in every browser.
+ */
+export const followsLink = (e: { ctrlKey: boolean; metaKey: boolean }) => e.ctrlKey || e.metaKey
 
 export function Cell({
   row,
@@ -70,6 +80,7 @@ export function Cell({
   onEndEdit,
   onCommit,
   onUpload,
+  onFollowLink,
 }: CellProps) {
   const present = Object.hasOwn(row, field.name)
   const value = row[field.name]
@@ -82,30 +93,99 @@ export function Cell({
     )
   }
 
-  if (field.kind === 'long_text') {
-    // Chapter 11 §1.1: a long-text column shows a binary "renseigné / vide" indicator,
-    // never an excerpt — an excerpt would require reading the value, and reading it is
-    // what triggers TOAST.
-    //
-    // HALF DONE, and the half that is missing is the server's: §1.1 also says such a
-    // column is never PROJECTED in a list, so the response should carry a presence flag
-    // rather than the text. It currently carries the text, and this cell declines to
-    // display it. The screen is therefore right and the wire is not; excluding the
-    // column from the projection belongs to `buildPlan`.
-    const filled = value === true || (typeof value === 'string' && value !== '')
+  if (field.ai === true) {
+    // Written by the kernel alone, whatever the type: shown, never edited. Empty is not
+    // computed YET — the next pass fills it — and says so, rather than a dash that reads as
+    // "nothing".
+    if (value === null || value === undefined || value === '') {
+      return <AiEmpty value={value ?? null} appearance="cell" />
+    }
+    if (field.kind === 'select' || field.kind === 'multi_select') {
+      return (
+        <span className="flex w-full min-w-0 items-center px-2">
+          <ChoiceChips field={field} values={choicesOf(value)} />
+        </span>
+      )
+    }
+    if (field.kind === 'url' && typeof value === 'string') {
+      return (
+        <span className="flex w-full min-w-0 items-center px-2">
+          <UrlLink url={value} />
+        </span>
+      )
+    }
+    const text =
+      field.kind === 'boolean'
+        ? value === true
+          ? 'Oui'
+          : 'Non'
+        : field.kind === 'long_text'
+          ? markdownExcerpt(String(value))
+          : display(String(value), field)
     return (
-      <span className="flex w-full items-center gap-1.5 px-2 text-xs">
-        <span className={cn('size-1.5 rounded-full', filled ? 'bg-primary' : 'bg-border')} />
-        <span className="text-muted-foreground">{filled ? 'Renseigné' : 'Vide'}</span>
+      <span
+        className={cn(
+          'block w-full truncate px-2',
+          emphasis && 'font-medium',
+          field.kind === 'number' && 'text-right tabular-nums',
+        )}
+        title={String(value)}
+      >
+        {text}
       </span>
+    )
+  }
+
+  if (field.kind === 'long_text') {
+    // Chapter 11 §1.1 used to show a bare "renseigné / vide" here, to spare the TOAST read.
+    // The text is on the wire anyway, and a column one cannot read from the grid is one
+    // nobody reads: one line of it, the whole of it rendered on hover, and an editor in
+    // place on a double click.
+    return (
+      <LongTextCell
+        value={value}
+        label={field.label}
+        readOnly={field.read_only === true}
+        editing={editing}
+        emphasis={emphasis}
+        onStartEdit={onStartEdit}
+        onEndEdit={onEndEdit}
+        onCommit={(next) => onCommit(next)}
+      />
     )
   }
 
   if (field.kind === 'link') {
     const link = value as { id: string | null; display: string | null } | null
+    const target = field.link?.target
+    const id = link?.id ?? null
+    const followable = onFollowLink !== undefined && target !== undefined && id !== null
+    // Caught on the way DOWN: the picker must not open, nor the grid move its selection,
+    // for a click that means « take me there ».
+    const intercept = followable
+      ? {
+          onPointerDownCapture: (e: React.PointerEvent) => {
+            if (!followsLink(e)) return
+            e.preventDefault()
+            e.stopPropagation()
+          },
+          onMouseDownCapture: (e: React.MouseEvent) => {
+            if (!followsLink(e)) return
+            e.preventDefault()
+            e.stopPropagation()
+          },
+          onClickCapture: (e: React.MouseEvent) => {
+            if (!followsLink(e)) return
+            e.preventDefault()
+            e.stopPropagation()
+            onFollowLink(target, id)
+          },
+          title: `Ctrl+clic : ouvrir « ${link?.display ?? id.slice(0, 8)} »`,
+        }
+      : {}
     if (options === undefined) {
       return (
-        <span className="flex w-full items-center px-2">
+        <span className="flex w-full items-center px-2" {...intercept}>
           {link?.id == null ? (
             <span className="text-muted-foreground">—</span>
           ) : (
@@ -118,7 +198,7 @@ export function Cell({
       )
     }
     return (
-      <span className="flex w-full items-center px-1">
+      <span className="flex w-full items-center px-1" {...intercept}>
         <LinkPicker
           field={field}
           value={link?.id ?? null}
@@ -213,6 +293,19 @@ export function Cell({
           await onCommit(next === '' ? null : convert(next, field))
         }}
       />
+    )
+  }
+
+  if (field.kind === 'url' && initial !== '') {
+    return (
+      <span
+        className="flex w-full min-w-0 items-center px-2"
+        onDoubleClick={() => {
+          if (isTextual(field)) onStartEdit()
+        }}
+      >
+        <UrlLink url={initial} />
+      </span>
     )
   }
 

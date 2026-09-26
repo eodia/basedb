@@ -78,6 +78,8 @@ const ALLOWED: Readonly<Record<FieldKind, readonly Operator[]>> = {
   // On a link, identifiers are compared: neither case nor substring apply.
   link: [...EQUALITY, 'is_null'],
   formula: [...EQUALITY, ...ORDERING, 'is_null'],
+  // An address is text: the domain is found with `contains`, the scheme with `starts_with`.
+  url: [...EQUALITY, 'eq_ci', 'contains', 'starts_with', 'ends_with', 'is_null'],
   // A list of files is present or absent; what it holds is not a value one filters on.
   file: ['is_null'],
   image: ['is_null'],
@@ -128,6 +130,7 @@ export const CAST: Readonly<Record<FieldKind, string>> = {
   datetime: 'timestamptz',
   link: 'uuid',
   formula: 'text',
+  url: 'text',
   file: 'jsonb',
   image: 'jsonb',
 }
@@ -734,7 +737,7 @@ export interface BuiltSort {
 }
 
 /** The types whose comparison must carry the linguistic collation. */
-const TEXTUAL: ReadonlySet<FieldKind> = new Set(['short_text', 'select', 'formula'])
+const TEXTUAL: ReadonlySet<FieldKind> = new Set(['short_text', 'select', 'formula', 'url'])
 
 /**
  * Translates `sort=-date_emission,numero` into an `ORDER BY`.

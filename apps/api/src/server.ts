@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { type FileStorageConfig, startKernel } from '@basedb/core'
 import { serve } from '@hono/node-server'
+import { providerTransport } from './ai-transport.js'
 import { createApp } from './app.js'
 
 /**
@@ -73,7 +74,19 @@ function fileStorage(): FileStorageConfig {
 
 const maxFileMb = Number(process.env.BASEDB_FILES_MAX_MB ?? '')
 
+// Webhooks go to public HTTPS addresses only (chapter 08 §10.8). `BASEDB_WEBHOOK_DEV=1`
+// relaxes that for a consumer on this machine — development only, and said at startup.
+const webhookDev = process.env.BASEDB_WEBHOOK_DEV === '1'
+
+// Where a purge writes its export first (chapter 06 §5.2): on this host, never on the
+// database server. `BASEDB_EXPORT_DIR`, by default `.basedb/exports` beside the files.
+const exportDir =
+  process.env.BASEDB_EXPORT_DIR ??
+  fileURLToPath(new URL('../../../.basedb/exports', import.meta.url))
+
 const kernel = startKernel({
+  webhookTargets: { allowHttp: webhookDev, allowPrivate: webhookDev },
+  exportDir,
   connectionString,
   encryptionKey: process.env.BASEDB_ENCRYPTION_KEY,
   mailer,
@@ -83,6 +96,12 @@ const kernel = startKernel({
   },
 })
 console.log(`Fichiers : ${kernel.files.storage}.`)
+console.log(`Exports avant purge : ${exportDir}.`)
+if (webhookDev) {
+  console.log(
+    'Webhooks : mode développement — HTTP et adresses locales acceptés (BASEDB_WEBHOOK_DEV=1).',
+  )
+}
 const port = Number(process.env.PORT ?? 8787)
 
 if (process.env.BASEDB_MIGRATE === '1') {
@@ -139,9 +158,22 @@ const app = createApp({
   tenantRef: process.env.BASEDB_TENANT,
 })
 
+// The history drain runs in the serving process (chapter 07 §1.4): without it, writes
+// are captured but never reach the journals.
+kernel.startBackground()
+
 serve({ fetch: app.fetch, port }, (info) => {
   console.log(`basedb API on http://localhost:${info.port}`)
 })
+
+// The AI fields are filled here, in the API process and nowhere else: the MCP server
+// answers agents, it does not run background work. `BASEDB_AI_WORKER=0` switches it off —
+// for a second API process sharing the database, where one worker is enough.
+if (process.env.BASEDB_AI_WORKER !== '0') {
+  kernel.startAiWorker(providerTransport, {
+    onError: (error) => console.error('Champs IA :', error),
+  })
+}
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {

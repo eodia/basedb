@@ -63,7 +63,8 @@ const TYPE_LABEL: Readonly<Record<string, string>> = {
   datetime: 'date-heure UTC (`2026-09-18T14:03:00.000Z`)',
   select: 'liste de choix',
   multi_select: 'choix multiple (liste de valeurs)',
-  link: 'lien',
+  link: 'relation (`_id` de la ligne liée)',
+  url: 'lien URL (`https://…` ou `mailto:…`)',
   formula: 'formule',
   file: 'documents (liste de fichiers)',
   image: 'images (liste de fichiers)',
@@ -307,8 +308,11 @@ function examples(base: ProjectedBase, table: ProjectedTable, tenantRef: string)
 export const DOCUMENTED_MCP_TOOLS: ReadonlyArray<{
   readonly name: string
   readonly summary: string
-  /** What it needs on a table: nothing, reading, creating or modifying. */
-  readonly needs: 'none' | 'read' | 'create' | 'update'
+  /**
+   * What it needs: nothing, reading, creating or modifying rows — or proposing a change
+   * of structure, which a person then approves or refuses (chapter 09 §7).
+   */
+  readonly needs: 'none' | 'read' | 'create' | 'update' | 'propose'
 }> = [
   {
     name: 'whoami',
@@ -324,7 +328,7 @@ export const DOCUMENTED_MCP_TOOLS: ReadonlyArray<{
   {
     name: 'describe_table',
     summary:
-      'Les champs d’une table : type, obligation, options, liens, et lesquels sont modifiables.',
+      'Les champs d’une table : type, obligation, options, relations, et lesquels sont modifiables.',
     needs: 'read',
   },
   {
@@ -339,11 +343,26 @@ export const DOCUMENTED_MCP_TOOLS: ReadonlyArray<{
   },
   {
     name: 'lookup_records',
-    summary: 'Trouver le `_id` d’une ligne par sa valeur d’affichage, avant d’écrire un lien.',
+    summary: 'Trouver le `_id` d’une ligne par sa valeur d’affichage, avant d’écrire une relation.',
     needs: 'read',
   },
   { name: 'create_record', summary: 'Créer une ligne.', needs: 'create' },
   { name: 'update_record', summary: 'Modifier les champs nommés d’une ligne.', needs: 'update' },
+  {
+    name: 'propose_create_table',
+    summary: 'Proposer une table et ses premiers champs — une personne décide.',
+    needs: 'propose',
+  },
+  {
+    name: 'propose_add_field',
+    summary: 'Proposer un champ, une liste de choix ou une relation — une personne décide.',
+    needs: 'propose',
+  },
+  {
+    name: 'get_proposal',
+    summary: 'Relire une proposition du jeton et savoir ce qu’il en est advenu.',
+    needs: 'read',
+  },
 ]
 
 /** Where the relay lives in a checkout, as the connection dialog also says it. */
@@ -360,6 +379,7 @@ function agentWritable(field: ProjectedField): boolean {
     field.hiddenFromAgents !== true &&
     !field.unsafeHtml &&
     field.kind !== 'formula' &&
+    field.ai !== true &&
     field.kind !== 'file' &&
     field.kind !== 'image'
   )
@@ -567,7 +587,11 @@ function agentSections(base: ProjectedBase): DocSection[] {
         DOCUMENTED_MCP_TOOLS.map((tool) => [
           code(tool.name),
           tool.summary,
-          tool.needs === 'create' || tool.needs === 'update' ? 'oui' : 'non',
+          tool.needs === 'create' || tool.needs === 'update'
+            ? 'oui'
+            : tool.needs === 'propose'
+              ? 'propose'
+              : 'non',
         ]),
       ),
       '',
@@ -578,14 +602,28 @@ function agentSections(base: ProjectedBase): DocSection[] {
       '  le jeton peut écrire (`access: "write"`).',
       '- `list_records` avec `filter`, `sort` et `limit` ; poursuivre avec `cursor` tant que',
       '  `has_more` vaut `true`.',
-      '- Pour écrire un lien : `lookup_records` sur la table cible, puis `create_record` ou',
+      '- Pour écrire une relation : `lookup_records` sur la table cible, puis `create_record` ou',
       '  `update_record` avec le `_id` trouvé.',
+      '- Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis',
+      '  `get_proposal` pour suivre la décision.',
+      '',
+      '### Propositions de structure',
+      '',
+      'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend',
+      'dans la file « Propositions » de la base, où une personne qui peut modifier la structure',
+      'l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle',
+      'est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le',
+      'droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.',
+      '',
+      '- Au plus 5 propositions en attente par jeton ; une nouvelle proposition sur le même',
+      '  objet remplace la précédente (`superseded`).',
+      '- Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).',
       '',
       '### Ce qui n’existe pas',
       '',
-      'Aucun outil ne supprime une ligne, ne change la structure, n’exécute de SQL ni ne gère',
-      'les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… —',
-      'reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.',
+      'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons.',
+      'Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit',
+      '`MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.',
       '',
       '### Bornes',
       '',
@@ -634,12 +672,13 @@ function agentSections(base: ProjectedBase): DocSection[] {
 function typeCell(field: ProjectedField): string {
   const marks: string[] = []
   if (field.required) marks.push('obligatoire')
-  if (field.readOnly && !field.system) marks.push('lecture seule')
+  if (field.ai === true) marks.push('calculé par l’IA')
+  else if (field.readOnly && !field.system) marks.push('lecture seule')
   if (field.unsafeHtml) marks.push('HTML riche — **à assainir à l’affichage**')
   if (field.hiddenFromAgents === true) marks.push('invisible pour les agents')
 
   let type = TYPE_LABEL[field.kind] ?? field.kind
-  if (field.link?.target !== undefined) type = `lien → ${code(field.link.target.table)}`
+  if (field.link?.target !== undefined) type = `relation → ${code(field.link.target.table)}`
 
   return [type, ...marks].join(' · ')
 }
@@ -747,7 +786,7 @@ function describeTable(base: ProjectedBase, table: ProjectedTable, tenantRef: st
   )
 
   if (links.length > 0) {
-    lines.push('', '### Champs lien', '', ...links.flatMap(describeLink))
+    lines.push('', '### Champs relation', '', ...links.flatMap(describeLink))
   }
 
   lines.push(
@@ -946,7 +985,7 @@ export function toDocumentation(base: ProjectedBase, tenantRef: string): Documen
       relations.length === 0
         ? 'Aucune relation visible dans cette base.'
         : [
-            'Les liens sont de **vraies clés étrangères PostgreSQL**. Elles sont vérifiées par la',
+            'Les relations sont de **vraies clés étrangères PostgreSQL**. Elles sont vérifiées par la',
             'base, pas par l’application : un `INSERT` en SQL direct est soumis aux mêmes règles.',
             '',
             ...relations,

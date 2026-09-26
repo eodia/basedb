@@ -7,6 +7,7 @@ import {
   Clock,
   Hash,
   Image as ImageIcon,
+  Link,
   Link2,
   ListChecks,
   Lock,
@@ -35,6 +36,7 @@ const ICONS = {
   formula: Sigma,
   file: Paperclip,
   image: ImageIcon,
+  url: Link,
   system: Lock,
 } as const
 
@@ -56,7 +58,8 @@ export const KIND_LABELS: Readonly<Record<string, string>> = {
   datetime: 'Date et heure',
   select: 'Liste de choix',
   multi_select: 'Choix multiple',
-  link: 'Lien',
+  link: 'Relation',
+  url: 'Lien URL',
   formula: 'Formule',
   file: 'Document',
   image: 'Image',

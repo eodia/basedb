@@ -543,6 +543,8 @@ Quatre règles :
 - une vue ne peut rien montrer de plus que la table : son tri, ses filtres et son ordre de colonnes sont appliqués **après** le masque, et une colonne masquée pour le lecteur est retirée de la présentation sans que la vue devienne invalide pour autant ;
 - un filtre ou un tri portant sur un champ masqué pour le lecteur est refusé comme partout ailleurs (`FIELD_UNKNOWN`), et l'invalidation d'une vue dont un champ référencé a disparu (`view_def.is_invalid`) relève de « 06 — Cycle de vie ».
 
+**Un formulaire partagé (chapitre 15) n'est pas une exception à ce régime, il le délègue.** Quelqu'un qui n'a aucun droit sur la table peut y répondre, mais la ligne s'écrit sur l'autorité de la personne qui a publié le partage : la décision `create` est rejouée pour elle à chaque réponse, le masque d'écriture restreint aux questions du formulaire, et un publiant qui perd ce droit suspend ses formulaires avec lui. La personne qui répond ne lit rien de la table — pas même la ligne qu'elle vient d'écrire —, et l'acteur `form` d'une réponse publique ne porte aucun droit propre.
+
 Ce qui n'existe pas en v1, c'est la **vue SQL** : elle exposerait des colonnes qui ne sont pas des champs et ne peuvent donc porter aucun `field_permission`, ce qui rouvrirait d'un cran le contournement que la clôture des formules (§4.1) prend soin de fermer.
 
 ---
@@ -724,10 +726,35 @@ Un compte se **désactive**, il ne se supprime pas : ses sessions et ses jetons 
 ### 15.7 Ce que ce modèle ne fait pas
 
 - Pas de niveau « bloqué » ni de filtrage de lignes par groupe (le « sandboxing » de Metabase) : `predicat_lignes` reste constamment vrai en v1 (§6), et l'union des rôles interdit tout `deny`.
-- Pas de permissions de champ dans la grille : `field_permission` reste réglée par les écrans de §3, la grille ne connaît que les tables et au-dessus.
+- Pas de permissions de champ dans la grille elle-même : la grille s'arrête aux tables, et « Champs », sur chaque ligne de table, ouvre l'écran de §3.3 qui règle `field_permission` groupe par groupe.
 - Pas de délégation : un membre de groupe ne peut pas accorder à un autre ce qu'il a ; seul le groupe « Administrateurs » administre.
 
 ---
+
+## État de la mise en œuvre (v1)
+
+**Règles de champ.** L'écran exigé par §3.3 existe, sous la grille de §15 : chaque ligne de
+table y porte « Champs », qui ouvre la matrice champs × groupes ayant accès à la table. Une
+cellule vaut « Selon le niveau », « Lecture seule » ou « Masqué » — les lignes
+`field_permission` `read` et `hidden` ; « selon le niveau » est l'absence de ligne. Une
+règle posée pour un groupe qui n'atteint pas la table est refusée (`PERMISSION_OUT_OF_SCOPE`),
+une règle sur les Administrateurs aussi (`GROUP_SYSTEM_IMMUTABLE`), et toute écriture exige
+une session élevée (§15.6). Le second volet de l'écran répond à la question de §3.3 pour une
+personne choisie : le niveau effectif de chaque champ, calculé par le décideur lui-même, les
+groupes par lesquels il reste lisible et ceux dont la règle est ainsi contournée.
+
+**Calcul du masque.** Le décideur applique §4.1 à la lettre : pour chaque rôle lisant la
+table, le niveau d'un champ est sa règle quand il en a une, sinon `write` si le rôle crée
+ou modifie des lignes et `read` sinon ; le niveau du champ est le plus haut sur les rôles.
+Une première version prenait l'union des verbes puis soustrayait les champs restreints par
+**tous** les rôles lecteurs : un champ rendu « lecture seule » par le seul groupe qui écrit
+redevenait modifiable dès qu'un autre groupe de la personne lisait la table. Corrigé, avec
+son test.
+
+**Pas encore faits.** Les clôtures de §4.1 — formules et contraintes croisées — n'ont pas
+d'objet tant que ces deux constructions n'existent pas dans le produit ; l'avertissement de
+l'éditeur de permissions qui les accompagne non plus.
+
 
 ## Décisions retenues
 

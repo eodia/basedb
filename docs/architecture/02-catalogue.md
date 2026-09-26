@@ -110,13 +110,18 @@ COMMENT ON FUNCTION _basedb_local.uuid_generate_v7() IS
 
 -- Corps de reference unique. clock_timestamp() et non now() : deux ecritures
 -- successives d'une meme transaction doivent rester ordonnables par _updated_at.
+-- Une reponse a un formulaire public (acteur « form », chapitre 15) n'a pas d'auteur :
+-- la personne qui a publie le formulaire en repond, elle ne l'a pas ecrite.
 CREATE FUNCTION _basedb_local.set_updated_at() RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = pg_catalog
 AS $$
 BEGIN
   NEW."_updated_at" := clock_timestamp();
-  NEW."_updated_by" := nullif(current_setting('basedb.actor_id', true), '')::uuid;
+  NEW."_updated_by" := CASE
+    WHEN current_setting('basedb.actor_kind', true) = 'form' THEN NULL
+    ELSE nullif(current_setting('basedb.actor_id', true), '')::uuid
+  END;
   RETURN NEW;
 END $$;
 ```
@@ -560,6 +565,10 @@ CREATE TABLE _basedb.project (
   label       text NOT NULL,
   label_key   text COLLATE "C" NOT NULL,
   description text NULL,
+  -- Apparence : celle d'une base, memes bornes.
+  color       text NULL,
+  icon        text NULL,
+  image       text NULL,
   position    integer NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
@@ -567,7 +576,11 @@ CREATE TABLE _basedb.project (
   updated_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   deleted_at timestamptz NULL,
   deleted_by uuid NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
-  CONSTRAINT uq_project_id_tenant UNIQUE (id, tenant_id)   -- cible : base
+  CONSTRAINT uq_project_id_tenant UNIQUE (id, tenant_id),  -- cible : base
+  CONSTRAINT ck_project_color CHECK (color IS NULL OR color ~ '^#[0-9a-f]{6}$'),
+  CONSTRAINT ck_project_icon  CHECK (icon IS NULL OR icon ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  CONSTRAINT ck_project_image CHECK (image IS NULL OR char_length(image) <= 16384),
+  CONSTRAINT ck_project_glyph CHECK (icon IS NULL OR image IS NULL)
 );
 CREATE UNIQUE INDEX uq_project_label_live
   ON _basedb.project (tenant_id, label_key) WHERE deleted_at IS NULL;
@@ -591,6 +604,15 @@ CREATE TABLE _basedb.base (
   structure_state text NOT NULL DEFAULT 'open'
                     CHECK (structure_state IN ('open','frozen')),
   current_migration_id uuid NULL,     -- FK ajoutee apres la creation de migration
+  -- Environnements (chapitre 14). Les declinaisons d'une meme base -- production,
+  -- recette, developpement -- partagent sa lignee ; chacune a son schema, ses tables et
+  -- ses lignes. La production est l'environnement par defaut.
+  lineage_id    uuid NOT NULL DEFAULT _basedb_local.uuid_generate_v7(),
+  environment   text NOT NULL DEFAULT 'Production',
+  environment_key text COLLATE "C" NOT NULL DEFAULT 'production',
+  is_production boolean NOT NULL DEFAULT true,
+  environment_position smallint NOT NULL DEFAULT 0,
+  forked_from_base_id uuid NULL,      -- l'environnement copie a la creation ; cle nue
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -613,10 +635,17 @@ CREATE TABLE _basedb.base (
   CONSTRAINT ck_base_color CHECK (color IS NULL OR color ~ '^#[0-9a-f]{6}$'),
   CONSTRAINT ck_base_icon  CHECK (icon IS NULL OR icon ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
   CONSTRAINT ck_base_image CHECK (image IS NULL OR char_length(image) <= 16384),
-  CONSTRAINT ck_base_glyph CHECK (icon IS NULL OR image IS NULL)
+  CONSTRAINT ck_base_glyph CHECK (icon IS NULL OR image IS NULL),
+  CONSTRAINT ck_base_environment CHECK (char_length(environment) BETWEEN 1 AND 60)
 );
+-- Le libelle est celui de la base, que ses environnements partagent : il est unique
+-- dans le projet parmi les productions.
 CREATE UNIQUE INDEX uq_base_label_live
-  ON _basedb.base (project_id, label_key) WHERE deleted_at IS NULL;
+  ON _basedb.base (project_id, label_key) WHERE deleted_at IS NULL AND is_production;
+CREATE UNIQUE INDEX uq_base_production_live
+  ON _basedb.base (lineage_id) WHERE deleted_at IS NULL AND is_production;
+CREATE UNIQUE INDEX uq_base_environment_live
+  ON _basedb.base (lineage_id, environment_key) WHERE deleted_at IS NULL;
 
 COMMENT ON COLUMN _basedb.base.catalog_version IS
   'Incremente a chaque migration appliquee. Les processus API comparent ce compteur
@@ -668,6 +697,29 @@ CREATE TABLE _basedb.sql_view_alias (
 
 **Le projet regroupe des bases ; il n'a aucune existence physique.** Une base reste un schéma PostgreSQL, et un projet n'est qu'une ligne du catalogue : il ne change ni le nom d'un schéma, ni celui d'une table, et déplacer une base d'un projet à un autre ne touche pas une ligne de données. Il est à la fois l'unité de navigation de l'interface — on choisit un projet, puis on y crée des bases et, dans chaque base, des tables — et une **portée de permission** au-dessus de la base (chapitre 05 §15). Le libellé d'une base est unique dans son projet, non plus dans le tenant ; le nom physique, lui, reste alloué à l'échelle de l'instance par la boucle de suffixes du chapitre 01.
 
+**Une base peut avoir des environnements** (chapitre 14) : production, recette, développement. Chacun est une ligne `base` à part entière — son schéma, ses tables, ses lignes, ses droits —, et tous partagent la même **lignée** (`lineage_id`). La production est celle qui existe d'abord, et la seule dont le libellé est tenu unique dans le projet : les autres environnements portent le même libellé, recopié à chaque modification, et se distinguent par `environment`. Tables et champs ont aussi une lignée, recopiée quand un environnement est créé à partir d'un autre ou qu'une structure y est reportée : c'est elle, et non le nom physique ni le libellé, qui dit « c'est la même table » d'un environnement à l'autre.
+
+```sql
+-- Le point commun de deux environnements : la derniere fois que l'un a ete recopie dans
+-- l'autre. Il sert de base aux comparaisons (chapitre 14) : un objet modifie depuis,
+-- d'un cote et de l'autre, est un conflit.
+CREATE TABLE _basedb.environment_sync (
+  id               uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  lineage_id       uuid NOT NULL,
+  source_base_id   uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  target_base_id   uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  kind             text NOT NULL CHECK (kind IN ('fork','structure','rows')),
+  table_lineage_id uuid NULL,          -- la table dont les lignes ont ete recopiees
+  synced_at        timestamptz NOT NULL DEFAULT clock_timestamp(),
+  synced_by        uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  summary          jsonb NOT NULL DEFAULT '{}'::jsonb,
+  CONSTRAINT ck_sync_pair  CHECK (source_base_id <> target_base_id),
+  CONSTRAINT ck_sync_table CHECK ((kind = 'rows') = (table_lineage_id IS NOT NULL))
+);
+CREATE INDEX idx_environment_sync_pair
+  ON _basedb.environment_sync (source_base_id, target_base_id, synced_at DESC);
+```
+
 C'est le **schéma**, et non la base, qui porte l'espace de noms des relations (chapitre 01 §6.2) : un schéma d'alias contient des vues SQL portant exactement les noms des tables du schéma courant, et cette reprise ne serait pas exprimable si la portée d'unicité était la base. Le cycle de vie des alias — création, durée de vie, avertissement au renommage — appartient au chapitre 06.
 
 **Les compteurs d'accès aux alias ne mesurent que ce qui passe par l'application, et leur nom le dit.** L'exécution d'un `SELECT` sur une vue ne laisse aucune trace exploitable dans le périmètre de privilèges retenu : les vues n'apparaissent pas dans `pg_stat_user_tables`, et `pg_stat_statements` comme `pgaudit` exigent `shared_preload_libraries`. L'écran de renommage liste donc les jetons actifs, les webhooks abonnés et les rôles ayant lu le schéma sur 30 jours, et **avertit que les connexions SQL directes ne sont pas observables** au lieu de laisser croire l'inverse. *Alternative rejetée* : rendre la vue d'alias écrivante par un appel en `InitPlan`, qui place une écriture sur un chemin de lecture et interdit toute transaction `READ ONLY`.
@@ -691,6 +743,8 @@ CREATE TABLE _basedb.table_def (
   definition_state text NOT NULL DEFAULT 'active'
                      CHECK (definition_state IN ('pending','active')),
   lock_key     integer NOT NULL DEFAULT nextval('_basedb.lock_key_seq'),
+  -- La meme table d'un environnement a l'autre (chapitre 14).
+  lineage_id   uuid NOT NULL DEFAULT _basedb_local.uuid_generate_v7(),
 
   display_field_id             uuid    NULL,
   display_field_kind           text    NULL,
@@ -721,6 +775,7 @@ CREATE TABLE _basedb.table_def (
 
   CONSTRAINT uq_table_name         UNIQUE (name_id),
   CONSTRAINT uq_table_lock         UNIQUE (lock_key),
+  CONSTRAINT uq_table_lineage      UNIQUE (base_id, lineage_id),
   CONSTRAINT uq_table_id_base_live UNIQUE (id, base_id, is_live),  -- cible : field, lien
   CONSTRAINT uq_table_id_base      UNIQUE (id, base_id),
   CONSTRAINT ck_table_live  CHECK (is_live = (deleted_at IS NULL)),
@@ -744,7 +799,7 @@ CREATE INDEX idx_table_by_base
 
 `fk_table_base` fait trois choses d'un coup : la table appartient à une base existante, une base ne peut pas être épurée tant qu'une table la référence, et **supprimer logiquement une base dont une table est encore vivante est refusé par la base de données**, avec le nom `ck_table_base_live`, que le service traduit en `BASE_NOT_EMPTY`.
 
-**Une base et une table ont une apparence**, celle d'une option de liste (chapitre 04 §3, « Apparence des options ») : une couleur, et un pictogramme ou une image, jamais les deux, tenus par les mêmes contraintes. Elle ne vit qu'au catalogue — ni le schéma ni la table PostgreSQL n'en savent rien — et la changer n'écrit rien d'autre qu'une ligne du catalogue.
+**Un projet, une base et une table ont une apparence**, celle d'une option de liste (chapitre 04 §3, « Apparence des options ») : une couleur, et un pictogramme ou une image, jamais les deux, tenus par les mêmes contraintes. Elle ne vit qu'au catalogue — ni le schéma ni la table PostgreSQL n'en savent rien — et la changer n'écrit rien d'autre qu'une ligne du catalogue.
 
 ### Champs
 
@@ -767,10 +822,11 @@ INSERT INTO _basedb.field_kind (code, label, can_be_display, has_config) VALUES
  ('datetime',  'Date-heure',     true,  true),
  ('select',    'Liste de choix', true,  true),
  ('multi_select', 'Choix multiple', false, true),
- ('link',      'Lien',           false, true),
+ ('link',      'Relation',       false, true),
  ('formula',   'Formule',        true,  true),
  ('file',      'Document',       false, true),
- ('image',     'Image',          false, true);
+ ('image',     'Image',          false, true),
+ ('url',       'Lien URL',       true,  false);
 
 CREATE TABLE _basedb.field (
   id            uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -794,6 +850,8 @@ CREATE TABLE _basedb.field (
   superseded_by_field_id uuid NULL REFERENCES _basedb.field(id) ON DELETE RESTRICT,
   definition_state text NOT NULL DEFAULT 'active'
                      CHECK (definition_state IN ('pending','active')),
+  -- Le meme champ d'un environnement a l'autre (chapitre 14).
+  lineage_id    uuid NOT NULL DEFAULT _basedb_local.uuid_generate_v7(),
 
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
@@ -817,6 +875,7 @@ CREATE TABLE _basedb.field (
     REFERENCES _basedb.physical_name (id, scope_id) ON DELETE RESTRICT ON UPDATE RESTRICT,
 
   CONSTRAINT uq_field_name                UNIQUE (name_id),
+  CONSTRAINT uq_field_lineage             UNIQUE (table_id, lineage_id),
   CONSTRAINT uq_field_id_kind             UNIQUE (id, kind),
   CONSTRAINT uq_field_id_kind_base_req    UNIQUE (id, kind, base_id, is_required),
   CONSTRAINT uq_field_id_table            UNIQUE (id, table_id),
@@ -846,6 +905,8 @@ Les cinq contraintes `UNIQUE (id, …)` sont redondantes avec la clé primaire ;
 **Décision : les paramètres propres à un type vivent dans une table satellite par famille de types, en colonnes réelles, dont la clé primaire est la clé étrangère vers `field`.** *Alternative rejetée* : une colonne `config jsonb` sur `field`, plus courte à écrire, mais qui rend impossible la seule chose qui compte ici — que la cible d'un champ lien soit une **vraie** clé étrangère vers `table_def`.
 
 La clé étrangère composite `(field_id, kind)` empêche d'attacher une configuration « nombre » à un champ texte et, le type étant immuable, rend la ligne satellite structurellement indissociable de son champ.
+
+**L'IA est une option, pas un type.** `field_ai_config` est le seul satellite qui s'ajoute à celui du type au lieu de le remplacer : un champ texte court calculé par l'IA a sa ligne `field_text_config` **et** sa ligne `field_ai_config`. Sa présence rend le champ calculé — retiré de tout masque d'écriture, comme une formule — et son absence le rend à la saisie. Le `CHECK` sur `kind` borne les types qui la reçoivent à ceux dont la valeur se lit dans la réponse d'un modèle.
 
 ```sql
 CREATE TABLE _basedb.field_text_config (
@@ -923,6 +984,36 @@ CREATE TABLE _basedb.field_file_config (
   CONSTRAINT fk_file_field FOREIGN KEY (field_id, kind)
     REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT uq_file_shape UNIQUE (shape_constraint_id)
+);
+
+-- L'IA n'est pas un type : c'est une OPTION d'un champ, que ce satellite porte. Il
+-- s'attache aux types dont la valeur se lit dans une reponse de modele ; la cle
+-- etrangere composite le lie au type du champ, comme les autres satellites.
+CREATE TABLE _basedb.field_ai_config (
+  field_id uuid PRIMARY KEY,
+  kind     text COLLATE "C" NOT NULL
+             CHECK (kind IN ('short_text','long_text','url','number','select','boolean','date')),
+  -- La consigne ; une colonne de la ligne y est citee {{nom_physique}} (chapitre 12 §9).
+  prompt   text NOT NULL,
+  refresh_mode     text NOT NULL CHECK (refresh_mode IN ('if_empty','schedule')),
+  refresh_cron     text NULL,          -- cinq champs, lus a l'heure de refresh_timezone
+  refresh_timezone text NULL,          -- fuseau IANA, ex. Europe/Paris
+  -- Qui a accepte que les valeurs citees partent chez le fournisseur, et quand.
+  consented_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  consented_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  -- Etat du calcul, ecrit par le processus qui le mene : hors versionnement du catalogue.
+  next_sweep_at  timestamptz NULL,     -- prochain recalcul de toutes les lignes
+  sweep_after    uuid NULL,            -- recalcul en cours : reprend apres cette ligne
+  lease_until    timestamptz NULL,     -- bail du processus qui calcule ce champ
+  last_run_at    timestamptz NULL,
+  last_error     text NULL,
+  last_error_at  timestamptz NULL,
+  computed_count bigint NOT NULL DEFAULT 0,
+  CONSTRAINT fk_ai_field FOREIGN KEY (field_id, kind)
+    REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT ck_ai_prompt   CHECK (char_length(prompt) BETWEEN 1 AND 8000),
+  CONSTRAINT ck_ai_schedule CHECK ((refresh_mode = 'schedule')
+                                   = (refresh_cron IS NOT NULL AND refresh_timezone IS NOT NULL))
 );
 
 CREATE TABLE _basedb.field_formula_config (
@@ -1258,19 +1349,64 @@ CREATE TABLE _basedb.view_def (
   label text NOT NULL,
   label_key text COLLATE "C" NOT NULL,
   name  text COLLATE "C" NOT NULL,
-  kind  text NOT NULL DEFAULT 'grid' CHECK (kind IN ('grid')),
-  spec  jsonb NOT NULL DEFAULT '{}'::jsonb,   -- filtres, tri, largeurs, ordre des colonnes
+  description text NULL,
+  kind  text NOT NULL DEFAULT 'grid'
+    CHECK (kind IN ('grid','kanban','calendar','timeline','form','survey')),
+  spec  jsonb NOT NULL DEFAULT '{}'::jsonb,   -- filtre, tri, champs affiches, champs pivots
+  position integer NOT NULL DEFAULT 0,        -- ordre dans le selecteur de vues de la table
   is_invalid boolean NOT NULL DEFAULT false,  -- un champ reference a disparu (chapitre 06)
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  updated_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   deleted_at timestamptz NULL,
   deleted_by uuid NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT
 );
 CREATE UNIQUE INDEX uq_view_label_live
   ON _basedb.view_def (table_id, label_key) WHERE deleted_at IS NULL;
+
+-- Le partage d'un formulaire ou d'un questionnaire (chapitre 15) : un lien qui permet de
+-- repondre sans avoir de droit sur la table, public ou reserve aux membres connectes.
+-- Un seul partage par vue ; regenerer le lien remplace son secret.
+CREATE TABLE _basedb.form_share (
+  id           uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id    uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  view_id      uuid NOT NULL REFERENCES _basedb.view_def(id) ON DELETE CASCADE,
+  table_id     uuid NOT NULL REFERENCES _basedb.table_def(id) ON DELETE CASCADE,
+  access       text NOT NULL CHECK (access IN ('public','members')),
+  -- Le secret du lien : son empreinte pour le retrouver, et le secret scelle par la cle
+  -- d'instance pour le remontrer a qui partage. Jamais en clair.
+  token_hash   bytea NOT NULL,
+  token_sealed text NOT NULL,
+  is_active    boolean NOT NULL DEFAULT true,
+  closes_at    timestamptz NULL,
+  max_responses integer NULL CHECK (max_responses IS NULL OR max_responses > 0),
+  response_count integer NOT NULL DEFAULT 0 CHECK (response_count >= 0),
+  last_response_at timestamptz NULL,
+  -- Au nom de qui les reponses s'ecrivent : la derniere personne qui a enregistre le
+  -- partage. Ses droits sont reverifies a chaque reponse (chapitre 15 §2).
+  published_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  created_at   timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by   uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at   timestamptz NOT NULL DEFAULT clock_timestamp(),
+  CONSTRAINT uq_form_share_view  UNIQUE (view_id),
+  CONSTRAINT uq_form_share_token UNIQUE (token_hash)
+);
+
+-- Un partage « membres » peut etre reserve a des groupes ; sans ligne ici, tout membre
+-- connecte du tenant repond.
+CREATE TABLE _basedb.form_share_role (
+  share_id uuid NOT NULL REFERENCES _basedb.form_share(id) ON DELETE CASCADE,
+  role_id  uuid NOT NULL REFERENCES _basedb.role(id) ON DELETE CASCADE,
+  PRIMARY KEY (share_id, role_id)
+);
 ```
 
 Une **vue enregistrée** est une présentation, sans existence physique : elle reste au périmètre v1 et son régime de permission est celui de sa table, sans droit propre. Il n'existe pas de colonne `owner_user_id` : les vues sont partagées à l'échelle de la table, et les vues personnelles sont hors périmètre v1.
+
+Six natures de vue, une seule table : `kind` dit comment les lignes sont montrées — `grid` (grille), `kanban` (colonnes par valeur d'une liste de choix), `calendar` (sur un champ date), `timeline` (barres entre une date de début et une date de fin), `form` (formulaire de saisie d'une page) et `survey` (le même, une question par écran). `spec` porte tout le reste, et sa forme dépend de `kind` : le filtre et le tri des vues de données, les champs affichés et leur ordre, les **champs pivots** — la liste de choix d'un kanban, les dates d'un calendrier ou d'une frise — et, pour un formulaire, les questions posées. Le document est validé par le noyau à l'écriture (types des champs pivots compris) et désigne les champs par leur nom physique, comme le filtre ; à la lecture, il est **reprojeté pour le lecteur** : un champ qu'il ne voit pas en disparaît, comme de la grille (chapitre 05 §9). `position` ordonne les vues d'une table dans le sélecteur ; il n'est pas unique, un réordonnancement réécrit toute la liste.
+
+Un formulaire ou un questionnaire peut être **partagé** (chapitre 15) : `form_share` en garde le lien — son empreinte SHA-256 pour le retrouver, le secret scellé par la clé d'instance pour le remontrer, jamais en clair —, l'accès (`public` ou `members`, restreint par `form_share_role` à certains groupes), les conditions de fermeture (`is_active`, `closes_at`, `max_responses`, dont `response_count` tient le compte exact) et `published_by`, la personne sur l'autorité de laquelle les réponses s'écrivent. `table_id` est redondant avec la vue, et voulu : un lien se résout en une seule lecture, qui dit en même temps si la vue et la table sont encore vivantes. La suppression logique d'une vue ou d'une table ne supprime pas le partage, mais le rend introuvable ; leur suppression physique l'emporte, en cascade.
 
 `application_table` porte `base_id` une seule fois, partagé par ses deux clés étrangères : rattacher à une application de la base X une table de la base Y est structurellement impossible.
 
@@ -1411,9 +1547,9 @@ CREATE TABLE _basedb.ai_call (
   tenant_id     uuid NOT NULL,
   base_id       uuid NULL,
   actor_user_id uuid NULL,
-  surface    text COLLATE "C" NOT NULL CHECK (surface IN ('ui','rest')),
+  surface    text COLLATE "C" NOT NULL CHECK (surface IN ('ui','rest','system')),
   usage_kind text COLLATE "C" NOT NULL
-             CHECK (usage_kind IN ('structure_draft','expression_draft')),
+             CHECK (usage_kind IN ('structure_draft','expression_draft','field_compute','copilot')),
   provider   text COLLATE "C" NOT NULL
              CHECK (provider IN ('openai','anthropic','mistral')),
   model      text COLLATE "C" NOT NULL,

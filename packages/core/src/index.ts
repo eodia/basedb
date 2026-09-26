@@ -8,6 +8,14 @@ import {
   applyAccessChanges,
 } from './admin/access.js'
 import {
+  type EffectiveMask,
+  type FieldAccess,
+  type FieldRule,
+  effectiveFieldMask,
+  fieldAccess,
+  setFieldRule,
+} from './admin/fields.js'
+import {
   type GroupSummary,
   createGroup,
   deleteGroup,
@@ -42,6 +50,7 @@ import {
   agentLookupRecords,
   agentUpdateRecord,
 } from './agent/records.js'
+import { type CopilotAnswer, type CopilotRequest, copilotTurn } from './ai/copilot.js'
 import {
   type ExpressionDraft,
   type ExpressionDraftRequest,
@@ -51,6 +60,19 @@ import {
   draftExpression,
   draftStructure,
 } from './ai/draft.js'
+import {
+  type AiFieldInput,
+  type AiFieldStatus,
+  type AiWorker,
+  type AiWorkerOptions,
+  aiFieldStatus,
+  disableAiField,
+  requestAiSweep,
+  runAiCell,
+  setAiField,
+  startAiWorker,
+} from './ai/field.js'
+import { checkSchedule, nextRuns } from './ai/schedule.js'
 import { type OidcProvider, loadProviders, requireProvider } from './auth/oidc-providers.js'
 import {
   type AssertedIdentity,
@@ -94,6 +116,7 @@ import { DESCRIPTION_MAX_CHARS } from './catalog/description.js'
 import { setFieldDescription, setTableDescription } from './catalog/descriptions.js'
 import { type Documentation, toDocumentation } from './catalog/documentation.js'
 import { setFieldLabel } from './catalog/field-label.js'
+import { type ReorderedFields, reorderFields } from './catalog/field-order.js'
 import {
   type AddFieldRequest,
   type AddedField,
@@ -127,6 +150,18 @@ import {
   createTable,
 } from './catalog/operations.js'
 import {
+  type AliasSummary,
+  type PhysicalKind,
+  type RenameImpact,
+  type RenameResult,
+  dropAlias,
+  endBlankCut,
+  listAliases,
+  renameImpact,
+  renamePhysical,
+  startBlankCut,
+} from './catalog/physical.js'
+import {
   type ProjectedBase,
   type ResolvedTable,
   type VisibleBase,
@@ -144,6 +179,14 @@ import {
   updateProject,
 } from './catalog/projects.js'
 import {
+  type DeletedTable,
+  type PurgeExport,
+  type PurgeResult,
+  exportForPurge,
+  listDeletedTables,
+  purge,
+} from './catalog/purge.js'
+import {
   type SelectOptionInput,
   type SetOptionsResult,
   setSelectOptions,
@@ -151,12 +194,46 @@ import {
 import { type MetaKind, type ServedMeta, serveMeta } from './catalog/serve.js'
 import { type UpdatedTable, updateTable } from './catalog/table-edit.js'
 import {
+  type SavedView,
+  createView,
+  deleteView,
+  listViews,
+  reorderViews,
+  updateView,
+} from './catalog/views.js'
+import type { FieldKind } from './ddl/emit.js'
+import {
   type Migration,
   applyMigration,
   listMigrations,
   proposeMigration,
   reclaimStaleMigrations,
 } from './ddl/migration.js'
+import {
+  type EnvironmentSummary,
+  type Family,
+  assertDeletableEnvironment,
+  createEnvironmentBase,
+  deletionOrder,
+  listEnvironments,
+  renameEnvironment,
+} from './environments/family.js'
+import {
+  type RowComparison,
+  type RowSyncResult,
+  type TableRowCounts,
+  compareRows,
+  countRows,
+  syncRows,
+} from './environments/rows.js'
+import {
+  type ApplyReport,
+  type EnvironmentComparison,
+  type StructurePlan,
+  applyStructure,
+  compareEnvironments,
+  planStructure,
+} from './environments/structure.js'
 import { BasedbError } from './errors/index.js'
 import {
   DEFAULT_MAX_FILE_BYTES,
@@ -169,6 +246,38 @@ import {
   withFileLinks,
 } from './files/operations.js'
 import { type FileStorageConfig, createFileStorage } from './files/storage.js'
+import {
+  type FormSharing,
+  type ShareSettings,
+  type SharedForm,
+  deleteFormShare,
+  getFormSharing,
+  openSharedForm,
+  regenerateFormShare,
+  saveFormSharing,
+  submitSharedForm,
+} from './forms/shares.js'
+import { drainHistory, startDrainLoop } from './history/drain.js'
+import {
+  type Deletion,
+  type RevisionPage,
+  baseHistory,
+  listDeletions,
+  recordHistory,
+  restoreRecord,
+  revertRevision,
+} from './history/read.js'
+import { type StructureHistoryPage, structureHistory } from './history/structure.js'
+import {
+  type Proposal,
+  type ProposedField,
+  agentGetProposal,
+  agentProposeAddField,
+  agentProposeCreateTable,
+  approveProposal,
+  listProposals,
+  rejectProposal,
+} from './proposals/index.js'
 import {
   type CreateRecordOptions,
   type CreateRecordsOptions,
@@ -198,6 +307,18 @@ import {
   runConsoleSql,
 } from './sql/console.js'
 import { type RequestContext, type Surface, sealContext } from './tx/context.js'
+import { dispatchWebhooks, startDispatchLoop } from './webhooks/dispatch.js'
+import {
+  type WebhookDelivery,
+  type WebhookEvent,
+  type WebhookSummary,
+  createWebhook,
+  deleteWebhook,
+  listDeliveries,
+  listWebhooks,
+  setWebhookActive,
+} from './webhooks/manage.js'
+import { STRICT_TARGETS, type TargetPolicy } from './webhooks/target.js'
 
 /**
  * `@basedb/core` — the kernel.
@@ -213,6 +334,18 @@ import { type RequestContext, type Surface, sealContext } from './tx/context.js'
  */
 
 export { BasedbError, businessError, type ErrorClass } from './errors/index.js'
+export type { WebhookDelivery, WebhookEvent, WebhookSummary } from './webhooks/manage.js'
+export type { SavedView, ViewKind } from './catalog/views.js'
+export type { Proposal, ProposedField } from './proposals/index.js'
+export type { TargetPolicy } from './webhooks/target.js'
+export type {
+  Deletion,
+  Revision,
+  RevisionActor,
+  RevisionChange,
+  RevisionOp,
+  RevisionPage,
+} from './history/read.js'
 export type { Actor, ActorKind, PermissionSnapshot, RequestContext, Surface } from './tx/context.js'
 export type { AllocatedName, ObjectKind, ScopeKind } from './naming/allocation.js'
 export type {
@@ -225,10 +358,20 @@ export type { CreateLinkFieldRequest, CreatedLinkField, OnDelete } from './catal
 export type { AddFieldRequest, AddedField, RequiredResult } from './catalog/fields.js'
 export type { Look, LookInput } from './catalog/look.js'
 export type { UpdatedTable } from './catalog/table-edit.js'
+export type { ReorderedFields } from './catalog/field-order.js'
 export type { SelectOption, SelectOptionInput, SetOptionsResult } from './catalog/select-options.js'
 export type { FileStorageConfig } from './files/storage.js'
 export type { OpenedFile, UploadRequest, UploadedFile } from './files/operations.js'
 export { DEFAULT_MAX_FILE_BYTES } from './files/operations.js'
+export type {
+  AliasSummary,
+  PhysicalKind,
+  RenameImpact,
+  RenameResult,
+} from './catalog/physical.js'
+export { ALIAS_DEFAULT_DAYS, BLANK_CUT_MIN_DAYS, MAX_LIVE_ALIASES } from './catalog/physical.js'
+export type { DeletedTable, ExportedTable, PurgeExport, PurgeResult } from './catalog/purge.js'
+export { EXPORT_MAX_ROWS, PURGE_DELAY_DAYS } from './catalog/purge.js'
 export { MAX_FILES_PER_VALUE } from './ddl/emit.js'
 export {
   MAX_IMAGE_CHARS,
@@ -239,6 +382,45 @@ export {
 export type { ListOptions, ListResult } from './records/list.js'
 export { COUNT_CEILING } from './records/list.js'
 export type { BaseSummary } from './catalog/lifecycle.js'
+export type { EnvironmentSummary, Family } from './environments/family.js'
+export type {
+  FormShare,
+  FormSharing,
+  ShareAccess,
+  ShareSettings,
+  ShareState,
+  SharedForm,
+  SharedQuestion,
+} from './forms/shares.js'
+export { MAX_ENVIRONMENT_CHARS } from './environments/family.js'
+export type {
+  ApplyReport,
+  ComparedField,
+  ComparedFieldCell,
+  ComparedTable,
+  ComparedTableCell,
+  EnvironmentComparison,
+  PlanNote,
+  PlanStep,
+  StepChange,
+  StepKind,
+  StepResult,
+  StepStatus,
+  StructurePlan,
+} from './environments/structure.js'
+export type {
+  RowComparison,
+  RowSample,
+  RowSyncResult,
+  SyncColumn,
+  TableRowCounts,
+} from './environments/rows.js'
+export type {
+  StructureChange,
+  StructureEvent,
+  StructureHistoryPage,
+} from './history/structure.js'
+export type { BaseEnvironment } from './catalog/projection.js'
 export { TABLE_BATCH } from './catalog/lifecycle.js'
 export type { Migration, MigrationStatus, MigrationStep } from './ddl/migration.js'
 export type { SqlColumn, SqlConsoleRequest, SqlConsoleResult } from './sql/console.js'
@@ -252,6 +434,22 @@ export type {
   StructureDraftRequest,
   UsageKind,
 } from './ai/draft.js'
+export type {
+  AiFieldInput,
+  AiFieldStatus,
+  AiRefresh,
+  AiWorker,
+  AiWorkerOptions,
+} from './ai/field.js'
+export { MIN_INTERVAL_MINUTES } from './ai/schedule.js'
+export type {
+  CopilotAction,
+  CopilotAnswer,
+  CopilotField,
+  CopilotMessage,
+  CopilotRead,
+  CopilotRequest,
+} from './ai/copilot.js'
 export { DESCRIPTION_MAX_CHARS }
 export type { DocSection, Documentation } from './catalog/documentation.js'
 export { DOCUMENTED_MCP_TOOLS, toDocumentation } from './catalog/documentation.js'
@@ -309,6 +507,14 @@ export type {
   AccessProject,
 } from './admin/access.js'
 export { ACCESS_LEVELS, LEVEL_ACTIONS } from './admin/access.js'
+export type {
+  EffectiveField,
+  EffectiveMask,
+  FieldAccess,
+  FieldAccessField,
+  FieldAccessGroup,
+  FieldRule,
+} from './admin/fields.js'
 export type { GroupSummary, SystemGroup } from './admin/groups.js'
 export type { UserSummary } from './admin/users.js'
 export type { ProjectBase, ProjectSummary } from './catalog/projects.js'
@@ -345,6 +551,17 @@ export type AgentWrite = Awaited<ReturnType<typeof agentCreateRecord>>
 
 export interface KernelConfig {
   readonly connectionString: string
+  /**
+   * Where webhooks may send — chapter 08 §10.8. Absent: HTTPS to public addresses only.
+   * Relaxing it is for development and tests, where the consumer runs on the same host.
+   */
+  readonly webhookTargets?: TargetPolicy
+  /**
+   * The directory where a purge's export is written — chapter 06 §5.2: on the
+   * application host, never on the database server. Absent: no export, hence no purge
+   * (`EXPORT_UNAVAILABLE`).
+   */
+  readonly exportDir?: string
   /**
    * Instance key (A25), from which the password pepper and the access-token signature
    * are derived by domain separation.
@@ -618,13 +835,15 @@ export interface Kernel {
   /** Creates a project. `manage_schema` on the tenant: the Administrators. */
   createProject(
     ctx: RequestContext,
-    request: { label: string; description?: string | null },
-  ): Promise<{ readonly id: string; readonly label: string; readonly description: string | null }>
-  /** Renames a project, or changes what it is for. `manage_schema` on the project. */
+    request: { label: string; description?: string | null; look?: LookInput },
+  ): Promise<
+    { readonly id: string; readonly label: string; readonly description: string | null } & Look
+  >
+  /** Renames a project, changes what it is for, or how it looks. `manage_schema` on it. */
   updateProject(
     ctx: RequestContext,
-    request: { projectId: string; label?: string; description?: string | null },
-  ): Promise<{ readonly label: string; readonly description: string | null }>
+    request: { projectId: string; label?: string; description?: string | null; look?: LookInput },
+  ): Promise<{ readonly label: string; readonly description: string | null } & Look>
   /** Deletes an empty project (`PROJECT_NOT_EMPTY` otherwise). */
   deleteProject(ctx: RequestContext, request: { projectId: string }): Promise<void>
   /** The tenant's accounts — administration only. */
@@ -683,6 +902,18 @@ export interface Kernel {
     ctx: RequestContext,
     request: { changes: readonly AccessChange[]; sessionId: string },
   ): Promise<AccessGraph>
+  /** Below the grid: each group's rules on the fields of one table (05 §4). */
+  fieldAccess(ctx: RequestContext, request: { tableId: string }): Promise<FieldAccess>
+  /** Hides a field from a group, makes it read-only for it, or lifts the rule (`null`). */
+  setFieldRule(
+    ctx: RequestContext,
+    request: { groupId: string; fieldId: string; rule: FieldRule | null; sessionId: string },
+  ): Promise<FieldAccess>
+  /** What one person ends up with on each field of a table, and through which group (05 §3.3). */
+  effectiveFieldMask(
+    ctx: RequestContext,
+    request: { tableId: string; userId: string },
+  ): Promise<EffectiveMask>
   createTable(
     ctx: RequestContext,
     request: {
@@ -825,6 +1056,48 @@ export interface Kernel {
     request: { fieldId: string; label: string },
   ): Promise<{ readonly label: string }>
   /**
+   * Sets the order of a table's fields, by physical name — the catalog's order, the one the
+   * screens and the API follow; PostgreSQL's own column order is left as it is.
+   */
+  reorderFields(
+    ctx: RequestContext,
+    request: { tableId: string; names: readonly string[] },
+  ): Promise<ReorderedFields>
+  /**
+   * The saved views of a table, in the order of its selector — chapter 11 §1.4. `read` on
+   * the table; each spec is cut down to the fields the reader sees.
+   */
+  listViews(ctx: RequestContext, request: { tableId: string }): Promise<SavedView[]>
+  /** Creates a view — a grid, kanban, calendar, timeline, form or survey. `manage_schema`. */
+  createView(
+    ctx: RequestContext,
+    request: {
+      tableId: string
+      label: unknown
+      kind: unknown
+      description?: unknown
+      spec?: unknown
+    },
+  ): Promise<SavedView>
+  /** Changes a view's label, description and/or WHOLE spec; never its kind. */
+  updateView(
+    ctx: RequestContext,
+    request: {
+      tableId: string
+      viewId: string
+      label?: unknown
+      description?: unknown
+      spec?: unknown
+    },
+  ): Promise<SavedView>
+  /** Deletes a view, logically. The rows it showed are not touched. */
+  deleteView(ctx: RequestContext, request: { tableId: string; viewId: string }): Promise<void>
+  /** Sets the order of a table's views, as the list of their identifiers. */
+  reorderViews(
+    ctx: RequestContext,
+    request: { tableId: string; ids: readonly string[] },
+  ): Promise<{ readonly order: readonly string[] }>
+  /**
    * Replaces the options of a `select`, in the given order — chapter 04 §3: the values
    * already there are updated, the new ones added, the absent ones removed (`OPTION_IN_USE`
    * while rows still carry them). Regenerates the `CHECK` only when the set of values moves.
@@ -842,6 +1115,107 @@ export interface Kernel {
    * `restoreBase` exact.
    */
   deleteBase(ctx: RequestContext, request: { baseId: string }): Promise<Migration>
+  /**
+   * The environments of a base — chapter 14: production first, each a base of its own
+   * sharing the lineage, label, description and look. `manage_schema` on the base.
+   */
+  listEnvironments(ctx: RequestContext, request: { baseId: string }): Promise<Family>
+  /**
+   * Adds an environment to a base: an empty base of the same lineage, then the structure
+   * of `sourceBaseId` (production when absent) carried into it, step by step. The AI
+   * options are carried only with `consent`.
+   */
+  createEnvironment(
+    ctx: RequestContext,
+    request: { baseId: string; environment: string; sourceBaseId?: string; consent?: boolean },
+  ): Promise<{ readonly environment: EnvironmentSummary; readonly report: ApplyReport }>
+  /** Renames an environment's badge. */
+  renameEnvironment(
+    ctx: RequestContext,
+    request: { baseId: string; environment: string },
+  ): Promise<EnvironmentSummary>
+  /** Deletes one environment — never production (`ENVIRONMENT_IS_PRODUCTION`). */
+  deleteEnvironment(ctx: RequestContext, request: { baseId: string }): Promise<Migration>
+  /** Every environment of a base side by side, table by table, field by field. */
+  compareEnvironments(
+    ctx: RequestContext,
+    request: { baseId: string },
+  ): Promise<EnvironmentComparison>
+  /** What carrying the structure of one environment into another would do. */
+  planStructure(
+    ctx: RequestContext,
+    request: { sourceBaseId: string; targetBaseId: string },
+  ): Promise<StructurePlan>
+  /** Applies the chosen steps of a fresh plan; reports each step's outcome. */
+  applyStructure(
+    ctx: RequestContext,
+    request: {
+      sourceBaseId: string
+      targetBaseId: string
+      steps: readonly string[]
+      consent?: boolean
+    },
+  ): Promise<ApplyReport>
+  /** Rows per table in two environments — the list of the synchronization screen. */
+  countRows(
+    ctx: RequestContext,
+    request: { sourceBaseId: string; targetBaseId: string },
+  ): Promise<readonly TableRowCounts[]>
+  /** A table's rows compared between two environments, by `_id`. */
+  compareRows(
+    ctx: RequestContext,
+    request: { sourceBaseId: string; targetBaseId: string; tableLineage: string },
+  ): Promise<RowComparison>
+  /** Copies a table's rows from one environment to another, all or nothing. */
+  syncRows(
+    ctx: RequestContext,
+    request: {
+      sourceBaseId: string
+      targetBaseId: string
+      tableLineage: string
+      insert: boolean
+      update: boolean
+      delete: boolean
+    },
+  ): Promise<RowSyncResult>
+  /** The structure history of a base, most recent first — chapter 07 §8.1. */
+  structureHistory(
+    ctx: RequestContext,
+    request: { baseId: string; before?: string; limit?: number },
+  ): Promise<StructureHistoryPage>
+  /** How a form view is shared — its link and settings, or none (chapter 15). */
+  getFormSharing(
+    ctx: RequestContext,
+    request: { tableId: string; viewId: string },
+  ): Promise<FormSharing>
+  /** Shares a form view, or changes how; whoever saves becomes its publisher. */
+  saveFormSharing(
+    ctx: RequestContext,
+    request: { tableId: string; viewId: string } & ShareSettings,
+  ): Promise<FormSharing>
+  /** A new link for a shared form: the old one stops working. */
+  regenerateFormShare(
+    ctx: RequestContext,
+    request: { tableId: string; viewId: string },
+  ): Promise<FormSharing>
+  /** Stops sharing a form. The answers already given stay. */
+  deleteFormShare(ctx: RequestContext, request: { tableId: string; viewId: string }): Promise<void>
+  /**
+   * Opens a shared form by its link — with no right on the table. `respondent` is the
+   * signed-in person, when there is one; a members' form refuses without.
+   */
+  openSharedForm(request: {
+    token: string
+    respondent: RequestContext | null
+    requestId: string
+  }): Promise<SharedForm>
+  /** Answers a shared form: one row, on the publisher's authority. */
+  submitSharedForm(request: {
+    token: string
+    respondent: RequestContext | null
+    requestId: string
+    values: Readonly<Record<string, unknown>>
+  }): Promise<{ readonly received: true }>
   /**
    * Deletes ONE table, logically — chapter 06 §4.2.
    *
@@ -865,6 +1239,50 @@ export interface Kernel {
   restoreBase(ctx: RequestContext, request: { baseId: string }): Promise<Migration>
   /** The tenant's deleted bases. Empty for an actor without the administration role. */
   listDeletedBases(ctx: RequestContext): Promise<readonly BaseSummary[]>
+  /** What renaming a base, a table or a field in the database would touch (06 §2.1). */
+  renameImpact(
+    ctx: RequestContext,
+    request: { kind: PhysicalKind; id: string },
+  ): Promise<RenameImpact>
+  /** The physical rename itself — administration only, confirmed by the current name. */
+  renamePhysical(
+    ctx: RequestContext,
+    request: {
+      kind: PhysicalKind
+      id: string
+      name: string
+      confirm: string
+      alias?: boolean
+      aliasDays?: number
+    },
+  ): Promise<RenameResult>
+  /** The compatibility aliases of a base (06 §3). */
+  listAliases(ctx: RequestContext, request: { baseId: string }): Promise<AliasSummary[]>
+  /** Renames an alias away for a while, to see who still uses it (06 §3.5). */
+  startBlankCut(
+    ctx: RequestContext,
+    request: { aliasId: string; days?: number },
+  ): Promise<AliasSummary | null>
+  endBlankCut(ctx: RequestContext, request: { aliasId: string }): Promise<AliasSummary | null>
+  dropAlias(ctx: RequestContext, request: { aliasId: string; confirm: string }): Promise<void>
+  /** A live base's deleted tables, not purged yet. */
+  listDeletedTables(ctx: RequestContext, request: { baseId: string }): Promise<DeletedTable[]>
+  /** The export a purge requires: one CSV per table and a manifest (06 §5.2). */
+  exportForPurge(
+    ctx: RequestContext,
+    request: { kind: 'base' | 'table'; id: string },
+  ): Promise<PurgeExport>
+  /** The one irreversible operation (06 §5). */
+  purge(
+    ctx: RequestContext,
+    request: {
+      kind: 'base' | 'table'
+      id: string
+      exportId: string
+      confirm: string
+      early?: { justification: string }
+    },
+  ): Promise<PurgeResult>
   /** A base's migrations, newest first — what the structure screen shows. */
   listMigrations(ctx: RequestContext, baseId: string): Promise<readonly Migration[]>
   /** Resumes a plan left `interrupted`, from the step it stopped at. */
@@ -887,6 +1305,49 @@ export interface Kernel {
     transport: ProviderTransport,
     request: StructureDraftRequest,
   ): Promise<StructureDraft>
+  /**
+   * One turn of the copilot — chapter 12 §1.6: an answer, and proposals the person applies
+   * through the ordinary routes. With `readData`, it may read rows first, under the
+   * person's rights, in a read-only transaction when it reads by SQL.
+   */
+  copilot(
+    ctx: RequestContext,
+    transport: ProviderTransport,
+    request: CopilotRequest,
+  ): Promise<CopilotAnswer>
+  /** How an AI field is set and how it is doing — chapter 12 §9. */
+  aiFieldStatus(ctx: RequestContext, fieldId: string): Promise<AiFieldStatus>
+  /**
+   * Switches the AI option on for a field, or changes its prompt or schedule, with a fresh
+   * consent; `recompute` starts a recomputation of every row.
+   */
+  setAiField(
+    ctx: RequestContext,
+    request: { fieldId: string; input: AiFieldInput; recompute?: boolean },
+  ): Promise<AiFieldStatus>
+  /** Switches the AI option off: the field is an ordinary, writable one again. */
+  disableAiField(ctx: RequestContext, fieldId: string): Promise<void>
+  /** Computes one row of an AI field now, overwriting its cell, and returns the value. */
+  runAiCell(
+    ctx: RequestContext,
+    transport: ProviderTransport,
+    request: { fieldId: string; recordId: string },
+  ): Promise<{ readonly value: unknown }>
+  /** Starts a recomputation of every row of an AI field — the worker does it. */
+  requestAiSweep(ctx: RequestContext, fieldId: string): Promise<void>
+  /**
+   * The next runs of a schedule, or the refusal it would meet — what the screen shows
+   * while a person builds one. Nothing is read or written.
+   */
+  previewSchedule(
+    ctx: RequestContext,
+    request: { cron: string; timezone: string },
+  ): { readonly runs: readonly string[] }
+  /**
+   * Starts the process that fills AI fields, pass after pass, until `close`. The API
+   * process runs one; several may run against one database, each field being leased.
+   */
+  startAiWorker(transport: ProviderTransport, options?: AiWorkerOptions): AiWorker
   /**
    * Runs a statement against one base's schema — the SQL console.
    *
@@ -930,6 +1391,102 @@ export interface Kernel {
   }): Promise<OpenedFile>
   /** Where the files go, for the startup log; and the largest deposit, for the adapter. */
   readonly files: { readonly storage: string; readonly maxBytes: number }
+  /**
+   * The history of one row, newest first — chapter 07 §9. `read` on its table; the
+   * detail of a field the reader may not read is withheld, and so is a modification of
+   * such fields only.
+   */
+  recordHistory(
+    ctx: RequestContext,
+    request: { tableId: string; recordId: string; cursor?: string; limit?: number },
+  ): Promise<RevisionPage>
+  /** The activity of a base — or of one of its tables — over what the reader may read. */
+  baseHistory(
+    ctx: RequestContext,
+    request: { baseId: string; tableId?: string; cursor?: string; limit?: number },
+  ): Promise<RevisionPage>
+  /** Undoes one modification; refused with `REVISION_SUPERSEDED` if a field changed since. */
+  revertRevision(
+    ctx: RequestContext,
+    request: { revisionId: string },
+  ): Promise<{ tableId: string; recordId: string }>
+  /** Brings a deleted row back under its own identifier (chapter 07 §12.1). */
+  restoreRecord(
+    ctx: RequestContext,
+    request: { revisionId: string },
+  ): Promise<{ tableId: string; recordId: string }>
+  /** The rows of a table deleted since an instant — a consumer's catch-up (08 §6.5). */
+  listDeletions(
+    ctx: RequestContext,
+    request: { tableId: string; since: string; cursor?: string; limit?: number },
+  ): Promise<{ readonly deletions: readonly Deletion[]; readonly nextCursor: string | null }>
+  /** A base's webhooks — never a secret (08 §10). `manage_tokens` on the base. */
+  listWebhooks(ctx: RequestContext, request: { baseId: string }): Promise<WebhookSummary[]>
+  /** Creates a webhook; the signing secret is in the result and nowhere else, ever. */
+  createWebhook(
+    ctx: RequestContext,
+    request: {
+      baseId: string
+      label: string
+      url: string
+      subscriptions: ReadonlyArray<{ tableId: string; events: readonly WebhookEvent[] }>
+      sessionId: string
+    },
+  ): Promise<{ readonly webhook: WebhookSummary; readonly secret: string }>
+  /** Stops or restarts a webhook; restarting checks its mask again (08 §10.3). */
+  setWebhookActive(
+    ctx: RequestContext,
+    request: { webhookId: string; active: boolean; sessionId: string },
+  ): Promise<WebhookSummary>
+  deleteWebhook(
+    ctx: RequestContext,
+    request: { webhookId: string; sessionId: string },
+  ): Promise<void>
+  /** The last deliveries of a webhook — states, never bodies (08 §10.9). */
+  listDeliveries(
+    ctx: RequestContext,
+    request: { webhookId: string; limit?: number },
+  ): Promise<WebhookDelivery[]>
+  /** `propose_create_table` — an agent proposes a table; a person decides (09 §7). */
+  agentProposeCreateTable(
+    ctx: RequestContext,
+    request: {
+      base: string
+      label: string
+      description?: string | null
+      fields: readonly ProposedField[]
+    },
+  ): Promise<Proposal>
+  /** `propose_add_field` — a column, a list of choices or a link (09 §7.4). */
+  agentProposeAddField(
+    ctx: RequestContext,
+    request: {
+      base: string
+      table: string
+      label: string
+      kind: FieldKind | 'link'
+      description?: string | null
+      options?: ReadonlyArray<{ value: string; label?: string }>
+      target?: string
+      onDelete?: string
+    },
+  ): Promise<Proposal>
+  /** `get_proposal` — its author, and nobody else on the agent surface. */
+  agentGetProposal(ctx: RequestContext, proposalId: string): Promise<Proposal>
+  /** The review queue of a base (09 §7.2), newest first. `manage_schema` on the base. */
+  listProposals(ctx: RequestContext, request: { baseId: string }): Promise<Proposal[]>
+  /** Approves and carries out a proposal, every check made again (09 §7.5, §7.6). */
+  approveProposal(ctx: RequestContext, request: { proposalId: string }): Promise<Proposal>
+  rejectProposal(ctx: RequestContext, request: { proposalId: string }): Promise<Proposal>
+  /** One pass of the webhook sender, now; returns the deliveries handled. */
+  dispatchWebhooks(): Promise<number>
+  /** Moves what the capture buffered into the journals now; returns the rows moved. */
+  drainHistory(): Promise<number>
+  /**
+   * Starts the work a serving process does in the background — the history drain. Called
+   * once by the server; a test drains by hand instead, and deterministically.
+   */
+  startBackground(): void
   close(): Promise<void>
 }
 
@@ -957,6 +1514,9 @@ const DEFAULT_TIMEOUT_MS = 30_000
  * The pools are created here and never leave: they are captured by the operations'
  * closure. That is what makes lock 1 true by construction rather than by convention.
  */
+/** How often the history drain passes when nothing wakes it (chapter 07 §1.4). */
+const DRAIN_INTERVAL_MS = 2_000
+
 export function startKernel(config: KernelConfig): Kernel {
   const pools = new Pools({
     connectionString: config.connectionString,
@@ -969,6 +1529,11 @@ export function startKernel(config: KernelConfig): Kernel {
    * correlation and never discloses a value.
    */
   const digestKey = config.encryptionKey || randomBytes(32).toString('base64')
+
+  /** Stops the background drain and the webhook sender, once started. */
+  let stopDrain: (() => void) | undefined
+  let stopDispatch: (() => void) | undefined
+  const webhookTargets = config.webhookTargets ?? STRICT_TARGETS
 
   /**
    * Files: the storage, and the key file links are signed with — derived from the
@@ -1066,6 +1631,9 @@ export function startKernel(config: KernelConfig): Kernel {
       }
     })
   }
+
+  /** The AI workers started, stopped by `close` before the pools they use. */
+  const workers: AiWorker[] = []
 
   return {
     async migrateCatalog() {
@@ -1290,6 +1858,9 @@ export function startKernel(config: KernelConfig): Kernel {
     setGroupMembership: (ctx, request) => setGroupMembership(pools, ctx, request),
     accessGraph: (ctx) => accessGraph(pools, ctx),
     applyAccessChanges: (ctx, request) => applyAccessChanges(pools, ctx, request),
+    fieldAccess: (ctx, request) => fieldAccess(pools, ctx, request),
+    setFieldRule: (ctx, request) => setFieldRule(pools, ctx, request),
+    effectiveFieldMask: (ctx, request) => effectiveFieldMask(pools, ctx, request),
     createTable: (ctx, request) => createTable(pools, ctx, request),
     createLinkField: (ctx, request) => createLinkField(pools, ctx, request),
     addField: (ctx, request) => addField(pools, ctx, request),
@@ -1313,16 +1884,105 @@ export function startKernel(config: KernelConfig): Kernel {
     setTableDescription: (ctx, request) => setTableDescription(pools, ctx, request),
     setFieldDescription: (ctx, request) => setFieldDescription(pools, ctx, request),
     setFieldLabel: (ctx, request) => setFieldLabel(pools, ctx, request),
+    reorderFields: (ctx, request) => reorderFields(pools, ctx, request),
+    listViews: (ctx, request) => listViews(pools, ctx, request),
+    createView: (ctx, request) => createView(pools, ctx, request),
+    updateView: (ctx, request) => updateView(pools, ctx, request),
+    deleteView: (ctx, request) => deleteView(pools, ctx, request),
+    reorderViews: (ctx, request) => reorderViews(pools, ctx, request),
     setSelectOptions: (ctx, request) => setSelectOptions(pools, ctx, request),
-    deleteBase: (ctx, request) => deleteBase(pools, ctx, request),
+    // Deleting a base deletes every environment of it, production last (chapter 14).
+    deleteBase: async (ctx, request) => {
+      let last: Migration | null = null
+      for (const baseId of await deletionOrder(pools, ctx, request.baseId)) {
+        last = await deleteBase(pools, ctx, { baseId })
+        if (last.status !== 'applied') return last
+      }
+      if (last === null) return deleteBase(pools, ctx, request)
+      return last
+    },
+    listEnvironments: (ctx, request) => listEnvironments(pools, ctx, request),
+    createEnvironment: async (ctx, request) => {
+      const created = await createEnvironmentBase(pools, ctx, request)
+      const report = await applyStructure(pools, ctx, {
+        sourceBaseId: created.sourceBaseId,
+        targetBaseId: created.environment.id,
+        steps: 'all',
+        consent: request.consent === true,
+        fork: true,
+      })
+      return { environment: created.environment, report }
+    },
+    renameEnvironment: (ctx, request) => renameEnvironment(pools, ctx, request),
+    deleteEnvironment: async (ctx, request) => {
+      await assertDeletableEnvironment(pools, ctx, request.baseId)
+      return deleteBase(pools, ctx, request)
+    },
+    compareEnvironments: (ctx, request) => compareEnvironments(pools, ctx, request),
+    planStructure: (ctx, request) => planStructure(pools, ctx, request),
+    applyStructure: (ctx, request) => applyStructure(pools, ctx, request),
+    countRows: (ctx, request) => countRows(pools, ctx, request),
+    compareRows: (ctx, request) => compareRows(pools, ctx, request),
+    syncRows: async (ctx, request) => {
+      // What the target held is drained into its history before it is overwritten.
+      await drainHistory(pools).catch(() => undefined)
+      return syncRows(pools, ctx, request)
+    },
+    structureHistory: (ctx, request) => structureHistory(pools, ctx, request),
+    getFormSharing: (ctx, request) => getFormSharing(pools, ctx, instanceKey(), request),
+    saveFormSharing: (ctx, request) => saveFormSharing(pools, ctx, instanceKey(), request),
+    regenerateFormShare: (ctx, request) => regenerateFormShare(pools, ctx, instanceKey(), request),
+    deleteFormShare: (ctx, request) => deleteFormShare(pools, ctx, request),
+    openSharedForm: (request) => openSharedForm(pools, request),
+    submitSharedForm: (request) => submitSharedForm(pools, request),
     deleteTable: (ctx, request) => deleteTable(pools, ctx, request),
     previewTableDeletion: (ctx, tableId) => previewTableDeletion(pools, ctx, tableId),
     restoreBase: (ctx, request) => restoreBase(pools, ctx, request),
+    renameImpact: (ctx, request) => renameImpact(pools, ctx, request),
+    renamePhysical: async (ctx, request) => {
+      // A column rename changes the names the capture writes under: what is still in the
+      // buffer is drained first, under the names the catalog knows them by.
+      if (request.kind === 'field') await drainHistory(pools)
+      return renamePhysical(pools, ctx, request)
+    },
+    listAliases: (ctx, request) => listAliases(pools, ctx, request),
+    startBlankCut: (ctx, request) => startBlankCut(pools, ctx, request),
+    endBlankCut: (ctx, request) => endBlankCut(pools, ctx, request),
+    dropAlias: (ctx, request) => dropAlias(pools, ctx, request),
+    listDeletedTables: (ctx, request) => listDeletedTables(pools, ctx, request),
+    exportForPurge: (ctx, request) => exportForPurge(pools, ctx, config.exportDir, request),
+    purge: (ctx, request) => purge(pools, ctx, request),
     listDeletedBases: (ctx) => listDeletedBases(pools, ctx),
     listMigrations: (ctx, baseId) => listMigrations(pools, ctx, baseId),
     resumeMigration: (ctx, migrationId) => applyMigration(pools, ctx, migrationId),
     draftExpression: (ctx, transport, request) => draftExpression(pools, ctx, transport, request),
     draftStructure: (ctx, transport, request) => draftStructure(pools, ctx, transport, request),
+    copilot: (ctx, transport, request) =>
+      copilotTurn(pools, ctx, transport, request, (baseId, sql) =>
+        runConsoleSql(pools, ctx, config.encryptionKey, config.connectionString, {
+          baseId,
+          sql,
+          limit: 50,
+          readOnly: true,
+        }),
+      ),
+    aiFieldStatus: (ctx, fieldId) => aiFieldStatus(pools, ctx, fieldId),
+    setAiField: (ctx, request) => setAiField(pools, ctx, request),
+    disableAiField: (ctx, fieldId) => disableAiField(pools, ctx, fieldId),
+    runAiCell: (ctx, transport, request) => runAiCell(pools, ctx, transport, request),
+    requestAiSweep: (ctx, fieldId) => requestAiSweep(pools, ctx, fieldId),
+    previewSchedule: (ctx, request) => {
+      const timezone = request.timezone.trim() || 'UTC'
+      const cron = checkSchedule(request.cron, timezone, ctx.timestamp)
+      return {
+        runs: nextRuns(cron, timezone, ctx.timestamp, 5).map((d) => d.toISOString()),
+      }
+    },
+    startAiWorker: (transport, options) => {
+      const worker = startAiWorker(pools, transport, options)
+      workers.push(worker)
+      return worker
+    },
     runSql: (ctx, request) =>
       runConsoleSql(pools, ctx, config.encryptionKey, config.connectionString, request),
     listRecords: async (ctx, options) => {
@@ -1339,7 +1999,46 @@ export function startKernel(config: KernelConfig): Kernel {
     openFile: (request) => openFile(files, request, new Date()),
     files: { storage: storage.description, maxBytes: files.maxBytes },
     deleteRecord: (ctx, options) => deleteRecord(pools, ctx, options),
+    recordHistory: (ctx, request) => recordHistory(pools, ctx, request),
+    baseHistory: (ctx, request) => baseHistory(pools, ctx, request),
+    revertRevision: (ctx, request) => revertRevision(pools, ctx, request),
+    restoreRecord: (ctx, request) => restoreRecord(pools, ctx, request),
+    drainHistory: () => drainHistory(pools),
+    listDeletions: (ctx, request) => listDeletions(pools, ctx, request),
+    listWebhooks: (ctx, request) => listWebhooks(pools, ctx, request),
+    createWebhook: (ctx, request) =>
+      createWebhook(pools, ctx, instanceKey(), webhookTargets, request),
+    setWebhookActive: (ctx, request) => setWebhookActive(pools, ctx, request),
+    deleteWebhook: (ctx, request) => deleteWebhook(pools, ctx, request),
+    listDeliveries: (ctx, request) => listDeliveries(pools, ctx, request),
+    dispatchWebhooks: () => dispatchWebhooks(pools, instanceKey(), webhookTargets),
+    agentProposeCreateTable: (ctx, request) => agentProposeCreateTable(pools, ctx, request),
+    agentProposeAddField: (ctx, request) => agentProposeAddField(pools, ctx, request),
+    agentGetProposal: (ctx, proposalId) => agentGetProposal(pools, ctx, proposalId),
+    listProposals: (ctx, request) => listProposals(pools, ctx, request),
+    approveProposal: (ctx, request) => approveProposal(pools, ctx, request),
+    rejectProposal: (ctx, request) => rejectProposal(pools, ctx, request),
+    startBackground: () => {
+      if (stopDrain !== undefined) return
+      stopDrain = startDrainLoop(pools, DRAIN_INTERVAL_MS, (error) => {
+        // A drain that fails stops nothing: the buffers keep the rows, and the next pass
+        // retries (07 §4.5). It is said, not swallowed.
+        console.error('drain de l’historique :', error)
+      })
+      stopDispatch = startDispatchLoop(
+        pools,
+        instanceKey,
+        webhookTargets,
+        DRAIN_INTERVAL_MS,
+        (error) => {
+          console.error('envoi des webhooks :', error)
+        },
+      )
+    },
     close: async () => {
+      stopDrain?.()
+      stopDispatch?.()
+      await Promise.all(workers.map((w) => w.stop()))
       await closeConsolePools()
       await pools.end()
     },

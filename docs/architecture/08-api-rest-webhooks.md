@@ -62,6 +62,7 @@ Toutes les routes sont préfixées de `/api/v1/{tenantRef}`. La colonne « droit
 | `GET` | `/meta/bases/{base}` | Description projetée : tables, champs, types, liens | — | session, jeton |
 | `GET` | `/meta/bases/{base}/openapi.json` | Sérialisation OpenAPI 3.1 de la même projection (§9.2) | — | session, jeton |
 | `GET` | `/meta/bases/{base}/doc` | Documentation lisible de la même projection (§9.4) | — | session, jeton |
+| `GET` | `/meta/bases/{base}/tables/{table}/views` | Vues enregistrées de la table, dans l'ordre de son sélecteur ; `spec` reprojeté pour le lecteur, `filter_hidden` quand le filtre cite un champ qu'il ne voit pas (chapitre 11 §1.6) | `read` | session, jeton |
 | `GET` `POST` | `/data/{base}/{table}` | Liste ; création unitaire | `read` / `create` | session, jeton |
 | `POST` | `/data/{base}/{table}/batch` | Lot (§3.5) | selon opérations | session, jeton |
 | `GET` `PATCH` `PUT` `DELETE` | `/data/{base}/{table}/{id}` | Enregistrement | `read` / `update` / `delete` | session, jeton |
@@ -77,6 +78,11 @@ Toutes les routes sont préfixées de `/api/v1/{tenantRef}`. La colonne « droit
 | `PATCH` | `/admin/bases/{base}/tables/{table}` | Description d'une table : `{description}` | `manage_schema` | **session seule** |
 | `PATCH` | `/admin/bases/{base}/tables/{table}/fields/{field}` | Libellé et/ou description d'un champ : `{label?, description?}`, l'un des deux au moins. Le libellé seul change, jamais la colonne (chapitre 06 §1.1) ; `LABEL_DUPLICATE` (422) si un frère le porte déjà | `manage_schema` | **session seule** |
 | `PUT` | `/admin/bases/{base}/tables/{table}/fields/{field}/options` | Remplace **en bloc et dans l'ordre** la liste d'une liste de choix : `{options: [{value, label?, color?, icon?, image?}]}` (chapitre 04 §3). Réponse : `data.options`, `data.added`, `data.removed`, et `meta.sql` (vide quand seule l'apparence change). `OPTION_IN_USE` (422) avec le décompte par valeur si une option retirée est portée par des lignes | `manage_schema` | **session seule** |
+| `POST` | `/admin/bases/{base}/tables/{table}/views` | Créer une vue : `{label, kind, description?, spec}`, `kind` parmi `grid`, `kanban`, `calendar`, `timeline`, `form`, `survey` ; placée en dernier. `spec` est validé selon `kind` (chapitre 11 §1.6) : `REQUEST_INVALID` avec `details.reason` — `cle_inconnue`, `champ_inconnu`, `champ_pivot_manquant`, `type_de_champ_incompatible`, `doublon`, `formulaire_vide`, `trop_de_tris`… — et `details.detail` pour la clé ou le champ en cause ; `LABEL_DUPLICATE` (422) si une vue vivante de la table porte déjà ce libellé | `manage_schema` | **session seule** |
+| `PATCH` `DELETE` | `/admin/bases/{base}/tables/{table}/views/{view}` | Libellé, description et/ou `spec` **remplacé en entier** ; jamais `kind`. Suppression logique : les lignes ne sont pas touchées | `manage_schema` | **session seule** |
+| `PUT` | `/admin/bases/{base}/tables/{table}/views/order` | Ordre du sélecteur : `{views: [id…]}` ; une vue que la liste ne nomme pas garde son rang relatif après les autres | `manage_schema` | **session seule** |
+| `GET` `PUT` `DELETE` | `/admin/bases/{base}/tables/{table}/views/{view}/share` | Partage d'un formulaire ou d'un questionnaire (chapitre 15 §7) : le lire, le créer ou le modifier — `{access, active, closes_at, max_responses, groups}` —, l'arrêter. Qui enregistre devient le publiant | `manage_schema` | **session seule** |
+| `POST` | `/admin/bases/{base}/tables/{table}/views/{view}/share/regenerate` | Nouveau lien ; l'ancien cesse de fonctionner | `manage_schema` | **session seule** |
 | `GET` `POST` | `/admin/tokens` | Jetons d'intégration (§11) | `manage_tokens` | **session seule** |
 | `DELETE` | `/admin/tokens/{id}` | Révocation immédiate | `manage_tokens` | **session seule** |
 | `POST` | `/admin/tokens/{id}/rotate` | Rotation avec grâce (§11.4) | `manage_tokens` | **session seule** |
@@ -91,6 +97,8 @@ Toutes les routes sont préfixées de `/api/v1/{tenantRef}`. La colonne « droit
 Les routes `/admin/bases/…` ne sont énumérées ici que pour ce qu'elles portent de descriptions : leurs effets, leurs verrous et leurs refus sont ceux des chapitres 03 et 06, et une modification de description n'est pas une migration (chapitre 06 §1.1). Comme toute route `/admin/*`, elles sont fermées aux jetons (§11.2). Un `PATCH` qui ne change rien — pas de `description` pour une table ou un champ, ni `label` ni `description` pour une base — est refusé par `REQUEST_INVALID` : un corps ignoré en silence ressemblerait à un succès. `null` ou la chaîne vide **efface** la description ; l'omettre dans le `PATCH` d'une base la laisse en l'état.
 
 `manage_tokens` couvre les deux formes d'intégration, jetons et webhooks : ce sont les deux manières d'ouvrir une porte vers l'extérieur avec les droits d'un rôle. Il est indépendant des droits sur les données. Les opérations dont le titulaire est l'administrateur d'instance (`_basedb.app_user.is_instance_admin`) — gestion des tenants, réglages d'instance — n'appartiennent pas à cette surface.
+
+**Une exception au préfixe : les formulaires partagés.** `GET` et `POST /api/v1/forms/{jeton}` (chapitre 15 §7) n'ont pas de `{tenantRef}` : le jeton du lien situe à lui seul le formulaire, et la personne qui répond n'a le plus souvent ni compte ni tenant. Elles ne demandent aucun droit sur la table ; le porteur y est facultatif et ne sert qu'à identifier le membre qui répond à un partage réservé. L'envoi est limité par adresse et par lien (`429 RATE_LIMIT_EXCEEDED`).
 
 **Aucune route d'export (A21).** Un flux illimité percerait le plafond que toutes les autres règles construisent ; l'extraction de volume se fait par la pagination par curseur (§6), bornée et soumise aux mêmes permissions.
 
@@ -1412,6 +1420,20 @@ Ces codes sont en anglais et en majuscules ASCII (A2), à raison d'un par condit
 `FILTER_FIELD_UNKNOWN` et `SORT_FIELD_UNKNOWN` recouvrent **volontairement** deux causes — champ inexistant et champ non lisible — et ne doivent jamais être scindés.
 
 ---
+
+## État de la mise en œuvre (v1)
+
+**Webhooks (§10).** Faits : création, liste, pause et reprise, suppression, livraisons
+listées ; masque de lecture complet exigé et revérifié à la réactivation ; événements
+programmés par le drain du chapitre 07 ; ordre FIFO par clé de partition ; signature
+`t=<unix>,v1=<hex>` ; réessais à repli exponentiel respectant `Retry-After` ;
+désactivation après cinquante échecs ; filtre d'adresses (HTTPS, adresses publiques
+seulement). Écarts : l'adresse résolue n'est pas épinglée pour la connexion (la résolution
+DNS est contrôlée avant l'envoi, pas imposée à la socket) ; `BASEDB_WEBHOOK_DEV=1` lève
+l'exigence de HTTPS **et** le filtre d'adresses, en développement seulement ; pas
+d'événement de resynchronisation (§10.7) ; les nombres voyagent en chaînes, tels que
+PostgreSQL les rend.
+
 
 ## Décisions retenues
 

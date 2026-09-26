@@ -1,9 +1,12 @@
 import { ERROR_CODES, isErrorCode } from '@basedb/contracts'
 import {
+  type AiFieldInput,
+  type AiFieldStatus,
   BasedbError,
   CACHE_CONTROL,
   CSRF_COOKIE,
   CSRF_HEADER,
+  type FormSharing,
   type Kernel,
   type MetaKind,
   type Migration,
@@ -11,6 +14,8 @@ import {
   type RequestContext,
   SESSION_ABSOLUTE_MS,
   SESSION_COOKIE,
+  type SavedView,
+  type ShareSettings,
   VARY,
 } from '@basedb/core'
 import { type Context, Hono } from 'hono'
@@ -632,6 +637,55 @@ export function createApp(options: AppOptions) {
     })
   })
 
+  // The rows deleted since an instant — how a consumer that missed events catches up on
+  // what disappeared (§6.5). Declared before `/:id`, whose pattern it would otherwise be.
+  app.get('/api/v1/:tenantRef/data/:base/:table/deleted', async (c) => {
+    const ctx = await dataContext(c)
+    const since = c.req.query('since')
+    if (since === undefined || since === '') {
+      throw new BasedbError('REQUEST_INVALID', { details: { parameter: 'since' } })
+    }
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const limit = c.req.query('limit')
+    const page = await options.kernel.listDeletions(ctx, {
+      tableId: table.tableId,
+      since,
+      cursor: c.req.query('cursor') || undefined,
+      limit: limit === undefined ? undefined : Number(limit),
+    })
+    return c.json({
+      data: page.deletions.map((d) => ({
+        _id: d.id,
+        deleted_at: d.deletedAt,
+        deleted_by: d.deletedBy,
+        cause: d.cause,
+      })),
+      meta: { next_cursor: page.nextCursor },
+    })
+  })
+
+  // One row by its identifier — the route the documentation has always announced. It is
+  // the list, filtered on `_id`: the same mask, the same link resolution, the same SQL
+  // builder, and therefore no second read path to keep in step with the first.
+  app.get('/api/v1/:tenantRef/data/:base/:table/:id', async (c) => {
+    const ctx = await dataContext(c)
+    const id = c.req.param('id')
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      throw new BasedbError('RESOURCE_NOT_FOUND', { details: { record: id } })
+    }
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const result = await options.kernel.listRecords(ctx, {
+      tableId: table.tableId,
+      limit: 1,
+      filter: `_id eq "${id.toLowerCase()}"`,
+      links: c.req.query('links') === 'id' ? 'id' : 'display',
+      expand: c.req.query('expand'),
+    })
+    const row = result.rows[0]
+    if (row === undefined) throw new BasedbError('RESOURCE_NOT_FOUND', { details: { record: id } })
+    return c.json({ data: row, included: result.included, meta: { sql: result.sql } })
+  })
+
   app.post('/api/v1/:tenantRef/data/:base/:table', async (c) => {
     const body = await c.req.json<{ actor?: string; values?: Record<string, unknown> }>()
     const ctx = await dataContext(c)
@@ -730,6 +784,94 @@ export function createApp(options: AppOptions) {
       })),
       meta: { truncated: result.truncated, sql: result.sql },
     })
+  })
+
+  // ---------------------------------------------------------------------------------
+  // History — chapter 07 §9, §12.1. Read with `read` on the table; undoing and
+  // restoring are ordinary writes, with the reader's rights.
+  // ---------------------------------------------------------------------------------
+
+  type HistoryPage = Awaited<ReturnType<typeof options.kernel.recordHistory>>
+
+  const serializeHistory = (page: HistoryPage) => ({
+    data: page.revisions.map((r) => ({
+      id: r.id,
+      occurred_at: r.occurredAt,
+      op: r.op,
+      cascade: r.cascade,
+      table: r.table,
+      record_id: r.recordId,
+      record_display: r.recordDisplay,
+      actor: {
+        kind: r.actor.kind,
+        user_id: r.actor.userId,
+        name: r.actor.name,
+        token_id: r.actor.tokenId,
+        token_label: r.actor.tokenLabel,
+        sql_identity: r.actor.sqlIdentity,
+      },
+      changes: r.changes.map((ch) => ({
+        field_id: ch.fieldId,
+        label: ch.label,
+        kind: ch.kind,
+        name: ch.name,
+        ...('before' in ch ? { before: ch.before } : {}),
+        ...('after' in ch ? { after: ch.after } : {}),
+        before_display: ch.beforeDisplay,
+        after_display: ch.afterDisplay,
+      })),
+      actions: r.actions,
+    })),
+    // Only the cursor says the end has come: a page may hold fewer entries than asked
+    // without being the last one, when the reader may not see some (07 §9.2).
+    meta: { next_cursor: page.nextCursor },
+  })
+
+  const pageParameters = (c: { req: { query: (k: string) => string | undefined } }) => {
+    const limit = c.req.query('limit')
+    return {
+      cursor: c.req.query('cursor') || undefined,
+      limit: limit === undefined ? undefined : Number(limit),
+    }
+  }
+
+  app.get('/api/v1/:tenantRef/data/:base/:table/:id/history', async (c) => {
+    const ctx = await dataContext(c)
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const page = await options.kernel.recordHistory(ctx, {
+      tableId: table.tableId,
+      recordId: c.req.param('id'),
+      ...pageParameters(c),
+    })
+    return c.json(serializeHistory(page))
+  })
+
+  app.get('/api/v1/:tenantRef/meta/bases/:base/history', async (c) => {
+    const ctx = await dataContext(c)
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const tableRef = c.req.query('table')
+    const tableId =
+      tableRef === undefined || tableRef === ''
+        ? undefined
+        : (await options.kernel.resolveTable(ctx, c.req.param('base'), tableRef)).tableId
+    const page = await options.kernel.baseHistory(ctx, {
+      baseId: base.baseId,
+      tableId,
+      ...pageParameters(c),
+    })
+    return c.json(serializeHistory(page))
+  })
+
+  app.post('/api/v1/:tenantRef/history/:revision/revert', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const result = await options.kernel.revertRevision(ctx, { revisionId: c.req.param('revision') })
+    return c.json({ data: { table_id: result.tableId, record_id: result.recordId } })
+  })
+
+  app.post('/api/v1/:tenantRef/history/:revision/restore', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const result = await options.kernel.restoreRecord(ctx, { revisionId: c.req.param('revision') })
+    return c.json({ data: { table_id: result.tableId, record_id: result.recordId } }, 201)
   })
 
   // ---------------------------------------------------------------------------------
@@ -847,25 +989,31 @@ export function createApp(options: AppOptions) {
   })
 
   app.post('/api/v1/:tenantRef/admin/projects', async (c) => {
-    const body = await c.req.json<{ label?: string; description?: string | null }>()
+    const body = await c.req.json<{ label?: string; description?: string | null } & LookBody>()
+    const look = lookOf(body)
     const ctx = await contextFor(c, await bearer(c))
     const project = await options.kernel.createProject(ctx, {
       label: typeof body.label === 'string' ? body.label : '',
       description: body.description,
+      ...(look === undefined ? {} : { look }),
     })
     return c.json({ data: project }, 201)
   })
 
   app.patch('/api/v1/:tenantRef/admin/projects/:id', async (c) => {
-    const body = await c.req.json<{ label?: string; description?: string | null }>()
-    if (body.label === undefined && body.description === undefined) {
-      throw new BasedbError('REQUEST_INVALID', { details: { field: 'label, description' } })
+    const body = await c.req.json<{ label?: string; description?: string | null } & LookBody>()
+    const look = lookOf(body)
+    if (body.label === undefined && body.description === undefined && look === undefined) {
+      throw new BasedbError('REQUEST_INVALID', {
+        details: { field: 'label, description, color, icon, image' },
+      })
     }
     const ctx = await contextFor(c, await bearer(c))
     const result = await options.kernel.updateProject(ctx, {
       projectId: c.req.param('id'),
       label: body.label,
       description: body.description,
+      ...(look === undefined ? {} : { look }),
     })
     return c.json({ data: result })
   })
@@ -1045,6 +1193,57 @@ export function createApp(options: AppOptions) {
     return c.json({ data: { ...graph, groups: graph.groups.map(serializeGroup) } })
   })
 
+  // Below the grid: the rules of each group on the fields of one table (05 §4), and what
+  // a given person ends up with there (§3.3).
+  const serializeFieldAccess = (
+    access: Awaited<ReturnType<typeof options.kernel.fieldAccess>>,
+  ) => ({
+    table: access.table,
+    fields: access.fields,
+    groups: access.groups.map((g) => ({ ...serializeGroup(g), level: g.level, rules: g.rules })),
+  })
+
+  app.get('/api/v1/:tenantRef/admin/access/tables/:table/fields', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const access = await options.kernel.fieldAccess(ctx, { tableId: c.req.param('table') })
+    return c.json({ data: serializeFieldAccess(access) })
+  })
+
+  app.put('/api/v1/:tenantRef/admin/access/fields/:field', async (c) => {
+    const body = await c.req.json<{ group?: unknown; rule?: unknown }>()
+    if (typeof body.group !== 'string' || (body.rule !== null && typeof body.rule !== 'string')) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'group, rule' } })
+    }
+    const { ctx, sessionId } = await administering(c)
+    const access = await options.kernel.setFieldRule(ctx, {
+      groupId: body.group,
+      fieldId: c.req.param('field'),
+      rule: body.rule as 'hidden' | 'read_only' | null,
+      sessionId,
+    })
+    return c.json({ data: serializeFieldAccess(access) })
+  })
+
+  app.get('/api/v1/:tenantRef/admin/access/tables/:table/mask', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const mask = await options.kernel.effectiveFieldMask(ctx, {
+      tableId: c.req.param('table'),
+      userId: c.req.query('user') ?? '',
+    })
+    return c.json({
+      data: {
+        user: { id: mask.user.id, display_name: mask.user.displayName, email: mask.user.email },
+        reads_table: mask.readsTable,
+        fields: mask.fields.map((f) => ({
+          id: f.id,
+          level: f.level,
+          readable_via: f.readableVia,
+          restricted_by: f.restrictedBy,
+        })),
+      },
+    })
+  })
+
   // ---------------------------------------------------------------------------------
   // /ai — the two draft usages of chapter 12 §1.2, and no third one.
   //
@@ -1096,6 +1295,58 @@ export function createApp(options: AppOptions) {
     return c.json({ data: draft })
   })
 
+  // The copilot — chapter 12 §1.6. A conversation about one base: the screen keeps it and
+  // sends it whole; the kernel answers the last message, and proposes. `read_data` is the
+  // person's consent, for this conversation, to rows being read and sent to the provider.
+  app.post('/api/v1/:tenantRef/ai/bases/:base/copilot', async (c) => {
+    const body = await c.req.json<{
+      table?: unknown
+      filter?: unknown
+      sort?: unknown
+      messages?: unknown
+      read_data?: unknown
+    }>()
+    const messages = Array.isArray(body.messages) ? body.messages : null
+    if (
+      messages === null ||
+      messages.some(
+        (m) =>
+          typeof m !== 'object' ||
+          m === null ||
+          (m.role !== 'user' && m.role !== 'assistant') ||
+          typeof m.content !== 'string',
+      )
+    ) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'messages' } })
+    }
+    for (const key of ['table', 'filter', 'sort'] as const) {
+      const value = body[key]
+      if (value !== undefined && value !== null && typeof value !== 'string') {
+        throw new BasedbError('REQUEST_INVALID', { details: { field: key } })
+      }
+    }
+    if (body.read_data !== undefined && typeof body.read_data !== 'boolean') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'read_data' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const table =
+      typeof body.table === 'string' && body.table !== ''
+        ? await options.kernel.resolveTable(ctx, c.req.param('base'), body.table)
+        : null
+    const answer = await options.kernel.copilot(ctx, providerTransport, {
+      baseId: base.baseId,
+      tableId: table?.tableId ?? null,
+      view: {
+        filter: typeof body.filter === 'string' ? body.filter : null,
+        sort: typeof body.sort === 'string' ? body.sort : null,
+      },
+      messages: messages as Array<{ role: 'user' | 'assistant'; content: string }>,
+      readData: body.read_data === true,
+    })
+    return c.json({ data: answer })
+  })
+
   app.post('/api/v1/:tenantRef/ai/bases/:base/structure', async (c) => {
     const body = await c.req.json<{ request?: string }>()
     if (typeof body.request !== 'string' || body.request.trim() === '') {
@@ -1123,6 +1374,205 @@ export function createApp(options: AppOptions) {
         deleted_at: b.deletedAt,
         table_count: b.tableCount,
       })),
+    })
+  })
+
+  // A live base's deleted tables — the screen of deleted objects, where a purge starts.
+  app.get('/api/v1/:tenantRef/admin/bases/:base/deleted-tables', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const tables = await options.kernel.listDeletedTables(ctx, { baseId: base.baseId })
+    return c.json({
+      data: tables.map((t) => ({
+        id: t.id,
+        label: t.label,
+        name: t.name,
+        deleted_at: t.deletedAt,
+        deleted_by: t.deletedBy,
+        purgeable_from: t.purgeableFrom,
+      })),
+    })
+  })
+
+  // ---------------------------------------------------------------------------------
+  // Chapter 06 — the PHYSICAL name (renames and their compatibility aliases) and the
+  // purge. Administration only, a person's session only; the kernel decides both.
+  // ---------------------------------------------------------------------------------
+
+  const physicalKind = (value: string): 'base' | 'table' | 'field' => {
+    if (value === 'base' || value === 'table' || value === 'field') return value
+    throw new BasedbError('RESOURCE_NOT_FOUND')
+  }
+  const purgeKind = (value: unknown): 'base' | 'table' => {
+    if (value === 'base' || value === 'table') return value
+    throw new BasedbError('REQUEST_INVALID', { details: { field: 'kind' } })
+  }
+
+  app.get('/api/v1/:tenantRef/admin/physical/:kind/:id', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const impact = await options.kernel.renameImpact(ctx, {
+      kind: physicalKind(c.req.param('kind')),
+      id: c.req.param('id'),
+    })
+    return c.json({
+      data: {
+        kind: impact.kind,
+        id: impact.id,
+        label: impact.label,
+        current: impact.current,
+        qualified: impact.qualified,
+        suggested: impact.suggested,
+        alias_allowed: impact.aliasAllowed,
+        live_aliases: impact.liveAliases,
+        estimated_rows: impact.estimatedRows,
+        bytes: impact.bytes,
+        webhooks: impact.webhooks,
+        tokens: impact.tokens.map((t) => ({ label: t.label, last_used_at: t.lastUsedAt })),
+        misaligned_links: impact.misalignedLinks,
+        dependents: impact.dependents,
+        citing_prompts: impact.citingPrompts,
+      },
+    })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/physical/:kind/:id/rename', async (c) => {
+    const body = await c.req.json<{
+      name?: unknown
+      confirm?: unknown
+      alias?: unknown
+      alias_days?: unknown
+    }>()
+    if (typeof body.name !== 'string' || typeof body.confirm !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'name, confirm' } })
+    }
+    if (body.alias !== undefined && typeof body.alias !== 'boolean') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'alias' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const result = await options.kernel.renamePhysical(ctx, {
+      kind: physicalKind(c.req.param('kind')),
+      id: c.req.param('id'),
+      name: body.name,
+      confirm: body.confirm,
+      ...(body.alias === undefined ? {} : { alias: body.alias }),
+      ...(typeof body.alias_days === 'number' ? { aliasDays: body.alias_days } : {}),
+    })
+    return c.json({
+      data: {
+        name: result.name,
+        alias: result.alias,
+        migration: serializeMigration(result.migration),
+      },
+    })
+  })
+
+  type AliasSummary = Awaited<ReturnType<typeof options.kernel.listAliases>>[number]
+  const serializeAlias = (a: AliasSummary) => ({
+    id: a.id,
+    kind: a.kind,
+    name: a.name,
+    qualified: a.qualified,
+    target: a.target,
+    target_label: a.targetLabel,
+    created_at: a.createdAt,
+    drop_after: a.dropAfter,
+    blank_cut: a.blankCut,
+    views: a.views,
+    dependents: a.dependents,
+  })
+
+  app.get('/api/v1/:tenantRef/admin/aliases', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.query('base') ?? '')
+    const aliases = await options.kernel.listAliases(ctx, { baseId: base.baseId })
+    return c.json({ data: aliases.map(serializeAlias) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/aliases/:id/cut', async (c) => {
+    const body = await c.req.json<{ days?: unknown }>().catch(() => ({}) as { days?: unknown })
+    if (body.days !== undefined && typeof body.days !== 'number') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'days' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const alias = await options.kernel.startBlankCut(ctx, {
+      aliasId: c.req.param('id'),
+      ...(body.days === undefined ? {} : { days: body.days }),
+    })
+    return c.json({ data: alias === null ? null : serializeAlias(alias) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/aliases/:id/restore', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const alias = await options.kernel.endBlankCut(ctx, { aliasId: c.req.param('id') })
+    return c.json({ data: alias === null ? null : serializeAlias(alias) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/aliases/:id/drop', async (c) => {
+    const body = await c.req.json<{ confirm?: unknown }>()
+    if (typeof body.confirm !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'confirm' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    await options.kernel.dropAlias(ctx, { aliasId: c.req.param('id'), confirm: body.confirm })
+    return c.body(null, 204)
+  })
+
+  app.post('/api/v1/:tenantRef/admin/purge/exports', async (c) => {
+    const body = await c.req.json<{ kind?: unknown; id?: unknown }>()
+    if (typeof body.id !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'id' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const exported = await options.kernel.exportForPurge(ctx, {
+      kind: purgeKind(body.kind),
+      id: body.id,
+    })
+    return c.json(
+      {
+        data: {
+          id: exported.id,
+          directory: exported.directory,
+          created_at: exported.createdAt,
+          total_rows: exported.totalRows,
+          total_bytes: exported.totalBytes,
+          tables: exported.tables,
+        },
+      },
+      201,
+    )
+  })
+
+  app.post('/api/v1/:tenantRef/admin/purge', async (c) => {
+    const body = await c.req.json<{
+      kind?: unknown
+      id?: unknown
+      export?: unknown
+      confirm?: unknown
+      early_justification?: unknown
+    }>()
+    if (
+      typeof body.id !== 'string' ||
+      typeof body.export !== 'string' ||
+      typeof body.confirm !== 'string'
+    ) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'id, export, confirm' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const result = await options.kernel.purge(ctx, {
+      kind: purgeKind(body.kind),
+      id: body.id,
+      exportId: body.export,
+      confirm: body.confirm,
+      ...(typeof body.early_justification === 'string' && body.early_justification.trim() !== ''
+        ? { early: { justification: body.early_justification } }
+        : {}),
+    })
+    return c.json({
+      data: {
+        purged_tables: result.purgedTables,
+        residual_schema: result.residualSchema,
+        migration: serializeMigration(result.migration),
+      },
     })
   })
 
@@ -1176,6 +1626,154 @@ export function createApp(options: AppOptions) {
     const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
     const migration = await options.kernel.restoreBase(ctx, { baseId: base.baseId })
     return c.json({ data: serializeMigration(migration) })
+  })
+
+  // ---------------------------------------------------------------------------------
+  // Environments — chapter 14. `:base` is any environment of the base; an environment
+  // is named by its own base name, the one in its URLs and its SQL schema.
+  // ---------------------------------------------------------------------------------
+
+  /** The base an environment parameter names — a body key or a query parameter. */
+  const environmentOf = async (ctx: RequestContext, name: unknown, field: string) => {
+    if (typeof name !== 'string' || name === '') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field } })
+    }
+    return (await options.kernel.resolveBase(ctx, name)).baseId
+  }
+
+  app.get('/api/v1/:tenantRef/admin/bases/:base/environments', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    return c.json({ data: await options.kernel.listEnvironments(ctx, { baseId: base.baseId }) })
+  })
+
+  // Adds an environment: an empty base of the same lineage, then the structure of the
+  // source carried into it — the answer says, step by step, what was carried.
+  app.post('/api/v1/:tenantRef/admin/bases/:base/environments', async (c) => {
+    const body = await c.req.json<{ environment?: unknown; source?: unknown; consent?: unknown }>()
+    if (typeof body.environment !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'environment' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const created = await options.kernel.createEnvironment(ctx, {
+      baseId: base.baseId,
+      environment: body.environment,
+      ...(body.source === undefined
+        ? {}
+        : { sourceBaseId: await environmentOf(ctx, body.source, 'source') }),
+      consent: body.consent === true,
+    })
+    return c.json({ data: created }, 201)
+  })
+
+  app.patch('/api/v1/:tenantRef/admin/bases/:base/environments/:env', async (c) => {
+    const body = await c.req.json<{ environment?: unknown }>()
+    if (typeof body.environment !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'environment' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const env = await options.kernel.resolveBase(ctx, c.req.param('env'))
+    const renamed = await options.kernel.renameEnvironment(ctx, {
+      baseId: env.baseId,
+      environment: body.environment,
+    })
+    return c.json({ data: renamed })
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/bases/:base/environments/:env', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const env = await options.kernel.resolveBase(ctx, c.req.param('env'))
+    const migration = await options.kernel.deleteEnvironment(ctx, { baseId: env.baseId })
+    return c.json({ data: serializeMigration(migration) })
+  })
+
+  app.get('/api/v1/:tenantRef/admin/bases/:base/environments/compare', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    return c.json({ data: await options.kernel.compareEnvironments(ctx, { baseId: base.baseId }) })
+  })
+
+  app.get('/api/v1/:tenantRef/admin/bases/:base/environments/plan', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const plan = await options.kernel.planStructure(ctx, {
+      sourceBaseId: await environmentOf(ctx, c.req.query('source'), 'source'),
+      targetBaseId: await environmentOf(ctx, c.req.query('target'), 'target'),
+    })
+    return c.json({ data: plan })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/bases/:base/environments/apply', async (c) => {
+    const body = await c.req.json<{
+      source?: unknown
+      target?: unknown
+      steps?: unknown
+      consent?: unknown
+    }>()
+    if (!Array.isArray(body.steps) || body.steps.some((s) => typeof s !== 'string')) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'steps' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const report = await options.kernel.applyStructure(ctx, {
+      sourceBaseId: await environmentOf(ctx, body.source, 'source'),
+      targetBaseId: await environmentOf(ctx, body.target, 'target'),
+      steps: body.steps as string[],
+      consent: body.consent === true,
+    })
+    return c.json({ data: report })
+  })
+
+  app.get('/api/v1/:tenantRef/admin/bases/:base/environments/rows', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const counts = await options.kernel.countRows(ctx, {
+      sourceBaseId: await environmentOf(ctx, c.req.query('source'), 'source'),
+      targetBaseId: await environmentOf(ctx, c.req.query('target'), 'target'),
+    })
+    return c.json({ data: counts })
+  })
+
+  app.get('/api/v1/:tenantRef/admin/bases/:base/environments/rows/:table', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const comparison = await options.kernel.compareRows(ctx, {
+      sourceBaseId: await environmentOf(ctx, c.req.query('source'), 'source'),
+      targetBaseId: await environmentOf(ctx, c.req.query('target'), 'target'),
+      tableLineage: c.req.param('table'),
+    })
+    return c.json({ data: comparison })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/bases/:base/environments/rows/:table/sync', async (c) => {
+    const body = await c.req.json<{
+      source?: unknown
+      target?: unknown
+      insert?: unknown
+      update?: unknown
+      delete?: unknown
+    }>()
+    const ctx = await contextFor(c, await bearer(c))
+    const result = await options.kernel.syncRows(ctx, {
+      sourceBaseId: await environmentOf(ctx, body.source, 'source'),
+      targetBaseId: await environmentOf(ctx, body.target, 'target'),
+      tableLineage: c.req.param('table'),
+      insert: body.insert === true,
+      update: body.update === true,
+      delete: body.delete === true,
+    })
+    return c.json({ data: result })
+  })
+
+  // The structure history of a base — chapter 07 §8.1: who changed what, and when.
+  app.get('/api/v1/:tenantRef/admin/bases/:base/structure-history', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const limit = Number(c.req.query('limit') ?? '50')
+    const before = c.req.query('before')
+    const page = await options.kernel.structureHistory(ctx, {
+      baseId: base.baseId,
+      limit: Number.isFinite(limit) ? limit : 50,
+      ...(before === undefined || before === '' ? {} : { before }),
+    })
+    return c.json({ data: page })
   })
 
   // What deleting a table would do — §4.2 asks the confirmation screen to name the
@@ -1333,6 +1931,7 @@ export function createApp(options: AppOptions) {
         icon?: string | null
         image?: string | null
       }>
+      ai?: unknown
     }>()
     const ctx = await contextFor(c, await bearer(c))
 
@@ -1350,6 +1949,7 @@ export function createApp(options: AppOptions) {
       description: body.description,
       kind: body.kind as never,
       options: body.options,
+      ...(body.ai === undefined ? {} : { ai: aiInputOf(body.ai) }),
     })
 
     return c.json(
@@ -1445,6 +2045,236 @@ export function createApp(options: AppOptions) {
   // The choices of a `select`, replaced AS A WHOLE (chapter 04 §3): the list is what a
   // person edits and what a pasted JSON carries, and a PUT says so. Regenerating the
   // CHECK is a migration in three steps, hence `meta.sql`.
+  // The order of the fields, as a whole list of physical names — what a drag in the
+  // structure screen produces. The catalog's order; PostgreSQL's is left as it is.
+  app.put('/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/order', async (c) => {
+    const body = await c.req.json<{ fields?: unknown }>()
+    if (!Array.isArray(body.fields) || body.fields.some((f) => typeof f !== 'string')) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'fields' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const result = await options.kernel.reorderFields(ctx, {
+      tableId: table.tableId,
+      names: body.fields as string[],
+    })
+    return c.json({ data: { fields: result.order } })
+  })
+
+  // Saved views (chapter 11 §1.4): reading them is reading the table — a data route, open
+  // to an integration token —, building them is `manage_schema`, like building the table.
+  const serializeView = (view: SavedView) => ({
+    id: view.id,
+    label: view.label,
+    kind: view.kind,
+    description: view.description,
+    position: view.position,
+    spec: view.spec,
+    filter_hidden: view.filterHidden,
+    created_at: view.createdAt,
+    updated_at: view.updatedAt,
+  })
+
+  app.get('/api/v1/:tenantRef/meta/bases/:base/tables/:table/views', async (c) => {
+    const ctx = await dataContext(c)
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const views = await options.kernel.listViews(ctx, { tableId: table.tableId })
+    return c.json({ data: views.map(serializeView) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/bases/:base/tables/:table/views', async (c) => {
+    const body = await c.req.json<Record<string, unknown>>()
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const view = await options.kernel.createView(ctx, {
+      tableId: table.tableId,
+      label: body.label,
+      kind: body.kind,
+      description: body.description,
+      spec: body.spec,
+    })
+    return c.json({ data: serializeView(view) }, 201)
+  })
+
+  // The order of the selector, as the whole list of identifiers — registered BEFORE
+  // `views/:view`, which would otherwise take `order` for an identifier.
+  app.put('/api/v1/:tenantRef/admin/bases/:base/tables/:table/views/order', async (c) => {
+    const body = await c.req.json<{ views?: unknown }>()
+    if (!Array.isArray(body.views) || body.views.some((v) => typeof v !== 'string')) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'views' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const result = await options.kernel.reorderViews(ctx, {
+      tableId: table.tableId,
+      ids: body.views as string[],
+    })
+    return c.json({ data: { views: result.order } })
+  })
+
+  app.patch('/api/v1/:tenantRef/admin/bases/:base/tables/:table/views/:view', async (c) => {
+    const body = await c.req.json<Record<string, unknown>>()
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const view = await options.kernel.updateView(ctx, {
+      tableId: table.tableId,
+      viewId: c.req.param('view'),
+      label: body.label,
+      description: body.description,
+      spec: body.spec,
+    })
+    return c.json({ data: serializeView(view) })
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/bases/:base/tables/:table/views/:view', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    await options.kernel.deleteView(ctx, { tableId: table.tableId, viewId: c.req.param('view') })
+    return c.body(null, 204)
+  })
+
+  // ---------------------------------------------------------------------------------
+  // Shared forms — chapter 15. The sharing of a form view is administered here; it is
+  // answered through `/api/v1/forms/:token`, below, which needs no right on the table.
+  // ---------------------------------------------------------------------------------
+
+  const serializeSharing = (sharing: FormSharing) => ({
+    share:
+      sharing.share === null
+        ? null
+        : {
+            id: sharing.share.id,
+            view_id: sharing.share.viewId,
+            access: sharing.share.access,
+            active: sharing.share.active,
+            token: sharing.share.token,
+            closes_at: sharing.share.closesAt,
+            max_responses: sharing.share.maxResponses,
+            response_count: sharing.share.responseCount,
+            last_response_at: sharing.share.lastResponseAt,
+            published_by: sharing.share.publishedBy,
+            groups: sharing.share.groupIds,
+            state: sharing.share.state,
+          },
+    groups: sharing.groups,
+    omitted: sharing.omitted,
+  })
+
+  const shareRoute = '/api/v1/:tenantRef/admin/bases/:base/tables/:table/views/:view/share'
+
+  app.get(shareRoute, async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const sharing = await options.kernel.getFormSharing(ctx, {
+      tableId: table.tableId,
+      viewId: c.req.param('view'),
+    })
+    return c.json({ data: serializeSharing(sharing) })
+  })
+
+  // Creates or changes the sharing: whoever saves becomes its publisher, and the answers
+  // are written on their authority from then on.
+  app.put(shareRoute, async (c) => {
+    const body = await c.req.json<{
+      access?: unknown
+      active?: unknown
+      closes_at?: unknown
+      max_responses?: unknown
+      groups?: unknown
+    }>()
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const sharing = await options.kernel.saveFormSharing(ctx, {
+      tableId: table.tableId,
+      viewId: c.req.param('view'),
+      access: body.access as ShareSettings['access'],
+      active: body.active === undefined ? true : (body.active as boolean),
+      closesAt: (body.closes_at ?? null) as string | null,
+      maxResponses: (body.max_responses ?? null) as number | null,
+      groupIds: (body.groups ?? []) as string[],
+    })
+    return c.json({ data: serializeSharing(sharing) })
+  })
+
+  app.post(`${shareRoute}/regenerate`, async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const sharing = await options.kernel.regenerateFormShare(ctx, {
+      tableId: table.tableId,
+      viewId: c.req.param('view'),
+    })
+    return c.json({ data: serializeSharing(sharing) })
+  })
+
+  app.delete(shareRoute, async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    await options.kernel.deleteFormShare(ctx, {
+      tableId: table.tableId,
+      viewId: c.req.param('view'),
+    })
+    return c.body(null, 204)
+  })
+
+  /**
+   * Who answers a shared form: the signed-in person when a valid access token comes with
+   * the request, nobody otherwise. A stale token is not an error here — a public form
+   * answers anyone —, and a members' form says it wants a sign-in by itself.
+   */
+  const respondentOf = async (
+    c: Context<{ Variables: Variables }, string>,
+  ): Promise<RequestContext | null> => {
+    const header = c.req.header('authorization')
+    if (header === undefined) return null
+    try {
+      return await contextFor(c, await bearer(c))
+    } catch {
+      return null
+    }
+  }
+
+  /** Answers to shared forms, per address: a public form is an open door. */
+  const answers = new RateLimiter(20, 60_000)
+
+  app.get('/api/v1/forms/:token', async (c) => {
+    const form = await options.kernel.openSharedForm({
+      token: c.req.param('token'),
+      respondent: await respondentOf(c),
+      requestId: c.get('requestId'),
+    })
+    return c.json({
+      data: {
+        kind: form.kind,
+        title: form.title,
+        description: form.description,
+        submit_label: form.submitLabel,
+        success_message: form.successMessage,
+        allow_another: form.allowAnother,
+        access: form.access,
+        respondent: form.respondent,
+        questions: form.questions,
+      },
+    })
+  })
+
+  app.post('/api/v1/forms/:token', async (c) => {
+    const verdict = answers.check(`${addressOf(c)}:${c.req.param('token')}`, Date.now())
+    if (!verdict.allowed) {
+      c.header('retry-after', String(verdict.retryAfter))
+      throw new BasedbError('RATE_LIMIT_EXCEEDED', {
+        details: { retry_after: verdict.retryAfter },
+      })
+    }
+    const body = await c.req.json<{ values?: unknown }>()
+    await options.kernel.submitSharedForm({
+      token: c.req.param('token'),
+      respondent: await respondentOf(c),
+      requestId: c.get('requestId'),
+      values: (body.values ?? {}) as Record<string, unknown>,
+    })
+    return c.json({ data: { received: true } }, 201)
+  })
+
   app.put('/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field/options', async (c) => {
     const body = await c.req.json<{ options?: unknown }>()
     if (!Array.isArray(body.options)) {
@@ -1465,6 +2295,94 @@ export function createApp(options: AppOptions) {
       data: { options: result.options, added: result.added, removed: result.removed },
       meta: { sql: result.sql },
     })
+  })
+
+  // An AI field: its prompt, its schedule, how it is doing (chapter 12 §9). Changing the
+  // prompt is a fresh consent — `consent: true` again — and `recompute` starts over.
+  app.get('/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field/ai', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const field = await options.kernel.resolveField(
+      ctx,
+      c.req.param('base'),
+      c.req.param('table'),
+      c.req.param('field'),
+    )
+    return c.json({ data: aiStatusJson(await options.kernel.aiFieldStatus(ctx, field.fieldId)) })
+  })
+
+  app.put('/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field/ai', async (c) => {
+    const body = await c.req.json<{ recompute?: unknown }>()
+    const input = aiInputOf(body)
+    if (body.recompute !== undefined && typeof body.recompute !== 'boolean') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'recompute' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const field = await options.kernel.resolveField(
+      ctx,
+      c.req.param('base'),
+      c.req.param('table'),
+      c.req.param('field'),
+    )
+    const status = await options.kernel.setAiField(ctx, {
+      fieldId: field.fieldId,
+      input,
+      recompute: body.recompute === true,
+    })
+    return c.json({ data: aiStatusJson(status) })
+  })
+
+  // The AI option switched off: the field is an ordinary one again, its values kept.
+  app.delete('/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field/ai', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const field = await options.kernel.resolveField(
+      ctx,
+      c.req.param('base'),
+      c.req.param('table'),
+      c.req.param('field'),
+    )
+    await options.kernel.disableAiField(ctx, field.fieldId)
+    return c.body(null, 204)
+  })
+
+  // One row now — `record` given, the value is returned — or every row, by the worker.
+  app.post('/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field/ai/run', async (c) => {
+    const body = await c.req.json<{ record?: unknown }>().catch(() => ({ record: undefined }))
+    if (body.record !== undefined && typeof body.record !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'record' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const field = await options.kernel.resolveField(
+      ctx,
+      c.req.param('base'),
+      c.req.param('table'),
+      c.req.param('field'),
+    )
+    if (body.record === undefined) {
+      await options.kernel.requestAiSweep(ctx, field.fieldId)
+      return c.json({ data: { scheduled: true } }, 202)
+    }
+    const result = await options.kernel.runAiCell(ctx, providerTransport, {
+      fieldId: field.fieldId,
+      recordId: body.record,
+    })
+    return c.json({ data: { record: body.record, value: result.value } })
+  })
+
+  // The next runs of a schedule as a person builds it — nothing read, nothing written.
+  app.post('/api/v1/:tenantRef/ai/schedule/preview', async (c) => {
+    const body = await c.req.json<{ cron?: unknown; timezone?: unknown }>()
+    if (typeof body.cron !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'cron' } })
+    }
+    if (body.timezone !== undefined && typeof body.timezone !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'timezone' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const preview = options.kernel.previewSchedule(ctx, {
+      cron: body.cron,
+      timezone: body.timezone ?? 'UTC',
+    })
+    return c.json({ data: { runs: preview.runs } })
   })
 
   // The obligation, in the four steps of §1.3 — which is why it has a route of its own.
@@ -1568,6 +2486,161 @@ export function createApp(options: AppOptions) {
     return c.json({ data: { ...serializeToken(issued), secret: issued.secret } }, 201)
   })
 
+  // ---------------------------------------------------------------------------------
+  // /admin/webhooks — chapter 08 §10. Like tokens: `manage_tokens` on the base, a session
+  // elevated minutes ago for every change, and the secret shown once.
+  // ---------------------------------------------------------------------------------
+
+  type WebhookSummary = Awaited<ReturnType<typeof options.kernel.listWebhooks>>[number]
+
+  const serializeWebhook = (w: WebhookSummary) => ({
+    id: w.id,
+    label: w.label,
+    url: w.url,
+    active: w.active,
+    disabled_reason: w.disabledReason,
+    created_at: w.createdAt,
+    subscriptions: w.subscriptions.map((s) => ({
+      table: s.tableName,
+      table_label: s.tableLabel,
+      events: s.events,
+    })),
+    last_delivery:
+      w.lastDelivery === null
+        ? null
+        : {
+            status: w.lastDelivery.status,
+            at: w.lastDelivery.at,
+            response_code: w.lastDelivery.responseCode,
+          },
+  })
+
+  app.get('/api/v1/:tenantRef/admin/webhooks', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.query('base') ?? '')
+    const hooks = await options.kernel.listWebhooks(ctx, { baseId: base.baseId })
+    return c.json({ data: hooks.map(serializeWebhook) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/webhooks', async (c) => {
+    const body = await c.req.json<{
+      base?: unknown
+      label?: unknown
+      url?: unknown
+      subscriptions?: unknown
+    }>()
+    if (typeof body.base !== 'string' || !Array.isArray(body.subscriptions)) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'base, subscriptions' } })
+    }
+    const { ctx, sessionId } = await administering(c)
+    const base = await options.kernel.resolveBase(ctx, body.base)
+    const subscriptions = []
+    for (const s of body.subscriptions as Array<{ table?: unknown; events?: unknown }>) {
+      if (typeof s?.table !== 'string' || !Array.isArray(s.events)) {
+        throw new BasedbError('REQUEST_INVALID', { details: { field: 'subscriptions' } })
+      }
+      const table = await options.kernel.resolveTable(ctx, body.base, s.table)
+      subscriptions.push({
+        tableId: table.tableId,
+        events: s.events as ('create' | 'update' | 'delete')[],
+      })
+    }
+    const created = await options.kernel.createWebhook(ctx, {
+      baseId: base.baseId,
+      label: typeof body.label === 'string' ? body.label : '',
+      url: typeof body.url === 'string' ? body.url : '',
+      subscriptions,
+      sessionId,
+    })
+    // The secret is in this response and nowhere else, ever.
+    return c.json({ data: { ...serializeWebhook(created.webhook), secret: created.secret } }, 201)
+  })
+
+  app.patch('/api/v1/:tenantRef/admin/webhooks/:id', async (c) => {
+    const body = await c.req.json<{ active?: unknown }>()
+    if (typeof body.active !== 'boolean') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'active' } })
+    }
+    const { ctx, sessionId } = await administering(c)
+    const hook = await options.kernel.setWebhookActive(ctx, {
+      webhookId: c.req.param('id'),
+      active: body.active,
+      sessionId,
+    })
+    return c.json({ data: serializeWebhook(hook) })
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/webhooks/:id', async (c) => {
+    const { ctx, sessionId } = await administering(c)
+    await options.kernel.deleteWebhook(ctx, { webhookId: c.req.param('id'), sessionId })
+    return c.body(null, 204)
+  })
+
+  app.get('/api/v1/:tenantRef/admin/webhooks/:id/deliveries', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const deliveries = await options.kernel.listDeliveries(ctx, { webhookId: c.req.param('id') })
+    return c.json({
+      data: deliveries.map((d) => ({
+        id: d.id,
+        created_at: d.createdAt,
+        status: d.status,
+        attempts: d.attempts,
+        next_attempt_at: d.nextAttemptAt,
+        delivered_at: d.deliveredAt,
+        response_code: d.responseCode,
+        error_code: d.errorCode,
+        table_label: d.tableLabel,
+        record_id: d.recordId,
+        op: d.op,
+      })),
+    })
+  })
+
+  // ---------------------------------------------------------------------------------
+  // /admin/proposals — chapter 09 §7. The review queue of a base: what agents proposed,
+  // for a person who manages its structure to approve or refuse. A person's session only:
+  // a token never decides on a proposal, its own or another's.
+  // ---------------------------------------------------------------------------------
+
+  type ProposalSummary = Awaited<ReturnType<typeof options.kernel.listProposals>>[number]
+
+  const serializeProposal = (p: ProposalSummary) => ({
+    id: p.id,
+    status: p.status,
+    base: p.base,
+    requested_at: p.requestedAt,
+    expires_at: p.expiresAt,
+    requested_by: p.requestedBy,
+    token: p.token,
+    summary_template: p.summaryTemplate,
+    summary_params: p.summaryParams,
+    affected_objects: p.affectedObjects,
+    up_sql: p.upSql,
+    down_sql: p.downSql,
+    decided_by: p.decidedBy,
+    decided_at: p.decidedAt,
+    error: p.error,
+  })
+
+  app.get('/api/v1/:tenantRef/admin/proposals', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.query('base') ?? '')
+    const proposals = await options.kernel.listProposals(ctx, { baseId: base.baseId })
+    return c.json({ data: proposals.map(serializeProposal) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/proposals/:id/approve', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const proposal = await options.kernel.approveProposal(ctx, { proposalId: c.req.param('id') })
+    return c.json({ data: serializeProposal(proposal) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/proposals/:id/reject', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const proposal = await options.kernel.rejectProposal(ctx, { proposalId: c.req.param('id') })
+    return c.json({ data: serializeProposal(proposal) })
+  })
+
   app.delete('/api/v1/:tenantRef/admin/tokens/:id', async (c) => {
     const who = await bearerWho(c)
     const ctx = await contextFor(c, who.userId)
@@ -1632,6 +2705,58 @@ function serializeMigration(m: Migration): Record<string, unknown> {
 }
 
 /** The look of a base or a table, as a body carries it: three keys, each optional. */
+/**
+ * The prompt, the schedule and the consent of an AI field, as a body carries them:
+ * `{ prompt, refresh: { mode, cron?, timezone? }, consent }`. A wrong type is refused by
+ * name; what the values MEAN is the kernel's to check.
+ */
+function aiInputOf(raw: unknown): AiFieldInput {
+  const body = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>
+  const refresh = (
+    typeof body.refresh === 'object' && body.refresh !== null ? body.refresh : {}
+  ) as Record<string, unknown>
+  if (typeof body.prompt !== 'string') {
+    throw new BasedbError('REQUEST_INVALID', { details: { field: 'prompt' } })
+  }
+  if (refresh.mode !== 'if_empty' && refresh.mode !== 'schedule') {
+    throw new BasedbError('REQUEST_INVALID', { details: { field: 'refresh.mode' } })
+  }
+  for (const key of ['cron', 'timezone'] as const) {
+    const value = refresh[key]
+    if (value !== undefined && value !== null && typeof value !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: `refresh.${key}` } })
+    }
+  }
+  if (body.consent !== undefined && typeof body.consent !== 'boolean') {
+    throw new BasedbError('REQUEST_INVALID', { details: { field: 'consent' } })
+  }
+  return {
+    prompt: body.prompt,
+    refresh: {
+      mode: refresh.mode,
+      cron: (refresh.cron as string | null | undefined) ?? null,
+      timezone: (refresh.timezone as string | null | undefined) ?? null,
+    },
+    consent: body.consent === true,
+  }
+}
+
+/** An AI field's status in the API's spelling. */
+function aiStatusJson(status: AiFieldStatus) {
+  return {
+    prompt: status.prompt,
+    cited: status.cited,
+    refresh: status.refresh,
+    next_sweep_at: status.nextSweepAt,
+    sweeping: status.sweeping,
+    last_run_at: status.lastRunAt,
+    last_error: status.lastError,
+    last_error_at: status.lastErrorAt,
+    computed_count: status.computedCount,
+    consented_at: status.consentedAt,
+  }
+}
+
 interface LookBody {
   readonly color?: unknown
   readonly icon?: unknown

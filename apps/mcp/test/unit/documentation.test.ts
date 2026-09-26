@@ -12,10 +12,12 @@ describe('the tools the documentation describes', () => {
     expect(DOCUMENTED_MCP_TOOLS.map((t) => t.name)).toEqual(TOOLS.map((t) => t.name))
   })
 
-  it('say they write exactly when the server says they are not read-only', () => {
+  it('say they write — or propose — exactly when the server says they are not read-only', () => {
     for (const tool of TOOLS) {
       const documented = DOCUMENTED_MCP_TOOLS.find((t) => t.name === tool.name)
-      const writes = documented?.needs === 'create' || documented?.needs === 'update'
+      const writes =
+        documented?.needs !== undefined &&
+        ['create', 'update', 'propose'].includes(documented.needs)
       expect({ tool: tool.name, writes }).toEqual({
         tool: tool.name,
         writes: tool.annotations.readOnlyHint !== true,

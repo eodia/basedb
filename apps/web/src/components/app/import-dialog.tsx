@@ -62,6 +62,7 @@ const SKIP = '__skip__'
 const NEW_KINDS: readonly Kind[] = [
   'short_text',
   'long_text',
+  'url',
   'number',
   'boolean',
   'date',

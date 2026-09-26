@@ -34,7 +34,7 @@ const ARGON2 = {
  */
 const KEY_VERSION = 'v1'
 
-export const PASSWORD_MIN = 12
+export const PASSWORD_MIN = 8
 export const PASSWORD_MAX = 256
 
 /**
@@ -65,6 +65,26 @@ const DENIED = new Set(
     'password123!',
     'azerty123456',
     'qwerty123456',
+    '12345678',
+    '123456789',
+    '1234567890',
+    '11111111',
+    '00000000',
+    'azertyui',
+    'qwertyui',
+    'azerty12',
+    'qwerty12',
+    'azerty123',
+    'qwerty123',
+    'password1',
+    'motdepasse1',
+    'changeme',
+    'iloveyou',
+    'jetaime1',
+    'bonjour1',
+    'soleil123',
+    'abc12345',
+    'basedb123',
   ].map((p) => p.toLowerCase()),
 )
 

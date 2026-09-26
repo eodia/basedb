@@ -428,6 +428,29 @@ const FK_INDEXES = fileURLToPath(
 )
 const fkIndexes = readFileSync(FK_INDEXES, 'utf8').trim()
 
+// The data history of chapter 07 — capture, journals, immutability — owns its DDL, as
+// chapter 02 says of it: it is written by hand after chapter 07 and comes last, since it
+// partitions tables chapter 02 creates (change_event, webhook_delivery).
+const HISTORY = fileURLToPath(
+  new URL('../packages/catalog-schema/sql/historique.sql', import.meta.url),
+)
+const history = readFileSync(HISTORY, 'utf8').trim()
+
+// The lifecycle of chapter 06 completes what chapter 02 left half-set on the aliases, and
+// adds the export a purge requires. After the history: it alters tables created above.
+const LIFECYCLE = fileURLToPath(
+  new URL('../packages/catalog-schema/sql/cycle-de-vie.sql', import.meta.url),
+)
+const lifecycle = readFileSync(LIFECYCLE, 'utf8').trim()
+
+// The structure history of chapter 07 §8 — `structure_revision` and the triggers that
+// feed it — comes last of all: its triggers sit on catalog tables every block above
+// creates, and its immutability reuses the history's function.
+const STRUCTURE_HISTORY = fileURLToPath(
+  new URL('../packages/catalog-schema/sql/historique-structure.sql', import.meta.url),
+)
+const structureHistory = readFileSync(STRUCTURE_HISTORY, 'utf8').trim()
+
 // The functions live in `_basedb`: they slot in after the `CREATE SCHEMA` statements
 // and before everything else.
 const afterSchemas = ordered.findLastIndex((b) => /^\s*CREATE\s+SCHEMA/i.test(b.body)) + 1
@@ -450,7 +473,7 @@ const render = (list) =>
 
 writeFileSync(
   `${TARGET}/0001_catalogue.sql`,
-  `${header}${render(head)}\n\n${normalization}\n\n${functions}\n\n${render(tail)}\n\n${fkIndexes}\n\n${versions}\n`,
+  `${header}${render(head)}\n\n${normalization}\n\n${functions}\n\n${render(tail)}\n\n${fkIndexes}\n\n${versions}\n\n${history}\n\n${lifecycle}\n\n${structureHistory}\n`,
 )
 console.log(`\n  0001_catalogue.sql  ${ordered.length} statements`)
 void migrationOf

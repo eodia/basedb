@@ -15,7 +15,7 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   AUTHENTICATION_REQUIRED: 'Session expirée ou absente : reconnectez-vous.',
   SESSION_EXPIRED: 'Session expirée : reconnectez-vous.',
   PASSWORD_POLICY_VIOLATION:
-    'Mot de passe refusé : au moins 12 caractères, et sans reprendre votre adresse ni votre nom.',
+    'Mot de passe refusé : au moins 8 caractères, et sans reprendre votre adresse ni votre nom.',
   EXPAND_UNAVAILABLE: 'Ce champ ne peut pas être développé, ou sa cible n’est pas visible.',
   RESOURCE_NOT_FOUND: 'Élément introuvable.',
   LABEL_EMPTY: 'Le libellé ne peut pas être vide.',
@@ -30,7 +30,7 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   FILTER_TOO_LONG: 'Filtre trop long.',
   FILTER_NOT_SUPPORTED: 'Ce filtre n’est pas encore pris en charge.',
   FILTER_DISPLAY_UNAVAILABLE: 'La table visée n’a pas de colonne d’affichage.',
-  EXPAND_TOO_DEEP: 'Un chemin de lien ne peut traverser qu’une seule relation.',
+  EXPAND_TOO_DEEP: 'Un chemin ne peut traverser qu’une seule relation.',
   // A cursor is bound to its reader and to its query (ch. 08 §6.2), so these two say
   // what to DO rather than what went wrong: one is unrecoverable, the other reloads.
   CURSOR_INVALID: 'Page expirée : revenez à la première page.',
@@ -41,10 +41,10 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   ADMIN_REQUIRED: 'Action réservée à l’administration.',
   LINK_TARGET_NOT_FOUND: 'La ligne liée n’existe pas, ou n’est pas visible.',
   ROW_REFERENCED: 'Cette ligne est encore référencée par une autre table.',
-  LINK_CROSS_DATABASE: 'Un lien ne peut pas viser une table d’une autre base.',
-  LINK_SELF_REQUIRED: 'Un lien vers la même table ne peut pas être obligatoire.',
+  LINK_CROSS_DATABASE: 'Une relation ne peut pas viser une table d’une autre base.',
+  LINK_SELF_REQUIRED: 'Une relation vers la même table ne peut pas être obligatoire.',
   LINK_SET_NULL_ON_REQUIRED:
-    '« Vider à la suppression » est incompatible avec un lien obligatoire.',
+    '« Vider à la suppression » est incompatible avec une relation obligatoire.',
   LINK_CASCADE_NOT_GRANTED: 'La suppression en cascade exige une confirmation explicite.',
   VALIDATION_FAILED: 'Valeur refusée par une règle métier.',
 
@@ -57,7 +57,7 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   TEXT_TOO_LONG: 'Texte trop long.',
   BASE_NOT_EMPTY: 'Cette base contient encore des tables vivantes.',
   BASE_STRUCTURE_FROZEN: 'La structure de cette base est gelée : une dérive a été détectée.',
-  TABLE_REFERENCED: 'Cette table est encore visée par un lien actif.',
+  TABLE_REFERENCED: 'Cette table est encore visée par une relation active.',
   DEPENDENT_OBJECT: 'Un objet créé en SQL (une vue, par exemple) en dépend encore.',
   ALIAS_DEPENDENT: 'Un alias de compatibilité est encore utilisé.',
   TARGET_PURGED: 'Cet objet a été purgé : il n’est plus restaurable.',
@@ -65,6 +65,34 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   RESTORE_OUT_OF_RETENTION:
     'La période de rétention est dépassée : la restauration n’est plus possible.',
   NAME_COLLISION_UNRESOLVED: 'Impossible de trouver un nom libre.',
+
+  // Chapter 07 — history.
+  REVISION_SUPERSEDED:
+    'Un de ces champs a changé depuis : annuler cette modification effacerait la plus récente.',
+  RESTORE_RECORD_PRESENT: 'Cette ligne existe de nouveau : il n’y a rien à restaurer.',
+  TRUNCATE_FORBIDDEN:
+    'Vider une table d’un coup est refusé : supprimez ses lignes, qui seront historisées.',
+  BULK_OPERATION_REFUSED: 'Trop de lignes dans une seule opération : découpez-la en lots.',
+  HISTORY_IMMUTABLE: 'L’historique ne se modifie pas.',
+
+  // Chapter 06 — physical names, aliases, purge.
+  NAME_RETIRED: 'Ce nom a déjà servi : un nom n’est jamais réattribué, même après suppression.',
+  NAME_TAKEN_OUTSIDE_REGISTRY: 'Un objet créé hors de basedb porte déjà ce nom dans la base.',
+  IDENTIFIER_INVALID:
+    'Nom invalide : lettres minuscules sans accent, chiffres et « _ », commençant par une lettre, hors mots réservés.',
+  NAME_TOO_LONG: 'Nom trop long pour PostgreSQL.',
+  TOO_MANY_ALIASES: 'Cet objet a déjà cinq alias : supprimez-en un avant de le renommer encore.',
+  PURGE_TOO_EARLY: 'La purge n’est possible que trente jours après la suppression.',
+  EXPORT_UNAVAILABLE: 'L’export préalable à la purge n’a pas pu être écrit ou relu.',
+  EXPORT_STALE: 'Des données ont été écrites depuis l’export : refaites l’export avant de purger.',
+
+  // Chapter 09 §7 — agent proposals.
+  PROPOSAL_STALE:
+    'La structure de la base a changé depuis cette proposition : l’agent doit la refaire.',
+  PROPOSAL_EXPIRED: 'Cette proposition a plus de 24 heures : elle a expiré.',
+  AUTHORIZATION_REVOKED:
+    'La personne pour qui l’agent agit, ou son jeton, n’a plus le droit de faire cette modification.',
+  TOO_MANY_OPEN_PROPOSALS: 'Trop de propositions en attente pour ce jeton.',
 
   // Chapter 03 — migrations.
   MIGRATION_IN_PROGRESS: 'Une migration est déjà en cours sur cette base.',
@@ -86,6 +114,21 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   ELEVATION_REQUIRED: 'Confirmez votre mot de passe pour faire cela.',
   ROLE_NOT_DELEGABLE: 'Vous ne pouvez pas accorder à un jeton des droits que vous n’avez pas.',
   TOKEN_EXPIRY_REQUIRED: 'La validité d’un jeton va de 1 à 365 jours.',
+
+  // Chapter 15 — shared forms.
+  FORM_CLOSED: 'Ce formulaire n’accepte plus de réponses.',
+  FORM_RESTRICTED: 'Ce formulaire est réservé à certains groupes.',
+
+  // Chapter 14 — environments.
+  ENVIRONMENT_IS_PRODUCTION:
+    'La production est la base elle-même : elle se supprime avec la base, pas seule.',
+  ENVIRONMENT_MISMATCH: 'Ces deux bases ne sont pas deux environnements d’une même base.',
+  SYNC_REFERENCE_MISSING:
+    'Une relation désigne une ligne absente de l’environnement cible : synchronisez d’abord la table visée.',
+  SYNC_TABLE_MISSING:
+    'Cette table n’existe pas dans les deux environnements : reportez d’abord la structure.',
+  SYNC_VALUES_REFUSED:
+    'Des valeurs sont refusées par l’environnement cible (choix absent, champ obligatoire…) : reportez d’abord la structure.',
 
   // Chapter 05 §15 — projects, people and groups.
   PROJECT_NOT_EMPTY: 'Ce projet contient encore des bases : supprimez-les d’abord.',
@@ -125,6 +168,33 @@ const OPTION_REASONS: Readonly<Record<string, string>> = {
   pas_une_liste_de_choix: 'Ce champ n’est pas une liste de choix.',
 }
 
+/** Why the prompt or the schedule of an AI field was refused (`REQUEST_INVALID`). */
+const AI_REASONS: Readonly<Record<string, string>> = {
+  consigne_vide: 'La consigne est vide.',
+  consigne_trop_longue: 'Consigne trop longue : 8 000 caractères au maximum.',
+  variable_circulaire: 'Un champ IA ne peut pas se citer lui-même.',
+  cron_invalide: 'Planification invalide.',
+  fuseau_inconnu: 'Fuseau horaire inconnu.',
+  cron_sans_date: 'Cette planification ne tombe jamais : aucune date ne la satisfait.',
+  frequence_trop_haute: 'Trop fréquent : un recalcul toutes les 15 minutes au plus.',
+  pas_un_champ_ia: 'Ce champ n’est pas un champ IA.',
+}
+
+/** Why a view's configuration was refused (`REQUEST_INVALID`, `field: 'spec'`). */
+const VIEW_REASONS: Readonly<Record<string, string>> = {
+  champ_pivot_manquant: 'Choisissez le champ pivot de la vue.',
+  type_de_champ_incompatible: 'Ce champ n’a pas le type qu’attend la vue.',
+  champ_inconnu: 'La vue cite un champ inconnu : il a peut-être été supprimé.',
+  cle_inconnue: 'Configuration de vue invalide.',
+  doublon: 'Un même champ est cité deux fois.',
+  formulaire_vide: 'Un formulaire doit poser au moins une question.',
+  trop_de_tris: 'Trois critères de tri au plus.',
+  texte_trop_long: 'Un texte de la vue est trop long.',
+  spec_trop_volumineux: 'Configuration de vue trop volumineuse.',
+  spec_invalide: 'Configuration de vue invalide.',
+  valeur_invalide: 'Configuration de vue invalide.',
+}
+
 /**
  * The sentence for a code, refined by what the refusal carries when the code alone is
  * ambiguous. `TEXT_TOO_LONG` is the case: it is raised for any bounded text, and "trop
@@ -145,13 +215,59 @@ function explain(e: ApiError): string {
   // `description`, or the path to one inside a payload — `fields[0].description` when a
   // table is created with its columns.
   const field = e.details.field
+  // A copy of rows that needs another table's rows first: that table is named.
+  if (e.code === 'SYNC_REFERENCE_MISSING' && typeof e.details.target === 'string') {
+    return `Des lignes pointent vers « ${e.details.target} », qui n’a pas encore ces lignes dans l’environnement cible : synchronisez-la d’abord.`
+  }
+  // A row brought back that points to a row gone since: the restoration names what blocks.
+  if (e.code === 'RESTORE_TARGET_MISSING' && typeof e.details.record === 'string') {
+    return 'Une ligne vers laquelle elle pointait n’existe plus : restaurez-la d’abord.'
+  }
+  // Chapter 06: what blocks is named — a view someone built, a name already used.
+  if (e.code === 'DEPENDENT_OBJECT') {
+    const named = Array.isArray(e.details.dependents)
+      ? (e.details.dependents as unknown[]).map(String)
+      : typeof e.details.dependent === 'string'
+        ? [e.details.dependent]
+        : []
+    if (named.length > 0) {
+      return `Des objets créés hors de basedb en dépendent : ${named.join(', ')}. Ils doivent être supprimés d’abord, par leur auteur.`
+    }
+  }
+  if (e.code === 'NAME_RETIRED' && typeof e.details.suggestion === 'string') {
+    return `Ce nom a déjà servi, et un nom n’est jamais réattribué. Libre : « ${e.details.suggestion} ».`
+  }
+  if (e.code === 'NAME_TAKEN_OUTSIDE_REGISTRY' && typeof e.details.owner === 'string') {
+    return `Un objet créé hors de basedb (propriétaire ${e.details.owner}) porte déjà ce nom.`
+  }
+  if (e.code === 'EXPORT_UNAVAILABLE' && e.details.reason === 'trop_volumineux') {
+    return 'Trop de lignes pour un export depuis l’interface (2 millions au plus).'
+  }
+  if (e.code === 'EXPORT_UNAVAILABLE' && e.details.reason === 'repertoire_absent') {
+    return 'Aucun répertoire d’export n’est configuré sur le serveur (BASEDB_EXPORT_DIR).'
+  }
+  if (e.code === 'PURGE_TOO_EARLY' && typeof e.details.purgeable_from === 'string') {
+    const at = new Date(e.details.purgeable_from).toLocaleDateString('fr-FR')
+    return `Purge possible à partir du ${at}. Seul un administrateur d’instance peut l’avancer, en le justifiant.`
+  }
   if (e.code === 'ACTION_FORBIDDEN' && e.details.reason === 'soi_meme') {
     return 'Vous ne pouvez pas désactiver votre propre compte.'
   }
   if (e.code === 'REQUEST_INVALID') {
     if (field === 'email') return 'Adresse électronique invalide.'
     const reason = e.details.reason
-    const known = typeof reason === 'string' ? OPTION_REASONS[reason] : undefined
+    if (field === 'spec' && typeof reason === 'string') {
+      return VIEW_REASONS[reason] ?? 'Configuration de vue invalide.'
+    }
+    // A citation that designates nothing is named: it is the one to correct.
+    if (reason === 'variable_inconnue' && typeof e.details.variable === 'string') {
+      return `La consigne cite « ${e.details.variable} », qui n’est pas une colonne lisible de la table.`
+    }
+    if (reason === 'cron_invalide' && typeof e.details.detail === 'string') {
+      return `Planification invalide — ${e.details.detail}.`
+    }
+    const known =
+      typeof reason === 'string' ? (OPTION_REASONS[reason] ?? AI_REASONS[reason]) : undefined
     if (known !== undefined) return known
     if (field === 'options') return 'Liste de choix invalide.'
   }
@@ -183,4 +299,17 @@ export function messageFor(e: unknown): string {
     return `${detail} (${e.code}${trace})`
   }
   return 'L’API est injoignable.'
+}
+
+/**
+ * The sentence alone, without the code and the trace — for a refusal shown next to the
+ * box it concerns, while a person is still typing, where a code would be noise.
+ */
+export function reasonFor(e: unknown): string {
+  return e instanceof ApiError ? explain(e) : 'L’API est injoignable.'
+}
+
+/** The sentence for a code recorded earlier — the last incident of an AI field. */
+export function sentenceFor(code: string): string {
+  return EXPLANATIONS[code] ?? code
 }

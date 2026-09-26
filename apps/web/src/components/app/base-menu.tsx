@@ -1,6 +1,7 @@
 'use client'
 
 import { DescriptionField, isTooLong } from '@/components/app/description'
+import { EnvironmentsEditor, NewEnvironmentsField } from '@/components/app/environments-editor'
 import { LookButton, type LookValue, lookOf, sameLook } from '@/components/app/look-picker'
 import { Button } from '@/components/ui/button'
 import {
@@ -44,11 +45,14 @@ export function EditBaseDialog({
   base,
   onClose,
   onDone,
+  onEnvironmentsChanged,
 }: {
   readonly open: boolean
   readonly base: BaseLike
   readonly onClose: () => void
   readonly onDone: () => void
+  /** An environment was added, renamed or deleted — the navigation lists them. */
+  readonly onEnvironmentsChanged?: () => void
 }) {
   const [label, setLabel] = useState(base.label)
   const [description, setDescription] = useState(base.description ?? '')
@@ -95,7 +99,10 @@ export function EditBaseDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent aria-describedby={undefined}>
+      <DialogContent
+        aria-describedby={undefined}
+        className="max-h-[90vh] overflow-y-auto sm:max-w-xl"
+      >
         <DialogHeader>
           <DialogTitle>Modifier la base</DialogTitle>
         </DialogHeader>
@@ -133,6 +140,15 @@ export function EditBaseDialog({
             placeholder="À quoi sert cette base ?"
             disabled={busy}
           />
+
+          {/* Each environment is saved as it is edited: its own row, its own act. */}
+          {open && (
+            <EnvironmentsEditor
+              base={base.name}
+              onChanged={() => onEnvironmentsChanged?.()}
+              disabled={busy}
+            />
+          )}
 
           {error !== null && <p className="text-sm text-destructive">{error}</p>}
         </div>
@@ -280,13 +296,17 @@ export function NewBaseDialog({
 }) {
   const [label, setLabel] = useState('')
   const [description, setDescription] = useState('')
+  const [environments, setEnvironments] = useState<readonly string[]>([])
   const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
     setLabel('')
     setDescription('')
+    setEnvironments([])
+    setProgress(null)
     setError(null)
   }, [open])
 
@@ -296,17 +316,31 @@ export function NewBaseDialog({
     if (!ready) return
     setBusy(true)
     setError(null)
+    let created: { name: string } | null = null
     try {
-      const created = await api.createBase(
+      created = await api.createBase(
         label.trim(),
         description.trim() === '' ? undefined : description.trim(),
         project.id,
       )
+      // The other environments, once production exists: each is a copy of it.
+      for (const environment of environments) {
+        setProgress(`Création de « ${environment} »…`)
+        await api.createEnvironment(created.name, environment)
+      }
       onDone(created.name)
     } catch (e) {
-      setError(messageFor(e))
+      // The base exists even when an environment could not be added: said, and the
+      // environments are completed from « Modifier la base ».
+      if (created !== null) {
+        setError(`La base est créée, mais pas tous ses environnements : ${messageFor(e)}`)
+        onDone(created.name)
+      } else {
+        setError(messageFor(e))
+      }
     } finally {
       setBusy(false)
+      setProgress(null)
     }
   }
 
@@ -343,6 +377,9 @@ export function NewBaseDialog({
             disabled={busy}
           />
 
+          <NewEnvironmentsField value={environments} onChange={setEnvironments} disabled={busy} />
+
+          {progress !== null && <p className="text-sm text-muted-foreground">{progress}</p>}
           {error !== null && <p className="text-sm text-destructive">{error}</p>}
         </div>
 

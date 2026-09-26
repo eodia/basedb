@@ -32,12 +32,20 @@ ligne ou une permission accordée. INV-IA2 est la contrepartie de l'auto-héberg
 qui installe basedb pour que ses données restent chez lui doit pouvoir activer l'IA
 sans les en faire sortir.
 
+**Une exception, décidée et bornée** : l'option IA d'un champ (§ 1.5) écrit la réponse
+d'un modèle dans une cellule et envoie pour cela des valeurs de la ligne. Il enfreint
+les deux invariants par construction ; il n'existe que parce que son auteur y a
+consenti explicitement, et ses bornes tiennent lieu d'invariant pour lui. Les deux
+usages de brouillon restent soumis aux deux invariants sans exception.
+
 ### 1.2 Les deux usages retenus
 
 | Usage (`usage_kind`) | Entrée | Sortie | Acte qui suit |
 |---|---|---|---|
 | `structure_draft` | Une description de besoin, plus les libellés et types des tables existantes de la base | Une proposition de tables, champs et liens, dans le vocabulaire de « Types de champs et projection vers PostgreSQL » | Le brouillon est amendé dans l'éditeur de schéma ; l'enregistrement produit une migration proposée, approuvée selon « Moteur DDL et stratégie de migration » |
 | `expression_draft` | Une phrase, plus les libellés et types des champs de la table visée | Une formule ou un filtre, dans la grammaire fermée de « Types de champs » et de « API REST, OpenAPI, webhooks, jetons d'intégration » | L'expression s'affiche dans l'éditeur, passe le validateur ordinaire, et n'est enregistrée que par une action explicite |
+| `field_compute` | La consigne d'un champ calculé par l'IA, les valeurs de la ligne qu'elle cite, les libellés de la table et du champ, le format attendu du type du champ | Une chaîne, `{ "value": string }`, relue dans le type du champ | Écrite dans la cellule par le noyau — l'exception du § 1.5 |
+| `copilot` | Une conversation, la structure lisible de la base et, sur consentement, des lignes lues | Une réponse en texte et des propositions typées : filtre, requête, colonnes, table, lignes à insérer ou à modifier | Chaque proposition s'applique d'un clic, par les routes ordinaires (§ 1.6) |
 
 La réponse est exigée sous forme structurée et validée contre un schéma avant d'être
 montrée. Une réponse non conforme est rejetée, jamais réinterprétée : le texte libre
@@ -53,17 +61,149 @@ chemins de validation existants : aucun code de confiance nouveau n'est introdui
 
 ### 1.4 Hors périmètre v1
 
-- **Tout usage portant sur le contenu** : champ de type « IA », enrichissement
-  automatique, résumé, traduction, classification, génération dans une cellule. Ils
-  violent INV-IA2 et transformeraient chaque écriture en appel facturé.
+- **Tout autre usage portant sur le contenu** que l'option IA des champs : enrichissement à
+  l'écriture, recherche, classification en masse hors d'une colonne, génération hors
+  d'une cellule. Ils violeraient INV-IA2 sans le consentement que le champ exige.
 - **Recherche sémantique et plongements vectoriels** : extension hors de la liste d'A3,
   stockage vectoriel par tenant, réindexation — un sous-système entier pour un besoin
   non demandé.
-- **Conversation sur les données** : c'est ce que sert « Serveur MCP », avec l'agent de
-  l'utilisateur, ses clés et son budget.
-- **Agent autonome, action déclenchée par événement, exécution différée, diffusion en
-  continu, cache sémantique, modèle hébergé localement, bascule entre fournisseurs,
-  refacturation.**
+- **Conversation sur les données** hors du copilote (§ 1.6) : c'est ce que sert
+  « Serveur MCP », avec l'agent de l'utilisateur, ses clés et son budget.
+- **Agent autonome, action déclenchée par événement, diffusion en continu, cache
+  sémantique, modèle hébergé localement, bascule entre fournisseurs, refacturation.**
+  L'exécution différée n'existe que pour l'option IA des champs, et seulement pour elle.
+
+### 1.5 L'option IA d'un champ — l'exception décidée
+
+*Décision du propriétaire*, prise contre le § 1.4 d'origine, comme la console SQL l'a
+été contre les chapitres 09 et 10. L'option est décrite par « Types de champs » (§ 7 bis) ;
+ce paragraphe dit ce qui en borne l'exception.
+
+*Décision révisée* : l'IA était d'abord un type de champ, `ai`, une colonne de texte.
+C'est désormais une **option** — un interrupteur « IA » sur le formulaire du champ — que
+peut porter un texte court ou long, un lien URL, un nombre, une liste de choix, un
+booléen ou une date. La colonne garde son type : le modèle reçoit le format attendu, et
+sa réponse est relue dans ce type, ou refusée si rien ne s'y lit (§ 7 bis du chapitre 04).
+Les bornes ci-dessous sont inchangées ; elles valent pour chaque champ qui porte l'option.
+
+1. **Nul n'écrit la colonne.** Le décideur la retire de tout masque d'écriture ; seul le
+   noyau l'écrit, à la demande d'une personne pour une ligne (« Recalculer », droit
+   `update`) ou de lui-même, par le processus de fond. Une réponse de modèle ne devient
+   donc jamais que la valeur d'une cellule, dans le type de sa colonne : ni DDL, ni
+   permission, ni écriture d'une autre colonne. Le texte d'une cellule qui contient des consignes (« ignore ce qui
+   précède… ») n'atteint que la réponse de cette même ligne.
+2. **Les valeurs partent sur consentement.** Activer l'option — à la création du champ ou
+   sur un champ existant —, ou en changer la consigne ou le planning, demande
+   `manage_schema` sur la table, la lecture de **chaque**
+   colonne citée, et `consent: true` — faute de quoi `AI_CONSENT_REQUIRED`. Le
+   consentement est nominatif (`field_ai_config.consented_by`, `consented_at`) et
+   renouvelé à chaque modification : les colonnes citées peuvent avoir changé. Refusé
+   tant que l'IA n'est pas configurée (`AI_DISABLED`, `AI_NOT_CONFIGURED`) : une
+   colonne qui ne se remplirait jamais serait une colonne de cellules vides que
+   personne ne comprendrait.
+3. **Ne part que ce qui est cité.** Pour une ligne : la consigne, valeurs en place, et
+   les libellés de la table et du champ. Ni `_id`, ni nom physique, ni autre colonne,
+   ni description, ni identité de l'auteur.
+4. **Chaque appel est compté**, une ligne `ai_call` par tentative, `usage_kind =
+   'field_compute'`, surface `system` pour le processus de fond — la personne et sa
+   surface pour « Recalculer ». Plafond horaire **propre** (§ 6.2), pour qu'une table de
+   mille lignes n'épuise pas celui des brouillons, ni l'inverse.
+5. **Le rythme est borné** : au plus un recalcul complet toutes les 15 minutes par
+   champ ; le processus de fond fait au plus 20 appels par passage de 10 secondes, 8 par
+   champ, pour qu'une grande table n'affame pas les autres.
+
+**Le processus de fond** tourne dans le processus de l'API (`BASEDB_AI_WORKER=0` le
+coupe), jamais dans le serveur MCP. À chaque passage, pour chaque champ vivant qui porte
+l'option :
+il prend un **bail** de cinq minutes sur la ligne de configuration (`lease_until`) —
+plusieurs processus peuvent donc tourner sur une même base sans calculer deux fois —,
+ouvre un recalcul complet si l'échéance cron est passée (`next_sweep_at`), calcule les
+cellules vides puis poursuit le recalcul en cours à partir de son curseur
+(`sweep_after`, dernier `_id` traité), et rend le bail avec son bilan (`last_run_at`,
+`computed_count`, `last_error`). Un refus qui vaut pour tout le champ — plafond atteint,
+fournisseur indisponible, IA désactivée — suspend ce champ de cinq à dix minutes au lieu
+de brûler le passage ; une ligne dont l'appel échoue est reprise plus tard, avec un
+délai qui double à chaque échec, jusqu'à six heures. Une cellule vide n'est remplie
+que si elle l'est encore au moment d'écrire : une valeur arrivée entre-temps n'est pas
+écrasée par un calcul plus ancien.
+
+**Une colonne citée qui change rejoue le calcul** (chapitre 04 § 7 bis) : l'écriture
+d'une personne vide la cellule, que le passage suivant remplit. Un appel prend quelques
+secondes, et une valeur citée peut changer pendant ce temps — la ligne tout juste créée,
+ses notes saisies pendant que le modèle répond. L'écriture du noyau est donc
+conditionnelle : la ligne est lue avec l'empreinte de ses valeurs citées
+(`md5(ROW(…)::text)`), et la réponse n'est écrite que si l'empreinte est encore la
+même. Sinon elle est abandonnée — elle répondait pour une ligne qui n'est plus —, et la
+cellule, vidée par le changement, est recalculée au passage suivant.
+
+**Rien à lire, rien à demander.** Une ligne dont toutes les valeurs citées sont vides
+n'est pas envoyée au fournisseur. Pour un champ texte, la cellule reçoit `''`, la réponse
+que le modèle donnerait, et une réponse vide du modèle est écrite de même : seul `NULL`
+est « à calculer », et une cellule qui ne pouvait rien donner n'est plus reprise à chaque
+passage (chapitre 04 § 7 bis). Les autres types n'ont pas de valeur vide à écrire : la
+ligne est refusée (`AI_RESPONSE_UNUSABLE`, `rien_a_lire`), comme une réponse où rien ne
+se lit dans le type du champ (`type_attendu`), et reprise avec le délai qui double, six
+heures au plus. Le coût d'une ligne sans données est donc un appel évité puis quelques
+lectures par jour, jamais un appel par passage.
+
+### 1.6 Le copilote — une conversation qui propose
+
+*Décision du propriétaire*, qui remplace les deux onglets « Expression » et « Structure »
+du panneau par une conversation. Le copilote répond sur **une base** : il voit sa
+structure, telle que la personne la lit, et **propose** ; il n'exécute rien.
+
+**Ce qu'il propose** est une liste fermée de six actions typées, revalidées par le noyau
+contre le catalogue et les droits de la personne avant d'être montrées, et appliquées —
+d'un clic, carte par carte — par les routes ordinaires, qui revérifient tout :
+
+| Action | Ce que la carte montre | Ce que le clic fait |
+|---|---|---|
+| `filter` | L'expression et le tri | Filtre la vue de la table ; l'expression est d'abord éprouvée par une lecture d'une ligne |
+| `sql` | Une requête `SELECT` | L'ouvre dans un onglet de console, où la personne l'exécute |
+| `add_fields` | Les colonnes, à cocher | `POST …/fields`, `…/links` une à une ; une colonne IA demande le consentement du § 1.5 dans la carte |
+| `create_table` | La table et ses colonnes | `POST …/tables`, puis les colonnes qu'elle ne peut porter à la création |
+| `insert_records` | Un aperçu des lignes, 50 au plus | `POST …/batch`, tout ou rien ; un lien désigné par sa valeur d'affichage est résolu à ce moment |
+| `update_records` | Les lignes lues et leurs nouvelles valeurs | `PATCH` ligne par ligne |
+
+Une proposition qui ne tient pas — table ou colonne inconnue, type hors liste, choix
+inexistant, droit manquant, requête qui écrit — est écartée **et dite** sous la réponse.
+Avant cela, le modèle la reçoit une fois avec la raison et corrige sa réponse ; ce qui
+reste écarté après cette correction est dit. Sont admis sans correction ce qui désigne
+sans ambiguïté la même chose : une table nommée par son libellé ou qualifiée de son
+schéma, la table à l'écran quand aucune n'est nommée, un choix de liste comparé par son
+libellé dans un filtre — réécrit en sa valeur, sans quoi le filtre ne trouverait rien.
+INV-IA1 tient : la réponse ne devient une écriture que par le geste d'une personne.
+
+**Ce qu'il lit — seconde exception à INV-IA2.** Par défaut, rien que la structure : les
+tables et colonnes que la personne lit, leurs types, les libellés des choix, ce qu'elle a
+le droit d'y faire, la table à l'écran et son filtre. Une case, sous la conversation,
+l'autorise à **lire des lignes** pour cette conversation ; il peut alors demander des
+lectures, que le noyau exécute et lui rend avant qu'il réponde — trois tours au plus :
+
+- **`records`** : la lecture ordinaire, sous le masque de la personne et le prédicat de
+  lignes, 50 lignes au plus, avec le décompte à la demande ;
+- **`sql`** : une requête `SELECT`, seulement pour qui la console SQL est déjà ouverte
+  (`manage_schema` sur la base), et jamais sur une base dont une colonne est soustraite
+  aux modèles tiers (`expose_to_agents = false`) — SQL ne saurait la cacher. Elle
+  s'exécute sous le rôle restreint de la console, dans une transaction `READ ONLY` et par
+  le protocole étendu, qui refuse une seconde instruction : ni un `COMMIT; DELETE…`, ni
+  une écriture dans une CTE ou une fonction n'en sortent. Elle est journalisée dans
+  `audit_log` comme toute requête de console.
+
+Chaque lecture est listée sous la réponse — « 2 lectures · 14 lignes envoyées au
+fournisseur » — avec son texte : ce qui a été lu est ce qui est parti. Les valeurs sont
+coupées à 300 caractères, une observation à 6 Kio ; les colonnes soustraites aux modèles
+tiers ne sont ni décrites ni lues.
+
+**Ce qui borne un tour** : une conversation de 20 messages et 16 000 caractères au plus,
+les plus anciens tombant les premiers ; quatre appels (trois tours de lecture, puis la
+réponse), chacun compté dans `ai_call` sous `usage_kind = 'copilot'` et sous le plafond
+horaire des usages interactifs (§ 6.2) ; 90 secondes et 8 000 jetons par appel, le temps
+d'écrire cinquante lignes.
+
+**Les données lues sont des données** : la consigne fermée le dit au modèle, et une
+consigne cachée dans une cellule ne peut produire qu'une proposition, que la personne
+lit avant de l'appliquer, jamais une action.
 
 ---
 
@@ -276,6 +416,8 @@ filtrer.
 |---|---|
 | `structure_draft` | Le libellé de la base ; pour chaque table et champ sélectionnés, le libellé, le type, le caractère obligatoire, et pour un lien la table cible désignée par son ordinal ; la phrase saisie |
 | `expression_draft` | Le libellé de la table visée ; pour chaque champ, libellé, type, caractère obligatoire ; la phrase saisie ; le cas échéant le message du validateur sur l'essai précédent |
+| `field_compute` | Le libellé de la table et celui du champ ; la consigne, **les valeurs des colonnes citées de la ligne** mises à leur place — l'exception du § 1.5, sur consentement |
+| `copilot` | Le libellé de la base ; pour chaque table lisible, son nom physique, son libellé, ses colonnes (nom, libellé, type, libellés des choix, cible d'un lien) et les droits de la personne ; la table à l'écran et son filtre ; la conversation ; **sur consentement**, les lignes lues (§ 1.6) |
 
 **Les descriptions du catalogue ne partent pas.** Un libellé est une étiquette ; une
 description est un texte libre de mille caractères, où l'on écrit volontiers un nom de
@@ -391,6 +533,8 @@ lecture est négligeable, et un second détenteur du compte dériverait du journ
 | Jetons produits par appel | Fixe par usage, non configurable | Réponse tronquée, traitée comme `AI_RESPONSE_UNUSABLE` |
 | Charge utile : 200 tables, 2 000 champs, 64 Kio | Fixe | `AI_PAYLOAD_TOO_LARGE` |
 | Simultanéité : 1 par utilisateur, 2 par tenant | Fixe | `AI_QUOTA_EXCEEDED`, sans attente |
+| Brouillons et copilote : 120 appels par heure (`BASEDB_AI_QUOTA`) | Tenant | `AI_QUOTA_EXCEEDED` |
+| Champs calculés par l'IA : 300 appels par heure (`BASEDB_AI_FIELD_QUOTA`) | Tenant, compté à part des brouillons | `AI_QUOTA_EXCEEDED` ; le processus de fond suspend le champ dix minutes |
 
 Une surcharge de tenant sur les quotas mensuels **ne peut que les abaisser** : sinon un
 `tenant_admin` relèverait son propre plafond et dépenserait la clé d'instance sans
@@ -420,6 +564,12 @@ l'indisponibilité par quota est un état affichable, pas une erreur à découvr
 |---|---|
 | Demander un `structure_draft` | `manage_schema` @ base |
 | Demander un `expression_draft` | `manage_schema` @ table |
+| Converser avec le copilote | `read` sur au moins une table de la base ; il ne voit que ce que la personne lit |
+| Laisser le copilote lire par SQL | `manage_schema` @ base, comme la console, et consentement de la conversation |
+| Activer l'option IA d'un champ, en changer la consigne ou le planning, tout recalculer | `manage_schema` @ table, lecture de chaque colonne citée, consentement explicite |
+| Désactiver l'option IA d'un champ | `manage_schema` @ table |
+| Recalculer une ligne d'un champ calculé par l'IA | `update` @ table |
+| Lire la consigne et l'état d'un champ calculé par l'IA | `read` @ table |
 | Appliquer un brouillon | Les droits ordinaires de l'acte, sans atténuation : proposition et approbation selon « Moteur DDL et stratégie de migration » |
 | Régler `ai.*` d'instance, poser la clé d'instance | `is_instance_admin` |
 | Surcharger `ai.*` du tenant, poser ou révoquer sa clé, accepter le consentement | Opération réservée + élévation + jeton de confirmation |
@@ -437,7 +587,8 @@ l'indisponibilité par quota est un état affichable, pas une erreur à découvr
   d'instance sans porteur humain identifiable, et un agent qui fait appeler un autre
   modèle par le produit est une boucle sans responsable. Un appel émis par un jeton ou
   depuis la surface MCP reçoit `404`, selon le principe d'absence de « Modèle de
-  permissions ».
+  permissions ». Le processus de fond des champs calculés par l'IA n'est pas une surface : c'est le
+  noyau, acteur `system`, qui agit dans les bornes qu'une personne a consenties.
 
 ---
 
@@ -477,13 +628,20 @@ lieu de test :
 2. **Retirer l'adaptateur retire les fonctions et ne casse rien d'autre** : le produit
    démarre, les éditeurs fonctionnent, les tests du noyau passent. C'est la configuration
    d'une installation qui ne veut aucun appel sortant.
-3. **Aucun objet du catalogue autre que `setting`, `secret` et `ai_call` ne mentionne
-   l'IA** : ni colonne sur `field`, ni type de champ, ni état de migration.
+3. **Aucun objet du catalogue autre que `setting`, `secret`, `ai_call` et le satellite
+   `field_ai_config` ne mentionne l'IA** : ni type de champ, ni colonne sur `field`, ni
+   état de migration. L'option IA d'un champ est la présence de sa ligne dans le
+   satellite, et rien d'autre.
+
+Le fournisseur, le modèle et la clé se prennent dans les réglages, ou à défaut dans
+l'environnement (`BASEDB_AI_PROVIDER`, `BASEDB_AI_MODEL`, `BASEDB_AI_API_KEY` — ou, pour
+la clé, le nom usuel du fournisseur : `MISTRAL_API_KEY`, `OPENAI_API_KEY`,
+`ANTHROPIC_API_KEY`) tant qu'aucun écran de réglage n'existe ; un réglage écrit l'emporte.
 
 Sont reportés, et nommés pour ne pas passer pour des oublis : rotation de
 `BASEDB_ENCRYPTION_KEY`, budgets en unité monétaire, diffusion en continu, choix du
 modèle par usage plutôt que par tenant, et tout usage portant sur le contenu des
-enregistrements — lequel exigerait de rouvrir INV-IA2, donc une décision de cadrage.
+enregistrements autre que l'option IA des champs.
 
 ---
 
@@ -501,7 +659,7 @@ Ajoutés au registre unique (A23), en anglais (A2), jamais renommés.
 | `AI_QUOTA_EXCEEDED` | Plafond mensuel ou de simultanéité atteint | Conflit | 429 |
 | `AI_PAYLOAD_TOO_LARGE` | Charge utile au-delà des plafonds du § 6.2 | Validation | 422 |
 | `AI_PROVIDER_UNAVAILABLE` | Délai dépassé, `5xx`, `429` amont, erreur réseau, circuit ouvert | Incident | 503 |
-| `AI_RESPONSE_UNUSABLE` | Réponse non conforme au schéma ou tronquée, après un réessai | Incident | 502 |
+| `AI_RESPONSE_UNUSABLE` | Réponse non conforme au schéma ou tronquée, après un réessai ; ou, pour un champ calculé par l'IA, sans valeur lisible dans le type du champ | Incident | 502 |
 
 ---
 
@@ -520,6 +678,8 @@ Ajoutés au registre unique (A23), en anglais (A2), jamais renommés.
 | Surcharge de quota à la baisse seulement | Sinon un `tenant_admin` dépense la clé d'instance sans limite | Surcharge libre |
 | Pas de verbe `use_ai` ; session seule, ni jeton ni surface MCP | La liste des verbes est fermée ; un jeton brûlerait la clé d'instance sans porteur humain | Verbe dédié ; exposition via jeton |
 | Ni phrase, ni charge utile, ni réponse journalisées ; comptage par agrégation de `ai_call` | Le journal ne doit pas devenir un second entrepôt des mêmes données, ni le compteur un second détenteur | Journalisation intégrale ; compteur incrémental |
+| Option IA d'un champ : colonne écrite par le noyau seul, sur consentement nominatif renouvelé à chaque changement de consigne, citations limitées aux colonnes lisibles par l'auteur, plafond horaire propre, 15 minutes au moins entre deux recalculs | Décision du propriétaire ; les bornes tiennent lieu d'invariant pour la seule exception à INV-IA1 et INV-IA2 | Champ refusé (§ 1.4 d'origine) ; calcul à l'écriture, synchrone ; planning libre |
+| L'IA est une option de sept types, pas un type ; la réponse est relue dans le type du champ, ou refusée | Un nombre, une catégorie, une date extraits par un modèle doivent se trier, se filtrer et se valider comme tels | Un type `ai` à colonne `text`, une première décision revue à l'usage ; forcer une réponse illisible dans le type |
 
 ---
 
@@ -537,7 +697,17 @@ Ajoutés au registre unique (A23), en anglais (A2), jamais renommés.
    applicatives (A4) ; sensible seulement sur la limite de simultanéité.
 5. **Aucune rotation de `BASEDB_ENCRYPTION_KEY` en v1**, dont les clés de fournisseurs
    héritent ; un appel déjà parti n'est pas davantage rappelé par une révocation.
-6. **Dépendances externes assumées** : la clé composite de `setting` et `secret`, le
+6. **L'option IA fait sortir des valeurs de ligne**, par construction. Le
+   consentement nomme les colonnes, mais un fournisseur reste un tiers, et rien ne
+   l'oblige à ce qu'il annonce faire des données reçues.
+7. **La valeur d'un champ calculé par l'IA est lue par qui lit la table**, y compris un lecteur à
+   qui une colonne citée est masquée : la réponse peut en résumer le contenu. L'auteur,
+   qui lit toutes les colonnes qu'il cite, en décide en écrivant la consigne ; le masque
+   d'un lecteur ne s'étend pas à ce qu'un modèle a tiré d'une colonne qu'il ne voit pas.
+8. **Un planning se paie par ligne** : « toutes les 15 minutes » sur mille lignes fait
+   96 000 appels par jour, que le plafond horaire arrête bien avant. L'écran annonce le
+   rythme ; il ne connaît pas le prix.
+9. **Dépendances externes assumées** : la clé composite de `setting` et `secret`, le
    marqueur `expose_to_agents`, le jeton de confirmation et l'élévation. Si l'une n'est pas livrée, la propriété correspondante
    tombe, et il faudra le dire.
 

@@ -477,6 +477,8 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `DEFAULT_NOT_ALLOWED` | Expression de défaut hors du vocabulaire autorisé | 422 | 03 |
 | `DEFAULT_VOLATILE_FORBIDDEN` | Expression de défaut volatile | 422 | 03 |
 | `DEPENDENT_OBJECT` | Objet inconnu du catalogue dépendant d'une vue, d'une table ou d'un schéma à supprimer | 409 | 06 |
+| `ENVIRONMENT_IS_PRODUCTION` | Suppression de l'environnement de production seul : c'est la base entière qui se supprime | 409 | 14 |
+| `ENVIRONMENT_MISMATCH` | Comparaison, report de structure ou synchronisation entre deux bases qui ne sont pas deux environnements distincts d'une même base | 422 | 14 |
 | `EXPORT_STALE` | Écriture détectée sur l'objet depuis l'export préalable | 409 | 06 |
 | `EXPORT_UNAVAILABLE` | Répertoire d'export absent, non inscriptible, ou export en échec | 503 | 06 |
 | `FIELD_CONFIG_MISSING` | Champ dont le type exige un satellite de configuration absent | 500 | 02 |
@@ -500,6 +502,9 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `REQUIRED_NULL_VALUES` | Passage à obligatoire d'une colonne contenant des nuls, avec échantillon (A23) | 422 | 04 |
 | `RESIDUAL_SCHEMA` | `DROP SCHEMA` final d'une base purgée en échec ; état affiché, jamais renvoyé à une écriture | — | 06 |
 | `STEP_DEFERRED` | Étape concurrente reportée, transaction longue en cours | — | 03 |
+| `SYNC_REFERENCE_MISSING` | Synchronisation de lignes dont une relation désigne une ligne absente de l'environnement cible | 409 | 14 |
+| `SYNC_TABLE_MISSING` | Synchronisation d'une table absente, supprimée ou sans colonne commune dans l'un des deux environnements | 422 | 14 |
+| `SYNC_VALUES_REFUSED` | Valeur recopiée refusée par une contrainte de l'environnement cible : la structure est à reporter d'abord | 422 | 14 |
 | `TABLE_ATTRIBUTES_EXHAUSTED` | Plus de 1 500 numéros d'attribut consommés sur la table | 422 | 04 |
 | `TABLE_MIGRATING` | Étape de migration exclusive en cours sur la table | 503 | 08 |
 | `TASK_IN_PROGRESS` | Seconde tâche différée demandée sur le même objet | 409 | 06 |
@@ -536,7 +541,7 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 |---|---|---|---|
 | `ACTION_FORBIDDEN` | Ressource visible, action non accordée | 403 | 05 |
 | `ADMIN_REQUIRED` | Action réservée à l'administration, l'acteur voyant la ressource ; cycle de vie compris (A23) | 403 | 06 |
-| `AUTHORIZATION_REVOKED` | Revérification des droits ou du jeton en échec à l'approbation | — | 09 |
+| `AUTHORIZATION_REVOKED` | Revérification des droits ou du jeton en échec à l'approbation | 403 | 09 |
 | `CONFIRMATION_REQUIRED` | Opération réservée présentée sans jeton de confirmation | 409 | 05 |
 | `CONFLICT` | Violation d'unicité ou de `CHECK` touchant un champ masqué ; réponse anonyme | 409 | 05 |
 | `CREATE_IMPOSSIBLE` | Champ obligatoire non inscriptible par l'acteur | 403 | 05 |
@@ -589,8 +594,10 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `REQUIRED_VALUE_MISSING` | `NOT NULL` violé en base (`23502`) | 422 | 10 |
 | `RESTORE_FIELD_CHANGED` | Champ visé par une annulation en masse supprimé, purgé ou remplacé depuis | 422 | 07 |
 | `RESTORE_OUT_OF_RETENTION` | Révisions nécessaires à la restauration déjà purgées | 422 | 07 |
+| `RESTORE_RECORD_PRESENT` | Restauration d'une ligne supprimée qui existe de nouveau | 409 | 07 |
 | `RESTORE_TARGET_MISSING` | Restauration référençant une ligne absente et hors périmètre | 422 | 07 |
 | `RETENTION_INCONSISTENT` | Rétention des structures inférieure à celle des données (A24) | — | 07 |
+| `REVISION_SUPERSEDED` | Annulation d'une modification dont un champ a changé depuis | 409 | 07 |
 | `SORT_NOT_INDEXABLE_VOLUME` | Tri non indexable demandé au-delà du seuil de cardinalité | 422 | 04 |
 | `TEXT_TOO_LONG` | Valeur dépassant `max_length` | 422 | 04 |
 | `TRUNCATE_FORBIDDEN` | `TRUNCATE` sur une table utilisateur | 422 | 07 |
@@ -613,7 +620,7 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `AI_PAYLOAD_TOO_LARGE` | Charge utile au-delà des plafonds déclarés | 422 | 12 |
 | `AI_PROVIDER_UNAVAILABLE` | Délai dépassé, `5xx`, `429` amont, erreur réseau, circuit ouvert | 503 | 12 |
 | `AI_QUOTA_EXCEEDED` | Plafond mensuel ou de simultanéité atteint | 429 | 12 |
-| `AI_RESPONSE_UNUSABLE` | Réponse non conforme au schéma ou tronquée, après un réessai | 502 | 12 |
+| `AI_RESPONSE_UNUSABLE` | Réponse non conforme au schéma ou tronquée, après un réessai ; ou, pour un champ calculé par l'IA, sans valeur lisible dans le type du champ | 502 | 12 |
 | `BATCH_TOO_LARGE` | Lot au-delà des bornes d'entrée | 413 | 08 |
 | `BODY_TOO_LARGE` | Corps au-delà des bornes d'entrée | 413 | 08 |
 | `CONCURRENCY_CONFLICT` | Sérialisation ou interblocage sur la surface MCP ; rejouable | — | 09 |
@@ -630,6 +637,8 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `FILTER_TOO_COMPLEX` | Budget de complexité du filtre dépassé | 400 | 08 |
 | `FILTER_TOO_LONG` | Longueur du filtre dépassée | 400 | 08 |
 | `FILTER_VALUE_INVALID` | Valeur de filtre non coercible | 400 | 08 |
+| `FORM_CLOSED` | Réponse à un formulaire partagé désactivé, fermé, complet, ou dont la personne qui l'a publié ne peut plus ajouter de lignes | 409 | 15 |
+| `FORM_RESTRICTED` | Formulaire partagé réservé à des groupes dont la personne connectée n'est pas membre | 403 | 15 |
 | `IDEMPOTENCY_CONFLICT` | Même clé d'idempotence, corps différent | 409 | 08 |
 | `IDEMPOTENCY_IN_PROGRESS` | Même clé, revendication sous bail valide | 409 | 08 |
 | `IDEMPOTENCY_INTERRUPTED` | Bail expiré, écriture métier partiellement constatée | 409 | 08 |
@@ -637,8 +646,8 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `MCP_OPERATION_EXCLUDED` | Nom réservé d'une opération exclue en v1 | — | 09 |
 | `PARAMETER_INVALID` | Étage protocolaire : type, cardinalité, taille ; ne cite aucun objet | — | 09 |
 | `PRECHECK_TIMEOUT` | Pré-vérification au-delà de 30 secondes | — | 09 |
-| `PROPOSAL_EXPIRED` | Proposition passée à `expired` au-delà de 24 heures | — | 09 |
-| `PROPOSAL_STALE` | `catalog_version` modifié depuis la proposition | — | 09 |
+| `PROPOSAL_EXPIRED` | Proposition passée à `expired` au-delà de 24 heures | 409 | 09 |
+| `PROPOSAL_STALE` | `catalog_version` modifié depuis la proposition | 409 | 09 |
 | `QUERY_TOO_EXPENSIVE` | Budget de complexité ou plan estimé au-delà du seuil | 400 | 08 |
 | `QUOTA_EXCEEDED` | Plafond d'appels ou de requêtes simultanées sur la surface MCP ; rejouable | — | 09 |
 | `RATE_LIMIT_EXCEEDED` | Seau à jetons épuisé (A4) | 429 | 08 |

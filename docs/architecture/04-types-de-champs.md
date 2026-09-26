@@ -20,6 +20,8 @@ Un champ se projette sur **exactement une colonne** de la table de sa base. Aucu
 
 Chaque colonne générée reçoit un `COMMENT ON COLUMN` dont le texte est `field.description` ou, quand il n'y en a pas, `field.label` ; la table reçoit de même un `COMMENT ON TABLE`, tiré de `table_def`. C'est la seule passerelle entre le catalogue et la base pour l'humain qui explore le schéma en SQL direct : `\d+` ne doit jamais montrer un commentaire vide là où le catalogue sait quelque chose. Le commentaire est réécrit dans la transaction de toute modification de la description (chapitre 06 §1.1), et la dérive `CAT-CMT` du chapitre 02 en vérifie la conformité. Une colonne de lien sans description porte le texte généré du §4.1 (« Lien vers Clients… ») plutôt que son libellé.
 
+**L'ordre des champs est celui du catalogue** (`field.position`), pas celui de la relation. On le règle dans l'écran de structure, en faisant glisser les champs, ou par `PUT …/tables/{table}/fields/order` avec la liste complète des noms physiques ; un champ que la liste ne nomme pas — ajouté entre-temps — garde son rang relatif après les autres. La grille, l'API, la documentation et les agents suivent cet ordre ; les cinq colonnes système restent en tête. L'ordre des colonnes dans PostgreSQL, fixé à l'`ADD COLUMN`, ne bouge pas : le changer réécrirait la table sous verrou exclusif pour un effet purement visuel, et `SELECT *` en SQL direct garde l'ordre de création.
+
 **Règle d'émission des littéraux, valable pour tout le DDL de ce chapitre.** Le chapitre 01 §10.2 pose l'invariant sur les *identifiants* : aucune chaîne utilisateur n'est concaténée, seuls des noms issus du registre le sont, les valeurs passent par des paramètres liés. Le DDL n'accepte cependant aucun paramètre lié. **Trois** littéraux de ce chapitre proviennent de données utilisateur : le texte d'un `COMMENT ON` (table ou colonne), les valeurs d'options dans `ck_…__enum` (§3), les constantes d'une expression de formule (§7.6). Pour ces trois, et pour eux seuls :
 
 1. le littéral est produit par `quote_literal()` côté serveur ou par l'équivalent exact de `format('%L', …)` côté application — jamais par concaténation de guillemets simples ;
@@ -44,13 +46,15 @@ Un champ fabrique en base un ensemble fini d'objets, entièrement déterminé pa
 | `ck_<table>__<colonne>__enum` | `rule = 'enum'`, référencée par `field_select_config.enum_constraint_id` | `select` |
 | `ck_<table>__<colonne>__format` | `rule = 'format'` | `long_text` en variante riche |
 | `ck_<table>__<colonne>__not_null` | `rule = 'not_null'`, **échafaudage temporaire** | passage à `is_required` (§1.3) |
+| `ck_<table>__<colonne>__files` | `rule = 'files'` | `file`, `image` (§3 bis) |
+| `ck_<table>__<colonne>__url` | `rule = 'url'` | `url` (§2.7) |
 | `fk_<table>__<colonne>` | `table_constraint` de `kind = 'foreign_key'`, pointée par `field_link_config.fk_constraint_id` | `link` |
 | `uq_<table>__<colonne>` | `table_constraint` de `kind = 'unique'` + `table_constraint_member` | unicité demandée (§1.6) |
 | `ix_<table>__<colonne>` | `table_index`, `method = 'btree'` ; pour un lien, pointé par `field_link_config.fk_index_id` | `field.is_sortable`, ou champ lien (d'office) |
 | `ix_<table>__<colonne>_2` | `table_index`, `method = 'gin'`, `expression_kind = 'trigram'` | `field.is_searchable` sur un champ texte |
 | index partiel booléen | `table_index`, `predicate_kind = 'true'` ou `'false'` | `field_boolean_config.indexed_side <> 'none'` |
 
-Le suffixe `<regle>` des contraintes de vérification est le **vocabulaire fermé** que le chapitre 01 §9.1 délègue ici et que porte `table_constraint.rule`. Il est arrêté à six valeurs : `enum`, `range`, `not_empty`, `format`, `length`, `not_null`. Aucune autre n'existe. La finitude du §1.7 est portée par `range`, et non par une septième règle : borner et exclure l'infini sont la même idée.
+Le suffixe `<regle>` des contraintes de vérification est le **vocabulaire fermé** que le chapitre 01 §9.1 délègue ici et que porte `table_constraint.rule`. Il est arrêté à huit valeurs : `enum`, `range`, `not_empty`, `format`, `length`, `not_null`, et, venues avec leurs types, `files` (§3 bis) et `url` (§2.7). Aucune autre n'existe. La finitude du §1.7 est portée par `range`, et non par une septième règle : borner et exclure l'infini sont la même idée.
 
 **Tous ces noms sont alloués par le registre `_basedb.physical_name`**, avec l'échappement, la répartition du budget par composant et la boucle de suffixe du chapitre 01 §9.6. Aucun nom n'est assemblé puis émis tel quel en comptant sur la troncature silencieuse de PostgreSQL à 63 octets : deux noms partageant leurs 63 premiers octets désigneraient le même objet, et le `DROP CONSTRAINT` ultérieur échouerait en `42704` au milieu d'un plan. Le cas n'est pas théorique : `ix_<table>__<colonne>` sur une colonne système d'horodatage atteint 64 octets avec un nom de table de 48 octets.
 
@@ -337,7 +341,9 @@ Même type SQL, `is_multiline = true`, `max_length` nul par défaut avec un plaf
 
 La recherche, elle, est possible : un champ long marqué `is_searchable` reçoit l'index GIN trigramme du §1.8, dont il faut connaître le prix — l'index d'un corpus de notes est fréquemment plus volumineux que les données, et chaque écriture le met à jour. Sans lui, `contains` est servi par balayage et tombe sous la borne du §1.9.
 
-**TOAST.** Une valeur dépassant environ 2 kilooctets par ligne part en stockage externe et est décompressée à chaque lecture de la colonne. **Un champ `long_text` n'est donc jamais projeté dans une lecture de liste** : la grille ne le sélectionne pas, seule la vue détail le lit. C'est une décision de projection ; le paramètre qui permettrait à un consommateur de le demander explicitement appartient au chapitre 08.
+**TOAST.** Une valeur dépassant environ 2 kilooctets par ligne part en stockage externe et est décompressée à chaque lecture de la colonne. *Décision révisée* : ce paragraphe excluait le texte long de toute lecture de liste. La grille le lit désormais, pour en montrer un extrait et l'éditer sur place (chapitre 11 §1.1 et §3.2) : la décompression est bornée à une page de cent lignes, et un consommateur qui n'a pas l'usage de la colonne la retire par `fields` (chapitre 08).
+
+**Markdown, par convention d'écran.** Le texte long simple est **stocké tel qu'il a été tapé** : l'interface l'écrit et le rend en Markdown, mais la colonne ne porte ni HTML ni forme canonique, et aucune contrainte n'en vérifie la syntaxe — un texte sans balisage est un Markdown valide. Le rendu n'interprète jamais de HTML (chapitre 11 §3.2) ; c'est ce qui le distingue de la variante riche, dont le stock est du HTML assaini.
 
 **Variante riche (`is_rich = true`, `sanitizer_profile = 'rich'`).** Le champ stocke du HTML, et l'assainissement est **à l'écriture, côté serveur, sur tous les chemins** — API REST, MCP, UI, import. *Alternative rejetée* : stocker le HTML brut et assainir à la lecture — refait le travail à chaque lecture et laisse une donnée dangereuse en base, exportable par n'importe quel consommateur SQL. Le profil `rich` est le seul défini en v1 ; `basic`, prévu par le catalogue, n'est pas exposé.
 
@@ -424,6 +430,24 @@ Refuser une entrée sans décalage en mode `utc` est délibéré : `"2026-09-18T
 Filtres et tri comme pour la date, bornes absolues comprises. Index btree `("c", "_id")` si `is_sortable`.
 
 Piège à documenter : `extract(year from …)` sur un `timestamptz` dépend du fuseau de session. C'est la raison pour laquelle les fonctions de date des formules ne s'appliquent qu'aux champs de `kind = 'date'` (§7.3).
+
+### 2.7 `url` — lien URL, `text`
+
+*Ajout.* Une adresse web ou de courriel, que l'écran rend cliquable. À ne pas confondre avec la **relation** (`link`, §4), qui pointe vers une ligne d'une autre table.
+
+| Élément | Valeur |
+|---|---|
+| Type PostgreSQL | `text` |
+| Contraintes | `ck_<table>__<colonne>__url` : `"c" IS NULL OR (char_length("c") <= 2048 AND "c" ~* '^(https?://[^[:space:]]+|mailto:[^[:space:]@]+@[^[:space:]]+)$')` |
+| Configuration | aucune : pas de satellite (`field_kind.has_config = false`) |
+| JSON entrée | chaîne ; `null` ou `""` effacent ; tout autre type JSON → `VALUE_INVALID` (`adresse_url`) |
+| JSON sortie | chaîne ou `null` ; `"format": "uri"`, `maxLength: 2048` dans OpenAPI |
+| Filtres | ceux du texte court (§9) |
+| Index | aucun par défaut ; btree si `is_sortable` |
+
+**Deux schémas pour les liens web, un pour le courriel, et rien d'autre** : `javascript:`, `data:` ou `file:` ne franchissent ni le noyau ni la contrainte, et l'écran n'ouvre un lien que si son schéma est l'un de ces trois. **Le noyau complète une saisie évidente** avant de la vérifier : `exemple.fr/tarifs` devient `https://exemple.fr/tarifs`, `marie@exemple.fr` devient `mailto:marie@exemple.fr`. Le complément est écrit tel quel : la valeur stockée est celle qu'on lit, sans deuxième interprétation à la lecture. Une adresse de plus de 2 048 caractères, ou contenant une espace, est refusée — une URL plus longue ne passe plus dans la barre d'adresse de certains navigateurs, et une espace est la marque d'une phrase collée par erreur.
+
+La contrainte suit le patron des autres `ck_…` : allouée au registre (règle `url`), posée à la création du champ, et juste après le `CREATE TABLE`, dans la même transaction, pour un champ créé avec sa table. Une ligne écrite en SQL direct avec une adresse sans schéma est refusée par la contrainte, là où l'API l'aurait complétée (§1.12).
 
 ---
 
@@ -546,7 +570,9 @@ Un `CASE` et non un `AND` : PostgreSQL ne promet pas l'ordre d'évaluation d'un 
 
 ---
 
-## 4. `link` — lien vers une autre table
+## 4. `link` — relation vers une autre table
+
+*Libellé produit :* le type s'affiche **« Relation »** partout où une personne le lit — écran, documentation générée, descriptions MCP. Le code et le catalogue gardent `link`, et la prose de ce document dit encore « lien » ou « champ lien » pour la relation ; le type `url` (§2.7), affiché « Lien URL », est tout autre chose : une adresse, pas une ligne.
 
 Un champ lien matérialise une vraie contrainte `FOREIGN KEY` PostgreSQL, en « plusieurs vers un », le « plusieurs vers plusieurs » avec table de jonction étant renvoyé en v2. Ce chapitre spécifie la projection, le type, les contraintes et les pré-contrôles ; l'ordre des étapes, les verrous et la reprise appartiennent au chapitre 03.
 
@@ -888,6 +914,55 @@ PostgreSQL 16 ne connaît pas `ALTER TABLE … ALTER COLUMN … SET EXPRESSION`.
 
 ---
 
+## 7 bis. L'option IA — un champ calculé par l'IA
+
+*Décision du propriétaire*, qui rouvre INV-IA1 et INV-IA2 pour cette seule option : le chapitre 12 (§ 1.5) dit dans quelles bornes. Ce paragraphe dit ce que devient la colonne.
+
+*Décision révisée* : l'IA était d'abord un **type**, `ai`, une colonne `text`. Elle est désormais une **option** que porte un champ de l'un de ces sept types : `short_text`, `long_text`, `url`, `number`, `select`, `boolean`, `date`. La colonne garde son type, ses contraintes, ses filtres et son rendu ; le satellite `_basedb.field_ai_config` dit seulement qu'elle est calculée, et comment. Un nombre extrait d'un texte se trie comme un nombre, une catégorie proposée par le modèle se filtre comme une liste de choix — ce qu'une colonne `text` n'aurait jamais permis. Les autres types n'en veulent pas (`REQUEST_INVALID`, `type_sans_ia`) : une date-heure demanderait un fuseau que le modèle ne connaît pas, un fichier des octets, une relation un identifiant qu'il ne peut pas inventer, une formule est déjà calculée. Le satellite porte le type du champ, sous une clé étrangère composite `(field_id, kind)` vers `field`, et son `CHECK` liste les sept : un type qui n'y figure pas ne peut pas recevoir l'option, même par une écriture directe du catalogue.
+
+**Activer, désactiver.** L'écran de champ porte un interrupteur « IA ». L'activer sur un champ existant pose le satellite — consigne, régime, consentement, comme à la création — et retire la colonne des masques d'écriture ; le désactiver supprime le satellite, et le champ redevient un champ ordinaire, ses valeurs calculées gardées telles quelles. Dans les deux cas le champ est touché (`updated_at`), ce qui fait avancer la version du catalogue : lecteurs et agents voient le changement à leur lecture suivante.
+
+**Une colonne que seul le noyau écrit.** Son auteur écrit une **consigne** qui cite d'autres colonnes de la ligne — `Résume {{Notes}} pour {{Client}} en une phrase` — et choisit **quand** elle s'exécute. Le noyau lit les valeurs citées, les met à la place des citations, pose la question au fournisseur du tenant et écrit la réponse dans la cellule. Aucune personne, aucun jeton, aucun agent n'écrit la colonne tant que l'option est active : le décideur la retire de tout masque d'écriture (`FIELD_NOT_WRITABLE`), comme une formule. Elle ne peut pas être rendue obligatoire (`REQUEST_INVALID`, `champ_ia`) : une ligne naît sans valeur, puisque personne ne peut lui en donner une.
+
+**La réponse est lue dans le type du champ.** Le modèle répond toujours une chaîne ; le noyau lui dit laquelle est attendue (`expected_format`), et la relit :
+
+| Type | Ce qui est demandé | Ce qui est lu |
+|---|---|---|
+| `short_text` | un texte court, sur une ligne | la réponse, ses retours à la ligne remplacés par des espaces |
+| `long_text` | texte libre | la réponse telle quelle |
+| `url` | une adresse complète, `https://` ou `mailto:` | la première adresse de la réponse, normalisée comme une saisie (§2.7) |
+| `number` | un nombre seul, point décimal | le premier nombre, espaces de milliers et virgule décimale compris |
+| `select` | exactement une des options, par son libellé | l'option dont la valeur ou le libellé égale la réponse (casse, accents et guillemets ignorés), à défaut **la seule** option nommée dans la réponse |
+| `boolean` | « oui » ou « non » | le premier mot : oui, yes, vrai, true, 1 — ou leurs contraires |
+| `date` | `AAAA-MM-JJ` | la première date ISO, ou `JJ/MM/AAAA`, **qui existe** (`2026-02-30` n'en est pas une) |
+
+Une réponse où rien ne se lit n'est **pas forcée** dans le type : elle est refusée (`AI_RESPONSE_UNUSABLE`, `type_attendu`), la cellule reste vide, et la ligne est reprise plus tard, de moins en moins souvent (chapitre 12 § 1.5). Écrire ce que le modèle n'a pas dit — un zéro pour un nombre illisible, la première option pour une catégorie ambiguë — serait pire qu'une cellule vide.
+
+**La consigne cite par libellé, le catalogue garde le nom physique.** `{{Notes}}`, `{{ notes }}` et `{{notes}}` désignent la même colonne (libellé plié comme au §1.8, ou nom physique) ; `_basedb.field_ai_config.prompt` la garde sous `{{notes}}`, qui survit au renommage du libellé. Une citation qui ne désigne aucune colonne **lisible par l'auteur** est refusée en la nommant (`variable_inconnue`) : une consigne qui lirait du vide là où une colonne était voulue remplirait mille cellules de non-sens avant qu'on s'en aperçoive. Un champ ne se cite pas lui-même (`variable_circulaire`). Consigne : 1 à 8 000 caractères (`ck_ai_prompt`).
+
+**Chaque valeur est lue comme une personne la lit** : un choix par son libellé, un choix multiple par ses libellés séparés de virgules, un lien par la valeur d'affichage de la cible, un fichier par son nom, un nombre sans ses zéros de fin, un booléen par « oui »/« non », une cellule vide par `(vide)`. Une valeur est coupée à 4 000 caractères ; la réponse, validée contre le schéma `{ "value": string }`, est coupée à 10 000.
+
+**Deux régimes de rafraîchissement** (`refresh_mode`) :
+
+| Régime | Ce qui est calculé |
+|---|---|
+| `if_empty` | Toute cellule vide, au prochain passage : une ligne créée est remplie dans les secondes qui suivent, et une ligne dont une colonne citée change est recalculée de même |
+| `schedule` | Les cellules vides, **et** toutes les lignes à chaque échéance d'une expression cron |
+
+**Une colonne citée qui change rejoue le calcul**, dans les deux régimes. La réponse vaut pour les valeurs qu'elle a lues : si l'une d'elles change, elle ne vaut plus pour la ligne. `updateRecord` vide donc la cellule dans la même instruction — `"resume" = CASE WHEN "notes" IS DISTINCT FROM $1 THEN NULL ELSE "resume" END` —, et le prochain passage la remplit comme une cellule neuve. `IS DISTINCT FROM` et non la seule présence de la colonne dans l'écriture : réécrire une valeur telle qu'elle était ne coûte pas d'appel. Seule l'écriture d'une personne, d'un jeton ou d'un agent vide la cellule ; celle du noyau non : un champ calculé par l'IA et cité par un autre n'invalide pas ce dernier quand il est recalculé, sans quoi deux champs qui se citent l'un l'autre se recalculeraient sans fin, un appel à chaque fois.
+
+**Une cellule vide n'est pas une cellule sans réponse** — pour les deux types texte, les seuls qui ont une valeur vide à écrire. `NULL` veut dire *à calculer* ; `''` veut dire *calculé, et la réponse est vide*. (Les autres types n'ont pas de `''` : quand les colonnes citées sont vides, ou que la réponse est vide, la cellule reste `NULL` et la ligne est reprise selon le recul du chapitre 12 § 1.5, `AI_RESPONSE_UNUSABLE`, `rien_a_lire` ou `type_attendu`.) Quand toutes les colonnes citées d'une ligne sont vides, le modèle n'a rien à lire : la ligne ne lui est pas envoyée, et la cellule reçoit `''` sans appel. Quand le modèle répond vide — sa consigne le lui demande « faute de données » —, c'est une réponse, écrite telle quelle. Dans les deux cas la cellule est réglée : laissée à `NULL`, elle serait reprise à chaque passage, un appel à chaque fois, sans jamais rien donner. Remplir une colonne citée la vide, et elle est calculée alors. Une consigne qui ne cite aucune colonne ne demande pas de données et s'exécute toujours. L'écran montre `''` comme un tiret, et un `NULL` comme un calcul en cours.
+
+L'expression cron a cinq champs (minute, heure, jour du mois, mois, jour de semaine), avec `*`, listes, intervalles et pas ; un jour satisfaisant **l'une ou l'autre** des deux restrictions de jour convient, comme dans tout cron. Elle est lue dans le **fuseau de l'auteur** (`refresh_timezone`, IANA) : « tous les jours à 8 h » reste 8 h de part et d'autre du changement d'heure. Sont refusées une expression invalide (`cron_invalide`, avec le champ fautif), un fuseau inconnu (`fuseau_inconnu`), une expression qu'aucune date ne satisfait (`cron_sans_date`, `0 0 31 2 *`) et **deux exécutions à moins de 15 minutes** (`frequence_trop_haute`) : chaque exécution est un appel par ligne. L'écran construit l'expression à partir de fréquences nommées — toutes les N minutes ou heures, tous les jours, chaque semaine, chaque mois — et montre les cinq prochains passages, calculés par le serveur.
+
+**« Recalculer »** une ligne est un acte de personne, qui demande `update` sur la table et écrase la valeur, quelle qu'elle soit. **« Tout recalculer »** (`manage_schema`) repasse sur toutes les lignes, en arrière-plan ; changer la consigne le propose.
+
+**Filtres, tri, rendu** : ceux du type du champ (§9) — l'option n'en retire ni n'en ajoute aucun.
+
+**Écarts avec l'écriture SQL directe (§1.12).** Rien n'empêche un `UPDATE` en psql d'écrire la colonne : aucune contrainte ne sait qui écrit. La valeur sera réécrite au prochain recalcul planifié, ou jamais en régime `if_empty`. De même, un `UPDATE` en psql d'une colonne citée ne vide pas la cellule : c'est le noyau qui le fait en écrivant, pas une contrainte ni un déclencheur. L'historique nomme l'auteur — `system` pour le noyau, la personne pour « Recalculer », `sql_direct` sinon.
+
+---
+
 ## 8. Conversions entre types
 
 Le `kind` d'un champ est immuable (chapitre 02). Une « conversion » est une procédure qui produit un plan de migration ordinaire, en six étapes **dans cet ordre**. **Cette matrice et cette procédure sont les seules du document** ; les autres chapitres y renvoient.
@@ -969,10 +1044,11 @@ Quinze opérateurs, et aucun autre : les treize de la v1, et les deux du choix m
 | `select` | `text` | `ck__not_empty`, `ck__enum` | `eq`, `ne`, `in`, `is_null` | aucun ; btree si `is_sortable` |
 | `multi_select` | `text[]` | `ck__enum` (`<@`, non vide, à une dimension) | `has_any`, `has_all`, `is_null` | aucun ; GIN si le volume l'exige. Pas de tri |
 | `file` / `image` | `jsonb` (liste de fichiers) | `ck__files` (tableau de 1 à 20 entrées) | `is_null` | aucun. Pas de tri |
-| `link` | `uuid` | `fk_<table>__<colonne>` (`NO ACTION` pour `restrict`, `SET NULL` en option, `CASCADE` réservé) | `eq`, `ne`, `in`, `is_null` ; sur la valeur d'affichage de la cible : `contains`, `starts_with`, `eq_ci`, avec jointure, un seul niveau | **`ix_<table>__<colonne>` systématique**, sur `("c","_id")` — remplacé par `uq_<table>__<colonne>` si le champ est unique |
+| `url` | `text` | `ck__url` (`http(s)://` ou `mailto:`, 2 048 caractères) | idem `short_text` | aucun ; btree si `is_sortable` |
+| `link` (« Relation ») | `uuid` | `fk_<table>__<colonne>` (`NO ACTION` pour `restrict`, `SET NULL` en option, `CASCADE` réservé) | `eq`, `ne`, `in`, `is_null` ; sur la valeur d'affichage de la cible : `contains`, `starts_with`, `eq_ci`, avec jointure, un seul niveau | **`ix_<table>__<colonne>` systématique**, sur `("c","_id")` — remplacé par `uq_<table>__<colonne>` si le champ est unique |
 | `formula` | type du résultat, généré `STORED` | celles du type de résultat | ceux du type de résultat | selon `is_sortable` et l'unicité |
 
-`NOT NULL` s'ajoute à toute colonne dont `field.is_required` est vrai — sauf `formula`, qui ne peut pas l'être. `uq_<table>__<colonne>` s'ajoute à toute colonne portant une contrainte d'unicité — sauf `long_text`, qui ne peut pas en porter. `is_null` se lit partout `"c" IS NULL`, la chaîne vide n'existant pas en base (§1.3).
+`NOT NULL` s'ajoute à toute colonne dont `field.is_required` est vrai — sauf `formula` et un champ calculé par l'IA (§7 bis), qui ne peuvent pas l'être. L'option IA ne change rien d'autre à cette ligne du tableau : un `number` calculé par l'IA a les contraintes, les opérateurs et les index d'un `number`. `uq_<table>__<colonne>` s'ajoute à toute colonne portant une contrainte d'unicité — sauf `long_text`, qui ne peut pas en porter. `is_null` se lit partout `"c" IS NULL`, la chaîne vide n'existant pas en base (§1.3).
 
 ---
 

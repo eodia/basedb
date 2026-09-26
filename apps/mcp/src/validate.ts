@@ -178,6 +178,29 @@ export class Checker {
   }
 
   /** Refuses the call if anything was faulted. */
+  /**
+   * A list of objects, bounded in length — each entry is then checked by the tool, which
+   * knows its shape, through `entry()`.
+   */
+  objects(key: string, max: number, required = false): Array<Record<string, unknown>> | undefined {
+    const v = this.params[key]
+    if (v === undefined) return required ? this.fault(key) : undefined
+    if (
+      !Array.isArray(v) ||
+      v.length === 0 ||
+      v.length > max ||
+      !v.every((x) => typeof x === 'object' && x !== null && !Array.isArray(x))
+    ) {
+      return this.fault(key)
+    }
+    return v as Array<Record<string, unknown>>
+  }
+
+  /** Records a fault found by the tool itself, at a path it names (`fields[2].kind`). */
+  entry(path: string, ok: boolean): void {
+    if (!ok) this.faults.push(path)
+  }
+
   done(): void {
     if (this.faults.length > 0) throw parameterInvalid(this.faults)
   }

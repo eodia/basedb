@@ -165,8 +165,14 @@ export function buildView(ctx: RequestContext, grants: ActorGrants, raw: RawCata
           // Rich text is refused in writing on this surface in v1: the agent read it
           // flattened, and writing it back would lose the markup silently (§6.2). Files
           // too: a file is deposited by a person, through the interface or the REST API,
-          // and an agent has no bytes to deposit.
-          writable: granted && row.kind !== 'formula' && !row.is_rich && !isFileKind(row.kind),
+          // and an agent has no bytes to deposit. A field computed by the AI is the
+          // kernel's to write: the decider already kept it out of `granted`.
+          writable:
+            granted &&
+            row.kind !== 'formula' &&
+            !row.has_ai &&
+            !row.is_rich &&
+            !isFileKind(row.kind),
           grantedWrite: granted,
           link: linkByField.get(row.id) ?? null,
         })

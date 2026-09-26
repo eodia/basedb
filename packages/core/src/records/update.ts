@@ -1,4 +1,5 @@
 import { qualify, quoteIdentifier } from '@basedb/naming'
+import { loadAiDependents, staleAiAssignments } from '../ai/field.js'
 import { isFileKind } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { type Action, SYSTEM_COLUMNS, decide } from '../rbac/decide.js'
@@ -107,6 +108,8 @@ export async function updateRecord(
 
       const assignments: string[] = []
       const params: unknown[] = []
+      /** The parameter holding each assigned column's new value. */
+      const placeholders = new Map<string, string>()
       const values = await shapeValues(exec, c.shaped, c.writable, options.values)
 
       for (const [name, value] of Object.entries(values)) {
@@ -119,6 +122,7 @@ export async function updateRecord(
           throw new BasedbError('FIELD_NOT_WRITABLE', { details: { field: name } })
         }
         params.push(value)
+        placeholders.set(name, `$${params.length}`)
         assignments.push(`${quoteIdentifier(name)} = $${params.length}`)
       }
 
@@ -127,6 +131,11 @@ export async function updateRecord(
           details: { reason: 'no writable value supplied' },
         })
       }
+
+      // An AI cell answers for the values its prompt cites: change one, and the cell is
+      // emptied for the worker to compute again (chapter 12 §1.5).
+      const dependents = await loadAiDependents(exec, options.tableId)
+      assignments.push(...staleAiAssignments(dependents, placeholders))
 
       // `_updated_at` and `_updated_by` are held by the kernel, never by the caller.
       params.push(ctx.actor.id)
@@ -148,7 +157,8 @@ RETURNING ${returning};`,
     { readOnly: true },
   )
 
-  const rows = await pools.withConnection('data', (exec) =>
+  // With the actor, so that the history names who changed the row (chapter 07 §2.1).
+  const rows = await withTransaction(pools, 'data', ctx, (exec) =>
     exec.query(plan.sql, plan.params, 'update'),
   )
 
@@ -187,7 +197,8 @@ export async function deleteRecord(
     { readOnly: true },
   )
 
-  const rows = await pools.withConnection('data', (exec) =>
+  // With the actor, so that the history names who deleted the row (chapter 07 §2.1).
+  const rows = await withTransaction(pools, 'data', ctx, (exec) =>
     exec.query<{ _id: string }>(plan.sql, plan.params, 'delete'),
   )
 

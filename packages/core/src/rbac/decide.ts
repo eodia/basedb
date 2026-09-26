@@ -76,6 +76,12 @@ export interface Target {
   readonly agentHiddenFieldIds?: readonly string[]
   /** `base.mcp_enabled = false`: on the `mcp` surface the target does not exist. */
   readonly agentsExcluded?: boolean
+  /**
+   * Fields whose value the kernel computes — a formula, an AI field. Readable by whoever
+   * may read them, writable by NOBODY: whatever a role grants, a value written into them
+   * would be overwritten, or would disagree with what computes it.
+   */
+  readonly computedFieldIds?: readonly string[]
 }
 
 /** Snapshot of an actor's grants, computed once by the kernel. */
@@ -221,6 +227,10 @@ export function decide(
 
   let { capabilities, readable, writable } = own
   let reason = grants.isInstanceAdmin ? 'INSTANCE_ADMIN' : 'GRANTED'
+  if ((target.computedFieldIds ?? []).length > 0) {
+    const computed = new Set(target.computedFieldIds)
+    writable = new Set([...writable].filter((f) => !computed.has(f)))
+  }
 
   // A token: its role, intersected with its creator's reach, at every decision.
   if (grants.tokenRole !== undefined) {
@@ -285,25 +295,27 @@ function reach(
   allFields: readonly string[],
 ): Reach | null {
   // 3. Instance administrator: full mask, INSIDE the context's tenant.
-  if (isInstanceAdmin) return { capabilities: new Set(ACTIONS), ...mask(allFields, []) }
+  if (isInstanceAdmin) return { capabilities: new Set(ACTIONS), ...mask(allFields, [], true) }
 
   // 5, 6 and 7. Collect the roles, union their capabilities on the target.
   //
   // Only roles that grant `read` ON THIS TARGET take part in the mask: a role with no
   // right here can neither open nor restrict a field.
   const capabilities = new Set<Action>()
-  const readingRoles: Role[] = []
+  const readingRoles: Array<{ role: Role; writes: boolean }> = []
 
   for (const role of roles) {
     const held = reachCapabilities(role, target)
     for (const action of held) capabilities.add(action)
-    if (held.has('read')) readingRoles.push(role)
+    if (held.has('read')) {
+      readingRoles.push({ role, writes: held.has('create') || held.has('update') })
+    }
   }
 
   if (!capabilities.has('read')) return null
 
   // 8. Field mask.
-  return { capabilities, ...mask(allFields, readingRoles, capabilities) }
+  return { capabilities, ...mask(allFields, readingRoles) }
 }
 
 /**
@@ -315,36 +327,29 @@ function reach(
  */
 function mask(
   allFields: readonly string[],
-  readingRoles: readonly Role[],
-  capabilities: ReadonlySet<Action> = new Set(ACTIONS),
+  readingRoles: ReadonlyArray<{ readonly role: Role; readonly writes: boolean }>,
+  everything = false,
 ): { readonly readable: ReadonlySet<string>; readonly writable: ReadonlySet<string> } {
-  const hidden = new Set<string>()
-  const readOnly = new Set<string>()
-
-  // A field is subtracted only if EVERY role granting access subtracts it: the
-  // intersection, not the union. This is the trap §3.3 names — Bob, with `rh` having no
-  // field rule and `support` hiding `salaire`, SEES `salaire`. Taking the union here
-  // would silently turn each role into a veto over all the others, the opposite of an
-  // additive model.
-  if (readingRoles.length > 0) {
-    for (const field of allFields) {
-      const modes = readingRoles.map(
-        (r) => r.fieldRestrictions.find((f) => f.fieldId === field)?.mode,
-      )
-      if (modes.every((m) => m === 'hidden')) hidden.add(field)
-      else if (modes.every((m) => m === 'hidden' || m === 'read_only')) readOnly.add(field)
+  // §4.1, field by field: for each role, the field's level is its rule when it has one —
+  // `hidden` or `read_only`, a rule only ever subtracts — and otherwise what the role
+  // does on the table: `write` if it creates or modifies rows, `read` if it only reads.
+  // The field's level is the HIGHEST over the roles. Bob, with `rh` having no field rule
+  // and `support` hiding `salaire`, sees `salaire`; and a field made read-only by the
+  // only role that writes stays read-only, whatever the other roles that merely read.
+  const readable = new Set<string>()
+  const writable = new Set<string>()
+  for (const field of allFields) {
+    let level = everything ? 2 : 0
+    for (const { role, writes } of readingRoles) {
+      const rule = role.fieldRestrictions.find((f) => f.fieldId === field)?.mode
+      const own = rule === 'hidden' ? 0 : rule === 'read_only' ? 1 : writes ? 2 : 1
+      if (own > level) level = own
     }
+    if (level >= 1) readable.add(field)
+    if (level === 2) writable.add(field)
   }
-
-  const readable = new Set(allFields.filter((f) => !hidden.has(f)))
   // System columns are ALWAYS readable as soon as `read` is granted, are never
   // writable, and cannot carry a field restriction (A18).
   for (const systemColumn of SYSTEM_COLUMNS) readable.add(systemColumn)
-
-  const canWrite = capabilities.has('create') || capabilities.has('update')
-  const writable = new Set(
-    canWrite ? allFields.filter((f) => !hidden.has(f) && !readOnly.has(f)) : [],
-  )
-
   return { readable, writable }
 }

@@ -83,8 +83,12 @@ export function PaginationBar({
   const last = pageIndex * pageSize + rowCount
 
   return (
-    <footer className="flex h-11 shrink-0 items-center gap-2 border-t bg-background px-4 text-xs">
-      <span className="hidden text-muted-foreground sm:block">Lignes par page</span>
+    // A CONTAINER query, not a window one: the panel on the right can be widened until the
+    // grid is narrow in a wide window, and the label must give way to the buttons then.
+    <footer className="@container flex h-11 shrink-0 items-center gap-2 border-t bg-background px-4 text-xs">
+      <span className="hidden whitespace-nowrap text-muted-foreground @xl:block">
+        Lignes par page
+      </span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="h-7 gap-1 px-2 tabular-nums">
@@ -108,7 +112,7 @@ export function PaginationBar({
 
       <div className="flex-1" />
 
-      <span className="tabular-nums text-muted-foreground">
+      <span className="whitespace-nowrap tabular-nums text-muted-foreground">
         {rowCount === 0 ? (
           'Aucune ligne'
         ) : (

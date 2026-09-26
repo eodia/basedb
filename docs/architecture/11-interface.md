@@ -30,11 +30,14 @@ Une page de grille est **un appel** : `GET /data/{base}/{table}`, `fields` restr
 colonnes affichées, `links=display`, `limit=100`, curseur de la page précédente. Aucun
 `expand` : la grille affiche des valeurs d'affichage, pas des champs de la table cible.
 
-Ne sont **jamais** projetés en liste : les champs de type texte long, y compris riche —
-conséquence du déclenchement de TOAST énoncé par « Types de champs et projection vers
-PostgreSQL » — et les champs masqués, absents de la réponse. Une colonne de texte long
-affiche donc un indicateur binaire « renseigné / vide », jamais un extrait : un extrait
-exigerait de lire la valeur.
+Ne sont **jamais** projetés en liste les champs masqués, absents de la réponse. Le texte
+long, lui, l'est : une colonne qu'on ne peut pas lire depuis la grille est une colonne que
+personne ne lit. Sa cellule montre **une ligne de ce que dit le texte**, sans son balisage
+Markdown — titres, éléments de liste et paragraphes joints par « · », coupée à 280
+caractères —, le texte entier rendu au survol, et s'édite sur place (§3.2). Le prix est
+celui de TOAST (« Types de champs et projection vers PostgreSQL », § 2.2) : la valeur est
+décompressée à chaque lecture de la page, cent lignes au plus ; `fields` reste le moyen de
+ne pas la lire, pour un consommateur qui n'en a pas l'usage.
 
 `count` est absent par défaut ; un bouton « Compter » émet `count=exact`, et
 `count_is_capped` s'affiche « 100 000+ », jamais un nombre rond inventé.
@@ -72,7 +75,7 @@ un autre et n'en cache aucun. Pas de filtre relatif de date : les bornes sont ab
 ### 1.4 Colonnes
 
 Une disposition de grille nommée et partagée est une vue enregistrée `_basedb.view_def`
-(`kind = 'grid'`), dont `spec` porte filtres, tri, largeurs et ordre des colonnes ; la
+(`kind = 'grid'`, §1.6), dont `spec` porte filtres, tri, largeurs et ordre des colonnes ; la
 créer ou la modifier suppose `manage_schema` @ base (chapitre 05 §9), elle est partagée à
 l'échelle de la table et il n'existe pas de vue personnelle. Seule la surcharge locale non
 enregistrée — largeur tirée à la souris, colonne masquée à la volée — est persistée par
@@ -95,6 +98,81 @@ partir d'une position. Ce qui change est ce que l'interface cesse d'offrir :
 | Tri ou filtre non indexé | Refusé par le garde-fou de coût ; l'écran affiche le refus, la suggestion d'index et le tri indexé de repli |
 | Saut de page | N'existe pas, quel que soit le volume |
 | « Tout charger » | N'existe pas : pas de mode dégradé, pas de route d'export (A21) |
+
+### 1.6 Les vues enregistrées
+
+Une table se montre de six façons, chacune une vue `_basedb.view_def` (chapitre 02) :
+**grille**, **kanban**, **calendrier**, **chronologie** — qui montrent des lignes — et
+**formulaire**, **questionnaire** — qui en demandent une. Le sélecteur de vues est le
+premier élément de la barre d'outils, **à gauche de « Filtrer »**. Il ouvre la liste :
+« Toutes les lignes » d'abord — la grille de la table, que personne n'a enregistrée ni ne
+peut supprimer, où tout lecteur retrouve toutes les lignes avec sa surcharge locale —,
+puis les vues dans l'ordre que leur a donné quiconque construit la base, par glisser-
+déposer ou au clavier. Cet ordre est celui de tous : les vues sont partagées. Un onglet
+retient la vue qu'il montre ; une vue supprimée entre-temps le ramène sur la grille de la
+table.
+
+Créer, configurer, renommer, dupliquer, réordonner et supprimer une vue supposent
+`manage_schema` (chapitre 05 §9) ; les autres lecteurs choisissent parmi elles, et le
+filtre ou le tri qu'ils essaient par-dessus reste leur surcharge locale.
+
+**Le dialogue de création** demande, selon la nature :
+
+| Nature | Champs pivots (obligatoires en gras) | Champs affichés |
+|---|---|---|
+| Grille | — | colonnes cochées et ordonnées ; les autres sont masquées |
+| Kanban | **colonnes selon** une liste de choix, leur ordre se réglant ensuite en glissant leurs en-têtes ; titre, image de couverture ; masquer les colonnes vides | champs sous le titre de la carte |
+| Calendrier | **date** ; date de fin, titre, couleur selon une liste de choix ; mois ou semaine | champs sous le titre, en semaine |
+| Chronologie | **début** ; fin, regroupement par liste de choix ou lien, titre, couleur ; échelle jour, semaine ou mois | champs dans la barre |
+| Formulaire, questionnaire | — | questions cochées et ordonnées ; pour chacune un intitulé, une aide, « réponse obligatoire » ; titre, présentation, libellé du bouton, message après l'envoi, « proposer une nouvelle réponse » |
+
+Chaque pivot est prérempli sur le premier champ qui peut le tenir, si bien qu'une table
+qui admet la nature obtient sa vue en un clic ; une nature qu'elle n'admet pas — pas de
+liste de choix pour un kanban, pas de date pour un calendrier — dit pourquoi et renvoie à
+l'écran « Structure ». Un champ obligatoire de la table est toujours demandé par un
+formulaire, verrouillé : la ligne serait refusée sans lui. Une vue qui montre des lignes
+peut reprendre le filtre et le tri affichés au moment de la créer.
+
+**Ce que chaque vue fait des lignes.** Le kanban lit **chaque colonne par sa propre
+requête** — le filtre de la vue et « `statut eq "x"` », page après page, avec son
+décompte — plutôt que de trier une page en colonnes, qui ferait paraître vide une colonne
+dont les lignes viennent après ; glisser une carte écrit le choix, un `PATCH` d'un champ,
+affiché aussitôt et remis en place si la base le refuse. Glisser l'en-tête d'une colonne la
+déplace : l'ordre est celui de la **vue** (`spec.group_order`, des valeurs de choix), écrit
+par qui détient `manage_schema`, jamais celui de la liste de choix, qui reste le même
+partout ailleurs ; un choix ajouté depuis va en dernier, « Sans valeur » reste en tête. Le
+calendrier et la chronologie
+ne demandent que les lignes de leur **fenêtre**, par une clause de dates jointe au filtre
+de la vue — le début dans la fenêtre, ou, avec une fin, toute ligne qui la chevauche —,
+jusqu'à mille lignes, au-delà desquelles l'écran dit de resserrer le filtre plutôt que de
+prétendre tout montrer. Glisser une ligne d'un jour à l'autre, ou une barre, la décale
+d'autant de jours, sa fin avec elle et son heure conservée ; le bord droit d'une barre
+change la fin seule. Les lignes sans date sont comptées, et listées dans le calendrier,
+pour qu'on les date. Le formulaire écrit **une** ligne par **un** `POST` à l'envoi, comme
+le panneau de création (§2.5) ; le questionnaire pose les mêmes questions une par écran,
+Entrée pour continuer. Un « + » dans une colonne de kanban ou un jour de calendrier ouvre
+une ligne déjà dotée de ce choix ou de cette date.
+
+**Partager un formulaire.** À qui détient `manage_schema`, un formulaire ou un
+questionnaire offre « Partager » — en haut de la vue et dans le menu de la vue du
+sélecteur. Le dialogue choisit **qui peut répondre** (« Public » ou « Membres
+connectés », restreints au besoin à des groupes), montre le lien à copier, à ouvrir ou à
+régénérer, un interrupteur « Lien actif », une date limite, un
+nombre maximal de réponses, le compte des réponses reçues, les questions que le lien ne
+posera pas et pourquoi, et au nom de qui les réponses s'écrivent. La page du lien,
+`/f/<jeton>`, est hors de l'application : le formulaire seul. Le chapitre 15 fixe le
+reste.
+
+**Modifiée, non enregistrée.** Changer le filtre, le tri ou les colonnes d'une vue
+enregistrée ne l'écrit pas : la barre dit « Vue modifiée » et offre « Enregistrer » —
+pour tous, à qui détient `manage_schema` — et « Rétablir ». Sur la grille de la table, un
+filtre, un tri ou des colonnes arrangées offrent « Enregistrer comme vue ».
+
+**Ce que le lecteur ne voit pas.** Le `spec` d'une vue lui parvient reprojeté (chapitre
+02) : un champ masqué pour lui disparaît des colonnes, des cartes et des questions, et un
+pivot masqué — ou supprimé, ce qui doit se lire de même — fait dire à la vue qu'elle ne
+peut pas être dessinée. Une vue dont le **filtre** cite un tel champ n'est pas montrée du
+tout : montrée sans filtre, elle montrerait plus qu'elle n'a été faite pour montrer.
 
 ---
 
@@ -189,9 +267,10 @@ qu'il se produit aussi lors d'une suppression faite directement en SQL.
 | Date | Date locale, valeur ISO envoyée | Sélecteur de date |
 | Date-heure | Mode `utc` : fuseau du lecteur. Mode `fixe` : fuseau du champ, affiché à côté | Décalage complété avant envoi ; une saisie sans décalage n'est jamais envoyée en mode `utc` |
 | Formule | Valeur du type de résultat, en lecture seule | **Aucune.** Une infobulle affiche l'expression réémise depuis son arbre, avec les libellés courants |
-| Texte long | Indicateur « renseigné / vide » (§1.1) | Vue détail uniquement |
+| Texte long | Extrait d'une ligne sans balisage, texte rendu au survol (§1.1) | Éditeur Markdown ouvert sur la cellule par un double clic ; rendu, et éditeur au clic, en vue détail (§3.2) |
+| Lien URL | L'adresse sans son schéma, lien ouvert dans un nouvel onglet | Saisie sur place (double clic) ; normalisée par le serveur |
 | Liste de choix | §3.1 | §3.1 |
-| Lien | §4 | §4 |
+| Relation | §4 | §4 |
 
 ### 3.1 Liste de choix
 
@@ -209,9 +288,19 @@ contrainte l'autorise toujours. Le choix multiple n'est pas exposé.
 
 ### 3.2 Texte long, et la variante HTML riche
 
-Le texte long simple s'édite en vue détail. La variante riche stocke du HTML déjà assaini
-à l'écriture, côté serveur ; la règle d'interface est celle que le chapitre 08 pose comme
-contrat du consommateur :
+**Le texte long simple s'écrit en Markdown**, et la colonne garde la source telle qu'elle a
+été tapée : psql lit le texte qu'une personne a écrit, le rendu est l'affaire de l'écran.
+L'éditeur — barre d'outils (titre, gras, italique, barré, listes, cases à cocher, citation,
+code, lien), source colorée, onglet « Aperçu » — s'ouvre par-dessus la cellule sur un double
+clic ; Ctrl+Entrée, le bouton ou un clic ailleurs enregistrent, Échap laisse la valeur
+telle qu'elle était. En vue détail, le texte est rendu, et un clic ouvre le même éditeur,
+enregistré à la perte du focus comme les autres champs. Le rendu **n'interprète jamais de
+HTML** — il construit des éléments, un `<script>` tapé dans une note s'affiche en texte —,
+ses liens partent dans un nouvel onglet, sans `opener`, et une image n'est qu'un lien : une
+image distante est une requête que le lecteur n'a pas choisi de faire.
+
+La variante riche stocke du HTML déjà assaini à l'écriture, côté serveur ; la règle
+d'interface est celle que le chapitre 08 pose comme contrat du consommateur :
 
 1. **Le HTML est réassaini au rendu**, sans exception : le stock peut avoir été écrit
    directement en SQL, donc sans passer par l'assainisseur. Le champ porte
@@ -224,7 +313,7 @@ contrat du consommateur :
 
 ---
 
-## 4. La cellule de lien
+## 4. La cellule de relation
 
 ### 4.1 Ce qui est affiché
 
@@ -506,9 +595,9 @@ par l'interface.
 — *Ouvrir*, *Importer…*, *Supprimer la table* — et un « ⋯ » au survol ouvre les mêmes trois
 entrées : le clic gauche reste ce qu'il était, ouvrir la table, et un écran tactile n'a pas de
 clic droit. *Supprimer* mène à la confirmation de §6.4 — la table est renommée, non détruite —
-et non à un raccourci qui la contournerait. *Importer* mène à l'assistant que la barre d'outils
-de la grille ouvre aussi : **une fonction qu'un menu contextuel est seul à offrir est une
-fonction que personne ne trouve.**
+et non à un raccourci qui la contournerait. *Importer* mène à l'assistant ci-dessous, et le
+« ⋯ » au survol le rend visible sans clic droit : **une fonction qu'un menu contextuel est seul
+à offrir est une fonction que personne ne trouve.**
 
 **L'assistant, en trois étapes** — aucune ne se saute, aucune n'envoie quoi que ce soit avant la
 dernière.
@@ -639,11 +728,14 @@ des jetons et des webhooks, renommage physique et alias, vues de grille partagé
 | Décision | Raison | Alternative écartée |
 |---|---|---|
 | L'interface est un consommateur ordinaire de `/api/v1` | Tout privilège d'interface contournerait le point d'application unique des droits | Des routes internes réservées au front |
+| Six natures de vue sur une seule table `view_def`, `spec` validé par nature et reprojeté pour le lecteur | Une vue est une présentation : ni droit propre ni donnée ; ses champs suivent le masque du lecteur comme la grille | Une table par nature de vue ; des vues personnelles |
+| Le kanban lit chaque colonne par sa propre requête ; calendrier et chronologie, leur fenêtre seule | Le coût reste celui d'une page par colonne ou par fenêtre, et aucune colonne ne paraît vide faute d'avoir été atteinte | Charger la table et la répartir à l'écran |
+| Une vue dont le filtre cite un champ invisible pour le lecteur n'est pas montrée | Un filtre ignoré élargit le résultat (chapitre 06 §4) | Montrer la vue sans son filtre |
 | Édition **optimiste**, à granularité de cellule, `If-Match` systématique | Latence perçue nulle sans état serveur ; conflit détecté par l'`ETag` | Verrou de cellule pessimiste |
 | La ligne entière est remplacée par la réponse | Normalisation, formules stockées, `display` et `_updated_at` ne sont connus que du serveur | Conserver la valeur saisie : la cellule ment jusqu'au rechargement |
 | `412` ouvre un panneau de rapprochement, jamais une fusion | Une fusion automatique écrase une écriture qu'on n'a pas vue | Dernier-écrivain-gagne silencieux |
 | Pas de saut de page, pas de total par défaut | `offset` n'existe pas ; un `count(*)` exact est la cause banale d'une grille lente | Pagination numérotée classique |
-| Texte long jamais projeté en grille | TOAST : la valeur est décompressée à chaque lecture de la colonne | Afficher un extrait, qui exige de lire la valeur |
+| Texte long projeté en grille : un extrait sans balisage, le rendu au survol, l'éditeur Markdown sur place | Une colonne illisible depuis la grille n'est pas lue ; la décompression TOAST est bornée à une page | Indicateur « renseigné / vide », édition en vue détail seulement — la première décision, revue à l'usage |
 | HTML riche **réassaini au rendu** | Le stock peut avoir été écrit en SQL direct, sans passer par l'assainisseur | Faire confiance au seul assainissement d'écriture |
 | Création de la cible depuis le sélecteur, **réduite et conditionnelle** | Le besoin est réel ; un formulaire complet imbriqué dans une cellule en édition ne l'est pas | Formulaire complet superposé ; interdiction totale |
 | Désambiguïsateur `_id` systématique dans les sélecteurs, conditionnel en cellule | Deux `display` identiques sont fréquents, la colonne d'affichage n'étant pas unique | Rendre la colonne d'affichage unique |

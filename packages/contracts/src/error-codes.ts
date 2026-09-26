@@ -7,7 +7,7 @@
 // to it, never rename one." The "Normative chapter" column alone is authoritative on a
 // code's parentage.
 //
-// 216 codes, 8 domains.
+// 225 codes, 8 domains.
 //
 // The `condition` strings are quoted verbatim from the French document, which is
 // authoritative on their wording.
@@ -67,6 +67,8 @@ export type ErrorCode =
   | 'DEFAULT_NOT_ALLOWED'
   | 'DEFAULT_VOLATILE_FORBIDDEN'
   | 'DEPENDENT_OBJECT'
+  | 'ENVIRONMENT_IS_PRODUCTION'
+  | 'ENVIRONMENT_MISMATCH'
   | 'EXPORT_STALE'
   | 'EXPORT_UNAVAILABLE'
   | 'FIELD_CONFIG_MISSING'
@@ -90,6 +92,9 @@ export type ErrorCode =
   | 'REQUIRED_NULL_VALUES'
   | 'RESIDUAL_SCHEMA'
   | 'STEP_DEFERRED'
+  | 'SYNC_REFERENCE_MISSING'
+  | 'SYNC_TABLE_MISSING'
+  | 'SYNC_VALUES_REFUSED'
   | 'TABLE_ATTRIBUTES_EXHAUSTED'
   | 'TABLE_MIGRATING'
   | 'TASK_IN_PROGRESS'
@@ -164,8 +169,10 @@ export type ErrorCode =
   | 'REQUIRED_VALUE_MISSING'
   | 'RESTORE_FIELD_CHANGED'
   | 'RESTORE_OUT_OF_RETENTION'
+  | 'RESTORE_RECORD_PRESENT'
   | 'RESTORE_TARGET_MISSING'
   | 'RETENTION_INCONSISTENT'
+  | 'REVISION_SUPERSEDED'
   | 'SORT_NOT_INDEXABLE_VOLUME'
   | 'TEXT_TOO_LONG'
   | 'TRUNCATE_FORBIDDEN'
@@ -200,6 +207,8 @@ export type ErrorCode =
   | 'FILTER_TOO_COMPLEX'
   | 'FILTER_TOO_LONG'
   | 'FILTER_VALUE_INVALID'
+  | 'FORM_CLOSED'
+  | 'FORM_RESTRICTED'
   | 'IDEMPOTENCY_CONFLICT'
   | 'IDEMPOTENCY_IN_PROGRESS'
   | 'IDEMPOTENCY_INTERRUPTED'
@@ -552,6 +561,22 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     chapter: '06',
     domain: 'structure_et_migrations',
   }),
+  ENVIRONMENT_IS_PRODUCTION: Object.freeze({
+    condition:
+      "Suppression de l'environnement de production seul : c'est la base entière qui se supprime",
+    httpStatus: 409,
+    httpStatusNote: null,
+    chapter: '14',
+    domain: 'structure_et_migrations',
+  }),
+  ENVIRONMENT_MISMATCH: Object.freeze({
+    condition:
+      "Comparaison, report de structure ou synchronisation entre deux bases qui ne sont pas deux environnements distincts d'une même base",
+    httpStatus: 422,
+    httpStatusNote: null,
+    chapter: '14',
+    domain: 'structure_et_migrations',
+  }),
   EXPORT_STALE: Object.freeze({
     condition: "Écriture détectée sur l'objet depuis l'export préalable",
     httpStatus: 409,
@@ -713,6 +738,30 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     httpStatus: null,
     httpStatusNote: null,
     chapter: '03',
+    domain: 'structure_et_migrations',
+  }),
+  SYNC_REFERENCE_MISSING: Object.freeze({
+    condition:
+      "Synchronisation de lignes dont une relation désigne une ligne absente de l'environnement cible",
+    httpStatus: 409,
+    httpStatusNote: null,
+    chapter: '14',
+    domain: 'structure_et_migrations',
+  }),
+  SYNC_TABLE_MISSING: Object.freeze({
+    condition:
+      "Synchronisation d'une table absente, supprimée ou sans colonne commune dans l'un des deux environnements",
+    httpStatus: 422,
+    httpStatusNote: null,
+    chapter: '14',
+    domain: 'structure_et_migrations',
+  }),
+  SYNC_VALUES_REFUSED: Object.freeze({
+    condition:
+      "Valeur recopiée refusée par une contrainte de l'environnement cible : la structure est à reporter d'abord",
+    httpStatus: 422,
+    httpStatusNote: null,
+    chapter: '14',
     domain: 'structure_et_migrations',
   }),
   TABLE_ATTRIBUTES_EXHAUSTED: Object.freeze({
@@ -902,7 +951,7 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
   }),
   AUTHORIZATION_REVOKED: Object.freeze({
     condition: "Revérification des droits ou du jeton en échec à l'approbation",
-    httpStatus: null,
+    httpStatus: 403,
     httpStatusNote: null,
     chapter: '09',
     domain: 'permissions_et_non_divulgation',
@@ -1241,6 +1290,13 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     chapter: '07',
     domain: 'donnees_et_validation',
   }),
+  RESTORE_RECORD_PRESENT: Object.freeze({
+    condition: "Restauration d'une ligne supprimée qui existe de nouveau",
+    httpStatus: 409,
+    httpStatusNote: null,
+    chapter: '07',
+    domain: 'donnees_et_validation',
+  }),
   RESTORE_TARGET_MISSING: Object.freeze({
     condition: 'Restauration référençant une ligne absente et hors périmètre',
     httpStatus: 422,
@@ -1251,6 +1307,13 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
   RETENTION_INCONSISTENT: Object.freeze({
     condition: 'Rétention des structures inférieure à celle des données (A24)',
     httpStatus: null,
+    httpStatusNote: null,
+    chapter: '07',
+    domain: 'donnees_et_validation',
+  }),
+  REVISION_SUPERSEDED: Object.freeze({
+    condition: "Annulation d'une modification dont un champ a changé depuis",
+    httpStatus: 409,
     httpStatusNote: null,
     chapter: '07',
     domain: 'donnees_et_validation',
@@ -1375,7 +1438,8 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     domain: 'api_et_integrations',
   }),
   AI_RESPONSE_UNUSABLE: Object.freeze({
-    condition: 'Réponse non conforme au schéma ou tronquée, après un réessai',
+    condition:
+      "Réponse non conforme au schéma ou tronquée, après un réessai ; ou, pour un champ calculé par l'IA, sans valeur lisible dans le type du champ",
     httpStatus: 502,
     httpStatusNote: null,
     chapter: '12',
@@ -1495,6 +1559,22 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     chapter: '08',
     domain: 'api_et_integrations',
   }),
+  FORM_CLOSED: Object.freeze({
+    condition:
+      "Réponse à un formulaire partagé désactivé, fermé, complet, ou dont la personne qui l'a publié ne peut plus ajouter de lignes",
+    httpStatus: 409,
+    httpStatusNote: null,
+    chapter: '15',
+    domain: 'api_et_integrations',
+  }),
+  FORM_RESTRICTED: Object.freeze({
+    condition:
+      "Formulaire partagé réservé à des groupes dont la personne connectée n'est pas membre",
+    httpStatus: 403,
+    httpStatusNote: null,
+    chapter: '15',
+    domain: 'api_et_integrations',
+  }),
   IDEMPOTENCY_CONFLICT: Object.freeze({
     condition: "Même clé d'idempotence, corps différent",
     httpStatus: 409,
@@ -1546,14 +1626,14 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
   }),
   PROPOSAL_EXPIRED: Object.freeze({
     condition: 'Proposition passée à expired au-delà de 24 heures',
-    httpStatus: null,
+    httpStatus: 409,
     httpStatusNote: null,
     chapter: '09',
     domain: 'api_et_integrations',
   }),
   PROPOSAL_STALE: Object.freeze({
     condition: 'catalog_version modifié depuis la proposition',
-    httpStatus: null,
+    httpStatus: 409,
     httpStatusNote: null,
     chapter: '09',
     domain: 'api_et_integrations',

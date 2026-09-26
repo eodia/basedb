@@ -38,9 +38,19 @@ describe('protocol negotiation (§15)', () => {
 })
 
 describe('the tool catalog (§2)', () => {
-  it('nine tools, lots 1 and 2, and no proposal tool', () => {
-    expect(TOOLS.map((t) => t.name)).toHaveLength(9)
-    expect(TOOLS.some((t) => t.name.startsWith('propose_'))).toBe(false)
+  it('twelve tools, lots 1 to 3 — and no proposal that deletes or renames', () => {
+    expect(TOOLS.map((t) => t.name)).toHaveLength(12)
+    expect(TOOLS.filter((t) => t.name.startsWith('propose_')).map((t) => t.name)).toEqual([
+      'propose_create_table',
+      'propose_add_field',
+    ])
+  })
+
+  it('a proposal tool is not read-only, and destroys nothing', () => {
+    for (const tool of TOOLS.filter((t) => t.name.startsWith('propose_'))) {
+      expect(tool.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false })
+      expect(tool.description).toContain('Ne modifie RIEN')
+    }
   })
 
   it('no declared tool carries a reserved name', () => {
@@ -56,7 +66,12 @@ describe('the tool catalog (§2)', () => {
 
   it('a tool is read-only exactly when its name says it reads', () => {
     const writes = TOOLS.filter((t) => t.annotations.readOnlyHint === false).map((t) => t.name)
-    expect(writes.sort()).toEqual(['create_record', 'update_record'])
+    expect(writes.sort()).toEqual([
+      'create_record',
+      'propose_add_field',
+      'propose_create_table',
+      'update_record',
+    ])
   })
 })
 

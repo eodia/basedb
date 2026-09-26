@@ -1,6 +1,18 @@
 'use client'
 
 import {
+  type AiDraft,
+  AiFieldForm,
+  AiStatusSummary,
+  AiToggle,
+  acceptsAi,
+  aiDraftOf,
+  aiInputOf,
+  aiReady,
+  emptyAiDraft,
+  sameAi,
+} from '@/components/app/ai-field'
+import {
   AddDescription,
   DescriptionEditor,
   DescriptionField,
@@ -11,11 +23,14 @@ import {
 } from '@/components/app/description'
 import { EditTableDialog } from '@/components/app/edit-table-dialog'
 import { FieldIcon, KIND_LABELS, KindLabel } from '@/components/app/field-icon'
+import { PhysicalRenameDialog, type PhysicalTarget } from '@/components/app/lifecycle-dialogs'
 import { NewTableDialog } from '@/components/app/new-table-dialog'
 import { LookIcon, OptionBadge } from '@/components/app/option-badge'
 import { OptionsEditor } from '@/components/app/options-editor'
+import { SortableFields } from '@/components/app/sortable-fields'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -34,6 +49,8 @@ import {
 } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
+  type AiFieldInput,
+  type AiFieldStatus,
   type DescribedBase,
   type Field,
   type FieldOptionInput,
@@ -44,7 +61,19 @@ import { messageFor } from '@/lib/messages'
 import { type OptionDraft, draftsOf, emptyDraft, optionsOf } from '@/lib/options'
 import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
-import { Check, Key, Link2, Pencil, Plus, Star, Table2, Trash2, X } from 'lucide-react'
+import {
+  Check,
+  CodeXml,
+  Key,
+  Link2,
+  Pencil,
+  Plus,
+  Sparkles,
+  Star,
+  Table2,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 /**
@@ -69,6 +98,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 const CREATABLE = [
   'short_text',
   'long_text',
+  'url',
   'number',
   'boolean',
   'date',
@@ -88,12 +118,18 @@ const hasChoices = (kind: string | undefined) => kind === 'select' || kind === '
  */
 const NOT_DISPLAYABLE = new Set(['link', 'long_text', 'boolean', 'multi_select', 'file', 'image'])
 
+/** The columns an AI prompt may cite: the table's own, the field itself excluded. */
+const citable = (table: Table, self?: string) =>
+  table.fields.filter((f) => f.system !== true && f.name !== self)
+
 interface Props {
   readonly base: DescribedBase
   readonly onChanged: () => Promise<void>
+  /** The administration role: physical names (chapter 06). */
+  readonly administers?: boolean
 }
 
-export function SchemaEditor({ base, onChanged }: Props) {
+export function SchemaEditor({ base, onChanged, administers = false }: Props) {
   const [openTable, setOpenTable] = useState<string | null>(base.tables[0]?.name ?? null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -102,6 +138,7 @@ export function SchemaEditor({ base, onChanged }: Props) {
   const [deleting, setDeleting] = useState<Table | null>(null)
   const [renaming, setRenaming] = useState<Table | null>(null)
   const [editing, setEditing] = useState<Field | null>(null)
+  const [physical, setPhysical] = useState<PhysicalTarget | null>(null)
 
   const table = base.tables.find((t) => t.name === openTable) ?? base.tables[0] ?? null
 
@@ -205,26 +242,55 @@ export function SchemaEditor({ base, onChanged }: Props) {
             />
 
             <div key={table.name} className="overflow-hidden rounded-xl border">
-              {table.fields.map((field, index) => (
-                <FieldRow
-                  key={field.name}
-                  field={field}
-                  table={table}
-                  first={index === 0}
-                  busy={busy}
-                  onRequired={(required) =>
-                    void run(() => api.setFieldRequired(table, field.name, required))
-                  }
-                  onDisplay={() => void run(() => api.setDisplayColumn(table, field.name))}
-                  onEdit={() => setEditing(field)}
-                  onDescription={async (next) => {
-                    // Not through `run`: it locks the whole screen, and rewriting a sentence
-                    // is no reason to. The editor shows its own refusal, in place.
-                    await api.setFieldDescription(table, field.name, next)
-                    await onChanged()
-                  }}
-                />
-              ))}
+              <SortableFields
+                table={table}
+                disabled={busy || !base.actions.includes('manage_schema')}
+                onReorder={(names) =>
+                  run(async () => {
+                    await api.reorderFields(table, names)
+                    // The grid follows the new order: a column order dragged there before,
+                    // kept by this browser, would hide it.
+                    const state = useWorkspace.getState()
+                    for (const tab of state.tabs) {
+                      if (tab.base === base.name && tab.table === table.name) {
+                        state.patchView(tab.id, { columnOrder: null })
+                      }
+                    }
+                  })
+                }
+              >
+                {(field, index, handle) => (
+                  <FieldRow
+                    key={field.name}
+                    field={field}
+                    table={table}
+                    first={index === 0}
+                    busy={busy}
+                    handle={handle}
+                    onRequired={(required) =>
+                      void run(() => api.setFieldRequired(table, field.name, required))
+                    }
+                    onDisplay={() => void run(() => api.setDisplayColumn(table, field.name))}
+                    onEdit={() => setEditing(field)}
+                    onPhysical={
+                      administers && field.id !== undefined && field.system !== true
+                        ? () =>
+                            setPhysical({
+                              kind: 'field',
+                              id: field.id as string,
+                              label: field.label,
+                            })
+                        : undefined
+                    }
+                    onDescription={async (next) => {
+                      // Not through `run`: it locks the whole screen, and rewriting a sentence
+                      // is no reason to. The editor shows its own refusal, in place.
+                      await api.setFieldDescription(table, field.name, next)
+                      await onChanged()
+                    }}
+                  />
+                )}
+              </SortableFields>
             </div>
 
             <AddFieldDialog
@@ -233,7 +299,9 @@ export function SchemaEditor({ base, onChanged }: Props) {
               base={base}
               onClose={() => setAdding(false)}
               onSubmit={async (field) => {
-                await run(async () => {
+                // The refusal is said in the dialog, which stays open on what was typed: a
+                // prompt rewritten three times is not something to lose to a typo.
+                try {
                   if (field.kind === 'link') {
                     await api.createLink(table, field.label, field.target ?? '', field.description)
                   } else {
@@ -242,10 +310,15 @@ export function SchemaEditor({ base, onChanged }: Props) {
                       kind: field.kind,
                       description: field.description,
                       options: field.options,
+                      ai: field.ai,
                     })
                   }
-                })
+                } catch (e) {
+                  return messageFor(e)
+                }
                 setAdding(false)
+                await onChanged()
+                return null
               }}
             />
 
@@ -254,6 +327,15 @@ export function SchemaEditor({ base, onChanged }: Props) {
               table={table}
               onClose={() => setEditing(null)}
               onSaved={onChanged}
+            />
+
+            <PhysicalRenameDialog
+              target={physical}
+              onClose={() => setPhysical(null)}
+              onDone={() => {
+                setPhysical(null)
+                void onChanged()
+              }}
             />
 
             <EditTableDialog
@@ -447,7 +529,7 @@ export function DeleteTableDialog({
         <div className="space-y-3 text-sm">
           {blocked && (
             <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-destructive">
-              Retirez d’abord les liens qui pointent vers cette table :{' '}
+              Retirez d’abord les relations qui pointent vers cette table :{' '}
               {preview?.referenced_by.join(', ')}.
             </p>
           )}
@@ -503,15 +585,21 @@ function FieldRow({
   onRequired,
   onDisplay,
   onEdit,
+  onPhysical,
   onDescription,
+  handle,
 }: {
   readonly field: Field
   readonly table: Table
   readonly first: boolean
   readonly busy: boolean
+  /** The grip that moves the row — a blank of its width for a row that does not move. */
+  readonly handle?: React.ReactNode
   readonly onRequired: (required: boolean) => void
   readonly onDisplay: () => void
   readonly onEdit: () => void
+  /** Renaming the COLUMN — administration only, and without an alias (chapter 06 §3.1). */
+  readonly onPhysical?: () => void
   readonly onDescription: (next: string | null) => Promise<void>
 }) {
   const isDisplay = table.display_field === field.name
@@ -524,6 +612,7 @@ function FieldRow({
 
   return (
     <div className={cn('group/row flex items-center gap-3 px-3 py-2.5', !first && 'border-t')}>
+      {handle}
       <FieldIcon kind={field.kind} className="size-4" />
 
       <div className="min-w-0 flex-1">
@@ -594,8 +683,18 @@ function FieldRow({
         )}
       </div>
 
-      <span className="w-32 shrink-0 text-sm text-muted-foreground">
+      <span className="flex w-32 shrink-0 items-center gap-1.5 text-sm text-muted-foreground">
         {KIND_LABELS[field.kind] ?? field.kind}
+        {/* The AI is an option of the type, said where the type is. */}
+        {field.ai === true && (
+          <span
+            className="inline-flex items-center gap-0.5 text-xs text-violet-600 dark:text-violet-400"
+            title="Rempli par l’IA"
+          >
+            <Sparkles className="size-3" />
+            IA
+          </span>
+        )}
       </span>
 
       {/* Required — a switch on the row, because it is an act on the table and not a
@@ -612,7 +711,7 @@ function FieldRow({
               variant={field.required === true ? 'secondary' : 'ghost'}
               size="sm"
               className="w-28 shrink-0"
-              disabled={busy || field.kind === 'formula'}
+              disabled={busy || field.kind === 'formula' || field.ai === true}
               onClick={() => onRequired(field.required !== true)}
             >
               {field.required === true ? (
@@ -652,11 +751,30 @@ function FieldRow({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            Modifier le libellé{hasChoices(field.kind) ? ' et les choix' : ''}
+            Modifier le libellé
+            {hasChoices(field.kind) ? ' et les choix' : ''}
+            {field.ai === true ? ' et la consigne de l’IA' : ''}
           </TooltipContent>
         </Tooltip>
       ) : (
         <span className="size-8 shrink-0" />
+      )}
+
+      {onPhysical !== undefined && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              disabled={busy}
+              onClick={onPhysical}
+              aria-label={`Renommer en base le champ ${field.label}`}
+            >
+              <CodeXml className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Renommer la colonne en base ({field.name})</TooltipContent>
+        </Tooltip>
       )}
 
       <Tooltip>
@@ -672,7 +790,7 @@ function FieldRow({
           </Button>
         </TooltipTrigger>
         <TooltipContent className="max-w-xs">
-          Colonne d’affichage, montrée dans les liens
+          Colonne d’affichage, montrée dans les relations
         </TooltipContent>
       </Tooltip>
     </div>
@@ -706,6 +824,18 @@ function EditFieldDialog({
   const [drafts, setDrafts] = useState<OptionDraft[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // An AI field: its status as read on opening, the draft made of it, and whether saving
+  // a new prompt recomputes the rows already filled.
+  const [status, setStatus] = useState<AiFieldStatus | null>(null)
+  const [ai, setAi] = useState<AiDraft | null>(null)
+  const [recompute, setRecompute] = useState(true)
+  const [swept, setSwept] = useState(false)
+  // The AI option: as the field has it, and as the switch now says.
+  const wasAi = field?.ai === true
+  const [aiOn, setAiOn] = useState(false)
+
+  const isAi = aiOn
+  const columns = useMemo(() => citable(table, field?.name), [table, field])
 
   // Opening the dialog opens the field as it is NOW: nothing typed for another field, or
   // before a refusal, is carried over.
@@ -714,21 +844,64 @@ function EditFieldDialog({
     setLabel(field.label)
     setDrafts(draftsOf(field.options))
     setError(null)
-  }, [field])
+    setStatus(null)
+    setAi(null)
+    setRecompute(true)
+    setSwept(false)
+    setAiOn(field.ai === true)
+    if (field.ai !== true) return
+    let current = true
+    api
+      .aiFieldStatus(table, field.name)
+      .then((read) => {
+        if (!current) return
+        setStatus(read)
+        setAi(aiDraftOf(read, table.fields))
+      })
+      .catch((e) => current && setError(messageFor(e)))
+    return () => {
+      current = false
+    }
+  }, [field, table])
 
   const isSelect = hasChoices(field?.kind)
   const known = useMemo(() => new Set((field?.options ?? []).map((o) => o.value)), [field])
   const original = useMemo(() => JSON.stringify(optionsOf(draftsOf(field?.options))), [field])
+  const originalAi = useMemo(
+    () => (status === null ? null : aiDraftOf(status, table.fields)),
+    [status, table],
+  )
 
   const next = optionsOf(drafts)
   const optionsChanged = isSelect && JSON.stringify(next) !== original
   const labelChanged = field !== null && label.trim() !== field.label
+  // Switched on, a new prompt; kept on, a changed one; switched off, the option removed.
+  const aiChanged =
+    aiOn && ai !== null && (!wasAi || (originalAi !== null && !sameAi(ai, originalAi)))
+  const aiRemoved = wasAi && !aiOn
   const ready =
     field !== null &&
     label.trim() !== '' &&
     (!isSelect || next.length > 0) &&
-    (labelChanged || optionsChanged) &&
+    (!aiChanged || (ai !== null && aiReady(ai, columns))) &&
+    (labelChanged || optionsChanged || aiChanged || aiRemoved) &&
     !busy
+
+  /** Every row again, now — the prompt as saved. */
+  const sweep = async () => {
+    if (field === null) return
+    setBusy(true)
+    setError(null)
+    try {
+      await api.runAiSweep(table, field.name)
+      setSwept(true)
+      setStatus(await api.aiFieldStatus(table, field.name))
+    } catch (e) {
+      setError(messageFor(e))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const save = async () => {
     if (field === null || !ready) return
@@ -745,6 +918,14 @@ function EditFieldDialog({
         await api.setFieldOptions(table, field.name, next)
         await onSaved()
       }
+      if (aiChanged && ai !== null) {
+        await api.setAiField(table, field.name, { ...aiInputOf(ai), recompute })
+        await onSaved()
+      }
+      if (aiRemoved) {
+        await api.disableAiField(table, field.name)
+        await onSaved()
+      }
       onClose()
     } catch (e) {
       setError(messageFor(e))
@@ -755,7 +936,9 @@ function EditFieldDialog({
 
   return (
     <Dialog open={field !== null} onOpenChange={(open) => !open && !busy && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent
+        className={cn('max-h-[90vh] overflow-y-auto', isAi ? 'sm:max-w-2xl' : 'sm:max-w-xl')}
+      >
         <DialogHeader>
           <DialogTitle>Modifier {field?.label}</DialogTitle>
           <DialogDescription>
@@ -782,6 +965,70 @@ function EditFieldDialog({
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Choix</p>
               <OptionsEditor value={drafts} onChange={setDrafts} known={known} disabled={busy} />
+            </div>
+          )}
+
+          {field !== null && acceptsAi(field.kind) && (
+            <AiToggle
+              checked={aiOn}
+              onChange={(on) => {
+                setAiOn(on)
+                // Switched on for the first time: an empty prompt to write, and consent.
+                if (on && ai === null) setAi(emptyAiDraft())
+              }}
+              disabled={busy}
+            />
+          )}
+
+          {aiRemoved && (
+            <p className="rounded-md bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+              Le champ redeviendra un champ ordinaire : ses valeurs restent, et chacun pourra les
+              modifier.
+            </p>
+          )}
+
+          {isAi && wasAi && status !== null && (
+            <div className="space-y-2">
+              <AiStatusSummary status={status} />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void sweep()}
+                  disabled={busy || status.sweeping || swept}
+                >
+                  Tout recalculer maintenant
+                </Button>
+                {swept && (
+                  <span className="text-xs text-muted-foreground">
+                    Demandé : les lignes sont recalculées en arrière-plan.
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {isAi && ai !== null && (
+            <AiFieldForm
+              value={ai}
+              onChange={setAi}
+              fields={columns}
+              kind={field?.kind}
+              disabled={busy}
+            />
+          )}
+
+          {aiChanged && (
+            <div className="flex items-center gap-2 text-sm">
+              <Checkbox
+                id="ai-recompute"
+                checked={recompute}
+                onCheckedChange={(checked) => setRecompute(checked === true)}
+                disabled={busy}
+              />
+              <label htmlFor="ai-recompute" className="cursor-pointer">
+                Recalculer aussi les lignes déjà remplies
+              </label>
             </div>
           )}
 
@@ -815,6 +1062,7 @@ interface Draft {
   readonly description?: string
   readonly target?: string
   readonly options?: readonly FieldOptionInput[]
+  readonly ai?: AiFieldInput
 }
 
 function AddFieldDialog({
@@ -828,42 +1076,69 @@ function AddFieldDialog({
   readonly table: Table
   readonly base: DescribedBase
   readonly onClose: () => void
-  readonly onSubmit: (draft: Draft) => Promise<void>
+  /** Resolves to the refusal to show, or `null` once the field is created. */
+  readonly onSubmit: (draft: Draft) => Promise<string | null>
 }) {
   const [label, setLabel] = useState('')
   const [kind, setKind] = useState<string>('short_text')
   const [target, setTarget] = useState('')
   const [choices, setChoices] = useState<OptionDraft[]>(() => [emptyDraft()])
   const [description, setDescription] = useState('')
+  const [ai, setAi] = useState<AiDraft>(emptyAiDraft)
+  const [aiOn, setAiOn] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const targets = base.tables.filter((t) => t.name !== table.name)
+  // The switch only holds for the types that take the option.
+  const withAi = aiOn && acceptsAi(kind)
   const parsed = optionsOf(choices)
+  const columns = citable(table)
 
   const ready =
     label.trim() !== '' &&
     (kind !== 'link' || target !== '') &&
     (!hasChoices(kind) || parsed.length > 0) &&
-    !isTooLong(description)
+    (!withAi || aiReady(ai, columns)) &&
+    !isTooLong(description) &&
+    !busy
 
-  const submit = () => {
+  const submit = async () => {
     if (!ready) return
-    void onSubmit({
+    setBusy(true)
+    setError(null)
+    const refusal = await onSubmit({
       label,
       kind,
       description: description.trim() === '' ? undefined : description.trim(),
       target: kind === 'link' ? target : undefined,
       options: hasChoices(kind) ? parsed : undefined,
+      ai: withAi ? aiInputOf(ai) : undefined,
     })
+    setBusy(false)
+    if (refusal !== null) {
+      setError(refusal)
+      return
+    }
     setLabel('')
     setChoices([emptyDraft()])
     setTarget('')
     setDescription('')
+    setAi(emptyAiDraft())
+    setAiOn(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (next || busy) return
+        setError(null)
+        onClose()
+      }}
+    >
       <DialogContent
-        className="max-h-[90vh] overflow-y-auto sm:max-w-xl"
+        className={cn('max-h-[90vh] overflow-y-auto', withAi ? 'sm:max-w-2xl' : 'sm:max-w-xl')}
         aria-describedby={undefined}
       >
         <DialogHeader>
@@ -943,21 +1218,36 @@ function AddFieldDialog({
             </p>
           )}
 
+          {acceptsAi(kind) && <AiToggle checked={aiOn} onChange={setAiOn} disabled={busy} />}
+
+          {withAi && (
+            <AiFieldForm value={ai} onChange={setAi} fields={columns} kind={kind} disabled={busy} />
+          )}
+
           <DescriptionField
             id="field-description"
             value={description}
             onChange={setDescription}
-            onSubmit={submit}
+            onSubmit={() => void submit()}
             placeholder="Que contient ce champ ?"
           />
+
+          {error !== null && (
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-sm text-destructive"
+            >
+              {error}
+            </p>
+          )}
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
             Annuler
           </Button>
-          <Button disabled={!ready} onClick={submit}>
-            Créer
+          <Button disabled={!ready} onClick={() => void submit()}>
+            {busy ? 'Création…' : 'Créer'}
           </Button>
         </DialogFooter>
       </DialogContent>

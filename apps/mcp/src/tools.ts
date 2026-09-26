@@ -1,4 +1,4 @@
-import type { AgentColumn, AgentRows, Kernel, RequestContext } from '@basedb/core'
+import type { AgentColumn, AgentRows, Kernel, Proposal, RequestContext } from '@basedb/core'
 import { BasedbError } from '@basedb/core'
 import { RESPONSE_BUDGET_CHARS, rowsWithinBudget, sanitizeDeep, shapeRow } from './shape.js'
 import { Checker, INPUT_BOUNDS } from './validate.js'
@@ -11,9 +11,10 @@ import { Checker, INPUT_BOUNDS } from './validate.js'
  * zone of an agent's context (§2.1). The schema is discovered through `describe_base` and
  * `describe_table`, whose results are labelled as data.
  *
- * Lots 1 and 2: six reads, the lookup, and the two writes. Lot 3 — the structure
- * proposals — is not declared at all, so that no agent builds a plan around a tool that
- * does not answer (§2.4).
+ * Lots 1, 2 and 3: six reads, the lookup, the two writes, and the structure proposals —
+ * which change nothing: a person decides, in the application (§7).
+ * `propose_create_base` is not declared: a token is bound to one base, and a base is
+ * created from its project, by a person.
  */
 
 export interface ToolContext {
@@ -78,7 +79,7 @@ const READ = {
 
 /** How a value is written, per field type — said once, in the two write tools. */
 const VALUE_FORMATS =
-  'Formats : texte → chaîne ; nombre → nombre JSON ou chaîne décimale (« 1234.50 ») ; booléen → true/false ; date → « AAAA-MM-JJ » ; date-heure → ISO 8601 avec fuseau (« 2026-09-25T14:30:00Z ») ; liste de choix → la valeur (value) d’une des options de describe_table ; lien → le _id de la ligne cible (voir lookup_records) ; null vide le champ. Les colonnes système (_id…), les champs formule et les champs de texte riche ne se modifient pas.'
+  'Formats : texte → chaîne ; nombre → nombre JSON ou chaîne décimale (« 1234.50 ») ; booléen → true/false ; date → « AAAA-MM-JJ » ; date-heure → ISO 8601 avec fuseau (« 2026-09-25T14:30:00Z ») ; liste de choix → la valeur (value) d’une des options de describe_table ; relation (link) → le _id de la ligne cible (voir lookup_records) ; lien URL (url) → une adresse « https://… » ou « mailto:… » ; null vide le champ. Les colonnes système (_id…), les champs formule et les champs de texte riche ne se modifient pas.'
 
 // ── Shaping helpers ────────────────────────────────────────────────────────────
 
@@ -572,7 +573,257 @@ const updateRecordTool: ToolDefinition = {
   },
 }
 
-/** §2.2: the normative table, lots 1 and 2 — the conformance test compares against it. */
+// ── Lot 3: proposals (§7) ──────────────────────────────────────────────────────
+
+/** Where a person decides — a fixed sentence, never a link (§7.7, rule 5). */
+const APPROVAL = {
+  where: 'la file « Propositions » de la base, dans l’application basedb',
+  url: null,
+}
+
+/** Said in every proposal tool: nothing changes until a person approves. */
+const PROPOSES =
+  'Ne modifie RIEN : la proposition attend la décision d’une personne, dans l’application, et expire après 24 heures. Suivez-la avec get_proposal.'
+
+const PLAIN_KINDS = [
+  'short_text',
+  'long_text',
+  'number',
+  'boolean',
+  'date',
+  'datetime',
+  'url',
+] as const
+const FIELD_KINDS = [...PLAIN_KINDS, 'select', 'multi_select', 'link'] as const
+
+/** The proposal as the agent reads it (§7.3). */
+function proposalPayload(p: Proposal): Record<string, unknown> {
+  return {
+    proposal_id: p.id,
+    status: p.status,
+    base: { name: p.base.name, id: p.base.id },
+    expires_at: p.expiresAt,
+    approval: APPROVAL,
+    summary_template: p.summaryTemplate,
+    summary_params: p.summaryParams,
+    affected_objects: p.affectedObjects,
+    up_sql: p.upSql,
+    down_sql: p.downSql,
+    ...(p.decidedAt === null ? {} : { decided_at: p.decidedAt }),
+  }
+}
+
+function proposalOutcome(p: Proposal): ToolOutcome {
+  return {
+    payload: proposalPayload(p),
+    audit: {
+      objectKind: 'migration',
+      objectId: p.id,
+      objectName: p.summaryTemplate,
+      baseId: p.base.id,
+    },
+  }
+}
+
+const DESCRIPTION = {
+  type: 'string',
+  maxLength: 1000,
+  description:
+    'À quoi sert l’objet, pour ceux qui ne l’ont pas conçu — agents compris. Texte brut, 1 000 caractères au plus.',
+}
+
+/** A field of `propose_create_table`, checked entry by entry. */
+function initialFields(c: Checker, raw: Array<Record<string, unknown>> | undefined) {
+  return (raw ?? []).map((f, i) => {
+    const label = typeof f.label === 'string' ? f.label : ''
+    const kind = typeof f.kind === 'string' ? f.kind : ''
+    c.entry(`fields[${i}].label`, label.trim() !== '' && label.length <= 255)
+    c.entry(`fields[${i}].kind`, (PLAIN_KINDS as readonly string[]).includes(kind))
+    c.entry(
+      `fields[${i}].description`,
+      f.description === undefined ||
+        f.description === null ||
+        (typeof f.description === 'string' && f.description.length <= 1000),
+    )
+    c.entry(`fields[${i}].required`, f.required === undefined || typeof f.required === 'boolean')
+    return {
+      label,
+      kind: kind as (typeof PLAIN_KINDS)[number],
+      description: typeof f.description === 'string' ? f.description : null,
+      required: f.required === true,
+    }
+  })
+}
+
+const proposeCreateTable: ToolDefinition = {
+  name: 'propose_create_table',
+  title: 'Proposer une table',
+  description: `Propose la création d’une table dans une base, avec ses premiers champs (types : ${PLAIN_KINDS.join(', ')}) ; les relations et les listes de choix s’ajoutent ensuite avec propose_add_field. ${PROPOSES} ${DATA}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      base: BASE,
+      label: {
+        type: 'string',
+        maxLength: 255,
+        description: 'Le libellé de la table, ex. « Devis ».',
+      },
+      description: DESCRIPTION,
+      fields: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 50,
+        items: {
+          type: 'object',
+          properties: {
+            label: { type: 'string', maxLength: 255 },
+            kind: { type: 'string', enum: [...PLAIN_KINDS] },
+            description: DESCRIPTION,
+            required: { type: 'boolean' },
+          },
+          required: ['label', 'kind'],
+        },
+      },
+    },
+    required: ['base', 'label', 'fields'],
+    additionalProperties: false,
+  },
+  annotations: {
+    title: 'Proposer une table',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+  objectKind: 'migration',
+  async run(tc, args) {
+    const c = new Checker(args).only(['base', 'label', 'description', 'fields'])
+    const base = c.name('base') as string
+    const label = c.string('label', 255, true) as string
+    const description = c.string('description', 1000)
+    const fields = initialFields(c, c.objects('fields', 50, true))
+    c.done()
+    return proposalOutcome(
+      await tc.kernel.agentProposeCreateTable(tc.ctx, { base, label, description, fields }),
+    )
+  },
+}
+
+const proposeAddField: ToolDefinition = {
+  name: 'propose_add_field',
+  title: 'Proposer un champ',
+  description: `Propose l’ajout d’un champ à une table. kind : ${FIELD_KINDS.join(', ')}. Une liste de choix (select, multi_select) demande options ; une relation (link) demande target, la table cible de la même base, et on_delete : « restrict » (défaut : une ligne cible référencée ne peut plus être supprimée) ou « set_null ». « cascade » est refusé. ${PROPOSES} ${DATA}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      base: BASE,
+      table: TABLE,
+      label: { type: 'string', maxLength: 255, description: 'Le libellé du champ.' },
+      kind: { type: 'string', enum: [...FIELD_KINDS] },
+      description: DESCRIPTION,
+      options: {
+        type: 'array',
+        maxItems: 200,
+        items: {
+          type: 'object',
+          properties: { value: { type: 'string' }, label: { type: 'string' } },
+          required: ['value'],
+        },
+        description: 'Les choix d’un select ou d’un multi_select.',
+      },
+      target: { type: 'string', description: 'Pour un lien : la table cible, de la même base.' },
+      on_delete: { type: 'string', enum: ['restrict', 'set_null'] },
+    },
+    required: ['base', 'table', 'label', 'kind'],
+    additionalProperties: false,
+  },
+  annotations: {
+    title: 'Proposer un champ',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+  objectKind: 'migration',
+  async run(tc, args) {
+    const c = new Checker(args).only([
+      'base',
+      'table',
+      'label',
+      'kind',
+      'description',
+      'options',
+      'target',
+      'on_delete',
+    ])
+    const base = c.name('base') as string
+    const table = c.name('table') as string
+    const label = c.string('label', 255, true) as string
+    const kind = c.string('kind', 32, true) as string
+    c.entry('kind', (FIELD_KINDS as readonly string[]).includes(kind ?? ''))
+    const description = c.string('description', 1000)
+    const rawOptions = c.objects('options', 200)
+    const options = (rawOptions ?? []).map((o, i) => {
+      c.entry(
+        `options[${i}].value`,
+        typeof o.value === 'string' && o.value !== '' && o.value.length <= 200,
+      )
+      c.entry(
+        `options[${i}].label`,
+        o.label === undefined || (typeof o.label === 'string' && o.label.length <= 200),
+      )
+      return {
+        value: String(o.value ?? ''),
+        ...(typeof o.label === 'string' ? { label: o.label } : {}),
+      }
+    })
+    const target = c.name('target', false)
+    const onDelete = c.string('on_delete', 16)
+    // `cascade` is not a value this surface knows: refused by name, whoever asks (§8.4).
+    if (onDelete === 'cascade') throw new BasedbError('MCP_CASCADE_FORBIDDEN')
+    c.entry(
+      'on_delete',
+      onDelete === undefined || onDelete === 'restrict' || onDelete === 'set_null',
+    )
+    c.done()
+    return proposalOutcome(
+      await tc.kernel.agentProposeAddField(tc.ctx, {
+        base,
+        table,
+        label,
+        kind: kind as Parameters<Kernel['agentProposeAddField']>[1]['kind'],
+        description,
+        ...(rawOptions === undefined ? {} : { options }),
+        ...(target === undefined ? {} : { target }),
+        ...(onDelete === undefined ? {} : { onDelete }),
+      }),
+    )
+  },
+}
+
+const getProposal: ToolDefinition = {
+  name: 'get_proposal',
+  title: 'Relire une proposition',
+  description: `Relit une proposition faite par ce jeton, et son état : proposed (en attente), applied (approuvée et appliquée), rejected (refusée), expired (24 heures passées) ou superseded (remplacée par une proposition plus récente sur les mêmes objets). ${DATA}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      proposal_id: { type: 'string', description: 'Le proposal_id rendu par propose_*.' },
+    },
+    required: ['proposal_id'],
+    additionalProperties: false,
+  },
+  annotations: { title: 'Relire une proposition', ...READ },
+  objectKind: 'migration',
+  async run(tc, args) {
+    const c = new Checker(args).only(['proposal_id'])
+    const id = c.uuid('proposal_id') as string
+    c.done()
+    return proposalOutcome(await tc.kernel.agentGetProposal(tc.ctx, id))
+  },
+}
+
+/** §2.2: the normative table — the conformance test compares against it. */
 export const TOOLS: readonly ToolDefinition[] = [
   whoami,
   listBases,
@@ -583,6 +834,9 @@ export const TOOLS: readonly ToolDefinition[] = [
   lookupRecords,
   createRecordTool,
   updateRecordTool,
+  proposeCreateTable,
+  proposeAddField,
+  getProposal,
 ]
 
 export const TOOLS_BY_NAME: ReadonlyMap<string, ToolDefinition> = new Map(

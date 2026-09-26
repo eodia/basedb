@@ -3,6 +3,7 @@ import { createRecord } from '../records/create.js'
 import { OPERATORS, type Operator } from '../records/filter.js'
 import { listRecords } from '../records/list.js'
 import { updateRecord } from '../records/update.js'
+import { shapeUrl } from '../records/values.js'
 import type { Pools } from '../runtime/pool.js'
 import type { RequestContext } from '../tx/context.js'
 import type { AgentNotice } from './describe.js'
@@ -493,6 +494,7 @@ const EXPECTED: Readonly<Record<string, string>> = {
   select: 'une des valeurs de la liste',
   multi_select: 'liste de valeurs de la liste',
   link: 'identifiant _id de la ligne cible',
+  url: 'adresse https://… ou mailto:…',
 }
 
 /**
@@ -558,6 +560,13 @@ function coerce(view: AgentView, table: AgentTable, field: AgentField, value: un
         ? items
         : invalid()
     }
+    case 'url':
+      // The kernel's own shaping — a bare domain gets its `https://` — and its refusal.
+      try {
+        return shapeUrl(field.name, value)
+      } catch {
+        return invalid()
+      }
     case 'link': {
       if (typeof value !== 'string' || !UUID.test(value)) return invalid()
       // A target the bearer cannot read is answered as a target that does not exist,

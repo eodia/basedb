@@ -4,6 +4,8 @@ import { ApiDocs } from '@/components/api-reference/api-docs'
 import { AdminPanel, type AdminTab } from '@/components/app/admin/admin-panel'
 import { NewBaseDialog } from '@/components/app/base-menu'
 import { ElevationProvider } from '@/components/app/elevation'
+import { EnvironmentBadge } from '@/components/app/environment-badge'
+import { HistoryPanel } from '@/components/app/history'
 import { NewTableDialog } from '@/components/app/new-table-dialog'
 import { PasswordRequired } from '@/components/app/password-required'
 import { ProjectDialog } from '@/components/app/project-menu'
@@ -28,11 +30,12 @@ import {
   api,
 } from '@/lib/api/client'
 import { messageFor } from '@/lib/messages'
+import { usePanels } from '@/lib/store/panels'
 import { useSidebar } from '@/lib/store/sidebar'
 import { hydrateWorkspace, useActiveTab, useWorkspace } from '@/lib/store/workspace'
 import { useTheme } from '@/lib/theme'
 import { useTitle } from '@/lib/use-title'
-import { Clock, Database, FolderKanban, Loader2, Plus, Sparkles } from 'lucide-react'
+import { Database, FolderKanban, Loader2, Plus, Sparkles } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
@@ -88,7 +91,7 @@ function rememberProject(id: string | null): void {
 // looks like — the purpose, the format, the unit — rather than repeating the label.
 const SAMPLE_BASE_DESCRIPTION =
   'Base de démonstration : des clients et les factures qui leur sont adressées. ' +
-  'Elle sert à explorer les liens entre tables, la documentation générée et l’API.'
+  'Elle sert à explorer les relations entre tables, la documentation générée et l’API.'
 
 const SAMPLE_CLIENTS_DESCRIPTION =
   'Les entreprises et organisations à qui l’on facture. Une ligne par client, quel que ' +
@@ -157,6 +160,7 @@ export default function App() {
   const openSql = useWorkspace((s) => s.openSql)
   const activate = useWorkspace((s) => s.activate)
   const dropBase = useWorkspace((s) => s.dropBase)
+  const dropTable = useWorkspace((s) => s.dropTable)
   const tabs = useWorkspace((s) => s.tabs)
   const activeTab = useActiveTab()
   const { importInto, deleteTable, editTable } = useTableActions()
@@ -178,12 +182,14 @@ export default function App() {
     section === 'admin' ? undefined : (base?.label ?? project?.label),
   ])
 
-  // The theme, the open tabs and the width of the sidebar are restored AFTER mount: all
-  // live in `localStorage`, which does not exist where Next.js renders this tree first, and
-  // seeding them at module scope would make the first client render disagree with the server's.
+  // The theme, the open tabs, the width of the sidebar and of the panels on the right are
+  // restored AFTER mount: all live in `localStorage`, which does not exist where Next.js
+  // renders this tree first, and seeding them at module scope would make the first client
+  // render disagree with the server's.
   useEffect(() => {
     hydrateWorkspace()
     useSidebar.getState().initialize()
+    usePanels.getState().initialize()
     return useTheme.getState().initialize()
   }, [])
 
@@ -564,6 +570,13 @@ export default function App() {
   const baseHasTabs = base !== null && tabs.some((t) => t.base === base.name)
   const canCreateBase = project?.actions.includes('manage_schema') === true
   const namingBase = naming === null ? null : (described[naming] ?? null)
+  // The environments that are not production, by base name: what a tab says of itself.
+  const environments = new Map(
+    projects
+      .flatMap((p) => p.bases)
+      .filter((b) => !b.environment.production)
+      .map((b) => [b.name, b.environment] as const),
+  )
 
   /** The data view: the active tab's base, or the current base when it has nothing open. */
   const dataView = () => {
@@ -644,7 +657,14 @@ export default function App() {
     }
     // The active tab's base is being described: the sync effect above is on it.
     if (shown === null) return <Loading />
-    return <Workspace base={shown} tables={shown.tables} onOpenDoc={() => setSection('doc')} />
+    return (
+      <Workspace
+        base={shown}
+        tables={shown.tables}
+        onBaseChanged={() => refreshBase(shown.name)}
+        environments={environments}
+      />
+    )
   }
 
   return (
@@ -685,6 +705,26 @@ export default function App() {
               })
             }}
             onTable={(b, t, intent) => void onTable(b, t, intent)}
+            onRenamed={(change) => {
+              // Tabs and URLs carry names: those of the old name are closed, and the
+              // object is reopened under the new one (chapter 06 §2).
+              if (change.kind === 'base') {
+                dropBase(change.from)
+                forget(change.from)
+                void loadProjects().then(() => focusBase(change.to, 'open'))
+                return
+              }
+              dropTable(change.base, change.from)
+              void (async () => {
+                await loadProjects().catch(() => undefined)
+                const found = await describe(change.base)
+                refreshDoc(change.base)
+                const renamed = found.tables.find((t) => t.name === change.to)
+                if (renamed === undefined) return
+                setSection('data')
+                openTable(renamed, renamed.label)
+              })().catch((e) => setError(messageFor(e)))
+            }}
             onSection={setSection}
             onAdmin={(tab) => {
               setAdminTab(tab)
@@ -703,6 +743,8 @@ export default function App() {
             />
           ) : section === 'data' || section === 'admin' || base === null ? (
             dataView()
+          ) : section === 'history' ? (
+            <HistoryPanel base={base} onBack={() => void focusBase(base.name, 'open')} />
           ) : (
             <SectionPanel
               section={section}
@@ -710,6 +752,7 @@ export default function App() {
               doc={doc}
               onBack={() => void focusBase(base.name, 'open')}
               onChanged={() => refreshBase()}
+              administers={me.isAdmin}
             />
           )}
 
@@ -847,12 +890,14 @@ function SectionPanel({
   doc,
   onBack,
   onChanged,
+  administers,
 }: {
   readonly section: Section
   readonly base: DescribedBase
   readonly doc: ApiDocumentation | null
   readonly onBack: () => void
   readonly onChanged: () => Promise<void>
+  readonly administers: boolean
 }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
@@ -861,6 +906,9 @@ function SectionPanel({
         <span className="text-sm text-muted-foreground">{base.project.label}</span>
         <span className="text-sm text-muted-foreground">/</span>
         <span className="text-sm text-muted-foreground">{base.label}</span>
+        {base.environment !== undefined && !base.environment.production && (
+          <EnvironmentBadge environment={base.environment} />
+        )}
         <span className="text-sm text-muted-foreground">/</span>
         <span className="text-sm font-medium">{SECTION_TITLES[section] ?? ''}</span>
         <div className="flex-1" />
@@ -879,19 +927,9 @@ function SectionPanel({
         }
       >
         {section === 'structure' ? (
-          <SchemaEditor base={base} onChanged={onChanged} />
-        ) : section === 'doc' ? (
-          <ApiDocs base={base} doc={doc} />
+          <SchemaEditor base={base} onChanged={onChanged} administers={administers} />
         ) : (
-          <div className="mx-auto max-w-lg pt-16 text-center">
-            <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-muted">
-              <Clock className="size-6 text-muted-foreground" />
-            </span>
-            <h1 className="text-lg font-semibold">Historique</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Bientôt : qui a modifié quoi, et quand.
-            </p>
-          </div>
+          <ApiDocs base={base} doc={doc} />
         )}
       </div>
     </div>

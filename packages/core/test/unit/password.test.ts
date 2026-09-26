@@ -17,8 +17,15 @@ describe('policy — chapter 13 §2.2', () => {
     expect(() => checkPasswordPolicy('les chaussettes de larchiduchesse', IDENTITY)).not.toThrow()
   })
 
-  it('refuses below twelve characters', () => {
+  it('refuses below eight characters', () => {
     expect(() => checkPasswordPolicy('court', IDENTITY)).toThrow(/PASSWORD_POLICY_VIOLATION/)
+    expect(() => checkPasswordPolicy('7 chars', IDENTITY)).toThrow(/PASSWORD_POLICY_VIOLATION/)
+    expect(() => checkPasswordPolicy('8 chars!', IDENTITY)).not.toThrow()
+  })
+
+  it('refuses a common password, whatever its case', () => {
+    expect(() => checkPasswordPolicy('Password', IDENTITY)).toThrow(/PASSWORD_POLICY_VIOLATION/)
+    expect(() => checkPasswordPolicy('12345678', IDENTITY)).toThrow(/PASSWORD_POLICY_VIOLATION/)
   })
 
   it('refuses beyond 256, because hashing cost is a denial of service', () => {

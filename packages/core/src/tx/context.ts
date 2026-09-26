@@ -19,7 +19,12 @@ import { type Executor, type PoolName, type Pools, executorOf } from '../runtime
  */
 declare const BRAND: unique symbol
 
-export type ActorKind = 'user' | 'token' | 'system'
+/**
+ * `form`: an answer to a PUBLIC shared form (chapter 15) — nobody signed in wrote it. Its
+ * `id` is the person who published the form, who answers for it, and its `tokenId` the
+ * share; it holds no right of its own, and the kernel never decides anything for it.
+ */
+export type ActorKind = 'user' | 'token' | 'system' | 'form'
 export type Surface = 'ui' | 'rest' | 'mcp' | 'system'
 
 export interface Actor {
@@ -190,7 +195,10 @@ async function setSessionContext(exec: Executor, ctx: RequestContext): Promise<v
     `SELECT set_config('basedb.actor_kind', $1, true),
             set_config('basedb.actor_id',   $2, true),
             set_config('basedb.surface',    $3, true),
-            set_config('basedb.request_id', $4, true)`,
-    [ctx.actor.kind, ctx.actor.id, ctx.surface, ctx.requestId],
+            set_config('basedb.request_id', $4, true),
+            set_config('basedb.token_id',   $5, true)`,
+    // A token writes in its creator's name AND its own: the history says "Alice, through
+    // the token Synchro", which is both who answers for it and which door it came by.
+    [ctx.actor.kind, ctx.actor.id, ctx.surface, ctx.requestId, ctx.actor.tokenId ?? ''],
   )
 }

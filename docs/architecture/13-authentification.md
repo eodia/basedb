@@ -57,7 +57,7 @@ la connexion suivante.
 
 | Règle | Valeur | Raison |
 |---|---|---|
-| Longueur | 12 caractères minimum, 256 maximum | Seule mesure à l'effet démontré ; au-delà, déni de service par coût de hachage |
+| Longueur | 8 caractères minimum, 256 maximum | Seule mesure à l'effet démontré ; au-delà, déni de service par coût de hachage |
 | Composition imposée | **aucune** | Elles produisent `Motdepasse2024!`, pas de l'entropie |
 | Expiration périodique | **aucune** | Elle produit l'incrémentation d'un chiffre final |
 | Liste de refus | liste locale livrée avec le produit, extensible par l'exploitant | A4 : aucun appel à un service tiers de réputation |
@@ -440,7 +440,7 @@ d'origine appartiennent à « Modèle de permissions ».
 | Décision | Raison | Alternative écartée |
 |---|---|---|
 | argon2id poivré par la clé d'instance | Une base volée sans `BASEDB_ENCRYPTION_KEY` ne se casse pas hors ligne | argon2id seul ; bcrypt |
-| Longueur 12 minimum, aucune composition imposée, aucune expiration, liste de refus locale | Composition et expiration produisent des mots de passe prévisibles ; A4 interdit un service tiers de réputation | Politique à classes de caractères ; appel externe |
+| Longueur 8 minimum, aucune composition imposée, aucune expiration, liste de refus locale | Composition et expiration produisent des mots de passe prévisibles ; A4 interdit un service tiers de réputation | Politique à classes de caractères ; appel externe |
 | Message d'échec unique et hachage factice sur compte inconnu | Un code distinct ou une durée distincte sont le même oracle | Message explicite « compte inconnu » |
 | Réinitialisation portée par `confirmation_challenge`, verrouillage porté par `auth_identity` | Sémantique déjà présente ; verrouillage exact malgré plusieurs instances (A4) | Table de jetons dédiée ; verrouillage par seau à jetons |
 | OIDC seul, avec découverte, code + PKCE `S256`, état en cookie scellé | Un jeton signé lie l'identité à l'échange ; pas de jeton dans l'URL, pas de stockage serveur | OAuth 2.0 nu ; flux implicite ; état en base |

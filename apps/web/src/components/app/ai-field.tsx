@@ -1,0 +1,822 @@
+'use client'
+
+import { FieldIcon } from '@/components/app/field-icon'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
+import { type AiFieldInput, type AiFieldStatus, type Field, api } from '@/lib/api/client'
+import { reasonFor, sentenceFor } from '@/lib/messages'
+import {
+  DAY_STEPS,
+  DEFAULT_SCHEDULE,
+  type Frequency,
+  HOUR_STEPS,
+  MINUTE_STEPS,
+  type ScheduleDraft,
+  WEEKDAYS,
+  cronOf,
+  describe,
+  draftOf,
+  localTimezone,
+  paceOf,
+} from '@/lib/schedule'
+import { cn } from '@/lib/utils'
+import {
+  AlertTriangle,
+  CalendarClock,
+  ChevronDown,
+  CircleDashed,
+  Plus,
+  Sparkles,
+} from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+
+/**
+ * The AI option of a field, as a person sets it — chapter 12 §1.5, chapter 04 §7 bis.
+ *
+ * The AI is not a type: a text, an address, a number, a choice, a yes-or-no or a date can
+ * each be filled by a model, and the option is one switch in the field's form. Switched
+ * on, the form below appears; switched off, the field is an ordinary one again.
+ *
+ * Three things, in the order one thinks of them: what the model is asked for each row
+ * (a prompt citing columns), when it runs (as soon as a row exists, again whenever a cited
+ * column changes, and on a schedule if wanted), and the consent that the cited values
+ * leave for the provider. The consent is a box to tick every time the prompt is saved: the
+ * columns cited may have changed.
+ *
+ * Columns are cited `{{Libellé}}` here — what a person reads. The server keeps them under
+ * their physical names, which survive a rename, and gives them back that way; the screen
+ * turns them back into labels before showing them.
+ */
+
+/** The types the AI option is offered to — the kernel's `AI_KINDS`. */
+export const AI_KINDS: readonly string[] = [
+  'short_text',
+  'long_text',
+  'url',
+  'number',
+  'select',
+  'boolean',
+  'date',
+]
+
+export const acceptsAi = (kind: string | undefined) => kind !== undefined && AI_KINDS.includes(kind)
+
+/** What the model's answer must be, said to the author of a field that is not free text. */
+const ANSWER: Readonly<Record<string, string>> = {
+  url: 'une adresse web',
+  number: 'un nombre',
+  select: 'une des valeurs de la liste',
+  boolean: 'oui ou non',
+  date: 'une date',
+}
+
+/** The switch that makes a field computed by the AI. */
+export function AiToggle({
+  checked,
+  onChange,
+  disabled,
+}: {
+  readonly checked: boolean
+  readonly onChange: (next: boolean) => void
+  readonly disabled?: boolean
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-md border px-3 py-2.5">
+      <Sparkles className="size-4 shrink-0 text-violet-500" />
+      <label htmlFor="field-ai" className="min-w-0 flex-1 cursor-pointer">
+        <span className="block text-sm font-medium">IA</span>
+        <span className="block text-xs text-muted-foreground">
+          Le champ est rempli par l’IA, ligne par ligne, à partir d’une consigne.
+        </span>
+      </label>
+      <Switch id="field-ai" checked={checked} onCheckedChange={onChange} disabled={disabled} />
+    </div>
+  )
+}
+
+export interface AiDraft {
+  /** Columns cited by label, `{{Notes}}`. */
+  readonly prompt: string
+  readonly refresh: 'if_empty' | 'schedule'
+  readonly schedule: ScheduleDraft
+  /** The zone the schedule is read in: the author's, or the one it was saved with. */
+  readonly timezone: string
+  readonly consent: boolean
+}
+
+export function emptyAiDraft(): AiDraft {
+  return {
+    prompt: '',
+    refresh: 'if_empty',
+    schedule: DEFAULT_SCHEDULE,
+    timezone: localTimezone(),
+    consent: false,
+  }
+}
+
+const REFERENCE = /\{\{\s*([^{}]+?)\s*\}\}/g
+
+const fold = (text: string) =>
+  text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/\s+/g, ' ').trim()
+
+/** The field a citation designates — by label, as typed, or by physical name. */
+function resolve(raw: string, fields: readonly Field[]): Field | undefined {
+  return fields.find((f) => f.name === raw) ?? fields.find((f) => fold(f.label) === fold(raw))
+}
+
+/** The citations of a prompt, each with the field it designates, or none. */
+function citationsOf(prompt: string, fields: readonly Field[]) {
+  const seen = new Map<string, Field | null>()
+  for (const match of prompt.matchAll(REFERENCE)) {
+    const raw = match[1]
+    if (!seen.has(raw)) seen.set(raw, resolve(raw, fields) ?? null)
+  }
+  return [...seen].map(([raw, field]) => ({ raw, field }))
+}
+
+/** The draft an existing field opens with: its prompt in labels, its schedule read back. */
+export function aiDraftOf(status: AiFieldStatus, fields: readonly Field[]): AiDraft {
+  const prompt = status.prompt.replace(REFERENCE, (whole, name: string) => {
+    const label =
+      fields.find((f) => f.name === name)?.label ?? status.cited.find((c) => c.name === name)?.label
+    return label === undefined ? whole : `{{${label}}}`
+  })
+  return {
+    prompt,
+    refresh: status.refresh.mode,
+    schedule: status.refresh.mode === 'schedule' ? draftOf(status.refresh.cron) : DEFAULT_SCHEDULE,
+    timezone: status.refresh.timezone ?? localTimezone(),
+    // Never carried over: saving is consenting again.
+    consent: false,
+  }
+}
+
+export function aiInputOf(draft: AiDraft): AiFieldInput {
+  return {
+    prompt: draft.prompt.trim(),
+    refresh:
+      draft.refresh === 'schedule'
+        ? { mode: 'schedule', cron: cronOf(draft.schedule), timezone: draft.timezone }
+        : { mode: 'if_empty' },
+    consent: draft.consent,
+  }
+}
+
+/** Whether the draft can be sent: the server judges the rest, and says why. */
+export function aiReady(draft: AiDraft, fields: readonly Field[]): boolean {
+  if (draft.prompt.trim() === '' || !draft.consent) return false
+  if (citationsOf(draft.prompt, fields).some((c) => c.field === null)) return false
+  if (draft.refresh === 'schedule') {
+    if (draft.schedule.frequency === 'weekly' && draft.schedule.weekdays.length === 0) return false
+    if (draft.schedule.frequency === 'custom' && draft.schedule.cron.trim() === '') return false
+  }
+  return true
+}
+
+/** Whether two drafts ask for the same thing — the consent aside. */
+export function sameAi(a: AiDraft, b: AiDraft): boolean {
+  const x = aiInputOf(a)
+  const y = aiInputOf(b)
+  return (
+    x.prompt === y.prompt &&
+    x.refresh.mode === y.refresh.mode &&
+    (x.refresh.cron ?? null) === (y.refresh.cron ?? null) &&
+    (x.refresh.timezone ?? null) === (y.refresh.timezone ?? null)
+  )
+}
+
+export function AiFieldForm({
+  value,
+  onChange,
+  fields,
+  kind,
+  disabled,
+}: {
+  readonly value: AiDraft
+  readonly onChange: (next: AiDraft) => void
+  /** The columns the prompt may cite: the table's, the field itself excluded. */
+  readonly fields: readonly Field[]
+  /** The field's type: what the answer is read into. */
+  readonly kind?: string
+  readonly disabled?: boolean
+}) {
+  const cited = citationsOf(value.prompt, fields)
+  const known = cited.filter((c) => c.field !== null).map((c) => c.field?.label ?? '')
+
+  return (
+    <div className="space-y-5">
+      <PromptEditor
+        value={value.prompt}
+        onChange={(prompt) => onChange({ ...value, prompt })}
+        fields={fields}
+        disabled={disabled}
+      />
+      {kind !== undefined && ANSWER[kind] !== undefined && (
+        <p className="-mt-3 text-xs text-muted-foreground">
+          La réponse doit être {ANSWER[kind]} : le modèle en est averti, et une réponse qui n’en
+          contient pas laisse la cellule vide.
+        </p>
+      )}
+
+      <RefreshEditor value={value} onChange={onChange} disabled={disabled} />
+
+      <div className="flex items-start gap-2.5 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-sm">
+        <Checkbox
+          id="ai-consent"
+          checked={value.consent}
+          onCheckedChange={(next) => onChange({ ...value, consent: next === true })}
+          disabled={disabled}
+          className="mt-0.5"
+        />
+        <label htmlFor="ai-consent" className="cursor-pointer leading-snug">
+          J’accepte que, pour chaque ligne, les valeurs
+          {known.length === 0
+            ? ' des colonnes citées'
+            : ` de ${known.map((k) => `« ${k} »`).join(', ')}`}{' '}
+          soient envoyées au fournisseur d’IA configuré sur cette instance.
+          <span className="mt-0.5 block text-xs text-muted-foreground">
+            Un appel par ligne et par calcul, journalisé et plafonné par heure.
+          </span>
+        </label>
+      </div>
+    </div>
+  )
+}
+
+function PromptEditor({
+  value,
+  onChange,
+  fields,
+  disabled,
+}: {
+  readonly value: string
+  readonly onChange: (next: string) => void
+  readonly fields: readonly Field[]
+  readonly disabled?: boolean
+}) {
+  const area = useRef<HTMLTextAreaElement>(null)
+  /** Where the caret goes once the menu has closed: just after what was inserted. */
+  const caret = useRef<number | null>(null)
+  const cited = citationsOf(value, fields)
+
+  // At the caret, or in place of the selection: where the person was typing.
+  const insert = (field: Field) => {
+    const box = area.current
+    const token = `{{${field.label}}}`
+    const start = box?.selectionStart ?? value.length
+    const end = box?.selectionEnd ?? value.length
+    onChange(value.slice(0, start) + token + value.slice(end))
+    caret.current = start + token.length
+  }
+
+  // The menu hands the focus back to its button when it closes; after an insertion the
+  // person is writing the prompt, so it goes back to the prompt, caret after the column.
+  const restore = (event: Event) => {
+    const at = caret.current
+    if (at === null) return
+    event.preventDefault()
+    caret.current = null
+    requestAnimationFrame(() => {
+      area.current?.focus()
+      area.current?.setSelectionRange(at, at)
+    })
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-end justify-between gap-2">
+        <label htmlFor="ai-prompt" className="text-sm text-muted-foreground">
+          Consigne
+        </label>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" disabled={disabled || fields.length === 0}>
+              <Plus className="size-3.5" />
+              Insérer une colonne
+              <ChevronDown className="size-3.5 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="max-h-72 overflow-y-auto"
+            onCloseAutoFocus={restore}
+          >
+            {fields.map((f) => (
+              <DropdownMenuItem key={f.name} onSelect={() => insert(f)}>
+                <FieldIcon kind={f.kind} />
+                {f.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <Textarea
+        id="ai-prompt"
+        ref={area}
+        value={value}
+        rows={5}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Résume {{Notes}} en une phrase, sur un ton neutre."
+        className="font-mono text-[13px] leading-relaxed"
+      />
+      {cited.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-muted-foreground">Colonnes citées :</span>
+          {cited.map((c) =>
+            c.field === null ? (
+              <span
+                key={c.raw}
+                className="rounded bg-destructive/10 px-1.5 py-0.5 text-destructive"
+                title="Aucune colonne lisible de la table ne porte ce nom"
+              >
+                {c.raw} — inconnue
+              </span>
+            ) : (
+              <span key={c.raw} className="flex items-center gap-1 rounded bg-muted px-1.5 py-0.5">
+                <FieldIcon kind={c.field.kind} className="size-3" />
+                {c.field.label}
+              </span>
+            ),
+          )}
+        </div>
+      )}
+      <p className="text-xs leading-snug text-muted-foreground">
+        Ce que le modèle doit écrire pour chaque ligne. Chaque {'{{colonne}}'} est remplacée par la
+        valeur de la ligne ; la réponse est écrite dans la cellule, lue dans le type du champ. Quand
+        l’une de ces colonnes change, la cellule est recalculée.
+      </p>
+    </div>
+  )
+}
+
+const FREQUENCIES: ReadonlyArray<{ readonly value: Frequency; readonly label: string }> = [
+  { value: 'minutes', label: 'Toutes les N minutes' },
+  { value: 'hours', label: 'Toutes les N heures' },
+  { value: 'days', label: 'Tous les jours' },
+  { value: 'weekly', label: 'Chaque semaine' },
+  { value: 'monthly', label: 'Chaque mois' },
+  { value: 'custom', label: 'Expression cron (avancé)' },
+]
+
+function RefreshEditor({
+  value,
+  onChange,
+  disabled,
+}: {
+  readonly value: AiDraft
+  readonly onChange: (next: AiDraft) => void
+  readonly disabled?: boolean
+}) {
+  const schedule = value.schedule
+  const set = (patch: Partial<ScheduleDraft>) =>
+    onChange({ ...value, schedule: { ...schedule, ...patch } })
+
+  const choice = (mode: AiDraft['refresh'], title: string, hint: string, Icon: typeof Plus) => (
+    <label
+      className={cn(
+        'flex flex-1 cursor-pointer items-start gap-2.5 rounded-md border px-3 py-2.5 text-left text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/40',
+        value.refresh === mode
+          ? 'border-primary bg-primary/5 ring-1 ring-primary'
+          : 'hover:bg-muted/60',
+        disabled && 'cursor-not-allowed opacity-60',
+      )}
+    >
+      <input
+        type="radio"
+        name="ai-refresh"
+        value={mode}
+        checked={value.refresh === mode}
+        disabled={disabled}
+        onChange={() => onChange({ ...value, refresh: mode })}
+        className="sr-only"
+      />
+      <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+      <span>
+        <span className="block font-medium">{title}</span>
+        <span className="block text-xs leading-snug text-muted-foreground">{hint}</span>
+      </span>
+    </label>
+  )
+
+  const time = `${String(schedule.hour).padStart(2, '0')}:${String(schedule.minute).padStart(2, '0')}`
+  const setTime = (text: string) => {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(text)
+    if (match !== null) set({ hour: Number(match[1]), minute: Number(match[2]) })
+  }
+
+  const needsTime =
+    schedule.frequency === 'days' ||
+    schedule.frequency === 'weekly' ||
+    schedule.frequency === 'monthly'
+  const pace = paceOf(schedule)
+
+  return (
+    <fieldset className="space-y-2">
+      <legend className="mb-2 text-sm text-muted-foreground">Rafraîchissement</legend>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        {choice(
+          'if_empty',
+          'Quand une colonne citée change',
+          'Chaque ligne est calculée dès qu’elle existe, puis de nouveau dès qu’une colonne citée change.',
+          CircleDashed,
+        )}
+        {choice(
+          'schedule',
+          'Selon un planning',
+          'En plus, toutes les lignes sont recalculées à intervalles réguliers.',
+          CalendarClock,
+        )}
+      </div>
+
+      {value.refresh === 'schedule' && (
+        <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={schedule.frequency}
+              onValueChange={(next) => {
+                const frequency = next as Frequency
+                // Each frequency opens on an N it offers; the expression opens on the
+                // one the presets made, so switching to it shows what they meant.
+                const every =
+                  frequency === 'minutes'
+                    ? MINUTE_STEPS[0]
+                    : frequency === 'hours'
+                      ? HOUR_STEPS[0]
+                      : frequency === 'days'
+                        ? DAY_STEPS[0]
+                        : schedule.every
+                set({
+                  frequency,
+                  every,
+                  ...(frequency === 'custom' ? { cron: cronOf(schedule) } : {}),
+                })
+              }}
+              disabled={disabled}
+            >
+              <SelectTrigger className="h-8 w-56" aria-label="Fréquence">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {FREQUENCIES.map((f) => (
+                  <SelectItem key={f.value} value={f.value}>
+                    {f.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(schedule.frequency === 'minutes' ||
+              schedule.frequency === 'hours' ||
+              schedule.frequency === 'days') && (
+              <Select
+                value={String(schedule.every)}
+                onValueChange={(n) => set({ every: Number(n) })}
+                disabled={disabled}
+              >
+                <SelectTrigger className="h-8 w-40" aria-label="Intervalle">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(schedule.frequency === 'minutes'
+                    ? MINUTE_STEPS
+                    : schedule.frequency === 'hours'
+                      ? HOUR_STEPS
+                      : DAY_STEPS
+                  ).map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {schedule.frequency === 'minutes'
+                        ? `${n} minutes`
+                        : schedule.frequency === 'hours'
+                          ? n === 1
+                            ? 'chaque heure'
+                            : `${n} heures`
+                          : n === 1
+                            ? 'chaque jour'
+                            : `tous les ${n} jours`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {schedule.frequency === 'hours' && (
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                à la minute
+                <Input
+                  type="number"
+                  min={0}
+                  max={59}
+                  value={schedule.minute}
+                  onChange={(e) => {
+                    const n = Number(e.target.value)
+                    if (Number.isInteger(n) && n >= 0 && n <= 59) set({ minute: n })
+                  }}
+                  disabled={disabled}
+                  className="h-8 w-16"
+                  aria-label="Minute de l’heure"
+                />
+              </span>
+            )}
+
+            {schedule.frequency === 'monthly' && (
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                le
+                <Select
+                  value={String(schedule.dayOfMonth)}
+                  onValueChange={(d) => set({ dayOfMonth: Number(d) })}
+                  disabled={disabled}
+                >
+                  <SelectTrigger className="h-8 w-20" aria-label="Jour du mois">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+                      <SelectItem key={d} value={String(d)}>
+                        {d === 1 ? '1er' : d}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </span>
+            )}
+
+            {needsTime && (
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                à
+                <Input
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  disabled={disabled}
+                  className="h-8 w-28"
+                  aria-label="Heure"
+                />
+              </span>
+            )}
+          </div>
+
+          {schedule.frequency === 'days' && schedule.every === 1 && (
+            <div className="flex items-center gap-2 text-sm">
+              <Checkbox
+                id="ai-workdays"
+                checked={schedule.workdays}
+                onCheckedChange={(next) => set({ workdays: next === true })}
+                disabled={disabled}
+              />
+              <label htmlFor="ai-workdays" className="cursor-pointer">
+                Du lundi au vendredi seulement
+              </label>
+            </div>
+          )}
+
+          {schedule.frequency === 'weekly' && (
+            <fieldset className="flex gap-1">
+              <legend className="sr-only">Jours de la semaine</legend>
+              {WEEKDAYS.map((d) => {
+                const on = schedule.weekdays.includes(d.value)
+                return (
+                  <button
+                    key={d.value}
+                    type="button"
+                    aria-pressed={on}
+                    title={d.long}
+                    disabled={disabled}
+                    onClick={() =>
+                      set({
+                        weekdays: on
+                          ? schedule.weekdays.filter((v) => v !== d.value)
+                          : [...schedule.weekdays, d.value],
+                      })
+                    }
+                    className={cn(
+                      'size-8 rounded-full border text-xs font-medium transition-colors',
+                      on ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-muted',
+                    )}
+                  >
+                    {d.short}
+                  </button>
+                )
+              })}
+            </fieldset>
+          )}
+
+          {schedule.frequency === 'custom' && (
+            <CronInput
+              value={schedule.cron}
+              onChange={(cron) => set({ cron })}
+              disabled={disabled}
+            />
+          )}
+
+          <div className="space-y-1 text-sm">
+            <p>
+              <span className="font-medium">{describe(schedule)}</span>
+              <span className="text-muted-foreground"> · fuseau {value.timezone}</span>
+            </p>
+            <SchedulePreview cron={cronOf(schedule)} timezone={value.timezone} />
+            {pace !== null && (
+              <p className="text-xs text-muted-foreground">
+                ≈ {pace}. Chaque recalcul appelle le modèle une fois par ligne de la table.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </fieldset>
+  )
+}
+
+const CRON_PARTS = [
+  { name: 'minute', range: '0–59' },
+  { name: 'heure', range: '0–23' },
+  { name: 'jour du mois', range: '1–31' },
+  { name: 'mois', range: '1–12' },
+  { name: 'jour de semaine', range: '0–7, 0 et 7 = dimanche' },
+] as const
+
+function CronInput({
+  value,
+  onChange,
+  disabled,
+}: {
+  readonly value: string
+  readonly onChange: (next: string) => void
+  readonly disabled?: boolean
+}) {
+  const [help, setHelp] = useState(false)
+  const parts = value
+    .trim()
+    .split(/\s+/)
+    .filter((p) => p !== '')
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2">
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          placeholder="0 8 * * 1-5"
+          className="h-8 max-w-56 font-mono"
+          aria-label="Expression cron"
+          spellCheck={false}
+        />
+        <Button variant="link" size="sm" className="px-0" onClick={() => setHelp(!help)}>
+          {help ? 'Masquer l’aide' : 'Aide'}
+        </Button>
+      </div>
+      {help && (
+        <div className="space-y-2 rounded-md border bg-background p-3 text-xs">
+          {/* The expression as typed, each of its five parts over what it means. */}
+          <table className="w-full table-fixed border-collapse text-center">
+            <tbody>
+              <tr className="font-mono text-sm">
+                {CRON_PARTS.map((part, i) => (
+                  <td key={part.name} className="border-b pb-1">
+                    {parts[i] ?? '·'}
+                  </td>
+                ))}
+              </tr>
+              <tr className="align-top">
+                {CRON_PARTS.map((part) => (
+                  <td key={part.name} className="px-1 pt-1">
+                    {part.name}
+                    <span className="block text-muted-foreground">{part.range}</span>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+          <p className="text-muted-foreground">
+            <code>*</code> toutes les valeurs · <code>1,15</code> une liste · <code>1-5</code> un
+            intervalle · <code>*/6</code> un pas.
+          </p>
+          <ul className="space-y-0.5">
+            {[
+              ['0 8 * * 1-5', 'du lundi au vendredi à 8 h'],
+              ['*/30 * * * *', 'toutes les 30 minutes'],
+              ['0 */6 * * *', 'toutes les 6 heures'],
+              ['0 9 1 * *', 'le 1er de chaque mois à 9 h'],
+              ['0 7 * * 1', 'chaque lundi à 7 h'],
+            ].map(([cron, meaning]) => (
+              <li key={cron}>
+                <button
+                  type="button"
+                  className="font-mono text-primary hover:underline"
+                  onClick={() => onChange(cron)}
+                  disabled={disabled}
+                >
+                  {cron}
+                </button>{' '}
+                <span className="text-muted-foreground">— {meaning}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-muted-foreground">Au plus un recalcul toutes les 15 minutes.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The next runs, from the server — the one that will run them, so what is shown is what
+ * will happen, summer time included. A refusal is shown in place, as the person types.
+ */
+function SchedulePreview({ cron, timezone }: { readonly cron: string; readonly timezone: string }) {
+  const [state, setState] = useState<{ runs?: readonly string[]; error?: string }>({})
+
+  useEffect(() => {
+    let current = true
+    const timer = setTimeout(() => {
+      api
+        .previewSchedule(cron, timezone)
+        .then((result) => current && setState({ runs: result.runs }))
+        .catch((e) => current && setState({ error: reasonFor(e) }))
+    }, 300)
+    return () => {
+      current = false
+      clearTimeout(timer)
+    }
+  }, [cron, timezone])
+
+  const format = useMemo(
+    () =>
+      new Intl.DateTimeFormat('fr-FR', {
+        timeZone: timezone,
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    [timezone],
+  )
+
+  if (state.error !== undefined) {
+    return (
+      <p className="flex items-center gap-1.5 text-xs text-destructive" role="alert">
+        <AlertTriangle className="size-3.5" />
+        {state.error}
+      </p>
+    )
+  }
+  if (state.runs === undefined) return null
+  return (
+    <p className="text-xs text-muted-foreground">
+      Prochains passages : {state.runs.map((r) => format.format(new Date(r))).join(' · ')}
+    </p>
+  )
+}
+
+const when = (iso: string | null) =>
+  iso === null
+    ? null
+    : new Date(iso).toLocaleString('fr-FR', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+
+/** How the field is doing — what the edit dialog opens with. */
+export function AiStatusSummary({ status }: { readonly status: AiFieldStatus }) {
+  const lastRun = when(status.last_run_at)
+  const next = when(status.next_sweep_at)
+  return (
+    <div className="space-y-1 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+      <p>
+        {status.computed_count} cellule{status.computed_count > 1 ? 's' : ''} calculée
+        {status.computed_count > 1 ? 's' : ''}
+        {lastRun !== null && ` · dernier passage le ${lastRun}`}
+        {status.refresh.mode === 'schedule' && next !== null && ` · prochain recalcul le ${next}`}
+      </p>
+      {status.sweeping && <p>Recalcul de toutes les lignes en cours…</p>}
+      {status.last_error !== null && (
+        <p className="flex items-start gap-1.5 text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="mt-px size-3.5 shrink-0" />
+          <span>
+            Dernier incident{status.last_error_at !== null && ` (${when(status.last_error_at)})`} :{' '}
+            {sentenceFor(status.last_error)}
+          </span>
+        </p>
+      )}
+    </div>
+  )
+}

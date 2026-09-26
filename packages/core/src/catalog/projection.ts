@@ -1,4 +1,5 @@
 import { qualify } from '@basedb/naming'
+import { COMPUTED_KINDS } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import type { ActorGrants } from '../rbac/decide.js'
 import { type Action, SYSTEM_COLUMNS, type Target, decide } from '../rbac/decide.js'
@@ -73,6 +74,11 @@ export interface ProjectedField {
    * what lets the documentation say which columns an agent will not.
    */
   readonly hiddenFromAgents?: boolean
+  /**
+   * Present and `true` when the field is computed by the AI (chapter 12 §1.5): its value
+   * is the model's, written by the kernel, and nobody else's — hence also `readOnly`.
+   */
+  readonly ai?: boolean
 }
 
 export interface ProjectedTable {
@@ -123,6 +129,19 @@ export interface ProjectedBase {
   readonly color: string | null
   readonly icon: string | null
   readonly image: string | null
+  /** Which environment of its base this one is (chapter 14). */
+  readonly environment: BaseEnvironment
+}
+
+/**
+ * The environment a base is — production, recette… (chapter 14). The environments of one
+ * base share its lineage; production is the one there is before any other.
+ */
+export interface BaseEnvironment {
+  readonly lineage: string
+  readonly label: string
+  readonly production: boolean
+  readonly position: number
 }
 
 /** One line of `GET /meta/bases`. */
@@ -151,6 +170,10 @@ export interface BaseRow extends Record<string, unknown> {
   readonly mcp_enabled: boolean
   readonly catalog_version: string
   readonly project_id: string
+  readonly lineage_id: string
+  readonly environment: string
+  readonly is_production: boolean
+  readonly environment_position: number
 }
 
 /** A project: the grouping of bases the interface navigates by (02, 05 §15). */
@@ -159,6 +182,9 @@ export interface ProjectRow extends Record<string, unknown> {
   readonly label: string
   readonly description: string | null
   readonly position: number
+  readonly color: string | null
+  readonly icon: string | null
+  readonly image: string | null
 }
 
 export interface TableRow extends Record<string, unknown> {
@@ -190,6 +216,8 @@ export interface FieldRow extends Record<string, unknown> {
   readonly formula_expression: string | null
   readonly formula_result_kind: string | null
   readonly formula_is_stored: boolean | null
+  /** The AI option is on: a model fills the field (`field_ai_config`). */
+  readonly has_ai: boolean
 }
 
 /**
@@ -254,7 +282,7 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
   const tenant = [ctx.tenantId]
 
   const projects = await exec.query<ProjectRow>(
-    `SELECT p.id, p.label, p.description, p.position
+    `SELECT p.id, p.label, p.description, p.position, p.color, p.icon, p.image
        FROM _basedb.project p
        JOIN _basedb.tenant t ON t.id = p.tenant_id
       WHERE t.ref = $1 AND p.deleted_at IS NULL
@@ -264,14 +292,15 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
 
   const bases = await exec.query<BaseRow>(
     `SELECT b.id, b.label, b.description, b.color, b.icon, b.image, sn.name AS schema_name,
-            b.mcp_enabled, b.catalog_version, b.project_id
+            b.mcp_enabled, b.catalog_version, b.project_id,
+            b.lineage_id, b.environment, b.is_production, b.environment_position
        FROM _basedb.base b
        JOIN _basedb.tenant t         ON t.id = b.tenant_id
        JOIN _basedb.db_schema s      ON s.base_id = b.id AND s.role = 'current'
                                     AND s.dropped_at IS NULL
        JOIN _basedb.physical_name sn ON sn.id = s.name_id
       WHERE t.ref = $1 AND b.is_live AND b.deleted_at IS NULL
-      ORDER BY b.label`,
+      ORDER BY b.label, NOT b.is_production, b.environment_position, b.environment`,
     tenant,
   )
 
@@ -294,7 +323,8 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
     `SELECT f.id, f.table_id, f.label, f.description, f.kind, f.is_required, n.name AS column,
             coalesce(tc.is_rich, false) AS is_rich, f.expose_to_agents, tc.max_length,
             fc.input_expression AS formula_expression, fc.result_kind AS formula_result_kind,
-            fc.is_stored AS formula_is_stored
+            fc.is_stored AS formula_is_stored,
+            EXISTS (SELECT 1 FROM _basedb.field_ai_config a WHERE a.field_id = f.id) AS has_ai
        FROM _basedb.field f
        JOIN _basedb.physical_name n ON n.id = f.name_id
        LEFT JOIN _basedb.field_text_config tc    ON tc.field_id = f.id
@@ -492,6 +522,9 @@ export function targetFactory(
       fieldIds: fields.map((f) => f.id),
       agentHiddenFieldIds: fields.filter((f) => !f.expose_to_agents).map((f) => f.id),
       agentsExcluded: agentsExcluded.has(table.base_id),
+      computedFieldIds: fields
+        .filter((f) => COMPUTED_KINDS.has(f.kind) || f.has_ai)
+        .map((f) => f.id),
     }
   }
 }
@@ -613,6 +646,7 @@ export function project(
           ...(raw.options.has(field.id) ? { options: raw.options.get(field.id) } : {}),
           ...(projectedLink === undefined ? {} : { link: projectedLink }),
           ...(field.expose_to_agents ? {} : { hiddenFromAgents: true }),
+          ...(field.has_ai ? { ai: true } : {}),
         })
       }
 
@@ -660,11 +694,22 @@ export function project(
         color: base.color,
         icon: base.icon,
         image: base.image,
+        environment: environmentOf(base),
       })
     }
   }
 
   return projected
+}
+
+/** A base row's environment, as every serialization names it. */
+export function environmentOf(base: BaseRow): BaseEnvironment {
+  return {
+    lineage: base.lineage_id,
+    label: base.environment,
+    production: base.is_production,
+    position: base.environment_position,
+  }
 }
 
 /** Everything a projection needs, read once and reused while the counters hold still. */

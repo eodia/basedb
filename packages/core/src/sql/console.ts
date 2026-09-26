@@ -58,6 +58,11 @@ export interface SqlConsoleRequest {
   readonly baseId: string
   readonly sql: string
   readonly limit?: number
+  /**
+   * One statement, in a `READ ONLY` transaction — what the copilot runs to read, with
+   * nobody reviewing the text before it executes. The console itself never sets it.
+   */
+  readonly readOnly?: boolean
 }
 
 export interface SqlColumn {
@@ -190,11 +195,29 @@ export async function runConsoleSql(
       })
     }
 
+    // The history must say WHO wrote through the console, not "a direct SQL session":
+    // the person is known here. Session-level, since the statement may run its own
+    // `BEGIN` / `COMMIT` — and reset below, the connection being pooled. Not a security
+    // boundary (07 §2.3): a statement could change them, and would only lie about itself.
+    await client.query(
+      `SELECT set_config('basedb.actor_kind', 'user', false),
+              set_config('basedb.actor_id', $1, false),
+              set_config('basedb.surface', 'rest', false)`,
+      [ctx.actor.id],
+    )
+
     // No transaction wrapper: a console must be able to run `BEGIN` / `COMMIT` itself,
     // and wrapping would make the submitted text a nested transaction it cannot control.
+    //
+    // Except in READ ONLY mode — a statement no person typed, the copilot's. There the
+    // wrapper IS the guarantee: a `READ ONLY` transaction refuses any write, down to one
+    // hidden in a CTE or a function, and the EXTENDED protocol refuses a second statement,
+    // so a `COMMIT; DELETE …` cannot step out of it. The `ROLLBACK` below closes it.
+    if (request.readOnly === true) await client.query('BEGIN TRANSACTION READ ONLY')
     const raw = (await client.query({
       text: sql,
       rowMode: 'array' as const,
+      ...(request.readOnly === true ? { queryMode: 'extended' as const } : {}),
     })) as unknown as ConsoleQueryResult | ConsoleQueryResult[]
     const results: ConsoleQueryResult[] = Array.isArray(raw) ? raw : [raw]
     // Several statements separated by `;` come back as several results. The LAST one
@@ -244,6 +267,16 @@ export async function runConsoleSql(
     await audit(pools, ctx, request.baseId, sql, null, null, refusal.code)
     throw refusal
   } finally {
+    if (client !== undefined) {
+      // What the statement left behind goes with it: an open transaction, and the identity
+      // set above, which must not follow the connection to the next caller.
+      await client.query('ROLLBACK').catch(() => undefined)
+      await client
+        .query(
+          "SELECT set_config('basedb.actor_kind', '', false), set_config('basedb.actor_id', '', false)",
+        )
+        .catch(() => undefined)
+    }
     client?.release()
   }
 }

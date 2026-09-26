@@ -331,7 +331,7 @@ describe('handshake and session (§9.4)', () => {
 })
 
 describe('the tool catalog (§2)', () => {
-  it('tools/list declares exactly the nine tools of lots 1 and 2', async () => {
+  it('tools/list declares exactly the twelve tools of lots 1 to 3', async () => {
     const session = await open(reader)
     const r = await rpc(reader, request('tools/list'), session)
     const tools = (r.body?.result as { tools: Array<{ name: string; description: string }> }).tools
@@ -340,10 +340,13 @@ describe('the tool catalog (§2)', () => {
         'create_record',
         'describe_base',
         'describe_table',
+        'get_proposal',
         'get_record',
         'list_bases',
         'list_records',
         'lookup_records',
+        'propose_add_field',
+        'propose_create_table',
         'update_record',
         'whoami',
       ].sort(),
@@ -364,14 +367,120 @@ describe('the tool catalog (§2)', () => {
     expect(a.text).toBe(b.text)
   })
 
-  it('an unknown tool, lot 3 included, is the protocol error, not a tool result', async () => {
+  it('an unknown tool — a base proposal included — is the protocol error, not a tool result', async () => {
     const session = await open(writer)
     const r = await rpc(
       writer,
-      request('tools/call', { name: 'propose_add_field', arguments: {} }),
+      request('tools/call', { name: 'propose_create_base', arguments: {} }),
       session,
     )
     expect(r.body?.error?.code).toBe(-32602)
+  })
+})
+
+describe('structure proposals (§7)', () => {
+  it('propose_add_field changes nothing, says where a person decides, and is followed', async () => {
+    const session = await open(writer)
+    const proposed = await call(writer, session, 'propose_add_field', {
+      base: 'crm',
+      table: 'clients',
+      label: 'Secteur',
+      kind: 'select',
+      description: 'Le secteur d’activité.',
+      options: [{ value: 'industrie', label: 'Industrie' }, { value: 'services' }],
+    })
+    expect(proposed.isError, proposed.text).toBe(false)
+    const p = proposed.payload
+    expect(p.status).toBe('proposed')
+    expect(p.base.name).toBe('crm')
+    expect(p.approval).toEqual({
+      where: expect.stringContaining('Propositions'),
+      url: null,
+    })
+    expect(p.summary_template).toBe('add_field')
+    expect(p.summary_params.field_label).toEqual({ value: 'Secteur', provenance: 'user_data' })
+    expect(Array.isArray(p.up_sql) && Array.isArray(p.down_sql)).toBe(true)
+    const columns = async () =>
+      (
+        await sql.query(
+          `SELECT column_name FROM information_schema.columns
+            WHERE table_schema = $1 AND table_name = 'clients'`,
+          [crm.schemaName],
+        )
+      ).rows.map((r) => r.column_name)
+    expect(await columns()).not.toContain('secteur')
+
+    await kernel.approveProposal(admin, { proposalId: p.proposal_id })
+    expect(await columns()).toContain('secteur')
+    const followed = await call(writer, session, 'get_proposal', { proposal_id: p.proposal_id })
+    expect(followed.payload.status).toBe('applied')
+    expect(followed.payload.decided_at).toEqual(expect.any(String))
+  })
+
+  it('propose_create_table: stage 1 names every faulty entry, before the catalog', async () => {
+    const session = await open(writer)
+    const bad = await call(writer, session, 'propose_create_table', {
+      base: 'crm',
+      label: 'Devis',
+      fields: [
+        { label: 'Numéro', kind: 'short_text' },
+        { label: '', kind: 'link' },
+      ],
+    })
+    expect(bad.payload.code).toBe('PARAMETER_INVALID')
+    expect(bad.text).toContain('fields[1].label')
+    expect(bad.text).toContain('fields[1].kind')
+
+    const ok = await call(writer, session, 'propose_create_table', {
+      base: 'crm',
+      label: 'Devis',
+      fields: [{ label: 'Numéro', kind: 'short_text', required: true }],
+    })
+    expect(ok.payload.status).toBe('proposed')
+    expect(ok.payload.affected_objects[0].role).toBe('created')
+    await kernel.rejectProposal(admin, { proposalId: ok.payload.proposal_id })
+    const followed = await call(writer, session, 'get_proposal', {
+      proposal_id: ok.payload.proposal_id,
+    })
+    expect(followed.payload.status).toBe('rejected')
+  })
+
+  it('cascade is refused by name; a read-only token proposes nothing', async () => {
+    const session = await open(writer)
+    const cascade = await call(writer, session, 'propose_add_field', {
+      base: 'crm',
+      table: 'factures',
+      label: 'Client bis',
+      kind: 'link',
+      target: 'clients',
+      on_delete: 'cascade',
+    })
+    expect(cascade.payload.code).toBe('MCP_CASCADE_FORBIDDEN')
+
+    const readSession = await open(reader)
+    const refused = await call(reader, readSession, 'propose_add_field', {
+      base: 'crm',
+      table: 'clients',
+      label: 'Autre',
+      kind: 'short_text',
+    })
+    expect(refused.payload.code).toBe('TOKEN_READ_ONLY')
+  })
+
+  it('get_proposal: another token’s proposal does not exist', async () => {
+    const session = await open(writer)
+    const mine = await call(writer, session, 'propose_add_field', {
+      base: 'crm',
+      table: 'clients',
+      label: 'Site web',
+      kind: 'short_text',
+    })
+    const readSession = await open(reader)
+    const other = await call(reader, readSession, 'get_proposal', {
+      proposal_id: mine.payload.proposal_id,
+    })
+    expect(other.payload.code).toBe('RESOURCE_NOT_FOUND')
+    await kernel.rejectProposal(admin, { proposalId: mine.payload.proposal_id })
   })
 })
 

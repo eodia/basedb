@@ -235,6 +235,35 @@ async function buildGraph(exec: Executor, ctx: RequestContext): Promise<AccessGr
   return { groups, projects: tree, cells }
 }
 
+/**
+ * What each group has on one table — the level the grid shows in its cell, inherited
+ * or not. The Administrators have « Gestion » everywhere. `null` when the table is not a
+ * live table of the tenant.
+ */
+export async function groupLevelsOnTable(
+  exec: Executor,
+  ctx: RequestContext,
+  tableId: string,
+): Promise<Map<string, AccessLevel> | null> {
+  const tree = await loadTree(exec, ctx)
+  const where = locate(tree, { kind: 'table', id: tableId })
+  if (where === null) return null
+  const groups = await loadGroups(exec, ctx)
+  const grants = await loadGrants(exec, ctx)
+  const out = new Map<string, AccessLevel>()
+  for (const group of groups) {
+    if (group.system === 'admins') {
+      out.set(group.id, 'manage')
+      continue
+    }
+    const direct = grants.get(group.id)
+    let level: AccessLevel = 'none'
+    for (const node of where.path) level = max(level, direct?.get(node) ?? 'none')
+    out.set(group.id, level)
+  }
+  return out
+}
+
 /** The whole grid: groups, projects, bases, tables, and what each group has on each. */
 export async function accessGraph(pools: Pools, ctx: RequestContext): Promise<AccessGraph> {
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
