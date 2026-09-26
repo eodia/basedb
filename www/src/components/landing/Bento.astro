@@ -1,6 +1,6 @@
 ---
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const views = ['Grille', 'Kanban', 'Calendrier', 'Chronologie', 'Formulaire', 'Questionnaire'];
+const views = ['Grille', 'Kanban', 'Calendrier', 'Chronologie', 'Galerie', 'Liste', 'Formulaire', 'Questionnaire'];
 const actors = [
 	{ label: 'Une personne', tone: 'green' },
 	{ label: 'Un jeton d’API', tone: 'blue' },
@@ -22,8 +22,29 @@ const small = [
 	},
 	{
 		title: 'Relations',
-		text: 'De vraies clés étrangères entre tables, une valeur d’affichage lisible, des filtres qui traversent la relation.',
-		href: `${base}/fonctionnalites/tables-et-champs/`,
+		text: 'De vraies clés étrangères entre tables, ou des relations multiples ; une valeur d’affichage lisible, des filtres qui traversent la relation.',
+		href: `${base}/fonctionnalites/tables-et-champs/#les-relations`,
+	},
+	{
+		title: 'Formules et champs calculés',
+		text: 'Des formules en français, calculées par PostgreSQL ; des recherches, cumuls et décomptes à travers les relations.',
+		code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+		href: `${base}/fonctionnalites/tables-et-champs/#formules`,
+	},
+	{
+		title: 'Vues partagées',
+		text: 'Une vue en lecture seule par un lien, intégrable à un autre site ; un calendrier devient un flux pour votre agenda.',
+		href: `${base}/fonctionnalites/vues-partagees/`,
+	},
+	{
+		title: 'Tables synchronisées',
+		text: 'Une table tenue à jour depuis un CSV en ligne, un agenda, ou la vue partagée d’un autre basedb.',
+		href: `${base}/integrations/synchronisation/`,
+	},
+	{
+		title: 'Modèles de base',
+		text: 'Dix modèles prêts à l’emploi, une base décrite en une phrase à l’IA, et la vôtre enregistrée comme modèle.',
+		href: `${base}/modeles/`,
 	},
 	{
 		title: 'Fichiers et images',
@@ -46,11 +67,6 @@ const small = [
 		href: `${base}/integrations/webhooks/`,
 	},
 	{
-		title: 'Documentation générée',
-		text: 'Pour chaque base, une documentation de l’API et du MCP, filtrée par vos droits, et sa spécification OpenAPI 3.1.',
-		href: `${base}/integrations/api-rest/`,
-	},
-	{
 		title: 'Console SQL',
 		text: 'Écrivez du SQL dans l’interface, sur les vrais noms, avec la même grille pour lire le résultat.',
 		href: `${base}/integrations/sql/`,
@@ -67,8 +83,8 @@ const small = [
 
 	<div class="grid">
 		<article class="card wide views bd-reveal">
-			<h3>Six vues sur les mêmes lignes</h3>
-			<p>Enregistrées et partagées à l’échelle de la table : chacun choisit sa façon de lire, personne ne copie les données.</p>
+			<h3>Huit vues sur les mêmes lignes</h3>
+			<p>Collaboratives pour toute l’équipe, ou personnelles pour soi seul : chacun choisit sa façon de lire, personne ne copie les données.</p>
 			<div class="chips">
 				{views.map((v, i) => <span class:list={['view', `v${i}`]}>{v}</span>)}
 			</div>
@@ -99,7 +115,7 @@ const small = [
 			<h3>Un historique qui n’oublie personne</h3>
 			<p>
 				Capturé par déclencheur dans la transaction même : même une écriture faite en SQL direct est tracée, avec
-				ses valeurs d’avant. Une modification s’annule, une ligne supprimée se restaure.
+				ses valeurs d’avant. Ctrl+Z annule une modification, une ligne supprimée se restaure.
 			</p>
 			<div class="actors">
 				{actors.map((a) => <span class:list={['actor', a.tone]}>{a.label}</span>)}
@@ -195,7 +211,9 @@ const small = [
 	.v2 { color: #2563eb; }
 	.v3 { color: #0e7490; }
 	.v4 { color: #7c3aed; }
-	.v5 { color: #be185d; }
+	.v5 { color: #b45309; }
+	.v6 { color: #4f46e5; }
+	.v7 { color: #be185d; }
 	.link {
 		display: flex;
 		align-items: center;

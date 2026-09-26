@@ -1,10 +1,16 @@
 name: Déployer le site
 
-# The public site (www/, Astro + Starlight) on GitHub Pages: by hand, or with a `www-v*` tag.
+# The public site (www/, Astro + Starlight) on GitHub Pages: by hand, with a `www-v*` tag,
+# or when a base template changes — the site publishes the catalog every instance reads
+# (docs/architecture/20-modeles.md §3.1).
 on:
   push:
     tags:
       - 'www-v*'
+    branches:
+      - main
+    paths:
+      - 'packages/templates/catalog/**'
   workflow_dispatch:
 
 permissions:
@@ -22,7 +28,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: www
+          # The site reads the templates' files and checks them with the shared validator.
+          sparse-checkout: |
+            www
+            packages/templates/catalog
+            packages/contracts/src
 
       - uses: actions/setup-node@v4
         with:

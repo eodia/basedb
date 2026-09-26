@@ -12,9 +12,9 @@ dessous, y compris ce qui sera créé plus tard.
 | Niveau | Permet |
 |---|---|
 | **Aucun accès** | rien : la ressource est invisible |
-| **Lecture** | voir les lignes |
-| **Édition** | créer, modifier, supprimer des lignes |
-| **Gestion** | et changer la structure, créer des vues et des jetons |
+| **Lecture** | voir les lignes, les commenter, se faire des vues personnelles, consulter la structure et les interfaces |
+| **Édition** | et créer, modifier, supprimer des lignes |
+| **Gestion** | et changer la structure, créer les vues partagées, les interfaces, les automatisations, les intégrations et les jetons |
 
 Les droits **s’additionnent** : une personne reçoit le niveau le plus élevé que lui donne l’un de
 ses groupes. Donner moins à une table qu’à sa base la rend « granulaire ».
@@ -42,6 +42,11 @@ Filtrer ou trier sur lui répond comme pour un champ qui n’existe pas.
 
 ## Le point d’application unique
 
-Toutes les surfaces — interface, API, MCP, formulaires partagés — passent par le même point de
-décision des droits, dans le noyau. Il n’existe pas de route privée de l’interface : ce que
-l’écran n’affiche pas, c’est que l’API ne l’a pas renvoyé.
+Toutes les surfaces — interface, API, MCP, formulaires et vues partagés, automatisations —
+passent par le même point de décision des droits, dans le noyau. Il n’existe pas de route
+privée de l’interface : ce que l’écran n’affiche pas, c’est que l’API ne l’a pas renvoyé.
+
+L’inverse vaut aussi : l’écran **ne propose pas ce qui serait refusé**. Sans le niveau
+Gestion, l’écran Structure se consulte sans bouton ni crayon, et l’import ne propose pas de
+créer une table ; sans le droit de créer ou de supprimer des lignes, la grille n’offre ni ligne
+d’ajout ni « Supprimer ».

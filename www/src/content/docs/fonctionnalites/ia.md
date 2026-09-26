@@ -44,6 +44,9 @@ Catégorie de {{Description}} parmi les choix de la liste.
 
 - **Brouillons** : décrire une table ou une formule en une phrase, et recevoir une proposition à
   relire. Ne partent que des libellés, des types et la phrase saisie — aucune valeur de cellule.
+- **Modèles** : décrire une base entière — « le suivi des réclamations de mes clients » — et
+  recevoir tables, lignes d’exemple, vues, tableau de bord et automatisations, à affiner puis à
+  créer. Seule la phrase part. Voir [Modèles de base](/basedb/fonctionnalites/modeles/#le-demander-à-lia).
 - **Copilote** : une conversation sur la base affichée. On demande un filtre, une requête, des
   colonnes, une table, un jeu d’essai ; chaque proposition arrive comme une carte et s’applique
   d’un clic, par les mêmes routes que les formulaires.

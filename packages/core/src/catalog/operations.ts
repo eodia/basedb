@@ -13,7 +13,7 @@ import { loadProjectTarget, requireAction, requireOnBase } from '../rbac/require
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { commentText, normalizeDescription } from './description.js'
-import { addUrlCheck } from './url-field.js'
+import { addPatternCheck } from './url-field.js'
 
 /**
  * Structure operations — chapter 03.
@@ -177,6 +177,16 @@ export async function createTable(
   const fieldDescriptions = request.fields.map((f, i) =>
     normalizeDescription(f.description, `fields[${i}].description`),
   )
+  // A formula needs fields to cite, a lookup a relation to follow: they are added once the
+  // table exists, one by one (chapter 04 §7, §7 ter).
+  const computed = request.fields.findIndex((f) =>
+    ['formula', 'lookup', 'rollup', 'count', 'button'].includes(f.kind),
+  )
+  if (computed >= 0) {
+    throw new BasedbError('REQUEST_INVALID', {
+      details: { field: `fields[${computed}].kind`, reason: 'champ_calcule_apres_creation' },
+    })
+  }
 
   return withTransaction(pools, 'ddl', ctx, async (exec) => {
     // A table is added by whoever may build in its base (chapter 05 §8).
@@ -284,10 +294,10 @@ export async function createTable(
 
     await exec.query(sqlCreateTable(schema.name, tableName.name, columns), [], 'ddl')
 
-    // A `url` column is held to being an address from its first row on.
+    // A `url` or `email` column is held to being an address from its first row on.
     for (const f of fields) {
-      if (f.kind !== 'url') continue
-      await addUrlCheck(
+      if (f.kind !== 'url' && f.kind !== 'email') continue
+      await addPatternCheck(
         exec,
         ctx,
         {
@@ -298,6 +308,7 @@ export async function createTable(
         },
         f.fieldId,
         f.name,
+        f.kind,
       )
     }
 
@@ -395,8 +406,12 @@ async function insertConfigSatellite(
         'insert',
       )
       return
-    // No satellite for an address: its CHECK is posed with the table.
+    // No satellite for an address: its CHECK is posed with the table. None either for an
+    // autonumber — the identity is all there is — nor for a person.
     case 'url':
+    case 'email':
+    case 'autonumber':
+    case 'user':
       return
     default:
       // `select`, `link` and `formula` require configuration the caller must supply:

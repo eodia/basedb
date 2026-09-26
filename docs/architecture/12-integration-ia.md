@@ -46,6 +46,7 @@ usages de brouillon restent soumis aux deux invariants sans exception.
 | `expression_draft` | Une phrase, plus les libellés et types des champs de la table visée | Une formule ou un filtre, dans la grammaire fermée de « Types de champs » et de « API REST, OpenAPI, webhooks, jetons d'intégration » | L'expression s'affiche dans l'éditeur, passe le validateur ordinaire, et n'est enregistrée que par une action explicite |
 | `field_compute` | La consigne d'un champ calculé par l'IA, les valeurs de la ligne qu'elle cite, les libellés de la table et du champ, le format attendu du type du champ | Une chaîne, `{ "value": string }`, relue dans le type du champ | Écrite dans la cellule par le noyau — l'exception du § 1.5 |
 | `copilot` | Une conversation, la structure lisible de la base et, sur consentement, des lignes lues | Une réponse en texte et des propositions typées : filtre, requête, colonnes, table, lignes à insérer ou à modifier | Chaque proposition s'applique d'un clic, par les routes ordinaires (§ 1.6) |
+| `template_draft` | Une phrase décrivant un usage, la proposition précédente quand on l'affine, la date du jour | Un modèle de base complet au format du chapitre 20 : tables, champs, relations, lignes d'exemple, vues, tableaux de bord, automatisations | Le modèle s'affiche dans la galerie ; la base n'est créée que par « Créer la base » (§ 1.7) |
 
 La réponse est exigée sous forme structurée et validée contre un schéma avant d'être
 montrée. Une réponse non conforme est rejetée, jamais réinterprétée : le texte libre
@@ -204,6 +205,23 @@ d'écrire cinquante lignes.
 **Les données lues sont des données** : la consigne fermée le dit au modèle, et une
 consigne cachée dans une cellule ne peut produire qu'une proposition, que la personne
 lit avant de l'appliquer, jamais une action.
+
+### 1.7 Proposer un modèle de base
+
+*Décision du propriétaire* (A30). La galerie de modèles (chapitre 20 §5) demande à l'IA un
+modèle de base à partir d'une phrase. L'usage produit un brouillon, comme les deux
+premiers (INV-IA1) : la proposition est validée par le validateur des modèles, en mode
+réparation — ce qui ne tient pas est retiré et dit —, montrée en entier, et ne devient une
+base que par le geste de la personne, qui l'applique par les routes ordinaires.
+
+INV-IA2 tient sans exception : la charge utile ne porte que la phrase, la proposition
+précédente quand la personne l'affine — un modèle que l'IA a elle-même écrit — et la date du
+jour ; aucun libellé, aucune valeur d'aucune base. Le droit demandé est celui de l'acte
+préparé : `manage_schema` sur le projet où la base sera créée. Chaque appel est compté dans
+`ai_call` sous `usage_kind = 'template_draft'` et sous le plafond horaire des usages
+interactifs ; 90 secondes et 12 000 jetons par appel, le temps d'écrire des lignes
+d'exemple. Les champs calculés par l'IA que la proposition contient ne sont créés comme tels
+qu'avec le consentement du § 1.5, demandé au moment de créer la base.
 
 ---
 

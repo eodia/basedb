@@ -73,6 +73,9 @@ function classOf(code: ErrorCode): ErrorClass {
       return 'forbidden'
     case 409:
       return 'conflict'
+    // A service the product depends on did not answer — a synced table's source, a
+    // webhook, an AI provider: said to the caller as such, not hidden as a defect.
+    case 502:
     case 503:
       return 'unavailable'
     case null:
@@ -191,6 +194,13 @@ function constraintDetails(error: PgErrorLike): Record<string, unknown> {
   if (error.constraint !== undefined) details.constraint = error.constraint
   if (error.column !== undefined) details.column = error.column
   if (error.table !== undefined) details.table = error.table
+  // The row a multi-link's trigger names — missing, or still linked (chapter 04 §4 bis).
+  if (
+    error.detail !== undefined &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(error.detail)
+  ) {
+    details.id = error.detail
+  }
   return details
 }
 

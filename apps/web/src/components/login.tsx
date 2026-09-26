@@ -1,11 +1,22 @@
 'use client'
 
-import { Clouds } from '@/components/clouds'
+import { Brand } from '@/components/brand'
+import { LoginBrand, LoginVisual } from '@/components/login-visual'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { api } from '@/lib/api/client'
 import { messageFor } from '@/lib/messages'
+import {
+  ArrowRight,
+  ArrowUpRight,
+  ChevronDown,
+  CircleAlert,
+  Eye,
+  EyeOff,
+  Loader2,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
+import styles from './login.module.css'
 
 /**
  * Login screen — chapter 13.
@@ -21,6 +32,7 @@ export function Login({ onSignedIn }: { readonly onSignedIn: () => void }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [passwordVisible, setPasswordVisible] = useState(false)
   const [providers, setProviders] = useState<ReadonlyArray<{ slug: string; label: string }>>([])
 
   useEffect(() => {
@@ -45,6 +57,7 @@ export function Login({ onSignedIn }: { readonly onSignedIn: () => void }) {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (busy) return
     setBusy(true)
     setError(null)
     try {
@@ -58,86 +71,129 @@ export function Login({ onSignedIn }: { readonly onSignedIn: () => void }) {
   }
 
   return (
-    <>
-      <Clouds />
-      <main className="relative z-10 flex min-h-screen items-center justify-center p-6">
-        <div className="w-[min(26rem,92vw)] rounded-2xl border border-white/10 bg-zinc-950/80 p-7 text-zinc-100 shadow-2xl backdrop-blur-md">
-          <h1 className="text-2xl font-semibold tracking-tight">basedb</h1>
-          <p className="mt-1 mb-6 text-sm text-zinc-400">Des tables PostgreSQL nommées en clair.</p>
+    <main className={styles.page}>
+      <LoginVisual />
+      <section className={styles.loginPanel} aria-labelledby="login-title">
+        <header className={styles.panelHeader}>
+          <div className={styles.mobileBrand}>
+            <LoginBrand />
+          </div>
+          <span className={styles.headerLabel}>VOTRE ESPACE DE TRAVAIL</span>
+        </header>
 
-          <form onSubmit={submit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="block text-sm text-zinc-400">
-                Adresse
-              </label>
+        <div className={styles.formContainer}>
+          <div className={styles.welcomeMark} aria-hidden="true">
+            <ArrowUpRight size={22} strokeWidth={1.5} />
+          </div>
+          <p className={styles.formEyebrow}>TOUT COMMENCE ICI</p>
+          <h1 id="login-title">Heureux de vous retrouver.</h1>
+          <p className={styles.formDescription}>Connectez-vous pour donner vie à vos données.</p>
+
+          <form onSubmit={submit} className={styles.form} aria-busy={busy}>
+            <div className={styles.field}>
+              <label htmlFor="email">Adresse e-mail</label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder="vous@entreprise.fr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="border-white/15 bg-white/5 text-zinc-100 placeholder:text-zinc-500"
+                disabled={busy}
+                aria-describedby={error !== null ? 'login-error' : undefined}
+                className={styles.input}
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="block text-sm text-zinc-400">
-                Mot de passe
-              </label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="border-white/15 bg-white/5 text-zinc-100 placeholder:text-zinc-500"
-              />
+            <div className={styles.field}>
+              <label htmlFor="password">Mot de passe</label>
+              <div className={styles.passwordField}>
+                <Input
+                  id="password"
+                  name="password"
+                  type={passwordVisible ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="Votre mot de passe"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={busy}
+                  aria-describedby={error !== null ? 'login-error' : undefined}
+                  className={styles.input}
+                />
+                <button
+                  type="button"
+                  className={styles.passwordToggle}
+                  onClick={() => setPasswordVisible((visible) => !visible)}
+                  aria-label={
+                    passwordVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
+                  }
+                  aria-pressed={passwordVisible}
+                  aria-controls="password"
+                >
+                  {passwordVisible ? (
+                    <EyeOff size={18} aria-hidden="true" />
+                  ) : (
+                    <Eye size={18} aria-hidden="true" />
+                  )}
+                </button>
+              </div>
             </div>
+
+            {error !== null && (
+              <div id="login-error" role="alert" className={styles.error}>
+                <CircleAlert size={17} aria-hidden="true" />
+                <span>{error}</span>
+              </div>
+            )}
 
             <Button
               type="submit"
-              className="w-full"
+              className={styles.submit}
               disabled={busy || email === '' || password === ''}
             >
-              {busy ? 'Connexion…' : 'Se connecter'}
+              <span aria-live="polite">{busy ? 'Connexion en cours…' : 'Se connecter'}</span>
+              {busy ? (
+                <Loader2 className={styles.spinner} aria-hidden="true" />
+              ) : (
+                <ArrowRight aria-hidden="true" />
+              )}
             </Button>
           </form>
 
           {providers.length > 0 && (
-            <div className="mt-5">
-              <div className="mb-3 flex items-center gap-3 text-xs text-zinc-500">
-                <span className="h-px flex-1 bg-white/10" />
-                ou
-                <span className="h-px flex-1 bg-white/10" />
-              </div>
+            <div className={styles.providers}>
+              <div className={styles.divider}>ou continuer avec</div>
               {providers.map((p) => (
                 // A LINK, not a button with a fetch: the route answers with a redirect
                 // to the provider, and the browser must follow it itself.
-                <a
-                  key={p.slug}
-                  href={api.oidcStartUrl(p.slug)}
-                  className="mb-2 block rounded-md border border-white/15 bg-white/5 py-2 text-center text-sm font-medium transition-colors hover:bg-white/10"
-                >
+                <a key={p.slug} href={api.oidcStartUrl(p.slug)} className={styles.provider}>
                   Continuer avec {p.label}
                 </a>
               ))}
             </div>
           )}
 
-          {error !== null && (
-            <div className="mt-4 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-              {error}
-            </div>
-          )}
-
-          <p className="mt-5 text-xs text-zinc-500">
-            Premier démarrage : le mot de passe administrateur s’affiche dans le terminal du
-            serveur.
-          </p>
+          <details className={styles.help}>
+            <summary>
+              Première connexion ?<ChevronDown size={14} aria-hidden="true" />
+            </summary>
+            <p>
+              Le mot de passe administrateur s’affiche dans le terminal du serveur lors du premier
+              démarrage. Pour un accès à votre organisation, contactez votre administrateur.
+            </p>
+          </details>
         </div>
-      </main>
-    </>
+
+        <footer className={styles.panelFooter}>
+          <span>Vos données. Votre structure. Vos possibilités.</span>
+          <Brand size={16} className={styles.footerBrand} />
+        </footer>
+      </section>
+    </main>
   )
 }

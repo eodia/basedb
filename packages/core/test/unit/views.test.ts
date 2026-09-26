@@ -41,7 +41,72 @@ describe('normalizeViewSpec', () => {
       column_order: [],
       column_widths: {},
       page_size: 100,
+      group_by: null,
+      summaries: {},
+      row_height: 'short',
+      color_field: null,
+      color_rules: [],
+      color_style: 'both',
+      system_columns: [],
     })
+  })
+
+  it('shows a colour as a stripe, a background or both — per rule, and for the list', () => {
+    const spec = normalizeViewSpec(
+      'grid',
+      {
+        color_style: 'stripe',
+        color_rules: [
+          { filter: 'statut eq "fait"', color: '#16A34A', style: 'background' },
+          { filter: 'statut eq "a_faire"', color: '#DC2626' },
+        ],
+      },
+      FIELDS,
+    )
+    expect(spec).toMatchObject({
+      color_style: 'stripe',
+      color_rules: [
+        { color: '#16a34a', style: 'background' },
+        // A rule saved before styles existed shows both, as it always did.
+        { color: '#dc2626', style: 'both' },
+      ],
+    })
+    expect(() => normalizeViewSpec('grid', { color_style: 'border' }, FIELDS)).toThrow()
+    expect(() =>
+      normalizeViewSpec(
+        'grid',
+        { color_rules: [{ filter: '', color: '#16a34a', style: 'border' }] },
+        FIELDS,
+      ),
+    ).toThrow()
+  })
+
+  it('takes summaries its columns allow, and colour rules with a colour', () => {
+    const spec = normalizeViewSpec(
+      'grid',
+      {
+        summaries: { debut: 'max', nom: 'filled' },
+        color_rules: [{ filter: 'statut eq "fait"', color: '#16A34A' }],
+        group_by: 'statut',
+      },
+      FIELDS,
+    )
+    expect(spec).toMatchObject({
+      summaries: { debut: 'max', nom: 'filled' },
+      color_rules: [{ filter: 'statut eq "fait"', color: '#16a34a' }],
+      group_by: 'statut',
+    })
+    // A sum of a text means nothing: refused, like a group by long text.
+    expect(
+      reason(() => normalizeViewSpec('grid', { summaries: { nom: 'sum' } }, FIELDS)),
+    ).toMatchObject({ reason: 'valeur_invalide', detail: 'summaries' })
+    expect(reason(() => normalizeViewSpec('grid', { group_by: 'notes' }, FIELDS))).toMatchObject({
+      reason: 'type_de_champ_incompatible',
+    })
+    // A rule on a field the reader cannot see is dropped from what they receive.
+    const seen = projectViewSpec(spec, new Map([['nom', 'short_text']])).spec
+    expect(seen.color_rules).toEqual([])
+    expect(seen.summaries).toEqual({ nom: 'filled' })
   })
 
   it('clamps column widths rather than refusing a dragged value', () => {
@@ -158,6 +223,27 @@ describe('normalizeViewSpec', () => {
     ).toMatchObject({ reason: 'doublon' })
   })
 
+  it('shows system columns on request, and never asks them in a form', () => {
+    // As `readableFields` gives them: the system columns, then the fields.
+    const withSystem = new Map([['_created_at', 'datetime'], ['_created_by', 'user'], ...FIELDS])
+    const spec = normalizeViewSpec(
+      'grid',
+      {
+        system_columns: ['_created_by'],
+        sorts: [{ field: '_created_at', direction: 'desc' }],
+        group_by: '_created_by',
+      },
+      withSystem,
+    )
+    expect(spec).toMatchObject({ system_columns: ['_created_by'], group_by: '_created_by' })
+    expect(
+      reason(() => normalizeViewSpec('grid', { system_columns: ['nom'] }, withSystem)),
+    ).toMatchObject({ reason: 'type_de_champ_incompatible', detail: 'nom' })
+    expect(
+      reason(() => normalizeViewSpec('form', { fields: [{ field: '_created_at' }] }, withSystem)),
+    ).toMatchObject({ reason: 'type_de_champ_incompatible', detail: '_created_at' })
+  })
+
   it('holds a sort to three terms', () => {
     const sorts = ['nom', 'statut', 'debut', 'fin'].map((field) => ({ field, direction: 'asc' }))
     expect(reason(() => normalizeViewSpec('grid', { sorts }, FIELDS))).toMatchObject({
@@ -213,5 +299,54 @@ describe('projectViewSpec', () => {
       reader,
     )
     expect(spec.fields).toEqual([{ field: 'nom' }])
+  })
+})
+
+describe('gallery, list, dependencies, manual order', () => {
+  it('fills a gallery and a list with their defaults', () => {
+    expect(normalizeViewSpec('gallery', { cover_field: 'photo' }, FIELDS)).toMatchObject({
+      cover_field: 'photo',
+      cover_fit: 'cover',
+      card_size: 'medium',
+      manual_order: [],
+    })
+    expect(normalizeViewSpec('list', { group_by: 'statut' }, FIELDS)).toMatchObject({
+      group_by: 'statut',
+      manual_order: [],
+    })
+    expect(
+      reason(() => normalizeViewSpec('gallery', { cover_field: 'nom' }, FIELDS)),
+    ).toMatchObject({ reason: 'type_de_champ_incompatible' })
+  })
+
+  it('takes dependencies only through a relation of the table to itself', () => {
+    const withSelf = new Map([...FIELDS, ['depend_de', 'multi_link']])
+    const spec = normalizeViewSpec(
+      'timeline',
+      { start_field: 'debut', depends_on: 'depend_de' },
+      withSelf,
+      new Set(['depend_de']),
+    )
+    expect(spec).toMatchObject({ depends_on: 'depend_de' })
+    // `client` is a relation, but to another table.
+    expect(
+      reason(() =>
+        normalizeViewSpec('timeline', { start_field: 'debut', depends_on: 'client' }, FIELDS),
+      ),
+    ).toMatchObject({ reason: 'type_de_champ_incompatible', detail: 'client' })
+  })
+
+  it('keeps an order by hand as row identifiers, once each', () => {
+    const a = '018f2c3a-0000-7000-8000-000000000001'
+    const b = '018f2c3a-0000-7000-8000-000000000002'
+    expect(
+      normalizeViewSpec('kanban', { group_by: 'statut', manual_order: [b, a] }, FIELDS),
+    ).toMatchObject({ manual_order: [b, a] })
+    expect(reason(() => normalizeViewSpec('list', { manual_order: [a, a] }, FIELDS))).toMatchObject(
+      { reason: 'doublon' },
+    )
+    expect(
+      reason(() => normalizeViewSpec('list', { manual_order: ['pas-un-id'] }, FIELDS)),
+    ).toMatchObject({ reason: 'valeur_invalide' })
   })
 })

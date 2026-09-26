@@ -1,5 +1,6 @@
 'use client'
 
+import { Brand } from '@/components/brand'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -53,6 +54,9 @@ export function PasswordRequired({
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm space-y-6">
+        <div className="flex justify-center">
+          <Brand size={32} className="text-2xl" />
+        </div>
         <div className="space-y-2 text-center">
           <span className="mx-auto flex size-12 items-center justify-center rounded-xl bg-muted">
             <KeyRound className="size-6 text-muted-foreground" />

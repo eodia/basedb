@@ -41,6 +41,15 @@ Conséquence directe de la colocalisation : **l'écriture utilisateur ne dépend
 | `capture_del` | `tg_<table>__capture_del` | `AFTER DELETE FOR EACH STATEMENT REFERENCING OLD TABLE AS old_rows` | idem | Capture des suppressions, ligne complète |
 | `capture_trunc` | `tg_<table>__capture_trunc` | `BEFORE TRUNCATE FOR EACH STATEMENT` | `_basedb_local.assert_no_truncate()` | Lève `TRUNCATE_FORBIDDEN` |
 
+Deux rôles s'y ajoutent, **par champ de relation multiple** et non par table (chapitre 04 §4 bis) : ils tiennent l'intégrité d'une colonne `uuid[]` qu'aucune clé étrangère ne peut porter, et sont émis avec le champ, pas avec la table.
+
+| Rôle | Nom | Posé sur | Moment | Fonction appelée |
+|---|---|---|---|---|
+| `ml_<colonne>` | `tg_<table>__ml_<colonne>` | la table source | `BEFORE INSERT OR UPDATE OF "<colonne>" FOR EACH ROW` | `_basedb_local.multi_link_check_v1()` |
+| `mlt_<table>_<colonne>` | `tg_<cible>__mlt_<table>_<colonne>` | la table cible | `AFTER DELETE FOR EACH STATEMENT REFERENCING OLD TABLE AS old_rows` | `_basedb_local.multi_link_deleted_v1()` |
+
+Le second modifie la source quand il retire une ligne supprimée des listes qui la citent : cette modification est capturée comme toute autre, avec `is_cascade` vrai (§1.3).
+
 Quatre règles attachées à cette liste :
 
 1. **Les cinq noms sont alloués au registre** `_basedb.physical_name` en `object_kind = 'trigger'`, portée `table`, comme tout nom dérivé. Le rôle le plus long est `capture_trunc` : les parties fixes de `tg_<table>__capture_trunc` valent 18 octets, le budget du composant « table » est donc de 45 octets et la répartition du chapitre 01 §9.6 s'applique dès que le nom de table le dépasse. **Aucun nom n'est produit par concaténation directe**, donc aucune troncature silencieuse à 63 octets n'est possible.
@@ -80,11 +89,11 @@ Sans ces quatre derniers `SET`, `to_jsonb()` sérialiserait un `timestamptz` dan
 
 ```sql
 WITH pair AS (
-  SELECT n."_id" AS record_id,
-         pg_catalog.to_jsonb(o) AS before,
-         pg_catalog.to_jsonb(n) AS after
-  FROM   "old_rows" o
-  JOIN   "new_rows" n ON n."_id" = o."_id"
+  SELECT _n."_id" AS record_id,
+         pg_catalog.to_jsonb(_o) AS before,
+         pg_catalog.to_jsonb(_n) AS after
+  FROM   "old_rows" _o
+  JOIN   "new_rows" _n ON _n."_id" = _o."_id"
 )
 INSERT INTO _basedb_local.revision_buffer
   (base_id, table_id, record_id, op, is_cascade, actor_kind, actor_user_id,
@@ -94,6 +103,10 @@ SELECT $1, $2, p.record_id, 'update', pg_catalog.pg_trigger_depth() > 1,
 FROM   pair p
 WHERE  p.before IS DISTINCT FROM p.after;
 ```
+
+Les alias commencent par « _ », qu'aucun nom physique ne peut porter (chapitre 03) : un
+alias `n` rendrait `to_jsonb(n)` ambigu sur une table dont une colonne s'appelle `n` — un
+champ « N° » —, et chaque écriture de cette table échouerait.
 
 Quatre propriétés de cette forme :
 
@@ -883,6 +896,17 @@ Un `NOTIFY basedb_drain` est émis **par la capture au `COMMIT`** et réveille l
 - la scrutation périodique rend le drain insensible à un `NOTIFY` perdu, à un redémarrage, et au fait qu'un `LISTEN` ne traverse pas un pooler en mode transaction ;
 - la connexion `LISTEN` est **dédiée, hors pool, et ne tient jamais de transaction ouverte**.
 
+Après chaque lot, le drain émet `NOTIFY basedb_live` par table touchée — la base, la
+table, au plus 100 identifiants, la nature des écritures et leur auteur —, que chaque
+instance relaie aux navigateurs (chapitre 16 §3). Dans la même transaction, une révision
+qui fait passer un champ `user` à une personne lui crée une notification `assigned`
+(chapitre 16 §2.1).
+
+L'annulation d'une écriture par sa transaction (chapitre 16 §4) s'appuie sur ce journal :
+les révisions d'une même transaction se retrouvent par `(occurred_at, xact_id)`, et
+chacune se défait comme au §12 — une modification rétablie, une suppression restaurée,
+une création supprimée si la ligne n'a pas bougé depuis.
+
 ### 11.5 Ce qui se passe quand un consommateur décroche
 
 `change_event` est purgée sur l'âge (7 jours), **quel que soit l'état de consommation** : purger les seules lignes livrées ferait dépendre la taille du disque de la bonne santé d'un processus distant. Un consommateur arrêté plus longtemps a donc perdu des événements, et c'est assumé.
@@ -1148,7 +1172,13 @@ champ a bougé depuis) et la restauration d'une ligne supprimée.
   droit sur les tampons.
 - Les journaux n'ont qu'une partition `DEFAULT` : pas de partition mensuelle ni de tâche
   qui les crée d'avance.
-- Le drain ne se réveille pas sur `NOTIFY` : il sonde toutes les deux secondes.
+- Le drain sonde toutes les deux secondes, et se réveille sur `NOTIFY basedb_drain`
+  (§11.4) quand la connexion d'écoute est établie.
+- Un acteur de nature `automation` (chapitre 17 §2.2) porte l'identifiant de la personne
+  qui répond de l'automatisation dans `actor_user_id` et celui de l'automatisation dans
+  `actor_token_id`. Le drain met en file les exécutions des automatisations dont une
+  révision est le déclencheur (chapitre 17 §2.1) — jamais pour une révision faite par une
+  automatisation.
 - Le garde-fou des opérations en masse (§5) se réduit au plafond cumulé de
   `basedb.rows_written` (100 000 lignes, `BULK_OPERATION_REFUSED`) : pas d'opération en
   masse déclarée ni de ligne `bulk_operation`.

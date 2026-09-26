@@ -19,6 +19,16 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   EXPAND_UNAVAILABLE: 'Ce champ ne peut pas être développé, ou sa cible n’est pas visible.',
   RESOURCE_NOT_FOUND: 'Élément introuvable.',
   LABEL_EMPTY: 'Le libellé ne peut pas être vide.',
+  FORMULA_SYNTAX: 'La formule est mal écrite.',
+  FORMULA_FIELD_NOT_FOUND: 'La formule cite un champ qui n’existe pas.',
+  FORMULA_TYPE_MISMATCH: 'La formule mélange des types incompatibles.',
+  FORMULA_LINK_FORBIDDEN:
+    'Une formule ne cite pas une relation : ajoutez une recherche ou un cumul, et citez-le.',
+  FORMULA_DEPENDS_ON_FORMULA:
+    'Une formule ne cite pas une autre formule : réécrivez l’expression complète.',
+  FORMULA_FUNCTION_NOT_IMMUTABLE:
+    'Une date ne se convertit pas en texte dans une formule : passez par ANNEE, MOIS, JOUR.',
+  COMPUTED_FIELD_READ_ONLY: 'Ce champ est calculé : il ne s’écrit pas.',
   REQUIRED_VALUE_MISSING: 'Un champ obligatoire est vide.',
   FIELD_NOT_WRITABLE: 'Vous ne pouvez pas modifier ce champ.',
   FILTER_FIELD_UNKNOWN: 'Champ inconnu.',
@@ -118,6 +128,17 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   // Chapter 15 — shared forms.
   FORM_CLOSED: 'Ce formulaire n’accepte plus de réponses.',
   FORM_RESTRICTED: 'Ce formulaire est réservé à certains groupes.',
+  VIEW_SHARE_CLOSED: 'Cette vue partagée n’est plus accessible.',
+  VIEW_SHARE_RESTRICTED: 'Cette vue partagée est réservée à certains groupes.',
+  VIEW_LOCKED: 'Cette vue est verrouillée : déverrouillez-la pour la modifier.',
+
+  // Chapters 17 and 19 — automations, integrations, synced tables.
+  AUTOMATION_DISABLED: 'Cette automatisation est désactivée ou supprimée.',
+  AUTOMATION_WEBHOOK_FAILED: 'Le service appelé n’a pas répondu correctement.',
+  TABLE_SYNCED:
+    'Cette table est synchronisée : ses lignes suivent leur source et ne se modifient pas ici.',
+  SYNC_SOURCE_FAILED:
+    'La source n’a pas pu être lue : elle est injoignable, trop grosse ou illisible.',
 
   // Chapter 14 — environments.
   ENVIRONMENT_IS_PRODUCTION:
@@ -201,6 +222,18 @@ const VIEW_REASONS: Readonly<Record<string, string>> = {
  * long" is no help to someone who has not been told which box to shorten.
  */
 function explain(e: ApiError): string {
+  // A formula's refusal names where: the field it cannot find, the position it stopped at.
+  if (e.code.startsWith('FORMULA_')) {
+    const base = EXPLANATIONS[e.code] ?? 'La formule est refusée.'
+    const where =
+      typeof e.details.field === 'string'
+        ? ` — [${e.details.field}]`
+        : typeof e.details.position === 'number'
+          ? ` — au caractère ${e.details.position + 1}`
+          : ''
+    return `${base}${where}`
+  }
+
   // A choice that rows still carry cannot leave the list. The count is the whole point of
   // the refusal: it says how much data stands in the way.
   if (e.code === 'OPTION_IN_USE' && Array.isArray(e.details.options)) {

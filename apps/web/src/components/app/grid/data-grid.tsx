@@ -6,6 +6,7 @@ import { Cell, ROW_HEIGHT, type Row, isTextual, rawText } from '@/components/app
 import { ColumnHeader } from '@/components/app/grid/column-header'
 import { cellKey, useCellSelection } from '@/components/app/grid/use-selection'
 import { EnumPicker, LinkPicker, MultiEnumPicker, type SearchLink } from '@/components/app/pickers'
+import { CardValue } from '@/components/app/views/card'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -16,10 +17,21 @@ import {
   ContextMenuShortcut,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
-import type { Field, LinkOption } from '@/lib/api/client'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import type { Field, LinkOption, PointerAt, RemotePointer } from '@/lib/api/client'
+import { effectiveKind } from '@/lib/computed'
 import { isDateKind, storedFromText } from '@/lib/dates'
 import { copy as copyText } from '@/lib/export'
+import { AGGREGATE_LABELS, type Aggregate, aggregatesFor, formatAggregate } from '@/lib/grid'
 import {
+  type ColorStyle,
   DEFAULT_COLUMN_WIDTH,
   MAX_COLUMN_WIDTH,
   MAX_SORT_TERMS,
@@ -38,7 +50,15 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { Copy, ExternalLink, Maximize2, Plus, Trash2 } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  ExternalLink,
+  Maximize2,
+  Plus,
+  Trash2,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
@@ -70,6 +90,9 @@ interface Props {
   readonly openedId: string | null
   /** False on an expression tab, where rows are a result rather than a table. */
   readonly editable: boolean
+  /** Whether the reader may add a row, remove one — the table's own actions. */
+  readonly canCreate?: boolean
+  readonly canDelete?: boolean
   readonly onPatchView: (patch: Partial<ViewState>) => void
   readonly onChecked: (next: ReadonlySet<string>) => void
   readonly onCells: (next: ReadonlySet<string>) => void
@@ -82,7 +105,164 @@ interface Props {
   readonly onFilterField: (field: Field) => void
   /** Opens the row a link cell points at, in its own table. */
   readonly onFollowLink?: (table: string, id: string) => void
+  /** A row's height, in pixels: taller rows wrap their text over several lines. */
+  readonly rowHeight?: number
+  /**
+   * The field the rows are grouped by. The rows arrive SORTED by it, so each group is one
+   * run of rows; a header opens each run.
+   */
+  readonly groupField?: Field | null
+  /** Rows per group over the whole filter, by `groupKey` — the page holds only some. */
+  readonly groupCounts?: ReadonlyMap<string, number> | null
+  /** The summary bar's aggregate per column; absent: no bar. */
+  readonly summaries?: Readonly<Record<string, string>>
+  readonly summaryValues?: Readonly<Record<string, string | number | null>> | null
+  /** Rows the filter keeps, all pages together. */
+  readonly summaryTotal?: number | null
+  readonly onSummary?: (field: string, fn: Aggregate | null) => void
+  /** The colour of a row — a rule's, or its choice's — and how it shows, or `null`. */
+  readonly rowColor?: (row: Row) => RowColor | null
+  /** The others' pointers on this table, drawn over their cell (chapter 16 §3.4). */
+  readonly pointers?: readonly RemotePointer[]
+  /** This screen's pointer: the cell it is over, `null` when it leaves the rows. */
+  readonly onPointer?: (at: PointerAt | null) => void
 }
+
+/** A row's colour, and how it shows: a stripe at its left, a tinted background, or both. */
+export interface RowColor {
+  readonly color: string
+  readonly style: ColorStyle
+}
+
+/** The cell under the mouse, and where in it — `null` off the cells (the gutter, a group). */
+function pointerIn(e: React.MouseEvent): PointerAt | null {
+  const cell = (e.target as HTMLElement).closest<HTMLElement>('[data-row][data-field]')
+  const record = cell?.dataset.row
+  const field = cell?.dataset.field
+  if (cell === null || record === undefined || field === undefined) return null
+  const box = cell.getBoundingClientRect()
+  return {
+    record,
+    field,
+    x: (e.clientX - box.left) / box.width,
+    y: (e.clientY - box.top) / box.height,
+  }
+}
+
+/** One colour per person, the same on every screen. */
+const POINTER_COLORS = ['#7c3aed', '#2563eb', '#db2777', '#ea580c', '#0891b2', '#16a34a', '#c026d3']
+function pointerColor(user: string): string {
+  let hash = 0
+  for (const char of user) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
+  return POINTER_COLORS[hash % POINTER_COLORS.length] ?? '#7c3aed'
+}
+
+/**
+ * The others' pointers, each over the cell it names — found again in this screen's own
+ * layout on every frame, so that scrolling, a pinned column or a row that just rendered
+ * keep them in place. Positioned straight in the DOM: a pointer moving is not a render.
+ * Off the rows this screen shows, a pointer is hidden.
+ */
+function RemotePointers({
+  pointers,
+  host,
+}: {
+  readonly pointers: readonly RemotePointer[]
+  readonly host: React.RefObject<HTMLDivElement | null>
+}) {
+  const marks = useRef(new Map<string, HTMLDivElement>())
+
+  useEffect(() => {
+    let frame = 0
+    const place = () => {
+      const root = host.current
+      if (root !== null) {
+        const origin = root.getBoundingClientRect()
+        for (const pointer of pointers) {
+          const mark = marks.current.get(pointer.session)
+          if (mark === undefined) continue
+          const { record, field, x, y } = pointer.at
+          const cell = root.querySelector<HTMLElement>(
+            `[data-row="${CSS.escape(record)}"][data-field="${CSS.escape(field)}"]`,
+          )
+          if (cell === null) {
+            mark.style.opacity = '0'
+            continue
+          }
+          const box = cell.getBoundingClientRect()
+          mark.style.opacity = '1'
+          mark.style.transform = `translate(${box.left - origin.left + x * box.width}px, ${box.top - origin.top + y * box.height}px)`
+        }
+      }
+      frame = requestAnimationFrame(place)
+    }
+    frame = requestAnimationFrame(place)
+    return () => cancelAnimationFrame(frame)
+  }, [pointers, host])
+
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-20">
+      {pointers.map((pointer) => {
+        const color = pointerColor(pointer.user)
+        return (
+          <div
+            key={pointer.session}
+            ref={(mark) => {
+              if (mark === null) marks.current.delete(pointer.session)
+              else marks.current.set(pointer.session, mark)
+            }}
+            className="absolute top-0 left-0 flex items-start opacity-0 transition-[transform,opacity] duration-100 ease-linear"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              className="drop-shadow-sm"
+              aria-hidden="true"
+            >
+              <path
+                d="M4 2l16 9.5-7 1.6-3.6 6.9z"
+                fill={color}
+                stroke="white"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span
+              className="mt-3 -ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap text-white shadow-sm"
+              style={{ backgroundColor: color }}
+            >
+              {pointer.name}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** A row's value for grouping, as a key: `∅` for no value, a link by its identifier. */
+export function groupKey(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '∅'
+  if (typeof value === 'object' && value !== null && 'id' in value) {
+    return String((value as { id: unknown }).id ?? '∅')
+  }
+  return String(value)
+}
+
+type Item =
+  | {
+      readonly type: 'group'
+      readonly key: string
+      readonly first: number
+      readonly loaded: number
+    }
+  | { readonly type: 'row'; readonly index: number }
+
+const GROUP_HEIGHT = 34
+
+/** Lines of text a row shows at its height. */
+const linesAt = (height: number) => (height >= 132 ? 6 : height >= 92 ? 4 : height >= 56 ? 2 : 1)
 
 /** Width of the leading gutter: checkbox plus row number. */
 const GUTTER_WIDTH = 64
@@ -124,6 +304,8 @@ export function DataGrid({
   busy,
   openedId,
   editable,
+  canCreate = editable,
+  canDelete = editable,
   onPatchView,
   onChecked,
   onCells,
@@ -134,8 +316,19 @@ export function DataGrid({
   onOpenRecord,
   onFilterField,
   onFollowLink,
+  rowHeight = ROW_HEIGHT,
+  groupField = null,
+  groupCounts = null,
+  summaries,
+  summaryValues = null,
+  summaryTotal = null,
+  onSummary,
+  rowColor,
+  pointers = [],
+  onPointer,
 }: Props) {
   const scroller = useRef<HTMLDivElement>(null)
+  const body = useRef<HTMLDivElement>(null)
   const [editing, setEditing] = useState<{ rowIndex: number; column: string } | null>(null)
   const [draft, setDraft] = useState<Record<string, string>>({})
   const [adding, setAdding] = useState(false)
@@ -226,12 +419,16 @@ export function DataGrid({
     (name: string) => {
       // Hiding also unpins: a pinned column that is not displayed still reserves its
       // sticky offset, and the columns after it would sit under a gap.
+      // A system column is shown on request: hiding it withdraws the request.
+      const system = fields.find((f) => f.name === name)?.system === true
       onPatchView({
-        hidden: [...view.hidden, name],
+        ...(system
+          ? { systemColumns: view.systemColumns.filter((n) => n !== name) }
+          : { hidden: [...view.hidden, name] }),
         pinned: view.pinned.filter((n) => n !== name),
       })
     },
-    [view.hidden, view.pinned, onPatchView],
+    [fields, view.hidden, view.systemColumns, view.pinned, onPatchView],
   )
 
   /**
@@ -355,16 +552,55 @@ export function DataGrid({
 
   // ── Virtualisation ───────────────────────────────────────────────────────────
 
+  // Groups folded by a click on their header. Local and transient: which groups one looks
+  // at is not a setting of the view.
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set())
+  const groupName = groupField?.name ?? null
+  // biome-ignore lint/correctness/useExhaustiveDependencies: unfolded whenever the grouping changes
+  useEffect(() => setCollapsed(new Set()), [groupName])
+
+  /** What the list draws, in order: a header per group, and the rows of unfolded groups. */
+  const items = useMemo<readonly Item[]>(() => {
+    if (groupField === null) return rows.map((_, index) => ({ type: 'row' as const, index }))
+    const out: Item[] = []
+    let current: string | null = null
+    let header: { key: string; first: number; loaded: number } | null = null
+    const flush = () => {
+      if (header !== null) out.push({ type: 'group', ...header })
+    }
+    const pending: Item[] = []
+    rows.forEach((row, index) => {
+      const key = groupKey(row[groupField.name])
+      if (key !== current) {
+        flush()
+        out.push(...pending)
+        pending.length = 0
+        current = key
+        header = { key, first: index, loaded: 0 }
+      }
+      if (header !== null) header.loaded++
+      if (!collapsed.has(key)) pending.push({ type: 'row', index })
+    })
+    flush()
+    out.push(...pending)
+    return out
+  }, [rows, groupField, collapsed])
+
   const virtualizer = useVirtualizer({
-    count: rows.length,
+    count: items.length,
     getScrollElement: () => scroller.current,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: (i) => (items[i]?.type === 'group' ? GROUP_HEIGHT : rowHeight),
     // Ten rows above and below: enough that a wheel flick never shows a blank band,
     // few enough that the DOM stays small.
     overscan: 10,
   })
 
+  // Heights are estimated, never measured: they change with the setting and the groups.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measured when what sizes the items changes
+  useEffect(() => virtualizer.measure(), [rowHeight, items])
+
   const totalWidth = GUTTER_WIDTH + fields.reduce((sum, f) => sum + widthOf(f.name), 0)
+  const lines = linesAt(rowHeight)
 
   /** Sticky offsets, accumulated in display order. */
   const stickyOffsets = useMemo(() => {
@@ -467,14 +703,81 @@ export function DataGrid({
         </div>
 
         {/* Body ───────────────────────────────────────────────────────────── */}
-        <div style={{ height: virtualizer.getTotalSize() }} className="relative">
+        <div
+          ref={body}
+          style={{ height: virtualizer.getTotalSize() }}
+          className="relative"
+          onMouseMove={onPointer === undefined ? undefined : (e) => onPointer(pointerIn(e))}
+          onMouseLeave={onPointer === undefined ? undefined : () => onPointer(null)}
+        >
+          {pointers.length > 0 && <RemotePointers pointers={pointers} host={body} />}
           {virtualizer.getVirtualItems().map((virtual) => {
-            const row = rows[virtual.index]
+            const item = items[virtual.index]
+            if (item === undefined) return null
+            if (item.type === 'group') {
+              const first = rows[item.first]
+              if (first === undefined || groupField === null) return null
+              const folded = collapsed.has(item.key)
+              const count = groupCounts?.get(item.key) ?? item.loaded
+              return (
+                <div
+                  // With the first row's index: rows not yet read in the group's order — the
+                  // grouping has just changed — make runs of the same value, briefly.
+                  key={`group:${item.key}:${item.first}`}
+                  className="absolute inset-x-0 flex items-center border-b bg-muted/60"
+                  style={{ height: GROUP_HEIGHT, transform: `translateY(${virtual.start}px)` }}
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCollapsed((current) => {
+                        const next = new Set(current)
+                        if (next.has(item.key)) next.delete(item.key)
+                        else next.add(item.key)
+                        return next
+                      })
+                    }
+                    className="sticky left-0 flex h-full max-w-[min(100%,36rem)] items-center gap-2 px-2 text-left text-xs"
+                    aria-expanded={!folded}
+                    title={folded ? 'Déplier le groupe' : 'Replier le groupe'}
+                  >
+                    {folded ? (
+                      <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+                    )}
+                    <span className="shrink-0 text-muted-foreground">{groupField.label}</span>
+                    <span className="flex min-w-0 items-center">
+                      {item.key === '∅' ? (
+                        <span className="text-muted-foreground">Sans valeur</span>
+                      ) : (
+                        <CardValue field={groupField} row={first} />
+                      )}
+                    </span>
+                    <span className="shrink-0 rounded-full bg-background px-1.5 tabular-nums text-muted-foreground">
+                      {count.toLocaleString('fr-FR')}
+                    </span>
+                  </button>
+                </div>
+              )
+            }
+            const rowIndex = item.index
+            const row = rows[rowIndex]
             if (row === undefined) return null
+            const colored = rowColor?.(row) ?? null
+            // The row's colour as what colours it asks: a tint under the whole row, a stripe
+            // at its left, or both. The opaque cells — the gutter, the pinned columns — take
+            // the tint as a layer over their own background, or they would stay blank.
+            const tint =
+              colored !== null && colored.style !== 'stripe'
+                ? `color-mix(in srgb, ${colored.color} 12%, transparent)`
+                : null
+            const stripe = colored !== null && colored.style !== 'background' ? colored.color : null
+            const tintLayer = tint === null ? undefined : `linear-gradient(${tint}, ${tint})`
             const id = row._id
             const opened = openedId === id
             const ticked = checked.has(id)
-            const pinnedBackground = stickyBackground(virtual.index % 2 === 1, ticked, opened)
+            const pinnedBackground = stickyBackground(rowIndex % 2 === 1, ticked, opened)
 
             return (
               <ContextMenu key={id}>
@@ -482,47 +785,67 @@ export function DataGrid({
                   <div
                     className={cn(
                       'group/row absolute inset-x-0 flex border-b transition-colors',
-                      virtual.index % 2 === 1 && 'bg-surface/40',
+                      rowIndex % 2 === 1 && 'bg-surface/40',
                       ticked && 'bg-primary/5',
                       opened && 'bg-primary/10',
                       busy === id && 'opacity-50',
                       'hover:bg-muted/50',
                     )}
-                    style={{ height: ROW_HEIGHT, transform: `translateY(${virtual.start}px)` }}
+                    style={{
+                      height: rowHeight,
+                      transform: `translateY(${virtual.start}px)`,
+                      ...(tint === null ? {} : { backgroundColor: tint }),
+                    }}
                   >
                     <div
                       className={cn(
                         'sticky left-0 z-10 flex shrink-0 items-center gap-2 border-r px-2 transition-colors',
+                        lines > 1 && 'items-start pt-2.5',
                         pinnedBackground,
                       )}
-                      style={{ width: GUTTER_WIDTH }}
+                      style={{ width: GUTTER_WIDTH, backgroundImage: tintLayer }}
                     >
+                      {stripe !== null && (
+                        <span
+                          aria-hidden
+                          className="absolute inset-y-0 left-0 w-1"
+                          style={{ backgroundColor: stripe }}
+                        />
+                      )}
                       <Checkbox
                         checked={ticked}
                         onClick={(e) => {
                           e.preventDefault()
-                          toggleRow(virtual.index, e.shiftKey)
+                          toggleRow(rowIndex, e.shiftKey)
                         }}
                         aria-label="Sélectionner la ligne"
                       />
                       <span className="text-[10px] tabular-nums text-muted-foreground/60">
-                        {virtual.index + 1}
+                        {rowIndex + 1}
                       </span>
                     </div>
 
                     {fields.map((field, columnIndex) => {
-                      const key = cellKey(virtual.index, field.name)
+                      const key = cellKey(rowIndex, field.name)
                       const sticky = stickyOffsets[field.name]
                       const isSelected = cells.has(key)
                       const isEditing =
-                        editing?.rowIndex === virtual.index && editing.column === field.name
+                        editing?.rowIndex === rowIndex && editing.column === field.name
 
                       return (
                         <div
                           key={field.name}
                           data-cell={key}
+                          // Where a pointer is, for the others: this row, this column.
+                          data-row={id}
+                          data-field={field.name}
                           className={cn(
                             'relative flex shrink-0 items-center overflow-hidden border border-transparent text-xs transition-colors',
+                            lines > 1 &&
+                              'items-start py-2 [&_.truncate]:whitespace-normal [&_.truncate]:break-words',
+                            lines === 2 && '[&_.truncate]:line-clamp-2',
+                            lines === 4 && '[&_.truncate]:line-clamp-4',
+                            lines === 6 && '[&_.truncate]:line-clamp-6',
                             isSelected &&
                               (sticky === undefined
                                 ? 'border-primary/60 bg-primary/10'
@@ -534,10 +857,15 @@ export function DataGrid({
                             width: widthOf(field.name),
                             ...(sticky === undefined
                               ? {}
-                              : { position: 'sticky', left: sticky, zIndex: 5 }),
+                              : {
+                                  position: 'sticky',
+                                  left: sticky,
+                                  zIndex: 5,
+                                  backgroundImage: tintLayer,
+                                }),
                           }}
-                          onMouseDown={(e) => onCellPointerDown(virtual.index, field.name, e)}
-                          onMouseEnter={() => onCellPointerEnter(virtual.index, field.name)}
+                          onMouseDown={(e) => onCellPointerDown(rowIndex, field.name, e)}
+                          onMouseEnter={() => onCellPointerEnter(rowIndex, field.name)}
                         >
                           <Cell
                             row={row}
@@ -547,8 +875,7 @@ export function DataGrid({
                             emphasis={columnIndex === 0}
                             editing={isEditing}
                             onStartEdit={() =>
-                              editable &&
-                              setEditing({ rowIndex: virtual.index, column: field.name })
+                              editable && setEditing({ rowIndex: rowIndex, column: field.name })
                             }
                             onEndEdit={() => setEditing(null)}
                             onCommit={(value) => onCommit(id, field, value)}
@@ -601,7 +928,7 @@ export function DataGrid({
                     Copier la ligne
                     <ContextMenuShortcut>Ctrl+C</ContextMenuShortcut>
                   </ContextMenuItem>
-                  {editable && (
+                  {editable && canDelete && (
                     <>
                       <ContextMenuSeparator />
                       <ContextMenuItem
@@ -621,7 +948,7 @@ export function DataGrid({
 
         {/* The new row lives IN the grid, not behind a dialog: adding a line is the most
             frequent act there is, and a dialog would put a click in front of it. */}
-        {editable && (
+        {editable && canCreate && (
           <div className="flex border-b bg-background" style={{ height: ROW_HEIGHT }}>
             <div
               className="sticky left-0 z-10 flex shrink-0 items-center justify-center border-r bg-background"
@@ -669,6 +996,29 @@ export function DataGrid({
           </div>
         )}
 
+        {summaries !== undefined && onSummary !== undefined && (
+          <div className="sticky bottom-0 z-20 flex border-t bg-background">
+            <div
+              className="sticky left-0 z-10 flex shrink-0 items-center border-r bg-background px-2 text-[10px] tabular-nums text-muted-foreground"
+              style={{ width: GUTTER_WIDTH }}
+              title="Lignes que garde le filtre, toutes pages confondues"
+            >
+              {summaryTotal === null ? '' : summaryTotal.toLocaleString('fr-FR')}
+            </div>
+            {fields.map((field) => (
+              <SummaryCell
+                key={field.name}
+                field={field}
+                width={widthOf(field.name)}
+                sticky={stickyOffsets[field.name] ?? null}
+                fn={(summaries[field.name] as Aggregate | undefined) ?? null}
+                value={summaryValues?.[`${field.name}:${summaries[field.name]}`] ?? null}
+                onChange={(fn) => onSummary(field.name, fn)}
+              />
+            ))}
+          </div>
+        )}
+
         {rows.length === 0 && (
           <div className="flex h-40 items-center justify-center">
             <p className="text-sm text-muted-foreground">
@@ -679,6 +1029,78 @@ export function DataGrid({
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+/**
+ * One column of the summary bar: its aggregate over every row the filter keeps, or, on
+ * hover, the way to choose one. A column with none shows nothing: a bar of dashes would
+ * be read as sixty zeros.
+ */
+function SummaryCell({
+  field,
+  width,
+  sticky,
+  fn,
+  value,
+  onChange,
+}: {
+  readonly field: Field
+  readonly width: number
+  readonly sticky: number | null
+  readonly fn: Aggregate | null
+  readonly value: string | number | null
+  readonly onChange: (fn: Aggregate | null) => void
+}) {
+  const offered = aggregatesFor(effectiveKind(field))
+  return (
+    <div
+      className={cn(
+        'group/sum flex h-8 shrink-0 items-center border-r',
+        sticky !== null && 'bg-background',
+      )}
+      style={{ width, ...(sticky === null ? {} : { position: 'sticky', left: sticky, zIndex: 5 }) }}
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              'flex size-full min-w-0 items-center justify-end gap-1.5 px-2 text-xs hover:bg-muted/60',
+              fn === null && 'opacity-0 group-hover/sum:opacity-100 focus-visible:opacity-100',
+            )}
+            aria-label={`Résumé de ${field.label}`}
+          >
+            {fn === null ? (
+              <span className="text-muted-foreground">Résumé</span>
+            ) : (
+              <>
+                <span className="truncate text-muted-foreground">{AGGREGATE_LABELS[fn]}</span>
+                <span className="shrink-0 font-medium tabular-nums">
+                  {formatAggregate(value, fn, field)}
+                </span>
+              </>
+            )}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+            {field.label}
+          </DropdownMenuLabel>
+          {offered.map((option) => (
+            <DropdownMenuItem key={option} onSelect={() => onChange(option)}>
+              {AGGREGATE_LABELS[option]}
+            </DropdownMenuItem>
+          ))}
+          {fn !== null && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => onChange(null)}>Aucun</DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

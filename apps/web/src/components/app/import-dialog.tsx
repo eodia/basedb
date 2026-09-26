@@ -146,17 +146,20 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
   // dependencies of the effect below. Importing into a new table refreshes the base, which
   // hands this dialog a new `base.tables`; an effect that depended on it would reset the
   // dialog in the middle of the import and wipe the screen that says it finished.
-  const aimed = useRef({ initial, tables: base.tables })
-  aimed.current = { initial, tables: base.tables }
+  // A new table is building the base (`manage_schema`), which importing rows is not: without
+  // it the assistant fills an existing table and offers nothing else.
+  const builds = base.actions.includes('manage_schema')
+  const aimed = useRef({ initial, tables: base.tables, builds })
+  aimed.current = { initial, tables: base.tables, builds }
 
   const reset = useCallback(() => {
-    const { initial: aim, tables } = aimed.current
+    const { initial: aim, tables, builds: canBuild } = aimed.current
     setStep('file')
     setFile(null)
     setReadError(null)
     setHasHeader(true)
     setDelimiter(null)
-    setMode(aim === null ? 'new' : 'existing')
+    setMode(aim === null && canBuild ? 'new' : 'existing')
     setTargetName(aim?.name ?? tables[0]?.name ?? '')
     setMapping([])
     setNewLabel('')
@@ -453,7 +456,7 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
               {(
                 [
                   ['existing', 'Une table existante', base.tables.length === 0],
-                  ['new', 'Une nouvelle table', false],
+                  ['new', 'Une nouvelle table', !builds],
                 ] as const
               ).map(([value, label, disabled]) => (
                 <button

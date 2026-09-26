@@ -37,8 +37,10 @@ import {
   freeLabel,
   gridSpecOf,
   groupFields,
+  listGroupFields,
   pictureFields,
   selectFields,
+  selfLinkFields,
   unavailableReason,
 } from '@/lib/views'
 import {
@@ -83,6 +85,8 @@ export interface ViewDraft {
   readonly kind: ViewKind
   readonly description: string | null
   readonly spec: Readonly<Record<string, unknown>>
+  /** A new view kept for its author alone (ch. 11 §1.6); ignored when configuring. */
+  readonly personal: boolean
 }
 
 type Spec = Record<string, unknown>
@@ -97,6 +101,7 @@ export function ViewDialog({
   view,
   current,
   layout,
+  canBuild,
   onClose,
   onSubmit,
 }: {
@@ -111,6 +116,11 @@ export function ViewDialog({
   readonly current: DataSpec
   /** The grid layout on screen: a new GRID starts from it — « enregistrer comme vue ». */
   readonly layout?: ViewState
+  /**
+   * Whether the reader builds the base: they alone create collaborative views — anyone
+   * else's new view is personal.
+   */
+  readonly canBuild: boolean
   readonly onClose: () => void
   /** Resolves to the refusal to show, or `null` once written. */
   readonly onSubmit: (draft: ViewDraft) => Promise<string | null>
@@ -123,11 +133,13 @@ export function ViewDialog({
   const [description, setDescription] = useState('')
   const [spec, setSpec] = useState<Spec>({})
   const [takeCurrent, setTakeCurrent] = useState(true)
+  const [personal, setPersonal] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const hasCurrent = current.filter !== '' || current.sorts.length > 0
   const takeId = useId()
+  const personalId = useId()
 
   // Each opening starts from the view as saved, or from the kind's defaults.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset on OPEN only, not on every render of the parent
@@ -140,6 +152,7 @@ export function ViewDialog({
     setDescription(view?.description ?? '')
     setSpec(view === undefined ? startingSpec(k) : { ...view.spec })
     setTakeCurrent(true)
+    setPersonal(!canBuild)
     setError(null)
     setBusy(false)
   }, [open])
@@ -182,6 +195,7 @@ export function ViewDialog({
       kind,
       description: description.trim() === '' ? null : description.trim(),
       spec: out,
+      personal: personal || !canBuild,
     })
     setBusy(false)
     if (refusal !== null) setError(refusal)
@@ -200,7 +214,9 @@ export function ViewDialog({
           <DialogDescription>
             {editing
               ? `${KIND_INFO[kind].label} — ${KIND_INFO[kind].summary}`
-              : 'Une vue est partagée avec tous ceux qui lisent la table. Elle ne change aucune donnée.'}
+              : personal || !canBuild
+                ? 'Une vue personnelle n’est vue que par vous. Elle ne change aucune donnée.'
+                : 'Une vue est partagée avec tous ceux qui lisent la table. Elle ne change aucune donnée.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -271,6 +287,25 @@ export function ViewDialog({
                   className="mt-2 min-h-0 resize-none text-sm"
                   aria-label="Description de la vue"
                 />
+                {!editing && (
+                  <div className="mt-2 flex items-start gap-2.5 text-sm">
+                    <Checkbox
+                      id={personalId}
+                      checked={personal || !canBuild}
+                      disabled={!canBuild}
+                      onCheckedChange={(v) => setPersonal(v === true)}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <label htmlFor={personalId}>Vue personnelle</label>
+                      <p className="text-xs text-muted-foreground">
+                        {canBuild
+                          ? 'Visible par vous seul ; les autres ne la voient pas dans leur liste.'
+                          : 'Vous ne construisez pas cette base : vos vues sont les vôtres, invisibles pour les autres.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </Section>
 
               {kind === 'kanban' && (
@@ -389,6 +424,14 @@ export function ViewDialog({
                     onChange={(v) => set('color_field', v)}
                     placeholder="Aucune"
                   />
+                  <Pivot
+                    label="Dépend de"
+                    hint="Une relation de la table vers elle-même : une flèche relie chaque ligne à celles dont elle dépend."
+                    fields={selfLinkFields(table, fields)}
+                    value={get('depends_on')}
+                    onChange={(v) => set('depends_on', v)}
+                    placeholder="Pas de dépendances"
+                  />
                   <Choice
                     label="Échelle"
                     value={typeof spec.scale === 'string' ? spec.scale : 'week'}
@@ -398,6 +441,77 @@ export function ViewDialog({
                       ['month', 'Mois'],
                     ]}
                     onChange={(v) => set('scale', v)}
+                  />
+                </Section>
+              )}
+
+              {kind === 'gallery' && (
+                <Section title="Cartes">
+                  <Pivot
+                    label="Titre des cartes"
+                    fields={fields}
+                    value={get('title_field')}
+                    onChange={(v) => set('title_field', v)}
+                    placeholder="Colonne d’affichage de la table"
+                  />
+                  <Pivot
+                    label="Image de couverture"
+                    fields={pictureFields(fields)}
+                    value={get('cover_field')}
+                    onChange={(v) => set('cover_field', v)}
+                    placeholder="Aucune"
+                  />
+                  {get('cover_field') !== null && (
+                    <Choice
+                      label="Image"
+                      value={spec.cover_fit === 'contain' ? 'contain' : 'cover'}
+                      options={[
+                        ['cover', 'Recadrée'],
+                        ['contain', 'Entière'],
+                      ]}
+                      onChange={(v) => set('cover_fit', v)}
+                    />
+                  )}
+                  <Choice
+                    label="Taille des cartes"
+                    value={
+                      spec.card_size === 'small' || spec.card_size === 'large'
+                        ? spec.card_size
+                        : 'medium'
+                    }
+                    options={[
+                      ['small', 'Petites'],
+                      ['medium', 'Moyennes'],
+                      ['large', 'Grandes'],
+                    ]}
+                    onChange={(v) => set('card_size', v)}
+                  />
+                  <Pivot
+                    label="Couleur selon"
+                    fields={selectFields(fields)}
+                    value={get('color_field')}
+                    onChange={(v) => set('color_field', v)}
+                    placeholder="Aucune"
+                  />
+                </Section>
+              )}
+
+              {kind === 'list' && (
+                <Section title="Lignes">
+                  <Pivot
+                    label="Titre"
+                    fields={fields}
+                    value={get('title_field')}
+                    onChange={(v) => set('title_field', v)}
+                    placeholder="Colonne d’affichage de la table"
+                  />
+                  <Pivot
+                    label="Regrouper par"
+                    hint="Un groupe repliable par choix d’une liste, par ligne liée ou par personne."
+                    fields={listGroupFields(fields)}
+                    value={get('group_by')}
+                    onChange={(v) => set('group_by', v)}
+                    placeholder="Pas de regroupement"
                   />
                 </Section>
               )}
@@ -420,10 +534,24 @@ export function ViewDialog({
                 </Section>
               )}
 
-              {(kind === 'kanban' || kind === 'calendar' || kind === 'timeline') && (
+              {(kind === 'kanban' ||
+                kind === 'calendar' ||
+                kind === 'timeline' ||
+                kind === 'gallery' ||
+                kind === 'list') && (
                 <Section
-                  title={kind === 'timeline' ? 'Champs sur les barres' : 'Champs sur les cartes'}
-                  hint="Sous le titre, dans cet ordre."
+                  title={
+                    kind === 'timeline'
+                      ? 'Champs sur les barres'
+                      : kind === 'list'
+                        ? 'Champs sur chaque ligne'
+                        : 'Champs sur les cartes'
+                  }
+                  hint={
+                    kind === 'list'
+                      ? 'Après le titre, dans cet ordre.'
+                      : 'Sous le titre, dans cet ordre.'
+                  }
                 >
                   <FieldChecklist
                     fields={fields.filter(
@@ -579,7 +707,7 @@ function Pivot({
             {fields.map((f) => (
               <SelectItem key={f.name} value={f.name}>
                 <span className="flex items-center gap-2">
-                  <FieldIcon kind={f.kind} />
+                  <FieldIcon kind={f.kind} format={f.format?.display} />
                   {f.label}
                 </span>
               </SelectItem>
@@ -833,7 +961,7 @@ function ChecklistRow({
           onCheckedChange={(v) => onToggle(v === true)}
           aria-label={field.label}
         />
-        <FieldIcon kind={field.kind} />
+        <FieldIcon kind={field.kind} format={field.format?.display} />
         <span className={cn('min-w-0 flex-1 truncate text-sm', !on && 'text-muted-foreground')}>
           {field.label}
         </span>

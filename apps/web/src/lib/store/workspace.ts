@@ -55,7 +55,49 @@ export interface ViewState {
   /** Result of the "Compter" button — absent until someone asks (§1.1). */
   readonly total: number | null
   readonly totalCapped: boolean
+  /**
+   * The quick search of the toolbar — a text looked for in every text column. Joined to
+   * the filter, never part of it: nothing saves it, and « Vue modifiée » ignores it.
+   */
+  readonly search: string
+  /** The grid's rows grouped by this field, `null` for none (§1.6). */
+  readonly groupBy: string | null
+  /** The summary bar: one aggregate per column, by field name. */
+  readonly summaries: Readonly<Record<string, string>>
+  readonly rowHeight: RowHeight
+  /** Rows take the colour of their choice in this list. */
+  readonly colorField: string | null
+  /** Rows matching a filter take a colour; the first rule that matches wins. */
+  readonly colorRules: readonly ColorRule[]
+  /** How a row coloured by the list shows it; each rule carries its own style. */
+  readonly colorStyle: ColorStyle
+  /**
+   * The system columns shown — « Créé le », « Modifié par »… Hidden unless asked for, where
+   * a field shows unless hidden: they are there on every table, and wanted on few.
+   */
+  readonly systemColumns: readonly string[]
 }
+
+export type RowHeight = 'short' | 'medium' | 'tall' | 'extra'
+
+/** A row's height, in pixels, per setting: one line of text, two, four, six. */
+export const ROW_HEIGHTS: Readonly<Record<RowHeight, number>> = {
+  short: 36,
+  medium: 56,
+  tall: 92,
+  extra: 132,
+}
+
+export interface ColorRule {
+  readonly filter: string
+  /** `#rrggbb`. */
+  readonly color: string
+  /** How a row this rule colours shows it. */
+  readonly style: ColorStyle
+}
+
+/** A stripe at the row's left, a tinted background, or both (the default). */
+export type ColorStyle = 'both' | 'stripe' | 'background'
 
 export interface Tab {
   readonly id: string
@@ -80,7 +122,8 @@ export interface Tab {
   readonly ownView: ViewState | null
 }
 
-function emptyView(): ViewState {
+/** A view with nothing set: every column, no sort, no filter, first page. */
+export function emptyView(): ViewState {
   return {
     columnWidths: {},
     columnOrder: null,
@@ -92,6 +135,14 @@ function emptyView(): ViewState {
     cursors: [],
     total: null,
     totalCapped: false,
+    search: '',
+    groupBy: null,
+    summaries: {},
+    rowHeight: 'short',
+    colorField: null,
+    colorRules: [],
+    colorStyle: 'both',
+    systemColumns: [],
   }
 }
 
@@ -135,6 +186,12 @@ interface WorkspaceState {
   dropTable: (base: string, table: string) => void
   /** Asks the open table to reload its rows. */
   reload: () => void
+  /**
+   * A row to open wherever it is — a notification's (chapter 16 §2): the page opens its
+   * table, the workspace then the row, and clears the request.
+   */
+  pendingRecord: { readonly base: string; readonly table: string; readonly id: string } | null
+  requestRecord: (target: { base: string; table: string; id: string } | null) => void
 }
 
 const STORAGE_KEY = 'basedb.workspace.v1'
@@ -354,6 +411,9 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   },
 
   reload: () => set((s) => ({ reloadTick: s.reloadTick + 1 })),
+
+  pendingRecord: null,
+  requestRecord: (target) => set({ pendingRecord: target }),
 }))
 
 /**
@@ -385,8 +445,15 @@ export function useActiveTab(): Tab | null {
 export function arrangeFields(
   fields: readonly Field[],
   view: ViewState,
-): { readonly visible: readonly Field[]; readonly hidden: readonly Field[] } {
+): {
+  readonly visible: readonly Field[]
+  readonly hidden: readonly Field[]
+  /** The system columns not shown — offered apart, since hiding them is the default. */
+  readonly systemHidden: readonly Field[]
+} {
   const byName = new Map(fields.map((f) => [f.name, f]))
+  const hides = (f: Field) =>
+    f.system === true ? !view.systemColumns.includes(f.name) : view.hidden.includes(f.name)
 
   const ordered =
     view.columnOrder === null
@@ -400,8 +467,9 @@ export function arrangeFields(
           ...fields.filter((f) => !view.columnOrder?.includes(f.name)),
         ]
 
-  const hidden = ordered.filter((f) => view.hidden.includes(f.name))
-  const shown = ordered.filter((f) => !view.hidden.includes(f.name))
+  const hidden = ordered.filter((f) => f.system !== true && hides(f))
+  const systemHidden = ordered.filter((f) => f.system === true && hides(f))
+  const shown = ordered.filter((f) => !hides(f))
 
   return {
     visible: [
@@ -409,6 +477,7 @@ export function arrangeFields(
       ...shown.filter((f) => !view.pinned.includes(f.name)),
     ],
     hidden,
+    systemHidden,
   }
 }
 

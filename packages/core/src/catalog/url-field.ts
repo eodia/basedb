@@ -1,31 +1,40 @@
 import { checkConstraintName, qualify, quoteIdentifier } from '@basedb/naming'
-import { urlCheck } from '../ddl/emit.js'
+import { emailCheck, urlCheck } from '../ddl/emit.js'
 import { allocateName } from '../naming/allocation.js'
 import type { Executor } from '../runtime/pool.js'
 import type { RequestContext } from '../tx/context.js'
 
 /**
- * The constraint of a `url` field — chapter 04, « Lien URL ».
+ * The constraint of a `url` or an `email` field — chapter 04, « Lien URL », « E-mail ».
  *
- * A text column the interface draws as a link, and that direct SQL is held to as well: an
- * `http(s)` address or a `mailto:`, 2 048 characters at most. Without the `CHECK`, the
- * first `UPDATE` written in psql could put `javascript:…` in a cell every reader then
- * clicks — the one value a hyperlink column must never hold.
+ * A text column the interface draws as a link, and that direct SQL is held to as well. For
+ * a URL: an `http(s)` address or a `mailto:`, 2 048 characters at most — without the
+ * `CHECK`, the first `UPDATE` written in psql could put `javascript:…` in a cell every
+ * reader then clicks. For an e-mail: one address, 254 characters at most.
  */
-export async function addUrlCheck(
+
+type Where = {
+  readonly tableId: string
+  readonly baseId: string
+  readonly tableName: string
+  readonly schemaName: string
+}
+
+const BODIES: Readonly<Record<'url' | 'email', (column: string) => string>> = {
+  url: urlCheck,
+  email: emailCheck,
+}
+
+export async function addPatternCheck(
   exec: Executor,
   ctx: RequestContext,
-  where: {
-    readonly tableId: string
-    readonly baseId: string
-    readonly tableName: string
-    readonly schemaName: string
-  },
+  where: Where,
   fieldId: string,
   columnName: string,
+  rule: 'url' | 'email',
 ): Promise<readonly string[]> {
   const name = await allocateName(exec, ctx, {
-    derivedName: checkConstraintName(where.tableName, columnName, 'url'),
+    derivedName: checkConstraintName(where.tableName, columnName, rule),
     objectKind: 'constraint',
     scopeKind: 'table',
     scopeId: where.tableId,
@@ -33,8 +42,8 @@ export async function addUrlCheck(
   const [constraint] = await exec.query<{ id: string }>(
     `INSERT INTO _basedb.table_constraint
        (table_id, base_id, kind, name_id, rule, origin, state, created_by)
-     VALUES ($1, $2, 'check', $3, 'url', 'system', 'active', $4) RETURNING id`,
-    [where.tableId, where.baseId, name.nameId, ctx.actor.id],
+     VALUES ($1, $2, 'check', $3, $4, 'system', 'active', $5) RETURNING id`,
+    [where.tableId, where.baseId, name.nameId, rule, ctx.actor.id],
     'insert',
   )
   await exec.query(
@@ -44,7 +53,17 @@ export async function addUrlCheck(
     'insert',
   )
   // Born on an empty column — or with its table — hence valid at once.
-  const statement = `ALTER TABLE ${qualify(where.schemaName, where.tableName)} ADD CONSTRAINT ${quoteIdentifier(name.name)} CHECK (${urlCheck(quoteIdentifier(columnName))});`
+  const statement = `ALTER TABLE ${qualify(where.schemaName, where.tableName)} ADD CONSTRAINT ${quoteIdentifier(name.name)} CHECK (${BODIES[rule](quoteIdentifier(columnName))});`
   await exec.query(statement, [], 'ddl')
   return [statement]
+}
+
+export function addUrlCheck(
+  exec: Executor,
+  ctx: RequestContext,
+  where: Where,
+  fieldId: string,
+  columnName: string,
+): Promise<readonly string[]> {
+  return addPatternCheck(exec, ctx, where, fieldId, columnName, 'url')
 }

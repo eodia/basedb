@@ -245,7 +245,12 @@ function completions(fields: readonly Field[]) {
     // completion cannot list them — they belong to the target's mask, which only the
     // kernel knows — so it offers the dot and says what follows.
     for (const field of fields) {
-      if (field.kind !== 'link' || field.link?.target === undefined) continue
+      if (
+        (field.kind !== 'link' && field.kind !== 'multi_link') ||
+        field.link?.target === undefined
+      ) {
+        continue
+      }
       options.push({
         label: `${field.name}.`,
         type: 'namespace',

@@ -60,6 +60,7 @@ Toutes les routes sont préfixées de `/api/v1/{tenantRef}`. La colonne « droit
 |---|---|---|---|---|
 | `GET` | `/meta/bases` | Bases visibles par l'appelant | — | session, jeton |
 | `GET` | `/meta/bases/{base}` | Description projetée : tables, champs, types, liens | — | session, jeton |
+| `GET` | `/meta/users` | Les personnes du tenant — ce qu'un champ `user` nomme : `id`, `display_name`, `email`, `disabled` (chapitre 04 §2.10) | — | session, jeton |
 | `GET` | `/meta/bases/{base}/openapi.json` | Sérialisation OpenAPI 3.1 de la même projection (§9.2) | — | session, jeton |
 | `GET` | `/meta/bases/{base}/doc` | Documentation lisible de la même projection (§9.4) | — | session, jeton |
 | `GET` | `/meta/bases/{base}/tables/{table}/views` | Vues enregistrées de la table, dans l'ordre de son sélecteur ; `spec` reprojeté pour le lecteur, `filter_hidden` quand le filtre cite un champ qu'il ne voit pas (chapitre 11 §1.6) | `read` | session, jeton |
@@ -67,16 +68,42 @@ Toutes les routes sont préfixées de `/api/v1/{tenantRef}`. La colonne « droit
 | `POST` | `/data/{base}/{table}/batch` | Lot (§3.5) | selon opérations | session, jeton |
 | `GET` `PATCH` `PUT` `DELETE` | `/data/{base}/{table}/{id}` | Enregistrement | `read` / `update` / `delete` | session, jeton |
 | `GET` | `/data/{base}/{table}/deleted` | Journal de suppression, pour reprise (§6.5) | `read` | session, jeton |
+| `GET` | `/data/{base}/{table}/aggregate` | Agrégats sur **toutes** les lignes que garde `filter` : `aggregates=champ:fn,…` avec `fn` parmi `filled`, `empty`, `unique`, `sum`, `avg`, `min`, `max`, `checked` selon le type ; `group=champ` ajoute le décompte par valeur (500 valeurs au plus, `groups_capped`). Même masque et même prédicat de lignes qu'une page ; les colonnes système s'y nomment comme dans un filtre (`_created_by`, `_updated_at`…) ; un agrégat que le type n'admet pas est refusé (`REQUEST_INVALID`, `agregat_invalide`) | `read` | session, jeton |
 | `GET` | `/data/{base}/{table}/{id}/referenced_by` | Résumé des liens inverses (§5.6) | `read` | session, jeton |
 | `GET` | `/data/{base}/{table}/{id}/referenced_by/{source_table}.{field}` | Liste paginée d'un groupe inverse | `read` source + cible | session, jeton |
 | `GET` | `/data/{base}/{table}/{id}/history` | Historique de l'enregistrement (§7.7) | `read` | session, jeton |
+| `GET` `POST` | `/data/{base}/{table}/{id}/comments` | Commentaires de la ligne ; en ajouter un, `meta.unreachable` pour les personnes mentionnées qui ne peuvent pas la lire (chapitre 16 §1) | `read` | session, jeton |
+| `PATCH` `DELETE` | `/comments/{comment}` | Modifier son commentaire ; le supprimer (son auteur, ou `manage_schema`) | `read` | session, jeton |
+| `GET` | `/me/notifications` | Notifications de l'appelant, `unread=true` pour les seules non-lues ; `meta.unread` (chapitre 16 §2) | — | **session seule** |
+| `POST` | `/me/notifications/read` | Marquer lues : `{ids}` ou `{all: true}` | — | **session seule** |
+| `GET` | `/events` | Flux temps réel `text/event-stream` : signaux d'écriture, de commentaire, de notification, de présence (chapitre 16 §3) | `read` sur la table suivie | **session seule** |
+| `POST` | `/presence` | Déplacer la présence d'un flux ouvert vers une autre ligne de sa table : `{session, base, table, record?}` | `read` | **session seule** |
+| `GET` `POST` | `/admin/bases/{base}/integrations` | Connexions Slack de la base ; en ajouter une `{label, url}` — l'adresse n'est jamais rendue (chapitre 19 §1) | `manage_schema` | **session seule** |
+| `DELETE` | `/admin/bases/{base}/integrations/{id}` | Supprimer une connexion | `manage_schema` | **session seule** |
+| `POST` | `/admin/bases/{base}/integrations/{id}/test` | Envoyer un message d'essai | `manage_schema` | **session seule** |
+| `GET` `POST` | `/admin/bases/{base}/synced-tables` | Tables synchronisées et leur état ; en créer une `{label, source: {kind, url}, interval_minutes}` (chapitre 19 §3) | `manage_schema` | **session seule** |
+| `PATCH` `DELETE` | `/admin/bases/{base}/synced-tables/{table}` | Régler le rythme ; arrêter la synchronisation | `manage_schema` | **session seule** |
+| `POST` | `/admin/bases/{base}/synced-tables/{table}/run` | Synchroniser maintenant | `manage_schema` | **session seule** |
+| `GET` | `/meta/templates` | Catalogue des modèles de base : résumé, comptes et source de chacun (chapitre 20) | être connecté | session, jeton |
+| `GET` | `/meta/templates/{key}` | Un modèle complet | être connecté | session, jeton |
+| `POST` | `/admin/templates` | Importer un modèle dans l'instance, ou remplacer celui de même clé ; `TEMPLATE_INVALID` sinon | administrateur de l'instance | **session seule** |
+| `DELETE` | `/admin/templates/{key}` | Retirer un modèle de l'instance | administrateur de l'instance | **session seule** |
+| `POST` | `/admin/templates/draft` | Proposition d'un modèle par l'IA : `{project, request, previous?}` (chapitre 20 §5) | `manage_schema` sur le projet | **session seule** |
+| `GET` | `/meta/bases/{base}/dashboards` | Tableaux de bord de la base, dans leur ordre (chapitre 18) ; leurs blocs lisent avec les droits du lecteur | voir la base | session, jeton |
+| `POST` | `/admin/bases/{base}/dashboards` | Créer un tableau de bord : `{label, description?, blocks}` | `manage_schema` | **session seule** |
+| `PATCH` `DELETE` | `/admin/bases/{base}/dashboards/{id}` | Le modifier (`blocks` remplacé en entier, `position`) ; le supprimer | `manage_schema` | **session seule** |
+| `GET` `POST` | `/admin/bases/{base}/automations` | Automatisations de la base ; en créer une (chapitre 17) | `manage_schema` | **session seule** |
+| `PATCH` `DELETE` | `/admin/bases/{base}/automations/{id}` | La modifier — qui enregistre en devient propriétaire ; la supprimer | `manage_schema` | **session seule** |
+| `GET` | `/admin/bases/{base}/automations/{id}/runs` | Ses 50 dernières exécutions | `manage_schema` | **session seule** |
+| `POST` | `/automations/{id}/run` | L'exécuter pour une ligne `{record}` : un bouton (`read` sur la ligne) ou un essai (`manage_schema`) ; `202` | selon le cas | session, jeton |
+| `POST` | `/history/undo` | Annuler une transaction de l'appelant : `{transaction}` (chapitre 16 §4) ; la réponse porte sa propre transaction | selon les écritures annulées | session, jeton |
 | `POST` | `/admin/bases` | Créer une base : `label`, `description?` (§9.5) | `manage_schema` (portée tenant) | **session seule** |
 | `POST` | `/admin/bases/{base}/tables` | Créer une table et ses champs initiaux : `description?` sur la table et sur chaque champ | `manage_schema` | **session seule** |
-| `POST` | `/admin/bases/{base}/tables/{table}/fields` | Ajouter un champ : `description?` | `manage_schema` | **session seule** |
-| `POST` | `/admin/bases/{base}/tables/{table}/links` | Ajouter un champ lien : `description?` | `manage_schema` + `read` sur la cible | **session seule** |
+| `POST` | `/admin/bases/{base}/tables/{table}/fields` | Ajouter un champ : `description?`, `format?` (`{display, currency?, rating_max?}`, chapitre 04 §2.11) ; une formule avec `formula: {expression, timezone?}` (chapitre 04 §7) ; une recherche, un cumul, un décompte avec `rollup: {via, via_table?, target?, aggregate?}` — `via` le champ relation suivi, `via_table` la table qui le porte quand il désigne celle-ci (sens entrant), `target` le champ lu, `aggregate` parmi `count`, `sum`, `avg`, `min`, `max` (chapitre 04 §7 ter) | `manage_schema` | **session seule** |
+| `POST` | `/admin/bases/{base}/tables/{table}/links` | Ajouter un champ lien : `description?`, `required?`, `on_delete?` ; `multiple: true` pour une relation multiple (chapitre 04 §4 bis), dont `on_delete` vaut `set_null` — « retirer de la liste » — par défaut et n'admet pas `cascade` ; la réponse porte `kind` et `constraint` nul pour elle | `manage_schema` + `read` sur la cible | **session seule** |
 | `PATCH` | `/admin/bases/{base}` | Libellé et/ou description d'une base : `{label?, description?}`, l'un des deux au moins | `manage_schema` | **session seule** |
 | `PATCH` | `/admin/bases/{base}/tables/{table}` | Description d'une table : `{description}` | `manage_schema` | **session seule** |
-| `PATCH` | `/admin/bases/{base}/tables/{table}/fields/{field}` | Libellé et/ou description d'un champ : `{label?, description?}`, l'un des deux au moins. Le libellé seul change, jamais la colonne (chapitre 06 §1.1) ; `LABEL_DUPLICATE` (422) si un frère le porte déjà | `manage_schema` | **session seule** |
+| `PATCH` | `/admin/bases/{base}/tables/{table}/fields/{field}` | Libellé, description, format et/ou expression d'un champ : `{label?, description?, format?, formula?}`, l'un au moins ; un format ne touche pas la colonne (chapitre 04 §2.11) ; une nouvelle expression réécrit la colonne d'une formule stockée, ou la retire si la formule devient calculée à la lecture (chapitre 04 §7.7), `meta.sql` dit ce qui a été émis. Le libellé seul change, jamais la colonne (chapitre 06 §1.1) ; `LABEL_DUPLICATE` (422) si un frère le porte déjà | `manage_schema` | **session seule** |
 | `PUT` | `/admin/bases/{base}/tables/{table}/fields/{field}/options` | Remplace **en bloc et dans l'ordre** la liste d'une liste de choix : `{options: [{value, label?, color?, icon?, image?}]}` (chapitre 04 §3). Réponse : `data.options`, `data.added`, `data.removed`, et `meta.sql` (vide quand seule l'apparence change). `OPTION_IN_USE` (422) avec le décompte par valeur si une option retirée est portée par des lignes | `manage_schema` | **session seule** |
 | `POST` | `/admin/bases/{base}/tables/{table}/views` | Créer une vue : `{label, kind, description?, spec}`, `kind` parmi `grid`, `kanban`, `calendar`, `timeline`, `form`, `survey` ; placée en dernier. `spec` est validé selon `kind` (chapitre 11 §1.6) : `REQUEST_INVALID` avec `details.reason` — `cle_inconnue`, `champ_inconnu`, `champ_pivot_manquant`, `type_de_champ_incompatible`, `doublon`, `formulaire_vide`, `trop_de_tris`… — et `details.detail` pour la clé ou le champ en cause ; `LABEL_DUPLICATE` (422) si une vue vivante de la table porte déjà ce libellé | `manage_schema` | **session seule** |
 | `PATCH` `DELETE` | `/admin/bases/{base}/tables/{table}/views/{view}` | Libellé, description et/ou `spec` **remplacé en entier** ; jamais `kind`. Suppression logique : les lignes ne sont pas touchées | `manage_schema` | **session seule** |
@@ -97,6 +124,8 @@ Toutes les routes sont préfixées de `/api/v1/{tenantRef}`. La colonne « droit
 Les routes `/admin/bases/…` ne sont énumérées ici que pour ce qu'elles portent de descriptions : leurs effets, leurs verrous et leurs refus sont ceux des chapitres 03 et 06, et une modification de description n'est pas une migration (chapitre 06 §1.1). Comme toute route `/admin/*`, elles sont fermées aux jetons (§11.2). Un `PATCH` qui ne change rien — pas de `description` pour une table ou un champ, ni `label` ni `description` pour une base — est refusé par `REQUEST_INVALID` : un corps ignoré en silence ressemblerait à un succès. `null` ou la chaîne vide **efface** la description ; l'omettre dans le `PATCH` d'une base la laisse en l'état.
 
 `manage_tokens` couvre les deux formes d'intégration, jetons et webhooks : ce sont les deux manières d'ouvrir une porte vers l'extérieur avec les droits d'un rôle. Il est indépendant des droits sur les données. Les opérations dont le titulaire est l'administrateur d'instance (`_basedb.app_user.is_instance_admin`) — gestion des tenants, réglages d'instance — n'appartiennent pas à cette surface.
+
+**Le flux iCalendar d'une vue partagée** — `GET /api/v1/views/{jeton}/calendar.ics` (chapitre 19 §2.1) — est, comme la page de la vue, hors préfixe de tenant et sans porteur : le jeton situe la vue, et un agenda qui s'abonne ne s'authentifie pas.
 
 **Une exception au préfixe : les formulaires partagés.** `GET` et `POST /api/v1/forms/{jeton}` (chapitre 15 §7) n'ont pas de `{tenantRef}` : le jeton du lien situe à lui seul le formulaire, et la personne qui répond n'a le plus souvent ni compte ni tenant. Elles ne demandent aucun droit sur la table ; le porteur y est facultatif et ne sert qu'à identifier le membre qui répond à un partage réservé. L'envoi est limité par adresse et par lien (`429 RATE_LIMIT_EXCEEDED`).
 
@@ -725,7 +754,7 @@ La confusion volontaire `404` pour « inexistant » et « invisible » est la tr
 
 **Acceptés en requête** : `Authorization`, `Content-Type`, `If-Match`, `If-None-Match`, `Idempotency-Key`, `X-Basedb-Csrf` (routes d'authentification), `X-Basedb-Confirm-Cascade` (§8.3), `X-Correlation-Id`.
 
-**Émis en réponse** : `X-Request-Id`, `ETag`, `Deprecation` / `Sunset` / `Link` (alias), `Idempotent-Replay`, `Retry-After` (sur `429` et `503`), `X-RateLimit-Limit` / `-Remaining` / `-Reset`, et les en-têtes de sécurité du §2.3.
+**Émis en réponse** : `X-Request-Id`, `X-Basedb-Transaction` (toute écriture de données : l'identité de sa transaction, que `POST /history/undo` annule — chapitre 16 §4), `ETag`, `Deprecation` / `Sunset` / `Link` (alias), `Idempotent-Replay`, `Retry-After` (sur `429` et `503`), `X-RateLimit-Limit` / `-Remaining` / `-Reset`, et les en-têtes de sécurité du §2.3.
 
 **`X-Request-Id` est toujours généré par le serveur** (UUIDv7) et n'est jamais lu depuis la requête : accepter une valeur de l'appelant permettrait de noyer une opération dans le bruit, d'imputer une trace à un autre utilisateur, ou d'injecter des sauts de ligne qui forgent de fausses lignes dans un agrégateur de journaux. Une valeur du client est acceptée dans `X-Correlation-Id`, validée contre `^[A-Za-z0-9._-]{1,64}$`, stockée à part et jamais utilisée comme identité de la trace d'audit. **`X-RateLimit-*` ne reflète que le seau de l'acteur** (§13.1).
 

@@ -37,7 +37,12 @@ import { type RequestContext, withTransaction } from '../tx/context.js'
  * that exists.
  */
 
-export type UsageKind = 'structure_draft' | 'expression_draft' | 'field_compute' | 'copilot'
+export type UsageKind =
+  | 'structure_draft'
+  | 'expression_draft'
+  | 'field_compute'
+  | 'copilot'
+  | 'template_draft'
 export type ProviderName = 'openai' | 'anthropic' | 'mistral'
 
 /**

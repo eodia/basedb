@@ -18,13 +18,18 @@ import {
   type ShareAccess,
   type ShareState,
   type TableRef,
+  type ViewKind,
   api,
+  calendarFeedUrl,
+  sharedViewApiUrl,
 } from '@/lib/api/client'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import {
   AlertTriangle,
+  CalendarDays,
   Check,
+  Code2,
   Copy,
   ExternalLink,
   Globe,
@@ -32,15 +37,19 @@ import {
   RefreshCw,
   Users,
 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useState } from 'react'
 
 /**
- * Sharing a form or a survey — chapter 15, on screen.
+ * Sharing a view — chapter 15, on screen.
  *
- * One link per form. PUBLIC, anyone who has it answers, with no account; for MEMBERS, the
- * person signs in first — and the form can be kept to some groups. Either way the answer
- * needs no right on the table: it is written on the authority of whoever saved the sharing
- * last, which the dialog says, since it is what closes the form if that right goes.
+ * One link per view. PUBLIC, anyone who has it opens it, with no account; for MEMBERS, the
+ * person signs in first — and the link can be kept to some groups. Either way it needs no
+ * right on the table: a form's answer is written, a data view's rows are read, on the
+ * authority of whoever saved the sharing last, which the dialog says, since it is what
+ * suspends the link if that right goes.
+ *
+ * A form is ANSWERED at `/f/<jeton>`, until a date or a number of answers; any other view
+ * is READ at `/v/<jeton>` (§10), and may be framed by another site.
  */
 
 const DATE = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })
@@ -61,18 +70,28 @@ function toLocalInput(iso: string | null): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
-export function shareUrl(token: string): string {
-  return `${window.location.origin}/f/${token}`
+/** Whether a view is answered through its link — a form — rather than read. */
+export const answered = (kind: ViewKind) => kind === 'form' || kind === 'survey'
+
+export function shareUrl(token: string, kind: ViewKind = 'form'): string {
+  return `${window.location.origin}/${answered(kind) ? 'f' : 'v'}/${token}`
 }
+
+/** The code another site pastes to frame a shared view. */
+export const embedCode = (url: string, title: string) =>
+  `<iframe src="${url}?embed=1" title="${title.replace(/"/g, '&quot;')}" width="100%" height="560" style="border:1px solid #e5e7eb;border-radius:8px" loading="lazy"></iframe>`
 
 function AccessChoice({
   value,
   onChange,
   disabled,
+  reading,
 }: {
   readonly value: ShareAccess
   readonly onChange: (value: ShareAccess) => void
   readonly disabled: boolean
+  /** A view to read, not a form to answer: the words change. */
+  readonly reading: boolean
 }) {
   const choices: ReadonlyArray<{
     value: ShareAccess
@@ -84,18 +103,22 @@ function AccessChoice({
       value: 'public',
       icon: Globe,
       title: 'Public',
-      text: 'Toute personne qui a le lien répond, sans compte.',
+      text: reading
+        ? 'Toute personne qui a le lien lit la vue, sans compte.'
+        : 'Toute personne qui a le lien répond, sans compte.',
     },
     {
       value: 'members',
       icon: Users,
       title: 'Membres connectés',
-      text: 'La personne se connecte d’abord ; sa réponse porte son nom.',
+      text: reading
+        ? 'La personne se connecte d’abord pour lire la vue.'
+        : 'La personne se connecte d’abord ; sa réponse porte son nom.',
     },
   ]
   return (
     <fieldset className="grid gap-2 sm:grid-cols-2">
-      <legend className="sr-only">Qui peut répondre</legend>
+      <legend className="sr-only">{reading ? 'Qui peut lire' : 'Qui peut répondre'}</legend>
       {choices.map((choice) => (
         <label
           key={choice.value}
@@ -129,25 +152,65 @@ function AccessChoice({
   )
 }
 
+/** An address to copy, with what it is for. */
+function CopyRow({
+  icon,
+  hint,
+  value,
+  label,
+  copied,
+  onCopy,
+}: {
+  readonly icon: ReactNode
+  readonly hint: string
+  readonly value: string
+  readonly label: string
+  readonly copied: boolean
+  readonly onCopy: () => void
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+        <span className="mt-0.5 shrink-0">{icon}</span>
+        {hint}
+      </p>
+      <div className="flex items-center gap-2">
+        <Input
+          readOnly
+          value={value}
+          onFocus={(e) => e.currentTarget.select()}
+          aria-label={label}
+          className="h-8 font-mono text-xs"
+        />
+        <Button variant="outline" size="icon-sm" onClick={onCopy} aria-label={`Copier : ${label}`}>
+          {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export function ShareFormDialog({
   table,
   view,
   onClose,
 }: {
   readonly table: TableRef & { readonly label: string }
-  /** The form view to share — `null` closes the dialog. */
-  readonly view: { readonly id: string; readonly label: string } | null
+  /** The view to share — `null` closes the dialog. */
+  readonly view: { readonly id: string; readonly label: string; readonly kind: ViewKind } | null
   readonly onClose: () => void
 }) {
+  const reading = view !== null && !answered(view.kind)
   const [sharing, setSharing] = useState<FormSharing | null>(null)
   const [access, setAccess] = useState<ShareAccess>('public')
   const [active, setActive] = useState(true)
   const [closesAt, setClosesAt] = useState('')
   const [maxResponses, setMaxResponses] = useState('')
   const [groups, setGroups] = useState<ReadonlySet<string>>(new Set())
+  const [canEmbed, setCanEmbed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<'link' | 'code' | 'feed' | 'api' | null>(null)
   const [renewing, setRenewing] = useState(false)
 
   /** The form reflects what the server holds — after a load, and after every save. */
@@ -159,6 +222,7 @@ export function ShareFormDialog({
     setClosesAt(toLocalInput(share?.closes_at ?? null))
     setMaxResponses(share?.max_responses == null ? '' : String(share.max_responses))
     setGroups(new Set(share?.groups ?? []))
+    setCanEmbed(share?.can_embed ?? false)
   }, [])
 
   const viewId = view?.id ?? null
@@ -176,7 +240,7 @@ export function ShareFormDialog({
 
   const maxOk = maxResponses.trim() === '' || /^[1-9]\d{0,6}$/.test(maxResponses.trim())
 
-  const save = async (overrides: Partial<{ active: boolean }> = {}) => {
+  const save = async (overrides: Partial<{ active: boolean; canEmbed: boolean }> = {}) => {
     if (viewId === null || !maxOk) return
     setBusy(true)
     setError(null)
@@ -185,9 +249,11 @@ export function ShareFormDialog({
         await api.saveFormSharing(table, viewId, {
           access,
           active: overrides.active ?? active,
-          closes_at: closesAt === '' ? null : new Date(closesAt).toISOString(),
-          max_responses: maxResponses.trim() === '' ? null : Number(maxResponses.trim()),
+          // Read, a view is neither closed at a date nor filled up (§10).
+          closes_at: reading || closesAt === '' ? null : new Date(closesAt).toISOString(),
+          max_responses: reading || maxResponses.trim() === '' ? null : Number(maxResponses.trim()),
           groups: access === 'members' ? [...groups] : [],
+          can_embed: reading && (overrides.canEmbed ?? canEmbed),
         }),
       )
     } catch (e) {
@@ -211,16 +277,27 @@ export function ShareFormDialog({
   }
 
   const share = sharing?.share ?? null
-  const url = share === null || share.token === '' ? null : shareUrl(share.token)
+  const url =
+    share === null || share.token === '' || view === null ? null : shareUrl(share.token, view.kind)
+  const code = url === null || view === null ? null : embedCode(url, view.label)
+  // Chapter 19: what an agenda subscribes to, what another base synchronises from — both
+  // read without an account, so a public link only.
+  const open = share !== null && share.token !== '' && share.access === 'public'
+  const feed =
+    open && reading && (view?.kind === 'calendar' || view?.kind === 'timeline')
+      ? calendarFeedUrl(share.token)
+      : null
+  const apiUrl = open && reading ? sharedViewApiUrl(share.token) : null
 
-  const copy = async () => {
-    if (url === null) return
+  const copy = async (what: 'link' | 'code' | 'feed' | 'api') => {
+    const text = { link: url, code, feed, api: apiUrl }[what]
+    if (text === null) return
     try {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      await navigator.clipboard.writeText(text)
+      setCopied(what)
+      setTimeout(() => setCopied(null), 1500)
     } catch {
-      // A browser without clipboard access: the link stays selectable in its box.
+      // A browser without clipboard access: the text stays selectable in its box.
     }
   }
 
@@ -230,8 +307,17 @@ export function ShareFormDialog({
         <DialogHeader>
           <DialogTitle>Partager « {view?.label} »</DialogTitle>
           <DialogDescription>
-            Répondre ne demande aucun droit sur la table : chaque réponse ajoute une ligne à «{' '}
-            {table.label} », et rien d’autre de la table n’est montré.
+            {reading ? (
+              <>
+                Lire ne demande aucun droit sur la table : le lien montre les lignes et les champs
+                de la vue, avec son filtre et son tri, sans rien permettre d’y changer.
+              </>
+            ) : (
+              <>
+                Répondre ne demande aucun droit sur la table : chaque réponse ajoute une ligne à «{' '}
+                {table.label} », et rien d’autre de la table n’est montré.
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -253,8 +339,11 @@ export function ShareFormDialog({
                     {STATE[share.state].label}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                    {share.response_count} réponse{share.response_count > 1 ? 's' : ''}
-                    {share.last_response_at !== null &&
+                    {reading
+                      ? 'Lecture seule'
+                      : `${share.response_count} réponse${share.response_count > 1 ? 's' : ''}`}
+                    {!reading &&
+                      share.last_response_at !== null &&
                       ` · dernière le ${DATE.format(new Date(share.last_response_at))}`}
                   </span>
                   <Label htmlFor="share-active" className="text-xs font-normal">
@@ -275,26 +364,26 @@ export function ShareFormDialog({
                     readOnly
                     value={url ?? 'Lien illisible : régénérez-le.'}
                     onFocus={(e) => e.currentTarget.select()}
-                    aria-label="Lien du formulaire"
+                    aria-label={reading ? 'Lien de la vue' : 'Lien du formulaire'}
                     className="h-8 font-mono text-xs"
                   />
                   <Button
                     variant="outline"
                     size="icon-sm"
-                    onClick={() => void copy()}
+                    onClick={() => void copy('link')}
                     disabled={url === null}
                     aria-label="Copier le lien"
                     title="Copier le lien"
                   >
-                    {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                    {copied === 'link' ? <Check className="size-4" /> : <Copy className="size-4" />}
                   </Button>
                   <Button
                     variant="outline"
                     size="icon-sm"
                     asChild={url !== null}
                     disabled={url === null}
-                    aria-label="Ouvrir le formulaire"
-                    title="Ouvrir le formulaire"
+                    aria-label={reading ? 'Ouvrir la vue' : 'Ouvrir le formulaire'}
+                    title={reading ? 'Ouvrir la vue' : 'Ouvrir le formulaire'}
                   >
                     {url === null ? (
                       <ExternalLink className="size-4" />
@@ -339,24 +428,28 @@ export function ShareFormDialog({
                 )}
                 {share.state === 'authority' && (
                   <p className="text-xs text-rose-700 dark:text-rose-400">
-                    {share.published_by.name ?? 'La personne qui l’a publié'} ne peut plus ajouter
-                    de lignes à cette table : le formulaire est suspendu. Enregistrez pour en
-                    devenir la personne qui publie.
+                    {share.published_by.name ?? 'La personne qui l’a publié'}
+                    {reading
+                      ? ' ne peut plus lire cette table : la vue partagée est suspendue.'
+                      : ' ne peut plus ajouter de lignes à cette table : le formulaire est suspendu.'}{' '}
+                    Enregistrez pour en devenir la personne qui publie.
                   </p>
                 )}
               </div>
             )}
 
             <div className="space-y-2">
-              <Label>Qui peut répondre</Label>
-              <AccessChoice value={access} onChange={setAccess} disabled={busy} />
+              <Label>{reading ? 'Qui peut lire' : 'Qui peut répondre'}</Label>
+              <AccessChoice value={access} onChange={setAccess} disabled={busy} reading={reading} />
             </div>
 
             {access === 'members' && (sharing?.groups.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <Label>Réservé aux groupes</Label>
                 <p className="text-xs text-muted-foreground">
-                  Aucun coché : tout membre connecté répond.
+                  {reading
+                    ? 'Aucun coché : tout membre connecté lit la vue.'
+                    : 'Aucun coché : tout membre connecté répond.'}
                 </p>
                 <div className="grid gap-1.5 sm:grid-cols-2">
                   {sharing?.groups.map((group) => (
@@ -385,31 +478,104 @@ export function ShareFormDialog({
               </div>
             )}
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="share-closes">Fermer le</Label>
-                <Input
-                  id="share-closes"
-                  type="datetime-local"
-                  value={closesAt}
-                  onChange={(e) => setClosesAt(e.target.value)}
-                  disabled={busy}
-                  className="h-8"
-                />
+            {reading && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="share-embed"
+                    checked={canEmbed}
+                    disabled={busy}
+                    onCheckedChange={(checked) => {
+                      setCanEmbed(checked)
+                      if (share !== null) void save({ canEmbed: checked })
+                    }}
+                  />
+                  <Label htmlFor="share-embed" className="font-normal">
+                    Autoriser l’intégration à un autre site
+                  </Label>
+                </div>
+                {share?.can_embed === true && code !== null && (
+                  <div className="space-y-1.5">
+                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Code2 className="size-3.5" />
+                      Code à coller dans la page qui intègre la vue :
+                    </p>
+                    <div className="flex items-start gap-2">
+                      <textarea
+                        readOnly
+                        value={code}
+                        rows={3}
+                        onFocus={(e) => e.currentTarget.select()}
+                        aria-label="Code d’intégration"
+                        className="min-w-0 flex-1 resize-none rounded-md border bg-muted/40 px-2 py-1.5 font-mono text-[11px] leading-snug"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={() => void copy('code')}
+                        aria-label="Copier le code"
+                        title="Copier le code"
+                      >
+                        {copied === 'code' ? (
+                          <Check className="size-4" />
+                        ) : (
+                          <Copy className="size-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="share-max">Nombre maximal de réponses</Label>
-                <Input
-                  id="share-max"
-                  inputMode="numeric"
-                  value={maxResponses}
-                  onChange={(e) => setMaxResponses(e.target.value)}
-                  placeholder="Illimité"
-                  disabled={busy}
-                  className={cn('h-8', !maxOk && 'border-destructive')}
-                />
+            )}
+
+            {feed !== null && (
+              <CopyRow
+                icon={<CalendarDays className="size-3.5" />}
+                hint="Flux iCalendar, pour s’abonner à la vue depuis Google Agenda (« Autres agendas » → « À partir de l’URL »), Outlook ou Calendrier :"
+                value={feed}
+                label="Adresse du flux d’agenda"
+                copied={copied === 'feed'}
+                onCopy={() => void copy('feed')}
+              />
+            )}
+            {apiUrl !== null && (
+              <CopyRow
+                icon={<RefreshCw className="size-3.5" />}
+                hint="Adresse de l’API de la vue, pour la synchroniser dans une autre base :"
+                value={apiUrl}
+                label="Adresse de l’API de la vue"
+                copied={copied === 'api'}
+                onCopy={() => void copy('api')}
+              />
+            )}
+
+            {!reading && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="share-closes">Fermer le</Label>
+                  <Input
+                    id="share-closes"
+                    type="datetime-local"
+                    value={closesAt}
+                    onChange={(e) => setClosesAt(e.target.value)}
+                    disabled={busy}
+                    className="h-8"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="share-max">Nombre maximal de réponses</Label>
+                  <Input
+                    id="share-max"
+                    inputMode="numeric"
+                    value={maxResponses}
+                    onChange={(e) => setMaxResponses(e.target.value)}
+                    placeholder="Illimité"
+                    disabled={busy}
+                    className={cn('h-8', !maxOk && 'border-destructive')}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {(sharing?.omitted.length ?? 0) > 0 && (
               <div className="space-y-1 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
@@ -427,7 +593,7 @@ export function ShareFormDialog({
 
             {share !== null && (
               <p className="text-xs text-muted-foreground">
-                Les réponses s’écrivent avec les droits de{' '}
+                {reading ? 'Les lignes se lisent' : 'Les réponses s’écrivent'} avec les droits de{' '}
                 <span className="font-medium text-foreground">
                   {share.published_by.name ?? 'la personne qui l’a publié'}
                 </span>

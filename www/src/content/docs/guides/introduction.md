@@ -37,26 +37,37 @@ l’écriture.
 ## Ce que vous y trouverez
 
 - Des [tables et des champs](/basedb/fonctionnalites/tables-et-champs/) typés, des relations
-  qui sont de vraies clés étrangères.
-- Six [vues](/basedb/fonctionnalites/vues/) : grille, kanban, calendrier, chronologie,
-  formulaire, questionnaire.
-- Des [formulaires partagés](/basedb/fonctionnalites/formulaires-partages/) par un lien,
-  publics ou réservés aux membres.
+  qui sont de vraies clés étrangères — ou multiples —, des formules calculées par PostgreSQL,
+  des recherches et des cumuls à travers les relations.
+- Huit [vues](/basedb/fonctionnalites/vues/) : grille, kanban, calendrier, chronologie,
+  galerie, liste, formulaire, questionnaire — collaboratives ou personnelles.
+- Des [formulaires](/basedb/fonctionnalites/formulaires-partages/) et des
+  [vues](/basedb/fonctionnalites/vues-partagees/) partagés par un lien, et des calendriers qui
+  s’abonnent depuis un agenda.
+- La [collaboration](/basedb/fonctionnalites/collaboration/) : commentaires et mentions,
+  notifications, mises à jour en temps réel.
+- Des [automatisations](/basedb/fonctionnalites/automatisations/) et des
+  [interfaces](/basedb/fonctionnalites/interfaces/), les tableaux de bord d’une base.
+- Des [modèles de base](/basedb/fonctionnalites/modeles/), à prendre dans une galerie ou à
+  demander à l’IA.
 - Des [environnements](/basedb/fonctionnalites/environnements/) — production, recette — que
   l’on compare et que l’on migre.
-- Un [historique](/basedb/fonctionnalites/historique/) de chaque écriture, SQL direct compris.
+- Un [historique](/basedb/fonctionnalites/historique/) de chaque écriture, SQL direct compris,
+  et Ctrl+Z pour annuler.
 - Des [droits](/basedb/fonctionnalites/droits/) par groupe, jusqu’au champ.
-- Une [API REST](/basedb/integrations/api-rest/), un [serveur MCP](/basedb/integrations/mcp/)
-  et des [webhooks](/basedb/integrations/webhooks/).
+- Une [API REST](/basedb/integrations/api-rest/), un [serveur MCP](/basedb/integrations/mcp/),
+  des [webhooks](/basedb/integrations/webhooks/), Slack et des
+  [tables synchronisées](/basedb/integrations/synchronisation/).
 - L’[IA](/basedb/fonctionnalites/ia/) en option : champs calculés par un modèle, copilote.
 
 ## État du projet
 
-basedb est un logiciel libre (AGPL-3.0) en développement actif. Le noyau, l’API, le serveur MCP
+basedb est un logiciel libre (AGPL-3.0) développé par [Eodia](https://eodia.com/fr/), studio de
+logiciel IA-natif, et en développement actif. Le noyau, l’API, le serveur MCP
 et l’interface fonctionnent et sont couverts par plus de mille tests ; la
 [feuille de route](/basedb/feuille-de-route/) dit ce qui reste à venir. Son
-[document d’architecture](https://github.com/eodia/basedb/tree/main/docs/architecture), seize
-chapitres, fixe chaque décision.
+[document d’architecture](https://github.com/eodia/basedb/tree/main/docs/architecture), une
+vingtaine de chapitres, fixe chaque décision.
 
 :::tip[Essayer]
 Une commande suffit une fois le dépôt cloné : `docker compose up -d`. Voir

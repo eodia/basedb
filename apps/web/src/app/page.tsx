@@ -2,10 +2,13 @@
 
 import { ApiDocs } from '@/components/api-reference/api-docs'
 import { AdminPanel, type AdminTab } from '@/components/app/admin/admin-panel'
+import { AutomationsPanel } from '@/components/app/automations'
 import { NewBaseDialog } from '@/components/app/base-menu'
+import { DashboardsPanel } from '@/components/app/dashboards'
 import { ElevationProvider } from '@/components/app/elevation'
 import { EnvironmentBadge } from '@/components/app/environment-badge'
 import { HistoryPanel } from '@/components/app/history'
+import { IntegrationsPanel } from '@/components/app/integrations'
 import { NewTableDialog } from '@/components/app/new-table-dialog'
 import { PasswordRequired } from '@/components/app/password-required'
 import { ProjectDialog } from '@/components/app/project-menu'
@@ -18,6 +21,7 @@ import {
   type TableIntent,
 } from '@/components/app/sidebar'
 import { TableDialogs, useTableActions } from '@/components/app/table-actions'
+import { TemplateGallery } from '@/components/app/template-gallery'
 import { Workspace } from '@/components/app/workspace'
 import { Login } from '@/components/login'
 import { Button } from '@/components/ui/button'
@@ -37,6 +41,7 @@ import { useTheme } from '@/lib/theme'
 import { useTitle } from '@/lib/use-title'
 import { Database, FolderKanban, Loader2, Plus, Sparkles } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Toaster } from 'sonner'
 
 /**
  * The application — chapter 11, organized by projects (chapter 05 §15).
@@ -62,6 +67,9 @@ const SECTION_TITLES: Readonly<Record<Section, string | undefined>> = {
   data: undefined,
   structure: 'Structure',
   history: 'Historique',
+  interfaces: 'Interfaces',
+  automations: 'Automatisations',
+  integrations: 'Intégrations',
   doc: 'Documentation API et MCP',
   admin: 'Administration',
 }
@@ -86,53 +94,6 @@ function rememberProject(id: string | null): void {
   }
 }
 
-// The demonstration base describes itself on purpose: its descriptions are what the
-// generated documentation and the agents read, so they show what a well-described base
-// looks like — the purpose, the format, the unit — rather than repeating the label.
-const SAMPLE_BASE_DESCRIPTION =
-  'Base de démonstration : des clients et les factures qui leur sont adressées. ' +
-  'Elle sert à explorer les relations entre tables, la documentation générée et l’API.'
-
-const SAMPLE_CLIENTS_DESCRIPTION =
-  'Les entreprises et organisations à qui l’on facture. Une ligne par client, quel que ' +
-  'soit le nombre de factures qui lui ont été adressées.'
-
-const SAMPLE_INVOICES_DESCRIPTION =
-  'Les factures émises, une ligne par facture. Chaque facture est adressée à un seul client ; ' +
-  'un client peut en avoir plusieurs.'
-
-const SAMPLE_FIELDS: ReadonlyArray<{
-  label: string
-  kind: string
-  required?: boolean
-  description: string
-}> = [
-  {
-    label: 'Numéro',
-    kind: 'short_text',
-    required: true,
-    description:
-      'Référence de la facture telle qu’imprimée sur le document, par exemple F-2026-0042. ' +
-      'Elle identifie la facture quand un autre enregistrement y renvoie.',
-  },
-  {
-    label: 'Montant',
-    kind: 'number',
-    description: 'Montant total de la facture, en euros, taxes comprises.',
-  },
-  {
-    label: 'Payée',
-    kind: 'boolean',
-    description:
-      'Cochée dès que le règlement a été reçu en totalité ; décochée tant que la facture reste due.',
-  },
-  {
-    label: "Date d'émission",
-    kind: 'date',
-    description: 'Jour où la facture a été émise au client, au format AAAA-MM-JJ.',
-  },
-]
-
 export default function App() {
   const [me, setMe] = useState<Me | null>(null)
   const [checking, setChecking] = useState(true)
@@ -149,6 +110,8 @@ export default function App() {
 
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  /** The gallery of templates, open — on one template, the demonstration say. */
+  const [gallery, setGallery] = useState<{ readonly initialKey: string | null } | null>(null)
   /** The base a new table is being named in. */
   const [naming, setNaming] = useState<string | null>(null)
   const [newProject, setNewProject] = useState(false)
@@ -430,6 +393,16 @@ export default function App() {
     ],
   )
 
+  // A notification's row in another base: its table is opened here, the workspace then
+  // opens the row once that base is on screen (chapter 16 §2).
+  const pendingRecord = useWorkspace((s) => s.pendingRecord)
+  useEffect(() => {
+    if (pendingRecord === null) return
+    // Its base on screen, in the data: the workspace opens the row itself.
+    if (pendingRecord.base === baseNameRef.current && section === 'data') return
+    void onTable(pendingRecord.base, pendingRecord.table, 'open')
+  }, [pendingRecord, onTable, section])
+
   /**
    * A new table in a base — which is what the button says. The description is read back
    * rather than patched: the catalog decides the table's name, its system columns and the
@@ -456,75 +429,6 @@ export default function App() {
     },
     [describe, loadProjects, openTable, refreshDoc],
   )
-
-  /** Two linked tables, described and filled, in the current project. */
-  const createSample = useCallback(async () => {
-    if (projectId === null) return
-    setCreating(true)
-    setError(null)
-    try {
-      const created = await api.createBase(
-        `Démo ${new Date().toISOString().slice(11, 19)}`,
-        SAMPLE_BASE_DESCRIPTION,
-        projectId,
-      )
-      const clients = await api.createTable(
-        created.name,
-        'Clients',
-        [
-          {
-            label: 'Raison sociale',
-            kind: 'short_text',
-            required: true,
-            description:
-              'Nom légal du client, tel qu’il figure sur ses factures. C’est aussi ce qui le ' +
-              'désigne quand une facture renvoie vers lui.',
-          },
-          {
-            label: 'Ville',
-            kind: 'short_text',
-            description: 'Ville du siège ou de l’établissement facturé, en texte libre.',
-          },
-        ],
-        SAMPLE_CLIENTS_DESCRIPTION,
-      )
-      const invoices = await api.createTable(
-        created.name,
-        'Factures',
-        SAMPLE_FIELDS,
-        SAMPLE_INVOICES_DESCRIPTION,
-      )
-      await api.createLink(
-        { base: created.name, name: invoices.name },
-        'Client',
-        clients.name,
-        'Client à qui la facture est adressée. Une facture vise un seul client ; ' +
-          'un client peut recevoir plusieurs factures.',
-      )
-
-      // Both tables get a display column: without one on `factures`, the inverse links
-      // shown on a client would read as truncated UUIDs — correct, and useless.
-      for (const [table, column] of [
-        [clients, 'raison_sociale'],
-        [invoices, 'numero'],
-      ] as const) {
-        const display = table.fields.find((f) => f.name === column)
-        if (display?.id !== undefined) {
-          await api.setDisplayColumn({ base: created.name, name: table.name }, display.id)
-        }
-      }
-      for (const name of ['Dupont SARL', 'ACME', 'École du Nord']) {
-        await api.createRecord({ base: created.name, name: clients.name }, { raison_sociale: name })
-      }
-
-      await loadProjects()
-      await focusBase(created.name, 'open')
-    } catch (e) {
-      setError(messageFor(e))
-    } finally {
-      setCreating(false)
-    }
-  }, [projectId, loadProjects, focusBase])
 
   const signOut = useCallback(() => {
     setMe(null)
@@ -602,11 +506,11 @@ export default function App() {
         <Empty
           icon={Database}
           title={`Aucune base dans « ${project.label} »`}
-          body="Créez une base vide, ou une base de démonstration : deux tables liées, déjà décrites."
+          body="Créez une base vide, partez d’un modèle ou demandez-la à l’IA — ou ouvrez la démonstration, qui montre tout basedb."
           action={{ label: 'Créer une base', onClick: () => setNewBase(true) }}
           secondary={{
             label: 'Base de démonstration',
-            onClick: () => void createSample(),
+            onClick: () => setGallery({ initialKey: 'demo' }),
           }}
           busy={creating}
         />
@@ -663,6 +567,7 @@ export default function App() {
         tables={shown.tables}
         onBaseChanged={() => refreshBase(shown.name)}
         environments={environments}
+        self={me?.id ?? null}
       />
     )
   }
@@ -671,6 +576,7 @@ export default function App() {
     <TooltipProvider delayDuration={300}>
       <ElevationProvider>
         <div className="flex h-screen overflow-hidden bg-background">
+          <Toaster position="bottom-center" closeButton />
           <Sidebar
             projects={projects}
             project={project}
@@ -745,6 +651,16 @@ export default function App() {
             dataView()
           ) : section === 'history' ? (
             <HistoryPanel base={base} onBack={() => void focusBase(base.name, 'open')} />
+          ) : section === 'interfaces' ? (
+            <DashboardsPanel base={base} onBack={() => void focusBase(base.name, 'open')} />
+          ) : section === 'automations' ? (
+            <AutomationsPanel base={base} onBack={() => void focusBase(base.name, 'open')} />
+          ) : section === 'integrations' ? (
+            <IntegrationsPanel
+              base={base}
+              onBack={() => void focusBase(base.name, 'open')}
+              onChanged={() => void refreshBase()}
+            />
           ) : (
             <SectionPanel
               section={section}
@@ -753,6 +669,7 @@ export default function App() {
               onBack={() => void focusBase(base.name, 'open')}
               onChanged={() => refreshBase()}
               administers={me.isAdmin}
+              buildable={buildableTables(projects, base.name)}
             />
           )}
 
@@ -776,6 +693,24 @@ export default function App() {
               onClose={() => setNewBase(false)}
               onDone={(name) => {
                 setNewBase(false)
+                void loadProjects().then(() => focusBase(name, 'open'))
+              }}
+              onGallery={() => {
+                setNewBase(false)
+                setGallery({ initialKey: null })
+              }}
+            />
+          )}
+
+          {project !== null && (
+            <TemplateGallery
+              open={gallery !== null}
+              project={project}
+              me={me}
+              initialKey={gallery?.initialKey ?? null}
+              onClose={() => setGallery(null)}
+              onDone={(name) => {
+                setGallery(null)
                 void loadProjects().then(() => focusBase(name, 'open'))
               }}
             />
@@ -883,6 +818,18 @@ function Empty({
   )
 }
 
+/**
+ * The tables of a base whose structure the reader may change. The base's description lists
+ * only the DATA verbs of a table; the navigation's projects add `manage_schema` to each one
+ * that grants it — the only place a « Gestion » set on a single table shows.
+ */
+function buildableTables(projects: readonly Project[], baseName: string): ReadonlySet<string> {
+  const found = projects.flatMap((p) => p.bases).find((b) => b.name === baseName)
+  return new Set(
+    (found?.tables ?? []).filter((t) => t.actions.includes('manage_schema')).map((t) => t.name),
+  )
+}
+
 /** The sections of a base: its structure, its documentation, and what is not written yet. */
 function SectionPanel({
   section,
@@ -891,6 +838,7 @@ function SectionPanel({
   onBack,
   onChanged,
   administers,
+  buildable,
 }: {
   readonly section: Section
   readonly base: DescribedBase
@@ -898,6 +846,7 @@ function SectionPanel({
   readonly onBack: () => void
   readonly onChanged: () => Promise<void>
   readonly administers: boolean
+  readonly buildable: ReadonlySet<string>
 }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
@@ -927,7 +876,12 @@ function SectionPanel({
         }
       >
         {section === 'structure' ? (
-          <SchemaEditor base={base} onChanged={onChanged} administers={administers} />
+          <SchemaEditor
+            base={base}
+            onChanged={onChanged}
+            administers={administers}
+            buildable={buildable}
+          />
         ) : (
           <ApiDocs base={base} doc={doc} />
         )}

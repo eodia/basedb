@@ -1,0 +1,376 @@
+{
+  "format": 1,
+  "key": "inventaire",
+  "label": "Inventaire et stocks",
+  "summary": "Articles, fournisseurs et mouvements : le stock se calcule tout seul, les ruptures se voient d'avance.",
+  "description": "Pour un atelier, une boutique ou un service généraux. Chaque entrée ou sortie est un mouvement ; le stock de chaque article en est la somme, sa valeur une formule, et les articles sous leur seuil apparaissent dans « À commander ». L'IA rédige la fiche de chaque article à partir de son nom et de sa catégorie.",
+  "category": "Opérations",
+  "icon": "package",
+  "color": "#a16207",
+  "tags": ["Cumuls", "Formules", "Galerie", "IA"],
+  "base": {
+    "label": "Stocks",
+    "description": "Les articles en stock, leurs fournisseurs et les entrées et sorties."
+  },
+  "tables": [
+    {
+      "key": "articles",
+      "label": "Articles",
+      "icon": "package",
+      "color": "#a16207",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        { "label": "Référence", "kind": "short_text", "format": { "display": "barcode" } },
+        {
+          "label": "Catégorie",
+          "kind": "select",
+          "options": [
+            { "label": "Matériel", "color": "#3b82f6" },
+            { "label": "Consommable", "color": "#10b981" },
+            { "label": "Mobilier", "color": "#a16207" },
+            { "label": "Emballage", "color": "#94a3b8" }
+          ]
+        },
+        {
+          "label": "Unité",
+          "kind": "select",
+          "options": ["pièce", "boîte", "carton", "kg", "litre"]
+        },
+        { "label": "Seuil d'alerte", "kind": "number" },
+        {
+          "label": "Prix unitaire",
+          "kind": "number",
+          "format": { "display": "currency", "currency": "EUR" }
+        },
+        {
+          "label": "Stock",
+          "kind": "rollup",
+          "rollup": {
+            "via": "Article",
+            "table": "mouvements",
+            "target": "Quantité",
+            "aggregate": "sum"
+          },
+          "description": "La somme des mouvements : les sorties sont négatives."
+        },
+        {
+          "label": "À commander",
+          "kind": "formula",
+          "formula": "SIVIDE([Stock]; 0) < [Seuil d'alerte]"
+        },
+        {
+          "label": "Valeur du stock",
+          "kind": "formula",
+          "formula": "ARRONDI(SIVIDE([Stock]; 0) * [Prix unitaire]; 2)"
+        },
+        {
+          "label": "Fiche",
+          "kind": "long_text",
+          "ai": {
+            "prompt": "Rédige en deux phrases une fiche descriptive neutre de cet article de la catégorie « {{Catégorie}} », vendu à l'unité « {{Unité}} » : {{Nom}}."
+          }
+        }
+      ]
+    },
+    {
+      "key": "mouvements",
+      "label": "Mouvements",
+      "icon": "truck",
+      "color": "#0ea5e9",
+      "fields": [
+        { "label": "Libellé", "kind": "short_text", "required": true },
+        { "label": "Date", "kind": "date" },
+        {
+          "label": "Type",
+          "kind": "select",
+          "options": [
+            { "label": "Entrée", "color": "#10b981", "icon": "arrow-down" },
+            { "label": "Sortie", "color": "#ef4444", "icon": "arrow-up" },
+            { "label": "Inventaire", "color": "#8b5cf6" }
+          ]
+        },
+        {
+          "label": "Quantité",
+          "kind": "number",
+          "description": "Positive pour une entrée, négative pour une sortie."
+        },
+        { "label": "Commentaire", "kind": "long_text" }
+      ]
+    },
+    {
+      "key": "fournisseurs",
+      "label": "Fournisseurs",
+      "icon": "building-2",
+      "color": "#6366f1",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        { "label": "Contact", "kind": "short_text" },
+        { "label": "E-mail", "kind": "email" },
+        { "label": "Téléphone", "kind": "short_text", "format": { "display": "phone" } },
+        { "label": "Délai (jours)", "kind": "number" },
+        {
+          "label": "Articles",
+          "kind": "count",
+          "rollup": { "via": "Fournisseur", "table": "articles" }
+        },
+        {
+          "label": "Commander",
+          "kind": "button",
+          "button": { "label": "Commander", "url": "mailto:{{E-mail}}?subject=Commande" }
+        }
+      ]
+    }
+  ],
+  "links": [
+    { "from": "articles", "label": "Fournisseur", "to": "fournisseurs" },
+    { "from": "mouvements", "label": "Article", "to": "articles" }
+  ],
+  "rows": {
+    "fournisseurs": [
+      {
+        "$key": "bureau",
+        "Nom": "Bureau Plus",
+        "Contact": "Sandrine",
+        "E-mail": "commandes@bureauplus.example",
+        "Téléphone": "01 23 45 67 89",
+        "Délai (jours)": 3
+      },
+      {
+        "$key": "embal",
+        "Nom": "Emballages du Centre",
+        "Contact": "Patrick",
+        "E-mail": "contact@emballages-centre.example",
+        "Délai (jours)": 7
+      },
+      {
+        "$key": "info",
+        "Nom": "InfoMatériel",
+        "E-mail": "pro@infomateriel.example",
+        "Délai (jours)": 5
+      }
+    ],
+    "articles": [
+      {
+        "$key": "ecran",
+        "Nom": "Écran 27 pouces",
+        "Référence": "3760001000011",
+        "Catégorie": "Matériel",
+        "Unité": "pièce",
+        "Seuil d'alerte": 2,
+        "Prix unitaire": 219,
+        "Fournisseur": "@info",
+        "Fiche": "Écran de 27 pouces pour poste de travail. Livré avec son pied et ses câbles."
+      },
+      {
+        "$key": "papier",
+        "Nom": "Ramette de papier A4",
+        "Référence": "3760001000028",
+        "Catégorie": "Consommable",
+        "Unité": "carton",
+        "Seuil d'alerte": 10,
+        "Prix unitaire": 27.5,
+        "Fournisseur": "@bureau",
+        "Fiche": "Carton de cinq ramettes de papier A4 80 g. Pour imprimantes et photocopieurs."
+      },
+      {
+        "$key": "chaise",
+        "Nom": "Chaise de bureau ergonomique",
+        "Référence": "3760001000035",
+        "Catégorie": "Mobilier",
+        "Unité": "pièce",
+        "Seuil d'alerte": 1,
+        "Prix unitaire": 189,
+        "Fournisseur": "@bureau"
+      },
+      {
+        "$key": "carton",
+        "Nom": "Carton d'expédition 40 × 30 × 20",
+        "Référence": "3760001000042",
+        "Catégorie": "Emballage",
+        "Unité": "pièce",
+        "Seuil d'alerte": 50,
+        "Prix unitaire": 0.9,
+        "Fournisseur": "@embal"
+      },
+      {
+        "$key": "clavier",
+        "Nom": "Clavier sans fil",
+        "Référence": "3760001000059",
+        "Catégorie": "Matériel",
+        "Unité": "pièce",
+        "Seuil d'alerte": 3,
+        "Prix unitaire": 39,
+        "Fournisseur": "@info"
+      }
+    ],
+    "mouvements": [
+      {
+        "Libellé": "Réception commande InfoMatériel",
+        "Date": "-20d",
+        "Type": "Entrée",
+        "Quantité": 6,
+        "Article": "@ecran"
+      },
+      {
+        "Libellé": "Postes des nouveaux arrivants",
+        "Date": "-10d",
+        "Type": "Sortie",
+        "Quantité": -3,
+        "Article": "@ecran"
+      },
+      {
+        "Libellé": "Commande mensuelle papier",
+        "Date": "-15d",
+        "Type": "Entrée",
+        "Quantité": 12,
+        "Article": "@papier"
+      },
+      {
+        "Libellé": "Consommation du mois",
+        "Date": "-2d",
+        "Type": "Sortie",
+        "Quantité": -5,
+        "Article": "@papier"
+      },
+      {
+        "Libellé": "Inventaire annuel",
+        "Date": "-30d",
+        "Type": "Inventaire",
+        "Quantité": 2,
+        "Article": "@chaise"
+      },
+      {
+        "Libellé": "Réception cartons",
+        "Date": "-25d",
+        "Type": "Entrée",
+        "Quantité": 200,
+        "Article": "@carton"
+      },
+      {
+        "Libellé": "Expéditions de la semaine",
+        "Date": "-1d",
+        "Type": "Sortie",
+        "Quantité": -165,
+        "Article": "@carton",
+        "Commentaire": "Pic d'activité lié aux soldes."
+      },
+      {
+        "Libellé": "Réception claviers",
+        "Date": "-8d",
+        "Type": "Entrée",
+        "Quantité": 5,
+        "Article": "@clavier"
+      }
+    ]
+  },
+  "views": [
+    {
+      "table": "articles",
+      "label": "À commander",
+      "kind": "grid",
+      "spec": {
+        "filter": "[À commander] eq true",
+        "sorts": [{ "field": "Catégorie", "direction": "asc" }]
+      }
+    },
+    {
+      "table": "articles",
+      "label": "Catalogue",
+      "kind": "gallery",
+      "spec": {
+        "card_fields": ["Catégorie", "Stock", "Prix unitaire", "Fournisseur"],
+        "color_field": "Catégorie"
+      }
+    },
+    {
+      "table": "articles",
+      "label": "Par catégorie",
+      "kind": "list",
+      "spec": {
+        "group_by": "Catégorie",
+        "card_fields": ["Stock", "Seuil d'alerte", "Valeur du stock"]
+      }
+    },
+    {
+      "table": "mouvements",
+      "label": "Journal",
+      "kind": "grid",
+      "spec": {
+        "sorts": [{ "field": "Date", "direction": "desc" }],
+        "group_by": "Type",
+        "summaries": { "Quantité": "sum" }
+      }
+    },
+    {
+      "table": "mouvements",
+      "label": "Calendrier",
+      "kind": "calendar",
+      "spec": {
+        "date_field": "Date",
+        "color_field": "Type",
+        "card_fields": ["Article", "Quantité"]
+      }
+    }
+  ],
+  "dashboards": [
+    {
+      "label": "Stocks",
+      "blocks": [
+        {
+          "kind": "number",
+          "title": "Articles à commander",
+          "table": "articles",
+          "aggregate": "count",
+          "filter": "[À commander] eq true"
+        },
+        { "kind": "number", "title": "Articles suivis", "table": "articles", "aggregate": "count" },
+        {
+          "kind": "number",
+          "title": "Sorties ce mois-ci",
+          "table": "mouvements",
+          "aggregate": "count",
+          "filter": "[Type] eq \"Sortie\""
+        },
+        {
+          "kind": "chart",
+          "title": "Articles par catégorie",
+          "table": "articles",
+          "group_by": "Catégorie",
+          "style": "pie"
+        },
+        {
+          "kind": "chart",
+          "title": "Mouvements par type",
+          "table": "mouvements",
+          "group_by": "Type",
+          "style": "bar",
+          "width": 2
+        },
+        {
+          "kind": "list",
+          "title": "Derniers mouvements",
+          "table": "mouvements",
+          "fields": ["Libellé", "Article", "Quantité"],
+          "sort": "-Date",
+          "limit": 6,
+          "width": 3
+        }
+      ]
+    }
+  ],
+  "automations": [
+    {
+      "label": "Grosse sortie",
+      "description": "Prévient quand une sortie dépasse 50 unités.",
+      "trigger": { "kind": "record_created", "table": "mouvements" },
+      "condition": "[Quantité] lt -50",
+      "actions": [
+        {
+          "kind": "notify",
+          "users": ["$moi"],
+          "message": "Grosse sortie : {{Libellé}} ({{Quantité}})"
+        }
+      ]
+    }
+  ]
+}

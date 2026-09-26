@@ -1,4 +1,6 @@
 ---
+import { Image } from 'astro:assets';
+import interfaces from '../assets/screens/interfaces-blocs.png';
 import AgentVisual from '../components/landing/AgentVisual.astro';
 import Bento from '../components/landing/Bento.astro';
 import FAQ from '../components/landing/FAQ.astro';
@@ -16,7 +18,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 <Landing
 	title="basedb — la base collaborative dont chaque table est une vraie table PostgreSQL"
-	description="Grilles, vues, formulaires partagés, droits au champ près, historique complet, API REST et serveur MCP — sur de vraies tables PostgreSQL, nommées en clair. Auto-hébergé, AGPL-3.0."
+	description="Grilles et huit vues, formules, formulaires et vues partagés, commentaires, automatisations, tableaux de bord, droits au champ près, historique complet, API REST et serveur MCP — sur de vraies tables PostgreSQL, nommées en clair. Auto-hébergé, AGPL-3.0."
 >
 	<main>
 		<Hero />
@@ -29,7 +31,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 				lead="Pas de modèle générique, pas de JSON fourre-tout, pas de <code>field_1837</code> : une base est un schéma, une table est une table, un champ est une colonne typée, nommée en clair."
 				bullets={[
 					'<strong>Des types natifs</strong> : <code>text</code>, <code>numeric</code>, <code>date</code>, <code>timestamptz</code>, <code>boolean</code> — et de vraies clés étrangères pour les relations.',
-					'<strong>Des contraintes tenues par la base</strong> : listes de choix en <code>CHECK</code>, adresses web vérifiées, relations en <code>FOREIGN KEY</code>.',
+					'<strong>Des contraintes tenues par la base</strong> : listes de choix en <code>CHECK</code>, adresses web et e-mails vérifiés, relations en <code>FOREIGN KEY</code>.',
+					'<strong>Des formules calculées par PostgreSQL</strong> : <code>JOURS([Fin]; [Début])</code> devient une colonne générée, que <code>psql</code> lit comme les autres.',
 					'<strong>Le SQL direct reste permis</strong> — et même lui est historisé, par déclencheur.',
 					'<strong>Renommer n’est pas casser</strong> : l’ancien nom reste servi par un alias de compatibilité le temps de migrer vos requêtes.',
 				]}
@@ -61,6 +64,33 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 			</Feature>
 
 			<Feature
+				label="Collaborer, automatiser"
+				title="Toute l’équipe sur la même base, {le répétitif en moins.}"
+				lead="Les écritures des autres arrivent en temps réel, on discute d’une ligne là où elle se trouve, et les automatisations font le travail répétitif — avec les droits de qui les a écrites."
+				bullets={[
+					'<strong>Commentaires et mentions</strong> : un <code>@</code> prévient la personne, la cloche compte ce qui n’est pas lu.',
+					'<strong>Automatisations</strong> : quand une ligne est créée ou modifiée, à heure fixe ou d’un clic — modifier, créer, prévenir, appeler un webhook, écrire sur Slack.',
+					'<strong>Interfaces</strong> : des tableaux de bord — chiffres, graphiques, listes — que chacun lit avec ses droits.',
+					'<strong>Ctrl+Z</strong> annule la dernière écriture, et refuse plutôt que d’écraser le travail d’un autre.',
+				]}
+				links={[
+					{ href: `${base}/fonctionnalites/automatisations/`, label: 'Les automatisations' },
+					{ href: `${base}/fonctionnalites/collaboration/`, label: 'Travailler à plusieurs' },
+				]}
+			>
+				<figure class="shot">
+					<Image
+						src={interfaces}
+						alt="basedb — un tableau de bord : projets en cours, montant encaissé, tâches par statut, sentiment des avis, prochaines échéances."
+						widths={[640, 1280]}
+						sizes="(max-width: 960px) 100vw, 620px"
+						format="webp"
+						quality={82}
+					/>
+				</figure>
+			</Feature>
+
+			<Feature
 				label="API REST · MCP · webhooks"
 				title="Vos agents IA accèdent aux données, {pas aux clés du château.}"
 				lead="Le serveur MCP donne douze outils aux agents ; l’API REST, les mêmes données à vos programmes. Un seul point de contrôle des droits, les mêmes journaux."
@@ -74,6 +104,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 					{ href: `${base}/integrations/mcp/`, label: 'Brancher un agent' },
 					{ href: `${base}/integrations/api-rest/`, label: 'L’API REST' },
 				]}
+				reverse
 			>
 				<AgentVisual />
 			</Feature>
@@ -85,3 +116,19 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 		<FooterCTA />
 	</main>
 </Landing>
+
+<style>
+	.shot {
+		margin: 0;
+		border-radius: 14px;
+		border: 1px solid rgba(16, 24, 16, 0.1);
+		background: #fff;
+		box-shadow: var(--bd-shadow-lg);
+		overflow: hidden;
+	}
+	.shot :global(img) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+</style>

@@ -3,6 +3,7 @@ import { BasedbError } from '../errors/index.js'
 import { type ActorGrants, type Decision, decide } from '../rbac/decide.js'
 import { loadGrants, loadTarget } from '../rbac/loader.js'
 import type { Executor, Pools } from '../runtime/pool.js'
+import { refuseSynced } from '../sync/guard.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { type HistoryTable, loadHistoryTables } from './catalog.js'
 import { drainHistory } from './drain.js'
@@ -162,13 +163,15 @@ async function pageOf(
     `SELECT r.id::text, r.occurred_at::text, r.table_id::text, r.record_id::text, r.op,
             r.is_cascade, r.record_display, r.actor_kind, r.actor_user_id::text,
             r.actor_token_id::text, r.sql_identity,
-            u.display_name AS user_name, coalesce(tk.label, fv.label) AS token_label
+            u.display_name AS user_name, coalesce(tk.label, fv.label, au.label) AS token_label
        FROM _basedb.record_revision r
        LEFT JOIN _basedb.app_user u   ON u.id = r.actor_user_id
        LEFT JOIN _basedb.api_token tk ON tk.id = r.actor_token_id
        -- An answer to a public form: its « token » is the share, named by its form.
        LEFT JOIN _basedb.form_share fs ON fs.id = r.actor_token_id AND r.actor_kind = 'form'
        LEFT JOIN _basedb.view_def fv   ON fv.id = fs.view_id
+       -- An automation's write: its « token » is the automation, named by its label.
+       LEFT JOIN _basedb.automation au ON au.id = r.actor_token_id AND r.actor_kind = 'automation'
       WHERE ${where.sql} ${bound}
       ORDER BY r.occurred_at DESC, r.id DESC
       LIMIT $${params.length}`,
@@ -451,8 +454,11 @@ export async function listDeletions(
   )
 }
 
+/** A revision as `loadRevision` finds it. */
+export type LoadedRevision = NonNullable<Awaited<ReturnType<typeof loadRevision>>>
+
 /** A revision's header and detail, by its identifier alone. */
-async function loadRevision(exec: Executor, revisionId: string) {
+export async function loadRevision(exec: Executor, revisionId: string) {
   if (!/^[0-9a-f-]{36}$/i.test(revisionId)) return null
   const [header] = await exec.query<{
     id: string
@@ -502,77 +508,88 @@ export async function revertRevision(
     if (revision === null) {
       throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: request.revisionId } })
     }
-    const { header } = revision
-    const grants = await loadGrants(exec, ctx)
-    const target = await loadTarget(exec, ctx, header.table_id)
-    const read = target === null ? null : decide(ctx, grants, 'read', target)
-    if (target === null || read?.verdict !== 'ALLOWED') {
-      throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: request.revisionId } })
-    }
-    if (header.op !== 'update') {
-      throw new BasedbError('REQUEST_INVALID', {
-        details: { field: 'revision', reason: 'seule_une_modification_s_annule' },
-      })
-    }
-    const update = decide(ctx, grants, 'update', target)
-    if (update.verdict !== 'ALLOWED') {
-      throw new BasedbError('ADMIN_REQUIRED', {
-        details: { table: header.table_id, action: 'update' },
-      })
-    }
-
-    const table = (await loadHistoryTables(exec, [header.table_id])).get(header.table_id)
-    if (table === undefined) {
-      throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: request.revisionId } })
-    }
-    const fields = new Map(table.fields.map((f) => [f.id, f]))
-    const changes = revision.fields.filter((f) => read.readableFields.has(f.field_id))
-    for (const change of changes) {
-      const field = fields.get(change.field_id)
-      if (field === undefined || !field.isLive || !update.writableFields.has(change.field_id)) {
-        throw new BasedbError('FIELD_NOT_WRITABLE', { details: { field: change.field_id } })
-      }
-    }
-    if (changes.length === 0) {
-      throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: request.revisionId } })
-    }
-
-    const where = qualify(table.schema, table.table)
-    const [current] = await exec.query<{ row: Record<string, unknown> }>(
-      `SELECT pg_catalog.to_jsonb(t) AS row FROM ${where} t WHERE "_id" = $1 FOR UPDATE`,
-      [header.record_id],
-    )
-    if (current === undefined) {
-      throw new BasedbError('RESOURCE_NOT_FOUND', { details: { record: header.record_id } })
-    }
-
-    const stale: string[] = []
-    const values: Record<string, unknown> = {}
-    for (const change of changes) {
-      const field = fields.get(change.field_id) as NonNullable<ReturnType<typeof fields.get>>
-      const now = current.row[field.column] ?? null
-      if (JSON.stringify(now) !== JSON.stringify(change.after_value ?? null))
-        stale.push(field.column)
-      values[field.column] = change.before_value ?? null
-    }
-    if (stale.length > 0) {
-      throw new BasedbError('REVISION_SUPERSEDED', { details: { fields: stale } })
-    }
-
-    // `jsonb_populate_record` turns each JSON value back into its column's own type —
-    // a list of choices into `text[]`, a date into `date` — exactly as it was captured.
-    const assignments = Object.keys(values)
-      .map((column) => `${quoteIdentifier(column)} = r.${quoteIdentifier(column)}`)
-      .join(', ')
-    await exec.query(
-      `UPDATE ${where} AS t SET ${assignments}
-         FROM pg_catalog.jsonb_populate_record(NULL::${where}, $1::jsonb) r
-        WHERE t."_id" = $2`,
-      [JSON.stringify(values), header.record_id],
-      'update',
-    )
-    return { tableId: header.table_id, recordId: header.record_id }
+    return revertIn(exec, ctx, revision)
   })
+}
+
+/** The undo of one modification, inside a transaction the caller holds. */
+export async function revertIn(
+  exec: Executor,
+  ctx: RequestContext,
+  revision: LoadedRevision,
+): Promise<{ readonly tableId: string; readonly recordId: string }> {
+  const { header } = revision
+  await refuseSynced(exec, ctx, header.table_id)
+  const grants = await loadGrants(exec, ctx)
+  const target = await loadTarget(exec, ctx, header.table_id)
+  const read = target === null ? null : decide(ctx, grants, 'read', target)
+  if (target === null || read?.verdict !== 'ALLOWED') {
+    throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: header.id } })
+  }
+  if (header.op !== 'update') {
+    throw new BasedbError('REQUEST_INVALID', {
+      details: { field: 'revision', reason: 'seule_une_modification_s_annule' },
+    })
+  }
+  const update = decide(ctx, grants, 'update', target)
+  if (update.verdict !== 'ALLOWED') {
+    throw new BasedbError('ADMIN_REQUIRED', {
+      details: { table: header.table_id, action: 'update' },
+    })
+  }
+
+  const table = (await loadHistoryTables(exec, [header.table_id])).get(header.table_id)
+  if (table === undefined) {
+    throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: header.id } })
+  }
+  const fields = new Map(table.fields.map((f) => [f.id, f]))
+  const changes = revision.fields.filter((f) => read.readableFields.has(f.field_id))
+  for (const change of changes) {
+    const field = fields.get(change.field_id)
+    if (field === undefined || !field.isLive || !update.writableFields.has(change.field_id)) {
+      throw new BasedbError('FIELD_NOT_WRITABLE', { details: { field: change.field_id } })
+    }
+  }
+  if (changes.length === 0) {
+    throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: header.id } })
+  }
+
+  const where = qualify(table.schema, table.table)
+  const [current] = await exec.query<{ row: Record<string, unknown> }>(
+    // `_t`, not `t`: no physical name starts with `_`, so the whole row can never be
+    // mistaken for a column called `t`.
+    `SELECT pg_catalog.to_jsonb(_t) AS row FROM ${where} _t WHERE "_id" = $1 FOR UPDATE`,
+    [header.record_id],
+  )
+  if (current === undefined) {
+    throw new BasedbError('RESOURCE_NOT_FOUND', { details: { record: header.record_id } })
+  }
+
+  const stale: string[] = []
+  const values: Record<string, unknown> = {}
+  for (const change of changes) {
+    const field = fields.get(change.field_id) as NonNullable<ReturnType<typeof fields.get>>
+    const now = current.row[field.column] ?? null
+    if (JSON.stringify(now) !== JSON.stringify(change.after_value ?? null)) stale.push(field.column)
+    values[field.column] = change.before_value ?? null
+  }
+  if (stale.length > 0) {
+    throw new BasedbError('REVISION_SUPERSEDED', { details: { fields: stale } })
+  }
+
+  // `jsonb_populate_record` turns each JSON value back into its column's own type —
+  // a list of choices into `text[]`, a date into `date` — exactly as it was captured.
+  const assignments = Object.keys(values)
+    .map((column) => `${quoteIdentifier(column)} = r.${quoteIdentifier(column)}`)
+    .join(', ')
+  await exec.query(
+    `UPDATE ${where} AS t SET ${assignments}
+       FROM pg_catalog.jsonb_populate_record(NULL::${where}, $1::jsonb) r
+      WHERE t."_id" = $2`,
+    [JSON.stringify(values), header.record_id],
+    'update',
+  )
+  return { tableId: header.table_id, recordId: header.record_id }
 }
 
 /**
@@ -595,73 +612,81 @@ export async function restoreRecord(
     if (revision === null) {
       throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: request.revisionId } })
     }
-    const { header } = revision
-    const grants = await loadGrants(exec, ctx)
-    const target = await loadTarget(exec, ctx, header.table_id)
-    if (target === null || decide(ctx, grants, 'read', target).verdict !== 'ALLOWED') {
-      throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: request.revisionId } })
-    }
-    if (header.op !== 'delete') {
-      throw new BasedbError('REQUEST_INVALID', {
-        details: { field: 'revision', reason: 'seule_une_suppression_se_restaure' },
-      })
-    }
-    if (decide(ctx, grants, 'create', target).verdict !== 'ALLOWED') {
-      throw new BasedbError('ADMIN_REQUIRED', {
-        details: { table: header.table_id, action: 'create' },
-      })
-    }
-
-    const table = (await loadHistoryTables(exec, [header.table_id])).get(header.table_id)
-    if (table === undefined || !table.isLive) {
-      throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: request.revisionId } })
-    }
-    const where = qualify(table.schema, table.table)
-    const [exists] = await exec.query<{ id: string }>(
-      `SELECT "_id"::text AS id FROM ${where} WHERE "_id" = $1`,
-      [header.record_id],
-    )
-    if (exists !== undefined) {
-      throw new BasedbError('RESTORE_RECORD_PRESENT', { details: { record: header.record_id } })
-    }
-
-    const [created] = await exec.query<{ occurred_at: string; actor_user_id: string | null }>(
-      `SELECT occurred_at::text, actor_user_id::text FROM _basedb.record_revision
-        WHERE table_id = $1 AND record_id = $2 AND op = 'insert'
-        ORDER BY occurred_at LIMIT 1`,
-      [header.table_id, header.record_id],
-    )
-
-    const values: Record<string, unknown> = {
-      _id: header.record_id,
-      _created_at: created?.occurred_at ?? null,
-      _created_by: created?.actor_user_id ?? null,
-    }
-    const fields = new Map(table.fields.map((f) => [f.id, f]))
-    for (const change of revision.fields) {
-      const field = fields.get(change.field_id)
-      if (field === undefined || !field.isLive || !change.has_before) continue
-      values[field.column] = change.before_value
-    }
-    const columns = Object.keys(values).filter(
-      (c) => values[c] !== null || !c.startsWith('_created'),
-    )
-
-    try {
-      await exec.query(
-        `INSERT INTO ${where} (${columns.map((c) => quoteIdentifier(c)).join(', ')})
-         SELECT ${columns.map((c) => `r.${quoteIdentifier(c)}`).join(', ')}
-           FROM pg_catalog.jsonb_populate_record(NULL::${where}, $1::jsonb) r`,
-        [JSON.stringify(values)],
-        'insert',
-      )
-    } catch (error) {
-      // A link to a row that is gone: nothing was written, and the refusal says why.
-      if (error instanceof BasedbError && error.code === 'LINK_TARGET_NOT_FOUND') {
-        throw new BasedbError('RESTORE_TARGET_MISSING', { details: { record: header.record_id } })
-      }
-      throw error
-    }
-    return { tableId: header.table_id, recordId: header.record_id }
+    return restoreIn(exec, ctx, revision)
   })
+}
+
+/** The restoration of one deletion, inside a transaction the caller holds. */
+export async function restoreIn(
+  exec: Executor,
+  ctx: RequestContext,
+  revision: LoadedRevision,
+): Promise<{ readonly tableId: string; readonly recordId: string }> {
+  const { header } = revision
+  await refuseSynced(exec, ctx, header.table_id)
+  const grants = await loadGrants(exec, ctx)
+  const target = await loadTarget(exec, ctx, header.table_id)
+  if (target === null || decide(ctx, grants, 'read', target).verdict !== 'ALLOWED') {
+    throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: header.id } })
+  }
+  if (header.op !== 'delete') {
+    throw new BasedbError('REQUEST_INVALID', {
+      details: { field: 'revision', reason: 'seule_une_suppression_se_restaure' },
+    })
+  }
+  if (decide(ctx, grants, 'create', target).verdict !== 'ALLOWED') {
+    throw new BasedbError('ADMIN_REQUIRED', {
+      details: { table: header.table_id, action: 'create' },
+    })
+  }
+
+  const table = (await loadHistoryTables(exec, [header.table_id])).get(header.table_id)
+  if (table === undefined || !table.isLive) {
+    throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: header.id } })
+  }
+  const where = qualify(table.schema, table.table)
+  const [exists] = await exec.query<{ id: string }>(
+    `SELECT "_id"::text AS id FROM ${where} WHERE "_id" = $1`,
+    [header.record_id],
+  )
+  if (exists !== undefined) {
+    throw new BasedbError('RESTORE_RECORD_PRESENT', { details: { record: header.record_id } })
+  }
+
+  const [created] = await exec.query<{ occurred_at: string; actor_user_id: string | null }>(
+    `SELECT occurred_at::text, actor_user_id::text FROM _basedb.record_revision
+      WHERE table_id = $1 AND record_id = $2 AND op = 'insert'
+      ORDER BY occurred_at LIMIT 1`,
+    [header.table_id, header.record_id],
+  )
+
+  const values: Record<string, unknown> = {
+    _id: header.record_id,
+    _created_at: created?.occurred_at ?? null,
+    _created_by: created?.actor_user_id ?? null,
+  }
+  const fields = new Map(table.fields.map((f) => [f.id, f]))
+  for (const change of revision.fields) {
+    const field = fields.get(change.field_id)
+    if (field === undefined || !field.isLive || !change.has_before) continue
+    values[field.column] = change.before_value
+  }
+  const columns = Object.keys(values).filter((c) => values[c] !== null || !c.startsWith('_created'))
+
+  try {
+    await exec.query(
+      `INSERT INTO ${where} (${columns.map((c) => quoteIdentifier(c)).join(', ')})
+       SELECT ${columns.map((c) => `r.${quoteIdentifier(c)}`).join(', ')}
+         FROM pg_catalog.jsonb_populate_record(NULL::${where}, $1::jsonb) r`,
+      [JSON.stringify(values)],
+      'insert',
+    )
+  } catch (error) {
+    // A link to a row that is gone: nothing was written, and the refusal says why.
+    if (error instanceof BasedbError && error.code === 'LINK_TARGET_NOT_FOUND') {
+      throw new BasedbError('RESTORE_TARGET_MISSING', { details: { record: header.record_id } })
+    }
+    throw error
+  }
+  return { tableId: header.table_id, recordId: header.record_id }
 }

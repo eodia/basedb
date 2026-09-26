@@ -203,10 +203,10 @@ export function Combobox({
           )}
         </div>
 
-        {/* biome-ignore lint/a11y/useSemanticElements: a <select> cannot host a search box — see the trigger */}
         {/* biome-ignore lint/a11y/useFocusableInteractive: focus stays in the search box, which points at the highlighted option with aria-activedescendant */}
         <div
           id={listId}
+          // biome-ignore lint/a11y/useSemanticElements: a <select> cannot host a search box — see the trigger
           role="listbox"
           aria-multiselectable={multiple || undefined}
           className="scroll-discret max-h-64 overflow-y-auto p-1"

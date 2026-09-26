@@ -7,7 +7,7 @@
 // to it, never rename one." The "Normative chapter" column alone is authoritative on a
 // code's parentage.
 //
-// 225 codes, 8 domains.
+// 233 codes, 8 domains.
 //
 // The `condition` strings are quoted verbatim from the French document, which is
 // authoritative on their wording.
@@ -120,6 +120,7 @@ export type ErrorCode =
   | 'TABLE_REFERENCED'
   | 'TARGET_PURGED'
   | 'ACTION_FORBIDDEN'
+  | 'AUTOMATION_DISABLED'
   | 'ADMIN_REQUIRED'
   | 'AUTHORIZATION_REVOKED'
   | 'CONFIRMATION_REQUIRED'
@@ -184,6 +185,10 @@ export type ErrorCode =
   | 'VALUE_TOO_LONG'
   | 'AI_CONSENT_REQUIRED'
   | 'AI_DISABLED'
+  | 'SYNC_SOURCE_FAILED'
+  | 'TABLE_SYNCED'
+  | 'TEMPLATE_INVALID'
+  | 'AUTOMATION_WEBHOOK_FAILED'
   | 'AI_KEY_REJECTED'
   | 'AI_MODEL_UNKNOWN'
   | 'AI_NOT_CONFIGURED'
@@ -209,6 +214,9 @@ export type ErrorCode =
   | 'FILTER_VALUE_INVALID'
   | 'FORM_CLOSED'
   | 'FORM_RESTRICTED'
+  | 'VIEW_SHARE_CLOSED'
+  | 'VIEW_SHARE_RESTRICTED'
+  | 'VIEW_LOCKED'
   | 'IDEMPOTENCY_CONFLICT'
   | 'IDEMPOTENCY_IN_PROGRESS'
   | 'IDEMPOTENCY_INTERRUPTED'
@@ -941,6 +949,14 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     chapter: '05',
     domain: 'permissions_et_non_divulgation',
   }),
+  AUTOMATION_DISABLED: Object.freeze({
+    condition:
+      "Exécution demandée d'une automatisation désactivée ou supprimée — un bouton qui la désigne",
+    httpStatus: 409,
+    httpStatusNote: null,
+    chapter: '17',
+    domain: 'permissions_et_non_divulgation',
+  }),
   ADMIN_REQUIRED: Object.freeze({
     condition:
       "Action réservée à l'administration, l'acteur voyant la ressource ; cycle de vie compris (A23)",
@@ -1395,6 +1411,37 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     chapter: '12',
     domain: 'api_et_integrations',
   }),
+  SYNC_SOURCE_FAILED: Object.freeze({
+    condition:
+      "Source d'une table synchronisée injoignable, trop grosse ou illisible ; la table garde ses lignes",
+    httpStatus: 502,
+    httpStatusNote: null,
+    chapter: '19',
+    domain: 'api_et_integrations',
+  }),
+  TABLE_SYNCED: Object.freeze({
+    condition: "Écriture d'une ligne dans une table synchronisée, en dehors de sa synchronisation",
+    httpStatus: 409,
+    httpStatusNote: null,
+    chapter: '19',
+    domain: 'api_et_integrations',
+  }),
+  TEMPLATE_INVALID: Object.freeze({
+    condition:
+      'Modèle de base mal formé, hors bornes, aux références non résolues ou contenant un interdit ; details.issues[]',
+    httpStatus: 422,
+    httpStatusNote: null,
+    chapter: '20',
+    domain: 'api_et_integrations',
+  }),
+  AUTOMATION_WEBHOOK_FAILED: Object.freeze({
+    condition:
+      "Webhook d'une automatisation injoignable, ou réponse autre que 2xx ; consigné dans l'exécution",
+    httpStatus: 502,
+    httpStatusNote: null,
+    chapter: '17',
+    domain: 'api_et_integrations',
+  }),
   AI_KEY_REJECTED: Object.freeze({
     condition: 'Clé refusée par le fournisseur, à la pose ou en exploitation',
     httpStatus: 422,
@@ -1573,6 +1620,28 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     httpStatus: 403,
     httpStatusNote: null,
     chapter: '15',
+    domain: 'api_et_integrations',
+  }),
+  VIEW_SHARE_CLOSED: Object.freeze({
+    condition:
+      "Lecture d'une vue partagée dont le lien est désactivé, ou dont la personne qui l'a publiée ne peut plus lire la table",
+    httpStatus: 409,
+    httpStatusNote: null,
+    chapter: '15',
+    domain: 'api_et_integrations',
+  }),
+  VIEW_SHARE_RESTRICTED: Object.freeze({
+    condition: "Vue partagée réservée à des groupes dont la personne connectée n'est pas membre",
+    httpStatus: 403,
+    httpStatusNote: null,
+    chapter: '15',
+    domain: 'api_et_integrations',
+  }),
+  VIEW_LOCKED: Object.freeze({
+    condition: "Modification d'une vue verrouillée : il faut d'abord la déverrouiller",
+    httpStatus: 409,
+    httpStatusNote: null,
+    chapter: '11',
     domain: 'api_et_integrations',
   }),
   IDEMPOTENCY_CONFLICT: Object.freeze({

@@ -112,6 +112,26 @@ import {
   revokeApiToken,
   verifyApiToken,
 } from './auth/tokens.js'
+import {
+  type Automation,
+  type AutomationInput,
+  type AutomationRun,
+  createAutomation,
+  deleteAutomation,
+  listAutomationRuns,
+  listAutomations,
+  updateAutomation,
+} from './automations/catalog.js'
+import { requestRun, runAutomations, startAutomationWorker } from './automations/engine.js'
+import { type FormulaInput, setFormula } from './catalog/computed-fields.js'
+import {
+  type Dashboard,
+  type DashboardInput,
+  createDashboard,
+  deleteDashboard,
+  listDashboards,
+  updateDashboard,
+} from './catalog/dashboards.js'
 import { DESCRIPTION_MAX_CHARS } from './catalog/description.js'
 import { setFieldDescription, setTableDescription } from './catalog/descriptions.js'
 import { type Documentation, toDocumentation } from './catalog/documentation.js'
@@ -124,6 +144,7 @@ import {
   addField,
   setFieldRequired,
 } from './catalog/fields.js'
+import { type FieldFormat, type FieldFormatInput, setFieldFormat } from './catalog/formats.js'
 import {
   type BaseSummary,
   deleteBase,
@@ -141,6 +162,7 @@ import {
   setDisplayColumn,
 } from './catalog/links.js'
 import type { Look, LookInput } from './catalog/look.js'
+import { type Member, listMembers } from './catalog/members.js'
 import { toOpenApi } from './catalog/openapi.js'
 import {
   type CreateBaseResult,
@@ -201,6 +223,36 @@ import {
   reorderViews,
   updateView,
 } from './catalog/views.js'
+import {
+  type Comment,
+  addComment,
+  deleteComment,
+  editComment,
+  listComments,
+} from './collab/comments.js'
+import {
+  type NotificationPage,
+  listNotifications,
+  markNotificationsRead,
+  purgeCollaboration,
+} from './collab/notifications.js'
+import {
+  type Viewer,
+  enterPresence,
+  leavePresence,
+  movePointer,
+  refreshPresence,
+  viewersOf,
+} from './collab/presence.js'
+import {
+  DRAIN_CHANNEL,
+  LIVE_CHANNEL,
+  type LiveSignal,
+  type PointerAt,
+  canReadTable as canReadTableIn,
+  parseLive,
+  readableFieldNames,
+} from './collab/signals.js'
 import type { FieldKind } from './ddl/emit.js'
 import {
   type Migration,
@@ -246,10 +298,22 @@ import {
   withFileLinks,
 } from './files/operations.js'
 import { type FileStorageConfig, createFileStorage } from './files/storage.js'
+import { CALENDAR_MAX_EVENTS, calendarEvents } from './forms/shared-calendar.js'
+import {
+  type SharedViewPage,
+  filterRefused,
+  pageSpec,
+  peopleIn,
+  sharedField,
+  sharedRow,
+  shownFields,
+  sortOf,
+} from './forms/shared-view.js'
 import {
   type FormSharing,
   type ShareSettings,
   type SharedForm,
+  admitSharedView,
   deleteFormShare,
   getFormSharing,
   openSharedForm,
@@ -268,6 +332,15 @@ import {
   revertRevision,
 } from './history/read.js'
 import { type StructureHistoryPage, structureHistory } from './history/structure.js'
+import { type Undone, undoTransaction } from './history/undo.js'
+import { icsCalendar } from './integrations/ical.js'
+import {
+  type Integration,
+  createIntegration,
+  deleteIntegration,
+  listIntegrations,
+  testIntegration,
+} from './integrations/slack.js'
 import {
   type Proposal,
   type ProposedField,
@@ -278,6 +351,11 @@ import {
   listProposals,
   rejectProposal,
 } from './proposals/index.js'
+import {
+  type AggregateRequest,
+  type AggregateResult,
+  aggregateRecords,
+} from './records/aggregate.js'
 import {
   type CreateRecordOptions,
   type CreateRecordsOptions,
@@ -299,6 +377,7 @@ import {
   deleteRecord,
   updateRecord,
 } from './records/update.js'
+import { Listener } from './runtime/listener.js'
 import { Pools, type PoolsOptions } from './runtime/pool.js'
 import {
   type SqlConsoleRequest,
@@ -306,6 +385,26 @@ import {
   closeConsolePools,
   runConsoleSql,
 } from './sql/console.js'
+import {
+  type SyncedTable,
+  createSyncedTable,
+  listSyncedTables,
+  runSyncedTable,
+  startSyncWorker,
+  stopSyncedTable,
+  syncDue,
+  updateSyncedTable,
+} from './sync/tables.js'
+import {
+  type CatalogEntry,
+  type CatalogListing,
+  DEFAULT_TEMPLATES_URL,
+  deleteTemplate,
+  getTemplate,
+  importTemplate,
+  listTemplates,
+} from './templates/catalog.js'
+import { type TemplateDraft, type TemplateDraftRequest, draftTemplate } from './templates/draft.js'
 import { type RequestContext, type Surface, sealContext } from './tx/context.js'
 import { dispatchWebhooks, startDispatchLoop } from './webhooks/dispatch.js'
 import {
@@ -336,6 +435,30 @@ import { STRICT_TARGETS, type TargetPolicy } from './webhooks/target.js'
 export { BasedbError, businessError, type ErrorClass } from './errors/index.js'
 export type { WebhookDelivery, WebhookEvent, WebhookSummary } from './webhooks/manage.js'
 export type { SavedView, ViewKind } from './catalog/views.js'
+export type { Comment } from './collab/comments.js'
+export type { Notification, NotificationPage } from './collab/notifications.js'
+export type { Viewer } from './collab/presence.js'
+export type { LiveSignal, PointerAt } from './collab/signals.js'
+export type { Undone } from './history/undo.js'
+export type {
+  Automation,
+  AutomationAction,
+  AutomationInput,
+  AutomationRun,
+  AutomationTrigger,
+  Schedule,
+  TriggerKind,
+} from './automations/catalog.js'
+export type { ButtonInput } from './catalog/fields.js'
+export type { Block, Dashboard, DashboardInput } from './catalog/dashboards.js'
+export type { Integration } from './integrations/slack.js'
+export type { SyncedTable } from './sync/tables.js'
+export type { CatalogEntry, CatalogListing, TemplateSource } from './templates/catalog.js'
+export { DEFAULT_TEMPLATES_URL, resetTemplateCatalog } from './templates/catalog.js'
+export type { TemplateDraft, TemplateDraftRequest } from './templates/draft.js'
+export type { SourceKind } from './sync/sources.js'
+export type { FieldFormat, FieldFormatInput } from './catalog/formats.js'
+export type { Member } from './catalog/members.js'
 export type { Proposal, ProposedField } from './proposals/index.js'
 export type { TargetPolicy } from './webhooks/target.js'
 export type {
@@ -355,6 +478,7 @@ export type {
   FieldRequest,
 } from './catalog/operations.js'
 export type { CreateLinkFieldRequest, CreatedLinkField, OnDelete } from './catalog/links.js'
+export type { FormulaInput, RollupInput, RollupAggregate } from './catalog/computed-fields.js'
 export type { AddFieldRequest, AddedField, RequiredResult } from './catalog/fields.js'
 export type { Look, LookInput } from './catalog/look.js'
 export type { UpdatedTable } from './catalog/table-edit.js'
@@ -380,6 +504,7 @@ export {
   MAX_OPTION_CHARS,
 } from './catalog/select-options.js'
 export type { ListOptions, ListResult } from './records/list.js'
+export type { Aggregate, AggregateRequest, AggregateResult } from './records/aggregate.js'
 export { COUNT_CEILING } from './records/list.js'
 export type { BaseSummary } from './catalog/lifecycle.js'
 export type { EnvironmentSummary, Family } from './environments/family.js'
@@ -392,6 +517,7 @@ export type {
   SharedForm,
   SharedQuestion,
 } from './forms/shares.js'
+export type { SharedViewField, SharedViewPage } from './forms/shared-view.js'
 export { MAX_ENVIRONMENT_CHARS } from './environments/family.js'
 export type {
   ApplyReport,
@@ -474,6 +600,8 @@ export type {
   CreatedRecords,
 } from './records/create.js'
 export { BATCH_MAX_OPERATIONS } from './records/create.js'
+export { COMMENT_MAX_LENGTH, MENTIONS_MAX } from './collab/comments.js'
+export { UNDO_MAX_REVISIONS, UNDO_WINDOW_HOURS } from './history/undo.js'
 export type { DeleteRecordOptions, UpdateRecordOptions, UpdatedRecord } from './records/update.js'
 export type { Action, Decision, Verdict } from './rbac/decide.js'
 export type {
@@ -562,6 +690,11 @@ export interface KernelConfig {
    * (`EXPORT_UNAVAILABLE`).
    */
   readonly exportDir?: string
+  /**
+   * Where the public site publishes its catalog of base templates — chapter 20 §3.1.
+   * Absent: the site's own address; `null`: not read, the carried templates only.
+   */
+  readonly templatesUrl?: string | null
   /**
    * Instance key (A25), from which the password pepper and the access-token signature
    * are derived by domain separation.
@@ -1066,6 +1199,21 @@ export interface Kernel {
     ctx: RequestContext,
     request: { tableId: string; names: readonly string[] },
   ): Promise<ReorderedFields>
+  /** Changes how a number or a short text READS — no migration: the column is the same. */
+  setFieldFormat(
+    ctx: RequestContext,
+    request: { fieldId: string; format: FieldFormatInput },
+  ): Promise<FieldFormat>
+  /**
+   * Replaces a formula's expression — chapter 04 §7.7: a stored one rewrites its column;
+   * one that becomes computed at read time loses it.
+   */
+  setFormula(
+    ctx: RequestContext,
+    request: { tableId: string; field: string; formula: FormulaInput },
+  ): Promise<{ readonly stored: boolean; readonly sql: readonly string[] }>
+  /** The people of the tenant — what a `user` field names, and how to call them. */
+  listMembers(ctx: RequestContext): Promise<Member[]>
   /**
    * The saved views of a table, in the order of its selector — chapter 11 §1.4. `read` on
    * the table; each spec is cut down to the fields the reader sees.
@@ -1080,6 +1228,8 @@ export interface Kernel {
       kind: unknown
       description?: unknown
       spec?: unknown
+      /** The reader's own view, which only needs `read` (chapter 11 §1.6). */
+      personal?: boolean
     },
   ): Promise<SavedView>
   /** Changes a view's label, description and/or WHOLE spec; never its kind. */
@@ -1091,6 +1241,8 @@ export interface Kernel {
       label?: unknown
       description?: unknown
       spec?: unknown
+      /** Locks or unlocks a collaborative view. */
+      locked?: unknown
     },
   ): Promise<SavedView>
   /** Deletes a view, logically. The rows it showed are not touched. */
@@ -1219,6 +1371,16 @@ export interface Kernel {
     requestId: string
     values: Readonly<Record<string, unknown>>
   }): Promise<{ readonly received: true }>
+  /**
+   * Reads a shared data view — chapter 15 §10: its shown fields and a page of its rows, on
+   * the publisher's authority. No right on the table is needed.
+   */
+  openSharedView(request: {
+    token: string
+    reader: RequestContext | null
+    requestId: string
+    after?: string
+  }): Promise<SharedViewPage>
   /**
    * Deletes ONE table, logically — chapter 06 §4.2.
    *
@@ -1361,6 +1523,11 @@ export interface Kernel {
    */
   runSql(ctx: RequestContext, request: SqlConsoleRequest): Promise<SqlConsoleResult>
   listRecords(ctx: RequestContext, options: ListOptions): Promise<ListResult>
+  /**
+   * Aggregates over every row a filter keeps — a grid's summary bar and the counts of its
+   * groups (chapter 11 §1.6). Same mask and row predicate as a page.
+   */
+  aggregateRecords(ctx: RequestContext, request: AggregateRequest): Promise<AggregateResult>
   /** The rows referencing a given row — chapter 04 §6. */
   listInverseLinks(
     ctx: RequestContext,
@@ -1376,7 +1543,7 @@ export interface Kernel {
   deleteRecord(
     ctx: RequestContext,
     options: DeleteRecordOptions,
-  ): Promise<{ readonly deleted: string; readonly sql: string }>
+  ): Promise<{ readonly deleted: string; readonly sql: string; readonly xact: string }>
   /**
    * Deposits a file for a `file` or `image` field — chapter 04 §3 bis. The file is
    * attached to nothing until a row write cites the identifier returned.
@@ -1485,6 +1652,137 @@ export interface Kernel {
   dispatchWebhooks(): Promise<number>
   /** Moves what the capture buffered into the journals now; returns the rows moved. */
   drainHistory(): Promise<number>
+  /** The catalog of base templates (chapter 20): the instance's, the site's, the carried ones. */
+  listTemplates(ctx: RequestContext): Promise<CatalogListing>
+  getTemplate(ctx: RequestContext, key: string): Promise<CatalogEntry>
+  /** Imports a template into the instance — an administrator of the instance. */
+  importTemplate(ctx: RequestContext, raw: unknown): ReturnType<typeof importTemplate>
+  deleteTemplate(ctx: RequestContext, key: string): Promise<void>
+  /** A template proposed by the AI from a sentence (chapter 20 §5). */
+  draftTemplate(
+    ctx: RequestContext,
+    transport: ProviderTransport,
+    request: TemplateDraftRequest,
+  ): Promise<TemplateDraft>
+  /** The Slack connections of a base (chapter 19 §1). */
+  listIntegrations(ctx: RequestContext, request: { baseId: string }): Promise<Integration[]>
+  createIntegration(
+    ctx: RequestContext,
+    request: { baseId: string; label: unknown; url: unknown },
+  ): Promise<Integration>
+  deleteIntegration(ctx: RequestContext, request: { baseId: string; id: string }): Promise<void>
+  testIntegration(
+    ctx: RequestContext,
+    request: { baseId: string; id: string },
+  ): Promise<{ status: number }>
+  /** The synced tables of a base (chapter 19 §3). */
+  listSyncedTables(ctx: RequestContext, request: { baseId: string }): Promise<SyncedTable[]>
+  createSyncedTable(
+    ctx: RequestContext,
+    request: {
+      baseId: string
+      label: unknown
+      source: { kind?: unknown; url?: unknown }
+      intervalMinutes?: unknown
+    },
+  ): Promise<SyncedTable>
+  updateSyncedTable(
+    ctx: RequestContext,
+    request: { baseId: string; tableId: string; intervalMinutes: unknown },
+  ): Promise<SyncedTable>
+  stopSyncedTable(ctx: RequestContext, request: { baseId: string; tableId: string }): Promise<void>
+  runSyncedTable(
+    ctx: RequestContext,
+    request: { baseId: string; tableId: string },
+  ): Promise<SyncedTable>
+  /** One pass of the synchronisation worker, now; returns the tables handled. */
+  syncDue(): Promise<number>
+  /**
+   * The iCalendar feed of a shared calendar or timeline (chapter 19 §2.1): the page's rows
+   * on the publisher's authority, as events — for a public share only.
+   */
+  openSharedCalendar(request: { token: string; requestId: string; host: string }): Promise<string>
+  /** The dashboards of a base (chapter 18). */
+  listDashboards(ctx: RequestContext, request: { baseId: string }): Promise<Dashboard[]>
+  createDashboard(
+    ctx: RequestContext,
+    request: { baseId: string; input: DashboardInput },
+  ): Promise<Dashboard>
+  updateDashboard(
+    ctx: RequestContext,
+    request: { baseId: string; id: string; input: DashboardInput },
+  ): Promise<Dashboard>
+  deleteDashboard(ctx: RequestContext, request: { baseId: string; id: string }): Promise<void>
+  /** The automations of a base (chapter 17). */
+  listAutomations(ctx: RequestContext, request: { baseId: string }): Promise<Automation[]>
+  createAutomation(
+    ctx: RequestContext,
+    request: { baseId: string; input: AutomationInput },
+  ): Promise<Automation>
+  updateAutomation(
+    ctx: RequestContext,
+    request: { baseId: string; id: string; input: AutomationInput },
+  ): Promise<Automation>
+  deleteAutomation(ctx: RequestContext, request: { baseId: string; id: string }): Promise<void>
+  listAutomationRuns(
+    ctx: RequestContext,
+    request: { baseId: string; id: string },
+  ): Promise<AutomationRun[]>
+  /** Queues a run for a row: a button clicked, or a test (chapter 17 §4). */
+  requestAutomationRun(
+    ctx: RequestContext,
+    request: { automationId: string; recordId: string | null },
+  ): Promise<{ runId: string }>
+  /** One pass of the automation worker, now; returns the runs handled. */
+  runAutomations(): Promise<number>
+  /** Undoes a transaction of the caller's (chapter 16 §4); returns the undo's own. */
+  undoTransaction(ctx: RequestContext, request: { transaction: string }): Promise<Undone>
+  /** The comments of a row, oldest first (chapter 16 §1). */
+  listComments(
+    ctx: RequestContext,
+    request: { tableId: string; recordId: string },
+  ): Promise<Comment[]>
+  addComment(
+    ctx: RequestContext,
+    request: { tableId: string; recordId: string; body: unknown },
+  ): Promise<{ comment: Comment; unreachable: readonly string[] }>
+  editComment(ctx: RequestContext, request: { commentId: string; body: unknown }): Promise<Comment>
+  deleteComment(ctx: RequestContext, request: { commentId: string }): Promise<void>
+  /** The caller's notifications, newest first (chapter 16 §2). */
+  listNotifications(
+    ctx: RequestContext,
+    request: { unread?: boolean; after?: string; limit?: number },
+  ): Promise<NotificationPage>
+  markNotificationsRead(
+    ctx: RequestContext,
+    request: { ids?: readonly string[]; all?: boolean },
+  ): Promise<number>
+  /** Whether the caller may read a table — what a live stream decides once. */
+  canReadTable(ctx: RequestContext, tableId: string): Promise<boolean>
+  /** Presence (chapter 16 §3.3). */
+  enterPresence(
+    ctx: RequestContext,
+    request: { session: string; tableId: string; recordId: string | null },
+  ): Promise<void>
+  refreshPresence(sessions: readonly string[]): Promise<void>
+  leavePresence(session: string): Promise<void>
+  viewersOf(tableId: string): Promise<Viewer[]>
+  /** Moves a stream's pointer over the grid (chapter 16 §3.4): a signal, nothing written. */
+  movePointer(
+    ctx: RequestContext,
+    request: { session: string; tableId: string; at: PointerAt | null },
+  ): Promise<void>
+  /** The columns the caller reads in a table, by physical name. */
+  readableFieldNames(ctx: RequestContext, tableId: string): Promise<ReadonlySet<string>>
+  /**
+   * The live signals of every instance (chapter 16 §3.1), heard on the listening
+   * connection once `start` has run: `subscribe` hands each to the handler.
+   */
+  readonly live: {
+    start(): Promise<void>
+    subscribe(handler: (signal: LiveSignal) => void): () => void
+    readonly ready: boolean
+  }
   /**
    * Starts the work a serving process does in the background — the history drain. Called
    * once by the server; a test drains by hand instead, and deterministically.
@@ -1536,7 +1834,34 @@ export function startKernel(config: KernelConfig): Kernel {
   /** Stops the background drain and the webhook sender, once started. */
   let stopDrain: (() => void) | undefined
   let stopDispatch: (() => void) | undefined
+  let stopPurge: (() => void) | undefined
+  let stopAutomations: (() => void) | undefined
+  let stopSync: (() => void) | undefined
+  /** The listening connection (chapter 10 §3.1): the drain's wake-up, the live signals. */
+  const listener = new Listener(config.connectionString, [DRAIN_CHANNEL, LIVE_CHANNEL], (error) => {
+    console.error('connexion d’écoute :', error instanceof Error ? error.message : error)
+  })
+  let listening: Promise<void> | null = null
+  const liveHandlers = new Set<(signal: LiveSignal) => void>()
+  listener.on(LIVE_CHANNEL, (payload) => {
+    const signal = parseLive(payload)
+    if (signal === null) return
+    for (const handler of liveHandlers) handler(signal)
+  })
+  // A write woke the drain: one pass soon, coalescing a burst of wake-ups into one.
+  let drainSoon: NodeJS.Timeout | null = null
+  listener.on(DRAIN_CHANNEL, () => {
+    if (drainSoon !== null) return
+    drainSoon = setTimeout(() => {
+      drainSoon = null
+      drainHistory(pools).catch((error) => console.error('drain de l’historique :', error))
+    }, 50)
+  })
   const webhookTargets = config.webhookTargets ?? STRICT_TARGETS
+  const templates = {
+    url: config.templatesUrl === undefined ? DEFAULT_TEMPLATES_URL : config.templatesUrl,
+    targets: webhookTargets,
+  }
 
   /**
    * Files: the storage, and the key file links are signed with — derived from the
@@ -1897,6 +2222,9 @@ export function startKernel(config: KernelConfig): Kernel {
     setFieldDescription: (ctx, request) => setFieldDescription(pools, ctx, request),
     setFieldLabel: (ctx, request) => setFieldLabel(pools, ctx, request),
     reorderFields: (ctx, request) => reorderFields(pools, ctx, request),
+    setFieldFormat: (ctx, request) => setFieldFormat(pools, ctx, request),
+    setFormula: (ctx, request) => setFormula(pools, ctx, request),
+    listMembers: (ctx) => listMembers(pools, ctx),
     listViews: (ctx, request) => listViews(pools, ctx, request),
     createView: (ctx, request) => createView(pools, ctx, request),
     updateView: (ctx, request) => updateView(pools, ctx, request),
@@ -1947,6 +2275,56 @@ export function startKernel(config: KernelConfig): Kernel {
     deleteFormShare: (ctx, request) => deleteFormShare(pools, ctx, request),
     openSharedForm: (request) => openSharedForm(pools, request),
     submitSharedForm: (request) => submitSharedForm(pools, request),
+    openSharedView: async (request) => {
+      const view = await admitSharedView(pools, request)
+      const base = await projectBase(pools, view.authority, view.baseId)
+      const table = base.tables.find((t) => t.id === view.tableId)
+      if (table === undefined) {
+        throw new BasedbError('VIEW_SHARE_CLOSED', { details: { reason: 'authority' } })
+      }
+      const shown = shownFields(view.kind, view.spec, table)
+      const readableNames = new Set(table.fields.map((f) => f.name))
+      const sort = sortOf(view.spec, readableNames)
+      const page = await listRecords(pools, view.authority, {
+        tableId: view.tableId,
+        filter: typeof view.spec.filter === 'string' ? view.spec.filter : undefined,
+        sort: sort || undefined,
+        select: shown.map((f) => f.name),
+        limit: view.kind === 'grid' ? 100 : 250,
+        after: request.after,
+      }).catch(filterRefused)
+      const signed =
+        page.fileColumns.length === 0
+          ? page.rows
+          : withFileLinks(files.linkKey, view.authority, page.rows, page.fileColumns)
+      // The people the page names, by their name alone.
+      const ids = peopleIn(signed, shown)
+      const people = new Map<string, string | null>()
+      if (ids.length > 0) {
+        await pools.withConnection('catalog', async (exec) => {
+          const found = await exec.query<{ id: string; display_name: string | null }>(
+            `SELECT u.id::text, NULLIF(u.display_name, '') AS display_name
+               FROM _basedb.app_user u
+               JOIN _basedb.tenant t ON t.id = u.tenant_id
+              WHERE t.ref = $1 AND u.id = ANY($2::uuid[])`,
+            [view.authority.tenantId, ids],
+          )
+          for (const r of found) people.set(r.id, r.display_name)
+        })
+      }
+      return {
+        kind: view.kind,
+        title: view.label,
+        description: view.description,
+        access: view.access,
+        reader: view.reader,
+        canEmbed: view.canEmbed,
+        fields: shown.map(sharedField),
+        spec: pageSpec(view.spec, new Set(shown.map((f) => f.name)), sort !== ''),
+        rows: signed.map((row) => sharedRow(row, shown, people)),
+        nextCursor: page.nextCursor,
+      }
+    },
     deleteTable: (ctx, request) => deleteTable(pools, ctx, request),
     previewTableDeletion: (ctx, tableId) => previewTableDeletion(pools, ctx, tableId),
     restoreBase: (ctx, request) => restoreBase(pools, ctx, request),
@@ -2003,6 +2381,7 @@ export function startKernel(config: KernelConfig): Kernel {
         ? result
         : { ...result, rows: withFileLinks(files.linkKey, ctx, result.rows, result.fileColumns) }
     },
+    aggregateRecords: (ctx, request) => aggregateRecords(pools, ctx, request),
     listInverseLinks: (ctx, options) => listInverseLinks(pools, ctx, options),
     createRecord: async (ctx, options) => linked(ctx, await createRecord(pools, ctx, options)),
     createRecords: (ctx, options) => createRecords(pools, ctx, options),
@@ -2016,6 +2395,108 @@ export function startKernel(config: KernelConfig): Kernel {
     revertRevision: (ctx, request) => revertRevision(pools, ctx, request),
     restoreRecord: (ctx, request) => restoreRecord(pools, ctx, request),
     drainHistory: () => drainHistory(pools),
+    undoTransaction: (ctx, request) => undoTransaction(pools, ctx, request),
+    listTemplates: (ctx) => listTemplates(pools, ctx, templates),
+    getTemplate: (ctx, key) => getTemplate(pools, ctx, templates, key),
+    importTemplate: (ctx, raw) => importTemplate(pools, ctx, raw),
+    deleteTemplate: (ctx, key) => deleteTemplate(pools, ctx, key),
+    draftTemplate: (ctx, transport, request) => draftTemplate(pools, ctx, transport, request),
+    listIntegrations: (ctx, request) => listIntegrations(pools, ctx, request),
+    createIntegration: (ctx, request) =>
+      createIntegration(pools, ctx, instanceKey(), {
+        ...request,
+        anyHost: webhookTargets.allowPrivate,
+      }),
+    deleteIntegration: (ctx, request) => deleteIntegration(pools, ctx, request),
+    testIntegration: (ctx, request) => testIntegration(pools, ctx, instanceKey(), request),
+    listSyncedTables: (ctx, request) => listSyncedTables(pools, ctx, request),
+    createSyncedTable: (ctx, request) =>
+      createSyncedTable(pools, ctx, instanceKey(), webhookTargets, request),
+    updateSyncedTable: (ctx, request) => updateSyncedTable(pools, ctx, request),
+    stopSyncedTable: (ctx, request) => stopSyncedTable(pools, ctx, request),
+    runSyncedTable: (ctx, request) =>
+      runSyncedTable(pools, ctx, instanceKey(), webhookTargets, request),
+    syncDue: () => syncDue(pools, instanceKey(), webhookTargets),
+    openSharedCalendar: async (request) => {
+      const view = await admitSharedView(pools, {
+        token: request.token,
+        reader: null,
+        requestId: request.requestId,
+      }).catch((error) => {
+        // An agenda that subscribes does not sign in: a members' share has no feed.
+        if (error instanceof BasedbError && error.code === 'AUTHENTICATION_REQUIRED') {
+          throw new BasedbError('VIEW_SHARE_RESTRICTED', {
+            details: { reason: 'flux_public_seulement' },
+          })
+        }
+        throw error
+      })
+      if (view.kind !== 'calendar' && view.kind !== 'timeline') {
+        throw new BasedbError('RESOURCE_NOT_FOUND', { details: { view: 'calendrier' } })
+      }
+      const base = await projectBase(pools, view.authority, view.baseId)
+      const table = base.tables.find((t) => t.id === view.tableId)
+      if (table === undefined) {
+        throw new BasedbError('VIEW_SHARE_CLOSED', { details: { reason: 'authority' } })
+      }
+      const shown = shownFields(view.kind, view.spec, table)
+      const rows: Array<Record<string, unknown>> = []
+      let after: string | undefined
+      do {
+        const page = await listRecords(pools, view.authority, {
+          tableId: view.tableId,
+          filter: typeof view.spec.filter === 'string' ? view.spec.filter : undefined,
+          select: shown.map((f) => f.name),
+          limit: 250,
+          after,
+        }).catch(filterRefused)
+        rows.push(...page.rows)
+        after = page.nextCursor ?? undefined
+      } while (after !== undefined && rows.length < CALENDAR_MAX_EVENTS)
+      return icsCalendar(
+        view.label,
+        calendarEvents(view.kind, view.spec, shown, rows, request.host),
+      )
+    },
+    listDashboards: (ctx, request) => listDashboards(pools, ctx, request),
+    createDashboard: (ctx, request) => createDashboard(pools, ctx, request),
+    updateDashboard: (ctx, request) => updateDashboard(pools, ctx, request),
+    deleteDashboard: (ctx, request) => deleteDashboard(pools, ctx, request),
+    listAutomations: (ctx, request) => listAutomations(pools, ctx, request),
+    createAutomation: (ctx, request) => createAutomation(pools, ctx, webhookTargets, request),
+    updateAutomation: (ctx, request) => updateAutomation(pools, ctx, webhookTargets, request),
+    deleteAutomation: (ctx, request) => deleteAutomation(pools, ctx, request),
+    listAutomationRuns: (ctx, request) => listAutomationRuns(pools, ctx, request),
+    requestAutomationRun: (ctx, request) => requestRun(pools, ctx, request),
+    runAutomations: () => runAutomations(pools, { targets: webhookTargets, instanceKey }),
+    listComments: (ctx, request) => listComments(pools, ctx, request),
+    addComment: (ctx, request) => addComment(pools, ctx, request),
+    editComment: (ctx, request) => editComment(pools, ctx, request),
+    deleteComment: (ctx, request) => deleteComment(pools, ctx, request),
+    listNotifications: (ctx, request) => listNotifications(pools, ctx, request),
+    markNotificationsRead: (ctx, request) => markNotificationsRead(pools, ctx, request),
+    canReadTable: (ctx, tableId) =>
+      pools.withConnection('catalog', (exec) => canReadTableIn(exec, ctx, tableId)),
+    enterPresence: (ctx, request) => enterPresence(pools, ctx, request),
+    refreshPresence: (sessions) => refreshPresence(pools, sessions),
+    leavePresence: (session) => leavePresence(pools, session),
+    viewersOf: (tableId) => viewersOf(pools, tableId),
+    movePointer: (ctx, request) => movePointer(pools, ctx, request),
+    readableFieldNames: (ctx, tableId) =>
+      pools.withConnection('catalog', (exec) => readableFieldNames(exec, ctx, tableId)),
+    live: {
+      start: () => {
+        listening ??= listener.start()
+        return listening
+      },
+      subscribe: (handler) => {
+        liveHandlers.add(handler)
+        return () => liveHandlers.delete(handler)
+      },
+      get ready() {
+        return listener.ready
+      },
+    },
     listDeletions: (ctx, request) => listDeletions(pools, ctx, request),
     listWebhooks: (ctx, request) => listWebhooks(pools, ctx, request),
     createWebhook: (ctx, request) =>
@@ -2032,6 +2513,22 @@ export function startKernel(config: KernelConfig): Kernel {
     rejectProposal: (ctx, request) => rejectProposal(pools, ctx, request),
     startBackground: () => {
       if (stopDrain !== undefined) return
+      // Notifications past their retention, presence nobody refreshed: every ten minutes.
+      const purge = setInterval(() => {
+        purgeCollaboration(pools).catch((error) => console.error('purge :', error))
+      }, 600_000)
+      stopPurge = () => clearInterval(purge)
+      // The synced tables due, every minute (chapter 19 §3.3).
+      stopSync = startSyncWorker(pools, instanceKey, webhookTargets, 60_000, (error) =>
+        console.error('synchronisation :', error),
+      )
+      // The automations' queue and clock (chapter 17 §2).
+      stopAutomations = startAutomationWorker(
+        pools,
+        { targets: webhookTargets, instanceKey },
+        DRAIN_INTERVAL_MS,
+        (error) => console.error('automatisations :', error),
+      )
       stopDrain = startDrainLoop(pools, DRAIN_INTERVAL_MS, (error) => {
         // A drain that fails stops nothing: the buffers keep the rows, and the next pass
         // retries (07 §4.5). It is said, not swallowed.
@@ -2050,6 +2547,11 @@ export function startKernel(config: KernelConfig): Kernel {
     close: async () => {
       stopDrain?.()
       stopDispatch?.()
+      stopPurge?.()
+      stopAutomations?.()
+      stopSync?.()
+      if (drainSoon !== null) clearTimeout(drainSoon)
+      await listener.stop()
       await Promise.all(workers.map((w) => w.stop()))
       await closeConsolePools()
       await pools.end()

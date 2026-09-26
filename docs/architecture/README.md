@@ -46,6 +46,11 @@ disponibles, aucune dépendance externe hors PostgreSQL.
 | [13](13-authentification.md) | Authentification | Mot de passe, OAuth/OIDC, sessions, élévation, amorçage |
 | [14](14-environnements.md) | Environnements | Production, recette, développement : la lignée, la comparaison, le report de structure, la synchronisation des lignes |
 | [15](15-formulaires-partages.md) | Formulaires partagés | Le lien public ou réservé aux membres, l'autorité du publiant, l'attribution des réponses, la fermeture |
+| [16](16-collaboration.md) | Collaboration | Commentaires et mentions, notifications internes, temps réel et présence, annulation d'une écriture (Ctrl+Z) |
+| [17](17-automatisations.md) | Automatisations | Déclencheurs (ligne créée ou modifiée, horloge, bouton), condition, actions, au nom du propriétaire ; le champ bouton |
+| [18](18-interfaces-modeles.md) | Interfaces, extensions et modèles | Tableaux de bord aux droits du lecteur, blocs et page intégrée, modèles de base appliqués par l'interface |
+| [19](19-integrations-synchronisation.md) | Intégrations et tables synchronisées | Slack par webhook entrant, flux iCalendar pour Google Agenda, tables tenues à jour depuis un CSV, un agenda ou une vue partagée |
+| [20](20-modeles.md) | Modèles de base | Un format JSON pour décrire une base entière, publié par le site public, importé par l'instance, proposé par l'IA, exporté d'une base |
 
 ---
 

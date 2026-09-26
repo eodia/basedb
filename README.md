@@ -56,8 +56,9 @@ Tout s'organise par **projet** : le sélecteur en haut de la barre latérale cha
 projet ou en crée un (administrateurs), et la barre liste les bases du projet, chacune
 avec ses tables. On crée une base avec « + », une table depuis le menu « ⋯ » de sa base.
 
-Les administrateurs trouvent en bas de la barre **Utilisateurs et groupes** et
-**Permissions**. Un compte se crée avec un mot de passe temporaire, montré une seule fois
+Le menu du profil, en bas à gauche, réunit ce qui n'est pas la donnée elle-même : la
+**Documentation API et MCP** de la base ouverte, ses **Intégrations**, et pour les
+administrateurs **Utilisateurs et groupes** et **Permissions**. Un compte se crée avec un mot de passe temporaire, montré une seule fois
 et à changer à la première connexion. Les droits s'accordent à des **groupes**, sur le
 modèle de Metabase : un niveau — Aucun accès, Lecture, Édition, Gestion — posé sur un
 projet, une base ou une table, qui descend sur tout ce qui est dessous (chapitre 05 §15).

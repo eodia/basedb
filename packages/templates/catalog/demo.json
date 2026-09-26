@@ -1,0 +1,827 @@
+{
+  "format": 1,
+  "key": "demo",
+  "label": "Démo : Atelier Lumen",
+  "summary": "Une petite agence, ses clients, projets, tâches, factures et avis : toutes les facettes de basedb dans une seule base.",
+  "description": "La base de démonstration. Atelier Lumen est une agence de design fictive. Sa base montre les relations entre tables, les recherches et cumuls (chiffre d'affaires par client, note moyenne), les formules (montant TTC, retard), trois champs calculés par l'IA sur les avis clients (sentiment, thème, réponse suggérée), chaque sorte de vue — grille, kanban, calendrier, chronologie avec dépendances, galerie, liste, formulaire —, un tableau de bord et deux automatisations.",
+  "category": "Démonstration",
+  "icon": "sparkles",
+  "color": "#8b5cf6",
+  "tags": ["IA", "Relations", "Toutes les vues", "Tableau de bord"],
+  "base": {
+    "label": "Démo — Atelier Lumen",
+    "description": "Base de démonstration : une agence de design, ses clients, projets, tâches, factures et avis. Elle sert à explorer les relations, les calculs, l'IA, les vues, les tableaux de bord et les automatisations."
+  },
+  "tables": [
+    {
+      "key": "clients",
+      "label": "Clients",
+      "icon": "building-2",
+      "color": "#3b82f6",
+      "description": "Les organisations pour qui l'agence travaille, prospects compris. Une ligne par client.",
+      "fields": [
+        {
+          "label": "Nom",
+          "kind": "short_text",
+          "required": true,
+          "description": "Nom usuel du client, tel qu'il apparaît sur les devis."
+        },
+        {
+          "label": "Secteur",
+          "kind": "select",
+          "options": ["Commerce", "Santé", "Éducation", "Industrie", "Association"]
+        },
+        {
+          "label": "Statut",
+          "kind": "select",
+          "options": [
+            { "label": "Prospect", "color": "#f59e0b" },
+            { "label": "Actif", "color": "#10b981" },
+            { "label": "Ancien", "color": "#94a3b8" }
+          ]
+        },
+        { "label": "Ville", "kind": "short_text" },
+        { "label": "E-mail", "kind": "email", "description": "Adresse du contact principal." },
+        { "label": "Site web", "kind": "url" },
+        {
+          "label": "Projets",
+          "kind": "count",
+          "rollup": { "via": "Client", "table": "projets" },
+          "description": "Nombre de projets menés pour ce client."
+        },
+        {
+          "label": "Chiffre d'affaires",
+          "kind": "rollup",
+          "rollup": {
+            "via": "Client",
+            "table": "factures",
+            "target": "Montant HT",
+            "aggregate": "sum"
+          },
+          "description": "Somme des montants HT facturés au client."
+        },
+        {
+          "label": "Note moyenne",
+          "kind": "rollup",
+          "rollup": { "via": "Client", "table": "avis", "target": "Note", "aggregate": "avg" },
+          "description": "Moyenne des notes laissées par le client, sur 5."
+        },
+        {
+          "label": "Écrire",
+          "kind": "button",
+          "button": { "label": "Écrire", "url": "mailto:{{E-mail}}" }
+        }
+      ]
+    },
+    {
+      "key": "projets",
+      "label": "Projets",
+      "icon": "rocket",
+      "color": "#8b5cf6",
+      "description": "Les missions de l'agence, de l'idée à la livraison. Un projet a un client et des tâches.",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        {
+          "label": "Statut",
+          "kind": "select",
+          "options": [
+            { "label": "Idée", "color": "#94a3b8" },
+            { "label": "En cours", "color": "#3b82f6" },
+            { "label": "En pause", "color": "#f59e0b" },
+            { "label": "Livré", "color": "#10b981" }
+          ]
+        },
+        { "label": "Début", "kind": "date" },
+        { "label": "Fin", "kind": "date" },
+        {
+          "label": "Budget",
+          "kind": "number",
+          "format": { "display": "currency", "currency": "EUR" }
+        },
+        {
+          "label": "Durée (jours)",
+          "kind": "formula",
+          "formula": "JOURS([Fin]; [Début])",
+          "description": "Nombre de jours entre le début et la fin prévue."
+        },
+        {
+          "label": "Ville du client",
+          "kind": "lookup",
+          "rollup": { "via": "Client", "target": "Ville" }
+        },
+        { "label": "Tâches", "kind": "count", "rollup": { "via": "Projet", "table": "taches" } }
+      ]
+    },
+    {
+      "key": "taches",
+      "label": "Tâches",
+      "icon": "list-todo",
+      "color": "#10b981",
+      "description": "Le travail à faire, projet par projet. Une tâche peut dépendre d'autres tâches.",
+      "fields": [
+        { "label": "Titre", "kind": "short_text", "required": true },
+        {
+          "label": "Statut",
+          "kind": "select",
+          "options": [
+            { "label": "À faire", "color": "#94a3b8" },
+            { "label": "En cours", "color": "#3b82f6" },
+            { "label": "En revue", "color": "#f59e0b" },
+            { "label": "Fait", "color": "#10b981" }
+          ]
+        },
+        {
+          "label": "Priorité",
+          "kind": "select",
+          "options": [
+            { "label": "Haute", "color": "#ef4444", "icon": "flame" },
+            { "label": "Moyenne", "color": "#f59e0b" },
+            { "label": "Basse", "color": "#94a3b8" }
+          ]
+        },
+        { "label": "Début", "kind": "date" },
+        { "label": "Échéance", "kind": "date" },
+        { "label": "Assigné à", "kind": "user" },
+        { "label": "Estimation (h)", "kind": "number" },
+        { "label": "Notes", "kind": "long_text" },
+        {
+          "label": "Terminée le",
+          "kind": "datetime",
+          "description": "Rempli par l'automatisation « Tâche terminée »."
+        }
+      ]
+    },
+    {
+      "key": "factures",
+      "label": "Factures",
+      "icon": "receipt",
+      "color": "#f59e0b",
+      "description": "Les factures émises. Une facture vise un client, et souvent un projet.",
+      "fields": [
+        {
+          "label": "Numéro",
+          "kind": "short_text",
+          "required": true,
+          "description": "Référence imprimée sur la facture, par exemple F-2026-012."
+        },
+        { "label": "Émise le", "kind": "date" },
+        {
+          "label": "Montant HT",
+          "kind": "number",
+          "format": { "display": "currency", "currency": "EUR" }
+        },
+        { "label": "Taux de TVA", "kind": "number", "description": "0,2 pour 20 %." },
+        {
+          "label": "Montant TTC",
+          "kind": "formula",
+          "formula": "ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)"
+        },
+        { "label": "Échéance", "kind": "date" },
+        { "label": "Payée", "kind": "boolean" },
+        {
+          "label": "En retard",
+          "kind": "formula",
+          "formula": "SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)",
+          "description": "Vrai quand l'échéance est passée et la facture non payée."
+        }
+      ]
+    },
+    {
+      "key": "avis",
+      "label": "Avis clients",
+      "icon": "message-square",
+      "color": "#ec4899",
+      "description": "Ce que les clients disent du travail livré. L'IA lit chaque avis : sentiment, thème et proposition de réponse.",
+      "fields": [
+        { "label": "Auteur", "kind": "short_text", "required": true },
+        { "label": "Avis", "kind": "long_text", "description": "Le texte laissé par le client." },
+        { "label": "Note", "kind": "number", "format": { "display": "rating", "rating_max": 5 } },
+        { "label": "Reçu le", "kind": "date" },
+        {
+          "label": "Sentiment",
+          "kind": "select",
+          "options": [
+            { "label": "Positif", "color": "#10b981", "icon": "smile" },
+            { "label": "Neutre", "color": "#94a3b8", "icon": "meh" },
+            { "label": "Négatif", "color": "#ef4444", "icon": "frown" }
+          ],
+          "ai": {
+            "prompt": "Voici l'avis d'un client sur une agence de design, noté {{Note}}/5 :\n« {{Avis}} »\nQuel est le sentiment général de cet avis ?"
+          },
+          "description": "Calculé par l'IA à partir du texte et de la note."
+        },
+        {
+          "label": "Thème",
+          "kind": "select",
+          "options": ["Qualité", "Délais", "Prix", "Communication", "Autre"],
+          "ai": { "prompt": "De quoi parle principalement cet avis client ? « {{Avis}} »" },
+          "description": "Le sujet principal de l'avis, selon l'IA."
+        },
+        {
+          "label": "Réponse suggérée",
+          "kind": "long_text",
+          "ai": {
+            "prompt": "Rédige en trois phrases au plus une réponse chaleureuse et professionnelle à cet avis client, noté {{Note}}/5. Remercie, réponds précisément aux remarques, et signe « L'équipe Atelier Lumen ».\nAvis de {{Auteur}} : « {{Avis}} »"
+          },
+          "description": "Un brouillon de réponse, à relire avant envoi."
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "from": "projets",
+      "label": "Client",
+      "to": "clients",
+      "description": "Le client pour qui le projet est mené."
+    },
+    { "from": "taches", "label": "Projet", "to": "projets" },
+    {
+      "from": "taches",
+      "label": "Dépend de",
+      "to": "taches",
+      "multiple": true,
+      "description": "Les tâches à terminer avant de commencer celle-ci."
+    },
+    { "from": "factures", "label": "Client", "to": "clients" },
+    { "from": "factures", "label": "Projet", "to": "projets" },
+    { "from": "avis", "label": "Client", "to": "clients" }
+  ],
+  "rows": {
+    "clients": [
+      {
+        "$key": "boulangerie",
+        "Nom": "Boulangerie Martin",
+        "Secteur": "Commerce",
+        "Statut": "Actif",
+        "Ville": "Lyon",
+        "E-mail": "contact@boulangerie-martin.example",
+        "Site web": "https://boulangerie-martin.example"
+      },
+      {
+        "$key": "clinique",
+        "Nom": "Clinique des Tilleuls",
+        "Secteur": "Santé",
+        "Statut": "Actif",
+        "Ville": "Nantes",
+        "E-mail": "communication@tilleuls.example"
+      },
+      {
+        "$key": "lycee",
+        "Nom": "Lycée Jean Moulin",
+        "Secteur": "Éducation",
+        "Statut": "Actif",
+        "Ville": "Bordeaux",
+        "E-mail": "direction@jeanmoulin.example"
+      },
+      {
+        "$key": "forges",
+        "Nom": "Forges du Rhône",
+        "Secteur": "Industrie",
+        "Statut": "Ancien",
+        "Ville": "Vienne",
+        "E-mail": "marketing@forges-rhone.example",
+        "Site web": "https://forges-rhone.example"
+      },
+      {
+        "$key": "velo",
+        "Nom": "Vélo Solidaire",
+        "Secteur": "Association",
+        "Statut": "Actif",
+        "Ville": "Grenoble",
+        "E-mail": "bonjour@velo-solidaire.example"
+      },
+      {
+        "$key": "epicerie",
+        "Nom": "L'Épicerie fine",
+        "Secteur": "Commerce",
+        "Statut": "Prospect",
+        "Ville": "Lyon",
+        "E-mail": "gerance@epicerie-fine.example"
+      }
+    ],
+    "projets": [
+      {
+        "$key": "site-boulangerie",
+        "Nom": "Site vitrine et commande en ligne",
+        "Statut": "En cours",
+        "Début": "-20d",
+        "Fin": "+25d",
+        "Budget": 12500,
+        "Client": "@boulangerie"
+      },
+      {
+        "$key": "charte-clinique",
+        "Nom": "Nouvelle charte graphique",
+        "Statut": "En cours",
+        "Début": "-10d",
+        "Fin": "+40d",
+        "Budget": 18000,
+        "Client": "@clinique"
+      },
+      {
+        "$key": "portes-ouvertes",
+        "Nom": "Campagne portes ouvertes",
+        "Statut": "Livré",
+        "Début": "-90d",
+        "Fin": "-30d",
+        "Budget": 6400,
+        "Client": "@lycee"
+      },
+      {
+        "$key": "catalogue-forges",
+        "Nom": "Catalogue produits 2026",
+        "Statut": "Livré",
+        "Début": "-200d",
+        "Fin": "-120d",
+        "Budget": 22000,
+        "Client": "@forges"
+      },
+      {
+        "$key": "appli-velo",
+        "Nom": "Application de réservation",
+        "Statut": "En pause",
+        "Début": "-40d",
+        "Fin": "+60d",
+        "Budget": 9800,
+        "Client": "@velo"
+      },
+      {
+        "$key": "identite-epicerie",
+        "Nom": "Identité visuelle",
+        "Statut": "Idée",
+        "Budget": 7500,
+        "Client": "@epicerie"
+      }
+    ],
+    "taches": [
+      {
+        "$key": "t1",
+        "Titre": "Atelier de cadrage avec la boulangerie",
+        "Statut": "Fait",
+        "Priorité": "Haute",
+        "Début": "-20d",
+        "Échéance": "-18d",
+        "Estimation (h)": 4,
+        "Projet": "@site-boulangerie",
+        "Assigné à": "$moi"
+      },
+      {
+        "$key": "t2",
+        "Titre": "Maquettes de la page d'accueil",
+        "Statut": "En revue",
+        "Priorité": "Haute",
+        "Début": "-15d",
+        "Échéance": "-2d",
+        "Estimation (h)": 16,
+        "Projet": "@site-boulangerie",
+        "Dépend de": ["@t1"],
+        "Assigné à": "$moi"
+      },
+      {
+        "$key": "t3",
+        "Titre": "Intégration du tunnel de commande",
+        "Statut": "En cours",
+        "Priorité": "Haute",
+        "Début": "-3d",
+        "Échéance": "+8d",
+        "Estimation (h)": 30,
+        "Projet": "@site-boulangerie",
+        "Dépend de": ["@t2"]
+      },
+      {
+        "$key": "t4",
+        "Titre": "Recette et mise en ligne",
+        "Statut": "À faire",
+        "Priorité": "Moyenne",
+        "Début": "+9d",
+        "Échéance": "+20d",
+        "Estimation (h)": 10,
+        "Projet": "@site-boulangerie",
+        "Dépend de": ["@t3"]
+      },
+      {
+        "$key": "t5",
+        "Titre": "Audit de l'identité actuelle",
+        "Statut": "Fait",
+        "Priorité": "Moyenne",
+        "Début": "-10d",
+        "Échéance": "-6d",
+        "Estimation (h)": 8,
+        "Projet": "@charte-clinique"
+      },
+      {
+        "$key": "t6",
+        "Titre": "Trois pistes de logo",
+        "Statut": "En cours",
+        "Priorité": "Haute",
+        "Début": "-5d",
+        "Échéance": "+5d",
+        "Estimation (h)": 24,
+        "Projet": "@charte-clinique",
+        "Dépend de": ["@t5"],
+        "Assigné à": "$moi"
+      },
+      {
+        "$key": "t7",
+        "Titre": "Présentation au comité de direction",
+        "Statut": "À faire",
+        "Priorité": "Haute",
+        "Début": "+6d",
+        "Échéance": "+12d",
+        "Estimation (h)": 6,
+        "Projet": "@charte-clinique",
+        "Dépend de": ["@t6"]
+      },
+      {
+        "$key": "t8",
+        "Titre": "Déclinaison de la signalétique",
+        "Statut": "À faire",
+        "Priorité": "Basse",
+        "Début": "+13d",
+        "Échéance": "+35d",
+        "Estimation (h)": 40,
+        "Projet": "@charte-clinique",
+        "Dépend de": ["@t7"]
+      },
+      {
+        "$key": "t9",
+        "Titre": "Affiches et réseaux sociaux",
+        "Statut": "Fait",
+        "Priorité": "Moyenne",
+        "Début": "-80d",
+        "Échéance": "-60d",
+        "Estimation (h)": 20,
+        "Projet": "@portes-ouvertes"
+      },
+      {
+        "$key": "t10",
+        "Titre": "Bilan de la campagne",
+        "Statut": "Fait",
+        "Priorité": "Basse",
+        "Début": "-35d",
+        "Échéance": "-30d",
+        "Estimation (h)": 3,
+        "Projet": "@portes-ouvertes",
+        "Dépend de": ["@t9"]
+      },
+      {
+        "$key": "t11",
+        "Titre": "Parcours de réservation",
+        "Statut": "En cours",
+        "Priorité": "Moyenne",
+        "Début": "-30d",
+        "Échéance": "+15d",
+        "Estimation (h)": 18,
+        "Projet": "@appli-velo",
+        "Notes": "En attente du retour de l'association sur les tarifs."
+      },
+      {
+        "$key": "t12",
+        "Titre": "Relancer l'association pour les tarifs",
+        "Statut": "À faire",
+        "Priorité": "Haute",
+        "Début": "today",
+        "Échéance": "+2d",
+        "Estimation (h)": 1,
+        "Projet": "@appli-velo",
+        "Assigné à": "$moi"
+      },
+      {
+        "$key": "t13",
+        "Titre": "Proposition commerciale pour l'épicerie",
+        "Statut": "À faire",
+        "Priorité": "Moyenne",
+        "Début": "+1d",
+        "Échéance": "+7d",
+        "Estimation (h)": 5,
+        "Projet": "@identite-epicerie"
+      }
+    ],
+    "factures": [
+      {
+        "Numéro": "F-2026-001",
+        "Émise le": "-190d",
+        "Montant HT": 11000,
+        "Taux de TVA": 0.2,
+        "Échéance": "-160d",
+        "Payée": true,
+        "Client": "@forges",
+        "Projet": "@catalogue-forges"
+      },
+      {
+        "Numéro": "F-2026-002",
+        "Émise le": "-120d",
+        "Montant HT": 11000,
+        "Taux de TVA": 0.2,
+        "Échéance": "-90d",
+        "Payée": true,
+        "Client": "@forges",
+        "Projet": "@catalogue-forges"
+      },
+      {
+        "Numéro": "F-2026-003",
+        "Émise le": "-85d",
+        "Montant HT": 3200,
+        "Taux de TVA": 0.2,
+        "Échéance": "-55d",
+        "Payée": true,
+        "Client": "@lycee",
+        "Projet": "@portes-ouvertes"
+      },
+      {
+        "Numéro": "F-2026-004",
+        "Émise le": "-30d",
+        "Montant HT": 3200,
+        "Taux de TVA": 0.2,
+        "Échéance": "today",
+        "Payée": false,
+        "Client": "@lycee",
+        "Projet": "@portes-ouvertes"
+      },
+      {
+        "Numéro": "F-2026-005",
+        "Émise le": "-20d",
+        "Montant HT": 5000,
+        "Taux de TVA": 0.2,
+        "Échéance": "-5d",
+        "Payée": false,
+        "Client": "@boulangerie",
+        "Projet": "@site-boulangerie"
+      },
+      {
+        "Numéro": "F-2026-006",
+        "Émise le": "-10d",
+        "Montant HT": 7200,
+        "Taux de TVA": 0.2,
+        "Échéance": "+20d",
+        "Payée": false,
+        "Client": "@clinique",
+        "Projet": "@charte-clinique"
+      },
+      {
+        "Numéro": "F-2026-007",
+        "Émise le": "-38d",
+        "Montant HT": 2900,
+        "Taux de TVA": 0.055,
+        "Échéance": "-8d",
+        "Payée": true,
+        "Client": "@velo",
+        "Projet": "@appli-velo"
+      }
+    ],
+    "avis": [
+      {
+        "Auteur": "Claire, Lycée Jean Moulin",
+        "Avis": "Campagne livrée en temps et en heure, des visuels qui ont vraiment plu aux familles. Nous avons eu 30 % de visiteurs en plus aux portes ouvertes !",
+        "Note": 5,
+        "Reçu le": "-28d",
+        "Client": "@lycee",
+        "Sentiment": "Positif",
+        "Thème": "Qualité",
+        "Réponse suggérée": "Merci Claire pour ce retour enthousiaste ! Nous sommes ravis que la campagne ait attiré autant de familles. À très bientôt pour la prochaine édition — l'équipe Atelier Lumen"
+      },
+      {
+        "Auteur": "Service marketing, Forges du Rhône",
+        "Avis": "Beau catalogue, mais deux semaines de retard sur l'impression et des relances nécessaires pour obtenir les fichiers définitifs.",
+        "Note": 3,
+        "Reçu le": "-115d",
+        "Client": "@forges",
+        "Sentiment": "Neutre",
+        "Thème": "Délais",
+        "Réponse suggérée": "Merci pour votre franchise. Le retard d'impression n'aurait pas dû arriver et nous avons revu notre planning de livraison des fichiers. Nous serions heureux de vous le prouver sur un prochain projet — l'équipe Atelier Lumen"
+      },
+      {
+        "Auteur": "Julien, Vélo Solidaire",
+        "Avis": "Équipe à l'écoute et prix très raisonnable pour une association. Hâte de voir l'application terminée.",
+        "Note": 5,
+        "Reçu le": "-12d",
+        "Client": "@velo",
+        "Sentiment": "Positif",
+        "Thème": "Prix",
+        "Réponse suggérée": "Merci Julien ! Travailler avec Vélo Solidaire est un vrai plaisir ; nous avançons sur l'application dès réception des tarifs. — l'équipe Atelier Lumen"
+      },
+      {
+        "Auteur": "Direction, Clinique des Tilleuls",
+        "Avis": "Les premières pistes sont intéressantes, mais nous aurions aimé être davantage consultés avant l'atelier.",
+        "Note": 3,
+        "Reçu le": "-4d",
+        "Client": "@clinique",
+        "Sentiment": "Neutre",
+        "Thème": "Communication",
+        "Réponse suggérée": "Merci pour ce retour. Nous planifions un point d'étape hebdomadaire pour vous associer à chaque décision d'ici la présentation au comité. — l'équipe Atelier Lumen"
+      },
+      {
+        "Auteur": "Sophie, Boulangerie Martin",
+        "Avis": "Les maquettes sont superbes mais le devis a augmenté en cours de route sans qu'on nous prévienne vraiment. Un peu déçue.",
+        "Note": 2,
+        "Reçu le": "-1d",
+        "Client": "@boulangerie",
+        "Sentiment": "Négatif",
+        "Thème": "Prix",
+        "Réponse suggérée": "Sophie, merci de nous l'avoir dit. Vous avez raison : l'évolution du devis aurait dû être expliquée avant d'être engagée. Nous vous appelons cette semaine pour la revoir ensemble. — l'équipe Atelier Lumen"
+      }
+    ]
+  },
+  "views": [
+    {
+      "table": "clients",
+      "label": "Cartes",
+      "kind": "gallery",
+      "spec": {
+        "card_fields": ["Secteur", "Ville", "Statut", "Chiffre d'affaires"],
+        "color_field": "Statut",
+        "card_size": "medium"
+      }
+    },
+    {
+      "table": "clients",
+      "label": "Par secteur",
+      "kind": "list",
+      "spec": { "group_by": "Secteur", "card_fields": ["Ville", "Statut", "Projets"] }
+    },
+    {
+      "table": "projets",
+      "label": "Par statut",
+      "kind": "kanban",
+      "spec": {
+        "group_by": "Statut",
+        "card_fields": ["Client", "Budget", "Fin"],
+        "group_order": ["Idée", "En cours", "En pause", "Livré"]
+      }
+    },
+    {
+      "table": "projets",
+      "label": "Planning",
+      "kind": "timeline",
+      "spec": {
+        "start_field": "Début",
+        "end_field": "Fin",
+        "color_field": "Statut",
+        "scale": "month"
+      }
+    },
+    {
+      "table": "taches",
+      "label": "Tableau",
+      "kind": "kanban",
+      "spec": {
+        "group_by": "Statut",
+        "card_fields": ["Priorité", "Échéance", "Projet", "Assigné à"],
+        "group_order": ["À faire", "En cours", "En revue", "Fait"]
+      }
+    },
+    {
+      "table": "taches",
+      "label": "Échéances",
+      "kind": "calendar",
+      "spec": { "date_field": "Échéance", "color_field": "Priorité", "card_fields": ["Projet"] }
+    },
+    {
+      "table": "taches",
+      "label": "Dépendances",
+      "kind": "timeline",
+      "spec": {
+        "start_field": "Début",
+        "end_field": "Échéance",
+        "depends_on": "Dépend de",
+        "group_by": "Projet",
+        "color_field": "Statut",
+        "scale": "week"
+      }
+    },
+    {
+      "table": "taches",
+      "label": "À faire",
+      "kind": "grid",
+      "spec": {
+        "filter": "[Statut] ne \"Fait\"",
+        "sorts": [{ "field": "Échéance", "direction": "asc" }],
+        "group_by": "Priorité"
+      }
+    },
+    {
+      "table": "factures",
+      "label": "Impayées",
+      "kind": "grid",
+      "spec": {
+        "filter": "[Payée] eq false",
+        "sorts": [{ "field": "Échéance", "direction": "asc" }],
+        "summaries": { "Montant HT": "sum" }
+      }
+    },
+    {
+      "table": "avis",
+      "label": "Par sentiment",
+      "kind": "kanban",
+      "spec": {
+        "group_by": "Sentiment",
+        "card_fields": ["Note", "Thème", "Client"],
+        "group_order": ["Négatif", "Neutre", "Positif"]
+      }
+    },
+    {
+      "table": "avis",
+      "label": "Donnez votre avis",
+      "kind": "form",
+      "spec": {
+        "title": "Votre avis sur Atelier Lumen",
+        "description": "Deux minutes pour nous dire ce que vous avez pensé de notre travail. Merci !",
+        "fields": [
+          { "field": "Auteur", "required": true, "label": "Votre nom et votre organisation" },
+          { "field": "Note", "required": true },
+          {
+            "field": "Avis",
+            "required": true,
+            "label": "Votre avis",
+            "help": "Ce qui vous a plu, ce que nous pourrions mieux faire."
+          }
+        ],
+        "submit_label": "Envoyer mon avis",
+        "success_message": "Merci, votre avis nous aide à progresser."
+      }
+    }
+  ],
+  "dashboards": [
+    {
+      "label": "Pilotage de l'agence",
+      "description": "L'essentiel en un coup d'œil.",
+      "blocks": [
+        {
+          "kind": "number",
+          "title": "Projets en cours",
+          "table": "projets",
+          "aggregate": "count",
+          "filter": "[Statut] eq \"En cours\""
+        },
+        {
+          "kind": "number",
+          "title": "Encaissé (HT)",
+          "table": "factures",
+          "aggregate": "sum",
+          "field": "Montant HT",
+          "filter": "[Payée] eq true"
+        },
+        {
+          "kind": "number",
+          "title": "Note moyenne des avis",
+          "table": "avis",
+          "aggregate": "avg",
+          "field": "Note"
+        },
+        {
+          "kind": "chart",
+          "title": "Tâches par statut",
+          "table": "taches",
+          "group_by": "Statut",
+          "style": "bar",
+          "width": 2
+        },
+        {
+          "kind": "chart",
+          "title": "Sentiment des avis",
+          "table": "avis",
+          "group_by": "Sentiment",
+          "style": "pie"
+        },
+        {
+          "kind": "list",
+          "title": "Prochaines échéances",
+          "table": "taches",
+          "fields": ["Titre", "Échéance", "Priorité"],
+          "filter": "[Statut] ne \"Fait\"",
+          "sort": "Échéance",
+          "limit": 6,
+          "width": 2
+        },
+        {
+          "kind": "text",
+          "title": "Bienvenue",
+          "body": "Cette base est une démonstration. Ouvrez « Avis clients » pour voir l'IA lire les avis, « Tâches » pour les vues kanban, calendrier et dépendances, et « Automatisations » pour ce qui se passe quand une tâche est terminée."
+        }
+      ]
+    }
+  ],
+  "automations": [
+    {
+      "label": "Tâche terminée",
+      "description": "Note l'heure à laquelle une tâche passe à « Fait ».",
+      "trigger": { "kind": "record_updated", "table": "taches", "fields": ["Statut"] },
+      "condition": "[Statut] eq \"Fait\"",
+      "actions": [{ "kind": "update_record", "values": { "Terminée le": "{{_maintenant}}" } }]
+    },
+    {
+      "label": "Avis négatif",
+      "description": "Prévient dès que l'IA juge un avis négatif.",
+      "trigger": { "kind": "record_updated", "table": "avis", "fields": ["Sentiment"] },
+      "condition": "[Sentiment] eq \"Négatif\"",
+      "actions": [
+        {
+          "kind": "notify",
+          "users": ["$moi"],
+          "message": "Avis négatif de {{Auteur}} : « {{Avis}} »"
+        }
+      ]
+    }
+  ]
+}

@@ -68,7 +68,9 @@ function isEmpty(field: Field, value: unknown): boolean {
   if (value === null || value === undefined || value === '') return true
   if (field.kind === 'link') return typeof (value as { id?: unknown }).id !== 'string'
   if (field.kind === 'file' || field.kind === 'image') return filesOf(value).length === 0
-  if (field.kind === 'multi_select') return !Array.isArray(value) || value.length === 0
+  if (field.kind === 'multi_select' || field.kind === 'multi_link') {
+    return !Array.isArray(value) || value.length === 0
+  }
   // An unticked box is an answer — « non » — and never a missing one.
   return false
 }

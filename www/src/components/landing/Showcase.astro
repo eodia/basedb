@@ -1,21 +1,27 @@
 ---
 import { Image } from 'astro:assets';
-import calendrier from '../../assets/screens/calendrier.png';
-import environnements from '../../assets/screens/environnements.png';
+import automatisations from '../../assets/screens/automatisations.png';
+import chronologie from '../../assets/screens/chronologie.png';
+import commentaires from '../../assets/screens/commentaires.png';
+import galerie from '../../assets/screens/galerie.png';
 import grille from '../../assets/screens/grille.png';
 import historique from '../../assets/screens/historique.png';
+import interfaces from '../../assets/screens/interfaces.png';
 import kanban from '../../assets/screens/kanban.png';
 import partage from '../../assets/screens/partage-formulaire.png';
 import sql from '../../assets/screens/requete-sql.png';
 
 const shots = [
-	{ id: 'grille', label: 'Grille', image: grille, caption: 'Relations, listes de choix colorées, texte long en Markdown : une grille qui écrit dans une vraie table.' },
+	{ id: 'grille', label: 'Grille', image: grille, caption: 'Une grille qui écrit dans une vraie table — et des champs calculés : une durée par formule, la ville du client par recherche, le nombre de tâches par décompte.' },
 	{ id: 'kanban', label: 'Kanban', image: kanban, caption: 'Les mêmes lignes en colonnes, selon une liste de choix. Glisser une carte, c’est modifier la ligne.' },
-	{ id: 'calendrier', label: 'Calendrier', image: calendrier, caption: 'Un champ date suffit : mois ou semaine, couleur selon le statut.' },
+	{ id: 'galerie', label: 'Galerie', image: galerie, caption: 'Des cartes, une couleur par statut : la galerie, l’une des huit façons de lire une table.' },
+	{ id: 'chronologie', label: 'Chronologie', image: chronologie, caption: 'Des barres entre deux dates, et les flèches de leurs dépendances — en rouge quand l’ordre ne tient plus.' },
+	{ id: 'interfaces', label: 'Interfaces', image: interfaces, caption: 'Un tableau de bord sur la base : chiffres, graphiques, prochaines échéances — lus avec les droits de chacun.' },
+	{ id: 'automatisations', label: 'Automatisations', image: automatisations, caption: 'Quand une tâche passe à « Fait », noter l’heure. Chaque exécution est tracée, action par action.' },
+	{ id: 'commentaires', label: 'Commentaires', image: commentaires, caption: 'On discute d’une ligne là où elle se trouve : commentaires, mentions, notifications.' },
 	{ id: 'formulaire', label: 'Formulaire', image: partage, caption: 'Un formulaire se partage par un lien, public ou réservé aux membres connectés.' },
-	{ id: 'historique', label: 'Historique', image: historique, caption: 'Chaque écriture, d’où qu’elle vienne — l’interface, un formulaire, le SQL direct — avec les valeurs d’avant.' },
+	{ id: 'historique', label: 'Historique', image: historique, caption: 'Chaque écriture, d’où qu’elle vienne — une personne, une automatisation, le SQL direct — avec les valeurs d’avant.' },
 	{ id: 'sql', label: 'SQL', image: sql, caption: 'La console SQL lit les tables sous leur vrai nom. Rien à traduire, rien à exporter.' },
-	{ id: 'environnements', label: 'Environnements', image: environnements, caption: 'Production et recette côte à côte, et le plan de migration de l’une vers l’autre.' },
 ];
 ---
 

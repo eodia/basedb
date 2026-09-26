@@ -244,22 +244,14 @@ const toChoice = (option: LinkOption): ComboboxOption => ({
 })
 
 /**
- * A link field: the rows of the target table, searched on the server.
+ * The search behind both link pickers: the rows of the target, asked of the server as one
+ * types, the rows loaded with the table standing in until it answers.
  *
  * Searching there is not an optimisation. The rows loaded with the table are one page,
  * and a target with more rows than that would simply not offer the ones past it — a
  * search that cannot find a row that exists is worse than no search.
  */
-export function LinkPicker({
-  field,
-  value,
-  display,
-  options,
-  onSearch,
-  onChange,
-  appearance,
-  placeholder = '—',
-}: LinkPickerProps) {
+function useLinkSearch(field: Field, options: readonly LinkOption[], onSearch: SearchLink) {
   const [query, setQuery] = useState('')
   const [found, setFound] = useState<{
     readonly query: string
@@ -267,7 +259,6 @@ export function LinkPicker({
   } | null>(null)
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
-  const [picked, setPicked] = useState<LinkOption | null>(null)
   const latest = useRef(0)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -317,6 +308,23 @@ export function LinkPicker({
         ? 'Précisez la recherche pour voir d’autres résultats.'
         : 'Liste incomplète.'
 
+  return { search, shown, loading, notice }
+}
+
+/** A link field: one row of the target table. */
+export function LinkPicker({
+  field,
+  value,
+  display,
+  options,
+  onSearch,
+  onChange,
+  appearance,
+  placeholder = '—',
+}: LinkPickerProps) {
+  const { search, shown, loading, notice } = useLinkSearch(field, options, onSearch)
+  const [picked, setPicked] = useState<LinkOption | null>(null)
+
   const label =
     value === null
       ? null
@@ -349,6 +357,156 @@ export function LinkPicker({
         placeholder={placeholder}
         icon={<Link2 className="size-3" />}
       />
+    </Combobox>
+  )
+}
+
+/** A linked row as a read returns it (chapter 04 §4.7). */
+export interface LinkValue {
+  readonly id: string | null
+  readonly display: string | null
+  readonly masked?: boolean
+}
+
+/** The rows of a multi-link, whatever the wire brought: anything else reads as none. */
+export function linksOf(value: unknown): readonly LinkValue[] {
+  if (!Array.isArray(value)) return []
+  return value.filter(
+    (v): v is LinkValue => typeof v === 'object' && v !== null && 'id' in (v as object),
+  )
+}
+
+/**
+ * The rows of a multi-link, as chips. On one line in a grid, what does not fit counted;
+ * wrapped in a form. A masked element — rows the reader may not see — reads « masqué »,
+ * once, whatever it hides.
+ */
+export function LinkChips({
+  values,
+  placeholder = '—',
+  wrap = false,
+  onFollow,
+}: {
+  readonly values: readonly LinkValue[]
+  readonly placeholder?: string
+  readonly wrap?: boolean
+  /** Opens a linked row — the chips become buttons. */
+  readonly onFollow?: (id: string) => void
+}) {
+  if (values.length === 0) return <span className="text-muted-foreground">{placeholder}</span>
+  // In a cell, two names cut short read better than one name and a stub: each chip may
+  // shrink, down to a few letters, and what is left over is counted.
+  const shown = wrap ? values : values.slice(0, 2)
+  const holder = wrap ? 'max-w-full' : 'min-w-8 max-w-40 shrink'
+  return (
+    <span className={cn('flex min-w-0 items-center gap-1', wrap ? 'flex-wrap' : 'overflow-hidden')}>
+      {shown.map((v) => {
+        const label = v.masked === true ? 'masqué' : (v.display ?? v.id?.slice(0, 8) ?? '—')
+        // The only element without an identifier is the masked one, and there is one at most.
+        const key = v.id ?? 'masked'
+        const chip = (
+          <Badge
+            key={key}
+            variant="secondary"
+            className={cn(
+              'w-full max-w-full justify-start gap-1 font-normal',
+              v.masked === true && 'text-muted-foreground italic',
+              onFollow !== undefined && v.id !== null && 'hover:bg-secondary/70',
+            )}
+            title={label}
+          >
+            <Link2 className="size-3 shrink-0" />
+            <span className="truncate">{label}</span>
+          </Badge>
+        )
+        const id = v.id
+        return onFollow !== undefined && id !== null ? (
+          <button
+            key={key}
+            type="button"
+            className={cn('flex', holder)}
+            onClick={() => onFollow(id)}
+            title={`Ouvrir « ${label} »`}
+            aria-label={`Ouvrir « ${label} »`}
+          >
+            {chip}
+          </button>
+        ) : (
+          <span key={key} className={cn('flex', holder)}>
+            {chip}
+          </span>
+        )
+      })}
+      {values.length > shown.length && (
+        <span className="shrink-0 text-xs text-muted-foreground">
+          +{values.length - shown.length}
+        </span>
+      )}
+    </span>
+  )
+}
+
+/**
+ * A multi-link field: rows of the target, each a toggle — chapter 04 §4 bis.
+ *
+ * The list is sent WHOLE after each toggle, in the order the rows were linked: a row
+ * chosen goes last, one removed leaves the others in place. Empty is `null`. The rows go
+ * out as `{ id, display }` — the server reads the identifier, and the display lets the
+ * cell show names before the answer comes back.
+ */
+export function MultiLinkPicker({
+  field,
+  value,
+  options,
+  onSearch,
+  onChange,
+  appearance,
+  placeholder = '—',
+  trigger,
+}: {
+  readonly field: Field
+  readonly value: readonly LinkValue[]
+  readonly options: readonly LinkOption[]
+  readonly onSearch: SearchLink
+  readonly onChange: (value: readonly LinkValue[] | null) => void
+  readonly appearance: PickerProps['appearance']
+  readonly placeholder?: string
+  /** What opens the list, when the chips are drawn elsewhere — the panel's « Modifier ». */
+  readonly trigger?: ReactNode
+}) {
+  const { search, shown, loading, notice } = useLinkSearch(field, options, onSearch)
+  // What the reader may not see stays as it is: it is not theirs to drop.
+  const masked = value.filter((v) => v.masked === true)
+  const linked = value.filter((v) => v.masked !== true && v.id !== null)
+  const chosen = new Set(linked.map((v) => v.id as string))
+
+  const toggle = (picked: string | null) => {
+    if (picked === null) return onChange(masked.length === 0 ? null : masked)
+    const next = chosen.has(picked)
+      ? linked.filter((v) => v.id !== picked)
+      : [...linked, { id: picked, display: shown.find((o) => o.value === picked)?.label ?? null }]
+    const all = [...next, ...masked]
+    onChange(all.length === 0 ? null : all)
+  }
+
+  return (
+    <Combobox
+      value={null}
+      selected={chosen}
+      onValueChange={toggle}
+      options={shown}
+      onQueryChange={search}
+      loading={loading}
+      notice={notice}
+      clearLabel={field.required === true ? undefined : 'Tout retirer'}
+      searchPlaceholder="Rechercher un enregistrement…"
+      emptyLabel="Aucun enregistrement trouvé"
+      className={cn(TRIGGER[appearance], appearance === 'form' && 'h-auto min-h-9 py-1.5')}
+      aria-label={field.label}
+    >
+      {trigger ?? (
+        <LinkChips values={value} placeholder={placeholder} wrap={appearance === 'form'} />
+      )}
     </Combobox>
   )
 }

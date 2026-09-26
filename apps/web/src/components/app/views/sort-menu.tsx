@@ -59,7 +59,7 @@ export function SortMenu({
                 )
               }
             >
-              <FieldIcon kind={field.kind} />
+              <FieldIcon kind={field.kind} format={field.format?.display} />
               <span className="flex-1 truncate">{field.label}</span>
               {term !== undefined &&
                 (term.direction === 'asc' ? (

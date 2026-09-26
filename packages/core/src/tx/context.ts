@@ -24,7 +24,7 @@ declare const BRAND: unique symbol
  * `id` is the person who published the form, who answers for it, and its `tokenId` the
  * share; it holds no right of its own, and the kernel never decides anything for it.
  */
-export type ActorKind = 'user' | 'token' | 'system' | 'form'
+export type ActorKind = 'user' | 'token' | 'system' | 'form' | 'automation'
 export type Surface = 'ui' | 'rest' | 'mcp' | 'system'
 
 export interface Actor {

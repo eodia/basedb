@@ -9,6 +9,7 @@
   "references": [
     { "path": "../naming" },
     { "path": "../contracts" },
-    { "path": "../catalog-schema" }
+    { "path": "../catalog-schema" },
+    { "path": "../templates" }
   ]
 }

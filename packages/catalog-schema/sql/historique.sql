@@ -71,7 +71,7 @@ BEGIN
   ELSE
     BEGIN
       v_actor := v_raw_actor::uuid;
-      v_kind := CASE WHEN v_raw_kind IN ('user', 'token', 'mcp', 'system', 'form')
+      v_kind := CASE WHEN v_raw_kind IN ('user', 'token', 'mcp', 'system', 'form', 'automation')
                      THEN v_raw_kind ELSE 'unknown' END;
     EXCEPTION WHEN invalid_text_representation THEN
       v_actor := NULL;
@@ -104,16 +104,20 @@ BEGIN
   -- Le SELECT des lignes, selon l'opération. Aucune instruction statique ne cite les
   -- tables de transition : leur forme change d'une table à l'autre, et un plan mis en
   -- cache serait celui de la première table capturée.
+  --
+  -- Les alias commencent par « _ », qu'aucun nom physique ne peut porter : `to_jsonb(n)`
+  -- serait ambigu sur une table qui a une colonne `n` — un champ « N° » —, et chaque
+  -- écriture de cette table échouerait.
   IF TG_OP = 'INSERT' THEN
-    v_select := 'SELECT n."_id" AS record_id, NULL::jsonb AS before, pg_catalog.to_jsonb(n) AS after
-                   FROM new_rows n';
+    v_select := 'SELECT _n."_id" AS record_id, NULL::jsonb AS before, pg_catalog.to_jsonb(_n) AS after
+                   FROM new_rows _n';
   ELSIF TG_OP = 'UPDATE' THEN
-    v_select := 'SELECT n."_id" AS record_id, pg_catalog.to_jsonb(o) AS before, pg_catalog.to_jsonb(n) AS after
-                   FROM old_rows o JOIN new_rows n ON n."_id" = o."_id"
-                  WHERE pg_catalog.to_jsonb(o) IS DISTINCT FROM pg_catalog.to_jsonb(n)';
+    v_select := 'SELECT _n."_id" AS record_id, pg_catalog.to_jsonb(_o) AS before, pg_catalog.to_jsonb(_n) AS after
+                   FROM old_rows _o JOIN new_rows _n ON _n."_id" = _o."_id"
+                  WHERE pg_catalog.to_jsonb(_o) IS DISTINCT FROM pg_catalog.to_jsonb(_n)';
   ELSE
-    v_select := 'SELECT o."_id" AS record_id, pg_catalog.to_jsonb(o) AS before, NULL::jsonb AS after
-                   FROM old_rows o';
+    v_select := 'SELECT _o."_id" AS record_id, pg_catalog.to_jsonb(_o) AS before, NULL::jsonb AS after
+                   FROM old_rows _o';
   END IF;
 
   EXECUTE
@@ -161,6 +165,13 @@ BEGIN
             v_format, v_full;
   END IF;
 
+  -- Réveille le drain (§11.4) : une notification par transaction — PostgreSQL fusionne les
+  -- notifications identiques —, et aucune quand la file est remplie à plus de moitié : la
+  -- capture ne doit jamais échouer pour un réveil.
+  IF pg_catalog.pg_notification_queue_usage() < 0.5 THEN
+    PERFORM pg_catalog.pg_notify('basedb_drain', '');
+  END IF;
+
   RETURN NULL;
 END
 $fn$;
@@ -186,7 +197,7 @@ CREATE TABLE _basedb.record_revision (
   bulk_id        uuid NULL,
   record_display text NULL,
   actor_kind     text NOT NULL CHECK (actor_kind IN
-                   ('user','token','mcp','system','form','sql_direct','unknown')),
+                   ('user','token','mcp','system','form','automation','sql_direct','unknown')),
   actor_user_id  uuid NULL,
   actor_token_id uuid NULL,
   sql_identity   text NULL,

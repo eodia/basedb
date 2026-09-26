@@ -77,12 +77,27 @@ const ALLOWED: Readonly<Record<FieldKind, readonly Operator[]>> = {
   multi_select: ['has_any', 'has_all', 'is_null'],
   // On a link, identifiers are compared: neither case nor substring apply.
   link: [...EQUALITY, 'is_null'],
+  // Several rows: asked what the list holds, as a multiple choice is (chapter 04 §4 bis).
+  multi_link: ['has_any', 'has_all', 'is_null'],
   formula: [...EQUALITY, ...ORDERING, 'is_null'],
   // An address is text: the domain is found with `contains`, the scheme with `starts_with`.
   url: [...EQUALITY, 'eq_ci', 'contains', 'starts_with', 'ends_with', 'is_null'],
   // A list of files is present or absent; what it holds is not a value one filters on.
   file: ['is_null'],
   image: ['is_null'],
+  // An address is text, like a URL.
+  email: [...EQUALITY, 'eq_ci', 'contains', 'starts_with', 'ends_with', 'is_null'],
+  // A number the database gave: compared and ordered as one.
+  autonumber: [...EQUALITY, ...ORDERING, 'is_null'],
+  // A person, by identifier — as a link is.
+  user: [...EQUALITY, 'is_null'],
+  // A button has no value: nothing to filter on (chapter 17 §4).
+  button: [],
+  // A lookup reaching several rows is a list: asked what it holds. One reaching a single
+  // row reads as the field it cites, and so does a rollup (chapter 04 §7 ter).
+  lookup: ['has_any', 'has_all', 'is_null'],
+  rollup: [...EQUALITY, ...ORDERING, 'is_null'],
+  count: [...EQUALITY, ...ORDERING, 'is_null'],
 }
 
 /**
@@ -106,7 +121,14 @@ export function sortableKind(kind: FieldKind): boolean {
   return !UNSORTABLE.has(kind)
 }
 
-const UNSORTABLE: ReadonlySet<FieldKind> = new Set(['long_text', 'multi_select', 'file', 'image'])
+const UNSORTABLE: ReadonlySet<FieldKind> = new Set([
+  'long_text',
+  'multi_select',
+  'multi_link',
+  'lookup',
+  'file',
+  'image',
+])
 
 /** The five system columns, filterable and sortable as soon as `read` is granted (A18). */
 const SYSTEM: Readonly<Record<string, FieldKind>> = {
@@ -129,10 +151,20 @@ export const CAST: Readonly<Record<FieldKind, string>> = {
   date: 'date',
   datetime: 'timestamptz',
   link: 'uuid',
+  // The cast of an ELEMENT, as for `multi_select`: `has_any` binds `$n::uuid[]`.
+  multi_link: 'uuid',
+  // A list's element is cast by its own kind (`elementKind`); this is the fallback.
+  lookup: 'text',
+  rollup: 'numeric',
+  count: 'numeric',
   formula: 'text',
   url: 'text',
   file: 'jsonb',
   image: 'jsonb',
+  email: 'text',
+  autonumber: 'numeric',
+  user: 'uuid',
+  button: 'text',
 }
 
 /** Bounds of §4.6, checked DURING parsing and not after. */
@@ -162,6 +194,15 @@ type Node =
 export interface FilterableColumn {
   readonly name: string
   readonly kind: FieldKind
+  /**
+   * The alias it is read under when not `t`: `v`, the lateral join of the fields
+   * computed at read time (chapter 04 §7 ter.3).
+   */
+  readonly alias?: string
+  /** For a list-valued computed field — a lookup reaching several rows —, each element's kind. */
+  readonly elementKind?: FieldKind
+  /** False for a field with no column: computed at read time. */
+  readonly stored?: boolean
 }
 
 /**
@@ -558,7 +599,12 @@ function predicate(
     throw new BasedbError('FILTER_FIELD_UNKNOWN', { details: { field: node.field } })
   }
 
-  return comparison(`${prefix}${quoteIdentifier(column.name)}`, column, node, bind)
+  return comparison(
+    `${columnPrefix(column, prefix)}${quoteIdentifier(column.name)}`,
+    column,
+    node,
+    bind,
+  )
 }
 
 /**
@@ -596,7 +642,7 @@ function linkPath(
   }
 
   const link = context.columns.get(linkName)
-  if (link === undefined || link.kind !== 'link') unknownField()
+  if (link === undefined || (link.kind !== 'link' && link.kind !== 'multi_link')) unknownField()
 
   const target = context.links.get(linkName)
   // When the target table is unreadable, the link field supports only `is_null` and its
@@ -618,12 +664,20 @@ function linkPath(
   const alias = context.nextAlias()
   const q = quoteIdentifier(alias)
   const inner = comparison(`${q}.${quoteIdentifier(column.name)}`, column, node, bind)
+  // A multi-link reaches any of its rows: the path holds when at least one satisfies.
+  const source = `${prefix}${quoteIdentifier(linkName)}`
+  const reach = link.kind === 'multi_link' ? `= ANY(${source})` : `= ${source}`
 
   return `EXISTS (SELECT 1
               FROM ${target.relation} AS ${q}
-             WHERE ${q}."_id" = ${prefix}${quoteIdentifier(linkName)}
+             WHERE ${q}."_id" ${reach}
                AND ( /*predicat_lignes:${linkName}*/ ${target.rowPredicate} )
                AND ${inner})`
+}
+
+/** `"v".` for a column of the lateral join of computed fields, else the table's prefix. */
+function columnPrefix(column: FilterableColumn, prefix: string): string {
+  return column.alias === undefined ? prefix : `${quoteIdentifier(column.alias)}.`
 }
 
 /** Emits the comparison itself, once the column is resolved and the right checked. */
@@ -639,10 +693,12 @@ function comparison(
     })
   }
 
-  const cast = CAST[column.kind]
+  // A list is compared element by element: its values are those of its elements.
+  const valueKind = column.elementKind ?? column.kind
+  const cast = CAST[valueKind]
   const scalar = (v: Value): string => {
     if (Array.isArray(v)) throw malformed(`"${node.op}" does not take a list`)
-    return `$${bind(coerce(v as Scalar, column.kind, node.field))}::${cast}`
+    return `$${bind(coerce(v as Scalar, valueKind, node.field))}::${cast}`
   }
 
   switch (node.op) {
@@ -663,7 +719,7 @@ function comparison(
 
     case 'in': {
       if (!Array.isArray(node.value)) throw malformed('"in" takes a list')
-      const list = node.value.map((v) => coerce(v, column.kind, node.field))
+      const list = node.value.map((v) => coerce(v, valueKind, node.field))
       return `${col} = ANY($${bind(list)}::${cast}[])`
     }
 
@@ -672,7 +728,7 @@ function comparison(
     case 'has_all': {
       const items = Array.isArray(node.value) ? node.value : [node.value as Scalar]
       if (items.length === 0) throw malformed(`"${node.op}" takes at least one value`)
-      const list = items.map((v) => coerce(v, column.kind, node.field))
+      const list = items.map((v) => coerce(v, valueKind, node.field))
       return `${col} ${node.op === 'has_any' ? '&&' : '@>'} $${bind(list)}::${cast}[]`
     }
 
@@ -680,8 +736,8 @@ function comparison(
       if (!Array.isArray(node.value) || node.value.length !== 2) {
         throw malformed('"between" takes a list of two bounds')
       }
-      const low = coerce(node.value[0], column.kind, node.field)
-      const high = coerce(node.value[1], column.kind, node.field)
+      const low = coerce(node.value[0], valueKind, node.field)
+      const high = coerce(node.value[1], valueKind, node.field)
       // Bounds included.
       return `${col} BETWEEN $${bind(low)}::${cast} AND $${bind(high)}::${cast}`
     }
@@ -737,7 +793,7 @@ export interface BuiltSort {
 }
 
 /** The types whose comparison must carry the linguistic collation. */
-const TEXTUAL: ReadonlySet<FieldKind> = new Set(['short_text', 'select', 'formula', 'url'])
+const TEXTUAL: ReadonlySet<FieldKind> = new Set(['short_text', 'select', 'formula', 'url', 'email'])
 
 /**
  * Translates `sort=-date_emission,numero` into an `ORDER BY`.
@@ -778,7 +834,7 @@ export function buildSort(
 
     const collate = TEXTUAL.has(column.kind) ? ' COLLATE "und-x-icu"' : ''
     const direction = descending ? 'DESC' : 'ASC'
-    const fragment = `${prefix}${quoteIdentifier(column.name)}${collate}`
+    const fragment = `${columnPrefix(column, prefix)}${quoteIdentifier(column.name)}${collate}`
     parts.push(`${fragment} ${direction}`)
     named.push(column.name)
     terms.push({ name: column.name, kind: column.kind, descending, expression: fragment })

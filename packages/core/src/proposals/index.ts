@@ -57,6 +57,7 @@ const PLAIN_KINDS: readonly FieldKind[] = [
   'date',
   'datetime',
   'url',
+  'email',
 ]
 const CHOICE_KINDS: readonly FieldKind[] = ['select', 'multi_select']
 

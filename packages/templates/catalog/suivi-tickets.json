@@ -1,0 +1,470 @@
+{
+  "format": 1,
+  "key": "suivi-tickets",
+  "label": "Suivi de tickets",
+  "summary": "Bugs et demandes triés par l'IA, suivis par sprint jusqu'à leur résolution, avec un formulaire de signalement.",
+  "description": "Un gestionnaire de tickets pour une équipe produit. Chaque ticket est rattaché à un composant et à un sprint ; l'IA propose une catégorie, estime la gravité et résume le signalement. Un kanban suit l'avancement, une chronologie montre les sprints, un formulaire permet à n'importe qui de signaler un problème, et une automatisation note la date de résolution.",
+  "category": "Produit et technique",
+  "icon": "bug",
+  "color": "#ef4444",
+  "tags": ["IA", "Kanban", "Formulaire", "Sprints"],
+  "base": {
+    "label": "Suivi de tickets",
+    "description": "Les bugs et demandes de l'équipe produit, du signalement à la résolution."
+  },
+  "tables": [
+    {
+      "key": "tickets",
+      "label": "Tickets",
+      "icon": "bug",
+      "color": "#ef4444",
+      "description": "Un ticket par problème signalé ou demande d'évolution.",
+      "fields": [
+        {
+          "label": "Titre",
+          "kind": "short_text",
+          "required": true,
+          "description": "Le problème ou la demande, en une phrase."
+        },
+        {
+          "label": "N°",
+          "kind": "autonumber",
+          "description": "Numéro du ticket, attribué à la création."
+        },
+        {
+          "label": "Description",
+          "kind": "long_text",
+          "description": "Ce qui se passe, ce qui était attendu, comment le reproduire."
+        },
+        {
+          "label": "Statut",
+          "kind": "select",
+          "options": [
+            { "label": "Nouveau", "color": "#94a3b8" },
+            { "label": "À faire", "color": "#8b5cf6" },
+            { "label": "En cours", "color": "#3b82f6" },
+            { "label": "En revue", "color": "#f59e0b" },
+            { "label": "Résolu", "color": "#10b981" },
+            { "label": "Fermé", "color": "#64748b" }
+          ]
+        },
+        {
+          "label": "Priorité",
+          "kind": "select",
+          "options": [
+            { "label": "Critique", "color": "#ef4444", "icon": "siren" },
+            { "label": "Haute", "color": "#f97316" },
+            { "label": "Normale", "color": "#3b82f6" },
+            { "label": "Basse", "color": "#94a3b8" }
+          ]
+        },
+        {
+          "label": "Catégorie",
+          "kind": "select",
+          "options": [
+            { "label": "Bug", "color": "#ef4444", "icon": "bug" },
+            { "label": "Évolution", "color": "#8b5cf6", "icon": "sparkles" },
+            { "label": "Question", "color": "#3b82f6", "icon": "circle-help" },
+            { "label": "Performance", "color": "#f59e0b", "icon": "zap" },
+            { "label": "Sécurité", "color": "#0f172a", "icon": "shield-alert" }
+          ],
+          "ai": {
+            "prompt": "Classe ce ticket d'une équipe logiciel.\nTitre : {{Titre}}\nDescription : {{Description}}"
+          },
+          "description": "Proposée par l'IA à partir du titre et de la description."
+        },
+        {
+          "label": "Gravité estimée",
+          "kind": "number",
+          "format": { "display": "rating", "rating_max": 5 },
+          "ai": {
+            "prompt": "Sur une échelle de 1 (gêne mineure) à 5 (service inutilisable ou données en danger), quelle est la gravité de ce problème pour les utilisateurs ?\nTitre : {{Titre}}\nDescription : {{Description}}"
+          },
+          "description": "L'avis de l'IA, pour aider au tri ; la priorité reste une décision de l'équipe."
+        },
+        {
+          "label": "Résumé",
+          "kind": "short_text",
+          "ai": {
+            "prompt": "Résume ce ticket en une phrase de 15 mots au plus, sans jargon.\n{{Titre}} — {{Description}}"
+          }
+        },
+        { "label": "Assigné à", "kind": "user" },
+        { "label": "Signalé par", "kind": "email" },
+        { "label": "Ouvert le", "kind": "date" },
+        { "label": "Estimation (points)", "kind": "number" },
+        {
+          "label": "Résolu le",
+          "kind": "datetime",
+          "description": "Rempli par l'automatisation « Date de résolution »."
+        },
+        {
+          "label": "Âge (jours)",
+          "kind": "formula",
+          "formula": "JOURS(AUJOURDHUI(); [Ouvert le])",
+          "description": "Depuis combien de jours le ticket est ouvert."
+        }
+      ]
+    },
+    {
+      "key": "composants",
+      "label": "Composants",
+      "icon": "code",
+      "color": "#3b82f6",
+      "description": "Les parties du produit, pour savoir où se concentrent les problèmes.",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        { "label": "Responsable", "kind": "user" },
+        {
+          "label": "Tickets",
+          "kind": "count",
+          "rollup": { "via": "Composant", "table": "tickets" }
+        }
+      ]
+    },
+    {
+      "key": "sprints",
+      "label": "Sprints",
+      "icon": "timer",
+      "color": "#10b981",
+      "description": "Les itérations de deux semaines de l'équipe.",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        { "label": "Début", "kind": "date" },
+        { "label": "Fin", "kind": "date" },
+        { "label": "Objectif", "kind": "long_text" },
+        { "label": "Tickets", "kind": "count", "rollup": { "via": "Sprint", "table": "tickets" } },
+        {
+          "label": "Points engagés",
+          "kind": "rollup",
+          "rollup": {
+            "via": "Sprint",
+            "table": "tickets",
+            "target": "Estimation (points)",
+            "aggregate": "sum"
+          }
+        }
+      ]
+    }
+  ],
+  "links": [
+    { "from": "tickets", "label": "Composant", "to": "composants" },
+    { "from": "tickets", "label": "Sprint", "to": "sprints" },
+    {
+      "from": "tickets",
+      "label": "Bloqué par",
+      "to": "tickets",
+      "multiple": true,
+      "description": "Les tickets à résoudre avant celui-ci."
+    }
+  ],
+  "rows": {
+    "composants": [
+      { "$key": "app", "Nom": "Application mobile" },
+      { "$key": "web", "Nom": "Site web" },
+      { "$key": "api", "Nom": "API" },
+      { "$key": "paiement", "Nom": "Paiement" }
+    ],
+    "sprints": [
+      {
+        "$key": "s1",
+        "Nom": "Sprint 14",
+        "Début": "-18d",
+        "Fin": "-5d",
+        "Objectif": "Stabiliser le paiement avant les soldes."
+      },
+      {
+        "$key": "s2",
+        "Nom": "Sprint 15",
+        "Début": "-4d",
+        "Fin": "+9d",
+        "Objectif": "Nouveau parcours d'inscription sur mobile."
+      },
+      {
+        "$key": "s3",
+        "Nom": "Sprint 16",
+        "Début": "+10d",
+        "Fin": "+23d",
+        "Objectif": "Performances de l'API."
+      }
+    ],
+    "tickets": [
+      {
+        "$key": "k1",
+        "Titre": "L'application plante à l'ouverture sur Android 12",
+        "Description": "Depuis la version 3.4, l'application se ferme aussitôt ouverte sur plusieurs Pixel 6. Aucun message d'erreur.",
+        "Statut": "En cours",
+        "Priorité": "Critique",
+        "Composant": "@app",
+        "Sprint": "@s2",
+        "Ouvert le": "-3d",
+        "Estimation (points)": 5,
+        "Assigné à": "$moi",
+        "Signalé par": "support@exemple.fr",
+        "Catégorie": "Bug",
+        "Gravité estimée": 5,
+        "Résumé": "Plantage immédiat au démarrage sur certains téléphones Android 12."
+      },
+      {
+        "$key": "k2",
+        "Titre": "Double débit lors d'un paiement par carte",
+        "Description": "Deux clients ont été débités deux fois après avoir cliqué deux fois sur « Payer ». Le bouton ne se désactive pas.",
+        "Statut": "Résolu",
+        "Priorité": "Critique",
+        "Composant": "@paiement",
+        "Sprint": "@s1",
+        "Ouvert le": "-15d",
+        "Estimation (points)": 3,
+        "Catégorie": "Bug",
+        "Gravité estimée": 5,
+        "Résumé": "Un double clic sur « Payer » débite deux fois le client."
+      },
+      {
+        "$key": "k3",
+        "Titre": "Pouvoir se connecter avec son compte Apple",
+        "Description": "Plusieurs utilisateurs iPhone demandent la connexion avec Apple, plus rapide que la création d'un mot de passe.",
+        "Statut": "À faire",
+        "Priorité": "Normale",
+        "Composant": "@app",
+        "Sprint": "@s2",
+        "Ouvert le": "-10d",
+        "Estimation (points)": 8,
+        "Catégorie": "Évolution",
+        "Gravité estimée": 2,
+        "Résumé": "Ajouter la connexion avec un compte Apple."
+      },
+      {
+        "$key": "k4",
+        "Titre": "La liste des commandes met 8 secondes à charger",
+        "Description": "Pour les clients qui ont plus de 200 commandes, la page « Mes commandes » est très lente.",
+        "Statut": "Nouveau",
+        "Priorité": "Haute",
+        "Composant": "@api",
+        "Sprint": "@s3",
+        "Ouvert le": "-2d",
+        "Estimation (points)": 5,
+        "Catégorie": "Performance",
+        "Gravité estimée": 3,
+        "Résumé": "La page des commandes est très lente pour les gros clients."
+      },
+      {
+        "$key": "k5",
+        "Titre": "Mot de passe visible dans les journaux du serveur",
+        "Description": "La requête de connexion est journalisée avec son corps complet, mot de passe compris.",
+        "Statut": "En revue",
+        "Priorité": "Critique",
+        "Composant": "@api",
+        "Sprint": "@s2",
+        "Ouvert le": "-1d",
+        "Estimation (points)": 2,
+        "Assigné à": "$moi",
+        "Catégorie": "Sécurité",
+        "Gravité estimée": 5,
+        "Résumé": "Les mots de passe apparaissent en clair dans les journaux."
+      },
+      {
+        "$key": "k6",
+        "Titre": "Comment exporter mes factures ?",
+        "Description": "Je ne trouve pas où télécharger mes factures de l'année dernière pour ma comptabilité.",
+        "Statut": "Fermé",
+        "Priorité": "Basse",
+        "Composant": "@web",
+        "Ouvert le": "-20d",
+        "Signalé par": "client@exemple.fr",
+        "Catégorie": "Question",
+        "Gravité estimée": 1,
+        "Résumé": "Un client cherche comment télécharger ses factures."
+      },
+      {
+        "$key": "k7",
+        "Titre": "Le bouton « Payer » reste cliquable pendant le traitement",
+        "Description": "Cause du double débit : désactiver le bouton et afficher un indicateur de chargement.",
+        "Statut": "Résolu",
+        "Priorité": "Haute",
+        "Composant": "@web",
+        "Sprint": "@s1",
+        "Ouvert le": "-14d",
+        "Estimation (points)": 1,
+        "Catégorie": "Bug",
+        "Gravité estimée": 4,
+        "Résumé": "Désactiver le bouton de paiement pendant le traitement."
+      },
+      {
+        "$key": "k8",
+        "Titre": "Nouveau parcours d'inscription en trois étapes",
+        "Description": "Réduire le formulaire d'inscription à trois écrans : e-mail, mot de passe, préférences.",
+        "Statut": "En cours",
+        "Priorité": "Haute",
+        "Composant": "@app",
+        "Sprint": "@s2",
+        "Ouvert le": "-6d",
+        "Estimation (points)": 13,
+        "Bloqué par": ["@k1"],
+        "Catégorie": "Évolution",
+        "Gravité estimée": 2,
+        "Résumé": "Simplifier l'inscription mobile en trois écrans."
+      },
+      {
+        "$key": "k9",
+        "Titre": "Mettre en cache le détail des produits",
+        "Description": "Chaque fiche produit interroge la base à chaque affichage ; un cache de 5 minutes suffirait.",
+        "Statut": "À faire",
+        "Priorité": "Normale",
+        "Composant": "@api",
+        "Sprint": "@s3",
+        "Ouvert le": "-2d",
+        "Estimation (points)": 3,
+        "Bloqué par": ["@k4"],
+        "Catégorie": "Performance",
+        "Gravité estimée": 2,
+        "Résumé": "Ajouter un cache court sur les fiches produit."
+      }
+    ]
+  },
+  "views": [
+    {
+      "table": "tickets",
+      "label": "Tableau",
+      "kind": "kanban",
+      "spec": {
+        "group_by": "Statut",
+        "card_fields": ["Priorité", "Catégorie", "Composant", "Assigné à"],
+        "group_order": ["Nouveau", "À faire", "En cours", "En revue", "Résolu", "Fermé"],
+        "hide_empty": false
+      }
+    },
+    {
+      "table": "tickets",
+      "label": "À trier",
+      "kind": "grid",
+      "spec": {
+        "filter": "[Statut] eq \"Nouveau\"",
+        "sorts": [{ "field": "Gravité estimée", "direction": "desc" }]
+      }
+    },
+    {
+      "table": "tickets",
+      "label": "Ouverts par priorité",
+      "kind": "grid",
+      "spec": {
+        "filter": "[Statut] ne \"Résolu\" and [Statut] ne \"Fermé\"",
+        "group_by": "Priorité",
+        "sorts": [{ "field": "Ouvert le", "direction": "asc" }],
+        "summaries": { "Estimation (points)": "sum" }
+      }
+    },
+    {
+      "table": "tickets",
+      "label": "Par composant",
+      "kind": "list",
+      "spec": { "group_by": "Catégorie", "card_fields": ["Statut", "Composant", "Priorité"] }
+    },
+    {
+      "table": "tickets",
+      "label": "Signaler un problème",
+      "kind": "form",
+      "spec": {
+        "title": "Signaler un problème",
+        "description": "Décrivez ce qui ne va pas : l'équipe reçoit votre ticket immédiatement.",
+        "fields": [
+          { "field": "Titre", "required": true, "label": "En une phrase, que se passe-t-il ?" },
+          {
+            "field": "Description",
+            "required": true,
+            "help": "Ce que vous faisiez, ce qui s'est passé, ce que vous attendiez."
+          },
+          { "field": "Signalé par", "required": true, "label": "Votre e-mail" }
+        ],
+        "submit_label": "Envoyer le signalement",
+        "success_message": "Merci ! Votre signalement a été transmis à l'équipe."
+      }
+    },
+    {
+      "table": "sprints",
+      "label": "Planning",
+      "kind": "timeline",
+      "spec": {
+        "start_field": "Début",
+        "end_field": "Fin",
+        "card_fields": ["Objectif"],
+        "scale": "week"
+      }
+    }
+  ],
+  "dashboards": [
+    {
+      "label": "Santé du produit",
+      "blocks": [
+        {
+          "kind": "number",
+          "title": "Tickets ouverts",
+          "table": "tickets",
+          "aggregate": "count",
+          "filter": "[Statut] ne \"Résolu\" and [Statut] ne \"Fermé\""
+        },
+        {
+          "kind": "number",
+          "title": "Critiques ouverts",
+          "table": "tickets",
+          "aggregate": "count",
+          "filter": "[Priorité] eq \"Critique\" and [Statut] ne \"Résolu\" and [Statut] ne \"Fermé\""
+        },
+        {
+          "kind": "number",
+          "title": "À trier",
+          "table": "tickets",
+          "aggregate": "count",
+          "filter": "[Statut] eq \"Nouveau\""
+        },
+        {
+          "kind": "chart",
+          "title": "Par catégorie",
+          "table": "tickets",
+          "group_by": "Catégorie",
+          "style": "pie"
+        },
+        {
+          "kind": "chart",
+          "title": "Par statut",
+          "table": "tickets",
+          "group_by": "Statut",
+          "style": "bar",
+          "width": 2
+        },
+        {
+          "kind": "list",
+          "title": "Critiques à traiter",
+          "table": "tickets",
+          "fields": ["Titre", "Statut", "Assigné à"],
+          "filter": "[Priorité] eq \"Critique\" and [Statut] ne \"Résolu\" and [Statut] ne \"Fermé\"",
+          "sort": "Ouvert le",
+          "limit": 5,
+          "width": 3
+        }
+      ]
+    }
+  ],
+  "automations": [
+    {
+      "label": "Date de résolution",
+      "description": "Note quand un ticket passe à « Résolu ».",
+      "trigger": { "kind": "record_updated", "table": "tickets", "fields": ["Statut"] },
+      "condition": "[Statut] eq \"Résolu\"",
+      "actions": [{ "kind": "update_record", "values": { "Résolu le": "{{_maintenant}}" } }]
+    },
+    {
+      "label": "Ticket critique",
+      "description": "Prévient dès qu'un ticket est marqué critique.",
+      "trigger": { "kind": "record_updated", "table": "tickets", "fields": ["Priorité"] },
+      "condition": "[Priorité] eq \"Critique\"",
+      "actions": [
+        {
+          "kind": "notify",
+          "users": ["$moi"],
+          "user_field": "Assigné à",
+          "message": "Ticket critique : {{Titre}}"
+        }
+      ]
+    }
+  ]
+}

@@ -47,6 +47,10 @@ export interface FormShare {
   /** The groups a members' share is reserved to — none: every member. */
   readonly groupIds: readonly string[]
   readonly state: ShareState
+  /** The page may be framed by another site (chapter 15 §10). */
+  readonly canEmbed: boolean
+  /** A form or a survey is answered; any other view is read (chapter 15 §10). */
+  readonly viewKind: string
 }
 
 export interface FormSharing {
@@ -92,6 +96,7 @@ const SHAREABLE_KINDS: ReadonlySet<string> = new Set([
   'short_text',
   'long_text',
   'url',
+  'email',
   'number',
   'boolean',
   'date',
@@ -139,6 +144,8 @@ interface ShareRow extends Record<string, unknown> {
   readonly view_live: boolean
   readonly table_live: boolean
   readonly group_ids: string[]
+  readonly can_embed: boolean
+  readonly view_description: string | null
 }
 
 const SHARE_SELECT = `
@@ -147,6 +154,7 @@ const SHARE_SELECT = `
          s.last_response_at, s.published_by, u.display_name AS publisher_name,
          (u.disabled_at IS NULL AND u.deleted_at IS NULL) AS publisher_live,
          v.kind AS view_kind, v.label AS view_label, v.spec AS view_spec,
+         v.description AS view_description, s.can_embed,
          v.deleted_at IS NULL AS view_live, (t.is_live AND t.deleted_at IS NULL) AS table_live,
          coalesce((SELECT array_agg(r.role_id::text ORDER BY r.role_id)
                      FROM _basedb.form_share_role r WHERE r.share_id = s.id), '{}') AS group_ids
@@ -262,18 +270,34 @@ async function questionsOf(
   return { questions, omitted }
 }
 
-/** May the publisher still create rows here? And which fields may they write? */
+/** A form or a survey is answered; every other view is read (chapter 15 §10). */
+export const isAnswered = (kind: string) => kind === 'form' || kind === 'survey'
+
+/**
+ * May the publisher still do what the share does here — create rows for a form, read them
+ * for a data view? And which fields may they write, or read?
+ */
 async function authorityOver(
   exec: Executor,
   row: ShareRow,
   requestId: string,
-): Promise<{ readonly allowed: boolean; readonly writable: ReadonlySet<string> }> {
-  if (!row.publisher_live) return { allowed: false, writable: new Set() }
+): Promise<{
+  readonly allowed: boolean
+  readonly writable: ReadonlySet<string>
+  readonly readable: ReadonlySet<string>
+}> {
+  const none = { allowed: false, writable: new Set<string>(), readable: new Set<string>() }
+  if (!row.publisher_live) return none
   const authority = authorityOf(row, requestId)
   const target = await loadTarget(exec, authority, row.table_id)
-  if (target === null) return { allowed: false, writable: new Set() }
-  const decision = decide(authority, await loadGrants(exec, authority), 'create', target)
-  return { allowed: decision.verdict === 'ALLOWED', writable: decision.writableFields }
+  if (target === null) return none
+  const action = isAnswered(row.view_kind) ? 'create' : 'read'
+  const decision = decide(authority, await loadGrants(exec, authority), action, target)
+  return {
+    allowed: decision.verdict === 'ALLOWED',
+    writable: decision.writableFields,
+    readable: decision.readableFields,
+  }
 }
 
 function stateOf(row: ShareRow, allowed: boolean, now: Date): ShareState {
@@ -310,24 +334,38 @@ function toShareFields(row: ShareRow, state: ShareState): Omit<FormShare, 'token
     publishedBy: { id: row.published_by, name: row.publisher_name },
     groupIds: row.group_ids,
     state,
+    canEmbed: row.can_embed,
+    viewKind: row.view_kind,
   }
 }
 
-/** The view of a table, when it is a form or a survey. */
+/**
+ * The view of a table a share may carry: a form or a survey, to answer; any other view,
+ * to read (chapter 15 §10). A personal view is its owner's alone: it is not shared.
+ */
 async function formView(
   exec: Executor,
   tableId: string,
   viewId: string,
-): Promise<{ readonly label: string; readonly spec: Record<string, unknown> }> {
-  const [view] = await exec.query<{ kind: string; label: string; spec: Record<string, unknown> }>(
-    `SELECT kind, label, spec FROM _basedb.view_def
+): Promise<{
+  readonly kind: string
+  readonly label: string
+  readonly spec: Record<string, unknown>
+}> {
+  const [view] = await exec.query<{
+    kind: string
+    label: string
+    spec: Record<string, unknown>
+    owner_id: string | null
+  }>(
+    `SELECT kind, label, spec, owner_id::text FROM _basedb.view_def
       WHERE id::text = $1 AND table_id = $2 AND deleted_at IS NULL`,
     [viewId, tableId],
   )
   if (view === undefined) throw new BasedbError('RESOURCE_NOT_FOUND', { details: { view: viewId } })
-  if (view.kind !== 'form' && view.kind !== 'survey') {
+  if (view.owner_id !== null) {
     throw new BasedbError('REQUEST_INVALID', {
-      details: { field: 'view', reason: 'pas_un_formulaire' },
+      details: { field: 'view', reason: 'vue_personnelle' },
     })
   }
   return view
@@ -349,12 +387,16 @@ async function sharingOf(
     [ctx.tenantId],
   )
   const [row] = await exec.query<ShareRow>(`${SHARE_SELECT} WHERE s.view_id::text = $1`, [viewId])
+  // A data view asks no question: nothing is omitted from it.
+  const answered = isAnswered(view.kind)
   if (row === undefined) {
-    const { omitted } = await questionsOf(exec, { table_id: tableId, view_spec: view.spec }, null)
+    const { omitted } = answered
+      ? await questionsOf(exec, { table_id: tableId, view_spec: view.spec }, null)
+      : { omitted: [] }
     return { share: null, groups, omitted }
   }
   const authority = await authorityOver(exec, row, ctx.requestId)
-  const { omitted } = await questionsOf(exec, row, authority.writable)
+  const { omitted } = answered ? await questionsOf(exec, row, authority.writable) : { omitted: [] }
   return {
     share: toShare(row, instanceKey, stateOf(row, authority.allowed, ctx.timestamp)),
     groups,
@@ -387,6 +429,8 @@ export interface ShareSettings {
   readonly closesAt: string | null
   readonly maxResponses: number | null
   readonly groupIds: readonly string[]
+  /** Another site may frame the page (chapter 15 §10). */
+  readonly canEmbed?: boolean
 }
 
 function checkSettings(raw: ShareSettings): ShareSettings {
@@ -408,6 +452,9 @@ function checkSettings(raw: ShareSettings): ShareSettings {
   if (!Array.isArray(raw.groupIds) || raw.groupIds.some((g) => typeof g !== 'string')) {
     throw new BasedbError('REQUEST_INVALID', { details: { field: 'groups' } })
   }
+  if (raw.canEmbed !== undefined && typeof raw.canEmbed !== 'boolean') {
+    throw new BasedbError('REQUEST_INVALID', { details: { field: 'can_embed' } })
+  }
   // Groups reserve a members' share; a public one is open to anyone, and keeps none.
   return { ...raw, groupIds: raw.access === 'public' ? [] : [...new Set(raw.groupIds)] }
 }
@@ -422,10 +469,15 @@ export async function saveFormSharing(
   instanceKey: string,
   request: { readonly tableId: string; readonly viewId: string } & ShareSettings,
 ): Promise<FormSharing> {
-  const settings = checkSettings(request)
+  const checked = checkSettings(request)
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
     await requireOnTable(exec, ctx, 'manage_schema', request.tableId)
     const view = await formView(exec, request.tableId, request.viewId)
+    // A closing date and a ceiling count answers: a data view takes none.
+    const settings = isAnswered(view.kind)
+      ? checked
+      : { ...checked, closesAt: null, maxResponses: null }
+    const canEmbed = settings.canEmbed === true
     if (settings.groupIds.length > 0) {
       const known = await exec.query<{ id: string }>(
         `SELECT r.id::text FROM _basedb.role r JOIN _basedb.tenant t ON t.id = r.tenant_id
@@ -448,8 +500,8 @@ export async function saveFormSharing(
       const [created] = await exec.query<{ id: string }>(
         `INSERT INTO _basedb.form_share
            (tenant_id, view_id, table_id, access, token_hash, token_sealed, is_active,
-            closes_at, max_responses, published_by, created_by)
-         SELECT t.id, $2::uuid, $3::uuid, $4, $5, $6, $7, $8::timestamptz, $9, $10, $10
+            closes_at, max_responses, published_by, created_by, can_embed)
+         SELECT t.id, $2::uuid, $3::uuid, $4, $5, $6, $7, $8::timestamptz, $9, $10, $10, $11
            FROM _basedb.tenant t WHERE t.ref = $1
          RETURNING id::text`,
         [
@@ -463,6 +515,7 @@ export async function saveFormSharing(
           settings.closesAt,
           settings.maxResponses,
           ctx.actor.id,
+          canEmbed,
         ],
         'insert',
       )
@@ -473,7 +526,7 @@ export async function saveFormSharing(
       await exec.query(
         `UPDATE _basedb.form_share
             SET access = $2, is_active = $3, closes_at = $4::timestamptz, max_responses = $5,
-                published_by = $6, updated_at = clock_timestamp()
+                published_by = $6, can_embed = $7, updated_at = clock_timestamp()
           WHERE id = $1::uuid`,
         [
           shareId,
@@ -482,6 +535,7 @@ export async function saveFormSharing(
           settings.closesAt,
           settings.maxResponses,
           ctx.actor.id,
+          canEmbed,
         ],
         'update',
       )
@@ -510,6 +564,7 @@ export async function saveFormSharing(
         closes_at: settings.closesAt,
         max_responses: settings.maxResponses,
         groups: settings.groupIds,
+        can_embed: canEmbed,
       },
     })
     return sharingOf(exec, ctx, instanceKey, request.tableId, request.viewId)
@@ -586,24 +641,35 @@ async function admit(
   respondent: RequestContext | null,
   requestId: string,
   now: Date,
+  /** What the door is for: answering a form, or reading a data view. */
+  purpose: 'answer' | 'read' = 'answer',
 ): Promise<{
   readonly row: ShareRow
   readonly writable: ReadonlySet<string>
+  readonly readable: ReadonlySet<string>
   readonly respondentName: string | null
 }> {
   const [row] = await exec.query<ShareRow>(`${SHARE_SELECT} WHERE s.token_hash = $1`, [
     hashOf(token),
   ])
-  // An unknown link, a deleted form or a deleted table: nothing is there.
-  if (row === undefined || !row.view_live || !row.table_live) {
-    throw new BasedbError('RESOURCE_NOT_FOUND', { details: { form: 'inconnu' } })
+  // An unknown link, a deleted view or a deleted table: nothing is there. Nor is a form
+  // opened as a view, or a view opened as a form.
+  if (
+    row === undefined ||
+    !row.view_live ||
+    !row.table_live ||
+    isAnswered(row.view_kind) !== (purpose === 'answer')
+  ) {
+    throw new BasedbError('RESOURCE_NOT_FOUND', { details: { share: 'inconnu' } })
   }
 
-  // A closed form says so before it asks anyone to sign in: signing in would not open it.
+  // A closed share says so before it asks anyone to sign in: signing in would not open it.
   const authority = await authorityOver(exec, row, requestId)
   const state = stateOf(row, authority.allowed, now)
   if (state !== 'open') {
-    throw new BasedbError('FORM_CLOSED', { details: { reason: state } })
+    throw new BasedbError(purpose === 'answer' ? 'FORM_CLOSED' : 'VIEW_SHARE_CLOSED', {
+      details: { reason: state },
+    })
   }
 
   let respondentName: string | null = null
@@ -624,10 +690,65 @@ async function admit(
       [respondent.actor.id, row.group_ids],
     )
     if (person === undefined) throw new BasedbError('AUTHENTICATION_REQUIRED')
-    if (!person.member) throw new BasedbError('FORM_RESTRICTED')
+    if (!person.member) {
+      throw new BasedbError(purpose === 'answer' ? 'FORM_RESTRICTED' : 'VIEW_SHARE_RESTRICTED')
+    }
     respondentName = person.display_name
   }
-  return { row, writable: authority.writable, respondentName }
+  return { row, writable: authority.writable, readable: authority.readable, respondentName }
+}
+
+/** A shared data view, admitted: what may be read, and on whose authority (§10). */
+export interface AdmittedView {
+  readonly authority: RequestContext
+  readonly tableId: string
+  readonly baseId: string
+  readonly kind: string
+  readonly label: string
+  readonly description: string | null
+  readonly spec: Record<string, unknown>
+  /** The publisher's readable fields, by catalog key. */
+  readonly readable: ReadonlySet<string>
+  readonly canEmbed: boolean
+  readonly access: ShareAccess
+  readonly reader: string | null
+}
+
+/**
+ * Opens the door of a shared data view — chapter 15 §10: the link, its state, the reader
+ * for a members' share, and the publisher's authority, decided again at every read.
+ */
+export async function admitSharedView(
+  pools: Pools,
+  request: {
+    readonly token: string
+    readonly reader: RequestContext | null
+    readonly requestId: string
+  },
+): Promise<AdmittedView> {
+  return pools.withConnection('catalog', async (exec) => {
+    const { row, readable, respondentName } = await admit(
+      exec,
+      request.token,
+      request.reader,
+      request.requestId,
+      new Date(),
+      'read',
+    )
+    return {
+      authority: authorityOf(row, request.requestId),
+      tableId: row.table_id,
+      baseId: row.base_id,
+      kind: row.view_kind,
+      label: row.view_label,
+      description: row.view_description,
+      spec: row.view_spec,
+      readable,
+      canEmbed: row.can_embed,
+      access: row.access,
+      reader: respondentName,
+    }
+  })
 }
 
 /** Opens a shared form: what the page shows. No right on the table is needed. */

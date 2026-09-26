@@ -5,22 +5,12 @@ interface Props {
 	size?: number;
 }
 const { tone = 'dark', size = 26 } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <span class:list={['bd-logo', tone]} style={`--bd-logo-size: ${size}px`}>
-	<svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
-		<defs>
-			<linearGradient id="bd-logo-g" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-				<stop offset="0" stop-color="#4ED83A"></stop>
-				<stop offset="1" stop-color="#1E8A14"></stop>
-			</linearGradient>
-		</defs>
-		<rect width="32" height="32" rx="8" fill="url(#bd-logo-g)"></rect>
-		<path d="M8 11.5c0-1.9 1.6-3.5 3.5-3.5h9c1.9 0 3.5 1.6 3.5 3.5v1H8v-1Z" fill="#fff"></path>
-		<rect x="8" y="8" width="16" height="16" rx="3.5" stroke="#fff" stroke-width="2"></rect>
-		<path d="M8 18h16M14 12.5V24" stroke="#fff" stroke-width="2"></path>
-	</svg>
-	<span class="word">base<b>db</b></span>
+	<img src={`${base}/brand/mark${tone === 'light' ? '-light' : ''}.svg`} width={size} height={size} alt="" />
+	<span class="word" translate="no">basedb</span>
 </span>
 
 <style>
@@ -30,26 +20,18 @@ const { tone = 'dark', size = 26 } = Astro.props;
 		gap: 9px;
 		line-height: 1;
 	}
-	.bd-logo svg {
+	.bd-logo img {
 		width: var(--bd-logo-size);
 		height: var(--bd-logo-size);
 		flex-shrink: 0;
-		filter: drop-shadow(0 2px 6px rgba(42, 157, 28, 0.35));
 	}
 	.word {
 		font-size: calc(var(--bd-logo-size) * 0.78);
-		font-weight: 800;
-		letter-spacing: -0.035em;
-		color: var(--bd-text);
-	}
-	.word b {
-		font-weight: 800;
-		color: var(--bd-primary);
+		font-weight: 700;
+		letter-spacing: -0.045em;
+		color: #143d2b;
 	}
 	.light .word {
-		color: #fff;
-	}
-	.light .word b {
-		color: var(--bd-primary-vivid);
+		color: #f4f8ef;
 	}
 </style>

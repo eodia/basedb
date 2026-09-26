@@ -6,7 +6,7 @@
 -- Chapter 02 is authoritative on the catalog: every correction is made in the
 -- document, never here.
 --
--- 122 statements, topologically sorted. The chapter order is a reading order,
+-- 146 statements, topologically sorted. The chapter order is a reading order,
 -- not an application order: the name registry references `app_user`, which belongs to
 -- the next domain.
 
@@ -77,8 +77,9 @@ BEGIN
 
   -- Un satellite par FAMILLE de types : `short_text` et `long_text` partagent
   -- `field_text_config`, `date` et `datetime` partagent `field_datetime_config`,
-  -- `select` et `multi_select` partagent `field_select_config`, `file` et `image`
-  -- partagent `field_file_config`.
+  -- `select` et `multi_select` partagent `field_select_config`, `link` et
+  -- `multi_link` partagent `field_link_config`, `file` et `image` partagent
+  -- `field_file_config`.
   v_present := CASE NEW.kind
     WHEN 'short_text'   THEN EXISTS (SELECT 1 FROM _basedb.field_text_config     WHERE field_id = NEW.id)
     WHEN 'long_text'    THEN EXISTS (SELECT 1 FROM _basedb.field_text_config     WHERE field_id = NEW.id)
@@ -89,9 +90,14 @@ BEGIN
     WHEN 'select'       THEN EXISTS (SELECT 1 FROM _basedb.field_select_config   WHERE field_id = NEW.id)
     WHEN 'multi_select' THEN EXISTS (SELECT 1 FROM _basedb.field_select_config   WHERE field_id = NEW.id)
     WHEN 'link'         THEN EXISTS (SELECT 1 FROM _basedb.field_link_config     WHERE field_id = NEW.id)
+    WHEN 'multi_link'   THEN EXISTS (SELECT 1 FROM _basedb.field_link_config     WHERE field_id = NEW.id)
     WHEN 'formula'      THEN EXISTS (SELECT 1 FROM _basedb.field_formula_config  WHERE field_id = NEW.id)
+    WHEN 'lookup'       THEN EXISTS (SELECT 1 FROM _basedb.field_rollup_config   WHERE field_id = NEW.id)
+    WHEN 'rollup'       THEN EXISTS (SELECT 1 FROM _basedb.field_rollup_config   WHERE field_id = NEW.id)
+    WHEN 'count'        THEN EXISTS (SELECT 1 FROM _basedb.field_rollup_config   WHERE field_id = NEW.id)
     WHEN 'file'         THEN EXISTS (SELECT 1 FROM _basedb.field_file_config     WHERE field_id = NEW.id)
     WHEN 'image'        THEN EXISTS (SELECT 1 FROM _basedb.field_file_config     WHERE field_id = NEW.id)
+    WHEN 'button'       THEN EXISTS (SELECT 1 FROM _basedb.field_button_config   WHERE field_id = NEW.id)
     -- Un `kind` ajouté au catalogue sans être câblé ici doit échouer bruyamment,
     -- jamais passer en silence.
     ELSE NULL
@@ -225,14 +231,40 @@ INSERT INTO _basedb.field_kind (code, label, can_be_display, has_config) VALUES
  ('select',    'Liste de choix', true,  true),
  ('multi_select', 'Choix multiple', false, true),
  ('link',      'Relation',       false, true),
+ ('multi_link','Relation multiple', false, true),
+ ('lookup',    'Recherche',      false, true),
+ ('rollup',    'Cumul',          false, true),
+ ('count',     'Decompte',       false, true),
  ('formula',   'Formule',        true,  true),
  ('file',      'Document',       false, true),
  ('image',     'Image',          false, true),
- ('url',       'Lien URL',       true,  false);
+ ('url',       'Lien URL',       true,  false),
+ ('email',     'E-mail',         true,  false),
+ ('autonumber','Numero automatique', true, false),
+ ('user',      'Personne',       false, false),
+ ('button',    'Bouton',         false, true);
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 4 — Intégrations et configuration (chapter 02, line 1418)
+-- Commentaires, notifications et présence (chapter 02, line 1657)
+-- ────────────────────────────────────────────────────────────────────────
+-- Qui regarde quelle table, et quelle ligne (chapitre 16 §3.3). Non journalisee : un etat
+-- ephemere, qu'une reprise apres incident peut perdre sans dommage.
+CREATE UNLOGGED TABLE _basedb.presence (
+  session_id uuid PRIMARY KEY,
+  tenant_id  uuid NOT NULL,
+  user_id    uuid NOT NULL,
+  base_id    uuid NOT NULL,
+  table_id   uuid NOT NULL,
+  record_id  uuid NULL,
+  seen_at    timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+
+CREATE INDEX idx_presence_table ON _basedb.presence (table_id, seen_at);
+
+
+-- ────────────────────────────────────────────────────────────────────────
+-- Domaine 4 — Intégrations et configuration (chapter 02, line 1716)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.idempotency_key (
   actor_kind  text COLLATE "C" NOT NULL CHECK (actor_kind IN ('user','token')),
@@ -255,7 +287,7 @@ CREATE INDEX idx_idempotency_expiry ON _basedb.idempotency_key (expires_at);
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Versionnement du catalogue lui-même (chapter 02, line 1694)
+-- Versionnement du catalogue lui-même (chapter 02, line 1993)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.catalog_migration (
   version     integer PRIMARY KEY,           -- 1, 2, 3... strictement sequentiel
@@ -268,7 +300,7 @@ CREATE TABLE _basedb.catalog_migration (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Journal d'audit (chapter 02, line 1716)
+-- Journal d'audit (chapter 02, line 2015)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.audit_log (
   id uuid NOT NULL DEFAULT _basedb_local.uuid_generate_v7(),
@@ -295,7 +327,7 @@ CREATE INDEX idx_audit_schema_read ON _basedb.audit_log (base_id, occurred_at DE
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Journal de sécurité (chapter 02, line 1749)
+-- Journal de sécurité (chapter 02, line 2048)
 -- ────────────────────────────────────────────────────────────────────────
 -- Journal de securite. Partitionne par mois sur occurred_at, comme audit_log, et
 -- comme lui SANS AUCUNE CLE ETRANGERE : il doit survivre a la suppression, a la
@@ -338,7 +370,7 @@ CREATE INDEX ix_security_log__code__occurred_at
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Capture et drain (chapter 02, line 1798)
+-- Capture et drain (chapter 02, line 2097)
 -- ────────────────────────────────────────────────────────────────────────
 -- Cote donnees : tampons, ecrits par _basedb_local.capture_v1() dans la transaction
 -- de l'utilisateur. Volontairement sans index autre que celui du drain.
@@ -410,7 +442,7 @@ CREATE INDEX idx_delivery_due ON _basedb.webhook_delivery (partition_key, create
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Registre des codes d'erreur et rétentions (chapter 02, line 1892)
+-- Registre des codes d'erreur et rétentions (chapter 02, line 2191)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.error_code (
   code        text COLLATE "C" PRIMARY KEY CHECK (code ~ '^[A-Z][A-Z0-9_]{2,63}$'),
@@ -423,7 +455,7 @@ CREATE TABLE _basedb.error_code (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 4 — Intégrations et configuration (chapter 02, line 1418)
+-- Domaine 4 — Intégrations et configuration (chapter 02, line 1716)
 -- ────────────────────────────────────────────────────────────────────────
 -- Journal des appels sortants aux fournisseurs d'IA : une ligne par tentative.
 CREATE TABLE _basedb.ai_call (
@@ -434,7 +466,8 @@ CREATE TABLE _basedb.ai_call (
   actor_user_id uuid NULL,
   surface    text COLLATE "C" NOT NULL CHECK (surface IN ('ui','rest','system')),
   usage_kind text COLLATE "C" NOT NULL
-             CHECK (usage_kind IN ('structure_draft','expression_draft','field_compute','copilot')),
+             CHECK (usage_kind IN ('structure_draft','expression_draft','field_compute','copilot',
+                                   'template_draft')),
   provider   text COLLATE "C" NOT NULL
              CHECK (provider IN ('openai','anthropic','mistral')),
   model      text COLLATE "C" NOT NULL,
@@ -455,14 +488,15 @@ CREATE INDEX ix_ai_call__tenant_id__occurred_at
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Registre des codes d'erreur et rétentions (chapter 02, line 1923)
+-- Registre des codes d'erreur et rétentions (chapter 02, line 2222)
 -- ────────────────────────────────────────────────────────────────────────
 -- Valeurs semees par la migration de catalogue initiale (A24).
 --  record_revision      24 mois     audit_log            24 mois
 --  structure_revision   60 mois     webhook_delivery     90 jours
 --  change_event          7 jours    catalog_tombstone    12 mois
 --  security_log        180 jours    migration_error_sample 30 jours
---  ai_call              24 mois
+--  ai_call              24 mois     notification         90 jours
+--  automation_run       30 jours
 
 
 -- ────────────────────────────────────────────────────────────────────────
@@ -1009,7 +1043,7 @@ CREATE INDEX idx_field_by_table
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Configuration par type : satellites 1:1, pas de `jsonb` (chapter 02, line 912)
+-- Configuration par type : satellites 1:1, pas de `jsonb` (chapter 02, line 920)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.field_text_config (
   field_id     uuid PRIMARY KEY,
@@ -1019,11 +1053,15 @@ CREATE TABLE _basedb.field_text_config (
   is_rich      boolean NOT NULL DEFAULT false,
   sanitizer_profile text NOT NULL DEFAULT 'none'
     CHECK (sanitizer_profile IN ('none','basic','rich')),
+  -- Comment un texte court se lit : tel quel, comme un numero de telephone, comme un code-barres.
+  display_format text NOT NULL DEFAULT 'plain'
+    CHECK (display_format IN ('plain','phone','barcode')),
   CONSTRAINT fk_text_field FOREIGN KEY (field_id, kind)
     REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT ck_text_rich      CHECK (NOT is_rich OR kind = 'long_text'),
   CONSTRAINT ck_text_multiline CHECK (NOT is_multiline OR kind = 'long_text'),
-  CONSTRAINT ck_text_sanitizer CHECK (is_rich = (sanitizer_profile <> 'none'))
+  CONSTRAINT ck_text_sanitizer CHECK (is_rich = (sanitizer_profile <> 'none')),
+  CONSTRAINT ck_text_format    CHECK (display_format = 'plain' OR kind = 'short_text')
 );
 
 CREATE TABLE _basedb.field_number_config (
@@ -1034,8 +1072,10 @@ CREATE TABLE _basedb.field_number_config (
   min_value numeric NULL,
   max_value numeric NULL,
   display_format text NOT NULL DEFAULT 'decimal'
-    CHECK (display_format IN ('decimal','integer','percent','currency')),
+    CHECK (display_format IN ('decimal','integer','percent','currency','duration','rating')),
   currency_code  text COLLATE "C" NULL CHECK (currency_code ~ '^[A-Z]{3}$'),
+  -- Une note se lit en etoiles, de 1 a rating_max ; une duree est un nombre de secondes.
+  rating_max     smallint NULL CHECK (rating_max IS NULL OR rating_max BETWEEN 1 AND 10),
   CONSTRAINT fk_number_field FOREIGN KEY (field_id, kind)
     REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT ck_number_scale  CHECK (scale <= precision),
@@ -1103,12 +1143,65 @@ CREATE TABLE _basedb.field_formula_config (
   ast         jsonb NOT NULL,       -- forme canonique de l'arbre syntaxique (chapitre 04)
   result_kind text COLLATE "C" NOT NULL REFERENCES _basedb.field_kind(code)
                 ON DELETE RESTRICT ON UPDATE RESTRICT,
+  -- Faux quand la formule emploie AUJOURDHUI()/MAINTENANT() ou cite un champ calcule
+  -- a la lecture : aucune colonne, un calcul a chaque lecture (chapitre 04 §7.1).
   is_stored   boolean NOT NULL DEFAULT true,
+  -- Le fuseau dans lequel AUJOURDHUI() se lit ; nul quand la formule n'en depend pas.
+  timezone    text NULL,
   CONSTRAINT fk_formula_field FOREIGN KEY (field_id, kind)
     REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT ck_formula_result
-    CHECK (result_kind NOT IN ('formula','link','multi_select','file','image'))
+    CHECK (result_kind NOT IN ('formula','link','multi_link','multi_select','file','image',
+                               'autonumber','user','lookup','rollup','count')),
+  CONSTRAINT ck_formula_timezone
+    CHECK (timezone IS NULL OR timezone ~ '^[A-Za-z_]+(/[A-Za-z0-9_+-]+)*$')
 );
+
+-- Recherche, cumul, decompte (chapitre 04 §7 ter) : aucune colonne, un chemin. Le
+-- champ relation suivi est de la table (sens sortant) ou la designe (sens entrant).
+CREATE TABLE _basedb.field_rollup_config (
+  field_id        uuid PRIMARY KEY,
+  kind            text COLLATE "C" NOT NULL CHECK (kind IN ('lookup','rollup','count')),
+  via_field_id    uuid NOT NULL REFERENCES _basedb.field(id) ON DELETE RESTRICT,
+  direction       text NOT NULL CHECK (direction IN ('outgoing','incoming')),
+  target_field_id uuid NULL REFERENCES _basedb.field(id) ON DELETE RESTRICT,
+  aggregate       text NULL CHECK (aggregate IN ('count','sum','avg','min','max')),
+  result_kind     text COLLATE "C" NOT NULL REFERENCES _basedb.field_kind(code)
+                    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  -- Une liste de valeurs (recherche qui atteint plusieurs lignes) ou une seule.
+  is_multiple     boolean NOT NULL,
+  CONSTRAINT fk_rollup_field FOREIGN KEY (field_id, kind)
+    REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT ck_rollup_shape CHECK (
+       (kind = 'lookup' AND target_field_id IS NOT NULL AND aggregate IS NULL)
+    OR (kind = 'rollup' AND target_field_id IS NOT NULL AND aggregate IS NOT NULL)
+    OR (kind = 'count'  AND target_field_id IS NULL     AND aggregate IS NULL)),
+  CONSTRAINT ck_rollup_result
+    CHECK (result_kind NOT IN ('link','multi_link','multi_select','file','image',
+                               'formula','lookup','rollup','count'))
+);
+
+-- Un bouton (chapitre 17 §4) : pas de colonne, un libelle et ce qu'il fait — ouvrir une
+-- adresse composee avec la ligne, ou lancer une automatisation.
+CREATE TABLE _basedb.field_button_config (
+  field_id      uuid PRIMARY KEY,
+  kind          text COLLATE "C" NOT NULL DEFAULT 'button' CHECK (kind = 'button'),
+  label         text NOT NULL CHECK (char_length(label) BETWEEN 1 AND 60),
+  color         text NULL CHECK (color IS NULL OR color ~ '^#[0-9a-f]{6}$'),
+  action        text NOT NULL CHECK (action IN ('url','automation')),
+  url_template  text NULL CHECK (url_template IS NULL OR char_length(url_template) <= 2048),
+  automation_id uuid NULL,
+  CONSTRAINT fk_button_field FOREIGN KEY (field_id, kind)
+    REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT ck_button_action CHECK (
+       (action = 'url' AND url_template IS NOT NULL AND automation_id IS NULL)
+    OR (action = 'automation' AND automation_id IS NOT NULL AND url_template IS NULL))
+);
+
+CREATE INDEX idx_rollup_via    ON _basedb.field_rollup_config (via_field_id);
+
+CREATE INDEX idx_rollup_target ON _basedb.field_rollup_config (target_field_id)
+  WHERE target_field_id IS NOT NULL;
 
 CREATE TABLE _basedb.select_option (
   id         uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1148,7 +1241,7 @@ CREATE TABLE _basedb.field_formula_dependency (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Fichiers déposés (chapter 02, line 1088)
+-- Fichiers déposés (chapter 02, line 1155)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.stored_file (
   id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1170,7 +1263,7 @@ CREATE TABLE _basedb.stored_file (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Contraintes et index des tables utilisateur (chapter 02, line 1114)
+-- Contraintes et index des tables utilisateur (chapter 02, line 1181)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.table_constraint (
   id       uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1199,7 +1292,7 @@ CREATE TABLE _basedb.table_constraint (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Configuration par type : satellites 1:1, pas de `jsonb` (chapter 02, line 912)
+-- Configuration par type : satellites 1:1, pas de `jsonb` (chapter 02, line 920)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.field_select_config (
   field_id uuid PRIMARY KEY,
@@ -1225,7 +1318,7 @@ CREATE TABLE _basedb.field_file_config (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Contraintes et index des tables utilisateur (chapter 02, line 1114)
+-- Contraintes et index des tables utilisateur (chapter 02, line 1181)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.table_constraint_member (
   constraint_id uuid NOT NULL,
@@ -1279,7 +1372,7 @@ CREATE TABLE _basedb.table_index_member (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Champs lien (chapter 02, line 1197)
+-- Champs lien (chapter 02, line 1264)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.cascade_grant (
   id         uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1294,13 +1387,17 @@ CREATE TABLE _basedb.cascade_grant (
 
 CREATE TABLE _basedb.field_link_config (
   field_id        uuid PRIMARY KEY,
-  kind            text COLLATE "C" NOT NULL DEFAULT 'link' CHECK (kind = 'link'),
+  kind            text COLLATE "C" NOT NULL DEFAULT 'link'
+                  CHECK (kind IN ('link','multi_link')),
   base_id         uuid NOT NULL,
   is_required     boolean NOT NULL,                 -- miroir de field.is_required
   target_table_id uuid NOT NULL,
   target_is_live  boolean NOT NULL DEFAULT true,    -- miroir de table_def.is_live
 
-  fk_constraint_id uuid NOT NULL REFERENCES _basedb.table_constraint(id) ON DELETE RESTRICT,
+  -- Nulle pour une relation multiple : sa colonne uuid[] n'a pas de cle etrangere,
+  -- son integrite est tenue par deux declencheurs (chapitre 04 §4 bis).
+  fk_constraint_id uuid NULL REFERENCES _basedb.table_constraint(id) ON DELETE RESTRICT,
+  -- btree ("c", "_id") pour un lien, GIN ("c") pour une relation multiple.
   fk_index_id      uuid NOT NULL REFERENCES _basedb.table_index(id)      ON DELETE RESTRICT,
   fk_dropped_at    timestamptz NULL,
 
@@ -1321,6 +1418,11 @@ CREATE TABLE _basedb.field_link_config (
     CHECK (on_delete <> 'set_null' OR is_required = false),
   CONSTRAINT ck_link_cascade_granted
     CHECK (on_delete <> 'cascade' OR cascade_grant_id IS NOT NULL),
+  CONSTRAINT ck_link_fk_by_kind
+    CHECK ((kind = 'link') = (fk_constraint_id IS NOT NULL)),
+  -- Supprimer une ligne parce qu'une des lignes qu'elle liait disparait n'a pas de sens.
+  CONSTRAINT ck_multi_link_no_cascade
+    CHECK (kind = 'link' OR on_delete <> 'cascade'),
   CONSTRAINT uq_link_fk_constraint UNIQUE (fk_constraint_id),
   CONSTRAINT uq_link_fk_index      UNIQUE (fk_index_id)
 );
@@ -1330,7 +1432,7 @@ CREATE INDEX idx_link_target
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Colonne d'affichage (chapter 02, line 1259)
+-- Colonne d'affichage (chapter 02, line 1335)
 -- ────────────────────────────────────────────────────────────────────────
 ALTER TABLE _basedb.table_def
   ADD CONSTRAINT fk_display_field
@@ -1347,7 +1449,7 @@ ALTER TABLE _basedb.table_def
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Applications et vues enregistrées (chapter 02, line 1315)
+-- Applications et vues enregistrées (chapter 02, line 1391)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.application (
   id uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1397,7 +1499,7 @@ CREATE TABLE _basedb.permission (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Applications et vues enregistrées (chapter 02, line 1315)
+-- Applications et vues enregistrées (chapter 02, line 1391)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE UNIQUE INDEX uq_application_label_live
   ON _basedb.application (base_id, label_key) WHERE deleted_at IS NULL;
@@ -1422,10 +1524,17 @@ CREATE TABLE _basedb.view_def (
   name  text COLLATE "C" NOT NULL,
   description text NULL,
   kind  text NOT NULL DEFAULT 'grid'
-    CHECK (kind IN ('grid','kanban','calendar','timeline','form','survey')),
+    CHECK (kind IN ('grid','kanban','calendar','timeline','gallery','list','form','survey')),
   spec  jsonb NOT NULL DEFAULT '{}'::jsonb,   -- filtre, tri, champs affiches, champs pivots
   position integer NOT NULL DEFAULT 0,        -- ordre dans le selecteur de vues de la table
   is_invalid boolean NOT NULL DEFAULT false,  -- un champ reference a disparu (chapitre 06)
+  -- Une vue personnelle : sa proprietaire seule la voit et la modifie, avec le seul droit
+  -- de lire la table. Nulle : une vue collaborative, celle de tous (chapitre 11 §1.6).
+  owner_id uuid NULL REFERENCES _basedb.app_user(id) ON DELETE CASCADE,
+  -- Verrouillee : on ne la modifie qu'apres l'avoir deverrouillee. Une vue personnelle n'a
+  -- personne d'autre a proteger de ses propres gestes.
+  is_locked boolean NOT NULL DEFAULT false,
+  CONSTRAINT ck_view_lock_collaborative CHECK (NOT is_locked OR owner_id IS NULL),
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -1434,8 +1543,11 @@ CREATE TABLE _basedb.view_def (
   deleted_by uuid NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT
 );
 
+-- Un libelle est unique parmi les vues collaboratives d'une table, et parmi les vues
+-- personnelles d'une meme personne : deux personnes peuvent chacune avoir « Mes taches ».
 CREATE UNIQUE INDEX uq_view_label_live
-  ON _basedb.view_def (table_id, label_key) WHERE deleted_at IS NULL;
+  ON _basedb.view_def (table_id, coalesce(owner_id, '00000000-0000-0000-0000-000000000000'::uuid), label_key)
+  WHERE deleted_at IS NULL;
 
 -- Le partage d'un formulaire ou d'un questionnaire (chapitre 15) : un lien qui permet de
 -- repondre sans avoir de droit sur la table, public ou reserve aux membres connectes.
@@ -1458,6 +1570,9 @@ CREATE TABLE _basedb.form_share (
   -- Au nom de qui les reponses s'ecrivent : la derniere personne qui a enregistre le
   -- partage. Ses droits sont reverifies a chaque reponse (chapitre 15 §2).
   published_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  -- Une vue de donnees partagee en lecture seule (chapitre 15 §10) peut s'integrer dans une
+  -- autre page (iframe) quand on l'a voulu ; un formulaire aussi.
+  can_embed    boolean NOT NULL DEFAULT false,
   created_at   timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by   uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   updated_at   timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -1475,7 +1590,201 @@ CREATE TABLE _basedb.form_share_role (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Domaine 4 — Intégrations et configuration (chapter 02, line 1418)
+-- Automatisations (chapter 02, line 1505)
+-- ────────────────────────────────────────────────────────────────────────
+-- Une automatisation (chapitre 17) : un declencheur, une condition, des actions, au nom
+-- de son proprietaire — la derniere personne qui l'a enregistree.
+CREATE TABLE _basedb.automation (
+  id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id   uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  base_id     uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  label       text NOT NULL CHECK (char_length(label) BETWEEN 1 AND 255),
+  description text NULL,
+  is_enabled  boolean NOT NULL DEFAULT true,
+  trigger_kind text NOT NULL
+    CHECK (trigger_kind IN ('record_created','record_updated','schedule','button')),
+  -- La table d'un declencheur de ligne ou d'un bouton ; nulle pour une horloge.
+  table_id    uuid NULL REFERENCES _basedb.table_def(id) ON DELETE CASCADE,
+  -- Les reglages du declencheur (champs surveilles, horloge) et la suite d'actions,
+  -- valides par le noyau a l'ecriture (chapitre 17 §1).
+  trigger     jsonb NOT NULL DEFAULT '{}'::jsonb,
+  condition   text NULL CHECK (condition IS NULL OR char_length(condition) <= 4000),
+  actions     jsonb NOT NULL DEFAULT '[]'::jsonb,
+  owner_id    uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  -- La prochaine echeance d'une horloge.
+  next_run_at timestamptz NULL,
+  created_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  deleted_at  timestamptz NULL,
+  CONSTRAINT ck_automation_table CHECK ((trigger_kind = 'schedule') = (table_id IS NULL))
+);
+
+CREATE INDEX idx_automation_table ON _basedb.automation (table_id)
+  WHERE deleted_at IS NULL AND is_enabled;
+
+CREATE INDEX idx_automation_due ON _basedb.automation (next_run_at)
+  WHERE deleted_at IS NULL AND is_enabled AND trigger_kind = 'schedule';
+
+-- Une execution : en attente, en cours, faite, echouee, ecartee — et ce que chaque action
+-- a donne.
+CREATE TABLE _basedb.automation_run (
+  id            uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  automation_id uuid NOT NULL REFERENCES _basedb.automation(id) ON DELETE CASCADE,
+  trigger_kind  text NOT NULL,
+  record_id     uuid NULL,
+  status        text NOT NULL DEFAULT 'queued'
+    CHECK (status IN ('queued','running','succeeded','failed','skipped')),
+  reason        text NULL,
+  error_code    text COLLATE "C" NULL,
+  steps         jsonb NOT NULL DEFAULT '[]'::jsonb,
+  queued_at     timestamptz NOT NULL DEFAULT clock_timestamp(),
+  started_at    timestamptz NULL,
+  finished_at   timestamptz NULL
+);
+
+CREATE INDEX idx_automation_run_queue ON _basedb.automation_run (queued_at)
+  WHERE status = 'queued';
+
+CREATE INDEX idx_automation_run_list ON _basedb.automation_run (automation_id, queued_at DESC);
+
+
+-- ────────────────────────────────────────────────────────────────────────
+-- Tableaux de bord (chapter 02, line 1563)
+-- ────────────────────────────────────────────────────────────────────────
+-- Un tableau de bord (chapitre 18) : des blocs sur une grille de trois colonnes, qui
+-- lisent chacun avec les droits de la personne qui regarde.
+CREATE TABLE _basedb.dashboard (
+  id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  base_id     uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  label       text NOT NULL CHECK (char_length(label) BETWEEN 1 AND 255),
+  description text NULL,
+  position    integer NOT NULL DEFAULT 0,
+  -- Les blocs, valides par le noyau a l'ecriture (chapitre 18 §1.1) ; ils citent tables
+  -- et champs par leur cle et leur nom, relus avec les droits du lecteur a l'affichage.
+  blocks      jsonb NOT NULL DEFAULT '[]'::jsonb,
+  created_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  updated_by  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  deleted_at  timestamptz NULL
+);
+
+CREATE INDEX idx_dashboard_base ON _basedb.dashboard (base_id, position)
+  WHERE deleted_at IS NULL;
+
+
+-- ────────────────────────────────────────────────────────────────────────
+-- Intégrations et tables synchronisées (chapter 02, line 1589)
+-- ────────────────────────────────────────────────────────────────────────
+-- Une connexion d'une base a un service exterieur (chapitre 19 §1) : Slack par un webhook
+-- entrant. L'adresse, qui vaut autorisation, est scellee par la cle d'instance (A25).
+CREATE TABLE _basedb.integration (
+  id           uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id    uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  base_id      uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  kind         text NOT NULL CHECK (kind IN ('slack')),
+  label        text NOT NULL CHECK (char_length(label) BETWEEN 1 AND 255),
+  url_sealed   text NOT NULL,
+  -- La fin de l'adresse, pour la reconnaitre sans la reveler.
+  url_hint     text NOT NULL,
+  created_at   timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by   uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  deleted_at   timestamptz NULL
+);
+
+CREATE INDEX idx_integration_base ON _basedb.integration (base_id) WHERE deleted_at IS NULL;
+
+-- Une table synchronisee (chapitre 19 §3) : sa source, son rythme, son dernier etat.
+CREATE TABLE _basedb.table_sync (
+  table_id         uuid PRIMARY KEY REFERENCES _basedb.table_def(id) ON DELETE CASCADE,
+  base_id          uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  source_kind      text NOT NULL CHECK (source_kind IN ('csv','ics','basedb')),
+  url_sealed       text NOT NULL,
+  url_host         text NOT NULL,
+  interval_minutes integer NOT NULL CHECK (interval_minutes BETWEEN 15 AND 1440),
+  -- Le champ qui porte la cle de chaque ligne, et la colonne de la source de chaque champ.
+  key_field_id     uuid NOT NULL REFERENCES _basedb.field(id) ON DELETE CASCADE,
+  columns          jsonb NOT NULL DEFAULT '[]'::jsonb,
+  next_sync_at     timestamptz NOT NULL DEFAULT clock_timestamp(),
+  last_synced_at   timestamptz NULL,
+  last_status      text NULL CHECK (last_status IN ('ok','failed')),
+  last_error       text NULL,
+  last_counts      jsonb NULL,
+  created_at       timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by       uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT
+);
+
+CREATE INDEX idx_table_sync_due ON _basedb.table_sync (next_sync_at);
+
+
+-- ────────────────────────────────────────────────────────────────────────
+-- Modèles de l'instance (chapter 02, line 1633)
+-- ────────────────────────────────────────────────────────────────────────
+-- Un modele de base importe par un administrateur (chapitre 20 §3.2) : le document JSON
+-- entier, valide par le noyau a l'ecriture. Une cle par tenant ; importer la meme cle
+-- remplace le modele.
+CREATE TABLE _basedb.template (
+  id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id   uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  key         text COLLATE "C" NOT NULL CHECK (key ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND char_length(key) <= 64),
+  label       text NOT NULL CHECK (char_length(label) BETWEEN 1 AND 255),
+  body        jsonb NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  updated_by  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  UNIQUE (tenant_id, key)
+);
+
+
+-- ────────────────────────────────────────────────────────────────────────
+-- Commentaires, notifications et présence (chapter 02, line 1657)
+-- ────────────────────────────────────────────────────────────────────────
+-- Un commentaire sur une ligne (chapitre 16 §1). La ligne est designee par son identifiant,
+-- sans cle etrangere : aucune contrainte ne traverse la frontiere catalogue / donnees (A9).
+CREATE TABLE _basedb.record_comment (
+  id         uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id  uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  base_id    uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  table_id   uuid NOT NULL REFERENCES _basedb.table_def(id) ON DELETE CASCADE,
+  record_id  uuid NOT NULL,
+  author_id  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  body       text NOT NULL CHECK (char_length(body) BETWEEN 1 AND 10000),
+  -- Les personnes que le texte mentionne, relues par le serveur a chaque ecriture.
+  mentions   uuid[] NOT NULL DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  edited_at  timestamptz NULL
+);
+
+CREATE INDEX idx_record_comment_record
+  ON _basedb.record_comment (table_id, record_id, created_at);
+
+-- Les notifications internes (chapitre 16 §2) : qui, de quoi, sur quelle ligne.
+CREATE TABLE _basedb.notification (
+  id         uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id  uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  user_id    uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE CASCADE,
+  kind       text NOT NULL CHECK (kind IN ('mention','reply','assigned','automation')),
+  actor_id   uuid NULL REFERENCES _basedb.app_user(id) ON DELETE SET NULL,
+  base_id    uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  table_id   uuid NOT NULL REFERENCES _basedb.table_def(id) ON DELETE CASCADE,
+  record_id  uuid NOT NULL,
+  comment_id uuid NULL REFERENCES _basedb.record_comment(id) ON DELETE CASCADE,
+  excerpt    text NOT NULL DEFAULT '' CHECK (char_length(excerpt) <= 200),
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  read_at    timestamptz NULL
+);
+
+CREATE INDEX idx_notification_user
+  ON _basedb.notification (user_id, created_at DESC);
+
+CREATE INDEX idx_notification_unread
+  ON _basedb.notification (user_id) WHERE read_at IS NULL;
+
+
+-- ────────────────────────────────────────────────────────────────────────
+-- Domaine 4 — Intégrations et configuration (chapter 02, line 1716)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.api_token (
   id uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1588,7 +1897,7 @@ CREATE TABLE _basedb.secret (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Migrations de structures utilisateur (chapter 02, line 1593)
+-- Migrations de structures utilisateur (chapter 02, line 1892)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.migration (
   id uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1678,7 +1987,7 @@ ALTER TABLE _basedb.base
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Registre des codes d'erreur et rétentions (chapter 02, line 1923)
+-- Registre des codes d'erreur et rétentions (chapter 02, line 2222)
 -- ────────────────────────────────────────────────────────────────────────
 CREATE TABLE _basedb.retention_policy (
   object           text COLLATE "C" PRIMARY KEY,
@@ -1690,7 +1999,7 @@ CREATE TABLE _basedb.retention_policy (
 
 
 -- ────────────────────────────────────────────────────────────────────────
--- Les déclencheurs du catalogue (chapter 02, line 1953)
+-- Les déclencheurs du catalogue (chapter 02, line 2253)
 -- ────────────────────────────────────────────────────────────────────────
 -- Verifie au COMMIT, donc compatible avec l'ordre naturel d'ecriture
 -- (champ puis satellite) dans une meme transaction.
@@ -2048,7 +2357,7 @@ BEGIN
   ELSE
     BEGIN
       v_actor := v_raw_actor::uuid;
-      v_kind := CASE WHEN v_raw_kind IN ('user', 'token', 'mcp', 'system', 'form')
+      v_kind := CASE WHEN v_raw_kind IN ('user', 'token', 'mcp', 'system', 'form', 'automation')
                      THEN v_raw_kind ELSE 'unknown' END;
     EXCEPTION WHEN invalid_text_representation THEN
       v_actor := NULL;
@@ -2081,16 +2390,20 @@ BEGIN
   -- Le SELECT des lignes, selon l'opération. Aucune instruction statique ne cite les
   -- tables de transition : leur forme change d'une table à l'autre, et un plan mis en
   -- cache serait celui de la première table capturée.
+  --
+  -- Les alias commencent par « _ », qu'aucun nom physique ne peut porter : `to_jsonb(n)`
+  -- serait ambigu sur une table qui a une colonne `n` — un champ « N° » —, et chaque
+  -- écriture de cette table échouerait.
   IF TG_OP = 'INSERT' THEN
-    v_select := 'SELECT n."_id" AS record_id, NULL::jsonb AS before, pg_catalog.to_jsonb(n) AS after
-                   FROM new_rows n';
+    v_select := 'SELECT _n."_id" AS record_id, NULL::jsonb AS before, pg_catalog.to_jsonb(_n) AS after
+                   FROM new_rows _n';
   ELSIF TG_OP = 'UPDATE' THEN
-    v_select := 'SELECT n."_id" AS record_id, pg_catalog.to_jsonb(o) AS before, pg_catalog.to_jsonb(n) AS after
-                   FROM old_rows o JOIN new_rows n ON n."_id" = o."_id"
-                  WHERE pg_catalog.to_jsonb(o) IS DISTINCT FROM pg_catalog.to_jsonb(n)';
+    v_select := 'SELECT _n."_id" AS record_id, pg_catalog.to_jsonb(_o) AS before, pg_catalog.to_jsonb(_n) AS after
+                   FROM old_rows _o JOIN new_rows _n ON _n."_id" = _o."_id"
+                  WHERE pg_catalog.to_jsonb(_o) IS DISTINCT FROM pg_catalog.to_jsonb(_n)';
   ELSE
-    v_select := 'SELECT o."_id" AS record_id, pg_catalog.to_jsonb(o) AS before, NULL::jsonb AS after
-                   FROM old_rows o';
+    v_select := 'SELECT _o."_id" AS record_id, pg_catalog.to_jsonb(_o) AS before, NULL::jsonb AS after
+                   FROM old_rows _o';
   END IF;
 
   EXECUTE
@@ -2138,6 +2451,13 @@ BEGIN
             v_format, v_full;
   END IF;
 
+  -- Réveille le drain (§11.4) : une notification par transaction — PostgreSQL fusionne les
+  -- notifications identiques —, et aucune quand la file est remplie à plus de moitié : la
+  -- capture ne doit jamais échouer pour un réveil.
+  IF pg_catalog.pg_notification_queue_usage() < 0.5 THEN
+    PERFORM pg_catalog.pg_notify('basedb_drain', '');
+  END IF;
+
   RETURN NULL;
 END
 $fn$;
@@ -2163,7 +2483,7 @@ CREATE TABLE _basedb.record_revision (
   bulk_id        uuid NULL,
   record_display text NULL,
   actor_kind     text NOT NULL CHECK (actor_kind IN
-                   ('user','token','mcp','system','form','sql_direct','unknown')),
+                   ('user','token','mcp','system','form','automation','sql_direct','unknown')),
   actor_user_id  uuid NULL,
   actor_token_id uuid NULL,
   sql_identity   text NULL,
@@ -2269,6 +2589,139 @@ CREATE TRIGGER tg_record_deletion__immutable
 CREATE TRIGGER tg_record_deletion_default__immutable
   BEFORE UPDATE OR DELETE ON _basedb.record_deletion_default
   FOR EACH STATEMENT EXECUTE FUNCTION _basedb.assert_history_immutable();
+
+-- ════════════════════════════════════════════════════════════════════════
+-- Relations multiples — chapitre 04 §4 bis (normatif sur ces objets).
+--
+-- FICHIER ÉCRIT À LA MAIN, à la différence du reste de la migration.
+--
+-- Une relation multiple est une colonne uuid[] : aucune clé étrangère ne peut porter
+-- sur un tableau. Son intégrité est tenue par deux fonctions partagées (A9), jamais
+-- une par table, que le moteur DDL attache à la source et à la cible de chaque champ.
+-- Elles lèvent les SQLSTATE d'une contrainte (23514, 23503), que le noyau retraduit
+-- comme ceux d'une clé étrangère.
+--
+-- SECURITY DEFINER, comme une vérification de clé étrangère s'exécute avec les droits
+-- du propriétaire de la table : la console SQL écrit sous un rôle restreint, qui doit
+-- être tenu par la règle sans avoir à lire la table cible. Les arguments viennent du
+-- moteur DDL, jamais d'un appelant, et chaque nom passe par format(%I).
+-- ════════════════════════════════════════════════════════════════════════
+
+-- Sur la source : BEFORE INSERT OR UPDATE OF "<colonne>" FOR EACH ROW.
+-- TG_ARGV : 0 colonne, 1 schéma de la cible, 2 table de la cible.
+CREATE FUNCTION _basedb_local.multi_link_check_v1() RETURNS trigger
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = pg_catalog
+AS $fn$
+DECLARE
+  v_ids     uuid[];
+  v_found   bigint;
+  v_missing uuid;
+BEGIN
+  EXECUTE format('SELECT ($1).%I', TG_ARGV[0]) USING NEW INTO v_ids;
+  IF v_ids IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  -- Vide s'écrit NULL, comme pour le choix multiple ; un tableau imbriqué ou un élément
+  -- nul ne désigne rien.
+  IF cardinality(v_ids) = 0 OR array_ndims(v_ids) <> 1
+     OR array_position(v_ids, NULL) IS NOT NULL THEN
+    RAISE EXCEPTION 'relation multiple « % » : liste vide, imbriquée ou avec un élément nul', TG_ARGV[0]
+      USING ERRCODE = 'check_violation', COLUMN = TG_ARGV[0];
+  END IF;
+  IF (SELECT count(DISTINCT x) FROM unnest(v_ids) AS u(x)) <> cardinality(v_ids) THEN
+    RAISE EXCEPTION 'relation multiple « % » : une ligne y figure deux fois', TG_ARGV[0]
+      USING ERRCODE = 'check_violation', COLUMN = TG_ARGV[0];
+  END IF;
+
+  -- FOR KEY SHARE, comme une clé étrangère : une suppression concurrente de la cible
+  -- attend la fin de cette transaction, ou la vérification la voit.
+  EXECUTE format(
+    'SELECT count(*) FROM (SELECT 1 FROM %I.%I t WHERE t."_id" = ANY($1) FOR KEY SHARE) s',
+    TG_ARGV[1], TG_ARGV[2])
+    USING v_ids INTO v_found;
+  IF v_found <> cardinality(v_ids) THEN
+    EXECUTE format(
+      'SELECT x FROM unnest($1) AS u(x) WHERE NOT EXISTS (SELECT 1 FROM %I.%I t WHERE t."_id" = x) LIMIT 1',
+      TG_ARGV[1], TG_ARGV[2])
+      USING v_ids INTO v_missing;
+    RAISE EXCEPTION 'relation multiple « % » : la ligne % n''existe pas dans %.%',
+      TG_ARGV[0], v_missing, TG_ARGV[1], TG_ARGV[2]
+      USING ERRCODE = 'foreign_key_violation', COLUMN = TG_ARGV[0], DETAIL = v_missing::text;
+  END IF;
+  RETURN NEW;
+END
+$fn$;
+
+-- Sur la cible : AFTER DELETE FOR EACH STATEMENT REFERENCING OLD TABLE AS old_rows.
+-- TG_ARGV : 0 schéma de la source, 1 table de la source, 2 colonne, 3 on_delete.
+--
+-- En fin d'instruction, comme NO ACTION : une suppression en lot qui retire, dans la
+-- même instruction, une ligne et celles qui la citent — une table qui se lie à
+-- elle-même — réussit.
+CREATE FUNCTION _basedb_local.multi_link_deleted_v1() RETURNS trigger
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = pg_catalog
+AS $fn$
+DECLARE
+  v_id uuid;
+BEGIN
+  IF TG_ARGV[3] = 'restrict' THEN
+    EXECUTE format(
+      'SELECT o."_id" FROM old_rows o
+        WHERE EXISTS (SELECT 1 FROM %I.%I s WHERE s.%I @> ARRAY[o."_id"]) LIMIT 1',
+      TG_ARGV[0], TG_ARGV[1], TG_ARGV[2])
+      INTO v_id;
+    IF v_id IS NOT NULL THEN
+      RAISE EXCEPTION 'la ligne % est encore liée par %.%.%', v_id, TG_ARGV[0], TG_ARGV[1], TG_ARGV[2]
+        USING ERRCODE = 'foreign_key_violation', DETAIL = v_id::text;
+    END IF;
+  ELSE
+    -- « Retirer de la liste » : l'ordre des autres est gardé, une liste vidée devient NULL.
+    EXECUTE format(
+      'UPDATE %1$I.%2$I s
+          SET %3$I = NULLIF(ARRAY(SELECT u.x FROM unnest(s.%3$I) WITH ORDINALITY AS u(x, i)
+                                   WHERE u.x NOT IN (SELECT o."_id" FROM old_rows o)
+                                   ORDER BY u.i), ''{}''::uuid[])
+        WHERE s.%3$I && ARRAY(SELECT o."_id" FROM old_rows o)',
+      TG_ARGV[0], TG_ARGV[1], TG_ARGV[2]);
+  END IF;
+  RETURN NULL;
+END
+$fn$;
+
+-- ════════════════════════════════════════════════════════════════════════
+-- Fonctions des formules — chapitre 04 §7.3.
+--
+-- FICHIER ÉCRIT À LA MAIN. Une formule stockée est une colonne générée : toute fonction
+-- qu'elle appelle doit être IMMUABLE, et ne jamais lever d'erreur — le calcul ayant
+-- lieu à l'écriture, une erreur rendrait la ligne inécrivable pour toujours.
+--
+-- Comme fold_v1, une fonction n'est jamais remplacée : une évolution crée une _v2.
+-- ════════════════════════════════════════════════════════════════════════
+
+-- DATE(a; m; j) : la date, ou NULL si elle n'existe pas — le 31 février n'est pas une
+-- erreur d'écriture, c'est une valeur vide.
+CREATE FUNCTION _basedb_local.safe_date_v1(y numeric, m numeric, d numeric) RETURNS date
+  LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE
+  SET search_path = pg_catalog
+AS $fn$
+BEGIN
+  IF y IS NULL OR m IS NULL OR d IS NULL
+     OR y < 1 OR y > 9999 OR m < 1 OR m > 12 OR d < 1 OR d > 31 THEN
+    RETURN NULL;
+  END IF;
+  RETURN make_date(y::int, m::int, d::int);
+EXCEPTION WHEN others THEN
+  RETURN NULL;
+END
+$fn$;
+
+COMMENT ON FUNCTION _basedb_local.safe_date_v1(numeric, numeric, numeric) IS
+  'DATE() des formules : une date, ou NULL si elle n''existe pas. Immuable, jamais remplacée.';
 
 -- ════════════════════════════════════════════════════════════════════════
 -- Cycle de vie — chapitre 06 : fin de vie des alias, export préalable à la purge.

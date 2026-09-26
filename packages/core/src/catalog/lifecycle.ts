@@ -18,6 +18,7 @@ import { loadBaseTarget, visibleInside } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { normalizeDescription } from './description.js'
+import { multiLinkTriggers } from './links.js'
 import { type Look, type LookInput, normalizeLook, touchesLook } from './look.js'
 import { defaultProjectId, labelKey } from './operations.js'
 
@@ -294,6 +295,11 @@ export async function deleteTable(
       [request.tableId],
     )
 
+    // The multi-links it bears (04 §4 bis): no foreign key but two triggers — one here,
+    // one on the target, which would otherwise keep naming a relegated table — and the
+    // GIN index, dropped in the same step.
+    const multiBorne = await loadMultiLinks(exec, 'f.table_id = $1', request.tableId)
+
     // Alias views aiming at this table, dropped with it (§4.2).
     const views = await exec.query<{ id: string; name: string; schema_name: string }>(
       `SELECT v.id, n.name, sn.name AS schema_name
@@ -336,6 +342,8 @@ export async function deleteTable(
         `UPDATE _basedb.table_index SET state = 'dropped', dropped_at = ${stamp}::timestamptz, state_changed_at = ${stamp}::timestamptz WHERE id = ${quoteLiteral(link.index_id)}::uuid;`,
       )
     }
+
+    statements.push(...dropMultiLinks(multiBorne, stamp))
 
     for (const view of views) {
       statements.push(`DROP VIEW IF EXISTS ${qualify(view.schema_name, view.name)};`)
@@ -383,7 +391,7 @@ VALUES (${quoteLiteral(nameId)}::uuid, 'schema', ${quoteLiteral(table.schema_id)
       baseId: table.base_id,
       label: table.label,
       relegated,
-      locked: borne.map((l) => l.target_label),
+      locked: [...borne.map((l) => l.target_label), ...multiBorne.map((l) => l.target_label)],
       statements,
     }
   })
@@ -404,6 +412,65 @@ VALUES (${quoteLiteral(nameId)}::uuid, 'schema', ${quoteLiteral(table.schema_id)
       locked_tables: plan.locked,
     },
     affectedObjects: [{ kind: 'table', label: plan.label, relegated: plan.relegated }],
+  })
+}
+
+/** A live multi-link, with what dropping its triggers and index needs (04 §4 bis). */
+interface MultiLinkRow extends Record<string, unknown> {
+  readonly field_id: string
+  readonly column: string
+  readonly index_id: string
+  readonly index_name: string
+  readonly schema_name: string
+  readonly table_name: string
+  readonly target_schema: string
+  readonly target_name: string
+  readonly target_label: string
+}
+
+async function loadMultiLinks(
+  exec: Executor,
+  where: string,
+  parameter: string,
+): Promise<MultiLinkRow[]> {
+  return exec.query<MultiLinkRow>(
+    `SELECT lc.field_id, n.name AS column, lc.fk_index_id AS index_id, ixn.name AS index_name,
+            sn.name AS schema_name, tn.name AS table_name,
+            tsn.name AS target_schema, ttn.name AS target_name, tt.label AS target_label
+       FROM _basedb.field_link_config lc
+       JOIN _basedb.field f           ON f.id = lc.field_id AND f.deleted_at IS NULL
+       JOIN _basedb.physical_name n   ON n.id = f.name_id
+       JOIN _basedb.table_def t       ON t.id = f.table_id
+       JOIN _basedb.physical_name tn  ON tn.id = t.name_id
+       JOIN _basedb.db_schema s       ON s.id = t.schema_id
+       JOIN _basedb.physical_name sn  ON sn.id = s.name_id
+       JOIN _basedb.table_index ix    ON ix.id = lc.fk_index_id
+       JOIN _basedb.physical_name ixn ON ixn.id = ix.name_id
+       JOIN _basedb.table_def tt      ON tt.id = lc.target_table_id
+       JOIN _basedb.physical_name ttn ON ttn.id = tt.name_id
+       JOIN _basedb.db_schema ts      ON ts.id = tt.schema_id
+       JOIN _basedb.physical_name tsn ON tsn.id = ts.name_id
+      WHERE ${where} AND lc.kind = 'multi_link' AND lc.fk_dropped_at IS NULL`,
+    [parameter],
+  )
+}
+
+/** The statements that detach multi-links: as `fk_dropped_at` does for a link's key. */
+function dropMultiLinks(links: readonly MultiLinkRow[], stamp: string): string[] {
+  return links.flatMap((link) => {
+    const triggers = multiLinkTriggers(
+      { schemaName: link.schema_name, tableName: link.table_name },
+      { schemaName: link.target_schema, tableName: link.target_name },
+      link.column,
+      'restrict',
+    )
+    return [
+      `DROP TRIGGER IF EXISTS ${quoteIdentifier(triggers.sourceName)} ON ${qualify(link.schema_name, link.table_name)};`,
+      `DROP TRIGGER IF EXISTS ${quoteIdentifier(triggers.targetName)} ON ${qualify(link.target_schema, link.target_name)};`,
+      `DROP INDEX IF EXISTS ${qualify(link.schema_name, link.index_name)};`,
+      `UPDATE _basedb.field_link_config SET fk_dropped_at = ${stamp}::timestamptz WHERE field_id = ${quoteLiteral(link.field_id)}::uuid;`,
+      `UPDATE _basedb.table_index SET state = 'dropped', dropped_at = ${stamp}::timestamptz, state_changed_at = ${stamp}::timestamptz WHERE id = ${quoteLiteral(link.index_id)}::uuid;`,
+    ]
   })
 }
 
@@ -707,6 +774,18 @@ async function buildDeletionPlan(
       WHERE lc.base_id = $1 AND lc.fk_dropped_at IS NULL AND t.deleted_at IS NULL`,
     [baseId],
   )
+
+  // The multi-links of the base (04 §4 bis): their triggers and GIN index, in the same
+  // batches — a trigger on a target would otherwise keep naming a relegated source.
+  const multiLinks = await loadMultiLinks(exec, 'lc.base_id = $1 AND t.deleted_at IS NULL', baseId)
+  for (let i = 0; i < multiLinks.length; i += TABLE_BATCH) {
+    const batch = multiLinks.slice(i, i + TABLE_BATCH)
+    steps.push({
+      label: `Détacher ${batch.length} relation${batch.length > 1 ? 's' : ''} multiple${batch.length > 1 ? 's' : ''}`,
+      statements: dropMultiLinks(batch, stamp),
+      lock: 'exclusive',
+    })
+  }
 
   for (let i = 0; i < links.length; i += TABLE_BATCH) {
     const batch = links.slice(i, i + TABLE_BATCH)

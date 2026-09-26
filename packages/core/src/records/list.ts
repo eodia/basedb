@@ -5,6 +5,7 @@ import { type Decision, SYSTEM_COLUMNS, decide } from '../rbac/decide.js'
 import { loadFields, loadGrants, loadTarget } from '../rbac/loader.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, actorKey, withTransaction } from '../tx/context.js'
+import { COMPUTED_ALIAS, type ComputedColumn, lateralJoin, resolveComputed } from './computed.js'
 import {
   decodeCursor,
   encodeCursor,
@@ -243,7 +244,7 @@ export async function listRecords(
   }
 }
 
-interface Plan {
+export interface Plan {
   readonly schemaName: string
   readonly tableName: string
   readonly columns: readonly string[]
@@ -251,6 +252,16 @@ interface Plan {
   /** Targets reachable through a link path, decided upstream (§4.4). */
   readonly links: ReadonlyMap<string, FilterableTarget>
   readonly decision: Decision
+  /**
+   * The fields computed at read time this reader may see (chapter 04 §7 ter), projected
+   * by one lateral join under the alias `v`.
+   */
+  readonly computed: readonly ComputedColumn[]
+}
+
+/** The lateral join of a plan's computed fields, given the alias of its table. */
+export function planLateral(plan: Plan, alias: string): string {
+  return lateralJoin(plan.computed, alias)
 }
 
 /**
@@ -300,6 +311,8 @@ async function resolveFilterableLinks(
 
     for (const [id, column] of targetFields) {
       if (decision === null || !decision.readableFields.has(id)) continue
+      // A field computed at read time has no column a path could name.
+      if (column.stored === false) continue
       columns.set(column.name, column)
       if (id === loc.display_field_id) displayColumn = column
     }
@@ -316,7 +329,16 @@ async function resolveFilterableLinks(
   return links
 }
 
-async function buildPlan(exec: Executor, ctx: RequestContext, tableId: string): Promise<Plan> {
+/**
+ * What reading a table is allowed to touch, decided once — its readable columns, the
+ * targets its link paths may reach, its row predicate. Shared with the aggregates, which
+ * must see exactly the rows and columns a page would.
+ */
+export async function buildPlan(
+  exec: Executor,
+  ctx: RequestContext,
+  tableId: string,
+): Promise<Plan> {
   const grants = await loadGrants(exec, ctx)
   const target = await loadTarget(exec, ctx, tableId)
 
@@ -349,23 +371,47 @@ async function buildPlan(exec: Executor, ctx: RequestContext, tableId: string): 
   // list is refused as a programming error — the verdict should have been INVISIBLE
   // (§3.2 step 9).
   const readable = [...fields].filter(([id]) => decision.readableFields.has(id))
-  const columns = [...SYSTEM_COLUMNS, ...readable.map(([, c]) => c.name)]
-
   if (readable.length === 0) {
     throw new BasedbError('INTERNAL_ERROR', {
       details: { reason: 'empty mask reached the SQL builder', table: tableId },
     })
   }
 
+  // The fields computed at read time, resolved FOR THIS READER: one whose path or
+  // citation they cannot read is left out, as a masked field is (04 §7 ter.2).
+  const computed = await resolveComputed(exec, ctx, grants, decision, fields)
+  const computedByName = new Map(computed.map((c) => [c.name, c]))
+  const shown = readable.filter(([, c]) => c.stored !== false || computedByName.has(c.name))
+  const columns = [...SYSTEM_COLUMNS, ...shown.map(([, c]) => c.name)]
+
   // The filterable-column table contains ONLY the read mask: that is what makes a
-  // masked field indistinguishable from a non-existent one (§4.3).
+  // masked field indistinguishable from a non-existent one (§4.3). A computed field is
+  // read under the lateral's alias, with the kind of its result.
+  const filterable = new Map<string, FilterableColumn>(
+    shown.map(([, c]) => {
+      const virtual = computedByName.get(c.name)
+      return [
+        c.name,
+        virtual === undefined
+          ? c
+          : {
+              name: c.name,
+              kind: virtual.kind,
+              alias: COMPUTED_ALIAS,
+              stored: false,
+              ...(virtual.elementKind === undefined ? {} : { elementKind: virtual.elementKind }),
+            },
+      ]
+    }),
+  )
   return {
     schemaName: location[0].schema_name,
     tableName: location[0].table_name,
     columns,
-    filterable: new Map(readable.map(([, c]) => [c.name, c])),
+    filterable,
     links: await resolveFilterableLinks(exec, ctx, tableId),
     decision,
+    computed,
   }
 }
 
@@ -438,9 +484,10 @@ export function buildSelect(
   // one paged forward would be worse than no total at all. It is captured here, before
   // the keyset predicate is appended.
   const countParams = [...params]
+  const lateral = planLateral(plan, ALIAS)
   const countSql = `SELECT count(*) AS n
   FROM (SELECT 1
-          FROM ${relation} AS ${quoteIdentifier(ALIAS)}
+          FROM ${relation} AS ${quoteIdentifier(ALIAS)}${lateral}
          WHERE ${clauses.join('\n   AND ')}
          LIMIT ${Math.min(options.countCeiling ?? COUNT_CEILING, COUNT_CEILING) + 1}) AS bounded;`
 
@@ -471,12 +518,18 @@ export function buildSelect(
   // The cursor is minted from the sort-key values of the last row, so every sort column
   // is read — even one a `select` left out, which the caller then drops.
   const sortOnly = sort.terms.map((t) => t.name).filter((name) => !plan.columns.includes(name))
+  // A computed field is read from the lateral join, under its own name.
+  const computedNames = new Set(plan.computed.map((c) => c.name))
   const projection = [...plan.columns, ...sortOnly]
-    .map((c) => `${prefix}${quoteIdentifier(c)}`)
+    .map((c) =>
+      computedNames.has(c)
+        ? `${quoteIdentifier(COMPUTED_ALIAS)}.${quoteIdentifier(c)}`
+        : `${prefix}${quoteIdentifier(c)}`,
+    )
     .join(', ')
 
   const sql = `SELECT ${projection}
-  FROM ${relation} AS ${quoteIdentifier(ALIAS)}
+  FROM ${relation} AS ${quoteIdentifier(ALIAS)}${lateral}
  WHERE ${clauses.join('\n   AND ')}
  ORDER BY ${sort.sql}
  LIMIT ${limit + 1};`

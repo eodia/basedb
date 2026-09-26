@@ -394,6 +394,7 @@ export const IMPORTABLE_KINDS: ReadonlySet<string> = new Set([
   'short_text',
   'long_text',
   'url',
+  'email',
   'number',
   'boolean',
   'date',
@@ -433,6 +434,16 @@ export function convert(
       // The server gives a bare domain its `https://`, and refuses what is no address.
       const text = String(cell).trim()
       return /\s/.test(text) ? fail('adresse web invalide') : { ok: true, value: text }
+    }
+
+    case 'email': {
+      // The server checks the address; a `mailto:` copied from a page is taken off here too.
+      const text = String(cell)
+        .trim()
+        .replace(/^mailto:/i, '')
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)
+        ? { ok: true, value: text }
+        : fail('adresse e-mail invalide')
     }
 
     case 'number': {

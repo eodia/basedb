@@ -19,10 +19,12 @@ import {
 import { LookIcon, type OptionLook } from '@/components/app/option-badge'
 import { ProjectMenu } from '@/components/app/project-menu'
 import { ProposalDialog } from '@/components/app/proposal-dialog'
+import { ExportTemplateDialog } from '@/components/app/template-export-dialog'
 import { TokenDialog } from '@/components/app/token-dialog'
 import { UserMenu } from '@/components/app/user-menu'
 import { WebhookDialog } from '@/components/app/webhook-dialog'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -62,9 +64,11 @@ import {
   Copy,
   Database,
   Ellipsis,
+  FileJson,
   FolderOpen,
   GitCompareArrows,
   Layers,
+  LayoutDashboard,
   type LucideIcon,
   PanelLeft,
   Pencil,
@@ -80,6 +84,7 @@ import {
   Upload,
   Users,
   Webhook,
+  Zap,
 } from 'lucide-react'
 import { createContext, useContext, useEffect, useState } from 'react'
 
@@ -100,7 +105,15 @@ import { createContext, useContext, useEffect, useState } from 'react'
 /** True inside the reduced column: every item shows its icon, and its label as a tooltip. */
 const Compact = createContext(false)
 
-export type Section = 'data' | 'structure' | 'history' | 'doc' | 'admin'
+export type Section =
+  | 'data'
+  | 'structure'
+  | 'history'
+  | 'interfaces'
+  | 'automations'
+  | 'integrations'
+  | 'doc'
+  | 'admin'
 
 /** What a base's menu asks of the page: each makes the base the current one first. */
 export type BaseIntent = 'open' | 'structure' | 'doc' | 'sql' | 'new-table'
@@ -148,6 +161,7 @@ type BaseDialog = {
     | 'aliases'
     | 'deleted-tables'
     | 'environments'
+    | 'template'
   readonly base: ProjectBase
 }
 
@@ -240,16 +254,7 @@ export function Sidebar({
 
   // Declared once and placed twice: under their group titles in full, one after the other
   // in the reduced column, which has no room for titles.
-  const sqlItem = (
-    <Item
-      icon={Terminal}
-      label="Nouvelle requête SQL"
-      muted
-      disabled={base === null}
-      onClick={() => base !== null && onBase(base.name, 'sql')}
-    />
-  )
-
+  // No « Nouvelle requête SQL » here: the tab bar's « + » opens one, and a base's menu too.
   const baseItems = (
     <>
       <Item
@@ -266,6 +271,21 @@ export function Sidebar({
         onClick={() => onSection('history')}
         disabled={base === null}
       />
+      <Item
+        icon={LayoutDashboard}
+        label="Interfaces"
+        active={section === 'interfaces'}
+        onClick={() => onSection('interfaces')}
+        disabled={base === null}
+      />
+      {base?.actions.includes('manage_schema') === true && (
+        <Item
+          icon={Zap}
+          label="Automatisations"
+          active={section === 'automations'}
+          onClick={() => onSection('automations')}
+        />
+      )}
     </>
   )
 
@@ -335,6 +355,11 @@ export function Sidebar({
         onClose={() => setDialog(null)}
         onChanged={(name) => onBaseChanged(name)}
       />
+      <ExportTemplateDialog
+        base={dialog.kind === 'template' ? dialog.base : null}
+        me={user}
+        onClose={() => setDialog(null)}
+      />
       <DeleteBaseDialog
         open={dialog.kind === 'delete'}
         base={dialog.base}
@@ -359,6 +384,11 @@ export function Sidebar({
     />
   )
 
+  // Documentation, integrations, people and rights: in the profile menu, bottom-left.
+  const entries = (
+    <WorkspaceEntries base={base} user={user} onSection={onSection} onAdmin={onAdmin} />
+  )
+
   if (collapsed) {
     return (
       <Compact.Provider value>
@@ -374,25 +404,18 @@ export function Sidebar({
               onOpen={(b, t) => onTable(b, t, 'open')}
               onNewBase={onNewBase}
             />
-            {sqlItem}
-            <Separator className="my-2" />
-            {baseItems}
           </nav>
+
+          {base !== null && (
+            <div className="px-2 pb-2">
+              <div className="space-y-1 rounded-xl border bg-card p-1 shadow-xs">{baseItems}</div>
+            </div>
+          )}
 
           <Separator />
 
-          <div className="space-y-1 p-2">
-            <BottomItems
-              section={section}
-              base={base}
-              user={user}
-              onSection={onSection}
-              onAdmin={onAdmin}
-            />
-          </div>
-
-          <div className="p-2 pt-0">
-            <UserMenu user={user} compact onSignedOut={onSignedOut} />
+          <div className="p-2">
+            <UserMenu user={user} compact onSignedOut={onSignedOut} entries={entries} />
           </div>
           {dialogs}
           {physicalDialog}
@@ -405,8 +428,10 @@ export function Sidebar({
     <aside className="flex w-64 shrink-0 flex-col border-r bg-sidebar">
       {projectMenu}
 
-      <div className="px-3 pb-3">
-        <div className="flex h-8 items-center gap-2 rounded-lg border bg-background px-2.5">
+      {/* The filter, and beside it the one way in for a new base: the list below needs no
+          heading of its own — what it lists is plain to see. */}
+      <div className="flex items-center gap-1.5 px-3 pb-3">
+        <div className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg border bg-background px-2.5">
           <Search className="size-3.5 shrink-0 text-muted-foreground" />
           <input
             value={filter}
@@ -426,30 +451,27 @@ export function Sidebar({
             </button>
           )}
         </div>
+        {canCreateBase && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="size-8 shrink-0"
+                onClick={onNewBase}
+                disabled={busy}
+                aria-label="Nouvelle base"
+              >
+                <Plus className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Nouvelle base dans ce projet</TooltipContent>
+          </Tooltip>
+        )}
       </div>
 
       <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-3 scroll-discret">
-        <Group
-          title={`Bases${project === null ? '' : ` · ${bases.length}`}`}
-          action={
-            canCreateBase && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={onNewBase}
-                    disabled={busy}
-                    aria-label="Nouvelle base"
-                  >
-                    <Plus className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Nouvelle base dans ce projet</TooltipContent>
-              </Tooltip>
-            )
-          }
-        >
+        <div className="space-y-0.5">
           {shown.map(({ base: b, tables }) => (
             <BaseNode
               key={b.id}
@@ -491,27 +513,26 @@ export function Sidebar({
                   : 'Aucune base visible dans ce projet.'}
             </p>
           )}
-        </Group>
-
-        <Group title="Interroger">{sqlItem}</Group>
-
-        <Group title={base === null ? 'Base' : `Base · ${base.label}`}>{baseItems}</Group>
+        </div>
       </nav>
+
+      {/* The open base's own screens, just above the profile: the column above lists the
+          bases, this card acts on the one that is open. */}
+      {base !== null && (
+        <div className="px-3 pb-3">
+          <Card className="p-1.5">
+            <p className="truncate px-2 pt-1 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Base · {base.label}
+            </p>
+            <div className="space-y-0.5">{baseItems}</div>
+          </Card>
+        </div>
+      )}
 
       <Separator />
 
-      <div className="space-y-0.5 p-3">
-        <BottomItems
-          section={section}
-          base={base}
-          user={user}
-          onSection={onSection}
-          onAdmin={onAdmin}
-        />
-      </div>
-
-      <div className="p-3 pt-0">
-        <UserMenu user={user} onSignedOut={onSignedOut} />
+      <div className="p-3">
+        <UserMenu user={user} onSignedOut={onSignedOut} entries={entries} />
       </div>
       {dialogs}
       {physicalDialog}
@@ -540,14 +561,17 @@ export function SidebarToggle() {
   )
 }
 
-function BottomItems({
-  section,
+/**
+ * What is not the data itself — the base's documentation and integrations, the people and
+ * their rights — as entries of the profile menu, bottom-left. The column is left to the
+ * bases and tables.
+ */
+function WorkspaceEntries({
   base,
   user,
   onSection,
   onAdmin,
 }: {
-  readonly section: Section
   readonly base: DescribedBase | null
   readonly user: Me
   readonly onSection: (section: Section) => void
@@ -555,28 +579,38 @@ function BottomItems({
 }) {
   return (
     <>
-      <Item
-        icon={BookOpen}
-        label="Documentation API et MCP"
-        active={section === 'doc'}
-        onClick={() => onSection('doc')}
-        disabled={base === null}
-      />
+      <DropdownMenuItem disabled={base === null} onSelect={() => onSection('doc')}>
+        <BookOpen className="size-4" />
+        Documentation API et MCP
+      </DropdownMenuItem>
+      {base?.actions.includes('manage_schema') === true && (
+        <DropdownMenuItem onSelect={() => onSection('integrations')}>
+          <Puzzle className="size-4" />
+          Intégrations
+        </DropdownMenuItem>
+      )}
       {/* People, groups and permissions: shown to those who administer, absent otherwise —
           a disabled entry would only advertise a door the reader will never open. */}
       {user.isAdmin && (
         <>
-          <Item
-            icon={Users}
-            label="Utilisateurs et groupes"
-            active={section === 'admin'}
-            onClick={() => onAdmin('users')}
-          />
-          <Item icon={Shield} label="Permissions" onClick={() => onAdmin('permissions')} />
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+            Administration
+          </DropdownMenuLabel>
+          <DropdownMenuItem onSelect={() => onAdmin('users')}>
+            <Users className="size-4" />
+            Utilisateurs et groupes
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => onAdmin('permissions')}>
+            <Shield className="size-4" />
+            Permissions
+          </DropdownMenuItem>
         </>
       )}
-      <Item icon={Puzzle} label="Intégrations" disabled />
-      <Item icon={Settings} label="Paramètres" disabled />
+      <DropdownMenuItem disabled>
+        <Settings className="size-4" />
+        Paramètres
+      </DropdownMenuItem>
     </>
   )
 }
@@ -697,6 +731,10 @@ function BaseMenuEntries({
           <M.Item onSelect={() => onDialog('environments')}>
             <GitCompareArrows className="size-4" />
             Comparer les environnements…
+          </M.Item>
+          <M.Item onSelect={() => onDialog('template')}>
+            <FileJson className="size-4" />
+            Enregistrer comme modèle…
           </M.Item>
           <M.Item
             onSelect={() => onDialog('delete')}
@@ -1027,28 +1065,6 @@ function BasesMenu({
   )
 }
 
-function Group({
-  title,
-  action,
-  children,
-}: {
-  readonly title: string
-  readonly action?: React.ReactNode
-  readonly children: React.ReactNode
-}) {
-  return (
-    <div>
-      <div className="flex h-7 items-center justify-between gap-2 px-2">
-        <span className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          {title}
-        </span>
-        {action}
-      </div>
-      <div className="space-y-0.5">{children}</div>
-    </div>
-  )
-}
-
 /**
  * A table in the tree, and what can be done to it.
  *
@@ -1181,7 +1197,6 @@ function Item({
   label,
   hint,
   active = false,
-  muted = false,
   disabled = false,
   onClick,
 }: {
@@ -1191,7 +1206,6 @@ function Item({
   readonly label: string
   readonly hint?: string
   readonly active?: boolean
-  readonly muted?: boolean
   readonly disabled?: boolean
   readonly onClick?: () => void
 }) {
@@ -1209,7 +1223,6 @@ function Item({
         'hover:bg-sidebar-accent disabled:pointer-events-none disabled:opacity-40',
         compact && 'h-9 justify-center px-0',
         active ? 'bg-sidebar-accent font-medium' : 'font-normal',
-        muted && 'text-muted-foreground',
       )}
     >
       <LookIcon

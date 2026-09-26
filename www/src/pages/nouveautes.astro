@@ -5,8 +5,41 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const entries = [
 	{
 		date: '26 septembre 2026',
-		title: 'Environnements, formulaires partagés, vues',
+		title: 'Automatisations, interfaces, formules, collaboration',
 		tag: 'Nouveau',
+		items: [
+			`<strong>Formules</strong> en français — <code>SI</code>, <code>ARRONDI</code>, <code>JOURS</code>… — devenues des colonnes générées par PostgreSQL ; <strong>recherches</strong>, <strong>cumuls</strong> et <strong>décomptes</strong> à travers les relations. <a href="${base}/fonctionnalites/tables-et-champs/">Les champs</a>`,
+			'<strong>Nouveaux types</strong> : relation multiple, personne, e-mail, numéro automatique, bouton ; et des formats choisis comme des types — monnaie, pourcentage, durée, note en étoiles, téléphone, code-barres.',
+			`<strong>Huit vues</strong> : la <strong>galerie</strong> et la <strong>liste</strong> rejoignent les six autres ; <strong>vues personnelles</strong> pour tout lecteur, vues verrouillées, ordre à la main, dépendances dans la chronologie. <a href="${base}/fonctionnalites/vues/">Les vues</a>`,
+			'<strong>La grille</strong> : recherche rapide, groupement, résumé par colonne sur tout le filtre, couleurs par règles, hauteur des lignes.',
+			`<strong>Vues partagées</strong> en lecture seule, intégrables à un autre site ; un calendrier devient un <strong>flux iCalendar</strong> pour Google Agenda, Outlook ou Apple Calendar. <a href="${base}/fonctionnalites/vues-partagees/">Le partage</a>`,
+			`<strong>Collaboration</strong> : commentaires et mentions, notifications, écritures des autres en temps réel, présence sur la table et sur la ligne. <a href="${base}/fonctionnalites/collaboration/">Travailler à plusieurs</a>`,
+			'<strong>Ctrl+Z</strong> annule la dernière écriture — une cellule, une carte déplacée, un import entier — et refuse plutôt que d’écraser ce qu’un autre a changé depuis.',
+			`<strong>Automatisations</strong> : quand une ligne est créée ou modifiée, à heure fixe ou d’un clic sur un bouton — modifier, créer, prévenir, appeler un webhook, écrire sur Slack. <a href="${base}/fonctionnalites/automatisations/">Automatiser</a>`,
+			`<strong>Interfaces</strong> : des tableaux de bord — chiffres, graphiques, listes, textes — lus avec les droits de chacun. <a href="${base}/fonctionnalites/interfaces/">Les interfaces</a>`,
+			`<strong>Intégrations</strong> : un canal Slack, et des <strong>tables synchronisées</strong> depuis un CSV en ligne, un agenda ou la vue d’un autre basedb. <a href="${base}/integrations/synchronisation/">Les intégrations</a>`,
+			`<strong>Modèles de base</strong> : une galerie de dix modèles, une base décrite en une phrase à l’IA, et toute base enregistrable comme modèle. <a href="${base}/modeles/">La galerie</a>`,
+			'<strong>Droits</strong> : l’écran Structure passe en consultation seule pour qui n’a pas le niveau Gestion.',
+			'<strong>Nouvelle identité</strong> : un logo, une palette, et un écran de connexion refait.',
+		],
+	},
+	{
+		date: '26 septembre 2026',
+		title: 'Une interface plus simple',
+		items: [
+			'<strong>La barre latérale</strong> ne liste plus que les bases et leurs tables ; les écrans de la base ouverte — Structure, Historique, Interfaces, Automatisations — sont réunis dans un bloc, juste au-dessus du profil.',
+			'<strong>Le menu du profil</strong> accueille ce qui n’est pas la donnée : la documentation API et MCP, les intégrations, les utilisateurs et les permissions.',
+			'<strong>Une requête SQL</strong> s’ouvre par le « + » de la barre d’onglets ou le menu de la base, sans doublon dans la barre latérale.',
+			'<strong>Nouvelle base</strong> propose les modèles et l’IA dès le dialogue ; la base de démonstration passe par la même galerie.',
+			'<strong>L’écran ne propose plus ce qui serait refusé</strong> : pas de bouton de structure sans Gestion, pas de « Supprimer » sans droit de supprimer ; et un lecteur crée ses propres vues au lieu de buter sur un message.',
+			'<strong>Les colonnes système</strong> sont rangées sous « Informations système » plutôt que proposées sur chaque table.',
+			'<strong>La fiche d’une ligne</strong> gagne ses commentaires, un bouton pour écrire ou appeler, et une note qui se règle d’un clic.',
+			'<strong>La connexion</strong> abandonne son fond animé en 3D pour un écran léger, qui respecte la préférence « moins de mouvement ».',
+		],
+	},
+	{
+		date: '26 septembre 2026',
+		title: 'Environnements, formulaires partagés, vues',
 		items: [
 			'<strong>Environnements</strong> : production, recette, développement pour une même base ; comparaison côte à côte, plan de migration, synchronisation des lignes.',
 			'<strong>Historique des structures</strong> : chaque création ou modification de table et de champ, capturée par déclencheur sur le catalogue.',
@@ -171,6 +204,14 @@ const entries = [
 	}
 	ul :global(strong) {
 		color: var(--bd-text);
+	}
+	ul :global(a) {
+		color: var(--bd-primary);
+		font-weight: 600;
+		white-space: nowrap;
+	}
+	ul :global(a)::after {
+		content: ' →';
 	}
 	@media (max-width: 720px) {
 		.timeline > li {

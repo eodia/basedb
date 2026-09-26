@@ -5,6 +5,7 @@ import { BasedbError } from '../errors/index.js'
 import { type Action, SYSTEM_COLUMNS, decide } from '../rbac/decide.js'
 import { loadFields, loadGrants, loadTarget } from '../rbac/loader.js'
 import type { Executor, Pools } from '../runtime/pool.js'
+import { refuseSynced } from '../sync/guard.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { type ShapedField, shapeValues, shapedFields } from './values.js'
 
@@ -30,6 +31,8 @@ export interface DeleteRecordOptions {
 export interface UpdatedRecord {
   readonly row: Record<string, unknown>
   readonly sql: string
+  /** The write's transaction — what an undo names (chapter 16 §4). */
+  readonly xact: string
   /** The readable `file` and `image` columns of `row`, whose entries a reader links to. */
   readonly fileColumns: readonly string[]
 }
@@ -63,6 +66,7 @@ async function prepare(
   if (decision.verdict === 'FORBIDDEN') {
     throw new BasedbError('ADMIN_REQUIRED', { details: { table: tableId, action } })
   }
+  await refuseSynced(exec, ctx, tableId)
 
   const fields = await loadFields(exec, tableId)
   const names = new Map([...fields].map(([id, f]) => [id, f.name]))
@@ -81,7 +85,10 @@ async function prepare(
   return {
     relation: qualify(location[0].schema_name, location[0].table_name),
     names,
-    readable,
+    // RETURNING names columns: a field computed at read time has none.
+    readable: readable.filter(
+      (n) => [...fields.values()].find((f) => f.name === n)?.stored !== false,
+    ),
     writable: new Set(
       [...names].filter(([id]) => decision.writableFields.has(id)).map(([, n]) => n),
     ),
@@ -158,9 +165,10 @@ RETURNING ${returning};`,
   )
 
   // With the actor, so that the history names who changed the row (chapter 07 §2.1).
-  const rows = await withTransaction(pools, 'data', ctx, (exec) =>
-    exec.query(plan.sql, plan.params, 'update'),
-  )
+  const { rows, xact } = await withTransaction(pools, 'data', ctx, async (exec) => ({
+    rows: await exec.query(plan.sql, plan.params, 'update'),
+    xact: await currentXact(exec),
+  }))
 
   const row = rows[0]
   // A missing row and an invisible row return the same code: the caller does not learn
@@ -168,7 +176,7 @@ RETURNING ${returning};`,
   if (row === undefined) {
     throw new BasedbError('RESOURCE_NOT_FOUND', { details: { record: options.recordId } })
   }
-  return { row, sql: plan.sql, fileColumns: plan.fileColumns }
+  return { row, sql: plan.sql, fileColumns: plan.fileColumns, xact }
 }
 
 /**
@@ -182,7 +190,7 @@ export async function deleteRecord(
   pools: Pools,
   ctx: RequestContext,
   options: DeleteRecordOptions,
-): Promise<{ readonly deleted: string; readonly sql: string }> {
+): Promise<{ readonly deleted: string; readonly sql: string; readonly xact: string }> {
   const plan = await withTransaction(
     pools,
     'catalog',
@@ -198,13 +206,25 @@ export async function deleteRecord(
   )
 
   // With the actor, so that the history names who deleted the row (chapter 07 §2.1).
-  const rows = await withTransaction(pools, 'data', ctx, (exec) =>
-    exec.query<{ _id: string }>(plan.sql, plan.params, 'delete'),
-  )
+  const { rows, xact } = await withTransaction(pools, 'data', ctx, async (exec) => ({
+    rows: await exec.query<{ _id: string }>(plan.sql, plan.params, 'delete'),
+    xact: await currentXact(exec),
+  }))
 
   const row = rows[0]
   if (row === undefined) {
     throw new BasedbError('RESOURCE_NOT_FOUND', { details: { record: options.recordId } })
   }
-  return { deleted: row._id, sql: plan.sql }
+  return { deleted: row._id, sql: plan.sql, xact }
+}
+
+/**
+ * The identity of the transaction under way — the `xact_id` its writes are captured
+ * with (chapter 07 §3.1), which an undo names (chapter 16 §4).
+ */
+export async function currentXact(exec: Executor): Promise<string> {
+  const [row] = await exec.query<{ xact: string }>(
+    'SELECT pg_catalog.pg_current_xact_id()::text AS xact',
+  )
+  return row?.xact ?? ''
 }

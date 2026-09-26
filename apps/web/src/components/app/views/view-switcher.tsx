@@ -44,11 +44,14 @@ import {
   Copy,
   Ellipsis,
   GripVertical,
+  Lock,
+  LockOpen,
   Pencil,
   Settings2,
   Share2,
   Table2,
   Trash2,
+  UserRound,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -75,6 +78,7 @@ export function ViewSwitcher({
   onDelete,
   onReorder,
   onShare,
+  onLock,
 }: {
   readonly views: readonly SavedView[]
   /** `null` for the table's own grid. */
@@ -90,8 +94,10 @@ export function ViewSwitcher({
   readonly onDuplicate: (view: SavedView) => void
   readonly onDelete: (view: SavedView) => Promise<void>
   readonly onReorder: (ids: readonly string[]) => Promise<void>
-  /** Shares a form or a survey (chapter 15). */
+  /** Shares a collaborative view: a form to answer, any other to read (chapter 15). */
   readonly onShare?: (view: SavedView) => void
+  /** Locks or unlocks a collaborative view. */
+  readonly onLock?: (view: SavedView, locked: boolean) => void
 }) {
   const [open, setOpen] = useState(false)
   const [deleting, setDeleting] = useState<SavedView | null>(null)
@@ -104,8 +110,11 @@ export function ViewSwitcher({
     setPending(null)
   }, [signature])
 
+  // The collaborative views, in the shared order; the reader's own, apart, after them.
+  const shared = views.filter((v) => !v.personal)
+  const mine = views.filter((v) => v.personal)
   const ordered =
-    pending === null ? views : pending.flatMap((id) => views.filter((v) => v.id === id))
+    pending === null ? shared : pending.flatMap((id) => shared.filter((v) => v.id === id))
   const active = views.find((v) => v.id === activeId) ?? null
   const Icon = active === null ? Table2 : KIND_INFO[active.kind].icon
 
@@ -171,6 +180,12 @@ export function ViewSwitcher({
                     view={view}
                     active={view.id === activeId}
                     canManage={canManage}
+                    sortable={canManage}
+                    onLock={
+                      onLock === undefined || !canManage
+                        ? undefined
+                        : (locked) => onLock(view, locked)
+                    }
                     onSelect={() => pick(view.id)}
                     onConfigure={() => {
                       setOpen(false)
@@ -186,7 +201,7 @@ export function ViewSwitcher({
                       setDeleting(view)
                     }}
                     onShare={
-                      onShare !== undefined && (view.kind === 'form' || view.kind === 'survey')
+                      onShare !== undefined && canManage
                         ? () => {
                             setOpen(false)
                             onShare(view)
@@ -199,11 +214,45 @@ export function ViewSwitcher({
             </SortableContext>
           </DndContext>
 
+          {mine.length > 0 && (
+            <>
+              <div className="my-1 border-t" />
+              <p className="flex items-center gap-1.5 px-2 pt-1 pb-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <UserRound className="size-3" />
+                Mes vues
+              </p>
+              {mine.map((view) => (
+                <SortableView
+                  key={view.id}
+                  view={view}
+                  active={view.id === activeId}
+                  // Its owner's: configured, renamed, deleted by them — never shared.
+                  canManage
+                  sortable={false}
+                  onSelect={() => pick(view.id)}
+                  onConfigure={() => {
+                    setOpen(false)
+                    onConfigure(view)
+                  }}
+                  onRename={(label) => onRename(view, label)}
+                  onDuplicate={() => {
+                    setOpen(false)
+                    onDuplicate(view)
+                  }}
+                  onDelete={() => {
+                    setOpen(false)
+                    setDeleting(view)
+                  }}
+                />
+              ))}
+            </>
+          )}
+
           <div className="my-1 border-t" />
-          {canManage ? (
+          {
             <div className="p-1">
               <p className="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Créer une vue
+                {canManage ? 'Créer une vue' : 'Créer une vue personnelle'}
               </p>
               <div className="grid grid-cols-3 gap-1">
                 {VIEW_KINDS.map((kind) => {
@@ -226,11 +275,7 @@ export function ViewSwitcher({
                 })}
               </div>
             </div>
-          ) : (
-            <p className="px-2 py-1.5 text-xs text-muted-foreground">
-              Les vues sont créées par ceux qui construisent la base.
-            </p>
-          )}
+          }
         </PopoverContent>
       </Popover>
 
@@ -239,8 +284,9 @@ export function ViewSwitcher({
           <DialogHeader>
             <DialogTitle>Supprimer la vue « {deleting?.label} » ?</DialogTitle>
             <DialogDescription>
-              Elle disparaît pour tous ceux qui lisent la table. Les lignes, elles, ne sont pas
-              touchées.
+              {deleting?.personal === true
+                ? 'Elle disparaît de vos vues. Les lignes, elles, ne sont pas touchées.'
+                : 'Elle disparaît pour tous ceux qui lisent la table. Les lignes, elles, ne sont pas touchées.'}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -318,27 +364,34 @@ function SortableView({
   view,
   active,
   canManage,
+  sortable,
   onSelect,
   onConfigure,
   onRename,
   onDuplicate,
   onDelete,
   onShare,
+  onLock,
 }: {
   readonly view: SavedView
   readonly active: boolean
   readonly canManage: boolean
+  /** Its place in the shared order can be dragged — never a personal view's. */
+  readonly sortable: boolean
   readonly onSelect: () => void
   readonly onConfigure: () => void
   readonly onRename: (label: string) => Promise<string | null>
   readonly onDuplicate: () => void
   readonly onDelete: () => void
   readonly onShare?: () => void
+  readonly onLock?: (locked: boolean) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: view.id,
-    disabled: !canManage,
+    disabled: !sortable,
   })
+  // Locked, a view is changed by nobody until someone unlocks it.
+  const editable = canManage && !view.locked
   const [renaming, setRenaming] = useState(false)
   const [text, setText] = useState(view.label)
   const [error, setError] = useState<string | null>(null)
@@ -390,14 +443,21 @@ function SortableView({
       ) : (
         <ViewRow
           icon={<Icon className="size-4 shrink-0 text-muted-foreground" />}
-          label={view.label}
+          label={
+            <span className="flex items-center gap-1.5">
+              <span className="truncate">{view.label}</span>
+              {view.locked && (
+                <Lock className="size-3 shrink-0 text-muted-foreground" aria-label="Verrouillée" />
+              )}
+            </span>
+          }
           sublabel={
             view.filter_hidden ? 'Filtre sur un champ qui ne vous est pas ouvert' : undefined
           }
           active={active}
           onSelect={onSelect}
           handle={
-            canManage ? (
+            sortable ? (
               <button
                 type="button"
                 {...attributes}
@@ -421,12 +481,13 @@ function SortableView({
                     <Ellipsis className="size-4" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onSelect={onConfigure}>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuItem onSelect={onConfigure} disabled={!editable}>
                     <Settings2 className="size-4" />
                     Configurer…
                   </DropdownMenuItem>
                   <DropdownMenuItem
+                    disabled={!editable}
                     onSelect={() => {
                       setText(view.label)
                       setRenaming(true)
@@ -445,9 +506,16 @@ function SortableView({
                       Partager…
                     </DropdownMenuItem>
                   )}
+                  {onLock !== undefined && (
+                    <DropdownMenuItem onSelect={() => onLock(!view.locked)}>
+                      {view.locked ? <LockOpen className="size-4" /> : <Lock className="size-4" />}
+                      {view.locked ? 'Déverrouiller la vue' : 'Verrouiller la vue'}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onSelect={onDelete}
+                    disabled={!editable}
                     className="text-destructive focus:text-destructive"
                   >
                     <Trash2 className="size-4" />

@@ -21,7 +21,8 @@ les descriptions (`COMMENT ON`).
 
 ## Dans l’interface
 
-Menu **⋯** de la base → **Nouvelle requête SQL** : une console avec coloration et complétion,
+Le **+** de la barre d’onglets, ou menu **⋯** de la base → **Nouvelle requête SQL** : une
+console avec coloration et complétion,
 dont le résultat s’affiche dans la même grille que vos tables.
 
 ![Une requête dans la console SQL](../../../assets/screens/requete-sql.png)

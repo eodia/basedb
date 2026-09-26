@@ -1,5 +1,7 @@
 import {
+  EMAIL_PATTERN,
   type FieldKind,
+  MAX_EMAIL_CHARS,
   MAX_FILES_PER_VALUE,
   MAX_URL_CHARS,
   URL_PATTERN,
@@ -45,7 +47,14 @@ export function shapedFields(
 ): Map<string, ShapedField> {
   const shaped = new Map<string, ShapedField>()
   for (const [id, field] of fields) {
-    if (field.kind === 'multi_select' || field.kind === 'url' || isFileKind(field.kind)) {
+    if (
+      field.kind === 'multi_select' ||
+      field.kind === 'multi_link' ||
+      field.kind === 'url' ||
+      field.kind === 'email' ||
+      field.kind === 'user' ||
+      isFileKind(field.kind)
+    ) {
       shaped.set(field.name, { id, kind: field.kind })
     }
   }
@@ -73,9 +82,15 @@ export async function shapeValues(
     out[name] =
       field.kind === 'multi_select'
         ? shapeChoices(name, value)
-        : field.kind === 'url'
-          ? shapeUrl(name, value)
-          : await shapeFiles(exec, name, field, value)
+        : field.kind === 'multi_link'
+          ? shapeMultiLink(name, value)
+          : field.kind === 'url'
+            ? shapeUrl(name, value)
+            : field.kind === 'email'
+              ? shapeEmail(name, value)
+              : field.kind === 'user'
+                ? await shapeUser(exec, name, field, value)
+                : await shapeFiles(exec, name, field, value)
   }
   return out ?? values
 }
@@ -103,6 +118,30 @@ export function shapeChoices(field: string, value: unknown): readonly string[] |
 }
 
 /**
+ * A multi-link — chapter 04 §4 bis: a list of identifiers or of `{ id }` objects, so that a
+ * row read can be written back as it came; a lone identifier is a list of one. Repeats
+ * are dropped in first-seen order, empty is `NULL`. Whether each row exists is the
+ * trigger's to say — the one rule direct SQL is held to as well.
+ */
+export function shapeMultiLink(field: string, value: unknown): readonly string[] | null {
+  if (value === null || value === undefined || value === '') return null
+  const items = Array.isArray(value) ? value : [value]
+  const seen = new Set<string>()
+  for (const item of items) {
+    const id =
+      typeof item === 'string'
+        ? item
+        : typeof item === 'object' && item !== null && 'id' in item
+          ? (item as { id: unknown }).id
+          : undefined
+    // A masked element is a read of a table one may not see: it cannot be written back.
+    if (typeof id !== 'string' || !UUID.test(id)) throw invalid(field, 'identifiant_de_ligne')
+    seen.add(id.toLowerCase())
+  }
+  return seen.size === 0 ? null : [...seen]
+}
+
+/**
  * An address: trimmed, empty is `NULL`, a bare domain — `exemple.fr/tarifs` — gets the
  * `https://` a person means when they type one, and an e-mail address its `mailto:`.
  * Anything else that is not an `http(s)` or `mailto:` address is refused by name, before
@@ -124,6 +163,53 @@ export function shapeUrl(field: string, value: unknown): string | null {
     throw invalid(field, 'adresse_url')
   }
   return withScheme
+}
+
+/** An e-mail address: trimmed, empty is `NULL`, a `mailto:` pasted with it dropped. */
+export function shapeEmail(field: string, value: unknown): string | null {
+  if (value === null || value === undefined) return null
+  if (typeof value !== 'string') throw invalid(field, 'adresse_email')
+  const text = value.trim().replace(/^mailto:/i, '')
+  if (text === '') return null
+  if (text.length > MAX_EMAIL_CHARS || !EMAIL_PATTERN.test(text)) {
+    throw invalid(field, 'adresse_email')
+  }
+  return text
+}
+
+/**
+ * A person: the identifier of a user of the SAME tenant as the table, not deleted — the
+ * column has no foreign key across `_basedb` (A9), so this is the check that stands for
+ * it. A disabled account may still be assigned: it names someone who was there. An
+ * identifier from elsewhere reads as unknown, like a file of another field.
+ */
+async function shapeUser(
+  exec: Executor,
+  name: string,
+  field: ShapedField,
+  value: unknown,
+): Promise<string | null> {
+  if (value === null || value === undefined || value === '') return null
+  const id =
+    typeof value === 'string'
+      ? value
+      : typeof value === 'object' &&
+          value !== null &&
+          typeof (value as { id?: unknown }).id === 'string'
+        ? (value as { id: string }).id
+        : null
+  if (id === null || !UUID.test(id)) throw invalid(name, 'personne_inconnue')
+  const rows = await exec.query<{ id: string }>(
+    `SELECT u.id::text
+       FROM _basedb.app_user u
+       JOIN _basedb.field f ON f.id = $2
+       JOIN _basedb.base b  ON b.id = f.base_id
+      WHERE u.id = $1::uuid AND u.tenant_id = b.tenant_id
+        AND u.deleted_at IS NULL AND (NOT u.is_system OR u.is_instance_admin)`,
+    [id, field.id],
+  )
+  if (rows.length === 0) throw invalid(name, 'personne_inconnue')
+  return rows[0]?.id ?? null
 }
 
 /**

@@ -593,6 +593,7 @@ const PLAIN_KINDS = [
   'date',
   'datetime',
   'url',
+  'email',
 ] as const
 const FIELD_KINDS = [...PLAIN_KINDS, 'select', 'multi_select', 'link'] as const
 

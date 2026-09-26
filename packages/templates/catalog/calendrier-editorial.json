@@ -1,0 +1,307 @@
+{
+  "format": 1,
+  "key": "calendrier-editorial",
+  "label": "Calendrier éditorial",
+  "summary": "Articles, posts et newsletters planifiés sur un calendrier ; l'IA propose accroches et mots-clés.",
+  "description": "Pour une équipe marketing ou une rédaction. Chaque contenu avance de l'idée à la publication, se place sur le calendrier des parutions et appartient à une campagne. L'IA propose une accroche et des mots-clés à partir du brief, et un formulaire permet à toute l'entreprise de suggérer un sujet.",
+  "category": "Marketing",
+  "icon": "megaphone",
+  "color": "#f97316",
+  "tags": ["IA", "Calendrier", "Kanban", "Formulaire"],
+  "base": {
+    "label": "Calendrier éditorial",
+    "description": "Les contenus à produire et à publier, par canal et par campagne."
+  },
+  "tables": [
+    {
+      "key": "contenus",
+      "label": "Contenus",
+      "icon": "file-text",
+      "color": "#f97316",
+      "fields": [
+        { "label": "Titre", "kind": "short_text", "required": true },
+        {
+          "label": "Format",
+          "kind": "select",
+          "options": [
+            { "label": "Article", "color": "#3b82f6" },
+            { "label": "Newsletter", "color": "#8b5cf6" },
+            { "label": "Post LinkedIn", "color": "#0ea5e9" },
+            { "label": "Vidéo", "color": "#ef4444" },
+            { "label": "Podcast", "color": "#10b981" }
+          ]
+        },
+        {
+          "label": "Statut",
+          "kind": "select",
+          "options": [
+            { "label": "Idée", "color": "#94a3b8" },
+            { "label": "Rédaction", "color": "#3b82f6" },
+            { "label": "Relecture", "color": "#f59e0b" },
+            { "label": "Programmé", "color": "#8b5cf6" },
+            { "label": "Publié", "color": "#10b981" }
+          ]
+        },
+        { "label": "Publication", "kind": "date" },
+        {
+          "label": "Canaux",
+          "kind": "multi_select",
+          "options": ["Blog", "LinkedIn", "Instagram", "Newsletter", "YouTube"]
+        },
+        {
+          "label": "Brief",
+          "kind": "long_text",
+          "description": "Le sujet, la cible, le message à faire passer."
+        },
+        { "label": "Proposé par", "kind": "email" },
+        {
+          "label": "Accroche",
+          "kind": "short_text",
+          "ai": {
+            "prompt": "Écris une accroche de 15 mots au plus, percutante et sans point d'exclamation, pour ce contenu ({{Format}}) intitulé « {{Titre}} ».\nBrief : {{Brief}}"
+          }
+        },
+        {
+          "label": "Mots-clés",
+          "kind": "short_text",
+          "ai": {
+            "prompt": "Donne cinq mots-clés de référencement pour ce contenu, séparés par des virgules.\n{{Titre}} — {{Brief}}"
+          }
+        }
+      ]
+    },
+    {
+      "key": "campagnes",
+      "label": "Campagnes",
+      "icon": "target",
+      "color": "#8b5cf6",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        { "label": "Début", "kind": "date" },
+        { "label": "Fin", "kind": "date" },
+        { "label": "Objectif", "kind": "long_text" },
+        {
+          "label": "Contenus",
+          "kind": "count",
+          "rollup": { "via": "Campagne", "table": "contenus" }
+        }
+      ]
+    },
+    {
+      "key": "auteurs",
+      "label": "Auteurs",
+      "icon": "users",
+      "color": "#14b8a6",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        {
+          "label": "Rôle",
+          "kind": "select",
+          "options": ["Rédaction", "Graphisme", "Vidéo", "Invité"]
+        },
+        { "label": "E-mail", "kind": "email" },
+        { "label": "Contenus", "kind": "count", "rollup": { "via": "Auteur", "table": "contenus" } }
+      ]
+    }
+  ],
+  "links": [
+    { "from": "contenus", "label": "Campagne", "to": "campagnes" },
+    { "from": "contenus", "label": "Auteur", "to": "auteurs" }
+  ],
+  "rows": {
+    "auteurs": [
+      { "$key": "lea", "Nom": "Léa Dubois", "Rôle": "Rédaction", "E-mail": "lea@exemple.fr" },
+      { "$key": "sami", "Nom": "Sami Haddad", "Rôle": "Vidéo", "E-mail": "sami@exemple.fr" },
+      { "$key": "ines", "Nom": "Inès Morel", "Rôle": "Graphisme", "E-mail": "ines@exemple.fr" }
+    ],
+    "campagnes": [
+      {
+        "$key": "rentree",
+        "Nom": "Rentrée : nouvelle offre",
+        "Début": "-10d",
+        "Fin": "+20d",
+        "Objectif": "Faire connaître la nouvelle offre aux clients existants et générer 50 demandes de démonstration."
+      },
+      {
+        "$key": "salon",
+        "Nom": "Salon de novembre",
+        "Début": "+25d",
+        "Fin": "+50d",
+        "Objectif": "Obtenir des rendez-vous sur le stand avant l'ouverture du salon."
+      }
+    ],
+    "contenus": [
+      {
+        "Titre": "Cinq façons de gagner une heure par jour",
+        "Format": "Article",
+        "Statut": "Publié",
+        "Publication": "-6d",
+        "Canaux": ["Blog", "LinkedIn"],
+        "Brief": "Article pratique pour les responsables d'équipe : automatiser les tâches répétitives, avec des exemples concrets.",
+        "Campagne": "@rentree",
+        "Auteur": "@lea",
+        "Accroche": "Une heure de plus chaque jour, sans travailler plus vite.",
+        "Mots-clés": "productivité, automatisation, équipe, organisation, temps"
+      },
+      {
+        "Titre": "Découvrez la nouvelle offre en 90 secondes",
+        "Format": "Vidéo",
+        "Statut": "Relecture",
+        "Publication": "+2d",
+        "Canaux": ["YouTube", "LinkedIn"],
+        "Brief": "Vidéo courte qui montre les trois nouveautés, avec une démonstration à l'écran.",
+        "Campagne": "@rentree",
+        "Auteur": "@sami",
+        "Accroche": "Trois nouveautés, quatre-vingt-dix secondes, zéro jargon.",
+        "Mots-clés": "nouvelle offre, démonstration, nouveautés, vidéo, logiciel"
+      },
+      {
+        "Titre": "Newsletter de rentrée",
+        "Format": "Newsletter",
+        "Statut": "Programmé",
+        "Publication": "+5d",
+        "Canaux": ["Newsletter"],
+        "Brief": "Récapitulatif des nouveautés, lien vers la vidéo, invitation à réserver une démonstration.",
+        "Campagne": "@rentree",
+        "Auteur": "@lea"
+      },
+      {
+        "Titre": "Témoignage client : la clinique des Tilleuls",
+        "Format": "Article",
+        "Statut": "Rédaction",
+        "Publication": "+12d",
+        "Canaux": ["Blog"],
+        "Brief": "Interview de la directrice : avant, pendant et après le déploiement ; chiffres clés.",
+        "Campagne": "@rentree",
+        "Auteur": "@lea"
+      },
+      {
+        "Titre": "Coulisses de notre stand",
+        "Format": "Post LinkedIn",
+        "Statut": "Idée",
+        "Publication": "+30d",
+        "Canaux": ["LinkedIn", "Instagram"],
+        "Brief": "Photos de la préparation du stand et présentation de l'équipe présente au salon.",
+        "Campagne": "@salon",
+        "Auteur": "@ines"
+      },
+      {
+        "Titre": "Épisode 4 : bien choisir ses outils",
+        "Format": "Podcast",
+        "Statut": "Idée",
+        "Publication": "+40d",
+        "Canaux": ["Blog"],
+        "Brief": "Discussion avec un consultant sur les critères de choix d'un logiciel métier.",
+        "Auteur": "@sami"
+      }
+    ]
+  },
+  "views": [
+    {
+      "table": "contenus",
+      "label": "Calendrier",
+      "kind": "calendar",
+      "spec": {
+        "date_field": "Publication",
+        "color_field": "Format",
+        "card_fields": ["Statut", "Canaux"]
+      }
+    },
+    {
+      "table": "contenus",
+      "label": "Production",
+      "kind": "kanban",
+      "spec": {
+        "group_by": "Statut",
+        "card_fields": ["Format", "Publication", "Auteur"],
+        "group_order": ["Idée", "Rédaction", "Relecture", "Programmé", "Publié"]
+      }
+    },
+    {
+      "table": "contenus",
+      "label": "Par format",
+      "kind": "list",
+      "spec": { "group_by": "Format", "card_fields": ["Statut", "Publication", "Accroche"] }
+    },
+    {
+      "table": "contenus",
+      "label": "Proposer un sujet",
+      "kind": "form",
+      "spec": {
+        "title": "Une idée de contenu ?",
+        "description": "Proposez un sujet à l'équipe marketing : article, vidéo, témoignage…",
+        "fields": [
+          { "field": "Titre", "required": true, "label": "Votre idée en une phrase" },
+          { "field": "Format" },
+          { "field": "Brief", "required": true, "label": "Pourquoi ce sujet, pour qui ?" },
+          { "field": "Proposé par", "required": true, "label": "Votre e-mail" }
+        ],
+        "submit_label": "Proposer",
+        "success_message": "Merci ! L'équipe marketing étudiera votre idée."
+      }
+    },
+    {
+      "table": "campagnes",
+      "label": "Chronologie",
+      "kind": "timeline",
+      "spec": { "start_field": "Début", "end_field": "Fin", "scale": "week" }
+    }
+  ],
+  "dashboards": [
+    {
+      "label": "Production",
+      "blocks": [
+        {
+          "kind": "number",
+          "title": "À publier ce mois-ci",
+          "table": "contenus",
+          "aggregate": "count",
+          "filter": "[Statut] ne \"Publié\""
+        },
+        {
+          "kind": "number",
+          "title": "Publiés",
+          "table": "contenus",
+          "aggregate": "count",
+          "filter": "[Statut] eq \"Publié\""
+        },
+        { "kind": "number", "title": "Campagnes", "table": "campagnes", "aggregate": "count" },
+        {
+          "kind": "chart",
+          "title": "Par format",
+          "table": "contenus",
+          "group_by": "Format",
+          "style": "pie"
+        },
+        {
+          "kind": "chart",
+          "title": "Par statut",
+          "table": "contenus",
+          "group_by": "Statut",
+          "style": "bar",
+          "width": 2
+        },
+        {
+          "kind": "list",
+          "title": "Prochaines parutions",
+          "table": "contenus",
+          "fields": ["Titre", "Format", "Publication"],
+          "filter": "[Statut] ne \"Publié\"",
+          "sort": "Publication",
+          "limit": 6,
+          "width": 3
+        }
+      ]
+    }
+  ],
+  "automations": [
+    {
+      "label": "Contenu publié",
+      "trigger": { "kind": "record_updated", "table": "contenus", "fields": ["Statut"] },
+      "condition": "[Statut] eq \"Publié\"",
+      "actions": [
+        { "kind": "notify", "users": ["$moi"], "message": "Publié : {{Titre}} ({{Format}})" }
+      ]
+    }
+  ]
+}

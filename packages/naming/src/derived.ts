@@ -223,3 +223,46 @@ export function linkColumnName(targetTable: string): string {
 export function linkColumnNameFromLabel(fieldSlug: string): string {
   return assembleDerivedName([{ variable: fieldSlug }, { fixed: '_id' }])
 }
+
+/**
+ * Column of a multi-link field: `<target_table>_ids` — chapter 04 §4 bis. The plural
+ * mark is the only difference with `linkColumnName`: a column that holds several rows
+ * says so, and a second relation to the same table then falls back on its label.
+ */
+export function multiLinkColumnName(targetTable: string): string {
+  return assembleDerivedName([{ variable: targetTable }, { fixed: '_ids' }])
+}
+
+/** Fallback multi-link column name: the slug of the field's label, then `_ids`. */
+export function multiLinkColumnNameFromLabel(fieldSlug: string): string {
+  return assembleDerivedName([{ variable: fieldSlug }, { fixed: '_ids' }])
+}
+
+/**
+ * The trigger that holds a multi-link's list on its source table: `tg_<table>__ml_<column>`
+ * (chapter 07 §1.2). One per field, since one per table could not say which column.
+ */
+export function multiLinkTriggerName(table: string, column: string): string {
+  return assembleDerivedName([
+    { fixed: 'tg_' },
+    { variable: table },
+    { fixed: '__ml_' },
+    { variable: column },
+  ])
+}
+
+/**
+ * The trigger on the TARGET table that answers the deletion of a row a multi-link cites:
+ * `tg_<target>__mlt_<source>_<column>`. Named after both, since a table may be the target
+ * of several multi-links, from several tables.
+ */
+export function multiLinkTargetTriggerName(target: string, source: string, column: string): string {
+  return assembleDerivedName([
+    { fixed: 'tg_' },
+    { variable: target },
+    { fixed: '__mlt_' },
+    { variable: source },
+    { fixed: '_' },
+    { variable: column },
+  ])
+}

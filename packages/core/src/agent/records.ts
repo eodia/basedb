@@ -3,7 +3,7 @@ import { createRecord } from '../records/create.js'
 import { OPERATORS, type Operator } from '../records/filter.js'
 import { listRecords } from '../records/list.js'
 import { updateRecord } from '../records/update.js'
-import { shapeUrl } from '../records/values.js'
+import { shapeEmail, shapeUrl } from '../records/values.js'
 import type { Pools } from '../runtime/pool.js'
 import type { RequestContext } from '../tx/context.js'
 import type { AgentNotice } from './describe.js'
@@ -564,6 +564,12 @@ function coerce(view: AgentView, table: AgentTable, field: AgentField, value: un
       // The kernel's own shaping — a bare domain gets its `https://` — and its refusal.
       try {
         return shapeUrl(field.name, value)
+      } catch {
+        return invalid()
+      }
+    case 'email':
+      try {
+        return shapeEmail(field.name, value)
       } catch {
         return invalid()
       }

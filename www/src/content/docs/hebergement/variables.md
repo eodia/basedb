@@ -54,6 +54,12 @@ modèle complet et commenté est `.env.example`). **Une valeur vide vaut « non 
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | — | identifiants |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` pour l’adressage par hôte |
 
+## Modèles de base
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `BASEDB_TEMPLATES_URL` | le catalogue du site public | d’où l’instance lit les modèles de sa galerie ; `off` pour n’en lire aucun (les modèles intégrés restent) — voir [Modèles](/basedb/fonctionnalites/modeles/) |
+
 ## Intelligence artificielle
 
 | Variable | Défaut | Rôle |

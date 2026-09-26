@@ -3,7 +3,7 @@ import { type Target, decide } from '../rbac/decide.js'
 import { loadGrants, loadTarget } from '../rbac/loader.js'
 import { loadBaseTarget } from '../rbac/require.js'
 import { listRecords } from '../records/list.js'
-import { shapeUrl } from '../records/values.js'
+import { shapeEmail, shapeUrl } from '../records/values.js'
 import type { Pools } from '../runtime/pool.js'
 import type { SqlConsoleResult } from '../sql/console.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
@@ -163,10 +163,17 @@ const CREATABLE: ReadonlySet<string> = new Set([
   'multi_select',
   'link',
   'url',
+  'email',
 ])
 
 /** The kinds nobody writes a value into: computed, deposited, or the system's. */
-const NOT_WRITABLE: ReadonlySet<string> = new Set(['formula', 'file', 'image', 'system'])
+const NOT_WRITABLE: ReadonlySet<string> = new Set([
+  'formula',
+  'autonumber',
+  'file',
+  'image',
+  'system',
+])
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -895,6 +902,12 @@ function coerce(value: unknown, field: CatalogField): unknown {
     case 'url':
       try {
         return shapeUrl(field.name, value) ?? undefined
+      } catch {
+        return undefined
+      }
+    case 'email':
+      try {
+        return shapeEmail(field.name, value) ?? undefined
       } catch {
         return undefined
       }

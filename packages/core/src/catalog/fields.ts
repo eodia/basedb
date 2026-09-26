@@ -7,6 +7,7 @@ import {
   fileShapeCheck,
   isChoiceKind,
   isFileKind,
+  nullabilityOf,
   pgTypeOf,
   sqlCommentOnColumn,
 } from '../ddl/emit.js'
@@ -15,10 +16,18 @@ import { allocateName } from '../naming/allocation.js'
 import { requireOnField, requireOnTable } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
+import {
+  type FormulaInput,
+  type RollupInput,
+  addFormulaField,
+  addRollupField,
+  insertComputedField,
+} from './computed-fields.js'
 import { commentText, normalizeDescription } from './description.js'
+import { type FieldFormatInput, normalizeFormat, writeFormat } from './formats.js'
 import { labelKey } from './operations.js'
 import { type SelectOptionInput, normalizeOptions } from './select-options.js'
-import { addUrlCheck } from './url-field.js'
+import { addPatternCheck } from './url-field.js'
 
 /**
  * Adding a field to an existing table — chapter 04 §1.3 and §1.10.
@@ -51,6 +60,25 @@ export interface AddFieldRequest {
   readonly ai?: AiFieldInput
   /** The field's lineage, when it copies a field of another environment (chapter 14). */
   readonly lineageId?: string
+  /**
+   * How the value reads — a currency, a percentage, a duration, a rating for a number; a
+   * phone number or a barcode for a short text. Presentation only: the column is the same.
+   */
+  readonly format?: FieldFormatInput
+  /** A formula's expression (chapter 04 §7). */
+  readonly formula?: FormulaInput
+  /** The path of a lookup, a rollup or a count (chapter 04 §7 ter). */
+  readonly rollup?: RollupInput
+  /** A button's label and action (chapter 17 §4). */
+  readonly button?: ButtonInput
+}
+
+export interface ButtonInput {
+  readonly label?: unknown
+  readonly color?: unknown
+  readonly action?: unknown
+  readonly url?: unknown
+  readonly automation?: unknown
 }
 
 export interface AddedField {
@@ -106,20 +134,21 @@ export async function addField(
   if (request.label.trim() === '') throw new BasedbError('LABEL_EMPTY')
   const description = normalizeDescription(request.description)
 
-  if (request.kind === 'link') {
+  if (request.kind === 'link' || request.kind === 'multi_link') {
     // A link is a three-step sequence with a step outside the transaction, and it has
     // its own operation. Folding it in here would hide that from the caller.
     throw new BasedbError('REQUEST_INVALID', {
       details: { field: 'kind', reason: 'utiliser createLinkField' },
     })
   }
-  if (request.kind === 'formula') {
-    // A formula needs an expression, its canonical tree and a result type — none of
-    // which exists to be produced yet. Accepting the field and leaving the satellite
-    // empty would create a column the catalog considers broken.
-    throw new BasedbError('REQUEST_INVALID', {
-      details: { field: 'kind', reason: 'formule_sans_expression' },
-    })
+  if (request.kind === 'button') return addButton(pools, ctx, request, description)
+  if (
+    request.kind === 'formula' ||
+    request.kind === 'lookup' ||
+    request.kind === 'rollup' ||
+    request.kind === 'count'
+  ) {
+    return addComputed(pools, ctx, request, description)
   }
   if (isChoiceKind(request.kind) && (request.options ?? []).length === 0) {
     // A select with no option is a column nothing can be written into. Refusing it here
@@ -128,6 +157,9 @@ export async function addField(
       details: { field: 'options', reason: 'liste_vide' },
     })
   }
+
+  // Checked before anything is written, like the rest of the request.
+  const format = request.format === undefined ? null : normalizeFormat(request.kind, request.format)
 
   if (request.ai !== undefined) {
     // The AI is an option of the kinds whose value a model's answer can hold.
@@ -180,8 +212,13 @@ export async function addField(
       'insert',
     )
 
-    // NULL, always, whatever the caller asked: the obligation is a separate step.
-    const add = `ALTER TABLE ${qualify(where.schemaName, where.tableName)} ADD COLUMN ${quoteIdentifier(column.name)} ${pgTypeOf(request.kind)} NULL;`
+    // NULL, always, whatever the caller asked: the obligation is a separate step. An
+    // autonumber is the exception the database makes itself: an identity is never null —
+    // and adding one numbers the rows already there, which rewrites the table.
+    const add =
+      `ALTER TABLE ${qualify(where.schemaName, where.tableName)} ADD COLUMN ${quoteIdentifier(column.name)} ${pgTypeOf(request.kind)} ${nullabilityOf(request.kind, false)}`
+        .trimEnd()
+        .concat(';')
     await exec.query(add, [], 'ddl')
     sql.push(add)
 
@@ -205,9 +242,9 @@ export async function addField(
           request.options ?? [],
         )),
       )
-    } else if (request.kind === 'url') {
+    } else if (request.kind === 'url' || request.kind === 'email') {
       // No satellite: the address is all there is to it, and the CHECK keeps it one.
-      sql.push(...(await addUrlCheck(exec, ctx, where, field.id, column.name)))
+      sql.push(...(await addPatternCheck(exec, ctx, where, field.id, column.name, request.kind)))
     } else if (isFileKind(request.kind)) {
       sql.push(
         ...(await addFileShape(
@@ -220,6 +257,7 @@ export async function addField(
       )
     } else {
       await insertSatellite(exec, field.id, request.kind)
+      if (format !== null) await writeFormat(exec, field.id, request.kind, format)
     }
 
     if (request.ai !== undefined) {
@@ -451,6 +489,12 @@ export async function setFieldRequired(
     if (field.kind === 'formula') {
       throw new BasedbError('REQUEST_INVALID', { details: { field: 'kind', reason: 'formule' } })
     }
+    // An autonumber is filled by the database on every row: there is nothing to demand.
+    if (field.kind === 'autonumber') {
+      throw new BasedbError('REQUEST_INVALID', {
+        details: { field: 'kind', reason: 'numero_automatique' },
+      })
+    }
     // Nor a field computed by the AI: only the kernel writes it, AFTER the row exists — a
     // NOT NULL would refuse every row created, since nobody may give it a value.
     const [computed] = await exec.query(
@@ -587,4 +631,147 @@ export async function setFieldRequired(
   })
 
   return { fieldId: request.fieldId, required: true, sql }
+}
+
+/**
+ * A formula, a lookup, a rollup or a count — chapter 04 §7, §7 ter. A formula without an
+ * expression, a lookup without a path, is refused before anything is written: the
+ * catalog would hold a field it considers broken.
+ */
+async function addComputed(
+  pools: Pools,
+  ctx: RequestContext,
+  request: AddFieldRequest,
+  description: string | null,
+): Promise<AddedField> {
+  if (request.kind === 'formula' && (request.formula?.expression ?? '').trim() === '') {
+    throw new BasedbError('REQUEST_INVALID', {
+      details: { field: 'formula', reason: 'formule_sans_expression' },
+    })
+  }
+  if (request.kind !== 'formula' && request.rollup === undefined) {
+    throw new BasedbError('REQUEST_INVALID', {
+      details: { field: 'rollup', reason: 'chemin_manquant' },
+    })
+  }
+  return withTransaction(pools, 'ddl', ctx, async (exec) => {
+    await requireOnTable(exec, ctx, 'manage_schema', request.tableId)
+    const where = await locate(exec, request.tableId)
+    const field = await insertComputedField(exec, ctx, where, {
+      label: request.label,
+      kind: request.kind,
+      technicalName: request.technicalName,
+      description,
+      lineageId: request.lineageId,
+    })
+    // A lookup, a rollup and a count emit no DDL: they have no column.
+    let sql: string[] = []
+    if (request.kind === 'formula') {
+      sql = await addFormulaField(
+        exec,
+        ctx,
+        where,
+        { id: field.id, name: field.name, label: request.label },
+        description,
+        request.formula as FormulaInput,
+      )
+    } else {
+      await addRollupField(
+        exec,
+        ctx,
+        where,
+        { id: field.id, kind: request.kind as 'lookup' | 'rollup' | 'count' },
+        request.rollup as RollupInput,
+      )
+    }
+    return {
+      fieldId: field.id,
+      name: field.name,
+      label: request.label,
+      description,
+      kind: request.kind,
+      sql,
+    }
+  })
+}
+
+/**
+ * A button — chapter 17 §4: no column, a label, and what a click does. An address may cite
+ * the row; an automation must be one of the base's, triggered by a button on this table.
+ */
+async function addButton(
+  pools: Pools,
+  ctx: RequestContext,
+  request: AddFieldRequest,
+  description: string | null,
+): Promise<AddedField> {
+  const input = request.button ?? {}
+  const text = typeof input.label === 'string' ? input.label.trim() : ''
+  if (text === '' || text.length > 60) {
+    throw new BasedbError('REQUEST_INVALID', {
+      details: { field: 'button.label', reason: 'libelle_invalide' },
+    })
+  }
+  const color =
+    typeof input.color === 'string' && input.color !== '' ? input.color.toLowerCase() : null
+  if (color !== null && !/^#[0-9a-f]{6}$/.test(color)) {
+    throw new BasedbError('REQUEST_INVALID', {
+      details: { field: 'button.color', reason: 'couleur_invalide' },
+    })
+  }
+  const action = input.action
+  if (action !== 'url' && action !== 'automation') {
+    throw new BasedbError('REQUEST_INVALID', {
+      details: { field: 'button.action', reason: 'action_inconnue' },
+    })
+  }
+  const url = action === 'url' && typeof input.url === 'string' ? input.url.trim() : null
+  if (
+    action === 'url' &&
+    (url === null || url.length > 2048 || !/^(https?:\/\/|mailto:)/i.test(url))
+  ) {
+    throw new BasedbError('REQUEST_INVALID', {
+      details: { field: 'button.url', reason: 'adresse_invalide' },
+    })
+  }
+  const automation =
+    action === 'automation' && typeof input.automation === 'string' ? input.automation : null
+  return withTransaction(pools, 'ddl', ctx, async (exec) => {
+    await requireOnTable(exec, ctx, 'manage_schema', request.tableId)
+    const where = await locate(exec, request.tableId)
+    if (action === 'automation') {
+      const [found] = await exec.query<{ id: string }>(
+        `SELECT id::text FROM _basedb.automation
+          WHERE id::text = $1 AND table_id = $2 AND trigger_kind = 'button' AND deleted_at IS NULL`,
+        [automation ?? '', request.tableId],
+      )
+      if (found === undefined) {
+        throw new BasedbError('REQUEST_INVALID', {
+          details: { field: 'button.automation', reason: 'automatisation_inconnue' },
+        })
+      }
+    }
+    const field = await insertComputedField(exec, ctx, where, {
+      label: request.label,
+      kind: 'button',
+      technicalName: request.technicalName,
+      description,
+      lineageId: request.lineageId,
+    })
+    await exec.query(
+      `INSERT INTO _basedb.field_button_config
+         (field_id, label, color, action, url_template, automation_id)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [field.id, text, color, action, url, automation],
+      'insert',
+    )
+    return {
+      fieldId: field.id,
+      name: field.name,
+      label: request.label,
+      description,
+      kind: 'button',
+      sql: [],
+    }
+  })
 }

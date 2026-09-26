@@ -385,3 +385,104 @@ describe('projects', () => {
     )
   })
 })
+
+describe('reading through a relation, under the reader’s rights', () => {
+  it('masks a count whose rows the reader may not read, as a field they may not see', async () => {
+    const link = await kernel.createLinkField(admin, {
+      tableId: factures,
+      targetTableId: clients,
+      label: 'Client',
+    })
+    await kernel.addField(admin, {
+      tableId: clients,
+      label: 'Nombre de factures',
+      kind: 'count',
+      rollup: { via: link.name, viaTable: 'factures' },
+    })
+    expect((await kernel.listRecords(admin, { tableId: clients })).columns).toContain(
+      'nombre_de_factures',
+    )
+
+    // Alice reads the clients, not the invoices: counting them would say how many exist.
+    await set(commerciaux, 'table', clients, 'read')
+    await set(commerciaux, 'table', factures, 'none')
+    const asAlice = await ctxOf(alice.id)
+    const page = await kernel.listRecords(asAlice, { tableId: clients })
+    expect(page.columns).not.toContain('nombre_de_factures')
+    expect(
+      await codeOf(
+        kernel.listRecords(asAlice, { tableId: clients, filter: 'nombre_de_factures gt 0' }),
+      ),
+    ).toBe('FILTER_FIELD_UNKNOWN')
+  })
+})
+
+describe('personal and locked views', () => {
+  it('lets a reader build a view of their own, seen by nobody else', async () => {
+    await set(commerciaux, 'table', clients, 'read')
+    const asAlice = await ctxOf(alice.id)
+    // Building for everyone is building the base; for oneself, reading is enough.
+    expect(
+      await codeOf(
+        kernel.createView(asAlice, { tableId: clients, label: 'Mes clients', kind: 'grid' }),
+      ),
+    ).toBe('ADMIN_REQUIRED')
+    const mine = await kernel.createView(asAlice, {
+      tableId: clients,
+      label: 'Mes clients',
+      kind: 'grid',
+      personal: true,
+    })
+    expect(mine).toMatchObject({ personal: true, locked: false })
+
+    // The administrator neither sees it nor can change it: it is Alice's business.
+    expect((await kernel.listViews(admin, { tableId: clients })).map((v) => v.id)).not.toContain(
+      mine.id,
+    )
+    expect(
+      await codeOf(kernel.updateView(admin, { tableId: clients, viewId: mine.id, label: 'X' })),
+    ).toBe('RESOURCE_NOT_FOUND')
+    // A collaborative view may bear the same label: labels are unique per owner.
+    await expect(
+      kernel.createView(admin, { tableId: clients, label: 'Mes clients', kind: 'grid' }),
+    ).resolves.toBeDefined()
+
+    const renamed = await kernel.updateView(asAlice, {
+      tableId: clients,
+      viewId: mine.id,
+      label: 'Clients suivis',
+    })
+    expect(renamed.label).toBe('Clients suivis')
+    expect((await kernel.listViews(asAlice, { tableId: clients })).map((v) => v.label)).toContain(
+      'Clients suivis',
+    )
+  })
+
+  it('refuses to change a locked view until it is unlocked', async () => {
+    const view = await kernel.createView(admin, {
+      tableId: clients,
+      label: 'Référence',
+      kind: 'grid',
+    })
+    const locked = await kernel.updateView(admin, {
+      tableId: clients,
+      viewId: view.id,
+      locked: true,
+    })
+    expect(locked.locked).toBe(true)
+    expect(
+      await codeOf(kernel.updateView(admin, { tableId: clients, viewId: view.id, label: 'Autre' })),
+    ).toBe('VIEW_LOCKED')
+    expect(await codeOf(kernel.deleteView(admin, { tableId: clients, viewId: view.id }))).toBe(
+      'VIEW_LOCKED',
+    )
+    // Unlocked in the same gesture as the change it allows.
+    const changed = await kernel.updateView(admin, {
+      tableId: clients,
+      viewId: view.id,
+      label: 'Référence 2026',
+      locked: false,
+    })
+    expect(changed).toMatchObject({ label: 'Référence 2026', locked: false })
+  })
+})

@@ -823,10 +823,18 @@ INSERT INTO _basedb.field_kind (code, label, can_be_display, has_config) VALUES
  ('select',    'Liste de choix', true,  true),
  ('multi_select', 'Choix multiple', false, true),
  ('link',      'Relation',       false, true),
+ ('multi_link','Relation multiple', false, true),
+ ('lookup',    'Recherche',      false, true),
+ ('rollup',    'Cumul',          false, true),
+ ('count',     'Decompte',       false, true),
  ('formula',   'Formule',        true,  true),
  ('file',      'Document',       false, true),
  ('image',     'Image',          false, true),
- ('url',       'Lien URL',       true,  false);
+ ('url',       'Lien URL',       true,  false),
+ ('email',     'E-mail',         true,  false),
+ ('autonumber','Numero automatique', true, false),
+ ('user',      'Personne',       false, false),
+ ('button',    'Bouton',         false, true);
 
 CREATE TABLE _basedb.field (
   id            uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -917,11 +925,15 @@ CREATE TABLE _basedb.field_text_config (
   is_rich      boolean NOT NULL DEFAULT false,
   sanitizer_profile text NOT NULL DEFAULT 'none'
     CHECK (sanitizer_profile IN ('none','basic','rich')),
+  -- Comment un texte court se lit : tel quel, comme un numero de telephone, comme un code-barres.
+  display_format text NOT NULL DEFAULT 'plain'
+    CHECK (display_format IN ('plain','phone','barcode')),
   CONSTRAINT fk_text_field FOREIGN KEY (field_id, kind)
     REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT ck_text_rich      CHECK (NOT is_rich OR kind = 'long_text'),
   CONSTRAINT ck_text_multiline CHECK (NOT is_multiline OR kind = 'long_text'),
-  CONSTRAINT ck_text_sanitizer CHECK (is_rich = (sanitizer_profile <> 'none'))
+  CONSTRAINT ck_text_sanitizer CHECK (is_rich = (sanitizer_profile <> 'none')),
+  CONSTRAINT ck_text_format    CHECK (display_format = 'plain' OR kind = 'short_text')
 );
 
 CREATE TABLE _basedb.field_number_config (
@@ -932,8 +944,10 @@ CREATE TABLE _basedb.field_number_config (
   min_value numeric NULL,
   max_value numeric NULL,
   display_format text NOT NULL DEFAULT 'decimal'
-    CHECK (display_format IN ('decimal','integer','percent','currency')),
+    CHECK (display_format IN ('decimal','integer','percent','currency','duration','rating')),
   currency_code  text COLLATE "C" NULL CHECK (currency_code ~ '^[A-Z]{3}$'),
+  -- Une note se lit en etoiles, de 1 a rating_max ; une duree est un nombre de secondes.
+  rating_max     smallint NULL CHECK (rating_max IS NULL OR rating_max BETWEEN 1 AND 10),
   CONSTRAINT fk_number_field FOREIGN KEY (field_id, kind)
     REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT ck_number_scale  CHECK (scale <= precision),
@@ -1023,12 +1037,63 @@ CREATE TABLE _basedb.field_formula_config (
   ast         jsonb NOT NULL,       -- forme canonique de l'arbre syntaxique (chapitre 04)
   result_kind text COLLATE "C" NOT NULL REFERENCES _basedb.field_kind(code)
                 ON DELETE RESTRICT ON UPDATE RESTRICT,
+  -- Faux quand la formule emploie AUJOURDHUI()/MAINTENANT() ou cite un champ calcule
+  -- a la lecture : aucune colonne, un calcul a chaque lecture (chapitre 04 §7.1).
   is_stored   boolean NOT NULL DEFAULT true,
+  -- Le fuseau dans lequel AUJOURDHUI() se lit ; nul quand la formule n'en depend pas.
+  timezone    text NULL,
   CONSTRAINT fk_formula_field FOREIGN KEY (field_id, kind)
     REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT ck_formula_result
-    CHECK (result_kind NOT IN ('formula','link','multi_select','file','image'))
+    CHECK (result_kind NOT IN ('formula','link','multi_link','multi_select','file','image',
+                               'autonumber','user','lookup','rollup','count')),
+  CONSTRAINT ck_formula_timezone
+    CHECK (timezone IS NULL OR timezone ~ '^[A-Za-z_]+(/[A-Za-z0-9_+-]+)*$')
 );
+
+-- Recherche, cumul, decompte (chapitre 04 §7 ter) : aucune colonne, un chemin. Le
+-- champ relation suivi est de la table (sens sortant) ou la designe (sens entrant).
+CREATE TABLE _basedb.field_rollup_config (
+  field_id        uuid PRIMARY KEY,
+  kind            text COLLATE "C" NOT NULL CHECK (kind IN ('lookup','rollup','count')),
+  via_field_id    uuid NOT NULL REFERENCES _basedb.field(id) ON DELETE RESTRICT,
+  direction       text NOT NULL CHECK (direction IN ('outgoing','incoming')),
+  target_field_id uuid NULL REFERENCES _basedb.field(id) ON DELETE RESTRICT,
+  aggregate       text NULL CHECK (aggregate IN ('count','sum','avg','min','max')),
+  result_kind     text COLLATE "C" NOT NULL REFERENCES _basedb.field_kind(code)
+                    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  -- Une liste de valeurs (recherche qui atteint plusieurs lignes) ou une seule.
+  is_multiple     boolean NOT NULL,
+  CONSTRAINT fk_rollup_field FOREIGN KEY (field_id, kind)
+    REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT ck_rollup_shape CHECK (
+       (kind = 'lookup' AND target_field_id IS NOT NULL AND aggregate IS NULL)
+    OR (kind = 'rollup' AND target_field_id IS NOT NULL AND aggregate IS NOT NULL)
+    OR (kind = 'count'  AND target_field_id IS NULL     AND aggregate IS NULL)),
+  CONSTRAINT ck_rollup_result
+    CHECK (result_kind NOT IN ('link','multi_link','multi_select','file','image',
+                               'formula','lookup','rollup','count'))
+);
+-- Un bouton (chapitre 17 §4) : pas de colonne, un libelle et ce qu'il fait — ouvrir une
+-- adresse composee avec la ligne, ou lancer une automatisation.
+CREATE TABLE _basedb.field_button_config (
+  field_id      uuid PRIMARY KEY,
+  kind          text COLLATE "C" NOT NULL DEFAULT 'button' CHECK (kind = 'button'),
+  label         text NOT NULL CHECK (char_length(label) BETWEEN 1 AND 60),
+  color         text NULL CHECK (color IS NULL OR color ~ '^#[0-9a-f]{6}$'),
+  action        text NOT NULL CHECK (action IN ('url','automation')),
+  url_template  text NULL CHECK (url_template IS NULL OR char_length(url_template) <= 2048),
+  automation_id uuid NULL,
+  CONSTRAINT fk_button_field FOREIGN KEY (field_id, kind)
+    REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT ck_button_action CHECK (
+       (action = 'url' AND url_template IS NOT NULL AND automation_id IS NULL)
+    OR (action = 'automation' AND automation_id IS NOT NULL AND url_template IS NULL))
+);
+
+CREATE INDEX idx_rollup_via    ON _basedb.field_rollup_config (via_field_id);
+CREATE INDEX idx_rollup_target ON _basedb.field_rollup_config (target_field_id)
+  WHERE target_field_id IS NOT NULL;
 
 CREATE TABLE _basedb.select_option (
   id         uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
@@ -1070,7 +1135,9 @@ Quatre précisions.
 
 **La présence ou l'absence de l'heure n'est pas dupliquée** : elle est portée par `kind` (`date` ou `datetime`) et par rien d'autre. *Alternative rejetée* : une colonne `with_time boolean`, qui autorise la combinaison absurde `kind = 'date'` + heure. Les chapitres qui attendent un tel drapeau lisent `kind = 'datetime'`.
 
-**Le choix multiple est un type, pas un drapeau** : `select` est une colonne `text`, `multi_select` une colonne `text[]`, et les deux partagent `field_select_config` et `select_option`. Aucune colonne `is_multiple` n'existe — le type étant immuable, un drapeau qui changerait le type physique de la colonne serait un second `kind` déguisé. Le « plusieurs vers plusieurs » reste hors périmètre v1, comme la relation « un vers un », qui n'est que l'unicité d'un champ lien et ne constitue pas un type de relation distinct.
+**Un type, ou un format ?** La règle qui tranche est le stockage. Un nouveau **type** existe quand la colonne change : `email` (un `text` tenu par un `CHECK`, comme `url`), `autonumber` (un `bigint GENERATED BY DEFAULT AS IDENTITY`, jamais écrit par l'API) et `user` (l'`uuid` d'un utilisateur du tenant, **sans** clé étrangère : aucune contrainte ne franchit la frontière de `_basedb`, comme pour `_created_by`). Monnaie, pourcentage, durée et note ne sont que des **formats** d'un `number` (`field_number_config.display_format`, `currency_code`, `rating_max`) ; téléphone et code-barres, des formats d'un texte court (`field_text_config.display_format`) : la colonne reste la même, seule sa lecture change, et un format se modifie sans migration.
+
+**Le choix multiple est un type, pas un drapeau** : `select` est une colonne `text`, `multi_select` une colonne `text[]`, et les deux partagent `field_select_config` et `select_option`. Aucune colonne `is_multiple` n'existe — le type étant immuable, un drapeau qui changerait le type physique de la colonne serait un second `kind` déguisé. Le « plusieurs vers plusieurs » est un type à part, `multi_link`, pour la même raison — une colonne `uuid[]` et non `uuid` (chapitre 04 §4 bis) ; la relation « un vers un » n'est que l'unicité d'un champ lien et ne constitue pas un type de relation distinct.
 
 **Un document ou une image n'est pas stocké dans la table.** La colonne `jsonb` d'un champ `file` ou `image` porte la liste des fichiers — identifiant, nom, type, taille — et les octets vivent dans le stockage de fichiers de l'instance (chapitre 04 §3 bis). `field_file_config` ne porte que la contrainte de forme, dont le nom est au registre comme toute contrainte système.
 
@@ -1196,13 +1263,17 @@ CREATE TABLE _basedb.table_index_member (
 ```sql
 CREATE TABLE _basedb.field_link_config (
   field_id        uuid PRIMARY KEY,
-  kind            text COLLATE "C" NOT NULL DEFAULT 'link' CHECK (kind = 'link'),
+  kind            text COLLATE "C" NOT NULL DEFAULT 'link'
+                  CHECK (kind IN ('link','multi_link')),
   base_id         uuid NOT NULL,
   is_required     boolean NOT NULL,                 -- miroir de field.is_required
   target_table_id uuid NOT NULL,
   target_is_live  boolean NOT NULL DEFAULT true,    -- miroir de table_def.is_live
 
-  fk_constraint_id uuid NOT NULL REFERENCES _basedb.table_constraint(id) ON DELETE RESTRICT,
+  -- Nulle pour une relation multiple : sa colonne uuid[] n'a pas de cle etrangere,
+  -- son integrite est tenue par deux declencheurs (chapitre 04 §4 bis).
+  fk_constraint_id uuid NULL REFERENCES _basedb.table_constraint(id) ON DELETE RESTRICT,
+  -- btree ("c", "_id") pour un lien, GIN ("c") pour une relation multiple.
   fk_index_id      uuid NOT NULL REFERENCES _basedb.table_index(id)      ON DELETE RESTRICT,
   fk_dropped_at    timestamptz NULL,
 
@@ -1223,6 +1294,11 @@ CREATE TABLE _basedb.field_link_config (
     CHECK (on_delete <> 'set_null' OR is_required = false),
   CONSTRAINT ck_link_cascade_granted
     CHECK (on_delete <> 'cascade' OR cascade_grant_id IS NOT NULL),
+  CONSTRAINT ck_link_fk_by_kind
+    CHECK ((kind = 'link') = (fk_constraint_id IS NOT NULL)),
+  -- Supprimer une ligne parce qu'une des lignes qu'elle liait disparait n'a pas de sens.
+  CONSTRAINT ck_multi_link_no_cascade
+    CHECK (kind = 'link' OR on_delete <> 'cascade'),
   CONSTRAINT uq_link_fk_constraint UNIQUE (fk_constraint_id),
   CONSTRAINT uq_link_fk_index      UNIQUE (fk_index_id)
 );
@@ -1351,10 +1427,17 @@ CREATE TABLE _basedb.view_def (
   name  text COLLATE "C" NOT NULL,
   description text NULL,
   kind  text NOT NULL DEFAULT 'grid'
-    CHECK (kind IN ('grid','kanban','calendar','timeline','form','survey')),
+    CHECK (kind IN ('grid','kanban','calendar','timeline','gallery','list','form','survey')),
   spec  jsonb NOT NULL DEFAULT '{}'::jsonb,   -- filtre, tri, champs affiches, champs pivots
   position integer NOT NULL DEFAULT 0,        -- ordre dans le selecteur de vues de la table
   is_invalid boolean NOT NULL DEFAULT false,  -- un champ reference a disparu (chapitre 06)
+  -- Une vue personnelle : sa proprietaire seule la voit et la modifie, avec le seul droit
+  -- de lire la table. Nulle : une vue collaborative, celle de tous (chapitre 11 §1.6).
+  owner_id uuid NULL REFERENCES _basedb.app_user(id) ON DELETE CASCADE,
+  -- Verrouillee : on ne la modifie qu'apres l'avoir deverrouillee. Une vue personnelle n'a
+  -- personne d'autre a proteger de ses propres gestes.
+  is_locked boolean NOT NULL DEFAULT false,
+  CONSTRAINT ck_view_lock_collaborative CHECK (NOT is_locked OR owner_id IS NULL),
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -1362,8 +1445,11 @@ CREATE TABLE _basedb.view_def (
   deleted_at timestamptz NULL,
   deleted_by uuid NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT
 );
+-- Un libelle est unique parmi les vues collaboratives d'une table, et parmi les vues
+-- personnelles d'une meme personne : deux personnes peuvent chacune avoir « Mes taches ».
 CREATE UNIQUE INDEX uq_view_label_live
-  ON _basedb.view_def (table_id, label_key) WHERE deleted_at IS NULL;
+  ON _basedb.view_def (table_id, coalesce(owner_id, '00000000-0000-0000-0000-000000000000'::uuid), label_key)
+  WHERE deleted_at IS NULL;
 
 -- Le partage d'un formulaire ou d'un questionnaire (chapitre 15) : un lien qui permet de
 -- repondre sans avoir de droit sur la table, public ou reserve aux membres connectes.
@@ -1386,6 +1472,9 @@ CREATE TABLE _basedb.form_share (
   -- Au nom de qui les reponses s'ecrivent : la derniere personne qui a enregistre le
   -- partage. Ses droits sont reverifies a chaque reponse (chapitre 15 §2).
   published_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  -- Une vue de donnees partagee en lecture seule (chapitre 15 §10) peut s'integrer dans une
+  -- autre page (iframe) quand on l'a voulu ; un formulaire aussi.
+  can_embed    boolean NOT NULL DEFAULT false,
   created_at   timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by   uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   updated_at   timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -1402,13 +1491,222 @@ CREATE TABLE _basedb.form_share_role (
 );
 ```
 
-Une **vue enregistrée** est une présentation, sans existence physique : elle reste au périmètre v1 et son régime de permission est celui de sa table, sans droit propre. Il n'existe pas de colonne `owner_user_id` : les vues sont partagées à l'échelle de la table, et les vues personnelles sont hors périmètre v1.
+Une **vue enregistrée** est une présentation, sans existence physique : son régime de permission est celui de sa table, sans droit propre. Une vue est **collaborative** (`owner_id` nul : partagée à l'échelle de la table, construite par qui a `manage_schema`) ou **personnelle** (`owner_id` : sa propriétaire seule la voit, la modifie et la supprime, avec le seul droit `read` sur la table). Une vue collaborative peut être **verrouillée** (`is_locked`) : toute modification est refusée (`VIEW_LOCKED`) tant qu'on ne l'a pas déverrouillée — une protection contre un geste involontaire, pas un droit de plus.
 
-Six natures de vue, une seule table : `kind` dit comment les lignes sont montrées — `grid` (grille), `kanban` (colonnes par valeur d'une liste de choix), `calendar` (sur un champ date), `timeline` (barres entre une date de début et une date de fin), `form` (formulaire de saisie d'une page) et `survey` (le même, une question par écran). `spec` porte tout le reste, et sa forme dépend de `kind` : le filtre et le tri des vues de données, les champs affichés et leur ordre, les **champs pivots** — la liste de choix d'un kanban, les dates d'un calendrier ou d'une frise — et, pour un formulaire, les questions posées. Le document est validé par le noyau à l'écriture (types des champs pivots compris) et désigne les champs par leur nom physique, comme le filtre ; à la lecture, il est **reprojeté pour le lecteur** : un champ qu'il ne voit pas en disparaît, comme de la grille (chapitre 05 §9). `position` ordonne les vues d'une table dans le sélecteur ; il n'est pas unique, un réordonnancement réécrit toute la liste.
+Huit natures de vue, une seule table : `kind` dit comment les lignes sont montrées — `grid` (grille), `kanban` (colonnes par valeur d'une liste de choix), `calendar` (sur un champ date), `timeline` (barres entre une date de début et une date de fin), `gallery` (des cartes, avec une image de couverture), `list` (une ligne par enregistrement, regroupées), `form` (formulaire de saisie d'une page) et `survey` (le même, une question par écran). `spec` porte tout le reste, et sa forme dépend de `kind` : le filtre et le tri des vues de données, les champs affichés et leur ordre, les **champs pivots** — la liste de choix d'un kanban, les dates d'un calendrier ou d'une frise — et, pour un formulaire, les questions posées. Le document est validé par le noyau à l'écriture (types des champs pivots compris) et désigne les champs par leur nom physique, comme le filtre ; à la lecture, il est **reprojeté pour le lecteur** : un champ qu'il ne voit pas en disparaît, comme de la grille (chapitre 05 §9). `position` ordonne les vues d'une table dans le sélecteur ; il n'est pas unique, un réordonnancement réécrit toute la liste.
 
-Un formulaire ou un questionnaire peut être **partagé** (chapitre 15) : `form_share` en garde le lien — son empreinte SHA-256 pour le retrouver, le secret scellé par la clé d'instance pour le remontrer, jamais en clair —, l'accès (`public` ou `members`, restreint par `form_share_role` à certains groupes), les conditions de fermeture (`is_active`, `closes_at`, `max_responses`, dont `response_count` tient le compte exact) et `published_by`, la personne sur l'autorité de laquelle les réponses s'écrivent. `table_id` est redondant avec la vue, et voulu : un lien se résout en une seule lecture, qui dit en même temps si la vue et la table sont encore vivantes. La suppression logique d'une vue ou d'une table ne supprime pas le partage, mais le rend introuvable ; leur suppression physique l'emporte, en cascade.
+Une vue peut être **partagée** (chapitre 15) — un formulaire ou un questionnaire pour y répondre, une vue de données pour la lire, sans modifier — : `form_share` en garde le lien, qu'il soit d'une nature ou de l'autre — son empreinte SHA-256 pour le retrouver, le secret scellé par la clé d'instance pour le remontrer, jamais en clair —, l'accès (`public` ou `members`, restreint par `form_share_role` à certains groupes), les conditions de fermeture (`is_active`, `closes_at`, `max_responses`, dont `response_count` tient le compte exact) et `published_by`, la personne sur l'autorité de laquelle les réponses s'écrivent. `table_id` est redondant avec la vue, et voulu : un lien se résout en une seule lecture, qui dit en même temps si la vue et la table sont encore vivantes. La suppression logique d'une vue ou d'une table ne supprime pas le partage, mais le rend introuvable ; leur suppression physique l'emporte, en cascade.
 
 `application_table` porte `base_id` une seule fois, partagé par ses deux clés étrangères : rattacher à une application de la base X une table de la base Y est structurellement impossible.
+
+### Automatisations
+
+```sql
+-- Une automatisation (chapitre 17) : un declencheur, une condition, des actions, au nom
+-- de son proprietaire — la derniere personne qui l'a enregistree.
+CREATE TABLE _basedb.automation (
+  id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id   uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  base_id     uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  label       text NOT NULL CHECK (char_length(label) BETWEEN 1 AND 255),
+  description text NULL,
+  is_enabled  boolean NOT NULL DEFAULT true,
+  trigger_kind text NOT NULL
+    CHECK (trigger_kind IN ('record_created','record_updated','schedule','button')),
+  -- La table d'un declencheur de ligne ou d'un bouton ; nulle pour une horloge.
+  table_id    uuid NULL REFERENCES _basedb.table_def(id) ON DELETE CASCADE,
+  -- Les reglages du declencheur (champs surveilles, horloge) et la suite d'actions,
+  -- valides par le noyau a l'ecriture (chapitre 17 §1).
+  trigger     jsonb NOT NULL DEFAULT '{}'::jsonb,
+  condition   text NULL CHECK (condition IS NULL OR char_length(condition) <= 4000),
+  actions     jsonb NOT NULL DEFAULT '[]'::jsonb,
+  owner_id    uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  -- La prochaine echeance d'une horloge.
+  next_run_at timestamptz NULL,
+  created_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  deleted_at  timestamptz NULL,
+  CONSTRAINT ck_automation_table CHECK ((trigger_kind = 'schedule') = (table_id IS NULL))
+);
+CREATE INDEX idx_automation_table ON _basedb.automation (table_id)
+  WHERE deleted_at IS NULL AND is_enabled;
+CREATE INDEX idx_automation_due ON _basedb.automation (next_run_at)
+  WHERE deleted_at IS NULL AND is_enabled AND trigger_kind = 'schedule';
+
+-- Une execution : en attente, en cours, faite, echouee, ecartee — et ce que chaque action
+-- a donne.
+CREATE TABLE _basedb.automation_run (
+  id            uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  automation_id uuid NOT NULL REFERENCES _basedb.automation(id) ON DELETE CASCADE,
+  trigger_kind  text NOT NULL,
+  record_id     uuid NULL,
+  status        text NOT NULL DEFAULT 'queued'
+    CHECK (status IN ('queued','running','succeeded','failed','skipped')),
+  reason        text NULL,
+  error_code    text COLLATE "C" NULL,
+  steps         jsonb NOT NULL DEFAULT '[]'::jsonb,
+  queued_at     timestamptz NOT NULL DEFAULT clock_timestamp(),
+  started_at    timestamptz NULL,
+  finished_at   timestamptz NULL
+);
+CREATE INDEX idx_automation_run_queue ON _basedb.automation_run (queued_at)
+  WHERE status = 'queued';
+CREATE INDEX idx_automation_run_list ON _basedb.automation_run (automation_id, queued_at DESC);
+```
+
+Une **automatisation** porte son déclencheur en deux temps : `trigger_kind` et `table_id`, que le drain lit à chaque lot pour savoir quelles tables en ont, et `trigger`, les réglages qu'il n'a pas à interroger (champs surveillés, horloge). `trigger` et `actions` sont des `jsonb` validés par le noyau à l'écriture ; ils ne produisent aucun DDL et chaque champ ou table qu'ils citent est relu, droits compris, à l'exécution. `owner_id` est la personne au nom de qui elle agit (chapitre 17 §2.2). Une **exécution** garde le résultat de chacune de ses actions dans `steps`, et `error_code` (un code du registre A23, recopié) ; elle est purgée après 30 jours (A24).
+
+### Tableaux de bord
+
+```sql
+-- Un tableau de bord (chapitre 18) : des blocs sur une grille de trois colonnes, qui
+-- lisent chacun avec les droits de la personne qui regarde.
+CREATE TABLE _basedb.dashboard (
+  id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  base_id     uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  label       text NOT NULL CHECK (char_length(label) BETWEEN 1 AND 255),
+  description text NULL,
+  position    integer NOT NULL DEFAULT 0,
+  -- Les blocs, valides par le noyau a l'ecriture (chapitre 18 §1.1) ; ils citent tables
+  -- et champs par leur cle et leur nom, relus avec les droits du lecteur a l'affichage.
+  blocks      jsonb NOT NULL DEFAULT '[]'::jsonb,
+  created_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  updated_by  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  deleted_at  timestamptz NULL
+);
+CREATE INDEX idx_dashboard_base ON _basedb.dashboard (base_id, position)
+  WHERE deleted_at IS NULL;
+```
+
+Un **tableau de bord** n'a pas de droit propre : ses blocs lisent par les routes de données, avec les droits du lecteur (A28). `blocks` est un `jsonb` validé par le noyau à l'écriture ; il ne produit aucun DDL et ne donne accès à rien.
+
+### Intégrations et tables synchronisées
+
+```sql
+-- Une connexion d'une base a un service exterieur (chapitre 19 §1) : Slack par un webhook
+-- entrant. L'adresse, qui vaut autorisation, est scellee par la cle d'instance (A25).
+CREATE TABLE _basedb.integration (
+  id           uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id    uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  base_id      uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  kind         text NOT NULL CHECK (kind IN ('slack')),
+  label        text NOT NULL CHECK (char_length(label) BETWEEN 1 AND 255),
+  url_sealed   text NOT NULL,
+  -- La fin de l'adresse, pour la reconnaitre sans la reveler.
+  url_hint     text NOT NULL,
+  created_at   timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by   uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  deleted_at   timestamptz NULL
+);
+CREATE INDEX idx_integration_base ON _basedb.integration (base_id) WHERE deleted_at IS NULL;
+
+-- Une table synchronisee (chapitre 19 §3) : sa source, son rythme, son dernier etat.
+CREATE TABLE _basedb.table_sync (
+  table_id         uuid PRIMARY KEY REFERENCES _basedb.table_def(id) ON DELETE CASCADE,
+  base_id          uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  source_kind      text NOT NULL CHECK (source_kind IN ('csv','ics','basedb')),
+  url_sealed       text NOT NULL,
+  url_host         text NOT NULL,
+  interval_minutes integer NOT NULL CHECK (interval_minutes BETWEEN 15 AND 1440),
+  -- Le champ qui porte la cle de chaque ligne, et la colonne de la source de chaque champ.
+  key_field_id     uuid NOT NULL REFERENCES _basedb.field(id) ON DELETE CASCADE,
+  columns          jsonb NOT NULL DEFAULT '[]'::jsonb,
+  next_sync_at     timestamptz NOT NULL DEFAULT clock_timestamp(),
+  last_synced_at   timestamptz NULL,
+  last_status      text NULL CHECK (last_status IN ('ok','failed')),
+  last_error       text NULL,
+  last_counts      jsonb NULL,
+  created_at       timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by       uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT
+);
+CREATE INDEX idx_table_sync_due ON _basedb.table_sync (next_sync_at);
+```
+
+Une **connexion** ne rend jamais son adresse : `url_sealed` n'est ouvert que par le serveur, au moment d'envoyer ; `url_hint` en montre la fin. Une **table synchronisée** est une table ordinaire du catalogue, que `table_sync` désigne : le noyau refuse les écritures de lignes qui ne viennent pas de sa synchronisation (`TABLE_SYNCED`), et la ligne `table_sync` supprimée, la table redevient ordinaire. `columns` associe chaque champ à sa colonne dans la source ; une colonne apparue depuis n'est pas ajoutée.
+
+### Modèles de l'instance
+
+```sql
+-- Un modele de base importe par un administrateur (chapitre 20 §3.2) : le document JSON
+-- entier, valide par le noyau a l'ecriture. Une cle par tenant ; importer la meme cle
+-- remplace le modele.
+CREATE TABLE _basedb.template (
+  id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id   uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  key         text COLLATE "C" NOT NULL CHECK (key ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND char_length(key) <= 64),
+  label       text NOT NULL CHECK (char_length(label) BETWEEN 1 AND 255),
+  body        jsonb NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  updated_by  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  UNIQUE (tenant_id, key)
+);
+```
+
+Un **modèle de l'instance** n'a pas de droit propre : il se lit comme ceux du site, par
+toute personne connectée, et ne s'applique que par les routes publiques, avec les droits
+de qui l'applique (A28, A30). Le retirer supprime la ligne.
+
+### Commentaires, notifications et présence
+
+```sql
+-- Un commentaire sur une ligne (chapitre 16 §1). La ligne est designee par son identifiant,
+-- sans cle etrangere : aucune contrainte ne traverse la frontiere catalogue / donnees (A9).
+CREATE TABLE _basedb.record_comment (
+  id         uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id  uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  base_id    uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  table_id   uuid NOT NULL REFERENCES _basedb.table_def(id) ON DELETE CASCADE,
+  record_id  uuid NOT NULL,
+  author_id  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  body       text NOT NULL CHECK (char_length(body) BETWEEN 1 AND 10000),
+  -- Les personnes que le texte mentionne, relues par le serveur a chaque ecriture.
+  mentions   uuid[] NOT NULL DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  edited_at  timestamptz NULL
+);
+CREATE INDEX idx_record_comment_record
+  ON _basedb.record_comment (table_id, record_id, created_at);
+
+-- Les notifications internes (chapitre 16 §2) : qui, de quoi, sur quelle ligne.
+CREATE TABLE _basedb.notification (
+  id         uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id  uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  user_id    uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE CASCADE,
+  kind       text NOT NULL CHECK (kind IN ('mention','reply','assigned','automation')),
+  actor_id   uuid NULL REFERENCES _basedb.app_user(id) ON DELETE SET NULL,
+  base_id    uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  table_id   uuid NOT NULL REFERENCES _basedb.table_def(id) ON DELETE CASCADE,
+  record_id  uuid NOT NULL,
+  comment_id uuid NULL REFERENCES _basedb.record_comment(id) ON DELETE CASCADE,
+  excerpt    text NOT NULL DEFAULT '' CHECK (char_length(excerpt) <= 200),
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  read_at    timestamptz NULL
+);
+CREATE INDEX idx_notification_user
+  ON _basedb.notification (user_id, created_at DESC);
+CREATE INDEX idx_notification_unread
+  ON _basedb.notification (user_id) WHERE read_at IS NULL;
+
+-- Qui regarde quelle table, et quelle ligne (chapitre 16 §3.3). Non journalisee : un etat
+-- ephemere, qu'une reprise apres incident peut perdre sans dommage.
+CREATE UNLOGGED TABLE _basedb.presence (
+  session_id uuid PRIMARY KEY,
+  tenant_id  uuid NOT NULL,
+  user_id    uuid NOT NULL,
+  base_id    uuid NOT NULL,
+  table_id   uuid NOT NULL,
+  record_id  uuid NULL,
+  seen_at    timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+CREATE INDEX idx_presence_table ON _basedb.presence (table_id, seen_at);
+```
+
+Un **commentaire** appartient à une ligne, désignée par `(table_id, record_id)` : sans clé étrangère vers la table de données (A9), il survit à la suppression de sa ligne — introuvable, puisque la ligne ne se lit plus — et revient avec sa restauration. `mentions` est relu dans le texte par le noyau à chaque écriture, jamais reçu tel quel. Une **notification** porte un extrait figé (200 caractères) pour être lue sans relire la ligne ; elle est purgée après 90 jours (A24). La **présence** est `UNLOGGED` et sans clé étrangère : une ligne vit tant qu'un flux est ouvert, rafraîchie toutes les 20 secondes, et une ligne de plus de 60 secondes est ignorée puis effacée.
 
 ---
 
@@ -1549,7 +1847,8 @@ CREATE TABLE _basedb.ai_call (
   actor_user_id uuid NULL,
   surface    text COLLATE "C" NOT NULL CHECK (surface IN ('ui','rest','system')),
   usage_kind text COLLATE "C" NOT NULL
-             CHECK (usage_kind IN ('structure_draft','expression_draft','field_compute','copilot')),
+             CHECK (usage_kind IN ('structure_draft','expression_draft','field_compute','copilot',
+                                   'template_draft')),
   provider   text COLLATE "C" NOT NULL
              CHECK (provider IN ('openai','anthropic','mistral')),
   model      text COLLATE "C" NOT NULL,
@@ -1932,7 +2231,8 @@ CREATE TABLE _basedb.retention_policy (
 --  structure_revision   60 mois     webhook_delivery     90 jours
 --  change_event          7 jours    catalog_tombstone    12 mois
 --  security_log        180 jours    migration_error_sample 30 jours
---  ai_call              24 mois
+--  ai_call              24 mois     notification         90 jours
+--  automation_run       30 jours
 ```
 
 Les lignes de `migration` ne figurent pas dans cette table : elles ne sont jamais purgées, parce qu'elles portent la rejouabilité et l'historique des structures. Seul leur échantillon d'erreur expire.

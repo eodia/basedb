@@ -76,6 +76,10 @@ const NOT_COPIED: Readonly<Record<string, string>> = {
   file: 'Documents : leurs fichiers appartiennent à l’environnement qui les a reçus.',
   image: 'Images : leurs fichiers appartiennent à l’environnement qui les a reçus.',
   formula: 'Formule : calculée par l’environnement cible.',
+  autonumber: 'Numéro automatique : donné par l’environnement cible.',
+  lookup: 'Recherche : lue à travers une relation, sans colonne.',
+  rollup: 'Cumul : lu à travers une relation, sans colonne.',
+  count: 'Décompte : lu à travers une relation, sans colonne.',
 }
 
 interface Side {

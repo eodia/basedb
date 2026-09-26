@@ -76,6 +76,8 @@ services:
       BASEDB_AI_QUOTA: ${BASEDB_AI_QUOTA:-}
       BASEDB_AI_FIELD_QUOTA: ${BASEDB_AI_FIELD_QUOTA:-}
       BASEDB_AI_WORKER: ${BASEDB_AI_WORKER:-}
+      # Where the base templates' catalog is read — the public site by default, `off` for none.
+      BASEDB_TEMPLATES_URL: ${BASEDB_TEMPLATES_URL:-}
       # Development only.
       BASEDB_DEV_MAIL: ${BASEDB_DEV_MAIL:-}
       BASEDB_WEBHOOK_DEV: ${BASEDB_WEBHOOK_DEV:-}

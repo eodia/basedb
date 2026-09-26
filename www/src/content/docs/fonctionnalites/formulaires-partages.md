@@ -5,7 +5,8 @@ description: Partager un formulaire par un lien, public ou réservé aux membres
 
 Un formulaire ou un questionnaire se **partage par un lien** `/f/<jeton>`. La personne qui
 répond n’a besoin d’**aucun droit sur la table** : chaque réponse ajoute une ligne, et rien
-d’autre de la table ne lui est montré.
+d’autre de la table ne lui est montré. Pour montrer des lignes plutôt qu’en recevoir, une vue
+se partage [en lecture seule](/basedb/fonctionnalites/vues-partagees/).
 
 ![Le dialogue de partage](../../../assets/screens/partage-formulaire.png)
 

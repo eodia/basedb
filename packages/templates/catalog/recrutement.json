@@ -1,0 +1,378 @@
+{
+  "format": 1,
+  "key": "recrutement",
+  "label": "Recrutement",
+  "summary": "Postes ouverts, candidats et entretiens ; l'IA synthétise chaque candidature et suggère les points à creuser.",
+  "description": "Un suivi des recrutements, de la candidature à l'embauche. Les candidats postulent par un formulaire public, avancent étape par étape dans un kanban, et les entretiens se planifient dans un calendrier. L'IA lit la lettre de motivation et les notes : une synthèse, et les questions à poser en entretien. Elle aide à lire, elle ne décide pas.",
+  "category": "Ressources humaines",
+  "icon": "users",
+  "color": "#14b8a6",
+  "tags": ["IA", "Formulaire", "Kanban", "Calendrier"],
+  "base": {
+    "label": "Recrutement",
+    "description": "Les postes ouverts, les candidatures reçues et les entretiens."
+  },
+  "tables": [
+    {
+      "key": "candidats",
+      "label": "Candidats",
+      "icon": "user",
+      "color": "#14b8a6",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        { "label": "E-mail", "kind": "email" },
+        { "label": "Téléphone", "kind": "short_text", "format": { "display": "phone" } },
+        {
+          "label": "Étape",
+          "kind": "select",
+          "options": [
+            { "label": "Candidature", "color": "#94a3b8" },
+            { "label": "Présélection", "color": "#8b5cf6" },
+            { "label": "Entretien", "color": "#3b82f6" },
+            { "label": "Offre", "color": "#f59e0b" },
+            { "label": "Embauché", "color": "#10b981", "icon": "trophy" },
+            { "label": "Refusé", "color": "#ef4444" }
+          ]
+        },
+        {
+          "label": "Source",
+          "kind": "select",
+          "options": ["Site carrières", "LinkedIn", "Cooptation", "Salon", "Candidature spontanée"]
+        },
+        { "label": "Reçue le", "kind": "date" },
+        { "label": "Lettre de motivation", "kind": "long_text" },
+        {
+          "label": "Notes",
+          "kind": "long_text",
+          "description": "Les impressions de l'équipe au fil du processus."
+        },
+        {
+          "label": "Évaluation",
+          "kind": "number",
+          "format": { "display": "rating", "rating_max": 5 },
+          "description": "La note de l'équipe, après entretien."
+        },
+        {
+          "label": "Poste visé",
+          "kind": "lookup",
+          "rollup": { "via": "Poste", "target": "Intitulé" }
+        },
+        {
+          "label": "Synthèse",
+          "kind": "long_text",
+          "ai": {
+            "prompt": "Résume en trois phrases factuelles cette candidature : parcours, motivations, points forts.\nLettre : {{Lettre de motivation}}\nNotes de l'équipe : {{Notes}}"
+          }
+        },
+        {
+          "label": "Questions à poser",
+          "kind": "long_text",
+          "ai": {
+            "prompt": "Propose trois questions précises à poser en entretien pour vérifier ce qui reste flou dans cette candidature. Une question par ligne.\nLettre : {{Lettre de motivation}}"
+          }
+        }
+      ]
+    },
+    {
+      "key": "postes",
+      "label": "Postes",
+      "icon": "briefcase",
+      "color": "#6366f1",
+      "fields": [
+        { "label": "Intitulé", "kind": "short_text", "required": true },
+        {
+          "label": "Service",
+          "kind": "select",
+          "options": ["Technique", "Commercial", "Support", "Marketing", "Administration"]
+        },
+        { "label": "Contrat", "kind": "select", "options": ["CDI", "CDD", "Stage", "Alternance"] },
+        { "label": "Lieu", "kind": "short_text" },
+        { "label": "Ouvert", "kind": "boolean" },
+        { "label": "Description", "kind": "long_text" },
+        {
+          "label": "Candidatures",
+          "kind": "count",
+          "rollup": { "via": "Poste", "table": "candidats" }
+        }
+      ]
+    },
+    {
+      "key": "entretiens",
+      "label": "Entretiens",
+      "icon": "calendar",
+      "color": "#f59e0b",
+      "fields": [
+        { "label": "Titre", "kind": "short_text", "required": true },
+        { "label": "Date", "kind": "datetime" },
+        {
+          "label": "Type",
+          "kind": "select",
+          "options": ["Téléphone", "Visio", "Sur place", "Cas pratique"]
+        },
+        { "label": "Intervieweur", "kind": "user" },
+        {
+          "label": "Avis",
+          "kind": "select",
+          "options": [
+            { "label": "Favorable", "color": "#10b981" },
+            { "label": "Réservé", "color": "#f59e0b" },
+            { "label": "Défavorable", "color": "#ef4444" }
+          ]
+        },
+        { "label": "Compte rendu", "kind": "long_text" }
+      ]
+    }
+  ],
+  "links": [
+    { "from": "candidats", "label": "Poste", "to": "postes" },
+    { "from": "entretiens", "label": "Candidat", "to": "candidats" }
+  ],
+  "rows": {
+    "postes": [
+      {
+        "$key": "dev",
+        "Intitulé": "Développeuse ou développeur full stack",
+        "Service": "Technique",
+        "Contrat": "CDI",
+        "Lieu": "Lyon ou télétravail",
+        "Ouvert": true,
+        "Description": "Faire évoluer notre application web (TypeScript, PostgreSQL) au sein d'une équipe de six personnes."
+      },
+      {
+        "$key": "sales",
+        "Intitulé": "Chargé·e de clientèle",
+        "Service": "Commercial",
+        "Contrat": "CDI",
+        "Lieu": "Paris",
+        "Ouvert": true,
+        "Description": "Accompagner une cinquantaine de clients PME, de la signature au renouvellement."
+      },
+      {
+        "$key": "stage",
+        "Intitulé": "Stage marketing de contenu",
+        "Service": "Marketing",
+        "Contrat": "Stage",
+        "Lieu": "Lyon",
+        "Ouvert": false,
+        "Description": "Six mois pour produire articles, vidéos et newsletters avec l'équipe marketing."
+      }
+    ],
+    "candidats": [
+      {
+        "$key": "c1",
+        "Nom": "Inès Garnier",
+        "E-mail": "ines.garnier@exemple.fr",
+        "Téléphone": "06 12 34 56 78",
+        "Étape": "Entretien",
+        "Source": "LinkedIn",
+        "Reçue le": "-12d",
+        "Poste": "@dev",
+        "Lettre de motivation": "Cinq ans de développement web dans une agence, dont deux en tant que référente technique. J'ai migré une application de PHP vers TypeScript et je cherche un produit sur lequel m'investir dans la durée.",
+        "Notes": "Très bon premier appel. À vérifier : expérience de PostgreSQL au-delà des requêtes simples.",
+        "Évaluation": 4,
+        "Synthèse": "Développeuse avec cinq ans d'expérience en agence, dont deux comme référente technique. A mené une migration vers TypeScript. Cherche un produit pour s'investir durablement.",
+        "Questions à poser": "Quelle a été la plus grande difficulté de la migration vers TypeScript ?\nQuelles requêtes PostgreSQL complexes avez-vous déjà écrites ?\nQu'attendez-vous d'une équipe produit par rapport à une agence ?"
+      },
+      {
+        "$key": "c2",
+        "Nom": "Tom Leroy",
+        "E-mail": "tom.leroy@exemple.fr",
+        "Étape": "Candidature",
+        "Source": "Site carrières",
+        "Reçue le": "-2d",
+        "Poste": "@sales",
+        "Lettre de motivation": "Commercial terrain depuis trois ans dans l'équipement de bureau, j'aimerais évoluer vers un rôle de suivi de clients dans le logiciel."
+      },
+      {
+        "$key": "c3",
+        "Nom": "Mathilde Roux",
+        "E-mail": "mathilde.roux@exemple.fr",
+        "Étape": "Offre",
+        "Source": "Cooptation",
+        "Reçue le": "-30d",
+        "Poste": "@dev",
+        "Lettre de motivation": "Développeuse back-end, spécialiste des bases de données. J'ai conçu le modèle de données d'une application de gestion utilisée par 200 entreprises.",
+        "Notes": "Excellente au cas pratique. Prétentions salariales dans le haut de la fourchette.",
+        "Évaluation": 5
+      },
+      {
+        "$key": "c4",
+        "Nom": "Yanis Belkacem",
+        "E-mail": "yanis.b@exemple.fr",
+        "Étape": "Présélection",
+        "Source": "Salon",
+        "Reçue le": "-6d",
+        "Poste": "@sales",
+        "Lettre de motivation": "Rencontré sur votre stand au salon de l'entrepreneuriat. Deux ans de relation client chez un opérateur télécom."
+      },
+      {
+        "$key": "c5",
+        "Nom": "Clara Nguyen",
+        "E-mail": "clara.nguyen@exemple.fr",
+        "Étape": "Refusé",
+        "Source": "Candidature spontanée",
+        "Reçue le": "-45d",
+        "Poste": "@stage",
+        "Lettre de motivation": "Étudiante en école de communication, je cherche un stage de six mois en marketing de contenu.",
+        "Notes": "Profil intéressant mais le stage a été pourvu."
+      }
+    ],
+    "entretiens": [
+      {
+        "Titre": "Inès Garnier — entretien technique",
+        "Date": "+2d 10:00",
+        "Type": "Visio",
+        "Intervieweur": "$moi",
+        "Candidat": "@c1"
+      },
+      {
+        "Titre": "Inès Garnier — premier appel",
+        "Date": "-8d 14:00",
+        "Type": "Téléphone",
+        "Avis": "Favorable",
+        "Candidat": "@c1",
+        "Compte rendu": "Motivée, parcours cohérent, bonne communication."
+      },
+      {
+        "Titre": "Mathilde Roux — cas pratique",
+        "Date": "-15d 09:30",
+        "Type": "Cas pratique",
+        "Avis": "Favorable",
+        "Candidat": "@c3",
+        "Compte rendu": "Modèle de données très propre, bonnes explications de ses choix."
+      },
+      {
+        "Titre": "Yanis Belkacem — appel de présélection",
+        "Date": "+1d 16:30",
+        "Type": "Téléphone",
+        "Candidat": "@c4"
+      }
+    ]
+  },
+  "views": [
+    {
+      "table": "candidats",
+      "label": "Pipeline",
+      "kind": "kanban",
+      "spec": {
+        "group_by": "Étape",
+        "card_fields": ["Poste", "Source", "Évaluation"],
+        "group_order": ["Candidature", "Présélection", "Entretien", "Offre", "Embauché", "Refusé"]
+      }
+    },
+    {
+      "table": "candidats",
+      "label": "À traiter",
+      "kind": "grid",
+      "spec": {
+        "filter": "[Étape] eq \"Candidature\"",
+        "sorts": [{ "field": "Reçue le", "direction": "asc" }]
+      }
+    },
+    {
+      "table": "candidats",
+      "label": "Postuler",
+      "kind": "form",
+      "spec": {
+        "title": "Postuler",
+        "description": "Présentez-vous en quelques lignes : nous répondons à chaque candidature sous dix jours.",
+        "fields": [
+          { "field": "Nom", "required": true, "label": "Prénom et nom" },
+          { "field": "E-mail", "required": true },
+          { "field": "Téléphone" },
+          {
+            "field": "Lettre de motivation",
+            "required": true,
+            "label": "Pourquoi nous rejoindre ?",
+            "help": "Votre parcours, ce que vous cherchez, le poste qui vous intéresse."
+          }
+        ],
+        "submit_label": "Envoyer ma candidature",
+        "success_message": "Merci ! Nous revenons vers vous sous dix jours."
+      }
+    },
+    {
+      "table": "entretiens",
+      "label": "Agenda",
+      "kind": "calendar",
+      "spec": {
+        "date_field": "Date",
+        "color_field": "Avis",
+        "card_fields": ["Candidat", "Type"],
+        "mode": "week"
+      }
+    },
+    {
+      "table": "postes",
+      "label": "Postes ouverts",
+      "kind": "gallery",
+      "spec": {
+        "filter": "[Ouvert] eq true",
+        "card_fields": ["Service", "Contrat", "Lieu", "Candidatures"],
+        "color_field": "Service"
+      }
+    }
+  ],
+  "dashboards": [
+    {
+      "label": "Recrutements",
+      "blocks": [
+        {
+          "kind": "number",
+          "title": "Candidatures en cours",
+          "table": "candidats",
+          "aggregate": "count",
+          "filter": "[Étape] ne \"Embauché\" and [Étape] ne \"Refusé\""
+        },
+        {
+          "kind": "number",
+          "title": "Postes ouverts",
+          "table": "postes",
+          "aggregate": "count",
+          "filter": "[Ouvert] eq true"
+        },
+        {
+          "kind": "number",
+          "title": "Évaluation moyenne",
+          "table": "candidats",
+          "aggregate": "avg",
+          "field": "Évaluation"
+        },
+        {
+          "kind": "chart",
+          "title": "Par étape",
+          "table": "candidats",
+          "group_by": "Étape",
+          "style": "bar",
+          "width": 2
+        },
+        {
+          "kind": "chart",
+          "title": "Sources",
+          "table": "candidats",
+          "group_by": "Source",
+          "style": "pie"
+        },
+        {
+          "kind": "list",
+          "title": "Prochains entretiens",
+          "table": "entretiens",
+          "fields": ["Titre", "Date", "Type"],
+          "sort": "Date",
+          "limit": 5,
+          "width": 3
+        }
+      ]
+    }
+  ],
+  "automations": [
+    {
+      "label": "Nouvelle candidature",
+      "description": "Prévient à chaque candidature reçue.",
+      "trigger": { "kind": "record_created", "table": "candidats" },
+      "actions": [
+        { "kind": "notify", "users": ["$moi"], "message": "Nouvelle candidature : {{Nom}}" }
+      ]
+    }
+  ]
+}

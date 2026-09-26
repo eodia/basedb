@@ -90,6 +90,7 @@ export function TimelineView({
   const endField = fields.find((f) => f.name === spec.end_field) ?? null
   const groupField = fields.find((f) => f.name === spec.group_by) ?? null
   const colorField = fields.find((f) => f.name === spec.color_field) ?? null
+  const dependsField = fields.find((f) => f.name === spec.depends_on) ?? null
   const title = titleFieldOf(table, fields, spec.title_field)
   const extra = useMemo(() => pick(fields, spec.card_fields), [fields, spec.card_fields])
   const writable = table.actions.includes('update')
@@ -369,6 +370,10 @@ export function TimelineView({
             </p>
           )}
 
+          {dependsField !== null && (
+            <Dependencies lanes={lanes} field={dependsField} from={from} px={s.px} days={s.days} />
+          )}
+
           {todayOffset >= 0 && todayOffset <= width && (
             <div
               aria-hidden
@@ -591,5 +596,121 @@ function TimelineBar({
         </span>
       )}
     </>
+  )
+}
+
+/** The axis's height: the lanes start under it. */
+const AXIS = 48
+/** A lane's header, when the timeline is grouped. */
+const LANE_HEADER = 32
+
+/**
+ * The dependencies of a timeline — chapter 11 §1.6: an arrow from the end of each row
+ * another depends on to the start of that other. One that goes back in time — the next
+ * starts before the one it depends on ends — is red. Drawn from the saved dates: a bar
+ * being dragged moves its arrows when it lands.
+ */
+function Dependencies({
+  lanes,
+  field,
+  from,
+  px,
+  days,
+}: {
+  readonly lanes: readonly Lane[]
+  readonly field: Field
+  readonly from: Date
+  readonly px: number
+  readonly days: number
+}) {
+  // Where each bar sits: its row's middle, its two ends.
+  const places = new Map<string, { y: number; start: number; end: number; bar: Bar }>()
+  let y = AXIS
+  for (const lane of lanes) {
+    if (lane.label !== null) y += LANE_HEADER
+    for (const bar of lane.bars) {
+      const startDay = daysBetween(from, bar.start)
+      const endDay = Math.max(startDay, daysBetween(from, bar.end))
+      places.set(bar.row._id, {
+        y: y + ROW / 2,
+        start: LABEL + Math.max(0, Math.min(days, startDay)) * px,
+        end: LABEL + Math.max(0, Math.min(days, endDay + 1)) * px,
+        bar,
+      })
+      y += ROW
+    }
+  }
+
+  const predecessorsOf = (row: Row): string[] => {
+    const value = row[field.name]
+    if (Array.isArray(value)) {
+      return value.flatMap((v) => {
+        const id = (v as { id?: unknown } | null)?.id
+        return typeof id === 'string' ? [id] : []
+      })
+    }
+    const id = (value as { id?: unknown } | null)?.id
+    return typeof id === 'string' ? [id] : []
+  }
+
+  const arrows: Array<{ key: string; d: string; late: boolean }> = []
+  for (const [id, next] of places) {
+    for (const before of predecessorsOf(next.bar.row)) {
+      const prior = places.get(before)
+      if (prior === undefined) continue
+      const x1 = prior.end
+      const x2 = next.start
+      const bend = Math.max(12, Math.min(40, Math.abs(x2 - x1) / 2))
+      arrows.push({
+        key: `${before}>${id}`,
+        d: `M ${x1} ${prior.y} C ${x1 + bend} ${prior.y}, ${x2 - bend} ${next.y}, ${x2 - 2} ${next.y}`,
+        late: next.bar.start.getTime() < prior.bar.end.getTime(),
+      })
+    }
+  }
+  if (arrows.length === 0) return null
+
+  return (
+    <svg
+      aria-hidden="true"
+      className="pointer-events-none absolute top-0 left-0 z-[5] overflow-visible"
+      width={LABEL + days * px}
+      height={y}
+    >
+      <defs>
+        <marker
+          id="dep-arrow"
+          viewBox="0 0 8 8"
+          refX="7"
+          refY="4"
+          markerWidth="7"
+          markerHeight="7"
+          orient="auto"
+        >
+          <path d="M0,0 L8,4 L0,8 z" className="fill-muted-foreground" />
+        </marker>
+        <marker
+          id="dep-arrow-late"
+          viewBox="0 0 8 8"
+          refX="7"
+          refY="4"
+          markerWidth="7"
+          markerHeight="7"
+          orient="auto"
+        >
+          <path d="M0,0 L8,4 L0,8 z" className="fill-destructive" />
+        </marker>
+      </defs>
+      {arrows.map((a) => (
+        <path
+          key={a.key}
+          d={a.d}
+          fill="none"
+          strokeWidth={1.5}
+          className={a.late ? 'stroke-destructive' : 'stroke-muted-foreground/70'}
+          markerEnd={a.late ? 'url(#dep-arrow-late)' : 'url(#dep-arrow)'}
+        />
+      ))}
+    </svg>
   )
 }

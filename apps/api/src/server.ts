@@ -96,9 +96,20 @@ const exportDir =
   setting('BASEDB_EXPORT_DIR') ??
   fileURLToPath(new URL('../../../.basedb/exports', import.meta.url))
 
+// Where the public site publishes its base templates (chapter 20 §3.1): its own address
+// by default, another one to serve a catalog of one's own, `off` to read none.
+const templatesSetting = setting('BASEDB_TEMPLATES_URL')
+const templatesUrl =
+  templatesSetting === undefined || templatesSetting === ''
+    ? undefined
+    : templatesSetting === 'off'
+      ? null
+      : templatesSetting
+
 const kernel = startKernel({
   webhookTargets: { allowHttp: webhookDev, allowPrivate: webhookDev },
   exportDir,
+  templatesUrl,
   connectionString,
   encryptionKey: setting('BASEDB_ENCRYPTION_KEY'),
   mailer,
@@ -109,6 +120,11 @@ const kernel = startKernel({
 })
 console.log(`Fichiers : ${kernel.files.storage}.`)
 console.log(`Exports avant purge : ${exportDir}.`)
+console.log(
+  templatesUrl === null
+    ? 'Modèles : catalogue du site non lu (BASEDB_TEMPLATES_URL=off).'
+    : `Modèles : catalogue du site ${templatesUrl ?? 'public'} — intégrés en secours.`,
+)
 if (webhookDev) {
   console.log(
     'Webhooks : mode développement — HTTP et adresses locales acceptés (BASEDB_WEBHOOK_DEV=1).',
@@ -177,6 +193,9 @@ const app = createApp({
 // The history drain runs in the serving process (chapter 07 §1.4): without it, writes
 // are captured but never reach the journals.
 kernel.startBackground()
+// The listening connection (chapter 10 §3.1): the drain woken by each write, the live
+// signals relayed to the browsers (chapter 16 §3). Down, it retries on its own.
+void kernel.live.start()
 
 serve({ fetch: app.fetch, port }, (info) => {
   console.log(`basedb API on http://localhost:${info.port}`)

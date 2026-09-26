@@ -4,8 +4,12 @@ import {
   andFilter,
   defaultSpec,
   freeLabel,
+  gallerySpec,
   isModified,
   kanbanSpec,
+  listSpec,
+  nextHandOrder,
+  orderByHand,
   rangeClause,
   unavailableReason,
   viewStateOf,
@@ -160,5 +164,31 @@ describe('Vue modifiée', () => {
     const state = viewStateOf(kanban)
     expect(isModified(kanban, { ...state, hidden: ['nom'] })).toBe(false)
     expect(isModified(kanban, { ...state, filter: 'nom eq "a"' })).toBe(true)
+  })
+})
+
+describe('rows ordered by hand', () => {
+  const rows = ['a', 'b', 'c', 'd'].map((_id) => ({ _id }))
+  const ids = (list: ReadonlyArray<{ _id: string }>) => list.map((r) => r._id)
+
+  it('draws the rows in the saved order, the rows it does not name after, as they came', () => {
+    expect(ids(orderByHand(rows, ['c', 'a']))).toEqual(['c', 'a', 'b', 'd'])
+    expect(ids(orderByHand(rows, []))).toEqual(['a', 'b', 'c', 'd'])
+    // A row since deleted leaves a hole the order simply skips.
+    expect(ids(orderByHand(rows, ['gone', 'd']))).toEqual(['d', 'a', 'b', 'c'])
+  })
+
+  it('saves the rows on screen, and keeps the place of those of a page not loaded', () => {
+    expect(nextHandOrder(['b', 'a'], ['a', 'x', 'b', 'y'])).toEqual(['b', 'a', 'x', 'y'])
+    expect(nextHandOrder(['a', 'b', 'c'], [], 2)).toEqual(['a', 'b'])
+  })
+
+  it('reads the order of a gallery and of a list, and what else they keep', () => {
+    expect(gallerySpec({ manual_order: ['b', 3, 'a'] })).toMatchObject({
+      manual_order: ['b', 'a'],
+      card_size: 'medium',
+      cover_fit: 'cover',
+    })
+    expect(listSpec({ group_by: 'statut' })).toMatchObject({ group_by: 'statut', manual_order: [] })
   })
 })

@@ -39,6 +39,14 @@ const columns = [
 			{ href: 'https://github.com/eodia/basedb/issues', label: 'Signaler un problème' },
 		],
 	},
+	{
+		title: 'Eodia',
+		links: [
+			{ href: 'https://eodia.com/fr/', label: 'Le studio' },
+			{ href: 'https://eodia.com/fr/about/', label: 'À propos' },
+			{ href: 'https://eodia.com/fr/contact/', label: 'Nous contacter' },
+		],
+	},
 ];
 ---
 
@@ -47,7 +55,10 @@ const columns = [
 		<div class="brand">
 			<Logo size={26} />
 			<p>La base collaborative dont chaque table est une vraie table PostgreSQL.</p>
-			<p class="small">Un logiciel libre d’eodia.</p>
+			<p class="small">
+				Un logiciel libre d’<a class="eodia" href="https://eodia.com/fr/">Eodia</a>, studio de logiciel
+				IA-natif.
+			</p>
 		</div>
 		{
 			columns.map((c) => (
@@ -65,7 +76,7 @@ const columns = [
 		}
 	</div>
 	<div class="bottom">
-		<span>© {new Date().getFullYear()} eodia · AGPL-3.0-or-later</span>
+		<span>© {new Date().getFullYear()} <a href="https://eodia.com/fr/">Eodia</a> · AGPL-3.0-or-later</span>
 		<span>Site construit avec Astro et Starlight.</span>
 	</div>
 </footer>
@@ -78,7 +89,7 @@ const columns = [
 	}
 	.inner {
 		display: grid;
-		grid-template-columns: 1.6fr repeat(4, 1fr);
+		grid-template-columns: 1.5fr repeat(5, 1fr);
 		gap: 32px;
 		max-width: 1200px;
 		margin: 0 auto;
@@ -117,6 +128,16 @@ const columns = [
 		color: var(--bd-text-soft);
 	}
 	a:hover {
+		color: var(--bd-primary);
+	}
+	.brand .eodia,
+	.bottom a {
+		font-size: inherit;
+		font-weight: 600;
+		color: var(--bd-text);
+	}
+	.brand .eodia:hover,
+	.bottom a:hover {
 		color: var(--bd-primary);
 	}
 	.bottom {

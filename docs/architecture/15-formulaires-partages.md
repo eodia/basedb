@@ -229,3 +229,51 @@ Un formulaire fermé **pendant** qu'on le remplit bascule la page sur l'écran d
   (chapitre 09), il n'a pas besoin d'un lien.
 - **Pas de notification** à la réception d'une réponse ; les webhooks du chapitre 08 sur
   la création de ligne s'appliquent, comme à toute ligne.
+
+---
+
+## 10. Partager une vue en lecture seule
+
+Une **vue de données** — grille, kanban, calendrier, chronologie, galerie, liste — se
+partage comme un formulaire, par la même ligne `form_share` et les mêmes routes
+d'administration (§7), mais pour être **lue** : la page `/v/<jeton>` montre les lignes
+de la vue, sans rien permettre d'y changer. C'est le « lien de partage » d'une grille ou
+d'un tableau qu'on envoie à qui n'a pas de compte, ou qu'on intègre à un site.
+
+**Au nom de qui on lit.** La règle du §2, transposée : les lignes sont lues sur
+l'autorité du publiant, dont le droit `read` sur la table est **redécidé à chaque
+lecture**. S'il l'a perdu, la page est suspendue (`VIEW_SHARE_CLOSED`, raison
+`authority`). Ce qu'elle montre est l'intersection de trois choses : les champs que la
+vue affiche, ceux que le publiant peut lire, ses lignes (prédicat de lignes compris) — et
+le filtre et le tri de la vue, qui s'appliquent tels quels. La personne qui lit n'y ajoute
+ni filtre ni tri : la page est ce que la vue montre.
+
+**Ce que la page ne montre pas.** Ni le nom de la base, ni celui de la table, ni les
+lignes d'une autre table : une relation se lit par sa valeur d'affichage seule, sans
+`_id`. Seul le `_id` des lignes de la vue est rendu — c'est lui que range l'ordre
+manuel (`manual_order`) ; les fichiers et images passent par des liens signés, comme dans
+l'application. Les champs
+calculés à la lecture (chapitre 04 §7 ter) y figurent si le publiant peut les lire.
+
+| Accès | Qui peut lire |
+|---|---|
+| `public` | quiconque a le lien |
+| `members` | un membre connecté du tenant, de l'un des groupes choisis s'il y en a (`VIEW_SHARE_RESTRICTED` sinon) |
+
+**Intégrer.** `can_embed` autorise la page dans une `<iframe>` d'un autre site. Seule
+l'adresse `/v/<jeton>?embed=1` peut être encadrée — toute autre part avec
+`frame-ancestors 'none'` — et elle s'affiche sans en-tête ; encadrée alors que
+`can_embed` est faux, elle ne montre aucune ligne et dit que l'intégration n'est pas
+autorisée. Le dialogue de partage donne le code à coller. Désactiver le lien (`is_active`) suspend la page
+(`VIEW_SHARE_CLOSED`, raison `inactive`) ; `closes_at` et `max_responses` ne concernent
+que les formulaires et restent nuls.
+
+Lecture, sans droit sur la table — le jeton suffit à situer la vue :
+
+| Méthode | Route | Effet |
+|---|---|---|
+| `GET` | `/api/v1/views/{jeton}` | la vue telle que la page l'affiche : `kind`, `title`, `description`, `fields` (visibles, avec leur type, leurs choix, leur format), `spec` (titre, couverture, regroupement…), et la première page de `rows` |
+| `GET` | `/api/v1/views/{jeton}/rows?after=` | la page suivante, par curseur |
+
+La lecture est limitée à **120 requêtes par minute par adresse et par lien**, comme
+l'envoi d'un formulaire (§7).

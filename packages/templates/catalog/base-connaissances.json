@@ -1,0 +1,323 @@
+{
+  "format": 1,
+  "key": "base-connaissances",
+  "label": "Base de connaissances",
+  "summary": "Articles d'aide et questions des clients : l'IA résume, classe et propose une réponse à partir des articles.",
+  "description": "Pour un service support. Les articles d'aide sont rangés par catégorie et suivis dans le temps ; les questions des clients arrivent par un formulaire public. L'IA résume chaque article et en évalue le niveau, classe chaque question et rédige un brouillon de réponse à relire.",
+  "category": "Support",
+  "icon": "lightbulb",
+  "color": "#eab308",
+  "tags": ["IA", "Formulaire", "Liste"],
+  "base": {
+    "label": "Base de connaissances",
+    "description": "Les articles d'aide du support et les questions posées par les clients."
+  },
+  "tables": [
+    {
+      "key": "articles",
+      "label": "Articles",
+      "icon": "file-text",
+      "color": "#eab308",
+      "fields": [
+        { "label": "Titre", "kind": "short_text", "required": true },
+        {
+          "label": "Catégorie",
+          "kind": "select",
+          "options": [
+            { "label": "Premiers pas", "color": "#10b981" },
+            { "label": "Compte et facturation", "color": "#3b82f6" },
+            { "label": "Fonctionnalités", "color": "#8b5cf6" },
+            { "label": "Dépannage", "color": "#ef4444" }
+          ]
+        },
+        {
+          "label": "Statut",
+          "kind": "select",
+          "options": [
+            { "label": "Brouillon", "color": "#94a3b8" },
+            { "label": "Publié", "color": "#10b981" },
+            { "label": "À revoir", "color": "#f59e0b" }
+          ]
+        },
+        { "label": "Contenu", "kind": "long_text" },
+        { "label": "Auteur", "kind": "user" },
+        { "label": "Mis à jour le", "kind": "date" },
+        {
+          "label": "Utile",
+          "kind": "number",
+          "description": "Nombre de lecteurs qui ont trouvé l'article utile."
+        },
+        {
+          "label": "Questions liées",
+          "kind": "count",
+          "rollup": { "via": "Article", "table": "questions" }
+        },
+        {
+          "label": "Résumé",
+          "kind": "short_text",
+          "ai": {
+            "prompt": "Résume cet article d'aide en une phrase de 20 mots au plus.\n{{Titre}}\n{{Contenu}}"
+          }
+        },
+        {
+          "label": "Niveau",
+          "kind": "select",
+          "options": ["Débutant", "Intermédiaire", "Avancé"],
+          "ai": {
+            "prompt": "À quel niveau d'utilisateur s'adresse cet article d'aide ?\n{{Titre}} — {{Contenu}}"
+          }
+        }
+      ]
+    },
+    {
+      "key": "questions",
+      "label": "Questions",
+      "icon": "circle-help",
+      "color": "#0ea5e9",
+      "fields": [
+        { "label": "Question", "kind": "short_text", "required": true },
+        { "label": "Détails", "kind": "long_text" },
+        { "label": "Posée par", "kind": "email" },
+        { "label": "Reçue le", "kind": "date" },
+        {
+          "label": "Statut",
+          "kind": "select",
+          "options": [
+            { "label": "Nouvelle", "color": "#3b82f6" },
+            { "label": "En cours", "color": "#f59e0b" },
+            { "label": "Répondue", "color": "#10b981" }
+          ]
+        },
+        {
+          "label": "Catégorie",
+          "kind": "select",
+          "options": ["Premiers pas", "Compte et facturation", "Fonctionnalités", "Dépannage"],
+          "ai": {
+            "prompt": "Dans quelle catégorie du support ranger cette question ?\n{{Question}}\n{{Détails}}"
+          }
+        },
+        {
+          "label": "Réponse suggérée",
+          "kind": "long_text",
+          "ai": {
+            "prompt": "Rédige une réponse courte, claire et bienveillante à cette question d'un client, en vouvoyant. Si elle manque de précisions, demande-les poliment.\nQuestion : {{Question}}\nDétails : {{Détails}}"
+          }
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "from": "questions",
+      "label": "Article",
+      "to": "articles",
+      "description": "L'article qui répond à la question, quand il existe."
+    }
+  ],
+  "rows": {
+    "articles": [
+      {
+        "$key": "a1",
+        "Titre": "Créer votre compte en trois minutes",
+        "Catégorie": "Premiers pas",
+        "Statut": "Publié",
+        "Mis à jour le": "-40d",
+        "Utile": 128,
+        "Auteur": "$moi",
+        "Contenu": "Rendez-vous sur la page d'inscription, saisissez votre e-mail professionnel, puis choisissez un mot de passe d'au moins douze caractères. Un e-mail de confirmation vous est envoyé : cliquez sur le lien pour activer votre compte.",
+        "Résumé": "Inscription avec un e-mail professionnel, un mot de passe solide et une confirmation par e-mail.",
+        "Niveau": "Débutant"
+      },
+      {
+        "$key": "a2",
+        "Titre": "Changer de formule d'abonnement",
+        "Catégorie": "Compte et facturation",
+        "Statut": "Publié",
+        "Mis à jour le": "-15d",
+        "Utile": 64,
+        "Contenu": "Depuis Paramètres, puis Abonnement, choisissez la nouvelle formule. Le changement est immédiat ; la différence de prix est calculée au prorata sur votre prochaine facture.",
+        "Résumé": "Le changement de formule se fait dans Paramètres et se facture au prorata.",
+        "Niveau": "Débutant"
+      },
+      {
+        "$key": "a3",
+        "Titre": "Importer vos données depuis un tableur",
+        "Catégorie": "Fonctionnalités",
+        "Statut": "Publié",
+        "Mis à jour le": "-5d",
+        "Utile": 97,
+        "Contenu": "Exportez votre tableur au format CSV, puis utilisez Importer dans le menu de la table. Associez chaque colonne à un champ ; les dates doivent être au format AAAA-MM-JJ.",
+        "Résumé": "Import d'un CSV en associant chaque colonne à un champ, dates au format AAAA-MM-JJ.",
+        "Niveau": "Intermédiaire"
+      },
+      {
+        "$key": "a4",
+        "Titre": "Que faire si la synchronisation échoue ?",
+        "Catégorie": "Dépannage",
+        "Statut": "À revoir",
+        "Mis à jour le": "-120d",
+        "Utile": 12,
+        "Contenu": "Vérifiez que l'adresse de la source est toujours accessible, puis relancez la synchronisation. Si l'erreur persiste, contactez le support avec le message affiché.",
+        "Résumé": "Vérifier l'accès à la source, relancer, puis contacter le support si besoin.",
+        "Niveau": "Avancé"
+      }
+    ],
+    "questions": [
+      {
+        "Question": "Comment récupérer mes factures de l'an dernier ?",
+        "Détails": "J'ai besoin des factures de janvier à décembre pour mon comptable.",
+        "Posée par": "comptabilite@exemple.fr",
+        "Reçue le": "-1d",
+        "Statut": "Nouvelle",
+        "Catégorie": "Compte et facturation",
+        "Réponse suggérée": "Bonjour, vos factures sont disponibles dans Paramètres, puis Facturation : vous pouvez les télécharger une à une ou toutes ensemble au format PDF. N'hésitez pas à revenir vers nous si vous ne les trouvez pas."
+      },
+      {
+        "Question": "Mon import CSV mélange les dates",
+        "Détails": "Les dates 03/04 deviennent le 4 mars au lieu du 3 avril.",
+        "Posée par": "lucie@exemple.fr",
+        "Reçue le": "-2d",
+        "Statut": "En cours",
+        "Article": "@a3",
+        "Catégorie": "Fonctionnalités",
+        "Réponse suggérée": "Bonjour, l'import attend des dates au format AAAA-MM-JJ : convertissez la colonne dans votre tableur avant l'export, et vos dates seront lues correctement."
+      },
+      {
+        "Question": "Peut-on inviter un collègue gratuitement ?",
+        "Posée par": "marc@exemple.fr",
+        "Reçue le": "-6d",
+        "Statut": "Répondue",
+        "Catégorie": "Compte et facturation",
+        "Réponse suggérée": "Bonjour, chaque formule inclut un nombre de membres ; pourriez-vous nous préciser votre formule actuelle afin que nous vous répondions précisément ?"
+      },
+      {
+        "Question": "La synchronisation affiche « source injoignable »",
+        "Détails": "Depuis ce matin, plus rien ne se met à jour.",
+        "Posée par": "it@exemple.fr",
+        "Reçue le": "today",
+        "Statut": "Nouvelle",
+        "Article": "@a4",
+        "Catégorie": "Dépannage"
+      }
+    ]
+  },
+  "views": [
+    {
+      "table": "articles",
+      "label": "Par catégorie",
+      "kind": "list",
+      "spec": {
+        "filter": "[Statut] eq \"Publié\"",
+        "group_by": "Catégorie",
+        "card_fields": ["Résumé", "Niveau", "Utile"]
+      }
+    },
+    {
+      "table": "articles",
+      "label": "À revoir",
+      "kind": "grid",
+      "spec": {
+        "filter": "[Statut] ne \"Publié\"",
+        "sorts": [{ "field": "Mis à jour le", "direction": "asc" }]
+      }
+    },
+    {
+      "table": "articles",
+      "label": "Fiches",
+      "kind": "gallery",
+      "spec": {
+        "card_fields": ["Catégorie", "Niveau", "Résumé"],
+        "color_field": "Catégorie",
+        "card_size": "large"
+      }
+    },
+    {
+      "table": "questions",
+      "label": "File d'attente",
+      "kind": "kanban",
+      "spec": {
+        "group_by": "Statut",
+        "card_fields": ["Catégorie", "Reçue le", "Posée par"],
+        "group_order": ["Nouvelle", "En cours", "Répondue"]
+      }
+    },
+    {
+      "table": "questions",
+      "label": "Poser une question",
+      "kind": "form",
+      "spec": {
+        "title": "Une question ?",
+        "description": "Décrivez votre question : le support vous répond par e-mail, en général dans la journée.",
+        "fields": [
+          { "field": "Question", "required": true, "label": "Votre question" },
+          { "field": "Détails", "help": "Ce que vous avez essayé, les messages affichés." },
+          { "field": "Posée par", "required": true, "label": "Votre e-mail" }
+        ],
+        "submit_label": "Envoyer",
+        "success_message": "Merci, nous vous répondons au plus vite."
+      }
+    }
+  ],
+  "dashboards": [
+    {
+      "label": "Support",
+      "blocks": [
+        {
+          "kind": "number",
+          "title": "Questions en attente",
+          "table": "questions",
+          "aggregate": "count",
+          "filter": "[Statut] ne \"Répondue\""
+        },
+        {
+          "kind": "number",
+          "title": "Articles publiés",
+          "table": "articles",
+          "aggregate": "count",
+          "filter": "[Statut] eq \"Publié\""
+        },
+        {
+          "kind": "number",
+          "title": "Votes « utile »",
+          "table": "articles",
+          "aggregate": "sum",
+          "field": "Utile"
+        },
+        {
+          "kind": "chart",
+          "title": "Questions par catégorie",
+          "table": "questions",
+          "group_by": "Catégorie",
+          "style": "pie"
+        },
+        {
+          "kind": "chart",
+          "title": "Articles par niveau",
+          "table": "articles",
+          "group_by": "Niveau",
+          "style": "bar",
+          "width": 2
+        },
+        {
+          "kind": "list",
+          "title": "Questions récentes",
+          "table": "questions",
+          "fields": ["Question", "Statut", "Catégorie"],
+          "sort": "-Reçue le",
+          "limit": 6,
+          "width": 3
+        }
+      ]
+    }
+  ],
+  "automations": [
+    {
+      "label": "Nouvelle question",
+      "description": "Prévient à chaque question reçue.",
+      "trigger": { "kind": "record_created", "table": "questions" },
+      "actions": [
+        { "kind": "notify", "users": ["$moi"], "message": "Nouvelle question : {{Question}}" }
+      ]
+    }
+  ]
+}

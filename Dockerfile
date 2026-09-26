@@ -42,6 +42,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 COPY --from=build /repo/packages/naming/dist packages/naming/dist
 COPY --from=build /repo/packages/contracts/dist packages/contracts/dist
 COPY --from=build /repo/packages/catalog-schema/dist packages/catalog-schema/dist
+COPY --from=build /repo/packages/templates/dist packages/templates/dist
 COPY --from=build /repo/packages/core/dist packages/core/dist
 COPY --from=build /repo/apps/api/dist apps/api/dist
 COPY --from=build /repo/apps/mcp/dist apps/mcp/dist
@@ -82,6 +83,7 @@ CMD ["node", "dist/server.js"]
 FROM runtime AS web
 COPY --from=build --chown=node:node /repo/apps/web/.next/standalone ./
 COPY --from=build --chown=node:node /repo/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=node:node /repo/apps/web/public ./apps/web/public
 ENV PORT=3000 \
     HOSTNAME=0.0.0.0
 USER node

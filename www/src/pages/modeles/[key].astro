@@ -1,0 +1,411 @@
+---
+import {
+	type Template,
+	type TemplateField,
+	resolveTemplateDate,
+} from '../../../../packages/contracts/src/templates';
+import Landing from '../../layouts/Landing.astro';
+import { KIND_LABELS, VIEW_LABELS, catalog, plural } from '../../lib/modeles';
+
+export async function getStaticPaths() {
+	return (await catalog()).map(({ template }) => ({ params: { key: template.key }, props: { template } }));
+}
+
+const { template } = Astro.props as { template: Template };
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const tableLabel = (key: string) => template.tables.find((t) => t.key === key)?.label ?? key;
+const aiFields = template.tables.flatMap((t) =>
+	t.fields.filter((f) => f.ai !== undefined).map((f) => ({ table: t.label, field: f.label, prompt: f.ai?.prompt ?? '' })),
+);
+/** A sample value as the base will show it: dates resolved from today, numbers in French. */
+function show(value: unknown, field: TemplateField): string {
+	if (Array.isArray(value)) return value.join(', ');
+	if (typeof value === 'boolean') return value ? 'Oui' : 'Non';
+	if (typeof value === 'number') {
+		const currency = field.format?.display === 'currency' ? (field.format.currency ?? 'EUR') : undefined;
+		return currency === undefined
+			? value.toLocaleString('fr-FR')
+			: value.toLocaleString('fr-FR', { style: 'currency', currency });
+	}
+	if ((field.kind === 'date' || field.kind === 'datetime') && typeof value === 'string') {
+		const resolved = resolveTemplateDate(value, field.kind, new Date());
+		if (resolved === null) return value;
+		return field.kind === 'date'
+			? new Date(`${resolved}T00:00:00`).toLocaleDateString('fr-FR')
+			: new Date(resolved).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+	}
+	if (value === '$moi') return 'Vous';
+	if (typeof value === 'string' && value.startsWith('@')) return '…';
+	return String(value);
+}
+---
+
+<Landing title={`${template.label} — modèles basedb`} description={template.summary}>
+	<main class="page">
+		<a class="back" href={`${base}/modeles/`}>← Tous les modèles</a>
+		<header class="head">
+			<span class="icon" style={`background:${template.color ?? '#64748b'}`}>
+				{template.label.replace(/^Démo : /, '').charAt(0)}
+			</span>
+			<div>
+				<span class="bd-label">{template.category ?? 'Modèle'}</span>
+				<h1>{template.label}</h1>
+				<p class="summary">{template.summary}</p>
+				<div class="tags">{template.tags.map((t) => <span>{t}</span>)}</div>
+			</div>
+		</header>
+
+		<div class="layout">
+			<div class="main">
+				{template.description && <p class="description">{template.description}</p>}
+
+				<h2>{plural(template.tables.length, 'table', 'tables')}</h2>
+				{
+					template.tables.map((table) => {
+						const rows = template.rows[table.key] ?? [];
+						const links = template.links.filter((l) => l.from === table.key);
+						const shown = table.fields.filter((f) => f.kind !== 'button').slice(0, 5);
+						return (
+							<section class="table">
+								<h3>
+									<span class="dot" style={`background:${table.color ?? '#94a3b8'}`} />
+									{table.label}
+									<small>{plural(rows.length, 'ligne d’exemple', 'lignes d’exemple')}</small>
+								</h3>
+								{table.description && <p class="muted">{table.description}</p>}
+								<ul class="fields">
+									{table.fields.map((f) => (
+										<li class={f.ai ? 'is-ai' : ''} title={f.ai?.prompt ?? f.formula ?? f.description ?? ''}>
+											{f.ai && <span class="spark">✦</span>}
+											{f.label}
+											<em>{KIND_LABELS[f.kind] ?? f.kind}</em>
+										</li>
+									))}
+									{links.map((l) => (
+										<li class="is-link">
+											{l.label}
+											<em>→ {tableLabel(l.to)}</em>
+										</li>
+									))}
+								</ul>
+								{rows.length > 0 && (
+									<div class="sample">
+										<table>
+											<thead>
+												<tr>
+													{shown.map((f) => (
+														<th>{f.label}</th>
+													))}
+												</tr>
+											</thead>
+											<tbody>
+												{rows.slice(0, 3).map((row) => (
+													<tr>
+														{shown.map((f) => (
+															<td>{row[f.label] === undefined ? '' : show(row[f.label], f)}</td>
+														))}
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
+								)}
+							</section>
+						);
+					})
+				}
+
+				{
+					aiFields.length > 0 && (
+						<>
+							<h2>Ce que l’IA calcule</h2>
+							<ul class="prompts">
+								{aiFields.map((f) => (
+									<li>
+										<strong>
+											{f.table} › {f.field}
+										</strong>
+										<p>{f.prompt}</p>
+									</li>
+								))}
+							</ul>
+						</>
+					)
+				}
+			</div>
+
+			<aside class="side">
+				<div class="box">
+					<h2>Utiliser ce modèle</h2>
+					<ol>
+						<li>Dans basedb, <strong>Nouvelle base</strong>.</li>
+						<li><strong>Partir d’un modèle</strong>, puis « {template.label} ».</li>
+						<li>
+							<strong>Créer la base</strong>{aiFields.length > 0 && ' — en acceptant, si vous le souhaitez, que les champs IA soient calculés par votre fournisseur d’IA'}.
+						</li>
+					</ol>
+					<a class="download" href={`${base}/modeles/${template.key}.json`} download>Télécharger le JSON</a>
+					<p class="muted small">
+						Pour l’importer dans votre instance, ou l’adapter avant de le proposer au catalogue.
+					</p>
+				</div>
+				{
+					template.views.length > 0 && (
+						<div class="box">
+							<h2>{plural(template.views.length, 'vue', 'vues')}</h2>
+							<ul class="plain">
+								{template.views.map((v) => (
+									<li>
+										{v.label} <span class="muted">— {VIEW_LABELS[v.kind]}, {tableLabel(v.table)}</span>
+									</li>
+								))}
+							</ul>
+						</div>
+					)
+				}
+				{
+					(template.dashboards.length > 0 || template.automations.length > 0) && (
+						<div class="box">
+							{template.dashboards.map((d) => (
+								<p>
+									<strong>Tableau de bord</strong> « {d.label} » — {plural(d.blocks.length, 'bloc', 'blocs')}
+								</p>
+							))}
+							{template.automations.map((a) => (
+								<p>
+									<strong>Automatisation</strong> « {a.label} »{a.description && <span class="muted"> — {a.description}</span>}
+								</p>
+							))}
+						</div>
+					)
+				}
+			</aside>
+		</div>
+	</main>
+</Landing>
+
+<style>
+	.page {
+		max-width: 1160px;
+		margin: 0 auto;
+		padding: 120px 24px 64px;
+	}
+	.back {
+		display: inline-block;
+		margin-bottom: 24px;
+		color: var(--bd-muted-fg);
+		font-weight: 600;
+		text-decoration: none;
+	}
+	.head {
+		display: flex;
+		gap: 20px;
+		align-items: flex-start;
+		margin-bottom: 32px;
+	}
+	.icon {
+		flex-shrink: 0;
+		width: 64px;
+		height: 64px;
+		border-radius: 16px;
+		display: grid;
+		place-items: center;
+		color: #fff;
+		font-weight: 800;
+		font-size: 28px;
+	}
+	h1 {
+		font-size: clamp(30px, 4vw, 44px);
+		font-weight: 800;
+		letter-spacing: -0.03em;
+		margin: 8px 0 8px;
+	}
+	.summary {
+		font-size: 17px;
+		color: var(--bd-text-soft);
+		margin: 0 0 12px;
+	}
+	.tags {
+		display: flex;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+	.tags span {
+		font-size: 12.5px;
+		font-weight: 600;
+		background: var(--bd-muted);
+		border: 1px solid var(--bd-border);
+		padding: 3px 10px;
+		border-radius: 999px;
+	}
+	.layout {
+		display: grid;
+		grid-template-columns: 1fr 320px;
+		gap: 40px;
+	}
+	.description {
+		font-size: 16px;
+		line-height: 1.7;
+		color: var(--bd-text-soft);
+		margin: 0 0 28px;
+	}
+	h2 {
+		font-size: 20px;
+		letter-spacing: -0.02em;
+		margin: 28px 0 14px;
+	}
+	.table {
+		border: 1px solid var(--bd-border);
+		border-radius: var(--bd-radius);
+		padding: 18px;
+		margin-bottom: 16px;
+		background: var(--bd-card);
+	}
+	.table h3 {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 0 0 6px;
+		font-size: 17px;
+	}
+	.table h3 small {
+		margin-left: auto;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--bd-muted-fg);
+	}
+	.dot {
+		width: 10px;
+		height: 10px;
+		border-radius: 3px;
+	}
+	.muted {
+		color: var(--bd-muted-fg);
+	}
+	.small {
+		font-size: 13px;
+	}
+	.fields {
+		list-style: none;
+		padding: 0;
+		margin: 12px 0 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.fields li {
+		font-size: 13.5px;
+		border: 1px solid var(--bd-border);
+		border-radius: 8px;
+		padding: 4px 8px;
+		display: inline-flex;
+		gap: 6px;
+		align-items: baseline;
+	}
+	.fields em {
+		font-style: normal;
+		font-size: 12px;
+		color: var(--bd-muted-fg);
+	}
+	.fields .is-ai {
+		border-color: #c4b5fd;
+		background: #f5f3ff;
+	}
+	.fields .is-link {
+		border-style: dashed;
+	}
+	.spark {
+		color: #7c3aed;
+	}
+	.sample {
+		overflow-x: auto;
+		margin-top: 14px;
+	}
+	.sample table {
+		border-collapse: collapse;
+		font-size: 13px;
+		width: 100%;
+	}
+	.sample th,
+	.sample td {
+		text-align: left;
+		padding: 6px 10px;
+		border-bottom: 1px solid var(--bd-border-subtle);
+		max-width: 220px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.sample th {
+		color: var(--bd-muted-fg);
+		font-weight: 600;
+	}
+	.prompts {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	.prompts li {
+		border: 1px solid #ddd6fe;
+		background: #faf5ff;
+		border-radius: 12px;
+		padding: 14px;
+	}
+	.prompts p {
+		margin: 6px 0 0;
+		white-space: pre-line;
+		font-size: 14px;
+		color: var(--bd-text-soft);
+	}
+	.side {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+	.box {
+		border: 1px solid var(--bd-border);
+		border-radius: var(--bd-radius);
+		padding: 18px;
+		background: var(--bd-alt-bg);
+	}
+	.box h2 {
+		margin: 0 0 10px;
+		font-size: 17px;
+	}
+	.box ol {
+		margin: 0 0 14px;
+		padding-left: 18px;
+		line-height: 1.6;
+		color: var(--bd-text-soft);
+	}
+	.box p {
+		margin: 0 0 8px;
+		font-size: 14px;
+	}
+	.plain {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		font-size: 14px;
+		line-height: 1.8;
+	}
+	.download {
+		display: block;
+		text-align: center;
+		background: var(--bd-primary);
+		color: #fff;
+		font-weight: 700;
+		padding: 10px;
+		border-radius: 10px;
+		text-decoration: none;
+		margin-bottom: 8px;
+	}
+	@media (max-width: 900px) {
+		.layout {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

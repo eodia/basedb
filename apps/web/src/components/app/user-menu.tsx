@@ -48,16 +48,21 @@ import { useCallback, useEffect, useState } from 'react'
  * It holds the three things a session-holder acts on: how the product looks, the
  * password, and the way out. Open sessions get a panel of their own, because "où suis-je
  * connecté" is a security question and deserves more than a menu line.
+ *
+ * Above them, what the sidebar hands it: the entries that are not the data itself —
+ * documentation, integrations, administration —, kept out of the column.
  */
 
 interface Props {
   readonly user: { readonly displayName: string; readonly email: string }
   /** The reduced sidebar: the avatar alone, the name in a tooltip. */
   readonly compact?: boolean
+  /** Menu items shown first, under the name. */
+  readonly entries?: React.ReactNode
   readonly onSignedOut: () => void
 }
 
-export function UserMenu({ user, compact = false, onSignedOut }: Props) {
+export function UserMenu({ user, compact = false, entries, onSignedOut }: Props) {
   const preference = useTheme((s) => s.preference)
   const setPreference = useTheme((s) => s.setPreference)
   const [passwordOpen, setPasswordOpen] = useState(false)
@@ -115,6 +120,13 @@ export function UserMenu({ user, compact = false, onSignedOut }: Props) {
             <span className="block truncate">{user.email}</span>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+
+          {entries !== undefined && (
+            <>
+              {entries}
+              <DropdownMenuSeparator />
+            </>
+          )}
 
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>

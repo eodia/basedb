@@ -2,20 +2,34 @@
 
 import { AiEmpty } from '@/components/app/ai-pending'
 import { DateInput } from '@/components/app/date-picker'
+import { FieldButton } from '@/components/app/field-button'
 import { FilesCell, type Upload } from '@/components/app/files'
 import { LongTextCell, UrlLink, markdownExcerpt } from '@/components/app/markdown-text'
 import {
   ChoiceChips,
   EnumPicker,
+  LinkChips,
   LinkPicker,
   MultiEnumPicker,
+  MultiLinkPicker,
   type SearchLink,
   choicesOf,
+  linksOf,
 } from '@/components/app/pickers'
+import {
+  BarcodeValue,
+  ComputedList,
+  ContactLink,
+  RatingStars,
+  UserPicker,
+  UserValue,
+} from '@/components/app/value-widgets'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { type Field, type LinkOption, filesOf } from '@/lib/api/client'
+import { shownField } from '@/lib/computed'
 import { type DateKind, displayStored, isDateKind, storedFromText } from '@/lib/dates'
+import { editText, formatNumber, formatOf, parseNumberInput } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Link2 } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -40,7 +54,7 @@ export interface Row extends Record<string, unknown> {
 export const ROW_HEIGHT = 36
 
 /** Types whose value is edited as plain text. The others carry their own control. */
-const TEXTUAL = new Set(['short_text', 'long_text', 'url', 'number', 'date', 'datetime'])
+const TEXTUAL = new Set(['short_text', 'long_text', 'url', 'email', 'number', 'date', 'datetime'])
 
 /** True when this cell opens an editor on double-click rather than on a single one. */
 export function isTextual(field: Field): boolean {
@@ -71,7 +85,7 @@ export const followsLink = (e: { ctrlKey: boolean; metaKey: boolean }) => e.ctrl
 
 export function Cell({
   row,
-  field,
+  field: given,
   options,
   onSearchLink,
   emphasis,
@@ -82,8 +96,31 @@ export function Cell({
   onUpload,
   onFollowLink,
 }: CellProps) {
+  // A computed field is drawn as the field its value is, read-only (chapter 04 §7 ter).
+  const field = shownField(given)
   const present = Object.hasOwn(row, field.name)
   const value = row[field.name]
+
+  if (given.computed?.multiple === true && present) {
+    return (
+      <span className="flex w-full min-w-0 items-center px-2">
+        <ComputedList
+          values={Array.isArray(value) ? value : []}
+          field={field}
+          text={(v) => (v === null || v === undefined ? '' : display(String(v), field))}
+        />
+      </span>
+    )
+  }
+
+  // A button has no value: it is drawn, whatever the row holds (chapter 17 §4).
+  if (given.kind === 'button') {
+    return (
+      <span className="flex w-full min-w-0 items-center px-2">
+        <FieldButton field={given} row={row} size="xs" />
+      </span>
+    )
+  }
 
   if (!present) {
     return (
@@ -212,6 +249,68 @@ export function Cell({
     )
   }
 
+  // Several rows of the target, chosen as a multiple choice is (chapter 04 §4 bis).
+  if (field.kind === 'multi_link') {
+    const links = linksOf(value)
+    const target = field.link?.target
+    const follow =
+      onFollowLink === undefined || target === undefined
+        ? undefined
+        : (id: string) => onFollowLink(target, id)
+    if (options === undefined) {
+      return (
+        <span className="flex w-full min-w-0 items-center px-2">
+          <LinkChips values={links} onFollow={follow} />
+        </span>
+      )
+    }
+    return (
+      <span className="flex w-full min-w-0 items-center px-1">
+        <MultiLinkPicker
+          field={field}
+          value={links}
+          options={options}
+          onSearch={onSearchLink}
+          onChange={(next) => void onCommit(next)}
+          appearance="cell"
+        />
+      </span>
+    )
+  }
+
+  if (field.kind === 'user') {
+    const id = typeof value === 'string' && value !== '' ? value : null
+    return (
+      <span className="flex w-full min-w-0 items-center px-1">
+        {field.read_only === true ? (
+          <span className="px-1">
+            <UserValue id={id} compact />
+          </span>
+        ) : (
+          <UserPicker
+            field={field}
+            value={id}
+            onChange={(next) => void onCommit(next)}
+            appearance="cell"
+          />
+        )}
+      </span>
+    )
+  }
+
+  if (field.kind === 'number' && formatOf(field) === 'rating') {
+    return (
+      <span className="flex w-full items-center px-2">
+        <RatingStars
+          value={value}
+          max={field.format?.rating_max ?? 5}
+          label={field.label}
+          onChange={field.read_only === true ? undefined : (next) => void onCommit(next)}
+        />
+      </span>
+    )
+  }
+
   if (field.kind === 'boolean') {
     return (
       <span className="flex w-full items-center px-2">
@@ -282,17 +381,44 @@ export function Cell({
   }
 
   if (editing) {
+    const typed = editText(value, field)
     return (
       <TextEditor
-        initial={initial}
+        initial={typed}
         field={field}
         onCancel={onEndEdit}
         onCommit={async (next) => {
           onEndEdit()
-          if (next === initial) return
+          if (next === typed) return
           await onCommit(next === '' ? null : convert(next, field))
         }}
       />
+    )
+  }
+
+  const format = formatOf(field)
+  if ((field.kind === 'email' || format === 'phone') && initial !== '') {
+    return (
+      <span
+        className="flex w-full min-w-0 items-center px-2"
+        onDoubleClick={() => {
+          if (isTextual(field)) onStartEdit()
+        }}
+      >
+        <ContactLink kind={field.kind === 'email' ? 'email' : 'phone'} value={initial} />
+      </span>
+    )
+  }
+  if (format === 'barcode' && initial !== '') {
+    return (
+      <span
+        className="flex w-full min-w-0 items-center px-2"
+        onDoubleClick={() => {
+          if (isTextual(field)) onStartEdit()
+        }}
+      >
+        <BarcodeValue value={initial} />
+      </span>
     )
   }
 
@@ -322,7 +448,7 @@ export function Cell({
       className={cn(
         'w-full truncate px-2 text-left',
         emphasis && 'font-medium',
-        field.kind === 'number' && 'text-right tabular-nums',
+        (field.kind === 'number' || field.kind === 'autonumber') && 'text-right tabular-nums',
         initial === '' && 'text-muted-foreground',
       )}
     >
@@ -421,6 +547,8 @@ function DateEditor({
 /** How a stored value reads on screen. */
 export function display(raw: string, field: Field): string {
   if (field.kind === 'number') {
+    // A format — a currency, a percentage, a duration, stars — reads the number its way.
+    if (formatOf(field) !== 'decimal') return formatNumber(raw, field)
     // Numbers arrive as decimal strings, without exception: `1234.5600000000` is what
     // the column holds, and trailing zeros are noise to a reader.
     return raw.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '')
@@ -433,10 +561,10 @@ export function display(raw: string, field: Field): string {
 /** Converts what was typed into what the field's type expects. */
 export function convert(typed: string, field: Field): unknown {
   if (field.kind === 'number') {
-    const parsed = Number(typed.replace(',', '.'))
-    // A refusal belongs to the server, which knows the column: sending the text through
-    // gets the real error rather than a guess made here.
-    return Number.isFinite(parsed) ? parsed : typed
+    // A duration typed `1:30`, an amount typed with its symbol and its French comma. A
+    // refusal belongs to the server, which knows the column: what does not read as a
+    // number goes through as typed, and gets the real error rather than a guess made here.
+    return parseNumberInput(typed, field)
   }
   if (field.kind === 'boolean') return typed === 'true' || typed === 'oui'
   if (isDateKind(field.kind)) return storedFromText(typed, field.kind)
@@ -450,6 +578,12 @@ export function rawText(row: Row, field: Field): string {
   if (field.kind === 'link') {
     const link = value as { id: string | null; display: string | null }
     return link.display ?? link.id ?? ''
+  }
+  if (field.kind === 'multi_link') {
+    return linksOf(value)
+      .filter((l) => l.masked !== true)
+      .map((l) => l.display ?? l.id ?? '')
+      .join(', ')
   }
   // What a person reads in the cell, as a spreadsheet would paste it back: the labels of
   // the choices, the names of the files.

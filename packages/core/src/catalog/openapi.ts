@@ -5,6 +5,7 @@ import type { ProjectedBase, ProjectedField, ProjectedTable } from './projection
 /** The kinds `sort` does not offer: a link, and the values that have no order (§4.2). */
 const UNSORTED: ReadonlySet<string> = new Set([
   'link',
+  'multi_link',
   'long_text',
   'multi_select',
   'file',
@@ -95,6 +96,15 @@ function scalarSchema(field: ProjectedField): Schema {
     // An `http(s)` address or a `mailto:`; a bare domain is given its `https://`.
     case 'url':
       return { ...of('string', 'uri'), maxLength: 2048 }
+    case 'email':
+      return { ...of('string', 'email'), maxLength: 254 }
+    // Numbered by the database, never written: a whole number, as text like every
+    // `bigint` the API returns.
+    case 'autonumber':
+      return { ...of('string', 'int64'), readOnly: true }
+    // The identifier of a user of the tenant — `GET /meta/users` lists them.
+    case 'user':
+      return of('string', 'uuid')
     case 'datetime':
       return of('string', 'date-time')
     case 'system':
@@ -153,7 +163,13 @@ function describe(description: string | null): Schema {
 }
 
 function fieldSchema(field: ProjectedField): Schema {
-  const schema = field.kind === 'link' ? linkReadSchema(field) : scalarSchema(field)
+  const schema =
+    field.kind === 'link'
+      ? linkReadSchema(field)
+      : field.kind === 'multi_link'
+        ? // The rows in the column's order, each as a link reads (chapter 04 §4 bis).
+          { type: ['array', 'null'], items: linkReadSchema(field) }
+        : scalarSchema(field)
   return {
     ...schema,
     ...describe(field.description),
@@ -206,7 +222,27 @@ function writeSchema(table: ProjectedTable): Schema {
               { type: 'object', properties: { id: { type: ['string', 'null'], format: 'uuid' } } },
             ],
           }
-        : fieldSchema(field)
+        : field.kind === 'multi_link'
+          ? {
+              title: escapeLabel(field.label),
+              ...describe(field.description),
+              // A list of identifiers or of `{ id }` — a read written back as it came —,
+              // one identifier for a list of one, `null` or `[]` to empty it.
+              oneOf: [
+                {
+                  type: 'array',
+                  items: {
+                    oneOf: [
+                      { type: 'string', format: 'uuid' },
+                      { type: 'object', properties: { id: { type: 'string', format: 'uuid' } } },
+                    ],
+                  },
+                },
+                { type: 'string', format: 'uuid' },
+                { type: 'null' },
+              ],
+            }
+          : fieldSchema(field)
 
     if (field.required) required.push(field.name)
   }

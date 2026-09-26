@@ -67,11 +67,13 @@ header.header {
 	-webkit-backdrop-filter: blur(14px) saturate(180%);
 }
 .site-title {
-	font-weight: 800;
-	letter-spacing: -0.03em;
+	font-weight: 700;
+	letter-spacing: -0.045em;
+	color: var(--sl-color-white);
 }
 .site-title img {
-	filter: drop-shadow(0 2px 6px rgba(42, 157, 28, 0.35));
+	width: 32px;
+	height: 32px;
 }
 
 /* Sidebar */

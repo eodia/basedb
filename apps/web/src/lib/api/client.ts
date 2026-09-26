@@ -10,6 +10,8 @@
  * psql — and never by an identifier the user would have to look up.
  */
 
+import type { Template, TemplateIssue, TemplateSummary } from '@basedb/contracts'
+
 declare global {
   interface Window {
     __BASEDB_API__?: string
@@ -145,6 +147,24 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * A data write, as the undo journal hears it (chapter 16 §4): its transaction — which
+ * `POST /history/undo` undoes — and what the request was.
+ */
+export interface Write {
+  readonly transaction: string
+  readonly method: string
+  readonly path: string
+  readonly body: string | null
+}
+
+let writeListener: ((write: Write) => void) | null = null
+
+/** Hears every data write's transaction; `null` stops. The undo journal's only door. */
+export function onWrite(listener: ((write: Write) => void) | null): void {
+  writeListener = listener
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   // `/auth/*` and `/healthz` carry the cookie; everything else carries a Bearer token.
   const authenticated = path.startsWith('/api/v1/') && !path.startsWith('/api/v1/dev/')
@@ -168,6 +188,17 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   if (r.status === 401 && authenticated) {
     access = null
     r = await send(await accessToken())
+  }
+
+  // Every data write names its transaction; an undo's own is the journal's business.
+  const transaction = r.ok ? r.headers.get('x-basedb-transaction') : null
+  if (transaction !== null && writeListener !== null && !path.endsWith('/history/undo')) {
+    writeListener({
+      transaction,
+      method: init?.method ?? 'GET',
+      path,
+      body: typeof init?.body === 'string' ? init.body : null,
+    })
   }
 
   if (r.status === 204) return undefined as T
@@ -263,6 +294,8 @@ export interface Project extends Look {
 
 /** Who is signed in, and what the screen must know about them before drawing anything. */
 export interface Me {
+  /** The account's identifier — what a person field, a mention, a presence name. */
+  readonly id: string
   readonly email: string
   readonly displayName: string
   readonly tenant: string
@@ -461,6 +494,16 @@ export interface Field {
   readonly sortable?: boolean
   /** The choices of a `select`, which the database itself holds the column to. */
   readonly options?: readonly FieldOption[]
+  /**
+   * How the value reads, when not plain (ch. 04 §2.11): a currency, a percentage, a
+   * duration in seconds, a rating out of `rating_max` for a number; a phone number or a
+   * barcode for a short text. The column is the same whatever the format.
+   */
+  readonly format?: {
+    readonly display: string
+    readonly currency?: string | null
+    readonly rating_max?: number | null
+  }
   readonly link?: {
     readonly target?: string
     readonly target_display_field?: string | null
@@ -468,6 +511,46 @@ export interface Field {
     readonly masked: boolean
     readonly on_delete: string
   }
+  /** A formula, a lookup, a rollup or a count: what it computes (ch. 04 §7, §7 ter). */
+  readonly computed?: Computed
+  /** A button: its label and what a click does (chapter 17 §4). */
+  readonly button?: ButtonConfig
+  /**
+   * Set by the screen, never by the API: the field a computed field's value reads as —
+   * its result's kind, with the format and choices of what it cites (`lib/computed.ts`).
+   */
+  readonly valueField?: Field
+}
+
+/** What a computed field computes — always read-only. */
+export interface Computed {
+  /** The kind of its value — or of each value, for a list. */
+  readonly result_kind: string
+  /** A generated column; false when computed at each read. */
+  readonly stored: boolean
+  /** A list of values: a lookup reaching several rows. */
+  readonly multiple: boolean
+  /** A formula's expression, with the labels of the day. */
+  readonly expression?: string
+  readonly timezone?: string | null
+  /** The relation a lookup, a rollup or a count follows, and the table it reaches. */
+  readonly via?: {
+    readonly field: string
+    readonly table: string
+    readonly direction: 'outgoing' | 'incoming'
+    readonly reached: string
+  }
+  readonly target?: string | null
+  readonly aggregate?: 'count' | 'sum' | 'avg' | 'min' | 'max' | null
+}
+
+/** A lookup, a rollup, a count, as they are created: the relation, and what is read. */
+export interface RollupInput {
+  readonly via: string
+  /** For a relation of another table aiming here. */
+  readonly via_table?: string
+  readonly target?: string
+  readonly aggregate?: 'count' | 'sum' | 'avg' | 'min' | 'max'
 }
 
 /**
@@ -597,6 +680,8 @@ export interface Table extends TableRef, Look {
   /** The column shown instead of an identifier when this table is a link target. */
   readonly display_field: string | null
   readonly fields: readonly Field[]
+  /** Kept like a source by the server: read, never written by hand (chapter 19 §3). */
+  readonly synced?: boolean
 }
 
 export interface DescribedBase extends Look {
@@ -1099,8 +1184,24 @@ export interface View {
   readonly count?: boolean
 }
 
+/** A person of the tenant, as a `user` field names them (ch. 04 §2.10). */
+export interface Member {
+  readonly id: string
+  readonly display_name: string
+  readonly email: string
+  readonly disabled: boolean
+}
+
 /** The six ways a saved view shows a table — or asks for one of its rows. */
-export type ViewKind = 'grid' | 'kanban' | 'calendar' | 'timeline' | 'form' | 'survey'
+export type ViewKind =
+  | 'grid'
+  | 'kanban'
+  | 'calendar'
+  | 'timeline'
+  | 'gallery'
+  | 'list'
+  | 'form'
+  | 'survey'
 
 /**
  * A saved view of a table (ch. 11 §1.4), shared by everyone who reads the table.
@@ -1117,12 +1218,353 @@ export interface SavedView {
   readonly position: number
   readonly spec: Readonly<Record<string, unknown>>
   readonly filter_hidden: boolean
+  /** The reader's own view: nobody else sees it (ch. 11 §1.6). */
+  readonly personal: boolean
+  /** Refused any change until it is unlocked. */
+  readonly locked: boolean
   readonly created_at: string
   readonly updated_at: string
 }
 
+/**
+ * Aggregates over every row a filter keeps (ch. 11 §1.6) — the summary bar and the counts
+ * of a grid's groups. Counts are numbers; sums, averages and bounds come as PostgreSQL
+ * writes them, a decimal text or an ISO date, for the screen to format.
+ */
+export interface Aggregates {
+  readonly total: number
+  /** By `field:fn`. */
+  readonly values: Readonly<Record<string, string | number | null>>
+  /** Rows per value of the grouping field, empty value first. */
+  readonly groups: ReadonlyArray<{ readonly value: unknown; readonly count: number }> | null
+  readonly groups_capped: boolean
+}
+
 const path = (t: TableRef) => `${v1()}/data/${t.base}/${t.name}`
 const viewsPath = (t: TableRef) => `${v1()}/admin/bases/${t.base}/tables/${t.name}/views`
+
+// ── Integrations and synced tables — chapter 19 ──────────────────────────────
+
+/** A Slack connection of a base: its address is never given back, only its end. */
+export interface Integration {
+  readonly id: string
+  readonly kind: 'slack'
+  readonly label: string
+  readonly hint: string
+  readonly created_at: string
+}
+
+export type SyncSourceKind = 'csv' | 'ics' | 'basedb'
+
+export interface SyncedTable {
+  readonly table_id: string
+  readonly table: string
+  readonly label: string
+  readonly source_kind: SyncSourceKind
+  readonly host: string
+  readonly interval_minutes: number
+  readonly next_sync_at: string
+  readonly last_synced_at: string | null
+  readonly last_status: 'ok' | 'failed' | null
+  readonly last_error: string | null
+  readonly last_counts: {
+    readonly created: number
+    readonly updated: number
+    readonly deleted: number
+  } | null
+}
+
+/** The iCalendar feed of a shared calendar or timeline, as an agenda subscribes to it. */
+export function calendarFeedUrl(token: string): string {
+  return `${BASE}/api/v1/views/${encodeURIComponent(token)}/calendar.ics`
+}
+
+/** The API address of a shared view, as a synced table of another base reads it. */
+export function sharedViewApiUrl(token: string): string {
+  return `${BASE}/api/v1/views/${encodeURIComponent(token)}`
+}
+
+// ── Base templates — chapter 20 ──────────────────────────────────────────────
+
+/** Where a template of the gallery comes from. */
+export type TemplateSource = 'instance' | 'site' | 'bundled'
+
+export type TemplateItem = TemplateSummary & { readonly source: TemplateSource }
+
+export interface TemplateCatalog {
+  readonly templates: readonly TemplateItem[]
+  /** How the public site's catalog is doing; `null` when the instance does not read it. */
+  readonly site: {
+    readonly url: string
+    readonly fetched_at: string | null
+    readonly error: string | null
+  } | null
+}
+
+/** A template proposed by the AI, and what its repair dropped. */
+export interface TemplateDraft {
+  readonly template: Template
+  readonly explanation: string
+  readonly issues: readonly TemplateIssue[]
+}
+
+// ── Dashboards — chapter 18 ──────────────────────────────────────────────────
+
+/** A block of a dashboard: it reads through the ordinary routes, on the reader's rights. */
+export type DashboardBlock =
+  | {
+      readonly kind: 'number'
+      readonly width: number
+      readonly title: string
+      /** The table's identifier. */
+      readonly table: string
+      readonly aggregate: 'count' | 'sum' | 'avg' | 'min' | 'max'
+      readonly field: string | null
+      readonly filter: string
+    }
+  | {
+      readonly kind: 'chart'
+      readonly width: number
+      readonly title: string
+      readonly table: string
+      readonly group_by: string
+      readonly filter: string
+      readonly style: 'bar' | 'pie'
+    }
+  | {
+      readonly kind: 'list'
+      readonly width: number
+      readonly title: string
+      readonly table: string
+      readonly fields: readonly string[]
+      readonly filter: string
+      readonly sort: string
+      readonly limit: number
+    }
+  | { readonly kind: 'text'; readonly width: number; readonly title: string; readonly body: string }
+  | {
+      readonly kind: 'embed'
+      readonly width: number
+      readonly title: string
+      readonly url: string
+      readonly height: number
+    }
+
+export interface Dashboard {
+  readonly id: string
+  readonly label: string
+  readonly description: string | null
+  readonly position: number
+  readonly blocks: readonly DashboardBlock[]
+  readonly updated_at: string
+}
+
+// ── Automations — chapter 17 ─────────────────────────────────────────────────
+
+/** A button field's label, colour and action. */
+export interface ButtonConfig {
+  readonly label: string
+  readonly color: string | null
+  readonly action: 'url' | 'automation'
+  /** An address that may cite the row with `{{champ}}`. */
+  readonly url: string | null
+  readonly automation: string | null
+}
+
+export type AutomationTriggerKind = 'record_created' | 'record_updated' | 'schedule' | 'button'
+
+export interface AutomationSchedule {
+  readonly every: 'hour' | 'day' | 'week'
+  readonly at: string
+  readonly weekday: number
+  readonly timezone: string
+}
+
+export type AutomationAction =
+  | { readonly kind: 'update_record'; readonly values: Readonly<Record<string, unknown>> }
+  | {
+      readonly kind: 'create_record'
+      /** The table's identifier. */
+      readonly table: string
+      readonly values: Readonly<Record<string, unknown>>
+    }
+  | {
+      readonly kind: 'notify'
+      readonly users: readonly string[]
+      readonly user_field: string | null
+      readonly message: string
+    }
+  | { readonly kind: 'webhook'; readonly url: string }
+  | {
+      readonly kind: 'slack'
+      /** The Slack connection's identifier. */
+      readonly integration: string
+      readonly message: string
+    }
+
+export interface Automation {
+  readonly id: string
+  readonly label: string
+  readonly description: string | null
+  readonly enabled: boolean
+  readonly trigger: {
+    readonly kind: AutomationTriggerKind
+    /** The table's identifier; `null` for a schedule. */
+    readonly table: string | null
+    readonly fields: readonly string[]
+    readonly schedule: AutomationSchedule | null
+  }
+  readonly condition: string | null
+  readonly actions: readonly AutomationAction[]
+  readonly owner: { readonly id: string; readonly name: string }
+  readonly next_run_at: string | null
+  readonly last_run: { readonly status: string; readonly at: string } | null
+  readonly created_at: string
+  readonly updated_at: string
+}
+
+/** What an automation is saved with — tables by name or identifier. */
+export interface AutomationInput {
+  readonly label?: string
+  readonly description?: string | null
+  readonly enabled?: boolean
+  readonly trigger?: {
+    readonly kind: AutomationTriggerKind
+    readonly table?: string | null
+    readonly fields?: readonly string[]
+    readonly schedule?: AutomationSchedule | null
+  }
+  readonly condition?: string | null
+  readonly actions?: readonly AutomationAction[]
+}
+
+export interface AutomationRun {
+  readonly id: string
+  readonly trigger: string
+  readonly record_id: string | null
+  readonly status: 'queued' | 'running' | 'succeeded' | 'failed' | 'skipped'
+  readonly reason: string | null
+  readonly error_code: string | null
+  readonly steps: ReadonlyArray<{
+    readonly action: string
+    readonly status: string
+    readonly detail?: string
+    readonly error_code?: string
+  }>
+  readonly queued_at: string
+  readonly started_at: string | null
+  readonly finished_at: string | null
+}
+
+// ── Collaboration — chapter 16 ───────────────────────────────────────────────
+
+/** A comment on a row (chapter 16 §1). */
+export interface RecordComment {
+  readonly id: string
+  readonly record_id: string
+  readonly author: { readonly id: string; readonly name: string }
+  /** Plain text; a mention reads `@[Nom](user:<id>)`. */
+  readonly body: string
+  readonly mentions: readonly string[]
+  readonly created_at: string
+  readonly edited_at: string | null
+  readonly can_edit: boolean
+  readonly can_delete: boolean
+}
+
+/** An in-app notification (chapter 16 §2). */
+export interface AppNotification {
+  readonly id: string
+  /** `automation`: an automation's « notify » step, its owner as the actor. */
+  readonly kind: 'mention' | 'reply' | 'assigned' | 'automation'
+  readonly actor: { readonly id: string; readonly name: string } | null
+  readonly base: { readonly name: string; readonly label: string }
+  readonly table: { readonly name: string; readonly label: string }
+  readonly record_id: string
+  readonly comment_id: string | null
+  readonly excerpt: string
+  readonly created_at: string
+  readonly read_at: string | null
+  /** Whether the row can still be opened. */
+  readonly readable: boolean
+}
+
+/** Someone looking at the same table, and the row they have open (chapter 16 §3.3). */
+export interface Viewer {
+  readonly user: string
+  readonly name: string
+  readonly record: string | null
+}
+
+/**
+ * Where a pointer is over the grid (chapter 16 §3.4): the cell — a row, a column — and
+ * where in it, from 0 to 1, so that every screen places it again on its own layout.
+ */
+export interface PointerAt {
+  readonly record: string
+  readonly field: string
+  readonly x: number
+  readonly y: number
+}
+
+/** Someone else's pointer on the same table. */
+export interface RemotePointer {
+  readonly session: string
+  readonly user: string
+  readonly name: string
+  readonly at: PointerAt
+}
+
+/**
+ * Opens the live stream (chapter 16 §3.2) and hands each event to `onEvent` until the
+ * stream ends or `signal` aborts it. `fetch` rather than `EventSource`: the stream is
+ * authenticated by a Bearer token, which an `EventSource` cannot carry.
+ */
+export async function streamEvents(
+  query: { readonly base?: string; readonly table?: string; readonly record?: string },
+  onEvent: (name: string, data: Record<string, unknown>) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(query)) {
+    if (typeof value === 'string' && value !== '') params.set(key, value)
+  }
+  const r = await fetch(`${BASE}${v1()}/events?${params.toString()}`, {
+    headers: { authorization: `Bearer ${await accessToken()}` },
+    credentials: 'include',
+    cache: 'no-store',
+    signal,
+  })
+  if (!r.ok || r.body === null) {
+    if (r.status === 401) access = null
+    const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+    throw new ApiError(
+      String(body.code ?? 'INTERNAL_ERROR'),
+      r.status,
+      String(body.request_id ?? ''),
+    )
+  }
+  const reader = r.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  for (;;) {
+    const { value, done } = await reader.read()
+    if (done) return
+    buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n')
+    const blocks = buffer.split('\n\n')
+    buffer = blocks.pop() ?? ''
+    for (const block of blocks) {
+      const name = /^event: ?(.*)$/m.exec(block)?.[1]
+      const payload = /^data: ?(.*)$/m.exec(block)?.[1]
+      if (name === undefined) continue
+      try {
+        onEvent(name, JSON.parse(payload ?? '{}') as Record<string, unknown>)
+      } catch {
+        // A malformed event is dropped; the next one stands on its own.
+      }
+    }
+  }
+}
 
 // ── Shared forms — chapter 15 ────────────────────────────────────────────────
 
@@ -1144,6 +1586,10 @@ export interface FormShare {
   readonly published_by: { readonly id: string; readonly name: string | null }
   readonly groups: readonly string[]
   readonly state: ShareState
+  /** Another site may frame the page (ch. 15 §10). */
+  readonly can_embed: boolean
+  /** A form or a survey is answered at `/f/`; any other view is read at `/v/`. */
+  readonly view_kind: ViewKind
 }
 
 export interface FormSharing {
@@ -1158,6 +1604,31 @@ export interface ShareSettings {
   readonly closes_at: string | null
   readonly max_responses: number | null
   readonly groups: readonly string[]
+  readonly can_embed?: boolean
+}
+
+/** A field as a shared view's page draws it (ch. 15 §10). */
+export interface SharedViewField {
+  readonly name: string
+  readonly label: string
+  readonly kind: string
+  readonly options?: readonly FieldOption[]
+  readonly format?: Field['format']
+  readonly computed?: { readonly result_kind: string; readonly multiple: boolean }
+}
+
+/** A data view read through its link: its fields, its presentation, a page of rows. */
+export interface SharedView {
+  readonly kind: ViewKind
+  readonly title: string
+  readonly description: string | null
+  readonly access: ShareAccess
+  readonly reader: string | null
+  readonly can_embed: boolean
+  readonly fields: readonly SharedViewField[]
+  readonly spec: Readonly<Record<string, unknown>>
+  readonly rows: ReadonlyArray<Record<string, unknown>>
+  readonly next_cursor: string | null
 }
 
 /** A shared form as the person answering sees it. */
@@ -1265,6 +1736,7 @@ export const api = {
     try {
       const body = await call<{
         data: {
+          id: string
           email: string
           display_name: string
           tenant: string
@@ -1274,6 +1746,7 @@ export const api = {
       }>('/auth/me')
       tenant = body.data.tenant
       return {
+        id: body.data.id,
         email: body.data.email,
         displayName: body.data.display_name,
         tenant: body.data.tenant,
@@ -1462,6 +1935,16 @@ export const api = {
       description?: string
       options?: readonly FieldOptionInput[]
       ai?: AiFieldInput
+      format?: { display: string; currency?: string | null; rating_max?: number | null }
+      formula?: { expression: string; timezone?: string }
+      rollup?: RollupInput
+      button?: {
+        label: string
+        color?: string | null
+        action: 'url' | 'automation'
+        url?: string
+        automation?: string
+      }
     },
   ) =>
     data<{ id: string; name: string; label: string; kind: string; description: string | null }>(
@@ -1556,10 +2039,11 @@ export const api = {
       kind: ViewKind
       description?: string | null
       spec: Readonly<Record<string, unknown>>
+      personal?: boolean
     },
   ) => data<SavedView>(viewsPath(table), { method: 'POST', body: JSON.stringify(view) }),
 
-  /** Renames a view and/or replaces its WHOLE spec. Its kind never changes. */
+  /** Renames a view and/or replaces its WHOLE spec — or locks it. Its kind never changes. */
   updateView: (
     table: TableRef,
     id: string,
@@ -1567,6 +2051,7 @@ export const api = {
       label?: string
       description?: string | null
       spec?: Readonly<Record<string, unknown>>
+      locked?: boolean
     },
   ) =>
     data<SavedView>(`${viewsPath(table)}/${id}`, {
@@ -1599,6 +2084,31 @@ export const api = {
   /** Opens a shared form by its link — no right on the table needed. */
   sharedForm: (token: string) => formCall<SharedForm>(`/api/v1/forms/${encodeURIComponent(token)}`),
 
+  /** Reads a shared data view by its link — no right on the table needed (ch. 15 §10). */
+  sharedView: async (token: string, after?: string): Promise<SharedView> => {
+    const path =
+      after === undefined
+        ? `/api/v1/views/${encodeURIComponent(token)}`
+        : `/api/v1/views/${encodeURIComponent(token)}/rows?after=${encodeURIComponent(after)}`
+    const r = await fetch(`${BASE}${path}`, { credentials: 'include', cache: 'no-store' })
+    const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+    if (!r.ok) {
+      throw new ApiError(
+        String(body.code ?? 'INTERNAL_ERROR'),
+        r.status,
+        String(body.request_id ?? ''),
+        typeof body.details === 'object' && body.details !== null
+          ? (body.details as Record<string, unknown>)
+          : {},
+      )
+    }
+    const meta = (body.meta ?? {}) as { next_cursor?: string | null }
+    return {
+      ...(body.data as Omit<SharedView, 'next_cursor'>),
+      next_cursor: meta.next_cursor ?? null,
+    }
+  },
+
   /** Answers a shared form: one row. */
   submitSharedForm: (token: string, values: Readonly<Record<string, unknown>>) =>
     formCall<{ received: true }>(`/api/v1/forms/${encodeURIComponent(token)}`, {
@@ -1612,6 +2122,27 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ views: ids }),
     }),
+
+  /** Changes how a number or a short text reads — no migration, the column is the same. */
+  /** A formula's new expression — a stored one rewrites its column (ch. 04 §7.7). */
+  setFormula: (table: TableRef, field: string, expression: string) =>
+    data<{ name: string; formula?: { stored: boolean } }>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}`,
+      { method: 'PATCH', body: JSON.stringify({ formula: { expression } }) },
+    ),
+
+  setFieldFormat: (
+    table: TableRef,
+    field: string,
+    format: { display: string; currency?: string | null; rating_max?: number | null },
+  ) =>
+    data<{ name: string; format: Field['format'] }>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}`,
+      { method: 'PATCH', body: JSON.stringify({ format }) },
+    ),
+
+  /** The people of the tenant — what a `user` field names. */
+  members: () => data<readonly Member[]>(`${v1()}/meta/users`),
 
   setFieldLabel: (table: TableRef, field: string, label: string) =>
     data<{ name: string; label: string }>(
@@ -1671,10 +2202,17 @@ export const api = {
       { method: 'PATCH', body: JSON.stringify(patch) },
     ),
 
-  createLink: (table: TableRef, label: string, target: string, description?: string) =>
+  /** A relation; `multiple` makes it a multi-link — several rows (04 §4 bis). */
+  createLink: (
+    table: TableRef,
+    label: string,
+    target: string,
+    description?: string,
+    multiple?: boolean,
+  ) =>
     data<Field & { target: string }>(
       `${v1()}/admin/bases/${table.base}/tables/${table.name}/links`,
-      { method: 'POST', body: JSON.stringify({ label, target, description }) },
+      { method: 'POST', body: JSON.stringify({ label, target, description, multiple }) },
     ),
 
   /** Designates the column read instead of the identifier in link cells. */
@@ -1683,6 +2221,24 @@ export const api = {
       `${v1()}/admin/bases/${table.base}/tables/${table.name}/display`,
       { method: 'POST', body: JSON.stringify({ field }) },
     ),
+
+  aggregate: (
+    table: TableRef,
+    request: {
+      readonly filter?: string
+      readonly aggregates: ReadonlyArray<{ readonly field: string; readonly fn: string }>
+      readonly group?: string | null
+    },
+  ) => {
+    const q = new URLSearchParams()
+    if (request.filter !== undefined && request.filter.trim() !== '')
+      q.set('filter', request.filter)
+    if (request.aggregates.length > 0) {
+      q.set('aggregates', request.aggregates.map((a) => `${a.field}:${a.fn}`).join(','))
+    }
+    if (request.group !== undefined && request.group !== null) q.set('group', request.group)
+    return data<Aggregates>(`${path(table)}/aggregate?${q}`)
+  },
 
   list: (table: TableRef, view: View = {}) => {
     // `URLSearchParams` does the encoding itself: the filter grammar contains spaces
@@ -2043,6 +2599,229 @@ export const api = {
     data<Proposal>(`${v1()}/admin/proposals/${encodeURIComponent(id)}/reject`, {
       method: 'POST',
     }),
+
+  /** The Slack connections of a base (chapter 19 §1). */
+  integrations: (base: string) =>
+    data<readonly Integration[]>(`${v1()}/admin/bases/${encodeURIComponent(base)}/integrations`),
+
+  createIntegration: (base: string, input: { label: string; url: string }) =>
+    data<Integration>(`${v1()}/admin/bases/${encodeURIComponent(base)}/integrations`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
+  deleteIntegration: (base: string, id: string) =>
+    call<void>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/integrations/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+    ),
+
+  testIntegration: (base: string, id: string) =>
+    data<{ status: number }>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/integrations/${encodeURIComponent(id)}/test`,
+      { method: 'POST' },
+    ),
+
+  /** The synced tables of a base (chapter 19 §3). */
+  syncedTables: (base: string) =>
+    data<readonly SyncedTable[]>(`${v1()}/admin/bases/${encodeURIComponent(base)}/synced-tables`),
+
+  createSyncedTable: (
+    base: string,
+    input: {
+      label: string
+      source: { kind: SyncSourceKind; url: string }
+      interval_minutes: number
+    },
+  ) =>
+    data<SyncedTable>(`${v1()}/admin/bases/${encodeURIComponent(base)}/synced-tables`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
+  updateSyncedTable: (base: string, table: string, input: { interval_minutes: number }) =>
+    data<SyncedTable>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/synced-tables/${encodeURIComponent(table)}`,
+      { method: 'PATCH', body: JSON.stringify(input) },
+    ),
+
+  stopSyncedTable: (base: string, table: string) =>
+    call<void>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/synced-tables/${encodeURIComponent(table)}`,
+      { method: 'DELETE' },
+    ),
+
+  runSyncedTable: (base: string, table: string) =>
+    data<SyncedTable>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/synced-tables/${encodeURIComponent(table)}/run`,
+      { method: 'POST' },
+    ),
+
+  /** The dashboards of a base, for whoever sees it (chapter 18). */
+  /** The gallery: the instance's templates, the site's, the carried ones (chapter 20). */
+  templates: async (): Promise<TemplateCatalog> => {
+    const r = await call<{
+      data: readonly TemplateItem[]
+      meta: { site: TemplateCatalog['site'] }
+    }>(`${v1()}/meta/templates`)
+    return { templates: r.data, site: r.meta.site }
+  },
+
+  template: async (key: string): Promise<{ template: Template; source: TemplateSource }> => {
+    const r = await call<{ data: Template; meta: { source: TemplateSource } }>(
+      `${v1()}/meta/templates/${encodeURIComponent(key)}`,
+    )
+    return { template: r.data, source: r.meta.source }
+  },
+
+  /** Imports a template into the instance, or replaces the one of the same key. */
+  importTemplate: (template: unknown) =>
+    data<TemplateItem>(`${v1()}/admin/templates`, {
+      method: 'POST',
+      body: JSON.stringify(template),
+    }),
+
+  deleteTemplate: (key: string) =>
+    call<void>(`${v1()}/admin/templates/${encodeURIComponent(key)}`, { method: 'DELETE' }),
+
+  /** A template proposed by the AI from a sentence — or the previous proposal, refined. */
+  draftTemplate: (request: { project: string; request: string; previous?: Template }) =>
+    data<TemplateDraft>(`${v1()}/admin/templates/draft`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    }),
+
+  dashboards: (base: string) =>
+    data<readonly Dashboard[]>(`${v1()}/meta/bases/${encodeURIComponent(base)}/dashboards`),
+
+  createDashboard: (
+    base: string,
+    input: { label: string; description?: string | null; blocks: readonly DashboardBlock[] },
+  ) =>
+    data<Dashboard>(`${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
+  updateDashboard: (
+    base: string,
+    id: string,
+    input: {
+      label?: string
+      description?: string | null
+      blocks?: readonly DashboardBlock[]
+      position?: number
+    },
+  ) =>
+    data<Dashboard>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards/${encodeURIComponent(id)}`,
+      { method: 'PATCH', body: JSON.stringify(input) },
+    ),
+
+  deleteDashboard: (base: string, id: string) =>
+    call<void>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+    ),
+
+  /** The automations of a base (chapter 17). */
+  automations: (base: string) =>
+    data<readonly Automation[]>(`${v1()}/admin/bases/${encodeURIComponent(base)}/automations`),
+
+  createAutomation: (base: string, input: AutomationInput) =>
+    data<Automation>(`${v1()}/admin/bases/${encodeURIComponent(base)}/automations`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
+  /** Rewrites an automation; whoever saves it becomes its owner. */
+  updateAutomation: (base: string, id: string, input: AutomationInput) =>
+    data<Automation>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/automations/${encodeURIComponent(id)}`,
+      { method: 'PATCH', body: JSON.stringify(input) },
+    ),
+
+  deleteAutomation: (base: string, id: string) =>
+    call<void>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/automations/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+    ),
+
+  automationRuns: (base: string, id: string) =>
+    data<readonly AutomationRun[]>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/automations/${encodeURIComponent(id)}/runs`,
+    ),
+
+  /** Runs an automation for a row — a button clicked, or a test. */
+  runAutomation: (id: string, record: string | null) =>
+    data<{ run: string }>(`${v1()}/automations/${encodeURIComponent(id)}/run`, {
+      method: 'POST',
+      body: JSON.stringify({ record }),
+    }),
+
+  /** Undoes a transaction of the caller's; returns the undo's own (chapter 16 §4). */
+  undoTransaction: (transaction: string) =>
+    data<{ transaction: string; revisions: number; tables: readonly string[] }>(
+      `${v1()}/history/undo`,
+      { method: 'POST', body: JSON.stringify({ transaction }) },
+    ),
+
+  /** The comments of a row, oldest first (chapter 16 §1). */
+  comments: (table: TableRef, recordId: string) =>
+    data<readonly RecordComment[]>(`${path(table)}/${encodeURIComponent(recordId)}/comments`),
+
+  /** Adds a comment; `unreachable` names the mentioned people who cannot read the row. */
+  addComment: async (table: TableRef, recordId: string, body: string) => {
+    const r = await call<{ data: RecordComment; meta: { unreachable: readonly string[] } }>(
+      `${path(table)}/${encodeURIComponent(recordId)}/comments`,
+      { method: 'POST', body: JSON.stringify({ body }) },
+    )
+    return { comment: r.data, unreachable: r.meta.unreachable }
+  },
+
+  editComment: (commentId: string, body: string) =>
+    data<RecordComment>(`${v1()}/comments/${encodeURIComponent(commentId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ body }),
+    }),
+
+  deleteComment: (commentId: string) =>
+    call<void>(`${v1()}/comments/${encodeURIComponent(commentId)}`, { method: 'DELETE' }),
+
+  /** The caller's notifications, newest first; `unread` counts those not read. */
+  notifications: async (options: { unread?: boolean; after?: string } = {}) => {
+    const q = new URLSearchParams()
+    if (options.unread === true) q.set('unread', 'true')
+    if (options.after !== undefined) q.set('after', options.after)
+    const query = q.toString()
+    const r = await call<{
+      data: readonly AppNotification[]
+      meta: { unread: number; next_cursor: string | null }
+    }>(`${v1()}/me/notifications${query === '' ? '' : `?${query}`}`)
+    return { notifications: r.data, unread: r.meta.unread, nextCursor: r.meta.next_cursor }
+  },
+
+  markNotificationsRead: (request: { ids?: readonly string[]; all?: boolean }) =>
+    data<{ marked: number }>(`${v1()}/me/notifications/read`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    }),
+
+  /** Moves an open stream's presence to another row of its table. */
+  movePresence: (request: {
+    session: string
+    base: string
+    table: string
+    record: string | null
+  }) => call<void>(`${v1()}/presence`, { method: 'POST', body: JSON.stringify(request) }),
+
+  /** Moves this stream's pointer over the grid, `null` when it leaves it. */
+  movePointer: (request: {
+    session: string
+    base: string
+    table: string
+    at: PointerAt | null
+  }) => call<void>(`${v1()}/presence/pointer`, { method: 'POST', body: JSON.stringify(request) }),
 
   /** The history of one row, newest first. */
   recordHistory: (table: TableRef, recordId: string, cursor?: string) =>

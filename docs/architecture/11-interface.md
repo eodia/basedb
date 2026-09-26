@@ -101,20 +101,26 @@ partir d'une position. Ce qui change est ce que l'interface cesse d'offrir :
 
 ### 1.6 Les vues enregistrées
 
-Une table se montre de six façons, chacune une vue `_basedb.view_def` (chapitre 02) :
-**grille**, **kanban**, **calendrier**, **chronologie** — qui montrent des lignes — et
-**formulaire**, **questionnaire** — qui en demandent une. Le sélecteur de vues est le
+Une table se montre de huit façons, chacune une vue `_basedb.view_def` (chapitre 02) :
+**grille**, **kanban**, **calendrier**, **chronologie**, **galerie**, **liste** — qui
+montrent des lignes — et **formulaire**, **questionnaire** — qui en demandent une. Le sélecteur de vues est le
 premier élément de la barre d'outils, **à gauche de « Filtrer »**. Il ouvre la liste :
 « Toutes les lignes » d'abord — la grille de la table, que personne n'a enregistrée ni ne
 peut supprimer, où tout lecteur retrouve toutes les lignes avec sa surcharge locale —,
-puis les vues dans l'ordre que leur a donné quiconque construit la base, par glisser-
-déposer ou au clavier. Cet ordre est celui de tous : les vues sont partagées. Un onglet
-retient la vue qu'il montre ; une vue supprimée entre-temps le ramène sur la grille de la
-table.
+puis les vues **collaboratives** dans l'ordre que leur a donné quiconque construit la base,
+par glisser-déposer ou au clavier — cet ordre est celui de tous —, et enfin, sous « Mes
+vues », les vues **personnelles** du lecteur. Un onglet retient la vue qu'il montre ; une
+vue supprimée entre-temps le ramène sur la grille de la table.
 
-Créer, configurer, renommer, dupliquer, réordonner et supprimer une vue supposent
-`manage_schema` (chapitre 05 §9) ; les autres lecteurs choisissent parmi elles, et le
-filtre ou le tri qu'ils essaient par-dessus reste leur surcharge locale.
+Créer, configurer, renommer, dupliquer, réordonner et supprimer une vue collaborative
+supposent `manage_schema` (chapitre 05 §9). **Une vue personnelle** ne demande que de
+pouvoir lire la table : sa propriétaire seule la voit, la configure et la supprime, sans
+rien changer pour les autres — le dialogue de création la propose à tous, et la seule
+qu'il propose à qui ne construit pas. **Une vue collaborative se verrouille** : « Verrouiller
+la vue » dans son menu, un cadenas dans le sélecteur ; tant qu'elle l'est, le serveur
+refuse toute modification (`VIEW_LOCKED`) et l'écran n'offre plus « Enregistrer » — le
+filtre ou le tri qu'on essaie par-dessus reste la surcharge locale, comme pour qui ne
+construit pas.
 
 **Le dialogue de création** demande, selon la nature :
 
@@ -123,7 +129,9 @@ filtre ou le tri qu'ils essaient par-dessus reste leur surcharge locale.
 | Grille | — | colonnes cochées et ordonnées ; les autres sont masquées |
 | Kanban | **colonnes selon** une liste de choix, leur ordre se réglant ensuite en glissant leurs en-têtes ; titre, image de couverture ; masquer les colonnes vides | champs sous le titre de la carte |
 | Calendrier | **date** ; date de fin, titre, couleur selon une liste de choix ; mois ou semaine | champs sous le titre, en semaine |
-| Chronologie | **début** ; fin, regroupement par liste de choix ou lien, titre, couleur ; échelle jour, semaine ou mois | champs dans la barre |
+| Chronologie | **début** ; fin, regroupement par liste de choix ou lien, titre, couleur ; échelle jour, semaine ou mois ; **dépendances** : une relation de la table vers elle-même (« Dépend de ») | champs dans la barre |
+| Galerie | titre, **image de couverture** (un champ image ou document), recadrée ou entière ; taille des cartes | champs sous le titre |
+| Liste | titre ; regroupement par liste de choix, relation ou personne | champs sur la ligne, après le titre |
 | Formulaire, questionnaire | — | questions cochées et ordonnées ; pour chacune un intitulé, une aide, « réponse obligatoire » ; titre, présentation, libellé du bouton, message après l'envoi, « proposer une nouvelle réponse » |
 
 Chaque pivot est prérempli sur le premier champ qui peut le tenir, si bien qu'une table
@@ -153,15 +161,83 @@ le panneau de création (§2.5) ; le questionnaire pose les mêmes questions une
 Entrée pour continuer. Un « + » dans une colonne de kanban ou un jour de calendrier ouvre
 une ligne déjà dotée de ce choix ou de cette date.
 
-**Partager un formulaire.** À qui détient `manage_schema`, un formulaire ou un
+**Galerie et liste.** La galerie montre une carte par ligne, sa couverture en tête — la
+première image du champ choisi —, le titre et les champs choisis dessous ; un clic ouvre
+la fiche. La liste montre une ligne par enregistrement, le titre puis les champs, sous
+des en-têtes de groupe repliables. Les deux lisent leurs lignes page après page, avec le
+filtre et le tri de la vue.
+
+**L'ordre à la main.** Sans tri, un kanban, une galerie ou une liste montrent les lignes
+dans l'ordre que la vue retient (`spec.manual_order`, des `_id`, 5 000 au plus) : on
+glisse une carte, une ligne, et l'ordre est enregistré dans la vue — par qui peut la
+modifier, c'est-à-dire sa propriétaire pour une vue personnelle. Une ligne que l'ordre ne
+nomme pas — créée depuis — va après les autres, dans l'ordre de la table ; un tri, s'il y
+en a un, l'emporte. La grille garde l'ordre de son tri : ses pages se lisent par curseur,
+et un ordre à la main n'y aurait pas de sens au-delà de la première.
+
+**Dépendances.** Une chronologie dont la vue désigne une relation de la table vers
+elle-même dessine une flèche de la fin de chaque ligne dont une autre dépend vers le
+début de celle-ci ; une flèche qui remonte le temps — la suivante commence avant la fin de
+celle dont elle dépend — est rouge.
+
+**Partager une vue.** À qui détient `manage_schema`, un formulaire ou un
 questionnaire offre « Partager » — en haut de la vue et dans le menu de la vue du
 sélecteur. Le dialogue choisit **qui peut répondre** (« Public » ou « Membres
 connectés », restreints au besoin à des groupes), montre le lien à copier, à ouvrir ou à
 régénérer, un interrupteur « Lien actif », une date limite, un
 nombre maximal de réponses, le compte des réponses reçues, les questions que le lien ne
 posera pas et pourquoi, et au nom de qui les réponses s'écrivent. La page du lien,
-`/f/<jeton>`, est hors de l'application : le formulaire seul. Le chapitre 15 fixe le
-reste.
+`/f/<jeton>`, est hors de l'application : le formulaire seul. Une **vue de données** —
+grille, kanban, calendrier, chronologie, galerie, liste — se partage de même **en lecture
+seule** : la page `/v/<jeton>` montre ses lignes, ses champs visibles, son filtre et son
+tri, sans rien permettre de modifier ; « Autoriser l'intégration » y ajoute le code d'une
+`<iframe>` à coller dans une autre page. Le chapitre 15 fixe le reste.
+
+**La grille, au-delà des colonnes.**
+
+- **Recherche rapide** : un champ de la barre d'outils cherche un texte dans toutes les
+  colonnes qui peuvent le tenir — `contains` sur un texte, comparé sans casse ni accents ;
+  les choix dont le **libellé** le contient, sur une liste ; l'égalité sur un nombre quand le
+  texte en est un. La clause est jointe au filtre sans en faire partie : rien ne
+  l'enregistre, « Vue modifiée » l'ignore, et un texte qu'aucune colonne ne peut tenir ne
+  trouve rien plutôt que tout. Elle vaut pour la grille, le kanban, le calendrier et la
+  chronologie.
+- **Groupement** : les lignes se groupent selon un champ à valeur unique et comparable
+  (texte court, liste de choix, booléen, lien, date, nombre, URL, formule, e-mail,
+  personne). La grille lit alors ses lignes **triées d'abord par ce champ** : chaque groupe est une seule suite de
+  lignes, sur autant de pages qu'il en faut, et son en-tête porte le décompte du groupe sur
+  **tout** le filtre, lu par `GET …/aggregate?group=`. Un groupe se replie d'un clic ; ce
+  repli est local.
+- **Barre de résumé** : sous la grille, chaque colonne peut porter un agrégat — remplies,
+  vides, valeurs uniques, somme, moyenne, minimum, maximum, cochées, selon le type —
+  calculé sur toutes les lignes que garde le filtre, jamais sur la page, avec leur nombre
+  total dans la gouttière. Rien n'est demandé tant qu'aucun résumé ni groupement n'est
+  affiché : l'agrégat est un balayage, et `count` reste hors des chargements ordinaires
+  (§1.1).
+- **Couleurs** : une ligne prend la couleur de son choix dans une liste, ou celle de la
+  première **règle** — un filtre et une couleur — qu'elle satisfait. Les règles sont évaluées
+  à l'écran, sur les lignes chargées, avec la sémantique du filtre du noyau (une valeur
+  vide ne satisfait que `is_null`) ; un chemin à travers un lien, dont la page ne tient pas la
+  ligne cible, ne satisfait rien. Une règle citant un champ que le lecteur ne voit pas lui
+  est retirée à la lecture. **Chaque règle choisit comment sa couleur s'affiche** — en
+  **trait et fond** (par défaut), en **trait à gauche** seul, ou en **fond** seul, teinte
+  légère qui couvre aussi la gouttière et les colonnes figées —, et la liste de choix a le
+  sien (`color_style`) ; une ligne prend la couleur et l'affichage de ce qui la colore.
+- **Hauteur des lignes** : courte, moyenne, haute ou très haute — une, deux, quatre ou six
+  lignes de texte par cellule.
+- **Colonnes système** : « Créé le », « Modifié le », « Créé par », « Modifié par » —
+  `_created_at`, `_updated_at`, `_created_by`, `_updated_by` — s'affichent comme des
+  colonnes en lecture seule, une date et heure ou une personne (chapitre 04 §2.10). Elles
+  sont **masquées tant qu'on ne les demande pas**, à l'inverse d'un champ, affiché tant
+  qu'on ne le masque pas : présentes sur chaque table, elles ne sont voulues que sur
+  quelques-unes. Le menu des colonnes les propose à part, sous « Informations système ».
+  Une vue peut trier, filtrer, grouper (par auteur) et résumer sur elles, que tout lecteur
+  de la table lit (A18) ; un formulaire ne les demande jamais. `_id` n'en est pas : un
+  identifiant est pour les programmes, et la fiche le donne.
+
+Tous ces réglages, sauf la recherche, font partie du `spec` d'une grille enregistrée
+(`group_by`, `summaries`, `color_field`, `color_rules`, `color_style`, `row_height`,
+`system_columns`).
 
 **Modifiée, non enregistrée.** Changer le filtre, le tri ou les colonnes d'une vue
 enregistrée ne l'écrit pas : la barre dit « Vue modifiée » et offre « Enregistrer » —
@@ -231,10 +307,12 @@ frontière d'erreur du chapitre 08 garantit qu'ils ne sortent pas de l'API.
 
 ### 2.4 Annulation
 
-Échap avant envoi jette le brouillon. **Après envoi, il n'y a pas d'annulation** : il
-n'existe pas de pile d'annulation serveur, et une annulation locale ne serait qu'une
-seconde écriture déguisée, qui écraserait ce qu'un autre a pu écrire entre-temps.
-L'écran propose de réécrire, ce qui est la même chose, dite honnêtement.
+Échap avant envoi jette le brouillon. Après envoi, **Ctrl+Z** (⌘Z) annule la dernière
+écriture de l'onglet et **Ctrl+Maj+Z** (ou Ctrl+Y) la rétablit (chapitre 16 §4) : une
+cellule, un déplacement de carte ou de barre, une ligne créée ou supprimée, un collage,
+un import. Ce n'est pas une seconde écriture déguisée : le serveur revient sur la
+transaction par l'historique, et refuse si quelqu'un a écrit depuis — l'écran le dit, au
+lieu d'écraser. Ctrl+Z dans un champ en cours de saisie reste celui du champ.
 
 ### 2.5 Créer et supprimer une ligne
 
@@ -271,6 +349,12 @@ qu'il se produit aussi lors d'une suppression faite directement en SQL.
 | Lien URL | L'adresse sans son schéma, lien ouvert dans un nouvel onglet | Saisie sur place (double clic) ; normalisée par le serveur |
 | Liste de choix | §3.1 | §3.1 |
 | Relation | §4 | §4 |
+| Relation multiple | Une pastille par ligne liée, dans l'ordre de la colonne ; deux au plus, tronquées, le reste compté (« +2 »). Un élément masqué se lit « masqué », une fois (chapitre 04 §4 bis) | Sélecteur de la cible, chaque ligne une bascule, recherche côté serveur ; une ligne choisie va à la fin, une ligne retirée laisse les autres en place. En vue détail, les pastilles ouvrent la ligne liée et « Modifier » ouvre le sélecteur |
+| E-mail, téléphone | Lien `mailto:` ou `tel:` | Saisie sur place, vérifiée par le serveur |
+| Personne | Nom et initiales du membre | Sélecteur des membres de l'espace ; un compte désactivé reste affiché mais n'est plus proposé |
+| Numéro automatique | Nombre aligné à droite | **Aucune** : donné par la base |
+| Formule, recherche, cumul, décompte | Comme le champ que leur valeur est : un cumul de montants se lit en monnaie, une recherche de choix en pastilles, une recherche qui atteint plusieurs lignes en une pastille par valeur (chapitre 04 §7 ter) | **Aucune.** Le dialogue « Nouveau champ » écrit une formule — les champs s'insèrent d'un clic, les fonctions sont rappelées, un refus nomme le champ ou la position fautive — ou choisit la relation suivie (de la table, ou d'une autre qui la désigne), le champ lu et le calcul |
+| Note | Étoiles | Un clic sur une étoile ; un clic sur l'étoile déjà choisie efface la note |
 
 ### 3.1 Liste de choix
 
@@ -426,6 +510,61 @@ reconstruit rien et ne configure rien.
 - Un groupe absent l'est pour deux raisons indistinguables — aucune référence, ou table
   source invisible. L'interface **n'en dit rien** : pas de compteur à zéro, pas de mention
   « groupes masqués ».
+
+### 5.3 Commentaires et présence
+
+Un onglet « Commentaires » suit « Détails » et « Historique » (chapitre 16 §1) : le fil
+de la ligne, du plus ancien au plus récent, et une zone de saisie où `@` propose les
+membres du tenant. Les personnes qui regardent la même ligne s'affichent en pastilles
+dans l'en-tête du panneau ; celles qui regardent la table, dans la barre d'outils. Une
+cloche, dans la barre latérale, compte les notifications non lues et les liste ; en
+ouvrir une ouvre la ligne.
+
+Les écritures des autres arrivent sans rechargement (chapitre 16 §3) : la page affichée
+est relue au signal, une cellule en cours d'édition n'est jamais remplacée sous le
+curseur.
+
+### 5.4 Automatisations et boutons
+
+Une entrée « Automatisations » de la barre latérale ouvre celles de la base (chapitre
+17) : la liste, avec leur interrupteur et leur dernière exécution ; l'éditeur — le
+déclencheur, la condition, les actions, chacune avec ses champs et des pastilles pour
+citer la ligne (`{{champ}}`) — et les exécutions, action par action. « Tester » exécute
+l'automatisation sur une ligne choisie. Un champ bouton se dessine comme un bouton dans
+la cellule, la carte et la fiche ; un clic dit ce qui a été lancé, ou pourquoi rien ne
+l'a été.
+
+### 5.5 Tableaux de bord et modèles
+
+Une entrée « Interfaces » de la barre latérale ouvre les tableaux de bord de la base
+(chapitre 18) : un onglet par tableau, ses blocs sur trois colonnes. Qui construit la
+base passe en mode édition — ajouter un bloc, le régler, l'élargir, le déplacer, le
+retirer. Un bloc dont la donnée n'est pas lisible dit « Donnée inaccessible » ; une ligne
+d'un bloc liste ouvre sa fiche.
+
+**La galerie de modèles** (chapitre 20) s'ouvre du dialogue « Nouvelle base » et d'un
+projet vide. En tête, une phrase à l'IA — « Décrivez ce que vous voulez gérer » — ; à
+gauche, les catégories ; au centre, les modèles, chacun avec son icône, son résumé, ses
+comptes et un badge « IA » s'il a des champs calculés par l'IA. Un modèle choisi se lit en
+entier — tables et champs, relations, vues, tableaux de bord, automatisations, lignes
+d'exemple, consignes IA — avant « Créer la base », qui demande le libellé et, s'il y a des
+champs IA, le consentement ; l'avancement de la construction s'affiche étape par étape. La
+proposition de l'IA se lit de la même façon, avec ce qui a été retiré, et s'affine par une
+nouvelle phrase. Un administrateur y importe un modèle JSON et retire ceux de l'instance ;
+chaque modèle se copie ou se télécharge en JSON. Le menu d'une base propose « Enregistrer
+comme modèle ».
+
+### 5.6 Intégrations et tables synchronisées
+
+L'entrée « Intégrations » de la barre latérale — montrée à qui construit la base
+(`manage_schema`), absente sinon — ouvre celles de la base courante (chapitre 19) : les
+connexions Slack — ajouter, tester, supprimer —, les tables synchronisées avec leur
+source, leur rythme, leur dernière synchronisation et ce qu'elle a changé, et comment voir
+une vue dans Google Agenda. Le dialogue de partage public d'une vue en lecture donne
+l'adresse de son API (la source d'une table synchronisée d'une autre base), et, pour une
+vue calendrier ou chronologie, celle de son flux iCalendar. Une table synchronisée porte
+un badge « Synchronisée » dans son en-tête ; la grille n'y propose ni nouvelle ligne, ni
+suppression, ni édition de cellule — le méta ne lui donne que `read`.
 
 ---
 
@@ -748,9 +887,9 @@ des jetons et des webhooks, renommage physique et alias, vues de grille partagé
 
 ## Risques et limites connues
 
-1. **Pas de temps réel.** Deux utilisateurs sur la même table ne voient pas leurs écritures
-   mutuelles avant un rechargement ; le `412` est le seul mécanisme qui les empêche de
-   s'écraser, et le panneau de conflit peut devenir fréquent.
+1. **Le temps réel est un signal, relu.** Les écritures des autres apparaissent après un
+   drain, en relisant la page affichée ; deux personnes qui écrivent la même cellule dans
+   la même seconde ne se voient pas avant d'écrire, et la dernière écriture l'emporte.
 2. **Le désambiguïsateur en cellule dépend de la page chargée** : deux lignes homonymes
    situées dans deux pages différentes ne l'obtiennent pas.
 3. **La création depuis le sélecteur n'est pas atomique** avec l'affectation du lien : une
@@ -769,8 +908,6 @@ des jetons et des webhooks, renommage physique et alias, vues de grille partagé
 
 1. **Groupement et totaux de colonne** en grille : aucun contrat d'agrégat n'existe dans
    l'API, et un agrégat sur champ masqué est refusé.
-2. **Annulation après écriture** : elle supposerait une pile côté serveur, donc une surface
-   d'API et une interaction avec l'historique des enregistrements.
-3. **Import de fichier** : traité au §6.7 pour le CSV, le TSV, le TXT et le JSON. Restent ouverts
+2. **Import de fichier** : traité au §6.7 pour le CSV, le TSV, le TXT et le JSON. Restent ouverts
    les fichiers Excel et XML, l'import des champs lien (par la colonne d'affichage de leur cible),
    les lots partiels (`atomic: false`) et un import asynchrone au-delà de 50 000 lignes.

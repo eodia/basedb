@@ -64,7 +64,11 @@ const TYPE_LABEL: Readonly<Record<string, string>> = {
   select: 'liste de choix',
   multi_select: 'choix multiple (liste de valeurs)',
   link: 'relation (`_id` de la ligne liée)',
+  multi_link: 'relation multiple (liste des `_id` des lignes liées, dans leur ordre)',
   url: 'lien URL (`https://…` ou `mailto:…`)',
+  email: 'adresse e-mail',
+  autonumber: 'numéro automatique (lecture seule)',
+  user: 'personne (`id` d’un membre de l’espace)',
   formula: 'formule',
   file: 'documents (liste de fichiers)',
   image: 'images (liste de fichiers)',
@@ -172,6 +176,11 @@ function sample(field: ProjectedField, direction: 'read' | 'write'): unknown {
       return field.link?.masked === true
         ? { id: null, display: null, masked: true }
         : { id: EXAMPLE_ID, display: 'Exemple' }
+    case 'multi_link':
+      if (direction === 'write') return [EXAMPLE_ID]
+      return field.link?.masked === true
+        ? [{ id: null, display: null, masked: true }]
+        : [{ id: EXAMPLE_ID, display: 'Exemple' }]
     case 'formula':
       return 'résultat'
     case 'system':

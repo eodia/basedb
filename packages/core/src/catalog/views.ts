@@ -2,6 +2,7 @@ import { BasedbError } from '../errors/index.js'
 import { type ActorGrants, decide } from '../rbac/decide.js'
 import { loadTarget } from '../rbac/loader.js'
 import { requireOnTable } from '../rbac/require.js'
+import { type Aggregate, GROUPABLE, aggregatesFor } from '../records/aggregate.js'
 import { BUDGETS, OPERATORS } from '../records/filter.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
@@ -28,7 +29,16 @@ import { labelKey } from './operations.js'
  *   silencieusement plus large.
  */
 
-export const VIEW_KINDS = ['grid', 'kanban', 'calendar', 'timeline', 'form', 'survey'] as const
+export const VIEW_KINDS = [
+  'grid',
+  'kanban',
+  'calendar',
+  'timeline',
+  'gallery',
+  'list',
+  'form',
+  'survey',
+] as const
 
 export type ViewKind = (typeof VIEW_KINDS)[number]
 
@@ -46,6 +56,10 @@ export interface SavedView {
    * widens the result, which is worse than a refusal (chapter 06 §4).
    */
   readonly filterHidden: boolean
+  /** Its owner's alone: seen, changed and deleted by them only (chapter 11 §1.6). */
+  readonly personal: boolean
+  /** Changes are refused until it is unlocked (`VIEW_LOCKED`). */
+  readonly locked: boolean
   readonly createdAt: string
   readonly updatedAt: string
 }
@@ -59,10 +73,35 @@ const MAX_WIDTH = 640
 const MAX_PAGE = 500
 /** A list of choices holds 200 at most (chapter 04 §3): so does the order of its columns. */
 const MAX_OPTIONS = 200
+const MAX_COLOR_RULES = 20
+/** Rows a view orders by hand: past this, a sort says it better. */
+const MAX_MANUAL_ORDER = 5000
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+/** How tall a grid's rows are: one line, two, four, six. */
+const ROW_HEIGHTS = ['short', 'medium', 'tall', 'extra'] as const
+/**
+ * How a coloured row shows its colour: a stripe at its left, a tinted background, or both.
+ * Each colour rule has its own; `color_style` is that of the colour a list gives.
+ */
+const COLOR_STYLES = ['both', 'stripe', 'background'] as const
+type ColorStyle = (typeof COLOR_STYLES)[number]
 
 const DATES = ['date', 'datetime'] as const
 /** A form writes rows: a computed column has nothing to be typed into. */
-const NOT_ASKABLE = ['formula']
+const NOT_ASKABLE = ['formula', 'autonumber', 'lookup', 'rollup', 'count', 'button']
+
+/**
+ * The system columns a view may name — to sort by, to filter on, to show in a grid —, with
+ * the kind they read as: a date and time, a person (chapter 04 §2.10). Every reader of the
+ * table reads them (A18); `_id` is left out, being nothing one sorts or looks at.
+ */
+const SYSTEM_VIEW_COLUMNS: ReadonlyArray<readonly [string, string]> = [
+  ['_created_at', 'datetime'],
+  ['_updated_at', 'datetime'],
+  ['_created_by', 'user'],
+  ['_updated_by', 'user'],
+]
+const SYSTEM_NAMES = SYSTEM_VIEW_COLUMNS.map(([name]) => name)
 
 /** The live fields of a table the reader sees: physical name → kind. */
 type Readable = ReadonlyMap<string, string>
@@ -149,6 +188,24 @@ class SpecReader {
   }
 
   /**
+   * An order of ROWS, by `_id` — a view ordered by hand (chapter 11 §1.6). Not checked
+   * against the table: a row deleted since is skipped when drawn, one created since goes
+   * after the others.
+   */
+  rowList(key: string): string[] {
+    const value = this.take(key)
+    if (value === undefined || value === null) return []
+    if (!Array.isArray(value) || value.length > MAX_MANUAL_ORDER) refuse('valeur_invalide', key)
+    const ids = value.map((v) => {
+      if (typeof v !== 'string' || !UUID.test(v)) refuse('valeur_invalide', key)
+      return v.toLowerCase()
+    })
+    const repeated = ids.find((id, i) => ids.indexOf(id) !== i)
+    if (repeated !== undefined) refuse('doublon', repeated)
+    return ids
+  }
+
+  /**
    * An order of VALUES — the choices of a list, not fields. Not checked against the list:
    * a choice removed since is simply skipped when drawn, and one added since goes last.
    */
@@ -214,6 +271,72 @@ class SpecReader {
     return out
   }
 
+  /** The summary bar: one aggregate per column, of those its type allows. */
+  summaries(): Record<string, string> {
+    const value = this.take('summaries')
+    if (value === undefined || value === null) return {}
+    if (typeof value !== 'object' || Array.isArray(value)) refuse('valeur_invalide', 'summaries')
+    const out: Record<string, string> = {}
+    for (const [name, fn] of Object.entries(value as Record<string, unknown>)) {
+      this.check(name, null)
+      const kind = this.fields.get(name) as string
+      if (typeof fn !== 'string' || !aggregatesFor(kind).includes(fn as Aggregate)) {
+        refuse('valeur_invalide', 'summaries')
+      }
+      out[name] = fn
+    }
+    return out
+  }
+
+  /**
+   * Conditional colours: rows that match a filter take a colour. Their filters are only
+   * checked for size here — a rule citing an unknown field matches nothing on screen,
+   * like a view's filter would fail, and the projection drops it for a reader who cannot
+   * see a field it cites.
+   */
+  colorRules(): Array<{ filter: string; color: string; style: ColorStyle }> {
+    const value = this.take('color_rules')
+    if (value === undefined || value === null) return []
+    if (!Array.isArray(value) || value.length > MAX_COLOR_RULES) {
+      refuse('valeur_invalide', 'color_rules')
+    }
+    return value.map((rule) => {
+      if (typeof rule !== 'object' || rule === null) refuse('valeur_invalide', 'color_rules')
+      const { filter, color, style } = rule as {
+        filter?: unknown
+        color?: unknown
+        style?: unknown
+      }
+      if (typeof filter !== 'string' || Buffer.byteLength(filter, 'utf8') > BUDGETS.bytes) {
+        refuse('valeur_invalide', 'color_rules')
+      }
+      if (typeof color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(color)) {
+        refuse('valeur_invalide', 'color_rules')
+      }
+      // Each rule shows its colour its own way: a stripe, a background, or both.
+      if (
+        style !== undefined &&
+        style !== null &&
+        !(COLOR_STYLES as readonly unknown[]).includes(style)
+      ) {
+        refuse('valeur_invalide', 'color_rules')
+      }
+      return {
+        filter: filter.trim(),
+        color: color.toLowerCase(),
+        style: (style ?? 'both') as ColorStyle,
+      }
+    })
+  }
+
+  /** System columns only, each named once. */
+  systemColumns(): string[] {
+    const names = this.fieldList('system_columns')
+    const other = names.find((name) => !SYSTEM_NAMES.includes(name))
+    if (other !== undefined) refuse('type_de_champ_incompatible', other)
+    return names
+  }
+
   /** The questions of a form: which fields, in which order, and how each is asked. */
   questions(): Array<{ field: string; required: boolean; label: string; help: string }> {
     const value = this.take('fields')
@@ -223,7 +346,7 @@ class SpecReader {
       if (typeof entry !== 'object' || entry === null) refuse('valeur_invalide', 'fields')
       const item = new SpecReader(entry as Record<string, unknown>, this.fields)
       const field = item.field('field', null, true) as string
-      if (NOT_ASKABLE.includes(this.fields.get(field) ?? '')) {
+      if (NOT_ASKABLE.includes(this.fields.get(field) ?? '') || SYSTEM_NAMES.includes(field)) {
         refuse('type_de_champ_incompatible', field)
       }
       const question = {
@@ -259,7 +382,21 @@ const FORM_KEYS = [
 
 /** The keys a spec may carry, per kind. */
 const SPEC_KEYS: Readonly<Record<ViewKind, readonly string[]>> = {
-  grid: [...DATA_KEYS, 'hidden', 'pinned', 'column_order', 'column_widths', 'page_size'],
+  grid: [
+    ...DATA_KEYS,
+    'hidden',
+    'pinned',
+    'column_order',
+    'column_widths',
+    'page_size',
+    'group_by',
+    'summaries',
+    'row_height',
+    'color_field',
+    'color_rules',
+    'color_style',
+    'system_columns',
+  ],
   kanban: [
     ...DATA_KEYS,
     'group_by',
@@ -268,9 +405,20 @@ const SPEC_KEYS: Readonly<Record<ViewKind, readonly string[]>> = {
     'card_fields',
     'cover_field',
     'hide_empty',
+    'manual_order',
   ],
   calendar: [...DATA_KEYS, ...CARD_KEYS, 'date_field', 'end_field', 'mode'],
-  timeline: [...DATA_KEYS, ...CARD_KEYS, 'start_field', 'end_field', 'group_by', 'scale'],
+  timeline: [
+    ...DATA_KEYS,
+    ...CARD_KEYS,
+    'start_field',
+    'end_field',
+    'group_by',
+    'scale',
+    'depends_on',
+  ],
+  gallery: [...DATA_KEYS, ...CARD_KEYS, 'cover_field', 'cover_fit', 'card_size', 'manual_order'],
+  list: [...DATA_KEYS, 'title_field', 'card_fields', 'group_by', 'manual_order'],
   form: FORM_KEYS,
   survey: FORM_KEYS,
 }
@@ -285,6 +433,8 @@ export function normalizeViewSpec(
   kind: ViewKind,
   raw: unknown,
   fields: Readable,
+  /** The relations of the table to itself: what a timeline's dependencies may follow. */
+  selfLinks: ReadonlySet<string> = new Set(),
 ): Record<string, unknown> {
   const source = raw === undefined || raw === null ? {} : raw
   if (typeof source !== 'object' || Array.isArray(source)) refuse('spec_invalide')
@@ -308,6 +458,17 @@ export function normalizeViewSpec(
           column_order: read.fieldList('column_order'),
           column_widths: read.widths(),
           page_size: read.integer('page_size', 1, MAX_PAGE, 100),
+          // Rows grouped by one field, their groups counted over the whole filter.
+          group_by: read.field('group_by', GROUPABLE, false),
+          summaries: read.summaries(),
+          row_height: read.choice('row_height', ROW_HEIGHTS, 'short'),
+          // A row takes the colour of its choice in this list — unless a rule says otherwise.
+          color_field: read.field('color_field', ['select'], false),
+          color_rules: read.colorRules(),
+          // How the colour the list gives shows; each rule carries its own style.
+          color_style: read.choice('color_style', COLOR_STYLES, 'both'),
+          // The system columns shown: hidden unless asked for, where a field shows unless hidden.
+          system_columns: read.systemColumns(),
         }
       case 'kanban':
         return {
@@ -321,6 +482,8 @@ export function normalizeViewSpec(
           card_fields: read.fieldList('card_fields'),
           cover_field: read.field('cover_field', ['file', 'image'], false),
           hide_empty: read.flag('hide_empty', false),
+          // Cards in the order they were dragged, when no sort says otherwise.
+          manual_order: read.rowList('manual_order'),
         }
       case 'calendar': {
         const spec = {
@@ -349,12 +512,38 @@ export function normalizeViewSpec(
           card_fields: read.fieldList('card_fields'),
           color_field: read.field('color_field', ['select'], false),
           scale: read.choice('scale', ['day', 'week', 'month'] as const, 'week'),
+          // « Dépend de »: a relation of the table to itself, drawn as arrows.
+          depends_on: read.field('depends_on', ['link', 'multi_link'], false),
         }
         if (spec.end_field !== null && spec.end_field === spec.start_field) {
           refuse('doublon', spec.end_field)
         }
+        if (spec.depends_on !== null && !selfLinks.has(spec.depends_on)) {
+          refuse('type_de_champ_incompatible', spec.depends_on)
+        }
         return spec
       }
+      case 'gallery':
+        return {
+          filter: read.filter(),
+          sorts: read.sorts(),
+          title_field: read.field('title_field', null, false),
+          card_fields: read.fieldList('card_fields'),
+          color_field: read.field('color_field', ['select'], false),
+          cover_field: read.field('cover_field', ['file', 'image'], false),
+          cover_fit: read.choice('cover_fit', ['cover', 'contain'] as const, 'cover'),
+          card_size: read.choice('card_size', ['small', 'medium', 'large'] as const, 'medium'),
+          manual_order: read.rowList('manual_order'),
+        }
+      case 'list':
+        return {
+          filter: read.filter(),
+          sorts: read.sorts(),
+          title_field: read.field('title_field', null, false),
+          card_fields: read.fieldList('card_fields'),
+          group_by: read.field('group_by', ['select', 'link', 'user'], false),
+          manual_order: read.rowList('manual_order'),
+        }
       case 'form':
       case 'survey':
         return {
@@ -380,8 +569,9 @@ const SINGLE_FIELD_KEYS = [
   'end_field',
   'start_field',
   'color_field',
+  'depends_on',
 ]
-const FIELD_LIST_KEYS = ['hidden', 'pinned', 'column_order', 'card_fields']
+const FIELD_LIST_KEYS = ['hidden', 'pinned', 'column_order', 'card_fields', 'system_columns']
 
 /** Operators, lower case: what follows a field name in a predicate. */
 const OPERATOR_WORDS = new Set<string>(OPERATORS)
@@ -438,6 +628,20 @@ export function projectViewSpec(
   if (Array.isArray(out.fields)) {
     out.fields = (out.fields as Array<{ field?: unknown }>).filter((q) => sees(q.field))
   }
+  if (typeof out.summaries === 'object' && out.summaries !== null) {
+    out.summaries = Object.fromEntries(
+      Object.entries(out.summaries as Record<string, unknown>).filter(([name]) => sees(name)),
+    )
+  }
+  // A colour rule citing a field the reader cannot see would tell them something about it
+  // by colouring rows: it is dropped, as the field is from everything else.
+  if (Array.isArray(out.color_rules)) {
+    out.color_rules = (out.color_rules as Array<{ filter?: unknown }>).filter(
+      (rule) =>
+        typeof rule.filter === 'string' &&
+        citedFields(rule.filter).every((name) => readable.has(name)),
+    )
+  }
   let filterHidden = false
   if (typeof out.filter === 'string' && out.filter !== '') {
     filterHidden = citedFields(out.filter).some((name) => !readable.has(name))
@@ -464,9 +668,10 @@ async function readableFields(
         AND f.definition_state = 'active'`,
     [tableId],
   )
-  return new Map(
-    rows.filter((r) => decision.readableFields.has(r.id)).map((r) => [r.name, r.kind] as const),
-  )
+  return new Map([
+    ...SYSTEM_VIEW_COLUMNS,
+    ...rows.filter((r) => decision.readableFields.has(r.id)).map((r) => [r.name, r.kind] as const),
+  ])
 }
 
 interface ViewRow extends Record<string, unknown> {
@@ -476,12 +681,14 @@ interface ViewRow extends Record<string, unknown> {
   readonly description: string | null
   readonly position: number
   readonly spec: Record<string, unknown>
+  readonly owner_id: string | null
+  readonly is_locked: boolean
   readonly created_at: string
   readonly updated_at: string
 }
 
 const VIEW_COLUMNS = `id::text, label, kind, description, position, spec,
-  created_at::text, updated_at::text`
+  owner_id::text, is_locked, created_at::text, updated_at::text`
 
 function toView(row: ViewRow, readable: Readable): SavedView {
   const projected = projectViewSpec(row.spec ?? {}, readable)
@@ -493,6 +700,8 @@ function toView(row: ViewRow, readable: Readable): SavedView {
     position: row.position,
     spec: projected.spec,
     filterHidden: projected.filterHidden,
+    personal: row.owner_id !== null,
+    locked: row.is_locked,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -535,12 +744,15 @@ async function assertLabelFree(
   tableId: string,
   label: string,
   except: string | null,
+  /** A personal view's owner: its label is unique among their views, not everyone's. */
+  owner: string | null = null,
 ): Promise<void> {
   const clash = await exec.query<{ id: string }>(
     `SELECT id FROM _basedb.view_def
       WHERE table_id = $1 AND label_key = $2 AND deleted_at IS NULL
-        AND ($3::uuid IS NULL OR id <> $3::uuid)`,
-    [tableId, labelKey(label), except],
+        AND ($3::uuid IS NULL OR id <> $3::uuid)
+        AND owner_id IS NOT DISTINCT FROM $4::uuid`,
+    [tableId, labelKey(label), except, owner],
   )
   if (clash.length > 0) throw new BasedbError('LABEL_DUPLICATE', { details: { label } })
 }
@@ -558,11 +770,13 @@ export async function listViews(
     async (exec) => {
       const grants = await requireOnTable(exec, ctx, 'read', request.tableId)
       const readable = await readableFields(exec, ctx, grants, request.tableId)
+      // The collaborative views, in the selector's order, then the reader's own.
       const rows = await exec.query<ViewRow>(
         `SELECT ${VIEW_COLUMNS} FROM _basedb.view_def
           WHERE table_id = $1 AND deleted_at IS NULL
-          ORDER BY position, created_at`,
-        [request.tableId],
+            AND (owner_id IS NULL OR owner_id = $2)
+          ORDER BY owner_id IS NOT NULL, position, created_at`,
+        [request.tableId, ctx.actor.id],
       )
       return rows.map((row) => toView(row, readable))
     },
@@ -580,25 +794,40 @@ export async function createView(
     readonly kind: unknown
     readonly description?: unknown
     readonly spec?: unknown
+    /** A personal view: the reader's own, which only needs `read` (chapter 11 §1.6). */
+    readonly personal?: boolean
   },
 ): Promise<SavedView> {
   const label = normalizeLabel(request.label, request.tableId)
   const kind = asKind(request.kind)
   const description = normalizeDescription(request.description)
+  const personal = request.personal === true
 
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
-    const grants = await requireOnTable(exec, ctx, 'manage_schema', request.tableId)
+    // Building a view for everyone is building the base; one for oneself is only reading.
+    const grants = await requireOnTable(
+      exec,
+      ctx,
+      personal ? 'read' : 'manage_schema',
+      request.tableId,
+    )
     const readable = await readableFields(exec, ctx, grants, request.tableId)
-    const spec = normalizeViewSpec(kind, request.spec, readable)
-    await assertLabelFree(exec, request.tableId, label, null)
+    const spec = normalizeViewSpec(
+      kind,
+      request.spec,
+      readable,
+      await selfLinksOf(exec, request.tableId),
+    )
+    const owner = personal ? ctx.actor.id : null
+    await assertLabelFree(exec, request.tableId, label, null, owner)
     const [row] = await exec.query<ViewRow>(
       `INSERT INTO _basedb.view_def
          (table_id, label, label_key, name, description, kind, spec, position,
-          created_by, updated_by)
+          created_by, updated_by, owner_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb,
                (SELECT coalesce(max(position), 0) + 1 FROM _basedb.view_def
                  WHERE table_id = $1 AND deleted_at IS NULL),
-               $8, $8)
+               $8, $8, $9)
        RETURNING ${VIEW_COLUMNS}`,
       [
         request.tableId,
@@ -609,6 +838,7 @@ export async function createView(
         kind,
         JSON.stringify(spec),
         ctx.actor.id,
+        owner,
       ],
       'insert',
     )
@@ -631,30 +861,54 @@ export async function updateView(
     readonly label?: unknown
     readonly description?: unknown
     readonly spec?: unknown
+    /** Locks or unlocks a collaborative view. */
+    readonly locked?: unknown
   },
 ): Promise<SavedView> {
   const label =
     request.label === undefined ? undefined : normalizeLabel(request.label, request.tableId)
   const setsDescription = request.description !== undefined
   const description = setsDescription ? normalizeDescription(request.description) : null
-  if (label === undefined && !setsDescription && request.spec === undefined) {
+  if (request.locked !== undefined && typeof request.locked !== 'boolean') {
+    throw new BasedbError('REQUEST_INVALID', { details: { field: 'locked' } })
+  }
+  const locked = request.locked as boolean | undefined
+  const changes = label !== undefined || setsDescription || request.spec !== undefined
+  if (!changes && locked === undefined) {
     throw new BasedbError('REQUEST_INVALID', { details: { field: 'body' } })
   }
 
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
-    const grants = await requireOnTable(exec, ctx, 'manage_schema', request.tableId)
-    const [current] = await exec.query<{ kind: ViewKind }>(
-      `SELECT kind FROM _basedb.view_def
-        WHERE id::text = $1 AND table_id = $2 AND deleted_at IS NULL`,
-      [request.viewId, request.tableId],
+    const current = await currentView(exec, ctx, request.tableId, request.viewId)
+    if (current.owner_id !== null && locked !== undefined) {
+      // A personal view has nobody else to be protected from.
+      throw new BasedbError('REQUEST_INVALID', {
+        details: { field: 'locked', reason: 'vue_personnelle' },
+      })
+    }
+    const grants = await requireOnTable(
+      exec,
+      ctx,
+      current.owner_id === null ? 'manage_schema' : 'read',
+      request.tableId,
     )
-    if (current === undefined) {
-      throw new BasedbError('RESOURCE_NOT_FOUND', { details: { view: request.viewId } })
+    // Locked: nothing changes but the lock itself, unless it is lifted in the same request.
+    if (current.is_locked && changes && locked !== false) {
+      throw new BasedbError('VIEW_LOCKED', { details: { view: request.viewId } })
     }
     const readable = await readableFields(exec, ctx, grants, request.tableId)
     const spec =
-      request.spec === undefined ? null : normalizeViewSpec(current.kind, request.spec, readable)
-    if (label !== undefined) await assertLabelFree(exec, request.tableId, label, request.viewId)
+      request.spec === undefined
+        ? null
+        : normalizeViewSpec(
+            current.kind,
+            request.spec,
+            readable,
+            await selfLinksOf(exec, request.tableId),
+          )
+    if (label !== undefined) {
+      await assertLabelFree(exec, request.tableId, label, request.viewId, current.owner_id)
+    }
 
     const [row] = await exec.query<ViewRow>(
       `UPDATE _basedb.view_def
@@ -663,6 +917,7 @@ export async function updateView(
               name = coalesce($4, name),
               description = CASE WHEN $5::boolean THEN $6::text ELSE description END,
               spec = coalesce($7::jsonb, spec),
+              is_locked = coalesce($9::boolean, is_locked),
               updated_at = clock_timestamp(), updated_by = $8
         WHERE id = $1::uuid
         RETURNING ${VIEW_COLUMNS}`,
@@ -675,6 +930,7 @@ export async function updateView(
         description,
         spec === null ? null : JSON.stringify(spec),
         ctx.actor.id,
+        locked ?? null,
       ],
       'update',
     )
@@ -689,7 +945,15 @@ export async function deleteView(
   request: { readonly tableId: string; readonly viewId: string },
 ): Promise<void> {
   await withTransaction(pools, 'catalog', ctx, async (exec) => {
-    await requireOnTable(exec, ctx, 'manage_schema', request.tableId)
+    const current = await currentView(exec, ctx, request.tableId, request.viewId)
+    await requireOnTable(
+      exec,
+      ctx,
+      current.owner_id === null ? 'manage_schema' : 'read',
+      request.tableId,
+    )
+    if (current.is_locked)
+      throw new BasedbError('VIEW_LOCKED', { details: { view: request.viewId } })
     const rows = await exec.query<{ id: string }>(
       `UPDATE _basedb.view_def
           SET deleted_at = clock_timestamp(), deleted_by = $3
@@ -727,9 +991,10 @@ export async function reorderViews(
 
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
     await requireOnTable(exec, ctx, 'manage_schema', request.tableId)
+    // The selector's shared order: personal views are listed after it, and never in it.
     const views = await exec.query<{ id: string; position: number }>(
       `SELECT id::text, position FROM _basedb.view_def
-        WHERE table_id = $1 AND deleted_at IS NULL
+        WHERE table_id = $1 AND deleted_at IS NULL AND owner_id IS NULL
         ORDER BY position, created_at`,
       [request.tableId],
     )
@@ -752,4 +1017,47 @@ export async function reorderViews(
     }
     return { order }
   })
+}
+
+/**
+ * A view as its writer may see it: a personal view of someone else is exactly an absent
+ * one — its existence is its owner's business.
+ */
+async function currentView(
+  exec: Executor,
+  ctx: RequestContext,
+  tableId: string,
+  viewId: string,
+): Promise<{
+  readonly kind: ViewKind
+  readonly owner_id: string | null
+  readonly is_locked: boolean
+}> {
+  const [current] = await exec.query<{
+    kind: ViewKind
+    owner_id: string | null
+    is_locked: boolean
+  }>(
+    `SELECT kind, owner_id::text, is_locked FROM _basedb.view_def
+      WHERE id::text = $1 AND table_id = $2 AND deleted_at IS NULL`,
+    [viewId, tableId],
+  )
+  if (current === undefined || (current.owner_id !== null && current.owner_id !== ctx.actor.id)) {
+    throw new BasedbError('RESOURCE_NOT_FOUND', { details: { view: viewId } })
+  }
+  return current
+}
+
+/** The relations of a table to itself, by physical name — what dependencies may follow. */
+async function selfLinksOf(exec: Executor, tableId: string): Promise<Set<string>> {
+  const rows = await exec.query<{ name: string }>(
+    `SELECT n.name
+       FROM _basedb.field f
+       JOIN _basedb.physical_name n      ON n.id = f.name_id
+       JOIN _basedb.field_link_config lc ON lc.field_id = f.id
+      WHERE f.table_id = $1 AND f.is_live AND lc.target_table_id = $1
+        AND lc.fk_dropped_at IS NULL`,
+    [tableId],
+  )
+  return new Set(rows.map((r) => r.name))
 }

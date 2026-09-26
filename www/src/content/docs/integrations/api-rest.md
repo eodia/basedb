@@ -53,6 +53,29 @@ curl -X POST "http://localhost:8787/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportu
 erreurs ont une forme unique : `{ "code": "…", "details": {…}, "request_id": "…" }`, avec un
 code stable par cause.
 
+Chaque écriture renvoie l’en-tête `x-basedb-transaction` : le passer à
+`POST /api/v1/<tenant>/history/undo` (`{"transaction": "…"}`) l’annule, comme Ctrl+Z dans
+l’interface — refusé si la ligne a été modifiée depuis.
+
+## Au-delà des lignes
+
+Avec le même jeton :
+
+| Route | Rôle |
+|---|---|
+| `GET …/data/<base>/<table>/aggregate` | des résumés sur toutes les lignes d’un filtre : `aggregates=montant:sum,nom:filled`, `group=statut` |
+| `GET …/data/<base>/<table>/<_id>/comments`, `POST` | lire et écrire les commentaires d’une ligne |
+| `POST /api/v1/<tenant>/automations/<id>/run` | lancer une automatisation déclenchée par un bouton, sur une ligne (`{"record": "…"}`) |
+| `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | les tableaux de bord d’une base |
+| `GET /api/v1/<tenant>/meta/users` | les membres de l’espace, pour un champ Personne |
+| `GET /api/v1/<tenant>/meta/templates` | les modèles de base de la galerie |
+
+Les [vues partagées](/basedb/fonctionnalites/vues-partagees/) se lisent sans compte :
+`GET /api/v1/views/<jeton>` et `…/rows` en JSON, `…/calendar.ics` en iCalendar.
+
+Construire — créer une automatisation, un tableau de bord, une intégration — reste réservé à
+une session de l’interface : un jeton lit et écrit des lignes, il ne change pas la base.
+
 ## La documentation générée
 
 Chaque base a sa page **Documentation API et MCP** : pour chaque table, ses points d’accès, ses

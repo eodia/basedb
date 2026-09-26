@@ -97,6 +97,16 @@ function authorOf(r: Revision): {
             : `réponse publique · publié par ${r.actor.name}`,
         icon: 'token',
       }
+    // An automation's write (chapter 17 §2.2): its name, and who answers for it.
+    case 'automation':
+      return {
+        name:
+          r.actor.token_label === null
+            ? 'Automatisation'
+            : `Automatisation « ${r.actor.token_label} »`,
+        hint: r.actor.name === null ? null : `au nom de ${r.actor.name}`,
+        icon: 'token',
+      }
     default:
       return { name: 'Auteur inconnu', hint: r.actor.sql_identity, icon: 'sql' }
   }

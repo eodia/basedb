@@ -372,6 +372,8 @@ Une seule valeur par objet, toutes configurables, toutes déclarées ici :
 | Journal de sécurité | 180 jours |
 | Échantillons d'erreur de migration | 30 jours |
 | Appels aux fournisseurs d'IA | 24 mois |
+| Notifications internes (chapitre 16) | 90 jours |
+| Exécutions d'automatisation (chapitre 17) | 30 jours |
 
 ### A25 — Clé de chiffrement d'instance
 
@@ -379,6 +381,61 @@ La clé d'instance, qui protège les curseurs opaques et les secrets de signatur
 est lue dans la variable d'environnement `BASEDB_ENCRYPTION_KEY`. Elle porte un
 numéro de version permettant la rotation, et la procédure de restauration après
 sinistre la nomme explicitement comme élément à sauvegarder séparément de la base.
+
+### A26 — Collaboration dans PostgreSQL
+
+Commentaires, mentions, notifications internes, temps réel, présence et annulation
+après écriture (Ctrl+Z) font partie du produit ; le chapitre 16 les fixe. Cette décision
+lève deux refus antérieurs — « le temps réel et la collaboration » (chapitre 10 §10) et
+l'annulation après envoi (chapitre 11 §2.4) — sans lever ce qui les motivait :
+
+- **rien hors de PostgreSQL** (A4) : les signaux passent par `NOTIFY` sur la seule
+  connexion d'écoute de chaque instance, la présence par une table non journalisée ;
+- **le serveur pousse un signal, jamais une donnée** : le navigateur relit par l'API,
+  sous ses droits (flux SSE, sans WebSocket) ;
+- **annuler est une écriture de plus**, appuyée sur l'historique (chapitre 07) et refusée
+  si quelqu'un a écrit depuis (`REVISION_SUPERSEDED`).
+
+### A27 — Automatisations au nom d'une personne
+
+Une base peut porter des automatisations (chapitre 17) : un déclencheur — une ligne
+créée ou modifiée, une horloge, un bouton —, une condition, des actions. Elles attendent
+dans une file en base (A4), naissent au drain de l'historique pour les lignes, et
+agissent **avec les droits de la personne qui les a enregistrées, redécidés à chaque
+exécution**, comme un formulaire partagé. Une écriture d'automatisation n'en déclenche
+aucune autre : il n'y a pas de chaîne, donc pas de boucle. Pas de script exécuté par le
+serveur.
+
+### A28 — Des tableaux de bord qui lisent avec les droits du lecteur
+
+Une base peut porter des tableaux de bord (chapitre 18) : des blocs — un chiffre, un
+graphique, une liste, un texte, une page extérieure — qui lisent chacun par les routes
+ordinaires, **avec les droits de la personne qui regarde**. Un tableau de bord n'élargit
+aucun droit : montrer des données à qui ne peut pas les lire reste le rôle explicite
+d'une vue partagée (chapitre 15). Une extension est une page affichée dans un cadre
+isolé, sans session ni données ; un modèle de base est appliqué par l'interface, par
+les routes publiques.
+
+### A29 — Intégrations par protocoles publics
+
+Slack, les agendas et les sources extérieures passent par des protocoles publics — un
+webhook entrant Slack, le format iCalendar, HTTPS — et jamais par un jeton d'accès à un
+compte tiers (chapitre 19). Toute adresse qui vaut autorisation est scellée par la clé
+d'instance (A25) ; toute adresse appelée par le serveur obéit aux règles des webhooks. Une
+table synchronisée est tenue à jour par le serveur, sous une identité système, et reste en
+lecture seule pour les personnes.
+
+### A30 — Des modèles de base en JSON, publiés par le site
+
+Un modèle de base est un document JSON déclaratif (chapitre 20), le même pour le site
+public, l'instance, l'IA et l'export d'une base ; son validateur est partagé par le serveur,
+l'interface et le site. Les modèles officiels sont publiés par le site public, que chaque
+instance lit — avec ses modèles intégrés en secours et ceux que ses administrateurs
+importent. Un modèle reste appliqué par l'interface, par les routes publiques (A28), et ne
+contient rien qui ouvre une porte ou fasse sortir une donnée : ni partage, ni droit, ni
+webhook ; un champ IA n'est créé comme tel qu'avec le consentement de qui l'applique. L'IA
+propose un modèle à partir d'une phrase (`template_draft`, chapitre 12), sans recevoir
+aucune donnée.
 
 ---
 
@@ -540,6 +597,7 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | Code | Condition | Statut HTTP | Chapitre normatif |
 |---|---|---|---|
 | `ACTION_FORBIDDEN` | Ressource visible, action non accordée | 403 | 05 |
+| `AUTOMATION_DISABLED` | Exécution demandée d'une automatisation désactivée ou supprimée — un bouton qui la désigne | 409 | 17 |
 | `ADMIN_REQUIRED` | Action réservée à l'administration, l'acteur voyant la ressource ; cycle de vie compris (A23) | 403 | 06 |
 | `AUTHORIZATION_REVOKED` | Revérification des droits ou du jeton en échec à l'approbation | 403 | 09 |
 | `CONFIRMATION_REQUIRED` | Opération réservée présentée sans jeton de confirmation | 409 | 05 |
@@ -614,6 +672,10 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 |---|---|---|---|
 | `AI_CONSENT_REQUIRED` | Consentement au fournisseur absent ou périmé | 409 | 12 |
 | `AI_DISABLED` | `ai.enabled` faux à la portée résolue | 409 | 12 |
+| `SYNC_SOURCE_FAILED` | Source d'une table synchronisée injoignable, trop grosse ou illisible ; la table garde ses lignes | 502 | 19 |
+| `TABLE_SYNCED` | Écriture d'une ligne dans une table synchronisée, en dehors de sa synchronisation | 409 | 19 |
+| `TEMPLATE_INVALID` | Modèle de base mal formé, hors bornes, aux références non résolues ou contenant un interdit ; `details.issues[]` | 422 | 20 |
+| `AUTOMATION_WEBHOOK_FAILED` | Webhook d'une automatisation injoignable, ou réponse autre que `2xx` ; consigné dans l'exécution | 502 | 17 |
 | `AI_KEY_REJECTED` | Clé refusée par le fournisseur, à la pose ou en exploitation | 422 | 12 |
 | `AI_MODEL_UNKNOWN` | Modèle absent de la table de correspondance du fournisseur résolu | 422 | 12 |
 | `AI_NOT_CONFIGURED` | IA activée sans fournisseur, modèle ou clé résolus | 409 | 12 |
@@ -639,6 +701,9 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `FILTER_VALUE_INVALID` | Valeur de filtre non coercible | 400 | 08 |
 | `FORM_CLOSED` | Réponse à un formulaire partagé désactivé, fermé, complet, ou dont la personne qui l'a publié ne peut plus ajouter de lignes | 409 | 15 |
 | `FORM_RESTRICTED` | Formulaire partagé réservé à des groupes dont la personne connectée n'est pas membre | 403 | 15 |
+| `VIEW_SHARE_CLOSED` | Lecture d'une vue partagée dont le lien est désactivé, ou dont la personne qui l'a publiée ne peut plus lire la table | 409 | 15 |
+| `VIEW_SHARE_RESTRICTED` | Vue partagée réservée à des groupes dont la personne connectée n'est pas membre | 403 | 15 |
+| `VIEW_LOCKED` | Modification d'une vue verrouillée : il faut d'abord la déverrouiller | 409 | 11 |
 | `IDEMPOTENCY_CONFLICT` | Même clé d'idempotence, corps différent | 409 | 08 |
 | `IDEMPOTENCY_IN_PROGRESS` | Même clé, revendication sous bail valide | 409 | 08 |
 | `IDEMPOTENCY_INTERRUPTED` | Bail expiré, écriture métier partiellement constatée | 409 | 08 |

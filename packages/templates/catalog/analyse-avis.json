@@ -1,0 +1,358 @@
+{
+  "format": 1,
+  "key": "analyse-avis",
+  "label": "Analyse d'avis clients",
+  "summary": "Collectez les avis, laissez l'IA en tirer le sentiment, les thèmes, l'urgence et un brouillon de réponse.",
+  "description": "Pour un commerce, un restaurant ou une marque : les avis arrivent d'un formulaire public ou d'un import, et l'IA lit chacun d'eux. Elle classe le sentiment, repère le thème principal, signale ceux qui demandent une réponse rapide, extrait la suggestion du client et rédige une réponse à relire. Les produits cumulent leur note moyenne et leur nombre d'avis ; un tableau de bord suit la satisfaction.",
+  "category": "Relation client",
+  "icon": "message-square",
+  "color": "#ec4899",
+  "tags": ["IA", "Formulaire", "Tableau de bord"],
+  "base": {
+    "label": "Avis clients",
+    "description": "Les avis des clients, lus et classés par l'IA, pour savoir ce qui plaît et ce qui fâche."
+  },
+  "tables": [
+    {
+      "key": "avis",
+      "label": "Avis",
+      "icon": "message-square",
+      "color": "#ec4899",
+      "description": "Un avis par ligne, d'où qu'il vienne.",
+      "fields": [
+        { "label": "Auteur", "kind": "short_text", "required": true },
+        { "label": "Avis", "kind": "long_text", "description": "Le texte du client, tel quel." },
+        { "label": "Note", "kind": "number", "format": { "display": "rating", "rating_max": 5 } },
+        {
+          "label": "Source",
+          "kind": "select",
+          "options": ["Site web", "Google", "Formulaire", "E-mail", "En boutique"]
+        },
+        { "label": "Reçu le", "kind": "date" },
+        {
+          "label": "Sentiment",
+          "kind": "select",
+          "options": [
+            { "label": "Très positif", "color": "#059669", "icon": "laugh" },
+            { "label": "Positif", "color": "#10b981", "icon": "smile" },
+            { "label": "Mitigé", "color": "#f59e0b", "icon": "meh" },
+            { "label": "Négatif", "color": "#ef4444", "icon": "frown" },
+            { "label": "Très négatif", "color": "#b91c1c", "icon": "angry" }
+          ],
+          "ai": {
+            "prompt": "Voici un avis client, noté {{Note}}/5 :\n« {{Avis}} »\nQuel est son sentiment global ?"
+          }
+        },
+        {
+          "label": "Thème",
+          "kind": "select",
+          "options": [
+            "Qualité du produit",
+            "Prix",
+            "Livraison",
+            "Service client",
+            "Site et commande",
+            "Autre"
+          ],
+          "ai": { "prompt": "Quel est le sujet principal de cet avis client ?\n« {{Avis}} »" }
+        },
+        {
+          "label": "Réponse urgente",
+          "kind": "boolean",
+          "ai": {
+            "prompt": "Cet avis demande-t-il une réponse rapide de l'entreprise (client en colère, problème non résolu, risque de mauvaise publicité, question posée) ?\n« {{Avis}} » ({{Note}}/5)"
+          }
+        },
+        {
+          "label": "Suggestion du client",
+          "kind": "short_text",
+          "ai": {
+            "prompt": "Si ce client suggère une amélioration concrète, résume-la en 12 mots au plus ; sinon réponds par une chaîne vide.\n« {{Avis}} »"
+          }
+        },
+        {
+          "label": "Réponse proposée",
+          "kind": "long_text",
+          "ai": {
+            "prompt": "Rédige une réponse publique à cet avis, en trois phrases au plus : remercie, réponds précisément à ce que dit le client, propose une solution s'il y a un problème. Ton chaleureux et professionnel, vouvoiement, sans formule creuse.\nAvis de {{Auteur}} ({{Note}}/5) : « {{Avis}} »"
+          }
+        },
+        {
+          "label": "Traité",
+          "kind": "boolean",
+          "description": "Coché quand la réponse a été publiée."
+        }
+      ]
+    },
+    {
+      "key": "produits",
+      "label": "Produits",
+      "icon": "package",
+      "color": "#8b5cf6",
+      "description": "Ce sur quoi portent les avis.",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        { "label": "Gamme", "kind": "select", "options": ["Cafés", "Thés", "Accessoires"] },
+        {
+          "label": "Prix",
+          "kind": "number",
+          "format": { "display": "currency", "currency": "EUR" }
+        },
+        { "label": "Avis", "kind": "count", "rollup": { "via": "Produit", "table": "avis" } },
+        {
+          "label": "Note moyenne",
+          "kind": "rollup",
+          "rollup": { "via": "Produit", "table": "avis", "target": "Note", "aggregate": "avg" }
+        },
+        {
+          "label": "Note la plus basse",
+          "kind": "rollup",
+          "rollup": { "via": "Produit", "table": "avis", "target": "Note", "aggregate": "min" }
+        }
+      ]
+    }
+  ],
+  "links": [{ "from": "avis", "label": "Produit", "to": "produits" }],
+  "rows": {
+    "produits": [
+      { "$key": "ethiopie", "Nom": "Café d'Éthiopie Yirgacheffe", "Gamme": "Cafés", "Prix": 14.9 },
+      { "$key": "espresso", "Nom": "Mélange Espresso Maison", "Gamme": "Cafés", "Prix": 11.5 },
+      { "$key": "sencha", "Nom": "Thé vert Sencha", "Gamme": "Thés", "Prix": 9.8 },
+      { "$key": "moulin", "Nom": "Moulin à café manuel", "Gamme": "Accessoires", "Prix": 49 }
+    ],
+    "avis": [
+      {
+        "Auteur": "Camille R.",
+        "Avis": "Un café incroyable, des notes de fruits rouges et de fleurs. Livré en deux jours dans un emballage soigné. Je recommande sans hésiter !",
+        "Note": 5,
+        "Source": "Site web",
+        "Reçu le": "-12d",
+        "Produit": "@ethiopie",
+        "Sentiment": "Très positif",
+        "Thème": "Qualité du produit",
+        "Réponse urgente": false,
+        "Traité": true
+      },
+      {
+        "Auteur": "Marc D.",
+        "Avis": "Colis arrivé avec une semaine de retard et aucune réponse du service client à mes deux e-mails. Le café est bon mais l'expérience est décevante.",
+        "Note": 2,
+        "Source": "Google",
+        "Reçu le": "-3d",
+        "Produit": "@espresso",
+        "Sentiment": "Négatif",
+        "Thème": "Livraison",
+        "Réponse urgente": true,
+        "Suggestion du client": "Répondre aux e-mails et prévenir en cas de retard",
+        "Traité": false
+      },
+      {
+        "Auteur": "Inès B.",
+        "Avis": "Le moulin est joli mais la mouture n'est pas régulière, impossible d'obtenir une mouture fine pour l'espresso. Assez cher pour ce résultat.",
+        "Note": 2,
+        "Source": "Site web",
+        "Reçu le": "-6d",
+        "Produit": "@moulin",
+        "Sentiment": "Négatif",
+        "Thème": "Qualité du produit",
+        "Réponse urgente": true,
+        "Suggestion du client": "Proposer un réglage de mouture plus fin",
+        "Traité": false
+      },
+      {
+        "Auteur": "Thomas L.",
+        "Avis": "Bon thé, frais et parfumé. Dommage que le sachet ne soit pas refermable.",
+        "Note": 4,
+        "Source": "Formulaire",
+        "Reçu le": "-9d",
+        "Produit": "@sencha",
+        "Sentiment": "Positif",
+        "Thème": "Qualité du produit",
+        "Réponse urgente": false,
+        "Suggestion du client": "Un sachet refermable",
+        "Traité": true
+      },
+      {
+        "Auteur": "Aurélie P.",
+        "Avis": "Le site plante à chaque fois que j'essaie de payer avec PayPal. J'ai fini par commander par téléphone. Vendeuse adorable au passage.",
+        "Note": 3,
+        "Source": "E-mail",
+        "Reçu le": "-1d",
+        "Produit": "@espresso",
+        "Sentiment": "Mitigé",
+        "Thème": "Site et commande",
+        "Réponse urgente": true,
+        "Suggestion du client": "Réparer le paiement PayPal",
+        "Traité": false
+      },
+      {
+        "Auteur": "Jean-Paul V.",
+        "Avis": "Toujours aussi bon, j'en commande tous les mois depuis deux ans.",
+        "Note": 5,
+        "Source": "Site web",
+        "Reçu le": "-20d",
+        "Produit": "@espresso",
+        "Sentiment": "Très positif",
+        "Thème": "Qualité du produit",
+        "Réponse urgente": false,
+        "Traité": true
+      },
+      {
+        "Auteur": "Léa M.",
+        "Avis": "Un peu cher par rapport aux cafés de supermarché, mais la différence de goût est réelle.",
+        "Note": 4,
+        "Source": "En boutique",
+        "Reçu le": "-15d",
+        "Produit": "@ethiopie",
+        "Sentiment": "Positif",
+        "Thème": "Prix",
+        "Réponse urgente": false,
+        "Traité": true
+      },
+      {
+        "Auteur": "Karim S.",
+        "Avis": "Reçu un thé périmé depuis trois mois. Inadmissible, je veux un remboursement.",
+        "Note": 1,
+        "Source": "Google",
+        "Reçu le": "today",
+        "Produit": "@sencha",
+        "Sentiment": "Très négatif",
+        "Thème": "Qualité du produit",
+        "Réponse urgente": true,
+        "Suggestion du client": "Vérifier les dates avant expédition",
+        "Traité": false
+      }
+    ]
+  },
+  "views": [
+    {
+      "table": "avis",
+      "label": "À traiter",
+      "kind": "grid",
+      "spec": {
+        "filter": "[Traité] eq false",
+        "sorts": [{ "field": "Reçu le", "direction": "desc" }],
+        "color_field": "Sentiment"
+      }
+    },
+    {
+      "table": "avis",
+      "label": "Urgents",
+      "kind": "list",
+      "spec": {
+        "filter": "[Réponse urgente] eq true and [Traité] eq false",
+        "card_fields": ["Sentiment", "Thème", "Note", "Réponse proposée"]
+      }
+    },
+    {
+      "table": "avis",
+      "label": "Par sentiment",
+      "kind": "kanban",
+      "spec": {
+        "group_by": "Sentiment",
+        "card_fields": ["Note", "Thème", "Produit"],
+        "group_order": ["Très négatif", "Négatif", "Mitigé", "Positif", "Très positif"]
+      }
+    },
+    {
+      "table": "avis",
+      "label": "Par thème",
+      "kind": "list",
+      "spec": { "group_by": "Thème", "card_fields": ["Sentiment", "Note", "Suggestion du client"] }
+    },
+    {
+      "table": "avis",
+      "label": "Laisser un avis",
+      "kind": "form",
+      "spec": {
+        "title": "Votre avis compte",
+        "description": "Dites-nous ce que vous avez pensé de votre commande.",
+        "fields": [
+          {
+            "field": "Auteur",
+            "required": true,
+            "label": "Votre prénom et l'initiale de votre nom"
+          },
+          { "field": "Note", "required": true },
+          { "field": "Avis", "required": true, "label": "Votre avis" }
+        ],
+        "submit_label": "Publier mon avis",
+        "success_message": "Merci pour votre avis !"
+      }
+    },
+    {
+      "table": "produits",
+      "label": "Catalogue",
+      "kind": "gallery",
+      "spec": { "card_fields": ["Gamme", "Prix", "Note moyenne", "Avis"], "card_size": "medium" }
+    }
+  ],
+  "dashboards": [
+    {
+      "label": "Satisfaction",
+      "blocks": [
+        {
+          "kind": "number",
+          "title": "Note moyenne",
+          "table": "avis",
+          "aggregate": "avg",
+          "field": "Note"
+        },
+        {
+          "kind": "number",
+          "title": "Avis à traiter",
+          "table": "avis",
+          "aggregate": "count",
+          "filter": "[Traité] eq false"
+        },
+        {
+          "kind": "number",
+          "title": "Réponses urgentes",
+          "table": "avis",
+          "aggregate": "count",
+          "filter": "[Réponse urgente] eq true and [Traité] eq false"
+        },
+        {
+          "kind": "chart",
+          "title": "Sentiment",
+          "table": "avis",
+          "group_by": "Sentiment",
+          "style": "pie"
+        },
+        {
+          "kind": "chart",
+          "title": "Thèmes abordés",
+          "table": "avis",
+          "group_by": "Thème",
+          "style": "bar",
+          "width": 2
+        },
+        {
+          "kind": "list",
+          "title": "Derniers avis négatifs",
+          "table": "avis",
+          "fields": ["Auteur", "Note", "Thème"],
+          "filter": "[Note] lte 2",
+          "sort": "-Reçu le",
+          "limit": 5,
+          "width": 3
+        }
+      ]
+    }
+  ],
+  "automations": [
+    {
+      "label": "Alerte avis urgent",
+      "description": "Prévient quand l'IA juge qu'un avis demande une réponse rapide.",
+      "trigger": { "kind": "record_updated", "table": "avis", "fields": ["Réponse urgente"] },
+      "condition": "[Réponse urgente] eq true",
+      "actions": [
+        {
+          "kind": "notify",
+          "users": ["$moi"],
+          "message": "Avis urgent de {{Auteur}} ({{Note}}/5) : « {{Avis}} »"
+        }
+      ]
+    }
+  ]
+}

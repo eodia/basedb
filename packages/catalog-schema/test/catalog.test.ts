@@ -194,8 +194,9 @@ describe('catalog invariants', () => {
     const { rows: kinds } = await client.query<{ n: string }>(
       'SELECT count(*)::text AS n FROM _basedb.field_kind',
     )
-    // The nine field types of v1, the multiple choice, the document, the image and AI.
-    expect(Number(kinds[0].n)).toBe(13)
+    // The thirteen types of the first catalog, the multiple relation, the computed fields
+    // (lookup, rollup, count), the e-mail, the automatic number, the person and the button.
+    expect(Number(kinds[0].n)).toBe(21)
 
     const { rows: states } = await client.query<{ n: string }>(
       'SELECT count(*)::text AS n FROM _basedb.physical_state',

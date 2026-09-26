@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label'
 import { type DescribedBase, api } from '@/lib/api/client'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 /**
@@ -280,19 +280,22 @@ export function DeleteBaseDialog({
 
 /**
  * A new, empty base in a project: a label and what it is for. Its tables are added next,
- * from the base's own menu — or all at once with the demonstration, for a first look.
+ * from the base's own menu — or all at once from a template of the gallery (chapter 20).
  */
 export function NewBaseDialog({
   open,
   project,
   onClose,
   onDone,
+  onGallery,
 }: {
   readonly open: boolean
   readonly project: { readonly id: string; readonly label: string }
   readonly onClose: () => void
   /** Receives the logical name of the base created. */
   readonly onDone: (name: string) => void
+  /** Opens the gallery of templates instead — and the AI's proposals. */
+  readonly onGallery: () => void
 }) {
   const [label, setLabel] = useState('')
   const [description, setDescription] = useState('')
@@ -376,6 +379,26 @@ export function NewBaseDialog({
             placeholder="À quoi sert cette base ?"
             disabled={busy}
           />
+
+          <button
+            type="button"
+            onClick={onGallery}
+            disabled={busy}
+            className="flex w-full items-center gap-3 rounded-lg border border-violet-500/30 bg-gradient-to-r from-violet-500/10 to-transparent p-3 text-left transition-colors hover:border-violet-500/60"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-white">
+              <Sparkles className="size-4" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium">
+                Partir d’un modèle, ou le demander à l’IA
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                Suivi de tickets, analyse d’avis, CRM… des bases prêtes, avec leurs lignes, leurs
+                vues et leur IA.
+              </span>
+            </span>
+          </button>
 
           <NewEnvironmentsField value={environments} onChange={setEnvironments} disabled={busy} />
 

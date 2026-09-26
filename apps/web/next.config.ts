@@ -11,6 +11,9 @@ import type { NextConfig } from 'next'
  */
 const config: NextConfig = {
   transpilePackages: ['@basedb/contracts'],
+  // Development only: Next's badge sits bottom-left by default — on the profile menu,
+  // which holds the documentation, the integrations and the administration.
+  devIndicators: { position: 'bottom-right' },
   // The Docker image (Dockerfile, target `web`) serves a self-contained server:
   // `next build` then traces what it needs into `.next/standalone`, from the root of the
   // monorepo so that the workspace packages come along. Off elsewhere: `next start`
@@ -21,6 +24,18 @@ const config: NextConfig = {
         outputFileTracingRoot: fileURLToPath(new URL('../..', import.meta.url)),
       }
     : {}),
+  // A shared view may be framed by another site only at `/v/<jeton>?embed=1`, and only
+  // when its sharing allows it — which the page checks (ch. 15 §10). Anywhere else under
+  // `/v/`, no frame.
+  async headers() {
+    return [
+      {
+        source: '/v/:token',
+        missing: [{ type: 'query', key: 'embed', value: '1' }],
+        headers: [{ key: 'Content-Security-Policy', value: "frame-ancestors 'none'" }],
+      },
+    ]
+  },
   // No `env` block for BASEDB_API: Next would inline its build-time value into the
   // SERVER code too, and the address the layout reads at run time (app/layout.tsx)
   // would be frozen into the image. The browser gets it from the layout.

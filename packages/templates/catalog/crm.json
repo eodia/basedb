@@ -1,0 +1,515 @@
+{
+  "format": 1,
+  "key": "crm",
+  "label": "CRM commercial",
+  "summary": "Entreprises, contacts et opportunités : un pipeline de vente, les échanges, et l'IA qui conseille la prochaine étape.",
+  "description": "Un CRM léger pour une équipe commerciale. Les opportunités avancent dans un pipeline, portent un montant pondéré par leur probabilité, et l'IA en évalue le risque et conseille la prochaine action à partir des notes. Les échanges avec les clients sont consignés et résumés, les entreprises cumulent ce qu'elles représentent.",
+  "category": "Ventes",
+  "icon": "handshake",
+  "color": "#0ea5e9",
+  "tags": ["IA", "Pipeline", "Kanban", "Calendrier"],
+  "base": {
+    "label": "CRM",
+    "description": "Les clients, leurs contacts et les ventes en cours, de la découverte à la signature."
+  },
+  "tables": [
+    {
+      "key": "opportunites",
+      "label": "Opportunités",
+      "icon": "target",
+      "color": "#0ea5e9",
+      "description": "Une vente possible, de la découverte à la signature ou à l'abandon.",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        {
+          "label": "Étape",
+          "kind": "select",
+          "options": [
+            { "label": "Découverte", "color": "#94a3b8" },
+            { "label": "Qualification", "color": "#8b5cf6" },
+            { "label": "Proposition", "color": "#3b82f6" },
+            { "label": "Négociation", "color": "#f59e0b" },
+            { "label": "Gagnée", "color": "#10b981", "icon": "trophy" },
+            { "label": "Perdue", "color": "#ef4444" }
+          ]
+        },
+        {
+          "label": "Montant",
+          "kind": "number",
+          "format": { "display": "currency", "currency": "EUR" }
+        },
+        {
+          "label": "Probabilité (%)",
+          "kind": "number",
+          "description": "Chance de signer, de 0 à 100."
+        },
+        {
+          "label": "Montant pondéré",
+          "kind": "formula",
+          "formula": "ARRONDI([Montant] * [Probabilité (%)] / 100; 0)",
+          "description": "Le montant multiplié par la probabilité."
+        },
+        { "label": "Clôture prévue", "kind": "date" },
+        { "label": "Responsable", "kind": "user" },
+        {
+          "label": "Notes",
+          "kind": "long_text",
+          "description": "Ce que l'on sait du besoin, du budget, des décideurs et des objections."
+        },
+        {
+          "label": "Risque",
+          "kind": "select",
+          "options": [
+            { "label": "Faible", "color": "#10b981" },
+            { "label": "Moyen", "color": "#f59e0b" },
+            { "label": "Élevé", "color": "#ef4444" }
+          ],
+          "ai": {
+            "prompt": "Voici les notes d'un commercial sur une opportunité à l'étape « {{Étape}} », d'un montant de {{Montant}} € :\n{{Notes}}\nQuel est le risque de ne pas signer ?"
+          }
+        },
+        {
+          "label": "Prochaine étape conseillée",
+          "kind": "short_text",
+          "ai": {
+            "prompt": "En une phrase de 15 mots au plus, quelle est la prochaine action commerciale la plus utile pour faire avancer cette opportunité (étape « {{Étape}} ») ?\nNotes : {{Notes}}"
+          }
+        }
+      ]
+    },
+    {
+      "key": "entreprises",
+      "label": "Entreprises",
+      "icon": "building-2",
+      "color": "#6366f1",
+      "description": "Les comptes clients et prospects.",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        {
+          "label": "Secteur",
+          "kind": "select",
+          "options": ["Industrie", "Services", "Commerce", "Santé", "Public"]
+        },
+        { "label": "Taille", "kind": "select", "options": ["TPE", "PME", "ETI", "Grand compte"] },
+        { "label": "Ville", "kind": "short_text" },
+        { "label": "Site web", "kind": "url" },
+        {
+          "label": "Opportunités",
+          "kind": "count",
+          "rollup": { "via": "Entreprise", "table": "opportunites" }
+        },
+        {
+          "label": "Montant en jeu",
+          "kind": "rollup",
+          "rollup": {
+            "via": "Entreprise",
+            "table": "opportunites",
+            "target": "Montant",
+            "aggregate": "sum"
+          }
+        }
+      ]
+    },
+    {
+      "key": "contacts",
+      "label": "Contacts",
+      "icon": "users",
+      "color": "#14b8a6",
+      "description": "Les personnes à qui l'on parle chez les clients.",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        { "label": "Fonction", "kind": "short_text" },
+        { "label": "E-mail", "kind": "email" },
+        { "label": "Téléphone", "kind": "short_text", "format": { "display": "phone" } },
+        {
+          "label": "Rôle dans la décision",
+          "kind": "select",
+          "options": ["Décideur", "Prescripteur", "Utilisateur", "Acheteur"]
+        },
+        {
+          "label": "Écrire",
+          "kind": "button",
+          "button": { "label": "Écrire", "url": "mailto:{{E-mail}}" }
+        }
+      ]
+    },
+    {
+      "key": "echanges",
+      "label": "Échanges",
+      "icon": "message-square",
+      "color": "#f59e0b",
+      "description": "Appels, rendez-vous, démonstrations : ce qui s'est dit, et quand.",
+      "fields": [
+        { "label": "Sujet", "kind": "short_text", "required": true },
+        {
+          "label": "Type",
+          "kind": "select",
+          "options": [
+            { "label": "Appel", "icon": "phone" },
+            { "label": "E-mail", "icon": "mail" },
+            { "label": "Rendez-vous", "icon": "users" },
+            { "label": "Démonstration", "icon": "monitor" }
+          ]
+        },
+        { "label": "Date", "kind": "datetime" },
+        { "label": "Compte rendu", "kind": "long_text" },
+        {
+          "label": "Points clés",
+          "kind": "short_text",
+          "ai": {
+            "prompt": "Résume en 20 mots au plus les points clés de cet échange commercial :\n{{Compte rendu}}"
+          }
+        }
+      ]
+    }
+  ],
+  "links": [
+    { "from": "opportunites", "label": "Entreprise", "to": "entreprises" },
+    { "from": "opportunites", "label": "Contact", "to": "contacts" },
+    { "from": "contacts", "label": "Entreprise", "to": "entreprises" },
+    { "from": "echanges", "label": "Opportunité", "to": "opportunites" }
+  ],
+  "rows": {
+    "entreprises": [
+      {
+        "$key": "rhodia",
+        "Nom": "Chimie du Rhône",
+        "Secteur": "Industrie",
+        "Taille": "ETI",
+        "Ville": "Lyon",
+        "Site web": "https://chimie-rhone.example"
+      },
+      {
+        "$key": "optique",
+        "Nom": "Optique Martin & Fils",
+        "Secteur": "Commerce",
+        "Taille": "PME",
+        "Ville": "Rennes"
+      },
+      {
+        "$key": "clinique",
+        "Nom": "Groupe Santé Atlantique",
+        "Secteur": "Santé",
+        "Taille": "Grand compte",
+        "Ville": "Nantes",
+        "Site web": "https://sante-atlantique.example"
+      },
+      {
+        "$key": "mairie",
+        "Nom": "Mairie de Villeurbanne",
+        "Secteur": "Public",
+        "Taille": "ETI",
+        "Ville": "Villeurbanne"
+      },
+      {
+        "$key": "conseil",
+        "Nom": "Atelier Conseil",
+        "Secteur": "Services",
+        "Taille": "TPE",
+        "Ville": "Paris"
+      }
+    ],
+    "contacts": [
+      {
+        "$key": "c1",
+        "Nom": "Nathalie Perrin",
+        "Fonction": "Directrice des achats",
+        "E-mail": "n.perrin@chimie-rhone.example",
+        "Téléphone": "04 72 00 00 01",
+        "Rôle dans la décision": "Décideur",
+        "Entreprise": "@rhodia"
+      },
+      {
+        "$key": "c2",
+        "Nom": "Julien Martin",
+        "Fonction": "Gérant",
+        "E-mail": "julien@optique-martin.example",
+        "Téléphone": "02 99 00 00 02",
+        "Rôle dans la décision": "Décideur",
+        "Entreprise": "@optique"
+      },
+      {
+        "$key": "c3",
+        "Nom": "Dr Hélène Robin",
+        "Fonction": "Directrice des systèmes d'information",
+        "E-mail": "h.robin@sante-atlantique.example",
+        "Rôle dans la décision": "Prescripteur",
+        "Entreprise": "@clinique"
+      },
+      {
+        "$key": "c4",
+        "Nom": "Karim Benali",
+        "Fonction": "Responsable de la commande publique",
+        "E-mail": "k.benali@villeurbanne.example",
+        "Rôle dans la décision": "Acheteur",
+        "Entreprise": "@mairie"
+      },
+      {
+        "$key": "c5",
+        "Nom": "Chloé Garnier",
+        "Fonction": "Associée",
+        "E-mail": "chloe@atelier-conseil.example",
+        "Rôle dans la décision": "Décideur",
+        "Entreprise": "@conseil"
+      }
+    ],
+    "opportunites": [
+      {
+        "$key": "o1",
+        "Nom": "Chimie du Rhône — logiciel de maintenance",
+        "Étape": "Négociation",
+        "Montant": 48000,
+        "Probabilité (%)": 70,
+        "Clôture prévue": "+12d",
+        "Responsable": "$moi",
+        "Entreprise": "@rhodia",
+        "Contact": "@c1",
+        "Notes": "Budget validé en comité. Ils comparent avec un concurrent 15 % moins cher. La directrice des achats veut une remise ou un accompagnement renforcé.",
+        "Risque": "Moyen",
+        "Prochaine étape conseillée": "Proposer un accompagnement au déploiement plutôt qu'une remise."
+      },
+      {
+        "$key": "o2",
+        "Nom": "Optique Martin — caisse et fidélité",
+        "Étape": "Proposition",
+        "Montant": 9500,
+        "Probabilité (%)": 50,
+        "Clôture prévue": "+25d",
+        "Entreprise": "@optique",
+        "Contact": "@c2",
+        "Notes": "Très intéressé par le programme de fidélité. Hésite sur le calendrier : il veut attendre après les soldes.",
+        "Risque": "Moyen",
+        "Prochaine étape conseillée": "Proposer un démarrage en deux temps, fidélité après les soldes."
+      },
+      {
+        "$key": "o3",
+        "Nom": "Santé Atlantique — portail patients",
+        "Étape": "Qualification",
+        "Montant": 120000,
+        "Probabilité (%)": 25,
+        "Clôture prévue": "+75d",
+        "Responsable": "$moi",
+        "Entreprise": "@clinique",
+        "Contact": "@c3",
+        "Notes": "Projet stratégique mais pas encore budgété. La DSI est favorable ; la direction générale n'a pas été rencontrée. Appel d'offres probable.",
+        "Risque": "Élevé",
+        "Prochaine étape conseillée": "Obtenir un rendez-vous avec la direction générale."
+      },
+      {
+        "$key": "o4",
+        "Nom": "Villeurbanne — réservation des salles",
+        "Étape": "Découverte",
+        "Montant": 22000,
+        "Probabilité (%)": 10,
+        "Clôture prévue": "+120d",
+        "Entreprise": "@mairie",
+        "Contact": "@c4",
+        "Notes": "Premier contact au salon des collectivités. Marché public à venir, cahier des charges en rédaction.",
+        "Risque": "Élevé",
+        "Prochaine étape conseillée": "Demander à être consulté pour le cahier des charges."
+      },
+      {
+        "$key": "o5",
+        "Nom": "Atelier Conseil — abonnement annuel",
+        "Étape": "Gagnée",
+        "Montant": 3600,
+        "Probabilité (%)": 100,
+        "Clôture prévue": "-5d",
+        "Entreprise": "@conseil",
+        "Contact": "@c5",
+        "Notes": "Signé après la démonstration. Souhaite une formation pour deux nouveaux collaborateurs en janvier.",
+        "Risque": "Faible",
+        "Prochaine étape conseillée": "Planifier la formation de janvier."
+      },
+      {
+        "$key": "o6",
+        "Nom": "Chimie du Rhône — module qualité",
+        "Étape": "Perdue",
+        "Montant": 15000,
+        "Probabilité (%)": 0,
+        "Clôture prévue": "-40d",
+        "Entreprise": "@rhodia",
+        "Contact": "@c1",
+        "Notes": "Perdu face à la solution déjà en place chez leur maison mère.",
+        "Risque": "Élevé"
+      }
+    ],
+    "echanges": [
+      {
+        "Sujet": "Démonstration du logiciel",
+        "Type": "Démonstration",
+        "Date": "-20d 10:00",
+        "Opportunité": "@o1",
+        "Compte rendu": "Démonstration devant quatre personnes. Très bon accueil sur la planification ; questions sur l'import des historiques et sur l'hébergement en France.",
+        "Points clés": "Bon accueil, questions sur l'import des historiques et l'hébergement."
+      },
+      {
+        "Sujet": "Point sur la proposition",
+        "Type": "Appel",
+        "Date": "-3d 14:30",
+        "Opportunité": "@o1",
+        "Compte rendu": "La directrice des achats trouve l'offre chère. Un concurrent propose 15 % de moins. Elle attend un geste avant la fin du mois.",
+        "Points clés": "Offre jugée chère, concurrent moins cher, geste attendu avant la fin du mois."
+      },
+      {
+        "Sujet": "Présentation du programme de fidélité",
+        "Type": "Rendez-vous",
+        "Date": "-8d 09:30",
+        "Opportunité": "@o2",
+        "Compte rendu": "Rendez-vous en boutique. Le gérant veut des cartes dématérialisées et un envoi de SMS à l'anniversaire des clients.",
+        "Points clés": "Cartes dématérialisées et SMS d'anniversaire demandés."
+      },
+      {
+        "Sujet": "Découverte du besoin",
+        "Type": "Rendez-vous",
+        "Date": "+4d 11:00",
+        "Opportunité": "@o3",
+        "Compte rendu": "À préparer : liste des services concernés, volumétrie des patients, contraintes d'hébergement de données de santé."
+      },
+      {
+        "Sujet": "Envoi du contrat signé",
+        "Type": "E-mail",
+        "Date": "-5d 17:00",
+        "Opportunité": "@o5",
+        "Compte rendu": "Contrat reçu signé. Facture à émettre, formation à planifier en janvier.",
+        "Points clés": "Contrat signé, facture à émettre, formation en janvier."
+      }
+    ]
+  },
+  "views": [
+    {
+      "table": "opportunites",
+      "label": "Pipeline",
+      "kind": "kanban",
+      "spec": {
+        "group_by": "Étape",
+        "card_fields": ["Entreprise", "Montant", "Clôture prévue", "Risque"],
+        "group_order": [
+          "Découverte",
+          "Qualification",
+          "Proposition",
+          "Négociation",
+          "Gagnée",
+          "Perdue"
+        ]
+      }
+    },
+    {
+      "table": "opportunites",
+      "label": "En cours par risque",
+      "kind": "grid",
+      "spec": {
+        "filter": "[Étape] ne \"Gagnée\" and [Étape] ne \"Perdue\"",
+        "group_by": "Risque",
+        "sorts": [{ "field": "Clôture prévue", "direction": "asc" }],
+        "summaries": { "Montant": "sum" }
+      }
+    },
+    {
+      "table": "opportunites",
+      "label": "Clôtures",
+      "kind": "calendar",
+      "spec": { "date_field": "Clôture prévue", "color_field": "Étape", "card_fields": ["Montant"] }
+    },
+    {
+      "table": "echanges",
+      "label": "Agenda",
+      "kind": "calendar",
+      "spec": {
+        "date_field": "Date",
+        "color_field": "Type",
+        "card_fields": ["Opportunité"],
+        "mode": "week"
+      }
+    },
+    {
+      "table": "entreprises",
+      "label": "Comptes",
+      "kind": "gallery",
+      "spec": {
+        "card_fields": ["Secteur", "Taille", "Ville", "Montant en jeu"],
+        "color_field": "Taille"
+      }
+    },
+    {
+      "table": "contacts",
+      "label": "Par entreprise",
+      "kind": "list",
+      "spec": {
+        "group_by": "Entreprise",
+        "card_fields": ["Fonction", "E-mail", "Rôle dans la décision"]
+      }
+    }
+  ],
+  "dashboards": [
+    {
+      "label": "Ventes",
+      "blocks": [
+        {
+          "kind": "number",
+          "title": "En jeu",
+          "table": "opportunites",
+          "aggregate": "sum",
+          "field": "Montant",
+          "filter": "[Étape] ne \"Gagnée\" and [Étape] ne \"Perdue\""
+        },
+        {
+          "kind": "number",
+          "title": "Gagné",
+          "table": "opportunites",
+          "aggregate": "sum",
+          "field": "Montant",
+          "filter": "[Étape] eq \"Gagnée\""
+        },
+        {
+          "kind": "number",
+          "title": "Opportunités ouvertes",
+          "table": "opportunites",
+          "aggregate": "count",
+          "filter": "[Étape] ne \"Gagnée\" and [Étape] ne \"Perdue\""
+        },
+        {
+          "kind": "chart",
+          "title": "Pipeline par étape",
+          "table": "opportunites",
+          "group_by": "Étape",
+          "style": "bar",
+          "width": 2
+        },
+        {
+          "kind": "chart",
+          "title": "Risque",
+          "table": "opportunites",
+          "group_by": "Risque",
+          "style": "pie"
+        },
+        {
+          "kind": "list",
+          "title": "Prochaines clôtures",
+          "table": "opportunites",
+          "fields": ["Nom", "Montant", "Clôture prévue", "Prochaine étape conseillée"],
+          "filter": "[Étape] ne \"Gagnée\" and [Étape] ne \"Perdue\"",
+          "sort": "Clôture prévue",
+          "limit": 5,
+          "width": 3
+        }
+      ]
+    }
+  ],
+  "automations": [
+    {
+      "label": "Opportunité gagnée",
+      "description": "Prévient le responsable quand une opportunité est gagnée.",
+      "trigger": { "kind": "record_updated", "table": "opportunites", "fields": ["Étape"] },
+      "condition": "[Étape] eq \"Gagnée\"",
+      "actions": [
+        {
+          "kind": "notify",
+          "users": ["$moi"],
+          "user_field": "Responsable",
+          "message": "Gagnée : {{Nom}} ({{Montant}} €)"
+        }
+      ]
+    }
+  ]
+}

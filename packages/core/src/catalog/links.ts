@@ -3,10 +3,15 @@ import {
   indexName,
   linkColumnName,
   linkColumnNameFromLabel,
+  multiLinkColumnName,
+  multiLinkColumnNameFromLabel,
+  multiLinkTargetTriggerName,
+  multiLinkTriggerName,
   qualify,
   quoteIdentifier,
   slugify,
 } from '@basedb/naming'
+import { quoteLiteral } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { allocateName } from '../naming/allocation.js'
 import { requireOnTable } from '../rbac/require.js'
@@ -23,8 +28,11 @@ import { labelKey } from './operations.js'
  * through the API. This is the cadrage's central requirement, and it rules out any
  * integrity held on the application side.
  *
- * v1 knows only many-to-one: the column lives on the SOURCE table and carries the
- * target's `_id`. There is no junction table, hence no cardinality to declare.
+ * A `link` is many-to-one: the column lives on the SOURCE table and carries the target's
+ * `_id`. A `multi_link` is many-to-many, and still ONE column of the source — a `uuid[]`
+ * of target ids, in the order they were linked (chapter 04 §4 bis). No foreign key can
+ * bear on an array: two shared triggers hold it instead, in PostgreSQL all the same, so
+ * a write in raw SQL is held to the rule as a write through the API is.
  */
 
 /** Behaviour on deletion of the target row (§4.2). */
@@ -41,6 +49,8 @@ export interface CreateLinkFieldRequest {
   readonly description?: string | null
   /** The field's lineage, when it copies a relation of another environment (chapter 14). */
   readonly lineageId?: string
+  /** Several target rows per row: a `multi_link` (chapter 04 §4 bis). */
+  readonly multiple?: boolean
 }
 
 export interface CreatedLinkField {
@@ -50,9 +60,11 @@ export interface CreatedLinkField {
   /** Physical column name, frozen at creation and never recomputed. */
   readonly name: string
   readonly targetTableName: string
-  readonly constraintName: string
+  /** `null` for a multi-link, which has no foreign key. */
+  readonly constraintName: string | null
   readonly indexName: string
   readonly onDelete: OnDelete
+  readonly kind: 'link' | 'multi_link'
   /** The statements actually emitted, in order, for inspection. */
   readonly sql: readonly string[]
 }
@@ -99,6 +111,7 @@ export async function createLinkField(
   ctx: RequestContext,
   request: CreateLinkFieldRequest,
 ): Promise<CreatedLinkField> {
+  if (request.multiple === true) return createMultiLinkField(pools, ctx, request)
   const onDelete = request.onDelete ?? 'restrict'
   const required = request.required ?? false
   const description = normalizeDescription(request.description)
@@ -256,7 +269,191 @@ export async function createLinkField(
     constraintName: plan.fkName,
     indexName: plan.ixName,
     onDelete,
+    kind: 'link',
     sql: [...plan.sql, indexSql, validateSql],
+  }
+}
+
+/**
+ * Creates a multi-link field — chapter 04 §4 bis — in two steps:
+ *
+ *   1. catalog + `ADD COLUMN … uuid[]` + the two triggers              (transaction)
+ *   2. `CREATE INDEX CONCURRENTLY … USING gin`                          (outside)
+ *
+ * No validation step: there is no constraint to validate, and the column is born empty.
+ * The triggers are in place from step 1, so the first write is already held to the rule.
+ *
+ * Removing a target row REMOVES it from the lists by default (`set_null`): what one
+ * expects of a tag deleted from the articles that carried it. `restrict` refuses the
+ * deletion instead; `cascade` is refused — deleting a task because one of the people
+ * assigned to it was deleted makes no sense.
+ */
+async function createMultiLinkField(
+  pools: Pools,
+  ctx: RequestContext,
+  request: CreateLinkFieldRequest,
+): Promise<CreatedLinkField> {
+  const required = request.required ?? false
+  const onDelete = request.onDelete ?? (required ? 'restrict' : 'set_null')
+  const description = normalizeDescription(request.description)
+
+  const plan = await withTransaction(pools, 'ddl', ctx, async (exec) => {
+    await requireOnTable(exec, ctx, 'manage_schema', request.tableId)
+    await requireOnTable(exec, ctx, 'manage_schema', request.targetTableId)
+    const source = await resolveTable(exec, request.tableId)
+    const target = await resolveTable(exec, request.targetTableId)
+
+    check(source, target, onDelete, required)
+
+    const labelSlug = slugify(request.label, { max: 60, nature: 'champ' }).slug
+    const columnName = await allocateName(exec, ctx, {
+      technicalName: request.technicalName,
+      derivedName:
+        request.technicalName === undefined ? multiLinkColumnName(target.tableName) : undefined,
+      derivedFallbacks:
+        request.technicalName === undefined ? [multiLinkColumnNameFromLabel(labelSlug)] : undefined,
+      objectKind: 'field',
+      scopeKind: 'table',
+      scopeId: source.tableId,
+    })
+
+    const [position] = await exec.query<{ n: number }>(
+      'SELECT COALESCE(MAX(position), 0) + 1 AS n FROM _basedb.field WHERE table_id = $1',
+      [source.tableId],
+    )
+
+    const [field] = await exec.query<{ id: string }>(
+      `INSERT INTO _basedb.field
+         (table_id, base_id, kind, name_id, label, label_key, description, is_required,
+          position, created_by, updated_by, lineage_id)
+       VALUES ($1, $2, 'multi_link', $3, $4, $5, $6, $7, $8, $9, $9,
+               coalesce($10::uuid, _basedb_local.uuid_generate_v7())) RETURNING id`,
+      [
+        source.tableId,
+        source.baseId,
+        columnName.nameId,
+        request.label,
+        labelKey(request.label),
+        description,
+        required,
+        position.n,
+        ctx.actor.id,
+        request.lineageId ?? null,
+      ],
+      'insert',
+    )
+
+    const ixName = indexName(source.tableName, [columnName.name])
+    const index = await registerObject(exec, ctx, {
+      table: '_basedb.table_index',
+      columns: 'method, origin, state',
+      values: "'gin', 'system', 'pending'",
+      name: ixName,
+      source,
+      fieldId: field.id,
+      members: '_basedb.table_index_member',
+      memberKey: 'index_id',
+    })
+
+    await exec.query(
+      `INSERT INTO _basedb.field_link_config
+         (field_id, kind, base_id, is_required, target_table_id, fk_constraint_id, fk_index_id,
+          on_delete)
+       VALUES ($1, 'multi_link', $2, $3, $4, NULL, $5, $6)`,
+      [field.id, source.baseId, required, target.tableId, index.id, onDelete],
+      'insert',
+    )
+
+    // The two triggers of chapter 07 §1.2, their names in the registry like any derived
+    // name: one on the source, one on the target — which may be the same table.
+    const triggers = multiLinkTriggers(
+      source,
+      target,
+      columnName.name,
+      onDelete === 'restrict' ? 'restrict' : 'set_null',
+    )
+    for (const [scope, name] of [
+      [source.tableId, triggers.sourceName],
+      [target.tableId, triggers.targetName],
+    ] as const) {
+      await exec.query(
+        `INSERT INTO _basedb.physical_name
+           (scope_kind, scope_id, name, object_kind, state, slug_version, allocated_by)
+         VALUES ('table', $1, $2, 'trigger', 'active', 1, $3)`,
+        [scope, name, ctx.actor.id],
+        'insert',
+      )
+    }
+
+    const relation = qualify(source.schemaName, source.tableName)
+    const column = quoteIdentifier(columnName.name)
+    const sql = [
+      `ALTER TABLE ${relation} ADD COLUMN ${column} uuid[] NULL;`,
+      `COMMENT ON COLUMN ${relation}.${column} IS ${literal(commentText(`Relation multiple vers ${target.label}`, description))};`,
+      ...triggers.statements,
+    ]
+    for (const statement of sql) await exec.query(statement, [], 'ddl')
+
+    return {
+      fieldId: field.id,
+      name: columnName.name,
+      ixName,
+      indexId: index.id,
+      relation,
+      targetTableName: target.tableName,
+      sql,
+    }
+  })
+
+  // GIN, not btree: it serves `@>` and `&&` — inverse links, the deletion of a target
+  // row, filters —, which would otherwise scan the whole source table.
+  const indexSql = `CREATE INDEX CONCURRENTLY ${quoteIdentifier(plan.ixName)}
+  ON ${plan.relation} USING gin (${quoteIdentifier(plan.name)});`
+  await advance(pools, plan.indexId, '_basedb.table_index', 'building', indexSql, 'active')
+
+  return {
+    fieldId: plan.fieldId,
+    label: request.label,
+    description,
+    name: plan.name,
+    targetTableName: plan.targetTableName,
+    constraintName: null,
+    indexName: plan.ixName,
+    onDelete,
+    kind: 'multi_link',
+    sql: [...plan.sql, indexSql],
+  }
+}
+
+/**
+ * The two triggers that hold a multi-link — chapter 04 §4 bis, chapter 07 §1.2. Their
+ * arguments are physical names, frozen at creation like every physical name; deleting
+ * the table or the base drops them, as it drops the foreign keys of its links.
+ */
+export function multiLinkTriggers(
+  source: { readonly schemaName: string; readonly tableName: string },
+  target: { readonly schemaName: string; readonly tableName: string },
+  column: string,
+  mode: 'restrict' | 'set_null',
+): {
+  readonly sourceName: string
+  readonly targetName: string
+  readonly statements: readonly string[]
+} {
+  const sourceName = multiLinkTriggerName(source.tableName, column)
+  const targetName = multiLinkTargetTriggerName(target.tableName, source.tableName, column)
+  return {
+    sourceName,
+    targetName,
+    statements: [
+      `CREATE TRIGGER ${quoteIdentifier(sourceName)}
+  BEFORE INSERT OR UPDATE OF ${quoteIdentifier(column)} ON ${qualify(source.schemaName, source.tableName)}
+  FOR EACH ROW EXECUTE FUNCTION _basedb_local.multi_link_check_v1(${quoteLiteral(column)}, ${quoteLiteral(target.schemaName)}, ${quoteLiteral(target.tableName)});`,
+      `CREATE TRIGGER ${quoteIdentifier(targetName)}
+  AFTER DELETE ON ${qualify(target.schemaName, target.tableName)}
+  REFERENCING OLD TABLE AS old_rows
+  FOR EACH STATEMENT EXECUTE FUNCTION _basedb_local.multi_link_deleted_v1(${quoteLiteral(source.schemaName)}, ${quoteLiteral(source.tableName)}, ${quoteLiteral(column)}, '${mode}');`,
+    ],
   }
 }
 

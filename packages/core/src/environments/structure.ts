@@ -486,6 +486,7 @@ const TABLE_KINDS: ReadonlySet<string> = new Set([
   'short_text',
   'long_text',
   'url',
+  'email',
   'number',
   'boolean',
   'date',
@@ -496,6 +497,9 @@ const KIND_LABEL: Readonly<Record<string, string>> = {
   short_text: 'texte',
   long_text: 'texte long',
   url: 'lien URL',
+  email: 'e-mail',
+  autonumber: 'numéro automatique',
+  user: 'personne',
   number: 'nombre',
   boolean: 'booléen',
   date: 'date',
@@ -505,6 +509,7 @@ const KIND_LABEL: Readonly<Record<string, string>> = {
   file: 'document',
   image: 'image',
   link: 'relation',
+  multi_link: 'relation multiple',
   formula: 'formule',
 }
 
@@ -812,6 +817,7 @@ export function buildPlan(
                   onDelete: link.onDelete,
                   description: field.description,
                   lineageId: field.lineage,
+                  multiple: field.kind === 'multi_link',
                 })
                 state.fields.set(field.lineage, {
                   id: done.fieldId,

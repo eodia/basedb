@@ -153,7 +153,7 @@ Deux connexions vivent **hors pool** :
 
 | Connexion | Réglages | Rôle |
 |---|---|---|
-| Écoute | `search_path=''`, `keepalives=1`, `keepalives_idle=30`, `keepalives_interval=10`, `keepalives_count=3` | `LISTEN basedb_catalog` (§4.4) |
+| Écoute | `search_path=''`, `keepalives=1`, `keepalives_idle=30`, `keepalives_interval=10`, `keepalives_count=3` | `LISTEN basedb_catalog` (§4.4), `basedb_drain` (réveil du drain, chapitre 07 §11.4) et `basedb_live` (temps réel, chapitre 16 §3) ; reconnexion avec un délai croissant |
 | Contrôle | `search_path=''`, `lock_timeout=3s`, `statement_timeout=BASEDB_MIGRATION_STATEMENT_TIMEOUT_MS`, `idle_in_transaction_session_timeout=0` | Étapes 2 à 8 du démarrage (§9.2), verrou `catalog_migration`, et **chien de garde** : `pg_cancel_backend` sur le backend DDL au-delà du budget d'étape, `pg_terminate_backend` 30 s plus tard |
 
 Les paramètres sémantiques — `search_path=''`, `TimeZone=UTC`, `DateStyle`, `IntervalStyle`, `client_encoding` — sont ceux du chapitre 01 §10.3, posés **dans le paquet de démarrage de la connexion**. S'y ajoute un `application_name` distinct par pool, pour que `pg_stat_activity` soit lisible. Une connexion qui ne satisfait pas l'assertion de contrat (`CONNECTION_CONTRACT_BROKEN`) est détruite, pas utilisée.
@@ -269,7 +269,7 @@ La clause émise pour la valeur `restrict` du catalogue est `ON DELETE NO ACTION
 | **Aucun objet d'un schéma `b_*` ne référence `_basedb`** | Requête de réconciliation sur `pg_depend`. L'interdit est exact et sans exception : les objets de `b_*` référencent `_basedb_local`, jamais `_basedb` |
 | **Une opération n'ouvre au plus qu'une transaction, sur un seul pool** — sans exception pour le DDL ni pour le DML | Le contexte ne porte qu'une poignée de transaction ; en ouvrir une seconde lève une erreur d'invariant. Seuls le *journal* de migration (§3.4.2) et l'entrée d'audit (§3.3) écrivent hors de cette transaction, par une voie qui n'est pas une opération |
 | Comparer `now()` obtenu de deux connexions | Toute opération fige son horodatage dans le contexte à sa création et n'utilise que celui-là |
-| `LISTEN` / `NOTIFY` ailleurs que sur la connexion d'écoute | Le canal d'invalidation est un mécanisme de catalogue |
+| `LISTEN` ailleurs que sur la connexion d'écoute, `NOTIFY` hors des canaux déclarés | Les canaux sont ceux du catalogue (`basedb_catalog`, `basedb_authz`), de la capture (`basedb_drain`) et du temps réel (`basedb_live`, chapitre 16) |
 
 **Ce dont dépendent les schémas `b_*` tient dans `_basedb_local`** (A9), dont le nom est figé et non configurable, et qui suit les données en cas de séparation physique :
 
@@ -747,7 +747,7 @@ Le catalogue et les données vivent dans la même base ; ils sont donc sauvegard
 
 Explicitement exclu du noyau, pour qu'il reste petit : tout HTTP et sa sécurité de transport ; **mots de passe, OIDC, cookies** (les sessions et les jetons, eux, appartiennent au noyau — §2.4) ; génération OpenAPI ; émission, signature et relance des webhooks (la **capture** est faite par déclencheur, la **livraison** est hors noyau) ; serveur MCP ; appels aux fournisseurs d'IA ; interface ; SDK. Ces sujets ne sont pas orphelins : ils appartiennent aux chapitres 08, 09, 11, 12 et 13, et aux paquets `@basedb/auth`, `@basedb/ai`, `@basedb/sdk` et `apps/*` du §1.2.
 
-Exclu aussi, et ce sont des refus assumés plutôt que des oublis : les relations « plusieurs vers plusieurs » (v2) ; le cloisonnement effectif du multi-tenant, dont seule la forme de nommage est en place ; la permission au niveau ligne, dont seule la signature est figée (A20) ; la rotation de la clé de chiffrement (§6.3) ; le temps réel et la collaboration ; la recherche plein texte ; les pièces jointes ; **toute route d'export** (A21), l'extraction de volume passant par la pagination par curseur ; les vues SQL matérialisées ; **tout cache externe et toute brique d'infrastructure hors PostgreSQL** (A4) ; toute métrique au-delà du journal structuré ; les écrans de renommage physique et de listing des consommateurs — étant entendu que les **primitives DDL** de renommage et d'alias, elles, sont dans le noyau de la phase 2, parce que rien d'autre ne sait émettre du DDL.
+Exclu aussi, et ce sont des refus assumés plutôt que des oublis : les relations « plusieurs vers plusieurs » (v2) ; le cloisonnement effectif du multi-tenant, dont seule la forme de nommage est en place ; la permission au niveau ligne, dont seule la signature est figée (A20) ; la rotation de la clé de chiffrement (§6.3) ; la recherche plein texte ; les pièces jointes ; **toute route d'export** (A21), l'extraction de volume passant par la pagination par curseur ; les vues SQL matérialisées ; **tout cache externe et toute brique d'infrastructure hors PostgreSQL** (A4) ; toute métrique au-delà du journal structuré ; les écrans de renommage physique et de listing des consommateurs — étant entendu que les **primitives DDL** de renommage et d'alias, elles, sont dans le noyau de la phase 2, parce que rien d'autre ne sait émettre du DDL.
 
 Conséquence directe d'A4, à écrire parce qu'elle surprend : **les compteurs de limitation de débit vivent dans PostgreSQL**, comme les files et les verrous. Avec plusieurs instances, la limitation est donc approximative ; le chapitre 08 documente cette approximation, et aucun chapitre ne suppose de magasin de compteurs partagé.
 

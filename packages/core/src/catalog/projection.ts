@@ -1,6 +1,7 @@
 import { qualify } from '@basedb/naming'
 import { COMPUTED_KINDS } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
+import { type Node, renderFormula } from '../formula/language.js'
 import type { ActorGrants } from '../rbac/decide.js'
 import { type Action, SYSTEM_COLUMNS, type Target, decide } from '../rbac/decide.js'
 import { loadGrants } from '../rbac/loader.js'
@@ -8,6 +9,7 @@ import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { type CatalogVersions, catalogCache, grantsCache, readVersions } from './cache.js'
 import { SYSTEM_COLUMN_DESCRIPTIONS } from './description.js'
+import type { FieldFormat } from './formats.js'
 
 /**
  * Catalog projection — chapter 08 §9.
@@ -42,6 +44,22 @@ export interface ProjectedLink {
   readonly masked: boolean
 }
 
+/**
+ * The format of a field, published only when it says something: a plain number or a plain
+ * text reads as it always did, and saying so on every field would be noise.
+ */
+function formatOf(field: FieldRow): { format?: FieldFormat } {
+  const display = field.kind === 'number' ? field.number_format : field.text_format
+  if (display === null || display === 'decimal' || display === 'plain') return {}
+  return {
+    format: {
+      display,
+      currency: field.currency_code,
+      ratingMax: field.rating_max === null ? null : Number(field.rating_max),
+    },
+  }
+}
+
 export interface ProjectedField {
   readonly name: string
   readonly label: string
@@ -68,6 +86,8 @@ export interface ProjectedField {
    */
   readonly options?: ReadonlyArray<ProjectedOption>
   readonly link?: ProjectedLink
+  /** How the value reads, when it is not plain (`formats.ts`). */
+  readonly format?: FieldFormat
   /**
    * Present and `true` when the field is withheld from agents (09 §12.2): on the MCP
    * surface it is exactly an unreadable field. The human reader still sees it — this is
@@ -79,6 +99,41 @@ export interface ProjectedField {
    * is the model's, written by the kernel, and nobody else's — hence also `readOnly`.
    */
   readonly ai?: boolean
+  /** A formula, a lookup, a rollup or a count: what it computes (chapter 04 §7, §7 ter). */
+  readonly computed?: ProjectedComputed
+  /** A button's label and what it does (chapter 17 §4). */
+  readonly button?: ProjectedButton
+}
+
+/** A button: its label, its colour, and what a click does. */
+export interface ProjectedButton {
+  readonly label: string
+  readonly color: string | null
+  readonly action: 'url' | 'automation'
+  readonly url: string | null
+  readonly automation: string | null
+}
+
+/** What a computed field says of itself, once the reader's rights have been applied. */
+export interface ProjectedComputed {
+  /** The kind of its value — or of each value, for a list. */
+  readonly resultKind: string
+  /** A generated column; false when computed at read time. */
+  readonly stored: boolean
+  /** A list of values: a lookup reaching several rows. */
+  readonly multiple: boolean
+  /** A formula's expression, written with the labels of the day. */
+  readonly expression?: string
+  readonly timezone?: string | null
+  /** The relation a lookup, a rollup or a count follows, and the table it reaches. */
+  readonly via?: {
+    readonly field: string
+    readonly table: string
+    readonly direction: 'outgoing' | 'incoming'
+    readonly reached: string
+  }
+  readonly target?: string | null
+  readonly aggregate?: string | null
 }
 
 export interface ProjectedTable {
@@ -106,6 +161,8 @@ export interface ProjectedTable {
   readonly color: string | null
   readonly icon: string | null
   readonly image: string | null
+  /** Kept like a source by the server: its rows are not written by hand (chapter 19 §3). */
+  readonly synced: boolean
 }
 
 export interface ProjectedBase {
@@ -198,6 +255,7 @@ export interface TableRow extends Record<string, unknown> {
   readonly table_name: string
   readonly schema_name: string
   readonly display_field_id: string | null
+  readonly synced: boolean
 }
 
 export interface FieldRow extends Record<string, unknown> {
@@ -218,6 +276,26 @@ export interface FieldRow extends Record<string, unknown> {
   readonly formula_is_stored: boolean | null
   /** The AI option is on: a model fills the field (`field_ai_config`). */
   readonly has_ai: boolean
+  /** How a number or a short text reads — its display format, currency, stars. */
+  readonly number_format: string | null
+  readonly currency_code: string | null
+  readonly rating_max: number | null
+  readonly text_format: string | null
+  readonly formula_ast: Node | null
+  readonly formula_timezone: string | null
+  /** The fields a formula cites, by catalog key. */
+  readonly formula_deps: readonly string[] | null
+  readonly rollup_direction: 'outgoing' | 'incoming' | null
+  readonly rollup_via_id: string | null
+  readonly rollup_target_id: string | null
+  readonly rollup_aggregate: string | null
+  readonly rollup_result_kind: string | null
+  readonly rollup_multiple: boolean | null
+  readonly button_label: string | null
+  readonly button_color: string | null
+  readonly button_action: 'url' | 'automation' | null
+  readonly button_url: string | null
+  readonly button_automation: string | null
 }
 
 /**
@@ -241,8 +319,11 @@ export interface LinkRow extends Record<string, unknown> {
   readonly field_id: string
   readonly target_table_id: string
   readonly on_delete: 'restrict' | 'set_null' | 'cascade'
-  /** Physical names of the foreign key and its index, as the registry holds them. */
-  readonly fk_constraint: string
+  /**
+   * Physical names of the foreign key and its index, as the registry holds them. A
+   * multi-link has no foreign key: `null`, and its index is the GIN of 04 §4 bis.
+   */
+  readonly fk_constraint: string | null
   readonly fk_index: string
 }
 
@@ -306,7 +387,8 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
 
   const tables = await exec.query<TableRow>(
     `SELECT t.id, t.base_id, t.label, t.description, t.color, t.icon, t.image,
-            tn.name AS table_name, sn.name AS schema_name, t.display_field_id
+            tn.name AS table_name, sn.name AS schema_name, t.display_field_id,
+            EXISTS (SELECT 1 FROM _basedb.table_sync ts WHERE ts.table_id = t.id) AS synced
        FROM _basedb.table_def t
        JOIN _basedb.base b           ON b.id = t.base_id
        JOIN _basedb.tenant te        ON te.id = b.tenant_id
@@ -324,11 +406,25 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
             coalesce(tc.is_rich, false) AS is_rich, f.expose_to_agents, tc.max_length,
             fc.input_expression AS formula_expression, fc.result_kind AS formula_result_kind,
             fc.is_stored AS formula_is_stored,
-            EXISTS (SELECT 1 FROM _basedb.field_ai_config a WHERE a.field_id = f.id) AS has_ai
+            EXISTS (SELECT 1 FROM _basedb.field_ai_config a WHERE a.field_id = f.id) AS has_ai,
+            nc.display_format AS number_format, nc.currency_code, nc.rating_max,
+            tc.display_format AS text_format,
+            fc.ast AS formula_ast, fc.timezone AS formula_timezone,
+            CASE WHEN fc.field_id IS NULL THEN NULL ELSE ARRAY(
+              SELECT d.depends_on_field_id::text FROM _basedb.field_formula_dependency d
+               WHERE d.formula_field_id = f.id) END AS formula_deps,
+            rc.direction AS rollup_direction, rc.via_field_id AS rollup_via_id,
+            rc.target_field_id AS rollup_target_id, rc.aggregate AS rollup_aggregate,
+            rc.result_kind AS rollup_result_kind, rc.is_multiple AS rollup_multiple,
+            bc.label AS button_label, bc.color AS button_color, bc.action AS button_action,
+            bc.url_template AS button_url, bc.automation_id::text AS button_automation
        FROM _basedb.field f
        JOIN _basedb.physical_name n ON n.id = f.name_id
        LEFT JOIN _basedb.field_text_config tc    ON tc.field_id = f.id
+       LEFT JOIN _basedb.field_number_config nc  ON nc.field_id = f.id
        LEFT JOIN _basedb.field_formula_config fc ON fc.field_id = f.id
+       LEFT JOIN _basedb.field_rollup_config rc  ON rc.field_id = f.id
+       LEFT JOIN _basedb.field_button_config bc  ON bc.field_id = f.id
        JOIN _basedb.table_def t     ON t.id = f.table_id
        JOIN _basedb.base b          ON b.id = t.base_id
        JOIN _basedb.tenant te       ON te.id = b.tenant_id
@@ -347,8 +443,8 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
        JOIN _basedb.table_def t ON t.id = f.table_id
        JOIN _basedb.base b      ON b.id = t.base_id
        JOIN _basedb.tenant te   ON te.id = b.tenant_id
-       JOIN _basedb.table_constraint c ON c.id = lc.fk_constraint_id
-       JOIN _basedb.physical_name cn   ON cn.id = c.name_id
+       LEFT JOIN _basedb.table_constraint c ON c.id = lc.fk_constraint_id
+       LEFT JOIN _basedb.physical_name cn   ON cn.id = c.name_id
        JOIN _basedb.table_index x      ON x.id = lc.fk_index_id
        JOIN _basedb.physical_name xn   ON xn.id = x.name_id
       WHERE te.ref = $1 AND lc.fk_dropped_at IS NULL AND f.is_live AND t.is_live`,
@@ -575,9 +671,17 @@ export function project(
       if (readableFields === undefined) continue
 
       const target = targetOf(table)
-      const writable = decide(ctx, grants, 'update', target).writableFields
+      // A synced table is written by its source alone (ch. 19 §3): whatever the grants,
+      // it is read and nothing else — its fields read-only, its rows neither added nor
+      // removed.
+      const synced = table.synced === true
+      const writable: ReadonlySet<string> = synced
+        ? new Set()
+        : decide(ctx, grants, 'update', target).writableFields
       const actions = DATA_ACTIONS.filter(
-        (action) => decide(ctx, grants, action, target).verdict === 'ALLOWED',
+        (action) =>
+          (!synced || action === 'read') &&
+          decide(ctx, grants, action, target).verdict === 'ALLOWED',
       )
 
       // System columns are always described in read, and always read-only (A18). They
@@ -628,9 +732,61 @@ export function project(
               onDelete: link.on_delete,
               required: field.is_required,
               target: { table: targetTable.table_name, displayField: display },
-              expandable: true,
+              // An expansion follows one row: a multi-link is not expandable (04 §4 bis).
+              expandable: field.kind === 'link',
               masked: false,
             }
+          }
+        }
+
+        // A computed field says what it computes — and is absent for a reader who could not
+        // read what it reads through (chapter 04 §7 ter.2).
+        let computed: ProjectedComputed | undefined
+        if (field.rollup_via_id !== null && field.rollup_direction !== null) {
+          const via = fieldById.get(field.rollup_via_id)
+          const viaLink = via === undefined ? undefined : linkByField.get(via.id)
+          if (via === undefined || viaLink === undefined) continue
+          const reachedId =
+            field.rollup_direction === 'outgoing' ? viaLink.target_table_id : via.table_id
+          const reachedFields = readable.get(reachedId)
+          const viaReadable =
+            field.rollup_direction === 'outgoing'
+              ? readableFields.has(via.id)
+              : reachedFields?.has(via.id) === true
+          const targetReadable =
+            field.rollup_target_id === null || reachedFields?.has(field.rollup_target_id) === true
+          if (reachedFields === undefined || !viaReadable || !targetReadable) continue
+          computed = {
+            resultKind: field.rollup_result_kind ?? 'number',
+            stored: false,
+            multiple: field.rollup_multiple === true,
+            via: {
+              field: via.column,
+              table: tableById.get(via.table_id)?.table_name ?? '',
+              direction: field.rollup_direction,
+              reached: tableById.get(reachedId)?.table_name ?? '',
+            },
+            target:
+              field.rollup_target_id === null
+                ? null
+                : (fieldById.get(field.rollup_target_id)?.column ?? null),
+            aggregate: field.rollup_aggregate,
+          }
+        } else if (field.kind === 'formula' && field.formula_ast !== null) {
+          // Computed at read time, a formula over a field the reader cannot see would
+          // say what the field holds.
+          if (
+            field.formula_is_stored === false &&
+            !(field.formula_deps ?? []).every((id) => readableFields.has(id))
+          ) {
+            continue
+          }
+          computed = {
+            resultKind: field.formula_result_kind ?? 'short_text',
+            stored: field.formula_is_stored !== false,
+            multiple: false,
+            expression: renderFormula(field.formula_ast, (id) => fieldById.get(id)?.label ?? '?'),
+            timezone: field.formula_timezone,
           }
         }
 
@@ -643,10 +799,23 @@ export function project(
           readOnly: !writable.has(field.id),
           system: false,
           unsafeHtml: field.is_rich,
+          ...(computed === undefined ? {} : { computed }),
+          ...(field.button_action === null || field.button_label === null
+            ? {}
+            : {
+                button: {
+                  label: field.button_label,
+                  color: field.button_color,
+                  action: field.button_action,
+                  url: field.button_url,
+                  automation: field.button_automation,
+                },
+              }),
           ...(raw.options.has(field.id) ? { options: raw.options.get(field.id) } : {}),
           ...(projectedLink === undefined ? {} : { link: projectedLink }),
           ...(field.expose_to_agents ? {} : { hiddenFromAgents: true }),
           ...(field.has_ai ? { ai: true } : {}),
+          ...formatOf(field),
         })
       }
 
@@ -668,6 +837,7 @@ export function project(
         color: table.color,
         icon: table.icon,
         image: table.image,
+        synced,
       })
     }
 

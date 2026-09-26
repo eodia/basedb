@@ -2,6 +2,8 @@ import {
   CalendarDays,
   ChartGantt,
   ClipboardList,
+  LayoutGrid,
+  List,
   type LucideIcon,
   MessageSquareText,
   SquareKanban,
@@ -10,7 +12,14 @@ import {
 // Relative, as `messages.ts` does: the unit tests run without the `@/` alias.
 import type { Field, SavedView, Table, ViewKind } from './api/client'
 import { type DateKind, fromStored, isDateKind } from './dates'
-import { DEFAULT_PAGE_SIZE, type SortTerm, type ViewState } from './store/workspace'
+import {
+  type ColorRule,
+  type ColorStyle,
+  DEFAULT_PAGE_SIZE,
+  type RowHeight,
+  type SortTerm,
+  type ViewState,
+} from './store/workspace'
 
 /**
  * Saved views, as the screen reads and writes them — chapter 11 §1.4.
@@ -35,6 +44,8 @@ export const VIEW_KINDS: readonly ViewKind[] = [
   'kanban',
   'calendar',
   'timeline',
+  'gallery',
+  'list',
   'form',
   'survey',
 ]
@@ -64,6 +75,18 @@ export const KIND_INFO: Readonly<Record<ViewKind, KindInfo>> = {
     summary: 'Des barres entre une date de début et une date de fin.',
     data: true,
   },
+  gallery: {
+    label: 'Galerie',
+    icon: LayoutGrid,
+    summary: 'Des cartes en mosaïque, une image de couverture en tête.',
+    data: true,
+  },
+  list: {
+    label: 'Liste',
+    icon: List,
+    summary: 'Une ligne par enregistrement, regroupées sous des titres.',
+    data: true,
+  },
   form: {
     label: 'Formulaire',
     icon: ClipboardList,
@@ -91,6 +114,13 @@ export interface GridSpec extends DataSpec {
   readonly column_order: readonly string[]
   readonly column_widths: Readonly<Record<string, number>>
   readonly page_size: number
+  readonly group_by: string | null
+  readonly summaries: Readonly<Record<string, string>>
+  readonly row_height: RowHeight
+  readonly color_field: string | null
+  readonly color_rules: readonly ColorRule[]
+  readonly color_style: ColorStyle
+  readonly system_columns: readonly string[]
 }
 
 /** What a card shows: its title, and a few fields under it. */
@@ -105,6 +135,8 @@ export interface KanbanSpec extends DataSpec, CardSpec {
   readonly group_order: readonly string[]
   readonly cover_field: string | null
   readonly hide_empty: boolean
+  /** Cards in the order they were dragged, when no sort says otherwise. */
+  readonly manual_order: readonly string[]
 }
 
 export interface CalendarSpec extends DataSpec, CardSpec {
@@ -122,6 +154,21 @@ export interface TimelineSpec extends DataSpec, CardSpec {
   readonly group_by: string | null
   readonly color_field: string | null
   readonly scale: TimelineScale
+  /** « Dépend de »: a relation of the table to itself, drawn as arrows. */
+  readonly depends_on: string | null
+}
+
+export interface GallerySpec extends DataSpec, CardSpec {
+  readonly cover_field: string | null
+  readonly cover_fit: 'cover' | 'contain'
+  readonly card_size: 'small' | 'medium' | 'large'
+  readonly color_field: string | null
+  readonly manual_order: readonly string[]
+}
+
+export interface ListSpec extends DataSpec, CardSpec {
+  readonly group_by: string | null
+  readonly manual_order: readonly string[]
 }
 
 export interface FormQuestion {
@@ -176,6 +223,30 @@ const cardOf = (raw: Raw): CardSpec => ({
   card_fields: names(raw, 'card_fields'),
 })
 
+function summariesOf(raw: Raw): Record<string, string> {
+  const out: Record<string, string> = {}
+  if (typeof raw.summaries === 'object' && raw.summaries !== null) {
+    for (const [key, value] of Object.entries(raw.summaries as Record<string, unknown>)) {
+      if (typeof value === 'string') out[key] = value
+    }
+  }
+  return out
+}
+
+function colorRulesOf(raw: Raw): ColorRule[] {
+  if (!Array.isArray(raw.color_rules)) return []
+  return (raw.color_rules as unknown[]).flatMap((rule) => {
+    if (typeof rule !== 'object' || rule === null) return []
+    const { filter, color, style } = rule as { filter?: unknown; color?: unknown; style?: unknown }
+    if (typeof filter !== 'string' || typeof color !== 'string') return []
+    // A rule saved before styles existed shows both, as it always did.
+    return [{ filter, color, style: isColorStyle(style) ? style : 'both' }]
+  })
+}
+
+const isColorStyle = (value: unknown): value is ColorStyle =>
+  value === 'both' || value === 'stripe' || value === 'background'
+
 export function gridSpec(raw: Raw): GridSpec {
   const widths: Record<string, number> = {}
   if (typeof raw.column_widths === 'object' && raw.column_widths !== null) {
@@ -190,6 +261,13 @@ export function gridSpec(raw: Raw): GridSpec {
     column_order: names(raw, 'column_order'),
     column_widths: widths,
     page_size: typeof raw.page_size === 'number' ? raw.page_size : DEFAULT_PAGE_SIZE,
+    group_by: name(raw, 'group_by'),
+    summaries: summariesOf(raw),
+    row_height: oneOf(raw, 'row_height', ['short', 'medium', 'tall', 'extra'] as const, 'short'),
+    color_field: name(raw, 'color_field'),
+    color_rules: colorRulesOf(raw),
+    color_style: isColorStyle(raw.color_style) ? raw.color_style : 'both',
+    system_columns: names(raw, 'system_columns'),
   }
 }
 
@@ -200,6 +278,7 @@ export const kanbanSpec = (raw: Raw): KanbanSpec => ({
   group_order: names(raw, 'group_order'),
   cover_field: name(raw, 'cover_field'),
   hide_empty: flag(raw, 'hide_empty', false),
+  manual_order: names(raw, 'manual_order'),
 })
 
 export const calendarSpec = (raw: Raw): CalendarSpec => ({
@@ -219,7 +298,55 @@ export const timelineSpec = (raw: Raw): TimelineSpec => ({
   group_by: name(raw, 'group_by'),
   color_field: name(raw, 'color_field'),
   scale: oneOf(raw, 'scale', ['day', 'week', 'month'] as const, 'week'),
+  depends_on: name(raw, 'depends_on'),
 })
+
+export const gallerySpec = (raw: Raw): GallerySpec => ({
+  ...dataOf(raw),
+  ...cardOf(raw),
+  cover_field: name(raw, 'cover_field'),
+  cover_fit: oneOf(raw, 'cover_fit', ['cover', 'contain'] as const, 'cover'),
+  card_size: oneOf(raw, 'card_size', ['small', 'medium', 'large'] as const, 'medium'),
+  color_field: name(raw, 'color_field'),
+  manual_order: names(raw, 'manual_order'),
+})
+
+export const listSpec = (raw: Raw): ListSpec => ({
+  ...dataOf(raw),
+  ...cardOf(raw),
+  group_by: name(raw, 'group_by'),
+  manual_order: names(raw, 'manual_order'),
+})
+
+/**
+ * Rows in the order a view keeps by hand (ch. 11 §1.6): those it names first, in its
+ * order; the others after them, as they came. With a sort, the sort wins — the caller
+ * passes no order then.
+ */
+export function orderByHand<T extends { readonly _id: string }>(
+  rows: readonly T[],
+  order: readonly string[],
+): T[] {
+  if (order.length === 0) return [...rows]
+  const rank = new Map(order.map((id, index) => [id, index]))
+  return rows
+    .map((row, index) => ({ row, at: rank.get(row._id) ?? order.length + index }))
+    .sort((a, b) => a.at - b.at)
+    .map((entry) => entry.row)
+}
+
+/**
+ * The order to save after a drag: the rows on screen in their new order, then the ids the
+ * old order named that are not on screen — a row of a page not loaded keeps its place.
+ */
+export function nextHandOrder(
+  shown: readonly string[],
+  previous: readonly string[],
+  limit = 5000,
+): string[] {
+  const onScreen = new Set(shown)
+  return [...shown, ...previous.filter((id) => !onScreen.has(id))].slice(0, limit)
+}
 
 export function formSpec(raw: Raw): FormSpec {
   const questions = Array.isArray(raw.fields)
@@ -266,6 +393,14 @@ export const pictureFields = (fields: readonly Field[]) =>
 /** What a timeline can stack its rows by. */
 export const groupFields = (fields: readonly Field[]) =>
   fields.filter((f) => f.kind === 'select' || f.kind === 'link')
+/** What a list can group its rows under: a choice, a relation, a person. */
+export const listGroupFields = (fields: readonly Field[]) =>
+  fields.filter((f) => f.kind === 'select' || f.kind === 'link' || f.kind === 'user')
+/** The relations of a table to itself — what a timeline's dependencies follow. */
+export const selfLinkFields = (table: Table, fields: readonly Field[]) =>
+  fields.filter(
+    (f) => (f.kind === 'link' || f.kind === 'multi_link') && f.link?.target === table.name,
+  )
 
 /**
  * What a form can ask: every field a person may write. A formula, a column filled by the
@@ -350,6 +485,27 @@ export function defaultSpec(kind: ViewKind, table: Table, current: DataSpec): Ra
         scale: 'week',
       }
     }
+    case 'gallery': {
+      return {
+        ...data,
+        title_field: title?.name ?? null,
+        card_fields: others,
+        cover_field: pictureFields(fields)[0]?.name ?? null,
+        cover_fit: 'cover',
+        card_size: 'medium',
+        color_field: null,
+        manual_order: [],
+      }
+    }
+    case 'list': {
+      return {
+        ...data,
+        title_field: title?.name ?? null,
+        card_fields: others,
+        group_by: selectFields(fields)[0]?.name ?? null,
+        manual_order: [],
+      }
+    }
     case 'form':
     case 'survey':
       return {
@@ -416,6 +572,14 @@ export function viewStateOf(view: SavedView | null, previous?: ViewState): ViewS
       cursors: [],
       total: null,
       totalCapped: false,
+      search: '',
+      groupBy: null,
+      summaries: {},
+      rowHeight: 'short',
+      colorField: null,
+      colorRules: [],
+      colorStyle: 'both',
+      systemColumns: [],
     }
   }
   const spec = gridSpec(view.spec)
@@ -430,6 +594,14 @@ export function viewStateOf(view: SavedView | null, previous?: ViewState): ViewS
     cursors: [],
     total: null,
     totalCapped: false,
+    search: '',
+    groupBy: spec.group_by,
+    summaries: spec.summaries,
+    rowHeight: spec.row_height,
+    colorField: spec.color_field,
+    colorRules: spec.color_rules,
+    colorStyle: spec.color_style,
+    systemColumns: spec.system_columns,
   }
 }
 
@@ -443,6 +615,13 @@ export function gridSpecOf(state: ViewState): Raw {
     column_order: state.columnOrder ?? [],
     column_widths: state.columnWidths,
     page_size: state.pageSize,
+    group_by: state.groupBy,
+    summaries: state.summaries,
+    row_height: state.rowHeight,
+    color_field: state.colorField,
+    color_rules: state.colorRules,
+    color_style: state.colorStyle,
+    system_columns: state.systemColumns,
   }
 }
 
@@ -471,6 +650,14 @@ export function isModified(view: SavedView, state: ViewState): boolean {
   if (!sameList(spec.hidden, state.hidden) || !sameList(spec.pinned, state.pinned)) return true
   if (!sameList(spec.column_order, state.columnOrder ?? [])) return true
   if (spec.page_size !== state.pageSize) return true
+  if (spec.group_by !== state.groupBy || spec.row_height !== state.rowHeight) return true
+  if (spec.color_field !== state.colorField || spec.color_style !== state.colorStyle) return true
+  if (!sameList(spec.system_columns, state.systemColumns)) return true
+  if (JSON.stringify(spec.color_rules) !== JSON.stringify(state.colorRules)) return true
+  const summaryKeys = new Set([...Object.keys(spec.summaries), ...Object.keys(state.summaries)])
+  for (const key of summaryKeys) {
+    if (spec.summaries[key] !== state.summaries[key]) return true
+  }
   const keys = new Set([...Object.keys(spec.column_widths), ...Object.keys(state.columnWidths)])
   for (const key of keys) {
     if (Math.abs((spec.column_widths[key] ?? 0) - (state.columnWidths[key] ?? 0)) > 8) return true

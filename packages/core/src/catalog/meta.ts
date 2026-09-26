@@ -58,6 +58,8 @@ export function toMeta(base: ProjectedBase): unknown {
       sql: t.sql,
       actions: t.actions,
       referenced_by: t.referencedBy,
+      // Kept like a source: its rows are read, not written (chapter 19 §3.2).
+      ...(t.synced ? { synced: true } : {}),
       display_field: t.displayField,
       fields: t.fields.map((f) => ({
         name: f.name,
@@ -70,12 +72,43 @@ export function toMeta(base: ProjectedBase): unknown {
         // The operators this field accepts, and whether it can be ordered. Published so
         // that no client has to carry a copy of the normative table — one that would
         // drift the day a type gains an operator (chapter 11 §1.3).
-        operators: operatorsFor(f.kind as FieldKind),
-        sortable: sortableKind(f.kind as FieldKind),
+        // A computed field is filtered and sorted as its value: a list as a list.
+        operators: operatorsFor(effectiveKind(f)),
+        sortable: sortableKind(effectiveKind(f)),
         ...(f.unsafeHtml ? { unsafe_html: true } : {}),
         // Computed by the AI: read-only, filled by the kernel (chapter 12 §1.5).
         ...(f.ai === true ? { ai: true } : {}),
         ...(f.options === undefined ? {} : { options: f.options }),
+        // How the value reads: a currency, a rating, a phone number… (chapter 04).
+        ...(f.format === undefined
+          ? {}
+          : {
+              format: {
+                display: f.format.display,
+                currency: f.format.currency,
+                rating_max: f.format.ratingMax,
+              },
+            }),
+        ...(f.computed === undefined
+          ? {}
+          : {
+              computed: {
+                result_kind: f.computed.resultKind,
+                stored: f.computed.stored,
+                multiple: f.computed.multiple,
+                ...(f.computed.expression === undefined
+                  ? {}
+                  : { expression: f.computed.expression, timezone: f.computed.timezone ?? null }),
+                ...(f.computed.via === undefined
+                  ? {}
+                  : {
+                      via: f.computed.via,
+                      target: f.computed.target ?? null,
+                      aggregate: f.computed.aggregate ?? null,
+                    }),
+              },
+            }),
+        ...(f.button === undefined ? {} : { button: f.button }),
         ...(f.link === undefined
           ? {}
           : {
@@ -96,4 +129,13 @@ export function toMeta(base: ProjectedBase): unknown {
       })),
     })),
   }
+}
+
+/** The kind a field is filtered and sorted as: a computed one's value, a list as `lookup`. */
+function effectiveKind(field: {
+  readonly kind: string
+  readonly computed?: { readonly resultKind: string; readonly multiple: boolean }
+}): FieldKind {
+  if (field.computed === undefined) return field.kind as FieldKind
+  return (field.computed.multiple ? 'lookup' : field.computed.resultKind) as FieldKind
 }

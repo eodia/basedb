@@ -4,7 +4,9 @@ import { BasedbError } from '../errors/index.js'
 import { SYSTEM_COLUMNS, decide } from '../rbac/decide.js'
 import { loadFields, loadGrants, loadTarget } from '../rbac/loader.js'
 import type { Executor, Pools } from '../runtime/pool.js'
+import { refuseSynced } from '../sync/guard.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
+import { currentXact } from './update.js'
 import { type ShapedField, shapeValues, shapedFields } from './values.js'
 
 /**
@@ -25,6 +27,8 @@ export interface CreateRecordOptions {
 export interface CreatedRecord {
   readonly row: Record<string, unknown>
   readonly sql: string
+  /** The write's transaction — what an undo names (chapter 16 §4). */
+  readonly xact: string
   /** The readable `file` and `image` columns of `row`, whose entries a reader links to. */
   readonly fileColumns: readonly string[]
 }
@@ -56,15 +60,16 @@ export async function createRecord(
   // In a transaction that carries the actor, never on a bare connection: the capture reads
   // the author from the session variables `withTransaction` sets (chapter 07 §2.1), and an
   // autocommitted write would be historised as a direct SQL session.
-  const rows = await withTransaction(pools, 'data', ctx, (exec) =>
-    exec.query(plan.sql, plan.params, 'insert'),
-  )
+  const { rows, xact } = await withTransaction(pools, 'data', ctx, async (exec) => ({
+    rows: await exec.query(plan.sql, plan.params, 'insert'),
+    xact: await currentXact(exec),
+  }))
 
   const row = rows[0]
   if (row === undefined) {
     throw new BasedbError('INTERNAL_ERROR', { details: { reason: 'insert without RETURNING' } })
   }
-  return { row, sql: plan.sql, fileColumns: plan.fileColumns }
+  return { row, sql: plan.sql, fileColumns: plan.fileColumns, xact }
 }
 
 /**
@@ -127,6 +132,8 @@ export interface CreatedRecords {
   readonly ids: readonly string[]
   /** The statement of the first row, as every write shows what it emitted. */
   readonly sql: string
+  /** The write's transaction — what an undo names (chapter 16 §4). */
+  readonly xact: string
 }
 
 /**
@@ -186,7 +193,7 @@ export async function createRecords(
     { readOnly: true },
   )
 
-  const ids = await withTransaction(pools, 'data', ctx, async (exec) => {
+  const { ids, xact } = await withTransaction(pools, 'data', ctx, async (exec) => {
     const created: string[] = []
     for (const [index, plan] of plans.entries()) {
       try {
@@ -196,10 +203,10 @@ export async function createRecords(
         throw withIndex(error, index)
       }
     }
-    return created
+    return { ids: created, xact: await currentXact(exec) }
   })
 
-  return { ids, sql: plans[0].sql }
+  return { ids, sql: plans[0].sql, xact }
 }
 
 /** The same refusal, now carrying the position of the row that caused it. */
@@ -254,6 +261,7 @@ async function loadWriteContext(
       details: { table: tableId, action: 'create' },
     })
   }
+  await refuseSynced(exec, ctx, tableId)
 
   const fields = await loadFields(exec, tableId)
   const names = new Map([...fields].map(([id, f]) => [id, f.name]))
@@ -270,7 +278,10 @@ async function loadWriteContext(
 
   // RETURNING projected with the READ mask: writing to a field does not grant the right
   // to read it back.
-  const readable = [...names].filter(([id]) => decision.readableFields.has(id)).map(([, n]) => n)
+  // A field computed at read time has no column to return: the row is read again for it.
+  const readable = [...names]
+    .filter(([id]) => decision.readableFields.has(id) && fields.get(id)?.stored !== false)
+    .map(([, n]) => n)
 
   return {
     relation: qualify(location[0].schema_name, location[0].table_name),

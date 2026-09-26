@@ -374,55 +374,68 @@ export function NewEnvironmentsField({
     setDraft('')
   }
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor="new-base-environment">Environnements</Label>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <EnvironmentBadge environment={{ label: 'Production', production: true, position: 0 }} />
-        {value.map((label, index) => (
-          <span key={label} className="inline-flex items-center gap-0.5">
-            <EnvironmentBadge environment={{ label, production: false, position: index + 1 }} />
-            <button
-              type="button"
-              onClick={() => onChange(value.filter((v) => v !== label))}
-              disabled={disabled}
-              aria-label={`Retirer ${label}`}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="size-3" />
-            </button>
-          </span>
-        ))}
-      </div>
-      <div className="flex items-center gap-2">
-        <Input
-          id="new-base-environment"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              add()
-            }
-          }}
-          placeholder="Ex. Recette, Développement…"
-          maxLength={60}
-          disabled={disabled}
-          className="h-8"
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={add}
-          disabled={disabled || draft.trim() === ''}
-        >
-          <Plus className="size-4" />
-          Ajouter
-        </Button>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Facultatif. Production est l’environnement par défaut ; les autres en reçoivent une copie de
-        la structure.
-      </p>
-    </div>
+    <Card>
+      <CardHeader>
+        <Layers className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <CardTitle className="flex items-center gap-2">
+            Environnements
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[0.7rem] font-medium text-muted-foreground tabular-nums">
+              {value.length + 1}
+            </span>
+          </CardTitle>
+          <CardDescription>
+            Facultatif. Production est l’environnement par défaut ; les autres en reçoivent une
+            copie de la structure.
+          </CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <EnvironmentBadge environment={{ label: 'Production', production: true, position: 0 }} />
+          {value.map((label, index) => (
+            <span key={label} className="inline-flex items-center gap-0.5">
+              <EnvironmentBadge environment={{ label, production: false, position: index + 1 }} />
+              <button
+                type="button"
+                onClick={() => onChange(value.filter((v) => v !== label))}
+                disabled={disabled}
+                aria-label={`Retirer ${label}`}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            id="new-base-environment"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                add()
+              }
+            }}
+            placeholder="Ex. Recette, Développement…"
+            aria-label="Nouvel environnement"
+            maxLength={60}
+            disabled={disabled}
+            className="h-8"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={add}
+            disabled={disabled || draft.trim() === ''}
+          >
+            <Plus className="size-4" />
+            Ajouter
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

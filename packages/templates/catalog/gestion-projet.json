@@ -1,0 +1,412 @@
+{
+  "format": 1,
+  "key": "gestion-projet",
+  "label": "Gestion de projet",
+  "summary": "Projets, tâches et jalons : une feuille de route, des dépendances entre tâches, un kanban et un calendrier.",
+  "description": "Pour piloter plusieurs projets en parallèle. Chaque projet cumule ses tâches et ses heures ; les tâches se suivent en kanban, se planifient sur une chronologie qui dessine leurs dépendances, et les jalons se lisent dans un calendrier. L'IA rédige une météo du projet pour la direction à partir de sa description et de son avancement.",
+  "category": "Organisation",
+  "icon": "list-todo",
+  "color": "#10b981",
+  "tags": ["Chronologie", "Dépendances", "Kanban", "IA"],
+  "base": {
+    "label": "Projets",
+    "description": "Les projets de l'équipe, leurs tâches et leurs jalons."
+  },
+  "tables": [
+    {
+      "key": "projets",
+      "label": "Projets",
+      "icon": "rocket",
+      "color": "#10b981",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        {
+          "label": "Statut",
+          "kind": "select",
+          "options": [
+            { "label": "Idée", "color": "#94a3b8" },
+            { "label": "Planifié", "color": "#8b5cf6" },
+            { "label": "En cours", "color": "#3b82f6" },
+            { "label": "Terminé", "color": "#10b981" },
+            { "label": "Suspendu", "color": "#f59e0b" }
+          ]
+        },
+        {
+          "label": "Priorité",
+          "kind": "select",
+          "options": [
+            { "label": "Haute", "color": "#ef4444" },
+            { "label": "Moyenne", "color": "#f59e0b" },
+            { "label": "Basse", "color": "#94a3b8" }
+          ]
+        },
+        { "label": "Début", "kind": "date" },
+        { "label": "Fin", "kind": "date" },
+        {
+          "label": "Budget",
+          "kind": "number",
+          "format": { "display": "currency", "currency": "EUR" }
+        },
+        { "label": "Chef de projet", "kind": "user" },
+        { "label": "Description", "kind": "long_text" },
+        { "label": "Tâches", "kind": "count", "rollup": { "via": "Projet", "table": "taches" } },
+        {
+          "label": "Heures prévues",
+          "kind": "rollup",
+          "rollup": {
+            "via": "Projet",
+            "table": "taches",
+            "target": "Estimation (h)",
+            "aggregate": "sum"
+          }
+        },
+        {
+          "label": "Météo",
+          "kind": "select",
+          "options": [
+            { "label": "Ensoleillé", "color": "#10b981", "icon": "sun" },
+            { "label": "Nuageux", "color": "#f59e0b", "icon": "cloud" },
+            { "label": "Orageux", "color": "#ef4444", "icon": "zap" }
+          ],
+          "ai": {
+            "prompt": "Voici un projet au statut « {{Statut}} », prévu du {{Début}} au {{Fin}} :\n{{Description}}\nQuelle est sa météo : tout va bien, des points d'attention, ou de sérieux problèmes ?"
+          }
+        }
+      ]
+    },
+    {
+      "key": "taches",
+      "label": "Tâches",
+      "icon": "clipboard-list",
+      "color": "#3b82f6",
+      "fields": [
+        { "label": "Titre", "kind": "short_text", "required": true },
+        {
+          "label": "Statut",
+          "kind": "select",
+          "options": [
+            { "label": "À faire", "color": "#94a3b8" },
+            { "label": "En cours", "color": "#3b82f6" },
+            { "label": "Bloqué", "color": "#ef4444" },
+            { "label": "Fait", "color": "#10b981" }
+          ]
+        },
+        {
+          "label": "Priorité",
+          "kind": "select",
+          "options": [
+            { "label": "Haute", "color": "#ef4444", "icon": "flame" },
+            { "label": "Moyenne", "color": "#f59e0b" },
+            { "label": "Basse", "color": "#94a3b8" }
+          ]
+        },
+        { "label": "Début", "kind": "date" },
+        { "label": "Échéance", "kind": "date" },
+        { "label": "Estimation (h)", "kind": "number", "format": { "display": "decimal" } },
+        { "label": "Assigné à", "kind": "user" },
+        { "label": "Notes", "kind": "long_text" },
+        {
+          "label": "Jours restants",
+          "kind": "formula",
+          "formula": "JOURS([Échéance]; AUJOURDHUI())",
+          "description": "Négatif quand l'échéance est dépassée."
+        },
+        { "label": "Terminée le", "kind": "datetime" }
+      ]
+    },
+    {
+      "key": "jalons",
+      "label": "Jalons",
+      "icon": "flag",
+      "color": "#f59e0b",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        { "label": "Date", "kind": "date" },
+        { "label": "Atteint", "kind": "boolean" }
+      ]
+    }
+  ],
+  "links": [
+    { "from": "taches", "label": "Projet", "to": "projets" },
+    {
+      "from": "taches",
+      "label": "Dépend de",
+      "to": "taches",
+      "multiple": true,
+      "description": "Les tâches à terminer avant celle-ci."
+    },
+    { "from": "jalons", "label": "Projet", "to": "projets" }
+  ],
+  "rows": {
+    "projets": [
+      {
+        "$key": "site",
+        "Nom": "Refonte du site web",
+        "Statut": "En cours",
+        "Priorité": "Haute",
+        "Début": "-21d",
+        "Fin": "+30d",
+        "Budget": 25000,
+        "Chef de projet": "$moi",
+        "Description": "Nouveau site vitrine et espace client. Les maquettes sont validées, l'intégration a pris une semaine de retard à cause d'un changement de prestataire d'hébergement.",
+        "Météo": "Nuageux"
+      },
+      {
+        "$key": "crm",
+        "Nom": "Déploiement du CRM",
+        "Statut": "Planifié",
+        "Priorité": "Moyenne",
+        "Début": "+10d",
+        "Fin": "+60d",
+        "Budget": 12000,
+        "Description": "Remplacer les tableurs de l'équipe commerciale. Éditeur choisi, formation prévue en deux sessions.",
+        "Météo": "Ensoleillé"
+      },
+      {
+        "$key": "salon",
+        "Nom": "Salon professionnel de printemps",
+        "Statut": "En cours",
+        "Priorité": "Haute",
+        "Début": "-7d",
+        "Fin": "+45d",
+        "Budget": 18000,
+        "Description": "Stand de 24 m², supports imprimés et démonstrations. Le fournisseur du stand ne répond plus depuis dix jours et l'acompte est versé.",
+        "Météo": "Orageux"
+      }
+    ],
+    "taches": [
+      {
+        "$key": "t1",
+        "Titre": "Valider les maquettes",
+        "Statut": "Fait",
+        "Priorité": "Haute",
+        "Début": "-21d",
+        "Échéance": "-14d",
+        "Estimation (h)": 6,
+        "Projet": "@site",
+        "Assigné à": "$moi"
+      },
+      {
+        "$key": "t2",
+        "Titre": "Intégrer les pages principales",
+        "Statut": "En cours",
+        "Priorité": "Haute",
+        "Début": "-12d",
+        "Échéance": "+3d",
+        "Estimation (h)": 40,
+        "Projet": "@site",
+        "Dépend de": ["@t1"]
+      },
+      {
+        "$key": "t3",
+        "Titre": "Migrer l'hébergement",
+        "Statut": "Bloqué",
+        "Priorité": "Haute",
+        "Début": "-5d",
+        "Échéance": "+2d",
+        "Estimation (h)": 8,
+        "Projet": "@site",
+        "Notes": "En attente des accès du nouveau prestataire."
+      },
+      {
+        "$key": "t4",
+        "Titre": "Recette et mise en ligne",
+        "Statut": "À faire",
+        "Priorité": "Moyenne",
+        "Début": "+4d",
+        "Échéance": "+15d",
+        "Estimation (h)": 16,
+        "Projet": "@site",
+        "Dépend de": ["@t2", "@t3"]
+      },
+      {
+        "$key": "t5",
+        "Titre": "Paramétrer le CRM",
+        "Statut": "À faire",
+        "Priorité": "Moyenne",
+        "Début": "+10d",
+        "Échéance": "+25d",
+        "Estimation (h)": 24,
+        "Projet": "@crm"
+      },
+      {
+        "$key": "t6",
+        "Titre": "Former l'équipe commerciale",
+        "Statut": "À faire",
+        "Priorité": "Basse",
+        "Début": "+26d",
+        "Échéance": "+35d",
+        "Estimation (h)": 10,
+        "Projet": "@crm",
+        "Dépend de": ["@t5"]
+      },
+      {
+        "$key": "t7",
+        "Titre": "Relancer le fournisseur du stand",
+        "Statut": "En cours",
+        "Priorité": "Haute",
+        "Début": "-2d",
+        "Échéance": "+1d",
+        "Estimation (h)": 1,
+        "Projet": "@salon",
+        "Assigné à": "$moi"
+      },
+      {
+        "$key": "t8",
+        "Titre": "Commander les supports imprimés",
+        "Statut": "À faire",
+        "Priorité": "Moyenne",
+        "Début": "+5d",
+        "Échéance": "+20d",
+        "Estimation (h)": 4,
+        "Projet": "@salon"
+      }
+    ],
+    "jalons": [
+      { "Nom": "Maquettes validées", "Date": "-14d", "Atteint": true, "Projet": "@site" },
+      { "Nom": "Mise en ligne du site", "Date": "+30d", "Atteint": false, "Projet": "@site" },
+      { "Nom": "CRM en production", "Date": "+60d", "Atteint": false, "Projet": "@crm" },
+      { "Nom": "Ouverture du salon", "Date": "+45d", "Atteint": false, "Projet": "@salon" }
+    ]
+  },
+  "views": [
+    {
+      "table": "projets",
+      "label": "Feuille de route",
+      "kind": "timeline",
+      "spec": {
+        "start_field": "Début",
+        "end_field": "Fin",
+        "color_field": "Météo",
+        "scale": "month",
+        "card_fields": ["Chef de projet"]
+      }
+    },
+    {
+      "table": "projets",
+      "label": "Portefeuille",
+      "kind": "gallery",
+      "spec": {
+        "card_fields": ["Statut", "Météo", "Budget", "Tâches"],
+        "color_field": "Statut",
+        "card_size": "large"
+      }
+    },
+    {
+      "table": "taches",
+      "label": "Tableau",
+      "kind": "kanban",
+      "spec": {
+        "group_by": "Statut",
+        "card_fields": ["Projet", "Échéance", "Priorité", "Assigné à"],
+        "group_order": ["À faire", "En cours", "Bloqué", "Fait"]
+      }
+    },
+    {
+      "table": "taches",
+      "label": "Planning",
+      "kind": "timeline",
+      "spec": {
+        "start_field": "Début",
+        "end_field": "Échéance",
+        "group_by": "Projet",
+        "depends_on": "Dépend de",
+        "color_field": "Statut",
+        "scale": "week"
+      }
+    },
+    {
+      "table": "taches",
+      "label": "À faire",
+      "kind": "grid",
+      "spec": {
+        "filter": "[Statut] ne \"Fait\"",
+        "sorts": [{ "field": "Échéance", "direction": "asc" }],
+        "summaries": { "Estimation (h)": "sum" }
+      }
+    },
+    {
+      "table": "jalons",
+      "label": "Calendrier",
+      "kind": "calendar",
+      "spec": { "date_field": "Date", "card_fields": ["Projet"] }
+    }
+  ],
+  "dashboards": [
+    {
+      "label": "Portefeuille",
+      "blocks": [
+        {
+          "kind": "number",
+          "title": "Projets en cours",
+          "table": "projets",
+          "aggregate": "count",
+          "filter": "[Statut] eq \"En cours\""
+        },
+        {
+          "kind": "number",
+          "title": "Tâches bloquées",
+          "table": "taches",
+          "aggregate": "count",
+          "filter": "[Statut] eq \"Bloqué\""
+        },
+        {
+          "kind": "number",
+          "title": "Heures restantes",
+          "table": "taches",
+          "aggregate": "sum",
+          "field": "Estimation (h)",
+          "filter": "[Statut] ne \"Fait\""
+        },
+        {
+          "kind": "chart",
+          "title": "Météo des projets",
+          "table": "projets",
+          "group_by": "Météo",
+          "style": "pie"
+        },
+        {
+          "kind": "chart",
+          "title": "Tâches par statut",
+          "table": "taches",
+          "group_by": "Statut",
+          "style": "bar",
+          "width": 2
+        },
+        {
+          "kind": "list",
+          "title": "Échéances proches",
+          "table": "taches",
+          "fields": ["Titre", "Projet", "Échéance"],
+          "filter": "[Statut] ne \"Fait\"",
+          "sort": "Échéance",
+          "limit": 6,
+          "width": 3
+        }
+      ]
+    }
+  ],
+  "automations": [
+    {
+      "label": "Tâche terminée",
+      "description": "Note l'heure à laquelle une tâche passe à « Fait ».",
+      "trigger": { "kind": "record_updated", "table": "taches", "fields": ["Statut"] },
+      "condition": "[Statut] eq \"Fait\"",
+      "actions": [{ "kind": "update_record", "values": { "Terminée le": "{{_maintenant}}" } }]
+    },
+    {
+      "label": "Tâche bloquée",
+      "description": "Prévient quand une tâche est bloquée.",
+      "trigger": { "kind": "record_updated", "table": "taches", "fields": ["Statut"] },
+      "condition": "[Statut] eq \"Bloqué\"",
+      "actions": [
+        {
+          "kind": "notify",
+          "users": ["$moi"],
+          "user_field": "Assigné à",
+          "message": "Tâche bloquée : {{Titre}}"
+        }
+      ]
+    }
+  ]
+}

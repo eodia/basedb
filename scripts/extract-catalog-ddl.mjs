@@ -225,7 +225,7 @@ function splitStatements(sql) {
 function createdObjects(body) {
   const found = new Set()
   const re =
-    /CREATE\s+(?:OR\s+REPLACE\s+)?(?:UNIQUE\s+)?(TABLE|VIEW|SEQUENCE|FUNCTION|TYPE|SCHEMA|INDEX)\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-z_][a-z0-9_.]*)/gi
+    /CREATE\s+(?:OR\s+REPLACE\s+)?(?:UNIQUE\s+|UNLOGGED\s+)?(TABLE|VIEW|SEQUENCE|FUNCTION|TYPE|SCHEMA|INDEX)\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-z_][a-z0-9_.]*)/gi
   for (const m of body.matchAll(re)) {
     const [, kind, name] = m
     // An index is not a dependency: its table is what counts.
@@ -436,6 +436,19 @@ const HISTORY = fileURLToPath(
 )
 const history = readFileSync(HISTORY, 'utf8').trim()
 
+// The integrity of multi-links (chapter 04 §4 bis): two shared trigger functions of
+// _basedb_local, which the DDL engine attaches to the tables of each such field.
+const MULTI_LINKS = fileURLToPath(
+  new URL('../packages/catalog-schema/sql/relations-multiples.sql', import.meta.url),
+)
+const multiLinks = readFileSync(MULTI_LINKS, 'utf8').trim()
+
+// The functions a stored formula may call beyond PostgreSQL's own (chapter 04 §7.3).
+const FORMULAS = fileURLToPath(
+  new URL('../packages/catalog-schema/sql/formules.sql', import.meta.url),
+)
+const formulas = readFileSync(FORMULAS, 'utf8').trim()
+
 // The lifecycle of chapter 06 completes what chapter 02 left half-set on the aliases, and
 // adds the export a purge requires. After the history: it alters tables created above.
 const LIFECYCLE = fileURLToPath(
@@ -473,7 +486,7 @@ const render = (list) =>
 
 writeFileSync(
   `${TARGET}/0001_catalogue.sql`,
-  `${header}${render(head)}\n\n${normalization}\n\n${functions}\n\n${render(tail)}\n\n${fkIndexes}\n\n${versions}\n\n${history}\n\n${lifecycle}\n\n${structureHistory}\n`,
+  `${header}${render(head)}\n\n${normalization}\n\n${functions}\n\n${render(tail)}\n\n${fkIndexes}\n\n${versions}\n\n${history}\n\n${multiLinks}\n\n${formulas}\n\n${lifecycle}\n\n${structureHistory}\n`,
 )
 console.log(`\n  0001_catalogue.sql  ${ordered.length} statements`)
 void migrationOf

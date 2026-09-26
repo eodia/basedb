@@ -107,7 +107,7 @@ export function ColumnHeader({
         className="flex min-w-0 flex-1 items-center gap-1.5 text-left disabled:pointer-events-none"
       >
         {pinned && <Pin className="size-2.5 shrink-0 text-primary" />}
-        <FieldIcon kind={field.kind} />
+        <FieldIcon kind={field.kind} format={field.format?.display} />
         <span className="truncate text-xs font-medium">{field.label}</span>
         {term === null ? (
           sortable && <ArrowUpDown className="ml-auto size-3 shrink-0 text-muted-foreground/25" />

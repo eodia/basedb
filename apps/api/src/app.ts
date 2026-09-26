@@ -2,26 +2,34 @@ import { ERROR_CODES, isErrorCode } from '@basedb/contracts'
 import {
   type AiFieldInput,
   type AiFieldStatus,
+  type Automation,
+  type AutomationRun,
   BasedbError,
   CACHE_CONTROL,
   CSRF_COOKIE,
   CSRF_HEADER,
+  type Comment,
+  type Dashboard,
   type FormSharing,
+  type Integration,
   type Kernel,
   type MetaKind,
   type Migration,
   OIDC_COOKIE,
+  type PointerAt,
   type RequestContext,
   SESSION_ABSOLUTE_MS,
   SESSION_COOKIE,
   type SavedView,
   type ShareSettings,
+  type SyncedTable,
   VARY,
 } from '@basedb/core'
 import { type Context, Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { cors } from 'hono/cors'
+import { streamSSE } from 'hono/streaming'
 import { providerTransport } from './ai-transport.js'
 import { RateLimiter } from './rate-limit.js'
 
@@ -106,7 +114,7 @@ export function createApp(options: AppOptions) {
       },
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowHeaders: ['content-type', 'x-request-id', 'authorization', 'x-basedb-csrf'],
-      exposeHeaders: ['x-request-id'],
+      exposeHeaders: ['x-request-id', 'x-basedb-transaction'],
       // The session cookie travels between two ports of the same site; without this the
       // browser sends it on no cross-origin request at all.
       credentials: true,
@@ -664,6 +672,38 @@ export function createApp(options: AppOptions) {
     })
   })
 
+  // Aggregates over every row the filter keeps — a grid's summary bar, the counts of its
+  // groups (chapter 11 §1.6). `aggregates=montant:sum,nom:filled`, `group=statut`. Declared
+  // before `/:id`, whose pattern it would otherwise be.
+  app.get('/api/v1/:tenantRef/data/:base/:table/aggregate', async (c) => {
+    const ctx = await dataContext(c)
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const aggregates = (c.req.query('aggregates') ?? '')
+      .split(',')
+      .map((pair) => pair.trim())
+      .filter((pair) => pair !== '')
+      .map((pair) => {
+        const cut = pair.lastIndexOf(':')
+        if (cut <= 0)
+          throw new BasedbError('REQUEST_INVALID', { details: { parameter: 'aggregates' } })
+        return { field: pair.slice(0, cut), fn: pair.slice(cut + 1) }
+      })
+    const result = await options.kernel.aggregateRecords(ctx, {
+      tableId: table.tableId,
+      filter: c.req.query('filter'),
+      aggregates,
+      groupBy: c.req.query('group') || undefined,
+    })
+    return c.json({
+      data: {
+        total: result.total,
+        values: result.values,
+        groups: result.groups,
+        groups_capped: result.groupsCapped,
+      },
+    })
+  })
+
   // One row by its identifier — the route the documentation has always announced. It is
   // the list, filtered on `_id`: the same mask, the same link resolution, the same SQL
   // builder, and therefore no second read path to keep in step with the first.
@@ -694,6 +734,7 @@ export function createApp(options: AppOptions) {
       tableId: table.tableId,
       values: body.values ?? {},
     })
+    c.header('x-basedb-transaction', created.xact)
     return c.json({ data: created.row }, 201)
   })
 
@@ -731,6 +772,7 @@ export function createApp(options: AppOptions) {
     const ctx = await dataContext(c)
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
     const created = await options.kernel.createRecords(ctx, { tableId: table.tableId, records })
+    c.header('x-basedb-transaction', created.xact)
 
     // 200, with the shape of §3.5: a caller reads `summary` to know what happened.
     return c.json({
@@ -749,16 +791,18 @@ export function createApp(options: AppOptions) {
       recordId: c.req.param('id'),
       values: body.values ?? {},
     })
+    c.header('x-basedb-transaction', updated.xact)
     return c.json({ data: updated.row })
   })
 
   app.delete('/api/v1/:tenantRef/data/:base/:table/:id', async (c) => {
     const ctx = await dataContext(c)
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
-    await options.kernel.deleteRecord(ctx, {
+    const deleted = await options.kernel.deleteRecord(ctx, {
       tableId: table.tableId,
       recordId: c.req.param('id'),
     })
+    c.header('x-basedb-transaction', deleted.xact)
     // 204: the deletion succeeded and there is nothing to return.
     return c.body(null, 204)
   })
@@ -875,6 +919,544 @@ export function createApp(options: AppOptions) {
   })
 
   // ---------------------------------------------------------------------------------
+  // Collaboration — chapter 16: undo, comments, notifications, the live stream, presence
+  // ---------------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------------
+  // Integrations and synced tables — chapter 19
+  // ---------------------------------------------------------------------------------
+
+  const serializeIntegration = (i: Integration) => ({
+    id: i.id,
+    kind: i.kind,
+    label: i.label,
+    hint: i.hint,
+    created_at: i.createdAt,
+  })
+  const serializeSynced = (t: SyncedTable) => ({
+    table_id: t.tableId,
+    table: t.tableName,
+    label: t.label,
+    source_kind: t.sourceKind,
+    host: t.host,
+    interval_minutes: t.intervalMinutes,
+    next_sync_at: t.nextSyncAt,
+    last_synced_at: t.lastSyncedAt,
+    last_status: t.lastStatus,
+    last_error: t.lastError,
+    last_counts: t.lastCounts,
+  })
+
+  app.get('/api/v1/:tenantRef/admin/bases/:base/integrations', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const list = await options.kernel.listIntegrations(ctx, { baseId: base.baseId })
+    return c.json({ data: list.map(serializeIntegration) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/bases/:base/integrations', async (c) => {
+    const body = await c.req.json<{ label?: unknown; url?: unknown }>()
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const created = await options.kernel.createIntegration(ctx, {
+      baseId: base.baseId,
+      label: body.label,
+      url: body.url,
+    })
+    return c.json({ data: serializeIntegration(created) }, 201)
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/bases/:base/integrations/:id', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    await options.kernel.deleteIntegration(ctx, { baseId: base.baseId, id: c.req.param('id') })
+    return c.body(null, 204)
+  })
+
+  app.post('/api/v1/:tenantRef/admin/bases/:base/integrations/:id/test', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const tested = await options.kernel.testIntegration(ctx, {
+      baseId: base.baseId,
+      id: c.req.param('id'),
+    })
+    return c.json({ data: tested })
+  })
+
+  app.get('/api/v1/:tenantRef/admin/bases/:base/synced-tables', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const list = await options.kernel.listSyncedTables(ctx, { baseId: base.baseId })
+    return c.json({ data: list.map(serializeSynced) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/bases/:base/synced-tables', async (c) => {
+    const body = await c.req.json<{
+      label?: unknown
+      source?: { kind?: unknown; url?: unknown }
+      interval_minutes?: unknown
+    }>()
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const created = await options.kernel.createSyncedTable(ctx, {
+      baseId: base.baseId,
+      label: body.label,
+      source: body.source ?? {},
+      intervalMinutes: body.interval_minutes,
+    })
+    return c.json({ data: serializeSynced(created) }, 201)
+  })
+
+  const syncedTableOf = async (c: Context<{ Variables: Variables }, string>) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const baseRef = c.req.param('base') ?? ''
+    const base = await options.kernel.resolveBase(ctx, baseRef)
+    const table = await options.kernel.resolveTable(ctx, baseRef, c.req.param('table') ?? '')
+    return { ctx, baseId: base.baseId, tableId: table.tableId }
+  }
+
+  app.patch('/api/v1/:tenantRef/admin/bases/:base/synced-tables/:table', async (c) => {
+    const body = await c.req.json<{ interval_minutes?: unknown }>()
+    const { ctx, baseId, tableId } = await syncedTableOf(c)
+    const updated = await options.kernel.updateSyncedTable(ctx, {
+      baseId,
+      tableId,
+      intervalMinutes: body.interval_minutes,
+    })
+    return c.json({ data: serializeSynced(updated) })
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/bases/:base/synced-tables/:table', async (c) => {
+    const { ctx, baseId, tableId } = await syncedTableOf(c)
+    await options.kernel.stopSyncedTable(ctx, { baseId, tableId })
+    return c.body(null, 204)
+  })
+
+  app.post('/api/v1/:tenantRef/admin/bases/:base/synced-tables/:table/run', async (c) => {
+    const { ctx, baseId, tableId } = await syncedTableOf(c)
+    const ran = await options.kernel.runSyncedTable(ctx, { baseId, tableId })
+    return c.json({ data: serializeSynced(ran) })
+  })
+
+  // ---------------------------------------------------------------------------------
+  // Dashboards — chapter 18
+  // ---------------------------------------------------------------------------------
+
+  const serializeDashboard = (d: Dashboard) => ({
+    id: d.id,
+    label: d.label,
+    description: d.description,
+    position: d.position,
+    blocks: d.blocks.map((b) => {
+      if (b.kind !== 'chart') return b
+      const { groupBy, ...rest } = b
+      return { ...rest, group_by: groupBy }
+    }),
+    updated_at: d.updatedAt,
+  })
+
+  app.get('/api/v1/:tenantRef/meta/bases/:base/dashboards', async (c) => {
+    const ctx = await dataContext(c)
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const list = await options.kernel.listDashboards(ctx, { baseId: base.baseId })
+    return c.json({ data: list.map(serializeDashboard) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/bases/:base/dashboards', async (c) => {
+    const body = await c.req.json<Record<string, unknown>>()
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const created = await options.kernel.createDashboard(ctx, { baseId: base.baseId, input: body })
+    return c.json({ data: serializeDashboard(created) }, 201)
+  })
+
+  app.patch('/api/v1/:tenantRef/admin/bases/:base/dashboards/:id', async (c) => {
+    const body = await c.req.json<Record<string, unknown>>()
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const updated = await options.kernel.updateDashboard(ctx, {
+      baseId: base.baseId,
+      id: c.req.param('id'),
+      input: body,
+    })
+    return c.json({ data: serializeDashboard(updated) })
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/bases/:base/dashboards/:id', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    await options.kernel.deleteDashboard(ctx, { baseId: base.baseId, id: c.req.param('id') })
+    return c.body(null, 204)
+  })
+
+  // ---------------------------------------------------------------------------------
+  // Automations — chapter 17
+  // ---------------------------------------------------------------------------------
+
+  const serializeAutomation = (a: Automation) => ({
+    id: a.id,
+    label: a.label,
+    description: a.description,
+    enabled: a.enabled,
+    trigger: {
+      kind: a.trigger.kind,
+      table: a.trigger.table,
+      fields: a.trigger.fields,
+      schedule: a.trigger.schedule,
+    },
+    condition: a.condition,
+    actions: a.actions.map((action) =>
+      action.kind === 'notify'
+        ? {
+            kind: action.kind,
+            users: action.users,
+            user_field: action.userField,
+            message: action.message,
+          }
+        : action,
+    ),
+    owner: a.owner,
+    next_run_at: a.nextRunAt,
+    last_run: a.lastRun,
+    created_at: a.createdAt,
+    updated_at: a.updatedAt,
+  })
+  const serializeRun = (r: AutomationRun) => ({
+    id: r.id,
+    trigger: r.trigger,
+    record_id: r.recordId,
+    status: r.status,
+    reason: r.reason,
+    error_code: r.errorCode,
+    steps: r.steps,
+    queued_at: r.queuedAt,
+    started_at: r.startedAt,
+    finished_at: r.finishedAt,
+  })
+
+  app.get('/api/v1/:tenantRef/admin/bases/:base/automations', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const list = await options.kernel.listAutomations(ctx, { baseId: base.baseId })
+    return c.json({ data: list.map(serializeAutomation) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/bases/:base/automations', async (c) => {
+    const body = await c.req.json<Record<string, unknown>>()
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const created = await options.kernel.createAutomation(ctx, { baseId: base.baseId, input: body })
+    return c.json({ data: serializeAutomation(created) }, 201)
+  })
+
+  app.patch('/api/v1/:tenantRef/admin/bases/:base/automations/:id', async (c) => {
+    const body = await c.req.json<Record<string, unknown>>()
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const updated = await options.kernel.updateAutomation(ctx, {
+      baseId: base.baseId,
+      id: c.req.param('id'),
+      input: body,
+    })
+    return c.json({ data: serializeAutomation(updated) })
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/bases/:base/automations/:id', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    await options.kernel.deleteAutomation(ctx, { baseId: base.baseId, id: c.req.param('id') })
+    return c.body(null, 204)
+  })
+
+  app.get('/api/v1/:tenantRef/admin/bases/:base/automations/:id/runs', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const runs = await options.kernel.listAutomationRuns(ctx, {
+      baseId: base.baseId,
+      id: c.req.param('id'),
+    })
+    return c.json({ data: runs.map(serializeRun) })
+  })
+
+  /** Ten clicks a minute per person: a button is not a way to flood a queue (§4). */
+  const clicks = new RateLimiter(10, 60_000)
+
+  app.post('/api/v1/:tenantRef/automations/:id/run', async (c) => {
+    const body = await c.req.json<{ record?: unknown }>().catch(() => ({}) as { record?: unknown })
+    const ctx = await dataContext(c)
+    const verdict = clicks.check(ctx.actor.tokenId ?? ctx.actor.id, Date.now())
+    if (!verdict.allowed) {
+      c.header('retry-after', String(verdict.retryAfter))
+      throw new BasedbError('RATE_LIMIT_EXCEEDED', { details: { retry_after: verdict.retryAfter } })
+    }
+    const queued = await options.kernel.requestAutomationRun(ctx, {
+      automationId: c.req.param('id'),
+      recordId: typeof body.record === 'string' ? body.record : null,
+    })
+    return c.json({ data: { run: queued.runId } }, 202)
+  })
+
+  /** Undoes a transaction of the caller's; the undo's own is what a redo names (§4). */
+  app.post('/api/v1/:tenantRef/history/undo', async (c) => {
+    const body = await c.req.json<{ transaction?: unknown }>().catch(() => ({}))
+    const ctx = await dataContext(c)
+    const undone = await options.kernel.undoTransaction(ctx, {
+      transaction: String((body as { transaction?: unknown }).transaction ?? ''),
+    })
+    c.header('x-basedb-transaction', undone.transaction)
+    return c.json({
+      data: { transaction: undone.transaction, revisions: undone.revisions, tables: undone.tables },
+    })
+  })
+
+  const serializeComment = (comment: Comment) => ({
+    id: comment.id,
+    record_id: comment.recordId,
+    author: comment.author,
+    body: comment.body,
+    mentions: comment.mentions,
+    created_at: comment.createdAt,
+    edited_at: comment.editedAt,
+    can_edit: comment.canEdit,
+    can_delete: comment.canDelete,
+  })
+
+  app.get('/api/v1/:tenantRef/data/:base/:table/:id/comments', async (c) => {
+    const ctx = await dataContext(c)
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const comments = await options.kernel.listComments(ctx, {
+      tableId: table.tableId,
+      recordId: c.req.param('id'),
+    })
+    return c.json({ data: comments.map(serializeComment) })
+  })
+
+  app.post('/api/v1/:tenantRef/data/:base/:table/:id/comments', async (c) => {
+    const body = await c.req.json<{ body?: unknown }>()
+    const ctx = await dataContext(c)
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const added = await options.kernel.addComment(ctx, {
+      tableId: table.tableId,
+      recordId: c.req.param('id'),
+      body: body.body,
+    })
+    return c.json(
+      { data: serializeComment(added.comment), meta: { unreachable: added.unreachable } },
+      201,
+    )
+  })
+
+  app.patch('/api/v1/:tenantRef/comments/:comment', async (c) => {
+    const body = await c.req.json<{ body?: unknown }>()
+    const ctx = await dataContext(c)
+    const comment = await options.kernel.editComment(ctx, {
+      commentId: c.req.param('comment'),
+      body: body.body,
+    })
+    return c.json({ data: serializeComment(comment) })
+  })
+
+  app.delete('/api/v1/:tenantRef/comments/:comment', async (c) => {
+    const ctx = await dataContext(c)
+    await options.kernel.deleteComment(ctx, { commentId: c.req.param('comment') })
+    return c.body(null, 204)
+  })
+
+  app.get('/api/v1/:tenantRef/me/notifications', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const page = await options.kernel.listNotifications(ctx, {
+      unread: c.req.query('unread') === 'true',
+      after: c.req.query('after'),
+    })
+    return c.json({
+      data: page.notifications.map((n) => ({
+        id: n.id,
+        kind: n.kind,
+        actor: n.actor,
+        base: n.base,
+        table: n.table,
+        record_id: n.recordId,
+        comment_id: n.commentId,
+        excerpt: n.excerpt,
+        created_at: n.createdAt,
+        read_at: n.readAt,
+        readable: n.readable,
+      })),
+      meta: { unread: page.unread, next_cursor: page.nextCursor },
+    })
+  })
+
+  app.post('/api/v1/:tenantRef/me/notifications/read', async (c) => {
+    const body = await c.req.json<{ ids?: unknown; all?: unknown }>()
+    const ctx = await contextFor(c, await bearer(c))
+    const marked = await options.kernel.markNotificationsRead(ctx, {
+      ids: Array.isArray(body.ids)
+        ? body.ids.filter((id): id is string => typeof id === 'string')
+        : [],
+      all: body.all === true,
+    })
+    return c.json({ data: { marked } })
+  })
+
+  /** Moves an open stream's presence to another row of its table (§3.3). */
+  app.post('/api/v1/:tenantRef/presence', async (c) => {
+    const body = await c.req.json<{
+      session?: unknown
+      base?: unknown
+      table?: unknown
+      record?: unknown
+    }>()
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(
+      ctx,
+      String(body.base ?? ''),
+      String(body.table ?? ''),
+    )
+    await options.kernel.enterPresence(ctx, {
+      session: String(body.session ?? ''),
+      tableId: table.tableId,
+      recordId: typeof body.record === 'string' ? body.record : null,
+    })
+    return c.body(null, 204)
+  })
+
+  /**
+   * Moves an open stream's pointer over the grid (§3.4). A signal and nothing else; a
+   * stream sending faster than every 40 ms has the extra dropped — the screen sends about
+   * eight a second, and a pointer is only ever the latest one.
+   */
+  const pointerSeen = new Map<string, number>()
+  app.post('/api/v1/:tenantRef/presence/pointer', async (c) => {
+    const body = await c.req.json<{
+      session?: unknown
+      base?: unknown
+      table?: unknown
+      at?: unknown
+    }>()
+    const session = String(body.session ?? '')
+    const now = Date.now()
+    if (now - (pointerSeen.get(session) ?? 0) < 40) return c.body(null, 204)
+    pointerSeen.set(session, now)
+    if (pointerSeen.size > 10_000) pointerSeen.clear()
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(
+      ctx,
+      String(body.base ?? ''),
+      String(body.table ?? ''),
+    )
+    await options.kernel.movePointer(ctx, {
+      session,
+      tableId: table.tableId,
+      at: typeof body.at === 'object' && body.at !== null ? (body.at as PointerAt) : null,
+    })
+    return c.body(null, 204)
+  })
+
+  /** Open live streams per actor — ten at most (§3.2). */
+  const streams = new Map<string, number>()
+  const STREAMS_PER_ACTOR = 10
+  const STREAM_LIFETIME_MS = 30 * 60_000
+  const STREAM_PING_MS = 20_000
+
+  /**
+   * The live stream — chapter 16 §3.2: signals, never values. The table is decided once,
+   * at the opening; the browser then reads again what a signal names, by the ordinary
+   * routes, under its own rights.
+   */
+  app.get('/api/v1/:tenantRef/events', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const baseRef = c.req.query('base')
+    const tableRef = c.req.query('table')
+    let tableId: string | null = null
+    if (baseRef !== undefined && tableRef !== undefined && baseRef !== '' && tableRef !== '') {
+      const table = await options.kernel.resolveTable(ctx, baseRef, tableRef)
+      if (!(await options.kernel.canReadTable(ctx, table.tableId))) {
+        throw new BasedbError('RESOURCE_NOT_FOUND', { details: { table: tableRef } })
+      }
+      tableId = table.tableId
+    }
+    const actor = ctx.actor.id
+    const open = streams.get(actor) ?? 0
+    if (open >= STREAMS_PER_ACTOR) {
+      throw new BasedbError('RATE_LIMIT_EXCEEDED', { details: { streams: STREAMS_PER_ACTOR } })
+    }
+    streams.set(actor, open + 1)
+    await options.kernel.live.start()
+    const session = crypto.randomUUID()
+    const record = c.req.query('record') ?? null
+    // What this reader sees of the table: another's pointer over a column hidden from
+    // them names no column, and shows nowhere.
+    const readable =
+      tableId === null ? new Set<string>() : await options.kernel.readableFieldNames(ctx, tableId)
+
+    return streamSSE(c, async (stream) => {
+      // One write at a time: signals may arrive while a previous event is still sending.
+      let queue: Promise<unknown> = Promise.resolve()
+      const send = (event: string, data: unknown) => {
+        queue = queue
+          .then(() => stream.writeSSE({ event, data: JSON.stringify(data) }))
+          .catch(() => undefined)
+        return queue
+      }
+      const unsubscribe = options.kernel.live.subscribe((signal) => {
+        if (signal.kind === 'notifications') {
+          if (signal.user === actor) void send('notifications', {})
+          return
+        }
+        if (tableId === null || signal.table !== tableId) return
+        if (signal.kind === 'records') {
+          void send('records', {
+            table: signal.table,
+            ids: signal.ids,
+            ops: signal.ops,
+            actor: signal.actor,
+          })
+        } else if (signal.kind === 'comments') {
+          void send('comments', { table: signal.table, record: signal.record })
+        } else if (signal.kind === 'pointer') {
+          if (signal.session === session) return
+          const at = signal.at !== null && readable.has(signal.at.field) ? signal.at : null
+          void send('pointer', {
+            session: signal.session,
+            user: signal.user,
+            name: signal.name,
+            at,
+          })
+        } else if (signal.kind === 'presence') {
+          const table = signal.table
+          void options.kernel.viewersOf(table).then((viewers) =>
+            send('presence', {
+              table,
+              viewers: viewers.map((v) => ({ user: v.userId, name: v.name, record: v.recordId })),
+            }),
+          )
+        }
+      })
+      await send('ready', { session })
+      if (tableId !== null) {
+        await options.kernel
+          .enterPresence(ctx, { session, tableId, recordId: record })
+          .catch(() => undefined)
+      }
+      const ping = setInterval(() => {
+        void send('ping', {})
+        if (tableId !== null) void options.kernel.refreshPresence([session]).catch(() => undefined)
+      }, STREAM_PING_MS)
+      await new Promise<void>((resolve) => {
+        const end = setTimeout(resolve, STREAM_LIFETIME_MS)
+        stream.onAbort(() => {
+          clearTimeout(end)
+          resolve()
+        })
+      })
+      clearInterval(ping)
+      unsubscribe()
+      streams.set(actor, Math.max(0, (streams.get(actor) ?? 1) - 1))
+      if (tableId !== null) await options.kernel.leavePresence(session).catch(() => undefined)
+    })
+  })
+
+  // ---------------------------------------------------------------------------------
   // /files — the bytes of `file` and `image` fields (chapter 04 §3 bis)
   //
   // A namespace of its own, like `/data/` and `/meta/`: `/data/{base}/{table}/files`
@@ -981,6 +1563,21 @@ export function createApp(options: AppOptions) {
   // Projects — the level above the base (chapter 05 §15). Listed under /meta like the
   // bases: what the caller sees is a projection of their rights.
   // ---------------------------------------------------------------------------------
+
+  // The people of the tenant — what a `user` field names (chapter 04, « Personne »): its
+  // column holds an identifier, and this is where a reader finds the name that goes with it.
+  app.get('/api/v1/:tenantRef/meta/users', async (c) => {
+    const ctx = await dataContext(c)
+    const members = await options.kernel.listMembers(ctx)
+    return c.json({
+      data: members.map((m) => ({
+        id: m.id,
+        display_name: m.displayName,
+        email: m.email,
+        disabled: m.disabled,
+      })),
+    })
+  })
 
   app.get('/api/v1/:tenantRef/meta/projects', async (c) => {
     const ctx = await contextFor(c, await bearer(c))
@@ -1345,6 +1942,47 @@ export function createApp(options: AppOptions) {
       readData: body.read_data === true,
     })
     return c.json({ data: answer })
+  })
+
+  // ── Base templates — chapter 20 ──
+  app.get('/api/v1/:tenantRef/meta/templates', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const listing = await options.kernel.listTemplates(ctx)
+    return c.json({ data: listing.templates, meta: { site: listing.site } })
+  })
+
+  app.get('/api/v1/:tenantRef/meta/templates/:key', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const entry = await options.kernel.getTemplate(ctx, c.req.param('key'))
+    return c.json({ data: entry.template, meta: { source: entry.source } })
+  })
+
+  // `draft` before `:key`: a template may not be called « draft », the route would hide it.
+  app.post('/api/v1/:tenantRef/admin/templates/draft', async (c) => {
+    const body = await c.req.json<{ project?: unknown; request?: unknown; previous?: unknown }>()
+    if (typeof body.project !== 'string' || typeof body.request !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'project, request' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const draft = await options.kernel.draftTemplate(ctx, providerTransport, {
+      projectId: body.project,
+      request: body.request,
+      previous: body.previous,
+    })
+    return c.json({ data: draft })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/templates', async (c) => {
+    const body = await c.req.json<unknown>()
+    const ctx = await contextFor(c, await bearer(c))
+    const imported = await options.kernel.importTemplate(ctx, body)
+    return c.json({ data: imported }, 201)
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/templates/:key', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    await options.kernel.deleteTemplate(ctx, c.req.param('key'))
+    return c.body(null, 204)
   })
 
   app.post('/api/v1/:tenantRef/ai/bases/:base/structure', async (c) => {
@@ -1873,11 +2511,16 @@ export function createApp(options: AppOptions) {
       target?: string
       required?: boolean
       on_delete?: 'restrict' | 'set_null' | 'cascade'
+      /** Several target rows per row: a multi-link (chapter 04 §4 bis). */
+      multiple?: boolean
     }>()
     const ctx = await contextFor(c, await bearer(c))
 
     if (typeof body.label !== 'string' || body.label.trim() === '') {
       throw new BasedbError('LABEL_EMPTY')
+    }
+    if (body.multiple !== undefined && typeof body.multiple !== 'boolean') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'multiple' } })
     }
     if (typeof body.target !== 'string' || body.target === '') {
       throw new BasedbError('REQUEST_INVALID', { details: { field: 'target' } })
@@ -1896,6 +2539,7 @@ export function createApp(options: AppOptions) {
       description: body.description,
       required: body.required,
       onDelete: body.on_delete,
+      multiple: body.multiple,
     })
 
     return c.json(
@@ -1905,7 +2549,7 @@ export function createApp(options: AppOptions) {
           label: link.label,
           name: link.name,
           description: link.description,
-          kind: 'link',
+          kind: link.kind,
           target: link.targetTableName,
           constraint: link.constraintName,
           index: link.indexName,
@@ -1932,9 +2576,21 @@ export function createApp(options: AppOptions) {
         image?: string | null
       }>
       ai?: unknown
+      format?: unknown
+      /** A formula: `{ expression, timezone? }` (chapter 04 §7). */
+      formula?: { expression?: unknown; timezone?: unknown }
+      /** A lookup, a rollup, a count: the relation followed and what is read (§7 ter). */
+      rollup?: { via?: unknown; via_table?: unknown; target?: unknown; aggregate?: unknown }
+      /** A button: `{ label, color?, action, url?, automation? }` (chapter 17 §4). */
+      button?: Record<string, unknown>
     }>()
     const ctx = await contextFor(c, await bearer(c))
 
+    if (body.format !== undefined && (typeof body.format !== 'object' || body.format === null)) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'format' } })
+    }
+    const formula = formulaOf(body.formula)
+    const rollup = rollupOf(body.rollup)
     if (typeof body.label !== 'string' || body.label.trim() === '') {
       throw new BasedbError('LABEL_EMPTY')
     }
@@ -1950,6 +2606,10 @@ export function createApp(options: AppOptions) {
       kind: body.kind as never,
       options: body.options,
       ...(body.ai === undefined ? {} : { ai: aiInputOf(body.ai) }),
+      ...(body.format === undefined ? {} : { format: body.format as Record<string, unknown> }),
+      ...(formula === undefined ? {} : { formula }),
+      ...(rollup === undefined ? {} : { rollup }),
+      ...(body.button === undefined ? {} : { button: body.button }),
     })
 
     return c.json(
@@ -2008,9 +2668,25 @@ export function createApp(options: AppOptions) {
   // goes first — it is the one that can clash with a sibling — so a refusal leaves the
   // description as it was.
   app.patch('/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field', async (c) => {
-    const body = await c.req.json<{ label?: string; description?: string | null }>()
-    if (body.label === undefined && body.description === undefined) {
-      throw new BasedbError('REQUEST_INVALID', { details: { field: 'label, description' } })
+    const body = await c.req.json<{
+      label?: string
+      description?: string | null
+      format?: unknown
+      formula?: { expression?: unknown; timezone?: unknown }
+    }>()
+    if (
+      body.label === undefined &&
+      body.description === undefined &&
+      body.format === undefined &&
+      body.formula === undefined
+    ) {
+      throw new BasedbError('REQUEST_INVALID', {
+        details: { field: 'label, description, format, formula' },
+      })
+    }
+    const formula = formulaOf(body.formula)
+    if (body.format !== undefined && (typeof body.format !== 'object' || body.format === null)) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'format' } })
     }
     if (body.label !== undefined && typeof body.label !== 'string') {
       throw new BasedbError('REQUEST_INVALID', { details: { field: 'label' } })
@@ -2022,7 +2698,12 @@ export function createApp(options: AppOptions) {
       c.req.param('table'),
       c.req.param('field'),
     )
-    const written: { label?: string; description?: string | null } = {}
+    const written: {
+      label?: string
+      description?: string | null
+      format?: unknown
+      formula?: { stored: boolean }
+    } = {}
     if (body.label !== undefined) {
       written.label = (
         await options.kernel.setFieldLabel(ctx, {
@@ -2039,7 +2720,35 @@ export function createApp(options: AppOptions) {
         })
       ).description
     }
-    return c.json({ data: { name: field.name, ...written } })
+    // How the value reads — a format changes no column, hence no migration.
+    if (body.format !== undefined) {
+      const format = await options.kernel.setFieldFormat(ctx, {
+        fieldId: field.fieldId,
+        format: body.format as Record<string, unknown>,
+      })
+      written.format = {
+        display: format.display,
+        currency: format.currency,
+        rating_max: format.ratingMax,
+      }
+    }
+    // A formula's expression: a stored one rewrites its column (chapter 04 §7.7).
+    let sql: readonly string[] = []
+    if (formula !== undefined) {
+      const table = await options.kernel.resolveTable(
+        ctx,
+        c.req.param('base'),
+        c.req.param('table'),
+      )
+      const done = await options.kernel.setFormula(ctx, {
+        tableId: table.tableId,
+        field: field.name,
+        formula,
+      })
+      written.formula = { stored: done.stored }
+      sql = done.sql
+    }
+    return c.json({ data: { name: field.name, ...written }, meta: { sql } })
   })
 
   // The choices of a `select`, replaced AS A WHOLE (chapter 04 §3): the list is what a
@@ -2071,6 +2780,8 @@ export function createApp(options: AppOptions) {
     position: view.position,
     spec: view.spec,
     filter_hidden: view.filterHidden,
+    personal: view.personal,
+    locked: view.locked,
     created_at: view.createdAt,
     updated_at: view.updatedAt,
   })
@@ -2092,6 +2803,7 @@ export function createApp(options: AppOptions) {
       kind: body.kind,
       description: body.description,
       spec: body.spec,
+      personal: body.personal === true,
     })
     return c.json({ data: serializeView(view) }, 201)
   })
@@ -2122,6 +2834,7 @@ export function createApp(options: AppOptions) {
       label: body.label,
       description: body.description,
       spec: body.spec,
+      locked: body.locked,
     })
     return c.json({ data: serializeView(view) })
   })
@@ -2155,6 +2868,8 @@ export function createApp(options: AppOptions) {
             published_by: sharing.share.publishedBy,
             groups: sharing.share.groupIds,
             state: sharing.share.state,
+            can_embed: sharing.share.canEmbed,
+            view_kind: sharing.share.viewKind,
           },
     groups: sharing.groups,
     omitted: sharing.omitted,
@@ -2181,6 +2896,7 @@ export function createApp(options: AppOptions) {
       closes_at?: unknown
       max_responses?: unknown
       groups?: unknown
+      can_embed?: unknown
     }>()
     const ctx = await contextFor(c, await bearer(c))
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
@@ -2192,6 +2908,7 @@ export function createApp(options: AppOptions) {
       closesAt: (body.closes_at ?? null) as string | null,
       maxResponses: (body.max_responses ?? null) as number | null,
       groupIds: (body.groups ?? []) as string[],
+      canEmbed: (body.can_embed ?? false) as boolean,
     })
     return c.json({ data: serializeSharing(sharing) })
   })
@@ -2235,6 +2952,63 @@ export function createApp(options: AppOptions) {
 
   /** Answers to shared forms, per address: a public form is an open door. */
   const answers = new RateLimiter(20, 60_000)
+  /** Reads of shared views, per address and link (chapter 15 §10). */
+  const viewReads = new RateLimiter(120, 60_000)
+
+  /**
+   * A shared data view, read — chapter 15 §10: its shown fields and a page of its rows,
+   * on the publisher's authority. The token situates it; no right on the table is asked.
+   */
+  const readSharedView = async (c: Context<{ Variables: Variables }, string>, after?: string) => {
+    const verdict = viewReads.check(`${addressOf(c)}:${c.req.param('token')}`, Date.now())
+    if (!verdict.allowed) {
+      c.header('retry-after', String(verdict.retryAfter))
+      throw new BasedbError('RATE_LIMIT_EXCEEDED', {
+        details: { retry_after: verdict.retryAfter },
+      })
+    }
+    const page = await options.kernel.openSharedView({
+      token: c.req.param('token') ?? '',
+      reader: await respondentOf(c),
+      requestId: c.get('requestId'),
+      ...(after === undefined || after === '' ? {} : { after }),
+    })
+    return c.json({
+      data: {
+        kind: page.kind,
+        title: page.title,
+        description: page.description,
+        access: page.access,
+        reader: page.reader,
+        can_embed: page.canEmbed,
+        fields: page.fields,
+        spec: page.spec,
+        rows: page.rows,
+      },
+      meta: { next_cursor: page.nextCursor },
+    })
+  }
+
+  app.get('/api/v1/views/:token', (c) => readSharedView(c))
+  app.get('/api/v1/views/:token/rows', (c) => readSharedView(c, c.req.query('after')))
+
+  /** The iCalendar feed of a shared calendar or timeline (chapter 19 §2.1). */
+  app.get('/api/v1/views/:token/calendar.ics', async (c) => {
+    const verdict = viewReads.check(`${addressOf(c)}:${c.req.param('token')}`, Date.now())
+    if (!verdict.allowed) {
+      c.header('retry-after', String(verdict.retryAfter))
+      throw new BasedbError('RATE_LIMIT_EXCEEDED', { details: { retry_after: verdict.retryAfter } })
+    }
+    const ics = await options.kernel.openSharedCalendar({
+      token: c.req.param('token'),
+      requestId: c.get('requestId'),
+      host: (c.req.header('host') ?? 'basedb').replace(/[^A-Za-z0-9.:-]/g, ''),
+    })
+    return c.body(ics, 200, {
+      'content-type': 'text/calendar; charset=utf-8',
+      'cache-control': 'no-cache',
+    })
+  })
 
   app.get('/api/v1/forms/:token', async (c) => {
     const form = await options.kernel.openSharedForm({
@@ -2801,3 +3575,58 @@ function disposition(kind: 'inline' | 'attachment', name: string): string {
 }
 
 export { isErrorCode }
+
+/** A formula as a request carries it: an expression, and the time zone AUJOURDHUI() reads. */
+function formulaOf(
+  raw: { expression?: unknown; timezone?: unknown } | undefined,
+): { expression: string; timezone?: string } | undefined {
+  if (raw === undefined) return undefined
+  if (typeof raw !== 'object' || raw === null || typeof raw.expression !== 'string') {
+    throw new BasedbError('REQUEST_INVALID', { details: { field: 'formula.expression' } })
+  }
+  if (raw.timezone !== undefined && raw.timezone !== null && typeof raw.timezone !== 'string') {
+    throw new BasedbError('REQUEST_INVALID', { details: { field: 'formula.timezone' } })
+  }
+  return {
+    expression: raw.expression,
+    ...(typeof raw.timezone === 'string' ? { timezone: raw.timezone } : {}),
+  }
+}
+
+/** The path of a lookup, a rollup or a count, by physical names (chapter 04 §7 ter). */
+function rollupOf(
+  raw: { via?: unknown; via_table?: unknown; target?: unknown; aggregate?: unknown } | undefined,
+):
+  | {
+      via: string
+      viaTable?: string
+      target?: string
+      aggregate?: 'count' | 'sum' | 'avg' | 'min' | 'max'
+    }
+  | undefined {
+  if (raw === undefined) return undefined
+  if (typeof raw !== 'object' || raw === null || typeof raw.via !== 'string') {
+    throw new BasedbError('REQUEST_INVALID', { details: { field: 'rollup.via' } })
+  }
+  for (const key of ['via_table', 'target', 'aggregate'] as const) {
+    if (raw[key] !== undefined && raw[key] !== null && typeof raw[key] !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: `rollup.${key}` } })
+    }
+  }
+  const aggregate = raw.aggregate as string | undefined | null
+  if (
+    aggregate !== undefined &&
+    aggregate !== null &&
+    !['count', 'sum', 'avg', 'min', 'max'].includes(aggregate)
+  ) {
+    throw new BasedbError('REQUEST_INVALID', { details: { field: 'rollup.aggregate' } })
+  }
+  return {
+    via: raw.via,
+    ...(typeof raw.via_table === 'string' ? { viaTable: raw.via_table } : {}),
+    ...(typeof raw.target === 'string' ? { target: raw.target } : {}),
+    ...(typeof aggregate === 'string'
+      ? { aggregate: aggregate as 'count' | 'sum' | 'avg' | 'min' | 'max' }
+      : {}),
+  }
+}

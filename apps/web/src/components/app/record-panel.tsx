@@ -1,8 +1,11 @@
 'use client'
 
 import { AiEmpty } from '@/components/app/ai-pending'
+import { Viewers } from '@/components/app/collab'
+import { CommentThread } from '@/components/app/comments'
 import { DateInput } from '@/components/app/date-picker'
 import { hasDescription } from '@/components/app/description'
+import { FieldButton } from '@/components/app/field-button'
 import { FieldIcon } from '@/components/app/field-icon'
 import { FilesField, type Upload } from '@/components/app/files'
 import { type Row, display } from '@/components/app/grid/cell'
@@ -11,12 +14,16 @@ import { MarkdownEditor, MarkdownView, UrlLink } from '@/components/app/markdown
 import {
   ChoiceChips,
   EnumPicker,
+  LinkChips,
   LinkPicker,
   MultiEnumPicker,
+  MultiLinkPicker,
   type SearchLink,
   choicesOf,
+  linksOf,
 } from '@/components/app/pickers'
 import { ResizablePanel } from '@/components/app/resizable-panel'
+import { ComputedList, RatingStars, UserPicker, UserValue } from '@/components/app/value-widgets'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,12 +36,15 @@ import {
   type LinkOption,
   type ReferencedBlock,
   type Table,
+  type Viewer,
   api,
   filesOf,
 } from '@/lib/api/client'
+import { shownField } from '@/lib/computed'
 import { isDateKind, storedFromText } from '@/lib/dates'
+import { editText, formatOf, parseNumberInput } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { ExternalLink, Link2, Maximize2, RefreshCw, X } from 'lucide-react'
+import { ExternalLink, Link2, Mail, Maximize2, Pencil, Phone, RefreshCw, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
@@ -61,6 +71,12 @@ interface Props {
   readonly onRecompute?: (field: Field) => Promise<void>
   /** Opens another row — the one a link points at, or one that points here. */
   readonly onFollowLink?: (table: string, id: string) => void
+  /** The reader — whose own mentions stand out in the comments (chapter 16 §1). */
+  readonly self?: string | null
+  /** Moves when this row's comments changed elsewhere. */
+  readonly commentsTick?: number
+  /** Who else looks at the table; those with this row open show in the header. */
+  readonly viewers?: readonly Viewer[]
 }
 
 export function RecordPanel({
@@ -75,11 +91,14 @@ export function RecordPanel({
   onUpload,
   onRecompute,
   onFollowLink,
+  self = null,
+  commentsTick = 0,
+  viewers = [],
 }: Props) {
   const title = headline(row, fields)
   const subtitle = secondLine(row, fields)
   const total = referenced.reduce((sum, block) => sum + block.count, 0)
-  const [tab, setTab] = useState<'details' | 'history'>('details')
+  const [tab, setTab] = useState<'details' | 'history' | 'comments'>('details')
   const recordId = String(row._id)
   // The history of THIS row, reloaded whenever the row changes — a commit in the details
   // tab is an entry the next time the history tab is looked at.
@@ -94,6 +113,7 @@ export function RecordPanel({
         <h2 className="flex-1 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Fiche {table.label}
         </h2>
+        <Viewers viewers={viewers} self={self} record={recordId} size="xs" />
         <Button variant="ghost" size="icon-sm" disabled aria-label="Agrandir">
           <Maximize2 className="size-4" />
         </Button>
@@ -118,13 +138,20 @@ export function RecordPanel({
         </div>
 
         <div className="px-5 pt-4">
-          <Tabs value={tab} onValueChange={(v) => setTab(v as 'details' | 'history')}>
+          <Tabs value={tab} onValueChange={(v) => setTab(v as 'details' | 'history' | 'comments')}>
             <TabsList className="w-full justify-start">
               <TabsTrigger value="details">Détails</TabsTrigger>
+              <TabsTrigger value="comments">Commentaires</TabsTrigger>
               <TabsTrigger value="history">Historique</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
+
+        {tab === 'comments' && (
+          <div className="px-5 py-4">
+            <CommentThread table={table} recordId={recordId} self={self} reloadKey={commentsTick} />
+          </div>
+        )}
 
         {tab === 'history' && (
           <div className="px-5 py-4">
@@ -243,7 +270,7 @@ function FieldList({
             )}
             title={field.label}
           >
-            <FieldIcon kind={field.kind} />
+            <FieldIcon kind={field.kind} format={field.format?.display} />
             <span className="truncate">{field.label}</span>
             {field.required === true && (
               <span className="text-destructive" title="Obligatoire">
@@ -419,6 +446,9 @@ export function writeValues(fields: readonly Field[], draft: Row): Record<string
     if (field.kind === 'link') {
       const id = (value as { id?: unknown }).id
       if (typeof id === 'string') values[field.name] = id
+    } else if (field.kind === 'multi_link') {
+      const ids = linksOf(value).flatMap((l) => (l.id === null ? [] : [l.id]))
+      if (ids.length > 0) values[field.name] = ids
     } else if (isFileField(field)) {
       const files = filesOf(value)
       if (files.length > 0) values[field.name] = files.map((f) => ({ id: f.id }))
@@ -430,7 +460,7 @@ export function writeValues(fields: readonly Field[], draft: Row): Record<string
 }
 
 export function PanelField({
-  field,
+  field: given,
   row,
   options,
   onSearchLink,
@@ -454,6 +484,8 @@ export function PanelField({
    */
   readonly live?: boolean
 }) {
+  // A computed field is shown as the field its value is, read-only (chapter 04 §7 ter).
+  const field = shownField(given)
   const present = Object.hasOwn(row, field.name)
   const value = row[field.name]
 
@@ -463,16 +495,70 @@ export function PanelField({
   useEffect(() => {
     // The same reading as in the grid: `487.5000000000` is what the column holds, and
     // the trailing zeros are noise wherever a person is looking.
-    setTyped(value === null || value === undefined ? '' : display(String(value), field))
+    setTyped(
+      value === null || value === undefined
+        ? ''
+        : field.kind === 'number'
+          ? editText(value, field)
+          : display(String(value), field),
+    )
     sent.current = null
   }, [value, field])
+
+  if (given.kind === 'button') return <FieldButton field={given} row={row} />
 
   if (!present) {
     return <span className="text-sm text-muted-foreground">Champ masqué</span>
   }
 
+  // The values a lookup reached through several rows, in their order.
+  if (given.computed?.multiple === true) {
+    return (
+      <span className="text-sm">
+        <ComputedList
+          values={Array.isArray(value) ? value : []}
+          field={field}
+          text={(v) => (v === null || v === undefined ? '' : display(String(v), field))}
+          wrap
+        />
+      </span>
+    )
+  }
+
   if (field.ai === true) {
     return <AiValue field={field} value={value} onRecompute={onRecompute} />
+  }
+
+  if (field.kind === 'multi_link') {
+    const links = linksOf(value)
+    const target = field.link?.target
+    const follow =
+      onFollowLink === undefined || target === undefined
+        ? undefined
+        : (id: string) => onFollowLink(target, id)
+    if (options === undefined) {
+      return <LinkChips values={links} wrap onFollow={follow} />
+    }
+    // The chips open the rows; « Modifier » opens the list that adds and removes them.
+    return (
+      <div className="flex flex-wrap items-center gap-1">
+        {links.length > 0 && <LinkChips values={links} wrap onFollow={follow} />}
+        <MultiLinkPicker
+          field={field}
+          value={links}
+          options={options}
+          onSearch={onSearchLink}
+          onChange={(next) => void onCommit(next)}
+          appearance="cell"
+          trigger={
+            <span className="flex items-center gap-1 text-muted-foreground">
+              <Pencil className="size-3" />
+              {links.length === 0 ? 'Choisir…' : 'Modifier'}
+            </span>
+          }
+        />
+      </div>
+    )
   }
 
   if (field.kind === 'link') {
@@ -530,6 +616,38 @@ export function PanelField({
     )
   }
 
+  if (field.kind === 'user') {
+    const id = typeof value === 'string' && value !== '' ? value : null
+    // No author on a system column is an exact statement, not a blank (chapter 11 §5.1).
+    if (field.system === true && id === null) {
+      return <span className="text-sm text-muted-foreground">écriture hors application</span>
+    }
+    return field.read_only === true ? (
+      <span className="text-sm">
+        <UserValue id={id} />
+      </span>
+    ) : (
+      <UserPicker
+        field={field}
+        value={id}
+        onChange={(next) => void onCommit(next)}
+        appearance="form"
+      />
+    )
+  }
+
+  if (field.kind === 'number' && formatOf(field) === 'rating') {
+    return (
+      <RatingStars
+        value={value}
+        max={field.format?.rating_max ?? 5}
+        size="md"
+        label={field.label}
+        onChange={field.read_only === true ? undefined : (next) => void onCommit(next)}
+      />
+    )
+  }
+
   if (field.kind === 'select' && field.options !== undefined) {
     return (
       <EnumPicker
@@ -570,9 +688,56 @@ export function PanelField({
   }
 
   const commit = () => {
-    const initial = value === null || value === undefined ? '' : display(String(value), field)
+    const initial =
+      value === null || value === undefined
+        ? ''
+        : field.kind === 'number'
+          ? editText(value, field)
+          : display(String(value), field)
     if (typed === initial) return
-    void onCommit(typed === '' ? null : typed)
+    // A number typed with its format — `1:30` for a duration, `12,50 €` — is read back
+    // into the value it stands for.
+    void onCommit(
+      typed === '' ? null : field.kind === 'number' ? parseNumberInput(typed, field) : typed,
+    )
+  }
+
+  // An address or a number to call: typed like a text, reached in a click.
+  const contact = field.kind === 'email' ? 'email' : formatOf(field) === 'phone' ? 'phone' : null
+  if (contact !== null) {
+    const href =
+      typeof value === 'string' && value !== ''
+        ? contact === 'email'
+          ? `mailto:${value}`
+          : `tel:${value.replace(/[^\d+]/g, '')}`
+        : null
+    return (
+      <div className="flex items-center gap-1">
+        <Input
+          value={typed}
+          readOnly={field.read_only === true}
+          onChange={(e) => setTyped(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur()
+          }}
+          inputMode={contact === 'email' ? 'email' : 'tel'}
+          placeholder={contact === 'email' ? 'nom@exemple.fr' : '+33 6 12 34 56 78'}
+          aria-label={field.label}
+        />
+        {href !== null && (
+          <Button variant="ghost" size="icon-sm" asChild>
+            <a
+              href={href}
+              aria-label={contact === 'email' ? 'Écrire' : 'Appeler'}
+              title={String(value)}
+            >
+              {contact === 'email' ? <Mail className="size-4" /> : <Phone className="size-4" />}
+            </a>
+          </Button>
+        )}
+      </div>
+    )
   }
 
   if (isDateKind(field.kind)) {

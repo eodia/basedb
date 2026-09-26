@@ -40,6 +40,8 @@ const MASKED: LinkValue = Object.freeze({ id: null, display: null, masked: true 
 interface LinkField extends Record<string, unknown> {
   readonly column: string
   readonly targetTableId: string
+  /** `multi_link` holds a list of identifiers (chapter 04 §4 bis). */
+  readonly kind: 'link' | 'multi_link'
 }
 
 /** A target table, resolved once even if several fields designate it. */
@@ -64,7 +66,7 @@ interface Target {
  */
 export async function loadLinkFields(exec: Executor, tableId: string): Promise<LinkField[]> {
   return exec.query<LinkField>(
-    `SELECT n.name AS column, lc.target_table_id AS "targetTableId"
+    `SELECT n.name AS column, lc.target_table_id AS "targetTableId", f.kind
        FROM _basedb.field f
        JOIN _basedb.field_link_config lc ON lc.field_id = f.id
        JOIN _basedb.physical_name n      ON n.id = f.name_id
@@ -129,7 +131,10 @@ async function resolveTargets(
     const targetFields = readable ? await loadFields(exec, field.targetTableId) : new Map()
     const readableColumns: string[] = []
     for (const [id, column] of targetFields) {
-      if (decision?.readableFields.has(id)) readableColumns.push(column.name)
+      // A field computed at read time has no column an expansion could project.
+      if (decision?.readableFields.has(id) && column.stored !== false) {
+        readableColumns.push(column.name)
+      }
     }
 
     targets.set(field.targetTableId, {
@@ -213,7 +218,8 @@ export async function resolveDisplays(
       throw new BasedbError('FILTER_FIELD_UNKNOWN', { details: { field: column } })
     }
 
-    const field = fields.find((f) => f.column === column)
+    // An expansion follows ONE row: a multi-link is not expandable in v1 (04 §4 bis).
+    const field = fields.find((f) => f.column === column && f.kind === 'link')
     // ONE code for two situations, deliberately: "this field is not a link" and "this
     // link points at a table you cannot see" are indistinguishable from the outside, so
     // expansion cannot be turned into an oracle enumerating which tables exist. And the
@@ -235,9 +241,15 @@ export async function resolveDisplays(
 
     for (const row of rows) {
       const value = row[field.column]
-      if (typeof value !== 'string') continue
+      const ids =
+        typeof value === 'string'
+          ? [value]
+          : Array.isArray(value)
+            ? value.filter((v): v is string => typeof v === 'string')
+            : []
+      if (ids.length === 0) continue
       const set = byTarget.get(field.targetTableId) ?? new Set<string>()
-      set.add(value)
+      for (const id of ids) set.add(id)
       byTarget.set(field.targetTableId, set)
     }
   }
@@ -254,7 +266,7 @@ export async function resolveDisplays(
   // query serves them both.
   const expandedColumns = new Map<string, Set<string> | null>()
   for (const [column, projection] of expand) {
-    const field = fields.find((f) => f.column === column)
+    const field = fields.find((f) => f.column === column && f.kind === 'link')
     if (field === undefined) continue
     const current = expandedColumns.get(field.targetTableId)
     if (projection === null || current === null) {
@@ -344,6 +356,11 @@ export async function resolveDisplays(
       const target = targets.get(field.targetTableId)
       const value = row[field.column]
 
+      if (field.kind === 'multi_link') {
+        copy[field.column] = multiLinkValue(value, target, displays.get(field.targetTableId))
+        continue
+      }
+
       if (target === undefined || !target.readable) {
         // Even when the value is null: distinguishing "null" from "unreadable" would
         // tell the reader whether the source row points at a forbidden target.
@@ -374,4 +391,32 @@ export async function resolveDisplays(
   })
 
   return { rows: rendered, sql, included }
+}
+
+/**
+ * A multi-link cell — chapter 04 §4 bis: the rows in the column's order, as `{ id,
+ * display }`. What the reader may not see — the whole target, or rows its predicate
+ * hides — becomes ONE masked element, never one per row: the count of forbidden rows is
+ * itself something the reader may not know. As for a link, an unreadable target masks a
+ * null too, so that null and unreadable cannot be told apart.
+ */
+function multiLinkValue(
+  value: unknown,
+  target: Target | undefined,
+  table: ReadonlyMap<string, string | null> | undefined,
+): readonly LinkValue[] | null {
+  if (target === undefined || !target.readable) return [MASKED]
+  if (!Array.isArray(value) || value.length === 0) return null
+  const out: LinkValue[] = []
+  let hidden = false
+  for (const id of value) {
+    if (typeof id !== 'string' || table === undefined || !table.has(id)) {
+      hidden = true
+      continue
+    }
+    const display = table.get(id) ?? null
+    out.push({ id, display: display === '' ? null : display })
+  }
+  if (hidden) out.push(MASKED)
+  return out
 }

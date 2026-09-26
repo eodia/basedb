@@ -185,7 +185,7 @@ describe('saved views over HTTP', () => {
     expect(taken.status).toBe(422)
     expect((await read<{ code: string }>(taken)).code).toBe('LABEL_DUPLICATE')
 
-    const kind = await app.request(ADMIN(), json('POST', { label: 'Galerie', kind: 'gallery' }))
+    const kind = await app.request(ADMIN(), json('POST', { label: 'Mosaïque', kind: 'mosaique' }))
     expect(kind.status).toBe(400)
   })
 
@@ -239,5 +239,172 @@ describe('saved views over HTTP', () => {
 
     const gone = await app.request(`${ADMIN()}/${form.id}`, { method: 'DELETE', headers: auth() })
     expect(gone.status).toBe(404)
+  })
+})
+
+describe('aggregates over HTTP', () => {
+  const DATA = () => `${V1}/data/${base}/visites`
+
+  it('summarises every row the filter keeps, and counts the groups', async () => {
+    for (const [nom, jour, statut] of [
+      ['Lyon', '2026-09-01', 'fait'],
+      ['Nice', '2026-09-03', 'fait'],
+      ['Brest', '2026-09-10', 'a_faire'],
+      ['', null, null],
+    ]) {
+      const created = await app.request(DATA(), json('POST', { values: { nom, jour, statut } }))
+      expect(created.status).toBe(201)
+    }
+
+    const response = await app.request(
+      `${DATA()}/aggregate?aggregates=nom:filled,nom:empty,jour:min,jour:max,statut:unique&group=statut`,
+      { headers: auth() },
+    )
+    expect(response.status).toBe(200)
+    const { data } = await read<{
+      data: {
+        total: number
+        values: Record<string, unknown>
+        groups: Array<{ value: unknown; count: number }>
+      }
+    }>(response)
+    expect(data.total).toBe(4)
+    expect(data.values).toEqual({
+      'nom:filled': 3,
+      'nom:empty': 1,
+      'jour:min': '2026-09-01',
+      'jour:max': '2026-09-10',
+      'statut:unique': 2,
+    })
+    expect(data.groups).toEqual([
+      { value: null, count: 1 },
+      { value: 'a_faire', count: 1 },
+      { value: 'fait', count: 2 },
+    ])
+
+    const filtered = await app.request(
+      `${DATA()}/aggregate?aggregates=nom:filled&filter=${encodeURIComponent('statut eq "fait"')}`,
+      { headers: auth() },
+    )
+    expect((await read<{ data: { total: number } }>(filtered)).data.total).toBe(2)
+  })
+
+  it('refuses a sum of a text, and a field nobody can see', async () => {
+    const sum = await app.request(`${DATA()}/aggregate?aggregates=nom:sum`, { headers: auth() })
+    expect(sum.status).toBe(400)
+    expect(await read(sum)).toMatchObject({ details: { reason: 'agregat_invalide' } })
+
+    const unknown = await app.request(`${DATA()}/aggregate?aggregates=secret:filled`, {
+      headers: auth(),
+    })
+    expect((await read<{ code: string }>(unknown)).code).toBe('FILTER_FIELD_UNKNOWN')
+  })
+
+  it('groups and summarises by who created a row and when', async () => {
+    const response = await app.request(
+      `${DATA()}/aggregate?aggregates=_created_at:max,_created_by:unique&group=_created_by`,
+      { headers: auth() },
+    )
+    expect(response.status).toBe(200)
+    const { data } = await read<{
+      data: { values: Record<string, unknown>; groups: Array<{ count: number }> }
+    }>(response)
+    expect(data.values['_created_by:unique']).toBe(1)
+    expect(data.groups).toHaveLength(1)
+    expect(data.groups[0]?.count).toBe(4)
+  })
+})
+
+describe('system columns in a view', () => {
+  it('shows them on request, sorts by them, and never asks them in a form', async () => {
+    const grid = await app.request(
+      ADMIN(),
+      json('POST', {
+        label: 'Récentes',
+        kind: 'grid',
+        spec: {
+          sorts: [{ field: '_created_at', direction: 'desc' }],
+          system_columns: ['_created_at', '_created_by'],
+        },
+      }),
+    )
+    expect(grid.status).toBe(201)
+    expect((await read<{ data: View }>(grid)).data.spec).toMatchObject({
+      sorts: [{ field: '_created_at', direction: 'desc' }],
+      system_columns: ['_created_at', '_created_by'],
+    })
+
+    const form = await app.request(
+      ADMIN(),
+      json('POST', {
+        label: 'Formulaire système',
+        kind: 'form',
+        spec: { fields: [{ field: '_created_by' }] },
+      }),
+    )
+    expect(form.status).toBe(400)
+    expect(await read(form)).toMatchObject({
+      details: { reason: 'type_de_champ_incompatible', detail: '_created_by' },
+    })
+  })
+})
+
+describe('a view shared to be read', () => {
+  it('shows the fields and the rows of the view, and nothing else', async () => {
+    const created = await app.request(
+      ADMIN(),
+      json('POST', {
+        label: 'Faites',
+        kind: 'grid',
+        spec: {
+          filter: 'statut eq "fait"',
+          sorts: [{ field: 'nom', direction: 'desc' }],
+          hidden: ['jour'],
+        },
+      }),
+    )
+    const view = (await read<{ data: View }>(created)).data
+    const shared = await app.request(
+      `${ADMIN()}/${view.id}/share`,
+      json('PUT', { access: 'public', active: true, can_embed: true }),
+    )
+    expect(shared.status).toBe(200)
+    const share = (
+      await read<{ data: { share: { token: string; can_embed: boolean; view_kind: string } } }>(
+        shared,
+      )
+    ).data.share
+    expect(share).toMatchObject({ can_embed: true, view_kind: 'grid' })
+
+    // No bearer: the link is the door.
+    const page = await app.request(`/api/v1/views/${share.token}`)
+    expect(page.status).toBe(200)
+    const { data } = await read<{
+      data: {
+        kind: string
+        can_embed: boolean
+        fields: Array<{ name: string }>
+        rows: Array<Record<string, unknown>>
+        spec: Record<string, unknown>
+      }
+    }>(page)
+    expect(data).toMatchObject({ kind: 'grid', can_embed: true })
+    expect(data.fields.map((f) => f.name)).toEqual(['nom', 'statut'])
+    expect(data.rows.map((r) => r.nom)).toEqual(['Nice', 'Lyon'])
+    // What the view hides, and its filter, stay out of the page.
+    expect(data.rows[0]).not.toHaveProperty('jour')
+    expect(data.rows[0]).not.toHaveProperty('_created_by')
+    expect(data.spec).not.toHaveProperty('filter')
+
+    // Switched off, the page says so; opened as a form, the link is nothing.
+    await app.request(
+      `${ADMIN()}/${view.id}/share`,
+      json('PUT', { access: 'public', active: false }),
+    )
+    expect(await read(await app.request(`/api/v1/views/${share.token}`))).toMatchObject({
+      code: 'VIEW_SHARE_CLOSED',
+      details: { reason: 'inactive' },
+    })
+    expect((await app.request(`/api/v1/forms/${share.token}`)).status).toBe(404)
   })
 })

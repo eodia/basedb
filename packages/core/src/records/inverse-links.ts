@@ -63,6 +63,8 @@ interface IncomingLink extends Record<string, unknown> {
   readonly field_label: string
   readonly column: string
   readonly display_column: string | null
+  /** A multi-link cites the row in a list (chapter 04 §4 bis). */
+  readonly kind: 'link' | 'multi_link'
 }
 
 /**
@@ -80,7 +82,8 @@ async function loadIncomingLinks(exec: Executor, targetTableId: string): Promise
             sn.name       AS schema_name,
             f.label       AS field_label,
             n.name        AS column,
-            dn.name       AS display_column
+            dn.name       AS display_column,
+            f.kind
        FROM _basedb.field_link_config lc
        JOIN _basedb.field f           ON f.id = lc.field_id
        JOIN _basedb.physical_name n   ON n.id = f.name_id
@@ -166,6 +169,9 @@ export async function listInverseLinks(
   for (const link of kept) {
     const relation = qualify(link.schema_name, link.table_name)
     const column = quoteIdentifier(link.column)
+    // A multi-link holds the row in a list: `@>`, served by its GIN index.
+    const cites =
+      link.kind === 'multi_link' ? `${column} @> ARRAY[$1::uuid]` : `${column} = $1::uuid`
 
     const projection =
       link.display_column === null
@@ -176,7 +182,7 @@ export async function listInverseLinks(
     // with no extra column — and the `(column, _id)` index serves it without a sort.
     const rowsQuery = `SELECT ${projection}
   FROM ${relation}
- WHERE ${column} = $1::uuid
+ WHERE ${cites}
    AND ( /*predicat_lignes:${link.table_name}*/ ${link.rowPredicate} )
  ORDER BY "_id" DESC
  LIMIT ${INVERSE_BUDGETS.rowsPerBlock};`
@@ -186,7 +192,7 @@ export async function listInverseLinks(
     const countQuery = `SELECT count(*)::int AS n
   FROM (SELECT 1
           FROM ${relation}
-         WHERE ${column} = $1::uuid
+         WHERE ${cites}
            AND ( /*predicat_lignes:${link.table_name}*/ ${link.rowPredicate} )
          LIMIT ${INVERSE_BUDGETS.countCap + 1}) t;`
 

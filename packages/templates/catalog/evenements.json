@@ -1,0 +1,388 @@
+{
+  "format": 1,
+  "key": "evenements",
+  "label": "Événements et inscriptions",
+  "summary": "Conférences, ateliers et webinaires : les inscriptions, les places restantes, et les retours des participants lus par l'IA.",
+  "description": "Pour organiser des événements récurrents. Chaque événement compte ses inscrits et ses places restantes ; les inscriptions avancent jusqu'à la présence. Après l'événement, les participants laissent un retour que l'IA classe par sentiment et résume. Un formulaire public permet de rejoindre la liste de diffusion.",
+  "category": "Événementiel",
+  "icon": "calendar",
+  "color": "#ec4899",
+  "tags": ["IA", "Calendrier", "Formulaire", "Cumuls"],
+  "base": {
+    "label": "Événements",
+    "description": "Les événements organisés, leurs participants et leurs inscriptions."
+  },
+  "tables": [
+    {
+      "key": "evenements",
+      "label": "Événements",
+      "icon": "calendar",
+      "color": "#ec4899",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        {
+          "label": "Type",
+          "kind": "select",
+          "options": [
+            { "label": "Conférence", "color": "#8b5cf6" },
+            { "label": "Atelier", "color": "#10b981" },
+            { "label": "Webinaire", "color": "#0ea5e9" },
+            { "label": "Afterwork", "color": "#f59e0b" }
+          ]
+        },
+        { "label": "Début", "kind": "datetime" },
+        { "label": "Fin", "kind": "datetime" },
+        { "label": "Lieu", "kind": "short_text" },
+        { "label": "Capacité", "kind": "number" },
+        {
+          "label": "Statut",
+          "kind": "select",
+          "options": [
+            { "label": "Brouillon", "color": "#94a3b8" },
+            { "label": "Ouvert", "color": "#10b981" },
+            { "label": "Complet", "color": "#f59e0b" },
+            { "label": "Terminé", "color": "#64748b" }
+          ]
+        },
+        { "label": "Description", "kind": "long_text" },
+        {
+          "label": "Inscrits",
+          "kind": "count",
+          "rollup": { "via": "Événement", "table": "inscriptions" }
+        },
+        {
+          "label": "Places restantes",
+          "kind": "formula",
+          "formula": "[Capacité] - SIVIDE([Inscrits]; 0)"
+        }
+      ]
+    },
+    {
+      "key": "inscriptions",
+      "label": "Inscriptions",
+      "icon": "clipboard-check",
+      "color": "#8b5cf6",
+      "fields": [
+        {
+          "label": "Participant",
+          "kind": "short_text",
+          "required": true,
+          "description": "Le nom de la personne inscrite."
+        },
+        {
+          "label": "Statut",
+          "kind": "select",
+          "options": [
+            { "label": "Inscrit", "color": "#94a3b8" },
+            { "label": "Confirmé", "color": "#3b82f6" },
+            { "label": "Présent", "color": "#10b981" },
+            { "label": "Absent", "color": "#ef4444" },
+            { "label": "Annulé", "color": "#64748b" }
+          ]
+        },
+        { "label": "Inscrit le", "kind": "datetime" },
+        {
+          "label": "Retour",
+          "kind": "long_text",
+          "description": "Ce que le participant a pensé de l'événement."
+        },
+        {
+          "label": "Sentiment",
+          "kind": "select",
+          "options": [
+            { "label": "Enthousiaste", "color": "#10b981", "icon": "laugh" },
+            { "label": "Satisfait", "color": "#84cc16", "icon": "smile" },
+            { "label": "Mitigé", "color": "#f59e0b", "icon": "meh" },
+            { "label": "Déçu", "color": "#ef4444", "icon": "frown" }
+          ],
+          "ai": {
+            "prompt": "Voici le retour d'un participant après un événement :\n« {{Retour}} »\nQuel est son sentiment ?"
+          }
+        },
+        {
+          "label": "À retenir",
+          "kind": "short_text",
+          "ai": {
+            "prompt": "Qu'est-ce que l'organisateur doit retenir de ce retour, en 15 mots au plus ? « {{Retour}} »"
+          }
+        }
+      ]
+    },
+    {
+      "key": "participants",
+      "label": "Participants",
+      "icon": "users",
+      "color": "#14b8a6",
+      "fields": [
+        { "label": "Nom", "kind": "short_text", "required": true },
+        { "label": "E-mail", "kind": "email" },
+        { "label": "Entreprise", "kind": "short_text" },
+        { "label": "Fonction", "kind": "short_text" },
+        {
+          "label": "Centres d'intérêt",
+          "kind": "multi_select",
+          "options": ["Produit", "Technique", "Marketing", "Ressources humaines", "Finance"]
+        },
+        {
+          "label": "Inscriptions",
+          "kind": "count",
+          "rollup": { "via": "Personne", "table": "inscriptions" }
+        }
+      ]
+    }
+  ],
+  "links": [
+    { "from": "inscriptions", "label": "Événement", "to": "evenements" },
+    { "from": "inscriptions", "label": "Personne", "to": "participants" }
+  ],
+  "rows": {
+    "evenements": [
+      {
+        "$key": "conf",
+        "Nom": "Conférence : l'IA au service des PME",
+        "Type": "Conférence",
+        "Début": "+14d 09:30",
+        "Fin": "+14d 12:30",
+        "Lieu": "Lyon, salle Confluence",
+        "Capacité": 120,
+        "Statut": "Ouvert",
+        "Description": "Trois interventions et une table ronde sur des usages concrets de l'IA dans les petites entreprises."
+      },
+      {
+        "$key": "atelier",
+        "Nom": "Atelier : automatiser ses tableaux de bord",
+        "Type": "Atelier",
+        "Début": "+6d 14:00",
+        "Fin": "+6d 17:00",
+        "Lieu": "Paris, espace Oberkampf",
+        "Capacité": 15,
+        "Statut": "Complet",
+        "Description": "Atelier pratique de trois heures, ordinateur portable nécessaire."
+      },
+      {
+        "$key": "webinaire",
+        "Nom": "Webinaire : les nouveautés de la rentrée",
+        "Type": "Webinaire",
+        "Début": "-7d 11:00",
+        "Fin": "-7d 12:00",
+        "Lieu": "En ligne",
+        "Capacité": 500,
+        "Statut": "Terminé",
+        "Description": "Présentation des nouveautés et questions-réponses."
+      },
+      {
+        "$key": "afterwork",
+        "Nom": "Afterwork clients",
+        "Type": "Afterwork",
+        "Début": "+21d 18:30",
+        "Fin": "+21d 21:00",
+        "Lieu": "Lyon, rooftop du centre",
+        "Capacité": 60,
+        "Statut": "Brouillon"
+      }
+    ],
+    "participants": [
+      {
+        "$key": "p1",
+        "Nom": "Claire Fontaine",
+        "E-mail": "claire.fontaine@exemple.fr",
+        "Entreprise": "Fontaine & Associés",
+        "Fonction": "Gérante",
+        "Centres d'intérêt": ["Produit", "Finance"]
+      },
+      {
+        "$key": "p2",
+        "Nom": "Mehdi Saïdi",
+        "E-mail": "mehdi.saidi@exemple.fr",
+        "Entreprise": "Logistique Express",
+        "Fonction": "Responsable informatique",
+        "Centres d'intérêt": ["Technique"]
+      },
+      {
+        "$key": "p3",
+        "Nom": "Sophie Lambert",
+        "E-mail": "sophie.lambert@exemple.fr",
+        "Entreprise": "Studio Lambert",
+        "Fonction": "Directrice marketing",
+        "Centres d'intérêt": ["Marketing", "Produit"]
+      },
+      {
+        "$key": "p4",
+        "Nom": "Antoine Mercier",
+        "E-mail": "antoine.mercier@exemple.fr",
+        "Entreprise": "Mercier Industrie",
+        "Fonction": "DRH",
+        "Centres d'intérêt": ["Ressources humaines"]
+      }
+    ],
+    "inscriptions": [
+      {
+        "Participant": "Claire Fontaine",
+        "Statut": "Confirmé",
+        "Inscrit le": "-10d 08:12",
+        "Événement": "@conf",
+        "Personne": "@p1"
+      },
+      {
+        "Participant": "Mehdi Saïdi",
+        "Statut": "Inscrit",
+        "Inscrit le": "-3d 19:40",
+        "Événement": "@conf",
+        "Personne": "@p2"
+      },
+      {
+        "Participant": "Sophie Lambert",
+        "Statut": "Confirmé",
+        "Inscrit le": "-12d 10:05",
+        "Événement": "@atelier",
+        "Personne": "@p3"
+      },
+      {
+        "Participant": "Claire Fontaine",
+        "Statut": "Présent",
+        "Inscrit le": "-20d 09:00",
+        "Événement": "@webinaire",
+        "Personne": "@p1",
+        "Retour": "Très clair, les démonstrations étaient parfaites. J'aurais aimé une heure de plus pour les questions.",
+        "Sentiment": "Enthousiaste",
+        "À retenir": "Prévoir plus de temps pour les questions."
+      },
+      {
+        "Participant": "Mehdi Saïdi",
+        "Statut": "Présent",
+        "Inscrit le": "-18d 14:30",
+        "Événement": "@webinaire",
+        "Personne": "@p2",
+        "Retour": "Le son coupait régulièrement et la moitié des nouveautés ne concernait pas les équipes techniques.",
+        "Sentiment": "Déçu",
+        "À retenir": "Soigner le son et prévoir une session technique."
+      },
+      {
+        "Participant": "Antoine Mercier",
+        "Statut": "Absent",
+        "Inscrit le": "-15d 11:20",
+        "Événement": "@webinaire",
+        "Personne": "@p4"
+      }
+    ]
+  },
+  "views": [
+    {
+      "table": "evenements",
+      "label": "Calendrier",
+      "kind": "calendar",
+      "spec": {
+        "date_field": "Début",
+        "end_field": "Fin",
+        "color_field": "Type",
+        "card_fields": ["Lieu", "Places restantes"]
+      }
+    },
+    {
+      "table": "evenements",
+      "label": "Affiches",
+      "kind": "gallery",
+      "spec": {
+        "card_fields": ["Type", "Début", "Lieu", "Places restantes"],
+        "color_field": "Statut",
+        "card_size": "large"
+      }
+    },
+    {
+      "table": "inscriptions",
+      "label": "Suivi",
+      "kind": "kanban",
+      "spec": {
+        "group_by": "Statut",
+        "card_fields": ["Événement", "Inscrit le"],
+        "group_order": ["Inscrit", "Confirmé", "Présent", "Absent", "Annulé"]
+      }
+    },
+    {
+      "table": "inscriptions",
+      "label": "Retours",
+      "kind": "list",
+      "spec": {
+        "filter": "not [Retour] is_null",
+        "group_by": "Sentiment",
+        "card_fields": ["Événement", "Retour", "À retenir"]
+      }
+    },
+    {
+      "table": "participants",
+      "label": "Rejoindre la liste",
+      "kind": "form",
+      "spec": {
+        "title": "Rester informé de nos événements",
+        "description": "Laissez vos coordonnées : nous vous prévenons de chaque nouvel événement qui vous concerne.",
+        "fields": [
+          { "field": "Nom", "required": true, "label": "Prénom et nom" },
+          { "field": "E-mail", "required": true },
+          { "field": "Entreprise" },
+          { "field": "Centres d'intérêt" }
+        ],
+        "submit_label": "M'inscrire à la liste",
+        "success_message": "C'est noté, à bientôt !"
+      }
+    }
+  ],
+  "dashboards": [
+    {
+      "label": "Événements",
+      "blocks": [
+        {
+          "kind": "number",
+          "title": "Événements à venir",
+          "table": "evenements",
+          "aggregate": "count",
+          "filter": "[Statut] ne \"Terminé\""
+        },
+        {
+          "kind": "number",
+          "title": "Inscriptions",
+          "table": "inscriptions",
+          "aggregate": "count"
+        },
+        {
+          "kind": "number",
+          "title": "Participants",
+          "table": "participants",
+          "aggregate": "count"
+        },
+        {
+          "kind": "chart",
+          "title": "Inscriptions par statut",
+          "table": "inscriptions",
+          "group_by": "Statut",
+          "style": "bar",
+          "width": 2
+        },
+        {
+          "kind": "chart",
+          "title": "Sentiment des retours",
+          "table": "inscriptions",
+          "group_by": "Sentiment",
+          "style": "pie"
+        },
+        {
+          "kind": "list",
+          "title": "Prochains événements",
+          "table": "evenements",
+          "fields": ["Nom", "Début", "Places restantes"],
+          "filter": "[Statut] ne \"Terminé\"",
+          "sort": "Début",
+          "limit": 5,
+          "width": 3
+        }
+      ]
+    }
+  ],
+  "automations": [
+    {
+      "label": "Date d'inscription",
+      "description": "Note la date de chaque nouvelle inscription.",
+      "trigger": { "kind": "record_created", "table": "inscriptions" },
+      "actions": [{ "kind": "update_record", "values": { "Inscrit le": "{{_maintenant}}" } }]
+    }
+  ]
+}

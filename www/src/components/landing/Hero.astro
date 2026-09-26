@@ -28,7 +28,7 @@ const rows: Array<{ nom: string; statut: Status; montant: string; client: string
 	<div class="text">
 		<a class="badge" href={`${base}/nouveautes/`}>
 			<span class="dot"></span>
-			Nouveau : formulaires partagés et environnements
+			Nouveau : automatisations, interfaces et formules
 			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
 		</a>
 		<h1>
@@ -81,8 +81,10 @@ const rows: Array<{ nom: string; statut: Status; montant: string; client: string
 						<span class="proj-ic"></span>
 						<span><b>Projet principal</b><small>Projet · 2 bases</small></span>
 					</div>
-					<div class="search">Filtrer les bases et les tables</div>
-					<div class="sec">Bases · 2</div>
+					<div class="search-row">
+						<div class="search">Filtrer les bases et les tables</div>
+						<span class="new">+</span>
+					</div>
 					<div class="base">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"></path><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"></path></svg>
 						Ventes <span class="env">Production</span>
@@ -94,14 +96,19 @@ const rows: Array<{ nom: string; statut: Status; montant: string; client: string
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"></path><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"></path></svg>
 						Support
 					</div>
-					<div class="sec">Interroger</div>
-					<div class="item">›_ Nouvelle requête SQL</div>
-					<div class="sec">Base · Ventes</div>
-					<div class="item">Structure</div>
-					<div class="item">Historique</div>
+					<div class="card">
+						<div class="sec">Base · Ventes</div>
+						<div class="item">Structure</div>
+						<div class="item">Historique</div>
+						<div class="item">Interfaces</div>
+						<div class="item">Automatisations</div>
+					</div>
 				</aside>
 				<div class="main">
-					<div class="crumbs">Ventes <span>/</span> <b>Opportunités</b></div>
+					<div class="crumbs">
+						Ventes <span>/</span> <b>Opportunités</b>
+						<svg class="bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+					</div>
 					<div class="tabs">
 						<span>Clients</span><span class="on">Opportunités</span><span class="plus">+</span>
 						<span class="copilot">✦ Copilot</span>
@@ -109,6 +116,9 @@ const rows: Array<{ nom: string; statut: Status; montant: string; client: string
 					<div class="bar">
 						<span class="views">▦ Toutes les lignes ▾</span>
 						<span class="filter">Filtrer</span>
+						<span class="filter">Grouper</span>
+						<span class="filter">Couleurs</span>
+						<span class="find">Rechercher…</span>
 						<span class="add">+ Ajouter</span>
 					</div>
 					<div class="grid">
@@ -547,13 +557,35 @@ const rows: Array<{ nom: string; statut: Status; montant: string; client: string
 		font-size: 9.5px;
 		color: #8a8a94;
 	}
+	.search-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin-bottom: 6px;
+	}
 	.search {
+		flex: 1;
+		min-width: 0;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 		border: 1px solid #e6e8e4;
 		border-radius: 6px;
 		padding: 5px 7px;
 		color: #9a9aa3;
 		font-size: 10px;
-		margin-bottom: 6px;
+	}
+	.new {
+		color: #55555e;
+		font-size: 13px;
+		line-height: 1;
+	}
+	.card {
+		margin-top: auto;
+		border: 1px solid #eceeea;
+		border-radius: 8px;
+		padding: 2px 4px 4px;
+		background: #fafbf9;
 	}
 	.sec {
 		font-size: 9px;
@@ -613,8 +645,19 @@ const rows: Array<{ nom: string; statut: Status; montant: string; client: string
 		color: #7a7a84;
 		border-bottom: 1px solid #eceeea;
 	}
+	.crumbs {
+		display: flex;
+		align-items: center;
+		gap: 3px;
+	}
 	.crumbs span {
 		margin: 0 3px;
+	}
+	.crumbs .bell {
+		width: 12px;
+		height: 12px;
+		margin-left: auto;
+		color: #55555e;
 	}
 	.crumbs b {
 		color: #111;
@@ -659,6 +702,17 @@ const rows: Array<{ nom: string; statut: Status; montant: string; client: string
 	}
 	.filter {
 		color: #33333a;
+	}
+	.find {
+		margin-left: auto;
+		border: 1px solid #e3e5e1;
+		border-radius: 6px;
+		padding: 3px 8px;
+		color: #9a9aa3;
+		min-width: 92px;
+	}
+	.find + .add {
+		margin-left: 0;
 	}
 	.add {
 		margin-left: auto;

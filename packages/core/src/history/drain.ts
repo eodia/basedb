@@ -1,4 +1,6 @@
 import { qualify, quoteIdentifier } from '@basedb/naming'
+import { type Trigger, queueTriggered } from '../automations/engine.js'
+import { LIVE_MAX_IDS, canReadTable, contextOf, emitLive } from '../collab/signals.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { executorOf } from '../runtime/pool.js'
 import { scheduleDeliveries } from '../webhooks/dispatch.js'
@@ -105,7 +107,10 @@ async function resolveLinkDisplays(
       const target = d.field.target
       if (target === undefined || target.displayColumn === null) continue
       const entry = wanted.get(target.tableId) ?? { field: d.field, ids: new Set<string>() }
-      for (const v of [d.before, d.after]) if (typeof v === 'string') entry.ids.add(v)
+      // A multi-link names several rows (04 §4 bis): each is looked up the same way.
+      for (const v of [d.before, d.after]) {
+        for (const id of Array.isArray(v) ? v : [v]) if (typeof id === 'string') entry.ids.add(id)
+      }
       wanted.set(target.tableId, entry)
     }
   }
@@ -154,6 +159,52 @@ async function resolveLinkDisplays(
   return found
 }
 
+/**
+ * A person field set to someone notifies them — if they may read the row, and it was not
+ * their own gesture (chapter 16 §2.1). Born here, it holds for every write, whatever its
+ * surface: the interface, the API, MCP or direct SQL.
+ */
+async function notifyAssigned(
+  exec: Executor,
+  assigned: ReadonlyArray<{ row: BufferRow; user: string; display: string | null }>,
+): Promise<void> {
+  if (assigned.length === 0) return
+  const owners = await exec.query<{ id: string; tenant_id: string; ref: string }>(
+    `SELECT b.id::text, b.tenant_id::text, t.ref
+       FROM _basedb.base b JOIN _basedb.tenant t ON t.id = b.tenant_id
+      WHERE b.id = ANY($1::uuid[])`,
+    [[...new Set(assigned.map((a) => a.row.base_id))]],
+  )
+  const byBase = new Map(owners.map((o) => [o.id, o]))
+  for (const { row, user, display } of assigned) {
+    const owner = byBase.get(row.base_id)
+    if (owner === undefined || !/^[0-9a-f-]{36}$/i.test(user)) continue
+    const [member] = await exec.query<{ id: string }>(
+      `SELECT id::text FROM _basedb.app_user
+        WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL AND disabled_at IS NULL`,
+      [user, owner.tenant_id],
+    )
+    if (member === undefined) continue
+    if (!(await canReadTable(exec, contextOf(owner.ref, user, row.id), row.table_id))) continue
+    await exec.query(
+      `INSERT INTO _basedb.notification
+         (tenant_id, user_id, kind, actor_id, base_id, table_id, record_id, excerpt)
+       VALUES ($1, $2, 'assigned', $3, $4, $5, $6, $7)`,
+      [
+        owner.tenant_id,
+        user,
+        row.actor_user_id,
+        row.base_id,
+        row.table_id,
+        row.record_id,
+        (display ?? '').slice(0, 200),
+      ],
+      'insert',
+    )
+    await emitLive(exec, { kind: 'notifications', user })
+  }
+}
+
 /** One batch. Returns how many buffer rows it moved; `0` when there was nothing to do. */
 async function drainBatch(exec: Executor): Promise<number> {
   const [locked] = await exec.query<{ ok: boolean }>(
@@ -182,6 +233,15 @@ async function drainBatch(exec: Executor): Promise<number> {
       details.set(row.id, table === undefined ? [] : detailsOf(row, table))
     }
     const links = await resolveLinkDisplays(exec, rows, details)
+    /** What each table's batch tells the browsers (chapter 16 §3.1). */
+    const touched = new Map<
+      string,
+      { base: string; ids: Set<string>; ops: Set<string>; actors: Set<string | null> }
+    >()
+    /** The people a person field was just set to (chapter 16 §2.1). */
+    const assigned: Array<{ row: BufferRow; user: string; display: string | null }> = []
+    /** What the batch may trigger (chapter 17 §2.1). */
+    const triggers: Trigger[] = []
 
     for (const row of rows) {
       const table = tables.get(row.table_id)
@@ -194,6 +254,31 @@ async function drainBatch(exec: Executor): Promise<number> {
         table?.displayColumn === null || table === undefined
           ? null
           : displayText((row.after ?? row.before)?.[table.displayColumn])
+
+      const batch = touched.get(row.table_id) ?? {
+        base: row.base_id,
+        ids: new Set<string>(),
+        ops: new Set<string>(),
+        actors: new Set<string | null>(),
+      }
+      batch.ids.add(row.record_id)
+      batch.ops.add(row.op)
+      batch.actors.add(row.actor_user_id)
+      touched.set(row.table_id, batch)
+      triggers.push({
+        tableId: row.table_id,
+        recordId: row.record_id,
+        op: row.op,
+        actorKind: row.actor_kind,
+        changed: list.map((d) => d.field.column),
+      })
+      if (row.op !== 'delete') {
+        for (const d of list) {
+          if (d.field.kind !== 'user' || typeof d.after !== 'string' || d.after === '') continue
+          if (d.after === d.before || d.after === row.actor_user_id) continue
+          assigned.push({ row, user: d.after, display: recordDisplay })
+        }
+      }
 
       await exec.query(
         `INSERT INTO _basedb.record_revision
@@ -228,6 +313,13 @@ async function drainBatch(exec: Executor): Promise<number> {
           if (value === undefined || value === null) return null
           if (d.field.target !== undefined && typeof value === 'string') {
             return links.get(`${d.field.target.tableId}:${value}`) ?? null
+          }
+          // The rows of a multi-link, in their order; one whose name was not kept says so.
+          if (d.field.target !== undefined && Array.isArray(value)) {
+            const tableId = d.field.target.tableId
+            return value
+              .map((id) => links.get(`${tableId}:${String(id)}`) ?? 'ligne non conservée')
+              .join(', ')
           }
           if (d.field.kind === 'select' || d.field.kind === 'multi_select') {
             return choiceDisplay(d.field, value)
@@ -282,6 +374,19 @@ async function drainBatch(exec: Executor): Promise<number> {
     await exec.query('DELETE FROM _basedb_local.revision_buffer WHERE id = ANY($1::uuid[])', [
       rows.map((r) => r.id),
     ])
+
+    await notifyAssigned(exec, assigned)
+    await queueTriggered(exec, triggers)
+    for (const [table, batch] of touched) {
+      await emitLive(exec, {
+        kind: 'records',
+        base: batch.base,
+        table,
+        ids: batch.ids.size > LIVE_MAX_IDS ? null : [...batch.ids],
+        ops: [...batch.ops],
+        actor: batch.actors.size === 1 ? ([...batch.actors][0] ?? null) : null,
+      })
+    }
   }
 
   // The outgoing events ride along: same transaction, same lock (07 §1.4, step 3).

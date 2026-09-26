@@ -8,7 +8,14 @@ import { type Field, type FieldOption, type Table, api } from '@/lib/api/client'
 import { quoteLiteral } from '@/lib/expression'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { type KanbanSpec, andFilter, pick, titleFieldOf } from '@/lib/views'
+import {
+  type KanbanSpec,
+  andFilter,
+  nextHandOrder,
+  orderByHand,
+  pick,
+  titleFieldOf,
+} from '@/lib/views'
 import {
   type CollisionDetection,
   DndContext,
@@ -110,6 +117,7 @@ export function KanbanView({
   onOpen,
   onAdd,
   onReorderColumns,
+  onReorderCards,
   onError,
 }: {
   readonly table: Table
@@ -130,6 +138,11 @@ export function KanbanView({
    * change the view: the columns then stay where they are.
    */
   readonly onReorderColumns?: (order: readonly string[]) => Promise<void>
+  /**
+   * Saves the cards' order by hand (`spec.manual_order`), when no sort says otherwise.
+   * Absent for a reader who may not change the view.
+   */
+  readonly onReorderCards?: (order: readonly string[]) => Promise<void>
   readonly onError: (message: string | null) => void
 }) {
   const group = fields.find((f) => f.name === spec.group_by) ?? null
@@ -173,6 +186,21 @@ export function KanbanView({
   }, [columns, order])
 
   const [state, setState] = useState<Readonly<Record<string, ColumnState>>>({})
+  const [pendingCards, setPendingCards] = useState<readonly string[] | null>(null)
+  const savedCards = JSON.stringify(spec.manual_order)
+  useEffect(() => {
+    void savedCards
+    setPendingCards(null)
+  }, [savedCards])
+  const byHand = sort === ''
+  /** A column's cards as drawn: by hand when no sort says otherwise. */
+  const drawn = useCallback(
+    (key: string): readonly Row[] => {
+      const rows = state[key]?.rows ?? []
+      return byHand ? orderByHand(rows, pendingCards ?? spec.manual_order) : rows
+    },
+    [state, byHand, pendingCards, spec.manual_order],
+  )
 
   const clause = useCallback(
     (column: Column) =>
@@ -263,12 +291,42 @@ export function KanbanView({
     }
   }
 
+  /** A card dropped on another of its own column: it takes that card's place. */
+  const reorderCard = async (column: Column, id: string, overId: string) => {
+    if (onReorderCards === undefined || !byHand) return
+    const ids = drawn(column.key).map((r) => r._id)
+    const from = ids.indexOf(id)
+    const to = ids.indexOf(overId)
+    if (from === -1 || to === -1 || from === to) return
+    const moved = arrayMove(ids, from, to)
+    // Every column as drawn, this one as dropped: the order is the view's, whole.
+    const all = columns.flatMap((c) =>
+      c.key === column.key ? moved : drawn(c.key).map((r) => r._id),
+    )
+    const next = nextHandOrder(all, spec.manual_order)
+    setPendingCards(next)
+    onError(null)
+    try {
+      await onReorderCards(next)
+    } catch (e) {
+      setPendingCards(null)
+      onError(messageFor(e))
+    }
+  }
+
   const moveCard = async (event: DragEndEvent) => {
     if (group === null || event.over === null) return
     const id = String(event.active.id)
-    const target = columns.find((c) => c.key === String(event.over?.id))
+    // Dropped on a card: the column that card is in; on a column: that column.
+    const overCard = event.over.data.current?.type === 'card-target'
+    const overKey = overCard ? String(event.over.data.current?.column) : String(event.over.id)
+    const target = columns.find((c) => c.key === overKey)
     const source = columns.find((c) => state[c.key]?.rows.some((r) => r._id === id))
-    if (target === undefined || source === undefined || target.key === source.key) return
+    if (target === undefined || source === undefined) return
+    if (target.key === source.key) {
+      if (overCard) await reorderCard(source, id, String(event.over.data.current?.row))
+      return
+    }
     const row = state[source.key]?.rows.find((r) => r._id === id)
     if (row === undefined) return
 
@@ -331,8 +389,13 @@ export function KanbanView({
   })
 
   const cards = (column: Column) =>
-    (state[column.key]?.rows ?? []).map((row) => (
-      <DraggableCard key={row._id} id={row._id} disabled={!movable}>
+    drawn(column.key).map((row) => (
+      <DraggableCard
+        key={row._id}
+        id={row._id}
+        column={column.key}
+        disabled={!movable && !(byHand && onReorderCards !== undefined)}
+      >
         <RecordCard
           row={row}
           title={title}
@@ -545,10 +608,12 @@ function ColumnFrame({
 
 function DraggableCard({
   id,
+  column,
   disabled,
   children,
 }: {
   readonly id: string
+  readonly column: string
   readonly disabled: boolean
   readonly children: ReactNode
 }) {
@@ -557,15 +622,26 @@ function DraggableCard({
     disabled,
     data: { type: 'card' },
   })
+  // Each card is also a place to drop on: another card of its column takes its rank.
+  const target = useDroppable({
+    id: `card:${id}`,
+    data: { type: 'card-target', column, row: id },
+  })
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node)
+        target.setNodeRef(node)
+      }}
       {...attributes}
       {...listeners}
       // The card itself is the button that opens the row; the wrapper only carries the drag.
       tabIndex={-1}
       role="presentation"
-      className={cn(isDragging && 'opacity-30')}
+      className={cn(
+        isDragging && 'opacity-30',
+        target.isOver && !isDragging && 'rounded-lg ring-2 ring-primary/40',
+      )}
     >
       {children}
     </div>
