@@ -74,6 +74,8 @@ ENV PORT=3000 \
 USER node
 EXPOSE 3000
 VOLUME ["/data"]
+# The API first, then the same path through the router: asking the router while the API
+# still applies the catalog would log a 502 on every check of the first start.
 HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=5 \
-  CMD ["node", "-e", "fetch('http://127.0.0.1:'+process.env.PORT+'/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+  CMD ["node", "-e", "fetch('http://127.0.0.1:8787/healthz').then(a=>a.ok?fetch('http://127.0.0.1:'+process.env.PORT+'/healthz'):a).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
 CMD ["node", "/app/start.mjs"]
