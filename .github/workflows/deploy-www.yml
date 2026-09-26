@@ -29,10 +29,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           # The site reads the templates' files and checks them with the shared validator.
+          # A cone checkout also brings packages/contracts/tsconfig.json, whose `extends`
+          # esbuild must resolve: tooling/typescript comes along.
           sparse-checkout: |
             www
             packages/templates/catalog
             packages/contracts/src
+            tooling/typescript
 
       - uses: actions/setup-node@v4
         with:
