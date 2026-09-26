@@ -24,9 +24,8 @@ import {
  * An administrator creates a person, puts them in groups, deactivates them, resets their
  * password. There is no mail in the loop by default, so a new account — like a reset —
  * receives a TEMPORARY password, shown once to the administrator who hands it over, and
- * the person must choose their own at first sign-in (`must_change_password`). That is
- * what Metabase does without an SMTP server, and what keeps an administrator from
- * knowing a password anyone actually uses.
+ * the person must choose their own at first sign-in (`must_change_password`). That
+ * keeps an administrator from knowing a password anyone actually uses.
  *
  * A person is never deleted, only deactivated: their name stays on what they wrote, in
  * the history and in the audit (05 §10.2). Deactivating closes every session at once and

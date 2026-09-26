@@ -3,8 +3,8 @@ title: Droits et groupes
 description: Comptes, groupes, niveaux d’accès par projet, base et table, et restrictions par champ.
 ---
 
-Les droits s’accordent à des **groupes**, jamais à des personnes une par une — sur le modèle de
-Metabase. Un niveau posé sur un projet, une base ou une table descend sur tout ce qui est
+Les droits s’accordent à des **groupes**, jamais à des personnes une par une. Un niveau
+posé sur un projet, une base ou une table descend sur tout ce qui est
 dessous, y compris ce qui sera créé plus tard.
 
 ## Les quatre niveaux

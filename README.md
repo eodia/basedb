@@ -36,7 +36,7 @@
 
 ## Pourquoi basedb
 
-Airtable, Baserow ou NocoDB rangent vos lignes dans un modèle générique — colonnes numérotées,
+Les autres bases collaboratives rangent vos lignes dans un modèle générique — colonnes numérotées,
 documents JSON. basedb fait l’inverse : **une base est un schéma PostgreSQL, une table est une
 table, un champ est une colonne typée, nommée en clair.**
 

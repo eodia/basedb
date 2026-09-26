@@ -10,7 +10,7 @@ import { ADMINS, type GroupSummary, ensureSystemGroups, loadGroup, loadGroups } 
 /**
  * Access levels, group by group, over projects, bases and tables — chapter 05 §15.
  *
- * Modelled on Metabase's data permissions. A level is granted to a GROUP on a project,
+ * A level is granted to a GROUP on a project,
  * a base or a table, and flows down: « Lecture » on a project reads every table of every
  * base in it, those created tomorrow included. Levels are closed and ordered, each a
  * bundle of the seven verbs of §1.3 — nothing is added to the catalog, which still holds
@@ -21,7 +21,7 @@ import { ADMINS, type GroupSummary, ensureSystemGroups, loadGroup, loadGroups } 
  *   Édition      read, create, update, delete
  *   Gestion      read, create, update, delete, manage_schema, manage_tokens
  *
- * Giving a table LESS than its base grants is Metabase's « granulaire »: the grant of the
+ * Giving a table LESS than its base grants makes the base « granulaire »: the grant of the
  * base is pushed down onto each of its tables, and the chosen one is lowered. The base
  * then shows « Granulaire », and a table created in it later inherits nothing from it —
  * which is the honest reading of "each table was set on its own".
@@ -314,8 +314,8 @@ function descendantsOf(project: AccessProject, nodeKey: string): string[] {
 }
 
 /**
- * Sets one level on one node for one group, in the grants of that group's project — the
- * rule of Metabase, applied to the catalog's rows:
+ * Sets one level on one node for one group, in the grants of that group's project,
+ * applied to the catalog's rows:
  *
  *   1. an ancestor granting MORE than the chosen level is exploded: its grant moves down
  *      onto each of its children, so that the chosen node alone can be lowered;

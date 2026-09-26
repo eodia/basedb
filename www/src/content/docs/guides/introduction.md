@@ -3,7 +3,7 @@ title: Introduction
 description: Ce qu’est basedb, et ce qui le distingue des tableurs collaboratifs.
 ---
 
-**basedb** est une base de données collaborative, dans l’esprit d’Airtable ou de Baserow,
+**basedb** est une base de données collaborative, dans l’esprit des tableurs collaboratifs,
 que vous hébergez vous-même — avec une différence qui commande tout le reste : **vos données
 vivent dans de vraies tables PostgreSQL**, typées et nommées en clair.
 

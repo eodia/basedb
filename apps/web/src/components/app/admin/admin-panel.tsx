@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import { Shield, UserRound, Users } from 'lucide-react'
 
 /**
- * The administration — chapter 05 §15, after Metabase's « People » and « Permissions ».
+ * The administration — chapter 05 §15: people, groups and permissions.
  *
  * Three screens, reached from the bottom of the sidebar by administrators only:
  *

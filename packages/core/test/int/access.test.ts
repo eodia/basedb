@@ -8,7 +8,7 @@ import type { RequestContext } from '../../src/tx/context.js'
  * Projects, groups, accounts and the permission grid — chapter 05 §15.
  *
  * Through the kernel's public interface only, as an adapter sees it. What is checked is
- * the Metabase model: rights granted to GROUPS on projects, bases and tables, flowing
+ * the group model: rights granted to GROUPS on projects, bases and tables, flowing
  * down, additive across groups — and « granulaire » when a table is given less than its
  * base.
  */
@@ -256,7 +256,7 @@ describe('accounts', () => {
   })
 })
 
-describe('access levels, Metabase-style', () => {
+describe('access levels by group', () => {
   it('without any grant, a person sees no project', async () => {
     const asAlice = await ctxOf(alice.id)
     expect(await kernel.listProjects(asAlice)).toEqual([])

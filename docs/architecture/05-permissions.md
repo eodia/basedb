@@ -659,7 +659,7 @@ Repris tels quels, définis ailleurs : `LINK_CROSS_DATABASE` (chapitre 01) ; `TA
 
 ## 15. Projets, groupes et niveaux d'accès
 
-Le modèle des sections précédentes — sept verbes, rôles additifs, portées emboîtées — reste le seul qui décide. Cette section fixe la façon dont il est **présenté et administré** : au-dessus de la base, une portée *projet* ; des *groupes* de personnes auxquels on accorde des droits ; quatre *niveaux* qui regroupent les verbes. Le parti pris est celui des permissions de données de Metabase : on accorde à un groupe un niveau sur un nœud de l'arborescence, et ce niveau descend.
+Le modèle des sections précédentes — sept verbes, rôles additifs, portées emboîtées — reste le seul qui décide. Cette section fixe la façon dont il est **présenté et administré** : au-dessus de la base, une portée *projet* ; des *groupes* de personnes auxquels on accorde des droits ; quatre *niveaux* qui regroupent les verbes. Le parti pris : on accorde à un groupe un niveau sur un nœud de l'arborescence, et ce niveau descend.
 
 ### 15.1 Le projet, portée au-dessus de la base
 
@@ -707,13 +707,13 @@ Un niveau posé sur un nœud vaut pour tout ce qui est dessous, **y compris ce q
 2. **Affectation.** Le nœud reçoit le niveau ; ses descendants perdent leurs octrois propres — un niveau choisi sur une base est celui de chacune de ses tables.
 3. **Élagage.** Un octroi qui n'accorde pas plus que ce que donnent déjà ses ancêtres est supprimé comme redondant.
 
-La grille montre pour chaque nœud le niveau effectif du groupe, marqué **hérité** lorsqu'il vient d'un ancêtre, et **Granulaire** lorsque les enfants du nœud n'ont pas tous ce qu'il a lui-même. Conséquence assumée, identique à Metabase : après une explosion, une table créée dans la base « granulaire » n'hérite de rien, puisque chaque table y a été réglée pour elle-même.
+La grille montre pour chaque nœud le niveau effectif du groupe, marqué **hérité** lorsqu'il vient d'un ancêtre, et **Granulaire** lorsque les enfants du nœud n'ont pas tous ce qu'il a lui-même. Conséquence assumée : après une explosion, une table créée dans la base « granulaire » n'hérite de rien, puisque chaque table y a été réglée pour elle-même.
 
 Chaque changement s'applique immédiatement, dans une transaction qui réécrit les lignes `permission` du groupe sur le projet concerné, écrit une entrée `audit_log` (`permission.set`) et fait avancer `tenant.authz_version` : toute décision en cache tombe (§11). Il n'y a pas de brouillon à enregistrer — et donc pas de brouillon oublié.
 
 ### 15.5 Comptes utilisateurs
 
-Un administrateur crée un compte avec une adresse (unique dans le tenant sans égard à la casse, `EMAIL_TAKEN`), un nom affiché et ses groupes. basedb n'envoyant pas de courrier en v1, le compte reçoit un **mot de passe temporaire** tiré dans un alphabet sans caractères ambigus, montré une seule fois à l'administrateur qui le transmet, et `app_user.must_change_password = true` : l'interface n'ouvre rien d'autre tant que la personne n'a pas choisi le sien (« 13 — Authentification »). La réinitialisation suit le même chemin et ferme les sessions ouvertes. C'est le parcours de Metabase, sans l'invitation par courrier.
+Un administrateur crée un compte avec une adresse (unique dans le tenant sans égard à la casse, `EMAIL_TAKEN`), un nom affiché et ses groupes. basedb n'envoyant pas de courrier en v1, le compte reçoit un **mot de passe temporaire** tiré dans un alphabet sans caractères ambigus, montré une seule fois à l'administrateur qui le transmet, et `app_user.must_change_password = true` : l'interface n'ouvre rien d'autre tant que la personne n'a pas choisi le sien (« 13 — Authentification »). La réinitialisation suit le même chemin et ferme les sessions ouvertes.
 
 Un compte se **désactive**, il ne se supprime pas : ses sessions et ses jetons cessent immédiatement, ses écritures restent signées de son nom, et il peut être réactivé. Un administrateur ne peut pas désactiver son propre compte (`ACTION_FORBIDDEN`).
 
@@ -725,7 +725,7 @@ Un compte se **désactive**, il ne se supprime pas : ses sessions et ses jetons 
 
 ### 15.7 Ce que ce modèle ne fait pas
 
-- Pas de niveau « bloqué » ni de filtrage de lignes par groupe (le « sandboxing » de Metabase) : `predicat_lignes` reste constamment vrai en v1 (§6), et l'union des rôles interdit tout `deny`.
+- Pas de niveau « bloqué » ni de filtrage de lignes par groupe : `predicat_lignes` reste constamment vrai en v1 (§6), et l'union des rôles interdit tout `deny`.
 - Pas de permissions de champ dans la grille elle-même : la grille s'arrête aux tables, et « Champs », sur chaque ligne de table, ouvre l'écran de §3.3 qui règle `field_permission` groupe par groupe.
 - Pas de délégation : un membre de groupe ne peut pas accorder à un autre ce qu'il a ; seul le groupe « Administrateurs » administre.
 
@@ -792,7 +792,7 @@ l'éditeur de permissions qui les accompagne non plus.
 | Délai avant purge renvoyé à « 06 — Cycle de vie », rétentions à `retention_policy` | Une valeur fixée à deux endroits diverge | Imposer les durées ici |
 | Portée *projet* au-dessus de la base, sans existence physique (§15.1) | Naviguer et accorder par regroupement sans renommer aucun schéma | Base de bases, ou schéma par projet |
 | Droits accordés à des groupes, quatre niveaux fermés écrits comme des lignes `permission` (§15.3) | L'administrateur raisonne en « qui peut lire ou modifier quoi », le décideur continue de raisonner en verbes | Nouvelle table de niveaux, ou grille verbe par verbe |
-| « Granulaire » par explosion de l'octroi parent, comme Metabase (§15.4) | Abaisser un seul enfant sans introduire de `deny` | Refus explicite sur l'enfant |
+| « Granulaire » par explosion de l'octroi parent (§15.4) | Abaisser un seul enfant sans introduire de `deny` | Refus explicite sur l'enfant |
 | Mot de passe temporaire montré une fois et changement obligatoire (§15.5) | Aucun courrier en v1, et l'administrateur ne doit pas connaître un mot de passe en usage | Mot de passe choisi par l'administrateur |
 | Changements de la grille appliqués immédiatement, sous élévation (§15.4, §15.6) | Un brouillon non enregistré est un droit que l'on croit posé | Brouillon à valider |
 

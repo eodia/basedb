@@ -1033,7 +1033,7 @@ export interface Kernel {
   ): Promise<void>
   /** The permission grid: every group, every project, base and table, and each level. */
   accessGraph(ctx: RequestContext): Promise<AccessGraph>
-  /** Sets levels on the grid, Metabase-style, and returns the new grid. */
+  /** Sets levels on the grid and returns the new grid. */
   applyAccessChanges(
     ctx: RequestContext,
     request: { changes: readonly AccessChange[]; sessionId: string },

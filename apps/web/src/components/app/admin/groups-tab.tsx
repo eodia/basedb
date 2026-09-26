@@ -29,7 +29,7 @@ import { Loader2, Lock, Pencil, Plus, Trash2, UserMinus, Users } from 'lucide-re
 import { useCallback, useEffect, useState } from 'react'
 
 /**
- * Groups and who is in them — Metabase's « Groups ».
+ * Groups and who is in them.
  *
  * Rights are granted to groups, never to a person: to give someone access, one puts them
  * in a group that has it. Two groups come with every tenant and cannot be renamed or

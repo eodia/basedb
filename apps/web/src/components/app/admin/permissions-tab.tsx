@@ -32,7 +32,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 /**
- * The permission grid — Metabase's « Data permissions », over projects, bases and tables.
+ * The permission grid, over projects, bases and tables.
  *
  * One group at a time, chosen on the left; on the right, every project, base and table of
  * the tenant with the level that group has there. A level flows down: « Lecture » on a

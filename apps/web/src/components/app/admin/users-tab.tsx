@@ -40,7 +40,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 /**
- * The accounts of the tenant — Metabase's « People », without the e-mail it sends.
+ * The accounts of the tenant, created and reset without any e-mail.
  *
  * basedb sends no mail, so an account is created with a TEMPORARY password shown once to
  * the administrator, who hands it over; the person chooses their own at first sign-in.

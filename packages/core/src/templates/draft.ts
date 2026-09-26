@@ -61,7 +61,7 @@ const TEMPLATE_DRAFT_SCHEMA: Record<string, unknown> = {
   },
 }
 
-const TEMPLATE_SYSTEM = `Tu conçois des modèles de base de données pour basedb, une base collaborative à la Airtable dont chaque table est une vraie table PostgreSQL. On te décrit un besoin en une phrase ; tu réponds par UN objet JSON, et rien d'autre :
+const TEMPLATE_SYSTEM = `Tu conçois des modèles de base de données pour basedb, une base collaborative dont chaque table est une vraie table PostgreSQL. On te décrit un besoin en une phrase ; tu réponds par UN objet JSON, et rien d'autre :
 { "template": { …le modèle… }, "explanation": "deux phrases qui disent ce que tu as prévu et pourquoi" }
 
 Tout est en français : libellés, choix, lignes d'exemple. Les libellés sont courts, avec une majuscule initiale et des accents.

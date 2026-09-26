@@ -14,7 +14,7 @@ import { type RequestContext, withTransaction } from '../tx/context.js'
  * A group is a `_basedb.role` of kind `group`: a named set of people to which access is
  * granted, project by project, base by base, table by table. Rights are never granted
  * to a person directly, only to groups, and a person's rights are the UNION of their
- * groups' — the model of Metabase, and the additive model this chapter already fixed.
+ * groups' — the additive model this chapter already fixed.
  *
  * Two groups exist in every tenant and cannot be renamed nor deleted:
  *

@@ -327,7 +327,7 @@ export interface Group {
   readonly member_count: number
 }
 
-/** The four levels of the permission grid — Metabase's, over projects, bases, tables. */
+/** The four levels of the permission grid, over projects, bases, tables. */
 export type AccessLevel = 'none' | 'read' | 'edit' | 'manage'
 
 export interface AccessCell {
