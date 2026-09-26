@@ -1,6 +1,7 @@
 'use client'
 
 import { initials, sinceWhen } from '@/components/app/admin/admin-panel'
+import { SignupSettings } from '@/components/app/admin/signup-settings'
 import { cancelled, useElevated } from '@/components/app/elevation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -137,6 +138,8 @@ export function UsersTab({ me }: { readonly me: Me }) {
           {error}
         </p>
       )}
+
+      <SignupSettings />
 
       <div className="overflow-hidden rounded-lg border">
         <table className="w-full text-sm">

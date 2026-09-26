@@ -97,7 +97,6 @@ curl -fsSLO https://raw.githubusercontent.com/eodia/basedb/main/docker-compose.y
 curl -fsSL https://raw.githubusercontent.com/eodia/basedb/main/.env.example -o .env
 # dans .env : POSTGRES_PASSWORD, et BASEDB_ENCRYPTION_KEY (openssl rand -base64 32)
 docker compose up -d
-docker compose logs basedb    # le mot de passe de l’administrateur, affiché une fois
 ```
 
 basedb répond sur <http://localhost:3000> — l’interface, l’API sous `/api`, le serveur MCP
@@ -106,7 +105,8 @@ sous `/mcp` —, publié sur `127.0.0.1` seulement. Une seule image,
 PostgreSQL ; `docker compose --profile https up -d` avec `BASEDB_DOMAIN` la sert en HTTPS sur
 votre domaine, derrière Caddy.
 
-Connectez-vous, puis ouvrez la **base de démonstration** : une petite agence, ses clients,
+La première page vous fait créer le **compte administrateur** — votre adresse, votre mot de
+passe. Ouvrez ensuite la **base de démonstration** : une petite agence, ses clients,
 projets, tâches, factures et avis — avec des formules, des vues de chaque sorte, un tableau de
 bord et des automatisations. Tout est expliqué dans
 [l’installation](https://eodia.github.io/basedb/guides/installation/) et les

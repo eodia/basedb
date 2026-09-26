@@ -27,6 +27,7 @@ import { SortMenu } from '@/components/app/views/sort-menu'
 import { TimelineView } from '@/components/app/views/timeline-view'
 import { ViewDialog, type ViewDraft } from '@/components/app/views/view-dialog'
 import { ViewSwitcher } from '@/components/app/views/view-switcher'
+import { WorkspaceIllustration } from '@/components/app/workspace-illustration'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -1196,15 +1197,17 @@ export function Workspace({ base, tables, onBaseChanged, environments, self = nu
     return (
       <div className="flex min-w-0 flex-1 flex-col">
         <Header base={base} tools={headerTools} />
-        <div className="flex flex-1 items-center justify-center p-6 text-center">
-          <div className="max-w-sm">
-            <p className="text-sm text-muted-foreground">
+        <div className="flex flex-1 items-center justify-center overflow-y-auto p-6 text-center">
+          <div className="my-auto w-full max-w-md py-6">
+            <WorkspaceIllustration />
+            <h1 className="text-xl font-semibold tracking-tight">À vous d’explorer.</h1>
+            <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
               Choisissez une table ou ouvrez une requête SQL.
             </p>
             <Button
               variant="outline"
               size="sm"
-              className="mt-4"
+              className="mt-5"
               onClick={() => openSql(base.name, null, 'Requête 1')}
             >
               <Plus className="size-4" />

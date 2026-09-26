@@ -4,6 +4,7 @@ import { DescriptionField, isTooLong } from '@/components/app/description'
 import { PurgeDialog, type PurgeTarget } from '@/components/app/lifecycle-dialogs'
 import { LookButton, type LookValue, lookOf, sameLook } from '@/components/app/look-picker'
 import { LookIcon } from '@/components/app/option-badge'
+import { ShareAccessDialog } from '@/components/app/share-access-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -39,6 +40,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  UserPlus,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -57,7 +59,7 @@ import { useCallback, useEffect, useState } from 'react'
 interface Props {
   readonly projects: readonly Project[]
   readonly project: Project | null
-  /** Holds `manage_schema` on the tenant: creates and deletes projects. */
+  /** An administrator of the tenant: restores the deleted bases. */
   readonly administers: boolean
   /** The reduced sidebar: the switcher is its icon alone, the label in a tooltip. */
   readonly compact?: boolean
@@ -79,6 +81,7 @@ export function ProjectMenu({
   onDeleted,
 }: Props) {
   const [editing, setEditing] = useState(false)
+  const [sharing, setSharing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleted, setDeleted] = useState<readonly DeletedBase[]>([])
   const [purging, setPurging] = useState<PurgeTarget | null>(null)
@@ -181,22 +184,27 @@ export function ProjectMenu({
             </DropdownMenuItem>
           ))}
 
-          {(administers || (project !== null && canEdit)) && <DropdownMenuSeparator />}
+          <DropdownMenuSeparator />
 
-          {administers && (
-            <DropdownMenuItem onSelect={onNew}>
-              <Plus className="size-4" />
-              Nouveau projet
-            </DropdownMenuItem>
-          )}
+          {/* Everyone creates their own projects (05 §15.1). */}
+          <DropdownMenuItem onSelect={onNew}>
+            <Plus className="size-4" />
+            Nouveau projet
+          </DropdownMenuItem>
 
           {project !== null && canEdit && (
-            <DropdownMenuItem onSelect={() => setEditing(true)}>
-              <Pencil className="size-4" />
-              Modifier « {project.label} »
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuItem onSelect={() => setSharing(true)}>
+                <UserPlus className="size-4" />
+                Partager « {project.label} »…
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setEditing(true)}>
+                <Pencil className="size-4" />
+                Modifier « {project.label} »
+              </DropdownMenuItem>
+            </>
           )}
-          {project !== null && administers && (
+          {project !== null && canEdit && (
             <DropdownMenuItem
               onSelect={() => setDeleting(true)}
               className="text-destructive focus:text-destructive"
@@ -296,6 +304,13 @@ export function ProjectMenu({
             onClose={() => setEditing(false)}
             onDone={() => {
               setEditing(false)
+              onChanged()
+            }}
+          />
+          <ShareAccessDialog
+            target={sharing ? { kind: 'project', id: project.id, label: project.label } : null}
+            onClose={() => {
+              setSharing(false)
               onChanged()
             }}
           />

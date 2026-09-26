@@ -1,22 +1,22 @@
 'use client'
 
-import { Brand } from '@/components/brand'
-import { LoginBrand, LoginVisual } from '@/components/login-visual'
+import {
+  AuthLayout,
+  FormError,
+  PRESSABLE,
+  PasswordInput,
+  REVEAL,
+  pauseOnSuccess,
+  revealAt,
+} from '@/components/auth-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { api } from '@/lib/api/client'
-import { messageFor } from '@/lib/messages'
-import {
-  ArrowRight,
-  ArrowUpRight,
-  ChevronDown,
-  CircleAlert,
-  Eye,
-  EyeOff,
-  Loader2,
-} from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import { ApiError, api } from '@/lib/api/client'
+import { reasonFor } from '@/lib/messages'
+import { cn } from '@/lib/utils'
+import { Check, ChevronDown, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import styles from './login.module.css'
 
 /**
  * Login screen — chapter 13.
@@ -27,13 +27,36 @@ import styles from './login.module.css'
  * is something a stranger may learn.
  */
 
-export function Login({ onSignedIn }: { readonly onSignedIn: () => void }) {
-  const [email, setEmail] = useState('')
+export function Login({
+  onSignedIn,
+  onSignUp,
+  title = 'Heureux de vous retrouver',
+  description = 'Connectez-vous pour retrouver vos bases et vos tables.',
+  initialEmail = '',
+  alwaysOfferSignUp = false,
+  returnTo = '/',
+}: {
+  readonly onSignedIn: () => void
+  /** Offered when the instance lets anyone create an account. */
+  readonly onSignUp?: () => void
+  /** What the screen says above the form — an invitation says what it offers. */
+  readonly title?: string
+  readonly description?: string
+  readonly initialEmail?: string
+  /** Offer creating an account whatever the instance's policy — an invitation admits it. */
+  readonly alwaysOfferSignUp?: boolean
+  /** Where a sign-in provider sends the browser back — the invitation's page, say. */
+  readonly returnTo?: string
+}) {
+  const [email, setEmail] = useState(initialEmail)
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<{ readonly text: string; readonly attempt: number } | null>(
+    null,
+  )
   const [busy, setBusy] = useState(false)
+  const [signedIn, setSignedIn] = useState(false)
   const [passwordVisible, setPasswordVisible] = useState(false)
-  const [providers, setProviders] = useState<ReadonlyArray<{ slug: string; label: string }>>([])
+  const [signupOpen, setSignupOpen] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -42,6 +65,162 @@ export function Login({ onSignedIn }: { readonly onSignedIn: () => void }) {
     void api.developmentAccount().then((account) => {
       if (alive && account !== null) setEmail(account.email)
     })
+    // Back from a sign-in provider that refused: the code travels in the address, and is
+    // taken out of it once read — a reload must not show it again.
+    const params = new URLSearchParams(window.location.search)
+    const refused = params.get('connexion')
+    if (refused !== null) {
+      setError({ text: reasonFor(new ApiError(refused, 400, '', {})), attempt: 1 })
+      params.delete('connexion')
+      const rest = params.toString()
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${rest === '' ? '' : `?${rest}`}`,
+      )
+    }
+    void api.signupPolicy().then((policy) => {
+      if (alive) setSignupOpen(policy !== null)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      await api.login(email, password)
+      setSignedIn(true)
+      await pauseOnSuccess()
+      onSignedIn()
+    } catch (e) {
+      // A new attempt number for each refusal, so the message shakes again.
+      setError((was) => ({ text: reasonFor(e), attempt: (was?.attempt ?? 0) + 1 }))
+      setBusy(false)
+    }
+  }
+
+  const described = error !== null ? 'login-error' : undefined
+
+  return (
+    <AuthLayout
+      title={title}
+      description={description}
+      footer={
+        (signupOpen || alwaysOfferSignUp) && onSignUp !== undefined ? (
+          <p>
+            Pas encore de compte&nbsp;?{' '}
+            <button
+              type="button"
+              onClick={onSignUp}
+              className="rounded-sm font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              Créer un compte
+            </button>
+          </p>
+        ) : (
+          <details className="group">
+            <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+              Première connexion&nbsp;?
+              <ChevronDown
+                className="size-3.5 transition-transform duration-200 group-open:rotate-180"
+                aria-hidden="true"
+              />
+            </summary>
+            <p className="mt-2 max-w-sm animate-in fade-in slide-in-from-top-1 leading-relaxed duration-300">
+              Votre administrateur crée votre compte et vous transmet un mot de passe temporaire. Si
+              l’instance a été installée avec une adresse d’administrateur imposée, son mot de passe
+              s’est affiché une seule fois dans les journaux du serveur.
+            </p>
+          </details>
+        )
+      }
+    >
+      <form onSubmit={submit} className="grid gap-5" aria-busy={busy}>
+        <div className={cn('group grid gap-2', REVEAL)} style={revealAt(0)}>
+          <Label htmlFor="email" className="transition-colors group-focus-within:text-primary">
+            Adresse e-mail
+          </Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder="vous@entreprise.fr"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            disabled={busy}
+            aria-describedby={described}
+            className="h-10"
+          />
+        </div>
+
+        <div className={cn('group grid gap-2', REVEAL)} style={revealAt(1)}>
+          <Label htmlFor="password" className="transition-colors group-focus-within:text-primary">
+            Mot de passe
+          </Label>
+          <PasswordInput
+            id="password"
+            name="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            visible={passwordVisible}
+            onVisibleChange={setPasswordVisible}
+            required
+            disabled={busy}
+            aria-describedby={described}
+            className="h-10"
+          />
+        </div>
+
+        {error !== null && (
+          <FormError key={error.attempt} id="login-error">
+            {error.text}
+          </FormError>
+        )}
+
+        <div className={REVEAL} style={revealAt(2)}>
+          <Button
+            type="submit"
+            size="lg"
+            className={cn('mt-1 w-full', PRESSABLE)}
+            disabled={busy || email === '' || password === ''}
+          >
+            {signedIn ? (
+              <Check className="animate-in zoom-in-50 duration-200" aria-hidden="true" />
+            ) : (
+              busy && <Loader2 className="animate-spin" aria-hidden="true" />
+            )}
+            <span aria-live="polite">
+              {signedIn ? 'Connecté' : busy ? 'Connexion…' : 'Se connecter'}
+            </span>
+          </Button>
+        </div>
+      </form>
+
+      <OidcButtons returnTo={returnTo} />
+    </AuthLayout>
+  )
+}
+
+/**
+ * « Continuer avec … » — the sign-in providers the instance declares (chapter 13 §3).
+ * Nothing when there are none. The same buttons sign in and sign up: a first sign-in
+ * creates the account when the instance lets anyone create one.
+ */
+export function OidcButtons({ returnTo = '/' }: { readonly returnTo?: string }) {
+  const [providers, setProviders] = useState<ReadonlyArray<{ slug: string; label: string }>>([])
+
+  useEffect(() => {
+    let alive = true
     // Nothing here depends on an address: before authentication, no route says anything
     // about who holds an account.
     void api
@@ -55,145 +234,25 @@ export function Login({ onSignedIn }: { readonly onSignedIn: () => void }) {
     }
   }, [])
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (busy) return
-    setBusy(true)
-    setError(null)
-    try {
-      await api.login(email, password)
-      onSignedIn()
-    } catch (e) {
-      setError(messageFor(e))
-    } finally {
-      setBusy(false)
-    }
-  }
-
+  if (providers.length === 0) return null
   return (
-    <main className={styles.page}>
-      <LoginVisual />
-      <section className={styles.loginPanel} aria-labelledby="login-title">
-        <header className={styles.panelHeader}>
-          <div className={styles.mobileBrand}>
-            <LoginBrand />
-          </div>
-          <span className={styles.headerLabel}>VOTRE ESPACE DE TRAVAIL</span>
-        </header>
-
-        <div className={styles.formContainer}>
-          <div className={styles.welcomeMark} aria-hidden="true">
-            <ArrowUpRight size={22} strokeWidth={1.5} />
-          </div>
-          <p className={styles.formEyebrow}>TOUT COMMENCE ICI</p>
-          <h1 id="login-title">Heureux de vous retrouver.</h1>
-          <p className={styles.formDescription}>Connectez-vous pour donner vie à vos données.</p>
-
-          <form onSubmit={submit} className={styles.form} aria-busy={busy}>
-            <div className={styles.field}>
-              <label htmlFor="email">Adresse e-mail</label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="username"
-                autoCapitalize="none"
-                spellCheck={false}
-                placeholder="vous@entreprise.fr"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={busy}
-                aria-describedby={error !== null ? 'login-error' : undefined}
-                className={styles.input}
-              />
-            </div>
-
-            <div className={styles.field}>
-              <label htmlFor="password">Mot de passe</label>
-              <div className={styles.passwordField}>
-                <Input
-                  id="password"
-                  name="password"
-                  type={passwordVisible ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  placeholder="Votre mot de passe"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={busy}
-                  aria-describedby={error !== null ? 'login-error' : undefined}
-                  className={styles.input}
-                />
-                <button
-                  type="button"
-                  className={styles.passwordToggle}
-                  onClick={() => setPasswordVisible((visible) => !visible)}
-                  aria-label={
-                    passwordVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
-                  }
-                  aria-pressed={passwordVisible}
-                  aria-controls="password"
-                >
-                  {passwordVisible ? (
-                    <EyeOff size={18} aria-hidden="true" />
-                  ) : (
-                    <Eye size={18} aria-hidden="true" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {error !== null && (
-              <div id="login-error" role="alert" className={styles.error}>
-                <CircleAlert size={17} aria-hidden="true" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              className={styles.submit}
-              disabled={busy || email === '' || password === ''}
-            >
-              <span aria-live="polite">{busy ? 'Connexion en cours…' : 'Se connecter'}</span>
-              {busy ? (
-                <Loader2 className={styles.spinner} aria-hidden="true" />
-              ) : (
-                <ArrowRight aria-hidden="true" />
-              )}
-            </Button>
-          </form>
-
-          {providers.length > 0 && (
-            <div className={styles.providers}>
-              <div className={styles.divider}>ou continuer avec</div>
-              {providers.map((p) => (
-                // A LINK, not a button with a fetch: the route answers with a redirect
-                // to the provider, and the browser must follow it itself.
-                <a key={p.slug} href={api.oidcStartUrl(p.slug)} className={styles.provider}>
-                  Continuer avec {p.label}
-                </a>
-              ))}
-            </div>
-          )}
-
-          <details className={styles.help}>
-            <summary>
-              Première connexion ?<ChevronDown size={14} aria-hidden="true" />
-            </summary>
-            <p>
-              Le mot de passe administrateur s’affiche dans le terminal du serveur lors du premier
-              démarrage. Pour un accès à votre organisation, contactez votre administrateur.
-            </p>
-          </details>
-        </div>
-
-        <footer className={styles.panelFooter}>
-          <span>Vos données. Votre structure. Vos possibilités.</span>
-          <Brand size={16} className={styles.footerBrand} />
-        </footer>
-      </section>
-    </main>
+    <div className={cn('mt-6 grid gap-2', REVEAL)} style={revealAt(5)}>
+      <div className="mb-1 flex items-center gap-3 text-xs text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
+        ou
+      </div>
+      {providers.map((p) => (
+        // A LINK, not a button with a fetch: the route answers with a redirect to the
+        // provider, and the browser must follow it itself.
+        <Button
+          key={p.slug}
+          variant="outline"
+          size="lg"
+          className={cn('w-full', PRESSABLE, 'hover:shadow-none')}
+          asChild
+        >
+          <a href={api.oidcStartUrl(p.slug, returnTo)}>Continuer avec {p.label}</a>
+        </Button>
+      ))}
+    </div>
   )
 }

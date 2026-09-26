@@ -312,7 +312,8 @@ describe('access levels by group', () => {
     expect(cells[`table:${factures}`]).toEqual({ level: 'read', direct: false })
   })
 
-  it('« Gestion » on a project lets a base be built in it — but not a project', async () => {
+  // Creating a project is anyone's (05 §15.1), not a matter of level: see sharing.test.ts.
+  it('« Gestion » on a project lets a base be built in it', async () => {
     await set(commerciaux, 'project', ventes, 'manage')
     const asAlice = await ctxOf(alice.id)
     const created = await kernel.createBase(asAlice, { label: 'Relances', projectId: ventes })
@@ -322,9 +323,6 @@ describe('access levels by group', () => {
       fields: [{ label: 'Objet', kind: 'short_text' }],
     })
     expect(table.tableName).toBe('appels')
-    expect(await codeOf(kernel.createProject(asAlice, { label: 'Le mien' }))).toBe(
-      'RESOURCE_NOT_FOUND',
-    )
   })
 
   it('an empty base is visible to whoever holds a right on it', async () => {

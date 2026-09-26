@@ -1,0 +1,49 @@
+.illustration {
+  display: block;
+  width: min(100%, 25rem);
+  height: auto;
+  margin: 0 auto 1rem;
+  overflow: visible;
+}
+
+/* A single entrance, then still: nothing competes with the workspace controls. */
+@media (prefers-reduced-motion: no-preference) {
+  .table,
+  .back {
+    animation: arrive 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .query,
+  .front {
+    animation: arrive 750ms 100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .detail {
+    animation: appear 800ms 150ms ease-out both;
+  }
+}
+
+@media (max-height: 650px) {
+  .illustration {
+    width: min(100%, 18rem);
+    margin-bottom: 0.5rem;
+  }
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

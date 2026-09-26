@@ -383,14 +383,14 @@ describe('refusals — one single place of translation', () => {
 })
 
 describe('development account', () => {
-  it('is not published when the server bootstrapped nothing', async () => {
-    // Not an access check, an absence: without bootstrap the route is not mounted, and
-    // the URL answers like any other unknown URL.
+  it('is not published outside development', async () => {
+    // Not an access check, an absence: the route is not mounted, and the URL answers
+    // like any other unknown URL.
     const r = await app.request('/api/v1/dev/account')
     expect(r.status).toBe(404)
   })
 
-  it('publishes the ADDRESS alone when the server has just bootstrapped', async () => {
+  it('publishes the ADDRESS alone in development, when the server has just bootstrapped', async () => {
     const inDevelopment = createApp({ kernel, developmentEmail: 'admin@basedb.local' })
     const r = await inDevelopment.request('/api/v1/dev/account')
     expect(r.status).toBe(200)
@@ -405,6 +405,159 @@ describe('development account', () => {
     const body = (await r.json()) as { request_id: string }
     expect(body.request_id).toBeTruthy()
     expect(r.headers.get('x-request-id')).toBe(body.request_id)
+  })
+})
+
+describe('first administrator, created from the interface', () => {
+  // An address of their own: the rate-limiting bucket of `/auth/*` is shared by every
+  // test that sends none.
+  const from = { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.7' }
+  const create = (target: ReturnType<typeof createApp>, email: string, name: string) =>
+    target.request('/auth/bootstrap', {
+      method: 'POST',
+      headers: from,
+      body: JSON.stringify({ email, display_name: name, password: PASSWORD }),
+    })
+
+  it('does not exist once the instance has an administrator, and creates nobody', async () => {
+    expect((await app.request('/auth/bootstrap')).status).toBe(404)
+    const r = await create(app, 'intrus@exemple.fr', 'Intrus')
+    expect(r.status).toBe(404)
+    await expect(r.json()).resolves.toMatchObject({ code: 'RESOURCE_NOT_FOUND' })
+
+    const login = await app.request('/auth/password/login', {
+      method: 'POST',
+      headers: from,
+      body: JSON.stringify({ email: 'intrus@exemple.fr', password: PASSWORD }),
+    })
+    expect(login.status).toBe(401)
+  })
+
+  it('on a fresh instance, the first visitor creates it and leaves signed in', async () => {
+    const { Client } = await import('pg')
+    const client = new Client({ connectionString: container.getConnectionUri() })
+    await client.connect()
+    await client.query('CREATE DATABASE premiere_visite')
+    await client.end()
+
+    const uri = new URL(container.getConnectionUri())
+    uri.pathname = '/premiere_visite'
+    const fresh = startKernel({
+      connectionString: uri.toString(),
+      encryptionKey: 'cle-instance-de-test-0123456789',
+    })
+    try {
+      await fresh.migrateCatalog()
+      const first = createApp({ kernel: fresh })
+
+      const open = await first.request('/auth/bootstrap')
+      await expect(open.json()).resolves.toEqual({ data: { open: true } })
+
+      const r = await create(first, 'camille@exemple.fr', 'Camille Martin')
+      expect(r.status).toBe(200)
+      const planted = r.headers.get('set-cookie')?.split(';')[0] ?? ''
+      const me = await first.request('/auth/me', { headers: { cookie: planted } })
+      await expect(me.json()).resolves.toMatchObject({
+        data: {
+          email: 'camille@exemple.fr',
+          display_name: 'Camille Martin',
+          is_instance_admin: true,
+          is_admin: true,
+          must_change_password: false,
+        },
+      })
+
+      // Taken: the road is gone, for the next visitor as for this one.
+      expect((await first.request('/auth/bootstrap')).status).toBe(404)
+      expect((await create(first, 'second@exemple.fr', 'Second')).status).toBe(404)
+    } finally {
+      await fresh.close()
+    }
+  })
+})
+
+describe('an account of one’s own, and sharing by a link', () => {
+  const from = (address: string) => ({
+    'content-type': 'application/json',
+    'x-forwarded-for': address,
+  })
+
+  /** Signs up, and returns the bearer of the new account. */
+  async function signUp(email: string, name: string, address: string, invitation?: string) {
+    const r = await app.request('/auth/signup', {
+      method: 'POST',
+      headers: from(address),
+      body: JSON.stringify({ email, display_name: name, password: PASSWORD, invitation }),
+    })
+    expect(r.status).toBe(200)
+    const planted = r.headers.get('set-cookie')?.split(';')[0] ?? ''
+    const { csrf } = ((await r.json()) as { data: { csrf: string } }).data
+    const issued = await app.request('/auth/session/access', {
+      method: 'POST',
+      headers: { cookie: planted, 'x-basedb-csrf': csrf },
+    })
+    const token = ((await issued.json()) as { data: { token: string } }).data.token
+    return { authorization: `Bearer ${token}` }
+  }
+
+  it('anyone signs up, creates a project and invites someone to it', async () => {
+    await expect((await app.request('/auth/signup')).json()).resolves.toEqual({
+      data: { open: true, domains: [] },
+    })
+    const lea = await signUp('lea@exemple.fr', 'Léa Martin', '203.0.113.21')
+
+    const created = await app.request(`${V1}/admin/projects`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...lea },
+      body: JSON.stringify({ label: 'Atelier' }),
+    })
+    expect(created.status).toBe(201)
+    const project = ((await created.json()) as { data: { id: string } }).data.id
+
+    const invited = await app.request(`${V1}/sharing/project/${project}/invitations`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...lea },
+      body: JSON.stringify({ email: 'tom@exemple.fr', level: 'edit' }),
+    })
+    expect(invited.status).toBe(201)
+    const { token } = ((await invited.json()) as { data: { token: string } }).data
+
+    // The link's page, before anyone signs in.
+    const preview = await app.request('/auth/invitation', {
+      method: 'POST',
+      headers: from('203.0.113.22'),
+      body: JSON.stringify({ token }),
+    })
+    await expect(preview.json()).resolves.toMatchObject({
+      data: {
+        scope: { kind: 'project', label: 'Atelier' },
+        level: 'edit',
+        invited_by: 'Léa Martin',
+      },
+    })
+
+    const tom = await signUp('tom@exemple.fr', 'Tom Roux', '203.0.113.22', token)
+    const accepted = await app.request(`${V1}/invitations/accept`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...tom },
+      body: JSON.stringify({ token }),
+    })
+    await expect(accepted.json()).resolves.toEqual({
+      data: { project_id: project, base_id: null },
+    })
+
+    const sharing = await app.request(`${V1}/sharing/project/${project}`, { headers: lea })
+    const body = (await sharing.json()) as {
+      data: { people: Array<{ display_name: string; level: string; you: boolean }> }
+    }
+    expect(body.data.people.map((p) => [p.display_name, p.level, p.you])).toEqual([
+      ['Léa Martin', 'manage', true],
+      ['Tom Roux', 'edit', false],
+    ])
+
+    // Tom edits, he does not share.
+    const refused = await app.request(`${V1}/sharing/project/${project}`, { headers: tom })
+    expect(refused.status).toBe(403)
   })
 })
 

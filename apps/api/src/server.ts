@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
-import { type FileStorageConfig, startKernel } from '@basedb/core'
+import { type FileStorageConfig, OIDC_PRESETS, type OidcProvider, startKernel } from '@basedb/core'
 import { serve } from '@hono/node-server'
 import { providerTransport } from './ai-transport.js'
 import { createApp } from './app.js'
@@ -106,7 +106,97 @@ const templatesUrl =
       ? null
       : templatesSetting
 
+/** Why the catalog stops the start, in words an operator acts on. */
+function catalogRefusal(error: unknown): string {
+  const code = (error as { code?: string }).code
+  const details = (error as { details?: Record<string, unknown> }).details ?? {}
+  switch (code) {
+    case 'CATALOG_VERSION_AHEAD':
+      return `Cette base a été mise à jour par une version plus récente de basedb (catalogue en version ${String(details.recorded)}, ce code s’arrête à la ${String(details.shipped)}) : démarrez une version au moins aussi récente. Le retour arrière d’un catalogue n’existe pas — restaurez la sauvegarde d’avant la mise à jour pour revenir en arrière.`
+    case 'CATALOG_CHECKSUM_MISMATCH':
+      return `La migration de catalogue ${String(details.name)} enregistrée dans cette base n’est pas celle de ce code : la base ou le code a été modifié. Arrêt, pour ne rien écrire dans un catalogue dont l’histoire est inconnue.`
+    case 'CATALOG_DRIFT':
+      return `Le schéma _basedb de cette base n’est pas un catalogue basedb reconnu (${JSON.stringify(details)}).`
+    case 'LOCK_UNAVAILABLE':
+      return 'Un autre processus met le catalogue à jour depuis plus de cinq minutes : vérifiez-le (pg_locks, verrou consultatif 1, 1), puis redémarrez.'
+    default:
+      return `Mise à jour du catalogue impossible : ${error instanceof Error ? error.message : String(error)}`
+  }
+}
+
+/**
+ * Sign-in providers — chapter 13 §3 — declared in the environment:
+ *
+ *   BASEDB_OIDC_PROVIDERS=google,microsoft
+ *   BASEDB_OIDC_GOOGLE_CLIENT_ID=…            BASEDB_OIDC_GOOGLE_CLIENT_SECRET=…
+ *   BASEDB_OIDC_MICROSOFT_ISSUER=https://login.microsoftonline.com/<organisation>/v2.0
+ *
+ * Per provider, `_ISSUER` (a preset's by default), `_LABEL`, `_SCOPES`, `_TRUSTED_DOMAINS`,
+ * and `_SIGNUP=off` to admit existing accounts only: otherwise a first sign-in creates the
+ * account as the sign-up policy says. An incomplete provider is left out, and said so.
+ */
+function oidcProviders(): OidcProvider[] {
+  const slugs = (setting('BASEDB_OIDC_PROVIDERS') ?? '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => s !== '')
+  const domains = (value: string | undefined) =>
+    (value ?? '')
+      .split(',')
+      .map((d) => d.trim().toLowerCase().replace(/^@/, ''))
+      .filter((d) => d !== '')
+
+  const providers: OidcProvider[] = []
+  for (const slug of slugs) {
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
+      console.error(
+        `BASEDB_OIDC_PROVIDERS : « ${slug} » n’est pas un nom (lettres, chiffres, tirets).`,
+      )
+      continue
+    }
+    const name = (key: string) => `BASEDB_OIDC_${slug.toUpperCase().replace(/-/g, '_')}_${key}`
+    const preset = OIDC_PRESETS[slug]
+    const issuer = setting(name('ISSUER')) ?? preset?.issuer
+    const clientId = setting(name('CLIENT_ID'))
+    const clientSecret = setting(name('CLIENT_SECRET'))
+    const missing = [
+      issuer === undefined ? name('ISSUER') : null,
+      clientId === undefined ? name('CLIENT_ID') : null,
+      clientSecret === undefined ? name('CLIENT_SECRET') : null,
+    ].filter((m) => m !== null)
+    if (issuer === undefined || clientId === undefined || clientSecret === undefined) {
+      console.error(
+        `Connexion « ${slug} » ignorée : ${missing.join(', ')} ${missing.length > 1 ? 'manquants' : 'manquant'}.`,
+      )
+      continue
+    }
+    providers.push({
+      slug,
+      label: setting(name('LABEL')) ?? preset?.label ?? slug,
+      issuer,
+      clientId,
+      clientSecret,
+      scopes: setting(name('SCOPES')) ?? preset?.scopes ?? 'openid email profile',
+      provisioning: setting(name('SIGNUP')) === 'off' ? 'off' : 'signup',
+      provisioningDomains: [],
+      trustedDomains: domains(setting(name('TRUSTED_DOMAINS'))),
+    })
+  }
+  if (providers.length > 0) {
+    const publicUrl = setting('BASEDB_PUBLIC_URL')
+    console.log(
+      `Connexion : ${providers.map((p) => p.label).join(', ')}. Adresse de retour à déclarer chez chacun : ${
+        publicUrl === undefined
+          ? '<BASEDB_PUBLIC_URL>/auth/oidc/<nom>/callback — BASEDB_PUBLIC_URL n’est pas défini'
+          : `${publicUrl.replace(/\/$/, '')}/auth/oidc/<nom>/callback`
+      }.`,
+    )
+  }
+  return providers
+}
+
 const kernel = startKernel({
+  oidcProviders: oidcProviders(),
   webhookTargets: { allowHttp: webhookDev, allowPrivate: webhookDev },
   exportDir,
   templatesUrl,
@@ -132,40 +222,89 @@ if (webhookDev) {
 }
 const port = Number(setting('PORT') ?? 8787)
 
-if (setting('BASEDB_MIGRATE') === '1') {
-  const n = await kernel.migrateCatalog()
-  console.log(
-    n === 0 ? 'Catalog already in place.' : `Catalog applied (${n} migration${n > 1 ? 's' : ''}).`,
-  )
+/**
+ * The catalog — chapter 02, « Amorçage ». `BASEDB_MIGRATE=1` (the image's default) brings
+ * it to the version this code ships: a fresh database gets all of it, an installation of
+ * an earlier version what it lacks. Otherwise it is only checked, and a catalog that is
+ * behind stops the start: this code would query tables it does not have yet.
+ */
+try {
+  if (setting('BASEDB_MIGRATE') === '1') {
+    const applied = await kernel.migrateCatalog({
+      onApplied: (name, ms) => console.log(`Catalogue : ${name} appliquée (${ms} ms).`),
+      onWaiting: () => console.log('Catalogue : un autre processus le met à jour, attente…'),
+    })
+    const state = await kernel.catalogStatus()
+    console.log(
+      applied === 0
+        ? `Catalogue à jour (version ${state.applied}).`
+        : `Catalogue mis à jour : version ${state.applied}.`,
+    )
+  } else {
+    const state = await kernel.catalogStatus()
+    if (state.pending.length > 0) {
+      console.error(
+        `Le catalogue est en version ${state.applied}, ce code attend la version ${state.shipped} (${state.pending.join(', ')}) : démarrez une fois avec BASEDB_MIGRATE=1.`,
+      )
+      process.exit(1)
+    }
+  }
+} catch (error) {
+  console.error(catalogRefusal(error))
+  process.exit(1)
 }
 
-// The bootstrapped administrator's ADDRESS, published so the login form can prefill it.
-// Its password is printed once below and never served over HTTP.
+// The bootstrapped administrator's ADDRESS, published in development so the login form
+// can prefill it. Its password is never served over HTTP.
 let developmentEmail: string | undefined
 
+/**
+ * The first administrator — chapter 13 §7.
+ *
+ * Named by the operator (`BASEDB_ADMIN_EMAIL`), the server creates it here. Otherwise
+ * nobody is invented: the first person to open the interface creates it, with their own
+ * address and password. A built-in address would be the same everywhere, and one no
+ * mail ever reaches.
+ */
 if (setting('BASEDB_BOOTSTRAP') === '1') {
   const tenantRef = setting('BASEDB_TENANT') ?? 't4z56fq'
-  const adminEmail = setting('BASEDB_ADMIN_EMAIL') ?? 'admin@basedb.local'
-  const a = await kernel.bootstrap({
-    tenantRef,
-    email: adminEmail,
-  })
-  // Only by the start that has just created the instance: a container restarting with
-  // `BASEDB_BOOTSTRAP=1` on every boot must not keep publishing the address.
-  if (!a.alreadyDone) developmentEmail = adminEmail
-
-  // The administrator needs a password, or the instance has an account nobody can use.
-  // Given explicitly in production; generated and PRINTED ONCE in development, because
-  // a default password shipped with the product is the same password everywhere.
+  const adminEmail = setting('BASEDB_ADMIN_EMAIL')
   const given = setting('BASEDB_ADMIN_PASSWORD')
-  const password = given ?? `basedb-${randomBytes(9).toString('base64url')}`
-  if (!a.alreadyDone || given !== undefined) {
-    await kernel.setPassword({ userId: a.userId, password })
-  }
 
-  console.log(`${a.alreadyDone ? 'Bootstrap already done' : 'Bootstrapped'} — ${adminEmail}`)
-  if (given === undefined && !a.alreadyDone) {
-    console.log(`Mot de passe administrateur (affiché une seule fois) : ${password}`)
+  if (adminEmail === undefined && (await kernel.bootstrapOpen())) {
+    console.log(
+      'Aucun administrateur : la première personne qui ouvre l’interface le crée. Ouvrez-la avant de publier l’instance sur un domaine.',
+    )
+  } else if (adminEmail !== undefined || given !== undefined) {
+    const a = await kernel.bootstrap({ tenantRef, email: adminEmail }).catch((error: unknown) => {
+      if (adminEmail !== undefined) throw error
+      // No address to create one with, and an administrator exists — but not in this
+      // tenant: `BASEDB_TENANT` changed since.
+      console.error(
+        `BASEDB_ADMIN_PASSWORD ignoré : aucun administrateur dans le tenant ${tenantRef}.`,
+      )
+      return null
+    })
+    if (a !== null) {
+      // Only by the start that has just created the instance, and only in development: a
+      // container restarting with `BASEDB_BOOTSTRAP=1` on every boot must not keep
+      // publishing the address, and a production one must never publish it.
+      if (!a.alreadyDone && setting('BASEDB_DEV_LOGIN') === '1') developmentEmail = a.email
+
+      // The administrator needs a password, or the instance has an account nobody can
+      // use. Given explicitly — and then reapplied at every start, to take back control —
+      // or generated and PRINTED ONCE, because a default password shipped with the
+      // product is the same password everywhere.
+      const password = given ?? `basedb-${randomBytes(9).toString('base64url')}`
+      if (!a.alreadyDone || given !== undefined) {
+        await kernel.setPassword({ userId: a.userId, password })
+      }
+
+      console.log(`${a.alreadyDone ? 'Bootstrap already done' : 'Bootstrapped'} — ${a.email}`)
+      if (given === undefined && !a.alreadyDone) {
+        console.log(`Mot de passe administrateur (affiché une seule fois) : ${password}`)
+      }
+    }
   }
 }
 

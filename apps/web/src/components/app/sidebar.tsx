@@ -19,6 +19,7 @@ import {
 import { LookIcon, type OptionLook } from '@/components/app/option-badge'
 import { ProjectMenu } from '@/components/app/project-menu'
 import { ProposalDialog } from '@/components/app/proposal-dialog'
+import { ShareAccessDialog } from '@/components/app/share-access-dialog'
 import { ExportTemplateDialog } from '@/components/app/template-export-dialog'
 import { TokenDialog } from '@/components/app/token-dialog'
 import { UserMenu } from '@/components/app/user-menu'
@@ -82,6 +83,7 @@ import {
   Terminal,
   Trash2,
   Upload,
+  UserPlus,
   Users,
   Webhook,
   Zap,
@@ -162,6 +164,7 @@ type BaseDialog = {
     | 'deleted-tables'
     | 'environments'
     | 'template'
+    | 'share'
   readonly base: ProjectBase
 }
 
@@ -358,6 +361,14 @@ export function Sidebar({
       <ExportTemplateDialog
         base={dialog.kind === 'template' ? dialog.base : null}
         me={user}
+        onClose={() => setDialog(null)}
+      />
+      <ShareAccessDialog
+        target={
+          dialog.kind === 'share'
+            ? { kind: 'base', id: dialog.base.id, label: dialog.base.label }
+            : null
+        }
         onClose={() => setDialog(null)}
       />
       <DeleteBaseDialog
@@ -715,6 +726,10 @@ function BaseMenuEntries({
       )}
       {manages && (
         <>
+          <M.Item onSelect={() => onDialog('share')}>
+            <UserPlus className="size-4" />
+            Partager la base…
+          </M.Item>
           <M.Item onSelect={() => onDialog('proposals')}>
             <Bot className="size-4" />
             <span className="flex-1">Propositions des agents…</span>

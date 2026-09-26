@@ -669,9 +669,9 @@ Le décideur n'a qu'un cas de plus. À l'étape de correspondance de portée, un
 
 | Opération | Exigence |
 |---|---|
-| Créer un projet | `manage_schema` @ tenant |
+| Créer un projet | toute personne connectée — jamais un jeton ; elle en reçoit « Gestion » |
 | Renommer un projet, changer sa description | `manage_schema` @ projet |
-| Supprimer un projet | `manage_schema` @ tenant, projet **vide** (`PROJECT_NOT_EMPTY` sinon) |
+| Supprimer un projet | `manage_schema` @ projet, projet **vide** (`PROJECT_NOT_EMPTY` sinon) |
 | Créer une base dans un projet | `manage_schema` @ projet |
 | Créer une table dans une base | `manage_schema` @ base (ou au-dessus) |
 
@@ -679,11 +679,13 @@ Le décideur n'a qu'un cas de plus. À l'étape de correspondance de portée, un
 
 **Visibilité.** Un projet apparaît à qui détient un droit sur lui (accordé sur lui ou sur le tenant) ou voit au moins une de ses bases ; une base apparaît à qui lit une de ses tables ou détient `read` sur elle. Un projet que personne n'a ouvert et où rien n'est visible est **absent**, pas vide — la règle de §7, un niveau plus haut. Corollaire : un refus sur une base ou un projet que l'acteur voit à travers une table lisible répond `ADMIN_REQUIRED`, pas `RESOURCE_NOT_FOUND` — l'objet existe pour lui, le taire serait mentir sans rien protéger.
 
+**Chacun ses projets.** Toute personne crée les siens, et en reçoit le niveau « Gestion » sur son rôle personnel (§15.8) : qui crée un projet le gère, et le partage. Le nom d'un projet est unique parmi les projets **de la personne qui l'a créé**, pas dans le tenant : un nom déjà pris par un projet que l'on ne voit pas ne doit ni bloquer ni révéler qu'il existe.
+
 L'amorçage crée un projet « Projet principal » ; une base créée sans projet désigné (route antérieure aux projets) y est rangée.
 
 ### 15.2 Groupes
 
-Un **groupe** est un rôle (`role.kind = 'group'`) dont les membres sont des personnes (`role_member`). Les droits s'accordent aux groupes, jamais à une personne : pour ouvrir un accès à une personne, on la place dans un groupe qui l'a. Deux groupes existent dans chaque tenant et ne peuvent être ni renommés ni supprimés (`GROUP_SYSTEM_IMMUTABLE`) :
+Un **groupe** est un rôle (`role.kind = 'group'`) dont les membres sont des personnes (`role_member`). L'administration accorde les droits aux groupes ; ce qu'un gestionnaire partage à une personne va sur son **rôle personnel** (§15.8). Deux groupes existent dans chaque tenant et ne peuvent être ni renommés ni supprimés (`GROUP_SYSTEM_IMMUTABLE`) :
 
 - **« Administrateurs »** (`tenant_admin`) porte les sept verbes sur le tenant. Ses membres voient tous les projets, et ce sont eux qui administrent comptes, groupes, permissions et projets. Il n'apparaît dans la grille qu'en lecture seule : un administrateur sans droits serait une contradiction que l'écran ne sait pas exprimer. Le retrait ou la désactivation de son dernier membre actif est refusé (`LAST_TENANT_ADMIN`, §12).
 - **« Tous les utilisateurs »** (`all_users`) contient chaque compte du tenant, d'office ; son appartenance ne se modifie pas. **Il ne reçoit rien par défaut** : les droits étant additifs (§3.3), ce qui lui est accordé, personne ne peut en être privé. Pour réserver un accès, on l'accorde à un groupe dédié.
@@ -697,7 +699,7 @@ Un **groupe** est un rôle (`role.kind = 'group'`) dont les membres sont des per
 | Édition | `read`, `create`, `update`, `delete` | créer, modifier, supprimer des lignes |
 | Gestion | Édition + `manage_schema`, `manage_tokens` | changer la structure, créer des jetons d'intégration |
 
-Un niveau n'est pas une notion du catalogue : il est écrit comme autant de lignes `permission` que de verbes, et relu comme **le plus haut niveau dont tous les verbes sont présents**. `manage_permissions` n'entre dans aucun niveau : administrer les droits reste l'affaire du groupe « Administrateurs ». Tout niveau non nul contient `read` — c'est ce qui rend visibles les objets sur lesquels on agit ; une ligne `manage_schema` sans `read`, qu'on ne pourrait poser qu'à la main, ne montre rien.
+Un niveau n'est pas une notion du catalogue : il est écrit comme autant de lignes `permission` que de verbes, et relu comme **le plus haut niveau dont tous les verbes sont présents**. `manage_permissions` n'entre dans aucun niveau : administrer les droits du tenant reste l'affaire du groupe « Administrateurs ». Partager un projet ou une base, en revanche, relève du niveau « Gestion » sur cet objet (§15.8). Tout niveau non nul contient `read` — c'est ce qui rend visibles les objets sur lesquels on agit ; une ligne `manage_schema` sans `read`, qu'on ne pourrait poser qu'à la main, ne montre rien.
 
 ### 15.4 Héritage et « Granulaire »
 
@@ -713,7 +715,7 @@ Chaque changement s'applique immédiatement, dans une transaction qui réécrit 
 
 ### 15.5 Comptes utilisateurs
 
-Un administrateur crée un compte avec une adresse (unique dans le tenant sans égard à la casse, `EMAIL_TAKEN`), un nom affiché et ses groupes. basedb n'envoyant pas de courrier en v1, le compte reçoit un **mot de passe temporaire** tiré dans un alphabet sans caractères ambigus, montré une seule fois à l'administrateur qui le transmet, et `app_user.must_change_password = true` : l'interface n'ouvre rien d'autre tant que la personne n'a pas choisi le sien (« 13 — Authentification »). La réinitialisation suit le même chemin et ferme les sessions ouvertes.
+Chacun peut aussi **créer son propre compte**, tant que l'administration le permet (« 13 — Authentification », §8) : il ne voit alors que ses projets et ce qu'on lui partage. Un administrateur crée un compte avec une adresse (unique dans le tenant sans égard à la casse, `EMAIL_TAKEN`), un nom affiché et ses groupes. basedb n'envoyant pas de courrier en v1, le compte reçoit un **mot de passe temporaire** tiré dans un alphabet sans caractères ambigus, montré une seule fois à l'administrateur qui le transmet, et `app_user.must_change_password = true` : l'interface n'ouvre rien d'autre tant que la personne n'a pas choisi le sien (« 13 — Authentification »). La réinitialisation suit le même chemin et ferme les sessions ouvertes.
 
 Un compte se **désactive**, il ne se supprime pas : ses sessions et ses jetons cessent immédiatement, ses écritures restent signées de son nom, et il peut être réactivé. Un administrateur ne peut pas désactiver son propre compte (`ACTION_FORBIDDEN`).
 
@@ -721,13 +723,24 @@ Un compte se **désactive**, il ne se supprime pas : ses sessions et ses jetons 
 
 - **Toute écriture d'administration** — compte, groupe, appartenance, niveau — exige une session élevée depuis moins de cinq minutes (§2.2) et répond `ELEVATION_REQUIRED` sinon. L'interface demande alors le mot de passe et rejoue l'action : on n'est pas prévenu à l'avance, on est interrompu au moment où c'est nécessaire, une fois par tranche de cinq minutes.
 - **Les listes de comptes, de groupes et la grille** ne sont lisibles que par les administrateurs. À tout autre acteur, ces routes répondent `RESOURCE_NOT_FOUND` (§8) : la liste nominative des comptes n'est pas une chose qu'un non-administrateur apprend exister.
+- **L'annuaire** (`/meta/users`, qui nomme les personnes d'un champ « Personne » ou d'une mention) ne montre à chacun que lui-même et les personnes avec qui il partage un projet — qui détiennent un accès dans un projet où il en détient un. Les administrateurs y voient tout le monde. N'importe qui pouvant créer un compte, l'annuaire du tenant n'est pas une liste à livrer au premier inscrit.
 - Un **contexte système** (`actor.kind = 'system'`, §6.4) détient tous les verbes dans son tenant : les tâches de fond n'ont pas de groupe.
 
 ### 15.7 Ce que ce modèle ne fait pas
 
 - Pas de niveau « bloqué » ni de filtrage de lignes par groupe : `predicat_lignes` reste constamment vrai en v1 (§6), et l'union des rôles interdit tout `deny`.
 - Pas de permissions de champ dans la grille elle-même : la grille s'arrête aux tables, et « Champs », sur chaque ligne de table, ouvre l'écran de §3.3 qui règle `field_permission` groupe par groupe.
-- Pas de délégation : un membre de groupe ne peut pas accorder à un autre ce qu'il a ; seul le groupe « Administrateurs » administre.
+- Pas de délégation par les groupes : un membre de groupe ne peut pas accorder à un autre ce qu'il a ; seul le groupe « Administrateurs » administre les groupes et la grille. Le partage de §15.8 est la seule délégation, bornée à ce que l'on gère.
+
+### 15.8 Partager un projet ou une base
+
+Qui a **« Gestion »** sur un projet ou une base le partage, sans élévation — c'est le geste quotidien d'une équipe, pas l'administration du tenant :
+
+- **inviter** une personne à un niveau (Lecture, Édition, Gestion) : un **lien** à usage unique, valable sept jours (`_basedb.invitation`, secret scellé comme celui d'un formulaire partagé, remontré à qui gère tant qu'il attend). La personne l'ouvre, se connecte ou crée son compte — même quand la création de comptes est fermée —, et reçoit l'accès ; jamais moins que ce qu'elle avait déjà ;
+- voir **qui a accès** — personnes et groupes —, **changer** le niveau d'une personne ou le **retirer** ; jamais le sien, ce qui pourrait laisser un projet sans gestionnaire ;
+- **annuler** une invitation en attente.
+
+Ce qui est partagé à une personne va sur son **rôle personnel** (`role.kind = 'person'`, son seul membre, jamais listé parmi les groupes) : le décideur, qui ne connaît que des rôles, n'a rien de plus à savoir. Le partage ne dépasse jamais sa portée : le gestionnaire d'une base partage cette base, pas son projet, et un accès qui vient du projet ne se change que depuis le partage du projet (`ACTION_FORBIDDEN`, raison `herite`). Aucun niveau n'excède « Gestion », que détient qui partage. Au moment d'accepter, l'auteur de l'invitation doit **toujours** gérer la portée : une invitation faite par quelqu'un qui a perdu ce droit ne donne plus rien. On ne partage qu'à qui l'on invite : l'annuaire du tenant n'est pas une liste où choisir des inconnus.
 
 ---
 
@@ -815,6 +828,6 @@ l'éditeur de permissions qui les accompagne non plus.
 ## Questions ouvertes
 
 1. **Compteur d'époque de session par utilisateur** : faut-il ajouter à `app_user` un compteur consulté à chaque requête pour obtenir une révocation véritablement instantanée en cas de compromission ? Le coût est une lecture par requête, en contradiction avec la propriété de temps constant de §7.2.
-2. **Ré-authentification forte des opérations réservées** : l'élévation de §2.2 accepte le mot de passe, et c'est la seule preuve possible en v1 — le chapitre 13 §8 place le deuxième facteur et WebAuthn hors périmètre, en annonçant que l'élévation les acceptera comme preuve le jour venu. Ce chapitre ne suppose donc aucun facteur enrôlé. Ce qui reste à trancher est pour ce jour-là : le second facteur devra-t-il être exigé sur **toutes** les opérations réservées, ou seulement sur celles des administrateurs d'instance — et son enrôlement devra-t-il alors être rendu obligatoire pour ces derniers ?
+2. **Ré-authentification forte des opérations réservées** : l'élévation de §2.2 accepte le mot de passe, et c'est la seule preuve possible en v1 — le chapitre 13 §9 place le deuxième facteur et WebAuthn hors périmètre, en annonçant que l'élévation les acceptera comme preuve le jour venu. Ce chapitre ne suppose donc aucun facteur enrôlé. Ce qui reste à trancher est pour ce jour-là : le second facteur devra-t-il être exigé sur **toutes** les opérations réservées, ou seulement sur celles des administrateurs d'instance — et son enrôlement devra-t-il alors être rendu obligatoire pour ces derniers ?
 3. **Notifications de sécurité** : la notification envoyée à chaque changement de rôle et création de jeton (§2.2) suppose un canal configuré à l'instance, dont la définition relève de « 13 — Authentification ». Faut-il refuser ces opérations lorsqu'aucun canal n'est configuré, ou se contenter de la trace `audit_log` ?
 4. **Seuil de confirmation renforcée d'une cascade** : 5 000 lignes atteintes est une valeur par défaut ; faut-il la rendre configurable par tenant, ou la laisser à l'instance ?

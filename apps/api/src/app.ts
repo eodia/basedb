@@ -16,11 +16,14 @@ import {
   type MetaKind,
   type Migration,
   OIDC_COOKIE,
+  type PendingInvitation,
   type PointerAt,
   type RequestContext,
   SESSION_ABSOLUTE_MS,
   SESSION_COOKIE,
   type SavedView,
+  type ScopeSharing,
+  type ShareScope,
   type ShareSettings,
   type SyncedTable,
   VARY,
@@ -65,10 +68,10 @@ export interface AppOptions {
   /**
    * Address of the bootstrapped administrator, published on `/api/v1/dev/account`.
    *
-   * Set ONLY when the server has just bootstrapped the instance itself, hence in
-   * development, and it publishes the ADDRESS alone — never the password, which the
-   * server prints once in its own output. Without this option the route does not exist:
-   * not an access check but an absence, there is nothing to reach.
+   * Set ONLY in development (`BASEDB_DEV_LOGIN=1`, which `pnpm start` sets) and by the
+   * start that has just bootstrapped the instance, and it publishes the ADDRESS alone —
+   * never the password. Without this option the route does not exist: not an access
+   * check but an absence, there is nothing to reach.
    */
   readonly developmentEmail?: string
   /**
@@ -226,10 +229,9 @@ export function createApp(options: AppOptions) {
   /** Liveness probe — entry point outside the catalog (chapter 08 §1.5). */
   app.get('/healthz', (c) => c.json({ status: 'ok' }))
 
-  // The interface asks here for the bootstrap actor, instead of requiring it to be
-  // copied from the server's output. The route is MOUNTED only if the server
-  // bootstrapped the instance: in production the URL does not exist and returns 404
-  // like any other unknown URL.
+  // In development the interface asks here for the bootstrap actor, instead of requiring
+  // it to be copied from the server's output. The route is MOUNTED only then: in
+  // production the URL does not exist and returns 404 like any other unknown URL.
   if (options.developmentEmail !== undefined) {
     const email = options.developmentEmail
     // Only the address, so the login form can prefill it. The password is printed once
@@ -519,15 +521,25 @@ export function createApp(options: AppOptions) {
   app.get('/auth/oidc/:slug/callback', async (c) => {
     bounded(c)
     const slug = c.req.param('slug')
-    const completed = await options.kernel.oidcCallback({
-      tenantRef: authTenant(),
-      slug,
-      code: c.req.query('code'),
-      state: c.req.query('state'),
-      cookie: getCookie(c, OIDC_COOKIE),
-      ip: addressOf(c),
-      userAgent: c.req.header('user-agent') ?? null,
-    })
+    let completed: Awaited<ReturnType<typeof options.kernel.oidcCallback>>
+    try {
+      completed = await options.kernel.oidcCallback({
+        tenantRef: authTenant(),
+        slug,
+        code: c.req.query('code'),
+        state: c.req.query('state'),
+        cookie: getCookie(c, OIDC_COOKIE),
+        ip: addressOf(c),
+        userAgent: c.req.header('user-agent') ?? null,
+      })
+    } catch (error) {
+      // The browser came back from the provider, on a page of its own: a refusal is shown
+      // by the sign-in screen, in words, not as a JSON body on a blank page. The code
+      // alone travels; an incident keeps its identifier in the log.
+      if (!(error instanceof BasedbError) || error.class === 'incident') throw error
+      deleteCookie(c, OIDC_COOKIE, { path: '/', secure: true })
+      return c.redirect(`/?connexion=${encodeURIComponent(error.code)}`, 302)
+    }
 
     // The exchange is over: its cookie has nothing left to carry.
     deleteCookie(c, OIDC_COOKIE, { path: '/', secure: true })
@@ -557,6 +569,93 @@ export function createApp(options: AppOptions) {
       slug: c.req.param('slug'),
     })
     return c.body(null, 204)
+  })
+
+  // ---------------------------------------------------------------------------------
+  // /auth/signup — chapter 13 §8: one's own account
+  // ---------------------------------------------------------------------------------
+
+  // Whether anyone may create an account here, and with which addresses. Closed, `404`:
+  // the sign-in screen then offers nothing but signing in.
+  app.get('/auth/signup', async (c) => {
+    const policy = await options.kernel.signupPolicy(authTenant())
+    if (!policy.open) throw new BasedbError('RESOURCE_NOT_FOUND')
+    return c.json({ data: policy })
+  })
+
+  app.post('/auth/signup', async (c) => {
+    const address = bounded(c)
+    type Body = {
+      email?: unknown
+      display_name?: unknown
+      password?: unknown
+      invitation?: unknown
+    }
+    const body = await c.req.json<Body>().catch(() => ({}) as Body)
+    const session = await options.kernel.signUp({
+      tenantRef: authTenant(),
+      email: typeof body.email === 'string' ? body.email : '',
+      displayName: typeof body.display_name === 'string' ? body.display_name : '',
+      password: typeof body.password === 'string' ? body.password : '',
+      invitation: typeof body.invitation === 'string' ? body.invitation : undefined,
+      requestId: c.get('requestId'),
+      ip: address === 'inconnue' ? null : address,
+      userAgent: c.req.header('user-agent') ?? null,
+    })
+    plantSession(c, session.sessionToken, session.csrfToken)
+    return c.json({ data: { csrf: session.csrfToken, tenant: session.tenantRef } })
+  })
+
+  // What an invitation offers, for its link's page, before anyone signs in. The secret in
+  // the body, not the URL; counted like every route without a bearer.
+  app.post('/auth/invitation', async (c) => {
+    bounded(c)
+    const body = await c.req.json<{ token?: unknown }>().catch(() => ({}) as { token?: unknown })
+    const preview = await options.kernel.invitationPreview(
+      authTenant(),
+      typeof body.token === 'string' ? body.token : '',
+    )
+    return c.json({
+      data: {
+        scope: preview.scope,
+        project: preview.project,
+        level: preview.level,
+        email: preview.email,
+        invited_by: preview.invitedBy,
+        expires_at: preview.expiresAt,
+      },
+    })
+  })
+
+  // ---------------------------------------------------------------------------------
+  // /auth/bootstrap — chapter 13 §7: the first administrator, created from the interface
+  // ---------------------------------------------------------------------------------
+
+  // Whether the instance still waits for its administrator. Once one exists, `404` like
+  // any unknown URL: the bootstrap no longer exists.
+  app.get('/auth/bootstrap', async (c) => {
+    if (!(await options.kernel.bootstrapOpen())) throw new BasedbError('RESOURCE_NOT_FOUND')
+    return c.json({ data: { open: true } })
+  })
+
+  // The first person here creates the administrator — their address, name and password —
+  // and leaves signed in, as from a login.
+  app.post('/auth/bootstrap', async (c) => {
+    const address = bounded(c)
+    const body = await c.req
+      .json<{ email?: unknown; display_name?: unknown; password?: unknown }>()
+      .catch(() => ({}) as { email?: unknown; display_name?: unknown; password?: unknown })
+    const session = await options.kernel.bootstrapAdministrator({
+      tenantRef: authTenant(),
+      email: typeof body.email === 'string' ? body.email : '',
+      displayName: typeof body.display_name === 'string' ? body.display_name : '',
+      password: typeof body.password === 'string' ? body.password : '',
+      requestId: c.get('requestId'),
+      ip: address === 'inconnue' ? null : address,
+      userAgent: c.req.header('user-agent') ?? null,
+    })
+    plantSession(c, session.sessionToken, session.csrfToken)
+    return c.json({ data: { csrf: session.csrfToken, tenant: session.tenantRef } })
   })
 
   // ---------------------------------------------------------------------------------
@@ -1788,6 +1887,107 @@ export function createApp(options: AppOptions) {
     }))
     const graph = await options.kernel.applyAccessChanges(ctx, { changes, sessionId })
     return c.json({ data: { ...graph, groups: graph.groups.map(serializeGroup) } })
+  })
+
+  // Who may create an account (chapter 13 §8): the administrators set it, elevated.
+  app.get('/api/v1/:tenantRef/admin/signup', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    return c.json({ data: await options.kernel.adminSignupPolicy(ctx) })
+  })
+
+  app.put('/api/v1/:tenantRef/admin/signup', async (c) => {
+    const body = await c.req
+      .json<{ open?: unknown; domains?: unknown }>()
+      .catch(() => ({}) as { open?: unknown; domains?: unknown })
+    const { ctx, sessionId } = await administering(c)
+    const policy = await options.kernel.setSignupPolicy(ctx, {
+      open: body.open as boolean,
+      domains: body.domains as string[],
+      sessionId,
+    })
+    return c.json({ data: policy })
+  })
+
+  // ---------------------------------------------------------------------------------
+  // Sharing a project or a base — chapter 05 §15.8. Its managers, no elevation: the
+  // everyday gesture of a team, bounded by what they manage.
+  // ---------------------------------------------------------------------------------
+
+  const shareScope = (c: Context<{ Variables: Variables }, string>): ShareScope => {
+    const kind = c.req.param('kind')
+    if (kind !== 'project' && kind !== 'base') {
+      throw new BasedbError('RESOURCE_NOT_FOUND', { details: { scope: kind } })
+    }
+    return { kind, id: c.req.param('id') ?? '' }
+  }
+
+  const serializeInvitation = (i: PendingInvitation) => ({
+    id: i.id,
+    email: i.email,
+    level: i.level,
+    expires_at: i.expiresAt,
+    invited_by: i.invitedBy,
+    token: i.token,
+  })
+
+  const serializeScopeSharing = (s: ScopeSharing) => ({
+    scope: s.scope,
+    people: s.people.map((p) => ({
+      user_id: p.userId,
+      display_name: p.displayName,
+      email: p.email,
+      level: p.level,
+      from: p.from,
+      you: p.you,
+    })),
+    groups: s.groups,
+    invitations: s.invitations.map(serializeInvitation),
+  })
+
+  app.get('/api/v1/:tenantRef/sharing/:kind/:id', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const sharing = await options.kernel.scopeSharing(ctx, { scope: shareScope(c) })
+    return c.json({ data: serializeScopeSharing(sharing) })
+  })
+
+  app.post('/api/v1/:tenantRef/sharing/:kind/:id/invitations', async (c) => {
+    const body = await c.req
+      .json<{ email?: unknown; level?: unknown }>()
+      .catch(() => ({}) as { email?: unknown; level?: unknown })
+    const ctx = await contextFor(c, await bearer(c))
+    const invitation = await options.kernel.inviteToScope(ctx, {
+      scope: shareScope(c),
+      email: typeof body.email === 'string' ? body.email : '',
+      level: body.level as 'read' | 'edit' | 'manage',
+    })
+    return c.json({ data: serializeInvitation(invitation) }, 201)
+  })
+
+  app.put('/api/v1/:tenantRef/sharing/:kind/:id/people/:userId', async (c) => {
+    const body = await c.req.json<{ level?: unknown }>().catch(() => ({}) as { level?: unknown })
+    const ctx = await contextFor(c, await bearer(c))
+    const sharing = await options.kernel.setPersonAccess(ctx, {
+      scope: shareScope(c),
+      userId: c.req.param('userId'),
+      level: body.level as 'none' | 'read' | 'edit' | 'manage',
+    })
+    return c.json({ data: serializeScopeSharing(sharing) })
+  })
+
+  app.delete('/api/v1/:tenantRef/invitations/:id', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    await options.kernel.revokeInvitation(ctx, { invitationId: c.req.param('id') })
+    return c.body(null, 204)
+  })
+
+  // The link's secret travels in the body, not in the URL: request logs keep URLs.
+  app.post('/api/v1/:tenantRef/invitations/accept', async (c) => {
+    const body = await c.req.json<{ token?: unknown }>().catch(() => ({}) as { token?: unknown })
+    const ctx = await contextFor(c, await bearer(c))
+    const accepted = await options.kernel.acceptInvitation(ctx, {
+      token: typeof body.token === 'string' ? body.token : '',
+    })
+    return c.json({ data: { project_id: accepted.projectId, base_id: accepted.baseId } })
   })
 
   // Below the grid: the rules of each group on the fields of one table (05 §4), and what

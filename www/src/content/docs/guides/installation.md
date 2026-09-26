@@ -29,21 +29,23 @@ Puis démarrez :
 
 ```bash
 docker compose up -d
-docker compose logs basedb
 ```
 
-Au premier démarrage, basedb crée le catalogue et le premier administrateur, puis **affiche
-son mot de passe une seule fois** dans ses journaux :
+Au premier démarrage, basedb crée le catalogue. Ouvrez ensuite
+[http://localhost:3000](http://localhost:3000) : la première page vous demande de **créer le
+compte administrateur**, avec votre nom, votre adresse et le mot de passe de votre choix, et
+vous êtes connecté dans la foulée.
 
-```text
-basedb-1  | [api] Catalog applied (1 migration).
-basedb-1  | [api] Bootstrapped — admin@basedb.local
-basedb-1  | [api] Mot de passe administrateur (affiché une seule fois) : basedb-…
-basedb-1  | [basedb] ready on port 3000: the interface, /api and /mcp
-```
+:::caution[La première visite crée l’administrateur]
+Tant qu’aucun administrateur n’existe, la première personne qui ouvre l’interface le crée.
+Créez-le **avant** de rendre l’instance joignable par d’autres — sur un domaine, ou avec un
+port publié sur toutes les interfaces.
+:::
 
-Ouvrez [http://localhost:3000](http://localhost:3000) et connectez-vous avec
-`admin@basedb.local` et ce mot de passe.
+Pour une installation sans intervention, nommez l’administrateur dans `.env` avec
+`BASEDB_ADMIN_EMAIL` : basedb le crée au premier démarrage et affiche son mot de passe **une
+seule fois** dans ses journaux (`docker compose logs basedb`), à moins que vous ne le fixiez
+avec `BASEDB_ADMIN_PASSWORD`.
 
 | Adresse | Rôle |
 |---|---|
@@ -86,8 +88,9 @@ corepack pnpm start
 ```
 
 `pnpm start` choisit des ports libres, démarre un PostgreSQL 16 jetable, applique le catalogue,
-amorce un administrateur (`admin@basedb.local` / `developpement-basedb`), puis lance l’API, le
-serveur MCP et l’interface en mode développement. `Ctrl+C` arrête tout, conteneur compris.
+amorce un administrateur de développement (`admin@basedb.local` / `developpement-basedb`,
+adresse préremplie à la connexion), puis lance l’API, le serveur MCP et l’interface en mode
+développement. `Ctrl+C` arrête tout, conteneur compris.
 
 ## Et ensuite ?
 

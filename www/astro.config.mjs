@@ -74,6 +74,7 @@ export default defineConfig({
 						{ label: 'Docker Compose', slug: 'hebergement/docker' },
 						{ label: 'Variables d’environnement', slug: 'hebergement/variables' },
 						{ label: 'Domaine et HTTPS', slug: 'hebergement/https' },
+						{ label: 'Comptes et connexion', slug: 'hebergement/connexion' },
 						{ label: 'Sauvegardes et mises à jour', slug: 'hebergement/sauvegardes' },
 					],
 				},

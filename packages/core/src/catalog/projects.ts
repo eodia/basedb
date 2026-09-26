@@ -1,7 +1,8 @@
+import { grantCreator } from '../admin/sharing.js'
 import { BasedbError } from '../errors/index.js'
 import { openProposalCounts } from '../proposals/index.js'
 import { type Action, decide } from '../rbac/decide.js'
-import { loadProjectTarget, requireAction, tenantTarget } from '../rbac/require.js'
+import { loadProjectTarget, requireAction } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { normalizeDescription } from './description.js'
@@ -167,18 +168,24 @@ function checkLabel(label: string | undefined): string | undefined {
   return trimmed
 }
 
+/**
+ * A project's name is unique among the projects of the person who created it — not in
+ * the tenant: a name taken by a project one cannot see must neither block nor reveal it.
+ */
 async function assertLabelFree(
   exec: Executor,
   ctx: RequestContext,
   label: string,
   except: string | null,
+  creator: string,
 ): Promise<void> {
   const clash = await exec.query<{ id: string }>(
     `SELECT p.id FROM _basedb.project p
        JOIN _basedb.tenant t ON t.id = p.tenant_id
       WHERE t.ref = $1 AND p.label_key = $2 AND p.deleted_at IS NULL
+        AND p.created_by = $4::uuid
         AND ($3::uuid IS NULL OR p.id <> $3::uuid)`,
-    [ctx.tenantId, labelKey(label), except],
+    [ctx.tenantId, labelKey(label), except, creator],
   )
   if (clash.length > 0) throw new BasedbError('LABEL_DUPLICATE', { details: { label } })
 }
@@ -200,8 +207,10 @@ export async function createProject(
   const look = lookOf(request.look) ?? { color: null, icon: null, image: null }
 
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
-    await requireAction(exec, ctx, 'manage_schema', tenantTarget(ctx))
-    await assertLabelFree(exec, ctx, label, null)
+    // Every person creates their own projects (§15.1); a token, which acts on one base,
+    // never does.
+    if (ctx.actor.kind !== 'user') throw new BasedbError('RESOURCE_NOT_FOUND')
+    await assertLabelFree(exec, ctx, label, null, ctx.actor.id)
     const [row] = await exec.query<{ id: string }>(
       `INSERT INTO _basedb.project
          (tenant_id, label, label_key, description, color, icon, image, position,
@@ -223,6 +232,8 @@ export async function createProject(
       ],
       'insert',
     )
+    // Whoever creates a project manages it — and shares it.
+    await grantCreator(exec, ctx, row.id)
     return { id: row.id, label, description, ...look }
   })
 }
@@ -247,7 +258,13 @@ export async function updateProject(
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
     const target = await loadProjectTarget(exec, ctx, request.projectId)
     await requireAction(exec, ctx, 'manage_schema', target, { project: request.projectId })
-    if (label !== undefined) await assertLabelFree(exec, ctx, label, target?.id ?? null)
+    if (label !== undefined) {
+      const [owner] = await exec.query<{ created_by: string }>(
+        'SELECT created_by FROM _basedb.project WHERE id = $1',
+        [target?.id],
+      )
+      await assertLabelFree(exec, ctx, label, target?.id ?? null, owner?.created_by ?? ctx.actor.id)
+    }
     const [row] = await exec.query<
       { label: string; description: string | null } & Look & Record<string, unknown>
     >(
@@ -298,12 +315,8 @@ export async function deleteProject(
 ): Promise<void> {
   await withTransaction(pools, 'catalog', ctx, async (exec) => {
     const target = await loadProjectTarget(exec, ctx, request.projectId)
-    // Seeing the project is enough to be told it exists; deleting one is the tenant
-    // structure's business, like creating one.
-    await requireAction(exec, ctx, 'read', target, { project: request.projectId })
-    await requireAction(exec, ctx, 'manage_schema', tenantTarget(ctx), {
-      project: request.projectId,
-    })
+    // Whoever manages the project deletes it, as whoever created it did.
+    await requireAction(exec, ctx, 'manage_schema', target, { project: request.projectId })
     const [live] = await exec.query<{ n: string }>(
       'SELECT count(*) AS n FROM _basedb.base WHERE project_id = $1 AND deleted_at IS NULL',
       [target?.id],
@@ -312,11 +325,17 @@ export async function deleteProject(
       throw new BasedbError('PROJECT_NOT_EMPTY', { details: { bases: Number(live?.n) } })
     }
     // Its grants go with it: a permission naming a project nobody can reach any more
-    // would survive in the permission screen as a ghost.
+    // would survive in the permission screen as a ghost. Its pending invitations too.
     await exec.query(
       'DELETE FROM _basedb.permission WHERE scope_project_id = $1',
       [target?.id],
       'delete',
+    )
+    await exec.query(
+      `UPDATE _basedb.invitation SET revoked_at = clock_timestamp()
+        WHERE scope_project_id = $1 AND accepted_at IS NULL AND revoked_at IS NULL`,
+      [target?.id],
+      'update',
     )
     await exec.query(
       `UPDATE _basedb.project

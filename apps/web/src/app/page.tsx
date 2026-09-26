@@ -3,6 +3,7 @@
 import { ApiDocs } from '@/components/api-reference/api-docs'
 import { AdminPanel, type AdminTab } from '@/components/app/admin/admin-panel'
 import { AutomationsPanel } from '@/components/app/automations'
+import { BaseIllustration } from '@/components/app/base-illustration'
 import { NewBaseDialog } from '@/components/app/base-menu'
 import { DashboardsPanel } from '@/components/app/dashboards'
 import { ElevationProvider } from '@/components/app/elevation'
@@ -11,6 +12,7 @@ import { HistoryPanel } from '@/components/app/history'
 import { IntegrationsPanel } from '@/components/app/integrations'
 import { NewTableDialog } from '@/components/app/new-table-dialog'
 import { PasswordRequired } from '@/components/app/password-required'
+import { ProjectIllustration } from '@/components/app/project-illustration'
 import { ProjectDialog } from '@/components/app/project-menu'
 import { SchemaEditor } from '@/components/app/schema-editor'
 import {
@@ -23,7 +25,9 @@ import {
 import { TableDialogs, useTableActions } from '@/components/app/table-actions'
 import { TemplateGallery } from '@/components/app/template-gallery'
 import { Workspace } from '@/components/app/workspace'
+import { Bootstrap } from '@/components/bootstrap'
 import { Login } from '@/components/login'
+import { SignUp } from '@/components/signup'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
@@ -40,7 +44,7 @@ import { hydrateWorkspace, useActiveTab, useWorkspace } from '@/lib/store/worksp
 import { useTheme } from '@/lib/theme'
 import { useTitle } from '@/lib/use-title'
 import { Database, FolderKanban, Loader2, Plus, Sparkles } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { Toaster } from 'sonner'
 
 /**
@@ -98,6 +102,10 @@ export default function App() {
   const [me, setMe] = useState<Me | null>(null)
   const [checking, setChecking] = useState(true)
   const [online, setOnline] = useState<boolean | null>(null)
+  /** No administrator exists yet: the first screen creates one instead of signing in. */
+  const [bootstrapping, setBootstrapping] = useState(false)
+  /** The sign-in screen turned into creating an account. */
+  const [signingUp, setSigningUp] = useState(false)
 
   const [projects, setProjects] = useState<readonly Project[]>([])
   const [loaded, setLoaded] = useState(false)
@@ -166,7 +174,9 @@ export default function App() {
       return
     }
     setOnline(true)
-    setMe(await api.resume())
+    const found = await api.resume()
+    setBootstrapping(found === null && (await api.bootstrapOpen()))
+    setMe(found)
     setChecking(false)
   }, [])
 
@@ -457,7 +467,14 @@ export default function App() {
     )
   }
 
-  if (me === null) return <Login onSignedIn={() => void resume()} />
+  if (me === null) {
+    if (bootstrapping) return <Bootstrap onDone={() => void resume()} />
+    return signingUp ? (
+      <SignUp onDone={() => void resume()} onSignIn={() => setSigningUp(false)} />
+    ) : (
+      <Login onSignedIn={() => void resume()} onSignUp={() => setSigningUp(true)} />
+    )
+  }
 
   if (me.mustChangePassword) {
     return (
@@ -485,19 +502,15 @@ export default function App() {
   /** The data view: the active tab's base, or the current base when it has nothing open. */
   const dataView = () => {
     if (!loaded) return <Loading />
+    // Anyone creates their own projects (05 §15.1); the others' come by invitation.
     if (projects.length === 0) {
-      return me.isAdmin ? (
+      return (
         <Empty
           icon={FolderKanban}
           title="Aucun projet"
-          body="Un projet regroupe des bases. Créez le premier pour commencer."
+          illustration={<ProjectIllustration />}
+          body="Un projet regroupe vos bases. Créez le vôtre — ou ouvrez le lien d’invitation qu’on vous a envoyé pour rejoindre celui d’une équipe."
           action={{ label: 'Créer un projet', onClick: () => setNewProject(true) }}
-        />
-      ) : (
-        <Empty
-          icon={FolderKanban}
-          title="Aucun projet accessible"
-          body="Aucun projet ne vous est encore ouvert. Demandez à un administrateur de vous donner accès."
         />
       )
     }
@@ -506,6 +519,7 @@ export default function App() {
         <Empty
           icon={Database}
           title={`Aucune base dans « ${project.label} »`}
+          illustration={<BaseIllustration />}
           body="Créez une base vide, partez d’un modèle ou demandez-la à l’IA — ou ouvrez la démonstration, qui montre tout basedb."
           action={{ label: 'Créer une base', onClick: () => setNewBase(true) }}
           secondary={{
@@ -767,6 +781,7 @@ function Loading() {
 /** Nothing to show yet: says why, and offers the way forward when there is one. */
 function Empty({
   icon: Icon,
+  illustration,
   title,
   body,
   action,
@@ -774,6 +789,7 @@ function Empty({
   busy = false,
 }: {
   readonly icon: typeof Database
+  readonly illustration?: ReactNode
   readonly title: string
   readonly body: string
   readonly action?: { readonly label: string; readonly onClick: () => void }
@@ -786,10 +802,12 @@ function Empty({
         <SidebarToggle />
       </header>
       <div className="flex flex-1 items-center justify-center p-6">
-        <div className="max-w-md text-center">
-          <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-muted">
-            <Icon className="size-6 text-muted-foreground" />
-          </span>
+        <div className="w-full max-w-md text-center">
+          {illustration ?? (
+            <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-muted">
+              <Icon className="size-6 text-muted-foreground" />
+            </span>
+          )}
           <h1 className="text-lg font-semibold">{title}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{body}</p>
           {(action !== undefined || secondary !== undefined) && (

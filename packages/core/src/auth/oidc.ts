@@ -1,9 +1,11 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { type JWTPayload, createRemoteJWKSet, jwtVerify } from 'jose'
+import { ensureSystemGroups } from '../admin/groups.js'
 import { BasedbError } from '../errors/index.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import type { OidcProvider } from './oidc-providers.js'
 import { seal, unseal } from './sealing.js'
+import { readPolicy } from './signup.js'
 
 /**
  * OIDC — chapter 13 §3.
@@ -399,8 +401,16 @@ export async function resolveIdentity(
     }
 
     // 3. Nobody matches: provisioning decides, and it is OFF by default.
-    const domain = asserted.email.slice(asserted.email.lastIndexOf('@') + 1)
-    if (provider.provisioning !== 'domains' || !provider.provisioningDomains.includes(domain)) {
+    const domain = asserted.email.slice(asserted.email.lastIndexOf('@') + 1).toLowerCase()
+    let admitted = false
+    if (provider.provisioning === 'domains') {
+      admitted = provider.provisioningDomains.includes(domain)
+    } else if (provider.provisioning === 'signup') {
+      // As a password sign-up would be: open, and on an admitted domain (chapter 13 §8).
+      const policy = await readPolicy(exec, tenantRef)
+      admitted = policy.open && (policy.domains.length === 0 || policy.domains.includes(domain))
+    }
+    if (!admitted) {
       throw new BasedbError('PROVISIONING_REFUSED', { details: { slug: provider.slug } })
     }
 
@@ -417,9 +427,11 @@ export async function resolveIdentity(
       'insert',
     )
 
-    // The account is created WITH NO ROLE MEMBERSHIP: it opens a session, sees nothing,
-    // and waits for an administrator. Rights are not handed out from a third party's
-    // directory.
+    // The account is created WITH NO RIGHT: it opens a session, sees nothing, and waits —
+    // for an administrator, or for someone to share a project with it. Rights are not
+    // handed out from a third party's directory. Created as a sign-up, it belongs to
+    // « Tous les utilisateurs », as every account signed up with a password does.
+    if (provider.provisioning === 'signup') await ensureSystemGroups(exec, tenantRef, created.id)
     return { userId: created.id, tenantId: tenant.id, provisioned: true }
   })
 }

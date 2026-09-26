@@ -41,12 +41,18 @@ services:
     init: true
     depends_on:
       db: { condition: service_healthy }
+    # All of .env reaches basedb as well: the sign-in providers' variables are named after
+    # the providers one declares (BASEDB_OIDC_GOOGLE_CLIENT_ID…), so they cannot be listed
+    # below one by one. What is listed below wins over it.
+    env_file:
+      - path: .env
+        required: false
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-basedb}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-basedb}}
       BASEDB_ENCRYPTION_KEY: ${BASEDB_ENCRYPTION_KEY:?set BASEDB_ENCRYPTION_KEY in .env (openssl rand -base64 32)}
       BASEDB_TENANT: ${BASEDB_TENANT:-}
-      # Applies the catalog on an empty database and creates the first administrator;
-      # both are no-ops on the next starts.
+      # Applies the catalog on an empty database; the first administrator is created by
+      # the first visit to the interface, or here when BASEDB_ADMIN_EMAIL names it.
       BASEDB_MIGRATE: ${BASEDB_MIGRATE:-1}
       BASEDB_BOOTSTRAP: ${BASEDB_BOOTSTRAP:-1}
       BASEDB_ADMIN_EMAIL: ${BASEDB_ADMIN_EMAIL:-}

@@ -2,6 +2,8 @@
 @plugin 'tailwindcss-animate';
 
 @custom-variant dark (&:is(.dark *));
+/* A short screen — a laptop at 720 px — where a tall composition has to tighten. */
+@custom-variant short (@media (max-height: 50rem));
 
 /**
  * Design tokens — shadcn/ui shape, basedb palette.
@@ -168,6 +170,43 @@
   /* A focus ring that follows the keyboard and never the mouse. */
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
+
+/* A refusal shakes its message once — a no, said by motion as well as by words. */
+@theme {
+  --animate-shake: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+
+  @keyframes shake {
+    10%,
+    90% {
+      translate: -1px 0;
+    }
+    20%,
+    80% {
+      translate: 2px 0;
+    }
+    30%,
+    50%,
+    70% {
+      translate: -3px 0;
+    }
+    40%,
+    60% {
+      translate: 3px 0;
+    }
+  }
+}
+
+/* The screens before a session move a lot; asked for less motion, they arrive still. */
+@media (prefers-reduced-motion: reduce) {
+  [data-auth-screen] *,
+  [data-auth-screen] *::before,
+  [data-auth-screen] *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
   }
 }
 

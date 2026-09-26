@@ -5,6 +5,20 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const entries = [
 	{
 		date: '26 septembre 2026',
+		title: 'Version 0.2.0 : chacun son compte, ses projets, ses invitations',
+		tag: 'Nouveau',
+		items: [
+			`<strong>Première connexion</strong> : sur une instance neuve, la première page crée le compte administrateur, avec votre adresse et votre mot de passe — plus de compte par défaut ni de mot de passe à chercher dans les journaux. <a href="${base}/guides/installation/">L’installation</a>`,
+			`<strong>Création de comptes</strong> : chacun crée son compte, puis ses propres projets, dont il devient gestionnaire. L’administration peut la fermer ou la réserver à des domaines. <a href="${base}/hebergement/connexion/">Comptes et connexion</a>`,
+			'<strong>Partager un projet ou une base</strong> : qui a le niveau Gestion invite par un lien, en Lecture, Modification ou Gestion ; voit qui a accès, change un niveau, le retire. Jamais plus que ce qu’il gère.',
+			'<strong>Confidentialité</strong> : chacun ne voit plus que les personnes avec qui il partage un projet, et un nom de projet déjà pris par un autre ne se devine plus.',
+			`<strong>Connexion avec Google, Microsoft</strong> et tout fournisseur OpenID Connect (Keycloak, GitLab…), déclarés dans le <code>.env</code> ; une première connexion crée le compte si la création de comptes le permet. <a href="${base}/hebergement/connexion/">Configurer</a>`,
+			'<strong>Nouvel écran de connexion</strong>, dans le thème de l’application, clair ou sombre, et animé avec retenue ; des écrans vides illustrés dans l’application.',
+			`<strong>Mises à jour sans perte</strong> : basedb met son catalogue à jour de lui-même au démarrage, une installation 0.1 comprise, et refuse de démarrer sur une base qu’une version plus récente a déjà mise à jour. <a href="${base}/hebergement/sauvegardes/">Mettre à jour</a>`,
+		],
+	},
+	{
+		date: '26 septembre 2026',
 		title: 'Une seule image Docker',
 		tag: 'Hébergement',
 		items: [

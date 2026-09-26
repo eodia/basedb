@@ -169,7 +169,7 @@ async function loadUser(
   return user
 }
 
-function checkName(displayName: unknown): string {
+export function checkName(displayName: unknown): string {
   const name = typeof displayName === 'string' ? displayName.normalize('NFC').trim() : ''
   if (name === '') throw new BasedbError('LABEL_EMPTY', { details: { field: 'display_name' } })
   if ([...name].length > 120) {

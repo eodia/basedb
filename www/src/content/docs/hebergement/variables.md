@@ -27,10 +27,22 @@ lit (le modèle complet et commenté est `.env.example`). Avec `docker run`, pas
 | Variable | Défaut | Rôle |
 |---|---|---|
 | `BASEDB_MIGRATE` | `1` | applique le catalogue sur une base vide |
-| `BASEDB_BOOTSTRAP` | `1` | crée le tenant et le premier administrateur |
+| `BASEDB_BOOTSTRAP` | `1` | prépare le premier administrateur |
 | `BASEDB_TENANT` | `t4z56fq` | référence du tenant, dans les URL de l’API |
-| `BASEDB_ADMIN_EMAIL` | `admin@basedb.local` | adresse du premier administrateur |
-| `BASEDB_ADMIN_PASSWORD` | généré, affiché une fois | réappliqué à **chaque** démarrage s’il est défini : à retirer une fois connecté |
+| `BASEDB_ADMIN_EMAIL` | — | adresse du premier administrateur, créé au démarrage ; vide, la première personne qui ouvre l’interface le crée |
+| `BASEDB_ADMIN_PASSWORD` | généré, affiché une fois | avec `BASEDB_ADMIN_EMAIL`, son mot de passe ; défini, il est réappliqué à l’administrateur à **chaque** démarrage : à retirer une fois connecté |
+
+## Connexion avec Google, Microsoft… (OIDC)
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `BASEDB_OIDC_PROVIDERS` | — | les fournisseurs proposés, séparés par des virgules : `google,microsoft` |
+| `BASEDB_OIDC_<NOM>_CLIENT_ID`, `_CLIENT_SECRET` | — | l’application enregistrée chez le fournisseur |
+| `BASEDB_OIDC_<NOM>_ISSUER` | celui de `google`, `gitlab` | l’émetteur OpenID Connect |
+| `BASEDB_OIDC_<NOM>_LABEL`, `_SCOPES` | selon le fournisseur | le nom du bouton, les portées demandées |
+| `BASEDB_OIDC_<NOM>_SIGNUP` | — | `off` : une première connexion ne crée pas de compte |
+
+Voir [Comptes et connexion](/basedb/hebergement/connexion/).
 
 ## Adresses
 

@@ -117,6 +117,15 @@ for (let i = 0; i < lines.length; i++) {
 }
 
 const write = process.argv.includes('--write')
+// 0001 is PUBLISHED (0.1.0): installations recorded its checksum, and would refuse to start
+// on a rewritten one. The catalog now changes by numbered migrations — see
+// scripts/catalog-migrations.mjs; this script only takes the inventory of chapter 02.
+if (write) {
+  console.error(
+    '✗ 0001_catalogue.sql est scellée : un changement du catalogue va dans une nouvelle migration (pnpm catalog new <nom>).',
+  )
+  process.exit(1)
+}
 
 console.log(`${blocks.length} SQL blocks in chapter 02\n`)
 for (const b of blocks) {

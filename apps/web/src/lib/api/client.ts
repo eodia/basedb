@@ -344,6 +344,52 @@ export interface Group {
 /** The four levels of the permission grid, over projects, bases, tables. */
 export type AccessLevel = 'none' | 'read' | 'edit' | 'manage'
 
+/** Who may create an account, and with which addresses (chapter 13 §8). */
+export interface SignupPolicy {
+  readonly open: boolean
+  readonly domains: readonly string[]
+}
+
+/** What an invitation offers, as its link's page shows it before anyone signs in. */
+export interface InvitationPreview {
+  readonly scope: { readonly kind: 'project' | 'base'; readonly label: string }
+  readonly project: string
+  readonly level: AccessLevel
+  readonly email: string
+  readonly invited_by: string
+  readonly expires_at: string
+}
+
+/** A pending invitation — its link's secret included, for whoever manages the scope. */
+export interface Invitation {
+  readonly id: string
+  readonly email: string
+  readonly level: AccessLevel
+  readonly expires_at: string
+  readonly invited_by: string
+  readonly token: string
+}
+
+/** Who has access to a project or a base, and who is invited to it (05 §15.8). */
+export interface Sharing {
+  readonly scope: { readonly kind: 'project' | 'base'; readonly id: string; readonly label: string }
+  readonly people: ReadonlyArray<{
+    readonly user_id: string
+    readonly display_name: string
+    readonly email: string
+    readonly level: AccessLevel | 'granular'
+    /** Given here, or on the project above — which only the project's sharing changes. */
+    readonly from: 'here' | 'project'
+    readonly you: boolean
+  }>
+  readonly groups: ReadonlyArray<{
+    readonly id: string
+    readonly label: string
+    readonly level: AccessLevel | 'granular'
+  }>
+  readonly invitations: readonly Invitation[]
+}
+
 export interface AccessCell {
   /** `granular` when the node's children do not all have what the node itself has. */
   readonly level: AccessLevel | 'granular'
@@ -1717,6 +1763,78 @@ export const api = {
     }
   },
 
+  /**
+   * Whether the instance still waits for its first administrator.
+   *
+   * `false` on any failure: once an administrator exists the route answers `404`, and
+   * the login screen is the right one to fall back to whatever went wrong.
+   */
+  bootstrapOpen: async (): Promise<boolean> => {
+    try {
+      await call<unknown>('/auth/bootstrap')
+      return true
+    } catch {
+      return false
+    }
+  },
+
+  /** Creates the first administrator, and comes back SIGNED IN as them. */
+  bootstrap: async (request: {
+    email: string
+    displayName: string
+    password: string
+  }): Promise<void> => {
+    const body = await call<{ data: { tenant: string } }>('/auth/bootstrap', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: request.email,
+        display_name: request.displayName,
+        password: request.password,
+      }),
+    })
+    tenant = body.data.tenant
+    access = null
+  },
+
+  /** Whether anyone may create an account here; `null` when it is closed. */
+  signupPolicy: async (): Promise<SignupPolicy | null> => {
+    try {
+      return await data<SignupPolicy>('/auth/signup')
+    } catch {
+      return null
+    }
+  },
+
+  /**
+   * Creates one's own account, and comes back SIGNED IN. An invitation's secret admits the
+   * account even when sign-up is closed.
+   */
+  signUp: async (request: {
+    email: string
+    displayName: string
+    password: string
+    invitation?: string
+  }): Promise<void> => {
+    const body = await call<{ data: { tenant: string } }>('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: request.email,
+        display_name: request.displayName,
+        password: request.password,
+        invitation: request.invitation,
+      }),
+    })
+    tenant = body.data.tenant
+    access = null
+  },
+
+  /** What an invitation offers — before signing in. The secret travels in the body. */
+  invitationPreview: (token: string) =>
+    data<InvitationPreview>('/auth/invitation', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
+
   /** Providers this instance accepts. Empty means password only. */
   oidcProviders: () => data<ReadonlyArray<{ slug: string; label: string }>>('/auth/oidc/providers'),
 
@@ -1727,7 +1845,8 @@ export const api = {
    * provider, and a redirect followed by `fetch` would land the provider's login page
    * inside a response body nobody can see.
    */
-  oidcStartUrl: (slug: string) => `${BASE}/auth/oidc/${encodeURIComponent(slug)}/start?return_to=/`,
+  oidcStartUrl: (slug: string, returnTo = '/') =>
+    `${BASE}/auth/oidc/${encodeURIComponent(slug)}/start?return_to=${encodeURIComponent(returnTo)}`,
 
   /**
    * Opens a session.
@@ -2945,6 +3064,45 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ changes }),
     }),
+
+  /** Who may create an account — the administrators' setting. */
+  adminSignupPolicy: () => data<SignupPolicy>(`${v1()}/admin/signup`),
+
+  setSignupPolicy: (policy: SignupPolicy) =>
+    data<SignupPolicy>(`${v1()}/admin/signup`, {
+      method: 'PUT',
+      body: JSON.stringify(policy),
+    }),
+
+  /** Who has access to a project or a base, and who is invited — for its managers. */
+  sharing: (kind: 'project' | 'base', id: string) =>
+    data<Sharing>(`${v1()}/sharing/${kind}/${encodeURIComponent(id)}`),
+
+  /** An invitation link, valid a week, at a level. */
+  invite: (kind: 'project' | 'base', id: string, email: string, level: AccessLevel) =>
+    data<Invitation>(`${v1()}/sharing/${kind}/${encodeURIComponent(id)}/invitations`, {
+      method: 'POST',
+      body: JSON.stringify({ email, level }),
+    }),
+
+  /** Changes what someone may do on the scope; `none` takes it back. */
+  setPersonAccess: (kind: 'project' | 'base', id: string, user: string, level: AccessLevel) =>
+    data<Sharing>(
+      `${v1()}/sharing/${kind}/${encodeURIComponent(id)}/people/${encodeURIComponent(user)}`,
+      { method: 'PUT', body: JSON.stringify({ level }) },
+    ),
+
+  revokeInvitation: (id: string) =>
+    call<void>(`${v1()}/invitations/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
+  /** Accepts an invitation as the signed-in person: where it leads. */
+  acceptInvitation: async (token: string) => {
+    const accepted = await data<{ project_id: string; base_id: string | null }>(
+      `${v1()}/invitations/accept`,
+      { method: 'POST', body: JSON.stringify({ token }) },
+    )
+    return { projectId: accepted.project_id, baseId: accepted.base_id }
+  },
 
   /** Each group's rules on the fields of one table. */
   fieldAccess: (tableId: string) =>

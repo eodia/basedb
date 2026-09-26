@@ -135,6 +135,7 @@ function start(name, command, args, env, cwd = ROOT) {
 // a throwaway container. Production sets both from the environment, and the server
 // refuses to authenticate without a key rather than inventing one.
 const DEV_KEY = 'developpement-seulement-ne-pas-utiliser-en-production'
+const DEV_EMAIL = 'admin@basedb.local'
 const DEV_PASSWORD = 'developpement-basedb'
 
 const api = start('api', 'node', ['apps/api/dist/server.js'], {
@@ -143,7 +144,12 @@ const api = start('api', 'node', ['apps/api/dist/server.js'], {
   BASEDB_MIGRATE: '1',
   BASEDB_BOOTSTRAP: '1',
   BASEDB_ENCRYPTION_KEY: process.env.BASEDB_ENCRYPTION_KEY || DEV_KEY,
+  // Named here, so the administrator exists before the interface opens. Production
+  // names nobody: there, the first visit to the interface creates it.
+  BASEDB_ADMIN_EMAIL: process.env.BASEDB_ADMIN_EMAIL || DEV_EMAIL,
   BASEDB_ADMIN_PASSWORD: process.env.BASEDB_ADMIN_PASSWORD || DEV_PASSWORD,
+  // The login form is prefilled with that address.
+  BASEDB_DEV_LOGIN: '1',
   // Reset links are printed here rather than sent: this container is thrown away, and
   // there is no SMTP to configure against it.
   BASEDB_DEV_MAIL: '1',

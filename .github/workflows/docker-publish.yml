@@ -24,6 +24,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # An installation records, for each catalog migration, its checksum and the version
+      # that applied it: a migration published unsealed could still change afterwards, and
+      # every installation that applied it would then refuse to start. See
+      # scripts/catalog-migrations.mjs.
+      - name: Vérifier les migrations de catalogue et la version
+        run: |
+          set -euo pipefail
+          node scripts/catalog-migrations.mjs check --release
+          version="${GITHUB_REF_NAME#v}"
+          version="${version%%-*}"
+          if ! grep -q "APPLICATION_VERSION = '$version'" packages/core/src/catalog/cache.ts; then
+            echo "::error::APPLICATION_VERSION (packages/core/src/catalog/cache.ts) doit valoir '$version' pour l’étiquette $GITHUB_REF_NAME."
+            exit 1
+          fi
+
       - uses: docker/setup-qemu-action@v3
 
       - uses: docker/setup-buildx-action@v3

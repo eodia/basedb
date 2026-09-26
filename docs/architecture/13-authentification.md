@@ -137,7 +137,7 @@ indisponible. »
 ### 3.1 Périmètre
 
 **OpenID Connect uniquement, avec découverte** (`/.well-known/openid-configuration`) :
-trois préréglages livrés — Google Workspace, Microsoft Entra ID, Keycloak — plus un
+des préréglages livrés — Google, Microsoft (Entra ID), GitLab, Keycloak — plus un
 fournisseur OIDC générique. OAuth 2.0 sans couche OIDC, dont GitHub est le cas typique,
 est **hors v1** : sans jeton d'identité signé, la validation se réduit à un appel de
 profil non lié cryptographiquement à l'échange, et chaque fournisseur exige son propre
@@ -209,11 +209,23 @@ demandé : basedb n'appelle aucune API du fournisseur.
 3. Sinon, aucun compte ne correspond : le provisionnement décide.
 
 **Le provisionnement automatique est désactivé par défaut.** Le réglage
-`auth.oidc.<slug>.provisioning` vaut `off` (défaut) ou `domains` avec une liste
-explicite de domaines d'adresse ; hors de ces cas, `403 PROVISIONING_REFUSED` et aucun
-compte n'est créé. Quand il est actif, le compte créé l'est **sans aucune appartenance
-à un rôle** : il ouvre une session, ne voit rien, et attend qu'un administrateur lui en
-accorde un. Les droits ne se distribuent pas depuis l'annuaire d'un tiers.
+`auth.oidc.<slug>.provisioning` vaut `off` (défaut), `domains` avec une liste
+explicite de domaines d'adresse, ou `signup` : la politique de création de comptes du
+tenant décide (§8) — c'est le mode d'un fournisseur déclaré dans l'environnement, sauf
+`BASEDB_OIDC_<NOM>_SIGNUP=off`. Hors de ces cas, `403 PROVISIONING_REFUSED` et aucun
+compte n'est créé. Quand il est actif, le compte créé l'est **sans aucun droit** : il
+ouvre une session, ne voit rien, et attend qu'un administrateur lui en accorde, ou
+qu'on lui partage un projet. Les droits ne se distribuent pas depuis l'annuaire d'un
+tiers. Créé en mode `signup`, il rejoint « Tous les utilisateurs », comme tout compte
+créé par son titulaire.
+
+**Déclarer un fournisseur dans l'environnement.** `BASEDB_OIDC_PROVIDERS` nomme les
+fournisseurs, et `BASEDB_OIDC_<NOM>_CLIENT_ID`, `_CLIENT_SECRET`, `_ISSUER` (celui d'un
+préréglage à défaut : Google, GitLab), `_LABEL`, `_SCOPES`, `_TRUSTED_DOMAINS` les
+décrivent. Le secret reste dans l'environnement du processus, jamais dans la base ; un
+fournisseur du catalogue portant le même nom lui cède la place. Au retour du fournisseur,
+un refus métier ramène le navigateur sur l'écran de connexion (`/?connexion=<code>`),
+qui le dit en mots, plutôt que d'afficher un corps JSON sur une page vide.
 
 Divulgation résiduelle, assumée : ces deux codes apprennent à l'appelant si l'adresse
 qu'il vient de prouver chez le fournisseur possède un compte basedb. Il a déjà démontré
@@ -325,7 +337,11 @@ Toutes sous `/auth/`, sans référence de tenant, hors OpenAPI. `401` génériqu
 | `/auth/sessions/{id}` | DELETE | cookie | `204`, `404` |
 | `/auth/elevate` | POST | cookie | `200` : échéance d'élévation, `401 CREDENTIALS_INVALID` |
 | `/auth/elevation` | DELETE | cookie | `204` |
-| `/auth/bootstrap` | POST | secret d'amorçage | `200`, `401 BOOTSTRAP_SECRET_INVALID`, `404` si clos |
+| `/auth/signup` | GET | — | `200` : politique de création de comptes ; `404` si elle est fermée |
+| `/auth/signup` | POST | — | `200` (cookie + jeton CSRF), `404` si fermée, `409 EMAIL_TAKEN`, `422`, `429` |
+| `/auth/invitation` | POST | secret du lien, dans le corps | `200` : ce qu'offre l'invitation ; `404` si inconnue, expirée, servie ou annulée |
+| `/auth/bootstrap` | GET | — | `200` tant qu'aucun administrateur n'existe, `404` ensuite |
+| `/auth/bootstrap` | POST | — | `200` (cookie + jeton CSRF), `404` si clos, `422 PASSWORD_POLICY_VIOLATION`, `429` |
 | `/auth/me` | GET | cookie ou jeton d'accès | `200` : identité, tenant, locale, fuseau, élévation restante |
 
 **Limitation de débit et protection par identité sont deux mécanismes distincts, et
@@ -366,19 +382,32 @@ Un dépassement sur `/auth/*`, comme un verrouillage, produit une entrée de
 ## 7. Amorçage et perte du dernier administrateur
 
 « Modèle de permissions » fixe la règle : aucun compte par défaut, aucun mot de passe
-par défaut, et un secret d'amorçage dont seule l'empreinte est stockée, expirant en 30
-minutes. Ce chapitre en donne le chemin.
+par défaut. Ce chapitre en donne les deux chemins.
 
-1. Au premier démarrage, si `_basedb.app_user` ne contient aucun utilisateur réel,
-   l'assistant d'installation crée en une transaction le tenant, ses rôles système et le
-   premier `app_user` (`is_instance_admin = true`, `must_change_password = true`), et
-   renseigne `bootstrap_secret_hash` / `bootstrap_secret_expires_at`.
-2. `POST /auth/bootstrap` accepte le secret et un mot de passe conforme à la politique.
-   Il crée l'identité `password`, renseigne `bootstrap_secret_consumed_at`, remet
-   `must_change_password` à faux, ouvre une session et écrit `audit_log`
-   `bootstrap.consumed`.
-3. Une fois le secret consommé, ou l'échéance passée, la route répond `404` : l'amorçage
-   n'existe plus. Une consommation tardive déclenche une alerte d'exploitation.
+1. **Par l'interface**, le cas général. Tant que `_basedb.app_user` ne contient aucun
+   administrateur d'instance, `GET /auth/bootstrap` répond `200` et l'interface montre, à
+   la place de la connexion, la création du compte administrateur. `POST /auth/bootstrap`
+   reçoit une adresse, un nom et un mot de passe conforme à la politique ; il crée en une
+   transaction le tenant, ses groupes système, le premier projet, le premier `app_user`
+   (`is_instance_admin = true`) et son identité `password`, écrit `audit_log`
+   `bootstrap.consumed` et ouvre une session. Un verrou consultatif départage deux
+   premières visites simultanées : la seconde trouve l'administrateur de la première.
+2. **Par l'exploitant** : `BASEDB_ADMIN_EMAIL` fait créer l'administrateur au démarrage,
+   avec `BASEDB_ADMIN_PASSWORD` pour mot de passe, ou un mot de passe généré et affiché
+   une seule fois dans les journaux. Sans adresse, le serveur ne crée personne : une
+   adresse intégrée au produit serait la même partout, et aucun courriel ne l'atteindrait.
+3. Dès qu'un administrateur existe, par l'un ou l'autre chemin, la route répond `404` :
+   l'amorçage n'existe plus. Le critère est l'instance entière, non le tenant : changer
+   `BASEDB_TENANT` après coup ne le rouvre pas.
+
+**Premier arrivé, sans secret.** Le chemin de l'interface est ouvert à la première
+personne qui atteint l'instance. Le secret d'amorçage de 30 minutes que prévoyait la
+première version de ce chapitre est écarté : il obligeait à lire les journaux du serveur
+avant la première connexion. Le risque est tenu par l'exploitation — les ports sont
+publiés sur `127.0.0.1` par défaut, le serveur annonce au démarrage qu'un administrateur
+reste à créer, et l'installation demande de le créer avant de publier l'instance sur un
+domaine. Les colonnes `bootstrap_secret_*` du catalogue restent sans usage, et
+`BOOTSTRAP_SECRET_INVALID` reste au registre, sans émetteur.
 
 **Perte du dernier administrateur.** Le catalogue refuse par déclencheur la
 désactivation, la suppression ou la rétrogradation du dernier administrateur vivant
@@ -394,7 +423,22 @@ Si l'accès direct à la base est lui aussi perdu, il ne reste que la restaurati
 sauvegarde, `BASEDB_ENCRYPTION_KEY` comprise (A25) : sans elle, les mots de passe
 poivrés ne sont pas vérifiables et les secrets ne sont pas déchiffrables.
 
-## 8. Hors v1
+## 8. Création de comptes
+
+Toute personne qui atteint l'instance peut **créer son compte** — adresse, nom, mot de
+passe conforme à §2.2 — et en sort connectée. Le compte ne voit rien qu'on ne lui ait
+donné : ses propres projets (« Modèle de permissions », §15.1) et ce qu'on lui partage
+(§15.8). Il rejoint « Tous les utilisateurs ».
+
+La politique est un réglage du tenant (`_basedb.setting`, clé `auth.signup`), ouvert par
+défaut, que les administrateurs règlent, session élevée : **fermée**, seule une
+invitation admet un nouveau compte ; **réservée à des domaines**, seules leurs adresses.
+Une adresse déjà portée par un compte est refusée (`EMAIL_TAKEN`) : un formulaire de
+création ne peut le taire sans courriel de confirmation, que basedb n'envoie pas ; le
+seau d'adresse de §6 borne la cadence de qui voudrait en profiter. La même politique
+décide de la première connexion par un fournisseur en mode `signup` (§3.5).
+
+## 9. Hors v1
 
 Décidé, et écrit ici pour qu'aucun autre chapitre ne le suppose présent :
 
@@ -412,7 +456,7 @@ amorçage. Rien d'autre.
 | Appareils de confiance, exemption de ré-authentification | Affaiblit l'élévation, dernière barrière contre une charge exécutée dans l'application |
 | Listes blanches d'adresses IP | Relève du proxy inverse de l'exploitant |
 
-## 9. Codes d'erreur définis par ce chapitre
+## 10. Codes d'erreur définis par ce chapitre
 
 En anglais, en majuscules ASCII (A2), versés au registre unique (A23).
 

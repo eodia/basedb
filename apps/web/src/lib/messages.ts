@@ -14,6 +14,14 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   CREDENTIALS_INVALID: 'Identifiants incorrects, ou compte indisponible.',
   AUTHENTICATION_REQUIRED: 'Session expirée ou absente : reconnectez-vous.',
   SESSION_EXPIRED: 'Session expirée : reconnectez-vous.',
+  // Coming back from a sign-in provider (chapter 13 §3).
+  PROVISIONING_REFUSED:
+    'Aucun compte n’est associé à cette adresse, et elle ne peut pas en créer un ici : demandez une invitation.',
+  OIDC_ACCOUNT_LINK_REQUIRED:
+    'Un compte existe déjà avec cette adresse : connectez-vous avec son mot de passe.',
+  OIDC_STATE_INVALID: 'La connexion a expiré ou a été interrompue : recommencez.',
+  OIDC_TOKEN_INVALID: 'Le fournisseur n’a pas pu confirmer votre identité : recommencez.',
+  OIDC_PROVIDER_UNKNOWN: 'Ce moyen de connexion n’est pas proposé ici.',
   PASSWORD_POLICY_VIOLATION:
     'Mot de passe refusé : au moins 8 caractères, et sans reprendre votre adresse ni votre nom.',
   EXPAND_UNAVAILABLE: 'Ce champ ne peut pas être développé, ou sa cible n’est pas visible.',
@@ -282,6 +290,22 @@ function explain(e: ApiError): string {
   if (e.code === 'PURGE_TOO_EARLY' && typeof e.details.purgeable_from === 'string') {
     const at = new Date(e.details.purgeable_from).toLocaleDateString('fr-FR')
     return `Purge possible à partir du ${at}. Seul un administrateur d’instance peut l’avancer, en le justifiant.`
+  }
+  // Sharing a project or a base (chapter 05 §15.8).
+  if (e.code === 'ACTION_FORBIDDEN' && e.details.reason === 'son_propre_acces') {
+    return 'Vous ne pouvez pas modifier votre propre accès.'
+  }
+  if (e.code === 'ACTION_FORBIDDEN' && e.details.reason === 'herite') {
+    return 'Cet accès vient du projet : modifiez-le depuis le partage du projet.'
+  }
+  // Creating one's own account on an instance kept to some domains (chapter 13 §8).
+  if (e.code === 'REQUEST_INVALID' && e.details.reason === 'domaine_refuse') {
+    const domains = Array.isArray(e.details.domains)
+      ? e.details.domains.map((d) => `@${String(d)}`).join(', ')
+      : ''
+    return domains === ''
+      ? 'Cette adresse n’est pas acceptée sur cette instance.'
+      : `Les comptes sont réservés aux adresses ${domains}.`
   }
   if (e.code === 'ACTION_FORBIDDEN' && e.details.reason === 'soi_meme') {
     return 'Vous ne pouvez pas désactiver votre propre compte.'

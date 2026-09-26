@@ -14,12 +14,22 @@ import { unseal } from './sealing.js'
  * the database is not a copy of the credentials.
  */
 
-/** Presets shipped with the product (§3.1). A generic provider needs none. */
+/**
+ * Presets shipped with the product (§3.1). A generic provider needs none. The issuer is
+ * given where there is only one — Google's, GitLab's; Microsoft's names the organization
+ * and Keycloak's the realm, so the operator gives theirs.
+ */
 export const PRESETS: Readonly<
-  Record<string, { readonly label: string; readonly scopes: string }>
+  Record<string, { readonly label: string; readonly scopes: string; readonly issuer?: string }>
 > = {
-  google: { label: 'Google Workspace', scopes: 'openid email profile' },
+  google: {
+    label: 'Google',
+    scopes: 'openid email profile',
+    issuer: 'https://accounts.google.com',
+  },
+  microsoft: { label: 'Microsoft', scopes: 'openid email profile' },
   entra: { label: 'Microsoft Entra ID', scopes: 'openid email profile' },
+  gitlab: { label: 'GitLab', scopes: 'openid email profile', issuer: 'https://gitlab.com' },
   keycloak: { label: 'Keycloak', scopes: 'openid email profile' },
 }
 
@@ -31,8 +41,12 @@ export interface OidcProvider {
   readonly clientId: string
   readonly clientSecret: string
   readonly scopes: string
-  /** `off` (default) or `domains`, with an explicit list. Never anything else. */
-  readonly provisioning: 'off' | 'domains'
+  /**
+   * Whether a first sign-in creates the account: `off` (default), `domains` with an
+   * explicit list, or `signup` — as the tenant's sign-up policy says (chapter 13 §8), which
+   * is what a provider declared in the environment does. Never anything else.
+   */
+  readonly provisioning: 'off' | 'domains' | 'signup'
   readonly provisioningDomains: readonly string[]
   /**
    * Providers trusted to have verified the address on these domains, which is the only
@@ -60,6 +74,7 @@ export async function loadProviders(
   exec: Executor,
   instanceKey: string,
   tenantRef: string,
+  configured: readonly OidcProvider[] = [],
 ): Promise<readonly OidcProvider[]> {
   const settings = await exec.query<SettingRow>(
     `SELECT s.key, s.value, s.scope_kind
@@ -104,9 +119,15 @@ export async function loadProviders(
   )
 
   const providers: OidcProvider[] = []
+  // The environment's first: the operator's word on a slug is the last one.
+  for (const provider of configured) {
+    if (accepted !== null && !accepted.includes(provider.slug)) continue
+    providers.push(provider)
+  }
   for (const [slug, entry] of declared) {
     // A tenant that has narrowed the list gets only what it named.
     if (accepted !== null && !accepted.includes(slug)) continue
+    if (configured.some((p) => p.slug === slug)) continue
 
     const issuer = text(entry.issuer)
     const clientId = text(entry.client_id)
@@ -144,9 +165,10 @@ export async function requireProvider(
   instanceKey: string,
   tenantRef: string,
   slug: string,
+  configured: readonly OidcProvider[] = [],
 ): Promise<OidcProvider> {
   const providers = await pools.withConnection('catalog', (exec) =>
-    loadProviders(exec, instanceKey, tenantRef),
+    loadProviders(exec, instanceKey, tenantRef, configured),
   )
   const found = providers.find((p) => p.slug === slug)
   // Undeclared, or not accepted by this tenant: one answer. Telling them apart would

@@ -35,7 +35,7 @@ export type AccessLevel = 'none' | 'read' | 'edit' | 'manage'
 
 export const ACCESS_LEVELS: readonly AccessLevel[] = ['none', 'read', 'edit', 'manage']
 
-const RANK: Readonly<Record<AccessLevel, number>> = { none: 0, read: 1, edit: 2, manage: 3 }
+export const RANK: Readonly<Record<AccessLevel, number>> = { none: 0, read: 1, edit: 2, manage: 3 }
 
 export const LEVEL_ACTIONS: Readonly<Record<AccessLevel, readonly Action[]>> = {
   none: [],
@@ -53,7 +53,7 @@ export function levelOf(actions: ReadonlySet<Action>): AccessLevel {
   return found
 }
 
-const max = (a: AccessLevel, b: AccessLevel): AccessLevel => (RANK[a] >= RANK[b] ? a : b)
+export const max = (a: AccessLevel, b: AccessLevel): AccessLevel => (RANK[a] >= RANK[b] ? a : b)
 
 export type ScopeKind = 'project' | 'base' | 'table'
 
@@ -97,10 +97,10 @@ export interface AccessChange {
   readonly level: AccessLevel
 }
 
-const key = (kind: ScopeKind, id: string) => `${kind}:${id}`
+export const key = (kind: ScopeKind, id: string) => `${kind}:${id}`
 
 /** Every live project, base and table of the tenant — the administrator sees them all. */
-async function loadTree(exec: Executor, ctx: RequestContext): Promise<AccessProject[]> {
+export async function loadTree(exec: Executor, ctx: RequestContext): Promise<AccessProject[]> {
   const projects = await exec.query<{ id: string; label: string }>(
     `SELECT p.id, p.label FROM _basedb.project p
        JOIN _basedb.tenant t ON t.id = p.tenant_id
@@ -145,20 +145,24 @@ async function loadTree(exec: Executor, ctx: RequestContext): Promise<AccessProj
   }))
 }
 
-/** Direct grants of the groups, as levels: group → node → level. */
-async function loadGrants(
+/**
+ * Direct grants of roles, as levels: role → node → level. The groups by default; the
+ * roles of the people — what was shared with them directly — with `person`.
+ */
+export async function loadGrants(
   exec: Executor,
   ctx: RequestContext,
+  kind: 'group' | 'person' = 'group',
 ): Promise<Map<string, Map<string, AccessLevel>>> {
   const rows = await exec.query<{ role_id: string; scope: string; action: Action }>(
     `SELECT p.role_id, p.scope_kind || ':' ||
               coalesce(p.scope_project_id, p.scope_base_id, p.scope_table_id)::text AS scope,
             p.action
        FROM _basedb.permission p
-       JOIN _basedb.role r   ON r.id = p.role_id AND r.kind = 'group' AND r.deleted_at IS NULL
+       JOIN _basedb.role r   ON r.id = p.role_id AND r.kind = $2 AND r.deleted_at IS NULL
        JOIN _basedb.tenant t ON t.id = r.tenant_id
       WHERE t.ref = $1 AND p.scope_kind IN ('project', 'base', 'table')`,
-    [ctx.tenantId],
+    [ctx.tenantId, kind],
   )
   const actions = new Map<string, Map<string, Set<Action>>>()
   for (const row of rows) {
@@ -277,7 +281,7 @@ export async function accessGraph(pools: Pools, ctx: RequestContext): Promise<Ac
  * Where a node sits: its project, and the keys from the project down to it.
  * `null` when the node is not a live object of the tenant.
  */
-function locate(
+export function locate(
   tree: readonly AccessProject[],
   scope: AccessChange['scope'],
 ): { project: AccessProject; path: string[] } | null {
@@ -306,7 +310,7 @@ function childrenOf(project: AccessProject, nodeKey: string): string[] {
   return []
 }
 
-function descendantsOf(project: AccessProject, nodeKey: string): string[] {
+export function descendantsOf(project: AccessProject, nodeKey: string): string[] {
   const out: string[] = []
   for (const child of childrenOf(project, nodeKey))
     out.push(child, ...descendantsOf(project, child))
@@ -353,6 +357,55 @@ export function applyLevel(
 }
 
 /**
+ * Rewrites one role's rows over one project from its levels. Each write moves
+ * `authz_version` through the catalog trigger, so every cached decision is dropped.
+ */
+export async function writeLevels(
+  exec: Executor,
+  ctx: RequestContext,
+  project: AccessProject,
+  roleId: string,
+  levels: ReadonlyMap<string, AccessLevel>,
+): Promise<void> {
+  const subtree = [
+    key('project', project.id),
+    ...descendantsOf(project, key('project', project.id)),
+  ]
+  const ids = (kind: ScopeKind) =>
+    subtree.filter((k) => k.startsWith(`${kind}:`)).map((k) => k.slice(kind.length + 1))
+  await exec.query(
+    `DELETE FROM _basedb.permission
+      WHERE role_id = $1
+        AND (scope_project_id = ANY($2::uuid[]) OR scope_base_id = ANY($3::uuid[])
+             OR scope_table_id = ANY($4::uuid[]))`,
+    [roleId, ids('project'), ids('base'), ids('table')],
+    'delete',
+  )
+  for (const [scope, level] of levels) {
+    if (!subtree.includes(scope)) continue
+    const [kind, id] = scope.split(':') as [ScopeKind, string]
+    for (const action of LEVEL_ACTIONS[level]) {
+      await exec.query(
+        `INSERT INTO _basedb.permission
+           (role_id, scope_kind, scope_project_id, scope_base_id, scope_table_id,
+            action, granted_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          roleId,
+          kind,
+          kind === 'project' ? id : null,
+          kind === 'base' ? id : null,
+          kind === 'table' ? id : null,
+          action,
+          ctx.actor.id,
+        ],
+        'insert',
+      )
+    }
+  }
+}
+
+/**
  * Applies changes to the grid, in one transaction, and returns the new grid.
  *
  * The Administrators are not edited: they hold every verb on the tenant, and an
@@ -390,45 +443,7 @@ export async function applyAccessChanges(
       const mine = grants.get(group.id) ?? new Map<string, AccessLevel>()
       applyLevel(where.project, where.path, change.level, mine)
       grants.set(group.id, mine)
-
-      // The group's rows over this project are rewritten from its levels. Each write moves
-      // `authz_version` through the catalog trigger, so every cached decision is dropped.
-      const subtree = [
-        key('project', where.project.id),
-        ...descendantsOf(where.project, key('project', where.project.id)),
-      ]
-      const ids = (kind: ScopeKind) =>
-        subtree.filter((k) => k.startsWith(`${kind}:`)).map((k) => k.slice(kind.length + 1))
-      await exec.query(
-        `DELETE FROM _basedb.permission
-          WHERE role_id = $1
-            AND (scope_project_id = ANY($2::uuid[]) OR scope_base_id = ANY($3::uuid[])
-                 OR scope_table_id = ANY($4::uuid[]))`,
-        [group.id, ids('project'), ids('base'), ids('table')],
-        'delete',
-      )
-      for (const [scope, level] of mine) {
-        if (!subtree.includes(scope)) continue
-        const [kind, id] = scope.split(':') as [ScopeKind, string]
-        for (const action of LEVEL_ACTIONS[level]) {
-          await exec.query(
-            `INSERT INTO _basedb.permission
-               (role_id, scope_kind, scope_project_id, scope_base_id, scope_table_id,
-                action, granted_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            [
-              group.id,
-              kind,
-              kind === 'project' ? id : null,
-              kind === 'base' ? id : null,
-              kind === 'table' ? id : null,
-              action,
-              ctx.actor.id,
-            ],
-            'insert',
-          )
-        }
-      }
+      await writeLevels(exec, ctx, where.project, group.id, mine)
 
       await writeAudit(exec, ctx, {
         action: 'permission.set',

@@ -1,0 +1,14 @@
+[
+  {
+    "version": 1,
+    "name": "0001_catalogue.sql",
+    "sha256": "39c7678e87feaad9fe9892e5f47454cbfc277fba0f31b3afd6b6866ef0dd59b5",
+    "release": "0.1.0"
+  },
+  {
+    "version": 2,
+    "name": "0002_partage_et_comptes.sql",
+    "sha256": "c4665363a28f00a7c20752297db8dcff2bcc2c2ccac083d15043b675fa7b9d37",
+    "release": "0.2.0"
+  }
+]

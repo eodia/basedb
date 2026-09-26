@@ -16,8 +16,7 @@
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test:int": "vitest run",
-    "generate": "node ../../scripts/extract-catalog-ddl.mjs --write"
+    "test:int": "vitest run"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^10.16.0",

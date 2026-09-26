@@ -1,9 +1,9 @@
 import { createHmac, randomBytes } from 'node:crypto'
-import { catalogMigrations } from '@basedb/catalog-schema'
 import { ALL_ERROR_CODES, ERROR_CODES } from '@basedb/contracts'
 import {
   type AccessChange,
   type AccessGraph,
+  type AccessLevel,
   accessGraph,
   applyAccessChanges,
 } from './admin/access.js'
@@ -19,12 +19,23 @@ import {
   type GroupSummary,
   createGroup,
   deleteGroup,
-  ensureSystemGroups,
   listGroupMembers,
   listGroups,
   renameGroup,
   setGroupMembership,
 } from './admin/groups.js'
+import {
+  type InvitationPreview,
+  type PendingInvitation,
+  type ScopeSharing,
+  type ShareScope,
+  acceptInvitation,
+  invitationPreview,
+  inviteToScope,
+  revokeInvitation,
+  scopeSharing,
+  setPersonAccess,
+} from './admin/sharing.js'
 import {
   type UserSummary,
   createUser,
@@ -73,6 +84,7 @@ import {
   startAiWorker,
 } from './ai/field.js'
 import { checkSchedule, nextRuns } from './ai/schedule.js'
+import { bootstrapAdministrator, bootstrapInstance, bootstrapOpen } from './auth/bootstrap.js'
 import { type OidcProvider, loadProviders, requireProvider } from './auth/oidc-providers.js'
 import {
   type AssertedIdentity,
@@ -104,6 +116,13 @@ import {
 import { loginWithOidc } from './auth/operations.js'
 import { elevated, listLiveSessions, loadSessionByToken } from './auth/session.js'
 import {
+  type SignupPolicy,
+  adminSignupPolicy,
+  setSignupPolicy,
+  signUp,
+  signupPolicy,
+} from './auth/signup.js'
+import {
   type ApiTokenSummary,
   type CreateApiTokenRequest,
   type IssuedApiToken,
@@ -123,6 +142,7 @@ import {
   updateAutomation,
 } from './automations/catalog.js'
 import { requestRun, runAutomations, startAutomationWorker } from './automations/engine.js'
+import { APPLICATION_VERSION } from './catalog/cache.js'
 import { type FormulaInput, setFormula } from './catalog/computed-fields.js'
 import {
   type Dashboard,
@@ -377,6 +397,11 @@ import {
   deleteRecord,
   updateRecord,
 } from './records/update.js'
+import {
+  type CatalogState,
+  inspectCatalog,
+  migrateCatalog as migrateCatalogSchema,
+} from './runtime/catalog-migrations.js'
 import { Listener } from './runtime/listener.js'
 import { Pools, type PoolsOptions } from './runtime/pool.js'
 import {
@@ -450,6 +475,15 @@ export type {
   TriggerKind,
 } from './automations/catalog.js'
 export type { ButtonInput } from './catalog/fields.js'
+export type {
+  InvitationPreview,
+  PendingInvitation,
+  ScopeSharing,
+  ShareScope,
+  SharedGroup,
+  SharedPerson,
+} from './admin/sharing.js'
+export type { SignupPolicy } from './auth/signup.js'
 export type { Block, Dashboard, DashboardInput } from './catalog/dashboards.js'
 export type { Integration } from './integrations/slack.js'
 export type { SyncedTable } from './sync/tables.js'
@@ -582,6 +616,7 @@ export { DOCUMENTED_MCP_TOOLS, toDocumentation } from './catalog/documentation.j
 export { CACHE_CONTROL, VARY } from './catalog/serve.js'
 export type { MetaKind, ServedMeta } from './catalog/serve.js'
 export { clearCaches, SNAPSHOT_TTL_MS, DOCUMENT_MAX_BYTES } from './catalog/cache.js'
+export type { CatalogState } from './runtime/catalog-migrations.js'
 export { toOpenApi } from './catalog/openapi.js'
 export { escapeLabel } from './catalog/labels.js'
 export type {
@@ -615,6 +650,7 @@ export { ELEVATION_MS } from './auth/session.js'
 export { OIDC_COOKIE, forgetDiscoveries } from './auth/oidc.js'
 export type { AssertedIdentity } from './auth/oidc.js'
 export type { OidcProvider } from './auth/oidc-providers.js'
+export { PRESETS as OIDC_PRESETS } from './auth/oidc-providers.js'
 export { seal } from './auth/sealing.js'
 export { normalizeEmail } from './auth/operations.js'
 export { CSRF_COOKIE, CSRF_HEADER, SESSION_COOKIE, SESSION_ABSOLUTE_MS } from './auth/session.js'
@@ -729,6 +765,12 @@ export interface KernelConfig {
     readonly storage: FileStorageConfig
     readonly maxBytes?: number
   }
+  /**
+   * Sign-in providers declared by the operator in the environment (chapter 13 §3) — a
+   * provider of the catalog with the same slug gives way to it. Their secrets stay in the
+   * environment: nothing of them is written to the database.
+   */
+  readonly oidcProviders?: readonly OidcProvider[]
 }
 
 /**
@@ -739,10 +781,18 @@ export interface KernelConfig {
  */
 export interface Kernel {
   /**
-   * Applies the catalog migrations. Bootstrap only (chapter 10 §9.2). A database whose
-   * catalog already exists is left as it is, and the answer is then 0.
+   * Brings the catalog to the version this code ships — chapter 02, « Amorçage ». Each
+   * migration missing from `_basedb.catalog_migration` is applied, in order, in its own
+   * transaction; the answer is how many were. Refuses, applying nothing, a catalog whose
+   * recorded history this code cannot vouch for (`CATALOG_CHECKSUM_MISMATCH`) or which a
+   * newer version already upgraded (`CATALOG_VERSION_AHEAD`).
    */
-  migrateCatalog(): Promise<number>
+  migrateCatalog(options?: {
+    onApplied?: (name: string, ms: number) => void
+    onWaiting?: () => void
+  }): Promise<number>
+  /** Where the catalog stands, checked the same way, without applying anything. */
+  catalogStatus(): Promise<CatalogState>
   /**
    * Password login — chapter 13 §2.
    *
@@ -854,13 +904,31 @@ export interface Kernel {
    *
    * Idempotent — restarting does not create a second administrator. It is the only
    * write in the product that does not go through an authorization decision, and for
-   * good reason: no actor exists yet to carry one (chapter 05 §12).
+   * good reason: no actor exists yet to carry one (chapter 05 §12). Without an address
+   * it only finds the administrator, and answers `RESOURCE_NOT_FOUND` when there is none.
    */
-  bootstrap(request: { readonly tenantRef: string; readonly email: string }): Promise<{
+  bootstrap(request: { readonly tenantRef: string; readonly email?: string }): Promise<{
     readonly tenantId: string
     readonly userId: string
+    /** The administrator's address — the one given, or the one found. */
+    readonly email: string
     readonly alreadyDone: boolean
   }>
+  /** Whether the instance still has no administrator, so the interface may create it. */
+  bootstrapOpen(): Promise<boolean>
+  /**
+   * Creates the first administrator from the interface, and opens their session — chapter
+   * 13 §7. Only while `bootstrapOpen()`: afterwards, `RESOURCE_NOT_FOUND`.
+   */
+  bootstrapAdministrator(request: {
+    readonly tenantRef: string
+    readonly email: string
+    readonly displayName: string
+    readonly password: string
+    readonly requestId: string
+    readonly ip?: string | null
+    readonly userAgent?: string | null
+  }): Promise<LoginResult>
   /**
    * Opens a context for a user, after CHECKING them against the catalog.
    *
@@ -968,7 +1036,7 @@ export interface Kernel {
    * the navigation of the interface (chapter 05 §15).
    */
   listProjects(ctx: RequestContext): Promise<readonly ProjectSummary[]>
-  /** Creates a project. `manage_schema` on the tenant: the Administrators. */
+  /** Creates a project — anyone signed in; its creator manages it (05 §15.1). */
   createProject(
     ctx: RequestContext,
     request: { label: string; description?: string | null; look?: LookInput },
@@ -1038,6 +1106,45 @@ export interface Kernel {
     ctx: RequestContext,
     request: { changes: readonly AccessChange[]; sessionId: string },
   ): Promise<AccessGraph>
+  /** Who has access to a project or a base, and who is invited — its managers (05 §15.8). */
+  scopeSharing(ctx: RequestContext, request: { scope: ShareScope }): Promise<ScopeSharing>
+  /** Invites someone to a project or a base, at a level: a link valid a week. */
+  inviteToScope(
+    ctx: RequestContext,
+    request: { scope: ShareScope; email: string; level: AccessLevel },
+  ): Promise<PendingInvitation>
+  revokeInvitation(ctx: RequestContext, request: { invitationId: string }): Promise<void>
+  /** Changes, or takes back (`none`), what a person the scope was shared with may do. */
+  setPersonAccess(
+    ctx: RequestContext,
+    request: { scope: ShareScope; userId: string; level: AccessLevel },
+  ): Promise<ScopeSharing>
+  /** What an invitation offers, for its link's page, before anyone signs in. */
+  invitationPreview(tenantRef: string, token: string): Promise<InvitationPreview>
+  /** Accepts an invitation as the signed-in person. */
+  acceptInvitation(
+    ctx: RequestContext,
+    request: { token: string },
+  ): Promise<{ readonly projectId: string; readonly baseId: string | null }>
+  /** Whether anyone may create an account, and with which addresses (13 §8). */
+  signupPolicy(tenantRef: string): Promise<SignupPolicy>
+  /** The same, for the administration screen. */
+  adminSignupPolicy(ctx: RequestContext): Promise<SignupPolicy>
+  setSignupPolicy(
+    ctx: RequestContext,
+    request: { open: boolean; domains: readonly string[]; sessionId: string },
+  ): Promise<SignupPolicy>
+  /** Creates one's own account, and opens its session. */
+  signUp(request: {
+    tenantRef: string
+    email: string
+    displayName: string
+    password: string
+    invitation?: string
+    requestId: string
+    ip?: string | null
+    userAgent?: string | null
+  }): Promise<LoginResult>
   /** Below the grid: each group's rules on the fields of one table (05 §4). */
   fieldAccess(ctx: RequestContext, request: { tableId: string }): Promise<FieldAccess>
   /** Hides a field from a group, makes it read-only for it, or lifts the rule (`null`). */
@@ -1964,73 +2071,26 @@ export function startKernel(config: KernelConfig): Kernel {
   const workers: AiWorker[] = []
 
   return {
-    async migrateCatalog() {
-      // The catalog is created once. Replayed, its first statement stops on `schema
-      // "_basedb" already exists`, and a server that restarts with `BASEDB_MIGRATE=1` — a
-      // container, typically — would never come back up. An existing catalog is kept;
-      // what follows (error codes, partitions, leases) is idempotent and still runs.
-      const migrations = await pools.withConnection('ddl', async (exec) => {
-        const [found] = await exec.query<{ present: boolean }>(
-          "SELECT to_regnamespace('_basedb') IS NOT NULL AS present",
-        )
-        if (found?.present === true) return []
-        const pending = catalogMigrations()
-        for (const m of pending) await exec.query(m.sql, [], 'ddl')
-        return pending
+    async migrateCatalog(options) {
+      const applied = await migrateCatalogSchema(config.connectionString, APPLICATION_VERSION, {
+        onApplied: options?.onApplied,
+        onWaiting: options?.onWaiting,
       })
+      // What follows is idempotent, and runs at every start.
       await seedErrorCodes()
       await ensureJournalPartitions()
       // A plan whose lease expired while a process was down is moved to `interrupted`,
       // never replayed on its own (chapter 06 §1.3). It stops the base from looking
       // like it has a migration running, and leaves a human something to resume.
       await reclaimStaleMigrations(pools)
-      return migrations.length
+      return applied.length
     },
 
-    async bootstrap(request) {
-      return pools.withConnection('catalog', async (exec) => {
-        const existing = await exec.query<{ tenant_id: string; user_id: string }>(
-          `SELECT t.id AS tenant_id, u.id AS user_id
-             FROM _basedb.tenant t
-             JOIN _basedb.app_user u ON u.tenant_id = t.id AND u.is_instance_admin
-            WHERE t.ref = $1`,
-          [request.tenantRef],
-        )
-        const found = existing[0]
-        if (found !== undefined) {
-          return { tenantId: found.tenant_id, userId: found.user_id, alreadyDone: true }
-        }
+    catalogStatus: () => inspectCatalog(config.connectionString),
 
-        // The tenant ↔ app_user cycle requires a single transaction with deferred
-        // constraints: each one requires the other.
-        await exec.query('BEGIN')
-        const [t] = await exec.query<{ id: string; created_by: string }>(
-          `INSERT INTO _basedb.tenant (ref, label, is_system, created_by)
-           VALUES ($1, $2, true, _basedb_local.uuid_generate_v7())
-           RETURNING id, created_by`,
-          [request.tenantRef, request.tenantRef],
-          'insert',
-        )
-        await exec.query(
-          `INSERT INTO _basedb.app_user
-             (id, tenant_id, email, display_name, is_system, is_instance_admin, created_by, updated_by)
-           VALUES ($1, $2, $3, 'Administration', true, true, $1, $1)`,
-          [t.created_by, t.id, request.email],
-          'insert',
-        )
-        // The two system groups — the first account is an Administrator, and belongs to
-        // everyone — and a first project to create bases in (chapter 05 §15).
-        await ensureSystemGroups(exec, request.tenantRef, t.created_by)
-        await exec.query(
-          `INSERT INTO _basedb.project (tenant_id, label, label_key, created_by, updated_by)
-           VALUES ($1, 'Projet principal', 'projet principal', $2, $2)`,
-          [t.id, t.created_by],
-          'insert',
-        )
-        await exec.query('COMMIT')
-        return { tenantId: t.id, userId: t.created_by, alreadyDone: false }
-      })
-    },
+    bootstrap: (request) => bootstrapInstance(pools, request),
+    bootstrapOpen: () => bootstrapOpen(pools),
+    bootstrapAdministrator: (request) => bootstrapAdministrator(pools, instanceKey(), request),
 
     async openContext(credential) {
       const rows = await pools.withConnection('catalog', (exec) =>
@@ -2112,7 +2172,7 @@ export function startKernel(config: KernelConfig): Kernel {
 
     oidcProviders: async (tenantRef) => {
       const providers = await pools.withConnection('catalog', (exec) =>
-        loadProviders(exec, instanceKey(), tenantRef),
+        loadProviders(exec, instanceKey(), tenantRef, config.oidcProviders),
       )
       // The slug and the label, and nothing else: a client identifier or an issuer would
       // describe the operator's arrangements to anyone who asks.
@@ -2120,7 +2180,13 @@ export function startKernel(config: KernelConfig): Kernel {
     },
 
     oidcStart: async (request) => {
-      const provider = await requireProvider(pools, instanceKey(), request.tenantRef, request.slug)
+      const provider = await requireProvider(
+        pools,
+        instanceKey(),
+        request.tenantRef,
+        request.slug,
+        config.oidcProviders,
+      )
       return startOidc(instanceKey(), provider, {
         redirectUri: request.redirectUri,
         returnTo: request.returnTo,
@@ -2129,7 +2195,13 @@ export function startKernel(config: KernelConfig): Kernel {
 
     oidcCallback: async (request) => {
       const key = instanceKey()
-      const provider = await requireProvider(pools, key, request.tenantRef, request.slug)
+      const provider = await requireProvider(
+        pools,
+        key,
+        request.tenantRef,
+        request.slug,
+        config.oidcProviders,
+      )
       const asserted = await completeOidc(key, provider, {
         code: request.code,
         state: request.state,
@@ -2145,7 +2217,13 @@ export function startKernel(config: KernelConfig): Kernel {
 
     oidcLink: async (request) => {
       const key = instanceKey()
-      const provider = await requireProvider(pools, key, request.tenantRef, request.slug)
+      const provider = await requireProvider(
+        pools,
+        key,
+        request.tenantRef,
+        request.slug,
+        config.oidcProviders,
+      )
       const asserted = await completeOidc(key, provider, {
         code: request.code,
         state: request.state,
@@ -2195,6 +2273,16 @@ export function startKernel(config: KernelConfig): Kernel {
     setGroupMembership: (ctx, request) => setGroupMembership(pools, ctx, request),
     accessGraph: (ctx) => accessGraph(pools, ctx),
     applyAccessChanges: (ctx, request) => applyAccessChanges(pools, ctx, request),
+    scopeSharing: (ctx, request) => scopeSharing(pools, ctx, instanceKey(), request),
+    inviteToScope: (ctx, request) => inviteToScope(pools, ctx, instanceKey(), request),
+    revokeInvitation: (ctx, request) => revokeInvitation(pools, ctx, request),
+    setPersonAccess: (ctx, request) => setPersonAccess(pools, ctx, instanceKey(), request),
+    invitationPreview: (tenantRef, token) => invitationPreview(pools, tenantRef, token),
+    acceptInvitation: (ctx, request) => acceptInvitation(pools, ctx, request),
+    signupPolicy: (tenantRef) => signupPolicy(pools, tenantRef),
+    adminSignupPolicy: (ctx) => adminSignupPolicy(pools, ctx),
+    setSignupPolicy: (ctx, request) => setSignupPolicy(pools, ctx, request),
+    signUp: (request) => signUp(pools, instanceKey(), request),
     fieldAccess: (ctx, request) => fieldAccess(pools, ctx, request),
     setFieldRule: (ctx, request) => setFieldRule(pools, ctx, request),
     effectiveFieldMask: (ctx, request) => effectiveFieldMask(pools, ctx, request),
