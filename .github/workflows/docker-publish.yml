@@ -1,0 +1,65 @@
+name: Publier les images Docker
+
+# The three images of the Dockerfile — api, mcp, web — in one Docker Hub repository,
+# eodia/basedb, the role at the front of the tag: a `v0.1.0` tag publishes api-0.1.0,
+# api-0.1 and api-latest, and the same for mcp and web; a prerelease (`v0.2.0-rc.1`)
+# publishes its exact version only. For amd64 and arm64 (emulated).
+on:
+  push:
+    tags:
+      - 'v*'
+  # By hand, from a `v*` tag: publishes that version again.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # One job rather than a matrix: the `build` stage, which the three targets share, is
+    # built once per platform and then found in the builder's cache.
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Construire et publier
+        run: |
+          set -euo pipefail
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Lancez ce workflow depuis une étiquette vX.Y.Z (reçu : $GITHUB_REF_NAME)."
+            exit 1
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          suffixes=("$version")
+          if [[ -z "${BASH_REMATCH[4]}" ]]; then
+            suffixes+=("${BASH_REMATCH[1]}.${BASH_REMATCH[2]}" latest)
+          fi
+
+          for target in api mcp web; do
+            tags=()
+            for suffix in "${suffixes[@]}"; do tags+=(--tag "eodia/basedb:$target-$suffix"); done
+            docker buildx build . \
+              --target "$target" \
+              --platform linux/amd64,linux/arm64 \
+              "${tags[@]}" \
+              --label "org.opencontainers.image.title=basedb-$target" \
+              --label "org.opencontainers.image.version=$version" \
+              --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+              --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+              --label "org.opencontainers.image.licenses=AGPL-3.0-or-later" \
+              --push
+          done
