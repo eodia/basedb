@@ -3,17 +3,18 @@ title: Installation
 description: Installer basedb avec Docker Compose, ou lancer la pile de développement.
 ---
 
-basedb se compose de trois processus — l’**API**, le **serveur MCP** et l’**interface** — et
-d’une base **PostgreSQL 16**. Le dépôt fournit tout le nécessaire pour Docker.
+basedb tient dans **une seule image Docker**, [`eodia/basedb`](https://hub.docker.com/r/eodia/basedb)
+(amd64 et arm64) : l’**interface**, l’**API** et le **serveur MCP**, servis sur une seule
+adresse. Elle a besoin d’une base **PostgreSQL 16**, que le `docker-compose.yml` fournit.
 
 ## Avec Docker Compose (recommandé)
 
-Prérequis : Docker avec Compose v2.
+Prérequis : Docker avec Compose v2. Deux fichiers suffisent, pas besoin du code :
 
 ```bash
-git clone https://github.com/eodia/basedb.git
-cd basedb
-cp .env.example .env
+mkdir basedb && cd basedb
+curl -fsSLO https://raw.githubusercontent.com/eodia/basedb/main/docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/eodia/basedb/main/.env.example -o .env
 ```
 
 Ouvrez `.env` et renseignez les deux seules valeurs obligatoires :
@@ -27,32 +28,46 @@ BASEDB_ENCRYPTION_KEY=…
 Puis démarrez :
 
 ```bash
-docker compose up -d --build
-docker compose logs api
+docker compose up -d
+docker compose logs basedb
 ```
 
-Au premier démarrage, l’API crée le catalogue et le premier administrateur, puis **affiche son
-mot de passe une seule fois** dans ses journaux :
+Au premier démarrage, basedb crée le catalogue et le premier administrateur, puis **affiche
+son mot de passe une seule fois** dans ses journaux :
 
 ```text
-api-1  | Catalog applied (1 migration).
-api-1  | Bootstrapped — admin@basedb.local
-api-1  | Mot de passe administrateur (affiché une seule fois) : basedb-…
-api-1  | basedb API on http://localhost:8787
+basedb-1  | [api] Catalog applied (1 migration).
+basedb-1  | [api] Bootstrapped — admin@basedb.local
+basedb-1  | [api] Mot de passe administrateur (affiché une seule fois) : basedb-…
+basedb-1  | [basedb] ready on port 3000: the interface, /api and /mcp
 ```
 
 Ouvrez [http://localhost:3000](http://localhost:3000) et connectez-vous avec
 `admin@basedb.local` et ce mot de passe.
 
-| Service | Adresse | Rôle |
-|---|---|---|
-| `web` | http://localhost:3000 | l’interface |
-| `api` | http://localhost:8787 | API REST, connexion, travail de fond |
-| `mcp` | http://localhost:8788/mcp | serveur MCP pour les agents |
-| `db` | localhost:5432 | PostgreSQL, pour `psql` et vos outils |
+| Adresse | Rôle |
+|---|---|
+| http://localhost:3000 | l’interface |
+| http://localhost:3000/api | l’API REST et sa documentation |
+| http://localhost:3000/mcp | le serveur MCP, pour les agents |
+| localhost:5432 | PostgreSQL, pour `psql` et vos outils |
 
 Les ports sont publiés sur `127.0.0.1` seulement. Pour servir basedb sur un domaine, voir
 [Domaine et HTTPS](/basedb/hebergement/https/).
+
+## Avec votre propre PostgreSQL
+
+L’image seule suffit, avec une base PostgreSQL 16 ou plus (rôle propriétaire de la base,
+extensions `pg_trgm` et `unaccent` disponibles) :
+
+```bash
+docker run -d --name basedb -p 3000:3000 -v basedb-files:/data \
+  -e DATABASE_URL=postgres://basedb:secret@db.example.com:5432/basedb \
+  -e BASEDB_ENCRYPTION_KEY="$(openssl rand -base64 32)" \
+  eodia/basedb
+```
+
+Gardez la clé générée : voir l’encadré ci-dessous.
 
 :::caution[La clé d’instance]
 `BASEDB_ENCRYPTION_KEY` signe les sessions et chiffre les secrets enregistrés (clés d’IA,

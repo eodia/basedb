@@ -1,13 +1,15 @@
 # syntax=docker/dockerfile:1.7
 #
-# basedb — one Dockerfile, three images, one per process:
+# basedb — one image: the API, the MCP server and the interface, behind one port (3000).
+# PostgreSQL stays outside it: the `db` service of docker-compose.yml, or yours
+# (DATABASE_URL).
 #
-#   docker build --target api -t basedb-api .   # REST API, auth, background work
-#   docker build --target mcp -t basedb-mcp .   # MCP entry point for agents
-#   docker build --target web -t basedb-web .   # the interface (Next.js)
+#   docker build -t basedb .
+#   docker run -d -p 3000:3000 -v basedb-files:/data \
+#     -e DATABASE_URL=postgres://… -e BASEDB_ENCRYPTION_KEY=… basedb
 #
-# `docker compose up -d` builds and starts all three with PostgreSQL
-# (docker-compose.yml); every variable is described in `.env.example`.
+# `docker compose up -d` starts it with PostgreSQL (docker-compose.yml); every variable
+# is described in `.env.example`. Published as eodia/basedb on Docker Hub.
 
 ARG NODE_VERSION=22
 
@@ -47,47 +49,31 @@ COPY --from=build /repo/packages/core/dist packages/core/dist
 COPY --from=build /repo/apps/api/dist apps/api/dist
 COPY --from=build /repo/apps/mcp/dist apps/mcp/dist
 
-# ── Runtime base ───────────────────────────────────────────────────────────────────────
-FROM node:${NODE_VERSION}-bookworm-slim AS runtime
+# ── The image ──────────────────────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-bookworm-slim AS basedb
 ENV NODE_ENV=production
-WORKDIR /app
-
-# ── API ────────────────────────────────────────────────────────────────────────────────
-FROM runtime AS api
+# The router in front of the three processes (docker/image/Caddyfile): a static binary.
+COPY --from=caddy:2-alpine /usr/bin/caddy /usr/local/bin/caddy
 # Files of `file` and `image` fields and exports before purge: one volume, /data.
 RUN mkdir -p /data/files /data/exports && chown -R node:node /data
-COPY --from=server /repo /app
-WORKDIR /app/apps/api
-ENV PORT=8787 \
+# The API and the MCP server, with the packages they reference.
+COPY --from=server /repo /app/server
+# The interface, as a self-contained server.
+COPY --from=build --chown=node:node /repo/apps/web/.next/standalone /app/web
+COPY --from=build --chown=node:node /repo/apps/web/.next/static /app/web/apps/web/.next/static
+COPY --from=build --chown=node:node /repo/apps/web/public /app/web/apps/web/public
+COPY docker/image/Caddyfile docker/image/start.mjs /app/
+WORKDIR /app
+# On an empty database, the first start applies the catalog and creates the first
+# administrator; both are no-ops on the next starts.
+ENV PORT=3000 \
+    BASEDB_MIGRATE=1 \
+    BASEDB_BOOTSTRAP=1 \
     BASEDB_FILES_DIR=/data/files \
     BASEDB_EXPORT_DIR=/data/exports
 USER node
-EXPOSE 8787
-VOLUME ["/data"]
-HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
-  CMD ["node", "-e", "fetch('http://127.0.0.1:'+process.env.PORT+'/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
-CMD ["node", "dist/server.js"]
-
-# ── MCP ────────────────────────────────────────────────────────────────────────────────
-FROM runtime AS mcp
-COPY --from=server /repo /app
-WORKDIR /app/apps/mcp
-ENV BASEDB_MCP_PORT=8788
-USER node
-EXPOSE 8788
-HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 \
-  CMD ["node", "-e", "fetch('http://127.0.0.1:'+process.env.BASEDB_MCP_PORT+'/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
-CMD ["node", "dist/server.js"]
-
-# ── Interface ──────────────────────────────────────────────────────────────────────────
-FROM runtime AS web
-COPY --from=build --chown=node:node /repo/apps/web/.next/standalone ./
-COPY --from=build --chown=node:node /repo/apps/web/.next/static ./apps/web/.next/static
-COPY --from=build --chown=node:node /repo/apps/web/public ./apps/web/public
-ENV PORT=3000 \
-    HOSTNAME=0.0.0.0
-USER node
 EXPOSE 3000
-HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 \
-  CMD ["node", "-e", "fetch('http://127.0.0.1:'+process.env.PORT+'/').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
-CMD ["node", "apps/web/server.js"]
+VOLUME ["/data"]
+HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=5 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:'+process.env.PORT+'/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+CMD ["node", "/app/start.mjs"]

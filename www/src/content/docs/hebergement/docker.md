@@ -1,67 +1,68 @@
 ---
 title: Docker Compose
-description: Les images, les services, les volumes et l’exploitation courante.
+description: L’image, les services, les volumes et l’exploitation courante.
 ---
 
-Le dépôt fournit un `Dockerfile` à trois cibles et un `docker-compose.yml` qui assemble la pile
-complète. Toute la configuration passe par un fichier `.env` (voir
+basedb est publié en **une seule image**, [`eodia/basedb`](https://hub.docker.com/r/eodia/basedb),
+pour amd64 et arm64. Le `docker-compose.yml` du dépôt l’assemble avec PostgreSQL. Toute la
+configuration passe par un fichier `.env` (voir
 [Variables d’environnement](/basedb/hebergement/variables/)).
 
-## Les images
+## L’image
 
-Un seul `Dockerfile`, une image par processus :
+Elle contient les trois processus de basedb et les sert sur **un seul port, 3000** :
 
-```bash
-docker build --target api -t basedb-api .   # API REST, connexion, travail de fond
-docker build --target mcp -t basedb-mcp .   # serveur MCP
-docker build --target web -t basedb-web .   # l’interface (Next.js autonome)
-```
+| Chemin | Processus |
+|---|---|
+| `/api/*`, `/auth/*`, `/healthz` | l’API REST, la connexion, le travail de fond |
+| `/mcp` | le serveur MCP, pour les agents |
+| tout le reste — `/`, `/f/…`, `/v/…` | l’interface |
 
-Les images tournent sous l’utilisateur `node`, sur Node 22, et déclarent une vérification de
-santé (`/healthz` pour l’API et le MCP).
+Au démarrage, l’API passe la première : sur une base vide, elle applique le catalogue et crée le
+premier administrateur ; aux démarrages suivants, les deux sont sans effet. Le serveur MCP démarre
+dès qu’elle répond. Si l’un des processus s’arrête, le conteneur s’arrête entier, et la politique
+de redémarrage le relance entier.
+
+L’image tourne sous l’utilisateur `node`, sur Node 22, déclare une vérification de santé
+(`/healthz`) et un volume, `/data`, pour les fichiers des champs Document et Image.
+
+| Étiquette | Contenu |
+|---|---|
+| `latest` | la dernière version publiée |
+| `0.1` | la dernière version 0.1.x |
+| `0.1.1` | exactement cette version |
 
 ## Les services
 
 | Service | Image | Port (sur 127.0.0.1) | Volume |
 |---|---|---|---|
 | `db` | `postgres:16-alpine` | 5432 | `db-data` |
-| `api` | `basedb-api` | 8787 | `files` → `/data` |
-| `mcp` | `basedb-mcp` | 8788 | — |
-| `web` | `basedb-web` | 3000 | — |
+| `basedb` | `eodia/basedb` | 3000 | `files` → `/data` |
 | `proxy` (option) | `caddy:2-alpine` | 80, 443 | `caddy-data`, `caddy-config` |
-
-- L’**API** attend que PostgreSQL soit prêt ; au premier démarrage, elle applique le catalogue et
-  crée le premier administrateur. Aux démarrages suivants, les deux sont sans effet : le
-  conteneur redémarre sans rien rejouer.
-- Le **MCP** attend l’API : c’est elle qui applique le catalogue.
-- L’**interface** ne reçoit aucun secret : seulement les adresses de l’API et du MCP, lues à
-  l’exécution — la même image sert n’importe quel domaine.
 
 ## Commandes utiles
 
 ```bash
-docker compose up -d --build        # construire et démarrer
-docker compose logs -f api          # suivre l’API (mot de passe admin au 1er démarrage)
+docker compose up -d                # télécharger l’image et démarrer
+docker compose logs -f basedb       # suivre basedb (mot de passe admin au 1er démarrage)
 docker compose ps                   # état et santé des services
-docker compose restart api          # redémarrer un service
+docker compose restart basedb       # redémarrer basedb
 docker compose down                 # arrêter (les volumes restent)
 ```
+
+Depuis un clone du dépôt, `docker compose up -d --build` construit l’image à partir du code
+plutôt que de la télécharger.
 
 ## Changer les ports
 
 ```bash
-BASEDB_WEB_PORT=3100
-BASEDB_API_PORT=8790
-BASEDB_MCP_PORT=8791
+BASEDB_PORT=3100
 POSTGRES_PORT=5433
 ```
 
-Les adresses vues par le navigateur suivent automatiquement (`BASEDB_API`, `BASEDB_MCP`), sauf si
-vous les fixez vous-même.
-
 ## Une base PostgreSQL existante
 
-Définissez `DATABASE_URL` : l’API et le MCP s’y connectent au lieu du conteneur `db` (qui
-démarre quand même, inutilisé — retirez-le d’un fichier `docker-compose.override.yml` si vous
-préférez). Il faut PostgreSQL 16 ou plus, un rôle propriétaire de la base, et les extensions
-`pg_trgm` et `unaccent` disponibles.
+Définissez `DATABASE_URL` : basedb s’y connecte au lieu du conteneur `db` (qui démarre quand même,
+inutilisé — retirez-le d’un fichier `docker-compose.override.yml` si vous préférez). Il faut
+PostgreSQL 16 ou plus, un rôle propriétaire de la base, et les extensions `pg_trgm` et `unaccent`
+disponibles. L’image seule suffit alors — voir [Installation](/basedb/guides/installation/).

@@ -5,6 +5,16 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const entries = [
 	{
 		date: '26 septembre 2026',
+		title: 'Une seule image Docker',
+		tag: 'Hébergement',
+		items: [
+			`basedb tient dans <strong>une seule image</strong>, <code>eodia/basedb</code> sur Docker Hub, pour amd64 et arm64 : l’interface, l’API sous <code>/api</code> et le serveur MCP sous <code>/mcp</code>, sur <strong>un seul port</strong>. <a href="${base}/guides/installation/">L’installation</a>`,
+			'Deux fichiers suffisent — <code>docker-compose.yml</code> et <code>.env</code> — sans cloner le dépôt ni rien construire ; la mise à jour se fait par <code>docker compose pull</code>.',
+			'Derrière un domaine, le proxy HTTPS n’a plus de routage à faire : tout va au port 3000.',
+		],
+	},
+	{
+		date: '26 septembre 2026',
 		title: 'Automatisations, interfaces, formules, collaboration',
 		tag: 'Nouveau',
 		items: [

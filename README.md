@@ -89,18 +89,22 @@ est historisé. Vos données restent exploitables sans basedb.
 
 ## Démarrer
 
-Avec Docker, sur n’importe quel hôte :
+Avec Docker, sur n’importe quel hôte — deux fichiers suffisent :
 
 ```bash
-git clone https://github.com/eodia/basedb.git && cd basedb
-cp .env.example .env          # renseignez POSTGRES_PASSWORD et BASEDB_ENCRYPTION_KEY
-docker compose up -d --build
-docker compose logs api       # le mot de passe de l’administrateur, affiché une fois
+mkdir basedb && cd basedb
+curl -fsSLO https://raw.githubusercontent.com/eodia/basedb/main/docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/eodia/basedb/main/.env.example -o .env
+# dans .env : POSTGRES_PASSWORD, et BASEDB_ENCRYPTION_KEY (openssl rand -base64 32)
+docker compose up -d
+docker compose logs basedb    # le mot de passe de l’administrateur, affiché une fois
 ```
 
-L’interface répond sur <http://localhost:3000>, l’API sur `:8787`, le serveur MCP sur
-`:8788/mcp` — publiés sur `127.0.0.1` seulement. `docker compose --profile https up -d` avec
-`BASEDB_DOMAIN` sert le tout en HTTPS sur votre domaine, derrière Caddy.
+basedb répond sur <http://localhost:3000> — l’interface, l’API sous `/api`, le serveur MCP
+sous `/mcp` —, publié sur `127.0.0.1` seulement. Une seule image,
+[`eodia/basedb`](https://hub.docker.com/r/eodia/basedb) (amd64 et arm64), à côté de
+PostgreSQL ; `docker compose --profile https up -d` avec `BASEDB_DOMAIN` la sert en HTTPS sur
+votre domaine, derrière Caddy.
 
 Connectez-vous, puis ouvrez la **base de démonstration** : une petite agence, ses clients,
 projets, tâches, factures et avis — avec des formules, des vues de chaque sorte, un tableau de
@@ -115,12 +119,12 @@ par défaut, jamais plus puissant que la personne qui l’a créé.
 
 ```bash
 # Un programme
-curl http://localhost:8787/api/v1/<tenant>/data/<base>/<table> \
+curl http://localhost:3000/api/v1/<tenant>/data/<base>/<table> \
   -H "Authorization: Bearer $BASEDB_TOKEN"
 
 # Un agent (Claude Code, ou tout client MCP)
 claude mcp add basedb -- node apps/mcp/dist/relay.js \
-  --url http://localhost:8788/mcp --token-env BASEDB_TOKEN
+  --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 
 Chaque base a sa page **Documentation API et MCP**, générée et filtrée par vos droits, avec sa

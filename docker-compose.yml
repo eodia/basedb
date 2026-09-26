@@ -1,24 +1,18 @@
-# basedb — the whole stack: PostgreSQL, the API, the MCP entry point, the interface.
+# basedb — PostgreSQL and basedb (the API, the MCP server and the interface in one image).
 #
 #   cp .env.example .env        # then set POSTGRES_PASSWORD and BASEDB_ENCRYPTION_KEY
-#   docker compose up -d --build
-#   docker compose logs api     # the administrator's password, printed once
+#   docker compose up -d        # pulls eodia/basedb; `--build` builds it from this clone
+#   docker compose logs basedb  # the administrator's password, printed once
 #
-# Interface on http://localhost:3000, API on :8787, MCP on :8788/mcp — published on
-# 127.0.0.1 only. To serve it on a domain with HTTPS (Caddy, automatic certificates):
+# Everything on http://localhost:3000 — the interface, the API under /api, the MCP server
+# under /mcp — published on 127.0.0.1 only. To serve it on a domain with HTTPS (Caddy,
+# automatic certificates):
 #
-#   docker compose --profile https up -d --build     # with BASEDB_DOMAIN set in .env
+#   docker compose --profile https up -d               # with BASEDB_DOMAIN set in .env
 #
 # Every variable is described in `.env.example`. An empty value counts as unset.
 
 name: basedb
-
-x-kernel: &kernel
-  # The API and the MCP server share the database and the instance key: what one seals,
-  # the other must open.
-  DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-basedb}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-basedb}}
-  BASEDB_ENCRYPTION_KEY: ${BASEDB_ENCRYPTION_KEY:?set BASEDB_ENCRYPTION_KEY in .env (openssl rand -base64 32)}
-  BASEDB_TENANT: ${BASEDB_TENANT:-}
 
 services:
   db:
@@ -40,24 +34,26 @@ services:
       timeout: 3s
       retries: 30
 
-  api:
-    build: { context: ., target: api }
-    image: basedb-api
+  basedb:
+    image: eodia/basedb:${BASEDB_VERSION:-latest}
+    build: { context: . }
     restart: unless-stopped
     init: true
     depends_on:
       db: { condition: service_healthy }
     environment:
-      <<: *kernel
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-basedb}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-basedb}}
+      BASEDB_ENCRYPTION_KEY: ${BASEDB_ENCRYPTION_KEY:?set BASEDB_ENCRYPTION_KEY in .env (openssl rand -base64 32)}
+      BASEDB_TENANT: ${BASEDB_TENANT:-}
       # Applies the catalog on an empty database and creates the first administrator;
       # both are no-ops on the next starts.
       BASEDB_MIGRATE: ${BASEDB_MIGRATE:-1}
       BASEDB_BOOTSTRAP: ${BASEDB_BOOTSTRAP:-1}
       BASEDB_ADMIN_EMAIL: ${BASEDB_ADMIN_EMAIL:-}
       BASEDB_ADMIN_PASSWORD: ${BASEDB_ADMIN_PASSWORD:-}
-      # Addresses, as the browser sees them.
-      BASEDB_ORIGINS: ${BASEDB_ORIGINS:-}
+      # The public address, for the return of an OIDC sign-in and the links basedb gives.
       BASEDB_PUBLIC_URL: ${BASEDB_PUBLIC_URL:-}
+      BASEDB_ORIGINS: ${BASEDB_ORIGINS:-}
       # Files of `file` and `image` fields: the /data volume, or an S3-compatible store.
       BASEDB_FILES_MAX_MB: ${BASEDB_FILES_MAX_MB:-}
       BASEDB_S3_BUCKET: ${BASEDB_S3_BUCKET:-}
@@ -84,45 +80,17 @@ services:
     volumes:
       - files:/data
     ports:
-      - "127.0.0.1:${BASEDB_API_PORT:-8787}:8787"
+      - "127.0.0.1:${BASEDB_PORT:-3000}:3000"
 
-  mcp:
-    build: { context: ., target: mcp }
-    image: basedb-mcp
-    restart: unless-stopped
-    init: true
-    depends_on:
-      # The API applies the catalog; the MCP server only reads and writes through it.
-      api: { condition: service_healthy }
-    environment:
-      <<: *kernel
-    ports:
-      - "127.0.0.1:${BASEDB_MCP_PORT:-8788}:8788"
-
-  web:
-    build: { context: ., target: web }
-    image: basedb-web
-    restart: unless-stopped
-    init: true
-    depends_on:
-      api: { condition: service_healthy }
-    # The interface holds no secret: it is told where the API and the MCP server are.
-    environment:
-      BASEDB_API: ${BASEDB_API:-http://localhost:${BASEDB_API_PORT:-8787}}
-      BASEDB_MCP: ${BASEDB_MCP:-http://localhost:${BASEDB_MCP_PORT:-8788}/mcp}
-    ports:
-      - "127.0.0.1:${BASEDB_WEB_PORT:-3000}:3000"
-
-  # One domain, HTTPS by Let's Encrypt: /api, /auth → API; /mcp → MCP; the rest → web.
+  # One domain, HTTPS by Let's Encrypt, in front of basedb — which does its own routing.
   proxy:
     image: caddy:2-alpine
     profiles: [https]
     restart: unless-stopped
-    depends_on: [api, mcp, web]
-    environment:
-      BASEDB_DOMAIN: ${BASEDB_DOMAIN:-}
+    depends_on: [basedb]
+    # BASEDB_DOMAIN: the domain, whose DNS points here, ports 80 and 443 reachable.
+    command: caddy reverse-proxy --from ${BASEDB_DOMAIN:-localhost} --to basedb:3000
     volumes:
-      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
     ports:

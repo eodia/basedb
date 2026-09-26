@@ -3,8 +3,8 @@ title: Variables d’environnement
 description: Toutes les variables lues par basedb, et leur valeur par défaut.
 ---
 
-Toutes se placent dans le fichier `.env` à la racine du dépôt, que `docker compose` lit (le
-modèle complet et commenté est `.env.example`). **Une valeur vide vaut « non défini ».**
+Toutes se placent dans le fichier `.env`, à côté de `docker-compose.yml`, que `docker compose`
+lit (le modèle complet et commenté est `.env.example`). Avec `docker run`, passez-les en `-e`. **Une valeur vide vaut « non défini ».**
 
 ## Obligatoires
 
@@ -36,12 +36,12 @@ modèle complet et commenté est `.env.example`). **Une valeur vide vaut « non 
 
 | Variable | Défaut | Rôle |
 |---|---|---|
-| `BASEDB_API` | `http://localhost:8787` | l’API, vue du navigateur |
-| `BASEDB_MCP` | `http://localhost:8788/mcp` | le MCP, affiché aux utilisateurs |
-| `BASEDB_ORIGINS` | toute origine `http://localhost` | origines autorisées, séparées par des virgules — **obligatoire en production** |
-| `BASEDB_PUBLIC_URL` | — | adresse publique de l’API, pour le retour OIDC |
-| `BASEDB_DOMAIN` | — | le domaine servi par le proxy Caddy |
-| `BASEDB_WEB_PORT`, `BASEDB_API_PORT`, `BASEDB_MCP_PORT` | 3000, 8787, 8788 | ports publiés |
+| `BASEDB_PORT` | `3000` | port publié sur 127.0.0.1 : l’interface, `/api` et `/mcp` |
+| `BASEDB_VERSION` | `latest` | l’étiquette de l’image `eodia/basedb` |
+| `BASEDB_PUBLIC_URL` | — | adresse publique de basedb, pour le retour OIDC |
+| `BASEDB_DOMAIN` | — | le domaine servi en HTTPS par le proxy Caddy |
+| `BASEDB_ORIGINS` | — | d’autres sites dont les pages appellent l’API depuis le navigateur, séparés par des virgules ; inutile pour l’interface de basedb, servie à la même adresse |
+| `BASEDB_API`, `BASEDB_MCP` | `/`, `/mcp` | l’API et le MCP vus du navigateur ; à ne régler que pour la pile de développement (`pnpm start`) |
 
 ## Fichiers
 

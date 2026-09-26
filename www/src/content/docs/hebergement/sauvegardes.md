@@ -41,9 +41,11 @@ secrets.** Conservez-la dans votre gestionnaire de secrets, à côté des sauveg
 ## Mettre à jour
 
 ```bash
-git pull
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
+
+`BASEDB_VERSION` fixe une version précise (`0.1.1`) plutôt que la dernière (`latest`).
 
 :::caution[En développement actif]
 Avant la première version stable, le catalogue n’a qu’une migration, régénérée au fil du

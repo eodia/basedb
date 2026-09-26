@@ -22,7 +22,7 @@ plus de droits que la personne qui l’a créé.
 
 ```bash
 export BASEDB_TOKEN=bdb_…
-curl "http://localhost:8787/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
+curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
   -H "Authorization: Bearer $BASEDB_TOKEN"
 ```
 
@@ -44,7 +44,7 @@ filtre traverse une relation : `clients_id.ville eq "Lyon"`.
 ## Écrire
 
 ```bash
-curl -X POST "http://localhost:8787/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
   -H "Authorization: Bearer $BASEDB_TOKEN" -H "content-type: application/json" \
   -d '{"values": {"nom": "Audit RGPD", "statut": "nouveau", "montant": 12000}}'
 ```

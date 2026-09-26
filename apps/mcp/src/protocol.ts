@@ -18,7 +18,7 @@ export type ProtocolVersion = (typeof PROTOCOL_VERSIONS)[number]
 export const LATEST_VERSION: ProtocolVersion = PROTOCOL_VERSIONS[0]
 
 /** `serverInfo`: the product and its version, stated at the handshake (§15). */
-export const SERVER_INFO = { name: 'basedb', title: 'basedb', version: '0.1.0' } as const
+export const SERVER_INFO = { name: 'basedb', title: 'basedb', version: '0.1.1' } as const
 
 /** JSON-RPC error codes: the standard ones, and the implementation-defined band. */
 export const RPC = {

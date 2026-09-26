@@ -3,7 +3,7 @@ title: Serveur MCP
 description: Brancher un agent IA sur basedb par le Model Context Protocol.
 ---
 
-basedb expose un **serveur MCP** (`POST /mcp`, port 8788 par défaut) : un agent — Claude, un
+basedb expose un **serveur MCP** (`POST /mcp`, à la même adresse que l’interface) : un agent — Claude, un
 assistant de code, votre propre agent — y découvre les bases, lit et écrit des lignes, et
 **propose** des évolutions de structure.
 
@@ -12,13 +12,13 @@ assistant de code, votre propre agent — y découvre les bases, lit et écrit d
 Créez un jeton depuis **Jetons API et MCP…** (menu de la base), accès MCP coché. Le même jeton
 sert à l’API REST et au MCP.
 
-Pour un client qui parle HTTP, l’adresse est `http://localhost:8788/mcp` avec
+Pour un client qui parle HTTP, l’adresse est `http://localhost:3000/mcp` avec
 `Authorization: Bearer <jeton>`. Pour un client qui lance des processus (stdio), le dépôt fournit
 un relais qui lit le jeton dans une variable d’environnement — jamais dans la configuration :
 
 ```bash
 claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
-  --url http://localhost:8788/mcp --token-env BASEDB_TOKEN
+  --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 
 ## Les douze outils

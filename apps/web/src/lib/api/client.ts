@@ -20,12 +20,25 @@ declare global {
 }
 
 /**
+ * An address as the browser must use it. One starting with `/` names this page's own
+ * origin: the Docker image serves the interface, the API (`/`) and the MCP entry point
+ * (`/mcp`) on one address, whatever the domain it is reached by. Made absolute because
+ * some addresses leave the page — an iCalendar feed, an agent's configuration.
+ */
+export function absoluteAddress(address: string, origin?: string): string {
+  const trimmed = address.replace(/\/+$/, '')
+  if (!address.startsWith('/')) return trimmed
+  const here = origin ?? (typeof window === 'undefined' ? '' : window.location.origin)
+  return `${here}${trimmed}`
+}
+
+/**
  * The MCP entry point's address, for the configuration an agent's client needs — handed
  * over by the layout like the API's, else the port `scripts/start.mjs` prefers.
  */
 export function mcpEndpoint(): string {
   const given = typeof window === 'undefined' ? undefined : window.__BASEDB_MCP__
-  return given !== undefined && given !== '' ? given : 'http://localhost:8788/mcp'
+  return given !== undefined && given !== '' ? absoluteAddress(given) : 'http://localhost:8788/mcp'
 }
 
 /**
@@ -35,10 +48,11 @@ export function mcpEndpoint(): string {
  * rendering on the server. Never inlined at build time (next.config.ts): an image built
  * once serves any address.
  */
-const BASE =
+const BASE = absoluteAddress(
   (typeof window === 'undefined' ? undefined : window.__BASEDB_API__) ??
-  process.env.BASEDB_API ??
-  'http://localhost:8787'
+    process.env.BASEDB_API ??
+    'http://localhost:8787',
+)
 
 /**
  * The session, held IN MEMORY and nowhere else.

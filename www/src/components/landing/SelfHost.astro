@@ -14,14 +14,12 @@ const steps = [
 	{
 		n: '3',
 		title: 'Démarrer',
-		code: 'docker compose up -d\ndocker compose logs api   # mot de passe admin',
+		code: 'docker compose up -d\ndocker compose logs basedb   # mot de passe admin',
 	},
 ];
 const services = [
 	{ name: 'db', text: 'PostgreSQL 16, vos données' },
-	{ name: 'api', text: 'API REST, connexion, historique' },
-	{ name: 'mcp', text: 'Serveur MCP pour les agents' },
-	{ name: 'web', text: 'L’interface' },
+	{ name: 'basedb', text: 'L’interface, l’API REST et le serveur MCP, sur un seul port' },
 	{ name: 'proxy', text: 'Caddy, HTTPS automatique (option)' },
 ];
 ---
@@ -32,7 +30,7 @@ const services = [
 			<span class="bd-label">Auto-hébergé</span>
 			<h2>Vos données restent <span class="bd-accent">chez vous.</span></h2>
 			<p class="lead">
-				basedb est un logiciel libre (AGPL-3.0) : une image par processus, une base PostgreSQL, et c’est
+				basedb est un logiciel libre (AGPL-3.0) : une seule image, une base PostgreSQL, et c’est
 				tout — ni service tiers imposé, ni télémétrie. Sauvegardez-le avec <code>pg_dump</code>, lisez-le avec
 				n’importe quel client PostgreSQL.
 			</p>

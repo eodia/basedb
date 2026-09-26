@@ -1,0 +1,39 @@
+# The router inside the basedb image: one port, three processes (docker/image/start.mjs).
+# Plain HTTP — HTTPS is the job of whatever sits in front: docker/Caddyfile with
+# `docker compose --profile https`, or your own proxy.
+{
+	admin off
+	auto_https off
+	persist_config off
+	# Behind a proxy on a private network (Docker, a load balancer), keep the visitor's
+	# address it sends: the API's rate limits count per visitor, not per proxy.
+	servers {
+		trusted_proxies static private_ranges
+	}
+	# Its start-up notices (admin endpoint off, no HTTP/2 without TLS) are expected here.
+	log {
+		level ERROR
+	}
+}
+
+:{$PORT:3000} {
+	encode zstd gzip
+
+	# The REST API, sign-in and the API documentation.
+	@api path /api/* /auth/* /healthz
+	handle @api {
+		reverse_proxy 127.0.0.1:8787
+	}
+
+	# The MCP entry point for agents (streamed answers: no buffering).
+	handle /mcp* {
+		reverse_proxy 127.0.0.1:8788 {
+			flush_interval -1
+		}
+	}
+
+	# Everything else is the interface, shared forms (/f/…) and views (/v/…) included.
+	handle {
+		reverse_proxy 127.0.0.1:3001
+	}
+}
