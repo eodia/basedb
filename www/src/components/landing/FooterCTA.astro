@@ -1,0 +1,60 @@
+---
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<section class="bd-cta bd-reveal">
+	<div class="grid-bg" aria-hidden="true"></div>
+	<h2>Vos données méritent <span class="bd-accent">de vraies tables.</span></h2>
+	<p>Installez basedb en quelques minutes, invitez votre équipe, et gardez la main sur chaque ligne.</p>
+	<div class="btns">
+		<a href={`${base}/guides/installation/`} class="bd-btn bd-btn-primary">Installer basedb</a>
+		<a href="https://github.com/eodia/basedb" class="bd-btn bd-btn-secondary">Voir le code sur GitHub</a>
+	</div>
+</section>
+
+<style>
+	.bd-cta {
+		position: relative;
+		max-width: 1200px;
+		margin: 48px auto 32px;
+		padding: 96px 24px;
+		text-align: center;
+		border-radius: 28px;
+		border: 1px solid #d9ecd3;
+		background: linear-gradient(180deg, #f3fbf0, #ffffff);
+		overflow: hidden;
+	}
+	.grid-bg {
+		position: absolute;
+		inset: 0;
+		background-image:
+			linear-gradient(to right, rgba(42, 157, 28, 0.08) 1px, transparent 1px),
+			linear-gradient(to bottom, rgba(42, 157, 28, 0.08) 1px, transparent 1px);
+		background-size: 48px 32px;
+		mask-image: radial-gradient(ellipse at 50% 0%, #000 10%, transparent 70%);
+		-webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 10%, transparent 70%);
+		pointer-events: none;
+	}
+	h2 {
+		position: relative;
+		font-size: clamp(32px, 4.4vw, 52px);
+		font-weight: 800;
+		letter-spacing: -0.04em;
+		line-height: 1.05;
+		margin: 0 0 16px;
+	}
+	p {
+		position: relative;
+		font-size: 17px;
+		color: var(--bd-text-soft);
+		margin: 0 auto 30px;
+		max-width: 560px;
+	}
+	.btns {
+		position: relative;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 12px;
+	}
+</style>

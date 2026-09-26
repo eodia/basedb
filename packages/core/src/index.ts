@@ -605,7 +605,10 @@ export interface KernelConfig {
  * error. None takes or returns a connection.
  */
 export interface Kernel {
-  /** Applies the catalog migrations. Bootstrap only (chapter 10 §9.2). */
+  /**
+   * Applies the catalog migrations. Bootstrap only (chapter 10 §9.2). A database whose
+   * catalog already exists is left as it is, and the answer is then 0.
+   */
   migrateCatalog(): Promise<number>
   /**
    * Password login — chapter 13 §2.
@@ -1637,9 +1640,18 @@ export function startKernel(config: KernelConfig): Kernel {
 
   return {
     async migrateCatalog() {
-      const migrations = catalogMigrations()
-      await pools.withConnection('ddl', async (exec) => {
-        for (const m of migrations) await exec.query(m.sql, [], 'ddl')
+      // The catalog is created once. Replayed, its first statement stops on `schema
+      // "_basedb" already exists`, and a server that restarts with `BASEDB_MIGRATE=1` — a
+      // container, typically — would never come back up. An existing catalog is kept;
+      // what follows (error codes, partitions, leases) is idempotent and still runs.
+      const migrations = await pools.withConnection('ddl', async (exec) => {
+        const [found] = await exec.query<{ present: boolean }>(
+          "SELECT to_regnamespace('_basedb') IS NOT NULL AS present",
+        )
+        if (found?.present === true) return []
+        const pending = catalogMigrations()
+        for (const m of pending) await exec.query(m.sql, [], 'ddl')
+        return pending
       })
       await seedErrorCodes()
       await ensureJournalPartitions()

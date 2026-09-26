@@ -28,6 +28,28 @@ amorce un administrateur, puis lance l'API, le serveur MCP (sur le port 8788 s'i
 libre) et l'interface. L'écran récupère lui-même l'identifiant d'acteur ; il n'y a rien à
 recopier. `Ctrl+C` arrête tout, conteneur compris.
 
+### Déployer avec Docker
+
+Le `Dockerfile` à la racine produit une image par processus (`--target api`, `mcp`, `web`) et
+le `docker-compose.yml` assemble la pile complète — PostgreSQL 16, l'API, le serveur MCP,
+l'interface, et en option un proxy Caddy qui sert le tout en HTTPS sur un seul domaine
+(`docker/Caddyfile`).
+
+```bash
+cp .env.example .env          # POSTGRES_PASSWORD et BASEDB_ENCRYPTION_KEY, obligatoires
+docker compose up -d --build
+docker compose logs api       # le mot de passe de l'administrateur, affiché une fois
+```
+
+L'interface répond sur http://localhost:3000, l'API sur :8787, le MCP sur :8788/mcp, tous
+publiés sur `127.0.0.1` seulement ; `docker compose --profile https up -d` avec `BASEDB_DOMAIN`
+les sert sur un domaine. Chaque variable est décrite dans [`.env.example`](.env.example) — une
+valeur vide y vaut « non défini ». Le catalogue et l'administrateur ne sont créés qu'au premier
+démarrage : un conteneur qui redémarre retrouve les siens.
+
+Le site public et la documentation d'utilisation sont dans [`www/`](www/) (Astro et
+Starlight).
+
 ### Projets, comptes et droits
 
 Tout s'organise par **projet** : le sélecteur en haut de la barre latérale change de

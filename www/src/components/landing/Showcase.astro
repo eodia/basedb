@@ -1,0 +1,183 @@
+---
+import { Image } from 'astro:assets';
+import calendrier from '../../assets/screens/calendrier.png';
+import environnements from '../../assets/screens/environnements.png';
+import grille from '../../assets/screens/grille.png';
+import historique from '../../assets/screens/historique.png';
+import kanban from '../../assets/screens/kanban.png';
+import partage from '../../assets/screens/partage-formulaire.png';
+import sql from '../../assets/screens/requete-sql.png';
+
+const shots = [
+	{ id: 'grille', label: 'Grille', image: grille, caption: 'Relations, listes de choix colorées, texte long en Markdown : une grille qui écrit dans une vraie table.' },
+	{ id: 'kanban', label: 'Kanban', image: kanban, caption: 'Les mêmes lignes en colonnes, selon une liste de choix. Glisser une carte, c’est modifier la ligne.' },
+	{ id: 'calendrier', label: 'Calendrier', image: calendrier, caption: 'Un champ date suffit : mois ou semaine, couleur selon le statut.' },
+	{ id: 'formulaire', label: 'Formulaire', image: partage, caption: 'Un formulaire se partage par un lien, public ou réservé aux membres connectés.' },
+	{ id: 'historique', label: 'Historique', image: historique, caption: 'Chaque écriture, d’où qu’elle vienne — l’interface, un formulaire, le SQL direct — avec les valeurs d’avant.' },
+	{ id: 'sql', label: 'SQL', image: sql, caption: 'La console SQL lit les tables sous leur vrai nom. Rien à traduire, rien à exporter.' },
+	{ id: 'environnements', label: 'Environnements', image: environnements, caption: 'Production et recette côte à côte, et le plan de migration de l’une vers l’autre.' },
+];
+---
+
+<section class="bd-show bd-reveal" aria-labelledby="bd-show-title">
+	<div class="head">
+		<span class="bd-label">L’interface, pour de vrai</span>
+		<h2 id="bd-show-title">Tout ce que votre équipe attend d’un tableur partagé.</h2>
+	</div>
+	<div class="tabs" role="tablist" aria-label="Captures de l’interface">
+		{
+			shots.map((s, i) => (
+				<button
+					type="button"
+					role="tab"
+					id={`bd-tab-${s.id}`}
+					aria-controls={`bd-panel-${s.id}`}
+					aria-selected={i === 0 ? 'true' : 'false'}
+					tabindex={i === 0 ? 0 : -1}
+				>
+					{s.label}
+				</button>
+			))
+		}
+	</div>
+	<div class="frame">
+		<div class="chrome" aria-hidden="true">
+			<span class="d"></span><span class="d"></span><span class="d"></span>
+		</div>
+		{
+			shots.map((s, i) => (
+				<figure
+					class="panel"
+					role="tabpanel"
+					id={`bd-panel-${s.id}`}
+					aria-labelledby={`bd-tab-${s.id}`}
+					hidden={i !== 0}
+				>
+					<Image
+						src={s.image}
+						alt={`basedb — ${s.label.toLowerCase()} : ${s.caption}`}
+						widths={[720, 1440, 2160]}
+						sizes="(max-width: 1240px) 100vw, 1200px"
+						loading={i === 0 ? 'eager' : 'lazy'}
+						format="webp"
+						quality={82}
+					/>
+					<figcaption>{s.caption}</figcaption>
+				</figure>
+			))
+		}
+	</div>
+</section>
+
+<script>
+	const root = document.querySelector('.bd-show');
+	if (root !== null) {
+		const tabs = [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+		const select = (tab: HTMLButtonElement) => {
+			for (const t of tabs) {
+				const on = t === tab;
+				t.setAttribute('aria-selected', String(on));
+				t.tabIndex = on ? 0 : -1;
+				const panel = document.getElementById(t.getAttribute('aria-controls') ?? '');
+				if (panel !== null) panel.hidden = !on;
+			}
+		};
+		tabs.forEach((tab, i) => {
+			tab.addEventListener('click', () => select(tab));
+			tab.addEventListener('keydown', (e) => {
+				const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+				if (step === 0) return;
+				const next = tabs[(i + step + tabs.length) % tabs.length];
+				select(next);
+				next.focus();
+			});
+		});
+	}
+</script>
+
+<style>
+	.bd-show {
+		max-width: 1240px;
+		margin: 0 auto;
+		padding: 40px 20px 110px;
+	}
+	.head {
+		text-align: center;
+		margin-bottom: 28px;
+	}
+	h2 {
+		font-size: clamp(28px, 3.6vw, 40px);
+		font-weight: 800;
+		letter-spacing: -0.03em;
+		line-height: 1.1;
+		margin: 12px auto 0;
+		max-width: 760px;
+	}
+	.tabs {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 6px;
+		margin-bottom: 22px;
+	}
+	.tabs button {
+		padding: 8px 15px;
+		border-radius: 999px;
+		font-size: 13.5px;
+		font-weight: 600;
+		color: var(--bd-text-soft);
+		border: 1px solid var(--bd-border);
+		background: #fff;
+		transition: all 0.15s ease;
+	}
+	.tabs button:hover {
+		color: var(--bd-text);
+		border-color: #cdd2ca;
+	}
+	.tabs button[aria-selected='true'] {
+		color: #fff;
+		background: var(--bd-ink);
+		border-color: var(--bd-ink);
+	}
+	.frame {
+		border-radius: 16px;
+		border: 1px solid rgba(16, 24, 16, 0.1);
+		background: #fff;
+		box-shadow: var(--bd-shadow-lg);
+		overflow: hidden;
+	}
+	.chrome {
+		display: flex;
+		gap: 6px;
+		padding: 11px 14px;
+		background: #f6f7f5;
+		border-bottom: 1px solid #eceeea;
+	}
+	.chrome .d {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background: #ff5f57;
+	}
+	.chrome .d:nth-child(2) {
+		background: #febc2e;
+	}
+	.chrome .d:nth-child(3) {
+		background: #28c840;
+	}
+	.panel {
+		margin: 0;
+	}
+	.panel img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+	figcaption {
+		padding: 14px 20px;
+		font-size: 14px;
+		color: var(--bd-text-soft);
+		border-top: 1px solid var(--bd-border-subtle);
+		background: var(--bd-alt-bg);
+	}
+</style>

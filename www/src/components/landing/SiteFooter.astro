@@ -1,0 +1,142 @@
+---
+import Logo from './Logo.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const columns = [
+	{
+		title: 'Produit',
+		links: [
+			{ href: `${base}/#fonctionnalites`, label: 'Fonctionnalités' },
+			{ href: `${base}/nouveautes/`, label: 'Nouveautés' },
+			{ href: `${base}/feuille-de-route/`, label: 'Feuille de route' },
+			{ href: `${base}/#faq`, label: 'Questions fréquentes' },
+		],
+	},
+	{
+		title: 'Documentation',
+		links: [
+			{ href: `${base}/guides/introduction/`, label: 'Introduction' },
+			{ href: `${base}/guides/installation/`, label: 'Installation' },
+			{ href: `${base}/integrations/api-rest/`, label: 'API REST' },
+			{ href: `${base}/integrations/mcp/`, label: 'Serveur MCP' },
+		],
+	},
+	{
+		title: 'Hébergement',
+		links: [
+			{ href: `${base}/hebergement/docker/`, label: 'Docker Compose' },
+			{ href: `${base}/hebergement/variables/`, label: 'Variables d’environnement' },
+			{ href: `${base}/hebergement/https/`, label: 'Domaine et HTTPS' },
+			{ href: `${base}/hebergement/sauvegardes/`, label: 'Sauvegardes' },
+		],
+	},
+	{
+		title: 'Projet',
+		links: [
+			{ href: 'https://github.com/eodia/basedb', label: 'GitHub' },
+			{ href: 'https://github.com/eodia/basedb/tree/main/docs/architecture', label: 'Document d’architecture' },
+			{ href: 'https://github.com/eodia/basedb/blob/main/LICENSE', label: 'Licence AGPL-3.0' },
+			{ href: 'https://github.com/eodia/basedb/issues', label: 'Signaler un problème' },
+		],
+	},
+];
+---
+
+<footer class="bd-footer">
+	<div class="inner">
+		<div class="brand">
+			<Logo size={26} />
+			<p>La base collaborative dont chaque table est une vraie table PostgreSQL.</p>
+			<p class="small">Un logiciel libre d’eodia.</p>
+		</div>
+		{
+			columns.map((c) => (
+				<nav aria-label={c.title}>
+					<h3>{c.title}</h3>
+					<ul>
+						{c.links.map((l) => (
+							<li>
+								<a href={l.href}>{l.label}</a>
+							</li>
+						))}
+					</ul>
+				</nav>
+			))
+		}
+	</div>
+	<div class="bottom">
+		<span>© {new Date().getFullYear()} eodia · AGPL-3.0-or-later</span>
+		<span>Site construit avec Astro et Starlight.</span>
+	</div>
+</footer>
+
+<style>
+	.bd-footer {
+		border-top: 1px solid var(--bd-border);
+		margin-top: 48px;
+		background: #fff;
+	}
+	.inner {
+		display: grid;
+		grid-template-columns: 1.6fr repeat(4, 1fr);
+		gap: 32px;
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 56px 24px 40px;
+	}
+	.brand p {
+		margin: 14px 0 0;
+		font-size: 14px;
+		line-height: 1.6;
+		color: var(--bd-text-soft);
+		max-width: 280px;
+	}
+	.brand .small {
+		margin-top: 8px;
+		font-size: 13px;
+		color: var(--bd-muted-fg);
+	}
+	h3 {
+		margin: 4px 0 14px;
+		font-size: 12px;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--bd-muted-fg);
+	}
+	ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	a {
+		font-size: 14px;
+		color: var(--bd-text-soft);
+	}
+	a:hover {
+		color: var(--bd-primary);
+	}
+	.bottom {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: 12px;
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 18px 24px 32px;
+		border-top: 1px solid var(--bd-border-subtle);
+		font-size: 13px;
+		color: var(--bd-muted-fg);
+	}
+	@media (max-width: 900px) {
+		.inner {
+			grid-template-columns: repeat(2, 1fr);
+		}
+		.brand {
+			grid-column: 1 / -1;
+		}
+	}
+</style>

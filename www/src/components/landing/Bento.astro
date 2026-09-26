@@ -1,0 +1,299 @@
+---
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const views = ['Grille', 'Kanban', 'Calendrier', 'Chronologie', 'Formulaire', 'Questionnaire'];
+const actors = [
+	{ label: 'Une personne', tone: 'green' },
+	{ label: 'Un jeton d’API', tone: 'blue' },
+	{ label: 'Un agent MCP', tone: 'violet' },
+	{ label: 'Un formulaire public', tone: 'amber' },
+	{ label: 'Du SQL direct', tone: 'ink' },
+];
+const small = [
+	{
+		title: 'Option IA sur un champ',
+		text: 'Un interrupteur « IA » fait remplir un champ par un modèle, à partir des autres colonnes. OpenAI, Anthropic ou Mistral, avec votre clé.',
+		code: 'Résume {{Notes}} en une phrase',
+		href: `${base}/fonctionnalites/ia/`,
+	},
+	{
+		title: 'Copilote',
+		text: 'Demandez un filtre, une requête, des colonnes : chaque proposition arrive en carte, et s’applique d’un clic.',
+		href: `${base}/fonctionnalites/ia/`,
+	},
+	{
+		title: 'Relations',
+		text: 'De vraies clés étrangères entre tables, une valeur d’affichage lisible, des filtres qui traversent la relation.',
+		href: `${base}/fonctionnalites/tables-et-champs/`,
+	},
+	{
+		title: 'Fichiers et images',
+		text: 'Sur le disque de l’hôte ou dans un stockage compatible S3 : AWS, Scaleway, OVH, Cloudflare R2, Garage, MinIO…',
+		href: `${base}/fonctionnalites/fichiers/`,
+	},
+	{
+		title: 'Import CSV et JSON',
+		text: 'Glissez un fichier : l’import devine les types, crée la table ou complète une table existante, et dit ligne par ligne ce qui est refusé.',
+		href: `${base}/guides/premiers-pas/`,
+	},
+	{
+		title: 'Connexion unique (OIDC)',
+		text: 'Mot de passe ou fournisseur d’identité OpenID Connect ; sessions révocables, élévation pour l’administration.',
+		href: `${base}/fonctionnalites/droits/`,
+	},
+	{
+		title: 'Webhooks',
+		text: 'Chaque écriture peut prévenir un autre système : charges signées, livrées dans l’ordre, réessayées.',
+		href: `${base}/integrations/webhooks/`,
+	},
+	{
+		title: 'Documentation générée',
+		text: 'Pour chaque base, une documentation de l’API et du MCP, filtrée par vos droits, et sa spécification OpenAPI 3.1.',
+		href: `${base}/integrations/api-rest/`,
+	},
+	{
+		title: 'Console SQL',
+		text: 'Écrivez du SQL dans l’interface, sur les vrais noms, avec la même grille pour lire le résultat.',
+		href: `${base}/integrations/sql/`,
+	},
+];
+---
+
+<section class="bd-bento" id="fonctionnalites-plus">
+	<div class="bd-section-head bd-reveal">
+		<span class="bd-label">Et tout le reste</span>
+		<h2>Ce qu’on attend d’un outil d’équipe, sans lâcher PostgreSQL.</h2>
+		<p>Chaque fonction écrit dans les mêmes tables, sous les mêmes droits, dans le même historique.</p>
+	</div>
+
+	<div class="grid">
+		<article class="card wide views bd-reveal">
+			<h3>Six vues sur les mêmes lignes</h3>
+			<p>Enregistrées et partagées à l’échelle de la table : chacun choisit sa façon de lire, personne ne copie les données.</p>
+			<div class="chips">
+				{views.map((v, i) => <span class:list={['view', `v${i}`]}>{v}</span>)}
+			</div>
+		</article>
+
+		<article class="card forms bd-reveal">
+			<h3>Formulaires partagés</h3>
+			<p>Un lien public, ou réservé aux membres connectés. Répondre ne donne aucun droit sur la table.</p>
+			<div class="link">
+				<span class="lock">🔗</span>
+				<code>/f/uIPJZ4Ensr_K8V0In0bb…</code>
+			</div>
+			<a href={`${base}/fonctionnalites/formulaires-partages/`}>En savoir plus →</a>
+		</article>
+
+		<article class="card envs bd-reveal">
+			<h3>Environnements</h3>
+			<p>Une base, plusieurs déclinaisons. Comparez la structure, migrez de l’une à l’autre, synchronisez des lignes.</p>
+			<div class="envline">
+				<span class="env prod">Production</span>
+				<span class="env rec">Recette</span>
+				<span class="env dev">Développement</span>
+			</div>
+			<a href={`${base}/fonctionnalites/environnements/`}>En savoir plus →</a>
+		</article>
+
+		<article class="card wide hist bd-reveal">
+			<h3>Un historique qui n’oublie personne</h3>
+			<p>
+				Capturé par déclencheur dans la transaction même : même une écriture faite en SQL direct est tracée, avec
+				ses valeurs d’avant. Une modification s’annule, une ligne supprimée se restaure.
+			</p>
+			<div class="actors">
+				{actors.map((a) => <span class:list={['actor', a.tone]}>{a.label}</span>)}
+			</div>
+			<a href={`${base}/fonctionnalites/historique/`}>En savoir plus →</a>
+		</article>
+
+		{
+			small.map((s) => (
+				<a class="card small bd-reveal" href={s.href}>
+					<h3>{s.title}</h3>
+					<p>{s.text}</p>
+					{s.code !== undefined && <code class="prompt">{s.code}</code>}
+				</a>
+			))
+		}
+	</div>
+</section>
+
+<style>
+	.bd-bento {
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 96px 24px;
+	}
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 16px;
+	}
+	.card {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 24px;
+		border-radius: 18px;
+		border: 1px solid var(--bd-border);
+		background: #fff;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+	}
+	a.card:hover,
+	.card:hover {
+		border-color: #cfe0ca;
+		box-shadow: 0 14px 34px -20px rgba(16, 24, 16, 0.28);
+	}
+	a.card:hover {
+		transform: translateY(-2px);
+	}
+	.wide {
+		grid-column: span 2;
+	}
+	h3 {
+		margin: 0;
+		font-size: 17px;
+		font-weight: 700;
+		letter-spacing: -0.015em;
+	}
+	p {
+		margin: 0;
+		font-size: 14px;
+		line-height: 1.6;
+		color: var(--bd-text-soft);
+	}
+	.card > a {
+		margin-top: auto;
+		padding-top: 6px;
+		font-size: 13.5px;
+		font-weight: 600;
+		color: var(--bd-primary);
+	}
+	.views {
+		background:
+			radial-gradient(400px 200px at 90% 110%, rgba(63, 203, 42, 0.12), transparent 70%),
+			#fff;
+	}
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 8px;
+	}
+	.view {
+		font-size: 13px;
+		font-weight: 600;
+		padding: 8px 14px;
+		border-radius: 10px;
+		border: 1px solid var(--bd-border);
+		background: var(--bd-alt-bg);
+	}
+	.v0 { color: #15803d; }
+	.v1 { color: #c26a05; }
+	.v2 { color: #2563eb; }
+	.v3 { color: #0e7490; }
+	.v4 { color: #7c3aed; }
+	.v5 { color: #be185d; }
+	.link {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 9px 12px;
+		border-radius: 10px;
+		background: var(--bd-ink);
+		color: #d8e6d4;
+		font-size: 12.5px;
+		overflow: hidden;
+	}
+	.link code {
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.envline {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.env {
+		font-size: 12px;
+		font-weight: 600;
+		padding: 4px 10px;
+		border-radius: 999px;
+	}
+	.env.prod {
+		background: #e5f6e1;
+		color: #1f7a14;
+	}
+	.env.rec {
+		background: #fdf1dc;
+		color: #b45309;
+	}
+	.env.dev {
+		background: #e6effd;
+		color: #1d4ed8;
+	}
+	.hist {
+		background:
+			radial-gradient(420px 220px at 0% 120%, rgba(124, 58, 237, 0.08), transparent 70%),
+			#fff;
+	}
+	.actors {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 4px;
+	}
+	.actor {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		font-size: 12.5px;
+		font-weight: 600;
+		padding: 6px 11px;
+		border-radius: 999px;
+		border: 1px solid var(--bd-border);
+		background: #fff;
+	}
+	.actor::before {
+		content: '';
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: currentColor;
+	}
+	.actor.green { color: #15803d; }
+	.actor.blue { color: #2563eb; }
+	.actor.violet { color: #7c3aed; }
+	.actor.amber { color: #c26a05; }
+	.actor.ink { color: #1f2a20; }
+	.small h3 {
+		font-size: 15.5px;
+	}
+	.small p {
+		font-size: 13.5px;
+	}
+	.prompt {
+		align-self: flex-start;
+		font-size: 12px;
+		padding: 5px 9px;
+		border-radius: 8px;
+		background: #f4efff;
+		color: #6d28d9;
+	}
+	@media (max-width: 960px) {
+		.grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@media (max-width: 640px) {
+		.grid {
+			grid-template-columns: 1fr;
+		}
+		.wide {
+			grid-column: auto;
+		}
+	}
+</style>

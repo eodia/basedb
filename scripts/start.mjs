@@ -142,8 +142,8 @@ const api = start('api', 'node', ['apps/api/dist/server.js'], {
   PORT: String(apiPort),
   BASEDB_MIGRATE: '1',
   BASEDB_BOOTSTRAP: '1',
-  BASEDB_ENCRYPTION_KEY: process.env.BASEDB_ENCRYPTION_KEY ?? DEV_KEY,
-  BASEDB_ADMIN_PASSWORD: process.env.BASEDB_ADMIN_PASSWORD ?? DEV_PASSWORD,
+  BASEDB_ENCRYPTION_KEY: process.env.BASEDB_ENCRYPTION_KEY || DEV_KEY,
+  BASEDB_ADMIN_PASSWORD: process.env.BASEDB_ADMIN_PASSWORD || DEV_PASSWORD,
   // Reset links are printed here rather than sent: this container is thrown away, and
   // there is no SMTP to configure against it.
   BASEDB_DEV_MAIL: '1',
@@ -161,7 +161,9 @@ api.stdout.on('data', (chunk) => {
     if (mcpPort !== null) {
       console.log(`  ${green('✓')} MCP            ${cyan(`http://localhost:${mcpPort}/mcp`)}`)
     }
-    console.log(`\n  ${bold('Connexion')}   ${cyan(found[1])}   ${cyan(DEV_PASSWORD)}`)
+    console.log(
+      `\n  ${bold('Connexion')}   ${cyan(found[1])}   ${cyan(process.env.BASEDB_ADMIN_PASSWORD || DEV_PASSWORD)}`,
+    )
     console.log(grey(`\n  psql "${DATABASE_URL}"`))
     console.log(grey('  Ctrl+C stops everything, container included.\n'))
 
@@ -207,7 +209,7 @@ const mcp =
     : start('mcp', 'node', ['apps/mcp/dist/server.js'], {
         DATABASE_URL,
         BASEDB_MCP_PORT: String(mcpPort),
-        BASEDB_ENCRYPTION_KEY: process.env.BASEDB_ENCRYPTION_KEY ?? DEV_KEY,
+        BASEDB_ENCRYPTION_KEY: process.env.BASEDB_ENCRYPTION_KEY || DEV_KEY,
       })
 const children = [api, web, ...(mcp === null ? [] : [mcp])]
 

@@ -12,7 +12,18 @@ import { createApp } from './app.js'
  * hands to the kernel without ever opening it itself.
  */
 
-const connectionString = process.env.DATABASE_URL
+/**
+ * A variable of the environment, EMPTY COUNTING AS UNSET: `KEY=` in a `.env` file, or
+ * `${KEY:-}` in a compose file, means "not given". Taken as a value, an empty
+ * `BASEDB_ADMIN_PASSWORD` would become the administrator's password, and an empty
+ * `BASEDB_ORIGINS` would refuse every browser.
+ */
+function setting(name: string): string | undefined {
+  const value = process.env[name]
+  return value === undefined || value.trim() === '' ? undefined : value
+}
+
+const connectionString = setting('DATABASE_URL')
 if (connectionString === undefined) {
   console.error('DATABASE_URL is required.')
   process.exit(1)
@@ -27,7 +38,7 @@ if (connectionString === undefined) {
  * and the way back in is the operational command of chapter 13 §7.
  */
 const mailer =
-  process.env.BASEDB_DEV_MAIL === '1'
+  setting('BASEDB_DEV_MAIL') === '1'
     ? async (message: { to: string; subject: string; body: string }) => {
         console.log(`[courriel · développement] ${message.to} — ${message.subject}`)
         console.log(`[courriel · développement] secret : ${message.body}`)
@@ -42,13 +53,13 @@ const mailer =
  * root of the repository: enough for one host, and said at startup.
  */
 function fileStorage(): FileStorageConfig {
-  const env = process.env
-  if (env.BASEDB_S3_BUCKET !== undefined && env.BASEDB_S3_BUCKET !== '') {
+  const bucket = setting('BASEDB_S3_BUCKET')
+  if (bucket !== undefined) {
     const missing = [
       'BASEDB_S3_ENDPOINT',
       'BASEDB_S3_ACCESS_KEY_ID',
       'BASEDB_S3_SECRET_ACCESS_KEY',
-    ].filter((name) => (env[name] ?? '') === '')
+    ].filter((name) => setting(name) === undefined)
     if (missing.length > 0) {
       console.error(
         `BASEDB_S3_BUCKET is set, but ${missing.join(', ')} ${missing.length > 1 ? 'are' : 'is'} not.`,
@@ -57,38 +68,39 @@ function fileStorage(): FileStorageConfig {
     }
     return {
       driver: 's3',
-      endpoint: env.BASEDB_S3_ENDPOINT as string,
-      bucket: env.BASEDB_S3_BUCKET,
-      region: env.BASEDB_S3_REGION ?? 'us-east-1',
-      accessKeyId: env.BASEDB_S3_ACCESS_KEY_ID as string,
-      secretAccessKey: env.BASEDB_S3_SECRET_ACCESS_KEY as string,
-      forcePathStyle: env.BASEDB_S3_FORCE_PATH_STYLE !== '0',
+      endpoint: setting('BASEDB_S3_ENDPOINT') as string,
+      bucket,
+      region: setting('BASEDB_S3_REGION') ?? 'us-east-1',
+      accessKeyId: setting('BASEDB_S3_ACCESS_KEY_ID') as string,
+      secretAccessKey: setting('BASEDB_S3_SECRET_ACCESS_KEY') as string,
+      forcePathStyle: setting('BASEDB_S3_FORCE_PATH_STYLE') !== '0',
     }
   }
   return {
     driver: 'local',
     directory:
-      env.BASEDB_FILES_DIR ?? fileURLToPath(new URL('../../../.basedb/files', import.meta.url)),
+      setting('BASEDB_FILES_DIR') ??
+      fileURLToPath(new URL('../../../.basedb/files', import.meta.url)),
   }
 }
 
-const maxFileMb = Number(process.env.BASEDB_FILES_MAX_MB ?? '')
+const maxFileMb = Number(setting('BASEDB_FILES_MAX_MB') ?? '')
 
 // Webhooks go to public HTTPS addresses only (chapter 08 §10.8). `BASEDB_WEBHOOK_DEV=1`
 // relaxes that for a consumer on this machine — development only, and said at startup.
-const webhookDev = process.env.BASEDB_WEBHOOK_DEV === '1'
+const webhookDev = setting('BASEDB_WEBHOOK_DEV') === '1'
 
 // Where a purge writes its export first (chapter 06 §5.2): on this host, never on the
 // database server. `BASEDB_EXPORT_DIR`, by default `.basedb/exports` beside the files.
 const exportDir =
-  process.env.BASEDB_EXPORT_DIR ??
+  setting('BASEDB_EXPORT_DIR') ??
   fileURLToPath(new URL('../../../.basedb/exports', import.meta.url))
 
 const kernel = startKernel({
   webhookTargets: { allowHttp: webhookDev, allowPrivate: webhookDev },
   exportDir,
   connectionString,
-  encryptionKey: process.env.BASEDB_ENCRYPTION_KEY,
+  encryptionKey: setting('BASEDB_ENCRYPTION_KEY'),
   mailer,
   files: {
     storage: fileStorage(),
@@ -102,30 +114,34 @@ if (webhookDev) {
     'Webhooks : mode développement — HTTP et adresses locales acceptés (BASEDB_WEBHOOK_DEV=1).',
   )
 }
-const port = Number(process.env.PORT ?? 8787)
+const port = Number(setting('PORT') ?? 8787)
 
-if (process.env.BASEDB_MIGRATE === '1') {
+if (setting('BASEDB_MIGRATE') === '1') {
   const n = await kernel.migrateCatalog()
-  console.log(`Catalog applied (${n} migration${n > 1 ? 's' : ''}).`)
+  console.log(
+    n === 0 ? 'Catalog already in place.' : `Catalog applied (${n} migration${n > 1 ? 's' : ''}).`,
+  )
 }
 
 // The bootstrapped administrator's ADDRESS, published so the login form can prefill it.
 // Its password is printed once below and never served over HTTP.
 let developmentEmail: string | undefined
 
-if (process.env.BASEDB_BOOTSTRAP === '1') {
-  const tenantRef = process.env.BASEDB_TENANT ?? 't4z56fq'
-  const adminEmail = process.env.BASEDB_ADMIN_EMAIL ?? 'admin@basedb.local'
+if (setting('BASEDB_BOOTSTRAP') === '1') {
+  const tenantRef = setting('BASEDB_TENANT') ?? 't4z56fq'
+  const adminEmail = setting('BASEDB_ADMIN_EMAIL') ?? 'admin@basedb.local'
   const a = await kernel.bootstrap({
     tenantRef,
     email: adminEmail,
   })
-  developmentEmail = adminEmail
+  // Only by the start that has just created the instance: a container restarting with
+  // `BASEDB_BOOTSTRAP=1` on every boot must not keep publishing the address.
+  if (!a.alreadyDone) developmentEmail = adminEmail
 
   // The administrator needs a password, or the instance has an account nobody can use.
   // Given explicitly in production; generated and PRINTED ONCE in development, because
   // a default password shipped with the product is the same password everywhere.
-  const given = process.env.BASEDB_ADMIN_PASSWORD
+  const given = setting('BASEDB_ADMIN_PASSWORD')
   const password = given ?? `basedb-${randomBytes(9).toString('base64url')}`
   if (!a.alreadyDone || given !== undefined) {
     await kernel.setPassword({ userId: a.userId, password })
@@ -138,7 +154,7 @@ if (process.env.BASEDB_BOOTSTRAP === '1') {
 }
 
 // Unset: any `localhost` origin is accepted (development).
-const raw = process.env.BASEDB_ORIGINS
+const raw = setting('BASEDB_ORIGINS')
 const allowedOrigins =
   raw === undefined
     ? undefined
@@ -154,8 +170,8 @@ const app = createApp({
   // Stated by the operator, never inferred from a `Host` header a caller controls: the
   // provider compares this return address character for character with the one
   // registered against the client identifier.
-  publicUrl: process.env.BASEDB_PUBLIC_URL,
-  tenantRef: process.env.BASEDB_TENANT,
+  publicUrl: setting('BASEDB_PUBLIC_URL'),
+  tenantRef: setting('BASEDB_TENANT'),
 })
 
 // The history drain runs in the serving process (chapter 07 §1.4): without it, writes
@@ -169,7 +185,7 @@ serve({ fetch: app.fetch, port }, (info) => {
 // The AI fields are filled here, in the API process and nowhere else: the MCP server
 // answers agents, it does not run background work. `BASEDB_AI_WORKER=0` switches it off —
 // for a second API process sharing the database, where one worker is enough.
-if (process.env.BASEDB_AI_WORKER !== '0') {
+if (setting('BASEDB_AI_WORKER') !== '0') {
   kernel.startAiWorker(providerTransport, {
     onError: (error) => console.error('Champs IA :', error),
   })

@@ -29,9 +29,9 @@ export function mcpEndpoint(): string {
 /**
  * API address.
  *
- * RUNTIME first — the value the layout handed over —, then the build-time variable for
- * server rendering. The order matters: a value inlined at build time may date from a
- * compilation performed without the variable.
+ * RUNTIME first — the value the layout handed over —, then the variable itself when
+ * rendering on the server. Never inlined at build time (next.config.ts): an image built
+ * once serves any address.
  */
 const BASE =
   (typeof window === 'undefined' ? undefined : window.__BASEDB_API__) ??

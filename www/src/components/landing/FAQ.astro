@@ -1,0 +1,113 @@
+---
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const items = [
+	{
+		q: 'En quoi basedb diffère-t-il d’Airtable, de Baserow ou de NocoDB ?',
+		a: 'Par l’endroit où vivent les données. Là où d’autres rangent vos lignes dans un modèle générique (colonnes numérotées, documents JSON), basedb crée une vraie table PostgreSQL par table, une vraie colonne typée par champ, avec des noms lisibles. Vos données restent exploitables sans basedb.',
+	},
+	{
+		q: 'Puis-je écrire directement en SQL dans les tables ?',
+		a: 'Oui. Les contraintes (types, obligatoire, listes de choix, clés étrangères) sont tenues par PostgreSQL lui-même, et un déclencheur historise même les écritures faites en SQL direct, avec la session qui les a faites. La console SQL de l’interface et psql lisent les mêmes tables.',
+	},
+	{
+		q: 'Qu’est-ce qui part chez un fournisseur d’IA ?',
+		a: 'Rien tant que vous n’avez pas configuré de fournisseur. Ensuite, pour les brouillons de structure et le copilote, seules la structure et votre phrase partent par défaut ; la lecture de données par le copilote est une case à cocher, par conversation. Un champ IA envoie les colonnes que sa consigne cite, après un consentement explicite.',
+	},
+	{
+		q: 'Comment un agent IA se connecte-t-il ?',
+		a: 'Par le serveur MCP, avec un jeton d’intégration limité à une base, en lecture seule par défaut. Un agent lit, crée et modifie des lignes selon ses droits ; il ne supprime rien et ne change pas la structure : il la propose, et une personne approuve.',
+	},
+	{
+		q: 'Quelle version de PostgreSQL faut-il ?',
+		a: 'PostgreSQL 16 ou plus récent, avec les extensions pg_trgm et unaccent (disponibles dans l’image officielle). Le docker-compose fourni démarre un PostgreSQL 16 ; vous pouvez aussi pointer DATABASE_URL vers votre propre serveur.',
+	},
+	{
+		q: 'Est-ce prêt pour la production ?',
+		a: 'basedb est en développement actif : le noyau, l’API, le serveur MCP et l’interface fonctionnent et sont couverts par plus de mille tests, mais certaines fonctions restent à venir (voir la feuille de route). Essayez-le, et sauvegardez votre base comme toute base PostgreSQL.',
+	},
+	{
+		q: 'Sous quelle licence ?',
+		a: 'AGPL-3.0-or-later. Vous pouvez l’utiliser, le modifier et l’héberger librement ; si vous proposez une version modifiée comme service, vous en partagez les sources.',
+	},
+];
+---
+
+<section class="bd-faq bd-reveal" id="faq">
+	<div class="bd-section-head">
+		<span class="bd-label">Questions fréquentes</span>
+		<h2>Ce qu’on nous demande souvent.</h2>
+		<p>Une autre question ? <a href={`${base}/guides/introduction/`}>La documentation</a> y répond sûrement.</p>
+	</div>
+	<div class="list">
+		{
+			items.map((item, i) => (
+				<details open={i === 0}>
+					<summary>
+						{item.q}
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<polyline points="6 9 12 15 18 9" />
+						</svg>
+					</summary>
+					<p>{item.a}</p>
+				</details>
+			))
+		}
+	</div>
+</section>
+
+<style>
+	.bd-faq {
+		max-width: 1200px;
+		margin: 24px auto;
+		padding: 88px 24px;
+		background: var(--bd-alt-bg);
+		border-radius: 24px;
+	}
+	.bd-section-head a {
+		color: var(--bd-primary);
+		font-weight: 600;
+	}
+	.list {
+		max-width: 760px;
+		margin: 0 auto;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	details {
+		background: #fff;
+		border: 1px solid var(--bd-border);
+		border-radius: 14px;
+		padding: 18px 22px;
+	}
+	details[open] {
+		box-shadow: 0 10px 28px -20px rgba(16, 24, 16, 0.3);
+	}
+	summary {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		font-size: 15px;
+		font-weight: 600;
+		cursor: pointer;
+		list-style: none;
+	}
+	summary::-webkit-details-marker {
+		display: none;
+	}
+	summary svg {
+		margin-left: auto;
+		flex-shrink: 0;
+		color: var(--bd-muted-fg);
+		transition: transform 0.2s ease;
+	}
+	details[open] summary svg {
+		transform: rotate(180deg);
+	}
+	details p {
+		margin: 12px 0 0;
+		font-size: 14.5px;
+		line-height: 1.65;
+		color: var(--bd-text-soft);
+	}
+</style>

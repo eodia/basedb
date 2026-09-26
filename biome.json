@@ -8,7 +8,8 @@
       "docs",
       ".next",
       "next-env.d.ts",
-      ".playwright-mcp"
+      ".playwright-mcp",
+      "www"
     ]
   },
   "formatter": {

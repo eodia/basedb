@@ -14,7 +14,13 @@ import { createMcpApp } from './app.js'
  * theirs that drags on holds a connection for nothing.
  */
 
-const connectionString = process.env.DATABASE_URL
+/** A variable of the environment, empty counting as unset (`KEY=` in a `.env` file). */
+function setting(name: string): string | undefined {
+  const value = process.env[name]
+  return value === undefined || value.trim() === '' ? undefined : value
+}
+
+const connectionString = setting('DATABASE_URL')
 if (connectionString === undefined) {
   console.error('DATABASE_URL is required.')
   process.exit(1)
@@ -24,11 +30,11 @@ const AGENT_POOL = { statementTimeoutMs: 5_000, lockTimeoutMs: 1_000 } as const
 
 const kernel = startKernel({
   connectionString,
-  encryptionKey: process.env.BASEDB_ENCRYPTION_KEY,
+  encryptionKey: setting('BASEDB_ENCRYPTION_KEY'),
   poolSettings: { catalog: AGENT_POOL, data: AGENT_POOL },
 })
 
-const port = Number(process.env.BASEDB_MCP_PORT ?? process.env.PORT ?? 8788)
+const port = Number(setting('BASEDB_MCP_PORT') ?? setting('PORT') ?? 8788)
 const app = createMcpApp({ kernel, timeoutMs: 30_000 })
 
 serve({ fetch: app.fetch, port }, (info) => {

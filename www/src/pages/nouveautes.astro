@@ -1,0 +1,181 @@
+---
+import Landing from '../layouts/Landing.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const entries = [
+	{
+		date: '26 septembre 2026',
+		title: 'Environnements, formulaires partagés, vues',
+		tag: 'Nouveau',
+		items: [
+			'<strong>Environnements</strong> : production, recette, développement pour une même base ; comparaison côte à côte, plan de migration, synchronisation des lignes.',
+			'<strong>Historique des structures</strong> : chaque création ou modification de table et de champ, capturée par déclencheur sur le catalogue.',
+			'<strong>Formulaires partagés</strong> : un lien public ou réservé aux membres, fermeture par date ou par nombre de réponses, attribution des réponses dans l’historique.',
+			'<strong>Six vues</strong> : grille, kanban, calendrier, chronologie, formulaire, questionnaire.',
+			'<strong>Historique des données</strong> : annuler une modification, restaurer une ligne supprimée.',
+			'<strong>IA</strong> : l’option IA sur n’importe quel champ, et le copilote.',
+			'<strong>Relation</strong> et <strong>Lien URL</strong> : deux types distincts ; le texte long s’écrit en Markdown.',
+			'<strong>Webhooks</strong> signés et ordonnés, <strong>propositions des agents</strong> à approuver.',
+			'<strong>Docker</strong> : un Dockerfile à trois cibles, un docker-compose complet, un proxy HTTPS en option.',
+		],
+	},
+	{
+		date: '25 septembre 2026',
+		title: 'Projets, droits, serveur MCP',
+		items: [
+			'<strong>Projets</strong> au-dessus des bases, et droits par <strong>groupes</strong> sur le modèle de Metabase : Aucun accès, Lecture, Édition, Gestion.',
+			'<strong>Comptes</strong> : mot de passe temporaire, changement à la première connexion, élévation pour l’administration.',
+			'<strong>Serveur MCP</strong> et relais stdio ; <strong>jetons d’intégration</strong> communs à l’API REST et au MCP.',
+			'<strong>Documentation générée</strong> « API et MCP » pour chaque base.',
+		],
+	},
+	{
+		date: '20 septembre 2026',
+		title: 'Champs, listes de choix, import',
+		items: [
+			'Modifier un champ et les options d’une liste de choix.',
+			'<strong>Import</strong> de fichiers CSV et JSON.',
+			'Le menu d’une table : renommer, décrire, supprimer.',
+		],
+	},
+	{
+		date: '20 septembre 2026',
+		title: 'Premier commit',
+		items: [
+			'Le monorepo : nommage, registre des codes d’erreur, catalogue extrait du document d’architecture, noyau, API, interface.',
+		],
+	},
+];
+---
+
+<Landing
+	title="Nouveautés — basedb"
+	description="Ce qui a changé dans basedb, version après version."
+>
+	<main class="page">
+		<header class="page-head">
+			<span class="bd-label">Nouveautés</span>
+			<h1>Ce qui a changé dans basedb</h1>
+			<p>
+				Le détail de chaque changement est dans
+				<a href="https://github.com/eodia/basedb/commits/main">l’historique du dépôt</a>. Ce qui vient
+				ensuite : la <a href={`${base}/feuille-de-route/`}>feuille de route</a>.
+			</p>
+		</header>
+		<ol class="timeline">
+			{
+				entries.map((e) => (
+					<li>
+						<div class="when">
+							<time>{e.date}</time>
+							{e.tag && <span class="tag">{e.tag}</span>}
+						</div>
+						<article>
+							<h2>{e.title}</h2>
+							<ul>
+								{e.items.map((i) => (
+									<li set:html={i} />
+								))}
+							</ul>
+						</article>
+					</li>
+				))
+			}
+		</ol>
+	</main>
+</Landing>
+
+<style>
+	.page {
+		max-width: 880px;
+		margin: 0 auto;
+		padding: 140px 24px 64px;
+	}
+	.page-head h1 {
+		font-size: clamp(34px, 4.6vw, 52px);
+		font-weight: 800;
+		letter-spacing: -0.04em;
+		line-height: 1.05;
+		margin: 14px 0 16px;
+	}
+	.page-head p {
+		font-size: 17px;
+		color: var(--bd-text-soft);
+		margin: 0 0 48px;
+	}
+	.page-head a {
+		color: var(--bd-primary);
+		font-weight: 600;
+	}
+	.timeline {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		border-left: 2px solid var(--bd-border);
+	}
+	.timeline > li {
+		position: relative;
+		display: grid;
+		grid-template-columns: 170px 1fr;
+		gap: 24px;
+		padding: 0 0 44px 28px;
+	}
+	.timeline > li::before {
+		content: '';
+		position: absolute;
+		left: -7px;
+		top: 6px;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: #fff;
+		border: 2px solid var(--bd-primary);
+	}
+	.timeline > li:first-child::before {
+		background: var(--bd-primary);
+		box-shadow: 0 0 0 5px rgba(63, 203, 42, 0.18);
+	}
+	.when {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		align-items: flex-start;
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--bd-muted-fg);
+	}
+	.tag {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--bd-primary);
+		background: var(--bd-primary-soft);
+		padding: 3px 8px;
+		border-radius: 999px;
+	}
+	h2 {
+		margin: 0 0 12px;
+		font-size: 21px;
+		letter-spacing: -0.02em;
+	}
+	ul {
+		margin: 0;
+		padding-left: 18px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		color: var(--bd-text-soft);
+		font-size: 15px;
+		line-height: 1.6;
+	}
+	ul :global(strong) {
+		color: var(--bd-text);
+	}
+	@media (max-width: 720px) {
+		.timeline > li {
+			grid-template-columns: 1fr;
+			gap: 8px;
+		}
+	}
+</style>

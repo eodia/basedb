@@ -110,6 +110,14 @@ afterAll(async () => {
 })
 
 describe('bootstrap and system groups', () => {
+  it('a server that restarts finds its catalog and its administrator in place', async () => {
+    // What a container does on every start: migrate, bootstrap. Neither may fail twice.
+    expect(await kernel.migrateCatalog()).toBe(0)
+    const again = await kernel.bootstrap({ tenantRef: TENANT, email: 'admin@basedb.local' })
+    expect(again.alreadyDone).toBe(true)
+    expect((await kernel.listProjects(admin)).length).toBeGreaterThan(0)
+  })
+
   it('a fresh tenant has a first project, the Administrators and « Tous les utilisateurs »', async () => {
     const projects = await kernel.listProjects(admin)
     expect(projects.map((p) => p.label)).toEqual(['Projet principal', 'Ventes'])

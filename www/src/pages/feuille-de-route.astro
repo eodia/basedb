@@ -1,0 +1,144 @@
+---
+import Landing from '../layouts/Landing.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const columns = [
+	{
+		title: 'Prochainement',
+		tone: 'next',
+		items: [
+			{ t: 'Migrations incrémentales du catalogue', d: 'Des versions stables, et des mises à jour qui migrent une instance existante sans repartir d’une base neuve.' },
+			{ t: 'Images Docker publiées', d: 'basedb-api, basedb-mcp et basedb-web sur un registre public, versionnées.' },
+			{ t: 'Restaurer une table seule', d: 'Une table supprimée reste lisible en SQL sous son nom relégué ; la ramener seule depuis l’interface est à venir.' },
+			{ t: 'Réglages de l’IA dans l’interface', d: 'Fournisseur, modèle et clé par tenant, sans passer par l’environnement de l’API.' },
+		],
+	},
+	{
+		title: 'Ensuite',
+		tone: 'later',
+		items: [
+			{ t: 'Relations et fichiers dans les formulaires partagés', d: 'Une recherche restreinte dans la table liée, un dépôt de fichiers borné pour les inconnus.' },
+			{ t: 'Notifications', d: 'Être prévenu d’une réponse à un formulaire, d’une proposition d’agent, d’un webhook désactivé.' },
+			{ t: 'Opérations en masse déclarées', d: 'Des modifications de milliers de lignes, historisées comme une seule opération.' },
+			{ t: 'Épuration des pierres tombales', d: 'Le nettoyage des traces de suppression devenues inutiles.' },
+		],
+	},
+];
+---
+
+<Landing
+	title="Feuille de route — basedb"
+	description="Ce que basedb va faire ensuite."
+>
+	<main class="page">
+		<header class="page-head">
+			<span class="bd-label">Feuille de route</span>
+			<h1>Ce qui vient ensuite</h1>
+			<p>
+				basedb est en développement actif. Cette page dit ce qui manque encore, sans date promise.
+				Une idée, un besoin ? <a href="https://github.com/eodia/basedb/issues">Ouvrez un ticket</a>. Ce qui est
+				déjà là : les <a href={`${base}/nouveautes/`}>nouveautés</a>.
+			</p>
+		</header>
+		<div class="cols">
+			{
+				columns.map((c) => (
+					<section class:list={['col', c.tone]}>
+						<h2>{c.title}</h2>
+						<ul>
+							{c.items.map((i) => (
+								<li>
+									<h3>{i.t}</h3>
+									<p>{i.d}</p>
+								</li>
+							))}
+						</ul>
+					</section>
+				))
+			}
+		</div>
+	</main>
+</Landing>
+
+<style>
+	.page {
+		max-width: 1080px;
+		margin: 0 auto;
+		padding: 140px 24px 64px;
+	}
+	.page-head {
+		max-width: 720px;
+	}
+	.page-head h1 {
+		font-size: clamp(34px, 4.6vw, 52px);
+		font-weight: 800;
+		letter-spacing: -0.04em;
+		line-height: 1.05;
+		margin: 14px 0 16px;
+	}
+	.page-head p {
+		font-size: 17px;
+		color: var(--bd-text-soft);
+		margin: 0 0 44px;
+	}
+	.page-head a {
+		color: var(--bd-primary);
+		font-weight: 600;
+	}
+	.cols {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 20px;
+	}
+	.col {
+		border-radius: 20px;
+		padding: 24px;
+		border: 1px solid var(--bd-border);
+		background: var(--bd-alt-bg);
+	}
+	.col.next {
+		background: linear-gradient(180deg, #f1faee, #fff);
+		border-color: #d6ebcf;
+	}
+	h2 {
+		margin: 0 0 16px;
+		font-size: 14px;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--bd-primary);
+	}
+	.later h2 {
+		color: var(--bd-muted-fg);
+	}
+	ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	li {
+		background: #fff;
+		border: 1px solid var(--bd-border);
+		border-radius: 14px;
+		padding: 16px 18px;
+	}
+	h3 {
+		margin: 0 0 6px;
+		font-size: 15.5px;
+		letter-spacing: -0.01em;
+	}
+	p {
+		margin: 0;
+		font-size: 14px;
+		line-height: 1.55;
+		color: var(--bd-text-soft);
+	}
+	@media (max-width: 760px) {
+		.cols {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

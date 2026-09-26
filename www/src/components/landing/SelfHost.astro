@@ -1,0 +1,209 @@
+---
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const steps = [
+	{
+		n: '1',
+		title: 'Récupérer basedb',
+		code: 'git clone https://github.com/eodia/basedb.git\ncd basedb && cp .env.example .env',
+	},
+	{
+		n: '2',
+		title: 'Deux secrets dans .env',
+		code: 'POSTGRES_PASSWORD=un-mot-de-passe-solide\n# openssl rand -base64 32\nBASEDB_ENCRYPTION_KEY=…',
+	},
+	{
+		n: '3',
+		title: 'Démarrer',
+		code: 'docker compose up -d\ndocker compose logs api   # mot de passe admin',
+	},
+];
+const services = [
+	{ name: 'db', text: 'PostgreSQL 16, vos données' },
+	{ name: 'api', text: 'API REST, connexion, historique' },
+	{ name: 'mcp', text: 'Serveur MCP pour les agents' },
+	{ name: 'web', text: 'L’interface' },
+	{ name: 'proxy', text: 'Caddy, HTTPS automatique (option)' },
+];
+---
+
+<section class="bd-self" id="auto-hebergement">
+	<div class="inner">
+		<div class="text bd-reveal">
+			<span class="bd-label">Auto-hébergé</span>
+			<h2>Vos données restent <span class="bd-accent">chez vous.</span></h2>
+			<p class="lead">
+				basedb est un logiciel libre (AGPL-3.0) : une image par processus, une base PostgreSQL, et c’est
+				tout — ni service tiers imposé, ni télémétrie. Sauvegardez-le avec <code>pg_dump</code>, lisez-le avec
+				n’importe quel client PostgreSQL.
+			</p>
+			<ul class="services">
+				{
+					services.map((s) => (
+						<li>
+							<code>{s.name}</code>
+							<span>{s.text}</span>
+						</li>
+					))
+				}
+			</ul>
+			<p class="links">
+				<a href={`${base}/hebergement/docker/`}>Guide Docker Compose →</a>
+				<a href={`${base}/hebergement/variables/`}>Toutes les variables →</a>
+			</p>
+		</div>
+		<ol class="steps bd-reveal">
+			{
+				steps.map((s) => (
+					<li>
+						<span class="n">{s.n}</span>
+						<div>
+							<h3>{s.title}</h3>
+							<pre><code>{s.code}</code></pre>
+						</div>
+					</li>
+				))
+			}
+		</ol>
+	</div>
+</section>
+
+<style>
+	.bd-self {
+		margin: 32px 16px;
+		border-radius: 28px;
+		background:
+			radial-gradient(700px 360px at 85% 0%, rgba(63, 203, 42, 0.18), transparent 70%),
+			radial-gradient(600px 300px at 0% 100%, rgba(14, 165, 233, 0.1), transparent 70%),
+			var(--bd-ink);
+		color: #eef6ec;
+		overflow: hidden;
+	}
+	.inner {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 56px;
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 88px 32px;
+	}
+	.bd-label {
+		color: var(--bd-primary-vivid);
+	}
+	h2 {
+		font-size: clamp(30px, 3.8vw, 44px);
+		font-weight: 800;
+		letter-spacing: -0.035em;
+		line-height: 1.08;
+		margin: 14px 0 18px;
+		color: #fff;
+	}
+	.lead {
+		font-size: 16.5px;
+		line-height: 1.65;
+		color: #b9c8b5;
+		margin: 0 0 26px;
+	}
+	.lead code {
+		color: #e8f5e4;
+		background: rgba(255, 255, 255, 0.08);
+		padding: 1px 6px;
+		border-radius: 5px;
+		font-size: 0.9em;
+	}
+	.services {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		gap: 8px;
+	}
+	.services li {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		font-size: 14px;
+		color: #c9d6c5;
+	}
+	.services code {
+		min-width: 58px;
+		text-align: center;
+		font-size: 12px;
+		font-weight: 600;
+		padding: 4px 8px;
+		border-radius: 7px;
+		background: rgba(63, 203, 42, 0.14);
+		color: var(--bd-primary-vivid);
+	}
+	.links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 22px;
+		margin: 28px 0 0;
+	}
+	.links a {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--bd-primary-vivid);
+	}
+	.links a:hover {
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+	.steps {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+		align-self: center;
+	}
+	.steps li {
+		display: flex;
+		gap: 16px;
+		padding: 18px;
+		border-radius: 16px;
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+	}
+	.n {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 30px;
+		height: 30px;
+		flex-shrink: 0;
+		border-radius: 50%;
+		background: var(--bd-primary);
+		color: #fff;
+		font-weight: 700;
+		font-size: 14px;
+	}
+	.steps div {
+		min-width: 0;
+		flex: 1;
+	}
+	h3 {
+		margin: 3px 0 10px;
+		font-size: 15px;
+		color: #fff;
+	}
+	pre {
+		margin: 0;
+		padding: 12px 14px;
+		border-radius: 10px;
+		background: rgba(0, 0, 0, 0.35);
+		color: #d8e6d4;
+		font-size: 12.5px;
+		line-height: 1.6;
+		overflow-x: auto;
+		white-space: pre;
+	}
+	@media (max-width: 960px) {
+		.inner {
+			grid-template-columns: minmax(0, 1fr);
+			padding: 64px 22px;
+			gap: 36px;
+		}
+	}
+</style>

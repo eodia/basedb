@@ -29,9 +29,10 @@ export const dynamic = 'force-dynamic'
  * server then reuses that cache. Read here instead, at the moment it matters.
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const api = process.env.BASEDB_API ?? 'http://localhost:8787'
+  // `||`, not `??`: an empty variable (`BASEDB_API=` in a `.env` file) means unset.
+  const api = process.env.BASEDB_API || 'http://localhost:8787'
   // The MCP entry point, shown in the configuration an agent's client needs.
-  const mcp = process.env.BASEDB_MCP ?? ''
+  const mcp = process.env.BASEDB_MCP || ''
 
   return (
     <html lang="fr">

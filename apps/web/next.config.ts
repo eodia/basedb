@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import type { NextConfig } from 'next'
 
 /**
@@ -10,9 +11,19 @@ import type { NextConfig } from 'next'
  */
 const config: NextConfig = {
   transpilePackages: ['@basedb/contracts'],
-  env: {
-    BASEDB_API: process.env.BASEDB_API ?? 'http://localhost:8787',
-  },
+  // The Docker image (Dockerfile, target `web`) serves a self-contained server:
+  // `next build` then traces what it needs into `.next/standalone`, from the root of the
+  // monorepo so that the workspace packages come along. Off elsewhere: `next start`
+  // does not serve a standalone build.
+  ...(process.env.BASEDB_WEB_STANDALONE === '1'
+    ? {
+        output: 'standalone' as const,
+        outputFileTracingRoot: fileURLToPath(new URL('../..', import.meta.url)),
+      }
+    : {}),
+  // No `env` block for BASEDB_API: Next would inline its build-time value into the
+  // SERVER code too, and the address the layout reads at run time (app/layout.tsx)
+  // would be frozen into the image. The browser gets it from the layout.
 }
 
 export default config

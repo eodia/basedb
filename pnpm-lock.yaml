@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@node-rs/argon2':
-        specifier: ^2.2.1
-        version: 2.2.1
     devDependencies:
       '@biomejs/biome':
         specifier: ^1.9.4
@@ -312,6 +308,9 @@ importers:
       '@basedb/naming':
         specifier: workspace:*
         version: link:../naming
+      '@node-rs/argon2':
+        specifier: ^2.2.1
+        version: 2.2.1
       jose:
         specifier: ^6.2.12
         version: 6.2.12
