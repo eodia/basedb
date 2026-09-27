@@ -6,6 +6,8 @@ Ce chapitre définit **qui a le droit de faire quoi**, comment cette question re
 
 Le contexte d'exécution impose une contrainte qu'il faut regarder en face : **toutes les requêtes du produit passent par un rôle PostgreSQL unique, propriétaire de la base.** PostgreSQL n'offre donc aucune seconde ligne de défense — ni `GRANT` par utilisateur, ni RLS exploitable, le propriétaire la contournant. La sécurité d'accès des surfaces est intégralement applicative. C'est pourquoi ce chapitre consacre l'essentiel de son propos non pas au modèle — qui est simple — mais aux conditions qui rendent son contournement détectable ou impossible.
 
+Une exception, et une seule surface : le **SQL écrit dans l'interface** (§9). La console de qui gère une base tourne sur un rôle restreint à son schéma ; le SQL de tout autre lecteur, sur un rôle PostgreSQL propre à la personne, dont les `GRANT` colonne par colonne sont le verdict du décideur — là, et là seulement, PostgreSQL tient une seconde ligne.
+
 ---
 
 ## 0. Frontière du modèle
@@ -545,7 +547,9 @@ Quatre règles :
 
 **Un formulaire partagé (chapitre 15) n'est pas une exception à ce régime, il le délègue.** Quelqu'un qui n'a aucun droit sur la table peut y répondre, mais la ligne s'écrit sur l'autorité de la personne qui a publié le partage : la décision `create` est rejouée pour elle à chaque réponse, le masque d'écriture restreint aux questions du formulaire, et un publiant qui perd ce droit suspend ses formulaires avec lui. La personne qui répond ne lit rien de la table — pas même la ligne qu'elle vient d'écrire —, et l'acteur `form` d'une réponse publique ne porte aucun droit propre.
 
-Ce qui n'existe pas en v1, c'est la **vue SQL** : elle exposerait des colonnes qui ne sont pas des champs et ne peuvent donc porter aucun `field_permission`, ce qui rouvrirait d'un cran le contournement que la clôture des formules (§4.1) prend soin de fermer.
+**Le SQL de l'interface ne contourne plus le masque, sauf pour qui gère la base.** Qui détient `manage_schema` sur une base garde la console (chapitre 09 §1, exception assumée) : il peut déjà en changer les colonnes. Tout autre lecteur exécute son SQL sur un rôle PostgreSQL **qui lui est propre**, en lecture seule, dont les `GRANT` sont posés avant chaque appel à partir de la décision `read` rendue ici, champ par champ : `SELECT` sur les colonnes lisibles des tables lisibles, `USAGE` sur le seul schéma de la base, rien d'autre. C'est la seconde ligne de défense que l'introduction de ce chapitre disait absente — PostgreSQL applique lui-même le masque —, pour cette surface-là.
+
+**Une vue SQL (`_basedb.sql_view`) n'est pas une portée non plus.** Elle est créée `security_invoker` : PostgreSQL vérifie, à chaque lecture, les droits du lecteur sur les tables et les colonnes qu'elle lit, si bien qu'elle ne peut rien montrer que ses tables ne montreraient. Elle ne lit que sa propre base, ce qui est vérifié sur `pg_depend` à la création. Une **requête enregistrée** (`_basedb.saved_query`) ne porte que son texte : la partager ne transmet rien des droits de son auteur.
 
 ---
 

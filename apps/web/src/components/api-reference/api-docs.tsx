@@ -3,15 +3,16 @@
 import { TokenDialog } from '@/components/app/token-dialog'
 import { Markdown, headings, unescapeText } from '@/components/markdown'
 import { Button } from '@/components/ui/button'
+import { Choice } from '@/components/ui/choice'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { type ApiDocumentation, type DocSection, api } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
-  ChevronDown,
   ChevronRight,
   FileJson,
   Plug,
@@ -81,7 +82,7 @@ function toPages(sections: readonly DocSection[]): DocPage[] {
       slug,
       title: unescapeText(section.title),
       // An API that predates `group` sends none: everything then falls into one group.
-      group: section.group || 'Documentation',
+      group: section.group || $t('Documentation'),
       markdown: section.markdown,
     }
   })
@@ -177,7 +178,7 @@ function Navigation({
 
   return (
     <aside
-      aria-label="Sections de la documentation"
+      aria-label={$t('Sections de la documentation')}
       className="hidden w-64 shrink-0 flex-col border-r @4xl:flex"
     >
       <div className="px-4 pt-4 pb-3">
@@ -187,8 +188,8 @@ function Navigation({
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
             onKeyDown={(event) => event.key === 'Escape' && setFilter('')}
-            placeholder="Filtrer…"
-            aria-label="Filtrer les sections"
+            placeholder={$t('Filtrer…')}
+            aria-label={$t('Filtrer les sections')}
             className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
           />
           {filter !== '' && (
@@ -196,7 +197,7 @@ function Navigation({
               type="button"
               onClick={() => setFilter('')}
               className="text-xs text-muted-foreground hover:text-foreground"
-              aria-label="Effacer le filtre"
+              aria-label={$t('Effacer le filtre')}
             >
               ×
             </button>
@@ -239,7 +240,9 @@ function Navigation({
           </div>
         ))}
         {shown.length === 0 && (
-          <p className="px-3.5 text-xs text-muted-foreground">Aucune section ne correspond.</p>
+          <p className="px-3.5 text-xs text-muted-foreground">
+            {$t('Aucune section ne correspond.')}
+          </p>
         )}
       </nav>
     </aside>
@@ -310,10 +313,10 @@ function OnThisPage({
   if (entries.length === 0) return null
 
   return (
-    <nav aria-label="Sur cette page">
+    <nav aria-label={$t('Sur cette page')}>
       <p className="mb-3 flex items-center gap-2 text-xs font-semibold text-foreground">
         <TextAlignStart className="size-3.5 text-muted-foreground" />
-        Sur cette page
+        {$t('Sur cette page')}
       </p>
       <ul className="border-l">
         {entries.map((entry) => (
@@ -369,7 +372,7 @@ function Neighbour({
         {!next && (
           <ArrowLeft className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
         )}
-        {next ? 'Suivant' : 'Précédent'}
+        {next ? $t('Suivant') : $t('Précédent')}
         {next && (
           <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
         )}
@@ -390,11 +393,11 @@ function Reminder() {
           className="hidden cursor-help items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground @2xl:inline-flex"
         >
           <ShieldCheck className="size-3.5" />
-          Filtrée par vos droits
+          {$t('Filtrée par vos droits')}
         </button>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
-        Générée selon vos droits : un autre utilisateur en voit une autre version.
+        {$t('Générée selon vos droits : un autre utilisateur en voit une autre version.')}
       </TooltipContent>
     </Tooltip>
   )
@@ -440,11 +443,11 @@ function SpecDownload({ base }: { readonly base: string }) {
       size="sm"
       onClick={() => void download()}
       disabled={busy}
-      title={failure ?? 'Télécharger la spécification OpenAPI 3.1'}
+      title={failure ?? $t('Télécharger la spécification OpenAPI 3.1')}
       className={cn(failure !== null && 'border-destructive/40 text-destructive')}
     >
       <FileJson />
-      {busy ? 'Export…' : failure !== null ? 'Échec — réessayer' : 'openapi.json'}
+      {busy ? $t('Export…') : failure !== null ? $t('Échec — réessayer') : 'openapi.json'}
     </Button>
   )
 }
@@ -470,10 +473,10 @@ function TokenButton({ base }: { readonly base: DocBase }) {
         variant="outline"
         size="sm"
         onClick={() => setOpen(true)}
-        title="Créer un jeton pour l’API REST ou le MCP"
+        title={$t('Créer un jeton pour l’API REST ou le MCP')}
       >
         <Plug />
-        Jetons
+        {$t('Jetons')}
       </Button>
       <TokenDialog open={open} base={base} onClose={() => setOpen(false)} />
     </>
@@ -573,7 +576,7 @@ function DocsBody({
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex h-12 shrink-0 items-center gap-3 border-b px-4 @2xl:px-6">
           <nav
-            aria-label="Fil d’Ariane"
+            aria-label={$t('Fil d’Ariane')}
             className="hidden min-w-0 items-center gap-1.5 text-sm text-muted-foreground @4xl:flex"
           >
             <span className="max-w-[10rem] truncate">{base.label}</span>
@@ -583,26 +586,28 @@ function DocsBody({
             <span className="truncate font-medium text-foreground">{page.title}</span>
           </nav>
 
-          {/* Below the navigation's breakpoint the sections are one native control away —
-              the platform's own picker is the best a phone has. */}
-          <div className="relative min-w-0 flex-1 @4xl:hidden">
-            <select
-              aria-label="Section de la documentation"
+          {/* Below the navigation's breakpoint the sections are one search away: a list of
+              every page, each with the section it belongs to. */}
+          <div className="min-w-0 flex-1 @4xl:hidden">
+            <Choice
               value={page.slug}
-              onChange={(event) => open(event.target.value)}
-              className="h-8 w-full appearance-none rounded-md border bg-background pr-8 pl-3 text-sm font-medium outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25"
-            >
-              {groups.map((group) => (
-                <optgroup key={group.name} label={group.name}>
-                  {group.pages.map((option) => (
-                    <option key={option.slug} value={option.slug}>
-                      {option.title}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              onValueChange={open}
+              options={groups.flatMap((group) =>
+                group.pages.map((option) => ({
+                  value: option.slug,
+                  label: option.title,
+                  render: (
+                    <span className="flex min-w-0 items-baseline gap-2">
+                      <span className="truncate">{option.title}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">{group.name}</span>
+                    </span>
+                  ),
+                })),
+              )}
+              aria-label={$t('Section de la documentation')}
+              searchPlaceholder={$t('Chercher une page…')}
+              className="bg-background font-medium"
+            />
           </div>
 
           {/* Pushes the actions right when the breadcrumb is what sits on the left. */}
@@ -631,7 +636,7 @@ function DocsBody({
               />
 
               <nav
-                aria-label="Pagination"
+                aria-label={$t('Pagination')}
                 className="mt-16 grid gap-3 border-t pt-8 @2xl:grid-cols-2"
               >
                 {previous === undefined ? (
@@ -645,7 +650,7 @@ function DocsBody({
           </div>
 
           <aside
-            aria-label="Sur cette page"
+            aria-label={$t('Sur cette page')}
             className="scroll-discret hidden w-56 shrink-0 overflow-y-auto py-12 pr-4 pl-2 @6xl:block"
           >
             <OnThisPage key={page.slug} entries={entries} scroller={scroller} onFollow={follow} />
@@ -710,5 +715,5 @@ export function ApiDocs({
 
   if (pages.length > 0) return <DocsBody key={base.name} base={base} pages={pages} />
   if (failure !== null) return <Notice>{failure}</Notice>
-  return <Notice>Chargement de la documentation…</Notice>
+  return <Notice>{$t('Chargement de la documentation…')}</Notice>
 }

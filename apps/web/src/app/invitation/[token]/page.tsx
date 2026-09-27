@@ -5,6 +5,7 @@ import { AuthLayout, PRESSABLE, REVEAL, pauseOnSuccess, revealAt } from '@/compo
 import { Login, OidcButtons } from '@/components/login'
 import { Button } from '@/components/ui/button'
 import { type AccessLevel, type InvitationPreview, type Me, api } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { useTheme } from '@/lib/theme'
 import { cn } from '@/lib/utils'
@@ -26,10 +27,10 @@ type Page =
   | { readonly kind: 'ready'; readonly preview: InvitationPreview; readonly me: Me | null }
 
 const LEVEL: Readonly<Record<AccessLevel, string>> = {
-  none: 'aucun accès',
-  read: 'en lecture',
-  edit: 'en modification',
-  manage: 'en gestion',
+  none: $t('aucun accès'),
+  read: $t('en lecture'),
+  edit: $t('en modification'),
+  manage: $t('en gestion'),
 }
 
 /** Where the application lands: the project last browsed (see `app/page.tsx`). */
@@ -44,9 +45,16 @@ function remember(projectId: string): void {
 function offer(preview: InvitationPreview): string {
   const where =
     preview.scope.kind === 'project'
-      ? `le projet « ${preview.scope.label} »`
-      : `la base « ${preview.scope.label} » du projet « ${preview.project} »`
-  return `${preview.invited_by} vous invite dans ${where}, ${LEVEL[preview.level]}.`
+      ? $t('le projet « {label} »', { label: preview.scope.label })
+      : $t('la base « {label} » du projet « {project} »', {
+          label: preview.scope.label,
+          project: preview.project,
+        })
+  return $t('{invited_by} vous invite dans {where}, {level}.', {
+    invited_by: preview.invited_by,
+    where,
+    level: LEVEL[preview.level],
+  })
 }
 
 export default function InvitationPage() {
@@ -104,13 +112,14 @@ export default function InvitationPage() {
           <span className="mx-auto mb-4 grid size-12 place-items-center rounded-xl bg-muted">
             <Link2Off className="size-6 text-muted-foreground" />
           </span>
-          <h1 className="text-lg font-semibold">Cette invitation n’est plus valable</h1>
+          <h1 className="text-lg font-semibold">{$t('Cette invitation n’est plus valable')}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Elle a expiré, a déjà servi ou a été annulée. Demandez un nouveau lien à la personne qui
-            vous a invité.
+            {$t(
+              'Elle a expiré, a déjà servi ou a été annulée. Demandez un nouveau lien à la personne qui vous a invité.',
+            )}
           </p>
           <Button asChild variant="outline" className="mt-6">
-            <a href="/">Aller à basedb</a>
+            <a href="/">{$t('Aller à basedb')}</a>
           </Button>
         </div>
       </main>
@@ -118,7 +127,7 @@ export default function InvitationPage() {
   }
 
   const { preview, me } = page
-  const title = `Rejoindre « ${preview.scope.label} »`
+  const title = $t('Rejoindre « {label} »', { label: preview.scope.label })
 
   // Already signed in: one gesture, and the application opens on the project.
   if (me !== null) {
@@ -126,7 +135,7 @@ export default function InvitationPage() {
       <AuthLayout title={title} description={offer(preview)}>
         <div className={cn('grid gap-4', REVEAL)} style={revealAt(0)}>
           <p className="text-sm text-muted-foreground">
-            Vous êtes connecté en tant que{' '}
+            {$t('Vous êtes connecté en tant que')}{' '}
             <span className="font-medium text-foreground">{me.email}</span>.
           </p>
           {error !== null && (
@@ -147,10 +156,10 @@ export default function InvitationPage() {
             )}
             <span aria-live="polite">
               {joined
-                ? 'C’est fait'
+                ? $t('C’est fait')
                 : preview.scope.kind === 'project'
-                  ? 'Rejoindre le projet'
-                  : 'Rejoindre la base'}
+                  ? $t('Rejoindre le projet')
+                  : $t('Rejoindre la base')}
             </span>
           </Button>
           <button
@@ -160,7 +169,7 @@ export default function InvitationPage() {
               void api.logout().finally(() => setPage({ ...page, me: null }))
             }}
           >
-            Ce n’est pas vous&nbsp;? Changer de compte
+            {$t('Ce n’est pas vous ? Changer de compte')}
           </button>
         </div>
       </AuthLayout>
@@ -171,7 +180,7 @@ export default function InvitationPage() {
     return (
       <Login
         title={title}
-        description={`${offer(preview)} Connectez-vous pour la rejoindre.`}
+        description={$t('{preview} Connectez-vous pour la rejoindre.', { preview: offer(preview) })}
         initialEmail={preview.email}
         onSignedIn={() => void join()}
         onSignUp={() => setMode('signup')}
@@ -184,23 +193,25 @@ export default function InvitationPage() {
   return (
     <AuthLayout
       title={title}
-      description={`${offer(preview)} Créez votre compte pour la rejoindre.`}
+      description={$t('{preview} Créez votre compte pour la rejoindre.', {
+        preview: offer(preview),
+      })}
       footer={
         <p>
-          Déjà un compte&nbsp;?{' '}
+          {$t('Déjà un compte ?')}{' '}
           <button
             type="button"
             onClick={() => setMode('login')}
             className="rounded-sm font-medium text-foreground underline-offset-4 hover:underline"
           >
-            Se connecter
+            {$t('Se connecter')}
           </button>
         </p>
       }
     >
       <AccountForm
-        submitLabel="Créer mon compte et rejoindre"
-        doneLabel="Compte créé"
+        submitLabel={$t('Créer mon compte et rejoindre')}
+        doneLabel={$t('Compte créé')}
         initialEmail={preview.email}
         onSubmit={async ({ name, email, password }) => {
           await api.signUp({ email, displayName: name, password, invitation: token })

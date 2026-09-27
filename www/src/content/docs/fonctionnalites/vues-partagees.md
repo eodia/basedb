@@ -6,7 +6,8 @@ description: Montrer une vue en lecture seule par un lien, l’intégrer à un s
 Une vue de données — grille, kanban, calendrier, chronologie, galerie, liste — se **partage en
 lecture seule** : un lien `/v/<jeton>` la montre à qui ne peut pas ouvrir basedb, sans rien
 permettre d’écrire. C’est le pendant des [formulaires partagés](/basedb/fonctionnalites/formulaires-partages/),
-qui laissent répondre sans rien laisser lire.
+qui laissent répondre sans rien laisser lire. Un [tableau de bord](/basedb/fonctionnalites/tableaux-de-bord/#partager-un-tableau-de-bord)
+se partage de la même façon.
 
 ## Partager
 

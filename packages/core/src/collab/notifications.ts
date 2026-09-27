@@ -1,5 +1,5 @@
 import { BasedbError } from '../errors/index.js'
-import type { Pools } from '../runtime/pool.js'
+import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { canReadTable, emitLive } from './signals.js'
 
@@ -11,10 +11,38 @@ import { canReadTable, emitLive } from './signals.js'
 
 export const NOTIFICATION_RETENTION_DAYS = 90
 
+/** `automation`: an automation's « notify » step (chapter 17), its owner as the actor. */
+export type NotificationKind = 'mention' | 'reply' | 'assigned' | 'automation'
+
+/** Every nature of notification (§2.1) — each one a person may refuse (§2.3). */
+export const NOTIFICATION_KINDS: readonly NotificationKind[] = [
+  'mention',
+  'reply',
+  'assigned',
+  'automation',
+]
+
+/**
+ * Whether a person still wants notifications of this nature — asked by every place that
+ * writes one (§2.3), BEFORE writing it: a refused notification is never stored, so it
+ * never counts as unread and never reaches the stream.
+ */
+export async function wantsNotification(
+  exec: Executor,
+  userId: string,
+  kind: NotificationKind,
+): Promise<boolean> {
+  const rows = await exec.query<{ id: string }>(
+    `SELECT id FROM _basedb.app_user
+      WHERE id = $1 AND NOT ($2 = ANY (muted_notifications))`,
+    [userId, kind],
+  )
+  return rows.length > 0
+}
+
 export interface Notification {
   readonly id: string
-  /** `automation`: an automation's « notify » step (chapter 17), its owner as the actor. */
-  readonly kind: 'mention' | 'reply' | 'assigned' | 'automation'
+  readonly kind: NotificationKind
   readonly actor: { readonly id: string; readonly name: string } | null
   readonly base: { readonly name: string; readonly label: string }
   readonly table: { readonly name: string; readonly label: string }

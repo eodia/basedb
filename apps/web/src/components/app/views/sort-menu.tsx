@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type { Field } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { MAX_SORT_TERMS, type SortTerm } from '@/lib/store/workspace'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 
@@ -34,12 +35,12 @@ export function SortMenu({
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="h-7 gap-1.5 px-2 text-xs">
           <ArrowUpDown className="size-3.5" />
-          Trier
+          {$t('Trier')}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-h-80 w-60 overflow-y-auto">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-          {full ? 'Trois critères au plus : retirez-en un.' : 'Ajouter un critère de tri'}
+          {full ? $t('Trois critères au plus : retirez-en un.') : $t('Ajouter un critère de tri')}
         </DropdownMenuLabel>
         {sortable.map((field) => {
           const term = sorts.find((s) => s.field === field.name)

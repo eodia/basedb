@@ -12,6 +12,7 @@ import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { TABLE_BATCH } from './lifecycle.js'
 import { requireLifecycleAdmin } from './physical.js'
+import { purgeSqlViewStatements } from './sql-views.js'
 
 /**
  * The purge — chapter 06 §5: the one irreversible operation of the product.
@@ -631,6 +632,8 @@ export async function purge(
         throw new BasedbError('EXPORT_STALE', { details: { table: table.name } })
       }
       // And nothing built on it outside the catalog: `DROP … RESTRICT` would fail mid-plan.
+      // A SQL view of the base, when the base itself goes: it is destroyed first, below.
+      // A table alone is not purged from under a view that reads it — the view goes first.
       const [dependent] = await exec.query<{ name: string }>(
         `SELECT dn.nspname || '.' || dc.relname AS name
            FROM pg_depend d
@@ -639,8 +642,17 @@ export async function purge(
            JOIN pg_namespace dn ON dn.oid = dc.relnamespace
           WHERE d.refclassid = 'pg_class'::regclass
             AND d.refobjid = $1::regclass AND dc.oid <> d.refobjid
+            AND NOT ($2::boolean AND dn.nspname = $3 AND EXISTS (
+                  SELECT 1 FROM _basedb.sql_view v
+                    JOIN _basedb.physical_name vn ON vn.id = v.name_id
+                   WHERE v.base_id = $4::uuid AND vn.name = dc.relname))
           LIMIT 1`,
-        [qualify(target.schemaName, table.name)],
+        [
+          qualify(target.schemaName, table.name),
+          target.kind === 'base',
+          target.schemaName,
+          target.baseId,
+        ],
       )
       if (dependent !== undefined) {
         throw new BasedbError('DEPENDENT_OBJECT', {
@@ -661,6 +673,12 @@ export async function purge(
           `UPDATE _basedb.base SET structure_state = 'frozen' WHERE id = ${quoteLiteral(target.baseId)}::uuid;`,
         ],
       })
+      // Its SQL views before its tables: they read them, and `DROP TABLE … RESTRICT` would
+      // refuse to go from under them.
+      const views = await purgeSqlViewStatements(exec, target.baseId, target.schemaName, stamp)
+      if (views.length > 0) {
+        steps.push({ label: 'Détruire les vues SQL', lock: 'short', statements: views })
+      }
     }
     for (let i = 0; i < target.tables.length; i += TABLE_BATCH) {
       const batch = target.tables.slice(i, i + TABLE_BATCH)

@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { Field, LinkOption } from '@/lib/api/client'
+import { $t, intlLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { ExternalLink, Link2, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useState } from 'react'
@@ -96,7 +97,7 @@ export function DataGrid({
         <thead className="sticky top-0 z-10">
           <tr>
             <th className="sticky left-0 z-20 w-10 border-b bg-background px-3 py-0">
-              <span className="sr-only">Sélection</span>
+              <span className="sr-only">{$t('Sélection')}</span>
             </th>
             {fields.map((field, index) => (
               <th
@@ -115,7 +116,7 @@ export function DataGrid({
               </th>
             ))}
             <th className="w-12 border-b border-l bg-background px-2 py-0">
-              <span className="sr-only">Actions</span>
+              <span className="sr-only">{$t('Actions')}</span>
             </th>
           </tr>
         </thead>
@@ -138,7 +139,7 @@ export function DataGrid({
                     <Checkbox
                       checked={checked.has(id)}
                       onCheckedChange={() => toggle(id)}
-                      aria-label="Sélectionner la ligne"
+                      aria-label={$t('Sélectionner la ligne')}
                     />
                   </span>
                 </td>
@@ -175,7 +176,7 @@ export function DataGrid({
                           variant="ghost"
                           size="icon-sm"
                           className="opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
-                          aria-label="Actions sur la ligne"
+                          aria-label={$t('Actions sur la ligne')}
                         >
                           <MoreHorizontal className="size-4" />
                         </Button>
@@ -183,14 +184,14 @@ export function DataGrid({
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onSelect={() => onSelect(row)}>
                           <ExternalLink className="size-4" />
-                          Ouvrir la fiche
+                          {$t('Ouvrir la fiche')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onSelect={() => void onDelete(id)}
                           className="text-destructive focus:text-destructive"
                         >
                           <Trash2 className="size-4" />
-                          Supprimer
+                          {$t('Supprimer')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -220,7 +221,7 @@ export function DataGrid({
                   field={field}
                   options={linkOptions[field.name]}
                   value={draft[field.name] ?? ''}
-                  placeholder={index === 0 ? 'Ajouter un enregistrement' : field.label}
+                  placeholder={index === 0 ? $t('Ajouter un enregistrement') : field.label}
                   onChange={(value) => setDraft({ ...draft, [field.name]: value })}
                   onSubmit={submitDraft}
                 />
@@ -233,7 +234,7 @@ export function DataGrid({
                   size="icon-sm"
                   onClick={submitDraft}
                   disabled={adding}
-                  aria-label="Enregistrer la ligne"
+                  aria-label={$t('Enregistrer la ligne')}
                 >
                   <Plus className="size-4" />
                 </Button>
@@ -272,7 +273,10 @@ function Cell({
   // Masked for this reader: never read, so there is nothing to show and nothing to write.
   if (!present) {
     return (
-      <span className="flex h-12 items-center px-3 text-muted-foreground" title="Champ masqué">
+      <span
+        className="flex h-12 items-center px-3 text-muted-foreground"
+        title={$t('Champ masqué')}
+      >
         ···
       </span>
     )
@@ -387,7 +391,7 @@ function Cell({
           type="button"
           onClick={onOpen}
           className="absolute right-1 z-10 hidden size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground group-hover:flex"
-          aria-label="Ouvrir la fiche"
+          aria-label={$t('Ouvrir la fiche')}
         >
           <ExternalLink className="size-3.5" />
         </button>
@@ -548,7 +552,7 @@ export function display(raw: string, field: Field): string {
   }
   if (field.kind === 'datetime') {
     const parsed = Date.parse(raw)
-    return Number.isNaN(parsed) ? raw : new Date(parsed).toLocaleString('fr-FR')
+    return Number.isNaN(parsed) ? raw : new Date(parsed).toLocaleString(intlLocale())
   }
   return raw
 }

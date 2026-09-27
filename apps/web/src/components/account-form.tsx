@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ApiError } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { reasonFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { Check, Loader2 } from 'lucide-react'
@@ -102,13 +103,13 @@ export function AccountForm({
     <form onSubmit={submit} className="grid gap-5" aria-busy={busy}>
       <div className={cn('group grid gap-2', REVEAL)} style={revealAt(0)}>
         <Label htmlFor="name" className="transition-colors group-focus-within:text-primary">
-          Votre nom
+          {$t('Votre nom')}
         </Label>
         <Input
           id="name"
           name="name"
           autoComplete="name"
-          placeholder="Prénom Nom"
+          placeholder={$t('Prénom Nom')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={120}
@@ -122,7 +123,7 @@ export function AccountForm({
 
       <div className={cn('group grid gap-2', REVEAL)} style={revealAt(1)}>
         <Label htmlFor="email" className="transition-colors group-focus-within:text-primary">
-          Adresse e-mail
+          {$t('Adresse e-mail')}
         </Label>
         <Input
           id="email"
@@ -148,7 +149,7 @@ export function AccountForm({
 
       <div className={cn('group grid gap-2', REVEAL)} style={revealAt(2)}>
         <Label htmlFor="password" className="transition-colors group-focus-within:text-primary">
-          Mot de passe
+          {$t('Mot de passe')}
         </Label>
         <PasswordInput
           id="password"
@@ -181,7 +182,7 @@ export function AccountForm({
               aria-hidden="true"
             />
           )}
-          Au moins 8 caractères, sans reprendre votre adresse ni votre nom.
+          {$t('Au moins 8 caractères, sans reprendre votre adresse ni votre nom.')}
         </p>
       </div>
 
@@ -190,7 +191,7 @@ export function AccountForm({
           htmlFor="confirm-password"
           className="transition-colors group-focus-within:text-primary"
         >
-          Confirmation
+          {$t('Confirmation')}
         </Label>
         <div className="relative">
           <Input
@@ -218,7 +219,7 @@ export function AccountForm({
             id="confirm-hint"
             className="animate-in fade-in slide-in-from-top-1 text-xs text-destructive duration-200"
           >
-            Les deux saisies diffèrent.
+            {$t('Les deux saisies diffèrent.')}
           </p>
         )}
       </div>
@@ -236,7 +237,7 @@ export function AccountForm({
           ) : (
             busy && <Loader2 className="animate-spin" aria-hidden="true" />
           )}
-          <span aria-live="polite">{done ? doneLabel : busy ? 'Création…' : submitLabel}</span>
+          <span aria-live="polite">{done ? doneLabel : busy ? $t('Création…') : submitLabel}</span>
         </Button>
       </div>
     </form>

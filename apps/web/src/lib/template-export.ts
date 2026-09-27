@@ -1,5 +1,19 @@
-import { type DescribedBase, type Field, type TableRef, api } from '@/lib/api/client'
-import { type Template, VIEW_FIELD_KEYS, checkTemplate, optionValue } from '@basedb/contracts'
+import { blocksOf } from '@/lib/analytics/dashboard'
+import {
+  type AutomationStep,
+  type DescribedBase,
+  type Field,
+  type TableRef,
+  api,
+} from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
+import {
+  TEMPLATE_FORMAT,
+  type Template,
+  VIEW_FIELD_KEYS,
+  checkTemplate,
+  optionValue,
+} from '@basedb/contracts'
 
 /**
  * A base as a template — chapter 20 §6: what the person reads of it, less what a template
@@ -27,6 +41,24 @@ export interface ExportResult {
 const EXPORT_ROWS = 50
 const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*/
 const SKIPPED_KINDS = new Set(['system', 'file', 'image'])
+
+/** Steps a template can carry: actions one after the other, on the triggering row. */
+function isSequence(steps: readonly AutomationStep[]): boolean {
+  const citesStep = (text: string) => /\{\{\s*[A-Za-z0-9_]+\./.test(text)
+  return steps.every((step) => {
+    if (step.kind === 'branch' || step.kind === 'find_record' || step.kind === 'ai') return false
+    if ('record' in step && step.record !== undefined && step.record !== null) {
+      if (step.record !== 'trigger') return false
+    }
+    const texts =
+      step.kind === 'update_record' || step.kind === 'create_record'
+        ? Object.values(step.values).filter((v): v is string => typeof v === 'string')
+        : step.kind === 'notify' || step.kind === 'slack'
+          ? [step.message]
+          : []
+    return !texts.some(citesStep)
+  })
+}
 
 /** A filter of the API as a template writes it: `[Libellé]` for names, labels for choices. */
 export function filterToLabels(filter: string, fields: readonly Field[]): string {
@@ -169,7 +201,10 @@ export async function exportTemplate(
       if (SKIPPED_KINDS.has(field.kind)) {
         if (field.kind !== 'system') {
           omitted.push(
-            `« ${table.label} » › « ${field.label} » : un modèle ne porte pas de fichier.`,
+            $t('« {label} » › « {label2} » : un modèle ne porte pas de fichier.', {
+              label: table.label,
+              label2: field.label,
+            }),
           )
         }
         continue
@@ -178,7 +213,10 @@ export async function exportTemplate(
         const to = field.link?.target === undefined ? undefined : keyOfName.get(field.link.target)
         if (to === undefined) {
           omitted.push(
-            `« ${table.label} » › « ${field.label} » : la table visée n’est pas dans la base.`,
+            $t('« {label} » › « {label2} » : la table visée n’est pas dans la base.', {
+              label: table.label,
+              label2: field.label,
+            }),
           )
           continue
         }
@@ -212,6 +250,7 @@ export async function exportTemplate(
           ...(field.format.rating_max ? { rating_max: field.format.rating_max } : {}),
         }
       }
+      if (field.unsafe_html === true) out.rich = true
       const computed = field.computed
       if (field.kind === 'formula' && computed?.expression !== undefined)
         out.formula = computed.expression
@@ -234,7 +273,10 @@ export async function exportTemplate(
         const status = await api.aiFieldStatus(ref, field.name).catch(() => null)
         if (status === null) {
           omitted.push(
-            `« ${table.label} » › « ${field.label} » : consigne IA illisible, champ exporté sans l’IA.`,
+            $t('« {label} » › « {label2} » : consigne IA illisible, champ exporté sans l’IA.', {
+              label: table.label,
+              label2: field.label,
+            }),
           )
         } else {
           let prompt = status.prompt
@@ -344,54 +386,73 @@ export async function exportTemplate(
     }
   }
 
-  // ── Dashboards: every block but a page from outside ──
-  const dashboards = (await api.dashboards(base.name).catch(() => [])).map((dashboard) => ({
-    label: dashboard.label,
-    ...(dashboard.description === null ? {} : { description: dashboard.description }),
-    blocks: dashboard.blocks.flatMap((block): Record<string, unknown>[] => {
-      if (block.kind === 'embed') {
-        omitted.push(
-          `Tableau « ${dashboard.label} » › « ${block.title} » : un modèle ne porte pas de page extérieure.`,
-        )
-        return []
-      }
-      if (block.kind === 'text')
-        return [{ kind: 'text', title: block.title, width: block.width, body: block.body }]
-      const table = tableById.get(block.table)
-      if (table === undefined) return []
-      const label = (name: string | null) =>
-        name === null ? null : (table.fields.find((f) => f.name === name)?.label ?? null)
-      const common = {
-        title: block.title,
-        width: block.width,
-        table: keyOfId.get(block.table),
-        filter: filterToLabels(block.filter, table.fields),
-      }
-      if (block.kind === 'number') {
+  // ── Dashboards: the cards a template's blocks can say, the others named ──
+  const questions = new Map((await api.questions(base.name).catch(() => [])).map((q) => [q.id, q]))
+  const dashboards = (await api.dashboards(base.name).catch(() => [])).map((dashboard) => {
+    const { blocks, omitted: left } = blocksOf(dashboard.cards, dashboard.tabs, questions)
+    for (const reason of left)
+      omitted.push($t('Tableau « {label} » › {reason}', { label: dashboard.label, reason }))
+    return {
+      label: dashboard.label,
+      ...(dashboard.description === null ? {} : { description: dashboard.description }),
+      blocks: blocks.slice(0, 12).flatMap((block): Record<string, unknown>[] => {
+        if (block.kind === 'embed') return []
+        if (block.kind === 'text')
+          return [{ kind: 'text', title: block.title, width: block.width, body: block.body }]
+        const table = tableById.get(block.table)
+        if (table === undefined) return []
+        const label = (name: string | null) =>
+          name === null ? null : (table.fields.find((f) => f.name === name)?.label ?? null)
+        const common = {
+          title: block.title,
+          width: block.width,
+          table: keyOfId.get(block.table),
+          filter: filterToLabels(block.filter, table.fields),
+        }
+        if (block.kind === 'number') {
+          return [
+            { kind: 'number', ...common, aggregate: block.aggregate, field: label(block.field) },
+          ]
+        }
+        if (block.kind === 'chart') {
+          return [{ kind: 'chart', ...common, group_by: label(block.group_by), style: block.style }]
+        }
+        const sortLabel = block.sort
+          .split(',')
+          .filter((s) => s !== '')
+          .map((s) => {
+            const descending = s.startsWith('-')
+            const named = label(descending ? s.slice(1) : s)
+            return named === null ? '' : `${descending ? '-' : ''}${named}`
+          })
+          .find((s) => s !== '')
         return [
-          { kind: 'number', ...common, aggregate: block.aggregate, field: label(block.field) },
+          {
+            kind: 'list',
+            ...common,
+            fields: block.fields.map(label).filter((f) => f !== null),
+            sort: sortLabel ?? '',
+            limit: block.limit,
+          },
         ]
-      }
-      if (block.kind === 'chart') {
-        return [{ kind: 'chart', ...common, group_by: label(block.group_by), style: block.style }]
-      }
-      const descending = block.sort.startsWith('-')
-      const sortLabel =
-        block.sort === '' ? null : label(descending ? block.sort.slice(1) : block.sort)
-      return [
-        {
-          kind: 'list',
-          ...common,
-          fields: block.fields.map(label).filter((f) => f !== null),
-          sort: sortLabel === null ? '' : `${descending ? '-' : ''}${sortLabel}`,
-          limit: block.limit,
-        },
-      ]
-    }),
-  }))
+      }),
+    }
+  })
 
   // ── Automations: every action but those that call outside ──
   const exportedAutomations = automations.flatMap((automation) => {
+    // A template carries a sequence of actions on the triggering row: a flow — a condition
+    // and its paths, a search, a step acting on or citing another's row — stays out whole
+    // rather than be flattened into something else.
+    if (!isSequence(automation.actions)) {
+      omitted.push(
+        $t(
+          'Automatisation « {label} » : un modèle ne porte pas encore ses conditions, recherches ni étapes qui s’en citent, elle est laissée de côté.',
+          { label: automation.label },
+        ),
+      )
+      return []
+    }
     const table =
       automation.trigger.table === null ? undefined : tableById.get(automation.trigger.table)
     const fields = table?.fields ?? []
@@ -435,7 +496,10 @@ export async function exportTemplate(
           ]
         default:
           omitted.push(
-            `Automatisation « ${automation.label} » : un modèle n’appelle pas l’extérieur, action retirée.`,
+            $t(
+              'Automatisation « {label} » : un modèle n’appelle pas l’extérieur, action retirée.',
+              { label: automation.label },
+            ),
           )
           return []
       }
@@ -497,8 +561,9 @@ export async function exportTemplate(
     }
   }
 
+  // The newest format; the check writes it down to 1 when no field needs more.
   const raw = {
-    format: 1,
+    format: TEMPLATE_FORMAT,
     key: options.key,
     label: options.label,
     summary: options.summary,

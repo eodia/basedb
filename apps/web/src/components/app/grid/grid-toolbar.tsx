@@ -18,6 +18,7 @@ import type { Field } from '@/lib/api/client'
 import { effectiveKind } from '@/lib/computed'
 import { compileMatcher } from '@/lib/evaluate'
 import { GROUPABLE_KINDS } from '@/lib/grid'
+import { $t } from '@/lib/i18n'
 import { PRESET_COLORS } from '@/lib/options'
 import type { ColorRule, ColorStyle, RowHeight } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
@@ -63,12 +64,12 @@ export function SearchBox({
           }
           if (e.key === 'Enter') latest.current(text)
         }}
-        placeholder="Rechercher…"
+        placeholder={$t('Rechercher…')}
         className={cn(
           'h-7 w-40 pr-6 pl-7 text-xs transition-[width] focus:w-56',
           text !== '' && 'w-56',
         )}
-        aria-label="Rechercher dans la table"
+        aria-label={$t('Rechercher dans la table')}
       />
       {text !== '' && (
         <button
@@ -78,7 +79,7 @@ export function SearchBox({
             latest.current('')
           }}
           className="absolute right-1.5 rounded p-0.5 text-muted-foreground hover:text-foreground"
-          aria-label="Effacer la recherche"
+          aria-label={$t('Effacer la recherche')}
         >
           <X className="size-3" />
         </button>
@@ -108,12 +109,14 @@ export function GroupMenu({
           className="h-7 gap-1.5 px-2 text-xs"
         >
           <Layers className="size-3.5" />
-          {current === undefined ? 'Grouper' : `Groupé par ${current.label}`}
+          {current === undefined
+            ? $t('Grouper')
+            : $t('Groupé par {label}', { label: current.label })}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-h-80 w-60 overflow-y-auto">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-          Regrouper les lignes selon
+          {$t('Regrouper les lignes selon')}
         </DropdownMenuLabel>
         {groupable.map((field) => (
           <DropdownMenuItem key={field.name} onSelect={() => onChange(field.name)}>
@@ -124,7 +127,9 @@ export function GroupMenu({
         {current !== undefined && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => onChange(null)}>Ne pas grouper</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onChange(null)}>
+              {$t('Ne pas grouper')}
+            </DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>
@@ -133,10 +138,10 @@ export function GroupMenu({
 }
 
 const HEIGHTS: ReadonlyArray<readonly [RowHeight, string]> = [
-  ['short', 'Courte'],
-  ['medium', 'Moyenne'],
-  ['tall', 'Haute'],
-  ['extra', 'Très haute'],
+  ['short', $t('Courte')],
+  ['medium', $t('Moyenne||hauteur de ligne')],
+  ['tall', $t('Haute')],
+  ['extra', $t('Très haute')],
 ]
 
 export function HeightMenu({
@@ -153,15 +158,15 @@ export function HeightMenu({
           variant="ghost"
           size="icon-sm"
           className="size-7"
-          aria-label="Hauteur des lignes"
-          title="Hauteur des lignes"
+          aria-label={$t('Hauteur des lignes')}
+          title={$t('Hauteur des lignes')}
         >
           <Rows3 className="size-3.5" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-44">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-          Hauteur des lignes
+          {$t('Hauteur des lignes')}
         </DropdownMenuLabel>
         <DropdownMenuRadioGroup value={value} onValueChange={(v) => onChange(v as RowHeight)}>
           {HEIGHTS.map(([height, label]) => (
@@ -177,9 +182,9 @@ export function HeightMenu({
 
 /** How a coloured row can show its colour, as the menu offers it. */
 const COLOR_STYLES: ReadonlyArray<{ readonly value: ColorStyle; readonly label: string }> = [
-  { value: 'both', label: 'Trait et fond' },
-  { value: 'stripe', label: 'Trait à gauche' },
-  { value: 'background', label: 'Fond' },
+  { value: 'both', label: $t('Trait et fond') },
+  { value: 'stripe', label: $t('Trait à gauche') },
+  { value: 'background', label: $t('Fond') },
 ]
 
 /** The three ways to show a colour, each previewed in that colour. */
@@ -274,7 +279,7 @@ export function ColorMenu({
           className="h-7 gap-1.5 px-2 text-xs"
         >
           <Palette className="size-3.5" />
-          Couleurs
+          {$t('Couleurs')}
           {rules.length > 0 && (
             <span className="rounded bg-primary/20 px-1 text-[10px] text-primary">
               {rules.length}
@@ -284,7 +289,7 @@ export function ColorMenu({
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[26rem] space-y-4 p-3">
         <div className="space-y-1.5">
-          <p className="text-xs font-medium">Selon une liste de choix</p>
+          <p className="text-xs font-medium">{$t('Selon une liste de choix')}</p>
           <div className="flex flex-wrap gap-1">
             <button
               type="button"
@@ -294,7 +299,7 @@ export function ColorMenu({
                 field === null ? 'border-primary bg-primary/5' : 'hover:bg-accent',
               )}
             >
-              Aucune
+              {$t('Aucune')}
             </button>
             {lists.map((f) => (
               <button
@@ -311,7 +316,7 @@ export function ColorMenu({
             ))}
             {lists.length === 0 && (
               <span className="text-xs text-muted-foreground">
-                La table n’a pas de liste de choix.
+                {$t('La table n’a pas de liste de choix.')}
               </span>
             )}
           </div>
@@ -320,16 +325,16 @@ export function ColorMenu({
               color={listSample}
               value={colorStyle}
               onChange={onStyle}
-              label="Affichage de la couleur de la liste"
+              label={$t('Affichage de la couleur de la liste')}
             />
           )}
         </div>
 
         <div className="space-y-2">
           <div>
-            <p className="text-xs font-medium">Règles</p>
+            <p className="text-xs font-medium">{$t('Règles')}</p>
             <p className="text-[11px] text-muted-foreground">
-              Un filtre et une couleur ; la première règle qui correspond l’emporte.
+              {$t('Un filtre et une couleur ; la première règle qui correspond l’emporte.')}
             </p>
           </div>
           {rules.map((rule, index) => {
@@ -341,19 +346,19 @@ export function ColorMenu({
                   <Input
                     value={rule.filter}
                     onChange={(e) => set(index, { filter: e.target.value })}
-                    placeholder='statut eq "bloque"'
+                    placeholder={$t('statut eq "bloque"')}
                     className={cn(
                       'h-7 flex-1 font-mono text-xs',
                       !valid && 'border-destructive focus-visible:ring-destructive/30',
                     )}
-                    aria-label={`Filtre de la règle ${index + 1}`}
+                    aria-label={$t('Filtre de la règle {value}', { value: index + 1 })}
                   />
                   <Button
                     variant="ghost"
                     size="icon-sm"
                     className="size-7"
                     onClick={() => onRules(rules.filter((_, i) => i !== index))}
-                    aria-label="Retirer la règle"
+                    aria-label={$t('Retirer la règle')}
                   >
                     <Trash2 className="size-3.5" />
                   </Button>
@@ -369,7 +374,7 @@ export function ColorMenu({
                         rule.color === color && 'ring-2 ring-foreground/60',
                       )}
                       style={{ backgroundColor: color }}
-                      aria-label={`Couleur ${color}`}
+                      aria-label={$t('Couleur {color}', { color })}
                     />
                   ))}
                 </div>
@@ -377,11 +382,11 @@ export function ColorMenu({
                   color={rule.color}
                   value={rule.style}
                   onChange={(style) => set(index, { style })}
-                  label={`Affichage de la règle ${index + 1}`}
+                  label={$t('Affichage de la règle {value}', { value: index + 1 })}
                 />
                 {!valid && (
                   <p className="text-[11px] text-destructive">
-                    Filtre illisible : cette règle ne colorera rien.
+                    {$t('Filtre illisible : cette règle ne colorera rien.')}
                   </p>
                 )}
               </div>
@@ -400,7 +405,7 @@ export function ColorMenu({
             disabled={rules.length >= 20}
           >
             <Plus className="size-3.5" />
-            Ajouter une règle
+            {$t('Ajouter une règle')}
           </Button>
         </div>
       </PopoverContent>

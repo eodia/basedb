@@ -67,6 +67,15 @@ export interface SavedView {
 const MAX_LABEL_CHARS = 255
 /** A spec is a configuration, not a document: 64 KiB is far more than any view needs. */
 const MAX_SPEC_BYTES = 64 * 1024
+
+/** A card's description, variables included (chapter 11 §1.6). */
+export const MAX_CARD_TEMPLATE_CHARS = 500
+
+/**
+ * A variable of a card's description: `{{nom_du_champ}}`, spaces allowed inside the
+ * braces. What it names is checked like any field of a spec.
+ */
+const TEMPLATE_VARIABLE = /\{\{\s*([^{}]*?)\s*\}\}/g
 const MAX_SORTS = 3
 const MIN_WIDTH = 64
 const MAX_WIDTH = 640
@@ -220,6 +229,18 @@ class SpecReader {
     const repeated = values.find((v, i) => values.indexOf(v) !== i)
     if (repeated !== undefined) refuse('doublon', repeated)
     return values
+  }
+
+  /**
+   * A text with variables — a card's description. Each `{{…}}` must name a field the
+   * author reads, like every field a spec names; it is kept as `{{nom}}`, spaces gone.
+   */
+  template(key: string, max: number): string {
+    const text = this.text(key, max)
+    return text.replace(
+      TEMPLATE_VARIABLE,
+      (_whole, name: string) => `{{${this.check(name, null)}}}`,
+    )
   }
 
   private check(name: string, kinds: readonly string[] | null): string {
@@ -403,6 +424,7 @@ const SPEC_KEYS: Readonly<Record<ViewKind, readonly string[]>> = {
     'group_order',
     'title_field',
     'card_fields',
+    'card_template',
     'cover_field',
     'hide_empty',
     'manual_order',
@@ -480,6 +502,8 @@ export function normalizeViewSpec(
           group_order: read.valueList('group_order', MAX_OPTIONS),
           title_field: read.field('title_field', null, false),
           card_fields: read.fieldList('card_fields'),
+          // A description under the title, the row's values in place of its variables.
+          card_template: read.template('card_template', MAX_CARD_TEMPLATE_CHARS),
           cover_field: read.field('cover_field', ['file', 'image'], false),
           hide_empty: read.flag('hide_empty', false),
           // Cards in the order they were dragged, when no sort says otherwise.
@@ -640,6 +664,13 @@ export function projectViewSpec(
       (rule) =>
         typeof rule.filter === 'string' &&
         citedFields(rule.filter).every((name) => readable.has(name)),
+    )
+  }
+  // A variable naming a field the reader cannot see goes, braces and all: its value would
+  // not be served anyway, and its NAME is already something they are not to learn.
+  if (typeof out.card_template === 'string') {
+    out.card_template = out.card_template.replace(TEMPLATE_VARIABLE, (whole, name: string) =>
+      sees(name) ? whole : '',
     )
   }
   let filterHidden = false

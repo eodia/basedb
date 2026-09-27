@@ -1,3 +1,4 @@
+import { $t } from '@/lib/i18n'
 import { useId } from 'react'
 import styles from './workspace-illustration.module.css'
 
@@ -153,7 +154,7 @@ export function WorkspaceIllustration() {
             fontWeight="500"
             className="font-mono"
           >
-            SQL
+            {$t('SQL')}
           </text>
           <circle cx="358" cy="159" r="2.5" fill="var(--syn-string)" opacity="0.8" />
           <g className="font-mono" fontSize="10" fontWeight="500">

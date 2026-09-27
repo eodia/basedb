@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { type StructureEvent, api } from '@/lib/api/client'
+import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import {
   ArrowRight,
@@ -24,8 +25,12 @@ import { useCallback, useEffect, useState } from 'react'
  * its token, or someone in psql, who is named as such.
  */
 
-const TIME = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' })
-const DAY = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+const TIME = new Intl.DateTimeFormat(intlLocale(), { hour: '2-digit', minute: '2-digit' })
+const DAY = new Intl.DateTimeFormat(intlLocale(), {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+})
 
 const ICONS: Readonly<Record<StructureEvent['object'], LucideIcon>> = {
   base: Database,
@@ -40,16 +45,16 @@ function dayOf(iso: string): string {
   const date = new Date(iso)
   const today = new Date()
   const yesterday = new Date(today.getTime() - 86_400_000)
-  if (date.toDateString() === today.toDateString()) return 'Aujourd’hui'
-  if (date.toDateString() === yesterday.toDateString()) return 'Hier'
+  if (date.toDateString() === today.toDateString()) return $t('Aujourd’hui')
+  if (date.toDateString() === yesterday.toDateString()) return $t('Hier')
   const text = DAY.format(date)
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
 function authorOf(event: StructureEvent): string {
-  if (event.actor.kind === 'sql_direct') return 'SQL direct'
+  if (event.actor.kind === 'sql_direct') return $t('SQL direct')
   if (event.actor.kind === 'system') return 'basedb'
-  return event.actor.name ?? 'Utilisateur supprimé'
+  return event.actor.name ?? $t('Utilisateur supprimé')
 }
 
 export function StructureHistory({ base }: { readonly base: string }) {
@@ -133,13 +138,13 @@ export function StructureHistory({ base }: { readonly base: string }) {
       )}
       {!loading && events.length === 0 && error === null && (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          Aucune modification de structure enregistrée.
+          {$t('Aucune modification de structure enregistrée.')}
         </p>
       )}
       {next !== null && !loading && (
         <div className="text-center">
           <Button variant="outline" size="sm" onClick={() => void load(next)}>
-            Plus ancien
+            {$t('Plus ancien')}
           </Button>
         </div>
       )}

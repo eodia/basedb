@@ -17,7 +17,7 @@ nouvel environnement naît d’une **copie de la structure** d’un autre, sans 
 
 ## Comparer les environnements
 
-Depuis le menu de la base, **Comparer les environnements…** ouvre un dialogue :
+Depuis le menu de la base, sous **Autres actions**, **Comparer les environnements…** ouvre un dialogue :
 
 - **Structure** : les environnements en colonnes, tables et champs en lignes ; ce qui diffère de
   la production est surligné.

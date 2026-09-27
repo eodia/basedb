@@ -31,8 +31,14 @@ import {
   useDescriptionEdit,
 } from '@/components/app/description'
 import { EditTableDialog } from '@/components/app/edit-table-dialog'
-import { FORMAT_LABELS, FieldIcon, KIND_LABELS, KindLabel } from '@/components/app/field-icon'
-import { PhysicalRenameDialog, type PhysicalTarget } from '@/components/app/lifecycle-dialogs'
+import {
+  FORMAT_LABELS,
+  FieldIcon,
+  KIND_LABELS,
+  KindLabel,
+  shownFormat,
+} from '@/components/app/field-icon'
+import { usePhysicalRename } from '@/components/app/lifecycle-dialogs'
 import { NewTableDialog } from '@/components/app/new-table-dialog'
 import { LookIcon, OptionBadge } from '@/components/app/option-badge'
 import { OptionsEditor } from '@/components/app/options-editor'
@@ -40,6 +46,7 @@ import { SortableFields } from '@/components/app/sortable-fields'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Choice } from '@/components/ui/choice'
 import {
   Dialog,
   DialogContent,
@@ -68,23 +75,12 @@ import {
 } from '@/lib/api/client'
 import { describeComputed } from '@/lib/computed'
 import { CURRENCIES, type FormatInput, PRESETS, formatOf, formatsFor } from '@/lib/format'
+import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { type OptionDraft, draftsOf, emptyDraft, optionsOf } from '@/lib/options'
 import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
-import {
-  Check,
-  CodeXml,
-  Key,
-  Link2,
-  Pencil,
-  Plus,
-  Sparkles,
-  Star,
-  Table2,
-  Trash2,
-  X,
-} from 'lucide-react'
+import { Check, Key, Link2, Pencil, Plus, Sparkles, Star, Table2, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 /**
@@ -161,7 +157,6 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
   const [deleting, setDeleting] = useState<Table | null>(null)
   const [renaming, setRenaming] = useState<Table | null>(null)
   const [editing, setEditing] = useState<Field | null>(null)
-  const [physical, setPhysical] = useState<PhysicalTarget | null>(null)
 
   const table = base.tables.find((t) => t.name === openTable) ?? base.tables[0] ?? null
 
@@ -191,10 +186,12 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
   return (
     <div className="mx-auto max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold tracking-tight">Structure de {base.label}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">
+          {$t('Structure de {label}', { label: base.label })}
+        </h1>
         {!buildsBase && !builds && (
           <p className="mt-1 text-sm text-muted-foreground">
-            Consultation seule : modifier la structure demande l’accès « Gestion ».
+            {$t('Consultation seule : modifier la structure demande l’accès « Gestion ».')}
           </p>
         )}
       </div>
@@ -231,7 +228,7 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
               onClick={() => setNaming(true)}
             >
               <Plus className="size-4" />
-              Nouvelle table
+              {$t('Nouvelle table')}
             </Button>
           )}
         </div>
@@ -248,7 +245,7 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
                 <>
                   <Button size="sm" onClick={() => setAdding(true)} disabled={busy}>
                     <Plus className="size-4" />
-                    Champ
+                    {$t('Champ')}
                   </Button>
                   <Button
                     variant="outline"
@@ -257,7 +254,7 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
                     disabled={busy}
                   >
                     <Pencil className="size-4" />
-                    Modifier
+                    {$t('Modifier')}
                   </Button>
                 </>
               )}
@@ -270,7 +267,7 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
                   className="text-destructive hover:text-destructive"
                 >
                   <Trash2 className="size-4" />
-                  Supprimer
+                  {$t('Supprimer')}
                 </Button>
               )}
             </div>
@@ -317,16 +314,6 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
                     }
                     onDisplay={() => void run(() => api.setDisplayColumn(table, field.name))}
                     onEdit={() => setEditing(field)}
-                    onPhysical={
-                      administers && field.id !== undefined && field.system !== true
-                        ? () =>
-                            setPhysical({
-                              kind: 'field',
-                              id: field.id as string,
-                              label: field.label,
-                            })
-                        : undefined
-                    }
                     onDescription={async (next) => {
                       // Not through `run`: it locks the whole screen, and rewriting a sentence
                       // is no reason to. The editor shows its own refusal, in place.
@@ -359,6 +346,7 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
                     await api.addField(table, {
                       label: field.label,
                       kind: field.kind,
+                      rich: field.rich,
                       description: field.description,
                       options: field.options,
                       ai: field.ai,
@@ -390,22 +378,23 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
               field={editing}
               table={table}
               tables={base.tables}
+              administers={administers}
               onClose={() => setEditing(null)}
               onSaved={onChanged}
             />
 
-            <PhysicalRenameDialog
-              target={physical}
-              onClose={() => setPhysical(null)}
-              onDone={() => {
-                setPhysical(null)
-                void onChanged()
-              }}
-            />
-
             <EditTableDialog
               table={renaming}
+              administers={administers}
               onClose={() => setRenaming(null)}
+              onRenamed={async (change) => {
+                // Tabs carry the old name, and would only fail to load it: they close.
+                // This screen follows the table under its new name.
+                const renamed = renaming
+                if (renamed !== null) useWorkspace.getState().dropTable(renamed.base, change.from)
+                if (openTable === change.from || openTable === null) setOpenTable(change.to)
+                await onChanged()
+              }}
               onSaved={async (label) => {
                 // The tabs open on it carry the label they were opened with.
                 const renamed = renaming
@@ -478,7 +467,7 @@ function TableDescription({
   readonly builds: boolean
   readonly onChanged: () => Promise<void>
 }) {
-  const subject = `la table ${table.label}`
+  const subject = $t('la table {label}', { label: table.label })
   const edit = useDescriptionEdit(table.description, async (next) => {
     await api.setTableDescription(table, next)
     await onChanged()
@@ -491,7 +480,7 @@ function TableDescription({
           edit={edit}
           subject={subject}
           size="md"
-          placeholder="À quoi sert cette table ?"
+          placeholder={$t('À quoi sert cette table ?')}
         />
       ) : hasDescription(table.description) ? (
         <DescriptionText
@@ -571,8 +560,9 @@ export function DeleteTableDialog({
       const migration = await api.deleteTable(table)
       if (migration.status !== 'applied') {
         setError(
-          `La migration s’est arrêtée à l’étape « ${migration.step_label ?? '?'} » ` +
-            `(${migration.error_code ?? 'inconnue'}).`,
+          `${$t('La migration s’est arrêtée à l’étape « {value} » ', {
+            value: migration.step_label ?? '?',
+          })}(${migration.error_code ?? 'inconnue'}).`,
         )
         return
       }
@@ -588,33 +578,42 @@ export function DeleteTableDialog({
     <Dialog open={table !== null} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Supprimer la table « {table?.label} » ?</DialogTitle>
+          <DialogTitle>
+            {$t('Supprimer la table « {label} » ?', { label: table?.label })}
+          </DialogTitle>
           <DialogDescription>
             {preview?.row_count != null && preview.row_count > 0
-              ? `Ses données (environ ${preview.row_count.toLocaleString('fr-FR')} lignes) restent lisibles en SQL.`
-              : 'Ses données restent lisibles en SQL.'}
+              ? $t('Ses données (environ {row_count} lignes) restent lisibles en SQL.', {
+                  row_count: preview.row_count.toLocaleString(intlLocale()),
+                })
+              : $t('Ses données restent lisibles en SQL.')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 text-sm">
           {blocked && (
             <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-destructive">
-              Retirez d’abord les relations qui pointent vers cette table :{' '}
-              {preview?.referenced_by.join(', ')}.
+              {$t(
+                'Retirez d’abord les relations qui pointent vers cette table : {referenced_by}.',
+                { referenced_by: preview?.referenced_by.join(', ') },
+              )}
             </p>
           )}
 
           {!blocked && (preview?.locked_tables.length ?? 0) > 0 && (
             <p className="text-muted-foreground">
-              Tables verrouillées brièvement : {preview?.locked_tables.join(', ')}.
+              {$t('Tables verrouillées brièvement : {locked_tables}.', {
+                locked_tables: preview?.locked_tables.join(', '),
+              })}
             </p>
           )}
 
           {!blocked && (
             <div className="space-y-1.5">
               <label htmlFor="confirm-table" className="text-sm text-muted-foreground">
-                Saisissez <span className="font-medium text-foreground">{table?.label}</span> pour
-                confirmer
+                {$t('Saisissez')}{' '}
+                <span className="font-medium text-foreground">{table?.label}</span>{' '}
+                {$t('pour confirmer')}
               </label>
               <Input
                 id="confirm-table"
@@ -636,10 +635,10 @@ export function DeleteTableDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button variant="destructive" onClick={() => void submit()} disabled={!ready}>
-            {busy ? 'Suppression…' : 'Supprimer la table'}
+            {busy ? $t('Suppression…') : $t('Supprimer la table')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -656,7 +655,6 @@ function FieldRow({
   onRequired,
   onDisplay,
   onEdit,
-  onPhysical,
   onDescription,
   handle,
 }: {
@@ -672,21 +670,20 @@ function FieldRow({
   readonly onDisplay: () => void
   readonly onEdit: () => void
   /** Renaming the COLUMN — administration only, and without an alias (chapter 06 §3.1). */
-  readonly onPhysical?: () => void
   readonly onDescription: (next: string | null) => Promise<void>
 }) {
   const isDisplay = table.display_field === field.name
 
   // A system column carries a description of the server's own, shown and never edited.
   const editable = builds && field.system !== true
-  const subject = `le champ ${field.label}`
+  const subject = $t('le champ {label}', { label: field.label })
   const edit = useDescriptionEdit(field.description, onDescription)
   const described = hasDescription(field.description)
 
   return (
     <div className={cn('group/row flex items-center gap-3 px-3 py-2.5', !first && 'border-t')}>
       {handle}
-      <FieldIcon kind={field.kind} format={field.format?.display} className="size-4" />
+      <FieldIcon kind={field.kind} format={shownFormat(field)} className="size-4" />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
@@ -699,7 +696,7 @@ function FieldRow({
           )}
           {field.link?.masked === true && (
             <Badge variant="outline" className="font-normal text-muted-foreground">
-              cible non visible
+              {$t('cible non visible')}
             </Badge>
           )}
         </div>
@@ -724,7 +721,7 @@ function FieldRow({
             <DescriptionEditor
               edit={edit}
               subject={subject}
-              placeholder="Que contient ce champ ?"
+              placeholder={$t('Que contient ce champ ?')}
             />
           </div>
         ) : (
@@ -757,17 +754,15 @@ function FieldRow({
       </div>
 
       <span className="flex w-32 shrink-0 items-center gap-1.5 text-sm text-muted-foreground">
-        {(field.format === undefined ? undefined : FORMAT_LABELS[field.format.display]) ??
-          KIND_LABELS[field.kind] ??
-          field.kind}
+        {FORMAT_LABELS[shownFormat(field) ?? ''] ?? KIND_LABELS[field.kind] ?? field.kind}
         {/* The AI is an option of the type, said where the type is. */}
         {field.ai === true && (
           <span
             className="inline-flex items-center gap-0.5 text-xs text-violet-600 dark:text-violet-400"
-            title="Rempli par l’IA"
+            title={$t('Rempli par l’IA')}
           >
             <Sparkles className="size-3" />
-            IA
+            {$t('IA')}
           </span>
         )}
       </span>
@@ -777,13 +772,13 @@ function FieldRow({
       {field.system === true ? (
         <Badge variant="outline" className="w-28 shrink-0 justify-center font-normal">
           <Key className="size-3" />
-          système
+          {$t('système')}
         </Badge>
       ) : !builds ? (
         // Said, not offered: making a field required is building the table.
         <Badge variant="outline" className="w-28 shrink-0 justify-center font-normal">
           {field.required === true ? <Check className="size-3" /> : <X className="size-3" />}
-          {field.required === true ? 'Obligatoire' : 'Facultatif'}
+          {field.required === true ? $t('Obligatoire') : $t('Facultatif')}
         </Badge>
       ) : (
         <Tooltip>
@@ -801,20 +796,20 @@ function FieldRow({
               {field.required === true ? (
                 <>
                   <Check className="size-3.5" />
-                  Obligatoire
+                  {$t('Obligatoire')}
                 </>
               ) : (
                 <>
                   <X className="size-3.5" />
-                  Facultatif
+                  {$t('Facultatif')}
                 </>
               )}
             </Button>
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
             {field.required === true
-              ? 'Rendre facultatif'
-              : 'Rendre obligatoire (refusé si une ligne est vide)'}
+              ? $t('Rendre facultatif')
+              : $t('Rendre obligatoire (refusé si une ligne est vide)')}
           </TooltipContent>
         </Tooltip>
       )}
@@ -829,36 +824,20 @@ function FieldRow({
               size="icon-sm"
               disabled={busy}
               onClick={onEdit}
-              aria-label={`Modifier le champ ${field.label}`}
+              aria-label={$t('Modifier le champ {label}', { label: field.label })}
             >
               <Pencil className="size-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            Modifier le libellé
-            {hasChoices(field.kind) ? ' et les choix' : ''}
-            {field.ai === true ? ' et la consigne de l’IA' : ''}
+            {$t('Modifier le libellé{value}{value2}', {
+              value: hasChoices(field.kind) ? $t(' et les choix') : '',
+              value2: field.ai === true ? $t(' et la consigne de l’IA') : '',
+            })}
           </TooltipContent>
         </Tooltip>
       ) : (
         <span className="size-8 shrink-0" />
-      )}
-
-      {onPhysical !== undefined && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              disabled={busy}
-              onClick={onPhysical}
-              aria-label={`Renommer en base le champ ${field.label}`}
-            >
-              <CodeXml className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Renommer la colonne en base ({field.name})</TooltipContent>
-        </Tooltip>
       )}
 
       {builds ? (
@@ -869,20 +848,20 @@ function FieldRow({
               size="icon-sm"
               disabled={busy || field.system === true || NOT_DISPLAYABLE.has(field.kind)}
               onClick={onDisplay}
-              aria-label="Désigner comme colonne d’affichage"
+              aria-label={$t('Désigner comme colonne d’affichage')}
             >
               <Star className={cn('size-4', isDisplay && 'fill-primary text-primary')} />
             </Button>
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
-            Colonne d’affichage, montrée dans les relations
+            {$t('Colonne d’affichage, montrée dans les relations')}
           </TooltipContent>
         </Tooltip>
       ) : (
         // The display column is still worth knowing; only the designation is withheld.
         <span
           className="flex size-8 shrink-0 items-center justify-center"
-          title={isDisplay ? 'Colonne d’affichage, montrée dans les relations' : undefined}
+          title={isDisplay ? $t('Colonne d’affichage, montrée dans les relations') : undefined}
         >
           {isDisplay && <Star className="size-4 fill-primary text-primary" />}
         </span>
@@ -907,6 +886,7 @@ function EditFieldDialog({
   field,
   table,
   tables,
+  administers,
   onClose,
   onSaved,
 }: {
@@ -914,10 +894,28 @@ function EditFieldDialog({
   readonly table: Table
   /** The base's tables: what a lookup or a rollup reads through is named from them. */
   readonly tables: readonly Table[]
+  /** The administration role: the column may be renamed in the database too. */
+  readonly administers: boolean
   readonly onClose: () => void
   readonly onSaved: () => Promise<void>
 }) {
   const [label, setLabel] = useState('')
+  // A system column has no name of its own to change (chapter 06 §2.6).
+  const physical = usePhysicalRename({
+    target:
+      field === null || field.system === true
+        ? null
+        : {
+            kind: 'field',
+            base: table.base,
+            table: table.name,
+            field: field.name,
+            label: field.label,
+          },
+    current: field?.name ?? '',
+    label,
+    administers: administers && field?.system !== true,
+  })
   const [drafts, setDrafts] = useState<OptionDraft[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -994,7 +992,14 @@ function EditFieldDialog({
     label.trim() !== '' &&
     (!isSelect || next.length > 0) &&
     (!aiChanged || (ai !== null && aiReady(ai, columns))) &&
-    (labelChanged || optionsChanged || aiChanged || aiRemoved || formatChanged || formulaChanged) &&
+    (labelChanged ||
+      optionsChanged ||
+      aiChanged ||
+      aiRemoved ||
+      formatChanged ||
+      formulaChanged ||
+      physical.asked) &&
+    physical.ready &&
     !busy
 
   /** Every row again, now — the prompt as saved. */
@@ -1044,6 +1049,8 @@ function EditFieldDialog({
         await api.disableAiField(table, field.name)
         await onSaved()
       }
+      // Last: the column's name is what every step above addressed it by.
+      if ((await physical.run()) !== null) await onSaved()
       onClose()
     } catch (e) {
       setError(messageFor(e))
@@ -1058,7 +1065,7 @@ function EditFieldDialog({
         className={cn('max-h-[90vh] overflow-y-auto', isAi ? 'sm:max-w-2xl' : 'sm:max-w-xl')}
       >
         <DialogHeader>
-          <DialogTitle>Modifier {field?.label}</DialogTitle>
+          <DialogTitle>{$t('Modifier {label}', { label: field?.label })}</DialogTitle>
           <DialogDescription asChild>
             <div>
               {field !== null && <KindLabel kind={field.kind} format={field.format?.display} />}
@@ -1069,7 +1076,7 @@ function EditFieldDialog({
         <div className="space-y-4">
           <div className="space-y-1.5">
             <label htmlFor="edit-field-label" className="text-sm text-muted-foreground">
-              Libellé
+              {$t('Libellé')}
             </label>
             <Input
               id="edit-field-label"
@@ -1079,11 +1086,12 @@ function EditFieldDialog({
               disabled={busy}
               autoFocus
             />
+            {field?.system !== true && physical.element}
           </div>
 
           {isSelect && (
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Choix</p>
+              <p className="text-sm text-muted-foreground">{$t('Choix')}</p>
               <OptionsEditor value={drafts} onChange={setDrafts} known={known} disabled={busy} />
             </div>
           )}
@@ -1106,9 +1114,10 @@ function EditFieldDialog({
           {formats.length > 0 && format !== null && (
             <div className="space-y-1.5">
               <label htmlFor="edit-field-format" className="text-sm text-muted-foreground">
-                Affichage
+                {$t('Affichage')}
               </label>
-              <Select
+              <Choice
+                id="edit-field-format"
                 value={format.display}
                 onValueChange={(display) =>
                   setFormat({
@@ -1117,24 +1126,22 @@ function EditFieldDialog({
                     rating_max: display === 'rating' ? (format.rating_max ?? 5) : undefined,
                   })
                 }
+                options={formats.map(([value, name]) => ({
+                  value,
+                  label: name,
+                  render: (
+                    <span className="flex items-center gap-2">
+                      <FieldIcon kind={field?.kind ?? ''} format={value} />
+                      {name}
+                    </span>
+                  ),
+                }))}
+                aria-label={$t('Format d’affichage')}
                 disabled={busy}
-              >
-                <SelectTrigger id="edit-field-format">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {formats.map(([value, name]) => (
-                    <SelectItem key={value} value={value}>
-                      <span className="flex items-center gap-2">
-                        <FieldIcon kind={field?.kind ?? ''} format={value} />
-                        {name}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                size="default"
+              />
               <p className="text-xs text-muted-foreground">
-                Seule la lecture change : les valeurs enregistrées restent les mêmes.
+                {$t('Seule la lecture change : les valeurs enregistrées restent les mêmes.')}
               </p>
             </div>
           )}
@@ -1143,7 +1150,7 @@ function EditFieldDialog({
             <FormatDetails value={format} onChange={setFormat} disabled={busy} />
           )}
 
-          {field !== null && acceptsAi(field.kind) && (
+          {field !== null && acceptsAi(field.kind) && field.unsafe_html !== true && (
             <AiToggle
               checked={aiOn}
               onChange={(on) => {
@@ -1157,8 +1164,9 @@ function EditFieldDialog({
 
           {aiRemoved && (
             <p className="rounded-md bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
-              Le champ redeviendra un champ ordinaire : ses valeurs restent, et chacun pourra les
-              modifier.
+              {$t(
+                'Le champ redeviendra un champ ordinaire : ses valeurs restent, et chacun pourra les modifier.',
+              )}
             </p>
           )}
 
@@ -1172,11 +1180,11 @@ function EditFieldDialog({
                   onClick={() => void sweep()}
                   disabled={busy || status.sweeping || swept}
                 >
-                  Tout recalculer maintenant
+                  {$t('Tout recalculer maintenant')}
                 </Button>
                 {swept && (
                   <span className="text-xs text-muted-foreground">
-                    Demandé : les lignes sont recalculées en arrière-plan.
+                    {$t('Demandé : les lignes sont recalculées en arrière-plan.')}
                   </span>
                 )}
               </div>
@@ -1202,7 +1210,7 @@ function EditFieldDialog({
                 disabled={busy}
               />
               <label htmlFor="ai-recompute" className="cursor-pointer">
-                Recalculer aussi les lignes déjà remplies
+                {$t('Recalculer aussi les lignes déjà remplies')}
               </label>
             </div>
           )}
@@ -1219,10 +1227,14 @@ function EditFieldDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button disabled={!ready} onClick={() => void save()}>
-            {busy ? 'Enregistrement…' : 'Enregistrer'}
+            {busy
+              ? $t('Enregistrement…')
+              : physical.asked
+                ? $t('Enregistrer et renommer en base')
+                : $t('Enregistrer')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1247,6 +1259,8 @@ interface Draft {
   readonly rollup?: import('@/lib/api/client').RollupInput
   /** A button's label and action (chapter 17 §4). */
   readonly button?: ButtonDraft
+  /** A long text that holds HTML (chapter 04 §2.2). */
+  readonly rich?: boolean
 }
 
 /** How many stars a rating may be out of. */
@@ -1269,7 +1283,7 @@ function FormatDetails({
     return (
       <div className="space-y-1.5">
         <label htmlFor="field-currency" className="text-sm text-muted-foreground">
-          Devise
+          {$t('Devise')}
         </label>
         <Select
           value={value.currency ?? 'EUR'}
@@ -1294,24 +1308,17 @@ function FormatDetails({
     return (
       <div className="space-y-1.5">
         <label htmlFor="field-rating-max" className="text-sm text-muted-foreground">
-          Nombre d’étoiles
+          {$t('Nombre d’étoiles')}
         </label>
-        <Select
+        <Choice
+          id="field-rating-max"
           value={String(value.rating_max ?? 5)}
           onValueChange={(n) => onChange({ ...value, rating_max: Number(n) })}
+          options={RATING_MAXES.map((n) => ({ value: String(n), label: String(n) }))}
+          aria-label={$t('Nombre d’étoiles')}
           disabled={disabled}
-        >
-          <SelectTrigger id="field-rating-max">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {RATING_MAXES.map((n) => (
-              <SelectItem key={n} value={String(n)}>
-                {n}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          size="default"
+        />
       </div>
     )
   }
@@ -1320,15 +1327,22 @@ function FormatDetails({
 
 /** What a type means for the rows, said before one creates it. */
 const KIND_NOTES: Readonly<Record<string, string>> = {
-  file: 'Des fichiers de tout type, jusqu’à 20 par ligne. Ils s’ouvrent dans le navigateur quand c’est sûr (PDF, images), sinon se téléchargent.',
-  image:
+  file: $t(
+    'Des fichiers de tout type, jusqu’à 20 par ligne. Ils s’ouvrent dans le navigateur quand c’est sûr (PDF, images), sinon se téléchargent.',
+  ),
+  image: $t(
     'Des images PNG, JPEG, GIF, WebP ou AVIF, jusqu’à 20 par ligne. Le type est vérifié sur le contenu, pas sur le nom.',
-  autonumber:
+  ),
+  autonumber: $t(
     'Un numéro donné à chaque ligne à sa création, dans l’ordre, lignes existantes comprises. Personne ne le saisit ni ne le modifie.',
-  user: 'Une personne de l’espace de travail. Une personne dont le compte est désactivé reste affichée sur ses lignes, mais n’est plus proposée.',
-  email: 'Une adresse vérifiée à l’écriture, qui s’ouvre dans la messagerie en un clic.',
-  button:
+  ),
+  user: $t(
+    'Une personne de l’espace de travail. Une personne dont le compte est désactivé reste affichée sur ses lignes, mais n’est plus proposée.',
+  ),
+  email: $t('Une adresse vérifiée à l’écriture, qui s’ouvre dans la messagerie en un clic.'),
+  button: $t(
     'Un bouton dans chaque ligne, sans valeur : il ouvre une adresse composée avec la ligne, ou lance une automatisation de la base déclenchée par un bouton.',
+  ),
 }
 
 interface ButtonDraft {
@@ -1385,8 +1399,8 @@ function ButtonForm({
       <Input
         value={value.label}
         onChange={(e) => onChange({ ...value, label: e.target.value })}
-        placeholder="Libellé du bouton : Relancer"
-        aria-label="Libellé du bouton"
+        placeholder={$t('Libellé du bouton : Relancer')}
+        aria-label={$t('Libellé du bouton')}
         maxLength={60}
         disabled={disabled}
         className="h-8"
@@ -1403,7 +1417,7 @@ function ButtonForm({
               value.action === a ? 'bg-secondary font-medium' : 'text-muted-foreground',
             )}
           >
-            {a === 'url' ? 'Ouvrir une adresse' : 'Lancer une automatisation'}
+            {a === 'url' ? $t('Ouvrir une adresse') : $t('Lancer une automatisation')}
           </button>
         ))}
       </div>
@@ -1412,7 +1426,7 @@ function ButtonForm({
           <Input
             value={value.url}
             onChange={(e) => onChange({ ...value, url: e.target.value })}
-            aria-label="Adresse du bouton"
+            aria-label={$t('Adresse du bouton')}
             disabled={disabled}
             className="h-8 font-mono text-xs"
           />
@@ -1422,24 +1436,19 @@ function ButtonForm({
         </>
       ) : automations !== null && automations.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          Aucune automatisation de cette table n’est déclenchée par un bouton. Créez-en une dans «
-          Automatisations », puis revenez.
+          {$t(
+            'Aucune automatisation de cette table n’est déclenchée par un bouton. Créez-en une dans « Automatisations », puis revenez.',
+          )}
         </p>
       ) : (
-        <select
-          value={value.automation}
-          onChange={(e) => onChange({ ...value, automation: e.target.value })}
-          aria-label="Automatisation du bouton"
+        <Choice
+          value={value.automation === '' ? null : value.automation}
+          onValueChange={(automation) => onChange({ ...value, automation })}
+          options={(automations ?? []).map((a) => ({ value: a.id, label: a.label }))}
+          placeholder={$t('Choisir une automatisation')}
+          aria-label={$t('Automatisation du bouton')}
           disabled={disabled || automations === null}
-          className="h-8 w-full rounded-md border bg-transparent px-2 text-sm"
-        >
-          <option value="">Choisir une automatisation</option>
-          {automations?.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.label}
-            </option>
-          ))}
-        </select>
+        />
       )}
     </div>
   )
@@ -1465,6 +1474,8 @@ function AddFieldDialog({
   const [format, setFormat] = useState<FormatInput | null>(null)
   const kind =
     preset === 'link' ? 'link' : (PRESETS.find((p) => p.value === preset)?.kind ?? preset)
+  // The rich variant of a long text: HTML, and no AI — a model writes plain text.
+  const rich = PRESETS.find((p) => p.value === preset)?.rich === true
   const [target, setTarget] = useState('')
   const [multiple, setMultiple] = useState(false)
   const [expression, setExpression] = useState('')
@@ -1482,7 +1493,7 @@ function AddFieldDialog({
   const paths = pathsOf(table, base.tables)
   const readsThrough = kind === 'lookup' || kind === 'rollup' || kind === 'count'
   // The switch only holds for the types that take the option.
-  const withAi = aiOn && acceptsAi(kind)
+  const withAi = aiOn && acceptsAi(kind) && !rich
   const parsed = optionsOf(choices)
   const columns = citable(table)
 
@@ -1515,6 +1526,7 @@ function AddFieldDialog({
       formula: kind === 'formula' ? { expression } : undefined,
       rollup: readsThrough ? rollupInputOf(kind, rollup, paths) : undefined,
       button: kind === 'button' ? { ...button, label: button.label.trim() } : undefined,
+      rich: rich ? true : undefined,
     })
     setBusy(false)
     if (refusal !== null) {
@@ -1547,71 +1559,76 @@ function AddFieldDialog({
         aria-describedby={undefined}
       >
         <DialogHeader>
-          <DialogTitle>Nouveau champ dans {table.label}</DialogTitle>
+          <DialogTitle>{$t('Nouveau champ dans {label}', { label: table.label })}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
             <label htmlFor="field-label" className="text-sm text-muted-foreground">
-              Libellé
+              {$t('Libellé')}
             </label>
             <Input
               id="field-label"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="Ville"
+              placeholder={$t('Ville')}
             />
           </div>
 
           <div className="space-y-1.5">
             <label htmlFor="field-kind" className="text-sm text-muted-foreground">
-              Type
+              {$t('Type')}
             </label>
-            <Select
+            <Choice
+              id="field-kind"
               value={preset}
               onValueChange={(next) => {
                 setPreset(next)
                 setFormat(PRESETS.find((p) => p.value === next)?.format ?? null)
               }}
-            >
-              <SelectTrigger id="field-kind">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PRESETS.map((p) => (
-                  <SelectItem key={p.value} value={p.value}>
+              options={[
+                ...PRESETS.map((p) => ({
+                  value: p.value,
+                  label: p.label,
+                  render: (
                     <span className="flex items-center gap-2">
-                      <FieldIcon kind={p.kind} format={p.format?.display} />
+                      <FieldIcon
+                        kind={p.kind}
+                        format={p.rich === true ? 'html' : p.format?.display}
+                      />
                       {p.label}
                     </span>
-                  </SelectItem>
-                ))}
-                {targets.length > 0 && (
-                  <SelectItem value="link">
-                    <KindLabel kind="link" />
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+                  ),
+                })),
+                ...(targets.length > 0
+                  ? [
+                      {
+                        value: 'link',
+                        label: KIND_LABELS.link ?? $t('Lien'),
+                        render: <KindLabel kind="link" />,
+                      },
+                    ]
+                  : []),
+              ]}
+              aria-label={$t('Type du champ')}
+              size="default"
+            />
           </div>
 
           {kind === 'link' && (
             <div className="space-y-1.5">
               <label htmlFor="field-target" className="text-sm text-muted-foreground">
-                Table cible
+                {$t('Table cible')}
               </label>
-              <Select value={target} onValueChange={setTarget}>
-                <SelectTrigger id="field-target">
-                  <SelectValue placeholder="Choisir une table" />
-                </SelectTrigger>
-                <SelectContent>
-                  {targets.map((t) => (
-                    <SelectItem key={t.id} value={t.name}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Choice
+                id="field-target"
+                value={target === '' ? null : target}
+                onValueChange={setTarget}
+                options={targets.map((t) => ({ value: t.name, label: t.label }))}
+                placeholder={$t('Choisir une table')}
+                aria-label={$t('Table liée')}
+                size="default"
+              />
               <div className="flex items-start gap-2 pt-1.5 text-sm">
                 <Checkbox
                   id="field-multiple"
@@ -1620,11 +1637,15 @@ function AddFieldDialog({
                   className="mt-0.5"
                 />
                 <label htmlFor="field-multiple" className="cursor-pointer">
-                  Plusieurs lignes par enregistrement
+                  {$t('Plusieurs lignes par enregistrement')}
                   <span className="block text-xs text-muted-foreground">
                     {multiple
-                      ? 'Une liste ordonnée de lignes : une ligne supprimée de la cible est retirée des listes qui la citent.'
-                      : 'Une seule ligne liée : une ligne de la cible encore liée ne peut pas être supprimée.'}
+                      ? $t(
+                          'Une liste ordonnée de lignes : une ligne supprimée de la cible est retirée des listes qui la citent.',
+                        )
+                      : $t(
+                          'Une seule ligne liée : une ligne de la cible encore liée ne peut pas être supprimée.',
+                        )}
                   </span>
                 </label>
               </div>
@@ -1634,7 +1655,7 @@ function AddFieldDialog({
           {hasChoices(kind) && (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                {kind === 'multi_select' ? 'Choix (plusieurs par ligne)' : 'Choix'}
+                {kind === 'multi_select' ? $t('Choix (plusieurs par ligne)') : $t('Choix')}
               </p>
               <OptionsEditor value={choices} onChange={setChoices} />
             </div>
@@ -1677,7 +1698,9 @@ function AddFieldDialog({
             </p>
           )}
 
-          {acceptsAi(kind) && <AiToggle checked={aiOn} onChange={setAiOn} disabled={busy} />}
+          {acceptsAi(kind) && !rich && (
+            <AiToggle checked={aiOn} onChange={setAiOn} disabled={busy} />
+          )}
 
           {withAi && (
             <AiFieldForm value={ai} onChange={setAi} fields={columns} kind={kind} disabled={busy} />
@@ -1688,7 +1711,7 @@ function AddFieldDialog({
             value={description}
             onChange={setDescription}
             onSubmit={() => void submit()}
-            placeholder="Que contient ce champ ?"
+            placeholder={$t('Que contient ce champ ?')}
           />
 
           {error !== null && (
@@ -1703,10 +1726,10 @@ function AddFieldDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button disabled={!ready} onClick={() => void submit()}>
-            {busy ? 'Création…' : 'Créer'}
+            {busy ? $t('Création…') : $t('Créer')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { type Me, api } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { KeyRound } from 'lucide-react'
 import { useState } from 'react'
@@ -61,10 +62,12 @@ export function PasswordRequired({
           <span className="mx-auto flex size-12 items-center justify-center rounded-xl bg-muted">
             <KeyRound className="size-6 text-muted-foreground" />
           </span>
-          <h1 className="text-lg font-semibold">Choisissez votre mot de passe</h1>
+          <h1 className="text-lg font-semibold">{$t('Choisissez votre mot de passe')}</h1>
           <p className="text-sm text-muted-foreground">
-            Bienvenue, {me.displayName}. Le mot de passe avec lequel vous venez de vous connecter
-            est temporaire : remplacez-le par le vôtre pour continuer.
+            {$t(
+              'Bienvenue, {displayName}. Le mot de passe avec lequel vous venez de vous connecter est temporaire : remplacez-le par le vôtre pour continuer.',
+              { displayName: me.displayName },
+            )}
           </p>
         </div>
 
@@ -76,7 +79,7 @@ export function PasswordRequired({
           }}
         >
           <div className="space-y-1.5">
-            <Label htmlFor="temporary">Mot de passe temporaire</Label>
+            <Label htmlFor="temporary">{$t('Mot de passe temporaire')}</Label>
             <Input
               id="temporary"
               type="password"
@@ -87,7 +90,7 @@ export function PasswordRequired({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="new-password">Nouveau mot de passe</Label>
+            <Label htmlFor="new-password">{$t('Nouveau mot de passe')}</Label>
             <Input
               id="new-password"
               type="password"
@@ -96,11 +99,11 @@ export function PasswordRequired({
               onChange={(e) => setNext(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Au moins 8 caractères, sans reprendre votre adresse ni votre nom.
+              {$t('Au moins 8 caractères, sans reprendre votre adresse ni votre nom.')}
             </p>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="confirm-password">Confirmation</Label>
+            <Label htmlFor="confirm-password">{$t('Confirmation')}</Label>
             <Input
               id="confirm-password"
               type="password"
@@ -108,23 +111,27 @@ export function PasswordRequired({
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
             />
-            {mismatched && <p className="text-xs text-destructive">Les deux saisies diffèrent.</p>}
+            {mismatched && (
+              <p className="text-xs text-destructive">{$t('Les deux saisies diffèrent.')}</p>
+            )}
             {reused && (
-              <p className="text-xs text-destructive">Choisissez un mot de passe différent.</p>
+              <p className="text-xs text-destructive">
+                {$t('Choisissez un mot de passe différent.')}
+              </p>
             )}
           </div>
 
           {error !== null && <p className="text-sm text-destructive">{error}</p>}
 
           <Button type="submit" className="w-full" disabled={!ready}>
-            {busy ? 'Enregistrement…' : 'Enregistrer et continuer'}
+            {busy ? $t('Enregistrement…') : $t('Enregistrer et continuer')}
           </Button>
         </form>
 
         <p className="text-center text-xs text-muted-foreground">
-          Session de {me.email} ·{' '}
+          {$t('Session de {email} ·', { email: me.email })}{' '}
           <button type="button" onClick={onSignOut} className="underline underline-offset-2">
-            se déconnecter
+            {$t('se déconnecter')}
           </button>
         </p>
       </div>

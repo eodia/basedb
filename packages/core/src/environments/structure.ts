@@ -53,6 +53,8 @@ export interface StructureField {
   readonly description: string | null
   readonly required: boolean
   readonly position: number
+  /** A long text holding HTML (chapter 04 §2.2): copied as such. */
+  readonly rich: boolean
   readonly options: readonly StructureOption[] | null
   readonly link: {
     readonly targetLineage: string
@@ -150,17 +152,19 @@ export async function loadStructure(
     refresh_mode: 'if_empty' | 'schedule' | null
     refresh_cron: string | null
     refresh_timezone: string | null
+    is_rich: boolean
   }>(
     `SELECT f.id, f.table_id, f.lineage_id, n.name, f.label, f.kind, f.description,
             f.is_required, f.position, lc.on_delete, tt.lineage_id AS target_lineage,
             tt.label AS target_label, ai.prompt, ai.refresh_mode, ai.refresh_cron,
-            ai.refresh_timezone
+            ai.refresh_timezone, coalesce(tc.is_rich, false) AS is_rich
        FROM _basedb.field f
        JOIN _basedb.table_def t      ON t.id = f.table_id
        JOIN _basedb.physical_name n  ON n.id = f.name_id
        LEFT JOIN _basedb.field_link_config lc ON lc.field_id = f.id
        LEFT JOIN _basedb.table_def tt         ON tt.id = lc.target_table_id
        LEFT JOIN _basedb.field_ai_config ai   ON ai.field_id = f.id
+       LEFT JOIN _basedb.field_text_config tc ON tc.field_id = f.id
       WHERE f.base_id = $1 AND f.deleted_at IS NULL AND t.deleted_at IS NULL
       ORDER BY f.position, f.created_at`,
     [baseId],
@@ -207,6 +211,7 @@ export async function loadStructure(
         description: f.description,
         required: f.is_required,
         position: f.position,
+        rich: f.is_rich,
         options:
           f.kind === 'select' || f.kind === 'multi_select' ? (options.get(f.id) ?? []) : null,
         link:
@@ -328,6 +333,7 @@ const fieldSignature = (f: StructureField | undefined) =>
         f.kind,
         f.description,
         f.required,
+        f.rich,
         f.options,
         f.link?.targetLineage ?? null,
         f.link?.onDelete ?? null,
@@ -666,7 +672,8 @@ export function buildPlan(
     const deps = created ? [createId] : []
 
     if (created) {
-      const simple = table.fields.filter((f) => TABLE_KINDS.has(f.kind))
+      // A rich text is added on its own, rich: the table's creation knows only plain types.
+      const simple = table.fields.filter((f) => TABLE_KINDS.has(f.kind) && !f.rich)
       steps.push(
         step(
           {
@@ -854,6 +861,7 @@ export function buildPlan(
                   label: field.label,
                   kind: field.kind,
                   description: field.description,
+                  ...(field.rich ? { rich: true } : {}),
                   ...(field.options === null
                     ? {}
                     : {

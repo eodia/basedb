@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "key": "demo",
   "label": "Démo : Atelier Lumen",
   "summary": "Une petite agence, ses clients, projets, tâches, factures et avis : toutes les facettes de basedb dans une seule base.",
@@ -109,7 +109,13 @@
           "kind": "lookup",
           "rollup": { "via": "Client", "target": "Ville" }
         },
-        { "label": "Tâches", "kind": "count", "rollup": { "via": "Projet", "table": "taches" } }
+        { "label": "Tâches", "kind": "count", "rollup": { "via": "Projet", "table": "taches" } },
+        {
+          "label": "Brief",
+          "kind": "long_text",
+          "rich": true,
+          "description": "Le besoin du client, les livrables et ce qu'il faut savoir."
+        }
       ]
     },
     {
@@ -308,7 +314,8 @@
         "Début": "-20d",
         "Fin": "+25d",
         "Budget": 12500,
-        "Client": "@boulangerie"
+        "Client": "@boulangerie",
+        "Brief": "<p>La boulangerie veut prendre les commandes la veille pour le lendemain.</p><h3>Livrables</h3><ul><li>Un site vitrine de cinq pages</li><li>La commande en ligne, avec retrait en boutique</li><li>Une demi-journée de formation pour l'équipe</li></ul><p><strong>À savoir :</strong> les photos des produits seront prises en boutique.</p>"
       },
       {
         "$key": "charte-clinique",
@@ -317,7 +324,8 @@
         "Début": "-10d",
         "Fin": "+40d",
         "Budget": 18000,
-        "Client": "@clinique"
+        "Client": "@clinique",
+        "Brief": "<p>Moderniser l'image de la clinique sans perdre la confiance des patients.</p><h3>Livrables</h3><ul><li>Un logo et une palette de couleurs</li><li>La signalétique des deux bâtiments</li><li>Des modèles de documents</li></ul><p><strong>À savoir :</strong> le comité de direction valide chaque étape.</p>"
       },
       {
         "$key": "portes-ouvertes",
@@ -326,7 +334,8 @@
         "Début": "-90d",
         "Fin": "-30d",
         "Budget": 6400,
-        "Client": "@lycee"
+        "Client": "@lycee",
+        "Brief": "<p>Faire venir plus de familles aux portes ouvertes du lycée.</p><h3>Livrables</h3><ul><li>Affiches et flyers</li><li>Des visuels pour les réseaux sociaux</li></ul><blockquote><p>Bilan : 30 % de visiteurs en plus.</p></blockquote>"
       },
       {
         "$key": "catalogue-forges",
@@ -335,7 +344,8 @@
         "Début": "-200d",
         "Fin": "-120d",
         "Budget": 22000,
-        "Client": "@forges"
+        "Client": "@forges",
+        "Brief": "<p>Le catalogue annuel des Forges du Rhône, en français et en anglais.</p><h3>Livrables</h3><ul><li>Les photos des pièces, prises à l'atelier</li><li>La mise en page et les fichiers pour l'imprimeur</li><li>Une version PDF pour le site</li></ul>"
       },
       {
         "$key": "appli-velo",
@@ -344,14 +354,16 @@
         "Début": "-40d",
         "Fin": "+60d",
         "Budget": 9800,
-        "Client": "@velo"
+        "Client": "@velo",
+        "Brief": "<p>Réserver un vélo en ligne et le retirer à l'atelier de l'association.</p><p><strong>En pause :</strong> l'association doit d'abord fixer ses tarifs de location.</p>"
       },
       {
         "$key": "identite-epicerie",
         "Nom": "Identité visuelle",
         "Statut": "Idée",
         "Budget": 7500,
-        "Client": "@epicerie"
+        "Client": "@epicerie",
+        "Brief": "<p>L'épicerie veut une identité à la hauteur de ses produits : logo, étiquettes et devanture.</p><p><em>Proposition commerciale à envoyer.</em></p>"
       }
     ],
     "taches": [

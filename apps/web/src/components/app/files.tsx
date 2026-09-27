@@ -1,6 +1,7 @@
 'use client'
 
 import { type Field, type StoredFile, fileHref, filesOf } from '@/lib/api/client'
+import { $t, intlLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import {
   Download,
@@ -39,8 +40,10 @@ const isPicture = (file: StoredFile) => file.type.startsWith('image/') && file.u
 /** A size as a person reads it: `845 o`, `12 Ko`, `3,4 Mo`. */
 export function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} o`
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`
-  return `${(bytes / (1024 * 1024)).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} Mo`
+  if (bytes < 1024 * 1024) return $t('{round} Ko', { round: Math.round(bytes / 1024) })
+  return $t('{value} Mo', {
+    value: (bytes / (1024 * 1024)).toLocaleString(intlLocale(), { maximumFractionDigits: 1 }),
+  })
 }
 
 /** A glyph for a document, from its type: enough to tell a PDF from a spreadsheet at a glance. */
@@ -219,8 +222,8 @@ export function FilesCell({
           type="button"
           onMouseDown={(e) => e.stopPropagation()}
           onClick={drop.browse}
-          aria-label={`Ajouter un fichier à ${field.label}`}
-          title="Ajouter un fichier (ou déposez-le sur la cellule)"
+          aria-label={$t('Ajouter un fichier à {label}', { label: field.label })}
+          title={$t('Ajouter un fichier (ou déposez-le sur la cellule)')}
           className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover/row:opacity-100"
         >
           <Plus className="size-3.5" />
@@ -272,7 +275,7 @@ export function FilesField({
                 <button
                   type="button"
                   onClick={() => void remove(file.id)}
-                  aria-label={`Retirer ${file.name}`}
+                  aria-label={$t('Retirer {name}', { name: file.name })}
                   className="absolute -top-1.5 -right-1.5 hidden size-5 items-center justify-center rounded-full border bg-background shadow-sm group-hover/file:flex focus-visible:flex"
                 >
                   <X className="size-3" />
@@ -297,7 +300,7 @@ export function FilesField({
               {file.url !== undefined && (
                 <a
                   href={fileHref(file.url, true)}
-                  aria-label={`Télécharger ${file.name}`}
+                  aria-label={$t('Télécharger {name}', { name: file.name })}
                   className="shrink-0 text-muted-foreground hover:text-foreground"
                 >
                   <Download className="size-3.5" />
@@ -307,7 +310,7 @@ export function FilesField({
                 <button
                   type="button"
                   onClick={() => void remove(file.id)}
-                  aria-label={`Retirer ${file.name}`}
+                  aria-label={$t('Retirer {name}', { name: file.name })}
                   className="shrink-0 text-muted-foreground hover:text-foreground"
                 >
                   <X className="size-3.5" />
@@ -334,10 +337,10 @@ export function FilesField({
             <UploadIcon className="size-4" />
           )}
           {busy
-            ? 'Envoi en cours…'
+            ? $t('Envoi en cours…')
             : field.kind === 'image'
-              ? 'Ajouter des images'
-              : 'Ajouter des fichiers'}
+              ? $t('Ajouter des images')
+              : $t('Ajouter des fichiers')}
         </button>
       ) : (
         files.length === 0 && <span className="text-sm text-muted-foreground">—</span>

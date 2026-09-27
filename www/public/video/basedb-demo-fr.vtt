@@ -1,0 +1,285 @@
+WEBVTT
+
+1
+00:00:00.733 --> 00:00:01.600
+Voici basedb :
+
+2
+00:00:01.600 --> 00:00:06.433
+la base de données collaborative où
+chaque table est une vraie table Postgres.
+
+3
+00:00:08.460 --> 00:00:12.663
+Tout commence dans un projet. On peut
+créer une base vide, partir d'un modèle,
+
+4
+00:00:12.663 --> 00:00:14.872
+ou décrire à l'IA ce que l'on veut gérer.
+
+5
+00:00:15.777 --> 00:00:19.901
+Ouvrons la démonstration : Atelier
+Lumen, une petite agence de design,
+
+6
+00:00:19.901 --> 00:00:24.850
+avec ses clients, ses projets, ses tâches,
+ses factures, et les avis de ses clients.
+
+7
+00:00:25.752 --> 00:00:27.678
+Les champs remplis par l'intelligence
+
+8
+00:00:27.678 --> 00:00:30.176
+artificielle ne s'activent
+qu'avec votre accord.
+
+9
+00:00:30.176 --> 00:00:32.935
+Un clic, et la base est
+prête : tables, lignes, vues,
+
+10
+00:00:32.935 --> 00:00:34.756
+tableau de bord et automatisations.
+
+11
+00:00:36.360 --> 00:00:41.172
+Chaque table se manipule comme un tableur.
+Mais chaque champ a un vrai type :
+
+12
+00:00:41.172 --> 00:00:44.546
+liste de choix, e-mail, lien,
+monnaie, date, personne…
+
+13
+00:00:45.451 --> 00:00:49.426
+Les tables sont reliées entre elles.
+Pour chaque client, le nombre de projets,
+
+14
+00:00:49.426 --> 00:00:52.586
+le chiffre d'affaires et la note
+moyenne remontent tout seuls,
+
+15
+00:00:52.586 --> 00:00:53.809
+à travers les relations.
+
+16
+00:00:54.720 --> 00:01:00.190
+Filtrer, trier, grouper, colorer :
+chaque vue garde ses propres réglages.
+
+17
+00:01:01.104 --> 00:01:04.612
+Dans les projets, la durée est
+une formule, écrite en français,
+
+18
+00:01:04.612 --> 00:01:06.504
+et calculée par Postgres lui-même.
+
+19
+00:01:10.934 --> 00:01:13.661
+Chaque ligne s'ouvre en
+fiche, avec tous ses champs,
+
+20
+00:01:13.661 --> 00:01:15.339
+y compris le texte mis en forme.
+
+21
+00:01:16.502 --> 00:01:20.839
+On y discute : un commentaire, une
+mention, et Camille est prévenue aussitôt.
+
+22
+00:01:24.130 --> 00:01:26.988
+Sa réponse arrive en direct,
+sans recharger la page.
+
+23
+00:01:27.890 --> 00:01:32.439
+L'historique de la fiche garde chaque
+modification, avec la valeur d'avant.
+
+24
+00:01:33.849 --> 00:01:37.422
+Les mêmes lignes se regardent de huit
+façons. Voici les tâches en kanban :
+
+25
+00:01:37.422 --> 00:01:39.450
+on glisse une carte pour la faire avancer.
+
+26
+00:01:42.669 --> 00:01:44.747
+Le calendrier montre
+les échéances du mois…
+
+27
+00:01:47.798 --> 00:01:51.622
+la chronologie, les tâches dans
+le temps et leurs dépendances…
+
+28
+00:01:52.657 --> 00:01:56.770
+et côté clients, une galerie de cartes,
+ou une liste groupée par secteur.
+
+29
+00:02:01.958 --> 00:02:06.273
+Les avis arrivent par un formulaire. Un
+lien public suffit : on répond sans compte.
+
+30
+00:02:10.620 --> 00:02:12.010
+Voici ce que voit le client.
+
+31
+00:02:21.226 --> 00:02:26.239
+Sa réponse devient aussitôt une ligne de
+la table. Et l'IA, ici Mistral, la lit :
+
+32
+00:02:26.239 --> 00:02:30.818
+elle en tire le sentiment, le thème,
+et rédige une proposition de réponse.
+
+33
+00:02:31.796 --> 00:02:36.662
+Comme l'avis est négatif, une
+automatisation prévient l'équipe.
+
+34
+00:02:38.322 --> 00:02:41.510
+Les automatisations se dessinent
+comme un schéma : un déclencheur,
+
+35
+00:02:41.510 --> 00:02:44.649
+une ligne qui change, une heure
+fixe ou un clic, puis des étapes.
+
+36
+00:02:45.552 --> 00:02:49.410
+Modifier ou créer une ligne, prévenir
+quelqu'un, appeler un webhook,
+
+37
+00:02:49.410 --> 00:02:51.509
+écrire sur Slack, ou demander à l'IA.
+
+38
+00:02:52.422 --> 00:02:55.287
+Chaque exécution est tracée,
+étape par étape : ici,
+
+39
+00:02:55.287 --> 00:02:58.657
+la tâche que l'on vient de
+terminer a reçu son heure de fin.
+
+40
+00:03:00.292 --> 00:03:03.362
+Les tableaux de bord rassemblent
+chiffres et graphiques, toujours à jour,
+
+41
+00:03:03.362 --> 00:03:04.961
+et calculés avec les droits de chacun.
+
+42
+00:03:05.862 --> 00:03:09.265
+Chaque carte est une question,
+posée à la souris ou en SQL,
+
+43
+00:03:09.265 --> 00:03:12.091
+et le tableau se partage,
+même sur un autre site.
+
+44
+00:03:16.359 --> 00:03:21.180
+Car sous chaque table, il y a une
+vraie table Postgres, nommée en clair.
+
+45
+00:03:21.180 --> 00:03:24.327
+On l'interroge en SQL,
+directement dans basedb.
+
+46
+00:03:27.308 --> 00:03:30.088
+La requête s'enregistre, pour
+soi ou pour toute l'équipe ;
+
+47
+00:03:30.088 --> 00:03:32.052
+chacun l'exécute avec ses propres droits.
+
+48
+00:03:35.508 --> 00:03:40.087
+Et vos outils de BI, vos scripts ou
+vos agents lisent les mêmes lignes,
+
+49
+00:03:40.087 --> 00:03:42.086
+sans export ni synchronisation.
+
+50
+00:03:43.888 --> 00:03:48.916
+L'historique de la base garde chaque
+écriture, d'où qu'elle vienne : l'interface,
+
+51
+00:03:48.916 --> 00:03:52.889
+l'API, un agent, ou le SQL direct.
+Et chacune peut être annulée.
+
+52
+00:03:54.034 --> 00:03:57.700
+Les droits se donnent par groupe :
+sur un projet, une base, une table,
+
+53
+00:03:57.700 --> 00:03:58.643
+et jusqu'au champ.
+
+54
+00:04:01.694 --> 00:04:03.719
+Pour les programmes et les agents IA,
+
+55
+00:04:03.719 --> 00:04:07.004
+chaque base a sa documentation
+d'API REST et de serveur MCP,
+
+56
+00:04:07.004 --> 00:04:08.482
+générée d'après vos droits.
+
+57
+00:04:10.253 --> 00:04:14.759
+Et dans l'interface, le Copilot répond
+en proposant : un filtre, une requête,
+
+58
+00:04:14.759 --> 00:04:17.451
+une colonne. Rien ne
+change sans votre accord.
+
+59
+00:04:23.966 --> 00:04:29.624
+basedb est libre, sous licence AGPL, et
+s'installe en une commande avec Docker.
+
+60
+00:04:29.624 --> 00:04:32.990
+Vos données restent les
+vôtres : dans Postgres.

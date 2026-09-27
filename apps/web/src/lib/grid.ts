@@ -1,3 +1,4 @@
+import { $t, intlLocale } from '@/lib/i18n'
 import type { Field } from './api/client'
 import { displayStored, isDateKind } from './dates'
 import { quoteLiteral } from './expression'
@@ -11,14 +12,14 @@ import { quoteLiteral } from './expression'
 export type Aggregate = 'filled' | 'empty' | 'unique' | 'sum' | 'avg' | 'min' | 'max' | 'checked'
 
 export const AGGREGATE_LABELS: Readonly<Record<Aggregate, string>> = {
-  filled: 'Remplies',
-  empty: 'Vides',
-  unique: 'Valeurs uniques',
-  sum: 'Somme',
-  avg: 'Moyenne',
-  min: 'Minimum',
-  max: 'Maximum',
-  checked: 'Cochées',
+  filled: $t('Remplies'),
+  empty: $t('Vides'),
+  unique: $t('Valeurs uniques'),
+  sum: $t('Somme'),
+  avg: $t('Moyenne'),
+  min: $t('Minimum'),
+  max: $t('Maximum'),
+  checked: $t('Cochées'),
 }
 
 /** The aggregates a column of `kind` offers, in the menu's order. */
@@ -47,7 +48,7 @@ export const GROUPABLE_KINDS: readonly string[] = [
   'user',
 ]
 
-const NUMBER = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 })
+const NUMBER = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 2 })
 
 /** An aggregate as the bar shows it: a count, a number rounded, a date read day first. */
 export function formatAggregate(value: string | number | null, fn: string, field: Field): string {
@@ -75,17 +76,22 @@ const SEARCH_BUDGET = 16
  * not among them: an identifier is for programs, and the panel shows it to whoever needs it.
  */
 const SYSTEM_DISPLAY: Readonly<Record<string, { label: string; kind: string }>> = {
-  _created_at: { label: 'Créé le', kind: 'datetime' },
-  _updated_at: { label: 'Modifié le', kind: 'datetime' },
-  _created_by: { label: 'Créé par', kind: 'user' },
-  _updated_by: { label: 'Modifié par', kind: 'user' },
+  _created_at: { label: $t('Créé le'), kind: 'datetime' },
+  _updated_at: { label: $t('Modifié le'), kind: 'datetime' },
+  _created_by: { label: $t('Créé par'), kind: 'user' },
+  _updated_by: { label: $t('Modifié par'), kind: 'user' },
 }
 
 /** The system columns of a table, dressed as the read-only fields a grid draws. */
 export function systemColumns(fields: readonly Field[]): Field[] {
   return fields.flatMap((field) => {
     const display = field.system === true ? SYSTEM_DISPLAY[field.name] : undefined
-    return display === undefined ? [] : [{ ...field, ...display, read_only: true }]
+    if (display === undefined) return []
+    // The server describes them in French (`SYSTEM_COLUMN_DESCRIPTIONS`): fixed sentences,
+    // translated like the interface's own.
+    const description =
+      typeof field.description === 'string' ? $t(field.description) : field.description
+    return [{ ...field, ...display, description, read_only: true }]
   })
 }
 

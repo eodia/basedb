@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import type { DescribedBase } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 
 /**
@@ -57,20 +58,20 @@ export function NewTableDialog({
     <Dialog open={open} onOpenChange={(next) => !next && !busy && onClose()}>
       <DialogContent aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle>Nouvelle table dans {base.label}</DialogTitle>
+          <DialogTitle>{$t('Nouvelle table dans {label}', { label: base.label })}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
             <label htmlFor="table-label" className="text-sm text-muted-foreground">
-              Libellé
+              {$t('Libellé')}
             </label>
             <Input
               id="table-label"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && submit()}
-              placeholder="Factures"
+              placeholder={$t('Factures')}
               autoFocus
             />
           </div>
@@ -80,17 +81,17 @@ export function NewTableDialog({
             value={description}
             onChange={setDescription}
             onSubmit={submit}
-            placeholder="À quoi sert cette table ?"
+            placeholder={$t('À quoi sert cette table ?')}
             disabled={busy}
           />
         </div>
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button disabled={!ready} onClick={submit}>
-            {busy ? 'Création…' : 'Créer la table'}
+            {busy ? $t('Création…') : $t('Créer la table')}
           </Button>
         </DialogFooter>
       </DialogContent>

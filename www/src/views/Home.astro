@@ -1,0 +1,108 @@
+---
+/*
+ * The page for developers, in one language: `src/pages/developpeurs.astro` (French) and
+ * `src/pages/[locale]/developpeurs.astro`. It was the home page; the home page is now the
+ * one for teams, `Teams.astro`.
+ */
+import { Image } from 'astro:assets';
+import automations from '../assets/screens/automatisations.png';
+import dashboards from '../assets/screens/tableaux-de-bord.png';
+import AgentVisual from '../components/landing/AgentVisual.astro';
+import Bento from '../components/landing/Bento.astro';
+import FAQ from '../components/landing/FAQ.astro';
+import Feature from '../components/landing/Feature.astro';
+import FooterCTA from '../components/landing/FooterCTA.astro';
+import Hero from '../components/landing/Hero.astro';
+import RightsVisual from '../components/landing/RightsVisual.astro';
+import SelfHost from '../components/landing/SelfHost.astro';
+import Showcase from '../components/landing/Showcase.astro';
+import SqlVisual from '../components/landing/SqlVisual.astro';
+import { type Locale, i18n } from '../i18n';
+import type { FeatureText } from '../i18n/types';
+import Landing from '../layouts/Landing.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, href, html } = i18n(locale);
+const f = t.features;
+
+/** A block's texts, its HTML and links in the page's language. */
+const block = (text: FeatureText) => ({
+	label: text.label,
+	title: text.title,
+	lead: html(text.lead),
+	bullets: text.bullets.map(html),
+	links: text.links.map((l) => ({ href: href(l.href), label: l.label })),
+});
+---
+
+<Landing locale={locale} path="/developpeurs/" title={t.meta.home.title} description={t.meta.home.description}>
+	<main>
+		<Hero locale={locale} />
+		<Showcase locale={locale} />
+
+		<div id="fonctionnalites">
+			<Feature {...block(f.postgres)}>
+				<SqlVisual locale={locale} />
+			</Feature>
+
+			<Feature {...block(f.automations)} reverse>
+				<figure class="shot">
+					<Image
+						src={automations}
+						alt={f.automations.alt ?? ''}
+						widths={[640, 1280]}
+						sizes="(max-width: 960px) 100vw, 620px"
+						format="webp"
+						quality={82}
+					/>
+				</figure>
+			</Feature>
+
+			<Feature {...block(f.dashboards)}>
+				<figure class="shot">
+					<Image
+						src={dashboards}
+						alt={f.dashboards.alt ?? ''}
+						widths={[640, 1280]}
+						sizes="(max-width: 960px) 100vw, 620px"
+						format="webp"
+						quality={82}
+					/>
+				</figure>
+			</Feature>
+
+			<Feature {...block(f.rights)} reverse>
+				<RightsVisual locale={locale} />
+			</Feature>
+
+			<Feature {...block(f.agents)}>
+				<AgentVisual locale={locale} />
+			</Feature>
+		</div>
+
+		<Bento locale={locale} />
+		<SelfHost locale={locale} />
+		<FAQ locale={locale} />
+		<FooterCTA locale={locale} />
+	</main>
+</Landing>
+
+<style>
+	.shot {
+		margin: 0;
+		border-radius: 14px;
+		border: 1px solid rgba(16, 24, 16, 0.1);
+		background: #fff;
+		box-shadow: var(--bd-shadow-lg);
+		overflow: hidden;
+	}
+	.shot :global(img) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+</style>

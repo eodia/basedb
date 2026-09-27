@@ -1,0 +1,372 @@
+---
+/**
+ * A sentence becomes a base: the request types itself in a glowing field, three linked
+ * tables appear with their fields, the AI field writes its first value, and the base is
+ * ready to create. In a loop while on screen; asked for less motion, shown done.
+ */
+import { type Locale, i18n } from '../../i18n';
+import Icon from '../landing/Icon.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, href } = i18n(locale);
+const a = t.teams.ai;
+const tables = [
+	{ key: 'jobs', ...a.tables.jobs, color: '#60a5fa' },
+	{ key: 'people', ...a.tables.people, color: '#a78bfa' },
+	{ key: 'talks', ...a.tables.talks, color: '#34d399' },
+] as const;
+---
+
+<section class="tm-section night ai" data-ai>
+	<div class="tm-head tm-rise">
+		<p class="tm-kicker">{a.eyebrow}</p>
+		<h2 class="tm-display">
+			<span>{a.title}</span>
+			<span class="tm-grad">{a.titleAccent}</span>
+		</h2>
+		<p class="tm-lede">{a.text}</p>
+	</div>
+
+	<div class="scene" data-scene data-state="done" aria-hidden="true">
+		<div class="field">
+			<span class="glow"></span>
+			<div class="inner">
+				<Icon name="sparkles" size={22} class="spark" />
+				<p class="typed" data-prompt data-text={a.prompt}>{a.prompt}</p>
+				<span class="send"><Icon name="arrowRight" size={18} stroke={2.4} /></span>
+			</div>
+		</div>
+
+		<p class="thinking" data-thinking>{a.thinking}</p>
+
+		<div class="tables">
+			{
+				tables.map((table, i) => (
+					<div class="table" data-table style={`--c: ${table.color}; --i: ${i}`}>
+						<p class="name">
+							<span class="dot" />
+							{table.name}
+						</p>
+						<ul>
+							{table.fields.map((field) => (
+								<li class:list={{ ai: field === a.aiField }}>
+									{field}
+									{field === a.aiField && <em>{t.gallery.ai}</em>}
+								</li>
+							))}
+						</ul>
+						{table.key === 'people' && (
+							<p class="value" data-value data-text={a.aiValue}>
+								{a.aiValue}
+							</p>
+						)}
+					</div>
+				))
+			}
+		</div>
+
+		<span class="create" data-create>{a.create}</span>
+	</div>
+
+	<p class="providers tm-rise">{a.providers}</p>
+	<p class="more tm-rise"><a class="tm-link" href={href(a.link.href)}>{a.link.label}</a></p>
+</section>
+
+<script>
+	import { reducedMotion, whileVisible } from '../../lib/motion';
+
+	const section = document.querySelector<HTMLElement>('[data-ai]');
+	const scene = section?.querySelector<HTMLElement>('[data-scene]');
+	if (section && scene) {
+		const prompt = scene.querySelector<HTMLElement>('[data-prompt]')!;
+		const value = scene.querySelector<HTMLElement>('[data-value]');
+		const full = prompt.dataset.text ?? '';
+		const answer = value?.dataset.text ?? '';
+		const set = (state: string) => (scene.dataset.state = state);
+
+		if (!reducedMotion()) {
+			// Empty until it plays: the request types itself when the scene comes into view.
+			set('typing');
+			prompt.textContent = '';
+			if (value) value.textContent = '';
+			whileVisible(
+				section,
+				async (sleep) => {
+					for (;;) {
+						set('typing');
+						prompt.textContent = '';
+						if (value) value.textContent = '';
+						await sleep(500);
+						for (let i = 1; i <= full.length; i += 1) {
+							prompt.textContent = full.slice(0, i);
+							await sleep(32);
+						}
+						await sleep(450);
+						set('thinking');
+						await sleep(1300);
+						set('tables');
+						await sleep(1500);
+						for (let i = 1; value && i <= answer.length; i += 1) {
+							value.textContent = answer.slice(0, i);
+							await sleep(22);
+						}
+						set('done');
+						await sleep(4200);
+					}
+				},
+				0.25,
+			);
+		}
+	}
+</script>
+
+<style>
+	.ai {
+		overflow: hidden;
+	}
+	.ai::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 46%;
+		width: 1200px;
+		height: 800px;
+		transform: translateX(-50%);
+		background: radial-gradient(closest-side, rgba(167, 139, 250, 0.16), rgba(52, 211, 153, 0.08) 50%, transparent 75%);
+		pointer-events: none;
+	}
+	.scene {
+		position: relative;
+		max-width: 920px;
+		margin: 80px auto 0;
+		text-align: center;
+	}
+
+	/* The field, its edge glowing as it listens */
+	.field {
+		position: relative;
+		max-width: 760px;
+		margin: 0 auto;
+		padding: 2px;
+		border-radius: 26px;
+		overflow: hidden;
+	}
+	.glow {
+		position: absolute;
+		inset: -60%;
+		background: conic-gradient(from 0deg, #34d399, #60a5fa, #a78bfa, #f472b6, #fbbf24, #34d399);
+		animation: spin 5s linear infinite;
+		filter: blur(6px);
+	}
+	@keyframes spin {
+		to {
+			transform: rotate(1turn);
+		}
+	}
+	.inner {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		min-height: 76px;
+		padding: 14px 16px 14px 22px;
+		border-radius: 24px;
+		background: #0c0c0f;
+		text-align: left;
+	}
+	.inner :global(.spark) {
+		flex-shrink: 0;
+		color: #c4b5fd;
+	}
+	.typed {
+		flex: 1;
+		margin: 0;
+		font-size: clamp(16px, 1.8vw, 20px);
+		line-height: 1.4;
+		color: #f5f5f7;
+	}
+	.scene[data-state='typing'] .typed::after {
+		content: '';
+		display: inline-block;
+		width: 2px;
+		height: 1.1em;
+		margin-left: 2px;
+		vertical-align: -0.15em;
+		background: #c4b5fd;
+		animation: blink 1s steps(1) infinite;
+	}
+	@keyframes blink {
+		50% {
+			opacity: 0;
+		}
+	}
+	.send {
+		display: grid;
+		flex-shrink: 0;
+		place-items: center;
+		width: 44px;
+		height: 44px;
+		border-radius: 50%;
+		color: #0c0c0f;
+		background: #f5f5f7;
+	}
+
+	.thinking {
+		height: 24px;
+		margin: 22px 0 0;
+		font-size: 15px;
+		font-weight: 500;
+		background: linear-gradient(90deg, #6b6b76 0%, #f5f5f7 50%, #6b6b76 100%);
+		background-size: 200% 100%;
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+		opacity: 0;
+		transition: opacity 0.4s ease;
+	}
+	.scene[data-state='thinking'] .thinking {
+		opacity: 1;
+		animation: shimmer 1.4s linear infinite;
+	}
+	.scene[data-state='tables'] .thinking,
+	.scene[data-state='done'] .thinking {
+		opacity: 1;
+		background: none;
+		color: #86868b;
+	}
+	@keyframes shimmer {
+		to {
+			background-position: -200% 0;
+		}
+	}
+
+	/* The three tables */
+	.tables {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 18px;
+		margin-top: 28px;
+		text-align: left;
+	}
+	.table {
+		padding: 20px;
+		border-radius: 22px;
+		background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+		opacity: 0;
+		transform: translateY(24px) scale(0.97);
+		transition:
+			opacity 0.6s ease calc(var(--i) * 180ms),
+			transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i) * 180ms);
+	}
+	.scene[data-state='tables'] .table,
+	.scene[data-state='done'] .table {
+		opacity: 1;
+		transform: none;
+	}
+	.name {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		margin: 0 0 14px;
+		font-size: 17px;
+		font-weight: 700;
+		color: #f5f5f7;
+	}
+	.name .dot {
+		width: 10px;
+		height: 10px;
+		border-radius: 3px;
+		background: var(--c);
+	}
+	.table ul {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 7px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.table li {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 5px 10px;
+		border-radius: 8px;
+		font-size: 13px;
+		color: #d4d4d8;
+		background: rgba(255, 255, 255, 0.06);
+	}
+	.table li.ai {
+		color: #ddd6fe;
+		background: rgba(167, 139, 250, 0.16);
+	}
+	.table li em {
+		font-style: normal;
+		font-size: 11px;
+		font-weight: 700;
+		color: #c4b5fd;
+	}
+	.value {
+		min-height: 60px;
+		margin: 14px 0 0;
+		padding: 10px 12px;
+		border-radius: 12px;
+		font-size: 13px;
+		line-height: 1.5;
+		color: #ddd6fe;
+		background: rgba(167, 139, 250, 0.1);
+	}
+	.create {
+		display: inline-flex;
+		margin-top: 30px;
+		padding: 12px 24px;
+		border-radius: 999px;
+		font-size: 16px;
+		font-weight: 600;
+		color: #0c0c0f;
+		background: #f5f5f7;
+		opacity: 0;
+		transform: scale(0.94);
+		transition:
+			opacity 0.4s ease,
+			transform 0.5s cubic-bezier(0.3, 1.6, 0.5, 1);
+	}
+	.scene[data-state='done'] .create {
+		opacity: 1;
+		transform: none;
+		animation: breathe 2.4s ease-in-out 0.6s infinite;
+	}
+	@keyframes breathe {
+		50% {
+			box-shadow: 0 0 0 10px rgba(245, 245, 247, 0.08);
+		}
+	}
+	.providers {
+		max-width: 620px;
+		margin: 56px auto 0;
+		font-size: 15px;
+		line-height: 1.55;
+		text-align: center;
+		color: var(--tm-night-slate);
+	}
+	.more {
+		margin: 20px 0 0;
+		text-align: center;
+	}
+
+	@media (max-width: 800px) {
+		.tables {
+			grid-template-columns: 1fr;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.glow {
+			animation: none;
+		}
+	}
+</style>

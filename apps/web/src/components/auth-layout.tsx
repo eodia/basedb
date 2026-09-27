@@ -3,6 +3,7 @@
 import { Brand } from '@/components/brand'
 import { ProductGlimpse } from '@/components/product-glimpse'
 import { Input } from '@/components/ui/input'
+import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { CircleAlert, Eye, EyeOff } from 'lucide-react'
 import type { CSSProperties, ComponentProps, ReactNode } from 'react'
@@ -101,7 +102,7 @@ export function PasswordInput({
         type="button"
         className="absolute inset-y-0 right-0 grid w-10 place-items-center rounded-r-md text-muted-foreground transition-colors hover:text-foreground"
         onClick={() => onVisibleChange(!visible)}
-        aria-label={visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+        aria-label={visible ? $t('Masquer le mot de passe') : $t('Afficher le mot de passe')}
         aria-pressed={visible}
         aria-controls={controls ?? props.id}
       >

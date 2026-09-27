@@ -4,7 +4,7 @@ import { AiEmpty } from '@/components/app/ai-pending'
 import { DateInput } from '@/components/app/date-picker'
 import { FieldButton } from '@/components/app/field-button'
 import { FilesCell, type Upload } from '@/components/app/files'
-import { LongTextCell, UrlLink, markdownExcerpt } from '@/components/app/markdown-text'
+import { LongTextCell, UrlLink, longTextExcerpt } from '@/components/app/markdown-text'
 import {
   ChoiceChips,
   EnumPicker,
@@ -30,6 +30,7 @@ import { type Field, type LinkOption, filesOf } from '@/lib/api/client'
 import { shownField } from '@/lib/computed'
 import { type DateKind, displayStored, isDateKind, storedFromText } from '@/lib/dates'
 import { editText, formatNumber, formatOf, parseNumberInput } from '@/lib/format'
+import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Link2 } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -124,7 +125,10 @@ export function Cell({
 
   if (!present) {
     return (
-      <span className="flex w-full items-center px-2 text-muted-foreground/60" title="Champ masqué">
+      <span
+        className="flex w-full items-center px-2 text-muted-foreground/60"
+        title={$t('Champ masqué')}
+      >
         ···
       </span>
     )
@@ -140,7 +144,10 @@ export function Cell({
     if (field.kind === 'select' || field.kind === 'multi_select') {
       return (
         <span className="flex w-full min-w-0 items-center px-2">
-          <ChoiceChips field={field} values={choicesOf(value)} />
+          <ChoiceChips
+            field={field}
+            values={typeof value === 'string' ? [value] : choicesOf(value)}
+          />
         </span>
       )
     }
@@ -154,10 +161,10 @@ export function Cell({
     const text =
       field.kind === 'boolean'
         ? value === true
-          ? 'Oui'
-          : 'Non'
+          ? $t('Oui')
+          : $t('Non')
         : field.kind === 'long_text'
-          ? markdownExcerpt(String(value))
+          ? longTextExcerpt(String(value), field)
           : display(String(value), field)
     return (
       <span
@@ -181,6 +188,9 @@ export function Cell({
     return (
       <LongTextCell
         value={value}
+        name={field.name}
+        rowId={row._id}
+        rich={field.unsafe_html === true}
         label={field.label}
         readOnly={field.read_only === true}
         editing={editing}
@@ -217,7 +227,7 @@ export function Cell({
             e.stopPropagation()
             onFollowLink(target, id)
           },
-          title: `Ctrl+clic : ouvrir « ${link?.display ?? id.slice(0, 8)} »`,
+          title: $t('Ctrl+clic : ouvrir « {value} »', { value: link?.display ?? id.slice(0, 8) }),
         }
       : {}
     if (options === undefined) {

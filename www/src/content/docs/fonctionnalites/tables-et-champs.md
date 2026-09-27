@@ -12,7 +12,8 @@ que vous saisissez (« Échéance ») devient un nom physique lisible (`echeance
 | Type | Colonne PostgreSQL | Remarques |
 |---|---|---|
 | Texte court | `text` | une ligne |
-| Texte long | `text` | Markdown : un extrait dans la grille, le rendu au survol, un éditeur dédié |
+| Texte long | `text` | Markdown : un extrait dans la grille, le rendu au survol, un éditeur dédié ; peut [citer une colonne](#texte-riche-et-variables) |
+| Texte riche | `text` + `CHECK` | du HTML assaini à l’écriture, écrit dans un éditeur visuel — [voir plus bas](#texte-riche-et-variables) |
 | Nombre | `numeric` | jamais de flottant : un montant ne dérive pas |
 | Monnaie, Pourcentage, Durée, Note | `numeric` | un nombre et son [format d’affichage](#formats-daffichage) : `12,50 €`, `15 %`, `1:30`, ★★★★☆ |
 | Case à cocher | `boolean` | |
@@ -142,10 +143,35 @@ Une base, une table et un champ portent une **description**, modifiable sans mig
 recopiée dans le `COMMENT ON` que lit `psql`, dans la documentation générée, et dans ce qu’un
 agent lit par `describe_table`.
 
+## Texte riche et variables
+
+Le **texte riche** est la variante HTML du texte long, choisie à la création du champ
+(« Texte riche (HTML) ») : titres, gras, italique, souligné, barré, listes, citations, code,
+liens et séparateurs, dans un éditeur visuel. Le HTML est **assaini à l’écriture**, qu’il vienne
+de l’interface, de l’API, du serveur MCP ou d’un import, et une contrainte `CHECK` refuse en plus
+les formes dangereuses écrites directement en SQL (`<script>`, attributs `on…`, `javascript:`).
+Ni image, ni tableau, ni couleur : ce que la base ne garderait pas n’est pas proposé.
+
+Un texte long — simple ou riche — peut **citer une colonne de sa ligne**. Le menu **Colonne** de
+l’éditeur insère la citation au curseur : une pastille dans le texte riche, `{{Ville}}` dans le
+Markdown.
+
+> Livraison prévue le `{{Livraison}}` à `{{Ville}}`.
+
+- La colonne garde la citation telle qu’écrite — `{{ville}}`, par son nom physique : c’est ce
+  que lit `psql`.
+- Partout ailleurs — la grille, la fiche, l’API, le serveur MCP, les vues partagées, les
+  automatisations — le texte se lit **avec la valeur de la ligne** : « Livraison prévue le
+  02/10/2026 à Lyon. » Changer la ville change le texte.
+- Une liste de choix se lit par son libellé, une personne par son nom, une date dans votre
+  format ; une valeur insérée dans du texte riche n’est jamais du balisage.
+- Une colonne que le lecteur ne peut pas lire ne donne rien : ni sa valeur, ni son nom.
+
+Le texte riche ne peut pas être rempli par l’IA : un modèle écrit du texte, pas du HTML assaini.
+
 ## Modifier la structure
 
-L’écran **Structure** de la base — dans le bloc de la base ouverte, en bas de la barre
-latérale — liste les tables et leurs champs : ajouter, renommer, rendre obligatoire, réordonner,
+L’écran **Structure** de la base — dans son menu **⋯** de la barre latérale — liste les tables et leurs champs : ajouter, renommer, rendre obligatoire, réordonner,
 décrire, désigner la colonne d’affichage.
 
 ![L’écran Structure d’une base](../../../assets/screens/structure.png)
@@ -156,9 +182,14 @@ offertes. Le serveur refuse de toute façon chaque changement ; l’écran ne fa
 l’accepter.
 
 Ajouter, renommer, changer le type d’un champ passe par le **moteur de migrations** : un plan en
-étapes, des verrous courts, et un refus nommé quand une donnée ne se convertit pas. Renommer le
-nom physique d’une table ou d’une base garde l’ancien nom servi par un **alias de
-compatibilité** — une vue — le temps de mettre à jour vos requêtes.
+étapes, des verrous courts, et un refus nommé quand une donnée ne se convertit pas.
+
+**Renommer** une base, une table ou un champ se fait dans un seul dialogue. Le libellé change
+toujours, sans migration. Un administrateur voit en dessous « Renommer aussi en base :
+`clients` → `comptes` » : cochée, elle change aussi le nom physique, et l’analyse d’impact
+s’affiche — les requêtes, les vues SQL et les automatisations qui citent l’ancien nom. L’ancien
+nom reste servi par un **alias de compatibilité** — une vue — le temps de mettre à jour vos
+requêtes.
 
 Supprimer n’efface rien tout de suite : la table ou la base est reléguée
 (`zz_supprime_…`) et reste lisible en SQL. Une base supprimée se restaure ; ramener une table

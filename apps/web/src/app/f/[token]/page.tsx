@@ -4,6 +4,7 @@ import { FormFill } from '@/components/app/views/form-view'
 import { Login } from '@/components/login'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ApiError, type Field, type SharedForm, api } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { useTheme } from '@/lib/theme'
 import type { FormSpec } from '@/lib/views'
@@ -32,11 +33,11 @@ type Page =
     }
 
 const CLOSED: Readonly<Record<string, string>> = {
-  inactive: 'Son auteur l’a désactivé.',
-  closed: 'La date limite pour répondre est passée.',
-  full: 'Le nombre maximal de réponses est atteint.',
-  authority: 'Ce formulaire est suspendu : son auteur ne peut plus ajouter de réponses.',
-  sans_question: 'Il ne pose plus aucune question.',
+  inactive: $t('Son auteur l’a désactivé.'),
+  closed: $t('La date limite pour répondre est passée.'),
+  full: $t('Le nombre maximal de réponses est atteint.'),
+  authority: $t('Ce formulaire est suspendu : son auteur ne peut plus ajouter de réponses.'),
+  sans_question: $t('Il ne pose plus aucune question.'),
 }
 
 function refusal(error: unknown): Page {
@@ -45,30 +46,32 @@ function refusal(error: unknown): Page {
     return {
       kind: 'refused',
       icon: 'closed',
-      title: 'Ce formulaire n’accepte plus de réponses',
-      text: CLOSED[reason] ?? 'Il a été fermé.',
+      title: $t('Ce formulaire n’accepte plus de réponses'),
+      text: CLOSED[reason] ?? $t('Il a été fermé.'),
     }
   }
   if (error instanceof ApiError && error.code === 'FORM_RESTRICTED') {
     return {
       kind: 'refused',
       icon: 'locked',
-      title: 'Formulaire réservé',
-      text: 'Ce formulaire est réservé à certains groupes, dont vous ne faites pas partie.',
+      title: $t('Formulaire réservé'),
+      text: $t('Ce formulaire est réservé à certains groupes, dont vous ne faites pas partie.'),
     }
   }
   if (error instanceof ApiError && error.code === 'RESOURCE_NOT_FOUND') {
     return {
       kind: 'refused',
       icon: 'unknown',
-      title: 'Lien introuvable',
-      text: 'Ce lien ne mène à aucun formulaire : il a pu être remplacé par un autre, ou retiré.',
+      title: $t('Lien introuvable'),
+      text: $t(
+        'Ce lien ne mène à aucun formulaire : il a pu être remplacé par un autre, ou retiré.',
+      ),
     }
   }
   return {
     kind: 'refused',
     icon: 'unknown',
-    title: 'Formulaire indisponible',
+    title: $t('Formulaire indisponible'),
     text: messageFor(error),
   }
 }
@@ -134,7 +137,7 @@ export default function SharedFormPage() {
     return (
       <div className="relative">
         <p className="absolute top-4 right-0 left-0 z-10 mx-auto w-fit rounded-full border bg-background/90 px-4 py-1.5 text-sm shadow-xs">
-          Connectez-vous pour répondre à ce formulaire.
+          {$t('Connectez-vous pour répondre à ce formulaire.')}
         </p>
         <Login onSignedIn={() => void load()} />
       </div>
@@ -185,7 +188,7 @@ export default function SharedFormPage() {
           />
         )}
         <footer className="shrink-0 py-3 text-center text-xs text-muted-foreground">
-          Formulaire propulsé par basedb
+          {$t('Formulaire propulsé par basedb')}
         </footer>
       </div>
     </TooltipProvider>

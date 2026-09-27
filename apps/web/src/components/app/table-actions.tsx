@@ -56,9 +56,12 @@ export function useTableActions() {
 
 export function TableDialogs({
   base,
+  administers = false,
   onBaseChanged,
 }: {
   readonly base: DescribedBase | null
+  /** The administration role: a table's relation may be renamed with its label. */
+  readonly administers?: boolean
   /** Reloads the description of the base: a table was created or deleted. */
   readonly onBaseChanged: () => Promise<void> | void
 }) {
@@ -105,7 +108,15 @@ export function TableDialogs({
 
       <EditTableDialog
         table={editing}
+        administers={administers}
         onClose={closeEdit}
+        onRenamed={async (change) => {
+          // Tabs and addresses carry names: those of the old one close, and the table
+          // opens again under the new one once the reloaded base holds it.
+          if (editing !== null) dropTable(editing.base, change.from)
+          await onBaseChanged()
+          setToOpen(change.to)
+        }}
         onSaved={async (label) => {
           // The tabs open on it carry the label they were opened with.
           if (editing !== null) {

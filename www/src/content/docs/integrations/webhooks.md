@@ -5,7 +5,7 @@ description: Prévenir un autre système à chaque création, modification ou su
 
 Un webhook envoie à une adresse HTTPS les **événements** d’une ou plusieurs tables :
 `record.created`, `record.updated`, `record.deleted`. Ils se gèrent depuis **Webhooks…** dans le
-menu de la base.
+menu de la base, sous **API et agents**.
 
 ## La charge utile
 

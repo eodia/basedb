@@ -1,6 +1,7 @@
 'use client'
 
 import type { Field, Table } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import {
   DndContext,
@@ -111,8 +112,8 @@ function SortableRow({
       type="button"
       {...attributes}
       {...listeners}
-      aria-label={`Déplacer le champ ${label}`}
-      title="Glisser pour changer l’ordre des colonnes"
+      aria-label={$t('Déplacer le champ {label}', { label })}
+      title={$t('Glisser pour changer l’ordre des colonnes')}
       className="-ml-1 flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-muted-foreground/50 hover:bg-muted hover:text-foreground focus-visible:text-foreground active:cursor-grabbing"
     >
       <GripVertical className="size-4" />

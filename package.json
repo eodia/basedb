@@ -20,6 +20,7 @@
     "graph": "depcruise packages apps --config tooling/dependency-cruiser/.dependency-cruiser.cjs",
     "demo": "node scripts/demo.mjs",
     "catalog": "node scripts/catalog-migrations.mjs",
+    "i18n": "node tooling/i18n/extract.mjs && node tooling/i18n/check.mjs",
     "start": "node scripts/start.mjs"
   },
   "devDependencies": {

@@ -1,3 +1,4 @@
+import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import {
   AlignLeft,
@@ -19,6 +20,7 @@ import {
   Paperclip,
   Percent,
   Phone,
+  Pilcrow,
   ScanBarcode,
   ScanSearch,
   Sigma,
@@ -70,6 +72,8 @@ const FORMAT_ICONS = {
   rating: Star,
   phone: Phone,
   barcode: ScanBarcode,
+  /** Not a display format: the rich variant of a long text, drawn apart where it is chosen. */
+  html: Pilcrow,
 } as const
 
 export function FieldIcon({
@@ -91,38 +95,50 @@ export function FieldIcon({
 
 /** How each type is named to a human, in one word. */
 export const KIND_LABELS: Readonly<Record<string, string>> = {
-  short_text: 'Texte',
-  long_text: 'Texte long',
-  number: 'Nombre',
-  boolean: 'Booléen',
-  date: 'Date',
-  datetime: 'Date et heure',
-  select: 'Liste de choix',
-  multi_select: 'Choix multiple',
-  link: 'Relation',
-  multi_link: 'Relation multiple',
-  lookup: 'Recherche',
-  rollup: 'Cumul',
-  count: 'Décompte',
+  short_text: $t('Texte'),
+  long_text: $t('Texte long'),
+  number: $t('Nombre'),
+  boolean: $t('Booléen'),
+  date: $t('Date'),
+  datetime: $t('Date et heure'),
+  select: $t('Liste de choix'),
+  multi_select: $t('Choix multiple'),
+  link: $t('Relation'),
+  multi_link: $t('Relation multiple'),
+  lookup: $t('Recherche'),
+  rollup: $t('Cumul'),
+  count: $t('Décompte'),
   url: 'Lien URL',
-  email: 'E-mail',
-  autonumber: 'Numéro automatique',
-  user: 'Personne',
+  email: $t('E-mail'),
+  autonumber: $t('Numéro automatique'),
+  user: $t('Personne'),
   formula: 'Formule',
-  file: 'Document',
-  image: 'Image',
-  system: 'Colonne système',
+  file: $t('Document'),
+  image: $t('Image'),
+  system: $t('Colonne système'),
 }
 
 /** How each format is named, when it names the field better than its type does. */
 export const FORMAT_LABELS: Readonly<Record<string, string>> = {
-  integer: 'Entier',
-  currency: 'Monnaie',
-  percent: 'Pourcentage',
-  duration: 'Durée',
-  rating: 'Note',
-  phone: 'Téléphone',
-  barcode: 'Code-barres',
+  integer: $t('Entier'),
+  currency: $t('Monnaie'),
+  percent: $t('Pourcentage'),
+  duration: $t('Durée'),
+  rating: $t('Note'),
+  phone: $t('Téléphone'),
+  barcode: $t('Code-barres'),
+  html: $t('Texte riche'),
+}
+
+/**
+ * The format a field's glyph and name go by: its display format — or `html` for the rich
+ * variant of a long text (chapter 04 §2.2), which is no display format but reads as one.
+ */
+export function shownFormat(field: {
+  readonly unsafe_html?: boolean
+  readonly format?: { readonly display: string }
+}): string | undefined {
+  return field.unsafe_html === true ? 'html' : field.format?.display
 }
 
 /** A type as one picks it: its glyph and its name, side by side. */

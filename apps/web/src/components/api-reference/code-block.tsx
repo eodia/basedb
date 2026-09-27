@@ -7,6 +7,7 @@ import {
   labelFor,
 } from '@/components/api-reference/highlight'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { $t } from '@/lib/i18n'
 import type { CodeBlock } from '@/lib/markdown'
 import { cn } from '@/lib/utils'
 import { Check, Copy } from 'lucide-react'
@@ -85,7 +86,7 @@ function CopyButton({ text }: { readonly text: string }) {
     <button
       type="button"
       onClick={() => void copy()}
-      aria-label="Copier le code"
+      aria-label={$t('Copier le code')}
       className={cn(
         'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors',
         'text-code-foreground/65 hover:bg-code-foreground/10 hover:text-code-foreground',
@@ -96,7 +97,7 @@ function CopyButton({ text }: { readonly text: string }) {
       {state === 'copied' ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
       {/* Announced, not just drawn: the label change is the only feedback there is. */}
       <span aria-live="polite">
-        {state === 'copied' ? 'Copié' : state === 'failed' ? 'Non copié' : 'Copier'}
+        {state === 'copied' ? $t('Copié') : state === 'failed' ? $t('Non copié') : $t('Copier')}
       </span>
     </button>
   )

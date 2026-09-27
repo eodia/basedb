@@ -1,8 +1,11 @@
 'use client'
 
+import { AutomationCopilot, type FlowBridge } from '@/components/app/automation-copilot'
+import { FlowCanvas, STEP_ICONS, StepMenu } from '@/components/app/automation-flow'
+import { PathSettings, StepSettings, TriggerSettings } from '@/components/app/automation-steps'
+import { CopilotToggle } from '@/components/app/copilot-toggle'
 import { SidebarToggle } from '@/components/app/sidebar'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,71 +13,115 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
+  ApiError,
   type Automation,
   type AutomationRun,
-  type AutomationTriggerKind,
   type DescribedBase,
-  type Field,
-  type Integration,
-  type Member,
   api,
 } from '@/lib/api/client'
+import { type Slot, TRIGGER_NODE } from '@/lib/automation-layout'
 import {
-  ACTION_LABELS,
   type Draft,
-  type DraftAction,
+  type DraftStep,
+  STEP_LABELS,
+  type StepKind,
   TRIGGER_LABELS,
   TRIGGER_OF_RUN,
-  type ValueRow,
   draftOf,
+  draftOfDefinition,
   emptyDraft,
+  findPath,
+  findStep,
+  freshId,
   inputOf,
-  newAction,
+  insertStep,
+  locate,
+  moveStep,
+  newStep,
+  refusalOf,
+  removeStep,
+  replacePath,
+  replaceStep,
   runSentence,
-  writableFields,
+  runStepSentence,
+  runStepsById,
 } from '@/lib/automations'
 import { relativeTime } from '@/lib/collab'
+import { $t } from '@/lib/i18n'
 import { MembersProvider, useMembers } from '@/lib/members'
 import { messageFor } from '@/lib/messages'
+import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
-import { ArrowDown, ArrowUp, Braces, Loader2, Play, Plus, Trash2, X, Zap } from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  ArrowDown,
+  ArrowUp,
+  Ellipsis,
+  Loader2,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Play,
+  Plus,
+  Sparkles,
+  Split,
+  Trash2,
+  X,
+  Zap,
+} from 'lucide-react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * The automations of a base — chapter 17, on screen: the list with each one's switch and
- * last run; the editor — when, if, then; and the runs, action by action, with why a run
- * did nothing when it did nothing.
+ * last run; the editor — the flow drawn, the settings of what is chosen on it; and the
+ * runs, each laid over the flow to show the way it took and how each step went.
  */
 
-const NONE = '__aucun__'
-
-export function AutomationsPanel({
-  base,
-  onBack,
-}: {
-  readonly base: DescribedBase
-  readonly onBack: () => void
-}) {
+export function AutomationsPanel({ base }: { readonly base: DescribedBase }) {
   return (
     <MembersProvider>
-      <Panel base={base} onBack={onBack} />
+      <Panel base={base} />
     </MembersProvider>
   )
 }
 
-function Panel({ base, onBack }: { readonly base: DescribedBase; readonly onBack: () => void }) {
+function Panel({ base }: { readonly base: DescribedBase }) {
   const [automations, setAutomations] = useState<readonly Automation[] | null>(null)
   const [selected, setSelected] = useState<string | 'new' | null>(null)
+  // A new automation opens empty, or with what the copilot proposed on its flow.
+  const [seed, setSeed] = useState<{ readonly n: number; readonly draft: Draft | null }>({
+    n: 0,
+    draft: null,
+  })
+  const [folded, setFolded] = useState(false)
+  // The copilot stays open from one section to the other: the same switch as the tables'.
+  const copilotOpen = useWorkspace((s) => s.copilotOpen)
+  const setCopilotOpen = useWorkspace((s) => s.setCopilotOpen)
+  // Beside the copilot, the flow needs the room: the list folds, and unfolds on demand.
+  useEffect(() => {
+    if (copilotOpen) setFolded(true)
+  }, [copilotOpen])
+  /** The editor on screen, as the copilot reaches it. */
+  const editor = useRef<FlowBridge | null>(null)
+  const register = useCallback((bridge: FlowBridge | null) => {
+    editor.current = bridge
+  }, [])
+  const flow = useMemo<FlowBridge>(
+    () => ({
+      current: () => editor.current?.current() ?? null,
+      lay: (definition) => editor.current?.lay(definition) ?? null,
+      open: (definition) => {
+        setSeed((s) => ({ n: s.n + 1, draft: draftOfDefinition(definition, base) }))
+        setSelected('new')
+      },
+    }),
+    [base],
+  )
+  const createNew = () => {
+    setSeed((s) => ({ n: s.n + 1, draft: null }))
+    setSelected('new')
+  }
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -120,20 +167,32 @@ function Panel({ base, onBack }: { readonly base: DescribedBase; readonly onBack
     <div className="flex min-w-0 flex-1 flex-col">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
         <SidebarToggle />
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => setFolded(!folded)}
+          aria-label={
+            folded
+              ? $t('Montrer la liste des automatisations')
+              : $t('Replier la liste des automatisations')
+          }
+          title={folded ? $t('Montrer la liste') : $t('Replier la liste')}
+          aria-expanded={!folded}
+        >
+          {folded ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+        </Button>
         <span className="text-sm text-muted-foreground">{base.label}</span>
         <span className="text-sm text-muted-foreground">/</span>
-        <span className="text-sm font-medium">Automatisations</span>
+        <span className="text-sm font-medium">{$t('Automatisations')}</span>
         <div className="flex-1" />
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          Retour aux données
-        </Button>
+        <CopilotToggle />
       </header>
       <div className="flex min-h-0 flex-1">
-        <aside className="flex w-72 shrink-0 flex-col border-r">
+        <aside className={cn('w-64 shrink-0 flex-col border-r', folded ? 'hidden' : 'flex')}>
           <div className="p-3">
-            <Button className="w-full gap-1.5" size="sm" onClick={() => setSelected('new')}>
+            <Button className="w-full gap-1.5" size="sm" onClick={createNew}>
               <Plus className="size-4" />
-              Nouvelle automatisation
+              {$t('Nouvelle automatisation')}
             </Button>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3 scroll-discret">
@@ -144,7 +203,9 @@ function Panel({ base, onBack }: { readonly base: DescribedBase; readonly onBack
             )}
             {automations?.length === 0 && (
               <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-                Aucune automatisation. Faites faire à la base ce que vous refaites à la main.
+                {$t(
+                  'Aucune automatisation. Faites faire à la base ce que vous refaites à la main.',
+                )}
               </p>
             )}
             {automations?.map((a) => (
@@ -182,23 +243,40 @@ function Panel({ base, onBack }: { readonly base: DescribedBase; readonly onBack
                 <Switch
                   checked={a.enabled}
                   onCheckedChange={(v) => void toggle(a, v)}
-                  aria-label={a.enabled ? `Désactiver ${a.label}` : `Activer ${a.label}`}
+                  aria-label={
+                    a.enabled
+                      ? $t('Désactiver {label}', { label: a.label })
+                      : $t('Activer {label}', { label: a.label })
+                  }
                 />
               </div>
             ))}
           </div>
         </aside>
-        <main className="min-w-0 flex-1 overflow-y-auto scroll-discret">
+        <main className="flex min-w-0 flex-1 flex-col">
           {error !== null && <p className="m-4 text-sm text-destructive">{error}</p>}
           {selected === null ? (
-            <p className="p-10 text-center text-sm text-muted-foreground">
-              Choisissez une automatisation, ou créez-en une.
-            </p>
+            <div className="flex flex-col items-center gap-3 p-10 text-center text-sm text-muted-foreground">
+              <p>{$t('Choisissez une automatisation, ou créez-en une.')}</p>
+              {!copilotOpen && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setCopilotOpen(true)}
+                >
+                  <Sparkles className="size-3.5" />
+                  {$t('La décrire au Copilot')}
+                </Button>
+              )}
+            </div>
           ) : (
             <Editor
-              key={selected}
+              key={selected === 'new' ? `new:${seed.n}` : selected}
               base={base}
               automation={current}
+              initial={selected === 'new' ? seed.draft : null}
+              register={register}
               onSaved={async (saved) => {
                 await load()
                 setSelected(saved.id)
@@ -210,6 +288,14 @@ function Panel({ base, onBack }: { readonly base: DescribedBase; readonly onBack
             />
           )}
         </main>
+        {copilotOpen && (
+          <AutomationCopilot
+            base={base}
+            bridge={flow}
+            onScreen={current?.label ?? (selected === 'new' ? 'Nouvelle automatisation' : null)}
+            onClose={() => setCopilotOpen(false)}
+          />
+        )}
       </div>
     </div>
   )
@@ -227,136 +313,116 @@ function RunDot({ status }: { readonly status: string }) {
   return <span className={cn('inline-block size-1.5 rounded-full align-middle', tone)} />
 }
 
-function Section({
-  title,
-  hint,
-  children,
-}: {
-  readonly title: string
-  readonly hint?: string
-  readonly children: ReactNode
-}) {
-  return (
-    <section className="space-y-2.5">
-      <div>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {title}
-        </h3>
-        {hint !== undefined && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
-      </div>
-      {children}
-    </section>
-  )
-}
+/** The runs of an automation, read again while one is under way. */
+function useRuns(base: DescribedBase, automation: Automation | null, tick: number) {
+  const [runs, setRuns] = useState<readonly AutomationRun[] | null>(null)
+  const id = automation?.id ?? null
+  const load = useCallback(async () => {
+    if (id === null) return
+    setRuns(await api.automationRuns(base.name, id).catch(() => []))
+  }, [base.name, id])
 
-function FieldSelect({
-  fields,
-  value,
-  onChange,
-  placeholder = 'Choisir un champ',
-  label,
-}: {
-  readonly fields: readonly Field[]
-  readonly value: string
-  readonly onChange: (value: string) => void
-  readonly placeholder?: string
-  readonly label: string
-}) {
-  return (
-    <Select
-      value={value === '' ? NONE : value}
-      onValueChange={(v) => onChange(v === NONE ? '' : v)}
-    >
-      <SelectTrigger
-        aria-label={label}
-        className={cn('h-8', value === '' && 'text-muted-foreground')}
-      >
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={NONE}>
-          <span className="text-muted-foreground">{placeholder}</span>
-        </SelectItem>
-        {fields.map((f) => (
-          <SelectItem key={f.name} value={f.name}>
-            {f.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )
-}
+  useEffect(() => {
+    void tick
+    void load()
+  }, [load, tick])
 
-/** A menu that adds `{{champ}}` at the end of a text: citing the row. */
-function Cite({
-  fields,
-  onCite,
-}: {
-  readonly fields: readonly Field[]
-  readonly onCite: (token: string) => void
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon-sm" aria-label="Citer la ligne" title="Citer la ligne">
-          <Braces className="size-3.5" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
-        {fields
-          .filter((f) => f.kind !== 'button')
-          .map((f) => (
-            <DropdownMenuItem key={f.name} onSelect={() => onCite(`{{${f.name}}}`)}>
-              {f.label}
-              <span className="ml-auto pl-3 font-mono text-[11px] text-muted-foreground">
-                {`{{${f.name}}}`}
-              </span>
-            </DropdownMenuItem>
-          ))}
-        <DropdownMenuItem onSelect={() => onCite('{{_maintenant}}')}>
-          Maintenant
-          <span className="ml-auto pl-3 font-mono text-[11px] text-muted-foreground">
-            {'{{_maintenant}}'}
-          </span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+  const pending = useMemo(
+    () => (runs ?? []).some((r) => r.status === 'queued' || r.status === 'running'),
+    [runs],
   )
+  useEffect(() => {
+    if (!pending) return
+    const timer = setInterval(() => void load(), 2000)
+    return () => clearInterval(timer)
+  }, [pending, load])
+  return runs
 }
 
 function Editor({
   base,
   automation,
+  initial,
+  register,
   onSaved,
   onDeleted,
 }: {
   readonly base: DescribedBase
   readonly automation: Automation | null
+  /** What a new automation opens with — a proposal of the copilot. */
+  readonly initial: Draft | null
+  /** Gives the copilot the editor's flow, to read and to lay a proposal on. */
+  readonly register: (bridge: FlowBridge | null) => void
   readonly onSaved: (saved: Automation) => Promise<void>
   readonly onDeleted: () => Promise<void>
 }) {
-  const [draft, setDraft] = useState<Draft>(() =>
-    automation === null ? emptyDraft(base) : draftOf(automation, base),
+  const [draft, setDraft] = useState<Draft>(
+    () => initial ?? (automation === null ? emptyDraft(base) : draftOf(automation, base)),
   )
+  const draftRef = useRef(draft)
+  draftRef.current = draft
+  // What was last saved, to say when the draft differs from it.
+  const [savedAs, setSavedAs] = useState(() => JSON.stringify(inputOf(draft)))
+  const [selected, setSelected] = useState<string>(TRIGGER_NODE)
+  const [tab, setTab] = useState<'settings' | 'runs'>('settings')
+  const [focus, setFocus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<{
+    readonly text: string
+    readonly step: string | null
+  } | null>(null)
   const [runsTick, setRunsTick] = useState(0)
+  const [shownRun, setShownRun] = useState<string | null>(null)
   const members = useMembers()
+  const runs = useRuns(base, automation, runsTick)
 
-  const source = base.tables.find((t) => t.name === draft.trigger.table) ?? null
-  const sourceFields = source?.fields.filter((f) => f.system !== true) ?? []
-  const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }))
-  const setTrigger = (patch: Partial<Draft['trigger']>) =>
-    setDraft((d) => ({ ...d, trigger: { ...d.trigger, ...patch } }))
-  const setAction = (index: number, next: DraftAction) =>
-    setDraft((d) => ({ ...d, actions: d.actions.map((a, i) => (i === index ? next : a)) }))
-  const moveAction = (index: number, step: number) =>
-    setDraft((d) => {
-      const actions = [...d.actions]
-      const [moved] = actions.splice(index, 1)
-      if (moved !== undefined) actions.splice(index + step, 0, moved)
-      return { ...d, actions }
+  // The copilot reads what is on screen, and lays a proposal on it — unsaved, undoable
+  // while nothing was changed since.
+  useEffect(() => {
+    register({
+      current: () => ({
+        id: automation?.id ?? null,
+        label: draftRef.current.label,
+        input: inputOf(draftRef.current),
+      }),
+      lay: (definition) => {
+        const before = draftRef.current
+        const next = draftOfDefinition(definition, base)
+        setDraft(next)
+        setSelected(TRIGGER_NODE)
+        setTab('settings')
+        setShownRun(null)
+        const laid = JSON.stringify(inputOf(next))
+        return () => {
+          if (JSON.stringify(inputOf(draftRef.current)) !== laid) return false
+          setDraft(before)
+          return true
+        }
+      },
+      open: () => undefined,
     })
+    return () => register(null)
+  }, [register, automation, base])
+  const run = runs?.find((r) => r.id === shownRun) ?? null
+  const dirty = JSON.stringify(inputOf(draft)) !== savedAs
+
+  const select = useCallback((id: string) => {
+    setSelected(id)
+    setTab('settings')
+  }, [])
+
+  const insert = (slot: Slot, kind: StepKind) => {
+    const id = freshId(draft.steps, 'e')
+    const step = newStep(kind, draft, base, id)
+    setDraft((d) => ({ ...d, steps: insertStep(d.steps, slot.path, slot.index, step) }))
+    setSelected(id)
+    setFocus(id)
+    setTab('settings')
+    setShownRun(null)
+  }
+
+  const setSteps = (edit: (steps: readonly DraftStep[]) => DraftStep[]) =>
+    setDraft((d) => ({ ...d, steps: edit(d.steps) }))
 
   const save = async () => {
     setBusy(true)
@@ -366,9 +432,18 @@ function Editor({
         automation === null
           ? await api.createAutomation(base.name, inputOf(draft))
           : await api.updateAutomation(base.name, automation.id, inputOf(draft))
+      // Read back as the API keeps it: the identifiers it gave, the texts it trimmed.
+      const kept = draftOf(saved, base)
+      setDraft(kept)
+      setSavedAs(JSON.stringify(inputOf(kept)))
       await onSaved(saved)
     } catch (e) {
-      setError(messageFor(e))
+      // A refusal about a step is shown on it.
+      const refusal = e instanceof ApiError ? refusalOf(e.details) : null
+      setError({ text: refusal?.sentence ?? messageFor(e), step: refusal?.step ?? null })
+      if (refusal !== null && refusal.step !== null && findStep(draft.steps, refusal.step)) {
+        select(refusal.step)
+      }
     } finally {
       setBusy(false)
     }
@@ -381,548 +456,367 @@ function Editor({
       await api.deleteAutomation(base.name, automation.id)
       await onDeleted()
     } catch (e) {
-      setError(messageFor(e))
+      setError({ text: messageFor(e), step: null })
       setBusy(false)
     }
   }
 
-  const schedule = draft.trigger.kind === 'schedule'
-
   return (
-    <div className="mx-auto max-w-3xl space-y-7 px-6 py-6">
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1 space-y-2">
-          <Input
-            value={draft.label}
-            onChange={(e) => set({ label: e.target.value })}
-            aria-label="Nom de l’automatisation"
-            className="h-9 text-base font-semibold"
-            maxLength={255}
-          />
-          <Textarea
-            value={draft.description}
-            onChange={(e) => set({ description: e.target.value })}
-            placeholder="À quoi sert-elle ? (facultatif)"
-            aria-label="Description de l’automatisation"
-            rows={2}
-            className="min-h-0 resize-none text-sm"
-          />
-        </div>
-        <div className="flex items-center gap-2 pt-2 text-sm">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2">
+        <Input
+          value={draft.label}
+          onChange={(e) => setDraft((d) => ({ ...d, label: e.target.value }))}
+          aria-label={$t('Nom de l’automatisation')}
+          className="h-8 w-72 max-w-full font-semibold"
+          maxLength={255}
+        />
+        <label htmlFor="automation-enabled" className="flex items-center gap-2 text-sm">
           <Switch
             id="automation-enabled"
             checked={draft.enabled}
-            onCheckedChange={(v) => set({ enabled: v })}
+            onCheckedChange={(v) => setDraft((d) => ({ ...d, enabled: v }))}
           />
-          <label htmlFor="automation-enabled">Active</label>
-        </div>
-      </div>
-      {automation !== null && (
-        <p className="-mt-4 text-xs text-muted-foreground">
-          Agit avec les droits de {automation.owner.name}, qui l’a enregistrée en dernier.
-          L’enregistrer vous en rend propriétaire.
-        </p>
-      )}
-
-      <Section title="Quand">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Select
-            value={draft.trigger.kind}
-            onValueChange={(v) => setTrigger({ kind: v as AutomationTriggerKind })}
-          >
-            <SelectTrigger aria-label="Déclencheur" className="h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(TRIGGER_LABELS) as AutomationTriggerKind[]).map((k) => (
-                <SelectItem key={k} value={k}>
-                  {TRIGGER_LABELS[k]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {!schedule && (
-            <Select
-              value={draft.trigger.table}
-              onValueChange={(v) => setTrigger({ table: v, fields: [] })}
-            >
-              <SelectTrigger aria-label="Table du déclencheur" className="h-8">
-                <SelectValue placeholder="Choisir une table" />
-              </SelectTrigger>
-              <SelectContent>
-                {base.tables.map((t) => (
-                  <SelectItem key={t.name} value={t.name}>
-                    dans {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-        {draft.trigger.kind === 'record_updated' && (
-          <div className="space-y-1.5">
-            <p className="text-xs text-muted-foreground">
-              Surveiller seulement ces champs (aucun coché : tout changement).
-            </p>
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-              {sourceFields
-                .filter((f) => f.kind !== 'button')
-                .map((f) => (
-                  <label
-                    key={f.name}
-                    htmlFor={`watch-${f.name}`}
-                    className="flex items-center gap-1.5 text-sm"
-                  >
-                    <Checkbox
-                      id={`watch-${f.name}`}
-                      checked={draft.trigger.fields.includes(f.name)}
-                      onCheckedChange={(v) =>
-                        setTrigger({
-                          fields:
-                            v === true
-                              ? [...draft.trigger.fields, f.name]
-                              : draft.trigger.fields.filter((n) => n !== f.name),
-                        })
-                      }
-                    />
-                    {f.label}
-                  </label>
-                ))}
-            </div>
-          </div>
-        )}
-        {schedule && (
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Select
-              value={draft.trigger.schedule.every}
-              onValueChange={(v) =>
-                setTrigger({
-                  schedule: { ...draft.trigger.schedule, every: v as 'hour' | 'day' | 'week' },
-                })
-              }
-            >
-              <SelectTrigger aria-label="Fréquence" className="h-8 w-44">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hour">Toutes les heures</SelectItem>
-                <SelectItem value="day">Chaque jour</SelectItem>
-                <SelectItem value="week">Chaque semaine</SelectItem>
-              </SelectContent>
-            </Select>
-            {draft.trigger.schedule.every === 'week' && (
-              <Select
-                value={String(draft.trigger.schedule.weekday)}
-                onValueChange={(v) =>
-                  setTrigger({ schedule: { ...draft.trigger.schedule, weekday: Number(v) } })
-                }
-              >
-                <SelectTrigger aria-label="Jour" className="h-8 w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].map(
-                    (d, i) => (
-                      <SelectItem key={d} value={String(i + 1)}>
-                        le {d}
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
-            )}
-            <span className="text-muted-foreground">
-              {draft.trigger.schedule.every === 'hour' ? 'à la minute' : 'à'}
-            </span>
-            <Input
-              type="time"
-              value={draft.trigger.schedule.at}
-              onChange={(e) =>
-                setTrigger({ schedule: { ...draft.trigger.schedule, at: e.target.value } })
-              }
-              aria-label="Heure"
-              className="h-8 w-28"
-            />
-            <Input
-              value={draft.trigger.schedule.timezone}
-              onChange={(e) =>
-                setTrigger({ schedule: { ...draft.trigger.schedule, timezone: e.target.value } })
-              }
-              aria-label="Fuseau horaire"
-              className="h-8 w-40"
-            />
-          </div>
-        )}
-        {automation?.next_run_at !== null && automation?.next_run_at !== undefined && schedule && (
-          <p className="text-xs text-muted-foreground">
-            Prochaine exécution : {new Date(automation.next_run_at).toLocaleString('fr-FR')}
-          </p>
-        )}
-      </Section>
-
-      {!schedule && (
-        <Section
-          title="Si"
-          hint="Facultatif — dans le langage des filtres, évalué sur la ligne au moment d’agir."
-        >
-          <Input
-            value={draft.condition}
-            onChange={(e) => set({ condition: e.target.value })}
-            placeholder='statut eq "fait"'
-            aria-label="Condition"
-            className="h-8 font-mono text-sm"
-          />
-        </Section>
-      )}
-
-      <Section title="Alors" hint="Dans l’ordre ; la première qui échoue arrête les suivantes.">
-        {draft.actions.map((action, index) => (
-          <div key={`${index}:${action.kind}`} className="rounded-lg border">
-            <div className="flex items-center gap-1 border-b bg-muted/40 px-3 py-1.5">
-              <span className="text-xs font-semibold text-muted-foreground">{index + 1}.</span>
-              <span className="flex-1 text-sm font-medium">{ACTION_LABELS[action.kind]}</span>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                disabled={index === 0}
-                onClick={() => moveAction(index, -1)}
-                aria-label="Monter l’action"
-              >
-                <ArrowUp className="size-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                disabled={index === draft.actions.length - 1}
-                onClick={() => moveAction(index, 1)}
-                aria-label="Descendre l’action"
-              >
-                <ArrowDown className="size-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => set({ actions: draft.actions.filter((_, i) => i !== index) })}
-                aria-label="Retirer l’action"
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
-            </div>
-            <div className="space-y-2 p-3">
-              <ActionBody
-                action={action}
-                base={base}
-                sourceFields={sourceFields}
-                members={members}
-                onChange={(next) => setAction(index, next)}
-              />
-            </div>
-          </div>
-        ))}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Plus className="size-4" />
-              Ajouter une action
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            {(Object.keys(ACTION_LABELS) as DraftAction['kind'][])
-              .filter((k) => !(schedule && k === 'update_record'))
-              .map((k) => (
-                <DropdownMenuItem
-                  key={k}
-                  onSelect={() => set({ actions: [...draft.actions, newAction(k, base)] })}
-                >
-                  {ACTION_LABELS[k]}
-                </DropdownMenuItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </Section>
-
-      <div className="flex items-center gap-2 border-t pt-4">
-        {error !== null && <p className="mr-auto text-sm text-destructive">{error}</p>}
-        {automation !== null && (
-          <Button
-            variant="ghost"
-            className="mr-auto text-destructive hover:text-destructive"
-            disabled={busy}
-            onClick={() => void remove()}
-          >
-            Supprimer
-          </Button>
+          {$t('Active')}
+        </label>
+        <div className="flex-1" />
+        {dirty && automation !== null && (
+          <span className="text-xs text-muted-foreground">
+            {$t('Modifications non enregistrées')}
+          </span>
         )}
         {automation !== null && (
           <TestRun
             base={base}
             automation={automation}
-            onRan={() => setRunsTick((t) => t + 1)}
-            onError={setError}
+            disabled={busy || dirty}
+            onRan={(id) => {
+              setRunsTick((t) => t + 1)
+              setShownRun(id)
+              setTab('runs')
+            }}
+            onError={(text) => setError(text === null ? null : { text, step: null })}
           />
         )}
-        <Button onClick={() => void save()} disabled={busy || draft.actions.length === 0}>
+        <Button onClick={() => void save()} disabled={busy || draft.steps.length === 0} size="sm">
           {busy && <Loader2 className="size-4 animate-spin" />}
-          {automation === null ? 'Créer' : 'Enregistrer'}
+          {automation === null ? $t('Créer') : $t('Enregistrer')}
         </Button>
+        {automation !== null && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon-sm" aria-label={$t('Autres actions')}>
+                <Ellipsis className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                disabled={busy}
+                onSelect={() => void remove()}
+              >
+                <Trash2 className="size-4" />
+                {$t('Supprimer l’automatisation')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
-
-      {automation !== null && <Runs base={base} automation={automation} tick={runsTick} />}
-    </div>
-  )
-}
-
-function ValueRows({
-  rows,
-  targetFields,
-  citeFields,
-  onChange,
-}: {
-  readonly rows: readonly ValueRow[]
-  readonly targetFields: readonly Field[]
-  readonly citeFields: readonly Field[]
-  readonly onChange: (rows: ValueRow[]) => void
-}) {
-  const writable = writableFields(targetFields)
-  const setRow = (index: number, patch: Partial<ValueRow>) =>
-    onChange(rows.map((r, i) => (i === index ? { ...r, ...patch } : r)))
-  return (
-    <div className="space-y-1.5">
-      {rows.map((row, index) => (
-        <div
-          key={`${index}:${row.field}`}
-          className="grid grid-cols-[180px_1fr_auto_auto] items-center gap-1.5"
-        >
-          <FieldSelect
-            fields={writable}
-            value={row.field}
-            onChange={(field) => setRow(index, { field })}
-            label={`Champ ${index + 1}`}
-          />
-          <Input
-            value={row.value}
-            onChange={(e) => setRow(index, { value: e.target.value })}
-            placeholder="Valeur, ou {{champ}}"
-            aria-label={`Valeur ${index + 1}`}
-            className="h-8"
-          />
-          <Cite
-            fields={citeFields}
-            onCite={(token) => setRow(index, { value: `${row.value}${token}` })}
-          />
+      {error !== null && (
+        <div className="flex shrink-0 items-center gap-2 border-b bg-destructive/8 px-4 py-2 text-sm text-destructive">
+          <span className="min-w-0 flex-1">
+            {error.step !== null && <span className="font-mono">{error.step} · </span>}
+            {error.text}
+          </span>
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() => onChange(rows.filter((_, i) => i !== index))}
-            aria-label={`Retirer le champ ${index + 1}`}
+            aria-label={$t('Fermer le message')}
+            onClick={() => setError(null)}
           >
-            <X className="size-3.5" />
+            <X className="size-4" />
           </Button>
         </div>
-      ))}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 gap-1 px-2 text-xs"
-        onClick={() => onChange([...rows, { field: '', value: '' }])}
-      >
-        <Plus className="size-3.5" />
-        Champ
-      </Button>
+      )}
+      <div className="flex min-h-0 flex-1">
+        <div className="relative min-w-0 flex-1">
+          <FlowCanvas
+            draft={draft}
+            base={base}
+            members={members}
+            selected={tab === 'settings' ? selected : ''}
+            onSelect={select}
+            onInsert={insert}
+            run={run}
+            focus={focus}
+          />
+          {run !== null && (
+            <div className="absolute top-3 left-3 z-10 flex max-w-[calc(100%-1.5rem)] items-center gap-2 whitespace-nowrap rounded-full border bg-card px-3 py-1 text-xs shadow-sm">
+              <RunDot status={run.status} />
+              <span className="truncate font-medium">{runSentence(run)}</span>
+              <span className="text-muted-foreground">· {relativeTime(run.queued_at)}</span>
+              <button
+                type="button"
+                onClick={() => setShownRun(null)}
+                className="ml-1 rounded-sm text-muted-foreground hover:text-foreground"
+                aria-label={$t('Ne plus montrer cette exécution')}
+              >
+                <X className="size-3.5" />
+              </button>
+            </div>
+          )}
+          {draft.steps.length === 0 && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-6 z-10 flex justify-center">
+              <p className="rounded-full bg-card/90 px-3 py-1 text-xs text-muted-foreground shadow-xs">
+                {$t('Réglez le déclencheur, puis ajoutez ce qu’elle doit faire.')}
+              </p>
+            </div>
+          )}
+        </div>
+        <aside className="flex w-[360px] shrink-0 flex-col border-l bg-background">
+          <Tabs
+            value={tab}
+            onValueChange={(v) => setTab(v as 'settings' | 'runs')}
+            className="flex min-h-0 flex-1 flex-col gap-0"
+          >
+            <div className="border-b px-3 py-2">
+              <TabsList className="w-full">
+                <TabsTrigger value="settings" className="flex-1">
+                  {$t('Réglages||onglet d’une automatisation')}
+                </TabsTrigger>
+                <TabsTrigger value="runs" className="flex-1" disabled={automation === null}>
+                  {$t('Exécutions')}
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="settings" className="min-h-0 flex-1 overflow-y-auto scroll-discret">
+              <Inspector
+                draft={draft}
+                base={base}
+                automation={automation}
+                selected={selected}
+                onSelect={select}
+                onDraft={(patch) => setDraft((d) => ({ ...d, ...patch }))}
+                onSteps={setSteps}
+                onInsert={insert}
+              />
+            </TabsContent>
+            <TabsContent value="runs" className="min-h-0 flex-1 overflow-y-auto scroll-discret">
+              <Runs
+                runs={runs}
+                draft={draft}
+                shown={shownRun}
+                onShow={(id) => setShownRun((current) => (current === id ? null : id))}
+              />
+            </TabsContent>
+          </Tabs>
+        </aside>
+      </div>
     </div>
   )
 }
 
-function ActionBody({
-  action,
+/** The settings of what is chosen on the flow, and what can be done with it. */
+function Inspector({
+  draft,
   base,
-  sourceFields,
-  members,
-  onChange,
+  automation,
+  selected,
+  onSelect,
+  onDraft,
+  onSteps,
+  onInsert,
 }: {
-  readonly action: DraftAction
+  readonly draft: Draft
   readonly base: DescribedBase
-  readonly sourceFields: readonly Field[]
-  readonly members: readonly Member[]
-  readonly onChange: (next: DraftAction) => void
+  readonly automation: Automation | null
+  readonly selected: string
+  readonly onSelect: (id: string) => void
+  readonly onDraft: (patch: Partial<Draft>) => void
+  readonly onSteps: (edit: (steps: readonly DraftStep[]) => DraftStep[]) => void
+  readonly onInsert: (slot: Slot, kind: StepKind) => void
 }) {
-  switch (action.kind) {
-    case 'update_record':
-      return (
-        <ValueRows
-          rows={action.values}
-          targetFields={sourceFields}
-          citeFields={sourceFields}
-          onChange={(values) => onChange({ ...action, values })}
-        />
-      )
-    case 'create_record': {
-      const target = base.tables.find((t) => t.name === action.table)
-      return (
-        <>
-          <Select
-            value={action.table}
-            onValueChange={(table) => onChange({ ...action, table, values: [] })}
-          >
-            <SelectTrigger aria-label="Table où créer" className="h-8 w-64">
-              <SelectValue placeholder="Choisir une table" />
-            </SelectTrigger>
-            <SelectContent>
-              {base.tables.map((t) => (
-                <SelectItem key={t.name} value={t.name}>
-                  dans {t.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <ValueRows
-            rows={action.values}
-            targetFields={target?.fields ?? []}
-            citeFields={sourceFields}
-            onChange={(values) => onChange({ ...action, values })}
-          />
-        </>
-      )
-    }
-    case 'notify': {
-      const people = members.filter((m) => !m.disabled)
-      return (
-        <>
-          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-            {people.map((m) => (
-              <label
-                key={m.id}
-                htmlFor={`notify-${m.id}`}
-                className="flex items-center gap-1.5 text-sm"
-              >
-                <Checkbox
-                  id={`notify-${m.id}`}
-                  checked={action.users.includes(m.id)}
-                  onCheckedChange={(v) =>
-                    onChange({
-                      ...action,
-                      users:
-                        v === true
-                          ? [...action.users, m.id]
-                          : action.users.filter((u) => u !== m.id),
-                    })
-                  }
-                />
-                {m.display_name || m.email}
-              </label>
-            ))}
-          </div>
-          <div className="grid grid-cols-[180px_1fr] items-center gap-1.5">
-            <span className="text-sm text-muted-foreground">et la personne du champ</span>
-            <FieldSelect
-              fields={sourceFields.filter((f) => f.kind === 'user')}
-              value={action.userField}
-              onChange={(userField) => onChange({ ...action, userField })}
-              placeholder="Aucun champ"
-              label="Champ personne à prévenir"
-            />
-          </div>
-          <div className="flex items-start gap-1.5">
-            <Textarea
-              value={action.message}
-              onChange={(e) => onChange({ ...action, message: e.target.value })}
-              placeholder="{{nom}} est terminée"
-              aria-label="Message"
-              rows={2}
-              className="min-h-0 flex-1 resize-none text-sm"
-            />
-            <Cite
-              fields={sourceFields}
-              onCite={(token) => onChange({ ...action, message: `${action.message}${token}` })}
-            />
-          </div>
-        </>
-      )
-    }
-    case 'webhook':
-      return (
-        <>
-          <Input
-            value={action.url}
-            onChange={(e) => onChange({ ...action, url: e.target.value })}
-            aria-label="Adresse du webhook"
-            className="h-8 font-mono text-sm"
-          />
-          <p className="text-xs text-muted-foreground">
-            Un <code>POST</code> JSON : l’automatisation, le déclencheur et la ligne. Adresse
-            <code> https</code> publique seulement ; 10 secondes au plus.
-          </p>
-        </>
-      )
-    case 'slack':
-      return (
-        <SlackAction base={base} action={action} sourceFields={sourceFields} onChange={onChange} />
-      )
-  }
-}
+  const members = useMembers()
 
-/** « Envoyer sur Slack » : a connection of the base, and a message composed from the row. */
-function SlackAction({
-  base,
-  action,
-  sourceFields,
-  onChange,
-}: {
-  readonly base: DescribedBase
-  readonly action: Extract<DraftAction, { kind: 'slack' }>
-  readonly sourceFields: readonly Field[]
-  readonly onChange: (next: DraftAction) => void
-}) {
-  const [integrations, setIntegrations] = useState<readonly Integration[] | null>(null)
-  useEffect(() => {
-    let live = true
-    api
-      .integrations(base.name)
-      .then((list) => live && setIntegrations(list))
-      .catch(() => live && setIntegrations([]))
-    return () => {
-      live = false
-    }
-  }, [base.name])
-  if (integrations?.length === 0) {
+  if (selected === TRIGGER_NODE) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Aucun canal Slack n’est connecté à cette base : connectez-en un dans « Intégrations ».
-      </p>
+      <Pane
+        icon={<Zap className="size-4" />}
+        title={$t('Déclencheur')}
+        tone="bg-primary/12 text-primary"
+      >
+        <TriggerSettings draft={draft} base={base} automation={automation} onChange={onDraft} />
+        {draft.steps.length === 0 && (
+          <StepMenu onPick={(kind) => onInsert({ path: null, index: 0 }, kind)} align="start">
+            <Button variant="outline" size="sm" className="mt-6 w-full gap-1.5">
+              <Plus className="size-4" />
+              {$t('Ajouter une étape')}
+            </Button>
+          </StepMenu>
+        )}
+      </Pane>
     )
   }
-  return (
-    <>
-      <Select
-        value={action.integration}
-        onValueChange={(integration) => onChange({ ...action, integration })}
+
+  const step = findStep(draft.steps, selected)
+  if (step !== null) {
+    const where = locate(draft.steps, step.id)
+    const Icon = STEP_ICONS[step.kind]
+    return (
+      <Pane
+        icon={<Icon className="size-4" />}
+        title={STEP_LABELS[step.kind]}
+        id={step.id}
+        tone="bg-muted text-foreground"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              disabled={where === null || where.index === 0}
+              onClick={() => onSteps((s) => moveStep(s, step.id, -1))}
+              aria-label={$t('Monter l’étape')}
+              title={$t('Monter l’étape')}
+            >
+              <ArrowUp className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              disabled={where === null || where.index === where.length - 1}
+              onClick={() => onSteps((s) => moveStep(s, step.id, 1))}
+              aria-label={$t('Descendre l’étape')}
+              title={$t('Descendre l’étape')}
+            >
+              <ArrowDown className="size-4" />
+            </Button>
+            <div className="flex-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-destructive hover:text-destructive"
+              onClick={() => {
+                onSteps((s) => removeStep(s, step.id))
+                onSelect(TRIGGER_NODE)
+              }}
+            >
+              <Trash2 className="size-4" />
+              {step.kind === 'branch'
+                ? $t('Retirer la condition et ses chemins')
+                : $t('Retirer l’étape')}
+            </Button>
+          </>
+        }
       >
-        <SelectTrigger aria-label="Canal Slack" className="h-8 w-64">
-          <SelectValue placeholder="Choisir un canal" />
-        </SelectTrigger>
-        <SelectContent>
-          {(integrations ?? []).map((i) => (
-            <SelectItem key={i.id} value={i.id}>
-              {i.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <div className="flex items-start gap-1.5">
-        <Textarea
-          value={action.message}
-          onChange={(e) => onChange({ ...action, message: e.target.value })}
-          placeholder="{{nom}} vient d’être livrée"
-          aria-label="Message Slack"
-          rows={2}
-          className="min-h-0 flex-1 resize-none text-sm"
+        <StepSettings
+          step={step}
+          draft={draft}
+          base={base}
+          members={members}
+          onChange={(next) => onSteps((s) => replaceStep(s, step.id, next))}
+          onSelect={onSelect}
         />
-        <Cite
-          fields={sourceFields}
-          onCite={(token) => onChange({ ...action, message: `${action.message}${token}` })}
+      </Pane>
+    )
+  }
+
+  const found = findPath(draft.steps, selected)
+  if (found !== null) {
+    const { branch, path } = found
+    return (
+      <Pane
+        icon={<Split className="size-4" />}
+        title={path.otherwise ? $t('Chemin « Sinon »') : $t('Chemin')}
+        id={path.id}
+        tone="bg-amber-500/15 text-amber-700 dark:text-amber-300"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onClick={() => onSelect(branch.id)}>
+              {$t('Tous les chemins')}
+            </Button>
+            <div className="flex-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-destructive hover:text-destructive"
+              disabled={branch.paths.length === 1}
+              onClick={() => {
+                onSteps((s) =>
+                  replaceStep(s, branch.id, {
+                    ...branch,
+                    paths: branch.paths.filter((p) => p.id !== path.id),
+                  }),
+                )
+                onSelect(branch.id)
+              }}
+            >
+              <Trash2 className="size-4" />
+              {$t('Retirer le chemin')}
+            </Button>
+          </>
+        }
+      >
+        <PathSettings
+          path={path}
+          draft={draft}
+          base={base}
+          onChange={(next) => onSteps((s) => replacePath(s, path.id, () => next))}
         />
+        <StepMenu
+          onPick={(kind) => onInsert({ path: path.id, index: path.steps.length }, kind)}
+          align="start"
+        >
+          <Button variant="outline" size="sm" className="mt-6 w-full gap-1.5">
+            <Plus className="size-4" />
+            {$t('Ajouter une étape à ce chemin')}
+          </Button>
+        </StepMenu>
+      </Pane>
+    )
+  }
+
+  return (
+    <p className="p-6 text-center text-sm text-muted-foreground">
+      {$t('Choisissez une étape sur le flux pour la régler.')}
+    </p>
+  )
+}
+
+function Pane({
+  icon,
+  title,
+  id,
+  tone,
+  footer,
+  children,
+}: {
+  readonly icon: ReactNode
+  readonly title: string
+  readonly id?: string
+  readonly tone: string
+  readonly footer?: ReactNode
+  readonly children: ReactNode
+}) {
+  return (
+    <div className="flex min-h-full flex-col">
+      <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
+        <span className={cn('flex size-7 items-center justify-center rounded-md', tone)}>
+          {icon}
+        </span>
+        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">{title}</h2>
+        {id !== undefined && (
+          <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+            {id}
+          </span>
+        )}
       </div>
-    </>
+      <div className="flex-1 px-4 pb-4">{children}</div>
+      {footer !== undefined && (
+        <div className="sticky bottom-0 flex items-center gap-1 border-t bg-background px-2 py-2">
+          {footer}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -930,24 +824,29 @@ function SlackAction({
 function TestRun({
   base,
   automation,
+  disabled,
   onRan,
   onError,
 }: {
   readonly base: DescribedBase
   readonly automation: Automation
-  readonly onRan: () => void
+  readonly disabled: boolean
+  readonly onRan: (run: string) => void
   readonly onError: (message: string | null) => void
 }) {
   const table = base.tables.find((t) => t.id === automation.trigger.table) ?? null
   const [rows, setRows] = useState<ReadonlyArray<{ id: string; label: string }> | null>(null)
   const [busy, setBusy] = useState(false)
+  const title = disabled
+    ? $t('Enregistrez d’abord : l’essai exécute ce qui est enregistré')
+    : undefined
 
   const run = async (record: string | null) => {
     setBusy(true)
     onError(null)
     try {
-      await api.runAutomation(automation.id, record)
-      onRan()
+      const queued = await api.runAutomation(automation.id, record)
+      onRan(queued.run)
     } catch (e) {
       onError(messageFor(e))
     } finally {
@@ -969,18 +868,31 @@ function TestRun({
 
   if (table === null) {
     return (
-      <Button variant="outline" disabled={busy} onClick={() => void run(null)} className="gap-1.5">
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={busy || disabled}
+        title={title}
+        onClick={() => void run(null)}
+        className="gap-1.5"
+      >
         <Play className="size-4" />
-        Tester
+        {$t('Tester')}
       </Button>
     )
   }
   return (
     <DropdownMenu onOpenChange={(open) => open && void loadRows()}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" disabled={busy} className="gap-1.5">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={busy || disabled}
+          title={title}
+          className="gap-1.5"
+        >
           <Play className="size-4" />
-          Tester sur une ligne
+          {$t('Tester sur une ligne')}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="max-h-72 w-64 overflow-y-auto">
@@ -988,6 +900,9 @@ function TestRun({
           <div className="flex justify-center py-3">
             <Loader2 className="size-4 animate-spin text-muted-foreground" />
           </div>
+        )}
+        {rows?.length === 0 && (
+          <p className="px-2 py-3 text-sm text-muted-foreground">{$t('La table est vide.')}</p>
         )}
         {rows?.map((r) => (
           <DropdownMenuItem key={r.id} onSelect={() => void run(r.id)}>
@@ -999,71 +914,92 @@ function TestRun({
   )
 }
 
-/** The runs, newest first, action by action — read again while one is under way. */
+/** The runs, newest first; one chosen is laid over the flow, and told step by step. */
 function Runs({
-  base,
-  automation,
-  tick,
+  runs,
+  draft,
+  shown,
+  onShow,
 }: {
-  readonly base: DescribedBase
-  readonly automation: Automation
-  readonly tick: number
+  readonly runs: readonly AutomationRun[] | null
+  readonly draft: Draft
+  readonly shown: string | null
+  readonly onShow: (id: string) => void
 }) {
-  const [runs, setRuns] = useState<readonly AutomationRun[] | null>(null)
-  const load = useCallback(async () => {
-    setRuns(await api.automationRuns(base.name, automation.id).catch(() => []))
-  }, [base.name, automation.id])
-
-  useEffect(() => {
-    void tick
-    void load()
-  }, [load, tick])
-
-  const pending = useMemo(
-    () => (runs ?? []).some((r) => r.status === 'queued' || r.status === 'running'),
-    [runs],
-  )
-  useEffect(() => {
-    if (!pending) return
-    const timer = setInterval(() => void load(), 2000)
-    return () => clearInterval(timer)
-  }, [pending, load])
-
+  if (runs === null) {
+    return (
+      <div className="flex justify-center py-6">
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+  if (runs.length === 0) {
+    return (
+      <p className="p-6 text-center text-sm text-muted-foreground">
+        {$t('Pas encore d’exécution. « Tester » en lance une sur la ligne de votre choix.')}
+      </p>
+    )
+  }
   return (
-    <Section title="Exécutions" hint="Les 50 dernières, gardées 30 jours.">
-      {runs === null && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
-      {runs?.length === 0 && (
-        <p className="text-sm text-muted-foreground">Pas encore d’exécution.</p>
-      )}
-      <div className="divide-y rounded-lg border">
-        {runs?.map((run) => (
-          <div key={run.id} className="px-3 py-2 text-sm">
-            <div className="flex items-center gap-2">
-              <RunDot status={run.status} />
-              <span className="font-medium">{runSentence(run)}</span>
-              <span className="text-xs text-muted-foreground">
-                · {TRIGGER_OF_RUN[run.trigger] ?? run.trigger} · {relativeTime(run.queued_at)}
+    <div className="space-y-1 p-2">
+      <p className="px-2 pt-1 pb-2 text-xs text-muted-foreground">
+        {$t(
+          'Les 50 dernières, gardées 30 jours. Choisissez-en une pour voir, sur le flux, le chemin qu’elle a pris.',
+        )}
+      </p>
+      {runs.map((run) => {
+        const open = run.id === shown
+        const steps = open ? runStepsById(run, draft.steps) : null
+        return (
+          <div
+            key={run.id}
+            className={cn(
+              'rounded-md border',
+              open ? 'border-primary/50 bg-accent/40' : 'border-transparent',
+            )}
+          >
+            <button
+              type="button"
+              onClick={() => onShow(run.id)}
+              aria-expanded={open}
+              className="w-full rounded-md px-2 py-1.5 text-left hover:bg-accent/60"
+            >
+              <span className="flex items-center gap-2 text-sm">
+                <RunDot status={run.status} />
+                <span className="truncate font-medium">{runSentence(run)}</span>
               </span>
-            </div>
-            {run.steps.length > 0 && (
-              <ol className="mt-1 space-y-0.5 pl-4 text-xs text-muted-foreground">
-                {run.steps.map((step, i) => (
-                  <li
-                    key={`${run.id}:${i}`}
-                    className={cn(step.status === 'failed' && 'text-destructive')}
-                  >
-                    {i + 1}. {ACTION_LABELS[step.action as DraftAction['kind']] ?? step.action} —{' '}
-                    {step.status === 'succeeded' ? 'fait' : `échec (${step.error_code ?? '?'})`}
-                    {step.detail !== undefined && step.status === 'failed'
-                      ? ` : ${step.detail}`
-                      : ''}
-                  </li>
-                ))}
+              <span className="block pl-3.5 text-xs text-muted-foreground">
+                {TRIGGER_OF_RUN[run.trigger] ?? run.trigger} · {relativeTime(run.queued_at)}
+              </span>
+            </button>
+            {steps !== null && steps.size > 0 && (
+              <ol className="space-y-0.5 px-2 pb-2 pl-5.5 text-xs">
+                {[...steps].map(([id, record]) => {
+                  const step = findStep(draft.steps, id)
+                  const label =
+                    step === null
+                      ? (STEP_LABELS[(record.kind ?? record.action) as StepKind] ?? id)
+                      : STEP_LABELS[step.kind]
+                  return (
+                    <li
+                      key={id}
+                      className={cn(
+                        'flex gap-1.5',
+                        record.status === 'failed' ? 'text-destructive' : 'text-muted-foreground',
+                      )}
+                    >
+                      <span className="font-mono text-[11px]">{id}</span>
+                      <span className="min-w-0">
+                        {label} — {runStepSentence(record)}
+                      </span>
+                    </li>
+                  )
+                })}
               </ol>
             )}
           </div>
-        ))}
-      </div>
-    </Section>
+        )
+      })}
+    </div>
   )
 }

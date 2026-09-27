@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { type SignupPolicy, api } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { Check, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -64,32 +65,36 @@ export function SignupSettings() {
     <section className="rounded-lg border p-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-medium">Création de comptes</h2>
+          <h2 className="text-sm font-medium">{$t('Création de comptes')}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {policy === null
-              ? 'Chargement…'
+              ? $t('Chargement…')
               : policy.open
-                ? 'Toute personne qui atteint cette instance peut créer son compte, puis ses propres projets.'
-                : 'Seules les personnes invitées à un projet ou à une base peuvent créer un compte.'}
+                ? $t(
+                    'Toute personne qui atteint cette instance peut créer son compte, puis ses propres projets.',
+                  )
+                : $t(
+                    'Seules les personnes invitées à un projet ou à une base peuvent créer un compte.',
+                  )}
           </p>
         </div>
         <Switch
           checked={policy?.open ?? false}
           disabled={policy === null || busy}
           onCheckedChange={(open) => void save(open)}
-          aria-label="Ouvrir la création de comptes"
+          aria-label={$t('Ouvrir la création de comptes')}
         />
       </div>
 
       {policy?.open === true && (
         <div className="mt-4 grid animate-in fade-in slide-in-from-top-1 gap-2 duration-300">
-          <Label htmlFor="signup-domains">Domaines acceptés</Label>
+          <Label htmlFor="signup-domains">{$t('Domaines acceptés')}</Label>
           <div className="flex gap-2">
             <Input
               id="signup-domains"
               value={domains}
               onChange={(e) => setDomains(e.target.value)}
-              placeholder="exemple.fr, autre.fr — vide : toutes les adresses"
+              placeholder={$t('exemple.fr, autre.fr — vide : toutes les adresses')}
               disabled={busy}
               className="min-w-0 flex-1"
             />
@@ -99,7 +104,7 @@ export function SignupSettings() {
               ) : (
                 saved && <Check className="animate-in zoom-in-50 text-primary duration-200" />
               )}
-              {saved ? 'Enregistré' : 'Enregistrer'}
+              {saved ? $t('Enregistré') : $t('Enregistrer')}
             </Button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import { $t } from '@/lib/i18n'
 import { MAIN_MIN, PANEL_DEFAULTS, PANEL_MIN, type PanelKey, usePanels } from '@/lib/store/panels'
 import { cn } from '@/lib/utils'
 import { type ReactNode, useCallback, useRef } from 'react'
@@ -112,11 +113,11 @@ export function ResizablePanel({
       <div
         role="separator"
         aria-orientation="vertical"
-        aria-label={`Redimensionner ${label}`}
+        aria-label={$t('Redimensionner {label}', { label })}
         aria-valuenow={width}
         aria-valuemin={PANEL_MIN}
         tabIndex={0}
-        title="Glisser pour redimensionner — double-clic : largeur par défaut"
+        title={$t('Glisser pour redimensionner — double-clic : largeur par défaut')}
         onPointerDown={onPointerDown}
         onDoubleClick={() => reset(panel)}
         onKeyDown={onKeyDown}

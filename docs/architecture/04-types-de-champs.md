@@ -357,19 +357,38 @@ La recherche, elle, est possible : un champ long marqué `is_searchable` reçoit
 
 `img` est exclu parce que la v1 n'a pas de gestion de fichiers : une image ne pourrait être qu'une URL externe, donc un pisteur.
 
-L'assainisseur **réémet** le document : il l'analyse et le sérialise au lieu d'éditer la chaîne reçue. La sortie est canonique — balises fermées, attributs ordonnés, entités minimales — et l'opération est idempotente, ce qui se teste. C'est cette forme canonique qui est stockée, et elle seule.
+L'assainisseur **réémet** le document : il l'analyse et le sérialise au lieu d'éditer la chaîne reçue. La sortie est canonique — balises fermées, attributs réduits à ceux du profil, entités minimales — et l'opération est idempotente, ce qui se teste. C'est cette forme canonique qui est stockée, et elle seule. Un document dont il ne reste rien à lire — `<p></p>`, ce que rend un éditeur vidé — est stocké `NULL`, comme tout texte vide (§1.3).
 
 **Garde-fou contre l'écriture SQL directe.** Un humain qui écrit `UPDATE … SET description = '<script>…'` contourne l'assainisseur. La contrainte `ck_<table>__<colonne>__format` refuse les formes les plus dangereuses :
 
 ```sql
 CHECK (
-     "description" !~* '<\s*/?\s*(script|iframe|object|embed|style|link|meta|svg|form|img|base|frame|frameset|applet|math)\b'
+     "description" !~* '<\s*/?\s*(script|iframe|object|embed|style|link|meta|svg|form|img|base|frame|frameset|applet|math)\y'
  AND "description" !~* '\son[a-z]+\s*='
  AND "description" !~* 'javascript\s*:'
 )
 ```
 
-L'alternance couvre `img`, premier vecteur réel (`<img src=x onerror=…>`), et les deux motifs supplémentaires attrapent un attribut événementiel posé sur une balise pourtant autorisée ainsi qu'une URL `javascript:` dans un `href`. La forme canonique produite par l'assainisseur ne contient jamais aucun de ces motifs — il échappe `<script` en `&lt;script` —, la contrainte ne peut donc refuser qu'une écriture directe. **Ce n'est pas une politique de sécurité, c'est un garde-fou** : une contrainte `CHECK` ne remplacera jamais un analyseur HTML. Deux mesures la complètent : la réconciliation repasse l'assainisseur sur un échantillon des valeurs riches et signale les divergences comme une dérive ; et l'API marque le champ `"format": "html"` dans OpenAPI comme dans la description MCP, l'interface rendant ces valeurs dans un conteneur à politique de contenu restreinte.
+`\y` et non `\b` : dans une expression rationnelle de PostgreSQL, `\b` désigne le caractère retour arrière, et la limite de mot s'écrit `\y`. Écrite avec `\b`, la première branche ne refusait rien.
+
+L'alternance couvre `img`, premier vecteur réel (`<img src=x onerror=…>`), et les deux motifs supplémentaires attrapent un attribut événementiel posé sur une balise pourtant autorisée ainsi qu'une URL `javascript:` dans un `href`. La forme canonique produite par l'assainisseur ne contient jamais aucun de ces motifs, la contrainte ne peut donc refuser qu'une écriture directe : une balise interdite est retirée (avec son contenu pour `script` et `style`), un `<` du texte devient `&lt;`, et comme la contrainte lit le texte **entier**, une phrase ordinaire qui en reproduirait un motif — « javascript: », « online = oui » — voit son deux-points ou son signe égal écrit en entité (`&#58;`, `&#61;`), identique une fois rendu. **Ce n'est pas une politique de sécurité, c'est un garde-fou** : une contrainte `CHECK` ne remplacera jamais un analyseur HTML. Deux mesures la complètent : la réconciliation repasse l'assainisseur sur un échantillon des valeurs riches et signale les divergences comme une dérive ; et l'API marque le champ `"format": "html"` dans OpenAPI comme dans la description MCP, l'interface reconstruisant ces valeurs élément par élément sur la liste du profil, sans jamais les insérer comme HTML (chapitre 11 §3.2).
+
+**Mise en œuvre.** La variante se choisit **à la création** du champ — `"rich": true` sur `POST …/fields`, refusé hors `long_text` (`REQUEST_INVALID`, `reason: "texte_long_seul"`) — et ne se change pas ensuite : passer un texte Markdown en HTML ou l'inverse réinterpréterait chaque valeur stockée. La description de la table la signale par `"unsafe_html": true`. L'assainisseur est `sanitize-html`, seule dépendance que la variante ajoute au noyau (chapitre 10 §10) ; l'éditeur de l'interface est Tiptap (licence MIT), dont le schéma **est** le profil : ce qui ne peut pas être stocké n'est pas proposé (chapitre 11 §3.2). Un champ riche ne peut pas être calculé par l'IA (`REQUEST_INVALID`, `reason: "type_sans_ia"`) : un modèle écrit du texte, pas du HTML assaini.
+
+#### Variables
+
+Un texte long — simple ou riche — peut **citer une colonne de sa propre ligne** : `{{nom_physique}}`. « Livraison prévue le {{date_livraison}} à {{ville}}. »
+
+- **La colonne garde la citation telle qu'écrite.** Le SQL direct lit `{{ville}}` : c'est le texte qu'une personne a écrit, et la valeur citée n'est dupliquée nulle part (§1.1).
+- **Toute lecture du produit sert le texte avec la valeur à sa place** : API REST, MCP, vues partagées, automatisations, copilote — tous passent par la lecture de liste du noyau, qui résout les citations de la page lue. La lecture brute se demande par `variables=raw` (chapitre 08 §3.1) : c'est ce qu'ouvre un éditeur, et ce que lit la synchronisation entre environnements.
+- **La valeur est celle que voit le lecteur.** Une colonne qu'il ne peut pas lire ne donne **rien** — ni sa valeur, ni son nom : la citation disparaît, exactement comme un champ masqué (chapitre 08 I3). Une citation qui ne nomme aucune colonne vivante reste telle quelle : ce n'est que du texte.
+- **La valeur se lit comme à l'écran** : un lien par sa valeur d'affichage, un choix par son libellé, une personne par son nom, un booléen par « oui » / « non », une date dans l'ordre et un horodatage dans le fuseau du lecteur (réglages de son compte), un document par son nom, un texte riche cité par ses seuls mots.
+- **Une seule passe, sans enchaînement** : un texte long cité dans un autre y entre privé de ses propres citations, si bien qu'aucun cycle ne peut se former.
+- **Dans un texte riche, ce qui est inséré est échappé** : une valeur n'est jamais du balisage, et la valeur `<b>gras</b>` se lit en toutes lettres.
+
+*Alternative rejetée* : remplacer les citations **à l'écriture** — le texte stocké serait lisible en SQL, mais figé à la valeur du jour de l'écriture : changer la ville n'aurait rien changé au texte, ce qui est l'inverse de ce qu'on attend d'une variable. *Alternative rejetée* : les résoudre dans l'interface seule — l'API, les agents et les vues partagées auraient servi `{{ville}}` à qui ne sait pas le lire.
+
+Limites connues : une réponse d'écriture (`POST`, `PATCH`) rend la ligne telle que stockée, citations comprises ; un webhook porte la valeur stockée, comme toute capture par déclencheur ; et le renommage physique d'une colonne ne réécrit pas les citations qui la nomment — elles restent alors du texte, comme une citation inconnue.
 
 ### 2.3 `number` — `numeric(precision, scale)`
 

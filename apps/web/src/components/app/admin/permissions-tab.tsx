@@ -16,6 +16,7 @@ import {
   type Group,
   api,
 } from '@/lib/api/client'
+import { $t, groupName } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import {
@@ -48,10 +49,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 type Level = AccessLevel | 'granular'
 
 const LEVELS: ReadonlyArray<{ id: AccessLevel; label: string; hint: string }> = [
-  { id: 'none', label: 'Aucun accès', hint: 'Invisible' },
-  { id: 'read', label: 'Lecture', hint: 'Voir les lignes' },
-  { id: 'edit', label: 'Édition', hint: 'Créer, modifier, supprimer des lignes' },
-  { id: 'manage', label: 'Gestion', hint: 'Et changer la structure, créer des jetons' },
+  { id: 'none', label: $t('Aucun accès'), hint: $t('Invisible') },
+  { id: 'read', label: $t('Lecture'), hint: $t('Voir les lignes') },
+  { id: 'edit', label: $t('Édition'), hint: $t('Créer, modifier, supprimer des lignes') },
+  { id: 'manage', label: $t('Gestion'), hint: $t('Et changer la structure, créer des jetons') },
 ]
 
 const DOT: Readonly<Record<Level, string>> = {
@@ -63,11 +64,11 @@ const DOT: Readonly<Record<Level, string>> = {
 }
 
 const LABEL: Readonly<Record<Level, string>> = {
-  none: 'Aucun accès',
-  read: 'Lecture',
-  edit: 'Édition',
-  manage: 'Gestion',
-  granular: 'Granulaire',
+  none: $t('Aucun accès'),
+  read: $t('Lecture'),
+  edit: $t('Édition'),
+  manage: $t('Gestion'),
+  granular: $t('Granulaire'),
 }
 
 type Scope = { readonly kind: 'project' | 'base' | 'table'; readonly id: string }
@@ -149,12 +150,11 @@ export function PermissionsTab({
   return (
     <div className="mx-auto max-w-5xl space-y-4 px-6 py-6">
       <div>
-        <h1 className="text-lg font-semibold">Permissions</h1>
+        <h1 className="text-lg font-semibold">{$t('Permissions')}</h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
-          Le niveau accordé à un groupe sur un projet vaut pour toutes ses bases et toutes leurs
-          tables, y compris celles créées plus tard. Les droits s’additionnent : une personne reçoit
-          le niveau le plus élevé que lui donne l’un de ses groupes. Sous une table, « Champs »
-          masque une colonne à un groupe ou la rend non modifiable pour lui.
+          {$t(
+            'Le niveau accordé à un groupe sur un projet vaut pour toutes ses bases et toutes leurs tables, y compris celles créées plus tard. Les droits s’additionnent : une personne reçoit le niveau le plus élevé que lui donne l’un de ses groupes. Sous une table, « Champs » masque une colonne à un groupe ou la rend non modifiable pour lui.',
+          )}
         </p>
       </div>
 
@@ -192,19 +192,22 @@ export function PermissionsTab({
             <header className="flex items-center gap-2 border-b bg-muted/40 px-4 py-2.5">
               <span className="text-sm font-semibold">{group?.label ?? '—'}</span>
               <div className="flex-1" />
-              <span className="text-xs text-muted-foreground">Accès aux données</span>
+              <span className="text-xs text-muted-foreground">{$t('Accès aux données')}</span>
             </header>
 
             {locked && (
               <p className="flex items-center gap-2 border-b px-4 py-2.5 text-xs text-muted-foreground">
                 <Lock className="size-3.5" />
-                Les administrateurs ont tous les droits, partout : leur niveau ne se règle pas.
+                {$t(
+                  'Les administrateurs ont tous les droits, partout : leur niveau ne se règle pas.',
+                )}
               </p>
             )}
             {group?.system === 'everyone' && (
               <p className="border-b bg-amber-500/5 px-4 py-2.5 text-xs text-muted-foreground">
-                Ce que reçoit « Tous les utilisateurs », chaque compte l’a, quels que soient ses
-                autres groupes. Pour réserver un accès, accordez-le plutôt à un groupe dédié.
+                {$t(
+                  'Ce que reçoit « Tous les utilisateurs », chaque compte l’a, quels que soient ses autres groupes. Pour réserver un accès, accordez-le plutôt à un groupe dédié.',
+                )}
               </p>
             )}
 
@@ -271,7 +274,7 @@ export function PermissionsTab({
                       })}
                     {pOpen && project.bases.length === 0 && (
                       <p className="border-b py-2 pr-4 pl-12 text-xs text-muted-foreground">
-                        Aucune base dans ce projet.
+                        {$t('Aucune base dans ce projet.')}
                       </p>
                     )}
                   </li>
@@ -279,7 +282,7 @@ export function PermissionsTab({
               })}
               {graph.projects.length === 0 && (
                 <li className="px-4 py-6 text-center text-sm text-muted-foreground">
-                  Aucun projet.
+                  {$t('Aucun projet.')}
                 </li>
               )}
             </ul>
@@ -341,7 +344,7 @@ function GroupList({
             )}
           >
             <Users className="size-4 shrink-0 text-muted-foreground" />
-            <span className="min-w-0 flex-1 truncate">{g.label}</span>
+            <span className="min-w-0 flex-1 truncate">{groupName(g.label)}</span>
             {g.system === 'admins' && <Lock className="size-3 text-muted-foreground" />}
             <span className="text-xs tabular-nums text-muted-foreground">{g.member_count}</span>
           </button>
@@ -395,7 +398,7 @@ function Row({
         <button
           type="button"
           onClick={onToggle}
-          aria-label={open ? `Replier ${label}` : `Déplier ${label}`}
+          aria-label={open ? $t('Replier {label}', { label }) : $t('Déplier {label}', { label })}
           aria-expanded={open}
           className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
         >
@@ -407,17 +410,17 @@ function Row({
         {label}
       </span>
 
-      {inherited && <span className="text-[11px] text-muted-foreground">hérité</span>}
+      {inherited && <span className="text-[11px] text-muted-foreground">{$t('hérité')}</span>}
       {saving && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
       {onFields !== undefined && (
         <button
           type="button"
           onClick={onFields}
-          aria-label={`Droits des champs de ${label}`}
+          aria-label={$t('Droits des champs de {label}', { label })}
           className="flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           <Columns3 className="size-3.5" />
-          Champs
+          {$t('Champs')}
         </button>
       )}
 
@@ -426,7 +429,10 @@ function Row({
         onValueChange={(value) => value !== 'granular' && onLevel(value as AccessLevel)}
         disabled={locked || saving}
       >
-        <SelectTrigger className="h-8 w-40 shrink-0 text-xs" aria-label={`Niveau sur ${label}`}>
+        <SelectTrigger
+          className="h-8 w-40 shrink-0 text-xs"
+          aria-label={$t('Niveau sur {label}', { label })}
+        >
           <SelectValue>
             <span className="flex items-center gap-2">
               <span className={cn('size-2 rounded-full', DOT[level])} />
@@ -447,7 +453,7 @@ function Row({
             <SelectItem value="granular" disabled>
               <span className="flex items-center gap-2">
                 <span className={cn('size-2 rounded-full', DOT.granular)} />
-                Granulaire
+                {$t('Granulaire')}
               </span>
             </SelectItem>
           )}

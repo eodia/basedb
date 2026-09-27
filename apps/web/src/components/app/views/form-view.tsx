@@ -8,6 +8,7 @@ import { PanelField, emptyDraft, writeValues } from '@/components/app/record-pan
 import { Unavailable } from '@/components/app/views/kanban-view'
 import { Button } from '@/components/ui/button'
 import { type Field, type LinkOption, type Table, api, filesOf } from '@/lib/api/client'
+import { $t, $tp } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import type { FormQuestion, FormSpec } from '@/lib/views'
@@ -109,7 +110,7 @@ export function FormView({
       <div className="absolute top-3 right-4 z-10">
         <Button variant="outline" size="sm" onClick={onShare} className="bg-background">
           <Share2 className="size-4" />
-          Partager
+          {$t('Partager')}
         </Button>
       </div>
     )
@@ -118,8 +119,10 @@ export function FormView({
       <div className="relative flex min-h-0 flex-1 flex-col">
         {share}
         <Unavailable>
-          Vous ne pouvez pas ajouter de lignes à « {table.label} » : ce formulaire ne vous est pas
-          ouvert.
+          {$t(
+            'Vous ne pouvez pas ajouter de lignes à « {label} » : ce formulaire ne vous est pas ouvert.',
+            { label: table.label },
+          )}
         </Unavailable>
       </div>
     )
@@ -200,8 +203,9 @@ export function FormFill({
   if (questions.length === 0) {
     return (
       <Unavailable>
-        Ce formulaire ne pose plus aucune question que vous puissiez remplir : ses champs ont été
-        supprimés, ou ne vous sont pas ouverts.
+        {$t(
+          'Ce formulaire ne pose plus aucune question que vous puissiez remplir : ses champs ont été supprimés, ou ne vous sont pas ouverts.',
+        )}
       </Unavailable>
     )
   }
@@ -235,15 +239,17 @@ export function FormFill({
       setMissing(new Set(lacking.map((q) => q.field.name)))
       setError(
         lacking.length === 1
-          ? `« ${lacking[0]?.label} » est obligatoire.`
-          : `${lacking.length} questions obligatoires sont sans réponse.`,
+          ? $t('« {label} » est obligatoire.', { label: lacking[0]?.label })
+          : $t('{lackingCount} questions obligatoires sont sans réponse.', {
+              lackingCount: lacking.length,
+            }),
       )
       if (kind === 'survey') setStep(questions.findIndex((q) => q === lacking[0]))
       return
     }
     const values = writeValues(writable, latest.current)
     if (Object.keys(values).length === 0) {
-      setError('Répondez à au moins une question.')
+      setError($t('Répondez à au moins une question.'))
       return
     }
     setBusy(true)
@@ -295,12 +301,12 @@ export function FormFill({
           <CheckCircle2 className="size-10 text-primary" />
           <p className="max-w-md whitespace-pre-line text-base">
             {spec.success_message.trim() === ''
-              ? 'Merci, votre réponse a été enregistrée.'
+              ? $t('Merci, votre réponse a été enregistrée.')
               : spec.success_message}
           </p>
           {spec.allow_another && (
             <Button variant="outline" onClick={restart} className="mt-2">
-              Envoyer une autre réponse
+              {$t('Envoyer une autre réponse')}
             </Button>
           )}
         </div>
@@ -308,7 +314,7 @@ export function FormFill({
     )
   }
 
-  const submitLabel = spec.submit_label.trim() === '' ? 'Envoyer' : spec.submit_label
+  const submitLabel = spec.submit_label.trim() === '' ? $t('Envoyer') : spec.submit_label
 
   if (kind === 'form') {
     return (
@@ -322,7 +328,7 @@ export function FormFill({
           )}
           {respondent != null && (
             <p className="mt-3 text-xs text-muted-foreground">
-              Vous répondez en tant que{' '}
+              {$t('Vous répondez en tant que')}{' '}
               <span className="font-medium text-foreground">{respondent}</span>.
             </p>
           )}
@@ -351,7 +357,7 @@ export function FormFill({
   const next = () => {
     if (current !== undefined && unanswered([current]).length > 0) {
       setMissing(new Set([current.field.name]))
-      setError(`« ${current.label} » est obligatoire.`)
+      setError($t('« {label} » est obligatoire.', { label: current.label }))
       return
     }
     setError(null)
@@ -378,11 +384,11 @@ export function FormFill({
             </p>
           )}
           <p className="text-sm text-muted-foreground">
-            {questions.length} question{questions.length > 1 ? 's' : ''}
+            {$tp(questions.length, '{count} question', '{count} questions')}
           </p>
           <div>
             <Button size="lg" onClick={() => setStep(0)} autoFocus>
-              Commencer
+              {$t('Commencer')}
               <ArrowRight className="size-4" />
             </Button>
           </div>
@@ -410,16 +416,16 @@ export function FormFill({
               ) : last ? (
                 <Send className="size-4" />
               ) : null}
-              {last ? submitLabel : 'Suivant'}
+              {last ? submitLabel : $t('Suivant')}
               {!last && <ArrowRight className="size-4" />}
             </Button>
             <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:flex">
-              ou Entrée <CornerDownLeft className="size-3" />
+              {$t('ou Entrée')} <CornerDownLeft className="size-3" />
             </span>
             <div className="flex-1" />
             <Button variant="ghost" onClick={() => setStep((s) => s - 1)} disabled={busy}>
               <ArrowLeft className="size-4" />
-              Précédent
+              {$t('Précédent')}
             </Button>
           </div>
           {error !== null && (
@@ -459,7 +465,7 @@ function QuestionBlock({
       <p className={cn('font-medium', large ? 'text-lg' : 'text-sm')}>
         {question.label}
         {question.required && (
-          <span className="ml-0.5 text-destructive" title="Obligatoire">
+          <span className="ml-0.5 text-destructive" title={$t('Obligatoire')}>
             *
           </span>
         )}

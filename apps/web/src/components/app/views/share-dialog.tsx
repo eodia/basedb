@@ -23,6 +23,7 @@ import {
   calendarFeedUrl,
   sharedViewApiUrl,
 } from '@/lib/api/client'
+import { $t, $tp, groupName, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import {
@@ -52,14 +53,14 @@ import { type ReactNode, useCallback, useEffect, useState } from 'react'
  * is READ at `/v/<jeton>` (§10), and may be framed by another site.
  */
 
-const DATE = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })
+const DATE = new Intl.DateTimeFormat(intlLocale(), { dateStyle: 'medium', timeStyle: 'short' })
 
 const STATE: Readonly<Record<ShareState, { label: string; tone: string }>> = {
-  open: { label: 'Ouvert', tone: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300' },
-  inactive: { label: 'Désactivé', tone: 'bg-muted text-muted-foreground' },
-  closed: { label: 'Fermé', tone: 'bg-muted text-muted-foreground' },
-  full: { label: 'Complet', tone: 'bg-amber-500/15 text-amber-800 dark:text-amber-300' },
-  authority: { label: 'Suspendu', tone: 'bg-rose-500/15 text-rose-800 dark:text-rose-300' },
+  open: { label: $t('Ouvert'), tone: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300' },
+  inactive: { label: $t('Désactivé'), tone: 'bg-muted text-muted-foreground' },
+  closed: { label: $t('Fermé'), tone: 'bg-muted text-muted-foreground' },
+  full: { label: $t('Complet'), tone: 'bg-amber-500/15 text-amber-800 dark:text-amber-300' },
+  authority: { label: $t('Suspendu'), tone: 'bg-rose-500/15 text-rose-800 dark:text-rose-300' },
 }
 
 /** `2026-10-01T18:00:00.000Z` → the value of a `datetime-local` input, in local time. */
@@ -81,17 +82,20 @@ export function shareUrl(token: string, kind: ViewKind = 'form'): string {
 export const embedCode = (url: string, title: string) =>
   `<iframe src="${url}?embed=1" title="${title.replace(/"/g, '&quot;')}" width="100%" height="560" style="border:1px solid #e5e7eb;border-radius:8px" loading="lazy"></iframe>`
 
-function AccessChoice({
+export function AccessChoice({
   value,
   onChange,
   disabled,
   reading,
+  subject = $t('la vue'),
 }: {
   readonly value: ShareAccess
   readonly onChange: (value: ShareAccess) => void
   readonly disabled: boolean
   /** A view to read, not a form to answer: the words change. */
   readonly reading: boolean
+  /** What is read, in the sentences: « la vue », « le tableau de bord ». */
+  readonly subject?: string
 }) {
   const choices: ReadonlyArray<{
     value: ShareAccess
@@ -102,23 +106,23 @@ function AccessChoice({
     {
       value: 'public',
       icon: Globe,
-      title: 'Public',
+      title: $t('Public'),
       text: reading
-        ? 'Toute personne qui a le lien lit la vue, sans compte.'
-        : 'Toute personne qui a le lien répond, sans compte.',
+        ? $t('Toute personne qui a le lien lit {subject}, sans compte.', { subject })
+        : $t('Toute personne qui a le lien répond, sans compte.'),
     },
     {
       value: 'members',
       icon: Users,
-      title: 'Membres connectés',
+      title: $t('Membres connectés'),
       text: reading
-        ? 'La personne se connecte d’abord pour lire la vue.'
-        : 'La personne se connecte d’abord ; sa réponse porte son nom.',
+        ? $t('La personne se connecte d’abord pour lire {subject}.', { subject })
+        : $t('La personne se connecte d’abord ; sa réponse porte son nom.'),
     },
   ]
   return (
     <fieldset className="grid gap-2 sm:grid-cols-2">
-      <legend className="sr-only">{reading ? 'Qui peut lire' : 'Qui peut répondre'}</legend>
+      <legend className="sr-only">{reading ? $t('Qui peut lire') : $t('Qui peut répondre')}</legend>
       {choices.map((choice) => (
         <label
           key={choice.value}
@@ -153,7 +157,7 @@ function AccessChoice({
 }
 
 /** An address to copy, with what it is for. */
-function CopyRow({
+export function CopyRow({
   icon,
   hint,
   value,
@@ -305,17 +309,20 @@ export function ShareFormDialog({
     <Dialog open={view !== null} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Partager « {view?.label} »</DialogTitle>
+          <DialogTitle>{$t('Partager « {label} »', { label: view?.label })}</DialogTitle>
           <DialogDescription>
             {reading ? (
               <>
-                Lire ne demande aucun droit sur la table : le lien montre les lignes et les champs
-                de la vue, avec son filtre et son tri, sans rien permettre d’y changer.
+                {$t(
+                  'Lire ne demande aucun droit sur la table : le lien montre les lignes et les champs de la vue, avec son filtre et son tri, sans rien permettre d’y changer.',
+                )}
               </>
             ) : (
               <>
-                Répondre ne demande aucun droit sur la table : chaque réponse ajoute une ligne à «{' '}
-                {table.label} », et rien d’autre de la table n’est montré.
+                {$t(
+                  'Répondre ne demande aucun droit sur la table : chaque réponse ajoute une ligne à « {label} », et rien d’autre de la table n’est montré.',
+                  { label: table.label },
+                )}
               </>
             )}
           </DialogDescription>
@@ -340,14 +347,16 @@ export function ShareFormDialog({
                   </span>
                   <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                     {reading
-                      ? 'Lecture seule'
-                      : `${share.response_count} réponse${share.response_count > 1 ? 's' : ''}`}
+                      ? $t('Lecture seule')
+                      : $tp(share.response_count, '{count} réponse', '{count} réponses')}
                     {!reading &&
                       share.last_response_at !== null &&
-                      ` · dernière le ${DATE.format(new Date(share.last_response_at))}`}
+                      $t(' · dernière le {format}', {
+                        format: DATE.format(new Date(share.last_response_at)),
+                      })}
                   </span>
                   <Label htmlFor="share-active" className="text-xs font-normal">
-                    Lien actif
+                    {$t('Lien actif')}
                   </Label>
                   <Switch
                     id="share-active"
@@ -364,7 +373,7 @@ export function ShareFormDialog({
                     readOnly
                     value={url ?? 'Lien illisible : régénérez-le.'}
                     onFocus={(e) => e.currentTarget.select()}
-                    aria-label={reading ? 'Lien de la vue' : 'Lien du formulaire'}
+                    aria-label={reading ? $t('Lien de la vue') : $t('Lien du formulaire')}
                     className="h-8 font-mono text-xs"
                   />
                   <Button
@@ -372,8 +381,8 @@ export function ShareFormDialog({
                     size="icon-sm"
                     onClick={() => void copy('link')}
                     disabled={url === null}
-                    aria-label="Copier le lien"
-                    title="Copier le lien"
+                    aria-label={$t('Copier le lien')}
+                    title={$t('Copier le lien')}
                   >
                     {copied === 'link' ? <Check className="size-4" /> : <Copy className="size-4" />}
                   </Button>
@@ -382,8 +391,8 @@ export function ShareFormDialog({
                     size="icon-sm"
                     asChild={url !== null}
                     disabled={url === null}
-                    aria-label={reading ? 'Ouvrir la vue' : 'Ouvrir le formulaire'}
-                    title={reading ? 'Ouvrir la vue' : 'Ouvrir le formulaire'}
+                    aria-label={reading ? $t('Ouvrir la vue') : $t('Ouvrir le formulaire')}
+                    title={reading ? $t('Ouvrir la vue') : $t('Ouvrir le formulaire')}
                   >
                     {url === null ? (
                       <ExternalLink className="size-4" />
@@ -397,11 +406,12 @@ export function ShareFormDialog({
                 {renewing ? (
                   <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5 text-xs">
                     <span className="min-w-0 flex-1">
-                      L’ancien lien cessera de fonctionner immédiatement, pour tous ceux qui l’ont
-                      reçu.
+                      {$t(
+                        'L’ancien lien cessera de fonctionner immédiatement, pour tous ceux qui l’ont reçu.',
+                      )}
                     </span>
                     <Button variant="ghost" size="sm" onClick={() => setRenewing(false)}>
-                      Annuler
+                      {$t('Annuler')}
                     </Button>
                     <Button
                       size="sm"
@@ -413,7 +423,7 @@ export function ShareFormDialog({
                         }
                       }}
                     >
-                      Régénérer
+                      {$t('Régénérer')}
                     </Button>
                   </div>
                 ) : (
@@ -423,33 +433,36 @@ export function ShareFormDialog({
                     className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                   >
                     <RefreshCw className="size-3" />
-                    Régénérer le lien
+                    {$t('Régénérer le lien')}
                   </button>
                 )}
                 {share.state === 'authority' && (
                   <p className="text-xs text-rose-700 dark:text-rose-400">
-                    {share.published_by.name ?? 'La personne qui l’a publié'}
-                    {reading
-                      ? ' ne peut plus lire cette table : la vue partagée est suspendue.'
-                      : ' ne peut plus ajouter de lignes à cette table : le formulaire est suspendu.'}{' '}
-                    Enregistrez pour en devenir la personne qui publie.
+                    {$t('{value}{value2} Enregistrez pour en devenir la personne qui publie.', {
+                      value: share.published_by.name ?? $t('La personne qui l’a publié'),
+                      value2: reading
+                        ? $t(' ne peut plus lire cette table : la vue partagée est suspendue.')
+                        : $t(
+                            ' ne peut plus ajouter de lignes à cette table : le formulaire est suspendu.',
+                          ),
+                    })}
                   </p>
                 )}
               </div>
             )}
 
             <div className="space-y-2">
-              <Label>{reading ? 'Qui peut lire' : 'Qui peut répondre'}</Label>
+              <Label>{reading ? $t('Qui peut lire') : $t('Qui peut répondre')}</Label>
               <AccessChoice value={access} onChange={setAccess} disabled={busy} reading={reading} />
             </div>
 
             {access === 'members' && (sharing?.groups.length ?? 0) > 0 && (
               <div className="space-y-2">
-                <Label>Réservé aux groupes</Label>
+                <Label>{$t('Réservé aux groupes')}</Label>
                 <p className="text-xs text-muted-foreground">
                   {reading
-                    ? 'Aucun coché : tout membre connecté lit la vue.'
-                    : 'Aucun coché : tout membre connecté répond.'}
+                    ? $t('Aucun coché : tout membre connecté lit la vue.')
+                    : $t('Aucun coché : tout membre connecté répond.')}
                 </p>
                 <div className="grid gap-1.5 sm:grid-cols-2">
                   {sharing?.groups.map((group) => (
@@ -471,7 +484,7 @@ export function ShareFormDialog({
                           })
                         }
                       />
-                      <span className="truncate">{group.label}</span>
+                      <span className="truncate">{groupName(group.label)}</span>
                     </label>
                   ))}
                 </div>
@@ -491,14 +504,14 @@ export function ShareFormDialog({
                     }}
                   />
                   <Label htmlFor="share-embed" className="font-normal">
-                    Autoriser l’intégration à un autre site
+                    {$t('Autoriser l’intégration à un autre site')}
                   </Label>
                 </div>
                 {share?.can_embed === true && code !== null && (
                   <div className="space-y-1.5">
                     <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Code2 className="size-3.5" />
-                      Code à coller dans la page qui intègre la vue :
+                      {$t('Code à coller dans la page qui intègre la vue :')}
                     </p>
                     <div className="flex items-start gap-2">
                       <textarea
@@ -506,15 +519,15 @@ export function ShareFormDialog({
                         value={code}
                         rows={3}
                         onFocus={(e) => e.currentTarget.select()}
-                        aria-label="Code d’intégration"
+                        aria-label={$t('Code d’intégration')}
                         className="min-w-0 flex-1 resize-none rounded-md border bg-muted/40 px-2 py-1.5 font-mono text-[11px] leading-snug"
                       />
                       <Button
                         variant="outline"
                         size="icon-sm"
                         onClick={() => void copy('code')}
-                        aria-label="Copier le code"
-                        title="Copier le code"
+                        aria-label={$t('Copier le code')}
+                        title={$t('Copier le code')}
                       >
                         {copied === 'code' ? (
                           <Check className="size-4" />
@@ -531,9 +544,11 @@ export function ShareFormDialog({
             {feed !== null && (
               <CopyRow
                 icon={<CalendarDays className="size-3.5" />}
-                hint="Flux iCalendar, pour s’abonner à la vue depuis Google Agenda (« Autres agendas » → « À partir de l’URL »), Outlook ou Calendrier :"
+                hint={$t(
+                  'Flux iCalendar, pour s’abonner à la vue depuis Google Agenda (« Autres agendas » → « À partir de l’URL »), Outlook ou Calendrier :',
+                )}
                 value={feed}
-                label="Adresse du flux d’agenda"
+                label={$t('Adresse du flux d’agenda')}
                 copied={copied === 'feed'}
                 onCopy={() => void copy('feed')}
               />
@@ -541,9 +556,9 @@ export function ShareFormDialog({
             {apiUrl !== null && (
               <CopyRow
                 icon={<RefreshCw className="size-3.5" />}
-                hint="Adresse de l’API de la vue, pour la synchroniser dans une autre base :"
+                hint={$t('Adresse de l’API de la vue, pour la synchroniser dans une autre base :')}
                 value={apiUrl}
-                label="Adresse de l’API de la vue"
+                label={$t('Adresse de l’API de la vue')}
                 copied={copied === 'api'}
                 onCopy={() => void copy('api')}
               />
@@ -552,7 +567,7 @@ export function ShareFormDialog({
             {!reading && (
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="share-closes">Fermer le</Label>
+                  <Label htmlFor="share-closes">{$t('Fermer le')}</Label>
                   <Input
                     id="share-closes"
                     type="datetime-local"
@@ -563,13 +578,13 @@ export function ShareFormDialog({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="share-max">Nombre maximal de réponses</Label>
+                  <Label htmlFor="share-max">{$t('Nombre maximal de réponses')}</Label>
                   <Input
                     id="share-max"
                     inputMode="numeric"
                     value={maxResponses}
                     onChange={(e) => setMaxResponses(e.target.value)}
-                    placeholder="Illimité"
+                    placeholder={$t('Illimité')}
                     disabled={busy}
                     className={cn('h-8', !maxOk && 'border-destructive')}
                   />
@@ -581,7 +596,7 @@ export function ShareFormDialog({
               <div className="space-y-1 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
                 <p className="flex items-center gap-1.5 font-medium">
                   <AlertTriangle className="size-3.5 text-amber-500" />
-                  Questions non posées par le lien
+                  {$t('Questions non posées par le lien')}
                 </p>
                 {sharing?.omitted.map((o) => (
                   <p key={o.field} className="text-muted-foreground">
@@ -593,11 +608,13 @@ export function ShareFormDialog({
 
             {share !== null && (
               <p className="text-xs text-muted-foreground">
-                {reading ? 'Les lignes se lisent' : 'Les réponses s’écrivent'} avec les droits de{' '}
+                {$t('{value} avec les droits de', {
+                  value: reading ? $t('Les lignes se lisent') : $t('Les réponses s’écrivent'),
+                })}{' '}
                 <span className="font-medium text-foreground">
-                  {share.published_by.name ?? 'la personne qui l’a publié'}
+                  {share.published_by.name ?? $t('la personne qui l’a publié')}
                 </span>
-                , qui a enregistré ce partage en dernier.
+                {$t(', qui a enregistré ce partage en dernier.')}
               </p>
             )}
 
@@ -623,18 +640,18 @@ export function ShareFormDialog({
                 })
               }}
             >
-              Arrêter le partage
+              {$t('Arrêter le partage')}
             </Button>
           ) : (
             <span />
           )}
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose} disabled={busy}>
-              Fermer
+              {$t('Fermer')}
             </Button>
             <Button onClick={() => void save()} disabled={busy || !maxOk || sharing === null}>
               {busy && <Loader2 className="size-4 animate-spin" />}
-              {share === null ? 'Créer le lien' : 'Enregistrer'}
+              {share === null ? $t('Créer le lien') : $t('Enregistrer')}
             </Button>
           </div>
         </DialogFooter>

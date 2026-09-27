@@ -520,7 +520,7 @@ function agentSections(base: ProjectedBase): DocSection[] {
       '',
       ...(mintsTokens
         ? [
-            'Dans l’interface, menu « ⋯ » de la base → **Jetons API et MCP…**, accès **MCP** coché.',
+            'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché.',
             'Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit',
             'explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché',
             'aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).',
@@ -927,7 +927,7 @@ export function toDocumentation(base: ProjectedBase, tenantRef: string): Documen
       '',
       ...(base.baseActions.includes('manage_tokens')
         ? [
-            'Pour en créer un : menu « ⋯ » de la base → **Jetons API et MCP…**, accès **API REST**',
+            'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST**',
             'coché. Il n’est affiché qu’une fois.',
           ]
         : callout(

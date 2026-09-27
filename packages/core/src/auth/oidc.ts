@@ -108,6 +108,13 @@ interface Exchange {
   readonly redirectUri: string
   readonly returnTo: string
   readonly expiresAt: number
+  /**
+   * Present when the exchange LINKS an identity instead of signing in: the session that
+   * opened it, elevated at that moment. The return from the provider is a cross-site
+   * navigation, which the `SameSite=Strict` session cookie does not ride — so the
+   * exchange carries the session itself, sealed, and the return re-reads it.
+   */
+  readonly linkSession?: string
 }
 
 /**
@@ -120,7 +127,13 @@ interface Exchange {
 export async function startOidc(
   instanceKey: string,
   provider: OidcProvider,
-  request: { readonly redirectUri: string; readonly returnTo?: string; readonly now?: Date },
+  request: {
+    readonly redirectUri: string
+    readonly returnTo?: string
+    /** The elevated session a link is made for; absent for a sign-in. */
+    readonly linkSession?: string
+    readonly now?: Date
+  },
 ): Promise<{ authorizeUrl: string; exchangeCookie: string }> {
   const now = request.now ?? new Date()
   const { document } = await discover(provider.issuer, now.getTime())
@@ -136,6 +149,7 @@ export async function startOidc(
     // login page into a phishing relay.
     returnTo: safeReturn(request.returnTo),
     expiresAt: now.getTime() + EXCHANGE_TTL_MS,
+    ...(request.linkSession === undefined ? {} : { linkSession: request.linkSession }),
   }
 
   const parameters = new URLSearchParams({
@@ -169,6 +183,8 @@ export interface AssertedIdentity {
   readonly email: string
   readonly displayName: string
   readonly returnTo: string
+  /** The session a link was opened from — `null` for a sign-in. */
+  readonly linkSession: string | null
 }
 
 /**
@@ -244,6 +260,7 @@ export async function completeOidc(
     displayName:
       typeof payload.name === 'string' && payload.name.trim() !== '' ? payload.name.trim() : email,
     returnTo: exchange.returnTo,
+    linkSession: exchange.linkSession ?? null,
   }
 }
 
@@ -372,6 +389,12 @@ export async function resolveIdentity(
     )
     const linked = existing[0]?.user_id
     if (linked !== undefined) {
+      await exec.query(
+        `UPDATE _basedb.auth_identity SET last_used_at = clock_timestamp()
+          WHERE provider = $1 AND subject = $2`,
+        [`oidc:${provider.slug}`, asserted.subject],
+        'update',
+      )
       // The address follows the provider, but only into a place that is free.
       await exec.query(
         `UPDATE _basedb.app_user u
@@ -436,17 +459,36 @@ export async function resolveIdentity(
   })
 }
 
-/** Links an OIDC identity to the caller's account — requires an elevated session. */
+/**
+ * Links the identity a provider has just asserted to an account — the caller's, whose
+ * elevated session opened the exchange (§3.5).
+ *
+ * Two refusals, both said rather than swallowed: the identity already opens ANOTHER
+ * account — linking it here would silently take that account's way in —, or this account
+ * already has one at the same provider, which is unlinked first. The same identity linked
+ * again changes nothing.
+ */
 export async function linkIdentity(
   exec: Executor,
   provider: OidcProvider,
   userId: string,
   subject: string,
 ): Promise<void> {
+  const held = await exec.query<{ user_id: string; subject: string }>(
+    `SELECT user_id::text, subject FROM _basedb.auth_identity
+      WHERE provider = $1 AND (subject = $2 OR user_id = $3)`,
+    [`oidc:${provider.slug}`, subject, userId],
+  )
+  if (held.some((h) => h.subject === subject && h.user_id !== userId)) {
+    throw new BasedbError('REQUEST_INVALID', { details: { reason: 'identite_deja_liee' } })
+  }
+  if (held.some((h) => h.user_id === userId && h.subject !== subject)) {
+    throw new BasedbError('REQUEST_INVALID', { details: { reason: 'fournisseur_deja_lie' } })
+  }
+  if (held.length > 0) return
   await exec.query(
-    `INSERT INTO _basedb.auth_identity (user_id, provider, subject)
-     VALUES ($1, $2, $3)
-     ON CONFLICT (provider, subject) DO NOTHING`,
+    `INSERT INTO _basedb.auth_identity (user_id, provider, subject, last_used_at)
+     VALUES ($1, $2, $3, clock_timestamp())`,
     [userId, `oidc:${provider.slug}`, subject],
     'insert',
   )

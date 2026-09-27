@@ -76,6 +76,7 @@ Toutes les routes sont préfixées de `/api/v1/{tenantRef}`. La colonne « droit
 | `PATCH` `DELETE` | `/comments/{comment}` | Modifier son commentaire ; le supprimer (son auteur, ou `manage_schema`) | `read` | session, jeton |
 | `GET` | `/me/notifications` | Notifications de l'appelant, `unread=true` pour les seules non-lues ; `meta.unread` (chapitre 16 §2) | — | **session seule** |
 | `POST` | `/me/notifications/read` | Marquer lues : `{ids}` ou `{all: true}` | — | **session seule** |
+| `GET` | `/me/tokens` | Les jetons d'intégration que l'appelant a créés, sur toutes les bases, avec la base qu'ils ouvrent (`null` une fois supprimée) ; jamais un secret (chapitre 11 §10) | — | **session seule** |
 | `GET` | `/events` | Flux temps réel `text/event-stream` : signaux d'écriture, de commentaire, de notification, de présence (chapitre 16 §3) | `read` sur la table suivie | **session seule** |
 | `POST` | `/presence` | Déplacer la présence d'un flux ouvert vers une autre ligne de sa table : `{session, base, table, record?}` | `read` | **session seule** |
 | `GET` `POST` | `/admin/bases/{base}/integrations` | Connexions Slack de la base ; en ajouter une `{label, url}` — l'adresse n'est jamais rendue (chapitre 19 §1) | `manage_schema` | **session seule** |
@@ -89,9 +90,25 @@ Toutes les routes sont préfixées de `/api/v1/{tenantRef}`. La colonne « droit
 | `POST` | `/admin/templates` | Importer un modèle dans l'instance, ou remplacer celui de même clé ; `TEMPLATE_INVALID` sinon | administrateur de l'instance | **session seule** |
 | `DELETE` | `/admin/templates/{key}` | Retirer un modèle de l'instance | administrateur de l'instance | **session seule** |
 | `POST` | `/admin/templates/draft` | Proposition d'un modèle par l'IA : `{project, request, previous?}` (chapitre 20 §5) | `manage_schema` sur le projet | **session seule** |
-| `GET` | `/meta/bases/{base}/dashboards` | Tableaux de bord de la base, dans leur ordre (chapitre 18) ; leurs blocs lisent avec les droits du lecteur | voir la base | session, jeton |
-| `POST` | `/admin/bases/{base}/dashboards` | Créer un tableau de bord : `{label, description?, blocks}` | `manage_schema` | **session seule** |
-| `PATCH` `DELETE` | `/admin/bases/{base}/dashboards/{id}` | Le modifier (`blocks` remplacé en entier, `position`) ; le supprimer | `manage_schema` | **session seule** |
+| `GET` | `/meta/bases/{base}/dashboards` | Tableaux de bord de la base, dans leur ordre (chapitre 18) : onglets, cartes, filtres ; leurs cartes lisent avec les droits du lecteur | voir la base | session, jeton |
+| `POST` | `/admin/bases/{base}/dashboards` | Créer un tableau de bord : `{label, description?, tabs?, cards?, parameters?}`, ou `{label, blocks}` (les blocs d'un modèle) | `manage_schema` | **session seule** |
+| `PATCH` `DELETE` | `/admin/bases/{base}/dashboards/{id}` | Le modifier (`tabs`, `cards`, `parameters` remplacés en entier, `position`) ; le supprimer | `manage_schema` | **session seule** |
+| `GET` `PUT` `DELETE` | `/admin/bases/{base}/dashboards/{id}/share` | Son partage par un lien (chapitre 18 §2.5) : le lire ; le créer ou le changer — `{access, active, groups, can_embed}`, et qui enregistre devient la personne qui publie ; l'arrêter | `manage_schema` | **session seule** |
+| `POST` | `/admin/bases/{base}/dashboards/{id}/share/regenerate` | Un nouveau lien ; l'ancien cesse aussitôt | `manage_schema` | **session seule** |
+| `GET` | `/meta/bases/{base}/questions` `/{id}` | Questions enregistrées de la base (chapitre 18 §1) ; une question | voir la base | session, jeton |
+| `POST` | `/admin/bases/{base}/questions` | Enregistrer une question : `{label, description?, query, visualization?}` | `manage_schema` | **session seule** |
+| `PATCH` `DELETE` | `/admin/bases/{base}/questions/{id}` | La modifier ; la supprimer | `manage_schema` | **session seule** |
+| `POST` | `/query/{base}` | Exécuter une question avec les droits de l'appelant : `{question}` telle qu'enregistrée, ou `{query}` ; les filtres d'un tableau dans `constraints`, `timezone`, `week_start`. Rend des colonnes nommées et typées, et 2 000 lignes au plus | voir la base, et lire ce qu'elle cite | session, jeton (une question SQL : session seule) |
+| `POST` | `/sql/{base}` | Exécuter une instruction SQL : `{sql, limit?, read_only?}`. Qui gère la structure de la base a la console — tout le schéma, écritures comprises ; tout autre lecteur l'exécute en lecture seule, sur un rôle PostgreSQL propre, avec ses tables et ses champs (chapitre 11 §1.7). La réponse dit lequel : `mode` vaut `console` ou `reader` | voir la base | **session seule** |
+| `GET` | `/meta/bases/{base}/queries` `/{query}` | Requêtes enregistrées que l'appelant peut ouvrir (chapitre 11 §1.7) : les siennes, celles de la base, celles de ses groupes ; une requête — `statement`, `audience`, `groups`, `owner`, `editable` | voir la base | **session seule** |
+| `POST` | `/admin/bases/{base}/queries` | Enregistrer une requête : `{label, statement, description?, audience?, group_ids?}`, `audience` parmi `personal` (défaut), `base`, `groups` | voir la base pour soi ; `manage_schema` pour la partager | **session seule** |
+| `PATCH` `DELETE` | `/admin/bases/{base}/queries/{query}` | La modifier — changer sa portée, c'est la partager ; la supprimer | son auteur si personnelle, `manage_schema` sinon | **session seule** |
+| `GET` | `/admin/bases/{base}/query-groups` | Les groupes à qui une requête peut être ouverte | `manage_schema` | **session seule** |
+| `GET` | `/meta/bases/{base}/sql-views` `/{view}` | Vues SQL de la base (chapitre 11 §1.8) — toutes pour qui gère la base, celles dont l'appelant lit chaque table et chaque colonne sinon ; une vue, par son identifiant ou son nom | voir la base | **session seule** |
+| `GET` | `/sql/{base}/views/{view}` | Les lignes d'une vue SQL, lues avec la portée de l'appelant comme une instruction de `/sql/{base}` ; `limit` en paramètre ; `SQL_VIEW_BROKEN` pour une vue retirée par une opération de structure | voir la vue | **session seule** |
+| `POST` | `/admin/bases/{base}/sql-views` | Créer une vue SQL : `{label, definition, name?, description?, color?, icon?, image?}` ; un seul `SELECT`, sur les tables et les vues de la base (`REQUEST_INVALID`, `hors_base` sinon) | `manage_schema` | **session seule** |
+| `PUT` | `/admin/bases/{base}/sql-views/order` | Ordonner les vues de la base : `{order}` | `manage_schema` | **session seule** |
+| `PATCH` `DELETE` | `/admin/bases/{base}/sql-views/{view}` | La modifier — une nouvelle définition la recrée, et remet en place une vue à corriger ; la supprimer, refusé tant qu'une autre vue la lit (`DEPENDENT_OBJECT`) | `manage_schema` | **session seule** |
 | `GET` `POST` | `/admin/bases/{base}/automations` | Automatisations de la base ; en créer une (chapitre 17) | `manage_schema` | **session seule** |
 | `PATCH` `DELETE` | `/admin/bases/{base}/automations/{id}` | La modifier — qui enregistre en devient propriétaire ; la supprimer | `manage_schema` | **session seule** |
 | `GET` | `/admin/bases/{base}/automations/{id}/runs` | Ses 50 dernières exécutions | `manage_schema` | **session seule** |
@@ -111,7 +128,9 @@ Toutes les routes sont préfixées de `/api/v1/{tenantRef}`. La colonne « droit
 | `GET` `PUT` `DELETE` | `/admin/bases/{base}/tables/{table}/views/{view}/share` | Partage d'un formulaire ou d'un questionnaire (chapitre 15 §7) : le lire, le créer ou le modifier — `{access, active, closes_at, max_responses, groups}` —, l'arrêter. Qui enregistre devient le publiant | `manage_schema` | **session seule** |
 | `POST` | `/admin/bases/{base}/tables/{table}/views/{view}/share/regenerate` | Nouveau lien ; l'ancien cesse de fonctionner | `manage_schema` | **session seule** |
 | `GET` `POST` | `/admin/tokens` | Jetons d'intégration (§11) | `manage_tokens` | **session seule** |
-| `DELETE` | `/admin/tokens/{id}` | Révocation immédiate | `manage_tokens` | **session seule** |
+| `DELETE` | `/admin/tokens/{id}` | Révocation immédiate ; son créateur la fait toujours, même sans `manage_tokens` ou sa base supprimée | `manage_tokens`, ou en être le créateur | **session seule** |
+| `GET` `POST` | `/admin/physical/{base\|table}/{id}`, `…/rename` | Impact d'un renommage physique (`?label=` : le libellé saisi, dont la suggestion suit) ; le renommage, confirmé par le nom actuel (chapitre 06 §2) | rôle d'administration | **session seule** |
+| `GET` `POST` | `/admin/bases/{base}/tables/{table}/fields/{field}/physical`, `…/rename` | Les mêmes pour un champ, désigné par ses noms : la description d'une base ne porte pas l'identifiant de ses champs | rôle d'administration | **session seule** |
 | `POST` | `/admin/tokens/{id}/rotate` | Rotation avec grâce (§11.4) | `manage_tokens` | **session seule** |
 | `GET` `POST` | `/admin/webhooks` | Abonnements | `manage_tokens` | **session seule** |
 | `PATCH` `DELETE` | `/admin/webhooks/{id}` | Modification, suppression | `manage_tokens` | **session seule** |
@@ -126,6 +145,8 @@ Les routes `/admin/bases/…` ne sont énumérées ici que pour ce qu'elles port
 `manage_tokens` couvre les deux formes d'intégration, jetons et webhooks : ce sont les deux manières d'ouvrir une porte vers l'extérieur avec les droits d'un rôle. Il est indépendant des droits sur les données. Les opérations dont le titulaire est l'administrateur d'instance (`_basedb.app_user.is_instance_admin`) — gestion des tenants, réglages d'instance — n'appartiennent pas à cette surface.
 
 **Le flux iCalendar d'une vue partagée** — `GET /api/v1/views/{jeton}/calendar.ics` (chapitre 19 §2.1) — est, comme la page de la vue, hors préfixe de tenant et sans porteur : le jeton situe la vue, et un agenda qui s'abonne ne s'authentifie pas.
+
+**Les tableaux de bord partagés**, de même, sont hors préfixe de tenant (chapitre 18 §2.5) : `GET /api/v1/dashboards/{jeton}` rend le tableau — titre, onglets, filtres, cartes et les seuls champs qu'elles citent, jamais leurs requêtes —, `POST /api/v1/dashboards/{jeton}/cards/{carte}` exécute une carte avec les valeurs des filtres (`{values, timezone, week_start}`) que le noyau relie lui-même, et `GET /api/v1/dashboards/{jeton}/parameters/{filtre}/values` rend les valeurs d'un filtre de catégorie. Tout y lit sur l'autorité de la personne qui a publié le partage ; le porteur n'y sert qu'à identifier le membre d'un partage réservé. Les lectures sont limitées par adresse et par lien (`429 RATE_LIMIT_EXCEEDED`).
 
 **Une exception au préfixe : les formulaires partagés.** `GET` et `POST /api/v1/forms/{jeton}` (chapitre 15 §7) n'ont pas de `{tenantRef}` : le jeton du lien situe à lui seul le formulaire, et la personne qui répond n'a le plus souvent ni compte ni tenant. Elles ne demandent aucun droit sur la table ; le porteur y est facultatif et ne sert qu'à identifier le membre qui répond à un partage réservé. L'envoi est limité par adresse et par lien (`429 RATE_LIMIT_EXCEEDED`).
 
@@ -234,14 +255,16 @@ Les permissions sont servies depuis un cache par processus, dont la clé contien
 
 | Opération | Méthode | Sémantique |
 |---|---|---|
-| Liste | `GET /data/{base}/{table}` | `filter`, `sort`, `fields`, `expand`, `links`, `limit`, `cursor`, `count` (§4 à §6) |
-| Lecture | `GET …/{id}` | `fields`, `expand`, `links` acceptés ; `ETag` positionné |
+| Liste | `GET /data/{base}/{table}` | `filter`, `sort`, `fields`, `expand`, `links`, `limit`, `cursor`, `count` (§4 à §6), `variables` |
+| Lecture | `GET …/{id}` | `fields`, `expand`, `links`, `variables` acceptés ; `ETag` positionné |
 | Création | `POST /data/{base}/{table}` | Corps = objet de champs ; `_id` fourni par l'appelant accepté sous condition (§3.2) |
 | Modification partielle | `PATCH …/{id}` | Clé absente = inchangée ; clé à `null` = mise à `NULL` |
 | Remplacement | `PUT …/{id}` | Clé absente = remise à la valeur par défaut, ou `NULL` ; `422 REQUIRED_FIELD_MISSING` si le champ est obligatoire et sans défaut |
 | Suppression | `DELETE …/{id}` | `204`, ou `409` (§8) |
 
 La distinction `PATCH` / `PUT` n'est pas cosmétique : sans `PUT`, un client qui synchronise un miroir ne peut pas exprimer « cet enregistrement vaut exactement ceci ».
+
+**Variables d'un texte long.** Un texte long peut citer une colonne de sa ligne, `{{nom_physique}}` (chapitre 04 §2.2). Par défaut, une lecture le sert **avec la valeur à la place de la citation**, telle que la voit l'appelant ; `variables=raw` le sert tel qu'il est stocké. Un client qui relit une ligne pour la réécrire — un éditeur, un miroir — lit en `raw`, sans quoi il remplacerait chaque citation par la valeur du moment. Les réponses d'écriture rendent la ligne telle que stockée.
 
 **Exception unique à la sémantique de remplacement, décrite en OpenAPI :** `PUT` ne réinitialise que les champs que l'appelant peut **lire et écrire** ; un champ qu'il ne peut pas lire est laissé inchangé, de même qu'un champ lien dont la table cible est masquée (§5.5). Sans cette règle, un client qui relit puis réécrit une ligne effacerait les valeurs qu'il n'a jamais vues — et l'effacement lui apprendrait qu'elles existaient.
 
@@ -764,7 +787,7 @@ Le texte long riche est assaini côté serveur **avant stockage** (« Types de c
 
 Décisions :
 
-1. **L'API ne réassainit pas à la lecture.** Le coût CPU serait proportionnel au volume servi, sur le chemin le plus chaud de l'API, pour un défaut qui se corrige une fois. À la place : le champ est décrit en OpenAPI avec `x-basedb-unsafe-html: true`, **le contrat est que tout consommateur assainit au rendu**, et l'interface passe obligatoirement par un assainisseur.
+1. **L'API ne réassainit pas à la lecture.** Le coût CPU serait proportionnel au volume servi, sur le chemin le plus chaud de l'API, pour un défaut qui se corrige une fois. À la place : le champ est décrit en OpenAPI avec `"format": "html"` et `x-basedb-unsafe-html: true` (et `"unsafe_html": true` dans `/meta`), **le contrat est que tout consommateur assainit au rendu**, et l'interface passe obligatoirement par un assainisseur. Les valeurs qu'insère la résolution des variables sont échappées (chapitre 04 §2.2) : elle n'ajoute aucun balisage.
 2. **Une reprise de stock est fournie** : une tâche d'administration réassainit en masse les colonnes riches d'une table, alimentée par le catalogue, exécutée après toute correction de l'assainisseur.
 3. **Les réponses de l'API ne peuvent pas exécuter de script** : `Content-Type: application/json` sans exception, `nosniff`, CSP `default-src 'none'; sandbox` (§2.3).
 4. **Les libellés du catalogue sont échappés** à la génération OpenAPI, dans la documentation lisible et dans les messages d'erreur. Injecté tel quel dans `title`/`description` d'une spécification rendue par une interface qui interprète Markdown et une partie du HTML, `Client <img src=x onerror=…>` exécute son script chez le lecteur de la documentation. La neutralisation est testée (§17.1). **Les descriptions le sont de la même façon**, dans la spécification OpenAPI et dans la documentation lisible : plus longues et plus bavardes qu'un libellé, elles offrent davantage de place à la même attaque. Une description est du **texte brut précisément pour que cet échappement soit sans perte** : ni Markdown ni HTML n'y sont admis, donc rien de ce que son auteur a voulu n'est détruit quand chaque caractère qui ouvrirait une construction est neutralisé, et le lecteur voit exactement les caractères saisis. *Alternative rejetée* : admettre un sous-ensemble de Markdown dans les descriptions — cela exigerait d'assainir un rendu à chaque génération, un assainisseur de plus à tenir contre les contournements, là où l'échappement est une fonction totale de quelques lignes. `/meta` sert le texte tel que stocké, en donnée pour un programme, et le consommateur qui l'affiche l'affiche comme du texte (chapitre 11 §3.2).

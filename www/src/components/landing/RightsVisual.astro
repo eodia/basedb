@@ -1,27 +1,29 @@
 ---
 /* Group levels flowing down a project, a field hidden from one group, and one line of history. */
+import { type Locale, i18n } from '../../i18n';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, html } = i18n(locale);
+const v = t.rightsVisual;
 const rows = [
-	{ depth: 0, icon: 'project', label: 'Projet principal', level: 'read', inherited: false },
-	{ depth: 1, icon: 'base', label: 'Ventes', level: 'edit', inherited: false },
-	{ depth: 2, icon: 'table', label: 'Opportunités', level: 'edit', inherited: true },
-	{ depth: 2, icon: 'table', label: 'Clients', level: 'edit', inherited: true },
-	{ depth: 1, icon: 'base', label: 'Support', level: 'read', inherited: true },
+	{ depth: 0, icon: 'project', label: v.project, level: 'read', inherited: false },
+	{ depth: 1, icon: 'base', label: v.sales, level: 'edit', inherited: false },
+	{ depth: 2, icon: 'table', label: v.opportunities, level: 'edit', inherited: true },
+	{ depth: 2, icon: 'table', label: v.clients, level: 'edit', inherited: true },
+	{ depth: 1, icon: 'base', label: v.support, level: 'read', inherited: true },
 ] as const;
-const LEVEL = {
-	none: 'Aucun accès',
-	read: 'Lecture',
-	edit: 'Édition',
-	manage: 'Gestion',
-} as const;
+const LEVEL = v.levels;
 ---
 
 <div class="rv">
 	<div class="card perms">
 		<div class="top">
 			<div class="groups">
-				<span class="g">Administrateurs</span>
-				<span class="g on">Commerciaux</span>
-				<span class="g">Support</span>
+				{v.groups.map((g, i) => <span class:list={['g', { on: i === 1 }]}>{g}</span>)}
 			</div>
 		</div>
 		<div class="tree">
@@ -30,15 +32,15 @@ const LEVEL = {
 					<div class="row" style={`--depth: ${r.depth}`}>
 						<span class:list={['ic', r.icon]} />
 						<span class="lbl">{r.label}</span>
-						{r.inherited && <span class="inh">hérité</span>}
+						{r.inherited && <span class="inh">{v.inherited}</span>}
 						<span class:list={['lvl', r.level]}>{LEVEL[r.level]}</span>
 					</div>
 				))
 			}
 			<div class="row field" style="--depth: 3">
 				<span class="ic field-ic"></span>
-				<span class="lbl">Champ « Marge »</span>
-				<span class="lvl hidden">Masqué</span>
+				<span class="lbl">{v.field}</span>
+				<span class="lvl hidden">{v.hidden}</span>
 			</div>
 		</div>
 	</div>
@@ -47,17 +49,17 @@ const LEVEL = {
 		<div class="who">
 			<span class="av">&gt;_</span>
 			<div>
-				<p><b>Session SQL directe</b> a modifié <b>« Migration ERP »</b></p>
-				<small>02:46 · connexion locale · psql</small>
-				<p class="diff">Montant : <s>125 000</s> → 130 000</p>
+				<p set:html={html(v.sqlChange)} />
+				<small>{v.sqlMeta}</small>
+				<p class="diff" set:html={html(v.sqlDiff)} />
 			</div>
-			<span class="undo">↶ Annuler</span>
+			<span class="undo">{v.undo}</span>
 		</div>
 		<div class="who">
 			<span class="av form">▣</span>
 			<div>
-				<p><b>Formulaire « Demande de devis »</b> a créé <b>« Refonte de l’intranet »</b></p>
-				<small>réponse publique · publié par Camille</small>
+				<p set:html={html(v.formChange)} />
+				<small>{v.formMeta}</small>
 			</div>
 		</div>
 	</div>
@@ -194,7 +196,7 @@ const LEVEL = {
 		margin: 0;
 		color: var(--bd-text-soft);
 	}
-	.who b {
+	.who :global(b) {
 		color: var(--bd-text);
 	}
 	.who small {
@@ -204,7 +206,7 @@ const LEVEL = {
 	.diff {
 		margin-top: 4px !important;
 	}
-	.diff s {
+	.diff :global(s) {
 		color: var(--bd-muted-fg);
 	}
 	.av {

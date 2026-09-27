@@ -1,4 +1,5 @@
 import type { FieldOption, FieldOptionInput } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 
 /**
  * The options of a list of choices, as an editor holds them.
@@ -148,7 +149,7 @@ export function parseOptionsJson(text: string, known: ReadonlySet<string>): Pars
   try {
     raw = JSON.parse(text)
   } catch {
-    return { ok: false, error: 'Ce n’est pas du JSON valide.' }
+    return { ok: false, error: $t('Ce n’est pas du JSON valide.') }
   }
   const list = Array.isArray(raw)
     ? raw
@@ -158,34 +159,35 @@ export function parseOptionsJson(text: string, known: ReadonlySet<string>): Pars
   if (list === null) {
     return {
       ok: false,
-      error: 'Attendu : une liste, par exemple [{ "value": "actif", "label": "Actif" }].',
+      error: $t('Attendu : une liste, par exemple [{ "value": "actif", "label": "Actif" }].'),
     }
   }
-  if (list.length === 0) return { ok: false, error: 'La liste est vide.' }
+  if (list.length === 0) return { ok: false, error: $t('La liste est vide.') }
 
   const drafts: OptionDraft[] = []
   for (const [index, item] of list.entries()) {
-    const at = `Élément ${index + 1}`
+    const at = $t('Élément {value}', { value: index + 1 })
     const entry = typeof item === 'string' ? { label: item } : (item as Record<string, unknown>)
     if (entry === null || typeof entry !== 'object') {
-      return { ok: false, error: `${at} : ni un texte ni un objet.` }
+      return { ok: false, error: $t('{at} : ni un texte ni un objet.', { at }) }
     }
 
     const value = typeof entry.value === 'string' ? entry.value.trim() : ''
     const label = typeof entry.label === 'string' ? entry.label.trim() : ''
     if (value === '' && label === '')
-      return { ok: false, error: `${at} : ni « value » ni « label ».` }
+      return { ok: false, error: $t('{at} : ni « value » ni « label ».', { at }) }
 
     let color: string | null = null
     if (entry.color !== undefined && entry.color !== null && entry.color !== '') {
       color = typeof entry.color === 'string' ? normalizeHex(entry.color) : null
-      if (color === null) return { ok: false, error: `${at} : couleur invalide (attendu #rrggbb).` }
+      if (color === null)
+        return { ok: false, error: $t('{at} : couleur invalide (attendu #rrggbb).', { at }) }
     }
 
     let icon: string | null = null
     if (entry.icon !== undefined && entry.icon !== null && entry.icon !== '') {
       if (typeof entry.icon !== 'string' || !ICON_NAME.test(entry.icon.trim())) {
-        return { ok: false, error: `${at} : nom de pictogramme invalide.` }
+        return { ok: false, error: $t('{at} : nom de pictogramme invalide.', { at }) }
       }
       icon = entry.icon.trim()
     }
@@ -193,15 +195,15 @@ export function parseOptionsJson(text: string, known: ReadonlySet<string>): Pars
     let image: string | null = null
     if (entry.image !== undefined && entry.image !== null && entry.image !== '') {
       if (typeof entry.image !== 'string' || !IMAGE_URL.test(entry.image.trim())) {
-        return { ok: false, error: `${at} : image invalide (https ou data:image).` }
+        return { ok: false, error: $t('{at} : image invalide (https ou data:image).', { at }) }
       }
       if (entry.image.trim().length > MAX_IMAGE_CHARS) {
-        return { ok: false, error: `${at} : image trop lourde.` }
+        return { ok: false, error: $t('{at} : image trop lourde.', { at }) }
       }
       image = entry.image.trim()
     }
     if (icon !== null && image !== null) {
-      return { ok: false, error: `${at} : un pictogramme ou une image, pas les deux.` }
+      return { ok: false, error: $t('{at} : un pictogramme ou une image, pas les deux.', { at }) }
     }
 
     const stored = value !== '' ? value : slugify(label)
@@ -220,7 +222,10 @@ export function parseOptionsJson(text: string, known: ReadonlySet<string>): Pars
   const seen = new Set<string>()
   for (const d of drafts) {
     if (seen.has(d.value))
-      return { ok: false, error: `La valeur « ${d.value} » apparaît deux fois.` }
+      return {
+        ok: false,
+        error: $t('La valeur « {value} » apparaît deux fois.', { value: d.value }),
+      }
     seen.add(d.value)
   }
   return { ok: true, drafts }

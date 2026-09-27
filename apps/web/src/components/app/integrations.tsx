@@ -20,6 +20,7 @@ import {
   api,
 } from '@/lib/api/client'
 import { relativeTime } from '@/lib/collab'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import {
@@ -50,20 +51,24 @@ const SOURCES: ReadonlyArray<{
 }> = [
   {
     kind: 'csv',
-    label: 'Fichier CSV en ligne',
-    hint: 'Un export publié, une feuille de calcul publiée au format CSV. Les colonnes sont typées d’après leur contenu.',
+    label: $t('Fichier CSV en ligne'),
+    hint: $t(
+      'Un export publié, une feuille de calcul publiée au format CSV. Les colonnes sont typées d’après leur contenu.',
+    ),
     placeholder: 'https://exemple.fr/export/stock.csv',
   },
   {
     kind: 'ics',
-    label: 'Agenda (Google Agenda, iCalendar)',
-    hint: 'Dans Google Agenda : Paramètres de l’agenda → « Adresse secrète au format iCal ».',
+    label: $t('Agenda (Google Agenda, iCalendar)'),
+    hint: $t('Dans Google Agenda : Paramètres de l’agenda → « Adresse secrète au format iCal ».'),
     placeholder: 'https://calendar.google.com/calendar/ical/…/basic.ics',
   },
   {
     kind: 'basedb',
-    label: 'Vue partagée d’un basedb',
-    hint: 'Le lien de la vue partagée (ou de son API) : ses champs et ses lignes, tels que son propriétaire les montre.',
+    label: $t('Vue partagée d’un basedb'),
+    hint: $t(
+      'Le lien de la vue partagée (ou de son API) : ses champs et ses lignes, tels que son propriétaire les montre.',
+    ),
     placeholder: 'https://…/api/v1/views/…',
   },
 ]
@@ -85,10 +90,10 @@ export function IntegrationsPanel({
         <SidebarToggle />
         <span className="text-sm text-muted-foreground">{base.label}</span>
         <span className="text-sm text-muted-foreground">/</span>
-        <span className="text-sm font-medium">Intégrations</span>
+        <span className="text-sm font-medium">{$t('Intégrations')}</span>
         <div className="flex-1" />
         <Button variant="ghost" size="sm" onClick={onBack}>
-          Retour aux données
+          {$t('Retour aux données')}
         </Button>
       </header>
       <main className="min-h-0 flex-1 overflow-y-auto scroll-discret">
@@ -100,7 +105,7 @@ export function IntegrationsPanel({
           </div>
         ) : (
           <p className="p-10 text-center text-sm text-muted-foreground">
-            Les intégrations d’une base sont réglées par ceux qui la construisent.
+            {$t('Les intégrations d’une base sont réglées par ceux qui la construisent.')}
           </p>
         )}
       </main>
@@ -155,7 +160,7 @@ function Slack({ base }: { readonly base: DescribedBase }) {
   const test = async (item: Integration) => {
     try {
       await api.testIntegration(base.name, item.id)
-      toast(`Message d’essai envoyé à « ${item.label} »`)
+      toast($t('Message d’essai envoyé à « {label} »', { label: item.label }))
     } catch (e) {
       toast.error(messageFor(e))
     }
@@ -164,12 +169,14 @@ function Slack({ base }: { readonly base: DescribedBase }) {
   return (
     <Section
       icon={<MessageSquare className="size-5" />}
-      title="Slack"
-      hint="Un canal Slack, prévenu par les automatisations de la base (action « Envoyer sur Slack »)."
+      title={$t('Slack')}
+      hint={$t(
+        'Un canal Slack, prévenu par les automatisations de la base (action « Envoyer sur Slack »).',
+      )}
       action={
         <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setAdding(true)}>
           <Plus className="size-4" />
-          Connecter un canal
+          {$t('Connecter un canal')}
         </Button>
       }
     >
@@ -179,8 +186,9 @@ function Slack({ base }: { readonly base: DescribedBase }) {
       )}
       {items?.length === 0 && (
         <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
-          Aucun canal connecté. Dans Slack, créez un « webhook entrant » pour le canal voulu, puis
-          collez son adresse ici.
+          {$t(
+            'Aucun canal connecté. Dans Slack, créez un « webhook entrant » pour le canal voulu, puis collez son adresse ici.',
+          )}
         </p>
       )}
       {items !== null && items.length > 0 && (
@@ -190,7 +198,7 @@ function Slack({ base }: { readonly base: DescribedBase }) {
               <span className="min-w-0 flex-1">
                 <span className="block font-medium">{item.label}</span>
                 <span className="block font-mono text-xs text-muted-foreground">
-                  hooks.slack.com {item.hint}
+                  {$t('hooks.slack.com {hint}', { hint: item.hint })}
                 </span>
               </span>
               <Button
@@ -200,12 +208,12 @@ function Slack({ base }: { readonly base: DescribedBase }) {
                 onClick={() => void test(item)}
               >
                 <Send className="size-3.5" />
-                Tester
+                {$t('Tester')}
               </Button>
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`Supprimer ${item.label}`}
+                aria-label={$t('Supprimer {label}', { label: item.label })}
                 onClick={async () => {
                   await api
                     .deleteIntegration(base.name, item.id)
@@ -269,15 +277,16 @@ function SlackDialog({
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Connecter un canal Slack</DialogTitle>
+          <DialogTitle>{$t('Connecter un canal Slack')}</DialogTitle>
           <DialogDescription>
-            L’adresse du webhook entrant vaut autorisation : elle est scellée, et ne sera plus
-            jamais affichée en entier.
+            {$t(
+              'L’adresse du webhook entrant vaut autorisation : elle est scellée, et ne sera plus jamais affichée en entier.',
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="slack-label">Nom</Label>
+            <Label htmlFor="slack-label">{$t('Nom')}</Label>
             <Input
               id="slack-label"
               value={label}
@@ -286,7 +295,7 @@ function SlackDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="slack-url">Adresse du webhook entrant</Label>
+            <Label htmlFor="slack-url">{$t('Adresse du webhook entrant')}</Label>
             <Input
               id="slack-url"
               value={url}
@@ -299,14 +308,14 @@ function SlackDialog({
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button
             onClick={() => void submit()}
             disabled={busy || label.trim() === '' || url.trim() === ''}
           >
             {busy && <Loader2 className="size-4 animate-spin" />}
-            Connecter
+            {$t('Connecter')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -316,7 +325,7 @@ function SlackDialog({
 
 function SyncStatus({ table }: { readonly table: SyncedTable }) {
   if (table.last_status === null)
-    return <span className="text-muted-foreground">Jamais synchronisée</span>
+    return <span className="text-muted-foreground">{$t('Jamais synchronisée')}</span>
   const counts = table.last_counts
   return (
     <span
@@ -372,7 +381,10 @@ function Synced({
       const result = await api.runSyncedTable(base.name, table.table)
       const c = result.last_counts
       toast(
-        `« ${table.label} » synchronisée${c === null ? '' : ` : +${c.created} ~${c.updated} −${c.deleted}`}`,
+        $t('« {label} » synchronisée{value}', {
+          label: table.label,
+          value: c === null ? '' : ` : +${c.created} ~${c.updated} −${c.deleted}`,
+        }),
       )
     } catch (e) {
       toast.error(messageFor(e))
@@ -385,12 +397,14 @@ function Synced({
   return (
     <Section
       icon={<RefreshCw className="size-5" />}
-      title="Tables synchronisées"
-      hint="Des tables tenues à jour depuis une source : un fichier CSV, un agenda, la vue d’une autre base. Elles se lisent comme les autres, mais ne s’écrivent pas à la main."
+      title={$t('Tables synchronisées')}
+      hint={$t(
+        'Des tables tenues à jour depuis une source : un fichier CSV, un agenda, la vue d’une autre base. Elles se lisent comme les autres, mais ne s’écrivent pas à la main.',
+      )}
       action={
         <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setAdding(true)}>
           <Plus className="size-4" />
-          Nouvelle table synchronisée
+          {$t('Nouvelle table synchronisée')}
         </Button>
       }
     >
@@ -400,7 +414,7 @@ function Synced({
       )}
       {items?.length === 0 && (
         <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
-          Aucune table synchronisée.
+          {$t('Aucune table synchronisée.')}
         </p>
       )}
       {items !== null && items.length > 0 && (
@@ -410,8 +424,11 @@ function Synced({
               <span className="min-w-0 flex-1">
                 <span className="block font-medium">{table.label}</span>
                 <span className="block text-xs text-muted-foreground">
-                  {SOURCES.find((s) => s.kind === table.source_kind)?.label} · {table.host} · toutes
-                  les {table.interval_minutes} min
+                  {$t('{label} · {host} · toutes les {interval_minutes} min', {
+                    label: SOURCES.find((s) => s.kind === table.source_kind)?.label,
+                    host: table.host,
+                    interval_minutes: table.interval_minutes,
+                  })}
                 </span>
                 <span className="block text-xs">
                   <SyncStatus table={table} />
@@ -425,13 +442,13 @@ function Synced({
                 onClick={() => void run(table)}
               >
                 <RefreshCw className={cn('size-3.5', busy === table.table && 'animate-spin')} />
-                Synchroniser
+                {$t('Synchroniser')}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-7 text-xs text-muted-foreground"
-                title="La table redevient une table ordinaire, avec ses lignes"
+                title={$t('La table redevient une table ordinaire, avec ses lignes')}
                 onClick={async () => {
                   await api
                     .stopSyncedTable(base.name, table.table)
@@ -440,7 +457,7 @@ function Synced({
                   onChanged()
                 }}
               >
-                Arrêter
+                {$t('Arrêter')}
               </Button>
             </div>
           ))}
@@ -452,7 +469,12 @@ function Synced({
         onClose={() => setAdding(false)}
         onDone={(created) => {
           setAdding(false)
-          toast(`Table « ${created.label} » créée : ${created.last_counts?.created ?? 0} lignes`)
+          toast(
+            $t('Table « {label} » créée : {value} lignes', {
+              label: created.label,
+              value: created.last_counts?.created ?? 0,
+            }),
+          )
           void load()
           onChanged()
         }}
@@ -508,9 +530,11 @@ function SyncDialog({
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Nouvelle table synchronisée</DialogTitle>
+          <DialogTitle>{$t('Nouvelle table synchronisée')}</DialogTitle>
           <DialogDescription>
-            La table est créée avec les colonnes de la source, puis tenue à jour par le serveur.
+            {$t(
+              'La table est créée avec les colonnes de la source, puis tenue à jour par le serveur.',
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -532,16 +556,16 @@ function SyncDialog({
             ))}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="sync-label">Nom de la table</Label>
+            <Label htmlFor="sync-label">{$t('Nom de la table')}</Label>
             <Input
               id="sync-label"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="Stock"
+              placeholder={$t('Stock')}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="sync-url">Adresse de la source</Label>
+            <Label htmlFor="sync-url">{$t('Adresse de la source')}</Label>
             <Input
               id="sync-url"
               value={url}
@@ -551,7 +575,7 @@ function SyncDialog({
             />
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <Label htmlFor="sync-interval">Synchroniser toutes les</Label>
+            <Label htmlFor="sync-interval">{$t('Synchroniser toutes les')}</Label>
             <Input
               id="sync-interval"
               type="number"
@@ -561,20 +585,20 @@ function SyncDialog({
               onChange={(e) => setInterval_(Number(e.target.value))}
               className="h-8 w-24"
             />
-            <span className="text-muted-foreground">minutes</span>
+            <span className="text-muted-foreground">{$t('minutes')}</span>
           </div>
           {error !== null && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button
             onClick={() => void submit()}
             disabled={busy || label.trim() === '' || url.trim() === ''}
           >
             {busy && <Loader2 className="size-4 animate-spin" />}
-            {busy ? 'Lecture de la source…' : 'Créer la table'}
+            {busy ? $t('Lecture de la source…') : $t('Créer la table')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -586,18 +610,21 @@ function Agenda() {
   return (
     <Section
       icon={<CalendarDays className="size-5" />}
-      title="Google Agenda"
-      hint="Voir les échéances de la base dans un agenda, ou importer un agenda dans la base."
+      title={$t('Google Agenda')}
+      hint={$t('Voir les échéances de la base dans un agenda, ou importer un agenda dans la base.')}
     >
       <ol className="list-decimal space-y-1.5 pl-5 text-sm text-muted-foreground">
         <li>
-          <span className="text-foreground">Voir une vue dans un agenda</span> : partagez
-          publiquement une vue calendrier ou chronologie ; son dialogue de partage donne l’adresse
-          de son flux iCalendar. Dans Google Agenda : « Autres agendas » → « À partir de l’URL ».
+          <span className="text-foreground">{$t('Voir une vue dans un agenda')}</span>{' '}
+          {$t(
+            ': partagez publiquement une vue calendrier ou chronologie ; son dialogue de partage donne l’adresse de son flux iCalendar. Dans Google Agenda : « Autres agendas » → « À partir de l’URL ».',
+          )}
         </li>
         <li>
-          <span className="text-foreground">Importer un agenda</span> : créez une table synchronisée
-          de source « Agenda » avec l’adresse secrète iCal de l’agenda Google.
+          <span className="text-foreground">{$t('Importer un agenda')}</span>{' '}
+          {$t(
+            ': créez une table synchronisée de source « Agenda » avec l’adresse secrète iCal de l’agenda Google.',
+          )}
         </li>
       </ol>
     </Section>

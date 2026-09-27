@@ -19,6 +19,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import type { SavedView, ViewKind } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { KIND_INFO, VIEW_KINDS } from '@/lib/views'
 import {
@@ -144,14 +145,14 @@ export function ViewSwitcher({
             variant="outline"
             size="sm"
             className="h-7 max-w-56 gap-1.5 px-2 text-xs"
-            aria-label="Changer de vue"
+            aria-label={$t('Changer de vue')}
           >
             <Icon className="size-3.5 text-primary" />
-            <span className="truncate">{active?.label ?? 'Toutes les lignes'}</span>
+            <span className="truncate">{active?.label ?? $t('Toutes les lignes')}</span>
             {modified && (
               <span
                 className="size-1.5 shrink-0 rounded-full bg-amber-500"
-                title="Modifiée, non enregistrée"
+                title={$t('Modifiée, non enregistrée')}
               />
             )}
             <ChevronDown className="size-3 opacity-60" />
@@ -160,8 +161,8 @@ export function ViewSwitcher({
         <PopoverContent align="start" className="w-80 p-1">
           <ViewRow
             icon={<Table2 className="size-4 text-muted-foreground" />}
-            label="Toutes les lignes"
-            sublabel="La grille de la table"
+            label={$t('Toutes les lignes')}
+            sublabel={$t('La grille de la table')}
             active={activeId === null}
             onSelect={() => pick(null)}
           />
@@ -219,7 +220,7 @@ export function ViewSwitcher({
               <div className="my-1 border-t" />
               <p className="flex items-center gap-1.5 px-2 pt-1 pb-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 <UserRound className="size-3" />
-                Mes vues
+                {$t('Mes vues')}
               </p>
               {mine.map((view) => (
                 <SortableView
@@ -252,7 +253,7 @@ export function ViewSwitcher({
           {
             <div className="p-1">
               <p className="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                {canManage ? 'Créer une vue' : 'Créer une vue personnelle'}
+                {canManage ? $t('Créer une vue') : $t('Créer une vue personnelle')}
               </p>
               <div className="grid grid-cols-3 gap-1">
                 {VIEW_KINDS.map((kind) => {
@@ -282,16 +283,20 @@ export function ViewSwitcher({
       <Dialog open={deleting !== null} onOpenChange={(next) => !next && !busy && setDeleting(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Supprimer la vue « {deleting?.label} » ?</DialogTitle>
+            <DialogTitle>
+              {$t('Supprimer la vue « {label} » ?', { label: deleting?.label })}
+            </DialogTitle>
             <DialogDescription>
               {deleting?.personal === true
-                ? 'Elle disparaît de vos vues. Les lignes, elles, ne sont pas touchées.'
-                : 'Elle disparaît pour tous ceux qui lisent la table. Les lignes, elles, ne sont pas touchées.'}
+                ? $t('Elle disparaît de vos vues. Les lignes, elles, ne sont pas touchées.')
+                : $t(
+                    'Elle disparaît pour tous ceux qui lisent la table. Les lignes, elles, ne sont pas touchées.',
+                  )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setDeleting(null)} disabled={busy}>
-              Annuler
+              {$t('Annuler')}
             </Button>
             <Button
               variant="destructive"
@@ -307,7 +312,7 @@ export function ViewSwitcher({
                 }
               }}
             >
-              {busy ? 'Suppression…' : 'Supprimer la vue'}
+              {busy ? $t('Suppression…') : $t('Supprimer la vue')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -435,7 +440,7 @@ function SortableView({
             onBlur={() => void finish(true)}
             maxLength={255}
             className="h-8 text-sm"
-            aria-label="Nouveau nom de la vue"
+            aria-label={$t('Nouveau nom de la vue')}
             autoFocus
           />
           {error !== null && <p className="px-1 pt-1 text-xs text-destructive">{error}</p>}
@@ -447,12 +452,15 @@ function SortableView({
             <span className="flex items-center gap-1.5">
               <span className="truncate">{view.label}</span>
               {view.locked && (
-                <Lock className="size-3 shrink-0 text-muted-foreground" aria-label="Verrouillée" />
+                <Lock
+                  className="size-3 shrink-0 text-muted-foreground"
+                  aria-label={$t('Verrouillée')}
+                />
               )}
             </span>
           }
           sublabel={
-            view.filter_hidden ? 'Filtre sur un champ qui ne vous est pas ouvert' : undefined
+            view.filter_hidden ? $t('Filtre sur un champ qui ne vous est pas ouvert') : undefined
           }
           active={active}
           onSelect={onSelect}
@@ -463,7 +471,7 @@ function SortableView({
                 {...attributes}
                 {...listeners}
                 className="cursor-grab rounded p-0.5 text-muted-foreground opacity-40 hover:bg-background group-hover/view:opacity-100 active:cursor-grabbing"
-                aria-label={`Déplacer la vue ${view.label}`}
+                aria-label={$t('Déplacer la vue {label}', { label: view.label })}
               >
                 <GripVertical className="size-3.5" />
               </button>
@@ -476,7 +484,7 @@ function SortableView({
                   <button
                     type="button"
                     className="rounded p-1 text-muted-foreground opacity-0 hover:bg-background focus-visible:opacity-100 group-hover/view:opacity-100 data-[state=open]:opacity-100"
-                    aria-label={`Actions sur la vue ${view.label}`}
+                    aria-label={$t('Actions sur la vue {label}', { label: view.label })}
                   >
                     <Ellipsis className="size-4" />
                   </button>
@@ -484,7 +492,7 @@ function SortableView({
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem onSelect={onConfigure} disabled={!editable}>
                     <Settings2 className="size-4" />
-                    Configurer…
+                    {$t('Configurer…')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     disabled={!editable}
@@ -494,22 +502,22 @@ function SortableView({
                     }}
                   >
                     <Pencil className="size-4" />
-                    Renommer
+                    {$t('Renommer')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={onDuplicate}>
                     <Copy className="size-4" />
-                    Dupliquer
+                    {$t('Dupliquer')}
                   </DropdownMenuItem>
                   {onShare !== undefined && (
                     <DropdownMenuItem onSelect={onShare}>
                       <Share2 className="size-4" />
-                      Partager…
+                      {$t('Partager…')}
                     </DropdownMenuItem>
                   )}
                   {onLock !== undefined && (
                     <DropdownMenuItem onSelect={() => onLock(!view.locked)}>
                       {view.locked ? <LockOpen className="size-4" /> : <Lock className="size-4" />}
-                      {view.locked ? 'Déverrouiller la vue' : 'Verrouiller la vue'}
+                      {view.locked ? $t('Déverrouiller la vue') : $t('Verrouiller la vue')}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
@@ -519,7 +527,7 @@ function SortableView({
                     className="text-destructive focus:text-destructive"
                   >
                     <Trash2 className="size-4" />
-                    Supprimer
+                    {$t('Supprimer')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

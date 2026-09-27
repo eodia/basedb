@@ -401,6 +401,13 @@ CREATE TABLE _basedb.app_user (
   is_system         boolean NOT NULL DEFAULT false,
   locale            text NOT NULL DEFAULT 'fr',
   timezone          text NOT NULL DEFAULT 'Europe/Paris',
+  -- Preferences de la personne (chapitre 11 §10), migration de catalogue 0003 :
+  date_format       text NOT NULL DEFAULT 'dmy'           -- 'dmy' 25/09/2026 | 'iso' 2026-09-25
+                    CHECK (date_format IN ('dmy','iso')),
+  week_start        smallint NOT NULL DEFAULT 1           -- 1 lundi, 0 dimanche
+                    CHECK (week_start IN (0,1)),
+  muted_notifications text[] NOT NULL DEFAULT '{}'        -- natures refusees (chapitre 16 §2.3)
+                    CHECK (muted_notifications <@ ARRAY['mention','reply','assigned','automation']),
   disabled_at       timestamptz NULL,
   must_change_password boolean NOT NULL DEFAULT false,
   bootstrap_secret_hash        bytea NULL,
@@ -1555,7 +1562,7 @@ CREATE INDEX idx_automation_run_queue ON _basedb.automation_run (queued_at)
 CREATE INDEX idx_automation_run_list ON _basedb.automation_run (automation_id, queued_at DESC);
 ```
 
-Une **automatisation** porte son déclencheur en deux temps : `trigger_kind` et `table_id`, que le drain lit à chaque lot pour savoir quelles tables en ont, et `trigger`, les réglages qu'il n'a pas à interroger (champs surveillés, horloge). `trigger` et `actions` sont des `jsonb` validés par le noyau à l'écriture ; ils ne produisent aucun DDL et chaque champ ou table qu'ils citent est relu, droits compris, à l'exécution. `owner_id` est la personne au nom de qui elle agit (chapitre 17 §2.2). Une **exécution** garde le résultat de chacune de ses actions dans `steps`, et `error_code` (un code du registre A23, recopié) ; elle est purgée après 30 jours (A24).
+Une **automatisation** porte son déclencheur en deux temps : `trigger_kind` et `table_id`, que le drain lit à chaque lot pour savoir quelles tables en ont, et `trigger`, les réglages qu'il n'a pas à interroger (champs surveillés, horloge). `trigger` et `actions` sont des `jsonb` validés par le noyau à l'écriture ; ils ne produisent aucun DDL et chaque champ ou table qu'ils citent est relu, droits compris, à l'exécution. `actions` porte le flux entier — les étapes, et dans une condition ses chemins et leurs étapes, chacune avec son identifiant (chapitre 17 §1.3) : un flux n'a pas demandé de colonne, et une automatisation enregistrée avant les flux se lit telle quelle. `owner_id` est la personne au nom de qui elle agit (chapitre 17 §2.2). Une **exécution** garde dans `steps` chaque étape par où elle est passée — son identifiant, son résultat, le chemin qu'a pris une condition, sa durée —, et `error_code` (un code du registre A23, recopié) ; elle est purgée après 30 jours (A24).
 
 ### Tableaux de bord
 
@@ -1582,6 +1589,131 @@ CREATE INDEX idx_dashboard_base ON _basedb.dashboard (base_id, position)
 ```
 
 Un **tableau de bord** n'a pas de droit propre : ses blocs lisent par les routes de données, avec les droits du lecteur (A28). `blocks` est un `jsonb` validé par le noyau à l'écriture ; il ne produit aucun DDL et ne donne accès à rien.
+
+### Questions et tableaux de bord en grille
+
+Migrations de catalogue 0005 et 0006 (chapitre 18).
+
+```sql
+-- Une lecture nommee d'une base, construite a la souris ou ecrite en SQL, et sa
+-- visualisation. Elle n'emporte aucun droit : chacun la lit avec les siens.
+CREATE TABLE _basedb.question (
+  id            uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  base_id       uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  label         text NOT NULL CHECK (char_length(label) BETWEEN 1 AND 255),
+  description   text NULL,
+  kind          text NOT NULL CHECK (kind IN ('builder', 'sql')),
+  query         jsonb NOT NULL,
+  visualization jsonb NOT NULL DEFAULT '{}'::jsonb,
+  position      integer NOT NULL DEFAULT 0,
+  created_at    timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by    uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at    timestamptz NOT NULL DEFAULT clock_timestamp(),
+  updated_by    uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  deleted_at    timestamptz NULL
+);
+CREATE INDEX idx_question_base    ON _basedb.question (base_id, position);
+CREATE INDEX idx_question_creator ON _basedb.question (created_by);
+CREATE INDEX idx_question_updater ON _basedb.question (updated_by);
+
+ALTER TABLE _basedb.dashboard
+  ADD COLUMN tabs       jsonb NOT NULL DEFAULT '[]'::jsonb,  -- [{id, label}]
+  ADD COLUMN cards      jsonb NULL,                          -- nul : pas encore traduit des blocs
+  ADD COLUMN parameters jsonb NOT NULL DEFAULT '[]'::jsonb;  -- les filtres du tableau
+```
+
+`query`, `visualization`, `tabs`, `cards` et `parameters` sont des documents de `@basedb/contracts` (`analytics.ts`), validés par le noyau à l'écriture : les tables sont celles de la base, par clé, les champs y existent, la place d'une carte tient dans la grille de 24 colonnes, un filtre relié existe. Ils ne produisent aucun DDL et ne donnent accès à rien : une question construite est exécutée sur les plans de lecture du lecteur, une question SQL par son lecteur SQL, en lecture seule. Tant que `cards` est nul, le noyau lit `blocks` comme des cartes ; le premier enregistrement écrit `cards` et vide `blocks`.
+
+### Partage d'un tableau de bord par un lien
+
+Migration de catalogue 0007 (chapitre 18 §2.5).
+
+```sql
+-- Un lien public, ou reserve aux membres connectes du tenant, qui ouvre un tableau de bord
+-- en lecture a qui n'a aucun droit sur la base. Un seul partage par tableau.
+CREATE TABLE _basedb.dashboard_share (
+  id           uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  tenant_id    uuid NOT NULL REFERENCES _basedb.tenant(id) ON DELETE RESTRICT,
+  dashboard_id uuid NOT NULL REFERENCES _basedb.dashboard(id) ON DELETE CASCADE,
+  base_id      uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  access       text NOT NULL CHECK (access IN ('public', 'members')),
+  token_hash   bytea NOT NULL,                 -- sha256 du secret du lien
+  token_sealed text NOT NULL,                  -- le secret, scelle par la cle d'instance
+  is_active    boolean NOT NULL DEFAULT true,
+  can_embed    boolean NOT NULL DEFAULT false,
+  published_by uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  created_at   timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_by   uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
+  updated_at   timestamptz NOT NULL DEFAULT clock_timestamp(),
+  CONSTRAINT uq_dashboard_share_dashboard UNIQUE (dashboard_id),
+  CONSTRAINT uq_dashboard_share_token UNIQUE (token_hash)
+);
+CREATE INDEX idx_dashboard_share_tenant    ON _basedb.dashboard_share (tenant_id);
+CREATE INDEX idx_dashboard_share_base      ON _basedb.dashboard_share (base_id);
+CREATE INDEX idx_dashboard_share_publisher ON _basedb.dashboard_share (published_by);
+CREATE INDEX idx_dashboard_share_creator   ON _basedb.dashboard_share (created_by);
+
+-- Les groupes auxquels un partage « membres » est reserve ; aucun : tout membre connecte.
+CREATE TABLE _basedb.dashboard_share_role (
+  share_id uuid NOT NULL REFERENCES _basedb.dashboard_share(id) ON DELETE CASCADE,
+  role_id  uuid NOT NULL REFERENCES _basedb.role(id) ON DELETE CASCADE,
+  PRIMARY KEY (share_id, role_id)
+);
+CREATE INDEX idx_dashboard_share_role_role ON _basedb.dashboard_share_role (role_id);
+```
+
+Un **partage de tableau de bord** suit le modèle des vues partagées (chapitre 15 §10) : le lien est retrouvé par l'empreinte de son secret, et le secret n'est gardé que scellé, pour être remontré à qui partage. `published_by` est l'autorité sur laquelle les cartes lisent, revérifiée à chaque lecture : la dernière personne à avoir enregistré le partage. Supprimer le tableau — logiquement — suffit à fermer le lien, que le noyau ne suit que vers un tableau et une base vivants.
+
+### Requêtes enregistrées et vues SQL
+
+Migration de catalogue 0004 (chapitre 11 §1.7 et §1.8).
+
+```sql
+-- Un texte SQL range sous une base. personal : son auteur seul ; base : quiconque lit la
+-- base ; groups : les groupes de saved_query_role, et qui gere la base.
+CREATE TABLE _basedb.saved_query (
+  id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  base_id     uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  label       text NOT NULL CHECK (char_length(label) BETWEEN 1 AND 255),
+  label_key   text COLLATE "C" NOT NULL,
+  description text NULL,
+  statement   text NOT NULL CHECK (char_length(statement) BETWEEN 1 AND 100000),
+  audience    text NOT NULL DEFAULT 'personal' CHECK (audience IN ('personal','base','groups')),
+  owner_id    uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE CASCADE,
+  created_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  updated_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+  updated_by  uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT
+);
+-- Unique parmi les requetes partagees d'une base, et parmi celles d'une personne.
+CREATE UNIQUE INDEX uq_saved_query_label ON _basedb.saved_query (base_id,
+  (CASE WHEN audience = 'personal' THEN owner_id ELSE '00000000-0000-0000-0000-000000000000'::uuid END),
+  label_key);
+
+CREATE TABLE _basedb.saved_query_role (
+  query_id uuid NOT NULL REFERENCES _basedb.saved_query(id) ON DELETE CASCADE,
+  role_id  uuid NOT NULL REFERENCES _basedb.role(id) ON DELETE CASCADE,
+  PRIMARY KEY (query_id, role_id)
+);
+
+-- Une vraie vue PostgreSQL du schema de la base, creee WITH (security_invoker = true).
+-- Son nom est alloue dans la portee du schema, celle des tables : jamais le nom d'une table.
+CREATE TABLE _basedb.sql_view (
+  id          uuid PRIMARY KEY DEFAULT _basedb_local.uuid_generate_v7(),
+  base_id     uuid NOT NULL REFERENCES _basedb.base(id) ON DELETE CASCADE,
+  schema_id   uuid NOT NULL REFERENCES _basedb.db_schema(id) ON DELETE RESTRICT,
+  name_id     uuid NOT NULL REFERENCES _basedb.physical_name(id) ON DELETE RESTRICT,
+  label       text NOT NULL, label_key text COLLATE "C" NOT NULL, description text NULL,
+  color       text NULL, icon text NULL, image text NULL,   -- l'apparence d'une table
+  position    integer NOT NULL DEFAULT 0,
+  definition  text NOT NULL,         -- le SELECT tel qu'ecrit ; PostgreSQL garde sa forme compilee
+  broken_reason text NULL,           -- retiree de PostgreSQL par une operation de structure
+  created_at, created_by, updated_at, updated_by,
+  CONSTRAINT uq_sql_view_name UNIQUE (name_id)
+);
+CREATE UNIQUE INDEX uq_sql_view_label ON _basedb.sql_view (base_id, label_key);
+```
+
+Ni l'une ni l'autre ne porte de droit. Une **requête** est un texte, que chacun exécute avec les siens (`sql/reader.ts`). Une **vue SQL** est un objet physique — son nom est au registre `physical_name` (`object_kind = 'sql_view'`, portée du schéma) et retiré, jamais réattribué, à sa suppression — dont PostgreSQL vérifie les droits du lecteur à chaque lecture. Ce que la vue lit n'est pas copié au catalogue : `pg_depend` le dit, exact à travers les renommages.
 
 ### Intégrations et tables synchronisées
 
@@ -1846,11 +1978,14 @@ CREATE TABLE _basedb.ai_call (
   base_id       uuid NULL,
   actor_user_id uuid NULL,
   surface    text COLLATE "C" NOT NULL CHECK (surface IN ('ui','rest','system')),
+  -- 'automation' : l'etape IA d'une automatisation, migration de catalogue 0008 (chapitre 17)
   usage_kind text COLLATE "C" NOT NULL
              CHECK (usage_kind IN ('structure_draft','expression_draft','field_compute','copilot',
-                                   'template_draft')),
+                                   'template_draft','automation')),
+  -- 'openai_compatible' : un serveur a l'API d'OpenAI a l'adresse de l'exploitant (Azure,
+  -- passerelle, modele local), migration de catalogue 0010 (chapitre 12 §2)
   provider   text COLLATE "C" NOT NULL
-             CHECK (provider IN ('openai','anthropic','mistral')),
+             CHECK (provider IN ('openai','anthropic','mistral','openai_compatible')),
   model      text COLLATE "C" NOT NULL,
   key_scope  text COLLATE "C" NOT NULL CHECK (key_scope IN ('instance','tenant')),
   status     text COLLATE "C" NOT NULL

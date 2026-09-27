@@ -1,3 +1,4 @@
+import { $t } from '@/lib/i18n'
 import type { Field, Table } from './api/client'
 
 /**
@@ -64,11 +65,11 @@ export function shownField(field: Field): Field {
 
 /** The name of an aggregation, as the rollup dialog and the header's tooltip say it. */
 export const AGGREGATE_NAMES: Readonly<Record<string, string>> = {
-  count: 'Nombre de valeurs',
-  sum: 'Somme',
-  avg: 'Moyenne',
-  min: 'Minimum',
-  max: 'Maximum',
+  count: $t('Nombre de valeurs'),
+  sum: $t('Somme'),
+  avg: $t('Moyenne'),
+  min: $t('Minimum'),
+  max: $t('Maximum'),
 }
 
 /** One sentence on what a computed field reads — the header's tooltip, the structure list. */
@@ -78,7 +79,7 @@ export function describeComputed(field: Field, tables: readonly Table[]): string
   if (computed.expression !== undefined) {
     return computed.stored
       ? `= ${computed.expression}`
-      : `= ${computed.expression} (calculée à chaque lecture)`
+      : $t('= {expression} (calculée à chaque lecture)', { expression: computed.expression })
   }
   const via = computed.via
   if (via === undefined) return null
@@ -87,8 +88,11 @@ export function describeComputed(field: Field, tables: readonly Table[]): string
   const relation = holder?.fields.find((f) => f.name === via.field)?.label ?? via.field
   const path =
     via.direction === 'outgoing'
-      ? `par « ${relation} »`
-      : `lignes de « ${holder?.label ?? via.table} » liées par « ${relation} »`
+      ? $t('par « {relation} »', { relation })
+      : $t('lignes de « {value} » liées par « {relation} »', {
+          value: holder?.label ?? via.table,
+          relation,
+        })
   const cited =
     computed.target === undefined || computed.target === null
       ? null
@@ -97,9 +101,13 @@ export function describeComputed(field: Field, tables: readonly Table[]): string
     case 'lookup':
       return `« ${cited ?? '?'} » — ${path}`
     case 'rollup':
-      return `${AGGREGATE_NAMES[computed.aggregate ?? 'count'] ?? ''} de « ${cited ?? '?'} » — ${path}`
+      return $t('{value} de « {value2} » — {path}', {
+        value: AGGREGATE_NAMES[computed.aggregate ?? 'count'] ?? '',
+        value2: cited ?? '?',
+        path,
+      })
     case 'count':
-      return `Nombre de lignes — ${path}`
+      return $t('Nombre de lignes — {path}', { path })
     default:
       return null
   }

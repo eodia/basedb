@@ -1,0 +1,86 @@
+---
+title: REST-API
+description: Läs och skriv rader i basedb från ett program.
+---
+
+REST-API:et är samma som gränssnittet använder: **det finns ingen privat väg**. Dess URL:er
+innehåller de fysiska namnen – samma som du läser i SQL.
+
+```text
+/api/v1/<tenant>/data/<base>/<table>
+/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites
+```
+
+## En token
+
+I gränssnittet, databasens **⋯**-meny → **API och agenter** → **API- och MCP-tokens…**: där skapar
+du en **integrationstoken** som är begränsad till den här databasen, skrivskyddad som standard,
+efter att du har bekräftat ditt lösenord. Den visas bara en gång; lägg den i en miljövariabel.
+
+En token läser, skapar och ändrar om den har skapats med skrivrätt, **tar aldrig bort** och har
+aldrig fler behörigheter än personen som skapade den.
+
+```bash
+export BASEDB_TOKEN=bdb_…
+curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
+  -H "Authorization: Bearer $BASEDB_TOKEN"
+```
+
+## Läsa
+
+| Parameter | Roll |
+|---|---|
+| `filter` | ett läsbart uttryck: `statut eq "gagne" and montant gte 10000` |
+| `sort` | `-montant,nom` |
+| `fields` | kolumnerna som ska returneras |
+| `limit`, `cursor` | paginering med krypterad markör (`next_cursor` i svaret) |
+| `links=display` | relationerna med sitt visningsvärde |
+| `count=exact` | totalen, med ett tak på 100 000 |
+| `variables=raw` | långa texter som de skrevs, `{{colonne}}` inräknat, i stället för med [radens värden](/basedb/sv/fonctionnalites/tables-et-champs/#formaterad-text-och-variabler) |
+
+Operatorerna: `eq`, `ne`, `eq_ci`, `contains`, `starts_with`, `ends_with`, `in`, `is_null`,
+`gt`, `gte`, `lt`, `lte`, `between`, kombinerade med `and`, `or`, `not` och parenteser. Ett
+filter kan gå genom en relation: `clients_id.ville eq "Lyon"`.
+
+## Skriva
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" -H "content-type: application/json" \
+  -d '{"values": {"nom": "Audit RGPD", "statut": "nouveau", "montant": 12000}}'
+```
+
+`PATCH …/<table>/<_id>` ändrar en rad med samma kropp `{"values": {…}}`. Felen har en enda
+form: `{ "code": "…", "details": {…}, "request_id": "…" }`, med en stabil kod per orsak.
+
+Varje skrivning returnerar sidhuvudet `x-basedb-transaction`: skickar du det till
+`POST /api/v1/<tenant>/history/undo` (`{"transaction": "…"}`) ångras skrivningen, precis som med
+Ctrl+Z i gränssnittet – det avvisas om raden har ändrats sedan dess.
+
+## Mer än rader
+
+Med samma token:
+
+| Väg | Roll |
+|---|---|
+| `GET …/data/<base>/<table>/aggregate` | sammanfattningar över alla rader i ett filter: `aggregates=montant:sum,nom:filled`, `group=statut` |
+| `GET …/data/<base>/<table>/<_id>/comments`, `POST` | läsa och skriva kommentarerna på en rad |
+| `POST /api/v1/<tenant>/automations/<id>/run` | starta en automatisering som utlöses av en knapp, på en rad (`{"record": "…"}`) |
+| `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | instrumentpanelerna i en databas |
+| `GET /api/v1/<tenant>/meta/users` | medlemmarna i arbetsytan, för ett Person-fält |
+| `GET /api/v1/<tenant>/meta/templates` | databasmallarna i galleriet |
+
+[Delade vyer](/basedb/sv/fonctionnalites/vues-partagees/) kan läsas utan konto:
+`GET /api/v1/views/<jeton>` och `…/rows` i JSON, `…/calendar.ics` i iCalendar.
+
+Att bygga – skapa en automatisering, en instrumentpanel, en integration – är förbehållet en
+session i gränssnittet: en token läser och skriver rader, den ändrar inte databasen.
+
+## Den genererade dokumentationen
+
+Varje databas har sin sida **API- och MCP-dokumentation**: för varje tabell dess slutpunkter,
+dess kolumner, exempel i cURL och i JavaScript. Den är **filtrerad efter dina behörigheter** –
+två läsare får två olika versioner – och finns också i OpenAPI 3.1
+(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+
+![Den genererade dokumentationen för en databas](../../../../assets/screens/documentation-api.png)

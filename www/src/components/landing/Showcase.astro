@@ -1,36 +1,46 @@
 ---
 import { Image } from 'astro:assets';
+import { type Locale, fill, i18n } from '../../i18n';
 import automatisations from '../../assets/screens/automatisations.png';
 import chronologie from '../../assets/screens/chronologie.png';
 import commentaires from '../../assets/screens/commentaires.png';
 import galerie from '../../assets/screens/galerie.png';
 import grille from '../../assets/screens/grille.png';
 import historique from '../../assets/screens/historique.png';
-import interfaces from '../../assets/screens/interfaces.png';
+import dashboards from '../../assets/screens/tableaux-de-bord.png';
 import kanban from '../../assets/screens/kanban.png';
 import partage from '../../assets/screens/partage-formulaire.png';
 import sql from '../../assets/screens/requete-sql.png';
+import vueSql from '../../assets/screens/vue-sql.png';
 
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, lang } = i18n(locale);
+const text = t.showcase.shots;
 const shots = [
-	{ id: 'grille', label: 'Grille', image: grille, caption: 'Une grille qui écrit dans une vraie table — et des champs calculés : une durée par formule, la ville du client par recherche, le nombre de tâches par décompte.' },
-	{ id: 'kanban', label: 'Kanban', image: kanban, caption: 'Les mêmes lignes en colonnes, selon une liste de choix. Glisser une carte, c’est modifier la ligne.' },
-	{ id: 'galerie', label: 'Galerie', image: galerie, caption: 'Des cartes, une couleur par statut : la galerie, l’une des huit façons de lire une table.' },
-	{ id: 'chronologie', label: 'Chronologie', image: chronologie, caption: 'Des barres entre deux dates, et les flèches de leurs dépendances — en rouge quand l’ordre ne tient plus.' },
-	{ id: 'interfaces', label: 'Interfaces', image: interfaces, caption: 'Un tableau de bord sur la base : chiffres, graphiques, prochaines échéances — lus avec les droits de chacun.' },
-	{ id: 'automatisations', label: 'Automatisations', image: automatisations, caption: 'Quand une tâche passe à « Fait », noter l’heure. Chaque exécution est tracée, action par action.' },
-	{ id: 'commentaires', label: 'Commentaires', image: commentaires, caption: 'On discute d’une ligne là où elle se trouve : commentaires, mentions, notifications.' },
-	{ id: 'formulaire', label: 'Formulaire', image: partage, caption: 'Un formulaire se partage par un lien, public ou réservé aux membres connectés.' },
-	{ id: 'historique', label: 'Historique', image: historique, caption: 'Chaque écriture, d’où qu’elle vienne — une personne, une automatisation, le SQL direct — avec les valeurs d’avant.' },
-	{ id: 'sql', label: 'SQL', image: sql, caption: 'La console SQL lit les tables sous leur vrai nom. Rien à traduire, rien à exporter.' },
+	{ id: 'grille', image: grille, ...text.grille },
+	{ id: 'kanban', image: kanban, ...text.kanban },
+	{ id: 'galerie', image: galerie, ...text.galerie },
+	{ id: 'chronologie', image: chronologie, ...text.chronologie },
+	{ id: 'tableaux', image: dashboards, ...text.tableaux },
+	{ id: 'automatisations', image: automatisations, ...text.automatisations },
+	{ id: 'commentaires', image: commentaires, ...text.commentaires },
+	{ id: 'formulaire', image: partage, ...text.formulaire },
+	{ id: 'historique', image: historique, ...text.historique },
+	{ id: 'sql', image: sql, ...text.sql },
+	{ id: 'vues-sql', image: vueSql, ...text.vuesSql },
 ];
 ---
 
 <section class="bd-show bd-reveal" aria-labelledby="bd-show-title">
 	<div class="head">
-		<span class="bd-label">L’interface, pour de vrai</span>
-		<h2 id="bd-show-title">Tout ce que votre équipe attend d’un tableur partagé.</h2>
+		<span class="bd-label">{t.showcase.label}</span>
+		<h2 id="bd-show-title">{t.showcase.title}</h2>
 	</div>
-	<div class="tabs" role="tablist" aria-label="Captures de l’interface">
+	<div class="tabs" role="tablist" aria-label={t.showcase.tabs}>
 		{
 			shots.map((s, i) => (
 				<button
@@ -61,7 +71,7 @@ const shots = [
 				>
 					<Image
 						src={s.image}
-						alt={`basedb — ${s.label.toLowerCase()} : ${s.caption}`}
+						alt={fill(t.showcase.alt, { label: s.label, labelLower: s.label.toLocaleLowerCase(lang), caption: s.caption })}
 						widths={[720, 1440, 2160]}
 						sizes="(max-width: 1240px) 100vw, 1200px"
 						loading={i === 0 ? 'eager' : 'lazy'}

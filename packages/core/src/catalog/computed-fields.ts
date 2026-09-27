@@ -16,6 +16,7 @@ import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { commentText } from './description.js'
 import { labelKey } from './operations.js'
+import { detachSqlViews, reattachSqlViews } from './sql-views.js'
 
 /**
  * Creating the computed fields — chapter 04 §7 and §7 ter.
@@ -235,6 +236,11 @@ export async function setFormula(
     const relation = qualify(where.schemaName, where.tableName)
     const column = quoteIdentifier(request.field)
     const sql: string[] = []
+    // A SQL view reading the column would make PostgreSQL refuse to drop it: it steps out
+    // for the time of the change, and comes back on the new column (ch. 11 §1.8).
+    const detached = field.is_stored
+      ? await detachSqlViews(exec, where.schemaName, where.tableName, request.field)
+      : []
     if (field.is_stored) {
       const drop = `ALTER TABLE ${relation} DROP COLUMN ${column};`
       await exec.query(drop, [], 'ddl')
@@ -274,6 +280,11 @@ export async function setFormula(
       'UPDATE _basedb.field SET updated_at = pg_catalog.clock_timestamp(), updated_by = $2 WHERE id = $1',
       [field.id, ctx.actor.id],
       'update',
+    )
+    await reattachSqlViews(
+      exec,
+      detached,
+      `La formule « ${field.label} » qu’elle lit a changé de nature.`,
     )
     return { stored: compiled.stored, sql }
   })

@@ -1,3 +1,6 @@
+import { AI_KINDS, type AiKind } from '../ai/answer.js'
+import { resolveProvider } from '../ai/draft.js'
+import { MAX_PROMPT_CHARS } from '../ai/prompt.js'
 import { BasedbError } from '../errors/index.js'
 import { requireOnBase } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
@@ -6,9 +9,10 @@ import { type TargetPolicy, checkTarget } from '../webhooks/target.js'
 
 /**
  * Automations — chapter 17: what one is, and how it is kept. A trigger, a condition, a
- * sequence of actions, acting on the authority of its owner — the last person who saved
- * it. Everything a definition names is checked here, at write time, and read again, with
- * the owner's rights, at every run.
+ * flow of steps — one after the other, branching on what a row holds, each able to cite
+ * what the steps before it found or wrote — acting on the authority of its owner, the
+ * last person who saved it. Everything a definition names is checked here, at write time,
+ * and read again, with the owner's rights, at every run.
  */
 
 export type TriggerKind = 'record_created' | 'record_updated' | 'schedule' | 'button'
@@ -22,28 +26,87 @@ export interface Schedule {
   readonly timezone: string
 }
 
-export type AutomationAction =
-  | { readonly kind: 'update_record'; readonly values: Readonly<Record<string, unknown>> }
+/**
+ * The row a step acts on (chapter 17 §1.4): `trigger`, the one that triggered, or the
+ * identifier of a step before it that found, created or modified one.
+ */
+export type RowSource = string
+
+export const TRIGGER_ROW = 'trigger'
+
+export type AutomationStep =
   | {
+      readonly id: string
+      readonly kind: 'update_record'
+      readonly record: RowSource
+      readonly values: Readonly<Record<string, unknown>>
+    }
+  | {
+      readonly id: string
       readonly kind: 'create_record'
       /** The table's catalog key. */
       readonly table: string
       readonly values: Readonly<Record<string, unknown>>
     }
   | {
+      readonly id: string
+      readonly kind: 'find_record'
+      /** The table's catalog key. */
+      readonly table: string
+      /** In the language of filters, citing what came before; empty: any row. */
+      readonly filter: string
+      /** `champ` or `-champ`: which row comes first when several match. */
+      readonly sort: string | null
+    }
+  | {
+      readonly id: string
       readonly kind: 'notify'
+      /** The row the notification is about; `null`: none (a schedule with no row). */
+      readonly record: RowSource | null
       readonly users: readonly string[]
-      /** A person field of the triggering row, whose person is notified too. */
+      /** A person field of that row, whose person is notified too. */
       readonly userField: string | null
       readonly message: string
     }
-  | { readonly kind: 'webhook'; readonly url: string }
   | {
+      readonly id: string
+      readonly kind: 'webhook'
+      /** The row sent; `null`: none. */
+      readonly record: RowSource | null
+      readonly url: string
+    }
+  | {
+      readonly id: string
       readonly kind: 'slack'
       /** A Slack connection of the base (chapter 19 §1). */
       readonly integration: string
       readonly message: string
     }
+  | {
+      readonly id: string
+      readonly kind: 'ai'
+      /** The instruction to the model, citing what came before (§1.6). */
+      readonly prompt: string
+      /** What the answer is read into — the types of an AI field (chapter 12 §1.5). */
+      readonly answer: AiKind
+      /** The choices of a `select` answer, by label. */
+      readonly options: readonly string[]
+      /** The author agreed that what the prompt cites leaves for the provider. */
+      readonly consent: true
+    }
+  | { readonly id: string; readonly kind: 'branch'; readonly paths: readonly BranchPath[] }
+
+/** One way out of a branch: the first whose test holds is taken (chapter 17 §1.5). */
+export interface BranchPath {
+  readonly id: string
+  readonly label: string
+  /** A row, and a filter it must satisfy; `null`: otherwise — the last path only. */
+  readonly when: { readonly record: RowSource; readonly condition: string } | null
+  readonly steps: readonly AutomationStep[]
+}
+
+/** What chapter 17 first called an action is now a step. */
+export type AutomationAction = AutomationStep
 
 export interface AutomationTrigger {
   readonly kind: TriggerKind
@@ -62,7 +125,8 @@ export interface Automation {
   readonly enabled: boolean
   readonly trigger: AutomationTrigger
   readonly condition: string | null
-  readonly actions: readonly AutomationAction[]
+  /** The flow's steps, in order — the API's `actions`. */
+  readonly actions: readonly AutomationStep[]
   readonly owner: { readonly id: string; readonly name: string }
   readonly nextRunAt: string | null
   readonly lastRun: { readonly status: string; readonly at: string } | null
@@ -92,8 +156,14 @@ export interface AutomationInput {
   readonly actions?: unknown
 }
 
-export const MAX_ACTIONS = 10
+/** Steps in all, branches and what they hold included. */
+export const MAX_STEPS = 30
+/** Branches within branches. */
+export const MAX_DEPTH = 3
+export const MAX_PATHS = 5
 export const MAX_NOTIFIED = 20
+/** The choices an AI step may be asked to pick among. */
+export const MAX_AI_OPTIONS = 50
 
 const invalid = (field: string, reason: string, detail?: unknown) =>
   new BasedbError('REQUEST_INVALID', {
@@ -102,6 +172,20 @@ const invalid = (field: string, reason: string, detail?: unknown) =>
 
 const TRIGGERS: readonly TriggerKind[] = ['record_created', 'record_updated', 'schedule', 'button']
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+/** A step's or a path's identifier: what `{{e2.champ}}` and `record` name. */
+const STEP_ID = /^[a-z][a-z0-9_]{0,31}$/
+/** The columns every table has, which a search may sort on. */
+const SYSTEM_SORTS = new Set(['_id', '_created_at', '_updated_at'])
+
+/**
+ * What a text cites: `{{champ}}` and `{{_id}}` of the triggering row, `{{_maintenant}}`,
+ * and `{{e2.champ}}` — a step before, then a path into what it gave.
+ */
+export const CITATION = /\{\{\s*([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)\s*\}\}/g
+
+export function citationsOf(text: string): string[][] {
+  return [...text.matchAll(CITATION)].map((m) => (m[1] as string).split('.'))
+}
 
 // ── Schedules ────────────────────────────────────────────────────────────────
 
@@ -235,7 +319,30 @@ function tableByName(tables: Map<string, TableInfo>, name: unknown, field: strin
   return found
 }
 
-function checkedValues(raw: unknown, table: TableInfo, field: string): Record<string, unknown> {
+/**
+ * What a step may name (chapter 17 §1.4): the triggering row's table, and the steps passed
+ * on every way to it — with the table of the row each gave, `null` for a webhook's answer.
+ * A step inside a path is not seen after the branch: it may not have run.
+ */
+interface Scope {
+  readonly trigger: TableInfo | null
+  readonly steps: ReadonlyMap<string, TableInfo | null>
+}
+
+/** A text may cite a step only once it has run: one passed on every way here. */
+function checkCitations(text: string, scope: Scope, field: string): void {
+  for (const path of citationsOf(text)) {
+    const head = path[0] as string
+    if (path.length > 1 && !scope.steps.has(head)) throw invalid(field, 'etape_inconnue', head)
+  }
+}
+
+function checkedValues(
+  raw: unknown,
+  table: TableInfo,
+  field: string,
+  scope: Scope,
+): Record<string, unknown> {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw))
     throw invalid(field, 'valeurs_invalides')
   const values = raw as Record<string, unknown>
@@ -243,95 +350,273 @@ function checkedValues(raw: unknown, table: TableInfo, field: string): Record<st
   if (names.length === 0) throw invalid(field, 'aucune_valeur')
   for (const name of names) {
     if (!table.fields.has(name)) throw invalid(field, 'champ_inconnu', name)
+    const value = values[name]
+    if (typeof value === 'string') checkCitations(value, scope, `${field}.${name}`)
   }
   return values
 }
 
-async function checkedActions(
-  exec: Executor,
-  ctx: RequestContext,
+/** The row a step acts on, and its table: the triggering row unless another is named. */
+function rowSource(
   raw: unknown,
-  trigger: AutomationTrigger,
-  tables: Map<string, TableInfo>,
-  targets: TargetPolicy,
-  baseId: string,
-): Promise<AutomationAction[]> {
-  if (!Array.isArray(raw) || raw.length === 0) throw invalid('actions', 'aucune_action')
-  if (raw.length > MAX_ACTIONS) throw invalid('actions', 'trop_d_actions', MAX_ACTIONS)
-  const source = trigger.table === null ? null : (tables.get(trigger.table) ?? null)
-  const out: AutomationAction[] = []
+  scope: Scope,
+  field: string,
+  required: string | null,
+): { readonly ref: string | null; readonly table: TableInfo | null } {
+  const ref =
+    typeof raw === 'string' && raw !== '' ? raw : scope.trigger === null ? null : TRIGGER_ROW
+  if (ref === null || (ref === TRIGGER_ROW && scope.trigger === null)) {
+    if (required !== null) throw invalid(field, required)
+    return { ref: null, table: null }
+  }
+  if (ref === TRIGGER_ROW) return { ref, table: scope.trigger }
+  const table = scope.steps.get(ref)
+  if (table === undefined) throw invalid(field, 'etape_inconnue', ref)
+  if (table === null) throw invalid(field, 'etape_sans_ligne', ref)
+  return { ref, table }
+}
+
+/** Every identifier a flow already carries, so that the new ones do not collide. */
+function idsOf(raw: unknown, into: Set<string>): Set<string> {
+  if (!Array.isArray(raw)) return into
+  for (const item of raw) {
+    const step = (item ?? {}) as Record<string, unknown>
+    if (typeof step.id === 'string') into.add(step.id)
+    for (const p of Array.isArray(step.paths) ? step.paths : []) {
+      const path = (p ?? {}) as Record<string, unknown>
+      if (typeof path.id === 'string') into.add(path.id)
+      idsOf(path.steps, into)
+    }
+  }
+  return into
+}
+
+/** A flow being checked: what it may name, and what it has used so far. */
+interface Walk {
+  readonly exec: Executor
+  readonly ctx: RequestContext
+  readonly baseId: string
+  readonly tables: Map<string, TableInfo>
+  readonly targets: TargetPolicy
+  /** Identifiers given or made, so that a new one is new. */
+  readonly taken: Set<string>
+  /** Identifiers met, so that one given twice is refused. */
+  readonly seen: Set<string>
+  /**
+   * The flow is being written, not only carried over: an AI step then needs the AI
+   * configured — switching an automation on or off never does.
+   */
+  readonly writing: boolean
+  count: number
+}
+
+/** The identifier given, checked, or a new one: `e3` for a step, `c2` for a path. */
+function identifier(walk: Walk, raw: unknown, prefix: 'e' | 'c', field: string): string {
+  if (raw !== undefined && raw !== null && raw !== '') {
+    if (typeof raw !== 'string' || !STEP_ID.test(raw) || raw === TRIGGER_ROW)
+      throw invalid(field, 'identifiant_invalide', raw)
+    if (walk.seen.has(raw)) throw invalid(field, 'identifiant_en_double', raw)
+    walk.seen.add(raw)
+    return raw
+  }
+  let n = 1
+  while (walk.taken.has(`${prefix}${n}`)) n++
+  const id = `${prefix}${n}`
+  walk.taken.add(id)
+  walk.seen.add(id)
+  return id
+}
+
+/** A refusal says which step it is about, so that the screen can show it there. */
+function aboutStep(error: unknown, id: string): unknown {
+  if (!(error instanceof BasedbError) || 'step' in error.details) return error
+  return new BasedbError(error.code, { details: { ...error.details, step: id }, cause: error })
+}
+
+async function checkedSteps(
+  walk: Walk,
+  raw: unknown,
+  outer: Scope,
+  at: string,
+  depth: number,
+): Promise<AutomationStep[]> {
+  if (!Array.isArray(raw)) throw invalid(at, 'etapes_invalides')
+  const scope = { trigger: outer.trigger, steps: new Map(outer.steps) }
+  const out: AutomationStep[] = []
   for (const [index, item] of raw.entries()) {
+    const field = `${at}[${index}]`
     const a = (item ?? {}) as Record<string, unknown>
-    const at = `actions[${index}]`
-    switch (a.kind) {
-      case 'update_record': {
-        if (source === null) throw invalid(at, 'action_sans_ligne')
-        out.push({ kind: 'update_record', values: checkedValues(a.values, source, `${at}.values`) })
-        break
-      }
-      case 'create_record': {
-        const table = tableByName(tables, a.table, `${at}.table`)
-        out.push({
-          kind: 'create_record',
-          table: table.id,
-          values: checkedValues(a.values, table, `${at}.values`),
-        })
-        break
-      }
-      case 'notify': {
-        const users = Array.isArray(a.users)
-          ? [...new Set(a.users.filter((u): u is string => typeof u === 'string' && UUID.test(u)))]
-          : []
-        if (users.length > MAX_NOTIFIED)
-          throw invalid(`${at}.users`, 'trop_de_personnes', MAX_NOTIFIED)
-        const userField =
-          typeof a.user_field === 'string' && a.user_field !== '' ? a.user_field : null
-        if (userField !== null && source?.fields.get(userField) !== 'user') {
-          throw invalid(`${at}.user_field`, 'champ_personne_attendu', userField)
-        }
-        if (users.length === 0 && userField === null)
-          throw invalid(`${at}.users`, 'personne_a_prevenir')
-        if (users.length > 0) {
-          const known = await exec.query<{ id: string }>(
-            `SELECT u.id::text FROM _basedb.app_user u JOIN _basedb.tenant t ON t.id = u.tenant_id
-              WHERE t.ref = $1 AND u.id = ANY($2::uuid[]) AND u.deleted_at IS NULL`,
-            [ctx.tenantId, users],
-          )
-          const unknown = users.find((u) => !known.some((k) => k.id === u))
-          if (unknown !== undefined) throw invalid(`${at}.users`, 'personne_inconnue', unknown)
-        }
-        const message = typeof a.message === 'string' ? a.message.trim() : ''
-        if (message === '' || message.length > 1000)
-          throw invalid(`${at}.message`, 'message_invalide')
-        out.push({ kind: 'notify', users, userField, message })
-        break
-      }
-      case 'webhook': {
-        const url = typeof a.url === 'string' ? a.url.trim() : ''
-        await checkTarget(url, targets)
-        out.push({ kind: 'webhook', url })
-        break
-      }
-      case 'slack': {
-        const integration = typeof a.integration === 'string' ? a.integration : ''
-        const [found] = await exec.query<{ id: string }>(
-          `SELECT id::text FROM _basedb.integration
-            WHERE id::text = $1 AND base_id = $2 AND kind = 'slack' AND deleted_at IS NULL`,
-          [integration, baseId],
-        )
-        if (found === undefined)
-          throw invalid(`${at}.integration`, 'connexion_inconnue', integration)
-        const message = typeof a.message === 'string' ? a.message.trim() : ''
-        if (message === '' || message.length > 3000)
-          throw invalid(`${at}.message`, 'message_invalide')
-        out.push({ kind: 'slack', integration, message })
-        break
-      }
-      default:
-        throw invalid(`${at}.kind`, 'action_inconnue', a.kind)
+    walk.count++
+    if (walk.count > MAX_STEPS) throw invalid('actions', 'trop_d_etapes', MAX_STEPS)
+    const id = identifier(walk, a.id, 'e', `${field}.id`)
+    try {
+      const { step, gives } = await checkedStep(walk, a, id, scope, field, depth)
+      out.push(step)
+      if (gives !== undefined) scope.steps.set(id, gives)
+    } catch (error) {
+      throw aboutStep(error, id)
     }
   }
   return out
+}
+
+async function checkedStep(
+  walk: Walk,
+  a: Record<string, unknown>,
+  id: string,
+  scope: Scope,
+  at: string,
+  depth: number,
+): Promise<{ readonly step: AutomationStep; readonly gives?: TableInfo | null }> {
+  switch (a.kind) {
+    case 'update_record': {
+      const source = rowSource(a.record, scope, `${at}.record`, 'action_sans_ligne')
+      const table = source.table as TableInfo
+      const values = checkedValues(a.values, table, `${at}.values`, scope)
+      return {
+        step: { id, kind: 'update_record', record: source.ref as string, values },
+        gives: table,
+      }
+    }
+    case 'create_record': {
+      const table = tableByName(walk.tables, a.table, `${at}.table`)
+      const values = checkedValues(a.values, table, `${at}.values`, scope)
+      return { step: { id, kind: 'create_record', table: table.id, values }, gives: table }
+    }
+    case 'find_record': {
+      const table = tableByName(walk.tables, a.table, `${at}.table`)
+      const filter = typeof a.filter === 'string' ? a.filter.trim() : ''
+      if (filter.length > 4000) throw invalid(`${at}.filter`, 'texte_trop_long')
+      checkCitations(filter, scope, `${at}.filter`)
+      const sort = typeof a.sort === 'string' && a.sort.trim() !== '' ? a.sort.trim() : null
+      if (sort !== null) {
+        const name = sort.replace(/^-/, '')
+        if (!table.fields.has(name) && !SYSTEM_SORTS.has(name))
+          throw invalid(`${at}.sort`, 'champ_inconnu', name)
+      }
+      return { step: { id, kind: 'find_record', table: table.id, filter, sort }, gives: table }
+    }
+    case 'notify': {
+      const source = rowSource(a.record, scope, `${at}.record`, null)
+      const users = Array.isArray(a.users)
+        ? [...new Set(a.users.filter((u): u is string => typeof u === 'string' && UUID.test(u)))]
+        : []
+      if (users.length > MAX_NOTIFIED)
+        throw invalid(`${at}.users`, 'trop_de_personnes', MAX_NOTIFIED)
+      const userField =
+        typeof a.user_field === 'string' && a.user_field !== '' ? a.user_field : null
+      if (userField !== null && source.table?.fields.get(userField) !== 'user') {
+        throw invalid(`${at}.user_field`, 'champ_personne_attendu', userField)
+      }
+      if (users.length === 0 && userField === null)
+        throw invalid(`${at}.users`, 'personne_a_prevenir')
+      if (users.length > 0) {
+        const known = await walk.exec.query<{ id: string }>(
+          `SELECT u.id::text FROM _basedb.app_user u JOIN _basedb.tenant t ON t.id = u.tenant_id
+            WHERE t.ref = $1 AND u.id = ANY($2::uuid[]) AND u.deleted_at IS NULL`,
+          [walk.ctx.tenantId, users],
+        )
+        const unknown = users.find((u) => !known.some((k) => k.id === u))
+        if (unknown !== undefined) throw invalid(`${at}.users`, 'personne_inconnue', unknown)
+      }
+      const message = typeof a.message === 'string' ? a.message.trim() : ''
+      if (message === '' || message.length > 1000)
+        throw invalid(`${at}.message`, 'message_invalide')
+      checkCitations(message, scope, `${at}.message`)
+      return { step: { id, kind: 'notify', record: source.ref, users, userField, message } }
+    }
+    case 'webhook': {
+      const source = rowSource(a.record, scope, `${at}.record`, null)
+      const url = typeof a.url === 'string' ? a.url.trim() : ''
+      await checkTarget(url, walk.targets)
+      return { step: { id, kind: 'webhook', record: source.ref, url }, gives: null }
+    }
+    case 'slack': {
+      const integration = typeof a.integration === 'string' ? a.integration : ''
+      const [found] = await walk.exec.query<{ id: string }>(
+        `SELECT id::text FROM _basedb.integration
+          WHERE id::text = $1 AND base_id = $2 AND kind = 'slack' AND deleted_at IS NULL`,
+        [integration, walk.baseId],
+      )
+      if (found === undefined) throw invalid(`${at}.integration`, 'connexion_inconnue', integration)
+      const message = typeof a.message === 'string' ? a.message.trim() : ''
+      if (message === '' || message.length > 3000)
+        throw invalid(`${at}.message`, 'message_invalide')
+      checkCitations(message, scope, `${at}.message`)
+      return { step: { id, kind: 'slack', integration, message } }
+    }
+    case 'ai': {
+      const prompt = typeof a.prompt === 'string' ? a.prompt.trim() : ''
+      if (prompt === '') throw invalid(`${at}.prompt`, 'consigne_vide')
+      if ([...prompt].length > MAX_PROMPT_CHARS)
+        throw invalid(`${at}.prompt`, 'consigne_trop_longue', MAX_PROMPT_CHARS)
+      checkCitations(prompt, scope, `${at}.prompt`)
+      const answer = a.answer === undefined || a.answer === null ? 'long_text' : a.answer
+      if (typeof answer !== 'string' || !(AI_KINDS as readonly string[]).includes(answer))
+        throw invalid(`${at}.answer`, 'reponse_inconnue', answer)
+      const options =
+        answer === 'select' && Array.isArray(a.options)
+          ? [
+              ...new Set(
+                a.options
+                  .filter((o): o is string => typeof o === 'string')
+                  .map((o) => o.trim())
+                  .filter((o) => o !== ''),
+              ),
+            ]
+          : []
+      if (answer === 'select' && options.length === 0) throw invalid(`${at}.options`, 'aucun_choix')
+      if (options.length > MAX_AI_OPTIONS || options.some((o) => o.length > 255))
+        throw invalid(`${at}.options`, 'trop_de_choix', MAX_AI_OPTIONS)
+      // As for an AI field (chapter 12 §1.5): what the prompt cites leaves for the provider,
+      // and the person who saves the step says they agree to it; a step that could never
+      // run — the AI switched off, no provider — is refused when written, not left to fail.
+      if (a.consent !== true) {
+        throw new BasedbError('AI_CONSENT_REQUIRED', {
+          details: { field: `${at}.consent`, reason: 'consentement_requis' },
+        })
+      }
+      if (walk.writing) await resolveProvider(walk.exec, walk.ctx)
+      return {
+        step: { id, kind: 'ai', prompt, answer: answer as AiKind, options, consent: true },
+        gives: null,
+      }
+    }
+    case 'branch': {
+      if (depth >= MAX_DEPTH) throw invalid(at, 'branches_trop_profondes', MAX_DEPTH)
+      const raw = Array.isArray(a.paths) ? a.paths : []
+      if (raw.length === 0) throw invalid(`${at}.paths`, 'aucun_chemin')
+      if (raw.length > MAX_PATHS) throw invalid(`${at}.paths`, 'trop_de_chemins', MAX_PATHS)
+      const paths: BranchPath[] = []
+      for (const [index, item] of raw.entries()) {
+        const p = (item ?? {}) as Record<string, unknown>
+        const field = `${at}.paths[${index}]`
+        const pathId = identifier(walk, p.id, 'c', `${field}.id`)
+        let when: BranchPath['when'] = null
+        if (p.when !== null && p.when !== undefined) {
+          const w = p.when as Record<string, unknown>
+          const source = rowSource(w.record, scope, `${field}.when.record`, 'condition_sans_ligne')
+          const condition = typeof w.condition === 'string' ? w.condition.trim() : ''
+          if (condition.length > 4000) throw invalid(`${field}.when.condition`, 'texte_trop_long')
+          checkCitations(condition, scope, `${field}.when.condition`)
+          when = { record: source.ref as string, condition }
+        } else if (index !== raw.length - 1) {
+          throw invalid(`${field}.when`, 'sinon_en_dernier')
+        }
+        const label =
+          typeof p.label === 'string' && p.label.trim() !== ''
+            ? p.label.trim().slice(0, 60)
+            : when === null
+              ? 'Sinon'
+              : `Chemin ${index + 1}`
+        const steps = await checkedSteps(walk, p.steps ?? [], scope, `${field}.steps`, depth + 1)
+        paths.push({ id: pathId, label, when, steps })
+      }
+      return { step: { id, kind: 'branch', paths } }
+    }
+    default:
+      throw invalid(`${at}.kind`, 'action_inconnue', a.kind)
+  }
 }
 
 async function checkedDefinition(
@@ -370,6 +655,7 @@ async function checkedDefinition(
       if (!table.fields.has(f)) throw invalid('trigger.fields', 'champ_inconnu', f)
     trigger = { kind, table: table.id, fields, schedule: null }
   }
+  const source = trigger.table === null ? null : (tables.get(trigger.table) ?? null)
 
   const rawCondition = input.condition === undefined ? current?.condition : input.condition
   const condition =
@@ -377,26 +663,78 @@ async function checkedDefinition(
   if (condition !== null && trigger.table === null)
     throw invalid('condition', 'condition_sans_ligne')
   if (condition !== null && condition.length > 4000) throw invalid('condition', 'texte_trop_long')
+  // Checked before any step has run: it cites the triggering row only.
+  if (condition !== null)
+    checkCitations(condition, { trigger: source, steps: new Map() }, 'condition')
 
-  const actions = await checkedActions(
+  const rawSteps = input.actions ?? (current === null ? undefined : wireSteps(current.actions))
+  if (!Array.isArray(rawSteps) || rawSteps.length === 0) throw invalid('actions', 'aucune_action')
+  const walk: Walk = {
     exec,
     ctx,
-    input.actions ?? current?.actions?.map(wireAction(tables)),
-    trigger,
+    baseId,
     tables,
     targets,
-    baseId,
+    taken: idsOf(rawSteps, new Set()),
+    seen: new Set(),
+    writing: input.actions !== undefined,
+    count: 0,
+  }
+  const actions = await checkedSteps(
+    walk,
+    rawSteps,
+    { trigger: source, steps: new Map() },
+    'actions',
+    0,
   )
   return { label, description, enabled, trigger, condition, actions }
 }
 
-/** An action as it was written — table names rather than keys — to be checked again. */
-const wireAction = (tables: Map<string, TableInfo>) => (a: AutomationAction) =>
-  a.kind === 'create_record'
-    ? { ...a, table: tables.get(a.table)?.name ?? a.table }
-    : a.kind === 'notify'
-      ? { kind: a.kind, users: a.users, user_field: a.userField, message: a.message }
-      : a
+/** Steps as the API shows them — tables by key, `user_field` — and takes them back. */
+export function wireSteps(steps: readonly AutomationStep[]): Record<string, unknown>[] {
+  return steps.map((s): Record<string, unknown> => {
+    switch (s.kind) {
+      case 'notify':
+        return {
+          id: s.id,
+          kind: s.kind,
+          record: s.record,
+          users: s.users,
+          user_field: s.userField,
+          message: s.message,
+        }
+      case 'branch':
+        return {
+          id: s.id,
+          kind: s.kind,
+          paths: s.paths.map((p) => ({
+            id: p.id,
+            label: p.label,
+            when: p.when,
+            steps: wireSteps(p.steps),
+          })),
+        }
+      default:
+        return { ...s }
+    }
+  })
+}
+
+/**
+ * Steps as stored. Those saved before flows had neither identifiers nor a row named: they
+ * are numbered in order, and act on the triggering row, as they always did.
+ */
+function storedSteps(raw: unknown, hasRow: boolean): AutomationStep[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map((item, index) => {
+    const s = item as Record<string, unknown>
+    const id = typeof s.id === 'string' ? s.id : `e${index + 1}`
+    if (s.kind === 'update_record') return { ...s, id, record: s.record ?? TRIGGER_ROW }
+    if (s.kind === 'notify' || s.kind === 'webhook')
+      return { ...s, id, record: s.record === undefined ? (hasRow ? TRIGGER_ROW : null) : s.record }
+    return { ...s, id }
+  }) as AutomationStep[]
+}
 
 // ── Reading ──────────────────────────────────────────────────────────────────
 
@@ -410,7 +748,7 @@ interface Row extends Record<string, unknown> {
   readonly table_id: string | null
   readonly trigger: Record<string, unknown>
   readonly condition: string | null
-  readonly actions: AutomationAction[]
+  readonly actions: unknown
   readonly owner_id: string
   readonly owner_name: string
   readonly next_run_at: string | null
@@ -446,7 +784,7 @@ function shaped(row: Row): Automation {
       schedule: t.schedule ?? null,
     },
     condition: row.condition,
-    actions: row.actions,
+    actions: storedSteps(row.actions, row.table_id !== null),
     owner: { id: row.owner_id, name: row.owner_name },
     nextRunAt: row.next_run_at,
     lastRun: row.last_status === null ? null : { status: row.last_status, at: row.last_at ?? '' },
@@ -497,6 +835,29 @@ export async function listAutomations(
 }
 
 // ── Writing ──────────────────────────────────────────────────────────────────
+
+/**
+ * A definition checked as a save would check it — tables, fields, rows, citations, the
+ * AI — and given back as it would be saved, identifiers included; nothing is written. What
+ * the copilot proposes goes through here (chapter 17 §5).
+ */
+export async function checkAutomationDraft(
+  pools: Pools,
+  ctx: RequestContext,
+  targets: TargetPolicy,
+  request: { readonly baseId: string; readonly input: AutomationInput },
+): Promise<Awaited<ReturnType<typeof checkedDefinition>>> {
+  return withTransaction(
+    pools,
+    'catalog',
+    ctx,
+    async (exec) => {
+      await requireOnBase(exec, ctx, 'manage_schema', request.baseId)
+      return checkedDefinition(exec, ctx, request.baseId, request.input, null, targets)
+    },
+    { readOnly: true },
+  )
+}
 
 export async function createAutomation(
   pools: Pools,

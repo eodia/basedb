@@ -30,7 +30,7 @@ l’a faite (`psql`, adresse, processus) : elle n’est jamais refusée pour aut
 ## Ce qu’on peut en faire
 
 - **Lire** l’historique d’une ligne (onglet « Historique » de sa fiche), d’une table ou d’une
-  base (**Historique**, dans le bloc de la base ouverte), filtré par table.
+  base (**Historique**, dans le menu **⋯** de la base), filtré par table.
 - **Annuler** une modification : les valeurs d’avant sont réappliquées champ par champ.
 - **Restaurer** une ligne supprimée depuis son entrée « a supprimé ».
 - Suivre l’**historique des structures** (onglet « Structure ») : tables et champs créés,

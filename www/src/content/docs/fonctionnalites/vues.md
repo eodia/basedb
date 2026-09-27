@@ -6,6 +6,12 @@ description: Grille, kanban, calendrier, chronologie, galerie, liste, formulaire
 Une table se montre de **huit façons**. Une vue ne copie aucune donnée, et ne donne aucun droit
 de plus que la table elle-même.
 
+:::note
+Ces vues sont des façons de montrer **une** table. Une [vue SQL](/basedb/fonctionnalites/requetes-et-vues-sql/)
+est autre chose : une vraie vue PostgreSQL, écrite en SQL sur les tables de la base, rangée parmi
+elles dans la barre latérale.
+:::
+
 | Vue | Ce qu’elle montre | Ce qu’il lui faut |
 |---|---|---|
 | **Grille** | des lignes, filtrées, triées, groupées, colonnes choisies | — |
@@ -56,7 +62,10 @@ la page : remplies, vides, valeurs uniques, somme, moyenne, minimum, maximum, ca
 ## Kanban, calendrier, chronologie
 
 - Le **kanban** range les cartes selon une liste de choix ; glisser une carte modifie la ligne,
-  un « + » en tête de colonne crée une ligne déjà dotée de ce choix.
+  un « + » en tête de colonne crée une ligne déjà dotée de ce choix. Chaque carte montre un
+  titre, une image de couverture, les champs choisis, et une **description** qui cite les
+  valeurs de la ligne — « Livraison prévue le `{{Date}}` pour `{{Client}}` » —, écrite dans le
+  réglage de la vue avec le bouton **Insérer un champ**.
 - Le **calendrier** place chaque ligne à sa date, avec une date de fin éventuelle ; glisser une
   ligne d’un jour à l’autre la décale.
 - La **chronologie** trace des barres entre une date de début et une date de fin, regroupées par

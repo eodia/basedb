@@ -399,12 +399,14 @@ l'annulation après envoi (chapitre 11 §2.4) — sans lever ce qui les motivait
 ### A27 — Automatisations au nom d'une personne
 
 Une base peut porter des automatisations (chapitre 17) : un déclencheur — une ligne
-créée ou modifiée, une horloge, un bouton —, une condition, des actions. Elles attendent
+créée ou modifiée, une horloge, un bouton —, une condition, un flux d'étapes — des
+actions, des recherches, des conditions dont les chemins se rejoignent. Elles attendent
 dans une file en base (A4), naissent au drain de l'historique pour les lignes, et
 agissent **avec les droits de la personne qui les a enregistrées, redécidés à chaque
 exécution**, comme un formulaire partagé. Une écriture d'automatisation n'en déclenche
-aucune autre : il n'y a pas de chaîne, donc pas de boucle. Pas de script exécuté par le
-serveur.
+aucune autre : il n'y a pas de chaîne entre automatisations, donc pas de boucle ; ce qui
+doit s'enchaîner s'écrit dans un flux, qui se lit de haut en bas, une fois. Pas de script
+exécuté par le serveur.
 
 ### A28 — Des tableaux de bord qui lisent avec les droits du lecteur
 
@@ -448,7 +450,8 @@ l'objet de chapitres propres :
   schéma, et les trois comportements d'interface exigés pour les relations
   (cellule affichant la valeur d'affichage, ouverture du détail de la ligne cible,
   liste des lignes référençantes).
-- **12 — Intégration des fournisseurs d'IA** : OpenAI, Anthropic et Mistral, modèle
+- **12 — Intégration des fournisseurs d'IA** : OpenAI, Anthropic et Mistral, ou un serveur
+  compatible à l'adresse de l'exploitant, modèle
   configurable au niveau instance et surchargeable par tenant, clés côté serveur.
 - **13 — Authentification** : mot de passe et OAuth, sessions, élévation,
   amorçage.
@@ -701,9 +704,10 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `FILTER_VALUE_INVALID` | Valeur de filtre non coercible | 400 | 08 |
 | `FORM_CLOSED` | Réponse à un formulaire partagé désactivé, fermé, complet, ou dont la personne qui l'a publié ne peut plus ajouter de lignes | 409 | 15 |
 | `FORM_RESTRICTED` | Formulaire partagé réservé à des groupes dont la personne connectée n'est pas membre | 403 | 15 |
-| `VIEW_SHARE_CLOSED` | Lecture d'une vue partagée dont le lien est désactivé, ou dont la personne qui l'a publiée ne peut plus lire la table | 409 | 15 |
-| `VIEW_SHARE_RESTRICTED` | Vue partagée réservée à des groupes dont la personne connectée n'est pas membre | 403 | 15 |
+| `VIEW_SHARE_CLOSED` | Lecture d'une vue ou d'un tableau de bord partagés dont le lien est désactivé, ou dont la personne qui l'a publié ne peut plus lire la table ou la base | 409 | 15 |
+| `VIEW_SHARE_RESTRICTED` | Vue ou tableau de bord partagés, réservés à des groupes dont la personne connectée n'est pas membre | 403 | 15 |
 | `VIEW_LOCKED` | Modification d'une vue verrouillée : il faut d'abord la déverrouiller | 409 | 11 |
+| `SQL_VIEW_BROKEN` | Lecture d'une vue SQL qu'une opération de structure a dû retirer de PostgreSQL ; sa définition est à corriger | 409 | 11 |
 | `IDEMPOTENCY_CONFLICT` | Même clé d'idempotence, corps différent | 409 | 08 |
 | `IDEMPOTENCY_IN_PROGRESS` | Même clé, revendication sous bail valide | 409 | 08 |
 | `IDEMPOTENCY_INTERRUPTED` | Bail expiré, écriture métier partiellement constatée | 409 | 08 |

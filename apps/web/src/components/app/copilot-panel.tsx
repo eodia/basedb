@@ -15,6 +15,7 @@ import {
   api,
 } from '@/lib/api/client'
 import { addFields, createTable, insertRecords, updateRecords } from '@/lib/copilot'
+import { $t, $tp } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import {
@@ -96,11 +97,11 @@ const fold = (text: string) =>
   text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/\s+/g, ' ').trim()
 
 const SUGGESTIONS: ReadonlyArray<{ readonly icon: typeof Plus; readonly text: string }> = [
-  { icon: Filter, text: 'Montre-moi les lignes modifiées cette semaine' },
-  { icon: Columns3, text: 'Ajoute les colonnes utiles pour suivre cette table' },
-  { icon: Rows3, text: 'Génère 20 lignes d’exemple réalistes' },
-  { icon: Table2, text: 'Crée une table liée à celle-ci, avec un jeu d’essai' },
-  { icon: Database, text: 'Combien de lignes par statut ?' },
+  { icon: Filter, text: $t('Montre-moi les lignes modifiées cette semaine') },
+  { icon: Columns3, text: $t('Ajoute les colonnes utiles pour suivre cette table') },
+  { icon: Rows3, text: $t('Génère 20 lignes d’exemple réalistes') },
+  { icon: Table2, text: $t('Crée une table liée à celle-ci, avec un jeu d’essai') },
+  { icon: Database, text: $t('Combien de lignes par statut ?') },
 ]
 
 export function CopilotPanel({
@@ -222,32 +223,32 @@ export function CopilotPanel({
     switch (action.type) {
       case 'filter':
         onApplyFilter(action.table, action.filter, action.sort)
-        return 'Filtre appliqué.'
+        return $t('Filtre appliqué.')
       case 'sql':
         onOpenSql(action.sql)
-        return 'Ouverte dans la console.'
+        return $t('Ouverte dans la console.')
       case 'add_fields': {
         const fields = action.fields.filter((_, i) => extra.selected?.[i] !== false)
         await addFields({ base: base.name, name: action.table }, fields, options)
         await onChanged()
-        return `${fields.length} colonne${fields.length > 1 ? 's' : ''} ajoutée${fields.length > 1 ? 's' : ''}.`
+        return $tp(fields.length, '{count} colonne ajoutée.', '{count} colonnes ajoutées.')
       }
       case 'create_table': {
         const name = await createTable(base.name, action, options)
         update((c) => ({ ...c, created: new Map([...c.created, [fold(action.label), name]]) }))
         await onChanged()
-        return 'Table créée.'
+        return $t('Table créée.')
       }
       case 'insert_records': {
         const fresh = await api.describeBase(base.name)
         const created = await insertRecords(fresh, action, conversation.created)
         await onChanged()
-        return `${created} ligne${created > 1 ? 's' : ''} insérée${created > 1 ? 's' : ''}.`
+        return $tp(created, '{count} ligne insérée.', '{count} lignes insérées.')
       }
       case 'update_records': {
         const done = await updateRecords(base, action)
         await onChanged()
-        return `${done} ligne${done > 1 ? 's' : ''} modifiée${done > 1 ? 's' : ''}.`
+        return $tp(done, '{count} ligne modifiée.', '{count} lignes modifiées.')
       }
     }
   }
@@ -260,11 +261,11 @@ export function CopilotPanel({
   }
 
   return (
-    <ResizablePanel panel="copilot" label="le Copilot" className="bg-sidebar">
+    <ResizablePanel panel="copilot" label={$t('le Copilot')} className="bg-sidebar">
       <header className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
         <Sparkles className="size-4 text-primary" />
         <span className="flex-1 truncate text-sm font-medium">
-          Copilot <span className="font-normal text-muted-foreground">· {base.label}</span>
+          {$t('Copilot')} <span className="font-normal text-muted-foreground">· {base.label}</span>
         </span>
         {conversation.turns.length > 0 && (
           <Button
@@ -272,13 +273,18 @@ export function CopilotPanel({
             size="icon-sm"
             onClick={restart}
             disabled={busy}
-            aria-label="Nouvelle conversation"
-            title="Nouvelle conversation"
+            aria-label={$t('Nouvelle conversation')}
+            title={$t('Nouvelle conversation')}
           >
             <RotateCcw className="size-4" />
           </Button>
         )}
-        <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Fermer le copilot">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onClose}
+          aria-label={$t('Fermer le copilot')}
+        >
           <X className="size-4" />
         </Button>
       </header>
@@ -287,14 +293,17 @@ export function CopilotPanel({
         {conversation.turns.length === 0 && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Demandez un filtre, une requête, des colonnes, une table, des lignes d’exemple…
+              {$t(
+                'Demandez un filtre, une requête, des colonnes, une table, des lignes d’exemple…',
+              )}
               {table !== null && (
                 <>
                   {' '}
-                  Sur <span className="text-foreground">{table.label}</span> par défaut.
+                  {$t('Sur')} <span className="text-foreground">{table.label}</span>{' '}
+                  {$t('par défaut.')}
                 </>
               )}{' '}
-              Chaque proposition s’applique d’un clic, et rien ne change sans vous.
+              {$t('Chaque proposition s’applique d’un clic, et rien ne change sans vous.')}
             </p>
             <div className="flex flex-col gap-1.5">
               {SUGGESTIONS.map((s) => (
@@ -322,7 +331,9 @@ export function CopilotPanel({
             {turn.answer === null && turn.error === null && (
               <p className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
                 <Loader2 className="size-3.5 animate-spin" />
-                {conversation.readData ? 'Réflexion, lecture des données au besoin…' : 'Réflexion…'}
+                {conversation.readData
+                  ? $t('Réflexion, lecture des données au besoin…')
+                  : $t('Réflexion…')}
               </p>
             )}
 
@@ -352,7 +363,7 @@ export function CopilotPanel({
                 ))}
                 {turn.answer.dropped.length > 0 && (
                   <p className="px-1 text-[11px] text-muted-foreground">
-                    Écarté : {turn.answer.dropped.join(' · ')}.
+                    {$t('Écarté : {dropped}.', { dropped: turn.answer.dropped.join(' · ') })}
                   </p>
                 )}
               </div>
@@ -374,15 +385,16 @@ export function CopilotPanel({
             htmlFor="copilot-read"
             className="cursor-pointer leading-snug text-muted-foreground"
           >
-            <span className="text-foreground">Autoriser la lecture des données</span> pour cette
-            conversation : le Copilot peut lire des lignes que vous voyez (50 au plus par lecture)
-            et les envoyer au fournisseur d’IA pour répondre.
+            <span className="text-foreground">{$t('Autoriser la lecture des données')}</span>{' '}
+            {$t(
+              'pour cette conversation : le Copilot peut lire des lignes que vous voyez (50 au plus par lecture) et les envoyer au fournisseur d’IA pour répondre.',
+            )}
           </label>
         </div>
         {!conversation.readData && (
           <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Shield className="size-3" />
-            Seuls votre demande et la structure de la base sont envoyés.
+            {$t('Seuls votre demande et la structure de la base sont envoyés.')}
           </p>
         )}
         <div className="relative">
@@ -399,7 +411,9 @@ export function CopilotPanel({
               }
             }}
             rows={3}
-            placeholder="Ajoute une colonne priorité, génère 30 visites, combien de visites urgentes…"
+            placeholder={$t(
+              'Ajoute une colonne priorité, génère 30 visites, combien de visites urgentes…',
+            )}
             className="resize-none pr-11 text-sm"
           />
           <Button
@@ -407,7 +421,7 @@ export function CopilotPanel({
             className="absolute right-2 bottom-2"
             onClick={() => void send(prompt)}
             disabled={busy || prompt.trim() === ''}
-            aria-label="Envoyer"
+            aria-label={$t('Envoyer')}
           >
             {busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowUp className="size-4" />}
           </Button>
@@ -427,36 +441,55 @@ function recap(turn: Turn): string {
   const lines = answer.actions.map((action, i) => {
     const state = turn.cards[i]
     const outcome =
-      state?.status === 'done' ? 'appliquée' : state?.status === 'error' ? 'échouée' : 'en attente'
+      state?.status === 'done'
+        ? $t('appliquée')
+        : state?.status === 'error'
+          ? $t('échouée')
+          : $t('en attente')
     return `- ${describe(action)} (${outcome})`
   })
   return [
     answer.message,
     ...(lines.length > 0 ? ['Propositions :', ...lines] : []),
     // What basedb set aside, so that « et la liste ? » is answered by a corrected proposal.
-    ...(answer.dropped.length > 0 ? [`Écarté par basedb : ${answer.dropped.join(' ; ')}`] : []),
+    ...(answer.dropped.length > 0
+      ? [$t('Écarté par basedb : {dropped}', { dropped: answer.dropped.join(' ; ') })]
+      : []),
   ].join('\n')
 }
 
 function describe(action: CopilotAction): string {
   switch (action.type) {
     case 'filter':
-      return `filtre sur ${action.table} : ${action.filter}`
+      return $t('filtre sur {table} : {filter}', { table: action.table, filter: action.filter })
     case 'sql':
-      return `requête SQL : ${action.sql}`
+      return $t('requête SQL : {sql}', { sql: action.sql })
     case 'add_fields':
-      return `colonnes pour ${action.table} : ${action.fields.map((f) => f.label).join(', ')}`
+      return $t('colonnes pour {table} : {map}', {
+        table: action.table,
+        map: action.fields.map((f) => f.label).join(', '),
+      })
     case 'create_table':
       return `table ${action.label} (${action.fields.map((f) => f.label).join(', ')})`
     case 'insert_records':
-      return `${action.records.length} lignes pour ${action.table}`
+      return $t('{recordsCount} lignes pour {table}', {
+        recordsCount: action.records.length,
+        table: action.table,
+      })
     case 'update_records':
-      return `${action.updates.length} modifications dans ${action.table}`
+      return $t('{updatesCount} modifications dans {table}', {
+        updatesCount: action.updates.length,
+        table: action.table,
+      })
   }
 }
 
 /** What was read to answer: shown folded, because it is what left the instance. */
-function Reads({ reads }: { readonly reads: CopilotAnswer['reads'] }) {
+export function Reads({
+  reads,
+}: {
+  readonly reads: ReadonlyArray<Pick<CopilotAnswer['reads'][number], 'text' | 'rows' | 'error'>>
+}) {
   const [open, setOpen] = useState(false)
   const rows = reads.reduce((n, r) => n + r.rows, 0)
   return (
@@ -467,8 +500,12 @@ function Reads({ reads }: { readonly reads: CopilotAnswer['reads'] }) {
         className="flex w-full items-center gap-1.5 px-2.5 py-1.5 text-left text-muted-foreground"
       >
         <Eye className="size-3.5" />
-        {reads.length} lecture{reads.length > 1 ? 's' : ''} · {rows} ligne{rows > 1 ? 's' : ''}{' '}
-        envoyée{rows > 1 ? 's' : ''} au fournisseur
+        {$tp(reads.length, '{count} lecture', '{count} lectures')} ·{' '}
+        {$tp(
+          rows,
+          '{count} ligne envoyée au fournisseur',
+          '{count} lignes envoyées au fournisseur',
+        )}
         <ChevronRight
           className={cn('ml-auto size-3.5 transition-transform', open && 'rotate-90')}
         />
@@ -487,7 +524,7 @@ function Reads({ reads }: { readonly reads: CopilotAnswer['reads'] }) {
                   read.error === null ? 'text-muted-foreground' : 'text-destructive',
                 )}
               >
-                {read.error ?? `${read.rows} ligne${read.rows > 1 ? 's' : ''}`}
+                {read.error ?? $tp(read.rows, '{count} ligne', '{count} lignes')}
               </span>
             </li>
           ))}
@@ -540,25 +577,39 @@ function ActionCard({
   const [title, button] = (() => {
     switch (action.type) {
       case 'filter':
-        return [`Filtrer ${labelOf(action.table)}`, 'Appliquer le filtre']
+        return [$t('Filtrer {table}', { table: labelOf(action.table) }), $t('Appliquer le filtre')]
       case 'sql':
-        return ['Requête SQL', 'Ouvrir dans la console']
+        return [$t('Requête SQL'), $t('Ouvrir dans la console')]
       case 'add_fields':
         return [
-          `${action.fields.length} colonne${action.fields.length > 1 ? 's' : ''} pour ${labelOf(action.table)}`,
-          'Ajouter',
+          $tp(
+            action.fields.length,
+            '{count} colonne pour {table}',
+            '{count} colonnes pour {table}',
+            {
+              table: labelOf(action.table),
+            },
+          ),
+          $t('Ajouter'),
         ]
       case 'create_table':
-        return [`Nouvelle table « ${action.label} »`, 'Créer la table']
+        return [$t('Nouvelle table « {label} »', { label: action.label }), $t('Créer la table')]
       case 'insert_records':
         return [
-          `${action.records.length} ligne${action.records.length > 1 ? 's' : ''} pour ${action.pending ? action.table : labelOf(action.table)}`,
-          `Insérer ${action.records.length} ligne${action.records.length > 1 ? 's' : ''}`,
+          $tp(action.records.length, '{count} ligne pour {table}', '{count} lignes pour {table}', {
+            table: action.pending ? action.table : labelOf(action.table),
+          }),
+          $tp(action.records.length, 'Insérer {count} ligne', 'Insérer {count} lignes'),
         ]
       case 'update_records':
         return [
-          `${action.updates.length} modification${action.updates.length > 1 ? 's' : ''} dans ${labelOf(action.table)}`,
-          'Appliquer les modifications',
+          $tp(
+            action.updates.length,
+            '{count} modification dans {table}',
+            '{count} modifications dans {table}',
+            { table: labelOf(action.table) },
+          ),
+          $t('Appliquer les modifications'),
         ]
     }
   })()
@@ -573,7 +624,7 @@ function ActionCard({
       <div className="space-y-2 px-3 py-2">
         {action.type === 'filter' && (
           <Code>
-            {action.filter === '' ? '(aucun filtre)' : action.filter}
+            {action.filter === '' ? $t('(aucun filtre)') : action.filter}
             {action.sort !== null && `\ntri : ${action.sort}`}
           </Code>
         )}
@@ -616,8 +667,9 @@ function ActionCard({
               htmlFor={`copilot-ai-${title}`}
               className="cursor-pointer leading-snug text-muted-foreground"
             >
-              J’accepte que les valeurs citées par la colonne IA soient envoyées au fournisseur,
-              ligne par ligne.
+              {$t(
+                'J’accepte que les valeurs citées par la colonne IA soient envoyées au fournisseur, ligne par ligne.',
+              )}
             </label>
           </div>
         )}
@@ -682,7 +734,7 @@ function FieldList({
             <Checkbox
               checked={selected[i] !== false}
               onCheckedChange={() => onToggle(i)}
-              aria-label={`Garder ${field.label}`}
+              aria-label={$t('Garder {label}', { label: field.label })}
               className="mt-px"
             />
           )}
@@ -759,7 +811,7 @@ function RowsPreview({
       </table>
       {rows.length > shown.length && (
         <p className="border-t px-2 py-1 text-[11px] text-muted-foreground">
-          … et {rows.length - shown.length} autre{rows.length - shown.length > 1 ? 's' : ''}
+          {$tp(rows.length - shown.length, '… et {count} autre', '… et {count} autres')}
         </p>
       )}
     </div>

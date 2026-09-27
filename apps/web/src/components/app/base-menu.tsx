@@ -2,6 +2,7 @@
 
 import { DescriptionField, isTooLong } from '@/components/app/description'
 import { EnvironmentsEditor, NewEnvironmentsField } from '@/components/app/environments-editor'
+import { usePhysicalRename } from '@/components/app/lifecycle-dialogs'
 import { LookButton, type LookValue, lookOf, sameLook } from '@/components/app/look-picker'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,10 +16,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { type DescribedBase, api } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { Loader2, Sparkles } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 /**
  * What one does to a base as a whole: create it, rename it, delete it.
@@ -37,20 +39,26 @@ import { useEffect, useState } from 'react'
 /** What these dialogs read of a base: the tree's line holds it as well as a description. */
 export type BaseLike = Pick<
   DescribedBase,
-  'name' | 'label' | 'description' | 'color' | 'icon' | 'image'
+  'id' | 'name' | 'label' | 'description' | 'color' | 'icon' | 'image'
 >
 
 export function EditBaseDialog({
   open,
   base,
+  administers = false,
   onClose,
   onDone,
+  onRenamed,
   onEnvironmentsChanged,
 }: {
   readonly open: boolean
   readonly base: BaseLike
+  /** The administration role: the schema may be renamed too (chapter 06 §2). */
+  readonly administers?: boolean
   readonly onClose: () => void
   readonly onDone: () => void
+  /** The schema was renamed: the base's whole name before, and after. */
+  readonly onRenamed?: (change: { readonly from: string; readonly to: string }) => void
   /** An environment was added, renamed or deleted — the navigation lists them. */
   readonly onEnvironmentsChanged?: () => void
 }) {
@@ -59,6 +67,17 @@ export function EditBaseDialog({
   const [look, setLook] = useState<LookValue>(lookOf(base))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // What was saved already, when a rename that followed was refused: not sent twice.
+  const saved = useRef<{ label: string; description: string | null } | null>(null)
+
+  // The rename in the database rides along with the label, for an administrator: the
+  // same dialog, a box under the name, and the impact only once it is ticked.
+  const physical = usePhysicalRename({
+    target: open ? { kind: 'base', id: base.id, label: base.label } : null,
+    current: base.name,
+    label,
+    administers,
+  })
 
   useEffect(() => {
     if (open) {
@@ -66,21 +85,23 @@ export function EditBaseDialog({
       setDescription(base.description ?? '')
       setLook(lookOf({ color: base.color, icon: base.icon, image: base.image }))
       setError(null)
+      saved.current = null
     }
   }, [open, base.label, base.description, base.color, base.icon, base.image])
 
   const submit = async () => {
     const trimmed = label.trim()
-    if (trimmed === '' || isTooLong(description) || busy) return
+    if (trimmed === '' || isTooLong(description) || !physical.ready || busy) return
 
     // Only what changed is sent, and an emptied description is a `null` — "clear it" —
     // not an omission, which would leave the old one in place. The look travels whole.
+    const was = saved.current ?? { label: base.label, description: base.description ?? null }
     const patch: { label?: string; description?: string | null } & Partial<LookValue> = {}
-    if (trimmed !== base.label) patch.label = trimmed
+    if (trimmed !== was.label) patch.label = trimmed
     const nextDescription = description.trim() === '' ? null : description.trim()
-    if (nextDescription !== (base.description ?? null)) patch.description = nextDescription
-    if (!sameLook(look, lookOf(base))) Object.assign(patch, look)
-    if (Object.keys(patch).length === 0) {
+    if (nextDescription !== was.description) patch.description = nextDescription
+    if (saved.current === null && !sameLook(look, lookOf(base))) Object.assign(patch, look)
+    if (Object.keys(patch).length === 0 && !physical.asked) {
       onClose()
       return
     }
@@ -88,10 +109,21 @@ export function EditBaseDialog({
     setBusy(true)
     setError(null)
     try {
-      await api.updateBase(base.name, patch)
-      onDone()
+      if (Object.keys(patch).length > 0) {
+        await api.updateBase(base.name, patch)
+        saved.current = { label: trimmed, description: nextDescription }
+      }
+      const renamed = await physical.run()
+      if (renamed !== null) onRenamed?.(renamed)
+      else onDone()
     } catch (e) {
-      setError(messageFor(e))
+      setError(
+        saved.current === null
+          ? messageFor(e)
+          : $t('Libellé enregistré, mais le nom en base n’a pas changé : {e}', {
+              e: messageFor(e),
+            }),
+      )
     } finally {
       setBusy(false)
     }
@@ -104,17 +136,17 @@ export function EditBaseDialog({
         className="max-h-[90vh] overflow-y-auto sm:max-w-xl"
       >
         <DialogHeader>
-          <DialogTitle>Modifier la base</DialogTitle>
+          <DialogTitle>{$t('Modifier la base')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="base-label">Libellé</Label>
+            <Label htmlFor="base-label">{$t('Libellé')}</Label>
             <div className="flex items-center gap-2">
               {/* The look sits before the name, where the tree draws it. */}
               <LookButton
                 look={look}
-                label={`Apparence de la base ${label}`.trim()}
+                label={$t('Apparence de la base {label}', { label }).trim()}
                 onChange={(patch) => setLook((current) => ({ ...current, ...patch }))}
                 disabled={busy}
                 className="size-9"
@@ -128,16 +160,18 @@ export function EditBaseDialog({
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Couleur, pictogramme ou image : ce qui distingue la base dans la navigation.
+              {$t('Couleur, pictogramme ou image : ce qui distingue la base dans la navigation.')}
             </p>
           </div>
+
+          {physical.element}
 
           <DescriptionField
             id="base-description"
             value={description}
             onChange={setDescription}
             onSubmit={() => void submit()}
-            placeholder="À quoi sert cette base ?"
+            placeholder={$t('À quoi sert cette base ?')}
             disabled={busy}
           />
 
@@ -155,13 +189,17 @@ export function EditBaseDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button
             onClick={() => void submit()}
-            disabled={label.trim() === '' || isTooLong(description) || busy}
+            disabled={label.trim() === '' || isTooLong(description) || !physical.ready || busy}
           >
-            {busy ? 'Enregistrement…' : 'Enregistrer'}
+            {busy
+              ? $t('Enregistrement…')
+              : physical.asked
+                ? $t('Enregistrer et renommer en base')
+                : $t('Enregistrer')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -213,8 +251,9 @@ export function DeleteBaseDialog({
         // The plan ran and stopped on a step. The step's label is far more useful than
         // "la suppression a échoué", and it is what the operator will grep for.
         setError(
-          `La migration s’est arrêtée à l’étape « ${migration.step_label ?? '?'} » ` +
-            `(${migration.error_code ?? 'inconnue'}).`,
+          `${$t('La migration s’est arrêtée à l’étape « {value} » ', {
+            value: migration.step_label ?? '?',
+          })}(${migration.error_code ?? 'inconnue'}).`,
         )
         return
       }
@@ -230,17 +269,19 @@ export function DeleteBaseDialog({
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Supprimer « {base.label} » ?</DialogTitle>
+          <DialogTitle>{$t('Supprimer « {label} » ?', { label: base.label })}</DialogTitle>
           <DialogDescription>
-            Ses données sont conservées : vous pourrez la restaurer depuis le menu du projet.
+            {$t(
+              'Ses données sont conservées : vous pourrez la restaurer depuis le menu du projet.',
+            )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 text-sm">
           <div className="space-y-1.5">
             <Label htmlFor="confirm-label">
-              Saisissez <span className="font-medium text-foreground">{base.label}</span> pour
-              confirmer
+              {$t('Saisissez')} <span className="font-medium text-foreground">{base.label}</span>{' '}
+              {$t('pour confirmer')}
             </Label>
             <Input
               id="confirm-label"
@@ -261,7 +302,7 @@ export function DeleteBaseDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button
             variant="destructive"
@@ -270,7 +311,7 @@ export function DeleteBaseDialog({
             className={cn(busy && 'opacity-80')}
           >
             {busy && <Loader2 className="size-4 animate-spin" />}
-            {busy ? 'Suppression…' : 'Supprimer la base'}
+            {busy ? $t('Suppression…') : $t('Supprimer la base')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -328,7 +369,7 @@ export function NewBaseDialog({
       )
       // The other environments, once production exists: each is a copy of it.
       for (const environment of environments) {
-        setProgress(`Création de « ${environment} »…`)
+        setProgress($t('Création de « {environment} »…', { environment }))
         await api.createEnvironment(created.name, environment)
       }
       onDone(created.name)
@@ -336,7 +377,9 @@ export function NewBaseDialog({
       // The base exists even when an environment could not be added: said, and the
       // environments are completed from « Modifier la base ».
       if (created !== null) {
-        setError(`La base est créée, mais pas tous ses environnements : ${messageFor(e)}`)
+        setError(
+          $t('La base est créée, mais pas tous ses environnements : {e}', { e: messageFor(e) }),
+        )
         onDone(created.name)
       } else {
         setError(messageFor(e))
@@ -351,15 +394,17 @@ export function NewBaseDialog({
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nouvelle base dans {project.label}</DialogTitle>
+          <DialogTitle>{$t('Nouvelle base dans {label}', { label: project.label })}</DialogTitle>
           <DialogDescription>
-            Une base est un schéma PostgreSQL : ses tables y sont de vraies tables, lisibles en SQL.
+            {$t(
+              'Une base est un schéma PostgreSQL : ses tables y sont de vraies tables, lisibles en SQL.',
+            )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="new-base-label">Libellé</Label>
+            <Label htmlFor="new-base-label">{$t('Libellé')}</Label>
             <Input
               id="new-base-label"
               value={label}
@@ -376,7 +421,7 @@ export function NewBaseDialog({
             value={description}
             onChange={setDescription}
             onSubmit={() => void submit()}
-            placeholder="À quoi sert cette base ?"
+            placeholder={$t('À quoi sert cette base ?')}
             disabled={busy}
           />
 
@@ -391,11 +436,12 @@ export function NewBaseDialog({
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-medium">
-                Partir d’un modèle, ou le demander à l’IA
+                {$t('Partir d’un modèle, ou le demander à l’IA')}
               </span>
               <span className="block text-xs text-muted-foreground">
-                Suivi de tickets, analyse d’avis, CRM… des bases prêtes, avec leurs lignes, leurs
-                vues et leur IA.
+                {$t(
+                  'Suivi de tickets, analyse d’avis, CRM… des bases prêtes, avec leurs lignes, leurs vues et leur IA.',
+                )}
               </span>
             </span>
           </button>
@@ -408,7 +454,7 @@ export function NewBaseDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button
             onClick={() => void submit()}
@@ -416,7 +462,7 @@ export function NewBaseDialog({
             className={cn(busy && 'opacity-80')}
           >
             {busy && <Loader2 className="size-4 animate-spin" />}
-            {busy ? 'Création…' : 'Créer la base'}
+            {busy ? $t('Création…') : $t('Créer la base')}
           </Button>
         </DialogFooter>
       </DialogContent>

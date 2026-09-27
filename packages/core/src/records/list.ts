@@ -24,6 +24,14 @@ import {
   buildSort,
   resolveColumn,
 } from './filter.js'
+import {
+  type VariableColumn,
+  type VariableScope,
+  citedNames,
+  hasVariables,
+  loadScopeExtras,
+  resolveText,
+} from './variables.js'
 
 /**
  * Reading records — chapter 05 §6.2, chapter 08 §4 and §6.
@@ -84,6 +92,12 @@ export interface ListOptions {
   readonly select?: readonly string[]
   /** Where an exact count stops, below the kernel's own ceiling. */
   readonly countCeiling?: number
+  /**
+   * The citations of long texts (chapter 04 §2.2, « Variables »): replaced by the row's
+   * values by default — what every reader wants —, kept as written with `raw` — what an
+   * editor needs, and whoever compares stored values.
+   */
+  readonly variables?: 'resolve' | 'raw'
 }
 
 export interface ListResult {
@@ -230,8 +244,20 @@ export async function listRecords(
           { readOnly: true },
         )
 
+  const rows =
+    (options.variables ?? 'resolve') === 'raw'
+      ? resolved.rows
+      : await resolvePageVariables(
+          pools,
+          ctx,
+          options.tableId,
+          plan,
+          selected.columns,
+          resolved.rows,
+        )
+
   return {
-    rows: resolved.rows,
+    rows,
     columns: selected.columns,
     sql: query.sql,
     hasNextPage,
@@ -242,6 +268,97 @@ export async function listRecords(
     included: resolved.included,
     fileColumns: selected.columns.filter((c) => isFileKind(plan.filterable.get(c)?.kind ?? '')),
   }
+}
+
+/**
+ * The citations of a page's long texts, replaced — chapter 04 §2.2, « Variables ».
+ *
+ * Nothing more is read when no long text of the page cites anything, which is the common
+ * case. Otherwise: the cited columns the page did not project are read for the rows that
+ * cite them, in one query under the same mask; then the labels, names and the reader's
+ * reading of dates, in one catalog round trip.
+ */
+async function resolvePageVariables(
+  pools: Pools,
+  ctx: RequestContext,
+  tableId: string,
+  plan: Plan,
+  columns: readonly string[],
+  rows: ReadonlyArray<Record<string, unknown>>,
+): Promise<ReadonlyArray<Record<string, unknown>>> {
+  const texts = columns.filter((c) => plan.filterable.get(c)?.kind === 'long_text')
+  if (texts.length === 0) return rows
+  const citing = rows.filter((row) => texts.some((c) => hasVariables(row[c])))
+  if (citing.length === 0) return rows
+
+  const cited = citedNames(citing.flatMap((row) => texts.map((c) => row[c]).filter(hasVariables)))
+  const all = await withTransaction(pools, 'catalog', ctx, (exec) => loadFields(exec, tableId), {
+    readOnly: true,
+  })
+  const byName = new Map([...all.values()].map((f) => [f.name, f]))
+  // What the reader reads — `filterable` IS the read mask, computed fields included.
+  const readable = new Map<string, VariableColumn>()
+  for (const name of cited) {
+    const column = plan.filterable.get(name)
+    if (column !== undefined) {
+      readable.set(name, { name, kind: column.kind, rich: byName.get(name)?.rich === true })
+    }
+  }
+
+  const missing = [...readable.keys()].filter((name) => !columns.includes(name))
+  const extra = new Map<string, Record<string, unknown>>()
+  if (missing.length > 0) {
+    const ids = citing.map((row) => JSON.stringify(String(row._id)))
+    const page = await listRecords(pools, ctx, {
+      tableId,
+      filter: `_id in [${ids.join(', ')}]`,
+      select: missing,
+      limit: ids.length,
+      variables: 'raw',
+    })
+    for (const row of page.rows) extra.set(String(row._id), row)
+  }
+  const full = (row: Record<string, unknown>) => {
+    const more = extra.get(String(row._id))
+    return more === undefined ? row : { ...more, ...row }
+  }
+
+  const people = new Set<string>()
+  for (const row of citing) {
+    const values = full(row)
+    for (const column of readable.values()) {
+      const value = values[column.name]
+      if (column.kind === 'user' && typeof value === 'string') people.add(value)
+    }
+  }
+  const extras = await withTransaction(
+    pools,
+    'catalog',
+    ctx,
+    (exec) =>
+      loadScopeExtras(exec, {
+        tableId,
+        actorId: ctx.actor.id,
+        choiceFields: [...readable.values()]
+          .filter((c) => c.kind === 'select' || c.kind === 'multi_select')
+          .map((c) => c.name),
+        people: [...people],
+      }),
+    { readOnly: true },
+  )
+  const scope: VariableScope = { readable, known: new Set(byName.keys()), ...extras }
+
+  return rows.map((row) => {
+    if (!texts.some((c) => hasVariables(row[c]))) return row
+    const values = full(row)
+    const copy = { ...row }
+    for (const c of texts) {
+      const text = row[c]
+      if (hasVariables(text))
+        copy[c] = resolveText(text, values, scope, byName.get(c)?.rich === true)
+    }
+    return copy
+  })
 }
 
 export interface Plan {

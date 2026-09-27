@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ApiError, api } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { reasonFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { Check, ChevronDown, Loader2 } from 'lucide-react'
@@ -30,8 +31,8 @@ import { useEffect, useState } from 'react'
 export function Login({
   onSignedIn,
   onSignUp,
-  title = 'Heureux de vous retrouver',
-  description = 'Connectez-vous pour retrouver vos bases et vos tables.',
+  title = $t('Heureux de vous retrouver'),
+  description = $t('Connectez-vous pour retrouver vos bases et vos tables.'),
   initialEmail = '',
   alwaysOfferSignUp = false,
   returnTo = '/',
@@ -113,28 +114,28 @@ export function Login({
       footer={
         (signupOpen || alwaysOfferSignUp) && onSignUp !== undefined ? (
           <p>
-            Pas encore de compte&nbsp;?{' '}
+            {$t('Pas encore de compte ?')}{' '}
             <button
               type="button"
               onClick={onSignUp}
               className="rounded-sm font-medium text-foreground underline-offset-4 hover:underline"
             >
-              Créer un compte
+              {$t('Créer un compte')}
             </button>
           </p>
         ) : (
           <details className="group">
             <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
-              Première connexion&nbsp;?
+              {$t('Première connexion ?')}
               <ChevronDown
                 className="size-3.5 transition-transform duration-200 group-open:rotate-180"
                 aria-hidden="true"
               />
             </summary>
             <p className="mt-2 max-w-sm animate-in fade-in slide-in-from-top-1 leading-relaxed duration-300">
-              Votre administrateur crée votre compte et vous transmet un mot de passe temporaire. Si
-              l’instance a été installée avec une adresse d’administrateur imposée, son mot de passe
-              s’est affiché une seule fois dans les journaux du serveur.
+              {$t(
+                'Votre administrateur crée votre compte et vous transmet un mot de passe temporaire. Si l’instance a été installée avec une adresse d’administrateur imposée, son mot de passe s’est affiché une seule fois dans les journaux du serveur.',
+              )}
             </p>
           </details>
         )
@@ -143,7 +144,7 @@ export function Login({
       <form onSubmit={submit} className="grid gap-5" aria-busy={busy}>
         <div className={cn('group grid gap-2', REVEAL)} style={revealAt(0)}>
           <Label htmlFor="email" className="transition-colors group-focus-within:text-primary">
-            Adresse e-mail
+            {$t('Adresse e-mail')}
           </Label>
           <Input
             id="email"
@@ -164,7 +165,7 @@ export function Login({
 
         <div className={cn('group grid gap-2', REVEAL)} style={revealAt(1)}>
           <Label htmlFor="password" className="transition-colors group-focus-within:text-primary">
-            Mot de passe
+            {$t('Mot de passe')}
           </Label>
           <PasswordInput
             id="password"
@@ -200,7 +201,7 @@ export function Login({
               busy && <Loader2 className="animate-spin" aria-hidden="true" />
             )}
             <span aria-live="polite">
-              {signedIn ? 'Connecté' : busy ? 'Connexion…' : 'Se connecter'}
+              {signedIn ? $t('Connecté') : busy ? $t('Connexion…') : $t('Se connecter')}
             </span>
           </Button>
         </div>
@@ -238,7 +239,7 @@ export function OidcButtons({ returnTo = '/' }: { readonly returnTo?: string }) 
   return (
     <div className={cn('mt-6 grid gap-2', REVEAL)} style={revealAt(5)}>
       <div className="mb-1 flex items-center gap-3 text-xs text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
-        ou
+        {$t('ou')}
       </div>
       {providers.map((p) => (
         // A LINK, not a button with a fetch: the route answers with a redirect to the
@@ -250,7 +251,9 @@ export function OidcButtons({ returnTo = '/' }: { readonly returnTo?: string }) 
           className={cn('w-full', PRESSABLE, 'hover:shadow-none')}
           asChild
         >
-          <a href={api.oidcStartUrl(p.slug, returnTo)}>Continuer avec {p.label}</a>
+          <a href={api.oidcStartUrl(p.slug, returnTo)}>
+            {$t('Continuer avec {label}', { label: p.label })}
+          </a>
         </Button>
       ))}
     </div>

@@ -1,8 +1,9 @@
 'use client'
 
-import { FieldIcon, KindLabel } from '@/components/app/field-icon'
+import { FieldIcon, KIND_LABELS, KindLabel } from '@/components/app/field-icon'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Choice } from '@/components/ui/choice'
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ApiError, type DescribedBase, type Field, type Table, api } from '@/lib/api/client'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
 import {
   type Cell,
   DELIMITERS,
@@ -113,8 +115,8 @@ const formatBytes = (n: number) =>
   n < 1024
     ? `${n} o`
     : n < 1024 * 1024
-      ? `${(n / 1024).toFixed(0)} Ko`
-      : `${(n / 1024 / 1024).toFixed(1)} Mo`
+      ? $t('{value} Ko', { value: (n / 1024).toFixed(0) })
+      : $t('{value} Mo', { value: (n / 1024 / 1024).toFixed(1) })
 
 /** Windows-1252 is what a French spreadsheet exports when nobody asked for UTF-8. */
 async function readText(file: File): Promise<string> {
@@ -186,12 +188,15 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
       if (table.rows.length > MAX_ROWS) {
         return {
           table: null,
-          error: `${table.rows.length.toLocaleString('fr-FR')} lignes : ${MAX_ROWS.toLocaleString('fr-FR')} au maximum.`,
+          error: $t('{rowsCount} lignes : {maxRows} au maximum.', {
+            rowsCount: table.rows.length.toLocaleString(intlLocale()),
+            maxRows: MAX_ROWS.toLocaleString(intlLocale()),
+          }),
         }
       }
       return { table, error: null }
     } catch (e) {
-      return { table: null, error: e instanceof ImportError ? e.message : 'Fichier illisible.' }
+      return { table: null, error: e instanceof ImportError ? e.message : $t('Fichier illisible.') }
     }
   }, [file, hasHeader, delimiter])
 
@@ -201,14 +206,18 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
     if (picked === undefined) return
     setReadError(null)
     if (picked.size > MAX_BYTES) {
-      setReadError(`Fichier trop volumineux (${formatBytes(MAX_BYTES)} au maximum).`)
+      setReadError(
+        $t('Fichier trop volumineux ({maxBytes} au maximum).', {
+          maxBytes: formatBytes(MAX_BYTES),
+        }),
+      )
       return
     }
     try {
       setFile({ name: picked.name, size: picked.size, text: await readText(picked) })
       setDelimiter(null)
     } catch {
-      setReadError('Ce fichier ne peut pas être lu.')
+      setReadError($t('Ce fichier ne peut pas être lu.'))
     }
   }
 
@@ -388,7 +397,7 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
       const batches = chunk(records, BATCH)
       for (const [k, part] of batches.entries()) {
         if (stop.current) {
-          show({ phase: 'failed', error: 'Import interrompu.' })
+          show({ phase: 'failed', error: $t('Import interrompu.') })
           break
         }
         try {
@@ -397,11 +406,11 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
           const index =
             e instanceof ApiError && typeof e.details.index === 'number' ? e.details.index : null
           const row = index === null ? null : prepared.rowNumbers[k * BATCH + index]
-          const where = row === null ? '' : `Ligne ${row} du fichier : `
+          const where = row === null ? '' : $t('Ligne {row} du fichier : ', { row })
           const kept =
             done === 0
-              ? 'Aucune ligne importée.'
-              : `${done.toLocaleString('fr-FR')} ligne${done > 1 ? 's' : ''} importée${done > 1 ? 's' : ''}.`
+              ? $t('Aucune ligne importée.')
+              : $tp(done, '{count} ligne importée.', '{count} lignes importées.')
           show({ phase: 'failed', error: `${where}${messageFor(e)} ${kept}` })
           break
         }
@@ -430,7 +439,7 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
         aria-describedby={undefined}
       >
         <DialogHeader>
-          <DialogTitle>Importer un fichier</DialogTitle>
+          <DialogTitle>{$t('Importer un fichier')}</DialogTitle>
         </DialogHeader>
 
         {step === 'file' && (
@@ -452,11 +461,11 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
         {step === 'target' && table !== null && (
           <div className="space-y-4">
             <fieldset className="grid grid-cols-2 gap-2">
-              <legend className="sr-only">Destination</legend>
+              <legend className="sr-only">{$t('Destination')}</legend>
               {(
                 [
-                  ['existing', 'Une table existante', base.tables.length === 0],
-                  ['new', 'Une nouvelle table', !builds],
+                  ['existing', $t('Une table existante'), base.tables.length === 0],
+                  ['new', $t('Une nouvelle table'), !builds],
                 ] as const
               ).map(([value, label, disabled]) => (
                 <button
@@ -525,10 +534,10 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
           {step === 'file' && (
             <>
               <Button variant="ghost" onClick={onClose}>
-                Annuler
+                {$t('Annuler')}
               </Button>
               <Button disabled={table === null} onClick={arrive}>
-                Suivant
+                {$t('Suivant')}
               </Button>
             </>
           )}
@@ -537,12 +546,11 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
             <>
               <Button variant="ghost" onClick={() => setStep('file')}>
                 <ArrowLeft className="size-4" />
-                Retour
+                {$t('Retour')}
               </Button>
               <Button disabled={!ready} onClick={() => void start()}>
                 <Upload className="size-4" />
-                Importer {prepared.records.length.toLocaleString('fr-FR')} ligne
-                {prepared.records.length > 1 ? 's' : ''}
+                {$tp(prepared.records.length, 'Importer {count} ligne', 'Importer {count} lignes')}
               </Button>
             </>
           )}
@@ -554,11 +562,13 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
                 stop.current = true
               }}
             >
-              Interrompre
+              {$t('Interrompre')}
             </Button>
           )}
           {step === 'run' && !running && (
-            <Button onClick={onClose}>{run?.phase === 'done' ? 'Terminé' : 'Fermer'}</Button>
+            <Button onClick={onClose}>
+              {run?.phase === 'done' ? $t('Terminé') : $t('Fermer')}
+            </Button>
           )}
         </DialogFooter>
       </DialogContent>
@@ -613,17 +623,17 @@ function FileStep({
       >
         <Upload className="size-6 text-muted-foreground" />
         <span className="text-sm font-medium">
-          Déposez un fichier ici, ou cliquez pour le choisir
+          {$t('Déposez un fichier ici, ou cliquez pour le choisir')}
         </span>
         <span className="text-xs text-muted-foreground">
-          CSV, TSV, TXT ou JSON — 20 Mo et 50 000 lignes au plus
+          {$t('CSV, TSV, TXT ou JSON — 20 Mo et 50 000 lignes au plus')}
         </span>
         <input
           ref={input}
           type="file"
           accept=".csv,.tsv,.txt,.json,.ndjson,.jsonl,text/csv,text/plain,application/json"
           className="sr-only"
-          aria-label="Choisir un fichier"
+          aria-label={$t('Choisir un fichier')}
           onChange={(e) => {
             onPick(e.target.files?.[0])
             e.target.value = ''
@@ -648,9 +658,9 @@ function FileStep({
               <FileText className="size-4 shrink-0 text-muted-foreground" />
               <span className="truncate font-medium">{file.name}</span>
               <span className="shrink-0 text-muted-foreground">
-                {formatBytes(file.size)} · {table.rows.length.toLocaleString('fr-FR')} ligne
-                {table.rows.length > 1 ? 's' : ''} · {table.columns.length} colonne
-                {table.columns.length > 1 ? 's' : ''}
+                {formatBytes(file.size)} ·{' '}
+                {$tp(table.rows.length, '{count} ligne', '{count} lignes')} ·{' '}
+                {$tp(table.columns.length, '{count} colonne', '{count} colonnes')}
               </span>
             </span>
 
@@ -660,12 +670,12 @@ function FileStep({
                 checked={hasHeader}
                 onCheckedChange={(c) => onHasHeader(c === true)}
               />
-              <label htmlFor="import-header">La première ligne est l’en-tête</label>
+              <label htmlFor="import-header">{$t('La première ligne est l’en-tête')}</label>
             </div>
 
             {table.format === 'csv' && (
               <div className="flex items-center gap-2">
-                <label htmlFor="import-delimiter">Séparateur</label>
+                <label htmlFor="import-delimiter">{$t('Séparateur')}</label>
                 <Select value={delimiter} onValueChange={onDelimiter}>
                   <SelectTrigger id="import-delimiter" className="h-8 w-40">
                     <SelectValue />
@@ -721,7 +731,9 @@ function Preview({ table }: { readonly table: ParsedTable }) {
       </table>
       {table.rows.length > 5 && (
         <p className="border-t px-2.5 py-1.5 text-xs text-muted-foreground">
-          Les 5 premières lignes sur {table.rows.length.toLocaleString('fr-FR')}.
+          {$t('Les 5 premières lignes sur {rowsCount}.', {
+            rowsCount: table.rows.length.toLocaleString(intlLocale()),
+          })}
         </p>
       )}
     </div>
@@ -760,19 +772,16 @@ function ExistingTarget({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <span className="text-sm text-muted-foreground">Table</span>
-        <Select value={target?.name ?? ''} onValueChange={onAim}>
-          <SelectTrigger className="w-64" aria-label="Table de destination">
-            <SelectValue placeholder="Choisir une table" />
-          </SelectTrigger>
-          <SelectContent>
-            {base.tables.map((t) => (
-              <SelectItem key={t.id} value={t.name}>
-                {t.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <span className="text-sm text-muted-foreground">{$t('Table')}</span>
+        <Choice
+          value={target?.name ?? null}
+          onValueChange={onAim}
+          options={base.tables.map((t) => ({ value: t.name, label: t.label }))}
+          placeholder={$t('Choisir une table')}
+          aria-label={$t('Table de destination')}
+          size="default"
+          className="w-64"
+        />
       </div>
 
       <ul className="divide-y rounded-lg border">
@@ -791,12 +800,15 @@ function ExistingTarget({
               value={mapping[index] ?? SKIP}
               onValueChange={(value) => onMap(index, value === SKIP ? null : value)}
             >
-              <SelectTrigger className="w-64" aria-label={`Champ pour la colonne ${column}`}>
+              <SelectTrigger
+                className="w-64"
+                aria-label={$t('Champ pour la colonne {column}', { column })}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={SKIP}>
-                  <span className="text-muted-foreground">Ne pas importer</span>
+                  <span className="text-muted-foreground">{$t('Ne pas importer')}</span>
                 </SelectItem>
                 {fields.map((f) => (
                   <SelectItem
@@ -820,9 +832,12 @@ function ExistingTarget({
       {requiredMissing.length > 0 && (
         <p className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          Champ{requiredMissing.length > 1 ? 's' : ''} obligatoire
-          {requiredMissing.length > 1 ? 's' : ''} non associé
-          {requiredMissing.length > 1 ? 's' : ''} : {requiredMissing.join(', ')}.
+          {$tp(
+            requiredMissing.length,
+            'Champ obligatoire non associé : {fields}.',
+            'Champs obligatoires non associés : {fields}.',
+            { fields: requiredMissing.join(', ') },
+          )}
         </p>
       )}
     </div>
@@ -850,7 +865,7 @@ function NewTarget({
     <div className="space-y-3">
       <div className="space-y-1.5">
         <label htmlFor="import-new-label" className="text-sm text-muted-foreground">
-          Libellé de la table
+          {$t('Libellé de la table')}
         </label>
         <Input
           id="import-new-label"
@@ -858,7 +873,9 @@ function NewTarget({
           onChange={(e) => onLabel(e.target.value)}
           aria-invalid={taken || undefined}
         />
-        {taken && <p className="text-xs text-destructive">Une table porte déjà ce libellé.</p>}
+        {taken && (
+          <p className="text-xs text-destructive">{$t('Une table porte déjà ce libellé.')}</p>
+        )}
       </div>
 
       <ul className="divide-y rounded-lg border">
@@ -873,39 +890,33 @@ function NewTarget({
               <Checkbox
                 checked={c.include}
                 onCheckedChange={(next) => onColumn(index, { include: next === true })}
-                aria-label={`Importer la colonne ${column}`}
+                aria-label={$t('Importer la colonne {column}', { column })}
               />
               <div className="min-w-0 flex-1">
                 <Input
                   value={c.label}
                   onChange={(e) => onColumn(index, { label: e.target.value })}
                   disabled={!c.include}
-                  aria-label={`Libellé du champ pour la colonne ${column}`}
+                  aria-label={$t('Libellé du champ pour la colonne {column}', { column })}
                   className="h-8"
                 />
                 <p className="mt-0.5 truncate px-1 text-xs text-muted-foreground">
                   {sample(table, index) || 'vide'}
                 </p>
               </div>
-              <Select
+              <Choice
                 value={c.kind}
                 onValueChange={(kind) => onColumn(index, { kind: kind as Kind })}
+                options={NEW_KINDS.map((k) => ({
+                  value: k,
+                  label: KIND_LABELS[k] ?? k,
+                  render: <KindLabel kind={k} />,
+                }))}
+                aria-label={$t('Type du champ pour la colonne {column}', { column })}
                 disabled={!c.include}
-              >
-                <SelectTrigger
-                  className="w-44"
-                  aria-label={`Type du champ pour la colonne ${column}`}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {NEW_KINDS.map((k) => (
-                    <SelectItem key={k} value={k}>
-                      <KindLabel kind={k} />
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                size="default"
+                className="w-44"
+              />
             </li>
           )
         })}
@@ -913,7 +924,7 @@ function NewTarget({
 
       {clash && (
         <p role="alert" className="text-xs text-destructive">
-          Deux colonnes portent le même libellé de champ.
+          {$t('Deux colonnes portent le même libellé de champ.')}
         </p>
       )}
     </div>
@@ -936,13 +947,11 @@ function Summary({
   return (
     <div className="space-y-2 text-sm">
       <p>
-        <span className="font-medium">{records.toLocaleString('fr-FR')}</span> ligne
-        {records > 1 ? 's' : ''} à importer
+        {$tp(records, '{count} ligne à importer', '{count} lignes à importer')}
         {blank > 0 && (
           <span className="text-muted-foreground">
             {' '}
-            · {blank.toLocaleString('fr-FR')} vide{blank > 1 ? 's' : ''} ignorée
-            {blank > 1 ? 's' : ''}
+            · {$tp(blank, '{count} vide ignorée', '{count} vides ignorées')}
           </span>
         )}
       </p>
@@ -951,17 +960,26 @@ function Summary({
         <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
           <p className="flex items-start gap-2 text-amber-700 dark:text-amber-400">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-            {problems.length.toLocaleString('fr-FR')} cellule{problems.length > 1 ? 's' : ''}{' '}
-            illisible
-            {problems.length > 1 ? 's' : ''} pour le type du champ.
+            {$tp(
+              problems.length,
+              '{count} cellule illisible pour le type du champ.',
+              '{count} cellules illisibles pour le type du champ.',
+            )}
           </p>
           <ul className="space-y-0.5 pl-6 text-xs text-muted-foreground">
             {problems.slice(0, 5).map((p) => (
               <li key={`${p.row}:${p.column}`}>
-                Ligne {p.row}, « {p.column} » : {p.reason} (« {p.value.slice(0, 40)} »)
+                {$t('Ligne {row}, « {column} » : {reason} (« {value} »)', {
+                  row: p.row,
+                  column: p.column,
+                  reason: p.reason,
+                  value: p.value.slice(0, 40),
+                })}
               </li>
             ))}
-            {problems.length > 5 && <li>… et {problems.length - 5} autres.</li>}
+            {problems.length > 5 && (
+              <li>{$t('… et {value} autres.', { value: problems.length - 5 })}</li>
+            )}
           </ul>
           <div className="flex items-center gap-2 pl-6">
             <Checkbox
@@ -970,7 +988,7 @@ function Summary({
               onCheckedChange={(c) => onAccept(c === true)}
             />
             <label htmlFor="import-accept">
-              Importer quand même, en laissant ces cellules vides
+              {$t('Importer quand même, en laissant ces cellules vides')}
             </label>
           </div>
         </div>
@@ -992,13 +1010,16 @@ function RunStep({ run }: { readonly run: Run }) {
         {run.phase === 'done' && <Check className="size-4 text-green-600" />}
         {run.phase === 'failed' && <AlertTriangle className="size-4 text-destructive" />}
         <span className="font-medium">
-          {run.phase === 'running' && 'Import en cours…'}
-          {run.phase === 'done' && 'Import terminé'}
-          {run.phase === 'failed' && 'Import arrêté'}
+          {run.phase === 'running' && $t('Import en cours…')}
+          {run.phase === 'done' && $t('Import terminé')}
+          {run.phase === 'failed' && $t('Import arrêté')}
         </span>
         <span className="text-muted-foreground">
-          {run.done.toLocaleString('fr-FR')} / {run.total.toLocaleString('fr-FR')} lignes
-          {run.tableLabel !== '' && <> dans « {run.tableLabel} »</>}
+          {$t('{done} / {total} lignes', {
+            done: run.done.toLocaleString(intlLocale()),
+            total: run.total.toLocaleString(intlLocale()),
+          })}
+          {run.tableLabel !== '' && $t('dans « {tableLabel} »', { tableLabel: run.tableLabel })}
         </span>
       </div>
 

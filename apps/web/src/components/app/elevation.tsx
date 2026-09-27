@@ -12,6 +12,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ApiError, api } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { ShieldCheck } from 'lucide-react'
 import { createContext, useCallback, useContext, useRef, useState } from 'react'
@@ -124,14 +125,16 @@ export function ElevationProvider({ children }: { readonly children: React.React
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="size-4" />
-              Confirmez votre mot de passe
+              {$t('Confirmez votre mot de passe')}
             </DialogTitle>
             <DialogDescription>
-              Administrer les comptes et les droits demande une confirmation, valable cinq minutes.
+              {$t(
+                'Administrer les comptes et les droits demande une confirmation, valable cinq minutes.',
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label htmlFor="elevation-password">Mot de passe</Label>
+            <Label htmlFor="elevation-password">{$t('Mot de passe')}</Label>
             <Input
               id="elevation-password"
               type="password"
@@ -146,10 +149,10 @@ export function ElevationProvider({ children }: { readonly children: React.React
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={close} disabled={busy}>
-              Annuler
+              {$t('Annuler')}
             </Button>
             <Button onClick={() => void submit()} disabled={password === '' || busy}>
-              {busy ? 'Vérification…' : 'Confirmer'}
+              {busy ? $t('Vérification…') : $t('Confirmer')}
             </Button>
           </DialogFooter>
         </DialogContent>

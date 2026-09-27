@@ -1,0 +1,92 @@
+---
+title: Ympäristömuuttujat
+description: Kaikki basedb:n lukemat muuttujat ja niiden oletusarvot.
+---
+
+Kaikki asetetaan `.env`-tiedostoon `docker-compose.yml`-tiedoston viereen, ja `docker compose`
+lukee sen (täydellinen, kommentoitu malli on `.env.example`). Kun käytät `docker run` -komentoa,
+välitä ne `-e`-valitsimella. **Tyhjä arvo tarkoittaa ”ei määritetty”.**
+
+## Pakolliset
+
+| Muuttuja | Tehtävä |
+|---|---|
+| `POSTGRES_PASSWORD` | PostgreSQL-kontin salasana |
+| `BASEDB_ENCRYPTION_KEY` | instanssin avain: allekirjoittaa istunnot, salaa salaisuudet. `openssl rand -base64 32`, kerran ja lopullisesti |
+
+## Tietokanta
+
+| Muuttuja | Oletus | Tehtävä |
+|---|---|---|
+| `POSTGRES_USER` | `basedb` | PostgreSQL-rooli |
+| `POSTGRES_DB` | `basedb` | PostgreSQL-tietokanta |
+| `POSTGRES_PORT` | `5432` | osoitteeseen 127.0.0.1 julkaistu portti |
+| `DATABASE_URL` | `db`-kontti | oma PostgreSQL 16+ -tietokantasi |
+
+## Ensimmäinen käynnistys
+
+| Muuttuja | Oletus | Tehtävä |
+|---|---|---|
+| `BASEDB_MIGRATE` | `1` | soveltaa katalogin tyhjään tietokantaan |
+| `BASEDB_BOOTSTRAP` | `1` | valmistelee ensimmäisen ylläpitäjän |
+| `BASEDB_TENANT` | `t4z56fq` | työtilan tunniste API:n URL-osoitteissa |
+| `BASEDB_ADMIN_EMAIL` | – | käynnistyksessä luotavan ensimmäisen ylläpitäjän osoite; tyhjänä ensimmäinen käyttöliittymän avaaja luo ylläpitäjän |
+| `BASEDB_ADMIN_PASSWORD` | luodaan, näytetään kerran | `BASEDB_ADMIN_EMAIL`-muuttujan kanssa ylläpitäjän salasana; määritettynä se asetetaan ylläpitäjälle uudelleen **jokaisessa** käynnistyksessä: poista se kirjauduttuasi |
+
+## Kirjautuminen Googlella, Microsoftilla… (OIDC)
+
+| Muuttuja | Oletus | Tehtävä |
+|---|---|---|
+| `BASEDB_OIDC_PROVIDERS` | – | tarjottavat palveluntarjoajat pilkuilla erotettuina: `google,microsoft` |
+| `BASEDB_OIDC_<NOM>_CLIENT_ID`, `_CLIENT_SECRET` | – | palveluntarjoajalle rekisteröity sovellus |
+| `BASEDB_OIDC_<NOM>_ISSUER` | `google`:n ja `gitlab`:n oma | OpenID Connect -myöntäjä |
+| `BASEDB_OIDC_<NOM>_LABEL`, `_SCOPES` | palveluntarjoajan mukaan | painikkeen nimi, pyydetyt laajuudet |
+| `BASEDB_OIDC_<NOM>_SIGNUP` | – | `off`: ensimmäinen kirjautuminen ei luo tiliä |
+
+Katso [Tilit ja kirjautuminen](/basedb/fi/hebergement/connexion/).
+
+## Osoitteet
+
+| Muuttuja | Oletus | Tehtävä |
+|---|---|---|
+| `BASEDB_PORT` | `3000` | osoitteeseen 127.0.0.1 julkaistu portti: käyttöliittymä, `/api` ja `/mcp` |
+| `BASEDB_VERSION` | `latest` | `eodia/basedb`-kuvan tunniste |
+| `BASEDB_PUBLIC_URL` | – | basedb:n julkinen osoite OIDC-paluuta varten |
+| `BASEDB_DOMAIN` | – | verkkotunnus, jota Caddy-välityspalvelin tarjoilee HTTPS:llä |
+| `BASEDB_ORIGINS` | – | muut sivustot, joiden sivut kutsuvat API:a selaimesta, pilkuilla erotettuina; tarpeeton basedb:n käyttöliittymälle, joka tarjoillaan samasta osoitteesta |
+| `BASEDB_API`, `BASEDB_MCP` | `/`, `/mcp` | API ja MCP selaimesta katsottuna; aseta vain kehitysympäristöä varten (`pnpm start`) |
+
+## Tiedostot
+
+| Muuttuja | Oletus | Tehtävä |
+|---|---|---|
+| `BASEDB_FILES_MAX_MB` | `25` | tiedoston enimmäiskoko |
+| `BASEDB_S3_BUCKET` | – | ottaa S3-tallennuksen käyttöön |
+| `BASEDB_S3_ENDPOINT` | – | S3-päätepiste |
+| `BASEDB_S3_REGION` | `us-east-1` | alue |
+| `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | – | tunnistetiedot |
+| `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` isäntänimeen perustuvaa osoitteistusta varten |
+
+## Tietokantamallit
+
+| Muuttuja | Oletus | Tehtävä |
+|---|---|---|
+| `BASEDB_TEMPLATES_URL` | julkisen sivuston katalogi | mistä instanssi lukee galleriansa mallit; `off`, jos mitään ei lueta (sisäänrakennetut mallit säilyvät) – katso [Mallit](/basedb/fi/fonctionnalites/modeles/) |
+
+## Tekoäly
+
+| Muuttuja | Oletus | Tehtävä |
+|---|---|---|
+| `BASEDB_AI_PROVIDER` | – | `openai`, `anthropic` tai `mistral` |
+| `BASEDB_AI_MODEL` | – | malli |
+| `BASEDB_AI_API_KEY` | – | avain (muuten `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_QUOTA` | `120` | vuorovaikutteiset kutsut tuntia ja työtilaa kohden |
+| `BASEDB_AI_FIELD_QUOTA` | `300` | tekoälykenttien laskennat tuntia ja työtilaa kohden |
+| `BASEDB_AI_WORKER` | `1` | `0`: ei taustalaskentaa tässä prosessissa |
+
+## Vain kehityskäyttöön
+
+| Muuttuja | Tehtävä |
+|---|---|
+| `BASEDB_DEV_MAIL=1` | näyttää sähköpostit lokeissa lähettämisen sijaan |
+| `BASEDB_WEBHOOK_DEV=1` | sallii webhookit HTTP-osoitteisiin ja paikallisiin osoitteisiin |

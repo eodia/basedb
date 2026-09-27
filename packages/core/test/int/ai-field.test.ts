@@ -732,3 +732,58 @@ describe('the AI, an option of other types', () => {
     expect(row?.value).toBe('basse')
   })
 })
+
+describe('a server compatible with OpenAI’s API', () => {
+  it('is handed the operator’s address and headers, and journaled under its own name', async () => {
+    const saved = Object.fromEntries(
+      ['BASEDB_AI_PROVIDER', 'BASEDB_AI_BASE_URL', 'BASEDB_AI_HEADERS', 'BASEDB_AI_API_KEY'].map(
+        (k) => [k, process.env[k]],
+      ),
+    )
+    process.env.BASEDB_AI_PROVIDER = 'openai_compatible'
+    process.env.BASEDB_AI_BASE_URL = 'https://atelier.openai.azure.com/openai/v1'
+    process.env.BASEDB_AI_HEADERS = '{"api-key": "cle-azure"}'
+    Reflect.deleteProperty(process.env, 'BASEDB_AI_API_KEY')
+    const sent: Array<Parameters<ProviderTransport>[0]> = []
+    const azure: ProviderTransport = async (request) => {
+      sent.push(request)
+      return transport(request)
+    }
+    try {
+      const field = await addField(pools, ctx, {
+        tableId,
+        label: 'Par Azure',
+        kind: 'short_text',
+        ai: { prompt: 'Résume {{Notes}}', refresh: { mode: 'if_empty' }, consent: true },
+      })
+      const { value } = await runAiCell(pools, ctx, azure, {
+        fieldId: field.fieldId,
+        recordId: await idOf('Alpha'),
+      })
+      expect(value).toMatch(/^IA: Résume /)
+      expect(sent).toHaveLength(1)
+      expect(sent[0]).toMatchObject({
+        provider: 'openai_compatible',
+        apiKey: '',
+        baseUrl: 'https://atelier.openai.azure.com/openai/v1',
+        headers: { 'api-key': 'cle-azure' },
+      })
+
+      // The journal says where the data went: its CHECK knows the fourth provider.
+      const journal = await pools.withConnection('catalog', (exec) =>
+        exec.query<{ provider: string; status: string; key_scope: string }>(
+          `SELECT provider, status, key_scope FROM _basedb.ai_call
+            WHERE provider = 'openai_compatible'`,
+        ),
+      )
+      expect(journal).toEqual([
+        { provider: 'openai_compatible', status: 'accepted', key_scope: 'instance' },
+      ])
+    } finally {
+      for (const [key, value] of Object.entries(saved)) {
+        if (value === undefined) Reflect.deleteProperty(process.env, key)
+        else process.env[key] = value
+      }
+    }
+  })
+})

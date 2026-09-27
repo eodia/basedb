@@ -3,13 +3,7 @@
 import { SidebarToggle } from '@/components/app/sidebar'
 import { StructureHistory } from '@/components/app/structure-history'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Choice } from '@/components/ui/choice'
 import {
   type DescribedBase,
   type Revision,
@@ -17,6 +11,7 @@ import {
   type RevisionPage,
   api,
 } from '@/lib/api/client'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
@@ -47,9 +42,13 @@ import { useCallback, useEffect, useState } from 'react'
  * a deleted row brings it back under its own identifier.
  */
 
-const TIME = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' })
-const DAY = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
-const FULL = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'medium' })
+const TIME = new Intl.DateTimeFormat(intlLocale(), { hour: '2-digit', minute: '2-digit' })
+const DAY = new Intl.DateTimeFormat(intlLocale(), {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+})
+const FULL = new Intl.DateTimeFormat(intlLocale(), { dateStyle: 'long', timeStyle: 'medium' })
 
 /** « Aujourd'hui », « Hier », or the date: what a day heading says. */
 function dayOf(iso: string): string {
@@ -57,8 +56,8 @@ function dayOf(iso: string): string {
   const today = new Date()
   const yesterday = new Date(today.getTime() - 86_400_000)
   const same = (a: Date, b: Date) => a.toDateString() === b.toDateString()
-  if (same(date, today)) return 'Aujourd’hui'
-  if (same(date, yesterday)) return 'Hier'
+  if (same(date, today)) return $t('Aujourd’hui')
+  if (same(date, yesterday)) return $t('Hier')
   const text = DAY.format(date)
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
@@ -71,30 +70,32 @@ function authorOf(r: Revision): {
 } {
   switch (r.actor.kind) {
     case 'user':
-      return { name: r.actor.name ?? 'Utilisateur', hint: null, icon: 'user' }
+      return { name: r.actor.name ?? $t('Utilisateur'), hint: null, icon: 'user' }
     case 'token':
     case 'mcp':
       return {
-        name: r.actor.name ?? 'Jeton d’intégration',
+        name: r.actor.name ?? $t('Jeton d’intégration'),
         hint:
-          r.actor.token_label === null ? 'par un jeton' : `par le jeton « ${r.actor.token_label} »`,
+          r.actor.token_label === null
+            ? $t('par un jeton')
+            : $t('par le jeton « {token_label} »', { token_label: r.actor.token_label }),
         icon: 'token',
       }
     case 'sql_direct':
-      return { name: 'Session SQL directe', hint: r.actor.sql_identity, icon: 'sql' }
+      return { name: $t('Session SQL directe'), hint: r.actor.sql_identity, icon: 'sql' }
     case 'system':
-      return { name: 'basedb', hint: 'opération système', icon: 'user' }
+      return { name: 'basedb', hint: $t('opération système'), icon: 'user' }
     // An answer to a public form (chapter 15): nobody signed in wrote it.
     case 'form':
       return {
         name:
           r.actor.token_label === null
-            ? 'Formulaire partagé'
-            : `Formulaire « ${r.actor.token_label} »`,
+            ? $t('Formulaire partagé')
+            : $t('Formulaire « {token_label} »', { token_label: r.actor.token_label }),
         hint:
           r.actor.name === null
-            ? 'réponse publique'
-            : `réponse publique · publié par ${r.actor.name}`,
+            ? $t('réponse publique')
+            : $t('réponse publique · publié par {name}', { name: r.actor.name }),
         icon: 'token',
       }
     // An automation's write (chapter 17 §2.2): its name, and who answers for it.
@@ -102,13 +103,13 @@ function authorOf(r: Revision): {
       return {
         name:
           r.actor.token_label === null
-            ? 'Automatisation'
-            : `Automatisation « ${r.actor.token_label} »`,
-        hint: r.actor.name === null ? null : `au nom de ${r.actor.name}`,
+            ? $t('Automatisation')
+            : $t('Automatisation « {token_label} »', { token_label: r.actor.token_label }),
+        hint: r.actor.name === null ? null : $t('au nom de {name}', { name: r.actor.name }),
         icon: 'token',
       }
     default:
-      return { name: 'Auteur inconnu', hint: r.actor.sql_identity, icon: 'sql' }
+      return { name: $t('Auteur inconnu'), hint: r.actor.sql_identity, icon: 'sql' }
   }
 }
 
@@ -127,8 +128,8 @@ function shown(change: RevisionChange, side: 'before' | 'after'): string | null 
   const value = side === 'before' ? change.before : change.after
   if (value === undefined) return null
   if (value === null || value === '') return null
-  if (typeof value === 'boolean') return value ? 'Oui' : 'Non'
-  if (typeof value === 'number') return value.toLocaleString('fr-FR')
+  if (typeof value === 'boolean') return value ? $t('Oui') : $t('Non')
+  if (typeof value === 'number') return value.toLocaleString(intlLocale())
   if (Array.isArray(value))
     return value.map((v) => (typeof v === 'object' ? JSON.stringify(v) : String(v))).join(', ')
   if (typeof value === 'object') return JSON.stringify(value)
@@ -137,13 +138,13 @@ function shown(change: RevisionChange, side: 'before' | 'after'): string | null 
     if (!Number.isNaN(at)) return FULL.format(new Date(at))
   }
   // A link whose target's name was not kept: the journal says so rather than show an id.
-  if (change.kind === 'link') return 'ligne liée (nom non conservé)'
+  if (change.kind === 'link') return $t('ligne liée (nom non conservé)')
   return String(value)
 }
 
 function Value({ text }: { readonly text: string | null }) {
   return text === null ? (
-    <span className="italic text-muted-foreground">vide</span>
+    <span className="italic text-muted-foreground">{$t('vide')}</span>
   ) : (
     <span className="break-words">{text}</span>
   )
@@ -184,8 +185,8 @@ function Changes({ revision }: { readonly revision: Revision }) {
           >
             <ChevronDown className={cn('size-3 transition-transform', open && 'rotate-180')} />
             {open
-              ? 'Réduire'
-              : `${all.length - 4} autre${all.length - 4 > 1 ? 's' : ''} champ${all.length - 4 > 1 ? 's' : ''}`}
+              ? $t('Réduire')
+              : $tp(all.length - 4, '{count} autre champ', '{count} autres champs')}
           </button>
         </li>
       )}
@@ -205,15 +206,15 @@ function Entry({
   readonly onAct: (revision: Revision, action: 'revert' | 'restore') => void
 }) {
   const author = authorOf(revision)
-  const name = revision.record_display ?? 'ligne sans libellé'
+  const name = revision.record_display ?? $t('ligne sans libellé')
   const verb =
     revision.op === 'insert'
-      ? 'a créé'
+      ? $t('a créé')
       : revision.op === 'update'
-        ? 'a modifié'
+        ? $t('a modifié')
         : revision.cascade
-          ? 'a supprimé, en chaîne,'
-          : 'a supprimé'
+          ? $t('a supprimé, en chaîne,')
+          : $t('a supprimé')
 
   return (
     <li className="flex gap-3 py-3">
@@ -239,7 +240,7 @@ function Entry({
           <span className="font-medium">« {name} »</span>
           {showTable && (
             <span className="text-muted-foreground">
-              dans <span className="text-foreground">{revision.table.label}</span>
+              {$t('dans')} <span className="text-foreground">{revision.table.label}</span>
             </span>
           )}
         </div>
@@ -259,10 +260,10 @@ function Entry({
             className="h-7 px-2 text-xs"
             disabled={busy}
             onClick={() => onAct(revision, 'revert')}
-            title="Remettre les valeurs d’avant cette modification"
+            title={$t('Remettre les valeurs d’avant cette modification')}
           >
             <Undo2 className="size-3.5" />
-            Annuler
+            {$t('Annuler')}
           </Button>
         )}
         {revision.actions.includes('restore') && (
@@ -272,10 +273,10 @@ function Entry({
             className="h-7 px-2 text-xs"
             disabled={busy}
             onClick={() => onAct(revision, 'restore')}
-            title="Rétablir cette ligne telle qu’elle était"
+            title={$t('Rétablir cette ligne telle qu’elle était')}
           >
             <RotateCcw className="size-3.5" />
-            Restaurer
+            {$t('Restaurer')}
           </Button>
         )}
       </div>
@@ -397,7 +398,7 @@ export function HistoryList({
         <div className="flex justify-center py-3">
           <Button variant="outline" size="sm" onClick={() => void next()} disabled={more}>
             {more && <Loader2 className="size-4 animate-spin" />}
-            Voir plus
+            {$t('Voir plus')}
           </Button>
         </div>
       )}
@@ -431,10 +432,10 @@ export function HistoryPanel({
         <span className="text-sm text-muted-foreground">/</span>
         <span className="text-sm text-muted-foreground">{base.label}</span>
         <span className="text-sm text-muted-foreground">/</span>
-        <span className="text-sm font-medium">Historique</span>
+        <span className="text-sm font-medium">{$t('Historique')}</span>
         <div className="flex-1" />
         <Button variant="ghost" size="sm" onClick={onBack}>
-          Retour aux données
+          {$t('Retour aux données')}
         </Button>
       </header>
 
@@ -444,12 +445,16 @@ export function HistoryPanel({
             <div>
               <h1 className="flex items-center gap-2 text-lg font-semibold">
                 <Clock className="size-5 text-muted-foreground" />
-                Historique
+                {$t('Historique')}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {view === 'rows'
-                  ? 'Chaque écriture, d’où qu’elle vienne — l’interface, l’API, un agent ou le SQL direct —, avec les valeurs d’avant.'
-                  : 'Chaque modification des tables, des champs, de leurs choix et de leur IA, avec ce qu’ils étaient avant.'}
+                  ? $t(
+                      'Chaque écriture, d’où qu’elle vienne — l’interface, l’API, un agent ou le SQL direct —, avec les valeurs d’avant.',
+                    )
+                  : $t(
+                      'Chaque modification des tables, des champs, de leurs choix et de leur IA, avec ce qu’ils étaient avant.',
+                    )}
               </p>
             </div>
             {structure && (
@@ -466,28 +471,23 @@ export function HistoryPanel({
                       view === v ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground',
                     )}
                   >
-                    {v === 'rows' ? 'Données' : 'Structure'}
+                    {v === 'rows' ? $t('Données') : $t('Structure')}
                   </button>
                 ))}
               </div>
             )}
             {view === 'rows' && (
-              <Select
+              <Choice
                 value={table === '' ? 'all' : table}
                 onValueChange={(v) => setTable(v === 'all' ? '' : v)}
-              >
-                <SelectTrigger className="w-56" aria-label="Table">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent align="end">
-                  <SelectItem value="all">Toutes les tables</SelectItem>
-                  {base.tables.map((t) => (
-                    <SelectItem key={t.id} value={t.name}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={[
+                  { value: 'all', label: $t('Toutes les tables') },
+                  ...base.tables.map((t) => ({ value: t.name, label: t.label })),
+                ]}
+                aria-label={$t('Table')}
+                size="default"
+                className="w-56"
+              />
             )}
           </div>
 
@@ -498,12 +498,12 @@ export function HistoryPanel({
               <HistoryList
                 load={load}
                 showTable={table === ''}
-                empty="Aucune écriture pour l’instant."
+                empty={$t('Aucune écriture pour l’instant.')}
               />
 
               <p className="mt-6 flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Trash2 className="size-3.5" />
-                Une ligne supprimée se restaure depuis son entrée « a supprimé ».
+                {$t('Une ligne supprimée se restaure depuis son entrée « a supprimé ».')}
               </p>
             </>
           )}

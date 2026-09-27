@@ -1,0 +1,124 @@
+---
+/* The roadmap, in one language: `src/pages/feuille-de-route.astro` (French) and `src/pages/[locale]/feuille-de-route.astro`. */
+import { type Locale, i18n } from '../i18n';
+import Landing from '../layouts/Landing.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, html } = i18n(locale);
+const r = t.roadmap;
+const columns = Object.entries(r.columns).map(([tone, column]) => ({ tone, ...column, items: Object.values(column.items) }));
+---
+
+<Landing locale={locale} path="/feuille-de-route/" title={t.meta.roadmap.title} description={t.meta.roadmap.description}>
+	<main class="page">
+		<header class="page-head">
+			<span class="bd-label">{r.label}</span>
+			<h1>{r.title}</h1>
+			<p set:html={html(r.intro)} />
+		</header>
+		<div class="cols">
+			{
+				columns.map((c) => (
+					<section class:list={['col', c.tone]}>
+						<h2>{c.title}</h2>
+						<ul>
+							{c.items.map((i) => (
+								<li>
+									<h3>{i.title}</h3>
+									<p>{i.text}</p>
+								</li>
+							))}
+						</ul>
+					</section>
+				))
+			}
+		</div>
+	</main>
+</Landing>
+
+<style>
+	.page {
+		max-width: 1080px;
+		margin: 0 auto;
+		padding: 140px 24px 64px;
+	}
+	.page-head {
+		max-width: 720px;
+	}
+	.page-head h1 {
+		font-size: clamp(34px, 4.6vw, 52px);
+		font-weight: 800;
+		letter-spacing: -0.04em;
+		line-height: 1.05;
+		margin: 14px 0 16px;
+	}
+	.page-head p {
+		font-size: 17px;
+		color: var(--bd-text-soft);
+		margin: 0 0 44px;
+	}
+	.page-head :global(a) {
+		color: var(--bd-primary);
+		font-weight: 600;
+	}
+	.cols {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 20px;
+	}
+	.col {
+		border-radius: 20px;
+		padding: 24px;
+		border: 1px solid var(--bd-border);
+		background: var(--bd-alt-bg);
+	}
+	.col.next {
+		background: linear-gradient(180deg, #f1faee, #fff);
+		border-color: #d6ebcf;
+	}
+	h2 {
+		margin: 0 0 16px;
+		font-size: 14px;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--bd-primary);
+	}
+	.later h2 {
+		color: var(--bd-muted-fg);
+	}
+	ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	li {
+		background: #fff;
+		border: 1px solid var(--bd-border);
+		border-radius: 14px;
+		padding: 16px 18px;
+	}
+	h3 {
+		margin: 0 0 6px;
+		font-size: 15.5px;
+		letter-spacing: -0.01em;
+	}
+	p {
+		margin: 0;
+		font-size: 14px;
+		line-height: 1.55;
+		color: var(--bd-text-soft);
+	}
+	@media (max-width: 760px) {
+		.cols {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

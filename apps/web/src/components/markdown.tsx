@@ -1,6 +1,7 @@
 'use client'
 
 import { CodeGroup } from '@/components/api-reference/code-block'
+import { $t } from '@/lib/i18n'
 import {
   type Align,
   type Block,
@@ -159,25 +160,25 @@ const CALLOUTS: Readonly<
   Record<CalloutKind, { title: string; icon: LucideIcon; box: string; accent: string }>
 > = {
   NOTE: {
-    title: 'Note',
+    title: $t('Note||encadré de texte'),
     icon: Info,
     box: 'border-sky-500 bg-sky-500/10',
     accent: 'text-sky-700 dark:text-sky-300',
   },
   TIP: {
-    title: 'Astuce',
+    title: $t('Astuce'),
     icon: Lightbulb,
     box: 'border-emerald-500 bg-emerald-500/10',
     accent: 'text-emerald-700 dark:text-emerald-300',
   },
   IMPORTANT: {
-    title: 'Important',
+    title: $t('Important'),
     icon: OctagonAlert,
     box: 'border-violet-500 bg-violet-500/10',
     accent: 'text-violet-700 dark:text-violet-300',
   },
   WARNING: {
-    title: 'Attention',
+    title: $t('Attention'),
     icon: TriangleAlert,
     box: 'border-amber-500 bg-amber-500/10',
     accent: 'text-amber-700 dark:text-amber-300',
@@ -314,7 +315,7 @@ function Heading({
             event.preventDefault()
             context.onAnchor(id)
           }}
-          aria-label={`Lien vers « ${block.text} »`}
+          aria-label={$t('Lien vers « {text} »', { text: block.text })}
           className="ml-2 font-normal text-muted-foreground no-underline opacity-0 transition-opacity hover:text-primary focus-visible:opacity-100 group-hover:opacity-100"
         >
           #

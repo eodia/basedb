@@ -16,12 +16,21 @@ import { ProjectIllustration } from '@/components/app/project-illustration'
 import { ProjectDialog } from '@/components/app/project-menu'
 import { SchemaEditor } from '@/components/app/schema-editor'
 import {
+  type LinkNotice,
+  SettingsPanel,
+  type SettingsTab,
+  tabOfSlug,
+} from '@/components/app/settings/settings-panel'
+import {
   type BaseIntent,
+  type SavedIntent,
   type Section,
   Sidebar,
   SidebarToggle,
   type TableIntent,
 } from '@/components/app/sidebar'
+import { QueryDialog } from '@/components/app/sql/query-dialog'
+import { SqlViewDialog } from '@/components/app/sql/sql-view-dialog'
 import { TableDialogs, useTableActions } from '@/components/app/table-actions'
 import { TemplateGallery } from '@/components/app/template-gallery'
 import { Workspace } from '@/components/app/workspace'
@@ -32,12 +41,19 @@ import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
   type ApiDocumentation,
+  ApiError,
   type DescribedBase,
   type Me,
   type Project,
+  type QuerySummary,
+  type SavedQuery,
+  type SqlView,
+  type SqlViewSummary,
   api,
 } from '@/lib/api/client'
-import { messageFor } from '@/lib/messages'
+import { $t, followAccountLocale } from '@/lib/i18n'
+import { messageFor, reasonFor } from '@/lib/messages'
+import { applyPreferences } from '@/lib/preferences'
 import { usePanels } from '@/lib/store/panels'
 import { useSidebar } from '@/lib/store/sidebar'
 import { hydrateWorkspace, useActiveTab, useWorkspace } from '@/lib/store/workspace'
@@ -69,13 +85,14 @@ import { Toaster } from 'sonner'
 /** What each section is called, in the tab strip as on screen. */
 const SECTION_TITLES: Readonly<Record<Section, string | undefined>> = {
   data: undefined,
-  structure: 'Structure',
-  history: 'Historique',
-  interfaces: 'Interfaces',
-  automations: 'Automatisations',
-  integrations: 'Intégrations',
-  doc: 'Documentation API et MCP',
-  admin: 'Administration',
+  structure: $t('Structure'),
+  history: $t('Historique'),
+  dashboards: $t('Tableaux de bord'),
+  automations: $t('Automatisations'),
+  integrations: $t('Intégrations'),
+  doc: $t('Documentation API et MCP'),
+  admin: $t('Administration'),
+  settings: $t('Paramètres'),
 }
 
 /** Where the project last browsed is remembered — a convenience, never a source of truth. */
@@ -115,6 +132,9 @@ export default function App() {
   const [baseName, setBaseName] = useState<string | null>(null)
   const [section, setSection] = useState<Section>('data')
   const [adminTab, setAdminTab] = useState<AdminTab>('users')
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>('profile')
+  /** What a provider answered to a link asked for from the settings (chapter 13 §3.5). */
+  const [linkNotice, setLinkNotice] = useState<LinkNotice | null>(null)
 
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -124,11 +144,23 @@ export default function App() {
   const [naming, setNaming] = useState<string | null>(null)
   const [newProject, setNewProject] = useState(false)
   const [newBase, setNewBase] = useState(false)
+  /** A SQL view being created in a base, or changed — from the navigation. */
+  const [viewEdit, setViewEdit] = useState<{
+    readonly base: string
+    readonly view: SqlView | null
+  } | null>(null)
+  /** A saved query being renamed or shared — from the navigation. */
+  const [queryEdit, setQueryEdit] = useState<{
+    readonly base: string
+    readonly query: SavedQuery
+  } | null>(null)
 
   const [doc, setDoc] = useState<ApiDocumentation | null>(null)
 
   const openTable = useWorkspace((s) => s.openTable)
   const openSql = useWorkspace((s) => s.openSql)
+  const openQueryTab = useWorkspace((s) => s.openQuery)
+  const openSqlViewTab = useWorkspace((s) => s.openSqlView)
   const activate = useWorkspace((s) => s.activate)
   const dropBase = useWorkspace((s) => s.dropBase)
   const dropTable = useWorkspace((s) => s.dropTable)
@@ -150,7 +182,7 @@ export default function App() {
   // product's, which is what the empty segments produce.
   useTitle([
     section === 'data' ? activeTab?.label : SECTION_TITLES[section],
-    section === 'admin' ? undefined : (base?.label ?? project?.label),
+    section === 'admin' || section === 'settings' ? undefined : (base?.label ?? project?.label),
   ])
 
   // The theme, the open tabs, the width of the sidebar and of the panels on the right are
@@ -175,10 +207,26 @@ export default function App() {
     }
     setOnline(true)
     const found = await api.resume()
+    // The account speaks another language than the page: the page reloads in it, and
+    // nothing is drawn meanwhile.
+    if (found !== null && followAccountLocale(found.locale)) return
     setBootstrapping(found === null && (await api.bootstrapOpen()))
+    if (found !== null) applyPreferences(found)
     setMe(found)
     setChecking(false)
   }, [])
+
+  /** The account changed from the settings: its name, its address, its preferences. */
+  const changeMe = useCallback((updated: Me) => {
+    // A language chosen in the settings reloads the page in it.
+    if (followAccountLocale(updated.locale)) return
+    applyPreferences(updated)
+    setMe(updated)
+  }, [])
+
+  // WHO is signed in, rather than the account as a whole: the first load below must run
+  // once per person, not again because they renamed themselves in the settings.
+  const signedIn = me === null || me.mustChangePassword ? null : me.id
 
   useEffect(() => {
     void resume()
@@ -227,7 +275,7 @@ export default function App() {
    * table, else nothing, and the empty base offers to create one.
    */
   const focusBase = useCallback(
-    async (name: string, intent: BaseIntent) => {
+    async (name: string, intent: BaseIntent, options: { readonly keepSection?: boolean } = {}) => {
       setError(null)
       try {
         const found = await describe(name)
@@ -238,7 +286,7 @@ export default function App() {
         const state = useWorkspace.getState()
         switch (intent) {
           case 'open': {
-            setSection('data')
+            if (options.keepSection !== true) setSection('data')
             const current = state.tabs.find((t) => t.id === state.activeId)
             if (current?.base === name) break
             const mine = state.tabs.filter((t) => t.base === name)
@@ -251,17 +299,23 @@ export default function App() {
           case 'structure':
             setSection('structure')
             break
+          case 'history':
+            setSection('history')
+            break
           case 'doc':
             setSection('doc')
             break
           case 'sql': {
             setSection('data')
             const count = state.tabs.filter((t) => t.kind === 'sql').length + 1
-            openSql(name, null, `Requête ${count}`)
+            openSql(name, null, $t('Requête {count}', { count }))
             break
           }
           case 'new-table':
             setNaming(name)
+            break
+          case 'new-sql-view':
+            setViewEdit({ base: name, view: null })
             break
         }
       } catch (e) {
@@ -278,8 +332,46 @@ export default function App() {
    * browsed, then the first one. A base opens by itself: arriving on a chooser when there
    * is one thing to choose is a click asked for nothing.
    */
+  // An address may land on the settings: `?parametres=<tab>`, or the provider's return
+  // after a link asked for there — `&lien=<slug>` when it was made, `?connexion=<code>`
+  // when it was refused (chapter 13 §3.5). The settings open on that tab, the outcome is
+  // said once, and the address is cleaned: a reload must not say it again. Declared
+  // before the first load, which reads `landing` to leave the settings in front.
+  const landing = useRef(false)
   useEffect(() => {
-    if (me === null || me.mustChangePassword) return
+    if (signedIn === null) return
+    const params = new URLSearchParams(window.location.search)
+    const tab = tabOfSlug(params.get('parametres'))
+    const refused = params.get('connexion')
+    if (tab === null && refused === null) return
+    landing.current = true
+    setSettingsTab(refused !== null ? 'profile' : (tab ?? 'profile'))
+    setSection('settings')
+    if (refused !== null) {
+      const reason = params.get('raison')
+      setLinkNotice({
+        ok: false,
+        // The sentence alone, as the sign-in screen says it: a code read off an address
+        // carries no trace worth showing.
+        text: reasonFor(new ApiError(refused, 400, '', reason === null ? {} : { reason })),
+      })
+    } else if (params.get('lien') !== null) {
+      setLinkNotice({
+        ok: true,
+        text: $t('Compte lié : vous pouvez désormais vous connecter avec lui.'),
+      })
+    }
+    for (const key of ['parametres', 'connexion', 'raison', 'lien']) params.delete(key)
+    const rest = params.toString()
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${rest === '' ? '' : `?${rest}`}`,
+    )
+  }, [signedIn])
+
+  useEffect(() => {
+    if (signedIn === null) return
     let stale = false
     void (async () => {
       try {
@@ -293,7 +385,9 @@ export default function App() {
         selectProject(chosen?.id ?? null)
         const target =
           tab !== undefined && tabProject !== undefined ? tab.base : chosen?.bases[0]?.name
-        if (target !== undefined) await focusBase(target, 'open')
+        if (target !== undefined) {
+          await focusBase(target, 'open', { keepSection: landing.current })
+        }
       } catch (e) {
         setError(messageFor(e))
       } finally {
@@ -303,7 +397,7 @@ export default function App() {
     return () => {
       stale = true
     }
-  }, [me, loadProjects, focusBase, selectProject])
+  }, [signedIn, loadProjects, focusBase, selectProject])
 
   // Activating a tab makes its base the current one. Keyed on the tab alone: a base chosen
   // in the sidebar must not be taken back by a tab that merely stayed active.
@@ -403,6 +497,59 @@ export default function App() {
     ],
   )
 
+  /**
+   * A SQL view of the navigation: opened in a tab of its own, or changed in its dialog —
+   * which reads it first, as it is now.
+   */
+  const onSqlView = useCallback(
+    async (name: string, view: SqlViewSummary, intent: SavedIntent) => {
+      setError(null)
+      try {
+        const found = described[name] ?? (await describe(name))
+        setBaseName(name)
+        selectProject(found.project.id)
+        if (intent === 'edit') {
+          setViewEdit({ base: name, view: await api.sqlView(name, view.id) })
+          return
+        }
+        setSection('data')
+        openSqlViewTab(name, view)
+      } catch (e) {
+        setError(messageFor(e))
+      }
+    },
+    [described, describe, openSqlViewTab, selectProject],
+  )
+
+  /**
+   * A saved query of the navigation: its text opened in a SQL tab — the one already showing
+   * it, if any — or its name and audience changed in its dialog.
+   */
+  const onQuery = useCallback(
+    async (name: string, summary: QuerySummary, intent: SavedIntent) => {
+      setError(null)
+      try {
+        const found = described[name] ?? (await describe(name))
+        const query = await api.query(name, summary.id)
+        setBaseName(name)
+        selectProject(found.project.id)
+        if (intent === 'edit') {
+          setQueryEdit({ base: name, query })
+          return
+        }
+        setSection('data')
+        openQueryTab(name, query)
+      } catch (e) {
+        setError(messageFor(e))
+        // Gone, or no longer shared: the navigation says so by no longer listing it.
+        if (e instanceof ApiError && e.code === 'RESOURCE_NOT_FOUND') {
+          void loadProjects().catch(() => undefined)
+        }
+      }
+    },
+    [described, describe, loadProjects, openQueryTab, selectProject],
+  )
+
   // A notification's row in another base: its table is opened here, the workspace then
   // opens the row once that base is on screen (chapter 16 §2).
   const pendingRecord = useWorkspace((s) => s.pendingRecord)
@@ -448,6 +595,8 @@ export default function App() {
     setBaseName(null)
     setLoaded(false)
     setSection('data')
+    setLinkNotice(null)
+    landing.current = false
     synced.current = null
     useWorkspace.getState().closeAll()
   }, [])
@@ -460,8 +609,10 @@ export default function App() {
     return (
       <main className="flex min-h-screen items-center justify-center p-6">
         <div className="max-w-md rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-sm">
-          <h1 className="mb-2 text-base font-semibold">L’API ne répond pas</h1>
-          <p className="text-muted-foreground">Vérifiez qu’elle est démarrée, puis rechargez.</p>
+          <h1 className="mb-2 text-base font-semibold">{$t('L’API ne répond pas')}</h1>
+          <p className="text-muted-foreground">
+            {$t('Vérifiez qu’elle est démarrée, puis rechargez.')}
+          </p>
         </div>
       </main>
     )
@@ -507,10 +658,12 @@ export default function App() {
       return (
         <Empty
           icon={FolderKanban}
-          title="Aucun projet"
+          title={$t('Aucun projet')}
           illustration={<ProjectIllustration />}
-          body="Un projet regroupe vos bases. Créez le vôtre — ou ouvrez le lien d’invitation qu’on vous a envoyé pour rejoindre celui d’une équipe."
-          action={{ label: 'Créer un projet', onClick: () => setNewProject(true) }}
+          body={$t(
+            'Un projet regroupe vos bases. Créez le vôtre — ou ouvrez le lien d’invitation qu’on vous a envoyé pour rejoindre celui d’une équipe.',
+          )}
+          action={{ label: $t('Créer un projet'), onClick: () => setNewProject(true) }}
         />
       )
     }
@@ -518,12 +671,14 @@ export default function App() {
       return canCreateBase ? (
         <Empty
           icon={Database}
-          title={`Aucune base dans « ${project.label} »`}
+          title={$t('Aucune base dans « {label} »', { label: project.label })}
           illustration={<BaseIllustration />}
-          body="Créez une base vide, partez d’un modèle ou demandez-la à l’IA — ou ouvrez la démonstration, qui montre tout basedb."
-          action={{ label: 'Créer une base', onClick: () => setNewBase(true) }}
+          body={$t(
+            'Créez une base vide, partez d’un modèle ou demandez-la à l’IA — ou ouvrez la démonstration, qui montre tout basedb.',
+          )}
+          action={{ label: $t('Créer une base'), onClick: () => setNewBase(true) }}
           secondary={{
-            label: 'Base de démonstration',
+            label: $t('Base de démonstration'),
             onClick: () => setGallery({ initialKey: 'demo' }),
           }}
           busy={creating}
@@ -531,8 +686,8 @@ export default function App() {
       ) : (
         <Empty
           icon={Database}
-          title="Aucune base visible"
-          body="Ce projet ne contient aucune base qui vous soit ouverte."
+          title={$t('Aucune base visible')}
+          body={$t('Ce projet ne contient aucune base qui vous soit ouverte.')}
         />
       )
     }
@@ -540,8 +695,8 @@ export default function App() {
       return (
         <Empty
           icon={FolderKanban}
-          title="Choisissez un projet"
-          body="Sélectionnez un projet en haut du panneau de gauche."
+          title={$t('Choisissez un projet')}
+          body={$t('Sélectionnez un projet en haut du panneau de gauche.')}
         />
       )
     }
@@ -550,16 +705,16 @@ export default function App() {
       return base.actions.includes('manage_schema') ? (
         <Empty
           icon={Database}
-          title="Aucune table"
-          body={`Créez la première table de « ${base.label} ».`}
-          action={{ label: 'Créer une table', onClick: () => setNaming(base.name) }}
+          title={$t('Aucune table')}
+          body={$t('Créez la première table de « {label} ».', { label: base.label })}
+          action={{ label: $t('Créer une table'), onClick: () => setNaming(base.name) }}
           busy={creating}
         />
       ) : (
         <Empty
           icon={Database}
-          title="Aucune table"
-          body="Aucune table de cette base ne vous est ouverte."
+          title={$t('Aucune table')}
+          body={$t('Aucune table de cette base ne vous est ouverte.')}
         />
       )
     }
@@ -568,8 +723,8 @@ export default function App() {
       return (
         <Empty
           icon={Database}
-          title="Choisissez une base"
-          body="Dépliez une base dans le panneau de gauche, puis ouvrez l’une de ses tables."
+          title={$t('Choisissez une base')}
+          body={$t('Dépliez une base dans le panneau de gauche, puis ouvrez l’une de ses tables.')}
         />
       )
     }
@@ -582,6 +737,7 @@ export default function App() {
         onBaseChanged={() => refreshBase(shown.name)}
         environments={environments}
         self={me?.id ?? null}
+        onNavigationChanged={() => void loadProjects().catch(() => undefined)}
       />
     )
   }
@@ -625,6 +781,8 @@ export default function App() {
               })
             }}
             onTable={(b, t, intent) => void onTable(b, t, intent)}
+            onSqlView={(b, v, intent) => void onSqlView(b, v, intent)}
+            onQuery={(b, q, intent) => void onQuery(b, q, intent)}
             onRenamed={(change) => {
               // Tabs and URLs carry names: those of the old name are closed, and the
               // object is reopened under the new one (chapter 06 §2).
@@ -650,10 +808,23 @@ export default function App() {
               setAdminTab(tab)
               setSection('admin')
             }}
+            onSettings={(tab) => {
+              setSettingsTab(tab)
+              setSection('settings')
+            }}
             onSignedOut={signOut}
           />
 
-          {section === 'admin' && me.isAdmin ? (
+          {section === 'settings' ? (
+            <SettingsPanel
+              tab={settingsTab}
+              me={me}
+              notice={linkNotice}
+              onTab={setSettingsTab}
+              onMe={changeMe}
+              onDismissNotice={() => setLinkNotice(null)}
+            />
+          ) : section === 'admin' && me.isAdmin ? (
             <AdminPanel
               tab={adminTab}
               me={me}
@@ -665,10 +836,10 @@ export default function App() {
             dataView()
           ) : section === 'history' ? (
             <HistoryPanel base={base} onBack={() => void focusBase(base.name, 'open')} />
-          ) : section === 'interfaces' ? (
-            <DashboardsPanel base={base} onBack={() => void focusBase(base.name, 'open')} />
+          ) : section === 'dashboards' ? (
+            <DashboardsPanel base={base} />
           ) : section === 'automations' ? (
-            <AutomationsPanel base={base} onBack={() => void focusBase(base.name, 'open')} />
+            <AutomationsPanel base={base} />
           ) : section === 'integrations' ? (
             <IntegrationsPanel
               base={base}
@@ -730,6 +901,52 @@ export default function App() {
             />
           )}
 
+          {viewEdit !== null && described[viewEdit.base] !== undefined && (
+            <SqlViewDialog
+              open
+              base={described[viewEdit.base] as DescribedBase}
+              view={viewEdit.view}
+              onClose={() => setViewEdit(null)}
+              onSaved={(saved) => {
+                const where = viewEdit.base
+                void loadProjects().catch(() => undefined)
+                if (viewEdit.view === null) {
+                  setSection('data')
+                  openSqlViewTab(where, saved)
+                  return
+                }
+                useWorkspace.getState().renameSqlView(saved.id, saved.label)
+                // An open tab of the view reads it again: its text may have changed.
+                useWorkspace.getState().reload()
+              }}
+              onDeleted={(id) => {
+                useWorkspace.getState().dropSqlView(id)
+                void loadProjects().catch(() => undefined)
+              }}
+            />
+          )}
+
+          {queryEdit !== null && (
+            <QueryDialog
+              open
+              base={queryEdit.base}
+              manages={described[queryEdit.base]?.actions.includes('manage_schema') === true}
+              query={queryEdit.query}
+              statement={queryEdit.query.statement}
+              onClose={() => setQueryEdit(null)}
+              onSaved={(saved) => {
+                useWorkspace.getState().renameQuery(saved.id, saved.label)
+                // Its open tab reads it again: who sees it may have changed too.
+                useWorkspace.getState().reload()
+                void loadProjects().catch(() => undefined)
+              }}
+              onDeleted={(id) => {
+                useWorkspace.getState().detachQuery(id)
+                void loadProjects().catch(() => undefined)
+              }}
+            />
+          )}
+
           <ProjectDialog
             open={newProject}
             onClose={() => setNewProject(false)}
@@ -747,7 +964,7 @@ export default function App() {
                   type="button"
                   onClick={() => setError(null)}
                   className="text-muted-foreground hover:text-foreground"
-                  aria-label="Fermer"
+                  aria-label={$t('Fermer')}
                 >
                   ×
                 </button>
@@ -758,6 +975,7 @@ export default function App() {
 
         <TableDialogs
           base={section === 'data' ? (tabBase ?? base) : base}
+          administers={me.isAdmin}
           onBaseChanged={() => refreshBase()}
         />
       </ElevationProvider>
@@ -825,7 +1043,7 @@ function Empty({
                   ) : (
                     <Sparkles className="size-4" />
                   )}
-                  {busy ? 'Création…' : secondary.label}
+                  {busy ? $t('Création…') : secondary.label}
                 </Button>
               )}
             </div>
@@ -880,7 +1098,7 @@ function SectionPanel({
         <span className="text-sm font-medium">{SECTION_TITLES[section] ?? ''}</span>
         <div className="flex-1" />
         <Button variant="ghost" size="sm" onClick={onBack}>
-          Retour aux données
+          {$t('Retour aux données')}
         </Button>
       </header>
 

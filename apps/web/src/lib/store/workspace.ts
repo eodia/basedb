@@ -16,7 +16,11 @@ import { create } from 'zustand'
  * `columnOrder` is an overlay read on top of it, null until someone drags a header.
  */
 
-export type TabKind = 'table' | 'sql'
+/**
+ * `table`: a grid of a table. `sql`: a statement and its result — a saved query's when
+ * `queryId` says so. `sqlview`: the rows of a SQL view of the base (chapter 11 §1.8).
+ */
+export type TabKind = 'table' | 'sql' | 'sqlview'
 
 /** One sort term. At most three, per chapter 11 §1.3. */
 export interface SortTerm {
@@ -120,6 +124,10 @@ export interface Tab {
    * it finds the columns as they were dragged, not reset.
    */
   readonly ownView: ViewState | null
+  /** For a `sql` tab: the saved query it shows (`_basedb.saved_query`), `null` when unsaved. */
+  readonly queryId: string | null
+  /** For a `sqlview` tab: the SQL view it shows (`_basedb.sql_view`). */
+  readonly sqlViewId: string | null
 }
 
 /** A view with nothing set: every column, no sort, no filter, first page. */
@@ -162,6 +170,25 @@ interface WorkspaceState {
 
   openTable: (table: Table, label: string) => string
   openSql: (base: string, table: string | null, label: string) => string
+  /**
+   * Opens a saved query: the tab already showing it if there is one — its text as it was
+   * left there, edits included —, else a new one holding its statement.
+   */
+  openQuery: (
+    base: string,
+    query: { readonly id: string; readonly label: string; readonly statement: string },
+  ) => { readonly id: string; readonly created: boolean }
+  /** Opens a SQL view: the tab already showing it, else a new one. */
+  openSqlView: (base: string, view: { readonly id: string; readonly label: string }) => string
+  /** A SQL tab's statement was just saved as a query, or saved again under a new name. */
+  attachQuery: (id: string, queryId: string, label: string) => void
+  /** A saved query is gone: its tabs keep their text, as statements no longer saved. */
+  detachQuery: (queryId: string) => void
+  /** A saved query was renamed: its tabs take its new name. */
+  renameQuery: (queryId: string, label: string) => void
+  /** A SQL view is gone, or renamed: its tabs close, or take its new name. */
+  dropSqlView: (sqlViewId: string) => void
+  renameSqlView: (sqlViewId: string, label: string) => void
   activate: (id: string) => void
   close: (id: string) => void
   closeOthers: (id: string) => void
@@ -222,7 +249,12 @@ function restore(): { tabs: readonly Tab[]; activeId: string | null } {
           typeof t.ownView === 'object' && t.ownView !== null
             ? { ...emptyView(), ...t.ownView }
             : null,
+        // Nor one saved before saved queries and SQL views existed.
+        queryId: typeof t.queryId === 'string' ? t.queryId : null,
+        sqlViewId: typeof t.sqlViewId === 'string' ? t.sqlViewId : null,
       }))
+      // A SQL view's tab without its view says nothing: it could only fail to load.
+      .filter((t) => t.kind !== 'sqlview' || t.sqlViewId !== null)
     return {
       tabs,
       activeId: typeof parsed.activeId === 'string' ? parsed.activeId : (tabs[0]?.id ?? null),
@@ -274,6 +306,8 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       draft: '',
       viewId: null,
       ownView: null,
+      queryId: null,
+      sqlViewId: null,
     }
     const tabs = [...get().tabs, tab]
     set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
@@ -292,11 +326,101 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       draft: '',
       viewId: null,
       ownView: null,
+      queryId: null,
+      sqlViewId: null,
     }
     const tabs = [...get().tabs, tab]
     set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
     persist(tabs, tab.id)
     return tab.id
+  },
+
+  openQuery: (base, query) => {
+    const existing = get().tabs.find(
+      (t) => t.kind === 'sql' && t.base === base && t.queryId === query.id,
+    )
+    if (existing !== undefined) {
+      set({ activeId: existing.id, checked: new Set(), cells: new Set() })
+      persist(get().tabs, existing.id)
+      return { id: existing.id, created: false }
+    }
+    const tab: Tab = {
+      id: nextId(),
+      kind: 'sql',
+      base,
+      table: null,
+      label: query.label,
+      view: emptyView(),
+      draft: query.statement,
+      viewId: null,
+      ownView: null,
+      queryId: query.id,
+      sqlViewId: null,
+    }
+    const tabs = [...get().tabs, tab]
+    set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
+    persist(tabs, tab.id)
+    return { id: tab.id, created: true }
+  },
+
+  openSqlView: (base, view) => {
+    const existing = get().tabs.find(
+      (t) => t.kind === 'sqlview' && t.base === base && t.sqlViewId === view.id,
+    )
+    if (existing !== undefined) {
+      set({ activeId: existing.id, checked: new Set(), cells: new Set() })
+      persist(get().tabs, existing.id)
+      return existing.id
+    }
+    const tab: Tab = {
+      id: nextId(),
+      kind: 'sqlview',
+      base,
+      table: null,
+      label: view.label,
+      view: emptyView(),
+      draft: '',
+      viewId: null,
+      ownView: null,
+      queryId: null,
+      sqlViewId: view.id,
+    }
+    const tabs = [...get().tabs, tab]
+    set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
+    persist(tabs, tab.id)
+    return tab.id
+  },
+
+  attachQuery: (id, queryId, label) => {
+    const tabs = get().tabs.map((t) => (t.id === id ? { ...t, queryId, label } : t))
+    set({ tabs })
+    persist(tabs, get().activeId)
+  },
+
+  detachQuery: (queryId) => {
+    const tabs = get().tabs.map((t) => (t.queryId === queryId ? { ...t, queryId: null } : t))
+    set({ tabs })
+    persist(tabs, get().activeId)
+  },
+
+  renameQuery: (queryId, label) => {
+    const tabs = get().tabs.map((t) => (t.queryId === queryId ? { ...t, label } : t))
+    set({ tabs })
+    persist(tabs, get().activeId)
+  },
+
+  dropSqlView: (sqlViewId) => {
+    const { tabs, activeId } = get()
+    const next = tabs.filter((t) => t.sqlViewId !== sqlViewId)
+    const nextActive = next.some((t) => t.id === activeId) ? activeId : (next[0]?.id ?? null)
+    set({ tabs: next, activeId: nextActive, checked: new Set(), cells: new Set() })
+    persist(next, nextActive)
+  },
+
+  renameSqlView: (sqlViewId, label) => {
+    const tabs = get().tabs.map((t) => (t.sqlViewId === sqlViewId ? { ...t, label } : t))
+    set({ tabs })
+    persist(tabs, get().activeId)
   },
 
   activate: (id) => {

@@ -65,25 +65,36 @@ est historisé. Vos données restent exploitables sans basedb.
 - **La collaboration** : commentaires et mentions, notifications, écritures des autres en temps
   réel, et **Ctrl+Z** qui refuse plutôt que d’écraser le travail d’un autre.
 - **Des automatisations** — quand une ligne change, à heure fixe ou d’un clic : modifier, créer,
-  prévenir, appeler un webhook, écrire sur Slack — et des **interfaces**, les tableaux de bord
-  d’une base.
+  prévenir, appeler un webhook, écrire sur Slack.
+- **Des tableaux de bord** : des questions posées à la souris ou en SQL, quinze graphiques —
+  courbes, aires, tableaux croisés, cartes… — sur une grille en onglets, sous des filtres qui
+  pilotent les cartes qu’on leur relie ; un clic sur un point ouvre ce qu’il représente ; un lien
+  public ou réservé aux membres le partage, intégrable à un autre site.
+- **Du SQL pour chacun, avec ses propres droits** : des requêtes enregistrées sous les tables —
+  pour soi, pour toute la base ou pour des groupes — et de vraies **vues SQL** PostgreSQL rangées
+  parmi elles, que `psql` lit aussi. PostgreSQL lui-même tient chacun à ses tables et à ses champs.
 - **Des droits par groupe**, sur un projet, une base ou une table, jusqu’au champ ; un
   **historique** de chaque écriture, d’où qu’elle vienne ; des **environnements** — production,
   recette — que l’on compare et que l’on migre.
 - **Une API REST, un serveur MCP et des webhooks**, derrière le même point de contrôle des
   droits. Un agent IA lit et écrit selon ses droits ; il ne change pas la structure, il la
   propose.
-- **L’IA en option** — OpenAI, Anthropic ou Mistral, avec votre clé : des champs remplis par un
+- **L’IA en option** — OpenAI, Anthropic, Mistral ou tout serveur compatible (Azure, Ollama…),
+  avec votre clé : des champs remplis par un
   modèle, un copilote, une base entière décrite en une phrase. Rien ne part sans configuration.
 
 <table>
   <tr>
-    <td width="50%"><img src="www/src/assets/screens/interfaces.png" alt="Un tableau de bord : chiffres, graphiques et prochaines échéances." /><br /><sub><b>Interfaces</b> — des tableaux de bord lus avec les droits de chacun.</sub></td>
+    <td width="50%"><img src="www/src/assets/screens/tableaux-de-bord.png" alt="Un tableau de bord : tendance du mois, objectif, chiffre d’affaires par mois et sentiment des avis, sous des filtres communs." /><br /><sub><b>Tableaux de bord</b> — des questions et leurs graphiques, lus avec les droits de chacun.</sub></td>
     <td width="50%"><img src="www/src/assets/screens/automatisations.png" alt="Une automatisation : quand une tâche passe à Fait, noter l’heure." /><br /><sub><b>Automatisations</b> — quand, si, alors, et chaque exécution tracée.</sub></td>
   </tr>
   <tr>
     <td width="50%"><img src="www/src/assets/screens/chronologie.png" alt="Une chronologie de tâches et les flèches de leurs dépendances." /><br /><sub><b>Chronologie</b> — des barres entre deux dates, et leurs dépendances.</sub></td>
     <td width="50%"><img src="www/src/assets/screens/commentaires.png" alt="La fiche d’un projet, avec une conversation et des mentions." /><br /><sub><b>Commentaires</b> — on discute d’une ligne là où elle se trouve.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="www/src/assets/screens/requete-sql.png" alt="Une requête SQL enregistrée pour toute la base, ouverte depuis la rubrique Requêtes, sous les tables." /><br /><sub><b>Requêtes</b> — enregistrées sous les tables, exécutées par chacun avec ses droits.</sub></td>
+    <td width="50%"><img src="www/src/assets/screens/vue-sql.png" alt="La vue SQL « Factures à encaisser », rangée parmi les tables avec sa couleur et son pictogramme." /><br /><sub><b>Vues SQL</b> — de vraies vues PostgreSQL, rangées parmi les tables.</sub></td>
   </tr>
 </table>
 
@@ -114,7 +125,7 @@ bord et des automatisations. Tout est expliqué dans
 
 ## Brancher un programme ou un agent
 
-Menu **⋯** d’une base → **Jetons API et MCP…** : un jeton limité à cette base, en lecture seule
+Menu **⋯** d’une base → **API et agents** → **Jetons API et MCP…** : un jeton limité à cette base, en lecture seule
 par défaut, jamais plus puissant que la personne qui l’a créé.
 
 ```bash
@@ -137,7 +148,7 @@ spécification OpenAPI 3.1. Voir [l’API REST](https://eodia.github.io/basedb/i
 | | |
 |---|---|
 | **Pour commencer** | [Introduction](https://eodia.github.io/basedb/guides/introduction/) · [Installation](https://eodia.github.io/basedb/guides/installation/) · [Premiers pas](https://eodia.github.io/basedb/guides/premiers-pas/) |
-| **Fonctionnalités** | [Tables et champs](https://eodia.github.io/basedb/fonctionnalites/tables-et-champs/) · [Vues](https://eodia.github.io/basedb/fonctionnalites/vues/) · [Formulaires](https://eodia.github.io/basedb/fonctionnalites/formulaires-partages/) et [vues partagés](https://eodia.github.io/basedb/fonctionnalites/vues-partagees/) · [Collaboration](https://eodia.github.io/basedb/fonctionnalites/collaboration/) · [Automatisations](https://eodia.github.io/basedb/fonctionnalites/automatisations/) · [Interfaces](https://eodia.github.io/basedb/fonctionnalites/interfaces/) · [Environnements](https://eodia.github.io/basedb/fonctionnalites/environnements/) · [Historique](https://eodia.github.io/basedb/fonctionnalites/historique/) · [Droits et groupes](https://eodia.github.io/basedb/fonctionnalites/droits/) · [IA](https://eodia.github.io/basedb/fonctionnalites/ia/) · [Modèles](https://eodia.github.io/basedb/fonctionnalites/modeles/) · [Fichiers](https://eodia.github.io/basedb/fonctionnalites/fichiers/) |
+| **Fonctionnalités** | [Tables et champs](https://eodia.github.io/basedb/fonctionnalites/tables-et-champs/) · [Vues](https://eodia.github.io/basedb/fonctionnalites/vues/) · [Formulaires](https://eodia.github.io/basedb/fonctionnalites/formulaires-partages/) et [vues partagés](https://eodia.github.io/basedb/fonctionnalites/vues-partagees/) · [Collaboration](https://eodia.github.io/basedb/fonctionnalites/collaboration/) · [Automatisations](https://eodia.github.io/basedb/fonctionnalites/automatisations/) · [Requêtes et vues SQL](https://eodia.github.io/basedb/fonctionnalites/requetes-et-vues-sql/) · [Tableaux de bord](https://eodia.github.io/basedb/fonctionnalites/tableaux-de-bord/) · [Environnements](https://eodia.github.io/basedb/fonctionnalites/environnements/) · [Historique](https://eodia.github.io/basedb/fonctionnalites/historique/) · [Droits et groupes](https://eodia.github.io/basedb/fonctionnalites/droits/) · [IA](https://eodia.github.io/basedb/fonctionnalites/ia/) · [Modèles](https://eodia.github.io/basedb/fonctionnalites/modeles/) · [Fichiers](https://eodia.github.io/basedb/fonctionnalites/fichiers/) |
 | **Intégrations** | [API REST](https://eodia.github.io/basedb/integrations/api-rest/) · [Serveur MCP](https://eodia.github.io/basedb/integrations/mcp/) · [Webhooks](https://eodia.github.io/basedb/integrations/webhooks/) · [Slack, agendas, synchronisation](https://eodia.github.io/basedb/integrations/synchronisation/) · [SQL direct](https://eodia.github.io/basedb/integrations/sql/) |
 | **Hébergement** | [Docker Compose](https://eodia.github.io/basedb/hebergement/docker/) · [Variables d’environnement](https://eodia.github.io/basedb/hebergement/variables/) · [Domaine et HTTPS](https://eodia.github.io/basedb/hebergement/https/) · [Sauvegardes et mises à jour](https://eodia.github.io/basedb/hebergement/sauvegardes/) |
 | **Architecture** | [Principes](https://eodia.github.io/basedb/architecture/principes/) · [le document d’architecture](docs/architecture/), une vingtaine de chapitres — [00 — Décisions structurantes](docs/architecture/00-decisions-structurantes.md) suffit pour comprendre le reste |

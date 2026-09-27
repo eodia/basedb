@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { type Proposal, type ProposalTable, type UserData, api } from '@/lib/api/client'
+import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor, sentenceFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { Bot, Check, ChevronDown, Loader2, X } from 'lucide-react'
@@ -29,25 +30,28 @@ import { useCallback, useEffect, useState } from 'react'
  * plainly that the request comes from an agent, through a token — not from a colleague.
  */
 
-const TIME = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
+const TIME = new Intl.DateTimeFormat(intlLocale(), { dateStyle: 'short', timeStyle: 'short' })
 
 const STATUS: Readonly<Record<Proposal['status'], { label: string; tone: string }>> = {
-  proposed: { label: 'En attente', tone: 'border-amber-500/40 text-amber-700 dark:text-amber-400' },
-  approved: { label: 'En cours', tone: 'border-sky-500/40 text-sky-700 dark:text-sky-400' },
+  proposed: {
+    label: $t('En attente'),
+    tone: 'border-amber-500/40 text-amber-700 dark:text-amber-400',
+  },
+  approved: { label: $t('En cours'), tone: 'border-sky-500/40 text-sky-700 dark:text-sky-400' },
   applied: {
-    label: 'Appliquée',
+    label: $t('Appliquée'),
     tone: 'border-emerald-500/40 text-emerald-700 dark:text-emerald-400',
   },
-  rejected: { label: 'Refusée', tone: 'text-muted-foreground' },
-  expired: { label: 'Expirée', tone: 'text-muted-foreground' },
-  superseded: { label: 'Remplacée', tone: 'text-muted-foreground' },
-  failed: { label: 'Échec', tone: 'border-destructive/40 text-destructive' },
+  rejected: { label: $t('Refusée'), tone: 'text-muted-foreground' },
+  expired: { label: $t('Expirée'), tone: 'text-muted-foreground' },
+  superseded: { label: $t('Remplacée'), tone: 'text-muted-foreground' },
+  failed: { label: $t('Échec'), tone: 'border-destructive/40 text-destructive' },
 }
 
 const ROLE: Readonly<Record<string, string>> = {
-  created: 'créée',
-  modified: 'modifiée',
-  referenced: 'référencée',
+  created: $t('créée'),
+  modified: $t('modifiée'),
+  referenced: $t('référencée'),
 }
 
 const DATA_MAX = 120
@@ -91,7 +95,8 @@ function Summary({ proposal }: { readonly proposal: Proposal }) {
     return (
       <div className="space-y-1.5">
         <p>
-          Créer la table <code className="font-mono text-[0.85em]">{created?.physical}</code>{' '}
+          {$t('Créer la table')}{' '}
+          <code className="font-mono text-[0.85em]">{created?.physical}</code>{' '}
           <Data value={p.table_label?.value} />
         </p>
         <ul className="space-y-1 pl-4 text-sm">
@@ -109,12 +114,12 @@ function Summary({ proposal }: { readonly proposal: Proposal }) {
   if (proposal.summary_template === 'add_link_field') {
     return (
       <p>
-        Ajouter à <TableName table={p.source_table} /> une relation{' '}
-        <Data value={p.field_label?.value} /> vers <TableName table={p.target_table} />
+        {$t('Ajouter à')} <TableName table={p.source_table} /> {$t('une relation')}{' '}
+        <Data value={p.field_label?.value} /> {$t('vers')} <TableName table={p.target_table} />
         <span className="block text-sm text-muted-foreground">
           {p.on_delete?.value === 'set_null'
-            ? 'Supprimer une ligne visée videra ce champ dans les lignes qui la référencent.'
-            : 'Une ligne visée par cette relation ne pourra plus être supprimée.'}
+            ? $t('Supprimer une ligne visée videra ce champ dans les lignes qui la référencent.')
+            : $t('Une ligne visée par cette relation ne pourra plus être supprimée.')}
         </span>
       </p>
     )
@@ -123,12 +128,13 @@ function Summary({ proposal }: { readonly proposal: Proposal }) {
     return (
       <div className="space-y-1">
         <p>
-          Ajouter à <TableName table={p.table} /> le champ <Data value={p.field_label?.value} />{' '}
+          {$t('Ajouter à')} <TableName table={p.table} /> {$t('le champ')}{' '}
+          <Data value={p.field_label?.value} />{' '}
           <span className="text-muted-foreground">— {kindOf(p.kind)}</span>
         </p>
         {p.options !== undefined && p.options.length > 0 && (
           <p className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
-            Choix :
+            {$t('Choix :')}
             {p.options.map((o, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: the list is fixed, its order is its identity
               <Data key={i} value={o.value} className="text-xs" />
@@ -138,7 +144,7 @@ function Summary({ proposal }: { readonly proposal: Proposal }) {
       </div>
     )
   }
-  return <p className="text-muted-foreground">Modification de structure.</p>
+  return <p className="text-muted-foreground">{$t('Modification de structure.')}</p>
 }
 
 /** What the proposer wrote about the object's purpose — data, shown as such. */
@@ -148,7 +154,7 @@ function Description({ proposal }: { readonly proposal: Proposal }) {
   if (text === null || text === undefined || text === '') return null
   return (
     <p className="text-sm text-muted-foreground">
-      Description proposée : <Data value={text} className="text-xs" />
+      {$t('Description proposée :')} <Data value={text} className="text-xs" />
     </p>
   )
 }
@@ -182,22 +188,23 @@ function ProposalCard({
       {/* The origin, without ambiguity: an agent, through a token, for a person (§7.7, 4). */}
       <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
         <Bot className="size-3.5" />
-        Proposé par un agent pour {proposal.requested_by.name ?? 'une personne supprimée'}, via le
-        jeton{' '}
+        {$t('Proposé par un agent pour {value}, via le jeton', {
+          value: proposal.requested_by.name ?? $t('une personne supprimée'),
+        })}{' '}
         {proposal.token.label === null ? (
-          'supprimé'
+          $t('supprimé')
         ) : (
           <Data value={proposal.token.label} className="text-xs" />
         )}{' '}
-        (MCP) · {TIME.format(new Date(proposal.requested_at))}
-        {open && <> · expire le {TIME.format(new Date(proposal.expires_at))}</>}
+        {$t('(MCP) · {format}', { format: TIME.format(new Date(proposal.requested_at)) })}
+        {open && $t('· expire le {format}', { format: TIME.format(new Date(proposal.expires_at)) })}
       </p>
 
       <ul className="space-y-1.5">
         {proposal.affected_objects.map((o) => (
           <li key={`${o.role}:${o.physical}`} className="text-xs">
             <span className="font-medium">
-              Table <code className="font-mono">{o.physical}</code> {ROLE[o.role] ?? o.role}
+              {$t('Table')} <code className="font-mono">{o.physical}</code> {ROLE[o.role] ?? o.role}
             </span>
             <ul className="mt-0.5 space-y-0.5 pl-4 text-muted-foreground">
               {o.effects.map((e) => (
@@ -217,7 +224,7 @@ function ProposalCard({
         className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
       >
         <ChevronDown className={cn('size-3.5 transition-transform', sql && 'rotate-180')} />
-        SQL prévu
+        {$t('SQL prévu')}
       </button>
       {sql && (
         <pre className="max-h-48 overflow-auto rounded-md border bg-muted px-3 py-2 font-mono text-xs whitespace-pre-wrap [overflow-wrap:anywhere]">
@@ -227,9 +234,12 @@ function ProposalCard({
 
       {proposal.decided_by !== null && proposal.status !== 'proposed' && (
         <p className="text-xs text-muted-foreground">
-          {proposal.status === 'rejected' ? 'Refusée' : 'Approuvée'} par{' '}
-          {proposal.decided_by.name ?? 'une personne supprimée'}
-          {proposal.decided_at !== null && <> le {TIME.format(new Date(proposal.decided_at))}</>}
+          {$t('{value} par {value2}', {
+            value: proposal.status === 'rejected' ? $t('Refusée') : $t('Approuvée'),
+            value2: proposal.decided_by.name ?? $t('une personne supprimée'),
+          })}
+          {proposal.decided_at !== null &&
+            $t('le {format}', { format: TIME.format(new Date(proposal.decided_at)) })}
         </p>
       )}
       {proposal.status === 'failed' && proposal.error !== null && (
@@ -242,11 +252,11 @@ function ProposalCard({
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="outline" size="sm" disabled={busy} onClick={onReject}>
             <X className="size-4" />
-            Refuser
+            {$t('Refuser')}
           </Button>
           <Button size="sm" disabled={busy} onClick={onApprove}>
             <Check className="size-4" />
-            Approuver et appliquer
+            {$t('Approuver et appliquer')}
           </Button>
         </div>
       )}
@@ -309,12 +319,13 @@ export function ProposalDialog({
     <Dialog open={open} onOpenChange={(o) => !o && busy === null && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Propositions des agents — {base.label}</DialogTitle>
+          <DialogTitle>
+            {$t('Propositions des agents — {label}', { label: base.label })}
+          </DialogTitle>
           <DialogDescription>
-            Un agent ne modifie jamais la structure d’une base : il la propose, et une personne
-            décide ici. Approuvée, la modification est appliquée au nom de la personne pour qui
-            l’agent agit, si elle en a toujours le droit. Sans décision, une proposition expire au
-            bout de 24 heures.
+            {$t(
+              'Un agent ne modifie jamais la structure d’une base : il la propose, et une personne décide ici. Approuvée, la modification est appliquée au nom de la personne pour qui l’agent agit, si elle en a toujours le droit. Sans décision, une proposition expire au bout de 24 heures.',
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -327,14 +338,16 @@ export function ProposalDialog({
 
           {proposals === null ? (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" /> Chargement…
+              <Loader2 className="size-4 animate-spin" /> {$t('Chargement…')}
             </p>
           ) : (
             <>
               <section className="space-y-2">
-                <h3 className="text-sm font-medium">En attente</h3>
+                <h3 className="text-sm font-medium">{$t('En attente')}</h3>
                 {pending.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Aucune proposition en attente.</p>
+                  <p className="text-sm text-muted-foreground">
+                    {$t('Aucune proposition en attente.')}
+                  </p>
                 ) : (
                   <ul className="space-y-2">
                     {pending.map((p) => (
@@ -361,7 +374,7 @@ export function ProposalDialog({
                     <ChevronDown
                       className={cn('size-4 transition-transform', past && 'rotate-180')}
                     />
-                    Décidées ou closes ({decided.length})
+                    {$t('Décidées ou closes ({decidedCount})', { decidedCount: decided.length })}
                   </button>
                   {past && (
                     <ul className="space-y-2">

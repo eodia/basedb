@@ -1,0 +1,12 @@
+---
+import { type Locale, PREFIXED_LOCALES } from '../../i18n';
+import FeuilleDeRoute from '../../views/FeuilleDeRoute.astro';
+
+export function getStaticPaths() {
+	return PREFIXED_LOCALES.map((l) => ({ params: { locale: l.code } }));
+}
+
+const locale = Astro.params.locale as Locale;
+---
+
+<FeuilleDeRoute locale={locale} />

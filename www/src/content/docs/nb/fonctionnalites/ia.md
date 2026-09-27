@@ -1,0 +1,85 @@
+---
+title: Kunstig intelligens
+description: KI-alternativet for et felt, utkastene, Copilot og instrumentbordenes Copilot – og hva som sendes til leverandøren.
+---
+
+KI er **valgfritt**. Uten en konfigurert leverandør sendes ingenting noe sted. basedb kan
+snakke med **OpenAI**, **Anthropic** og **Mistral**, med din egen nøkkel.
+
+## Konfigurer en leverandør
+
+Så lenge ingen innstilling er lagret i grensesnittet, leser API-et miljøet sitt:
+
+```bash
+BASEDB_AI_PROVIDER=mistral      # openai, anthropic eller mistral
+BASEDB_AI_MODEL=mistral-small-latest
+MISTRAL_API_KEY=…               # eller BASEDB_AI_API_KEY
+```
+
+Nøkkelen leses fra `BASEDB_AI_API_KEY`, eller ellers fra leverandørens vanlige navn
+(`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`).
+
+## KI-alternativet for et felt
+
+KI er ikke en felttype, men et **alternativ**: bryteren **KI** i skjemaet for et
+felt – tekst, lang tekst, URL, tall, enkeltvalg, boolsk, dato – lar det fylles ut av
+en modell, ut fra en instruksjon som refererer til andre kolonner:
+
+```text
+Résume {{Notes}} en une phrase.
+Catégorie de {{Description}} parmi les choix de la liste.
+```
+
+- Feltet beregnes så snart raden finnes, og deretter hver gang en kolonne det refereres til, endres –
+  og, om du vil, etter en tidsplan (høyst hvert 15. minutt).
+- Kolonnen **beholder typen sin**: et svar der ingenting kan leses i denne typen (et tall
+  som ikke finnes, et valg som ikke eksisterer), avvises i stedet for å bli skrevet.
+- Å slå av alternativet gjør feltet redigerbart for hånd igjen, med verdiene bevart.
+- Verdiene det refereres til, sendes til leverandøren: **aktiveringen krever uttrykkelig
+  samtykke**.
+
+`BASEDB_AI_FIELD_QUOTA` begrenser disse beregningene per time og per tenant (300 som standard).
+
+## I en automatisering
+
+En [automatisering](/basedb/nb/fonctionnalites/automatisations/#spør-ki) kan **spørre
+KI** i et av trinnene sine: en instruksjon som refererer til raden og de forrige trinnene,
+et svar lest i den valgte typen, som de neste trinnene skriver, sender eller refererer til. Samme
+regler som for et felt: samtykke ved lagring, bare det instruksjonen refererer til, sendes,
+hvert kall logges og telles i `BASEDB_AI_FIELD_QUOTA`.
+
+## Utkast og Copilot
+
+- **Utkast**: beskriv en tabell eller en formel med én setning, og få et forslag å
+  lese gjennom. Bare etiketter, typer og setningen du skrev inn, sendes – ingen celleverdier.
+- **Maler**: beskriv en hel database – «oppfølging av reklamasjoner fra kundene mine» – og
+  få tabeller, eksempelrader, visninger, instrumentbord og automatiseringer, som du finjusterer og så
+  oppretter. Bare setningen sendes. Se [Databasemaler](/basedb/nb/fonctionnalites/modeles/#be-ki-om-en-mal).
+- **Copilot**: en samtale om den viste databasen. Du ber om et filter, en spørring,
+  kolonner, en tabell, et testdatasett; hvert forslag kommer som et kort og tas i bruk
+  med ett klikk, via de samme rutene som skjemaene.
+
+Som standard sendes bare strukturen til leverandøren. Avkrysningsboksen **«Tillat lesing av
+dataene»** lar Copilot, for samtalen, lese rader (høyst 50 per lesing)
+og svare ut fra dem – hver lesing listes under svaret.
+
+## Copilot for instrumentbord
+
+I delen [Instrumentbord](/basedb/nb/fonctionnalites/tableaux-de-bord/#copilot) foreslår
+Copilot spørsmål, endringer i instrumentbordet og verdier for filtrene, som
+tas i bruk med ett klikk. Samme regler: uten samtykke sendes bare strukturen – tabeller og
+felt, databasens instrumentbord og spørsmål, definisjonen av kortene på det viste instrumentbordet (spørsmålene
+og tekstene deres) –, aldri resultatene eller verdiene som er valgt i filtrene. Avkrysningsboksen
+**«Tillat lesing av dataene»** legger til disse verdiene og resultatene på kortene under de
+viste filtrene, høyst 50 rader per lesing, hver av dem listet under svaret.
+
+## Copilot for automatiseringer
+
+I delen [Automatiseringer](/basedb/nb/fonctionnalites/automatisations/#copilot) foreslår Copilot
+en hel automatisering – den på skjermen, endret, eller en ny – som den legger på
+flyten i editoren, **uten noen gang å lagre den**: du leser den gjennom, og lagrer den så. Samme regler:
+uten samtykke sendes bare strukturen – tabeller og felt, databasens automatiseringer, den på
+skjermen, de siste kjøringene av den uten noen verdier, personer og Slack-kanaler under stedfortredere –,
+og avkrysningsboksen **«Tillat lesing av dataene»** legger til leste rader, høyst 50 per lesing.
+
+`BASEDB_AI_QUOTA` begrenser de interaktive kallene per time og per tenant (120 som standard).

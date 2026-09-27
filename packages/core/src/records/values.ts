@@ -9,6 +9,7 @@ import {
 } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import type { Executor } from '../runtime/pool.js'
+import { sanitizeRichText } from './rich-text.js'
 
 /**
  * The values whose wire form is not their column form — chapter 04 §3 and §3 bis.
@@ -22,13 +23,17 @@ import type { Executor } from '../runtime/pool.js'
  *   - a `file` or `image` arrives as references to files deposited beforehand; the column
  *     stores what a reader needs to list them, and that is copied from `stored_file`,
  *     NEVER from the request. A client that sends `{ id, name: "facture.pdf" }` for a
- *     file deposited as `virus.exe` gets `virus.exe` back.
+ *     file deposited as `virus.exe` gets `virus.exe` back;
+ *   - a RICH long text arrives as any HTML; the column stores its canonical, sanitized
+ *     form (chapter 04 §2.2), and nothing when nothing readable is left.
  */
 
 /** A field whose value is reshaped before it is written, by physical name. */
 export interface ShapedField {
   readonly id: string
   readonly kind: FieldKind
+  /** A long text holding HTML: sanitized before it is written. */
+  readonly rich?: boolean
 }
 
 /** What a file column holds for each file — and what a reader gets back, plus a link. */
@@ -43,10 +48,17 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /** The fields of a table that need reshaping, keyed by physical name. */
 export function shapedFields(
-  fields: ReadonlyMap<string, { readonly name: string; readonly kind: FieldKind }>,
+  fields: ReadonlyMap<
+    string,
+    { readonly name: string; readonly kind: FieldKind; readonly rich?: boolean }
+  >,
 ): Map<string, ShapedField> {
   const shaped = new Map<string, ShapedField>()
   for (const [id, field] of fields) {
+    if (field.kind === 'long_text' && field.rich === true) {
+      shaped.set(field.name, { id, kind: field.kind, rich: true })
+      continue
+    }
     if (
       field.kind === 'multi_select' ||
       field.kind === 'multi_link' ||
@@ -80,19 +92,29 @@ export async function shapeValues(
     if (field === undefined || !writable.has(name)) continue
     out ??= { ...values }
     out[name] =
-      field.kind === 'multi_select'
-        ? shapeChoices(name, value)
-        : field.kind === 'multi_link'
-          ? shapeMultiLink(name, value)
-          : field.kind === 'url'
-            ? shapeUrl(name, value)
-            : field.kind === 'email'
-              ? shapeEmail(name, value)
-              : field.kind === 'user'
-                ? await shapeUser(exec, name, field, value)
-                : await shapeFiles(exec, name, field, value)
+      field.rich === true
+        ? shapeRichText(name, value)
+        : field.kind === 'multi_select'
+          ? shapeChoices(name, value)
+          : field.kind === 'multi_link'
+            ? shapeMultiLink(name, value)
+            : field.kind === 'url'
+              ? shapeUrl(name, value)
+              : field.kind === 'email'
+                ? shapeEmail(name, value)
+                : field.kind === 'user'
+                  ? await shapeUser(exec, name, field, value)
+                  : await shapeFiles(exec, name, field, value)
   }
   return out ?? values
+}
+
+/** HTML in, its canonical sanitized form out — `null` when nothing readable is left. */
+function shapeRichText(name: string, value: unknown): string | null {
+  if (value === null || value === undefined) return null
+  if (typeof value !== 'string') throw invalid(name, 'texte_attendu')
+  const clean = sanitizeRichText(value)
+  return clean === '' ? null : clean
 }
 
 function invalid(field: string, reason: string): BasedbError {

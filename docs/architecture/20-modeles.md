@@ -70,6 +70,12 @@ créé comme tel qu'avec le consentement explicite de la personne qui applique l
 }
 ```
 
+`format` vaut 1, ou 2 pour un modèle qui porte un texte riche (§2.2) : un lecteur du format 1
+ignorerait `rich` et prendrait le HTML de ses exemples pour du Markdown ; il refuse donc un
+modèle de format 2, et une instance plus ancienne garde à la place sa copie embarquée
+(§3.3). Le validateur rend le plus petit format qui convient, 1 sans texte riche : un tel
+modèle reste lisible partout. `format` absent vaut le plus récent.
+
 `key` s'écrit en minuscules, chiffres et tirets (64 caractères au plus) : c'est l'adresse du
 modèle dans un catalogue. `icon` est un nom d'icône Lucide ; une icône inconnue est
 remplacée par une icône générique. `base.label` vaut `label` quand il manque.
@@ -100,6 +106,11 @@ remplacée par une icône générique. `base.label` vaut `label` quand il manque
   dérivée du libellé (minuscules, sans accents, `_` pour séparateur).
 - `format` : celui du chapitre 04 §2.11 (`currency` et sa devise, `percent`, `duration`,
   `rating` et sa note maximale, `phone`, `barcode`).
+- `rich` : `true` fait d'un `long_text` la variante HTML riche du chapitre 04 §2.2 — pour un
+  document mis en forme : un article, une fiche de poste, un programme. Ses valeurs d'exemple
+  sont du HTML, assaini par le serveur à l'écriture comme toute valeur riche. Jamais sur la
+  colonne d'affichage, jamais avec `ai` (un modèle d'IA écrit du texte, pas du HTML
+  assaini) ; le modèle déclare alors `"format": 2` (§2.1).
 - `formula` : l'expression du chapitre 04 §7, qui cite les champs par leur libellé.
 - `rollup` pour `lookup`, `rollup` et `count` : `{ "via": "Libellé de la relation",
   "target": "Libellé du champ lu", "aggregate": "sum" }` ; pour une relation d'une autre
@@ -195,7 +206,10 @@ Les blocs du chapitre 18 §1.1, sans `embed` ; `width` vaut 1 par défaut (sur 3
 
 Celles du chapitre 17, les champs cités par libellé — dans les valeurs, les messages
 (`{{Libellé}}`) et la condition (`[Libellé]`). Actions admises : `update_record`,
-`create_record` (`"table": "clé"`), `notify` (`"user_field": "Libellé"` et un message). Une
+`create_record` (`"table": "clé"`), `notify` (`"user_field": "Libellé"` et un message), les
+unes après les autres, sur la ligne déclencheuse. Un modèle ne porte pas encore de flux
+(chapitre 17 §1.4–1.6) : ni recherche, ni condition, ni étape qui en cite une autre ;
+l'export d'une base laisse de côté l'automatisation qui en a, et le dit. Une
 automatisation de déclencheur `button` est citée par la `key` d'un champ bouton.
 
 ### 2.8 Bornes

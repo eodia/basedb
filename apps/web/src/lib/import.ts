@@ -1,4 +1,5 @@
 import type { Field, FieldOption } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 
 /**
  * Reading a file into a table of cells, and turning cells into values a field accepts.
@@ -30,10 +31,10 @@ export class ImportError extends Error {}
 // ── Delimited text ───────────────────────────────────────────────────────────────────
 
 export const DELIMITERS: ReadonlyArray<{ readonly value: string; readonly label: string }> = [
-  { value: ',', label: 'Virgule' },
-  { value: ';', label: 'Point-virgule' },
-  { value: '\t', label: 'Tabulation' },
-  { value: '|', label: 'Barre verticale' },
+  { value: ',', label: $t('Virgule') },
+  { value: ';', label: $t('Point-virgule') },
+  { value: '\t', label: $t('Tabulation') },
+  { value: '|', label: $t('Barre verticale') },
 ]
 
 /**
@@ -126,7 +127,8 @@ export function parseDelimited(text: string, delimiter: string): string[][] {
       endRow()
     } else cell += ch
   }
-  if (quoted) throw new ImportError('Un guillemet n’est jamais refermé : le fichier est tronqué.')
+  if (quoted)
+    throw new ImportError($t('Un guillemet n’est jamais refermé : le fichier est tronqué.'))
   if (cell !== '' || row.length > 0) endRow()
   return rows
 }
@@ -137,7 +139,7 @@ export function parseDelimited(text: string, delimiter: string): string[][] {
 function nameColumns(raw: readonly (string | null | undefined)[]): string[] {
   const seen = new Map<string, number>()
   return raw.map((value, index) => {
-    const base = (value ?? '').toString().trim() || `Colonne ${index + 1}`
+    const base = (value ?? '').toString().trim() || $t('Colonne {value}', { value: index + 1 })
     const n = (seen.get(base.toLowerCase()) ?? 0) + 1
     seen.set(base.toLowerCase(), n)
     return n === 1 ? base : `${base} (${n})`
@@ -152,7 +154,7 @@ function fromRows(
   hasHeader: boolean,
   delimiter?: string,
 ): ParsedTable {
-  if (raw.length === 0) throw new ImportError('Le fichier est vide.')
+  if (raw.length === 0) throw new ImportError($t('Le fichier est vide.'))
   const width = Math.max(...raw.map((r) => r.length))
   const columns = hasHeader
     ? nameColumns(Array.from({ length: width }, (_, i) => raw[0][i] as string | null))
@@ -161,7 +163,7 @@ function fromRows(
   // Ragged rows are padded: a file whose last cells were left off is still a file.
   const rows = body.map((r) => Array.from({ length: width }, (_, i) => r[i] ?? null))
   if (rows.length === 0)
-    throw new ImportError('Le fichier n’a qu’une ligne d’en-tête, aucune donnée.')
+    throw new ImportError($t('Le fichier n’a qu’une ligne d’en-tête, aucune donnée.'))
   return { format, delimiter, columns, rows }
 }
 
@@ -210,13 +212,13 @@ export function parseJsonText(text: string, options: { hasHeader: boolean }): Pa
         .filter((l) => l.trim() !== '')
         .map((l) => JSON.parse(l))
     } catch {
-      throw new ImportError('Ce fichier n’est pas du JSON valide.')
+      throw new ImportError($t('Ce fichier n’est pas du JSON valide.'))
     }
   }
 
   const list = arrayOf(value)
   if (list === null || list.length === 0) {
-    throw new ImportError('Attendu : une liste de lignes, en objets ou en listes.')
+    throw new ImportError($t('Attendu : une liste de lignes, en objets ou en listes.'))
   }
 
   if (list.every((item) => Array.isArray(item))) {
@@ -227,7 +229,7 @@ export function parseJsonText(text: string, options: { hasHeader: boolean }): Pa
     )
   }
   if (!list.every((item) => item !== null && typeof item === 'object' && !Array.isArray(item))) {
-    throw new ImportError('Les lignes doivent toutes être des objets, ou toutes des listes.')
+    throw new ImportError($t('Les lignes doivent toutes être des objets, ou toutes des listes.'))
   }
 
   const keys: string[] = []
@@ -433,7 +435,7 @@ export function convert(
     case 'url': {
       // The server gives a bare domain its `https://`, and refuses what is no address.
       const text = String(cell).trim()
-      return /\s/.test(text) ? fail('adresse web invalide') : { ok: true, value: text }
+      return /\s/.test(text) ? fail($t('adresse web invalide')) : { ok: true, value: text }
     }
 
     case 'email': {
@@ -443,29 +445,29 @@ export function convert(
         .replace(/^mailto:/i, '')
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)
         ? { ok: true, value: text }
-        : fail('adresse e-mail invalide')
+        : fail($t('adresse e-mail invalide'))
     }
 
     case 'number': {
       const n = parseNumber(cell)
-      return n === null ? fail('nombre invalide') : { ok: true, value: n }
+      return n === null ? fail($t('nombre invalide')) : { ok: true, value: n }
     }
 
     case 'boolean': {
       const b = parseBoolean(cell)
-      return b === null ? fail('attendu oui/non, vrai/faux ou 1/0') : { ok: true, value: b }
+      return b === null ? fail($t('attendu oui/non, vrai/faux ou 1/0')) : { ok: true, value: b }
     }
 
     case 'date': {
       const parts = parseDateParts(cell)
       return parts === null
-        ? fail('date invalide (jj/mm/aaaa ou aaaa-mm-jj)')
+        ? fail($t('date invalide (jj/mm/aaaa ou aaaa-mm-jj)'))
         : { ok: true, value: parts.date }
     }
 
     case 'datetime': {
       const parts = parseDateParts(cell)
-      if (parts === null) return fail('date et heure invalides')
+      if (parts === null) return fail($t('date et heure invalides'))
       // No zone is read as UTC, which is what the database's connection contract says the
       // instant is stored in; a date alone is midnight.
       return { ok: true, value: `${parts.date}T${parts.time ?? '00:00:00'}` }
@@ -477,7 +479,7 @@ export function convert(
         (o) => fold(o.value) === wanted || fold(o.label) === wanted,
       )
       return found === undefined
-        ? fail('valeur absente de la liste')
+        ? fail($t('valeur absente de la liste'))
         : { ok: true, value: found.value }
     }
 
@@ -491,14 +493,15 @@ export function convert(
         const found = (options ?? []).find(
           (o) => fold(o.value) === wanted || fold(o.label) === wanted,
         )
-        if (found === undefined) return fail(`« ${part.trim()} » absent de la liste`)
+        if (found === undefined)
+          return fail($t('« {part} » absent de la liste', { part: part.trim() }))
         if (!values.includes(found.value)) values.push(found.value)
       }
       return { ok: true, value: values.length === 0 ? null : values }
     }
 
     default:
-      return fail('ce type ne s’importe pas')
+      return fail($t('ce type ne s’importe pas'))
   }
 }
 
@@ -532,7 +535,7 @@ export function labelFromFileName(name: string): string {
     .replace(/[_-]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-  return base === '' ? 'Import' : base.charAt(0).toUpperCase() + base.slice(1)
+  return base === '' ? $t('Import') : base.charAt(0).toUpperCase() + base.slice(1)
 }
 
 export function chunk<T>(list: readonly T[], size: number): T[][] {

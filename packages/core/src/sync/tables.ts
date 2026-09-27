@@ -97,6 +97,7 @@ async function apply(
       limit: 500,
       after,
       links: 'id',
+      variables: 'raw',
     })
     for (const row of page.rows) existing.set(String(row[keyField] ?? ''), row)
     after = page.nextCursor ?? undefined

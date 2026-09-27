@@ -1,8 +1,13 @@
+import { intlLocale } from '@/lib/i18n'
+import { type DateFormat, dateFormat } from './preferences'
+
 /**
  * Dates as a person types and reads them, and as the API holds them.
  *
  * On screen a date is DAY first — `25/09/2026`, `25/09/2026 14:30` — the reading of the
- * people this product is written for. On the wire a `date` is a calendar day
+ * people this product is written for, unless the person chose the ISO order in their
+ * settings (`2026-09-25`, chapter 11 §10). Typing accepts both, whatever the choice. On
+ * the wire a `date` is a calendar day
  * (`2026-09-25`) and a `datetime` an instant in UTC (`2026-09-25T12:30:00.000Z`), which
  * the screen shows in the reader's own time.
  *
@@ -130,7 +135,11 @@ export function parseTyped(text: string, today: Date = new Date()): Moment | nul
   return time === null ? null : { day, time }
 }
 
-export const formatDay = (day: Day) => `${pad(day.day)}/${pad(day.month)}/${pad(day.year, 4)}`
+/** A day as it reads — in the order the person chose, or the one given. */
+export const formatDay = (day: Day, format: DateFormat = dateFormat()) =>
+  format === 'iso'
+    ? `${pad(day.year, 4)}-${pad(day.month)}-${pad(day.day)}`
+    : `${pad(day.day)}/${pad(day.month)}/${pad(day.year, 4)}`
 
 /** Seconds only when there are some: `14:30`, but `14:30:15` is not rounded away. */
 export const formatTime = (time: Time) =>
@@ -202,7 +211,7 @@ export function storedFromText(text: string, kind: DateKind, today?: Date): stri
   return moment === null ? trimmed : toStored(moment, kind)
 }
 
-const LONG_DAY = new Intl.DateTimeFormat('fr-FR', {
+const LONG_DAY = new Intl.DateTimeFormat(intlLocale(), {
   weekday: 'long',
   day: 'numeric',
   month: 'long',

@@ -2,6 +2,7 @@
 
 import { cancelled, useElevated } from '@/components/app/elevation'
 import { FieldIcon } from '@/components/app/field-icon'
+import { Choice as ChoiceField } from '@/components/ui/choice'
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ import {
   type FieldRule,
   api,
 } from '@/lib/api/client'
+import { $t, groupName } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { Eye, EyeOff, Info, Loader2, Lock, Pencil } from 'lucide-react'
@@ -41,9 +43,9 @@ import { useCallback, useEffect, useState } from 'react'
 type Choice = 'level' | FieldRule
 
 const LEVEL_LABEL: Readonly<Record<string, string>> = {
-  read: 'Lecture',
-  edit: 'Édition',
-  manage: 'Gestion',
+  read: $t('Lecture'),
+  edit: $t('Édition'),
+  manage: $t('Gestion'),
 }
 
 export function FieldRulesDialog({
@@ -117,11 +119,11 @@ export function FieldRulesDialog({
     <Dialog open={table !== null} onOpenChange={(o) => !o && saving === null && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Champs — {table?.label}</DialogTitle>
+          <DialogTitle>{$t('Champs — {label}', { label: table?.label })}</DialogTitle>
           <DialogDescription>
-            Masquer un champ à un groupe, ou le rendre non modifiable pour lui. Une règle ne donne
-            jamais plus que le niveau du groupe sur la table. Les droits s’additionnent : un champ
-            masqué pour un groupe reste visible à qui appartient aussi à un groupe qui le lit.
+            {$t(
+              'Masquer un champ à un groupe, ou le rendre non modifiable pour lui. Une règle ne donne jamais plus que le niveau du groupe sur la table. Les droits s’additionnent : un champ masqué pour un groupe reste visible à qui appartient aussi à un groupe qui le lit.',
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -139,8 +141,9 @@ export function FieldRulesDialog({
           )
         ) : groups.length === 0 ? (
           <p className="rounded-md border px-3 py-6 text-center text-sm text-muted-foreground">
-            Aucun groupe n’a accès à cette table, en dehors des administrateurs : il n’y a rien à
-            restreindre. Accordez d’abord un niveau dans la grille.
+            {$t(
+              'Aucun groupe n’a accès à cette table, en dehors des administrateurs : il n’y a rien à restreindre. Accordez d’abord un niveau dans la grille.',
+            )}
           </p>
         ) : (
           <div className="min-w-0 space-y-6">
@@ -148,10 +151,10 @@ export function FieldRulesDialog({
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-xs">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium">Champ</th>
+                    <th className="px-3 py-2 text-left font-medium">{$t('Champ')}</th>
                     {groups.map((g) => (
                       <th key={g.id} className="min-w-44 px-3 py-2 text-left font-medium">
-                        <span className="block truncate">{g.label}</span>
+                        <span className="block truncate">{groupName(g.label)}</span>
                         <span className="font-normal text-muted-foreground">
                           {LEVEL_LABEL[g.level] ?? g.level}
                         </span>
@@ -180,7 +183,10 @@ export function FieldRulesDialog({
                               writes={g.level !== 'read'}
                               saving={saving === key}
                               disabled={saving !== null}
-                              label={`${field.label} pour ${g.label}`}
+                              label={$t('{label} pour {label2}', {
+                                label: field.label,
+                                label2: g.label,
+                              })}
                               onChange={(choice) => void choose(field.id, g.id, choice)}
                             />
                           </td>
@@ -194,25 +200,21 @@ export function FieldRulesDialog({
 
             <section className="space-y-2">
               <div className="flex flex-wrap items-center gap-3">
-                <h3 className="text-sm font-medium">Ce que voit une personne</h3>
-                <Select
-                  value={person ?? ''}
+                <h3 className="text-sm font-medium">{$t('Ce que voit une personne')}</h3>
+                <ChoiceField
+                  value={person}
                   onValueChange={(id) => {
                     setPerson(id)
                     void loadMask(id)
                   }}
-                >
-                  <SelectTrigger className="h-8 w-64 text-xs" aria-label="Personne">
-                    <SelectValue placeholder="Choisir une personne…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.display_name} — {u.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={users.map((u) => ({
+                    value: u.id,
+                    label: `${u.display_name} · ${u.email}`,
+                  }))}
+                  placeholder={$t('Choisir une personne…')}
+                  aria-label={$t('Personne')}
+                  className="w-64 text-xs"
+                />
               </div>
               {mask !== null && <MaskView access={access} mask={mask} />}
             </section>
@@ -224,9 +226,9 @@ export function FieldRulesDialog({
 }
 
 const CHOICES: ReadonlyArray<{ id: Choice; label: string }> = [
-  { id: 'level', label: 'Selon le niveau' },
-  { id: 'read_only', label: 'Lecture seule' },
-  { id: 'hidden', label: 'Masqué' },
+  { id: 'level', label: $t('Selon le niveau') },
+  { id: 'read_only', label: $t('Lecture seule') },
+  { id: 'hidden', label: $t('Masqué') },
 ]
 
 function RuleSelect({
@@ -248,11 +250,11 @@ function RuleSelect({
   const shown = (id: Choice) =>
     id === 'level'
       ? writes
-        ? 'Modifiable'
-        : 'Lecture'
+        ? $t('Modifiable')
+        : $t('Lecture')
       : id === 'read_only'
-        ? 'Lecture seule'
-        : 'Masqué'
+        ? $t('Lecture seule')
+        : $t('Masqué')
   return (
     <span className="flex items-center gap-1.5">
       <Select value={value} onValueChange={(v) => onChange(v as Choice)} disabled={disabled}>
@@ -280,7 +282,7 @@ function RuleSelect({
 }
 
 const LEVEL_ICON = { write: Pencil, read: Eye, hidden: EyeOff } as const
-const LEVEL_TEXT = { write: 'Modifiable', read: 'Lecture', hidden: 'Masqué' } as const
+const LEVEL_TEXT = { write: $t('Modifiable'), read: $t('Lecture'), hidden: $t('Masqué') } as const
 
 /** The effective mask of one person: what every surface will enforce for them. */
 function MaskView({
@@ -294,8 +296,10 @@ function MaskView({
     return (
       <p className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm text-muted-foreground">
         <Lock className="size-4" />
-        {mask.user.display_name} n’a accès à cette table par aucun de ses groupes : elle lui est
-        invisible.
+        {$t(
+          '{display_name} n’a accès à cette table par aucun de ses groupes : elle lui est invisible.',
+          { display_name: mask.user.display_name },
+        )}
       </p>
     )
   }
@@ -326,19 +330,24 @@ function MaskView({
             <span className="min-w-0 flex-[2] text-xs text-muted-foreground">
               {f.restricted_by.length > 0 && (
                 <>
-                  Règle :{' '}
-                  {f.restricted_by
-                    .map(
-                      (r) => `${r.rule === 'hidden' ? 'masqué' : 'lecture seule'} pour ${r.group}`,
-                    )
-                    .join(', ')}
-                  .{' '}
+                  {$t('Règle : {map}.', {
+                    map: f.restricted_by
+                      .map((r) =>
+                        $t('{value} pour {group}', {
+                          value: r.rule === 'hidden' ? $t('masqué') : $t('lecture seule'),
+                          group: r.group,
+                        }),
+                      )
+                      .join(', '),
+                  })}{' '}
                 </>
               )}
               {overridden && (
                 <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
                   <Info className="size-3.5" />
-                  Reste visible via {f.readable_via.join(', ')}.
+                  {$t('Reste visible via {readable_via}.', {
+                    readable_via: f.readable_via.join(', '),
+                  })}
                 </span>
               )}
             </span>

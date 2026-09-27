@@ -1,3 +1,4 @@
+import { $t } from '@/lib/i18n'
 import {
   CalendarDays,
   ChartGantt,
@@ -12,6 +13,7 @@ import {
 // Relative, as `messages.ts` does: the unit tests run without the `@/` alias.
 import type { Field, SavedView, Table, ViewKind } from './api/client'
 import { type DateKind, fromStored, isDateKind } from './dates'
+import { weekStart } from './preferences'
 import {
   type ColorRule,
   type ColorStyle,
@@ -52,51 +54,51 @@ export const VIEW_KINDS: readonly ViewKind[] = [
 
 export const KIND_INFO: Readonly<Record<ViewKind, KindInfo>> = {
   grid: {
-    label: 'Grille',
+    label: $t('Grille'),
     icon: Table2,
-    summary: 'Lignes et colonnes, comme un tableur.',
+    summary: $t('Lignes et colonnes, comme un tableur.'),
     data: true,
   },
   kanban: {
-    label: 'Kanban',
+    label: $t('Kanban'),
     icon: SquareKanban,
-    summary: 'Des cartes en colonnes, une par choix d’une liste ; on les fait glisser.',
+    summary: $t('Des cartes en colonnes, une par choix d’une liste ; on les fait glisser.'),
     data: true,
   },
   calendar: {
-    label: 'Calendrier',
+    label: $t('Calendrier'),
     icon: CalendarDays,
-    summary: 'Chaque ligne posée sur sa date, au mois ou à la semaine.',
+    summary: $t('Chaque ligne posée sur sa date, au mois ou à la semaine.'),
     data: true,
   },
   timeline: {
-    label: 'Chronologie',
+    label: $t('Chronologie'),
     icon: ChartGantt,
-    summary: 'Des barres entre une date de début et une date de fin.',
+    summary: $t('Des barres entre une date de début et une date de fin.'),
     data: true,
   },
   gallery: {
-    label: 'Galerie',
+    label: $t('Galerie'),
     icon: LayoutGrid,
-    summary: 'Des cartes en mosaïque, une image de couverture en tête.',
+    summary: $t('Des cartes en mosaïque, une image de couverture en tête.'),
     data: true,
   },
   list: {
-    label: 'Liste',
+    label: $t('Liste'),
     icon: List,
-    summary: 'Une ligne par enregistrement, regroupées sous des titres.',
+    summary: $t('Une ligne par enregistrement, regroupées sous des titres.'),
     data: true,
   },
   form: {
-    label: 'Formulaire',
+    label: $t('Formulaire'),
     icon: ClipboardList,
-    summary: 'Une page de saisie : chaque envoi ajoute une ligne.',
+    summary: $t('Une page de saisie : chaque envoi ajoute une ligne.'),
     data: false,
   },
   survey: {
-    label: 'Questionnaire',
+    label: $t('Questionnaire'),
     icon: MessageSquareText,
-    summary: 'Le même, une question par écran, avec une barre de progression.',
+    summary: $t('Le même, une question par écran, avec une barre de progression.'),
     data: false,
   },
 }
@@ -131,6 +133,11 @@ export interface CardSpec {
 
 export interface KanbanSpec extends DataSpec, CardSpec {
   readonly group_by: string | null
+  /**
+   * A description under each card's title, with variables — `{{nom_du_champ}}` — that the
+   * row's values replace (`card-template.ts`). Empty: none.
+   */
+  readonly card_template: string
   /** The columns' order, as choice values; a choice it does not name goes last. */
   readonly group_order: readonly string[]
   readonly cover_field: string | null
@@ -276,6 +283,7 @@ export const kanbanSpec = (raw: Raw): KanbanSpec => ({
   ...cardOf(raw),
   group_by: name(raw, 'group_by'),
   group_order: names(raw, 'group_order'),
+  card_template: text(raw, 'card_template'),
   cover_field: name(raw, 'cover_field'),
   hide_empty: flag(raw, 'hide_empty', false),
   manual_order: names(raw, 'manual_order'),
@@ -532,14 +540,14 @@ export function unavailableReason(kind: ViewKind, table: Table): string | null {
   switch (kind) {
     case 'kanban':
       return selectFields(fields).length === 0
-        ? 'Il faut un champ « Liste de choix » pour former les colonnes.'
+        ? $t('Il faut un champ « Liste de choix » pour former les colonnes.')
         : null
     case 'calendar':
     case 'timeline':
-      return dateFields(fields).length === 0 ? 'Il faut un champ date ou date-heure.' : null
+      return dateFields(fields).length === 0 ? $t('Il faut un champ date ou date-heure.') : null
     case 'form':
     case 'survey':
-      return askableFields(fields).length === 0 ? 'Aucun champ ne peut être saisi.' : null
+      return askableFields(fields).length === 0 ? $t('Aucun champ ne peut être saisi.') : null
     default:
       return null
   }
@@ -709,10 +717,10 @@ export const addDays = (date: Date, days: number) =>
 export const daysBetween = (a: Date, b: Date) =>
   Math.round((startOfDay(b).getTime() - startOfDay(a).getTime()) / 86_400_000)
 
-/** Monday of the week of `date` — the French week. */
+/** The first day of the week of `date` — Monday, the French week, unless the person chose Sunday. */
 export function startOfWeek(date: Date): Date {
   const day = startOfDay(date)
-  return addDays(day, -((day.getDay() + 6) % 7))
+  return addDays(day, -((day.getDay() + 7 - weekStart()) % 7))
 }
 
 /**
@@ -724,10 +732,7 @@ export function rangeClause(start: Field, end: Field | null, from: Date, to: Dat
   if (end === null) {
     return `${start.name} gte ${at(from, start)} and ${start.name} lt ${at(to, start)}`
   }
-  return (
-    `${start.name} lt ${at(to, start)} and ` +
-    `(${end.name} gte ${at(from, end)} or (${end.name} is_null and ${start.name} gte ${at(from, start)}))`
-  )
+  return `${start.name} lt ${at(to, start)} and (${end.name} gte ${at(from, end)} or (${end.name} is_null and ${start.name} gte ${at(from, start)}))`
 }
 
 /** A filter of the view and a clause of the screen, joined. */

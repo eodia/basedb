@@ -149,6 +149,23 @@ describe('renaming a table in the database (§2)', () => {
     )
   })
 
+  it('suggests a name slugged from the label being typed, and changes nothing else', async () => {
+    const typed = await kernel.renameImpact(admin, {
+      kind: 'table',
+      id: clients.tableId,
+      label: '  Comptes clients  ',
+    })
+    expect(typed).toMatchObject({ current: 'clients', label: 'Clients' })
+    expect(typed.suggested).toBe('comptes_clients')
+    // An empty label is no proposal: the suggestion comes from the catalog's.
+    const blank = await kernel.renameImpact(admin, {
+      kind: 'table',
+      id: clients.tableId,
+      label: ' ',
+    })
+    expect(blank.suggested).toBe('clients')
+  })
+
   it('renames, and leaves a writable alias under the old name', async () => {
     expect(
       await codeOf(

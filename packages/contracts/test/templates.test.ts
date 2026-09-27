@@ -197,6 +197,70 @@ describe('a template', () => {
     ])
     expect(repaired.ok && repaired.template.key).toBe('x')
   })
+
+  it('keeps a rich text on a long text only — neither the display column, nor the AI', () => {
+    const t = { ...structuredClone(tickets), format: 2 } as unknown as {
+      tables: Array<{ fields: Array<Record<string, unknown>> }>
+      rows: Record<string, Array<Record<string, unknown>>>
+    }
+    const fields = t.tables[1]?.fields ?? []
+    ;(fields[3] as Record<string, unknown>).rich = true
+    ;(t.rows.tickets?.[0] as Record<string, unknown>).Description =
+      '<p>Au <strong>démarrage</strong> :</p><ol><li>ouvrir</li><li>attendre</li></ol>'
+    const check = checkTemplate(t)
+    expect(check.issues).toEqual([])
+    expect(check.ok && check.template.tables[1]?.fields[3]).toMatchObject({
+      label: 'Description',
+      kind: 'long_text',
+      rich: true,
+    })
+    expect(check.ok && check.template.rows.tickets?.[0]?.Description).toContain('<ol>')
+    // Format 2 says it: an instance that reads only format 1 leaves it out rather than
+    // storing its HTML as Markdown. Without a rich text, a template is still format 1.
+    expect(check.ok && check.template.format).toBe(2)
+    const plain = checkTemplate(tickets)
+    expect(plain.ok && plain.template.format).toBe(1)
+    expect(checkTemplate({ ...t, format: 1 }).issues).toContainEqual({
+      path: 'tables[1].fields[3].rich',
+      message: 'un texte riche demande "format": 2',
+    })
+    expect(checkTemplate({ ...t, format: 3 }).issues).toContainEqual({
+      path: 'format',
+      message: 'format 3 inconnu ; seuls les formats 1 et 2 existent',
+    })
+    ;(fields[0] as Record<string, unknown>).rich = true
+    ;(fields[4] as Record<string, unknown>).rich = true
+    fields.push({ label: 'Résumé', kind: 'long_text', rich: true, ai: { prompt: '{{Titre}}' } })
+    const refused = checkTemplate(t)
+    expect(refused.ok).toBe(false)
+    expect(refused.issues).toEqual(
+      expect.arrayContaining([
+        { path: 'tables[1].fields[0].rich', message: 'seul un texte long peut être riche' },
+        { path: 'tables[1].fields[4].rich', message: 'seul un texte long peut être riche' },
+        { path: 'tables[1].fields[7].ai', message: 'l’IA n’écrit pas de texte riche' },
+      ]),
+    )
+    const repaired = checkTemplate(t, { repair: true })
+    const kept = repaired.ok ? repaired.template.tables[1]?.fields : []
+    expect(kept?.filter((f) => f.rich === true).map((f) => f.label)).toEqual([
+      'Description',
+      'Résumé',
+    ])
+    expect(kept?.find((f) => f.label === 'Résumé')?.ai).toBeUndefined()
+  })
+
+  it('never makes the display column a rich text', () => {
+    const t = {
+      label: 'X',
+      tables: [{ label: 'Notes', fields: [{ label: 'Texte', kind: 'long_text', rich: true }] }],
+    }
+    const check = checkTemplate(t)
+    expect(check.ok).toBe(false)
+    expect(check.issues).toContainEqual({
+      path: 'tables[0].fields[0].rich',
+      message: 'la colonne d’affichage n’est pas un texte riche',
+    })
+  })
 })
 
 describe('the views of a template', () => {

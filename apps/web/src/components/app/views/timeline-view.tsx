@@ -7,7 +7,9 @@ import { Unavailable } from '@/components/app/views/kanban-view'
 import { loadRows } from '@/components/app/views/load'
 import { Button } from '@/components/ui/button'
 import { type Field, type Table, api } from '@/lib/api/client'
+import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
+import { weekStart } from '@/lib/preferences'
 import { cn } from '@/lib/utils'
 import {
   type TimelineScale,
@@ -43,15 +45,15 @@ const LABEL = 224
 const SCALES: Readonly<
   Record<TimelineScale, { label: string; px: number; days: number; step: number; before: number }>
 > = {
-  day: { label: 'Jour', px: 56, days: 28, step: 7, before: 3 },
-  week: { label: 'Semaine', px: 22, days: 91, step: 28, before: 14 },
-  month: { label: 'Mois', px: 5, days: 366, step: 91, before: 30 },
+  day: { label: $t('Jour'), px: 56, days: 28, step: 7, before: 3 },
+  week: { label: $t('Semaine'), px: 22, days: 91, step: 28, before: 14 },
+  month: { label: $t('Mois'), px: 5, days: 366, step: 91, before: 30 },
 }
 
-const MONTH = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' })
-const MONTH_SHORT = new Intl.DateTimeFormat('fr-FR', { month: 'short' })
-const DAY = new Intl.DateTimeFormat('fr-FR', { weekday: 'narrow', day: 'numeric' })
-const SHORT = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' })
+const MONTH = new Intl.DateTimeFormat(intlLocale(), { month: 'long', year: 'numeric' })
+const MONTH_SHORT = new Intl.DateTimeFormat(intlLocale(), { month: 'short' })
+const DAY = new Intl.DateTimeFormat(intlLocale(), { weekday: 'narrow', day: 'numeric' })
+const SHORT = new Intl.DateTimeFormat(intlLocale(), { day: 'numeric', month: 'short' })
 
 interface Bar {
   readonly row: Row
@@ -180,14 +182,14 @@ export function TimelineView({
               const first = groups.get(k)?.[0]?.row[groupField.name] as { display?: string } | null
               return first?.display ?? k
             }
-            return label(a).localeCompare(label(b), 'fr')
+            return label(a).localeCompare(label(b), intlLocale())
           })
     return order.flatMap((key) => {
       const list = groups.get(key)
       if (list === undefined) return []
       let label: React.ReactNode = (
         <span key={key} className="text-muted-foreground">
-          Sans valeur
+          {$t('Sans valeur')}
         </span>
       )
       if (key !== '' && groupField.kind === 'select') {
@@ -235,7 +237,7 @@ export function TimelineView({
   if (startField === null) {
     return (
       <Unavailable>
-        Le champ de début de cette chronologie n’existe plus, ou ne vous est pas ouvert.
+        {$t('Le champ de début de cette chronologie n’existe plus, ou ne vous est pas ouvert.')}
       </Unavailable>
     )
   }
@@ -252,14 +254,14 @@ export function TimelineView({
           className="h-7 px-2 text-xs"
           onClick={() => setAnchor(startOfDay(new Date()))}
         >
-          Aujourd’hui
+          {$t('Aujourd’hui')}
         </Button>
         <Button
           variant="ghost"
           size="icon-sm"
           className="size-7"
           onClick={() => setAnchor((a) => addDays(a, -s.step))}
-          aria-label="Précédent"
+          aria-label={$t('Précédent')}
         >
           <ChevronLeft className="size-4" />
         </Button>
@@ -268,7 +270,7 @@ export function TimelineView({
           size="icon-sm"
           className="size-7"
           onClick={() => setAnchor((a) => addDays(a, s.step))}
-          aria-label="Suivant"
+          aria-label={$t('Suivant')}
         >
           <ChevronRight className="size-4" />
         </Button>
@@ -278,17 +280,19 @@ export function TimelineView({
         {loading && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
         {capped && (
           <span className="text-xs text-destructive">
-            Plus de {CEILING} lignes sur la période : resserrez le filtre.
+            {$t('Plus de {ceiling} lignes sur la période : resserrez le filtre.', {
+              ceiling: CEILING,
+            })}
           </span>
         )}
         <div className="flex-1" />
         {undated !== null && undated > 0 && (
-          <span className="text-xs text-muted-foreground" title="Lignes sans date de début">
-            {undated} sans date
+          <span className="text-xs text-muted-foreground" title={$t('Lignes sans date de début')}>
+            {$t('{undated} sans date', { undated })}
           </span>
         )}
         <fieldset className="flex rounded-md border p-0.5">
-          <legend className="sr-only">{'Échelle'}</legend>
+          <legend className="sr-only">{$t('Échelle')}</legend>
           {(Object.keys(SCALES) as TimelineScale[]).map((k) => (
             <button
               key={k}
@@ -366,7 +370,7 @@ export function TimelineView({
               className="sticky left-0 p-6 text-sm text-muted-foreground"
               style={{ width: LABEL + Math.min(width, 800) }}
             >
-              Aucune ligne sur cette période.
+              {$t('Aucune ligne sur cette période.')}
             </p>
           )}
 
@@ -435,7 +439,7 @@ function Axis({ from, scale }: { readonly from: Date; readonly scale: TimelineSc
           </div>
         ))}
         {days.map((day, i) => {
-          const monday = day.getDay() === 1
+          const opensWeek = day.getDay() === weekStart()
           const weekend = day.getDay() === 0 || day.getDay() === 6
           if (scale === 'day') {
             return (
@@ -451,7 +455,7 @@ function Axis({ from, scale }: { readonly from: Date; readonly scale: TimelineSc
               </div>
             )
           }
-          if (scale === 'week' && monday) {
+          if (scale === 'week' && opensWeek) {
             return (
               <div
                 key={day.toISOString()}

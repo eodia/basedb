@@ -16,6 +16,7 @@ import {
   type SharedViewField,
   api,
 } from '@/lib/api/client'
+import { $t, intlLocale } from '@/lib/i18n'
 import { KnownMembers } from '@/lib/members'
 import { messageFor } from '@/lib/messages'
 import { useTheme } from '@/lib/theme'
@@ -47,9 +48,9 @@ type Page =
     }
 
 const CLOSED: Readonly<Record<string, string>> = {
-  inactive: 'La personne qui l’a partagée a désactivé le lien.',
-  authority: 'Elle est suspendue : la personne qui l’a partagée ne peut plus lire cette table.',
-  filtre: 'Son filtre cite un champ que la personne qui l’a partagée ne peut plus lire.',
+  inactive: $t('La personne qui l’a partagée a désactivé le lien.'),
+  authority: $t('Elle est suspendue : la personne qui l’a partagée ne peut plus lire cette table.'),
+  filtre: $t('Son filtre cite un champ que la personne qui l’a partagée ne peut plus lire.'),
 }
 
 function refusal(error: unknown): Page {
@@ -58,27 +59,32 @@ function refusal(error: unknown): Page {
     return {
       kind: 'refused',
       icon: 'closed',
-      title: 'Cette vue n’est plus partagée',
-      text: CLOSED[reason] ?? 'Le lien a été fermé.',
+      title: $t('Cette vue n’est plus partagée'),
+      text: CLOSED[reason] ?? $t('Le lien a été fermé.'),
     }
   }
   if (error instanceof ApiError && error.code === 'VIEW_SHARE_RESTRICTED') {
     return {
       kind: 'refused',
       icon: 'locked',
-      title: 'Vue réservée',
-      text: 'Cette vue est réservée à certains groupes, dont vous ne faites pas partie.',
+      title: $t('Vue réservée'),
+      text: $t('Cette vue est réservée à certains groupes, dont vous ne faites pas partie.'),
     }
   }
   if (error instanceof ApiError && error.code === 'RESOURCE_NOT_FOUND') {
     return {
       kind: 'refused',
       icon: 'unknown',
-      title: 'Lien introuvable',
-      text: 'Ce lien ne mène à aucune vue : il a pu être remplacé par un autre, ou retiré.',
+      title: $t('Lien introuvable'),
+      text: $t('Ce lien ne mène à aucune vue : il a pu être remplacé par un autre, ou retiré.'),
     }
   }
-  return { kind: 'refused', icon: 'unknown', title: 'Vue indisponible', text: messageFor(error) }
+  return {
+    kind: 'refused',
+    icon: 'unknown',
+    title: $t('Vue indisponible'),
+    text: messageFor(error),
+  }
 }
 
 /** A shared field, as the application's widgets read one. */
@@ -97,7 +103,7 @@ function screenRows(
   const person = (value: unknown): string | null => {
     const name = (value as { display?: string | null } | null)?.display
     if (value === null || value === undefined) return null
-    const label = typeof name === 'string' && name !== '' ? name : 'Utilisateur'
+    const label = typeof name === 'string' && name !== '' ? name : $t('Utilisateur')
     const known = people.get(label)
     if (known !== undefined) return known
     const id = `personne-${people.size + 1}`
@@ -209,7 +215,7 @@ export default function SharedViewPage() {
     return (
       <div className="relative">
         <p className="absolute top-4 right-0 left-0 z-10 mx-auto w-fit rounded-full border bg-background/90 px-4 py-1.5 text-sm shadow-xs">
-          Connectez-vous pour lire cette vue.
+          {$t('Connectez-vous pour lire cette vue.')}
         </p>
         <Login onSignedIn={() => void load()} />
       </div>
@@ -221,15 +227,19 @@ export default function SharedViewPage() {
       ? {
           kind: 'refused',
           icon: 'locked',
-          title: 'Intégration non autorisée',
-          text: 'Cette vue ne peut pas être affichée dans une autre page. Ouvrez son lien directement.',
+          title: $t('Intégration non autorisée'),
+          text: $t(
+            'Cette vue ne peut pas être affichée dans une autre page. Ouvrez son lien directement.',
+          ),
         }
       : page.kind === 'login'
         ? {
             kind: 'refused',
             icon: 'locked',
-            title: 'Connexion nécessaire',
-            text: 'Cette vue est réservée aux membres : ouvrez son lien directement pour vous connecter.',
+            title: $t('Connexion nécessaire'),
+            text: $t(
+              'Cette vue est réservée aux membres : ouvrez son lien directement pour vous connecter.',
+            ),
           }
         : page
 
@@ -243,11 +253,11 @@ export default function SharedViewPage() {
                 <h1 className="text-lg font-semibold">{shown.view.title}</h1>
                 <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                   <Eye className="size-3" />
-                  Lecture seule
+                  {$t('Lecture seule')}
                 </span>
                 {shown.view.reader !== null && (
                   <span className="ml-auto text-xs text-muted-foreground">
-                    Connecté : {shown.view.reader}
+                    {$t('Connecté : {reader}', { reader: shown.view.reader })}
                   </span>
                 )}
               </div>
@@ -291,7 +301,7 @@ export default function SharedViewPage() {
                     onClick={() => void loadMore()}
                   >
                     {more && <Loader2 className="size-4 animate-spin" />}
-                    Charger plus
+                    {$t('Charger plus')}
                   </Button>
                 )}
               </div>
@@ -301,8 +311,8 @@ export default function SharedViewPage() {
           {!bare && (
             <footer className="shrink-0 py-2 text-center text-xs text-muted-foreground">
               {shown.kind === 'ready'
-                ? `${KIND_INFO[shown.view.kind].label} partagée avec basedb`
-                : 'Vue partagée avec basedb'}
+                ? $t('{label} partagée avec basedb', { label: KIND_INFO[shown.view.kind].label })
+                : $t('Vue partagée avec basedb')}
             </footer>
           )}
         </div>
@@ -339,7 +349,11 @@ function Body({
     .filter((f): f is Field => f !== null && f.name !== title?.name)
 
   if (rows.length === 0) {
-    return <p className="p-10 text-center text-sm text-muted-foreground">Aucune ligne à montrer.</p>
+    return (
+      <p className="p-10 text-center text-sm text-muted-foreground">
+        {$t('Aucune ligne à montrer.')}
+      </p>
+    )
   }
 
   switch (view.kind) {
@@ -454,7 +468,7 @@ function Grid({
 function groupOf(row: Row, field: Field): { key: string; header: ReactNode } {
   const value = row[field.name]
   if (value === null || value === undefined || value === '') {
-    return { key: '', header: <span className="text-muted-foreground">Sans valeur</span> }
+    return { key: '', header: <span className="text-muted-foreground">{$t('Sans valeur')}</span> }
   }
   if (field.kind === 'select') {
     const option = field.options?.find((o) => o.value === value)
@@ -564,7 +578,7 @@ function Board({
       {grouped(rows, group, order).map((g) => (
         <section key={g.key} className="flex w-72 shrink-0 flex-col rounded-lg bg-muted/60 p-2">
           <h2 className="mb-2 flex items-center gap-2 px-1 text-sm font-medium">
-            {g.header ?? 'Toutes les lignes'}
+            {g.header ?? $t('Toutes les lignes')}
             <span className="text-xs font-normal text-muted-foreground">{g.rows.length}</span>
           </h2>
           <div className="space-y-2">
@@ -584,13 +598,13 @@ function Board({
   )
 }
 
-const DAY = new Intl.DateTimeFormat('fr-FR', {
+const DAY = new Intl.DateTimeFormat(intlLocale(), {
   weekday: 'long',
   day: 'numeric',
   month: 'long',
   year: 'numeric',
 })
-const SHORT = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' })
+const SHORT = new Intl.DateTimeFormat(intlLocale(), { day: 'numeric', month: 'short' })
 
 /** A calendar or a timeline, read as an agenda: the rows under the day they start. */
 function Agenda({
@@ -622,7 +636,7 @@ function Agenda({
   const days: Array<{ key: string; label: string; items: typeof dated }> = []
   for (const item of dated) {
     const key = item.from === null ? '' : item.from.toDateString()
-    const label = item.from === null ? 'Sans date' : DAY.format(item.from)
+    const label = item.from === null ? $t('Sans date') : DAY.format(item.from)
     const day = days.find((d) => d.key === key)
     if (day === undefined) days.push({ key, label, items: [item] })
     else day.items.push(item)

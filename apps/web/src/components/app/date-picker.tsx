@@ -15,6 +15,8 @@ import {
   parseTyped,
   splitTyped,
 } from '@/lib/dates'
+import { $t } from '@/lib/i18n'
+import { dateFormat } from '@/lib/preferences'
 import { cn } from '@/lib/utils'
 import { CalendarDays, Clock } from 'lucide-react'
 import { type KeyboardEvent, useRef, useState } from 'react'
@@ -55,9 +57,10 @@ interface DateInputProps {
   readonly 'aria-label': string
 }
 
-const PLACEHOLDER: Readonly<Record<DateKind, string>> = {
-  date: 'jj/mm/aaaa',
-  datetime: 'jj/mm/aaaa hh:mm',
+/** What to type, in the order dates read for this person. */
+function placeholderOf(kind: DateKind): string {
+  const day = dateFormat() === 'iso' ? 'aaaa-mm-jj' : 'jj/mm/aaaa'
+  return kind === 'date' ? day : `${day} hh:mm`
 }
 
 const firstOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1)
@@ -164,9 +167,9 @@ export function DateInput({
   }
 
   const hint = empty
-    ? `Saisissez ${PLACEHOLDER[kind]} ou choisissez un jour.`
+    ? $t('Saisissez {kind} ou choisissez un jour.', { kind: placeholderOf(kind) })
     : typed === null
-      ? 'Date non reconnue.'
+      ? $t('Date non reconnue.')
       : describe(typed, kind)
 
   if (readOnly) {
@@ -197,8 +200,8 @@ export function DateInput({
                   focusCalendar.current = true
                 }}
                 className="absolute left-1 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                aria-label="Ouvrir le calendrier"
-                title="Ouvrir le calendrier"
+                aria-label={$t('Ouvrir le calendrier')}
+                title={$t('Ouvrir le calendrier')}
               >
                 <CalendarDays className="size-4" />
               </button>
@@ -209,7 +212,7 @@ export function DateInput({
             // biome-ignore lint/a11y/noAutofocus: the field was opened by a double click, and the caret belongs there
             autoFocus={autoFocus}
             value={text}
-            placeholder={placeholder ?? PLACEHOLDER[kind]}
+            placeholder={placeholder ?? placeholderOf(kind)}
             inputMode={kind === 'date' ? 'numeric' : 'text'}
             autoComplete="off"
             spellCheck={false}
@@ -341,7 +344,7 @@ export function DateInput({
                 }
               }}
               className="h-8 w-full min-w-0 rounded-md border bg-transparent px-2 text-sm tabular-nums outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25"
-              aria-label="Heure"
+              aria-label={$t('Heure')}
             />
           </div>
         )}
@@ -358,7 +361,7 @@ export function DateInput({
           </p>
           <div className="flex gap-1.5">
             <Button variant="outline" size="sm" className="h-7 flex-1 text-xs" onClick={now}>
-              {kind === 'date' ? 'Aujourd’hui' : 'Maintenant'}
+              {kind === 'date' ? $t('Aujourd’hui') : $t('Maintenant')}
             </Button>
             {clearable && !empty && (
               <Button
@@ -370,12 +373,12 @@ export function DateInput({
                   finish('')
                 }}
               >
-                Effacer
+                {$t('Effacer')}
               </Button>
             )}
             {kind === 'datetime' && (
               <Button size="sm" className="h-7 text-xs" onClick={() => finish(text)}>
-                Valider
+                {$t('Valider')}
               </Button>
             )}
           </div>

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { ExportFormat } from '@/lib/export'
+import { $t, intlLocale } from '@/lib/i18n'
 import { PAGE_SIZES } from '@/lib/store/workspace'
 import {
   ChevronDown,
@@ -59,7 +60,7 @@ interface Props {
   readonly onExport: (format: ExportFormat) => void
 }
 
-const format = (n: number) => n.toLocaleString('fr-FR')
+const format = (n: number) => n.toLocaleString(intlLocale())
 
 export function PaginationBar({
   rowCount,
@@ -87,7 +88,7 @@ export function PaginationBar({
     // grid is narrow in a wide window, and the label must give way to the buttons then.
     <footer className="@container flex h-11 shrink-0 items-center gap-2 border-t bg-background px-4 text-xs">
       <span className="hidden whitespace-nowrap text-muted-foreground @xl:block">
-        Lignes par page
+        {$t('Lignes par page')}
       </span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -114,7 +115,7 @@ export function PaginationBar({
 
       <span className="whitespace-nowrap tabular-nums text-muted-foreground">
         {rowCount === 0 ? (
-          'Aucune ligne'
+          $t('Aucune ligne')
         ) : (
           <>
             {format(first)}–{format(last)}
@@ -143,10 +144,10 @@ export function PaginationBar({
               ) : (
                 <Hash className="size-3.5" />
               )}
-              Compter
+              {$t('Compter')}
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Calculer le nombre total de lignes</TooltipContent>
+          <TooltipContent>{$t('Calculer le nombre total de lignes')}</TooltipContent>
         </Tooltip>
       )}
 
@@ -160,10 +161,10 @@ export function PaginationBar({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuLabel>Exporter la page</DropdownMenuLabel>
+          <DropdownMenuLabel>{$t('Exporter la page')}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => onExport('csv')}>CSV</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => onExport('json')}>JSON</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => onExport('csv')}>{$t('CSV')}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => onExport('json')}>{$t('JSON')}</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => onExport('sql')}>INSERT SQL</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -176,12 +177,12 @@ export function PaginationBar({
             className="size-7"
             onClick={onRefresh}
             disabled={loading}
-            aria-label="Recharger"
+            aria-label={$t('Recharger')}
           >
             <RefreshCw className={loading ? 'size-3.5 animate-spin' : 'size-3.5'} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Recharger la page</TooltipContent>
+        <TooltipContent>{$t('Recharger la page')}</TooltipContent>
       </Tooltip>
 
       <Button
@@ -190,7 +191,7 @@ export function PaginationBar({
         className="size-7"
         onClick={onFirst}
         disabled={pageIndex === 0 || loading}
-        aria-label="Première page"
+        aria-label={$t('Première page')}
       >
         <ChevronsLeft className="size-3.5" />
       </Button>
@@ -200,7 +201,7 @@ export function PaginationBar({
         className="size-7"
         onClick={onPrevious}
         disabled={pageIndex === 0 || loading}
-        aria-label="Page précédente"
+        aria-label={$t('Page précédente')}
       >
         <ChevronLeft className="size-3.5" />
       </Button>
@@ -213,7 +214,7 @@ export function PaginationBar({
         className="size-7"
         onClick={onNext}
         disabled={!hasNextPage || loading}
-        aria-label="Page suivante"
+        aria-label={$t('Page suivante')}
       >
         <ChevronRight className="size-3.5" />
       </Button>

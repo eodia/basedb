@@ -4,6 +4,7 @@ import { OptionGlyph, hasLook } from '@/components/app/option-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { $t } from '@/lib/i18n'
 import { OPTION_ICONS } from '@/lib/option-icons'
 import { MAX_IMAGE_CHARS, PRESET_COLORS, normalizeHex, shrinkImage } from '@/lib/options'
 import { cn } from '@/lib/utils'
@@ -64,6 +65,9 @@ export function LookButton({
 
   return (
     <Popover
+      // Modal: its pictograms scroll, and from a dialog a non-modal popover sits outside the
+      // dialog's scroll lock — the wheel would do nothing over them.
+      modal
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
@@ -76,7 +80,7 @@ export function LookButton({
           type="button"
           disabled={disabled}
           aria-label={label}
-          title="Couleur, pictogramme ou image"
+          title={$t('Couleur, pictogramme ou image')}
           className={cn(
             'flex size-8 shrink-0 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-accent',
             !hasLook(draft) && 'border-dashed',
@@ -101,7 +105,7 @@ export function LookButton({
 
         <div className="space-y-2">
           <fieldset className="inline-flex rounded-md border p-0.5 text-xs">
-            <legend className="sr-only">Pictogramme ou image</legend>
+            <legend className="sr-only">{$t('Pictogramme ou image')}</legend>
             {(['icon', 'image'] as const).map((m) => (
               <button
                 key={m}
@@ -115,7 +119,7 @@ export function LookButton({
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                {m === 'icon' ? 'Pictogramme' : 'Image'}
+                {m === 'icon' ? $t('Pictogramme') : $t('Image')}
               </button>
             ))}
           </fieldset>
@@ -144,11 +148,11 @@ function ColorPane({
 }) {
   return (
     <div className="space-y-1.5">
-      <p className="text-xs font-medium text-muted-foreground">Couleur</p>
+      <p className="text-xs font-medium text-muted-foreground">{$t('Couleur')}</p>
       <div className="flex flex-wrap items-center gap-1.5">
         <button
           type="button"
-          aria-label="Aucune couleur"
+          aria-label={$t('Aucune couleur')}
           aria-pressed={color === null}
           onClick={() => onChange(null)}
           className="flex size-6 items-center justify-center rounded-full border text-muted-foreground aria-pressed:ring-2 aria-pressed:ring-ring aria-pressed:ring-offset-1"
@@ -159,7 +163,7 @@ function ColorPane({
           <button
             key={preset}
             type="button"
-            aria-label={`Couleur ${preset}`}
+            aria-label={$t('Couleur {preset}', { preset })}
             aria-pressed={color === preset}
             onClick={() => onChange(preset)}
             style={{ backgroundColor: preset }}
@@ -168,7 +172,7 @@ function ColorPane({
         ))}
         {/* Any other colour: the browser's own picker, which also takes a typed hex. */}
         <label
-          title="Une autre couleur"
+          title={$t('Une autre couleur')}
           className={cn(
             'relative flex size-6 cursor-pointer items-center justify-center rounded-full border text-muted-foreground',
             color !== null && !PRESET_COLORS.includes(color) && 'ring-2 ring-ring ring-offset-1',
@@ -181,7 +185,7 @@ function ColorPane({
         >
           <input
             type="color"
-            aria-label="Choisir une autre couleur"
+            aria-label={$t('Choisir une autre couleur')}
             value={color ?? '#6b7280'}
             onChange={(e) => onChange(normalizeHex(e.target.value))}
             className="absolute inset-0 size-full cursor-pointer opacity-0"
@@ -217,8 +221,8 @@ function IconPane({
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Chercher un pictogramme…"
-          aria-label="Chercher un pictogramme"
+          placeholder={$t('Chercher un pictogramme…')}
+          aria-label={$t('Chercher un pictogramme')}
           className="h-8 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
       </div>
@@ -242,7 +246,7 @@ function IconPane({
         ))}
         {shown.length === 0 && (
           <p className="col-span-7 py-4 text-center text-xs text-muted-foreground">
-            Aucun pictogramme.
+            {$t('Aucun pictogramme.')}
           </p>
         )}
       </div>
@@ -250,7 +254,7 @@ function IconPane({
       {icon !== null && (
         <Button type="button" variant="ghost" size="sm" onClick={() => onChange(null)}>
           <X className="size-3.5" />
-          Retirer le pictogramme
+          {$t('Retirer le pictogramme')}
         </Button>
       )}
     </div>
@@ -276,7 +280,7 @@ function ImagePane({
     try {
       onChange(await shrinkImage(picked))
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Image illisible.')
+      setError(e instanceof Error ? e.message : $t('Image illisible.'))
     } finally {
       setBusy(false)
       // The same file can be chosen twice in a row.
@@ -287,7 +291,7 @@ function ImagePane({
   const useUrl = () => {
     const text = url.trim()
     if (!/^https:\/\/\S+$/i.test(text)) return setError('Une adresse https://… est attendue.')
-    if (text.length > MAX_IMAGE_CHARS) return setError('Adresse trop longue.')
+    if (text.length > MAX_IMAGE_CHARS) return setError($t('Adresse trop longue.'))
     setError(null)
     onChange(text)
     setUrl('')
@@ -310,7 +314,7 @@ function ImagePane({
         onClick={() => file.current?.click()}
       >
         <ImageUp className="size-4" />
-        {busy ? 'Traitement…' : 'Choisir un fichier'}
+        {busy ? $t('Traitement…') : $t('Choisir un fichier')}
       </Button>
 
       <div className="flex gap-1.5">
@@ -324,7 +328,7 @@ function ImagePane({
             }
           }}
           placeholder="ou une adresse https://…"
-          aria-label="Adresse de l’image"
+          aria-label={$t('Adresse de l’image')}
           className="h-8 text-xs"
         />
         <Button
@@ -334,7 +338,7 @@ function ImagePane({
           onClick={useUrl}
           disabled={url.trim() === ''}
         >
-          Utiliser
+          {$t('Utiliser')}
         </Button>
       </div>
 
@@ -349,7 +353,7 @@ function ImagePane({
           <OptionGlyph look={{ image }} className="size-8" />
           <Button type="button" variant="ghost" size="sm" onClick={() => onChange(null)}>
             <X className="size-3.5" />
-            Retirer l’image
+            {$t('Retirer l’image')}
           </Button>
         </div>
       )}

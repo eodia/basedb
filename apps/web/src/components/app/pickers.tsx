@@ -4,6 +4,7 @@ import { OptionBadge, hasLook } from '@/components/app/option-badge'
 import { Badge } from '@/components/ui/badge'
 import { Combobox, type ComboboxOption, filterOptions } from '@/components/ui/combobox'
 import type { Field, LinkOption } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Link2 } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
@@ -52,7 +53,7 @@ const TRIGGER: Readonly<Record<PickerProps['appearance'], string>> = {
 }
 
 /** A field that may be empty offers a way to empty it; a required one must not. */
-const clearLabelOf = (field: Field) => (field.required === true ? undefined : 'Aucune valeur')
+const clearLabelOf = (field: Field) => (field.required === true ? undefined : $t('Aucune valeur'))
 
 function Shown({
   label,
@@ -100,7 +101,7 @@ export function EnumPicker({ field, value, onChange, appearance, placeholder = '
       onValueChange={onChange}
       options={choices}
       clearLabel={clearLabelOf(field)}
-      searchPlaceholder="Rechercher une valeur…"
+      searchPlaceholder={$t('Rechercher une valeur…')}
       className={TRIGGER[appearance]}
       aria-label={field.label}
     >
@@ -166,8 +167,8 @@ export function MultiEnumPicker({
       selected={chosen}
       onValueChange={toggle}
       options={choices}
-      clearLabel={field.required === true ? undefined : 'Tout retirer'}
-      searchPlaceholder="Rechercher une valeur…"
+      clearLabel={field.required === true ? undefined : $t('Tout retirer')}
+      searchPlaceholder={$t('Rechercher une valeur…')}
       className={cn(TRIGGER[appearance], appearance === 'form' && 'h-auto min-h-9 py-1.5')}
       aria-label={field.label}
     >
@@ -301,12 +302,12 @@ function useLinkSearch(field: Field, options: readonly LinkOption[], onSearch: S
   const shown = settled?.filtered === true ? listed : filterOptions(listed, query)
 
   const notice = failed
-    ? 'Recherche indisponible.'
+    ? $t('Recherche indisponible.')
     : settled?.truncated !== true
       ? null
       : settled.filtered
-        ? 'Précisez la recherche pour voir d’autres résultats.'
-        : 'Liste incomplète.'
+        ? $t('Précisez la recherche pour voir d’autres résultats.')
+        : $t('Liste incomplète.')
 
   return { search, shown, loading, notice }
 }
@@ -346,8 +347,8 @@ export function LinkPicker({
       loading={loading}
       notice={notice}
       clearLabel={clearLabelOf(field)}
-      searchPlaceholder="Rechercher un enregistrement…"
-      emptyLabel="Aucun enregistrement trouvé"
+      searchPlaceholder={$t('Rechercher un enregistrement…')}
+      emptyLabel={$t('Aucun enregistrement trouvé')}
       className={TRIGGER[appearance]}
       aria-label={field.label}
     >
@@ -401,7 +402,7 @@ export function LinkChips({
   return (
     <span className={cn('flex min-w-0 items-center gap-1', wrap ? 'flex-wrap' : 'overflow-hidden')}>
       {shown.map((v) => {
-        const label = v.masked === true ? 'masqué' : (v.display ?? v.id?.slice(0, 8) ?? '—')
+        const label = v.masked === true ? $t('masqué') : (v.display ?? v.id?.slice(0, 8) ?? '—')
         // The only element without an identifier is the masked one, and there is one at most.
         const key = v.id ?? 'masked'
         const chip = (
@@ -426,8 +427,8 @@ export function LinkChips({
             type="button"
             className={cn('flex', holder)}
             onClick={() => onFollow(id)}
-            title={`Ouvrir « ${label} »`}
-            aria-label={`Ouvrir « ${label} »`}
+            title={$t('Ouvrir « {label} »', { label })}
+            aria-label={$t('Ouvrir « {label} »', { label })}
           >
             {chip}
           </button>
@@ -498,9 +499,9 @@ export function MultiLinkPicker({
       onQueryChange={search}
       loading={loading}
       notice={notice}
-      clearLabel={field.required === true ? undefined : 'Tout retirer'}
-      searchPlaceholder="Rechercher un enregistrement…"
-      emptyLabel="Aucun enregistrement trouvé"
+      clearLabel={field.required === true ? undefined : $t('Tout retirer')}
+      searchPlaceholder={$t('Rechercher un enregistrement…')}
+      emptyLabel={$t('Aucun enregistrement trouvé')}
       className={cn(TRIGGER[appearance], appearance === 'form' && 'h-auto min-h-9 py-1.5')}
       aria-label={field.label}
     >

@@ -3,8 +3,9 @@ import { quoteIdentifier } from '@basedb/naming'
 import { Pool, type PoolClient } from 'pg'
 import { quoteLiteral } from '../ddl/emit.js'
 import { BasedbError, translatePgError } from '../errors/index.js'
-import { TENANT_SCOPE } from '../rbac/decide.js'
+import { type ActorGrants, type Target, decide } from '../rbac/decide.js'
 import { loadGrants } from '../rbac/loader.js'
+import { loadBaseTarget } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { startupOptions } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
@@ -52,7 +53,7 @@ export const CONSOLE_DEFAULT_LIMIT = 500
 export const CONSOLE_MAX_LIMIT = 5_000
 
 /** Long enough for an honest query, short enough that a mistake is not an outage. */
-const CONSOLE_STATEMENT_TIMEOUT_MS = 15_000
+export const CONSOLE_STATEMENT_TIMEOUT_MS = 15_000
 
 export interface SqlConsoleRequest {
   readonly baseId: string
@@ -97,6 +98,12 @@ export interface SqlConsoleResult {
   readonly truncated: boolean
   /** The schema the statement ran against, unqualified names included. */
   readonly schema: string
+  /**
+   * `console`: with the reach of whoever manages the base's structure, writes included.
+   * `reader`: read only, with the caller's own rights — the tables they read, the fields
+   * they see (`sql/reader.ts`).
+   */
+  readonly mode: 'console' | 'reader'
 }
 
 /**
@@ -135,17 +142,8 @@ export async function runConsoleSql(
     ctx,
     async (exec) => {
       const grants = await loadGrants(exec, ctx)
-      const allowed =
-        grants.isInstanceAdmin ||
-        grants.roles.some((role) =>
-          role.permissions.some(
-            (p) =>
-              p.action === 'manage_schema' &&
-              ((p.scopeKind === 'tenant' && p.scopeId === TENANT_SCOPE) ||
-                (p.scopeKind === 'base' && p.scopeId === request.baseId)),
-          ),
-        )
-      if (!allowed) {
+      const base = await loadBaseTarget(exec, ctx, request.baseId)
+      if (!holdsConsole(ctx, grants, base)) {
         throw new BasedbError('ADMIN_REQUIRED', { details: { base: request.baseId } })
       }
 
@@ -258,6 +256,7 @@ export async function runConsoleSql(
       durationMs: Date.now() - started,
       truncated: all.length > kept.length,
       schema: scope.schema,
+      mode: 'console' as const,
     }
 
     await audit(pools, ctx, request.baseId, sql, outcome.command, outcome.rowCount, null)
@@ -282,6 +281,20 @@ export async function runConsoleSql(
 }
 
 /**
+ * Whether the console's full reach is the caller's on a base: `manage_schema` on it, as
+ * the decider renders it — granted on the base, its project or the tenant, or held by the
+ * instance administration. Whoever does not hold it still runs SQL, read only and with
+ * their own rights (`sql/reader.ts`).
+ */
+export function holdsConsole(
+  ctx: RequestContext,
+  grants: ActorGrants,
+  base: Target | null,
+): boolean {
+  return base !== null && decide(ctx, grants, 'manage_schema', base).verdict === 'ALLOWED'
+}
+
+/**
  * Turns a failure into something a console user can act on.
  *
  * This is the ONE place in the product where a raw PostgreSQL message crosses the
@@ -296,7 +309,7 @@ export async function runConsoleSql(
  * that could not be opened — and falls back to the ordinary translation, which discloses
  * nothing.
  */
-function asStatementError(error: unknown): BasedbError {
+export function asStatementError(error: unknown): BasedbError {
   if (error instanceof BasedbError) return error
 
   const pg = error as {
@@ -325,7 +338,7 @@ function asStatementError(error: unknown): BasedbError {
 }
 
 /** Two identical column names must not collapse into one key. */
-function uniqueKey(row: Record<string, unknown>, name: string, index: number): string {
+export function uniqueKey(row: Record<string, unknown>, name: string, index: number): string {
   if (!(name in row)) return name
   return `${name}__${index}`
 }
@@ -478,7 +491,7 @@ export async function closeConsolePools(): Promise<void> {
 /** OID → type name, so a column reads `numeric` rather than `1700`. */
 const typeNameCache = new Map<number, string>()
 
-async function resolveTypes(
+export async function resolveTypes(
   client: PoolClient,
   oids: readonly number[],
 ): Promise<readonly string[]> {
@@ -502,7 +515,7 @@ async function resolveTypes(
  * fixable here. What remains knowable is who ran what, and that is worth keeping: it is
  * the only thread an investigation would have.
  */
-async function audit(
+export async function audit(
   pools: Pools,
   ctx: RequestContext,
   baseId: string,
@@ -510,6 +523,7 @@ async function audit(
   command: string | null,
   rowCount: number | null,
   errorCode: string | null,
+  mode: SqlConsoleResult['mode'] = 'console',
 ): Promise<void> {
   await pools
     .withConnection('catalog', async (exec: Executor) => {
@@ -519,7 +533,8 @@ async function audit(
             object_id, payload, request_id)
          SELECT t.id, $2::uuid, $3, $4::uuid, $5, 'sql.console', 'base', $2::uuid,
                 jsonb_build_object('sql', $6::text, 'command', $7::text,
-                                   'row_count', $8::int, 'error_code', $9::text),
+                                   'row_count', $8::int, 'error_code', $9::text,
+                                   'mode', $11::text),
                 $10::uuid
            FROM _basedb.tenant t WHERE t.ref = $1`,
         [
@@ -533,6 +548,7 @@ async function audit(
           rowCount,
           errorCode,
           ctx.requestId.length === 36 ? ctx.requestId : null,
+          mode,
         ],
         'insert',
       )

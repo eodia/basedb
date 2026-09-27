@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@/components/app/admin/users-tab'
 import { cancelled, useElevated } from '@/components/app/elevation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Choice } from '@/components/ui/choice'
 import {
   Dialog,
   DialogContent,
@@ -15,14 +16,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { type AdminUser, type Group, api } from '@/lib/api/client'
+import { $t, groupName } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { Loader2, Lock, Pencil, Plus, Trash2, UserMinus, Users } from 'lucide-react'
@@ -100,15 +95,16 @@ export function GroupsTab() {
     <div className="mx-auto max-w-5xl space-y-4 px-6 py-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Groupes</h1>
+          <h1 className="text-lg font-semibold">{$t('Groupes')}</h1>
           <p className="text-sm text-muted-foreground">
-            Les droits s’accordent à des groupes : pour donner un accès à une personne, placez-la
-            dans un groupe qui l’a.
+            {$t(
+              'Les droits s’accordent à des groupes : pour donner un accès à une personne, placez-la dans un groupe qui l’a.',
+            )}
           </p>
         </div>
         <Button onClick={() => setNaming({ group: null })}>
           <Plus className="size-4" />
-          Nouveau groupe
+          {$t('Nouveau groupe')}
         </Button>
       </div>
 
@@ -137,7 +133,7 @@ export function GroupsTab() {
                 )}
               >
                 <Users className="size-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate">{g.label}</span>
+                <span className="min-w-0 flex-1 truncate">{groupName(g.label)}</span>
                 {g.system !== null && <Lock className="size-3 text-muted-foreground" />}
                 <span className="text-xs tabular-nums text-muted-foreground">{g.member_count}</span>
               </button>
@@ -148,14 +144,16 @@ export function GroupsTab() {
         {group !== null && (
           <section className="rounded-lg border">
             <header className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-              <h2 className="text-base font-semibold">{group.label}</h2>
-              {group.system !== null && <Badge variant="secondary">Groupe fourni par basedb</Badge>}
+              <h2 className="text-base font-semibold">{groupName(group.label)}</h2>
+              {group.system !== null && (
+                <Badge variant="secondary">{$t('Groupe fourni par basedb')}</Badge>
+              )}
               <div className="flex-1" />
               {group.system === null && (
                 <>
                   <Button variant="ghost" size="sm" onClick={() => setNaming({ group })}>
                     <Pencil className="size-4" />
-                    Renommer
+                    {$t('Renommer')}
                   </Button>
                   <Button
                     variant="ghost"
@@ -164,7 +162,7 @@ export function GroupsTab() {
                     onClick={() => setDeleting(group)}
                   >
                     <Trash2 className="size-4" />
-                    Supprimer
+                    {$t('Supprimer')}
                   </Button>
                 </>
               )}
@@ -172,26 +170,30 @@ export function GroupsTab() {
 
             <p className="border-b px-4 py-2.5 text-xs text-muted-foreground">
               {group.system === 'admins'
-                ? 'Les administrateurs ont tous les droits sur tous les projets, et administrent les comptes et les permissions.'
+                ? $t(
+                    'Les administrateurs ont tous les droits sur tous les projets, et administrent les comptes et les permissions.',
+                  )
                 : group.system === 'everyone'
-                  ? 'Chaque compte fait partie de ce groupe. Ce qui lui est accordé, tout le monde l’a : il ne reçoit donc rien par défaut.'
-                  : 'Les droits de ce groupe se règlent dans l’onglet Permissions.'}
+                  ? $t(
+                      'Chaque compte fait partie de ce groupe. Ce qui lui est accordé, tout le monde l’a : il ne reçoit donc rien par défaut.',
+                    )
+                  : $t('Les droits de ce groupe se règlent dans l’onglet Permissions.')}
             </p>
 
             {group.system !== 'everyone' && (
               <div className="flex items-center gap-2 border-b px-4 py-3">
-                <Select value={adding} onValueChange={setAdding}>
-                  <SelectTrigger className="max-w-sm" aria-label="Personne à ajouter">
-                    <SelectValue placeholder="Ajouter une personne…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {candidates.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.display_name} — {u.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Choice
+                  value={adding === '' ? null : adding}
+                  onValueChange={setAdding}
+                  options={candidates.map((u) => ({
+                    value: u.id,
+                    label: `${u.display_name} · ${u.email}`,
+                  }))}
+                  placeholder={$t('Ajouter une personne…')}
+                  aria-label={$t('Personne à ajouter')}
+                  size="default"
+                  className="max-w-sm"
+                />
                 <Button
                   variant="outline"
                   disabled={adding === ''}
@@ -202,7 +204,7 @@ export function GroupsTab() {
                     })
                   }
                 >
-                  Ajouter
+                  {$t('Ajouter')}
                 </Button>
               </div>
             )}
@@ -226,8 +228,8 @@ export function GroupsTab() {
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      aria-label={`Retirer ${m.email} du groupe`}
-                      title="Retirer du groupe"
+                      aria-label={$t('Retirer {email} du groupe', { email: m.email })}
+                      title={$t('Retirer du groupe')}
                       onClick={() => void act(() => api.setGroupMember(group.id, m.id, false))}
                     >
                       <UserMinus className="size-4" />
@@ -236,7 +238,7 @@ export function GroupsTab() {
                 </li>
               ))}
               {members !== null && members.length === 0 && (
-                <li className="px-4 py-4 text-sm text-muted-foreground">Aucun membre.</li>
+                <li className="px-4 py-4 text-sm text-muted-foreground">{$t('Aucun membre.')}</li>
               )}
             </ul>
           </section>
@@ -255,8 +257,10 @@ export function GroupsTab() {
 
       <ConfirmDialog
         open={deleting !== null}
-        title={`Supprimer « ${deleting?.label ?? ''} » ?`}
-        body="Ses membres perdent les droits que ce groupe leur donnait. Leurs comptes restent intacts."
+        title={$t('Supprimer « {value} » ?', { value: deleting?.label ?? '' })}
+        body={$t(
+          'Ses membres perdent les droits que ce groupe leur donnait. Leurs comptes restent intacts.',
+        )}
         action="Supprimer le groupe"
         destructive
         onClose={() => setDeleting(null)}
@@ -319,20 +323,23 @@ function GroupDialog({
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{group === null ? 'Nouveau groupe' : 'Renommer le groupe'}</DialogTitle>
+          <DialogTitle>
+            {group === null ? $t('Nouveau groupe') : $t('Renommer le groupe')}
+          </DialogTitle>
           <DialogDescription>
-            Un groupe réunit des personnes qui doivent avoir les mêmes droits — une équipe, un
-            service, un rôle.
+            {$t(
+              'Un groupe réunit des personnes qui doivent avoir les mêmes droits — une équipe, un service, un rôle.',
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-1.5">
-          <Label htmlFor="group-label">Nom du groupe</Label>
+          <Label htmlFor="group-label">{$t('Nom du groupe')}</Label>
           <Input
             id="group-label"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void submit()}
-            placeholder="Ex. Comptabilité"
+            placeholder={$t('Ex. Comptabilité')}
             autoFocus
             disabled={busy}
           />
@@ -340,11 +347,11 @@ function GroupDialog({
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button onClick={() => void submit()} disabled={label.trim() === '' || busy}>
             {busy && <Loader2 className="size-4 animate-spin" />}
-            {group === null ? 'Créer le groupe' : 'Enregistrer'}
+            {group === null ? $t('Créer le groupe') : $t('Enregistrer')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -7,7 +7,7 @@
 // to it, never rename one." The "Normative chapter" column alone is authoritative on a
 // code's parentage.
 //
-// 233 codes, 8 domains.
+// 234 codes, 8 domains.
 //
 // The `condition` strings are quoted verbatim from the French document, which is
 // authoritative on their wording.
@@ -217,6 +217,7 @@ export type ErrorCode =
   | 'VIEW_SHARE_CLOSED'
   | 'VIEW_SHARE_RESTRICTED'
   | 'VIEW_LOCKED'
+  | 'SQL_VIEW_BROKEN'
   | 'IDEMPOTENCY_CONFLICT'
   | 'IDEMPOTENCY_IN_PROGRESS'
   | 'IDEMPOTENCY_INTERRUPTED'
@@ -1624,14 +1625,15 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
   }),
   VIEW_SHARE_CLOSED: Object.freeze({
     condition:
-      "Lecture d'une vue partagée dont le lien est désactivé, ou dont la personne qui l'a publiée ne peut plus lire la table",
+      "Lecture d'une vue ou d'un tableau de bord partagés dont le lien est désactivé, ou dont la personne qui l'a publié ne peut plus lire la table ou la base",
     httpStatus: 409,
     httpStatusNote: null,
     chapter: '15',
     domain: 'api_et_integrations',
   }),
   VIEW_SHARE_RESTRICTED: Object.freeze({
-    condition: "Vue partagée réservée à des groupes dont la personne connectée n'est pas membre",
+    condition:
+      "Vue ou tableau de bord partagés, réservés à des groupes dont la personne connectée n'est pas membre",
     httpStatus: 403,
     httpStatusNote: null,
     chapter: '15',
@@ -1639,6 +1641,14 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
   }),
   VIEW_LOCKED: Object.freeze({
     condition: "Modification d'une vue verrouillée : il faut d'abord la déverrouiller",
+    httpStatus: 409,
+    httpStatusNote: null,
+    chapter: '11',
+    domain: 'api_et_integrations',
+  }),
+  SQL_VIEW_BROKEN: Object.freeze({
+    condition:
+      "Lecture d'une vue SQL qu'une opération de structure a dû retirer de PostgreSQL ; sa définition est à corriger",
     httpStatus: 409,
     httpStatusNote: null,
     chapter: '11',

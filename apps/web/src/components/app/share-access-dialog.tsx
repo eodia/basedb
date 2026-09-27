@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { type AccessLevel, type Invitation, type Sharing, api } from '@/lib/api/client'
+import { $t, groupName, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { Check, Copy, Link2, Loader2, UserPlus, Users, X } from 'lucide-react'
@@ -39,17 +40,17 @@ export interface ShareTarget {
 type Level = Exclude<AccessLevel, 'none'>
 
 const LEVELS: ReadonlyArray<{ id: Level; label: string; hint: string }> = [
-  { id: 'read', label: 'Lecture', hint: 'Voir les lignes' },
-  { id: 'edit', label: 'Modification', hint: 'Ajouter, modifier, supprimer des lignes' },
-  { id: 'manage', label: 'Gestion', hint: 'Et changer la structure, partager' },
+  { id: 'read', label: $t('Lecture'), hint: $t('Voir les lignes') },
+  { id: 'edit', label: $t('Modification'), hint: $t('Ajouter, modifier, supprimer des lignes') },
+  { id: 'manage', label: $t('Gestion'), hint: $t('Et changer la structure, partager') },
 ]
 
 const LABELS: Readonly<Record<AccessLevel | 'granular', string>> = {
-  none: 'Aucun accès',
-  read: 'Lecture',
-  edit: 'Modification',
-  manage: 'Gestion',
-  granular: 'Accès partiel',
+  none: $t('Aucun accès'),
+  read: $t('Lecture'),
+  edit: $t('Modification'),
+  manage: $t('Gestion'),
+  granular: $t('Accès partiel'),
 }
 
 /** The page an invitation's link opens, on this very interface. */
@@ -87,7 +88,7 @@ function CopyButton({ text, label }: { readonly text: string; readonly label: st
       ) : (
         <Copy className="animate-in fade-in duration-200" />
       )}
-      <span aria-live="polite">{copied ? 'Copié' : 'Copier'}</span>
+      <span aria-live="polite">{copied ? $t('Copié') : $t('Copier')}</span>
     </Button>
   )
 }
@@ -167,11 +168,11 @@ export function ShareAccessDialog({
     <Dialog open={target !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Partager « {target?.label} »</DialogTitle>
+          <DialogTitle>{$t('Partager « {label} »', { label: target?.label })}</DialogTitle>
           <DialogDescription>
             {target?.kind === 'project'
-              ? 'Invitez des personnes dans ce projet : elles accèdent à toutes ses bases.'
-              : 'Invitez des personnes dans cette base seulement.'}
+              ? $t('Invitez des personnes dans ce projet : elles accèdent à toutes ses bases.')
+              : $t('Invitez des personnes dans cette base seulement.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -181,12 +182,12 @@ export function ShareAccessDialog({
             placeholder="adresse@exemple.fr"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            aria-label="Adresse de la personne à inviter"
+            aria-label={$t('Adresse de la personne à inviter')}
             disabled={busy}
             className="min-w-0 flex-1"
           />
           <Select value={level} onValueChange={(v) => setLevel(v as Level)} disabled={busy}>
-            <SelectTrigger className="w-40" aria-label="Niveau d’accès">
+            <SelectTrigger className="w-40" aria-label={$t('Niveau d’accès')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent align="end">
@@ -199,7 +200,7 @@ export function ShareAccessDialog({
           </Select>
           <Button type="submit" disabled={busy || email.trim() === ''}>
             {busy ? <Loader2 className="animate-spin" /> : <UserPlus />}
-            Inviter
+            {$t('Inviter')}
           </Button>
         </form>
         {/* What the chosen level allows, said once, under the choice. */}
@@ -216,7 +217,7 @@ export function ShareAccessDialog({
           <div className="grid animate-in fade-in slide-in-from-top-2 gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 duration-300">
             <p className="flex items-center gap-2 text-sm font-medium">
               <Link2 className="size-4 text-primary" />
-              Lien d’invitation pour {fresh.email}
+              {$t('Lien d’invitation pour {email}', { email: fresh.email })}
             </p>
             <div className="flex gap-2">
               <Input
@@ -224,13 +225,17 @@ export function ShareAccessDialog({
                 value={invitationUrl(fresh.token)}
                 onFocus={(e) => e.currentTarget.select()}
                 className="min-w-0 flex-1 font-mono text-xs"
-                aria-label="Lien d’invitation"
+                aria-label={$t('Lien d’invitation')}
               />
-              <CopyButton text={invitationUrl(fresh.token)} label="Copier le lien d’invitation" />
+              <CopyButton
+                text={invitationUrl(fresh.token)}
+                label={$t('Copier le lien d’invitation')}
+              />
             </div>
             <p className="text-xs text-muted-foreground">
-              Envoyez-le à cette personne : valable 7 jours, pour une seule personne. Elle se
-              connecte, ou crée son compte, en l’ouvrant.
+              {$t(
+                'Envoyez-le à cette personne : valable 7 jours, pour une seule personne. Elle se connecte, ou crée son compte, en l’ouvrant.',
+              )}
             </p>
           </div>
         )}
@@ -249,9 +254,11 @@ export function ShareAccessDialog({
           sharing !== null && (
             <div className="grid max-h-[50vh] gap-4 overflow-y-auto pr-1">
               <section className="grid gap-1">
-                <h3 className="text-xs font-medium text-muted-foreground">Personnes</h3>
+                <h3 className="text-xs font-medium text-muted-foreground">{$t('Personnes')}</h3>
                 {sharing.people.length === 0 && (
-                  <p className="py-2 text-sm text-muted-foreground">Personne pour l’instant.</p>
+                  <p className="py-2 text-sm text-muted-foreground">
+                    {$t('Personne pour l’instant.')}
+                  </p>
                 )}
                 {sharing.people.map((p, i) => (
                   <div
@@ -266,7 +273,7 @@ export function ShareAccessDialog({
                       <span className="block truncate text-sm font-medium">
                         {p.display_name}
                         {p.you && (
-                          <span className="font-normal text-muted-foreground"> (vous)</span>
+                          <span className="font-normal text-muted-foreground"> {$t('(vous)')}</span>
                         )}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
@@ -276,7 +283,7 @@ export function ShareAccessDialog({
                     {p.you || p.from === 'project' || p.level === 'granular' ? (
                       <span className="shrink-0 text-sm text-muted-foreground">
                         {LABELS[p.level]}
-                        {p.from === 'project' && ' · via le projet'}
+                        {p.from === 'project' && $t(' · via le projet')}
                       </span>
                     ) : (
                       <Select
@@ -285,7 +292,9 @@ export function ShareAccessDialog({
                       >
                         <SelectTrigger
                           className="h-8 w-36 shrink-0"
-                          aria-label={`Accès de ${p.display_name}`}
+                          aria-label={$t('Accès de {display_name}', {
+                            display_name: p.display_name,
+                          })}
                         >
                           <SelectValue />
                         </SelectTrigger>
@@ -296,7 +305,7 @@ export function ShareAccessDialog({
                             </SelectItem>
                           ))}
                           <SelectItem value="none" className="text-destructive">
-                            Retirer l’accès
+                            {$t('Retirer l’accès')}
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -307,20 +316,20 @@ export function ShareAccessDialog({
 
               {sharing.groups.length > 0 && (
                 <section className="grid gap-1">
-                  <h3 className="text-xs font-medium text-muted-foreground">Groupes</h3>
+                  <h3 className="text-xs font-medium text-muted-foreground">{$t('Groupes')}</h3>
                   {sharing.groups.map((g) => (
                     <div key={g.id} className="flex items-center gap-3 px-1 py-1.5">
                       <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted">
                         <Users className="size-4 text-muted-foreground" />
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-sm">{g.label}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm">{groupName(g.label)}</span>
                       <span className="shrink-0 text-sm text-muted-foreground">
                         {LABELS[g.level]}
                       </span>
                     </div>
                   ))}
                   <p className="px-1 text-xs text-muted-foreground">
-                    Les groupes se règlent dans l’administration.
+                    {$t('Les groupes se règlent dans l’administration.')}
                   </p>
                 </section>
               )}
@@ -328,30 +337,32 @@ export function ShareAccessDialog({
               {pending.length > 0 && (
                 <section className="grid gap-1">
                   <h3 className="text-xs font-medium text-muted-foreground">
-                    Invitations en attente
+                    {$t('Invitations en attente')}
                   </h3>
                   {pending.map((inv) => (
                     <div key={inv.id} className="flex items-center gap-2 px-1 py-1.5">
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm">{inv.email}</span>
                         <span className="block text-xs text-muted-foreground">
-                          {LABELS[inv.level]} · expire le{' '}
-                          {new Date(inv.expires_at).toLocaleDateString('fr-FR', {
-                            day: 'numeric',
-                            month: 'long',
+                          {$t('{labels} · expire le {intlLocale}', {
+                            labels: LABELS[inv.level],
+                            intlLocale: new Date(inv.expires_at).toLocaleDateString(intlLocale(), {
+                              day: 'numeric',
+                              month: 'long',
+                            }),
                           })}
                         </span>
                       </span>
                       <CopyButton
                         text={invitationUrl(inv.token)}
-                        label={`Copier le lien pour ${inv.email}`}
+                        label={$t('Copier le lien pour {email}', { email: inv.email })}
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => void revoke(inv.id)}
-                        aria-label={`Annuler l’invitation de ${inv.email}`}
+                        aria-label={$t('Annuler l’invitation de {email}', { email: inv.email })}
                         className={cn('text-muted-foreground hover:text-destructive')}
                       >
                         <X />

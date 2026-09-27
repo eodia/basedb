@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { copy } from '@/lib/export'
+import { $t } from '@/lib/i18n'
 import {
   type OptionDraft,
   emptyDraft,
@@ -70,7 +71,7 @@ export function OptionsEditor({ value, onChange, known = NO_VALUES, disabled = f
     <div className="space-y-3">
       {value.length === 0 ? (
         <p className="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
-          Aucun choix. Ajoutez-en un, ou collez une liste JSON plus bas.
+          {$t('Aucun choix. Ajoutez-en un, ou collez une liste JSON plus bas.')}
         </p>
       ) : (
         <ul className="space-y-1.5">
@@ -82,7 +83,7 @@ export function OptionsEditor({ value, onChange, known = NO_VALUES, disabled = f
               <div className="flex flex-col">
                 <button
                   type="button"
-                  aria-label="Monter ce choix"
+                  aria-label={$t('Monter ce choix')}
                   disabled={disabled || index === 0}
                   onClick={() => move(index, -1)}
                   className="flex h-4 w-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
@@ -91,7 +92,7 @@ export function OptionsEditor({ value, onChange, known = NO_VALUES, disabled = f
                 </button>
                 <button
                   type="button"
-                  aria-label="Descendre ce choix"
+                  aria-label={$t('Descendre ce choix')}
                   disabled={disabled || index === value.length - 1}
                   onClick={() => move(index, 1)}
                   className="flex h-4 w-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
@@ -102,7 +103,7 @@ export function OptionsEditor({ value, onChange, known = NO_VALUES, disabled = f
 
               <LookButton
                 look={draft}
-                label={`Apparence du choix ${draft.label || ''}`.trim()}
+                label={$t('Apparence du choix {value}', { value: draft.label || '' }).trim()}
                 disabled={disabled}
                 onChange={(patch) => update(index, patch)}
               />
@@ -118,8 +119,8 @@ export function OptionsEditor({ value, onChange, known = NO_VALUES, disabled = f
                     }
                   }}
                   autoFocus={draft.key === focusKey}
-                  placeholder="Libellé du choix"
-                  aria-label={`Libellé du choix ${index + 1}`}
+                  placeholder={$t('Libellé du choix')}
+                  aria-label={$t('Libellé du choix {value}', { value: index + 1 })}
                   disabled={disabled}
                   className="h-8"
                 />
@@ -127,8 +128,8 @@ export function OptionsEditor({ value, onChange, known = NO_VALUES, disabled = f
                   className="mt-0.5 flex items-center gap-1 truncate px-1 font-mono text-[11px] text-muted-foreground"
                   title={
                     draft.locked
-                      ? 'Valeur enregistrée (non modifiable)'
-                      : 'Valeur enregistrée, dérivée du libellé'
+                      ? $t('Valeur enregistrée (non modifiable)')
+                      : $t('Valeur enregistrée, dérivée du libellé')
                   }
                 >
                   {draft.locked ? <Lock className="size-3 shrink-0" /> : <span aria-hidden>→</span>}
@@ -142,7 +143,7 @@ export function OptionsEditor({ value, onChange, known = NO_VALUES, disabled = f
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`Retirer le choix ${draft.label || index + 1}`}
+                aria-label={$t('Retirer le choix {value}', { value: draft.label || index + 1 })}
                 disabled={disabled}
                 onClick={() => onChange(value.filter((_, i) => i !== index))}
                 className="text-muted-foreground hover:text-destructive"
@@ -163,7 +164,7 @@ export function OptionsEditor({ value, onChange, known = NO_VALUES, disabled = f
         className="text-muted-foreground"
       >
         <Plus className="size-4" />
-        Ajouter un choix
+        {$t('Ajouter un choix')}
       </Button>
 
       <JsonPanel value={value} known={known} onChange={onChange} disabled={disabled} />
@@ -217,7 +218,7 @@ function JsonPanel({
   }
 
   const copyJson = async () => {
-    if (!(await copy(text))) return setError('Le presse-papiers n’est pas accessible ici.')
+    if (!(await copy(text))) return setError($t('Le presse-papiers n’est pas accessible ici.'))
     setCopied(true)
     clearTimeout(timer.current)
     timer.current = setTimeout(() => setCopied(false), 1800)
@@ -227,7 +228,7 @@ function JsonPanel({
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <label htmlFor={id} className="text-sm text-muted-foreground">
-          JSON
+          {$t('JSON')}
         </label>
         <Button
           type="button"
@@ -238,7 +239,7 @@ function JsonPanel({
           className={cn(copied && 'text-green-600 hover:text-green-600')}
         >
           {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-          {copied ? 'Copié' : 'Copier'}
+          {copied ? $t('Copié') : $t('Copier')}
         </Button>
       </div>
       <Textarea
@@ -257,7 +258,7 @@ function JsonPanel({
         </p>
       ) : (
         <p className="text-xs text-muted-foreground">
-          Exemple : <span className="font-mono">["Actif", "Inactif"]</span>
+          {$t('Exemple :')} <span className="font-mono">["Actif", "Inactif"]</span>
         </p>
       )}
     </div>

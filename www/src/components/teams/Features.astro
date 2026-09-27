@@ -1,0 +1,480 @@
+---
+/**
+ * The features, tile by tile — what each one does, in a sentence, and a small drawing of
+ * it. Every tile leads to its page of the documentation. The anchor of « Fonctionnalités »
+ * in the menu.
+ */
+import { type Locale, i18n } from '../../i18n';
+import type { Tile } from '../../i18n/types';
+import Icon from '../landing/Icon.astro';
+import type { IconName } from '../landing/icons';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, href } = i18n(locale);
+const f = t.teams.features;
+const tiles = Object.entries(f.tiles) as Array<[string, Tile]>;
+/** The tiles twice as wide as the others. */
+const WIDE = new Set(['views', 'history', 'formulas', 'templates']);
+/** The tiles drawn with an icon only. */
+const GLYPH: Record<string, IconName> = {
+	agenda: 'calendar',
+	share: 'link',
+	sync: 'refresh',
+	signin: 'key',
+	languages: 'globe',
+	relations: 'layers',
+};
+// A formula, its functions and its texts coloured.
+const formula = (code: string) =>
+	code.split(/("[^"]*"|\b[A-ZÀ-Ý]{2,}\b(?=\()|\[[^\]]*\])/).map((part) => ({
+		text: part,
+		kind: part.startsWith('"') ? 'str' : part.startsWith('[') ? 'ref' : /^[A-ZÀ-Ý]{2,}$/.test(part) ? 'fn' : '',
+	}));
+const tables = t.teams.stage.tables;
+---
+
+<section class="tm-section features" id="fonctionnalites">
+	<div class="tm-head tm-rise">
+		<h2 class="tm-display">
+			<span>{f.title}</span>
+			<span class="tm-grad">{f.titleAccent}</span>
+		</h2>
+		<p class="tm-lede">{f.text}</p>
+	</div>
+
+	<div class="tiles">
+		{
+			tiles.map(([key, tile]) => (
+				<a class:list={['tile', `t-${key}`, { wide: WIDE.has(key) }]} href={href(tile.href)}>
+					<div class="visual" aria-hidden="true">
+						{key === 'views' && (
+							<>
+								<span class="stat">{tile.stat}</span>
+								<span class="chips">
+									{t.bento.views.chips.map((chip) => (
+										<i>{chip}</i>
+									))}
+								</span>
+							</>
+						)}
+						{key === 'history' && (
+							<span class="keys">
+								{(tile.stat ?? '').split('+').map((k, i) => (
+									<>
+										{i > 0 && <span class="plus">+</span>}
+										<kbd>{k}</kbd>
+									</>
+								))}
+							</span>
+						)}
+						{key === 'viz' && (
+							<>
+								<span class="stat">{tile.stat}</span>
+								<span class="minis">
+									<svg viewBox="0 0 40 28"><rect x="2" y="14" width="7" height="12" rx="2" /><rect x="12" y="6" width="7" height="20" rx="2" /><rect x="22" y="10" width="7" height="16" rx="2" /><rect x="32" y="2" width="6" height="24" rx="2" /></svg>
+									<svg viewBox="0 0 40 28"><path d="M2 24 L12 14 L20 18 L30 6 L38 10" /></svg>
+									<svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="10" class="ringbg" /><path d="M14 4 A10 10 0 0 1 23.5 17" class="arc" /></svg>
+								</span>
+							</>
+						)}
+						{key === 'templates' && (
+							<span class="stat">{tile.stat}</span>
+						)}
+						{key === 'formulas' && tile.code !== undefined && (
+							<code class="formula">
+								{formula(tile.code).map((p) => (p.kind === '' ? p.text : <span class={p.kind}>{p.text}</span>))}
+							</code>
+						)}
+						{key === 'mentions' && (
+							<span class="bubble">
+								<i class="face">L</i>
+								<span>
+									<b>{tile.bubble}</b> …
+								</span>
+							</span>
+						)}
+						{key === 'forms' && (
+							<span class="form">
+								<i />
+								<i class="short" />
+								<i />
+								<b />
+							</span>
+						)}
+						{key === 'rights' && (
+							<span class="mask">
+								<span class="col" />
+								<span class="col" />
+								<span class="col hidden">
+									<Icon name="eye" size={16} />
+								</span>
+							</span>
+						)}
+						{key === 'import' && (
+							<span class="import">
+								<span class="file">CSV</span>
+								<Icon name="arrowRight" size={20} stroke={2} />
+								<span class="glyph"><Icon name="table" size={22} /></span>
+							</span>
+						)}
+						{key === 'files' && (
+							<span class="thumbs">
+								<i style="--c:#f59e0b" />
+								<i style="--c:#3b82f6" />
+								<i style="--c:#ec4899" />
+							</span>
+						)}
+						{key === 'relations' && (
+							<span class="nodes">
+								{tables.map((table) => (
+									<i>{table}</i>
+								))}
+							</span>
+						)}
+						{GLYPH[key] !== undefined && key !== 'relations' && (
+							<span class="glyph big">
+								<Icon name={GLYPH[key]!} size={26} />
+							</span>
+						)}
+					</div>
+					<div class="words">
+						<h3>{tile.title}</h3>
+						<p>{tile.text}</p>
+					</div>
+					<span class="go" aria-hidden="true">
+						<Icon name="arrowRight" size={16} stroke={2.2} />
+					</span>
+				</a>
+			))
+		}
+	</div>
+</section>
+
+<style>
+	.tiles {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		grid-auto-flow: dense;
+		gap: 18px;
+		max-width: 1180px;
+		margin: 72px auto 0;
+	}
+	.tile {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		gap: 22px;
+		min-height: 290px;
+		padding: 30px;
+		border-radius: 28px;
+		background: var(--tm-mist);
+		overflow: hidden;
+		transition:
+			transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+			box-shadow 0.35s ease;
+	}
+	.tile.wide {
+		grid-column: span 2;
+	}
+	.tile:hover {
+		transform: scale(1.015);
+		box-shadow: 0 30px 60px -30px rgba(16, 24, 16, 0.3);
+	}
+	.visual {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 14px;
+	}
+	.words h3 {
+		margin: 0 0 8px;
+		font-size: 21px;
+		font-weight: 700;
+		line-height: 1.2;
+		letter-spacing: -0.02em;
+	}
+	.words p {
+		margin: 0;
+		font-size: 15px;
+		line-height: 1.5;
+		color: var(--tm-slate);
+	}
+	.go {
+		position: absolute;
+		top: 26px;
+		right: 26px;
+		display: grid;
+		place-items: center;
+		width: 34px;
+		height: 34px;
+		border-radius: 50%;
+		color: var(--tm-ink);
+		background: #fff;
+		opacity: 0;
+		transform: translateX(-6px);
+		transition:
+			opacity 0.25s ease,
+			transform 0.25s ease;
+	}
+	.tile:hover .go,
+	.tile:focus-visible .go {
+		opacity: 1;
+		transform: none;
+	}
+
+	/* What each tile shows large */
+	.stat {
+		font-size: clamp(64px, 7vw, 96px);
+		font-weight: 800;
+		line-height: 0.9;
+		letter-spacing: -0.06em;
+		background: var(--tm-grad);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+	}
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 7px;
+	}
+	.chips i {
+		padding: 6px 12px;
+		border-radius: 999px;
+		font-style: normal;
+		font-size: 13px;
+		font-weight: 500;
+		background: #fff;
+		box-shadow: 0 0 0 1px var(--tm-line);
+	}
+	.keys {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+	kbd {
+		display: grid;
+		place-items: center;
+		min-width: 86px;
+		height: 86px;
+		padding: 0 18px;
+		border-radius: 18px;
+		font-family: var(--bd-font-sans);
+		font-size: 30px;
+		font-weight: 600;
+		color: var(--tm-ink);
+		background: linear-gradient(#fff, #f0f0f3);
+		box-shadow:
+			0 0 0 1px #dcdce2,
+			0 6px 0 #d2d2d9,
+			0 12px 24px -10px rgba(0, 0, 0, 0.25);
+	}
+	.plus {
+		font-size: 26px;
+		font-weight: 600;
+		color: var(--tm-slate);
+	}
+	.minis {
+		display: flex;
+		gap: 10px;
+	}
+	.minis svg {
+		width: 40px;
+		height: 28px;
+		fill: #1fa34a;
+		stroke: #1fa34a;
+		stroke-width: 3;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+	.minis svg:nth-child(1) {
+		stroke: none;
+	}
+	.minis svg:nth-child(2) {
+		fill: none;
+	}
+	.minis svg:nth-child(3) {
+		width: 28px;
+		fill: none;
+	}
+	.minis .ringbg {
+		stroke: #d9eed5;
+	}
+	.formula {
+		display: block;
+		padding: 16px 18px;
+		border-radius: 14px;
+		font-size: 15px;
+		line-height: 1.5;
+		color: #d8e6d4;
+		background: var(--bd-ink);
+		white-space: pre-wrap;
+	}
+	.formula .fn {
+		color: #7ee06a;
+		font-weight: 600;
+	}
+	.formula .str {
+		color: #f5c26b;
+	}
+	.formula .ref {
+		color: #93c5fd;
+	}
+	.bubble {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 16px 10px 10px;
+		border-radius: 18px 18px 18px 4px;
+		font-size: 15px;
+		background: #fff;
+		box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.3);
+	}
+	.bubble b {
+		color: #1d4ed8;
+		background: #dbeafe;
+		border-radius: 6px;
+		padding: 1px 5px;
+	}
+	.face {
+		display: grid;
+		place-items: center;
+		width: 30px;
+		height: 30px;
+		border-radius: 50%;
+		font-style: normal;
+		font-size: 13px;
+		font-weight: 700;
+		color: #fff;
+		background: #ec4899;
+	}
+	.form {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		width: 150px;
+		padding: 14px;
+		border-radius: 14px;
+		background: #fff;
+		box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.3);
+	}
+	.form i {
+		height: 10px;
+		border-radius: 5px;
+		background: #ececf0;
+	}
+	.form i.short {
+		width: 60%;
+	}
+	.form b {
+		align-self: flex-end;
+		width: 54px;
+		height: 18px;
+		border-radius: 9px;
+		background: #1fa34a;
+	}
+	.mask {
+		display: flex;
+		gap: 6px;
+	}
+	.mask .col {
+		display: grid;
+		place-items: center;
+		width: 38px;
+		height: 62px;
+		border-radius: 10px;
+		background: #fff;
+		box-shadow: 0 0 0 1px var(--tm-line);
+	}
+	.mask .col.hidden {
+		color: var(--tm-slate);
+		background: repeating-linear-gradient(135deg, #ececf0 0 6px, #f7f7f9 6px 12px);
+	}
+	.import {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		color: var(--tm-slate);
+	}
+	.file {
+		display: grid;
+		place-items: center;
+		width: 48px;
+		height: 58px;
+		border-radius: 8px 16px 8px 8px;
+		font-size: 12px;
+		font-weight: 800;
+		color: #fff;
+		background: #1fa34a;
+	}
+	.glyph {
+		display: grid;
+		place-items: center;
+		width: 48px;
+		height: 48px;
+		border-radius: 14px;
+		color: #1f7a14;
+		background: #fff;
+		box-shadow: 0 0 0 1px var(--tm-line);
+	}
+	.glyph.big {
+		width: 56px;
+		height: 56px;
+		border-radius: 16px;
+	}
+	.thumbs {
+		display: flex;
+	}
+	.thumbs i {
+		width: 54px;
+		height: 54px;
+		margin-right: -12px;
+		border-radius: 12px;
+		background: linear-gradient(135deg, color-mix(in srgb, var(--c) 55%, #fff), var(--c));
+		box-shadow: 0 0 0 3px var(--tm-mist);
+	}
+	.nodes {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 10px;
+	}
+	.nodes i {
+		position: relative;
+		padding: 6px 12px;
+		border-radius: 10px;
+		font-style: normal;
+		font-size: 13px;
+		font-weight: 600;
+		background: #fff;
+		box-shadow: 0 0 0 1px var(--tm-line);
+	}
+	.nodes i:nth-child(2) {
+		margin-left: 28px;
+	}
+	.nodes i:nth-child(3) {
+		margin-left: 56px;
+	}
+
+	@media (max-width: 1000px) {
+		.tiles {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@media (max-width: 640px) {
+		.tiles {
+			grid-template-columns: 1fr;
+		}
+		.tile.wide {
+			grid-column: auto;
+		}
+		.tile {
+			min-height: 0;
+		}
+	}
+</style>

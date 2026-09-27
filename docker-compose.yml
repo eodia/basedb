@@ -75,6 +75,9 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      # Another address (Azure, a gateway, a local model) and the headers it asks for.
+      BASEDB_AI_BASE_URL: ${BASEDB_AI_BASE_URL:-}
+      BASEDB_AI_HEADERS: ${BASEDB_AI_HEADERS:-}
       BASEDB_AI_QUOTA: ${BASEDB_AI_QUOTA:-}
       BASEDB_AI_FIELD_QUOTA: ${BASEDB_AI_FIELD_QUOTA:-}
       BASEDB_AI_WORKER: ${BASEDB_AI_WORKER:-}

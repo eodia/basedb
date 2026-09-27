@@ -47,7 +47,9 @@ l’écriture.
 - La [collaboration](/basedb/fonctionnalites/collaboration/) : commentaires et mentions,
   notifications, mises à jour en temps réel.
 - Des [automatisations](/basedb/fonctionnalites/automatisations/) et des
-  [interfaces](/basedb/fonctionnalites/interfaces/), les tableaux de bord d’une base.
+  [tableaux de bord](/basedb/fonctionnalites/tableaux-de-bord/) et leurs questions, construites à la souris ou en SQL.
+- Du [SQL pour chacun](/basedb/fonctionnalites/requetes-et-vues-sql/), avec ses propres droits :
+  des requêtes enregistrées sous les tables, et de vraies vues PostgreSQL rangées parmi elles.
 - Des [modèles de base](/basedb/fonctionnalites/modeles/), à prendre dans une galerie ou à
   demander à l’IA.
 - Des [environnements](/basedb/fonctionnalites/environnements/) — production, recette — que

@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "key": "base-connaissances",
   "label": "Base de connaissances",
   "summary": "Articles d'aide et questions des clients : l'IA résume, classe et propose une réponse à partir des articles.",
@@ -39,7 +39,7 @@
             { "label": "À revoir", "color": "#f59e0b" }
           ]
         },
-        { "label": "Contenu", "kind": "long_text" },
+        { "label": "Contenu", "kind": "long_text", "rich": true },
         { "label": "Auteur", "kind": "user" },
         { "label": "Mis à jour le", "kind": "date" },
         {
@@ -124,7 +124,7 @@
         "Mis à jour le": "-40d",
         "Utile": 128,
         "Auteur": "$moi",
-        "Contenu": "Rendez-vous sur la page d'inscription, saisissez votre e-mail professionnel, puis choisissez un mot de passe d'au moins douze caractères. Un e-mail de confirmation vous est envoyé : cliquez sur le lien pour activer votre compte.",
+        "Contenu": "<p>Trois étapes suffisent pour ouvrir votre compte.</p><ol><li>Rendez-vous sur la page d'inscription et saisissez votre <strong>e-mail professionnel</strong>.</li><li>Choisissez un mot de passe d'<strong>au moins douze caractères</strong>.</li><li>Ouvrez l'e-mail de confirmation et cliquez sur le lien pour activer votre compte.</li></ol><blockquote><p>Pas d'e-mail au bout de cinq minutes ? Regardez dans vos courriers indésirables avant de recommencer.</p></blockquote>",
         "Résumé": "Inscription avec un e-mail professionnel, un mot de passe solide et une confirmation par e-mail.",
         "Niveau": "Débutant"
       },
@@ -135,7 +135,7 @@
         "Statut": "Publié",
         "Mis à jour le": "-15d",
         "Utile": 64,
-        "Contenu": "Depuis Paramètres, puis Abonnement, choisissez la nouvelle formule. Le changement est immédiat ; la différence de prix est calculée au prorata sur votre prochaine facture.",
+        "Contenu": "<p>Depuis <strong>Paramètres</strong>, puis <strong>Abonnement</strong>, choisissez la nouvelle formule et confirmez.</p><ul><li>Le changement est <strong>immédiat</strong> : les fonctions de la nouvelle formule sont disponibles tout de suite.</li><li>La différence de prix est calculée <em>au prorata</em> et figure sur votre prochaine facture.</li></ul>",
         "Résumé": "Le changement de formule se fait dans Paramètres et se facture au prorata.",
         "Niveau": "Débutant"
       },
@@ -146,7 +146,7 @@
         "Statut": "Publié",
         "Mis à jour le": "-5d",
         "Utile": 97,
-        "Contenu": "Exportez votre tableur au format CSV, puis utilisez Importer dans le menu de la table. Associez chaque colonne à un champ ; les dates doivent être au format AAAA-MM-JJ.",
+        "Contenu": "<h2>Préparer le fichier</h2><p>Exportez votre tableur au format <strong>CSV</strong>. Les dates s'écrivent <code>AAAA-MM-JJ</code>, par exemple <code>2026-03-15</code>.</p><h2>Importer</h2><ol><li>Ouvrez le menu de la table, puis <strong>Importer</strong>.</li><li>Choisissez votre fichier CSV.</li><li>Associez chaque colonne à un champ, puis lancez l'import.</li></ol>",
         "Résumé": "Import d'un CSV en associant chaque colonne à un champ, dates au format AAAA-MM-JJ.",
         "Niveau": "Intermédiaire"
       },
@@ -157,7 +157,7 @@
         "Statut": "À revoir",
         "Mis à jour le": "-120d",
         "Utile": 12,
-        "Contenu": "Vérifiez que l'adresse de la source est toujours accessible, puis relancez la synchronisation. Si l'erreur persiste, contactez le support avec le message affiché.",
+        "Contenu": "<ol><li>Vérifiez que l'adresse de la source est toujours accessible.</li><li>Relancez la synchronisation.</li></ol><p>Si l'erreur persiste, contactez le support en joignant <strong>le message affiché</strong> : il nous aide à trouver la cause plus vite.</p>",
         "Résumé": "Vérifier l'accès à la source, relancer, puis contacter le support si besoin.",
         "Niveau": "Avancé"
       }

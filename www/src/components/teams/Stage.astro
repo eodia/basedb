@@ -1,0 +1,1910 @@
+---
+/**
+ * The window of the home page's story: a team's client follow-up in basedb, drawn as the
+ * application draws it — its sidebar, its bar, its tabs and toolbar, the grid with its
+ * typed columns — and the same seven rows shown five ways: the table; the table again,
+ * with the Copilot asked who to call back, whose filter it applies; a kanban; a calendar;
+ * the bars of a dashboard.
+ *
+ * Every view's geometry is worked out here, at build time, and written on each row as
+ * custom properties (`--grid-x`, `--kanban-y`…); the `data-view` its parent writes picks
+ * the set, and CSS moves the rows from one to the other. Without JavaScript, the table.
+ * Drawn at a fixed size, 1080 × 600, and scaled to the width it is given.
+ */
+import { type Locale, fill, i18n } from '../../i18n';
+
+interface Props {
+	locale: Locale;
+	/** The smallest scale: under it, the window is cut on the right rather than shrunk. */
+	minScale?: number;
+}
+
+const { locale, minScale = 0.5 } = Astro.props;
+const { t, lang } = i18n(locale);
+const s = t.teams.stage;
+
+type Status = keyof typeof s.statuses;
+type View = 'grid' | 'copilot' | 'kanban' | 'calendar' | 'dashboard';
+const VIEWS: View[] = ['grid', 'copilot', 'kanban', 'calendar', 'dashboard'];
+
+const COLORS: Record<Status, string> = {
+	contact: '#94a3b8',
+	meeting: '#3b82f6',
+	quote: '#f59e0b',
+	signed: '#10b981',
+};
+const ORDER: Status[] = ['contact', 'meeting', 'quote', 'signed'];
+
+const PEOPLE = {
+	lea: { name: 'Léa', color: '#ec4899' },
+	hugo: { name: 'Hugo', color: '#3b82f6' },
+	camille: { name: 'Camille', color: '#8b5cf6' },
+} as const;
+type Person = keyof typeof PEOPLE;
+
+/** What each client is, in the table's order; `cover`: the two colours of its card's picture. */
+const FACTS: Array<{ status: Status; owner: Person; amount: number; day: number; cover: [string, string] }> = [
+	{ status: 'signed', owner: 'lea', amount: 4200, day: 2, cover: ['#fcd9a8', '#e59f5b'] },
+	{ status: 'quote', owner: 'hugo', amount: 12500, day: 6, cover: ['#b8e3dc', '#2a9d8f'] },
+	{ status: 'meeting', owner: 'lea', amount: 6400, day: 8, cover: ['#c7d2fe', '#4f6bed'] },
+	{ status: 'contact', owner: 'camille', amount: 2100, day: 20, cover: ['#fecdd3', '#e2445c'] },
+	{ status: 'quote', owner: 'camille', amount: 7500, day: 13, cover: ['#f3ead8', '#2f4a3a'] },
+	{ status: 'signed', owner: 'hugo', amount: 22000, day: 15, cover: ['#fde68a', '#ea580c'] },
+	{ status: 'meeting', owner: 'lea', amount: 9800, day: 22, cover: ['#ddd6fe', '#7c3aed'] },
+];
+/** Who the Copilot finds to call back: a quote waiting, or a meeting to prepare. */
+const matches = (status: Status) => status === 'quote' || status === 'meeting';
+
+// ── Geometry, in the canvas's pixels: the area under the toolbar, 880 × 442, whose top
+// left corner is at (200, 158) in the window ─────────────────────────────────────────────
+const W = 880;
+const H = 442;
+const TOP = 158;
+const HEAD = 36;
+const ROW = 40;
+const LANE = (W - 28 - 36) / 4;
+const CARD = 150;
+const CELL_W = W / 7;
+const CAL_TOP = 72;
+const CELL_H = (H - CAL_TOP) / 5;
+// October 2026 begins on a Thursday: the fourth column of a week from Monday.
+const FIRST = 3;
+const TODAY = 6;
+/** The dashboard's chart card, in the window: its top, and its axis. */
+const CHART_TOP = 312;
+const BASELINE = 548 - TOP;
+const BAR_MAX = 176;
+const MAX = Math.max(...FACTS.map((f) => f.amount));
+
+const money = (n: number, compact = false) =>
+	new Intl.NumberFormat(lang, {
+		style: 'currency',
+		currency: 'EUR',
+		...(compact ? { notation: 'compact', maximumFractionDigits: 1 } : { minimumFractionDigits: 2 }),
+	}).format(n);
+const dateOf = (d: number) =>
+	new Intl.DateTimeFormat(lang, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }).format(
+		new Date(Date.UTC(2026, 9, d)),
+	);
+const monthTitle = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+	new Date(Date.UTC(2026, 9, 1)),
+);
+const weekdays = Array.from({ length: 7 }, (_, i) =>
+	new Intl.DateTimeFormat(lang, { weekday: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, 8, 28 + i))),
+);
+const percent = new Intl.NumberFormat(lang, { style: 'percent', maximumFractionDigits: 0 });
+
+const byAmount = FACTS.map((f, i) => ({ i, amount: f.amount }))
+	.sort((a, b) => b.amount - a.amount)
+	.map((r) => r.i);
+const found = FACTS.map((f, i) => ({ i, hit: matches(f.status) }))
+	.filter((r) => r.hit)
+	.map((r) => r.i);
+
+const rows = s.clients.map((name, i) => {
+	const fact = FACTS[i]!;
+	const lane = ORDER.indexOf(fact.status);
+	const inLane = FACTS.slice(0, i).filter((f) => f.status === fact.status).length;
+	const cell = FIRST + fact.day - 1;
+	const bar = byAmount.indexOf(i);
+	const barH = Math.max(8, Math.round((fact.amount / MAX) * BAR_MAX));
+	const hit = matches(fact.status);
+	const grid: [number, number, number, number] = [0, HEAD + i * ROW, W, ROW];
+	const geometry: Record<View, [number, number, number, number]> = {
+		grid,
+		copilot: hit ? [0, HEAD + found.indexOf(i) * ROW, W, ROW] : grid,
+		kanban: [14 + lane * (LANE + 12) + 8, 58 + inLane * (CARD + 10), LANE - 16, CARD],
+		calendar: [(cell % 7) * CELL_W + 5, CAL_TOP + Math.floor(cell / 7) * CELL_H + 28, CELL_W - 10, 22],
+		dashboard: [226 + bar * 58, BASELINE - barH, 34, barH],
+	};
+	const vars = [`--i:${i}`, `--c:${COLORS[fact.status]}`, `--c1:${fact.cover[0]}`, `--c2:${fact.cover[1]}`];
+	for (const view of VIEWS) {
+		const [x, y, w, h] = geometry[view];
+		vars.push(`--${view}-x:${x}px`, `--${view}-y:${y}px`, `--${view}-w:${w}px`, `--${view}-h:${h}px`);
+	}
+	const person = PEOPLE[fact.owner];
+	return {
+		name,
+		...fact,
+		hit,
+		person,
+		date: dateOf(fact.day),
+		amountText: money(fact.amount),
+		compact: money(fact.amount, true),
+		style: vars.join(';'),
+		// The card's description: its text, the row's values cited in bold.
+		card: s.card
+			.split(/(\{owner\}|\{date\})/)
+			.map((part) =>
+				part === '{owner}' ? { bold: person.name } : part === '{date}' ? { bold: dateOf(fact.day) } : { text: part },
+			),
+	};
+});
+
+const signed = FACTS.filter((f) => f.status === 'signed');
+const kpis = [
+	{ label: s.kpis.signed, value: money(signed.reduce((n, f) => n + f.amount, 0)) },
+	{ label: s.kpis.pending, value: money(FACTS.filter((f) => f.status === 'quote').reduce((n, f) => n + f.amount, 0)) },
+	{ label: s.kpis.rate, value: percent.format(signed.length / FACTS.length) },
+];
+const lanes = ORDER.map((status, i) => ({
+	status,
+	label: s.statuses[status],
+	count: FACTS.filter((f) => f.status === status).length,
+	x: 14 + i * (LANE + 12),
+}));
+const days = Array.from({ length: 35 }, (_, i) => {
+	const date = new Date(Date.UTC(2026, 8, 28 + i));
+	return {
+		n: date.getUTCDate(),
+		out: date.getUTCMonth() !== 9,
+		today: date.getUTCMonth() === 9 && date.getUTCDate() === TODAY,
+		x: (i % 7) * CELL_W,
+		y: CAL_TOP + Math.floor(i / 7) * CELL_H,
+	};
+});
+/** The chart's lines, placed in its card. */
+const rules = [5000, 10000, 15000, 20000].map((v) => ({
+	top: BASELINE - (v / MAX) * BAR_MAX + TOP - CHART_TOP,
+	label: money(v, true),
+}));
+const axisTop = BASELINE + TOP - CHART_TOP;
+// The ring of the dashboard: the clients by stage.
+let turned = 0;
+const ring = ORDER.map((status) => {
+	const share = (FACTS.filter((f) => f.status === status).length / FACTS.length) * 100;
+	const offset = -turned;
+	turned += share;
+	return { status, share, offset, color: COLORS[status], label: s.statuses[status] };
+});
+
+/** Line icons of the application's own vocabulary, 24 × 24. */
+const I = {
+	panel: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>',
+	table: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>',
+	kanban: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/>',
+	calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+	dashboard:
+		'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+	zap: '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+	sparkles: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M17 5h4"/>',
+	bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+	search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+	filter: '<path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/>',
+	eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+	layers: '<path d="m12 2 10 5-10 5L2 7l10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+	palette:
+		'<circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2a10 10 0 0 0 0 20c.9 0 1.6-.7 1.6-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.7 1.6-1.7H16a6 6 0 0 0 6-6C22 6 17.5 2 12 2z"/>',
+	sort: '<path d="m3 16 4 4 4-4M7 20V4M21 8l-4-4-4 4M17 4v16"/>',
+	sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+	plus: '<path d="M12 5v14M5 12h14"/>',
+	chevron: '<path d="m6 9 6 6 6-6"/>',
+	chevronsV: '<path d="m7 15 5 5 5-5M7 9l5-5 5 5"/>',
+	left: '<path d="m15 18-6-6 6-6"/>',
+	right: '<path d="m9 18 6-6-6-6"/>',
+	db: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>',
+	building:
+		'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>',
+	contact: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+	receipt: '<path d="M4 2v20l3-2 3 2 3-2 3 2 3-2 3 2V2l-3 2-3-2-3 2-3-2-3 2z"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+	text: '<path d="M4 7V4h16v3M9 20h6M12 4v16"/>',
+	select: '<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5L16 9.5"/>',
+	user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+	money: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
+	grip: '<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>',
+	refresh: '<path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+	share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>',
+	pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+	compass: '<circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/>',
+	chart: '<path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-9"/>',
+	close: '<path d="M18 6 6 18M6 6l12 12"/>',
+	up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+	check: '<path d="M20 6 9 17l-5-5"/>',
+	loader: '<path d="M21 12a9 9 0 1 1-6.22-8.56"/>',
+} as const;
+const icon = (name: keyof typeof I, size = 15, width = 1.8) =>
+	`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[name]}</svg>`;
+const TABLE_ICONS = [
+	{ name: 'building', color: '#3b82f6' },
+	{ name: 'contact', color: '#8b5cf6' },
+	{ name: 'receipt', color: '#f59e0b' },
+] as const;
+const tableIcon = (i: number, size = 15) => {
+	const t = TABLE_ICONS[i % TABLE_ICONS.length]!;
+	return `<span style="display:inline-flex;color:${t.color}">${icon(t.name, size)}</span>`;
+};
+const columns = [
+	{ key: 'name', icon: 'text', label: s.columns.name },
+	{ key: 'status', icon: 'select', label: s.columns.status },
+	{ key: 'owner', icon: 'user', label: s.columns.owner },
+	{ key: 'amount', icon: 'money', label: s.columns.amount },
+	{ key: 'next', icon: 'calendar', label: s.columns.next },
+] as const;
+/** The views that show the table, its tabs and its toolbar. */
+const TABLE_VIEWS = 'grid copilot kanban calendar';
+---
+
+<div class="frame" data-frame data-min={minScale}>
+	<div class="stage" data-stage data-view="grid" role="img" aria-label={s.aria}>
+		<!-- The window -->
+		<div class="chrome">
+			<span class="dots"><i></i><i></i><i></i></span>
+			<span class="url">{t.hero.demo.url}</span>
+		</div>
+
+		<!-- The sidebar, as the application has it -->
+		<aside class="side">
+			<div class="project">
+				<span class="mark" set:html={icon('dashboard', 15, 2)} />
+				<span class="who">
+					<b>{s.project}</b>
+					<small>{s.projectMeta}</small>
+				</span>
+				<span class="muted" set:html={icon('chevronsV', 14)} />
+			</div>
+			<div class="navfilter">
+				<span class="field"><span class="muted" set:html={icon('search', 13)} /><span class="hint">{s.filterNav}</span></span>
+				<span class="muted" set:html={icon('plus', 15)} />
+			</div>
+			<div class="tree">
+				<p class="base">
+					<span class="muted" set:html={icon('chevron', 13)} />
+					<span class="muted" set:html={icon('db', 15)} />
+					{s.base}
+				</p>
+				{
+					s.tables.map((table, i) => (
+						<p class:list={['table', { first: i === 0 }]}>
+							<Fragment set:html={tableIcon(i)} />
+							{table}
+						</p>
+					))
+				}
+				<p class="base closed">
+					<span class="muted" set:html={icon('right', 13)} />
+					<span class="muted" set:html={icon('db', 15)} />
+					{s.otherBase}
+				</p>
+			</div>
+			<div class="screens">
+				<p class="label">{s.baseSection}</p>
+				<p class="screen dash"><span class="muted" set:html={icon('dashboard', 15)} />{s.screens[0]}</p>
+				<p class="screen"><span class="muted" set:html={icon('zap', 15)} />{s.screens[1]}</p>
+			</div>
+			<div class="me">
+				<i class="face" style={`background:${PEOPLE.lea.color}`}>LM</i>
+				<b>{s.user}</b>
+				<span class="muted" set:html={icon('chevronsV', 14)} />
+			</div>
+		</aside>
+
+		<!-- The bar -->
+		<header class="top">
+			<span class="muted" set:html={icon('panel', 16)} />
+			<span class="crumbs">
+				<span class="muted">{s.base}</span>
+				<span class="muted">/</span>
+				<span class="stack">
+					<b data-show={TABLE_VIEWS}>{s.tables[0]}</b>
+					<b data-show="dashboard">{s.screens[0]}</b>
+				</span>
+			</span>
+			<span class="faces">{Object.values(PEOPLE).map((p) => <i style={`background:${p.color}`}>{p.name.charAt(0)}</i>)}</span>
+			<span class="bell"><span set:html={icon('bell', 16)} /><em>2</em></span>
+			<span class="copilot-button"><span set:html={icon('sparkles', 15)} />Copilot</span>
+		</header>
+
+		<!-- The table's tabs and its toolbar -->
+		<div class="tabs" data-show={TABLE_VIEWS}>
+			{
+				s.tables.map((table, i) => (
+					<span class:list={['tab', { on: i === 0 }]}>
+						<Fragment set:html={tableIcon(i, 14)} />
+						{table}
+					</span>
+				))
+			}
+			<span class="tab plus" set:html={icon('plus', 15)} />
+		</div>
+		<div class="toolbar" data-show={TABLE_VIEWS}>
+			<span class="switch">
+				<span class="stack">
+					<span class="viewname" data-show="grid copilot"><span class="green" set:html={icon('table', 15)} />{s.views.grid}</span>
+					<span class="viewname" data-show="kanban"><span class="green" set:html={icon('kanban', 15)} />{s.views.kanban}</span>
+					<span class="viewname" data-show="calendar"><span class="green" set:html={icon('calendar', 15)} />{s.views.calendar}</span>
+				</span>
+				<span class="muted" set:html={icon('chevron', 13)} />
+			</span>
+			<span class="stack">
+				<span class="toolset" data-show="grid copilot">
+					<span class="tool filterbox">
+						<span class="plain"><span set:html={icon('filter', 15)} />{s.toolbar.filter}</span>
+						<span class="filtered"><span set:html={icon('filter', 15)} />{fill(s.copilot.filtered, { n: found.length })}</span>
+					</span>
+					<span class="tool"><span set:html={icon('eye', 15)} />{s.toolbar.columns}</span>
+					<span class="tool"><span set:html={icon('layers', 15)} />{s.toolbar.group}</span>
+					<span class="tool"><span set:html={icon('palette', 15)} />{s.toolbar.colors}</span>
+				</span>
+				<span class="toolset" data-show="kanban calendar">
+					<span class="tool"><span set:html={icon('filter', 15)} />{s.toolbar.filter}</span>
+					<span class="tool"><span set:html={icon('sort', 15)} />{s.toolbar.sort}</span>
+					<span class="tool"><span set:html={icon('sliders', 15)} />{s.toolbar.configure}</span>
+				</span>
+			</span>
+			<span class="search"><span set:html={icon('search', 14)} />{s.search}</span>
+			<span class="add"><span set:html={icon('plus', 15, 2.2)} />{s.add}</span>
+		</div>
+
+		<!-- The dashboard's screen: the list of dashboards, and the one open -->
+		<div class="board" data-show="dashboard">
+			<div class="boards">
+				<p class="label">{s.dashboards}<span set:html={icon('plus', 14)} /></p>
+				<p class="item on"><span class="muted" set:html={icon('dashboard', 15)} />{s.dashboard}</p>
+				<p class="label">{s.questions}<span set:html={icon('plus', 14)} /></p>
+				<p class="item"><span class="muted" set:html={icon('chart', 15)} />{s.chart}</p>
+				<p class="explore"><span set:html={icon('compass', 15)} />{s.explore}</p>
+			</div>
+			<div class="page">
+				<div class="head">
+					<div>
+						<b>{s.dashboard}</b>
+						<small>{s.dashboardText}</small>
+					</div>
+					<span class="actions">
+						<span class="muted" set:html={icon('refresh', 15)} />
+						<span class="btn"><span set:html={icon('share', 14)} />{s.share}</span>
+						<span class="btn"><span set:html={icon('pen', 14)} />{s.edit}</span>
+					</span>
+				</div>
+				<div class="dtabs">
+					{s.dashboardTabs.map((tab, i) => <span class:list={{ on: i === 0 }}>{tab}</span>)}
+				</div>
+				<div class="chips">
+					<span class="chip on">
+						<span set:html={icon('calendar', 13)} />
+						<em>{s.period}</em>
+						{s.thisYear}
+						<span class="muted" set:html={icon('close', 11)} />
+					</span>
+					<span class="chip">
+						<span set:html={icon('filter', 13)} />
+						{s.columns.status}
+						<span class="muted" set:html={icon('chevron', 11)} />
+					</span>
+				</div>
+				<div class="kpis">
+					{
+						kpis.map((k) => (
+							<div class="kpi">
+								<span>{k.label}</span>
+								<b>{k.value}</b>
+							</div>
+						))
+					}
+				</div>
+				<div class="card chart">
+					<span class="title">{s.chart}</span>
+					{
+						rules.map((r) => (
+							<span class="rule" style={`top:${r.top}px`}>
+								<em>{r.label}</em>
+							</span>
+						))
+					}
+					<span class="axis" style={`top:${axisTop}px`} />
+				</div>
+				<div class="card donut">
+					<span class="title">{s.byStage}</span>
+					<svg viewBox="0 0 42 42" aria-hidden="true">
+						<circle cx="21" cy="21" r="15.915" class="hole" />
+						{ring.map((r) => <circle cx="21" cy="21" r="15.915" class="seg" stroke={r.color} style={`--share:${r.share};--offset:${r.offset}`} />)}
+					</svg>
+					<ul>
+						{ring.map((r) => <li style={`--c:${r.color}`}>{r.label}</li>)}
+					</ul>
+				</div>
+			</div>
+		</div>
+
+		<!-- The area under the toolbar, where the rows are -->
+		<div class="canvas">
+			<div class="layer grid" data-show="grid copilot">
+				<div class="ghead">
+					<span class="c-check"><i class="box"></i></span>
+					<span class="c-num">#</span>
+					{
+						columns.map((c) => (
+							<span class={`c-${c.key}`}>
+								<span class="grip" set:html={icon('grip', 12)} />
+								<span class="type" set:html={icon(c.icon, 14)} />
+								{c.label}
+								<span class="sort" set:html={icon('chevronsV', 12)} />
+							</span>
+						))
+					}
+				</div>
+				<div class="gadd">
+					<span class="c-check" set:html={icon('plus', 15)} />
+					<span class="c-name">{s.addRow}</span>
+				</div>
+				<div class="gfoot">
+					<span>{s.perPage}</span>
+					<span class="select">100<span set:html={icon('chevron', 11)} /></span>
+					<span class="stack count">
+						<span data-show="grid">1–7</span>
+						<span class="later" data-show="copilot">1–{found.length}</span>
+					</span>
+				</div>
+			</div>
+
+			<div class="layer kanban" data-show="kanban">
+				{
+					lanes.map((lane) => (
+						<div class="lane" style={`left:${lane.x}px;width:${LANE}px;--c:${COLORS[lane.status]}`}>
+							<p class="lane-head">
+								<i class="chip-s">{lane.label}</i>
+								<em>{lane.count}</em>
+								<span class="muted" set:html={icon('plus', 14)} />
+							</p>
+							<p class="lane-add">
+								<span set:html={icon('plus', 13)} />
+								{s.addCard}
+							</p>
+						</div>
+					))
+				}
+			</div>
+
+			<div class="layer calendar" data-show="calendar">
+				<div class="calbar">
+					<span class="today">{s.today}</span>
+					<span class="muted" set:html={icon('left', 16)} />
+					<span class="muted" set:html={icon('right', 16)} />
+					<b>{monthTitle}</b>
+					<span class="modes"><i class="on">{s.month}</i><i>{s.week}</i></span>
+				</div>
+				{weekdays.map((d, i) => <span class="wd" style={`left:${i * CELL_W}px;width:${CELL_W}px`}>{d}</span>)}
+				{
+					days.map((d) => (
+						<span class:list={['day', { out: d.out }]} style={`left:${d.x}px;top:${d.y}px;width:${CELL_W}px;height:${CELL_H}px`}>
+							<i class:list={{ today: d.today }}>{d.n}</i>
+						</span>
+					))
+				}
+			</div>
+
+			<!-- The clients: one element each, whatever the view -->
+			{
+				rows.map((r, i) => (
+					<div class="rec" style={r.style} data-match={r.hit ? '1' : '0'}>
+						<div class="r-row" data-show="grid copilot">
+							<span class="c-check">
+								<i class="box" />
+							</span>
+							<span class="c-num">{i + 1}</span>
+							<span class="c-name">{r.name}</span>
+							<span class="c-status">
+								<i class="chip-s">{s.statuses[r.status]}</i>
+							</span>
+							<span class="c-owner">
+								<i class="face" style={`background:${r.person.color}`}>
+									{r.person.name.charAt(0)}
+								</i>
+								{r.person.name}
+							</span>
+							<span class="c-amount">{r.amountText}</span>
+							<span class="c-next">{r.date}</span>
+						</div>
+						<div class="r-card" data-show="kanban">
+							<span class="cover" />
+							<span class="body">
+								<b>{r.name}</b>
+								<span class="desc">{r.card.map((part) => ('bold' in part ? <strong>{part.bold}</strong> : part.text))}</span>
+								<span class="field">
+									<span set:html={icon('money', 13)} />
+									{r.amountText}
+								</span>
+							</span>
+						</div>
+						<div class="r-chip" data-show="calendar">
+							{r.name}
+						</div>
+						<div class="r-bar" data-show="dashboard">
+							<span class="value">{r.compact}</span>
+							<span class="name">{r.name}</span>
+						</div>
+					</div>
+				))
+			}
+		</div>
+
+		<!-- The Copilot, asked who to call back -->
+		<aside class="copilot" data-show="copilot">
+			<p class="c-head">
+				<span class="green" set:html={icon('sparkles', 16)} />
+				<b>Copilot</b>
+				<span class="muted">· {s.base}</span>
+				<span class="muted end" set:html={icon('close', 15)} />
+			</p>
+			<div class="c-body">
+				<p class="ask">{s.copilot.question}</p>
+				<p class="thinking"><span class="spin" set:html={icon('loader', 14, 2)} />{s.copilot.thinking}</p>
+				<p class="answer">{s.copilot.answer}</p>
+				<div class="action">
+					<p class="a-head"><span set:html={icon('filter', 14)} />{s.copilot.card}</p>
+					<code>{s.copilot.filter}</code>
+					<span class="stack">
+						<span class="apply">{s.copilot.apply}</span>
+						<span class="applied"><span set:html={icon('check', 14, 2.4)} />{s.copilot.applied}</span>
+					</span>
+				</div>
+			</div>
+			<div class="c-input">
+				<span>{s.copilot.placeholder}</span>
+				<i set:html={icon('up', 15, 2.4)} />
+			</div>
+		</aside>
+	</div>
+</div>
+
+<script>
+	const frame = document.querySelector<HTMLElement>('[data-frame]');
+	if (frame !== null) {
+		// Drawn at 1080 × 600, shown at the width it is given — never under its smallest
+		// scale: below it, the window is cut on the right rather than shrunk to nothing.
+		const min = Number(frame.dataset.min ?? 0.5);
+		const fit = () => frame.style.setProperty('--k', String(Math.min(1, Math.max(min, frame.clientWidth / 1080))));
+		fit();
+		new ResizeObserver(fit).observe(frame);
+	}
+</script>
+
+<style>
+	.frame {
+		--k: 1;
+		--ink: #18181b;
+		--soft: #71717a;
+		--line: #e4e4e7;
+		--tint: #f4f4f5;
+		--green: #2da31e;
+		position: relative;
+		width: 100%;
+		max-width: 1080px;
+		height: calc(600px * var(--k));
+		margin: 0 auto;
+		overflow: hidden;
+		border-radius: calc(14px * var(--k));
+		background: #fff;
+		box-shadow: var(--bd-shadow-lg);
+		border: 1px solid rgba(16, 24, 16, 0.1);
+	}
+	.stage {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 1080px;
+		height: 600px;
+		transform: scale(var(--k));
+		transform-origin: 0 0;
+		font-family: var(--bd-font-sans);
+		font-size: 13px;
+		color: var(--ink);
+		background: #fff;
+	}
+	.stage p {
+		margin: 0;
+	}
+	.stage :global(svg) {
+		flex-shrink: 0;
+	}
+	.muted {
+		display: inline-flex;
+		color: var(--soft);
+	}
+	.green {
+		display: inline-flex;
+		color: var(--green);
+	}
+	/* Labels that change with the view sit in the same cell and cross-fade. */
+	.stack {
+		display: inline-grid;
+	}
+	.stack > * {
+		grid-area: 1 / 1;
+	}
+
+	/* What each view shows: everything that belongs to some views carries `data-show`. */
+	[data-show] {
+		opacity: 0;
+		visibility: hidden;
+		transition:
+			opacity 0.45s ease,
+			visibility 0.45s;
+	}
+	.stage[data-view='grid'] [data-show~='grid'],
+	.stage[data-view='copilot'] [data-show~='copilot'],
+	.stage[data-view='kanban'] [data-show~='kanban'],
+	.stage[data-view='calendar'] [data-show~='calendar'],
+	.stage[data-view='dashboard'] [data-show~='dashboard'] {
+		opacity: 1;
+		visibility: visible;
+	}
+
+	/* The window */
+	.chrome {
+		position: absolute;
+		inset: 0 0 auto 0;
+		display: flex;
+		align-items: center;
+		height: 30px;
+		padding: 0 14px;
+		border-bottom: 1px solid var(--line);
+		background: #f4f4f5;
+	}
+	.dots {
+		display: flex;
+		gap: 6px;
+	}
+	.dots i {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background: #ff5f57;
+	}
+	.dots i:nth-child(2) {
+		background: #febc2e;
+	}
+	.dots i:nth-child(3) {
+		background: #28c840;
+	}
+	.url {
+		position: absolute;
+		left: 50%;
+		padding: 2px 14px;
+		border: 1px solid var(--line);
+		border-radius: 6px;
+		font-size: 11px;
+		color: var(--soft);
+		background: #fff;
+		transform: translateX(-50%);
+	}
+
+	/* The sidebar */
+	.side {
+		position: absolute;
+		top: 30px;
+		left: 0;
+		bottom: 0;
+		display: flex;
+		flex-direction: column;
+		width: 200px;
+		padding: 10px 10px 8px;
+		border-right: 1px solid var(--line);
+		background: #fff;
+	}
+	.project {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		padding: 4px 4px 10px;
+	}
+	.mark {
+		display: grid;
+		place-items: center;
+		width: 30px;
+		height: 30px;
+		border-radius: 8px;
+		color: #fff;
+		background: #18181b;
+	}
+	.who {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		min-width: 0;
+	}
+	.who small {
+		font-size: 11px;
+		color: var(--soft);
+	}
+	/* One line each, as in the application, whatever the language's length. */
+	.who b,
+	.who small {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.navfilter {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 10px;
+	}
+	.navfilter .field {
+		display: flex;
+		flex: 1;
+		align-items: center;
+		gap: 6px;
+		height: 28px;
+		padding: 0 8px;
+		overflow: hidden;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		font-size: 11.5px;
+		white-space: nowrap;
+		color: #a1a1aa;
+	}
+	/* A placeholder longer than the field, in some languages: cut with an ellipsis. */
+	.navfilter .hint {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.tree p {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		padding: 6px;
+		border-radius: 7px;
+		white-space: nowrap;
+	}
+	.base {
+		font-weight: 600;
+	}
+	.base.closed {
+		font-weight: 500;
+		color: #3f3f46;
+	}
+	.tree .table {
+		margin-left: 18px;
+		color: #3f3f46;
+		transition: background-color 0.4s ease;
+	}
+	.stage:not([data-view='dashboard']) .table.first {
+		font-weight: 600;
+		color: var(--ink);
+		background: var(--tint);
+	}
+	.screens {
+		margin-top: auto;
+		padding: 4px;
+		border: 1px solid var(--line);
+		border-radius: 10px;
+	}
+	.screens .label {
+		margin: 4px 6px;
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--soft);
+	}
+	.screen {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px;
+		border-radius: 7px;
+		color: #3f3f46;
+		transition: background-color 0.4s ease;
+	}
+	.stage[data-view='dashboard'] .screen.dash {
+		font-weight: 600;
+		color: var(--ink);
+		background: var(--tint);
+	}
+	.me {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-top: 8px;
+		padding: 8px 4px 0;
+		border-top: 1px solid var(--line);
+	}
+	.me b {
+		flex: 1;
+		font-size: 12.5px;
+	}
+	.face {
+		display: inline-grid;
+		flex-shrink: 0;
+		place-items: center;
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		font-style: normal;
+		font-size: 9.5px;
+		font-weight: 700;
+		color: #fff;
+	}
+	.me .face {
+		width: 26px;
+		height: 26px;
+		font-size: 10px;
+	}
+
+	/* The bar */
+	.top {
+		position: absolute;
+		top: 30px;
+		left: 200px;
+		right: 0;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		height: 46px;
+		padding: 0 14px;
+		border-bottom: 1px solid var(--line);
+		background: #fff;
+	}
+	.crumbs {
+		display: flex;
+		flex: 1;
+		align-items: center;
+		gap: 8px;
+	}
+	.faces {
+		display: flex;
+	}
+	.faces i {
+		display: grid;
+		place-items: center;
+		width: 22px;
+		height: 22px;
+		margin-left: -5px;
+		border-radius: 50%;
+		font-style: normal;
+		font-size: 10px;
+		font-weight: 700;
+		color: #fff;
+		box-shadow: 0 0 0 2px #fff;
+	}
+	.bell {
+		position: relative;
+		display: grid;
+		place-items: center;
+		width: 30px;
+		height: 30px;
+		color: #3f3f46;
+	}
+	.bell em {
+		position: absolute;
+		top: 1px;
+		right: 0;
+		display: grid;
+		place-items: center;
+		min-width: 15px;
+		height: 15px;
+		border-radius: 999px;
+		font-style: normal;
+		font-size: 9px;
+		font-weight: 700;
+		color: #fff;
+		background: var(--green);
+	}
+	.copilot-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 11px;
+		border-radius: 8px;
+		font-weight: 600;
+		transition:
+			color 0.35s ease,
+			background-color 0.35s ease;
+	}
+	.stage[data-view='copilot'] .copilot-button {
+		color: #fff;
+		background: var(--green);
+	}
+
+	/* Tabs and toolbar */
+	.tabs {
+		position: absolute;
+		top: 76px;
+		left: 200px;
+		right: 0;
+		display: flex;
+		align-items: stretch;
+		height: 36px;
+		padding: 0 10px;
+		border-bottom: 1px solid var(--line);
+		background: #f8f8f9;
+	}
+	.tab {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 0 16px;
+		color: var(--soft);
+	}
+	.tab.on {
+		font-weight: 500;
+		color: var(--ink);
+		background: #fff;
+		box-shadow:
+			inset 0 -2px 0 var(--green),
+			1px 0 0 var(--line),
+			-1px 0 0 var(--line);
+	}
+	.toolbar {
+		position: absolute;
+		top: 112px;
+		left: 200px;
+		right: 0;
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		height: 46px;
+		padding: 0 12px;
+		border-bottom: 1px solid var(--line);
+		background: #fff;
+	}
+	.switch {
+		display: inline-flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 160px;
+		height: 30px;
+		padding: 0 8px 0 10px;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+	}
+	.viewname {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		font-weight: 600;
+		white-space: nowrap;
+	}
+	.toolset {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+	}
+	.tool {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-weight: 500;
+		white-space: nowrap;
+		color: #27272a;
+	}
+	.filterbox {
+		display: inline-grid;
+	}
+	.filterbox > span {
+		display: inline-flex;
+		grid-area: 1 / 1;
+		align-items: center;
+		gap: 6px;
+		transition: opacity 0.35s ease;
+	}
+	.filtered {
+		margin: -4px 0 -4px -9px;
+		padding: 4px 9px;
+		border-radius: 999px;
+		color: #15803d;
+		background: #dcfce7;
+		opacity: 0;
+	}
+	.stage[data-view='copilot'] .filtered {
+		opacity: 1;
+		transition-delay: 3.4s;
+	}
+	.stage[data-view='copilot'] .plain {
+		opacity: 0;
+		transition-delay: 3.4s;
+	}
+	.search {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		width: 156px;
+		height: 30px;
+		margin-left: auto;
+		padding: 0 10px;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		color: #a1a1aa;
+	}
+	.add {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		height: 30px;
+		padding: 0 12px;
+		border-radius: 8px;
+		font-weight: 600;
+		color: #fff;
+		background: var(--green);
+	}
+
+	/* The rows' area */
+	.canvas {
+		position: absolute;
+		top: 158px;
+		left: 200px;
+		z-index: 2;
+		width: 880px;
+		height: 442px;
+	}
+	.layer {
+		position: absolute;
+		inset: 0;
+	}
+
+	/* The grid */
+	.ghead,
+	.gadd,
+	.r-row {
+		position: absolute;
+		left: 0;
+		right: 0;
+		height: 40px;
+	}
+	.ghead {
+		top: 0;
+		height: 36px;
+		border-bottom: 1px solid var(--line);
+		font-weight: 600;
+		color: #27272a;
+		background: #fafafa;
+	}
+	.gadd {
+		top: 316px;
+		border-bottom: 1px solid var(--line);
+		color: #a1a1aa;
+	}
+	.ghead > span,
+	.gadd > span,
+	.r-row > span {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		padding: 0 10px;
+		overflow: hidden;
+		white-space: nowrap;
+		box-shadow: inset -1px 0 0 #f0f0f2;
+	}
+	.ghead > .c-check,
+	.gadd > .c-check,
+	.r-row > .c-check,
+	.ghead > .c-num,
+	.r-row > .c-num {
+		justify-content: center;
+		padding: 0;
+	}
+	.c-check {
+		left: 0;
+		width: 34px;
+	}
+	.c-num {
+		left: 34px;
+		width: 34px;
+		font-size: 11.5px;
+		font-weight: 500;
+		color: #a1a1aa;
+	}
+	.c-name {
+		left: 68px;
+		width: 214px;
+	}
+	.c-status {
+		left: 282px;
+		width: 150px;
+	}
+	.c-owner {
+		left: 432px;
+		width: 150px;
+	}
+	.c-amount {
+		left: 582px;
+		width: 136px;
+		font-variant-numeric: tabular-nums;
+	}
+	.r-row > .c-amount {
+		justify-content: flex-end;
+	}
+	.c-next {
+		left: 718px;
+		width: 162px;
+		font-variant-numeric: tabular-nums;
+	}
+	.grip {
+		display: inline-flex;
+		margin-left: -4px;
+		color: #d4d4d8;
+	}
+	.type {
+		display: inline-flex;
+		color: var(--soft);
+	}
+	.sort {
+		display: inline-flex;
+		margin-left: auto;
+		color: #d4d4d8;
+	}
+	.box {
+		width: 14px;
+		height: 14px;
+		border-radius: 4px;
+		box-shadow: inset 0 0 0 1.5px #d4d4d8;
+	}
+	.gfoot {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		height: 38px;
+		padding: 0 14px;
+		border-top: 1px solid var(--line);
+		font-size: 12px;
+		color: var(--soft);
+	}
+	.select {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 3px 8px;
+		border: 1px solid var(--line);
+		border-radius: 7px;
+		color: var(--ink);
+	}
+	.count {
+		margin-left: auto;
+	}
+	.stage[data-view='copilot'] .later {
+		transition-delay: 3.4s;
+	}
+	.chip-s {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 2px 9px;
+		border-radius: 999px;
+		font-style: normal;
+		font-size: 12px;
+		font-weight: 500;
+		color: color-mix(in srgb, var(--c) 72%, #000);
+		background: color-mix(in srgb, var(--c) 14%, #fff);
+	}
+	.chip-s::before {
+		content: '';
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--c);
+	}
+
+	/* The kanban */
+	.lane {
+		position: absolute;
+		top: 14px;
+		height: 414px;
+		border-radius: 12px;
+		background: color-mix(in srgb, var(--c) 7%, #f7f7f8);
+		box-shadow: inset 0 3px 0 var(--c);
+	}
+	.lane-head {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 12px 10px 0;
+	}
+	.lane-head em {
+		display: grid;
+		place-items: center;
+		min-width: 20px;
+		height: 20px;
+		padding: 0 6px;
+		border-radius: 999px;
+		font-style: normal;
+		font-size: 11px;
+		color: var(--soft);
+		background: #fff;
+	}
+	.lane-head .muted {
+		margin-left: auto;
+	}
+	.lane-add {
+		position: absolute;
+		left: 12px;
+		bottom: 10px;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		color: var(--soft);
+	}
+
+	/* The calendar */
+	.calbar {
+		position: absolute;
+		inset: 0 0 auto 0;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		height: 44px;
+		padding: 0 12px;
+	}
+	.today {
+		padding: 4px 10px;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		font-weight: 600;
+	}
+	.calbar b {
+		font-size: 15px;
+		text-transform: capitalize;
+	}
+	.modes {
+		display: flex;
+		margin-left: auto;
+		padding: 2px;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+	}
+	.modes i {
+		padding: 3px 10px;
+		border-radius: 6px;
+		font-style: normal;
+		color: var(--soft);
+	}
+	.modes i.on {
+		font-weight: 600;
+		color: var(--ink);
+		background: var(--tint);
+	}
+	.wd,
+	.day {
+		position: absolute;
+	}
+	.wd {
+		top: 44px;
+		display: flex;
+		align-items: center;
+		height: 28px;
+		padding-left: 10px;
+		border-top: 1px solid var(--line);
+		border-bottom: 1px solid var(--line);
+		font-size: 10.5px;
+		font-weight: 600;
+		letter-spacing: 0.03em;
+		text-transform: uppercase;
+		color: var(--soft);
+		background: #fafafa;
+	}
+	.day {
+		box-shadow:
+			inset -1px 0 0 var(--line),
+			inset 0 -1px 0 var(--line);
+	}
+	.day i {
+		display: inline-grid;
+		place-items: center;
+		width: 22px;
+		height: 22px;
+		margin: 4px 0 0 6px;
+		border-radius: 50%;
+		font-style: normal;
+		font-size: 11.5px;
+		color: #27272a;
+	}
+	.day.out {
+		background: #fafafa;
+	}
+	.day.out i {
+		color: #a1a1aa;
+	}
+	.day i.today {
+		font-weight: 700;
+		color: #fff;
+		background: var(--green);
+	}
+
+	/* The dashboard's screen: its parts placed where the bars expect them */
+	.board {
+		position: absolute;
+		top: 76px;
+		left: 200px;
+		right: 0;
+		bottom: 0;
+		z-index: 1;
+		display: flex;
+		background: #fff;
+	}
+	.boards {
+		display: flex;
+		flex-direction: column;
+		width: 170px;
+		padding: 14px 10px;
+		border-right: 1px solid var(--line);
+		background: #fcfcfc;
+	}
+	.boards .label {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin: 6px 6px 8px;
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--soft);
+	}
+	.boards .item {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 0 0 12px;
+		padding: 6px;
+		border-radius: 7px;
+		white-space: nowrap;
+		color: #3f3f46;
+	}
+	.boards .item.on {
+		font-weight: 600;
+		color: var(--ink);
+		background: var(--tint);
+	}
+	.explore {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-top: auto !important;
+		padding: 10px 6px 0;
+		border-top: 1px solid var(--line);
+		color: var(--soft);
+	}
+	.page {
+		position: relative;
+		flex: 1;
+	}
+	.page > * {
+		position: absolute;
+		left: 18px;
+		right: 18px;
+	}
+	.head {
+		top: 14px;
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+	}
+	.head b {
+		display: block;
+		font-size: 20px;
+		letter-spacing: -0.02em;
+	}
+	.head small {
+		display: block;
+		margin-top: 2px;
+		color: var(--soft);
+	}
+	.actions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 5px 10px;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		font-weight: 500;
+	}
+	.dtabs {
+		top: 70px;
+		display: flex;
+		gap: 18px;
+		border-bottom: 1px solid var(--line);
+	}
+	.dtabs span {
+		padding: 4px 2px 7px;
+		color: var(--soft);
+	}
+	.dtabs span.on {
+		font-weight: 600;
+		color: var(--ink);
+		box-shadow: inset 0 -2px 0 var(--green);
+	}
+	.chips {
+		top: 108px;
+		display: flex;
+		gap: 8px;
+	}
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 28px;
+		padding: 0 10px;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		font-size: 12px;
+	}
+	.chip em {
+		font-style: normal;
+		color: var(--soft);
+	}
+	.chip.on {
+		border-color: #bbe5b3;
+		background: #f0faee;
+	}
+	.kpis {
+		top: 146px;
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 12px;
+	}
+	.kpi {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		height: 78px;
+		padding: 12px 14px;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+	}
+	.kpi span {
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.kpi b {
+		font-size: 24px;
+		letter-spacing: -0.03em;
+		font-variant-numeric: tabular-nums;
+	}
+	.card {
+		top: 236px;
+		height: 272px;
+		padding: 12px 14px;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+	}
+	.card.chart {
+		right: 240px;
+	}
+	.card.donut {
+		left: auto;
+		width: 210px;
+	}
+	.card .title {
+		font-size: 12.5px;
+		font-weight: 600;
+	}
+	.rule,
+	.axis {
+		position: absolute;
+		left: 14px;
+		right: 14px;
+		height: 1px;
+		background: #f0f0f2;
+	}
+	.rule em {
+		position: absolute;
+		right: 0;
+		bottom: 3px;
+		font-style: normal;
+		font-size: 9.5px;
+		color: #a1a1aa;
+	}
+	.axis {
+		background: #d4d4d8;
+	}
+	.donut svg {
+		display: block;
+		width: 130px;
+		height: 130px;
+		margin: 20px auto 16px;
+		transform: rotate(-90deg);
+	}
+	.hole {
+		fill: none;
+		stroke: #f0f0f2;
+		stroke-width: 7;
+	}
+	.seg {
+		fill: none;
+		stroke-width: 7;
+		stroke-dasharray: var(--share) calc(100 - var(--share));
+		stroke-dashoffset: var(--offset);
+	}
+	.donut ul {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 6px 10px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: 11px;
+		color: #3f3f46;
+	}
+	.donut li {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		white-space: nowrap;
+	}
+	.donut li::before {
+		content: '';
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--c);
+	}
+
+	/* The rows. Each view sets where a row sits and what it looks like; the row moves there. */
+	.rec {
+		--x: var(--grid-x);
+		--y: var(--grid-y);
+		--w: var(--grid-w);
+		--h: var(--grid-h);
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: var(--w);
+		height: var(--h);
+		overflow: hidden;
+		background: #fff;
+		box-shadow: inset 0 -1px 0 var(--line);
+		transform: translate(var(--x), var(--y));
+		transition-property: transform, width, height, background-color, border-radius, box-shadow, opacity;
+		transition-duration: 0.8s, 0.8s, 0.8s, 0.5s, 0.5s, 0.5s, 0.45s;
+		transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+		transition-delay: calc(var(--i) * 55ms);
+	}
+	/* The Copilot's filter: the rows it keeps go up, the others go — once it is applied. */
+	.stage[data-view='copilot'] .rec {
+		--x: var(--copilot-x);
+		--y: var(--copilot-y);
+		--w: var(--copilot-w);
+		--h: var(--copilot-h);
+		transition-delay: calc(3.4s + var(--i) * 40ms);
+	}
+	.stage[data-view='copilot'] .rec[data-match='0'] {
+		opacity: 0;
+	}
+	.stage[data-view='kanban'] .rec {
+		--x: var(--kanban-x);
+		--y: var(--kanban-y);
+		--w: var(--kanban-w);
+		--h: var(--kanban-h);
+		border-radius: 12px;
+		box-shadow:
+			0 0 0 1px #e4e4e7,
+			0 4px 12px -6px rgba(16, 24, 16, 0.18);
+	}
+	.stage[data-view='calendar'] .rec {
+		--x: var(--calendar-x);
+		--y: var(--calendar-y);
+		--w: var(--calendar-w);
+		--h: var(--calendar-h);
+		border-radius: 5px;
+		background: color-mix(in srgb, var(--c) 16%, #fff);
+		box-shadow: inset 3px 0 0 var(--c);
+	}
+	.stage[data-view='dashboard'] .rec {
+		--x: var(--dashboard-x);
+		--y: var(--dashboard-y);
+		--w: var(--dashboard-w);
+		--h: var(--dashboard-h);
+		overflow: visible;
+		border-radius: 4px 4px 0 0;
+		background: #2a78d6;
+		box-shadow: none;
+	}
+	.rec > div {
+		position: absolute;
+		inset: 0;
+	}
+	.r-row > .c-name {
+		font-weight: 500;
+	}
+	.r-card {
+		display: flex;
+		flex-direction: column;
+	}
+	.cover {
+		flex-shrink: 0;
+		height: 54px;
+		background:
+			radial-gradient(circle at 74% 62%, var(--c2) 0 15px, transparent 16px),
+			linear-gradient(135deg, var(--c1), color-mix(in srgb, var(--c1) 55%, var(--c2)));
+	}
+	.body {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		min-width: 0;
+		padding: 9px 11px;
+	}
+	.body b {
+		overflow: hidden;
+		font-size: 13px;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+	.desc {
+		font-size: 11.5px;
+		line-height: 1.35;
+		color: var(--soft);
+	}
+	.desc strong {
+		font-weight: 600;
+		color: #3f3f46;
+	}
+	.field {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		font-variant-numeric: tabular-nums;
+		color: #3f3f46;
+	}
+	.field :global(svg) {
+		color: var(--soft);
+	}
+	.r-chip {
+		overflow: hidden;
+		padding: 0 8px 0 10px;
+		font-size: 11.5px;
+		font-weight: 500;
+		line-height: 22px;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+	.r-bar span {
+		position: absolute;
+		left: 50%;
+		width: 58px;
+		font-size: 10px;
+		line-height: 1.2;
+		text-align: center;
+		transform: translateX(-50%);
+	}
+	.r-bar .value {
+		bottom: calc(100% + 4px);
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+	}
+	.r-bar .name {
+		top: calc(100% + 6px);
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		color: var(--soft);
+	}
+
+	/* The Copilot */
+	.copilot {
+		position: absolute;
+		top: 76px;
+		right: 0;
+		bottom: 0;
+		z-index: 3;
+		display: flex;
+		flex-direction: column;
+		width: 304px;
+		border-left: 1px solid var(--line);
+		background: #fcfcfc;
+		box-shadow: -24px 0 40px -30px rgba(16, 24, 16, 0.35);
+		transform: translateX(24px);
+		transition:
+			opacity 0.45s ease,
+			visibility 0.45s,
+			transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+	}
+	.stage[data-view='copilot'] .copilot {
+		transform: none;
+	}
+	.c-head {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		height: 44px;
+		padding: 0 12px;
+		border-bottom: 1px solid var(--line);
+	}
+	.c-head .end {
+		margin-left: auto;
+	}
+	.c-body {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		gap: 10px;
+		padding: 14px 12px;
+	}
+	.ask,
+	.thinking,
+	.answer,
+	.action {
+		opacity: 0;
+	}
+	.ask {
+		align-self: flex-end;
+		max-width: 92%;
+		padding: 8px 12px;
+		border-radius: 16px 16px 4px 16px;
+		line-height: 1.4;
+		text-wrap: pretty;
+		color: #fff;
+		background: var(--green);
+	}
+	.thinking {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		height: 0;
+		overflow: hidden;
+		font-size: 12px;
+		color: var(--soft);
+	}
+	.spin {
+		display: inline-flex;
+		animation: turn 0.9s linear infinite;
+	}
+	@keyframes turn {
+		to {
+			transform: rotate(1turn);
+		}
+	}
+	.answer {
+		line-height: 1.5;
+	}
+	.action {
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		background: #fff;
+		transition: border-color 0.4s ease;
+	}
+	.a-head {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		padding: 8px 10px;
+		border-bottom: 1px solid var(--line);
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.action code {
+		display: block;
+		margin: 10px 10px 8px;
+		padding: 7px 9px;
+		border-radius: 7px;
+		font-size: 11px;
+		line-height: 1.4;
+		background: var(--tint);
+	}
+	.action .stack {
+		margin: 0 10px 10px;
+	}
+	.apply,
+	.applied {
+		display: inline-flex;
+		align-items: center;
+		justify-self: start;
+		gap: 5px;
+		padding: 5px 10px;
+		border-radius: 7px;
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.apply {
+		color: #fff;
+		background: var(--green);
+	}
+	.applied {
+		color: #15803d;
+		opacity: 0;
+	}
+	.c-input {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		height: 70px;
+		margin: 12px;
+		padding: 10px;
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		color: #a1a1aa;
+		background: #fff;
+	}
+	.c-input i {
+		display: grid;
+		place-items: center;
+		width: 26px;
+		height: 26px;
+		border-radius: 7px;
+		color: #fff;
+		background: color-mix(in srgb, var(--green) 45%, #fff);
+	}
+	/* The conversation plays as the Copilot opens: the question, a thought, the answer, the
+	   filter proposed — and applied. */
+	.stage[data-view='copilot'] .ask {
+		animation: appear 0.4s ease 0.5s both;
+	}
+	.stage[data-view='copilot'] .thinking {
+		animation: think 1.1s ease 1s both;
+	}
+	.stage[data-view='copilot'] .answer {
+		animation: appear 0.45s ease 2.1s both;
+	}
+	.stage[data-view='copilot'] .action {
+		border-color: #86efac;
+		transition-delay: 3.3s;
+		animation: appear 0.45s ease 2.5s both;
+	}
+	.stage[data-view='copilot'] .apply {
+		animation: vanish 0.3s ease 3.3s both;
+	}
+	.stage[data-view='copilot'] .applied {
+		animation: appear 0.3s ease 3.35s both;
+	}
+	@keyframes appear {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+		to {
+			opacity: 1;
+			transform: none;
+		}
+	}
+	@keyframes vanish {
+		to {
+			opacity: 0;
+		}
+	}
+	@keyframes think {
+		0% {
+			height: 0;
+			opacity: 0;
+		}
+		15%,
+		85% {
+			height: 18px;
+			opacity: 1;
+		}
+		100% {
+			height: 0;
+			opacity: 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.rec,
+		[data-show] {
+			transition: none;
+		}
+	}
+</style>

@@ -2,7 +2,6 @@
 
 import { EnvironmentBadge } from '@/components/app/environment-badge'
 import { LookIcon, type OptionLook } from '@/components/app/option-badge'
-import { Button } from '@/components/ui/button'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -13,6 +12,7 @@ import {
 } from '@/components/ui/context-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { BaseEnvironment, Table } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { type Tab, useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
 import {
@@ -25,7 +25,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Plus, Sparkles, Table2, Terminal, X } from 'lucide-react'
+import { Eye, FileCode2, Plus, Table2, Terminal, X } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 
 /**
@@ -42,8 +42,6 @@ import { useEffect, useMemo } from 'react'
 
 interface Props {
   readonly onNewSql: () => void
-  readonly copilotOpen: boolean
-  readonly onToggleCopilot: () => void
   /** The tables whose look a tab wears; a tab of a table not listed keeps the plain glyph. */
   readonly tables?: readonly Table[]
   /**
@@ -53,13 +51,7 @@ interface Props {
   readonly environments?: ReadonlyMap<string, BaseEnvironment>
 }
 
-export function TabBar({
-  onNewSql,
-  copilotOpen,
-  onToggleCopilot,
-  tables = [],
-  environments,
-}: Props) {
+export function TabBar({ onNewSql, tables = [], environments }: Props) {
   const tabs = useWorkspace((s) => s.tabs)
   const activeId = useWorkspace((s) => s.activeId)
   const looks = useMemo(() => new Map(tables.map((t) => [`${t.base}.${t.name}`, t])), [tables])
@@ -131,28 +123,16 @@ export function TabBar({
                   type="button"
                   onClick={onNewSql}
                   className="flex shrink-0 items-center justify-center px-2.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  aria-label="Nouvel onglet SQL"
+                  aria-label={$t('Nouvel onglet SQL')}
                 >
                   <Plus className="size-3.5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>Nouvelle requête SQL</TooltipContent>
+              <TooltipContent>{$t('Nouvelle requête SQL')}</TooltipContent>
             </Tooltip>
           </div>
         </SortableContext>
       </DndContext>
-
-      <div className="flex shrink-0 items-center gap-1 border-l px-2">
-        <Button
-          variant={copilotOpen ? 'default' : 'ghost'}
-          size="sm"
-          className="h-7 gap-1.5 px-2 text-xs"
-          onClick={onToggleCopilot}
-        >
-          <Sparkles className="size-3.5" />
-          <span className="hidden sm:inline">Copilot</span>
-        </Button>
-      </div>
     </div>
   )
 }
@@ -186,7 +166,15 @@ function SortableTab({
     id: tab.id,
   })
 
-  const Icon = tab.kind === 'table' ? Table2 : Terminal
+  // A table, a SQL view, a saved query, a statement being written.
+  const Icon =
+    tab.kind === 'table'
+      ? Table2
+      : tab.kind === 'sqlview'
+        ? Eye
+        : tab.queryId !== null
+          ? FileCode2
+          : Terminal
 
   return (
     <ContextMenu>
@@ -233,7 +221,7 @@ function SortableTab({
               onClose()
             }}
             className="rounded p-px text-muted-foreground opacity-0 transition-all hover:bg-accent hover:text-foreground group-hover:opacity-100"
-            aria-label={`Fermer ${tab.label}`}
+            aria-label={$t('Fermer {label}', { label: tab.label })}
           >
             <X className="size-3" />
           </button>
@@ -242,16 +230,16 @@ function SortableTab({
 
       <ContextMenuContent className="w-56">
         <ContextMenuItem onSelect={onClose}>
-          Fermer
-          <ContextMenuShortcut>Alt+W</ContextMenuShortcut>
+          {$t('Fermer')}
+          <ContextMenuShortcut>{$t('Alt+W')}</ContextMenuShortcut>
         </ContextMenuItem>
-        <ContextMenuItem onSelect={onCloseOthers}>Fermer les autres</ContextMenuItem>
+        <ContextMenuItem onSelect={onCloseOthers}>{$t('Fermer les autres')}</ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem onSelect={onCloseToLeft}>Fermer à gauche</ContextMenuItem>
-        <ContextMenuItem onSelect={onCloseToRight}>Fermer à droite</ContextMenuItem>
+        <ContextMenuItem onSelect={onCloseToLeft}>{$t('Fermer à gauche')}</ContextMenuItem>
+        <ContextMenuItem onSelect={onCloseToRight}>{$t('Fermer à droite')}</ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={onCloseAll} className="text-destructive focus:text-destructive">
-          Tout fermer
+          {$t('Tout fermer')}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

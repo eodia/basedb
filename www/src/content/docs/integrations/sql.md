@@ -15,17 +15,26 @@ les lit sous leur nom.
 | Table | son nom slugifié | `opportunites` |
 | Champ | son nom slugifié | `echeance` |
 | Relation | `<table cible>_id` | `clients_id` |
+| [Vue SQL](/basedb/fonctionnalites/requetes-et-vues-sql/) | son nom technique, dans le schéma de la base | `factures_a_encaisser` |
 
 La page **Documentation API et MCP** de chaque base les donne tous, et `\d` dans `psql` montre
 les descriptions (`COMMENT ON`).
 
 ## Dans l’interface
 
-Le **+** de la barre d’onglets, ou menu **⋯** de la base → **Nouvelle requête SQL** : une
-console avec coloration et complétion,
-dont le résultat s’affiche dans la même grille que vos tables.
+Le **+** de la barre d’onglets, ou menu **⋯** de la base → **Nouvelle requête SQL** : un éditeur
+avec coloration et complétion, dont le résultat s’affiche dans la même grille que vos tables.
 
-![Une requête dans la console SQL](../../../assets/screens/requete-sql.png)
+![Une requête enregistrée, et deux vues SQL rangées parmi les tables](../../../assets/screens/requete-sql.png)
+
+- **Chacun y lit avec ses droits** : le niveau Gestion a toute la base, écritures comprises ; les
+  autres membres écrivent du SQL en lecture seule, où une table fermée n’existe pas et un champ
+  masqué disparaît.
+- Une requête **s’enregistre** sous les tables — pour soi, pour toute la base ou pour des
+  groupes —, et devient, si l’on veut, une **vue SQL** : une vraie vue PostgreSQL, rangée parmi
+  les tables et lisible depuis `psql`.
+
+Tout est détaillé dans [Requêtes et vues SQL](/basedb/fonctionnalites/requetes-et-vues-sql/).
 
 ## Depuis psql
 

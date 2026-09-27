@@ -1,0 +1,57 @@
+---
+title: Colaboración
+description: Comentarios y menciones, notificaciones, actualizaciones en tiempo real y presencia.
+---
+
+Varias personas trabajan en la misma base a la vez: cada una ve llegar las escrituras de las
+demás, sabe quién está mirando qué y comenta una fila allí donde se encuentra.
+
+## Comentarios
+
+Los detalles de una fila tienen una pestaña **Comentarios**, entre «Detalles» e «Historial». Escribe
+`@` para **mencionar** a un miembro y Ctrl+Intro para enviar. Cada uno edita o elimina sus
+propios comentarios.
+
+![Una conversación sobre un proyecto](../../../../assets/screens/commentaires.png)
+
+Poder leer la fila basta para comentarla. Una persona mencionada que no puede leerla
+no recibe aviso, y se informa de ello al autor en lugar de dejarle creer que el mensaje ha llegado.
+
+## Notificaciones
+
+La campana, arriba a la derecha, cuenta lo que no se ha leído. Llegan ahí cuatro cosas:
+
+- alguien te **menciona** en un comentario;
+- alguien **responde** en una conversación en la que has escrito;
+- alguien te **asigna** en un campo Persona, desde la interfaz, la API, un formulario
+  o una automatización;
+- una [automatización](/basedb/es/fonctionnalites/automatisations/) te **avisa**.
+
+Abrir una notificación abre la fila. **Marcar todo como leído** pone el contador a cero; las
+notificaciones se conservan 90 días.
+
+![Una mención recibida](../../../../assets/screens/notifications.png)
+
+## Tiempo real
+
+Las escrituras de los demás se muestran **sin recargar**: una celda modificada, una tarjeta
+desplazada, una fila añadida, vengan de la interfaz, de la API, de un agente o del SQL
+directo. El servidor solo envía una **señal**, nunca un dato: es la pantalla la que vuelve a leer, con
+tus permisos. Una celda que estás modificando nunca se reemplaza mientras la
+editas.
+
+## Presencia
+
+Las caras de las personas que miran **la misma tabla** se muestran en la parte superior de la pantalla; las
+de quienes han abierto **la misma fila**, en el encabezado de sus detalles. En la cuadrícula, el puntero de los
+demás aparece en la celda sobre la que pasan.
+
+## Deshacer
+
+Ctrl+Z deshace tu última escritura: consulta [el historial](/basedb/es/fonctionnalites/historique/#deshacer-ctrlz).
+
+## Límites
+
+- Las notificaciones se quedan en basedb: por ahora no se envía ninguna por correo electrónico.
+- Si cambian más de cien filas de golpe, la pantalla recarga la página entera en lugar de
+  hacerlo fila por fila.

@@ -1,4 +1,10 @@
-import { ERROR_CODES, isErrorCode } from '@basedb/contracts'
+import {
+  ERROR_CODES,
+  acceptedLanguages,
+  isErrorCode,
+  isLocale,
+  matchLocale,
+} from '@basedb/contracts'
 import {
   type AiFieldInput,
   type AiFieldStatus,
@@ -10,6 +16,7 @@ import {
   CSRF_HEADER,
   type Comment,
   type Dashboard,
+  type DashboardSharing,
   type FormSharing,
   type Integration,
   type Kernel,
@@ -18,15 +25,20 @@ import {
   OIDC_COOKIE,
   type PendingInvitation,
   type PointerAt,
+  type Question,
   type RequestContext,
   SESSION_ABSOLUTE_MS,
   SESSION_COOKIE,
+  type SavedQuery,
   type SavedView,
   type ScopeSharing,
   type ShareScope,
   type ShareSettings,
+  type SqlConsoleResult,
+  type SqlView,
   type SyncedTable,
   VARY,
+  wireSteps,
 } from '@basedb/core'
 import { type Context, Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
@@ -99,6 +111,17 @@ type Variables = { requestId: string }
 /** What every integration token starts with (`bdb_` + prefix + secret, 08 §11.3). */
 const INTEGRATION_TOKEN_PREFIX = 'bdb_'
 
+/**
+ * The language of the screen a request comes from — chapter 11 §10: the one the interface
+ * sends (`x-basedb-locale`), else the browser's `Accept-Language`. What a copilot answers
+ * in, and what the labels it proposes are written in.
+ */
+function screenLanguage(c: { req: { header: (name: string) => string | undefined } }): string {
+  const sent = c.req.header('x-basedb-locale')
+  if (isLocale(sent)) return sent
+  return matchLocale(acceptedLanguages(c.req.header('accept-language')))
+}
+
 export function createApp(options: AppOptions) {
   const app = new Hono<{ Variables: Variables }>()
 
@@ -116,7 +139,13 @@ export function createApp(options: AppOptions) {
         return /^http:\/\/localhost(:\d+)?$/.test(origin) ? origin : null
       },
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['content-type', 'x-request-id', 'authorization', 'x-basedb-csrf'],
+      allowHeaders: [
+        'content-type',
+        'x-request-id',
+        'authorization',
+        'x-basedb-csrf',
+        'x-basedb-locale',
+      ],
       exposeHeaders: ['x-request-id', 'x-basedb-transaction'],
       // The session cookie travels between two ports of the same site; without this the
       // browser sends it on no cross-origin request at all.
@@ -225,6 +254,20 @@ export function createApp(options: AppOptions) {
   /** The credential of `/auth/*`: the session cookie, and it alone. */
   const cookieHolder = async (c: Context<{ Variables: Variables }, string>) =>
     options.kernel.authenticateCookie(getCookie(c, SESSION_COOKIE))
+
+  /**
+   * The cookie's holder, as an actor acting on their own account — with the session the
+   * request came from, which elevation is checked on.
+   */
+  const accountHolder = async (c: Context<{ Variables: Variables }, string>) => {
+    const who = await cookieHolder(c)
+    const ctx = await options.kernel.openContext({
+      userId: who.userId,
+      requestId: c.get('requestId'),
+      surface: 'rest',
+    })
+    return { who, ctx }
+  }
 
   /** Liveness probe — entry point outside the catalog (chapter 08 §1.5). */
   app.get('/healthz', (c) => c.json({ status: 'ok' }))
@@ -406,6 +449,22 @@ export function createApp(options: AppOptions) {
     return c.body(null, 204)
   })
 
+  const serializeMe = (me: Awaited<ReturnType<typeof options.kernel.whoAmI>>) => ({
+    id: me.id,
+    email: me.email,
+    display_name: me.displayName,
+    tenant: me.tenantRef,
+    is_instance_admin: me.isInstanceAdmin,
+    is_admin: me.isAdmin,
+    must_change_password: me.mustChangePassword,
+    elevated_until: me.elevatedUntil,
+    has_password: me.hasPassword,
+    date_format: me.dateFormat,
+    week_start: me.weekStart,
+    muted_notifications: me.mutedNotifications,
+    locale: me.locale,
+  })
+
   // Accepts either credential: the interface calls it with the cookie right after
   // login, an integration with its access token.
   app.get('/auth/me', async (c) => {
@@ -415,17 +474,70 @@ export function createApp(options: AppOptions) {
         ? await options.kernel.authenticateAccessToken(header.slice(7).trim())
         : await cookieHolder(c)
 
-    const me = await options.kernel.whoAmI(who)
+    return c.json({ data: serializeMe(await options.kernel.whoAmI(who)) })
+  })
+
+  // One's own account — chapter 11 §10: the name, and how the product reads. Each field
+  // optional; the answer is the account as it now stands.
+  app.patch('/auth/me', async (c) => {
+    type Body = {
+      display_name?: unknown
+      date_format?: unknown
+      week_start?: unknown
+      muted_notifications?: unknown
+      locale?: unknown
+    }
+    const body = await c.req.json<Body>().catch(() => ({}) as Body)
+    const { who, ctx } = await accountHolder(c)
+    await options.kernel.updateProfile(ctx, {
+      displayName: body.display_name,
+      dateFormat: body.date_format,
+      weekStart: body.week_start,
+      mutedNotifications: body.muted_notifications,
+      // `null` is a choice — the browser's language —, an absent key none.
+      locale: body.locale,
+    })
+    return c.json({ data: serializeMe(await options.kernel.whoAmI(who)) })
+  })
+
+  // The address one signs in with — chapter 13 §2.6. An elevated session, a password.
+  app.put('/auth/me/email', async (c) => {
+    const body = await c.req.json<{ email?: unknown }>().catch(() => ({}) as { email?: unknown })
+    const { who, ctx } = await accountHolder(c)
+    await options.kernel.changeEmail(ctx, {
+      email: body.email,
+      sessionId: who.sessionId,
+      acceptLanguage: c.req.header('accept-language') ?? null,
+    })
+    return c.json({ data: serializeMe(await options.kernel.whoAmI(who)) })
+  })
+
+  // The ways in to one's account: whether it has a password, and each provider this
+  // instance accepts, linked or not — a provider linked once and withdrawn since shows
+  // too, under its bare name, so it can still be unlinked.
+  app.get('/auth/identities', async (c) => {
+    const who = await cookieHolder(c)
+    const [identities, providers] = await Promise.all([
+      options.kernel.listOwnIdentities(who),
+      options.kernel.oidcProviders(who.tenantRef),
+    ])
+    const linked = new Map(identities.map((i) => [i.provider, i]))
+    const listed = new Set(providers.map((p) => p.slug))
+    const shown = [
+      ...providers,
+      ...identities
+        .filter((i) => i.provider !== 'password' && !listed.has(i.provider))
+        .map((i) => ({ slug: i.provider, label: i.provider })),
+    ]
     return c.json({
       data: {
-        id: me.id,
-        email: me.email,
-        display_name: me.displayName,
-        tenant: me.tenantRef,
-        is_instance_admin: me.isInstanceAdmin,
-        is_admin: me.isAdmin,
-        must_change_password: me.mustChangePassword,
-        elevated_until: me.elevatedUntil,
+        password: linked.has('password'),
+        providers: shown.map((p) => ({
+          slug: p.slug,
+          label: p.label,
+          linked_at: linked.get(p.slug)?.createdAt ?? null,
+          last_used_at: linked.get(p.slug)?.lastUsedAt ?? null,
+        })),
       },
     })
   })
@@ -456,7 +568,7 @@ export function createApp(options: AppOptions) {
     void address
     const body = await c.req.json<{ email?: string }>().catch(() => ({}) as { email?: string })
     if (typeof body.email === 'string') {
-      await options.kernel.requestPasswordReset(body.email)
+      await options.kernel.requestPasswordReset(body.email, c.req.header('accept-language') ?? null)
     }
     return c.body(null, 202)
   })
@@ -531,43 +643,56 @@ export function createApp(options: AppOptions) {
         cookie: getCookie(c, OIDC_COOKIE),
         ip: addressOf(c),
         userAgent: c.req.header('user-agent') ?? null,
+        requestId: c.get('requestId'),
       })
     } catch (error) {
       // The browser came back from the provider, on a page of its own: a refusal is shown
-      // by the sign-in screen, in words, not as a JSON body on a blank page. The code
-      // alone travels; an incident keeps its identifier in the log.
+      // by the interface, in words, not as a JSON body on a blank page — by the sign-in
+      // screen, or by the settings when a link was being made. The code and its reason
+      // alone travel; an incident keeps its identifier in the log.
       if (!(error instanceof BasedbError) || error.class === 'incident') throw error
       deleteCookie(c, OIDC_COOKIE, { path: '/', secure: true })
-      return c.redirect(`/?connexion=${encodeURIComponent(error.code)}`, 302)
+      const reason = error.details?.reason
+      const suffix = typeof reason === 'string' ? `&raison=${encodeURIComponent(reason)}` : ''
+      return c.redirect(`/?connexion=${encodeURIComponent(error.code)}${suffix}`, 302)
     }
 
-    // The exchange is over: its cookie has nothing left to carry.
+    // The exchange is over: its cookie has nothing left to carry. A link opens no
+    // session — the one that asked for it is still there.
     deleteCookie(c, OIDC_COOKIE, { path: '/', secure: true })
-    plantSession(c, completed.session.sessionToken, completed.session.csrfToken)
+    if (completed.kind === 'session') {
+      plantSession(c, completed.session.sessionToken, completed.session.csrfToken)
+    }
     return c.redirect(completed.returnTo, 302)
   })
 
   // Linking happens from a session that is ALREADY open and elevated — never the other
   // way round. Adopting an account because a provider claims its address would turn
   // every OIDC login into a takeover.
+  //
+  // A fetch, not a navigation, so that a missing elevation comes back as a code the
+  // interface answers by asking for the password. It plants the exchange cookie and
+  // hands back where to send the browser; the provider's return completes the link on
+  // `/callback`, which opens no session.
   app.post('/auth/oidc/:slug/link', async (c) => {
-    await options.kernel.oidcLink({
-      sessionToken: getCookie(c, SESSION_COOKIE),
-      tenantRef: authTenant(),
-      slug: c.req.param('slug'),
-      code: c.req.query('code'),
-      state: c.req.query('state'),
-      cookie: getCookie(c, OIDC_COOKIE),
+    const body = await c.req
+      .json<{ return_to?: unknown }>()
+      .catch(() => ({}) as { return_to?: unknown })
+    const slug = c.req.param('slug')
+    const { who, ctx } = await accountHolder(c)
+    const started = await options.kernel.oidcLinkStart(ctx, {
+      sessionId: who.sessionId,
+      slug,
+      redirectUri: redirectUri(c, slug),
+      returnTo: typeof body.return_to === 'string' ? body.return_to : undefined,
     })
-    deleteCookie(c, OIDC_COOKIE, { path: '/', secure: true })
-    return c.body(null, 204)
+    plantExchange(c, started.exchangeCookie)
+    return c.json({ data: { url: started.authorizeUrl } })
   })
 
   app.delete('/auth/oidc/:slug/link', async (c) => {
-    await options.kernel.oidcUnlink({
-      sessionToken: getCookie(c, SESSION_COOKIE),
-      slug: c.req.param('slug'),
-    })
+    const { who, ctx } = await accountHolder(c)
+    await options.kernel.oidcUnlink(ctx, { sessionId: who.sessionId, slug: c.req.param('slug') })
     return c.body(null, 204)
   })
 
@@ -722,6 +847,8 @@ export function createApp(options: AppOptions) {
       links: c.req.query('links') === 'id' ? 'id' : 'display',
       expand: c.req.query('expand'),
       sort: c.req.query('sort'),
+      // `variables=raw`: the citations of long texts as written — for an editor.
+      variables: c.req.query('variables') === 'raw' ? 'raw' : 'resolve',
       // Chapter 11 §1.1: the total is NOT computed by default. A caller asks for it,
       // and the kernel caps the answer rather than scanning without a bound.
       count: c.req.query('count') === 'exact' ? 'exact' : undefined,
@@ -819,6 +946,7 @@ export function createApp(options: AppOptions) {
       filter: `_id eq "${id.toLowerCase()}"`,
       links: c.req.query('links') === 'id' ? 'id' : 'display',
       expand: c.req.query('expand'),
+      variables: c.req.query('variables') === 'raw' ? 'raw' : 'resolve',
     })
     const row = result.rows[0]
     if (row === undefined) throw new BasedbError('RESOURCE_NOT_FOUND', { details: { record: id } })
@@ -1141,17 +1269,28 @@ export function createApp(options: AppOptions) {
   // Dashboards — chapter 18
   // ---------------------------------------------------------------------------------
 
+  // The tabs, cards and filters are documents of `@basedb/contracts`, in their own names.
   const serializeDashboard = (d: Dashboard) => ({
     id: d.id,
     label: d.label,
     description: d.description,
     position: d.position,
-    blocks: d.blocks.map((b) => {
-      if (b.kind !== 'chart') return b
-      const { groupBy, ...rest } = b
-      return { ...rest, group_by: groupBy }
-    }),
+    tabs: d.tabs,
+    cards: d.cards,
+    parameters: d.parameters,
     updated_at: d.updatedAt,
+  })
+
+  const serializeQuestion = (q: Question) => ({
+    id: q.id,
+    label: q.label,
+    description: q.description,
+    kind: q.kind,
+    query: q.query,
+    visualization: q.visualization,
+    position: q.position,
+    updated_at: q.updatedAt,
+    updated_by: q.updatedBy,
   })
 
   app.get('/api/v1/:tenantRef/meta/bases/:base/dashboards', async (c) => {
@@ -1188,6 +1327,154 @@ export function createApp(options: AppOptions) {
     return c.body(null, 204)
   })
 
+  // The sharing of a dashboard by a link — chapter 18 §2.5. Administered here by the base's
+  // builders; read through `/api/v1/dashboards/:token`, below, which needs no right on it.
+  const serializeDashboardSharing = (sharing: DashboardSharing) => ({
+    share:
+      sharing.share === null
+        ? null
+        : {
+            id: sharing.share.id,
+            dashboard_id: sharing.share.dashboardId,
+            access: sharing.share.access,
+            active: sharing.share.active,
+            token: sharing.share.token,
+            published_by: sharing.share.publishedBy,
+            groups: sharing.share.groupIds,
+            state: sharing.share.state,
+            can_embed: sharing.share.canEmbed,
+          },
+    groups: sharing.groups,
+  })
+
+  const dashboardShareRoute = '/api/v1/:tenantRef/admin/bases/:base/dashboards/:id/share'
+
+  app.get(dashboardShareRoute, async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const sharing = await options.kernel.getDashboardSharing(ctx, {
+      baseId: base.baseId,
+      dashboardId: c.req.param('id'),
+    })
+    return c.json({ data: serializeDashboardSharing(sharing) })
+  })
+
+  // Creates or changes the sharing: whoever saves becomes its publisher, and the cards read
+  // on their authority from then on.
+  app.put(dashboardShareRoute, async (c) => {
+    const body = await c.req.json<{
+      access?: unknown
+      active?: unknown
+      groups?: unknown
+      can_embed?: unknown
+    }>()
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const sharing = await options.kernel.saveDashboardSharing(ctx, {
+      baseId: base.baseId,
+      dashboardId: c.req.param('id'),
+      access: body.access as 'public' | 'members',
+      active: body.active === undefined ? true : (body.active as boolean),
+      groupIds: (body.groups ?? []) as string[],
+      canEmbed: (body.can_embed ?? false) as boolean,
+    })
+    return c.json({ data: serializeDashboardSharing(sharing) })
+  })
+
+  app.post(`${dashboardShareRoute}/regenerate`, async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const sharing = await options.kernel.regenerateDashboardShare(ctx, {
+      baseId: base.baseId,
+      dashboardId: c.req.param('id'),
+    })
+    return c.json({ data: serializeDashboardSharing(sharing) })
+  })
+
+  app.delete(dashboardShareRoute, async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    await options.kernel.deleteDashboardShare(ctx, {
+      baseId: base.baseId,
+      dashboardId: c.req.param('id'),
+    })
+    return c.body(null, 204)
+  })
+
+  // Saved questions — chapter 18 §3. Seen by whoever sees the base, written by its builders.
+  app.get('/api/v1/:tenantRef/meta/bases/:base/questions', async (c) => {
+    const ctx = await dataContext(c)
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const list = await options.kernel.listQuestions(ctx, { baseId: base.baseId })
+    return c.json({ data: list.map(serializeQuestion) })
+  })
+
+  app.get('/api/v1/:tenantRef/meta/bases/:base/questions/:id', async (c) => {
+    const ctx = await dataContext(c)
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const question = await options.kernel.getQuestion(ctx, {
+      baseId: base.baseId,
+      id: c.req.param('id'),
+    })
+    return c.json({ data: serializeQuestion(question) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/bases/:base/questions', async (c) => {
+    const body = await c.req.json<Record<string, unknown>>()
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const created = await options.kernel.createQuestion(ctx, { baseId: base.baseId, input: body })
+    return c.json({ data: serializeQuestion(created) }, 201)
+  })
+
+  app.patch('/api/v1/:tenantRef/admin/bases/:base/questions/:id', async (c) => {
+    const body = await c.req.json<Record<string, unknown>>()
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const updated = await options.kernel.updateQuestion(ctx, {
+      baseId: base.baseId,
+      id: c.req.param('id'),
+      input: body,
+    })
+    return c.json({ data: serializeQuestion(updated) })
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/bases/:base/questions/:id', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    await options.kernel.deleteQuestion(ctx, { baseId: base.baseId, id: c.req.param('id') })
+    return c.body(null, 204)
+  })
+
+  // Runs a question — a saved one by `question`, or one given whole in `query` — with the
+  // caller's rights, a dashboard's filters in `constraints`. Beside `/sql/:base` rather than
+  // under `/data/:base`, where `query` would be a table's name.
+  app.post('/api/v1/:tenantRef/query/:base', async (c) => {
+    const body = await c.req.json<{
+      question?: unknown
+      query?: unknown
+      constraints?: unknown
+      timezone?: unknown
+      week_start?: unknown
+    }>()
+    const ctx = await dataContext(c)
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    if (
+      typeof body.question !== 'string' &&
+      (typeof body.query !== 'object' || body.query === null)
+    ) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'query' } })
+    }
+    const result = await options.kernel.runQuestion(ctx, {
+      baseId: base.baseId,
+      ...(typeof body.question === 'string' ? { question: body.question } : { query: body.query }),
+      constraints: body.constraints,
+      timezone: typeof body.timezone === 'string' ? body.timezone : undefined,
+      weekStart: body.week_start === 0 ? 0 : 1,
+    })
+    return c.json({ data: result })
+  })
+
   // ---------------------------------------------------------------------------------
   // Automations — chapter 17
   // ---------------------------------------------------------------------------------
@@ -1204,16 +1491,8 @@ export function createApp(options: AppOptions) {
       schedule: a.trigger.schedule,
     },
     condition: a.condition,
-    actions: a.actions.map((action) =>
-      action.kind === 'notify'
-        ? {
-            kind: action.kind,
-            users: action.users,
-            user_field: action.userField,
-            message: action.message,
-          }
-        : action,
-    ),
+    // The flow's steps, branches and what they hold included (chapter 17 §1.3).
+    actions: wireSteps(a.actions),
     owner: a.owner,
     next_run_at: a.nextRunAt,
     last_run: a.lastRun,
@@ -2052,7 +2331,7 @@ export function createApp(options: AppOptions) {
   // against chapters 09 and 10 by the owner's decision. The kernel runs it on a separate
   // PostgreSQL login role that holds one schema and nothing else.
   app.post('/api/v1/:tenantRef/sql/:base', async (c) => {
-    const body = await c.req.json<{ sql?: string; limit?: number }>()
+    const body = await c.req.json<{ sql?: string; limit?: number; read_only?: boolean }>()
     if (typeof body.sql !== 'string') {
       throw new BasedbError('REQUEST_INVALID', { details: { field: 'sql' } })
     }
@@ -2062,18 +2341,191 @@ export function createApp(options: AppOptions) {
       baseId: base.baseId,
       sql: body.sql,
       limit: typeof body.limit === 'number' ? body.limit : undefined,
+      ...(body.read_only === true ? { readOnly: true } : {}),
     })
-    return c.json({
-      data: {
-        columns: result.columns,
-        rows: result.rows,
-        row_count: result.rowCount,
-        command: result.command,
-        duration_ms: result.durationMs,
-        truncated: result.truncated,
-        schema: result.schema,
-      },
+    return c.json({ data: serializeSqlResult(result) })
+  })
+
+  // ---------------------------------------------------------------------------------
+  // Saved queries and SQL views — chapter 11 §1.7 and §1.8. A person's routes: a token
+  // runs no SQL, and keeps no query.
+  // ---------------------------------------------------------------------------------
+
+  const serializeQuery = (q: SavedQuery) => ({
+    id: q.id,
+    label: q.label,
+    description: q.description,
+    statement: q.statement,
+    audience: q.audience,
+    groups: q.groups,
+    owner: q.owner,
+    mine: q.mine,
+    editable: q.editable,
+    updated_at: q.updatedAt,
+  })
+
+  /** A query's body, in the API's words: `group_ids` for the groups of a `groups` query. */
+  const queryInput = (body: Record<string, unknown>) => ({
+    ...(body.label === undefined ? {} : { label: body.label as string }),
+    ...(body.description === undefined ? {} : { description: body.description as string | null }),
+    ...(body.statement === undefined ? {} : { statement: body.statement as string }),
+    ...(body.audience === undefined
+      ? {}
+      : { audience: body.audience as 'personal' | 'base' | 'groups' }),
+    ...(Array.isArray(body.group_ids) ? { groupIds: body.group_ids as string[] } : {}),
+  })
+
+  app.get('/api/v1/:tenantRef/meta/bases/:base/queries', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const list = await options.kernel.listQueries(ctx, { baseId: base.baseId })
+    return c.json({ data: list.map(serializeQuery) })
+  })
+
+  app.get('/api/v1/:tenantRef/meta/bases/:base/queries/:query', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const query = await options.kernel.getQuery(ctx, {
+      baseId: base.baseId,
+      queryId: c.req.param('query'),
     })
+    return c.json({ data: serializeQuery(query) })
+  })
+
+  app.get('/api/v1/:tenantRef/admin/bases/:base/query-groups', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const groups = await options.kernel.listQueryGroups(ctx, { baseId: base.baseId })
+    return c.json({ data: groups })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/bases/:base/queries', async (c) => {
+    const body = await c.req.json<Record<string, unknown>>()
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const created = await options.kernel.createQuery(ctx, {
+      baseId: base.baseId,
+      input: queryInput(body),
+    })
+    return c.json({ data: serializeQuery(created) }, 201)
+  })
+
+  app.patch('/api/v1/:tenantRef/admin/bases/:base/queries/:query', async (c) => {
+    const body = await c.req.json<Record<string, unknown>>()
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const updated = await options.kernel.updateQuery(ctx, {
+      baseId: base.baseId,
+      queryId: c.req.param('query'),
+      input: queryInput(body),
+    })
+    return c.json({ data: serializeQuery(updated) })
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/bases/:base/queries/:query', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    await options.kernel.deleteQuery(ctx, { baseId: base.baseId, queryId: c.req.param('query') })
+    return c.body(null, 204)
+  })
+
+  const serializeSqlView = (v: SqlView) => ({
+    id: v.id,
+    name: v.name,
+    label: v.label,
+    description: v.description,
+    definition: v.definition,
+    broken: v.broken,
+    color: v.color,
+    icon: v.icon,
+    image: v.image,
+    editable: v.editable,
+    updated_at: v.updatedAt,
+  })
+
+  /** A SQL view's body: its look travels flat, as a table's does. */
+  const sqlViewInput = (body: Record<string, unknown> & LookBody) => {
+    const look = lookOf(body)
+    return {
+      ...(body.label === undefined ? {} : { label: body.label as string }),
+      ...(body.name === undefined ? {} : { name: body.name as string }),
+      ...(body.description === undefined ? {} : { description: body.description as string | null }),
+      ...(body.definition === undefined ? {} : { definition: body.definition as string }),
+      ...(look === undefined ? {} : { look }),
+    }
+  }
+
+  app.get('/api/v1/:tenantRef/meta/bases/:base/sql-views', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const list = await options.kernel.listSqlViews(ctx, { baseId: base.baseId })
+    return c.json({ data: list.map(serializeSqlView) })
+  })
+
+  app.get('/api/v1/:tenantRef/meta/bases/:base/sql-views/:view', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const view = await options.kernel.getSqlView(ctx, {
+      baseId: base.baseId,
+      viewId: c.req.param('view'),
+    })
+    return c.json({ data: serializeSqlView(view) })
+  })
+
+  // The rows of a view, read like a statement typed in the console — with the reader's
+  // reach, never the author's.
+  app.get('/api/v1/:tenantRef/sql/:base/views/:view', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const limit = Number.parseInt(c.req.query('limit') ?? '', 10)
+    const result = await options.kernel.readSqlView(ctx, {
+      baseId: base.baseId,
+      viewId: c.req.param('view'),
+      ...(Number.isFinite(limit) ? { limit } : {}),
+    })
+    return c.json({ data: serializeSqlResult(result) })
+  })
+
+  app.post('/api/v1/:tenantRef/admin/bases/:base/sql-views', async (c) => {
+    const body = await c.req.json<Record<string, unknown> & LookBody>()
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const created = await options.kernel.createSqlView(ctx, {
+      baseId: base.baseId,
+      input: sqlViewInput(body),
+    })
+    return c.json({ data: serializeSqlView(created) }, 201)
+  })
+
+  // Before `:view`, or `order` would be taken for a view.
+  app.put('/api/v1/:tenantRef/admin/bases/:base/sql-views/order', async (c) => {
+    const body = await c.req.json<{ order?: unknown }>()
+    if (!Array.isArray(body.order) || !body.order.every((id) => typeof id === 'string')) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'order' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    await options.kernel.reorderSqlViews(ctx, { baseId: base.baseId, order: body.order })
+    return c.body(null, 204)
+  })
+
+  app.patch('/api/v1/:tenantRef/admin/bases/:base/sql-views/:view', async (c) => {
+    const body = await c.req.json<Record<string, unknown> & LookBody>()
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const updated = await options.kernel.updateSqlView(ctx, {
+      baseId: base.baseId,
+      viewId: c.req.param('view'),
+      input: sqlViewInput(body),
+    })
+    return c.json({ data: serializeSqlView(updated) })
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/bases/:base/sql-views/:view', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    await options.kernel.deleteSqlView(ctx, { baseId: base.baseId, viewId: c.req.param('view') })
+    return c.body(null, 204)
   })
 
   app.post('/api/v1/:tenantRef/ai/bases/:base/expression', async (c) => {
@@ -2140,6 +2592,120 @@ export function createApp(options: AppOptions) {
       },
       messages: messages as Array<{ role: 'user' | 'assistant'; content: string }>,
       readData: body.read_data === true,
+      language: screenLanguage(c),
+    })
+    return c.json({ data: answer })
+  })
+
+  // The copilot of the dashboards — chapter 18 §2.6: the same conversation, about the
+  // dashboards of a base. `dashboard`, `tab` and `values` say what is on screen; the kernel
+  // answers with questions, changes and filter values, proposed, never applied.
+  app.post('/api/v1/:tenantRef/ai/bases/:base/dashboard-copilot', async (c) => {
+    const body = await c.req.json<{
+      dashboard?: unknown
+      tab?: unknown
+      values?: unknown
+      messages?: unknown
+      read_data?: unknown
+      timezone?: unknown
+      week_start?: unknown
+    }>()
+    const messages = Array.isArray(body.messages) ? body.messages : null
+    if (
+      messages === null ||
+      messages.some(
+        (m) =>
+          typeof m !== 'object' ||
+          m === null ||
+          (m.role !== 'user' && m.role !== 'assistant') ||
+          typeof m.content !== 'string',
+      )
+    ) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'messages' } })
+    }
+    for (const key of ['dashboard', 'tab', 'timezone'] as const) {
+      const value = body[key]
+      if (value !== undefined && value !== null && typeof value !== 'string') {
+        throw new BasedbError('REQUEST_INVALID', { details: { field: key } })
+      }
+    }
+    if (
+      body.values !== undefined &&
+      body.values !== null &&
+      (typeof body.values !== 'object' || Array.isArray(body.values))
+    ) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'values' } })
+    }
+    if (body.read_data !== undefined && typeof body.read_data !== 'boolean') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'read_data' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const answer = await options.kernel.dashboardCopilot(ctx, providerTransport, {
+      baseId: base.baseId,
+      dashboardId:
+        typeof body.dashboard === 'string' && body.dashboard !== '' ? body.dashboard : null,
+      tab: typeof body.tab === 'string' && body.tab !== '' ? body.tab : null,
+      values: (body.values ?? {}) as Record<string, never>,
+      messages: messages as Array<{ role: 'user' | 'assistant'; content: string }>,
+      readData: body.read_data === true,
+      ...(typeof body.timezone === 'string' ? { timezone: body.timezone } : {}),
+      weekStart: body.week_start === 0 ? 0 : 1,
+      language: screenLanguage(c),
+    })
+    return c.json({ data: answer })
+  })
+
+  // The copilot of the automations — chapter 17 §6: the same conversation, about the
+  // automations of a base. `automation` names the one on screen, `draft` is what its editor
+  // shows; the kernel answers with automations proposed whole, never saved.
+  app.post('/api/v1/:tenantRef/ai/bases/:base/automation-copilot', async (c) => {
+    const body = await c.req.json<{
+      automation?: unknown
+      draft?: unknown
+      messages?: unknown
+      read_data?: unknown
+    }>()
+    const messages = Array.isArray(body.messages) ? body.messages : null
+    if (
+      messages === null ||
+      messages.some(
+        (m) =>
+          typeof m !== 'object' ||
+          m === null ||
+          (m.role !== 'user' && m.role !== 'assistant') ||
+          typeof m.content !== 'string',
+      )
+    ) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'messages' } })
+    }
+    if (
+      body.automation !== undefined &&
+      body.automation !== null &&
+      typeof body.automation !== 'string'
+    ) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'automation' } })
+    }
+    if (
+      body.draft !== undefined &&
+      body.draft !== null &&
+      (typeof body.draft !== 'object' || Array.isArray(body.draft))
+    ) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'draft' } })
+    }
+    if (body.read_data !== undefined && typeof body.read_data !== 'boolean') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'read_data' } })
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const answer = await options.kernel.automationCopilot(ctx, providerTransport, {
+      baseId: base.baseId,
+      automationId:
+        typeof body.automation === 'string' && body.automation !== '' ? body.automation : null,
+      draft: (body.draft ?? null) as Record<string, unknown> | null,
+      messages: messages as Array<{ role: 'user' | 'assistant'; content: string }>,
+      readData: body.read_data === true,
+      language: screenLanguage(c),
     })
     return c.json({ data: answer })
   })
@@ -2195,6 +2761,7 @@ export function createApp(options: AppOptions) {
     const draft = await options.kernel.draftStructure(ctx, providerTransport, {
       baseId: base.baseId,
       request: body.request,
+      language: screenLanguage(c),
     })
     return c.json({ data: draft })
   })
@@ -2246,11 +2813,18 @@ export function createApp(options: AppOptions) {
     throw new BasedbError('REQUEST_INVALID', { details: { field: 'kind' } })
   }
 
-  app.get('/api/v1/:tenantRef/admin/physical/:kind/:id', async (c) => {
-    const ctx = await contextFor(c, await bearer(c))
+  /** What a physical rename would touch; `?label=` is the label typed alongside. */
+  const renameImpactOf = async (
+    c: Context<{ Variables: Variables }, string>,
+    ctx: RequestContext,
+    kind: 'base' | 'table' | 'field',
+    id: string,
+  ) => {
+    const label = c.req.query('label')
     const impact = await options.kernel.renameImpact(ctx, {
-      kind: physicalKind(c.req.param('kind')),
-      id: c.req.param('id'),
+      kind,
+      id,
+      ...(label === undefined ? {} : { label }),
     })
     return c.json({
       data: {
@@ -2271,9 +2845,15 @@ export function createApp(options: AppOptions) {
         citing_prompts: impact.citingPrompts,
       },
     })
-  })
+  }
 
-  app.post('/api/v1/:tenantRef/admin/physical/:kind/:id/rename', async (c) => {
+  /** The physical rename itself, from its body. */
+  const renamePhysicalOf = async (
+    c: Context<{ Variables: Variables }, string>,
+    ctx: RequestContext,
+    kind: 'base' | 'table' | 'field',
+    id: string,
+  ) => {
     const body = await c.req.json<{
       name?: unknown
       confirm?: unknown
@@ -2286,10 +2866,9 @@ export function createApp(options: AppOptions) {
     if (body.alias !== undefined && typeof body.alias !== 'boolean') {
       throw new BasedbError('REQUEST_INVALID', { details: { field: 'alias' } })
     }
-    const ctx = await contextFor(c, await bearer(c))
     const result = await options.kernel.renamePhysical(ctx, {
-      kind: physicalKind(c.req.param('kind')),
-      id: c.req.param('id'),
+      kind,
+      id,
       name: body.name,
       confirm: body.confirm,
       ...(body.alias === undefined ? {} : { alias: body.alias }),
@@ -2302,7 +2881,46 @@ export function createApp(options: AppOptions) {
         migration: serializeMigration(result.migration),
       },
     })
+  }
+
+  app.get('/api/v1/:tenantRef/admin/physical/:kind/:id', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    return renameImpactOf(c, ctx, physicalKind(c.req.param('kind')), c.req.param('id'))
   })
+
+  app.post('/api/v1/:tenantRef/admin/physical/:kind/:id/rename', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    return renamePhysicalOf(c, ctx, physicalKind(c.req.param('kind')), c.req.param('id'))
+  })
+
+  // A field by its names, like every other field route: its catalog id is not in the
+  // description of a base, and the interface has only the names to go by.
+  const physicalField = async (c: Context<{ Variables: Variables }, string>) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const field = await options.kernel.resolveField(
+      ctx,
+      c.req.param('base') ?? '',
+      c.req.param('table') ?? '',
+      c.req.param('field') ?? '',
+    )
+    return { ctx, id: field.fieldId }
+  }
+
+  app.get(
+    '/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field/physical',
+    async (c) => {
+      const { ctx, id } = await physicalField(c)
+      return renameImpactOf(c, ctx, 'field', id)
+    },
+  )
+
+  app.post(
+    '/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field/physical/rename',
+    async (c) => {
+      const { ctx, id } = await physicalField(c)
+      return renamePhysicalOf(c, ctx, 'field', id)
+    },
+  )
 
   type AliasSummary = Awaited<ReturnType<typeof options.kernel.listAliases>>[number]
   const serializeAlias = (a: AliasSummary) => ({
@@ -2783,9 +3401,14 @@ export function createApp(options: AppOptions) {
       rollup?: { via?: unknown; via_table?: unknown; target?: unknown; aggregate?: unknown }
       /** A button: `{ label, color?, action, url?, automation? }` (chapter 17 §4). */
       button?: Record<string, unknown>
+      /** A long text that holds HTML (chapter 04 §2.2). */
+      rich?: unknown
     }>()
     const ctx = await contextFor(c, await bearer(c))
 
+    if (body.rich !== undefined && typeof body.rich !== 'boolean') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'rich' } })
+    }
     if (body.format !== undefined && (typeof body.format !== 'object' || body.format === null)) {
       throw new BasedbError('REQUEST_INVALID', { details: { field: 'format' } })
     }
@@ -2810,6 +3433,7 @@ export function createApp(options: AppOptions) {
       ...(formula === undefined ? {} : { formula }),
       ...(rollup === undefined ? {} : { rollup }),
       ...(body.button === undefined ? {} : { button: body.button }),
+      ...(body.rich === true ? { rich: true } : {}),
     })
 
     return c.json(
@@ -3210,6 +3834,74 @@ export function createApp(options: AppOptions) {
     })
   })
 
+  /**
+   * Reads of shared dashboards, per address and link: a page runs each of its cards, and
+   * again at each change of a filter — a wider allowance than a view's.
+   */
+  const dashboardReads = new RateLimiter(600, 60_000)
+  const admitDashboardRead = (c: Context<{ Variables: Variables }, string>) => {
+    const verdict = dashboardReads.check(`${addressOf(c)}:${c.req.param('token')}`, Date.now())
+    if (!verdict.allowed) {
+      c.header('retry-after', String(verdict.retryAfter))
+      throw new BasedbError('RATE_LIMIT_EXCEEDED', {
+        details: { retry_after: verdict.retryAfter },
+      })
+    }
+  }
+
+  /** A shared dashboard — chapter 18 §2.5: its tabs, filters, cards, and the fields shown. */
+  app.get('/api/v1/dashboards/:token', async (c) => {
+    admitDashboardRead(c)
+    const page = await options.kernel.openSharedDashboard({
+      token: c.req.param('token'),
+      reader: await respondentOf(c),
+      requestId: c.get('requestId'),
+    })
+    return c.json({
+      data: {
+        title: page.title,
+        description: page.description,
+        access: page.access,
+        reader: page.reader,
+        can_embed: page.canEmbed,
+        tabs: page.tabs,
+        parameters: page.parameters,
+        cards: page.cards,
+        tables: page.tables,
+      },
+    })
+  })
+
+  // One card, run on the publisher's authority. The body gives the filters' values alone:
+  // what they filter is the dashboard's, never the visitor's.
+  app.post('/api/v1/dashboards/:token/cards/:card', async (c) => {
+    admitDashboardRead(c)
+    const body = await c.req
+      .json<{ values?: unknown; timezone?: unknown; week_start?: unknown }>()
+      .catch(() => ({}) as { values?: unknown; timezone?: unknown; week_start?: unknown })
+    const result = await options.kernel.runSharedCard({
+      token: c.req.param('token'),
+      reader: await respondentOf(c),
+      requestId: c.get('requestId'),
+      card: c.req.param('card'),
+      values: body.values,
+      timezone: typeof body.timezone === 'string' ? body.timezone : undefined,
+      weekStart: body.week_start === 0 ? 0 : 1,
+    })
+    return c.json({ data: result })
+  })
+
+  app.get('/api/v1/dashboards/:token/parameters/:parameter/values', async (c) => {
+    admitDashboardRead(c)
+    const values = await options.kernel.sharedParameterValues({
+      token: c.req.param('token'),
+      reader: await respondentOf(c),
+      requestId: c.get('requestId'),
+      parameter: c.req.param('parameter'),
+    })
+    return c.json({ data: values })
+  })
+
   app.get('/api/v1/forms/:token', async (c) => {
     const form = await options.kernel.openSharedForm({
       token: c.req.param('token'),
@@ -3410,6 +4102,27 @@ export function createApp(options: AppOptions) {
     last_used_at: t.lastUsedAt,
     revoked_at: t.revokedAt,
     suspended_at: t.suspendedAt,
+  })
+
+  // The tokens the caller minted, on every base (chapter 11 §10) — revoked with the route
+  // below, which lets a creator close their own door without `manage_tokens`.
+  app.get('/api/v1/:tenantRef/me/tokens', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const tokens = await options.kernel.listOwnApiTokens(ctx)
+    return c.json({
+      data: tokens.map((t) => ({
+        ...serializeToken(t),
+        base:
+          t.base === null
+            ? null
+            : {
+                name: t.base.name,
+                label: t.base.label,
+                environment: t.base.environment,
+                production: t.base.production,
+              },
+      })),
+    })
   })
 
   app.get('/api/v1/:tenantRef/admin/tokens', async (c) => {
@@ -3735,6 +4448,20 @@ interface LookBody {
   readonly color?: unknown
   readonly icon?: unknown
   readonly image?: unknown
+}
+
+/** What a SQL statement returned, in the API's words — the console's, a view's. */
+function serializeSqlResult(result: SqlConsoleResult) {
+  return {
+    columns: result.columns,
+    rows: result.rows,
+    row_count: result.rowCount,
+    command: result.command,
+    duration_ms: result.durationMs,
+    truncated: result.truncated,
+    schema: result.schema,
+    mode: result.mode,
+  }
 }
 
 /**

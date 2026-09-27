@@ -1,0 +1,660 @@
+---
+/**
+ * Several people in one table, live — drawn in the application's dark theme, on black.
+ *
+ * Hugo signs a quote, Léa corrects an amount, Camille asks Hugo about another one in a
+ * comment and he answers; the bell rings, a notice says who changed what. The scene plays
+ * while it is on screen, in a loop, and starts again from the beginning when it comes back.
+ * Drawn at 1000 × 560 and scaled to the page.
+ */
+import { type Locale, fill, i18n } from '../../i18n';
+import Icon from '../landing/Icon.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, lang, href } = i18n(locale);
+const s = t.teams.together;
+const d = s.demo;
+
+const PEOPLE = [
+	{ id: 'lea', name: 'Léa', color: '#f472b6' },
+	{ id: 'hugo', name: 'Hugo', color: '#60a5fa' },
+	{ id: 'camille', name: 'Camille', color: '#a78bfa' },
+] as const;
+
+type Status = keyof typeof d.statuses;
+const money = (n: number) =>
+	new Intl.NumberFormat(lang, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+const day = (n: number) =>
+	new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, 9, n)));
+const FACTS: Array<{ status: Status; amount: number; due: number }> = [
+	{ status: 'signed', amount: 4200, due: 2 },
+	{ status: 'sent', amount: 12500, due: 6 },
+	{ status: 'draft', amount: 6400, due: 8 },
+	{ status: 'sent', amount: 2100, due: 20 },
+	{ status: 'sent', amount: 7500, due: 13 },
+	{ status: 'signed', amount: 22000, due: 15 },
+];
+const rows = d.rows.map((client, i) => ({ client, ...FACTS[i]!, amountText: money(FACTS[i]!.amount), dueText: day(FACTS[i]!.due) }));
+// The comment names Hugo: the mention is drawn as one.
+const [before = '', after = ''] = d.comment.split('@{name}');
+---
+
+<section class="tm-section night together" data-together>
+	<div class="tm-head tm-rise">
+		<p class="tm-kicker">{s.eyebrow}</p>
+		<h2 class="tm-display">
+			<span>{s.title}</span>
+			<span class="tm-grad">{s.titleAccent}</span>
+		</h2>
+		<p class="tm-lede">{s.text}</p>
+	</div>
+
+	<div class="frame tm-rise" data-frame aria-hidden="true">
+		<div class="win" data-win>
+			<div class="bar">
+				<span class="dots"><i></i><i></i><i></i></span>
+				<span class="path">{d.path}</span>
+				<span class="here">
+					<span class="faces">
+						{PEOPLE.map((p) => <i style={`background:${p.color}`}>{p.name.charAt(0)}</i>)}
+					</span>
+					{d.here}
+				</span>
+				<span class="bell" data-bell>
+					<Icon name="bell" size={17} />
+				</span>
+			</div>
+			<div class="tools">
+				<span class="pill"><Icon name="table" size={14} />{t.teams.stage.views.grid}</span>
+				{[t.teams.stage.toolbar.filter, t.teams.stage.toolbar.sort].map((tool) => <span>{tool}</span>)}
+			</div>
+			<div class="grid">
+				<div class="row head">
+					<span class="n">#</span>
+					<span>{d.columns.client}</span>
+					<span>{d.columns.status}</span>
+					<span class="num">{d.columns.amount}</span>
+					<span>{d.columns.due}</span>
+				</div>
+				{
+					rows.map((r, i) => (
+						<div class="row" data-row={i}>
+							<span class="n">{i + 1}</span>
+							<span class="client" data-cell={`${i}-client`}>
+								{r.client}
+							</span>
+							<span data-cell={`${i}-status`}>
+								<i class="chip" data-status={r.status} data-chip={i}>
+									{d.statuses[r.status]}
+								</i>
+							</span>
+							<span class="num" data-cell={`${i}-amount`}>
+								<em data-amount={i} data-next={i === 2 ? money(6900) : undefined}>
+									{r.amountText}
+								</em>
+							</span>
+							<span data-cell={`${i}-due`}>{r.dueText}</span>
+						</div>
+					))
+				}
+			</div>
+
+			<div class="comment" data-comment>
+				<div class="msg">
+					<i class="face" style={`background:${PEOPLE[2].color}`}>C</i>
+					<p>
+						<b>{PEOPLE[2].name}</b>
+						<span>
+							{before}
+							<b class="mention">@{PEOPLE[1].name}</b>
+							{after}
+						</span>
+					</p>
+				</div>
+				<div class="msg reply" data-reply>
+					<i class="face" style={`background:${PEOPLE[1].color}`}>H</i>
+					<p>
+						<b>{PEOPLE[1].name}</b>
+						<span>{d.reply}</span>
+					</p>
+				</div>
+			</div>
+
+			<div class="toast" data-toast>
+				<i class="face" style={`background:${PEOPLE[1].color}`}>H</i>
+				<span>{fill(d.toast, { name: PEOPLE[1].name, field: d.columns.status })}</span>
+			</div>
+
+			{
+				PEOPLE.map((p) => (
+					<div class="cursor" data-cursor={p.id} style={`--c:${p.color}`}>
+						<svg width="18" height="18" viewBox="0 0 24 24">
+							<path d="M4 2l16 9.5-7 1.6-3.6 6.9z" fill="currentColor" stroke="#000" stroke-width="1.2" stroke-linejoin="round" />
+						</svg>
+						<span>{p.name}</span>
+					</div>
+				))
+			}
+		</div>
+	</div>
+
+	<div class="tm-points">
+		<div class="tm-rise">
+			<span class="ic"><Icon name="users" size={22} /></span>
+			<h3>{s.points.live.title}</h3>
+			<p>{s.points.live.text}</p>
+		</div>
+		<div class="tm-rise">
+			<span class="ic"><Icon name="message" size={22} /></span>
+			<h3>{s.points.comments.title}</h3>
+			<p>{s.points.comments.text}</p>
+		</div>
+		<div class="tm-rise">
+			<span class="ic"><Icon name="history" size={22} /></span>
+			<h3>{s.points.undo.title}</h3>
+			<p>{s.points.undo.text}</p>
+		</div>
+	</div>
+	<p class="more tm-rise"><a class="tm-link" href={href(s.link.href)}>{s.link.label}</a></p>
+</section>
+
+<script>
+	import { fit, reducedMotion, whileVisible } from '../../lib/motion';
+
+	const section = document.querySelector<HTMLElement>('[data-together]');
+	const frame = section?.querySelector<HTMLElement>('[data-frame]');
+	const win = section?.querySelector<HTMLElement>('[data-win]');
+	if (section && frame && win) {
+		fit(frame, 1000);
+		const $ = <T extends HTMLElement>(selector: string) => win.querySelector<T>(selector)!;
+		const cursor = (id: string) => $(`[data-cursor="${id}"]`);
+		/** Where a cell is, in the window's own pixels. */
+		const spot = (cell: string, dx = 0.55, dy = 0.62) => {
+			const el = $(`[data-cell="${cell}"]`);
+			let x = 0;
+			let y = 0;
+			for (let n: HTMLElement | null = el; n !== null && n !== win; n = n.offsetParent as HTMLElement | null) {
+				x += n.offsetLeft;
+				y += n.offsetTop;
+			}
+			return { x: x + el.offsetWidth * dx, y: y + el.offsetHeight * dy };
+		};
+		const move = (id: string, to: { x: number; y: number }, shown = true) => {
+			const c = cursor(id);
+			c.style.transform = `translate(${to.x}px, ${to.y}px)`;
+			c.classList.toggle('on', shown);
+		};
+		const ring = (cell: string | null, color = '') => {
+			for (const el of win.querySelectorAll<HTMLElement>('[data-cell].ringed')) el.classList.remove('ringed');
+			if (cell === null) return;
+			const el = $(`[data-cell="${cell}"]`);
+			el.style.setProperty('--ring', color);
+			el.classList.add('ringed');
+		};
+		const setStatus = (row: number, status: string, label: string) => {
+			const chip = $(`[data-chip="${row}"]`);
+			chip.dataset.status = status;
+			chip.textContent = label;
+			chip.classList.remove('pop');
+			void chip.offsetWidth;
+			chip.classList.add('pop');
+		};
+		const signed = win.querySelector<HTMLElement>('[data-status="signed"]')?.textContent?.trim() ?? '';
+		const sent = win.querySelector<HTMLElement>('[data-status="sent"]')?.textContent?.trim() ?? '';
+		const amount = $('[data-amount="2"]');
+		const original = amount.textContent?.trim() ?? '';
+		const corrected = amount.dataset.next ?? original;
+		const comment = $('[data-comment]');
+		const reply = $('[data-reply]');
+		const toast = $('[data-toast]');
+		const bell = $('[data-bell]');
+
+		const reset = () => {
+			setStatus(1, 'sent', sent);
+			setStatus(4, 'sent', sent);
+			amount.textContent = original;
+			comment.classList.remove('on');
+			reply.classList.remove('on');
+			toast.classList.remove('on');
+			bell.classList.remove('ring');
+			ring(null);
+			move('lea', { x: 900, y: 600 }, false);
+			move('hugo', { x: 1040, y: 160 }, false);
+			move('camille', { x: 400, y: 620 }, false);
+			for (const r of win.querySelectorAll<HTMLElement>('[data-row]')) r.style.removeProperty('--here');
+		};
+		const here = (row: number, color: string | null) => {
+			const r = $(`[data-row="${row}"]`);
+			if (color === null) r.style.removeProperty('--here');
+			else r.style.setProperty('--here', color);
+		};
+
+		if (reducedMotion()) {
+			// Still: the moment after — the comment and its answer, Hugo's change made.
+			setStatus(1, 'signed', signed);
+			comment.classList.add('on');
+			reply.classList.add('on');
+			bell.classList.add('ring');
+		} else {
+			reset();
+			whileVisible(section, async (sleep) => {
+				for (;;) {
+					reset();
+					await sleep(700);
+					// Hugo signs the quote of row 2.
+					move('hugo', spot('1-status'));
+					here(1, '#60a5fa');
+					await sleep(1000);
+					ring('1-status', '#60a5fa');
+					await sleep(350);
+					setStatus(1, 'signed', signed);
+					toast.classList.add('on');
+					await sleep(900);
+					ring(null);
+					move('hugo', { x: 980, y: 140 });
+					// Léa corrects an amount, figure by figure.
+					move('lea', spot('2-amount', 0.7));
+					here(2, '#f472b6');
+					await sleep(1100);
+					ring('2-amount', '#f472b6');
+					toast.classList.remove('on');
+					for (let i = original.length; i >= 0; i -= 1) {
+						amount.textContent = original.slice(0, i);
+						await sleep(45);
+					}
+					for (let i = 1; i <= corrected.length; i += 1) {
+						amount.textContent = corrected.slice(0, i);
+						await sleep(90);
+					}
+					await sleep(500);
+					ring(null);
+					move('lea', { x: 860, y: 580 });
+					here(1, null);
+					// Camille asks Hugo about another quote; the bell rings; he answers.
+					move('camille', spot('4-client', 0.4));
+					here(4, '#a78bfa');
+					await sleep(1100);
+					comment.classList.add('on');
+					await sleep(700);
+					bell.classList.add('ring');
+					await sleep(1600);
+					reply.classList.add('on');
+					await sleep(900);
+					move('hugo', spot('4-status'));
+					await sleep(1000);
+					ring('4-status', '#60a5fa');
+					await sleep(300);
+					setStatus(4, 'signed', signed);
+					await sleep(700);
+					ring(null);
+					await sleep(3200);
+				}
+			});
+		}
+	}
+</script>
+
+<style>
+	.together {
+		overflow: hidden;
+	}
+	.together::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 38%;
+		width: 1100px;
+		height: 700px;
+		transform: translateX(-50%);
+		background: radial-gradient(closest-side, rgba(96, 165, 250, 0.14), rgba(167, 139, 250, 0.08) 45%, transparent 75%);
+		pointer-events: none;
+	}
+	.frame {
+		--k: 1;
+		position: relative;
+		width: 100%;
+		max-width: 1000px;
+		height: calc(560px * var(--k));
+		margin: 80px auto 0;
+	}
+	.win {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 1000px;
+		height: 560px;
+		transform: scale(var(--k));
+		transform-origin: 0 0;
+		overflow: hidden;
+		border-radius: 18px;
+		background: #0f0f12;
+		box-shadow:
+			0 0 0 1px rgba(255, 255, 255, 0.09),
+			0 60px 120px -40px rgba(96, 165, 250, 0.25);
+		color: #ececf1;
+		font-size: 14px;
+	}
+	.bar {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		height: 48px;
+		padding: 0 18px;
+		border-bottom: 1px solid #25252b;
+		background: #141418;
+	}
+	.dots {
+		display: flex;
+		gap: 7px;
+	}
+	.dots i {
+		width: 11px;
+		height: 11px;
+		border-radius: 50%;
+		background: #ff5f57;
+	}
+	.dots i:nth-child(2) {
+		background: #febc2e;
+	}
+	.dots i:nth-child(3) {
+		background: #28c840;
+	}
+	.path {
+		margin-left: 8px;
+		font-weight: 600;
+	}
+	.here {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-left: auto;
+		font-size: 13px;
+		color: #8d8d96;
+	}
+	.faces {
+		display: flex;
+	}
+	.faces i,
+	.face {
+		display: inline-grid;
+		place-items: center;
+		width: 26px;
+		height: 26px;
+		border-radius: 50%;
+		font-style: normal;
+		font-size: 11.5px;
+		font-weight: 700;
+		color: #0f0f12;
+	}
+	.faces i {
+		margin-left: -6px;
+		box-shadow: 0 0 0 2px #141418;
+	}
+	.bell {
+		position: relative;
+		display: grid;
+		place-items: center;
+		width: 34px;
+		height: 34px;
+		border-radius: 9px;
+		color: #c7c7cf;
+	}
+	.bell::after {
+		content: '';
+		position: absolute;
+		top: 7px;
+		right: 8px;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #f43f5e;
+		box-shadow: 0 0 0 2px #141418;
+		transform: scale(0);
+		transition: transform 0.3s cubic-bezier(0.3, 1.6, 0.5, 1);
+	}
+	.bell.ring::after {
+		transform: scale(1);
+	}
+	.bell.ring :global(svg) {
+		animation: ring 0.9s ease;
+	}
+	@keyframes ring {
+		20%,
+		60% {
+			transform: rotate(14deg);
+		}
+		40%,
+		80% {
+			transform: rotate(-14deg);
+		}
+	}
+	.tools {
+		display: flex;
+		align-items: center;
+		gap: 22px;
+		height: 50px;
+		padding: 0 18px;
+		border-bottom: 1px solid #25252b;
+		color: #8d8d96;
+	}
+	.tools .pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 5px 12px;
+		border-radius: 8px;
+		color: #ececf1;
+		font-weight: 600;
+		box-shadow: inset 0 0 0 1px #2c2c33;
+	}
+	.tools .pill :global(svg) {
+		color: #6ee08a;
+	}
+	.row {
+		display: grid;
+		grid-template-columns: 48px 280px 190px 170px 160px 1fr;
+		align-items: center;
+		height: 60px;
+		border-bottom: 1px solid #1f1f25;
+		box-shadow: inset 3px 0 0 var(--here, transparent);
+		transition: box-shadow 0.4s ease;
+	}
+	.row.head {
+		height: 44px;
+		color: #8d8d96;
+		font-size: 13px;
+		font-weight: 600;
+		background: #121216;
+	}
+	.row > span {
+		display: flex;
+		align-items: center;
+		height: 100%;
+		padding: 0 14px;
+		border-radius: 6px;
+		white-space: nowrap;
+		box-shadow: inset 0 0 0 0 var(--ring, transparent);
+		transition: box-shadow 0.25s ease;
+	}
+	.row > span.ringed {
+		box-shadow: inset 0 0 0 2px var(--ring);
+	}
+	.row .n {
+		justify-content: center;
+		color: #5f5f68;
+		font-size: 12.5px;
+	}
+	.client {
+		font-weight: 600;
+	}
+	.num {
+		justify-content: flex-end;
+		font-variant-numeric: tabular-nums;
+	}
+	.num em {
+		font-style: normal;
+	}
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 4px 11px;
+		border-radius: 999px;
+		font-style: normal;
+		font-size: 13px;
+		font-weight: 600;
+	}
+	.chip::before {
+		content: '';
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: currentColor;
+	}
+	.chip[data-status='draft'] {
+		color: #a1a1aa;
+		background: rgba(161, 161, 170, 0.14);
+	}
+	.chip[data-status='sent'] {
+		color: #fbbf24;
+		background: rgba(251, 191, 36, 0.13);
+	}
+	.chip[data-status='signed'] {
+		color: #4ade80;
+		background: rgba(74, 222, 128, 0.13);
+	}
+	.chip.pop {
+		animation: pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1);
+	}
+	@keyframes pop {
+		from {
+			transform: scale(0.6);
+			opacity: 0;
+		}
+	}
+
+	.comment {
+		position: absolute;
+		left: 560px;
+		top: 292px;
+		width: 400px;
+		padding: 14px;
+		border-radius: 14px;
+		background: #1b1b21;
+		box-shadow:
+			0 0 0 1px #2c2c33,
+			0 30px 60px -20px rgba(0, 0, 0, 0.8);
+		opacity: 0;
+		transform: translateY(10px) scale(0.97);
+		transition:
+			opacity 0.35s ease,
+			transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+	}
+	.comment.on {
+		opacity: 1;
+		transform: none;
+	}
+	.msg {
+		display: flex;
+		gap: 10px;
+	}
+	.msg p {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+		margin: 3px 0 0;
+		font-size: 13.5px;
+		line-height: 1.45;
+	}
+	.msg p > b {
+		font-size: 12.5px;
+		color: #c7c7cf;
+	}
+	.mention {
+		color: #93c5fd;
+		background: rgba(96, 165, 250, 0.16);
+		border-radius: 5px;
+		padding: 0 4px;
+	}
+	.reply {
+		margin-top: 12px;
+		padding-top: 12px;
+		border-top: 1px solid #2a2a31;
+		max-height: 0;
+		opacity: 0;
+		overflow: hidden;
+		transition:
+			opacity 0.35s ease,
+			max-height 0.45s ease,
+			margin 0.45s ease,
+			padding 0.45s ease;
+	}
+	.reply:not(.on) {
+		margin-top: 0;
+		padding-top: 0;
+		border-top-color: transparent;
+	}
+	.reply.on {
+		max-height: 80px;
+		opacity: 1;
+	}
+	.toast {
+		position: absolute;
+		top: 60px;
+		right: 18px;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 9px 14px 9px 9px;
+		border-radius: 12px;
+		background: #1b1b21;
+		box-shadow:
+			0 0 0 1px #2c2c33,
+			0 20px 40px -16px rgba(0, 0, 0, 0.8);
+		font-size: 13px;
+		opacity: 0;
+		transform: translateY(-8px);
+		transition:
+			opacity 0.3s ease,
+			transform 0.3s ease;
+	}
+	.toast.on {
+		opacity: 1;
+		transform: none;
+	}
+	.cursor {
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 3;
+		display: flex;
+		align-items: flex-start;
+		gap: 1px;
+		color: var(--c);
+		opacity: 0;
+		pointer-events: none;
+		transition:
+			transform 0.95s cubic-bezier(0.22, 0.61, 0.36, 1),
+			opacity 0.3s ease;
+	}
+	.cursor.on {
+		opacity: 1;
+	}
+	.cursor span {
+		margin-top: 14px;
+		padding: 2px 8px;
+		border-radius: 999px;
+		background: var(--c);
+		color: #0f0f12;
+		font-size: 11.5px;
+		font-weight: 700;
+	}
+	.more {
+		margin: 48px 0 0;
+		text-align: center;
+	}
+</style>

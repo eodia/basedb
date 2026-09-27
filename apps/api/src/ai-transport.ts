@@ -1,4 +1,4 @@
-import { BasedbError, type ProviderTransport } from '@basedb/core'
+import { BasedbError, type ProviderName, type ProviderTransport } from '@basedb/core'
 
 /**
  * The AI transport — chapter 12 §2.3, the adapter's half.
@@ -9,8 +9,9 @@ import { BasedbError, type ProviderTransport } from '@basedb/core'
  * base is, and decides nothing: it receives a system instruction, a payload and a
  * schema, and gives back text.
  *
- * Three providers, one function each, because their request bodies genuinely differ and
- * a shared abstraction over three shapes would be longer than the three shapes.
+ * Three request shapes, one function each, because their bodies genuinely differ and a
+ * shared abstraction over three shapes would be longer than the three shapes. A
+ * compatible server — Azure, a gateway, a local model — takes OpenAI's.
  */
 
 interface Attempt {
@@ -24,13 +25,21 @@ interface Attempt {
   }
 }
 
+/** The vendors' own addresses — what `BASEDB_AI_BASE_URL` replaces. */
+const BASE_URL: Readonly<Partial<Record<ProviderName, string>>> = {
+  openai: 'https://api.openai.com/v1',
+  anthropic: 'https://api.anthropic.com/v1',
+  mistral: 'https://api.mistral.ai/v1',
+}
+
 /**
  * The circuit breaker of §2.4.
  *
  * Five consecutive failures on a (tenant, provider) pair open it for five minutes:
- * refused immediately, consuming neither quota nor time. Keyed by provider alone here —
- * the transport does not know the tenant, and must not be told, since knowing it is the
- * first step towards deciding something with it.
+ * refused immediately, consuming neither quota nor time. Keyed by the address called
+ * here — the transport does not know the tenant, and must not be told, since knowing it
+ * is the first step towards deciding something with it. An Azure deployment that fails
+ * does not close OpenAI's own address.
  */
 const breaker = new Map<string, { failures: number; openUntil: number }>()
 const BREAKER_THRESHOLD = 5
@@ -40,19 +49,49 @@ function instruction(system: string, schema: Record<string, unknown>): string {
   return `${system}\n\nSCHÉMA DE LA RÉPONSE :\n${JSON.stringify(schema, null, 2)}`
 }
 
-function attemptFor(request: Parameters<ProviderTransport>[0]): Attempt {
+/**
+ * The operation's address under a base: appended to its path, before its query string —
+ * Azure's `?api-version=…` stays where Azure wants it.
+ */
+export function under(base: string, operation: string): string {
+  const url = new URL(base)
+  url.pathname = `${url.pathname.replace(/\/+$/, '')}${operation}`
+  return url.toString()
+}
+
+/**
+ * The headers of a call: the provider's own, then the operator's (`BASEDB_AI_HEADERS`,
+ * lower-cased by the kernel), which may replace them — an `authorization` of a gateway —,
+ * then the body's type, which nothing replaces.
+ */
+function headersOf(
+  request: Parameters<ProviderTransport>[0],
+  own: Record<string, string>,
+): Record<string, string> {
+  return { ...own, ...request.headers, 'content-type': 'application/json' }
+}
+
+const bearer = (apiKey: string): Record<string, string> =>
+  apiKey === '' ? {} : { authorization: `Bearer ${apiKey}` }
+
+export function attemptFor(request: Parameters<ProviderTransport>[0]): Attempt {
   const system = instruction(request.system, request.schema)
   const user = JSON.stringify(request.payload)
+  const base = request.baseUrl ?? BASE_URL[request.provider]
+  if (base === undefined) {
+    // The kernel resolves no compatible provider without its address: reaching this is
+    // a transport handed a request the kernel did not build.
+    throw new BasedbError('AI_NOT_CONFIGURED', { details: { setting: 'BASEDB_AI_BASE_URL' } })
+  }
 
   switch (request.provider) {
     case 'anthropic':
       return {
-        url: 'https://api.anthropic.com/v1/messages',
-        headers: {
-          'content-type': 'application/json',
+        url: under(base, '/messages'),
+        headers: headersOf(request, {
           'x-api-key': request.apiKey,
           'anthropic-version': '2023-06-01',
-        },
+        }),
         body: {
           model: request.model,
           max_tokens: request.maxTokens ?? 2048,
@@ -76,12 +115,10 @@ function attemptFor(request: Parameters<ProviderTransport>[0]): Attempt {
       }
 
     case 'openai':
+    case 'openai_compatible':
       return {
-        url: 'https://api.openai.com/v1/chat/completions',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${request.apiKey}`,
-        },
+        url: under(base, '/chat/completions'),
+        headers: headersOf(request, bearer(request.apiKey)),
         body: {
           model: request.model,
           // JSON mode rather than a strict schema: the kernel validates the object
@@ -107,11 +144,8 @@ function attemptFor(request: Parameters<ProviderTransport>[0]): Attempt {
 
     case 'mistral':
       return {
-        url: 'https://api.mistral.ai/v1/chat/completions',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${request.apiKey}`,
-        },
+        url: under(base, '/chat/completions'),
+        headers: headersOf(request, bearer(request.apiKey)),
         body: {
           model: request.model,
           ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),
@@ -145,7 +179,8 @@ function attemptFor(request: Parameters<ProviderTransport>[0]): Attempt {
  * never agreed to, to spare them an error message.
  */
 export const providerTransport: ProviderTransport = async (request) => {
-  const state = breaker.get(request.provider)
+  const attempt = attemptFor(request)
+  const state = breaker.get(attempt.url)
   if (state !== undefined && state.openUntil > Date.now()) {
     throw new BasedbError('AI_PROVIDER_UNAVAILABLE', {
       details: {
@@ -155,7 +190,6 @@ export const providerTransport: ProviderTransport = async (request) => {
     })
   }
 
-  const attempt = attemptFor(request)
   const deadline = Date.now() + Math.max(1_000, request.timeoutMs)
   let lastStatus: number | null = null
 
@@ -176,7 +210,7 @@ export const providerTransport: ProviderTransport = async (request) => {
 
       if (response.ok) {
         const body = (await response.json()) as Record<string, unknown>
-        breaker.delete(request.provider)
+        breaker.delete(attempt.url)
         return attempt.extract(body)
       }
 
@@ -199,9 +233,9 @@ export const providerTransport: ProviderTransport = async (request) => {
     }
   }
 
-  const current = breaker.get(request.provider) ?? { failures: 0, openUntil: 0 }
+  const current = breaker.get(attempt.url) ?? { failures: 0, openUntil: 0 }
   const failures = current.failures + 1
-  breaker.set(request.provider, {
+  breaker.set(attempt.url, {
     failures,
     openUntil: failures >= BREAKER_THRESHOLD ? Date.now() + BREAKER_MS : 0,
   })

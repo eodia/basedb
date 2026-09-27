@@ -1,6 +1,13 @@
 import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
-import { type FileStorageConfig, OIDC_PRESETS, type OidcProvider, startKernel } from '@basedb/core'
+import {
+  type BasedbError,
+  type FileStorageConfig,
+  OIDC_PRESETS,
+  type OidcProvider,
+  endpointFromEnv,
+  startKernel,
+} from '@basedb/core'
 import { serve } from '@hono/node-server'
 import { providerTransport } from './ai-transport.js'
 import { createApp } from './app.js'
@@ -41,7 +48,7 @@ const mailer =
   setting('BASEDB_DEV_MAIL') === '1'
     ? async (message: { to: string; subject: string; body: string }) => {
         console.log(`[courriel · développement] ${message.to} — ${message.subject}`)
-        console.log(`[courriel · développement] secret : ${message.body}`)
+        console.log(`[courriel · développement] ${message.body}`)
       }
     : undefined
 
@@ -220,6 +227,31 @@ if (webhookDev) {
     'Webhooks : mode développement — HTTP et adresses locales acceptés (BASEDB_WEBHOOK_DEV=1).',
   )
 }
+// The environment's AI provider, read once here: a mistyped name, address or header object
+// is said at startup, not discovered later as « IA non configurée » in the interface.
+const aiProvider = setting('BASEDB_AI_PROVIDER')
+if (aiProvider !== undefined) {
+  try {
+    const { baseUrl } = endpointFromEnv(process.env)
+    if (!['openai', 'anthropic', 'mistral', 'openai_compatible'].includes(aiProvider)) {
+      console.error(
+        `IA : BASEDB_AI_PROVIDER « ${aiProvider} » inconnu — openai, anthropic, mistral ou openai_compatible.`,
+      )
+    } else if (aiProvider === 'openai_compatible' && baseUrl === undefined) {
+      console.error('IA : openai_compatible sans BASEDB_AI_BASE_URL, l’adresse du serveur.')
+    } else {
+      console.log(
+        `IA : ${aiProvider}${baseUrl === undefined ? '' : ` à ${new URL(baseUrl).origin}`}.`,
+      )
+    }
+  } catch (error) {
+    console.error(
+      (error as BasedbError).details?.setting === 'BASEDB_AI_HEADERS'
+        ? 'IA : BASEDB_AI_HEADERS doit être un objet JSON de chaînes : {"api-key":"…"}.'
+        : 'IA : BASEDB_AI_BASE_URL n’est pas une adresse http(s).',
+    )
+  }
+}
 const port = Number(setting('PORT') ?? 8787)
 
 /**
@@ -330,8 +362,9 @@ const app = createApp({
 })
 
 // The history drain runs in the serving process (chapter 07 §1.4): without it, writes
-// are captured but never reach the journals.
-kernel.startBackground()
+// are captured but never reach the journals. The automations' AI steps call the provider
+// through the same transport as the AI cells (chapter 17 §1.3).
+kernel.startBackground({ aiTransport: providerTransport })
 // The listening connection (chapter 10 §3.1): the drain woken by each write, the live
 // signals relayed to the browsers (chapter 16 §3). Down, it retries on its own.
 void kernel.live.start()

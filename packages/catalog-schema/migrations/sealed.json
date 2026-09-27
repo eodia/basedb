@@ -10,5 +10,59 @@
     "name": "0002_partage_et_comptes.sql",
     "sha256": "c4665363a28f00a7c20752297db8dcff2bcc2c2ccac083d15043b675fa7b9d37",
     "release": "0.2.0"
+  },
+  {
+    "version": 3,
+    "name": "0003_preferences_personnelles.sql",
+    "sha256": "d1bf4f668369ce9beeca4066d8309902afae94894ceafee799ee593465d9f5b8",
+    "release": "0.3.0"
+  },
+  {
+    "version": 4,
+    "name": "0004_requetes_et_vues_sql.sql",
+    "sha256": "16c4d41a3eb46d869e20c6358f6c54364220cc44524d9e27855f029900e82f50",
+    "release": "0.3.0"
+  },
+  {
+    "version": 5,
+    "name": "0005_questions_et_tableaux_de_bord.sql",
+    "sha256": "6e2b5a27a807ccaa22ce12a0c26caf56b36272f69b75385745c7bd350b261cdb",
+    "release": "0.3.0"
+  },
+  {
+    "version": 6,
+    "name": "0006_index_des_questions.sql",
+    "sha256": "d39881b718ccbbb41fd305cf824fb94645ff205f11a52c39c8b437444328bcec",
+    "release": "0.3.0"
+  },
+  {
+    "version": 7,
+    "name": "0007_partage_des_tableaux_de_bord.sql",
+    "sha256": "515bc7f58e643a377c87cdbdf231a8ff4f90acecb165e9584eb67ba29362d6fd",
+    "release": "0.3.0"
+  },
+  {
+    "version": 8,
+    "name": "0008_ia_des_automatisations.sql",
+    "sha256": "d39e6e9b468b743728fae0d929703188429f1b76de4aef75e74c70dd01e51294",
+    "release": "0.3.0"
+  },
+  {
+    "version": 9,
+    "name": "0009_langue.sql",
+    "sha256": "0a8fcb331989c20c0131a1ddd2a8680951ef596789bfe30aee5c2f0230602f0a",
+    "release": "0.3.0"
+  },
+  {
+    "version": 10,
+    "name": "0010_fournisseur_compatible_openai.sql",
+    "sha256": "55b3a9ba9c492827aad8aa0af4a790411cd879aaf10bc680498447e0c3ed502f",
+    "release": "0.3.0"
+  },
+  {
+    "version": 11,
+    "name": "0011_langue_choisie.sql",
+    "sha256": "d977b8383d3db028f061142750e28b4ff49bcd7405c62d9b4b016727fe6bf981",
+    "release": "0.3.0"
   }
 ]

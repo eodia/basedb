@@ -1,5 +1,10 @@
 import { createHmac, randomBytes } from 'node:crypto'
-import { ALL_ERROR_CODES, ERROR_CODES } from '@basedb/contracts'
+import {
+  ALL_ERROR_CODES,
+  type DashboardCopilotAnswer,
+  ERROR_CODES,
+  type QueryResult,
+} from '@basedb/contracts'
 import {
   type AccessChange,
   type AccessGraph,
@@ -61,7 +66,13 @@ import {
   agentLookupRecords,
   agentUpdateRecord,
 } from './agent/records.js'
+import {
+  type AutomationCopilotAnswer,
+  type AutomationCopilotRequest,
+  automationCopilotTurn,
+} from './ai/automation-copilot.js'
 import { type CopilotAnswer, type CopilotRequest, copilotTurn } from './ai/copilot.js'
+import { type DashboardCopilotRequest, dashboardCopilotTurn } from './ai/dashboard-copilot.js'
 import {
   type ExpressionDraft,
   type ExpressionDraftRequest,
@@ -84,7 +95,23 @@ import {
   startAiWorker,
 } from './ai/field.js'
 import { checkSchedule, nextRuns } from './ai/schedule.js'
+import { checkBuilderQuery, checkConstraints, runBuilderQuery } from './analytics/query.js'
+import {
+  type SavedQuestion,
+  type SharedDashboardPage,
+  type ValueChoice,
+  choicesOf,
+  forVisitor,
+  sharedCards,
+  sharedRun,
+  sharedTables,
+  valuesQuery,
+  withPeopleNames,
+} from './analytics/shared-dashboard.js'
+import { checkSqlQuery, runSqlQuestion } from './analytics/sql.js'
+import { writeAudit } from './audit/journal.js'
 import { bootstrapAdministrator, bootstrapInstance, bootstrapOpen } from './auth/bootstrap.js'
+import { requireElevatedSession } from './auth/elevation.js'
 import { type OidcProvider, loadProviders, requireProvider } from './auth/oidc-providers.js'
 import {
   type AssertedIdentity,
@@ -114,7 +141,14 @@ import {
   whoAmI,
 } from './auth/operations.js'
 import { loginWithOidc } from './auth/operations.js'
-import { elevated, listLiveSessions, loadSessionByToken } from './auth/session.js'
+import {
+  type OwnIdentity,
+  type ProfileChange,
+  changeEmail,
+  listOwnIdentities,
+  updateProfile,
+} from './auth/profile.js'
+import { listLiveSessions, loadSessionById, sessionUsable } from './auth/session.js'
 import {
   type SignupPolicy,
   adminSignupPolicy,
@@ -126,8 +160,10 @@ import {
   type ApiTokenSummary,
   type CreateApiTokenRequest,
   type IssuedApiToken,
+  type OwnApiToken,
   createApiToken,
   listApiTokens,
+  listOwnApiTokens,
   revokeApiToken,
   verifyApiToken,
 } from './auth/tokens.js'
@@ -144,6 +180,15 @@ import {
 import { requestRun, runAutomations, startAutomationWorker } from './automations/engine.js'
 import { APPLICATION_VERSION } from './catalog/cache.js'
 import { type FormulaInput, setFormula } from './catalog/computed-fields.js'
+import {
+  type DashboardShareSettings,
+  type DashboardSharing,
+  admitSharedDashboard,
+  deleteDashboardShare,
+  getDashboardSharing,
+  regenerateDashboardShare,
+  saveDashboardSharing,
+} from './catalog/dashboard-shares.js'
 import {
   type Dashboard,
   type DashboardInput,
@@ -229,11 +274,41 @@ import {
   purge,
 } from './catalog/purge.js'
 import {
+  type QueryInput,
+  type SavedQuery,
+  createQuery,
+  deleteQuery,
+  getQuery,
+  listQueries,
+  listQueryGroups,
+  updateQuery,
+} from './catalog/queries.js'
+import {
+  type Question,
+  type QuestionInput,
+  createQuestion,
+  deleteQuestion,
+  getQuestion,
+  listQuestions,
+  updateQuestion,
+} from './catalog/questions.js'
+import {
   type SelectOptionInput,
   type SetOptionsResult,
   setSelectOptions,
 } from './catalog/select-options.js'
 import { type MetaKind, type ServedMeta, serveMeta } from './catalog/serve.js'
+import {
+  type SqlView,
+  type SqlViewInput,
+  createSqlView,
+  deleteSqlView,
+  getSqlView,
+  listSqlViews,
+  reorderSqlViews,
+  sqlViewStatement,
+  updateSqlView,
+} from './catalog/sql-views.js'
 import { type UpdatedTable, updateTable } from './catalog/table-edit.js'
 import {
   type SavedView,
@@ -410,6 +485,8 @@ import {
   closeConsolePools,
   runConsoleSql,
 } from './sql/console.js'
+import { closeReaderPools } from './sql/reader.js'
+import { runSql } from './sql/run.js'
 import {
   type SyncedTable,
   createSyncedTable,
@@ -430,7 +507,7 @@ import {
   listTemplates,
 } from './templates/catalog.js'
 import { type TemplateDraft, type TemplateDraftRequest, draftTemplate } from './templates/draft.js'
-import { type RequestContext, type Surface, sealContext } from './tx/context.js'
+import { type RequestContext, type Surface, sealContext, withTransaction } from './tx/context.js'
 import { dispatchWebhooks, startDispatchLoop } from './webhooks/dispatch.js'
 import {
   type WebhookDelivery,
@@ -470,10 +547,13 @@ export type {
   AutomationAction,
   AutomationInput,
   AutomationRun,
+  AutomationStep,
   AutomationTrigger,
+  BranchPath,
   Schedule,
   TriggerKind,
 } from './automations/catalog.js'
+export { wireSteps } from './automations/catalog.js'
 export type { ButtonInput } from './catalog/fields.js'
 export type {
   InvitationPreview,
@@ -485,6 +565,20 @@ export type {
 } from './admin/sharing.js'
 export type { SignupPolicy } from './auth/signup.js'
 export type { Block, Dashboard, DashboardInput } from './catalog/dashboards.js'
+export type { Question, QuestionInput } from './catalog/questions.js'
+export type {
+  DashboardShare,
+  DashboardShareSettings,
+  DashboardSharing,
+} from './catalog/dashboard-shares.js'
+export type {
+  SharedDashboardCard,
+  SharedDashboardPage,
+  SharedDashboardTable,
+  ValueChoice,
+} from './analytics/shared-dashboard.js'
+export type { QueryAudience, QueryInput, QuerySummary, SavedQuery } from './catalog/queries.js'
+export type { SqlView, SqlViewInput, SqlViewSummary } from './catalog/sql-views.js'
 export type { Integration } from './integrations/slack.js'
 export type { SyncedTable } from './sync/tables.js'
 export type { CatalogEntry, CatalogListing, TemplateSource } from './templates/catalog.js'
@@ -594,6 +688,7 @@ export type {
   StructureDraftRequest,
   UsageKind,
 } from './ai/draft.js'
+export { endpointFromEnv } from './ai/draft.js'
 export type {
   AiFieldInput,
   AiFieldStatus,
@@ -610,6 +705,13 @@ export type {
   CopilotRead,
   CopilotRequest,
 } from './ai/copilot.js'
+export type { DashboardCopilotRequest } from './ai/dashboard-copilot.js'
+export type {
+  AutomationCopilotAction,
+  AutomationCopilotAnswer,
+  AutomationCopilotRequest,
+  AutomationDefinition,
+} from './ai/automation-copilot.js'
 export { DESCRIPTION_MAX_CHARS }
 export type { DocSection, Documentation } from './catalog/documentation.js'
 export { DOCUMENTED_MCP_TOOLS, toDocumentation } from './catalog/documentation.js'
@@ -659,8 +761,10 @@ export type {
   ApiTokenSummary,
   CreateApiTokenRequest,
   IssuedApiToken,
+  OwnApiToken,
   TokenAccess,
 } from './auth/tokens.js'
+export type { OwnIdentity, ProfileChange } from './auth/profile.js'
 export { TOKEN_DEFAULT_DAYS, TOKEN_MAX_DAYS, forgetVerifiedTokens } from './auth/tokens.js'
 export type { AgentCall } from './agent/audit.js'
 export type {
@@ -826,7 +930,34 @@ export interface Kernel {
     /** A temporary password is in use: a new one is asked for before anything else. */
     readonly mustChangePassword: boolean
     readonly elevatedUntil: string | null
+    /** Whether the account has a password — else it signs in through a provider only. */
+    readonly hasPassword: boolean
+    readonly dateFormat: 'dmy' | 'iso'
+    readonly weekStart: 0 | 1
+    readonly mutedNotifications: readonly string[]
+    /** The language chosen, or `null`: the browser's. */
+    readonly locale: string | null
   }>
+  /**
+   * Renames oneself, and sets how the product reads — chapter 11 §10. Each field is
+   * optional; none is changed unless given.
+   */
+  updateProfile(ctx: RequestContext, change: ProfileChange): Promise<void>
+  /**
+   * Changes the address one signs in with — chapter 13 §2.6. Demands an elevated session
+   * and an account with a password; the old address is told.
+   */
+  changeEmail(
+    ctx: RequestContext,
+    request: {
+      readonly email: unknown
+      readonly sessionId: string
+      /** The caller's `Accept-Language`: the mail's language when the account has none. */
+      readonly acceptLanguage?: string | null
+    },
+  ): Promise<{ readonly email: string }>
+  /** The ways the caller signs in: the password, and each linked provider. */
+  listOwnIdentities(authenticated: Authenticated): Promise<readonly OwnIdentity[]>
   listSessions(authenticated: Authenticated): Promise<
     ReadonlyArray<{
       id: string
@@ -863,7 +994,7 @@ export interface Kernel {
   ): Promise<{ session: IssuedSession; elevatedUntil: Date }>
   dropElevation(sessionToken: string | undefined): Promise<void>
   /** Opens a password reset. Answers nothing, always, and immediately (§2.3). */
-  requestPasswordReset(email: string): Promise<void>
+  requestPasswordReset(email: string, acceptLanguage?: string | null): Promise<void>
   confirmPasswordReset(request: { secret: string; password: string }): Promise<void>
   /** Providers this tenant accepts — nothing that depends on an address (§6). */
   oidcProviders(tenantRef: string): Promise<ReadonlyArray<{ slug: string; label: string }>>
@@ -888,17 +1019,35 @@ export interface Kernel {
     cookie?: string
     ip?: string | null
     userAgent?: string | null
-  }): Promise<{ session: IssuedSession; returnTo: string; provisioned: boolean }>
-  /** Links a provider identity to the caller — demands an ELEVATED session (§5). */
-  oidcLink(request: {
-    sessionToken: string | undefined
-    tenantRef: string
-    slug: string
-    code?: string
-    state?: string
-    cookie?: string
-  }): Promise<void>
-  oidcUnlink(request: { sessionToken: string | undefined; slug: string }): Promise<void>
+    requestId?: string
+  }): Promise<
+    | {
+        readonly kind: 'session'
+        session: IssuedSession
+        returnTo: string
+        provisioned: boolean
+      }
+    | { readonly kind: 'linked'; returnTo: string }
+  >
+  /**
+   * Opens an exchange that LINKS a provider identity to the caller — §3.5. Demands an
+   * ELEVATED session (§5); the return from the provider completes the link, through
+   * `oidcCallback`, without opening a session.
+   */
+  oidcLinkStart(
+    ctx: RequestContext,
+    request: {
+      readonly sessionId: string
+      readonly slug: string
+      readonly redirectUri: string
+      readonly returnTo?: string
+    },
+  ): Promise<{ authorizeUrl: string; exchangeCookie: string }>
+  /** Unlinks a provider identity — demands an ELEVATED session; never the last identity. */
+  oidcUnlink(
+    ctx: RequestContext,
+    request: { readonly sessionId: string; readonly slug: string },
+  ): Promise<void>
   /**
    * Bootstraps the instance: one tenant and its first administrator.
    *
@@ -968,7 +1117,12 @@ export interface Kernel {
     ctx: RequestContext,
     request: { readonly baseId: string },
   ): Promise<readonly ApiTokenSummary[]>
-  /** Revokes a token at once and for good. Demands an elevated session. */
+  /** The tokens the caller minted, on every base — metadata only (chapter 11 §10). */
+  listOwnApiTokens(ctx: RequestContext): Promise<readonly OwnApiToken[]>
+  /**
+   * Revokes a token at once and for good. Demands an elevated session, and
+   * `manage_tokens` on its base — unless the caller created it.
+   */
   revokeApiToken(
     ctx: RequestContext,
     request: { readonly tokenId: string; readonly sessionId: string },
@@ -1514,7 +1668,8 @@ export interface Kernel {
   /** What renaming a base, a table or a field in the database would touch (06 §2.1). */
   renameImpact(
     ctx: RequestContext,
-    request: { kind: PhysicalKind; id: string },
+    /** `label`: the label being typed alongside — the suggestion is slugged from it. */
+    request: { kind: PhysicalKind; id: string; label?: string },
   ): Promise<RenameImpact>
   /** The physical rename itself — administration only, confirmed by the current name. */
   renamePhysical(
@@ -1587,6 +1742,25 @@ export interface Kernel {
     transport: ProviderTransport,
     request: CopilotRequest,
   ): Promise<CopilotAnswer>
+  /**
+   * One turn of the copilot of the dashboards — chapter 18 §2.6: questions, changes to a
+   * dashboard, values for its filters, proposed; results read only on consent, with the
+   * person's rights.
+   */
+  dashboardCopilot(
+    ctx: RequestContext,
+    transport: ProviderTransport,
+    request: DashboardCopilotRequest & { timezone?: string; weekStart?: 0 | 1 },
+  ): Promise<DashboardCopilotAnswer>
+  /**
+   * One turn of the copilot of the automations — chapter 17 §6: an automation, new or
+   * changed, proposed whole and checked as a save would be; rows read only on consent.
+   */
+  automationCopilot(
+    ctx: RequestContext,
+    transport: ProviderTransport,
+    request: AutomationCopilotRequest,
+  ): Promise<AutomationCopilotAnswer>
   /** How an AI field is set and how it is doing — chapter 12 §9. */
   aiFieldStatus(ctx: RequestContext, fieldId: string): Promise<AiFieldStatus>
   /**
@@ -1627,8 +1801,56 @@ export interface Kernel {
    * grain of chapters 09 and 10, by the owner's decision. It runs on a SEPARATE
    * PostgreSQL login role holding nothing but that one schema, so `_basedb` is out of
    * reach, and every call is written to `audit_log`.
+   *
+   * Whoever manages the base gets the console's reach, writes included; everyone else who
+   * sees it runs read only, on a role of their own that PostgreSQL holds to their tables
+   * and fields (`sql/reader.ts`). The result says which (`mode`).
    */
   runSql(ctx: RequestContext, request: SqlConsoleRequest): Promise<SqlConsoleResult>
+  /**
+   * The saved queries of a base (chapter 11 §1.7): personal, the base's, or some groups'.
+   * Their text is shared, never their author's reach — each runs them with their own.
+   */
+  listQueries(ctx: RequestContext, request: { baseId: string }): Promise<SavedQuery[]>
+  getQuery(ctx: RequestContext, request: { baseId: string; queryId: string }): Promise<SavedQuery>
+  createQuery(
+    ctx: RequestContext,
+    request: { baseId: string; input: QueryInput },
+  ): Promise<SavedQuery>
+  updateQuery(
+    ctx: RequestContext,
+    request: { baseId: string; queryId: string; input: QueryInput },
+  ): Promise<SavedQuery>
+  deleteQuery(ctx: RequestContext, request: { baseId: string; queryId: string }): Promise<void>
+  /** The groups a query may be shared with — for whoever manages the base. */
+  listQueryGroups(
+    ctx: RequestContext,
+    request: { baseId: string },
+  ): Promise<ReadonlyArray<{ readonly id: string; readonly label: string }>>
+  /**
+   * The SQL views of a base (chapter 11 §1.8): PostgreSQL views of its schema, created
+   * `security_invoker`, listed among its tables. Those whose every column the caller reads.
+   */
+  listSqlViews(ctx: RequestContext, request: { baseId: string }): Promise<SqlView[]>
+  getSqlView(ctx: RequestContext, request: { baseId: string; viewId: string }): Promise<SqlView>
+  createSqlView(
+    ctx: RequestContext,
+    request: { baseId: string; input: SqlViewInput },
+  ): Promise<SqlView>
+  updateSqlView(
+    ctx: RequestContext,
+    request: { baseId: string; viewId: string; input: SqlViewInput },
+  ): Promise<SqlView>
+  deleteSqlView(ctx: RequestContext, request: { baseId: string; viewId: string }): Promise<void>
+  reorderSqlViews(
+    ctx: RequestContext,
+    request: { baseId: string; order: readonly string[] },
+  ): Promise<void>
+  /** The rows of a SQL view, read through `runSql` — with the caller's reach. */
+  readSqlView(
+    ctx: RequestContext,
+    request: { baseId: string; viewId: string; limit?: number },
+  ): Promise<SqlConsoleResult>
   listRecords(ctx: RequestContext, options: ListOptions): Promise<ListResult>
   /**
    * Aggregates over every row a filter keeps — a grid's summary bar and the counts of its
@@ -1820,6 +2042,85 @@ export interface Kernel {
     request: { baseId: string; id: string; input: DashboardInput },
   ): Promise<Dashboard>
   deleteDashboard(ctx: RequestContext, request: { baseId: string; id: string }): Promise<void>
+  /** The saved questions of a base (chapter 18 §3), for whoever sees it. */
+  listQuestions(ctx: RequestContext, request: { baseId: string }): Promise<Question[]>
+  getQuestion(ctx: RequestContext, request: { baseId: string; id: string }): Promise<Question>
+  createQuestion(
+    ctx: RequestContext,
+    request: { baseId: string; input: QuestionInput },
+  ): Promise<Question>
+  updateQuestion(
+    ctx: RequestContext,
+    request: { baseId: string; id: string; input: QuestionInput },
+  ): Promise<Question>
+  deleteQuestion(ctx: RequestContext, request: { baseId: string; id: string }): Promise<void>
+  /**
+   * Runs a question with the caller's rights (chapter 18 §3): one built with the mouse,
+   * through the readers' plans; a SQL one, read only on their own role. `question` runs a
+   * saved one as its builder saved it; `query`, one given whole. The filters of a dashboard
+   * come as `constraints`.
+   */
+  runQuestion(
+    ctx: RequestContext,
+    request: {
+      baseId: string
+      question?: string
+      query?: unknown
+      constraints?: unknown
+      timezone?: string
+      weekStart?: 0 | 1
+    },
+  ): Promise<QueryResult>
+  /** How a dashboard is shared — its link and settings, or none (chapter 18 §2.5). */
+  getDashboardSharing(
+    ctx: RequestContext,
+    request: { baseId: string; dashboardId: string },
+  ): Promise<DashboardSharing>
+  /** Shares a dashboard, or changes how; whoever saves becomes its publisher. */
+  saveDashboardSharing(
+    ctx: RequestContext,
+    request: { baseId: string; dashboardId: string } & DashboardShareSettings,
+  ): Promise<DashboardSharing>
+  /** A new link for a shared dashboard: the old one stops working. */
+  regenerateDashboardShare(
+    ctx: RequestContext,
+    request: { baseId: string; dashboardId: string },
+  ): Promise<DashboardSharing>
+  /** Stops sharing a dashboard. */
+  deleteDashboardShare(
+    ctx: RequestContext,
+    request: { baseId: string; dashboardId: string },
+  ): Promise<void>
+  /**
+   * Opens a shared dashboard by its link — chapter 18 §2.5: its tabs, filters and cards,
+   * and the fields they show, as the publisher reads them. No right on the base is needed;
+   * `reader` is the signed-in person, when there is one — a members' share refuses without.
+   */
+  openSharedDashboard(request: {
+    token: string
+    reader: RequestContext | null
+    requestId: string
+  }): Promise<SharedDashboardPage>
+  /**
+   * Runs one card of a shared dashboard on the publisher's authority, its filters tied by
+   * the kernel from the visitor's `values` — never a query of the visitor's.
+   */
+  runSharedCard(request: {
+    token: string
+    reader: RequestContext | null
+    requestId: string
+    card: string
+    values?: unknown
+    timezone?: string
+    weekStart?: 0 | 1
+  }): Promise<QueryResult>
+  /** The values a category filter of a shared dashboard offers. */
+  sharedParameterValues(request: {
+    token: string
+    reader: RequestContext | null
+    requestId: string
+    parameter: string
+  }): Promise<ValueChoice[]>
   /** The automations of a base (chapter 17). */
   listAutomations(ctx: RequestContext, request: { baseId: string }): Promise<Automation[]>
   createAutomation(
@@ -1841,7 +2142,7 @@ export interface Kernel {
     request: { automationId: string; recordId: string | null },
   ): Promise<{ runId: string }>
   /** One pass of the automation worker, now; returns the runs handled. */
-  runAutomations(): Promise<number>
+  runAutomations(options?: { readonly aiTransport?: ProviderTransport }): Promise<number>
   /** Undoes a transaction of the caller's (chapter 16 §4); returns the undo's own. */
   undoTransaction(ctx: RequestContext, request: { transaction: string }): Promise<Undone>
   /** The comments of a row, oldest first (chapter 16 §1). */
@@ -1894,7 +2195,10 @@ export interface Kernel {
    * Starts the work a serving process does in the background — the history drain. Called
    * once by the server; a test drains by hand instead, and deterministically.
    */
-  startBackground(): void
+  startBackground(options?: {
+    /** The AI provider's transport, for the automations' AI steps (chapter 17 §1.3). */
+    readonly aiTransport?: ProviderTransport
+  }): void
   close(): Promise<void>
 }
 
@@ -2007,6 +2311,47 @@ export function startKernel(config: KernelConfig): Kernel {
     }
     return config.encryptionKey
   }
+
+  /** A question run with `ctx`'s rights: built with the mouse, or in SQL (chapter 18 §3). */
+  const runAnyQuery = (
+    ctx: RequestContext,
+    baseId: string,
+    query: unknown,
+    rawConstraints: unknown,
+    options: { readonly timezone?: string; readonly weekStart?: 0 | 1 },
+  ): Promise<QueryResult> => {
+    const kind =
+      typeof query === 'object' && query !== null ? (query as { kind?: unknown }).kind : null
+    const constraints = checkConstraints(rawConstraints)
+    if (kind === 'sql') {
+      return runSqlQuestion(pools, ctx, config.encryptionKey, config.connectionString, {
+        baseId,
+        query: checkSqlQuery(query),
+        constraints,
+        timeZone: options.timezone,
+        weekStart: options.weekStart,
+      })
+    }
+    return runBuilderQuery(pools, ctx, {
+      baseId,
+      query: checkBuilderQuery(query),
+      constraints,
+      timeZone: options.timezone,
+      weekStart: options.weekStart,
+    })
+  }
+
+  /** The saved questions of a base, as a shared dashboard's cards run them. */
+  const sharedQuestions = async (
+    authority: RequestContext,
+    baseId: string,
+  ): Promise<Map<string, SavedQuestion>> =>
+    new Map(
+      (await listQuestions(pools, authority, { baseId })).map((q) => [
+        q.id,
+        { label: q.label, query: q.query, visualization: q.visualization },
+      ]),
+    )
 
   /**
    * Mirrors the shared registry into `_basedb.error_code`.
@@ -2141,6 +2486,7 @@ export function startKernel(config: KernelConfig): Kernel {
 
     createApiToken: (ctx, request) => createApiToken(pools, ctx, request),
     listApiTokens: (ctx, request) => listApiTokens(pools, ctx, request),
+    listOwnApiTokens: (ctx) => listOwnApiTokens(pools, ctx),
     revokeApiToken: (ctx, request) => revokeApiToken(pools, ctx, request),
 
     agentWhoAmI: (ctx, budgets) =>
@@ -2161,13 +2507,17 @@ export function startKernel(config: KernelConfig): Kernel {
     issueAccessToken: (token, csrf) => issueAccessToken(pools, instanceKey(), token, csrf),
     logout: (token) => logout(pools, token),
     whoAmI: (authenticated) => whoAmI(pools, authenticated),
+    updateProfile: (ctx, change) => updateProfile(pools, ctx, change),
+    changeEmail: (ctx, request) => changeEmail(pools, ctx, { ...request, mailer: config.mailer }),
+    listOwnIdentities: (authenticated) => listOwnIdentities(pools, authenticated.userId),
     listSessions: (authenticated) => listLiveSessions(pools, authenticated.userId),
     revokeSession: (authenticated, scope) => revoke(pools, authenticated, scope),
     setPassword: (request) => setPassword(pools, instanceKey(), request),
     changePassword: (request) => changePassword(pools, instanceKey(), request),
     elevate: (token, password) => elevate(pools, instanceKey(), token, password),
     dropElevation: (token) => dropElevation(pools, token),
-    requestPasswordReset: (email) => requestPasswordReset(pools, { email, mailer: config.mailer }),
+    requestPasswordReset: (email, acceptLanguage) =>
+      requestPasswordReset(pools, { email, mailer: config.mailer, acceptLanguage }),
     confirmPasswordReset: (request) => confirmPasswordReset(pools, instanceKey(), request),
 
     oidcProviders: async (tenantRef) => {
@@ -2207,53 +2557,88 @@ export function startKernel(config: KernelConfig): Kernel {
         state: request.state,
         cookie: request.cookie,
       })
+      if (asserted.linkSession !== null) {
+        const linkSession = asserted.linkSession
+        const now = new Date()
+        const snapshot = await pools.withConnection('catalog', (exec) =>
+          loadSessionById(exec, linkSession),
+        )
+        // The session that opened the exchange, still open: a link made for a session
+        // closed since — signed out, revoked, its password changed — is made for nobody.
+        if (
+          snapshot === null ||
+          !sessionUsable(snapshot, now) ||
+          snapshot.tenantRef !== request.tenantRef
+        ) {
+          throw new BasedbError('AUTHENTICATION_REQUIRED')
+        }
+        const ctx = sealContext({
+          requestId: request.requestId ?? 'oidc-link',
+          actor: { kind: 'user', id: snapshot.userId },
+          tenantId: snapshot.tenantRef,
+          surface: 'rest',
+          timestamp: now,
+          deadline: new Date(now.getTime() + DEFAULT_TIMEOUT_MS),
+          permissions: { version: '1', rowPredicate: 'TRUE' },
+        })
+        await withTransaction(pools, 'catalog', ctx, async (exec) => {
+          await linkIdentity(exec, provider, snapshot.userId, asserted.subject)
+          await writeAudit(exec, ctx, {
+            action: 'user.identity_link',
+            objectKind: 'app_user',
+            objectId: snapshot.userId,
+            payload: { provider: provider.slug },
+          })
+        })
+        return { kind: 'linked', returnTo: asserted.returnTo }
+      }
+
       const resolved = await resolveIdentity(pools, provider, request.tenantRef, asserted)
       const session = await loginWithOidc(pools, key, resolved, {
         ip: request.ip,
         userAgent: request.userAgent,
       })
-      return { session, returnTo: asserted.returnTo, provisioned: resolved.provisioned }
+      return {
+        kind: 'session',
+        session,
+        returnTo: asserted.returnTo,
+        provisioned: resolved.provisioned,
+      }
     },
 
-    oidcLink: async (request) => {
+    oidcLinkStart: async (ctx, request) => {
       const key = instanceKey()
       const provider = await requireProvider(
         pools,
         key,
-        request.tenantRef,
+        ctx.tenantId,
         request.slug,
         config.oidcProviders,
       )
-      const asserted = await completeOidc(key, provider, {
-        code: request.code,
-        state: request.state,
-        cookie: request.cookie,
-      })
-
-      await pools.withConnection('catalog', async (exec) => {
-        const snapshot =
-          request.sessionToken === undefined
-            ? null
-            : await loadSessionByToken(exec, request.sessionToken)
-        if (snapshot === null) throw new BasedbError('AUTHENTICATION_REQUIRED')
-        // Linking a provider is handing someone else the power to sign into this
-        // account: it demands a proof made minutes ago, not one made last week.
-        if (!elevated(snapshot, new Date())) throw new BasedbError('ELEVATION_REQUIRED')
-        await linkIdentity(exec, provider, snapshot.userId, asserted.subject)
+      // Linking a provider is handing someone else the power to sign into this account:
+      // it demands a proof made minutes ago, not one made last week. The exchange then
+      // carries the session, and the return re-reads it.
+      await pools.withConnection('catalog', (exec) =>
+        requireElevatedSession(exec, ctx, request.sessionId),
+      )
+      return startOidc(key, provider, {
+        redirectUri: request.redirectUri,
+        returnTo: request.returnTo,
+        linkSession: request.sessionId,
       })
     },
 
-    oidcUnlink: async (request) => {
-      await pools.withConnection('catalog', async (exec) => {
-        const snapshot =
-          request.sessionToken === undefined
-            ? null
-            : await loadSessionByToken(exec, request.sessionToken)
-        if (snapshot === null) throw new BasedbError('AUTHENTICATION_REQUIRED')
-        if (!elevated(snapshot, new Date())) throw new BasedbError('ELEVATION_REQUIRED')
-        await unlinkIdentity(exec, request.slug, snapshot.userId)
-      })
-    },
+    oidcUnlink: (ctx, request) =>
+      withTransaction(pools, 'catalog', ctx, async (exec) => {
+        await requireElevatedSession(exec, ctx, request.sessionId)
+        await unlinkIdentity(exec, request.slug, ctx.actor.id)
+        await writeAudit(exec, ctx, {
+          action: 'user.identity_unlink',
+          objectKind: 'app_user',
+          objectId: ctx.actor.id,
+          payload: { provider: request.slug },
+        })
+      }),
 
     createBase: (ctx, request) => createBase(pools, ctx, request),
     listProjects: (ctx) => listProjects(pools, ctx),
@@ -2444,6 +2829,29 @@ export function startKernel(config: KernelConfig): Kernel {
           readOnly: true,
         }),
       ),
+    dashboardCopilot: (ctx, transport, request) =>
+      dashboardCopilotTurn(pools, ctx, transport, request, {
+        runQuery: (query, constraints) =>
+          runAnyQuery(ctx, request.baseId, query, constraints, request),
+        readSql: (baseId, sql) =>
+          runConsoleSql(pools, ctx, config.encryptionKey, config.connectionString, {
+            baseId,
+            sql,
+            limit: 50,
+            readOnly: true,
+          }),
+      }),
+    automationCopilot: (ctx, transport, request) =>
+      automationCopilotTurn(pools, ctx, transport, request, {
+        targets: webhookTargets,
+        readSql: (baseId, sql) =>
+          runConsoleSql(pools, ctx, config.encryptionKey, config.connectionString, {
+            baseId,
+            sql,
+            limit: 50,
+            readOnly: true,
+          }),
+      }),
     aiFieldStatus: (ctx, fieldId) => aiFieldStatus(pools, ctx, fieldId),
     setAiField: (ctx, request) => setAiField(pools, ctx, request),
     disableAiField: (ctx, fieldId) => disableAiField(pools, ctx, fieldId),
@@ -2462,7 +2870,26 @@ export function startKernel(config: KernelConfig): Kernel {
       return worker
     },
     runSql: (ctx, request) =>
-      runConsoleSql(pools, ctx, config.encryptionKey, config.connectionString, request),
+      runSql(pools, ctx, config.encryptionKey, config.connectionString, request),
+    listQueries: (ctx, request) => listQueries(pools, ctx, request),
+    getQuery: (ctx, request) => getQuery(pools, ctx, request),
+    createQuery: (ctx, request) => createQuery(pools, ctx, request),
+    updateQuery: (ctx, request) => updateQuery(pools, ctx, request),
+    deleteQuery: (ctx, request) => deleteQuery(pools, ctx, request),
+    listQueryGroups: (ctx, request) => listQueryGroups(pools, ctx, request),
+    listSqlViews: (ctx, request) => listSqlViews(pools, ctx, request),
+    getSqlView: (ctx, request) => getSqlView(pools, ctx, request),
+    createSqlView: (ctx, request) => createSqlView(pools, ctx, request),
+    updateSqlView: (ctx, request) => updateSqlView(pools, ctx, request),
+    deleteSqlView: (ctx, request) => deleteSqlView(pools, ctx, request),
+    reorderSqlViews: (ctx, request) => reorderSqlViews(pools, ctx, request),
+    readSqlView: async (ctx, request) =>
+      runSql(pools, ctx, config.encryptionKey, config.connectionString, {
+        baseId: request.baseId,
+        sql: await sqlViewStatement(pools, ctx, request),
+        ...(request.limit === undefined ? {} : { limit: request.limit }),
+        readOnly: true,
+      }),
     listRecords: async (ctx, options) => {
       const result = await listRecords(pools, ctx, options)
       return result.fileColumns.length === 0
@@ -2550,13 +2977,87 @@ export function startKernel(config: KernelConfig): Kernel {
     createDashboard: (ctx, request) => createDashboard(pools, ctx, request),
     updateDashboard: (ctx, request) => updateDashboard(pools, ctx, request),
     deleteDashboard: (ctx, request) => deleteDashboard(pools, ctx, request),
+    listQuestions: (ctx, request) => listQuestions(pools, ctx, request),
+    getQuestion: (ctx, request) => getQuestion(pools, ctx, request),
+    createQuestion: (ctx, request) => createQuestion(pools, ctx, request),
+    updateQuestion: (ctx, request) => updateQuestion(pools, ctx, request),
+    deleteQuestion: (ctx, request) => deleteQuestion(pools, ctx, request),
+    runQuestion: async (ctx, request) => {
+      const query =
+        request.question !== undefined
+          ? (await getQuestion(pools, ctx, { baseId: request.baseId, id: request.question })).query
+          : request.query
+      return runAnyQuery(ctx, request.baseId, query, request.constraints, request)
+    },
+    getDashboardSharing: (ctx, request) => getDashboardSharing(pools, ctx, instanceKey(), request),
+    saveDashboardSharing: (ctx, request) =>
+      saveDashboardSharing(pools, ctx, instanceKey(), request),
+    regenerateDashboardShare: (ctx, request) =>
+      regenerateDashboardShare(pools, ctx, instanceKey(), request),
+    deleteDashboardShare: (ctx, request) => deleteDashboardShare(pools, ctx, request),
+    openSharedDashboard: async (request) => {
+      const admitted = await admitSharedDashboard(pools, request)
+      const questions = await sharedQuestions(admitted.authority, admitted.baseId)
+      const base = await projectBase(pools, admitted.authority, admitted.baseId)
+      const queries = admitted.dashboard.cards
+        .filter((c) => c.kind === 'question')
+        .map((c) => (c.question === undefined ? c.query : questions.get(c.question)?.query))
+        .filter((q): q is NonNullable<typeof q> => q !== undefined)
+      const { dashboard } = admitted
+      return {
+        title: dashboard.label,
+        description: dashboard.description,
+        access: admitted.access,
+        reader: admitted.reader,
+        canEmbed: admitted.canEmbed,
+        tabs: dashboard.tabs,
+        parameters: dashboard.parameters,
+        cards: sharedCards(dashboard, questions),
+        tables: sharedTables(base, queries),
+      }
+    },
+    runSharedCard: async (request) => {
+      const admitted = await admitSharedDashboard(pools, request)
+      const questions = await sharedQuestions(admitted.authority, admitted.baseId)
+      const run = sharedRun(admitted.dashboard, request.card, questions, request.values)
+      const result = await runAnyQuery(
+        admitted.authority,
+        admitted.baseId,
+        run.query,
+        run.constraints,
+        request,
+      )
+      return pools.withConnection('catalog', (exec) =>
+        withPeopleNames(exec, admitted.authority.tenantId, forVisitor(result)),
+      )
+    },
+    sharedParameterValues: async (request) => {
+      const admitted = await admitSharedDashboard(pools, request)
+      const questions = await sharedQuestions(admitted.authority, admitted.baseId)
+      const query = valuesQuery(admitted.dashboard, request.parameter, questions)
+      if (query === null) return []
+      const result = await runBuilderQuery(pools, admitted.authority, {
+        baseId: admitted.baseId,
+        query: checkBuilderQuery(query),
+        constraints: [],
+      })
+      const named = await pools.withConnection('catalog', (exec) =>
+        withPeopleNames(exec, admitted.authority.tenantId, result),
+      )
+      return choicesOf(named, await projectBase(pools, admitted.authority, admitted.baseId))
+    },
     listAutomations: (ctx, request) => listAutomations(pools, ctx, request),
     createAutomation: (ctx, request) => createAutomation(pools, ctx, webhookTargets, request),
     updateAutomation: (ctx, request) => updateAutomation(pools, ctx, webhookTargets, request),
     deleteAutomation: (ctx, request) => deleteAutomation(pools, ctx, request),
     listAutomationRuns: (ctx, request) => listAutomationRuns(pools, ctx, request),
     requestAutomationRun: (ctx, request) => requestRun(pools, ctx, request),
-    runAutomations: () => runAutomations(pools, { targets: webhookTargets, instanceKey }),
+    runAutomations: (options) =>
+      runAutomations(pools, {
+        targets: webhookTargets,
+        instanceKey,
+        ...(options?.aiTransport === undefined ? {} : { aiTransport: options.aiTransport }),
+      }),
     listComments: (ctx, request) => listComments(pools, ctx, request),
     addComment: (ctx, request) => addComment(pools, ctx, request),
     editComment: (ctx, request) => editComment(pools, ctx, request),
@@ -2599,7 +3100,7 @@ export function startKernel(config: KernelConfig): Kernel {
     listProposals: (ctx, request) => listProposals(pools, ctx, request),
     approveProposal: (ctx, request) => approveProposal(pools, ctx, request),
     rejectProposal: (ctx, request) => rejectProposal(pools, ctx, request),
-    startBackground: () => {
+    startBackground: (options) => {
       if (stopDrain !== undefined) return
       // Notifications past their retention, presence nobody refreshed: every ten minutes.
       const purge = setInterval(() => {
@@ -2613,7 +3114,11 @@ export function startKernel(config: KernelConfig): Kernel {
       // The automations' queue and clock (chapter 17 §2).
       stopAutomations = startAutomationWorker(
         pools,
-        { targets: webhookTargets, instanceKey },
+        {
+          targets: webhookTargets,
+          instanceKey,
+          ...(options?.aiTransport === undefined ? {} : { aiTransport: options.aiTransport }),
+        },
         DRAIN_INTERVAL_MS,
         (error) => console.error('automatisations :', error),
       )
@@ -2642,6 +3147,7 @@ export function startKernel(config: KernelConfig): Kernel {
       await listener.stop()
       await Promise.all(workers.map((w) => w.stop()))
       await closeConsolePools()
+      await closeReaderPools()
       await pools.end()
     },
   }

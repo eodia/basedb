@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "key": "recrutement",
   "label": "Recrutement",
   "summary": "Postes ouverts, candidats et entretiens ; l'IA synthétise chaque candidature et suggère les points à creuser.",
@@ -88,7 +88,7 @@
         { "label": "Contrat", "kind": "select", "options": ["CDI", "CDD", "Stage", "Alternance"] },
         { "label": "Lieu", "kind": "short_text" },
         { "label": "Ouvert", "kind": "boolean" },
-        { "label": "Description", "kind": "long_text" },
+        { "label": "Description", "kind": "long_text", "rich": true },
         {
           "label": "Candidatures",
           "kind": "count",
@@ -136,7 +136,7 @@
         "Contrat": "CDI",
         "Lieu": "Lyon ou télétravail",
         "Ouvert": true,
-        "Description": "Faire évoluer notre application web (TypeScript, PostgreSQL) au sein d'une équipe de six personnes."
+        "Description": "<p>Faire évoluer notre application web (TypeScript, PostgreSQL) au sein d'une équipe de six personnes.</p><h3>Vos missions</h3><ul><li>Concevoir et livrer de nouvelles fonctionnalités, de la base de données à l'interface.</li><li>Relire le code de l'équipe et partager les bonnes pratiques.</li><li>Prendre part aux choix techniques.</li></ul><h3>Votre profil</h3><ul><li>Trois ans d'expérience au moins en développement web.</li><li>À l'aise avec TypeScript et SQL.</li></ul><p>Poste basé à Lyon, <strong>télétravail complet possible</strong>.</p>"
       },
       {
         "$key": "sales",
@@ -145,7 +145,7 @@
         "Contrat": "CDI",
         "Lieu": "Paris",
         "Ouvert": true,
-        "Description": "Accompagner une cinquantaine de clients PME, de la signature au renouvellement."
+        "Description": "<p>Accompagner une cinquantaine de clients PME, de la signature au renouvellement.</p><h3>Vos missions</h3><ul><li>Accueillir chaque nouveau client et suivre sa mise en route.</li><li>Faire régulièrement le point avec vos clients et repérer leurs nouveaux besoins.</li><li>Préparer les renouvellements avec l'équipe commerciale.</li></ul><h3>Votre profil</h3><ul><li>Une première expérience de la relation client, idéalement auprès d'entreprises.</li><li>Le sens de l'écoute et de l'organisation.</li></ul>"
       },
       {
         "$key": "stage",
@@ -154,7 +154,7 @@
         "Contrat": "Stage",
         "Lieu": "Lyon",
         "Ouvert": false,
-        "Description": "Six mois pour produire articles, vidéos et newsletters avec l'équipe marketing."
+        "Description": "<p>Six mois pour produire articles, vidéos et newsletters avec l'équipe marketing.</p><h3>Ce que vous ferez</h3><ul><li>Rédiger des articles de blog et des témoignages clients.</li><li>Monter de courtes vidéos pour les réseaux sociaux.</li><li>Préparer la newsletter mensuelle.</li></ul><p><em>Stage de fin d'études.</em></p>"
       }
     ],
     "candidats": [

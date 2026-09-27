@@ -3,6 +3,7 @@
 import type { Row } from '@/components/app/grid/cell'
 import { type Field, type TableRef, api } from '@/lib/api/client'
 import { quoteLiteral } from '@/lib/expression'
+import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Loader2, Sparkles } from 'lucide-react'
 import {
@@ -136,7 +137,7 @@ export function useAiWatch(
 }
 
 /** Why a settled cell holds nothing: the model had nothing to work on. */
-const NOTHING = 'Rien à calculer : les colonnes citées sont vides ou insuffisantes'
+const NOTHING = $t('Rien à calculer : les colonnes citées sont vides ou insuffisantes')
 
 /**
  * An AI cell with no text. NULL is not computed yet: a green loader while the screen waits
@@ -168,7 +169,7 @@ export function AiEmpty({
     return (
       <p className="flex items-center gap-1.5 py-2 text-sm text-muted-foreground">
         <Icon className={cn('size-3.5', waiting && 'animate-spin text-emerald-500')} />
-        {waiting ? 'Calcul en cours…' : 'Pas encore calculé'}
+        {waiting ? $t('Calcul en cours…') : $t('Pas encore calculé')}
       </p>
     )
   }
@@ -177,12 +178,12 @@ export function AiEmpty({
       className="flex w-full items-center gap-1.5 px-2 text-xs text-muted-foreground/70"
       title={
         waiting
-          ? 'Calcul en cours : la valeur s’affiche dès que l’IA a répondu'
-          : 'Pas encore calculé : la cellule est remplie au prochain passage de l’IA'
+          ? $t('Calcul en cours : la valeur s’affiche dès que l’IA a répondu')
+          : $t('Pas encore calculé : la cellule est remplie au prochain passage de l’IA')
       }
     >
       <Icon className={cn('size-3 shrink-0', waiting && 'animate-spin text-emerald-500')} />
-      {waiting ? 'calcul…' : 'en attente'}
+      {waiting ? $t('calcul…') : $t('en attente')}
     </span>
   )
 }

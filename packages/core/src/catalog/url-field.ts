@@ -1,5 +1,5 @@
 import { checkConstraintName, qualify, quoteIdentifier } from '@basedb/naming'
-import { emailCheck, urlCheck } from '../ddl/emit.js'
+import { emailCheck, richTextCheck, urlCheck } from '../ddl/emit.js'
 import { allocateName } from '../naming/allocation.js'
 import type { Executor } from '../runtime/pool.js'
 import type { RequestContext } from '../tx/context.js'
@@ -20,9 +20,14 @@ type Where = {
   readonly schemaName: string
 }
 
-const BODIES: Readonly<Record<'url' | 'email', (column: string) => string>> = {
+/**
+ * `format` is the guard of a RICH long text (chapter 04 §2.2): the patterns a direct SQL
+ * write could slip past the sanitizer, refused by the column itself.
+ */
+const BODIES: Readonly<Record<'url' | 'email' | 'format', (column: string) => string>> = {
   url: urlCheck,
   email: emailCheck,
+  format: richTextCheck,
 }
 
 export async function addPatternCheck(
@@ -31,7 +36,7 @@ export async function addPatternCheck(
   where: Where,
   fieldId: string,
   columnName: string,
-  rule: 'url' | 'email',
+  rule: 'url' | 'email' | 'format',
 ): Promise<readonly string[]> {
   const name = await allocateName(exec, ctx, {
     derivedName: checkConstraintName(where.tableName, columnName, rule),

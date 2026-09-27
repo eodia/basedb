@@ -41,14 +41,14 @@ disponibles, aucune dépendance externe hors PostgreSQL.
 | [08](08-api-rest-webhooks.md) | API REST et webhooks | Le plan d'URL, les filtres, la pagination par curseur, l'expansion des liens, OpenAPI, les jetons |
 | [09](09-serveur-mcp.md) | Serveur MCP | Les outils exposés aux agents, les migrations proposées, la confirmation humaine |
 | [10](10-architecture-logicielle.md) | Architecture logicielle | Le monorepo, la frontière du noyau, les pools, les transactions, la stratégie de test |
-| [11](11-interface.md) | Interface | La grille, l'édition en ligne, la cellule de lien, la vue détail, l'éditeur de schéma |
-| [12](12-integration-ia.md) | Intégration IA | OpenAI, Anthropic et Mistral, la configuration par tenant, les clés côté serveur |
+| [11](11-interface.md) | Interface | La grille, l'édition en ligne, la cellule de lien, la vue détail, l'éditeur de schéma ; le SQL de chacun, les requêtes enregistrées et les vues SQL ; les paramètres de la personne |
+| [12](12-integration-ia.md) | Intégration IA | OpenAI, Anthropic, Mistral et les serveurs compatibles (Azure, modèle local), la configuration par tenant, les clés côté serveur |
 | [13](13-authentification.md) | Authentification | Mot de passe, OAuth/OIDC, sessions, élévation, amorçage |
 | [14](14-environnements.md) | Environnements | Production, recette, développement : la lignée, la comparaison, le report de structure, la synchronisation des lignes |
 | [15](15-formulaires-partages.md) | Formulaires partagés | Le lien public ou réservé aux membres, l'autorité du publiant, l'attribution des réponses, la fermeture |
 | [16](16-collaboration.md) | Collaboration | Commentaires et mentions, notifications internes, temps réel et présence, annulation d'une écriture (Ctrl+Z) |
-| [17](17-automatisations.md) | Automatisations | Déclencheurs (ligne créée ou modifiée, horloge, bouton), condition, actions, au nom du propriétaire ; le champ bouton |
-| [18](18-interfaces-modeles.md) | Interfaces, extensions et modèles | Tableaux de bord aux droits du lecteur, blocs et page intégrée, modèles de base appliqués par l'interface |
+| [17](17-automatisations.md) | Automatisations | Déclencheurs (ligne créée ou modifiée, horloge, bouton), condition, un flux d'étapes — rechercher, bifurquer, demander à l'IA, citer une étape précédente —, suivi étape par étape, au nom du propriétaire ; le Copilot des automatisations ; le champ bouton |
+| [18](18-interfaces-modeles.md) | Tableaux de bord, questions, extensions et modèles | Questions construites à la souris ou en SQL, lues avec les droits du lecteur ; tableaux de bord en grille, en onglets, sous des filtres ; page intégrée ; modèles de base appliqués par l'interface |
 | [19](19-integrations-synchronisation.md) | Intégrations et tables synchronisées | Slack par webhook entrant, flux iCalendar pour Google Agenda, tables tenues à jour depuis un CSV, un agenda ou une vue partagée |
 | [20](20-modeles.md) | Modèles de base | Un format JSON pour décrire une base entière, publié par le site public, importé par l'instance, proposé par l'IA, exporté d'une base |
 

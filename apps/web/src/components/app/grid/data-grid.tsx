@@ -30,6 +30,7 @@ import { effectiveKind } from '@/lib/computed'
 import { isDateKind, storedFromText } from '@/lib/dates'
 import { copy as copyText } from '@/lib/export'
 import { AGGREGATE_LABELS, type Aggregate, aggregatesFor, formatAggregate } from '@/lib/grid'
+import { $t, intlLocale } from '@/lib/i18n'
 import {
   type ColorStyle,
   DEFAULT_COLUMN_WIDTH,
@@ -59,7 +60,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * The grid — chapter 11 §1 and §2.
@@ -92,6 +93,8 @@ interface Props {
   readonly editable: boolean
   /** Whether the reader may add a row, remove one — the table's own actions. */
   readonly canCreate?: boolean
+  /** Kept within the viewport even when the columns overflow horizontally. */
+  readonly emptyState?: ReactNode
   readonly canDelete?: boolean
   readonly onPatchView: (patch: Partial<ViewState>) => void
   readonly onChecked: (next: ReadonlySet<string>) => void
@@ -305,6 +308,7 @@ export function DataGrid({
   openedId,
   editable,
   canCreate = editable,
+  emptyState,
   canDelete = editable,
   onPatchView,
   onChecked,
@@ -641,13 +645,13 @@ export function DataGrid({
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
         <p className="max-w-sm text-sm text-muted-foreground">
-          Toutes les colonnes sont cachées.{' '}
+          {$t('Toutes les colonnes sont cachées.')}{' '}
           <button
             type="button"
             className="font-medium text-primary underline-offset-4 hover:underline"
             onClick={() => onPatchView({ hidden: [] })}
           >
-            Tout réafficher
+            {$t('Tout réafficher')}
           </button>
         </p>
       </div>
@@ -657,10 +661,10 @@ export function DataGrid({
   return (
     <div
       ref={scroller}
-      className="scroll-discret min-h-0 flex-1 overflow-auto"
+      className="scroll-discret flex min-h-0 flex-1 flex-col overflow-auto"
       onPointerUp={endDrag}
     >
-      <div style={{ width: totalWidth, minWidth: '100%' }} className="relative">
+      <div style={{ width: totalWidth, minWidth: '100%' }} className="relative shrink-0">
         {/* Header ─────────────────────────────────────────────────────────── */}
         <div className="sticky top-0 z-30 flex border-b bg-background">
           <div
@@ -671,7 +675,7 @@ export function DataGrid({
               checked={allChecked}
               onCheckedChange={toggleAll}
               disabled={rows.length === 0}
-              aria-label="Tout sélectionner"
+              aria-label={$t('Tout sélectionner')}
             />
             <span className="text-[10px] text-muted-foreground">#</span>
           </div>
@@ -739,7 +743,7 @@ export function DataGrid({
                     }
                     className="sticky left-0 flex h-full max-w-[min(100%,36rem)] items-center gap-2 px-2 text-left text-xs"
                     aria-expanded={!folded}
-                    title={folded ? 'Déplier le groupe' : 'Replier le groupe'}
+                    title={folded ? $t('Déplier le groupe') : $t('Replier le groupe')}
                   >
                     {folded ? (
                       <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
@@ -749,13 +753,13 @@ export function DataGrid({
                     <span className="shrink-0 text-muted-foreground">{groupField.label}</span>
                     <span className="flex min-w-0 items-center">
                       {item.key === '∅' ? (
-                        <span className="text-muted-foreground">Sans valeur</span>
+                        <span className="text-muted-foreground">{$t('Sans valeur')}</span>
                       ) : (
                         <CardValue field={groupField} row={first} />
                       )}
                     </span>
                     <span className="shrink-0 rounded-full bg-background px-1.5 tabular-nums text-muted-foreground">
-                      {count.toLocaleString('fr-FR')}
+                      {count.toLocaleString(intlLocale())}
                     </span>
                   </button>
                 </div>
@@ -818,7 +822,7 @@ export function DataGrid({
                           e.preventDefault()
                           toggleRow(rowIndex, e.shiftKey)
                         }}
-                        aria-label="Sélectionner la ligne"
+                        aria-label={$t('Sélectionner la ligne')}
                       />
                       <span className="text-[10px] tabular-nums text-muted-foreground/60">
                         {rowIndex + 1}
@@ -901,8 +905,8 @@ export function DataGrid({
                                 onOpenRecord(row)
                               }}
                               className="absolute right-1 hidden size-6 items-center justify-center rounded-md border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground group-hover/row:flex"
-                              aria-label="Ouvrir la fiche"
-                              title="Ouvrir la fiche"
+                              aria-label={$t('Ouvrir la fiche')}
+                              title={$t('Ouvrir la fiche')}
                             >
                               <Maximize2 className="size-3" />
                             </button>
@@ -916,7 +920,7 @@ export function DataGrid({
                 <ContextMenuContent className="w-56">
                   <ContextMenuItem onSelect={() => onOpenRecord(row)}>
                     <ExternalLink className="size-4" />
-                    Ouvrir la fiche
+                    {$t('Ouvrir la fiche')}
                   </ContextMenuItem>
                   <ContextMenuItem
                     onSelect={() => {
@@ -925,8 +929,8 @@ export function DataGrid({
                     }}
                   >
                     <Copy className="size-4" />
-                    Copier la ligne
-                    <ContextMenuShortcut>Ctrl+C</ContextMenuShortcut>
+                    {$t('Copier la ligne')}
+                    <ContextMenuShortcut>{$t('Ctrl+C')}</ContextMenuShortcut>
                   </ContextMenuItem>
                   {editable && canDelete && (
                     <>
@@ -936,7 +940,7 @@ export function DataGrid({
                         className="text-destructive focus:text-destructive"
                       >
                         <Trash2 className="size-4" />
-                        Supprimer la ligne
+                        {$t('Supprimer la ligne')}
                       </ContextMenuItem>
                     </>
                   )}
@@ -976,7 +980,7 @@ export function DataGrid({
                   options={linkOptions[field.name]}
                   onSearchLink={onSearchLink}
                   value={draft[field.name] ?? ''}
-                  placeholder={index === 0 ? 'Ajouter un enregistrement' : field.label}
+                  placeholder={index === 0 ? $t('Ajouter un enregistrement') : field.label}
                   onChange={(value) => setDraft({ ...draft, [field.name]: value })}
                   onSubmit={() => void submitDraft()}
                 />
@@ -988,7 +992,7 @@ export function DataGrid({
                 size="icon-sm"
                 onClick={() => void submitDraft()}
                 disabled={adding}
-                aria-label="Enregistrer la ligne"
+                aria-label={$t('Enregistrer la ligne')}
               >
                 <Plus className="size-4" />
               </Button>
@@ -1001,9 +1005,9 @@ export function DataGrid({
             <div
               className="sticky left-0 z-10 flex shrink-0 items-center border-r bg-background px-2 text-[10px] tabular-nums text-muted-foreground"
               style={{ width: GUTTER_WIDTH }}
-              title="Lignes que garde le filtre, toutes pages confondues"
+              title={$t('Lignes que garde le filtre, toutes pages confondues')}
             >
-              {summaryTotal === null ? '' : summaryTotal.toLocaleString('fr-FR')}
+              {summaryTotal === null ? '' : summaryTotal.toLocaleString(intlLocale())}
             </div>
             {fields.map((field) => (
               <SummaryCell
@@ -1018,17 +1022,22 @@ export function DataGrid({
             ))}
           </div>
         )}
-
-        {rows.length === 0 && (
-          <div className="flex h-40 items-center justify-center">
-            <p className="text-sm text-muted-foreground">
-              {view.filter === ''
-                ? 'Cette table est vide.'
-                : 'Aucune ligne ne satisfait ce filtre.'}
-            </p>
-          </div>
-        )}
       </div>
+      {rows.length === 0 && (
+        <div className="sticky left-0 flex w-full flex-1 flex-col">
+          {emptyState !== undefined ? (
+            emptyState
+          ) : (
+            <div className="flex h-40 items-center justify-center">
+              <p className="text-sm text-muted-foreground">
+                {view.filter === ''
+                  ? $t('Cette table est vide.')
+                  : $t('Aucune ligne ne satisfait ce filtre.')}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -1070,10 +1079,10 @@ function SummaryCell({
               'flex size-full min-w-0 items-center justify-end gap-1.5 px-2 text-xs hover:bg-muted/60',
               fn === null && 'opacity-0 group-hover/sum:opacity-100 focus-visible:opacity-100',
             )}
-            aria-label={`Résumé de ${field.label}`}
+            aria-label={$t('Résumé de {label}', { label: field.label })}
           >
             {fn === null ? (
-              <span className="text-muted-foreground">Résumé</span>
+              <span className="text-muted-foreground">{$t('Résumé')}</span>
             ) : (
               <>
                 <span className="truncate text-muted-foreground">{AGGREGATE_LABELS[fn]}</span>
@@ -1096,7 +1105,7 @@ function SummaryCell({
           {fn !== null && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => onChange(null)}>Aucun</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => onChange(null)}>{$t('Aucun')}</DropdownMenuItem>
             </>
           )}
         </DropdownMenuContent>

@@ -1,8 +1,10 @@
 'use client'
 
 import { FieldIcon } from '@/components/app/field-icon'
+import { TemplateEditor } from '@/components/app/views/template-editor'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Choice as ChoiceField } from '@/components/ui/choice'
 import {
   Dialog,
   DialogContent,
@@ -12,16 +14,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import type { Field, SavedView, Table, ViewKind } from '@/lib/api/client'
+import { CARD_TEMPLATE_MAX } from '@/lib/card-template'
+import { $t } from '@/lib/i18n'
 import type { ViewState } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
 import {
@@ -90,8 +87,6 @@ export interface ViewDraft {
 }
 
 type Spec = Record<string, unknown>
-
-const NONE = '__none__'
 
 export function ViewDialog({
   open,
@@ -209,21 +204,25 @@ export function ViewDialog({
         <DialogHeader className="border-b px-6 py-4">
           <DialogTitle className="flex items-center gap-2">
             <Icon className="size-4 text-primary" />
-            {editing ? `Configurer « ${view.label} »` : `Nouvelle vue de ${table.label}`}
+            {editing
+              ? $t('Configurer « {label} »', { label: view.label })
+              : $t('Nouvelle vue de {label}', { label: table.label })}
           </DialogTitle>
           <DialogDescription>
             {editing
               ? `${KIND_INFO[kind].label} — ${KIND_INFO[kind].summary}`
               : personal || !canBuild
-                ? 'Une vue personnelle n’est vue que par vous. Elle ne change aucune donnée.'
-                : 'Une vue est partagée avec tous ceux qui lisent la table. Elle ne change aucune donnée.'}
+                ? $t('Une vue personnelle n’est vue que par vous. Elle ne change aucune donnée.')
+                : $t(
+                    'Une vue est partagée avec tous ceux qui lisent la table. Elle ne change aucune donnée.',
+                  )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5 scroll-discret">
           {!editing && (
             <fieldset className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              <legend className="sr-only">{'Type de vue'}</legend>
+              <legend className="sr-only">{$t('Type de vue')}</legend>
               {VIEW_KINDS.map((k) => {
                 const info = KIND_INFO[k]
                 const reason = unavailableReason(k, table)
@@ -261,11 +260,14 @@ export function ViewDialog({
 
           {blocked !== null ? (
             <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
-              {blocked} Ajoutez-en un depuis l’écran « Structure », puis revenez créer la vue.
+              {$t(
+                '{blocked} Ajoutez-en un depuis l’écran « Structure », puis revenez créer la vue.',
+                { blocked },
+              )}
             </p>
           ) : (
             <>
-              <Section title="Nom">
+              <Section title={$t('Nom')}>
                 <Input
                   value={label}
                   onChange={(e) => {
@@ -275,17 +277,17 @@ export function ViewDialog({
                   onKeyDown={(e) => e.key === 'Enter' && void submit()}
                   placeholder={KIND_INFO[kind].label}
                   maxLength={255}
-                  aria-label="Nom de la vue"
+                  aria-label={$t('Nom de la vue')}
                   autoFocus
                 />
                 <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="À quoi sert cette vue ? (facultatif)"
+                  placeholder={$t('À quoi sert cette vue ? (facultatif)')}
                   rows={2}
                   maxLength={1000}
                   className="mt-2 min-h-0 resize-none text-sm"
-                  aria-label="Description de la vue"
+                  aria-label={$t('Description de la vue')}
                 />
                 {!editing && (
                   <div className="mt-2 flex items-start gap-2.5 text-sm">
@@ -297,11 +299,15 @@ export function ViewDialog({
                       className="mt-0.5"
                     />
                     <div>
-                      <label htmlFor={personalId}>Vue personnelle</label>
+                      <label htmlFor={personalId}>{$t('Vue personnelle')}</label>
                       <p className="text-xs text-muted-foreground">
                         {canBuild
-                          ? 'Visible par vous seul ; les autres ne la voient pas dans leur liste.'
-                          : 'Vous ne construisez pas cette base : vos vues sont les vôtres, invisibles pour les autres.'}
+                          ? $t(
+                              'Visible par vous seul ; les autres ne la voient pas dans leur liste.',
+                            )
+                          : $t(
+                              'Vous ne construisez pas cette base : vos vues sont les vôtres, invisibles pour les autres.',
+                            )}
                       </p>
                     </div>
                   </div>
@@ -309,10 +315,12 @@ export function ViewDialog({
               </Section>
 
               {kind === 'kanban' && (
-                <Section title="Champs pivots">
+                <Section title={$t('Champs pivots')}>
                   <Pivot
-                    label="Colonnes selon"
-                    hint="Une colonne par choix de la liste ; glisser une carte change sa valeur, glisser l’en-tête d’une colonne la déplace."
+                    label={$t('Colonnes selon')}
+                    hint={$t(
+                      'Une colonne par choix de la liste ; glisser une carte change sa valeur, glisser l’en-tête d’une colonne la déplace.',
+                    )}
                     required
                     fields={selectFields(fields)}
                     value={get('group_by')}
@@ -320,21 +328,21 @@ export function ViewDialog({
                     onChange={(v) => setSpec((s) => ({ ...s, group_by: v, group_order: [] }))}
                   />
                   <Pivot
-                    label="Titre des cartes"
+                    label={$t('Titre des cartes')}
                     fields={fields}
                     value={get('title_field')}
                     onChange={(v) => set('title_field', v)}
-                    placeholder="Colonne d’affichage de la table"
+                    placeholder={$t('Colonne d’affichage de la table')}
                   />
                   <Pivot
-                    label="Image de couverture"
+                    label={$t('Image de couverture')}
                     fields={pictureFields(fields)}
                     value={get('cover_field')}
                     onChange={(v) => set('cover_field', v)}
-                    placeholder="Aucune"
+                    placeholder={$t('Aucune')}
                   />
                   <Toggle
-                    label="Masquer les colonnes vides"
+                    label={$t('Masquer les colonnes vides')}
                     checked={spec.hide_empty === true}
                     onChange={(v) => set('hide_empty', v)}
                   />
@@ -342,43 +350,43 @@ export function ViewDialog({
               )}
 
               {kind === 'calendar' && (
-                <Section title="Champs pivots">
+                <Section title={$t('Champs pivots')}>
                   <Pivot
-                    label="Date"
-                    hint="Le jour où chaque ligne est posée."
+                    label={$t('Date')}
+                    hint={$t('Le jour où chaque ligne est posée.')}
                     required
                     fields={dateFields(fields)}
                     value={get('date_field')}
                     onChange={(v) => set('date_field', v)}
                   />
                   <Pivot
-                    label="Date de fin"
-                    hint="Facultative : une ligne s’étend alors sur plusieurs jours."
+                    label={$t('Date de fin')}
+                    hint={$t('Facultative : une ligne s’étend alors sur plusieurs jours.')}
                     fields={dateFields(fields).filter((f) => f.name !== get('date_field'))}
                     value={get('end_field')}
                     onChange={(v) => set('end_field', v)}
-                    placeholder="Aucune"
+                    placeholder={$t('Aucune')}
                   />
                   <Pivot
-                    label="Titre"
+                    label={$t('Titre')}
                     fields={fields}
                     value={get('title_field')}
                     onChange={(v) => set('title_field', v)}
-                    placeholder="Colonne d’affichage de la table"
+                    placeholder={$t('Colonne d’affichage de la table')}
                   />
                   <Pivot
-                    label="Couleur selon"
+                    label={$t('Couleur selon')}
                     fields={selectFields(fields)}
                     value={get('color_field')}
                     onChange={(v) => set('color_field', v)}
-                    placeholder="Aucune"
+                    placeholder={$t('Aucune')}
                   />
                   <Choice
-                    label="Affichage"
+                    label={$t('Affichage')}
                     value={spec.mode === 'week' ? 'week' : 'month'}
                     options={[
-                      ['month', 'Mois'],
-                      ['week', 'Semaine'],
+                      ['month', $t('Mois')],
+                      ['week', $t('Semaine')],
                     ]}
                     onChange={(v) => set('mode', v)}
                   />
@@ -386,59 +394,61 @@ export function ViewDialog({
               )}
 
               {kind === 'timeline' && (
-                <Section title="Champs pivots">
+                <Section title={$t('Champs pivots')}>
                   <Pivot
-                    label="Début"
+                    label={$t('Début')}
                     required
                     fields={dateFields(fields)}
                     value={get('start_field')}
                     onChange={(v) => set('start_field', v)}
                   />
                   <Pivot
-                    label="Fin"
-                    hint="Sans fin, chaque barre dure un jour."
+                    label={$t('Fin')}
+                    hint={$t('Sans fin, chaque barre dure un jour.')}
                     fields={dateFields(fields).filter((f) => f.name !== get('start_field'))}
                     value={get('end_field')}
                     onChange={(v) => set('end_field', v)}
-                    placeholder="Aucune"
+                    placeholder={$t('Aucune')}
                   />
                   <Pivot
-                    label="Regrouper par"
-                    hint="Une bande par choix d’une liste, ou par ligne liée."
+                    label={$t('Regrouper par')}
+                    hint={$t('Une bande par choix d’une liste, ou par ligne liée.')}
                     fields={groupFields(fields)}
                     value={get('group_by')}
                     onChange={(v) => set('group_by', v)}
-                    placeholder="Pas de regroupement"
+                    placeholder={$t('Pas de regroupement')}
                   />
                   <Pivot
-                    label="Titre"
+                    label={$t('Titre')}
                     fields={fields}
                     value={get('title_field')}
                     onChange={(v) => set('title_field', v)}
-                    placeholder="Colonne d’affichage de la table"
+                    placeholder={$t('Colonne d’affichage de la table')}
                   />
                   <Pivot
-                    label="Couleur selon"
+                    label={$t('Couleur selon')}
                     fields={selectFields(fields)}
                     value={get('color_field')}
                     onChange={(v) => set('color_field', v)}
-                    placeholder="Aucune"
+                    placeholder={$t('Aucune')}
                   />
                   <Pivot
-                    label="Dépend de"
-                    hint="Une relation de la table vers elle-même : une flèche relie chaque ligne à celles dont elle dépend."
+                    label={$t('Dépend de')}
+                    hint={$t(
+                      'Une relation de la table vers elle-même : une flèche relie chaque ligne à celles dont elle dépend.',
+                    )}
                     fields={selfLinkFields(table, fields)}
                     value={get('depends_on')}
                     onChange={(v) => set('depends_on', v)}
-                    placeholder="Pas de dépendances"
+                    placeholder={$t('Pas de dépendances')}
                   />
                   <Choice
-                    label="Échelle"
+                    label={$t('Échelle')}
                     value={typeof spec.scale === 'string' ? spec.scale : 'week'}
                     options={[
-                      ['day', 'Jour'],
-                      ['week', 'Semaine'],
-                      ['month', 'Mois'],
+                      ['day', $t('Jour')],
+                      ['week', $t('Semaine')],
+                      ['month', $t('Mois')],
                     ]}
                     onChange={(v) => set('scale', v)}
                   />
@@ -446,80 +456,82 @@ export function ViewDialog({
               )}
 
               {kind === 'gallery' && (
-                <Section title="Cartes">
+                <Section title={$t('Cartes')}>
                   <Pivot
-                    label="Titre des cartes"
+                    label={$t('Titre des cartes')}
                     fields={fields}
                     value={get('title_field')}
                     onChange={(v) => set('title_field', v)}
-                    placeholder="Colonne d’affichage de la table"
+                    placeholder={$t('Colonne d’affichage de la table')}
                   />
                   <Pivot
-                    label="Image de couverture"
+                    label={$t('Image de couverture')}
                     fields={pictureFields(fields)}
                     value={get('cover_field')}
                     onChange={(v) => set('cover_field', v)}
-                    placeholder="Aucune"
+                    placeholder={$t('Aucune')}
                   />
                   {get('cover_field') !== null && (
                     <Choice
-                      label="Image"
+                      label={$t('Image')}
                       value={spec.cover_fit === 'contain' ? 'contain' : 'cover'}
                       options={[
-                        ['cover', 'Recadrée'],
-                        ['contain', 'Entière'],
+                        ['cover', $t('Recadrée')],
+                        ['contain', $t('Entière')],
                       ]}
                       onChange={(v) => set('cover_fit', v)}
                     />
                   )}
                   <Choice
-                    label="Taille des cartes"
+                    label={$t('Taille des cartes')}
                     value={
                       spec.card_size === 'small' || spec.card_size === 'large'
                         ? spec.card_size
                         : 'medium'
                     }
                     options={[
-                      ['small', 'Petites'],
-                      ['medium', 'Moyennes'],
-                      ['large', 'Grandes'],
+                      ['small', $t('Petites')],
+                      ['medium', $t('Moyennes')],
+                      ['large', $t('Grandes')],
                     ]}
                     onChange={(v) => set('card_size', v)}
                   />
                   <Pivot
-                    label="Couleur selon"
+                    label={$t('Couleur selon')}
                     fields={selectFields(fields)}
                     value={get('color_field')}
                     onChange={(v) => set('color_field', v)}
-                    placeholder="Aucune"
+                    placeholder={$t('Aucune')}
                   />
                 </Section>
               )}
 
               {kind === 'list' && (
-                <Section title="Lignes">
+                <Section title={$t('Lignes')}>
                   <Pivot
-                    label="Titre"
+                    label={$t('Titre')}
                     fields={fields}
                     value={get('title_field')}
                     onChange={(v) => set('title_field', v)}
-                    placeholder="Colonne d’affichage de la table"
+                    placeholder={$t('Colonne d’affichage de la table')}
                   />
                   <Pivot
-                    label="Regrouper par"
-                    hint="Un groupe repliable par choix d’une liste, par ligne liée ou par personne."
+                    label={$t('Regrouper par')}
+                    hint={$t(
+                      'Un groupe repliable par choix d’une liste, par ligne liée ou par personne.',
+                    )}
                     fields={listGroupFields(fields)}
                     value={get('group_by')}
                     onChange={(v) => set('group_by', v)}
-                    placeholder="Pas de regroupement"
+                    placeholder={$t('Pas de regroupement')}
                   />
                 </Section>
               )}
 
               {kind === 'grid' && (
                 <Section
-                  title="Colonnes affichées"
-                  hint="Décochez pour masquer, glissez pour ordonner."
+                  title={$t('Colonnes affichées')}
+                  hint={$t('Décochez pour masquer, glissez pour ordonner.')}
                 >
                   <FieldChecklist
                     fields={fields}
@@ -542,15 +554,15 @@ export function ViewDialog({
                 <Section
                   title={
                     kind === 'timeline'
-                      ? 'Champs sur les barres'
+                      ? $t('Champs sur les barres')
                       : kind === 'list'
-                        ? 'Champs sur chaque ligne'
-                        : 'Champs sur les cartes'
+                        ? $t('Champs sur chaque ligne')
+                        : $t('Champs sur les cartes')
                   }
                   hint={
                     kind === 'list'
-                      ? 'Après le titre, dans cet ordre.'
-                      : 'Sous le titre, dans cet ordre.'
+                      ? $t('Après le titre, dans cet ordre.')
+                      : $t('Sous le titre, dans cet ordre.')
                   }
                 >
                   <FieldChecklist
@@ -563,12 +575,30 @@ export function ViewDialog({
                 </Section>
               )}
 
+              {kind === 'kanban' && (
+                <Section
+                  title={$t('Description des cartes')}
+                  hint={$t(
+                    'Une phrase sous le titre de chaque carte ; chaque {{champ}} y est remplacé par la valeur de la ligne.',
+                  )}
+                >
+                  <TemplateEditor
+                    id="card-template"
+                    value={typeof spec.card_template === 'string' ? spec.card_template : ''}
+                    onChange={(next) => set('card_template', next)}
+                    fields={fields}
+                    max={CARD_TEMPLATE_MAX}
+                    placeholder={$t('Livraison prévue le {{Date}} pour {{Client}}.')}
+                  />
+                </Section>
+              )}
+
               {(kind === 'form' || kind === 'survey') && (
                 <FormSettings kind={kind} fields={fields} spec={spec} setSpec={setSpec} />
               )}
 
               {KIND_INFO[kind].data && !editing && hasCurrent && (
-                <Section title="Filtre et tri">
+                <Section title={$t('Filtre et tri')}>
                   <div className="flex items-start gap-2.5 text-sm">
                     <Checkbox
                       id={takeId}
@@ -577,7 +607,7 @@ export function ViewDialog({
                       className="mt-0.5"
                     />
                     <div>
-                      <label htmlFor={takeId}>Reprendre le filtre et le tri affichés</label>
+                      <label htmlFor={takeId}>{$t('Reprendre le filtre et le tri affichés')}</label>
                       <CurrentSummary current={current} fields={fields} />
                     </div>
                   </div>
@@ -600,10 +630,10 @@ export function ViewDialog({
             </p>
           )}
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button onClick={() => void submit()} disabled={!ready}>
-            {busy ? 'Enregistrement…' : editing ? 'Enregistrer' : 'Créer la vue'}
+            {busy ? $t('Enregistrement…') : editing ? $t('Enregistrer') : $t('Créer la vue')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -616,16 +646,16 @@ function missingPivot(kind: ViewKind, spec: Spec): string | null {
   const has = (key: string) => typeof spec[key] === 'string' && spec[key] !== ''
   switch (kind) {
     case 'kanban':
-      return has('group_by') ? null : 'Choisissez le champ qui forme les colonnes.'
+      return has('group_by') ? null : $t('Choisissez le champ qui forme les colonnes.')
     case 'calendar':
-      return has('date_field') ? null : 'Choisissez le champ date.'
+      return has('date_field') ? null : $t('Choisissez le champ date.')
     case 'timeline':
-      return has('start_field') ? null : 'Choisissez le champ de début.'
+      return has('start_field') ? null : $t('Choisissez le champ de début.')
     case 'form':
     case 'survey':
       return Array.isArray(spec.fields) && spec.fields.length > 0
         ? null
-        : 'Ajoutez au moins une question.'
+        : $t('Ajoutez au moins une question.')
     default:
       return null
   }
@@ -675,7 +705,7 @@ function Pivot({
   fields,
   value,
   onChange,
-  placeholder = 'Choisir un champ',
+  placeholder = $t('Choisir un champ'),
 }: {
   readonly label: string
   readonly hint?: string
@@ -693,30 +723,35 @@ function Pivot({
         {required && <span className="ml-0.5 text-destructive">*</span>}
       </div>
       <div className="min-w-0 space-y-1">
-        <Select
-          value={known ? (value as string) : NONE}
-          onValueChange={(v) => onChange(v === NONE ? null : v)}
-        >
-          <SelectTrigger aria-label={label} className={cn(!known && 'text-muted-foreground')}>
-            <SelectValue placeholder={placeholder} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={NONE}>
-              <span className="text-muted-foreground">{placeholder}</span>
-            </SelectItem>
-            {fields.map((f) => (
-              <SelectItem key={f.name} value={f.name}>
+        <ChoiceField
+          value={known ? (value as string) : ''}
+          onValueChange={(v) => onChange(v === '' ? null : v)}
+          options={[
+            {
+              value: '',
+              label: placeholder,
+              render: <span className="text-muted-foreground">{placeholder}</span>,
+            },
+            ...fields.map((f) => ({
+              value: f.name,
+              label: f.label,
+              render: (
                 <span className="flex items-center gap-2">
                   <FieldIcon kind={f.kind} format={f.format?.display} />
                   {f.label}
                 </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              ),
+            })),
+          ]}
+          aria-label={label}
+          size="default"
+          className={cn(!known && 'text-muted-foreground')}
+        />
         {hint !== undefined && <p className="text-xs text-muted-foreground">{hint}</p>}
         {fields.length === 0 && (
-          <p className="text-xs text-muted-foreground">Aucun champ de ce type dans la table.</p>
+          <p className="text-xs text-muted-foreground">
+            {$t('Aucun champ de ce type dans la table.')}
+          </p>
         )}
       </div>
     </div>
@@ -872,7 +907,7 @@ function FieldChecklist({
   }
 
   if (fields.length === 0) {
-    return <p className="text-sm text-muted-foreground">Aucun champ.</p>
+    return <p className="text-sm text-muted-foreground">{$t('Aucun champ.')}</p>
   }
 
   return (
@@ -906,7 +941,7 @@ function FieldChecklist({
           className="h-7 px-2 text-xs"
           onClick={() => onChange(order)}
         >
-          Tout
+          {$t('Tout')}
         </Button>
         <Button
           variant="ghost"
@@ -914,7 +949,7 @@ function FieldChecklist({
           className="h-7 px-2 text-xs"
           onClick={() => onChange(order.filter((n) => locked?.has(n) === true))}
         >
-          Aucun
+          {$t('Aucun')}
         </Button>
       </div>
     </div>
@@ -951,7 +986,7 @@ function ChecklistRow({
           {...attributes}
           {...listeners}
           className="cursor-grab rounded p-0.5 text-muted-foreground hover:bg-accent active:cursor-grabbing"
-          aria-label={`Déplacer ${field.label}`}
+          aria-label={$t('Déplacer {label}', { label: field.label })}
         >
           <GripVertical className="size-4" />
         </button>
@@ -966,7 +1001,7 @@ function ChecklistRow({
           {field.label}
         </span>
         {locked && (
-          <span title="Champ obligatoire de la table : le formulaire doit le demander">
+          <span title={$t('Champ obligatoire de la table : le formulaire doit le demander')}>
             <Lock className="size-3.5 text-muted-foreground" />
           </span>
         )}
@@ -1017,35 +1052,37 @@ function FormSettings({
 
   return (
     <>
-      <Section title={kind === 'survey' ? 'Accueil' : 'En-tête'}>
+      <Section title={kind === 'survey' ? $t('Accueil') : $t('En-tête')}>
         <Input
           value={form.title}
           onChange={setText('title')}
-          placeholder="Titre"
+          placeholder={$t('Titre')}
           maxLength={255}
-          aria-label="Titre du formulaire"
+          aria-label={$t('Titre du formulaire')}
         />
         <Textarea
           value={form.description}
           onChange={setText('description')}
           placeholder={
             kind === 'survey'
-              ? 'Ce que la personne va remplir, et pourquoi'
-              : 'Consignes, en tête du formulaire'
+              ? $t('Ce que la personne va remplir, et pourquoi')
+              : $t('Consignes, en tête du formulaire')
           }
           rows={3}
           maxLength={4000}
           className="mt-2 text-sm"
-          aria-label="Présentation du formulaire"
+          aria-label={$t('Présentation du formulaire')}
         />
       </Section>
 
       <Section
-        title="Questions"
+        title={$t('Questions')}
         hint={
           kind === 'survey'
-            ? 'Une par écran, dans cet ordre. Les champs calculés et en lecture seule ne sont pas proposés.'
-            : 'Dans cet ordre. Les champs calculés et en lecture seule ne sont pas proposés.'
+            ? $t(
+                'Une par écran, dans cet ordre. Les champs calculés et en lecture seule ne sont pas proposés.',
+              )
+            : $t('Dans cet ordre. Les champs calculés et en lecture seule ne sont pas proposés.')
         }
       >
         <FieldChecklist
@@ -1061,22 +1098,22 @@ function FormSettings({
                 <Input
                   value={q.label}
                   onChange={(e) => patchQuestion(field.name, { label: e.target.value })}
-                  placeholder={`Intitulé : ${field.label}`}
+                  placeholder={$t('Intitulé : {label}', { label: field.label })}
                   className="h-8 text-xs"
                   maxLength={255}
-                  aria-label={`Intitulé de la question ${field.label}`}
+                  aria-label={$t('Intitulé de la question {label}', { label: field.label })}
                 />
                 <Input
                   value={q.help}
                   onChange={(e) => patchQuestion(field.name, { help: e.target.value })}
-                  placeholder={field.description ?? 'Aide sous la question'}
+                  placeholder={field.description ?? $t('Aide sous la question')}
                   className="h-8 text-xs"
                   maxLength={1000}
-                  aria-label={`Aide de la question ${field.label}`}
+                  aria-label={$t('Aide de la question {label}', { label: field.label })}
                 />
                 <SwitchRow
                   className="text-xs sm:col-span-2"
-                  label="Réponse obligatoire"
+                  label={$t('Réponse obligatoire')}
                   checked={q.required || locked.has(field.name)}
                   disabled={locked.has(field.name)}
                   onChange={(v) => patchQuestion(field.name, { required: v })}
@@ -1087,18 +1124,18 @@ function FormSettings({
         />
       </Section>
 
-      <Section title="Envoi">
+      <Section title={$t('Envoi')}>
         <div className="grid gap-2 sm:grid-cols-2">
           <Input
             value={form.submit_label}
             onChange={setText('submit_label')}
-            placeholder="Libellé du bouton : Envoyer"
+            placeholder={$t('Libellé du bouton : Envoyer')}
             maxLength={60}
-            aria-label="Libellé du bouton d’envoi"
+            aria-label={$t('Libellé du bouton d’envoi')}
           />
           <SwitchRow
             className="text-sm"
-            label="Proposer une nouvelle réponse"
+            label={$t('Proposer une nouvelle réponse')}
             checked={form.allow_another}
             onChange={(v) => setSpec((s) => ({ ...s, allow_another: v }))}
           />
@@ -1106,11 +1143,11 @@ function FormSettings({
         <Textarea
           value={form.success_message}
           onChange={setText('success_message')}
-          placeholder="Message après l’envoi : Merci, votre réponse a été enregistrée."
+          placeholder={$t('Message après l’envoi : Merci, votre réponse a été enregistrée.')}
           rows={2}
           maxLength={2000}
           className="text-sm"
-          aria-label="Message après l’envoi"
+          aria-label={$t('Message après l’envoi')}
         />
       </Section>
     </>

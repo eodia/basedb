@@ -4,7 +4,7 @@ Le site public de basedb, logiciel libre d’[Eodia](https://eodia.com/fr/) : la
 d’accueil, les nouveautés, la feuille de route et la documentation. Chaque page renvoie au
 studio — le pied de page de l’accueil, celui de la documentation, et les métadonnées
 (`author`, fiche JSON-LD `SoftwareApplication`). [Astro](https://astro.build) et [Starlight](https://starlight.astro.build),
-en français. Publié sur GitHub Pages sous `https://eodia.github.io/basedb/`.
+en vingt langues — le français d’abord (voir `src/i18n/README.md`). Publié sur GitHub Pages sous `https://eodia.github.io/basedb/`.
 
 Ce dossier est un projet à part : il n’appartient pas à l’espace de travail pnpm du dépôt et
 s’installe avec npm.
@@ -21,9 +21,10 @@ npm run check     # vérification des types
 
 | Chemin | Contenu |
 |---|---|
-| `src/pages/index.astro` | la page d’accueil, assemblée à partir de `src/components/landing/` |
-| `src/pages/nouveautes.astro`, `feuille-de-route.astro` | les pages annexes |
-| `src/content/docs/` | la documentation (Markdown), une page par fichier |
+| `src/views/` | les pages d’accueil, écrites une fois pour toutes les langues : l’accueil (assemblé à partir de `src/components/landing/`), les nouveautés, la feuille de route, la galerie des modèles |
+| `src/pages/` | leurs adresses : le français à la racine, les autres langues sous `[locale]/` |
+| `src/i18n/` | les langues : leur liste, les textes des pages d’accueil (`ui/fr.ts`, puis une traduction par langue), la détection de la langue |
+| `src/content/docs/` | la documentation (Markdown), une page par fichier ; ses traductions sous `src/content/docs/<langue>/` |
 | `src/pages/modeles/` | la galerie des modèles de base, une page par modèle, et `catalogue.json` que les instances lisent |
 | `../packages/templates/catalog/` | les modèles eux-mêmes, un fichier JSON par modèle — hors de `www/`, partagés avec l’application |
 | `src/assets/screens/` | les captures de l’interface, optimisées en WebP à la construction |

@@ -1,14 +1,17 @@
 ---
 // Starlight's own footer — edit link, pagination —, followed by who makes basedb: every
-// page of the documentation leads back to the studio, as the home page does.
+// page of the documentation leads back to the studio, as the home page does. In the
+// page's language: Starlight's locale is the site's (`root` is French).
 import Default from '@astrojs/starlight/components/Footer.astro';
+import { DEFAULT_LOCALE, getDict, isLocale, localizeHtml } from '../i18n';
+
+const key = Astro.locals.starlightRoute.locale;
+const locale = isLocale(key) ? key : DEFAULT_LOCALE;
+const madeBy = localizeHtml(locale, getDict(locale).docsFooter.madeBy);
 ---
 
 <Default><slot /></Default>
-<p class="bd-made-by">
-	basedb est un logiciel libre d’<a href="https://eodia.com/fr/">Eodia</a>, studio de logiciel
-	IA-natif.
-</p>
+<p class="bd-made-by" set:html={madeBy} />
 
 <style>
 	.bd-made-by {
@@ -18,12 +21,12 @@ import Default from '@astrojs/starlight/components/Footer.astro';
 		font-size: var(--sl-text-sm);
 		color: var(--sl-color-gray-3);
 	}
-	.bd-made-by a {
+	.bd-made-by :global(a) {
 		font-weight: 600;
 		color: var(--sl-color-text-accent);
 		text-decoration: none;
 	}
-	.bd-made-by a:hover {
+	.bd-made-by :global(a:hover) {
 		text-decoration: underline;
 	}
 </style>

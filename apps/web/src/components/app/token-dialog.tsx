@@ -29,6 +29,7 @@ import {
   mcpEndpoint,
   restRoot,
 } from '@/lib/api/client'
+import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { KeyRound, Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -60,17 +61,17 @@ type Duration = (typeof DURATIONS)[number]
 const VARIABLE = 'BASEDB_TOKEN'
 
 const SURFACES: ReadonlyArray<{ id: TokenSurface; label: string; hint: string }> = [
-  { id: 'rest', label: 'API REST', hint: 'un programme, un script, une synchronisation' },
-  { id: 'mcp', label: 'MCP', hint: 'un agent : Claude ou tout client MCP' },
+  { id: 'rest', label: $t('API REST'), hint: $t('un programme, un script, une synchronisation') },
+  { id: 'mcp', label: $t('MCP'), hint: $t('un agent : Claude ou tout client MCP') },
 ]
 
-const date = (iso: string) => new Date(iso).toLocaleDateString('fr-FR')
+const date = (iso: string) => new Date(iso).toLocaleDateString(intlLocale())
 
 /** Why a token no longer answers, if it does not. */
-function stateOf(token: ApiToken): string | null {
-  if (token.revoked_at !== null) return 'Révoqué'
-  if (token.suspended_at !== null) return 'Suspendu'
-  if (token.expires_at !== null && Date.parse(token.expires_at) <= Date.now()) return 'Expiré'
+export function stateOf(token: ApiToken): string | null {
+  if (token.revoked_at !== null) return $t('Révoqué')
+  if (token.suspended_at !== null) return $t('Suspendu')
+  if (token.expires_at !== null && Date.parse(token.expires_at) <= Date.now()) return $t('Expiré')
   return null
 }
 
@@ -83,7 +84,7 @@ function configuration(secret: string, base: string, surfaces: readonly string[]
     variable: [
       {
         lang: 'powershell',
-        title: 'Windows (PowerShell)',
+        title: $t('Windows (PowerShell)'),
         body: `[Environment]::SetEnvironmentVariable('${VARIABLE}', '${secret}', 'User')`,
       },
       {
@@ -101,7 +102,7 @@ function configuration(secret: string, base: string, surfaces: readonly string[]
           },
           {
             lang: 'js',
-            title: 'API REST — JavaScript',
+            title: $t('API REST — JavaScript'),
             body: [
               `const response = await fetch('${restRoot()}/meta/bases/${base}', {`,
               `  headers: { Authorization: \`Bearer \${process.env.${VARIABLE}}\` },`,
@@ -115,12 +116,12 @@ function configuration(secret: string, base: string, surfaces: readonly string[]
       ? [
           {
             lang: 'bash',
-            title: 'MCP — Claude Code',
+            title: $t('MCP — Claude Code'),
             body: `claude mcp add basedb -- node ${args.join(' ')}`,
           },
           {
             lang: 'json',
-            title: 'MCP — autre client',
+            title: $t('MCP — autre client'),
             body: JSON.stringify({ mcpServers: { basedb: { command: 'node', args } } }, null, 2),
           },
         ]
@@ -129,7 +130,7 @@ function configuration(secret: string, base: string, surfaces: readonly string[]
 }
 
 /** « API REST · MCP », as a token's line says where it is accepted. */
-function doorsOf(surfaces: readonly string[]): string {
+export function doorsOf(surfaces: readonly string[]): string {
   return SURFACES.filter((s) => surfaces.includes(s.id))
     .map((s) => s.label)
     .join(' · ')
@@ -228,28 +229,30 @@ export function TokenDialog({
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Jetons API et MCP — {base.label}</DialogTitle>
+          <DialogTitle>{$t('Jetons API et MCP — {label}', { label: base.label })}</DialogTitle>
           <DialogDescription>
-            Un jeton d’intégration ouvre cette base à un programme, par l’API REST, ou à un agent
-            (Claude ou tout client MCP) : il la lit et, si vous le décidez, y crée et modifie des
-            lignes. Il ne peut ni supprimer une ligne ni changer la structure, et ne voit que ce que
-            vous pouvez voir.
+            {$t(
+              'Un jeton d’intégration ouvre cette base à un programme, par l’API REST, ou à un agent (Claude ou tout client MCP) : il la lit et, si vous le décidez, y crée et modifie des lignes. Il ne peut ni supprimer une ligne ni changer la structure, et ne voit que ce que vous pouvez voir.',
+            )}
           </DialogDescription>
         </DialogHeader>
 
         {issued !== null && snippets !== null ? (
           <div className="min-w-0 space-y-3">
             <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-              Copiez le jeton « {issued.label} » maintenant : il ne sera plus jamais affiché.
-              Placez-le dans la variable d’environnement <code>{VARIABLE}</code> : les
-              configurations ci-dessous n’en portent que le nom, jamais le jeton.
+              {$t(
+                'Copiez le jeton « {label} » maintenant : il ne sera plus jamais affiché. Placez-le dans la variable d’environnement',
+                { label: issued.label },
+              )}{' '}
+              <code>{VARIABLE}</code>{' '}
+              {$t(': les configurations ci-dessous n’en portent que le nom, jamais le jeton.')}
             </p>
             <CodeGroup blocks={snippets.variable} />
             {snippets.rest.length > 0 && (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Pour un programme : l’en-tête <code>Authorization: Bearer</code> sur les routes de
-                  données de cette base.
+                  {$t('Pour un programme : l’en-tête')} <code>Authorization: Bearer</code>{' '}
+                  {$t('sur les routes de données de cette base.')}
                 </p>
                 <CodeGroup blocks={snippets.rest} />
               </>
@@ -257,25 +260,25 @@ export function TokenDialog({
             {snippets.mcp.length > 0 && (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Pour un agent : déclarez le relais dans votre client MCP.
+                  {$t('Pour un agent : déclarez le relais dans votre client MCP.')}
                 </p>
                 <CodeGroup blocks={snippets.mcp} />
               </>
             )}
             <DialogFooter>
-              <Button onClick={() => setIssued(null)}>Terminé</Button>
+              <Button onClick={() => setIssued(null)}>{$t('Terminé')}</Button>
             </DialogFooter>
           </div>
         ) : (
           <div className="min-w-0 space-y-5">
             <section className="space-y-2">
-              <h3 className="text-sm font-medium">Jetons de cette base</h3>
+              <h3 className="text-sm font-medium">{$t('Jetons de cette base')}</h3>
               {tokens === null ? (
                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" /> Chargement…
+                  <Loader2 className="size-4 animate-spin" /> {$t('Chargement…')}
                 </p>
               ) : tokens.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Aucun jeton pour l’instant.</p>
+                <p className="text-sm text-muted-foreground">{$t('Aucun jeton pour l’instant.')}</p>
               ) : (
                 <ul className="divide-y rounded-md border">
                   {tokens.map((token) => {
@@ -286,16 +289,27 @@ export function TokenDialog({
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium">{token.label}</span>
                           <span className="block truncate font-mono text-[11px] text-muted-foreground">
-                            bdb_{token.prefix}… · {doorsOf(token.surfaces)} ·{' '}
-                            {token.expires_at === null
-                              ? 'sans expiration'
-                              : `expire le ${date(token.expires_at)}`}
-                            {token.last_used_at !== null &&
-                              ` · utilisé le ${date(token.last_used_at)}`}
+                            {$t('bdb_{prefix}… · {surfaces} · {value}{value2}', {
+                              prefix: token.prefix,
+                              surfaces: doorsOf(token.surfaces),
+                              value:
+                                token.expires_at === null
+                                  ? $t('sans expiration')
+                                  : $t('expire le {expires_at}', {
+                                      expires_at: date(token.expires_at),
+                                    }),
+                              value2:
+                                token.last_used_at !== null &&
+                                $t(' · utilisé le {last_used_at}', {
+                                  last_used_at: date(token.last_used_at),
+                                }),
+                            })}
                           </span>
                         </span>
                         <Badge variant="secondary">
-                          {token.access === 'write' ? 'Lecture et écriture' : 'Lecture seule'}
+                          {token.access === 'write'
+                            ? $t('Lecture et écriture')
+                            : $t('Lecture seule')}
                         </Badge>
                         {state === null ? (
                           <Button
@@ -305,12 +319,12 @@ export function TokenDialog({
                             disabled={password === '' || busy}
                             title={
                               password === ''
-                                ? 'Saisissez votre mot de passe ci-dessous'
+                                ? $t('Saisissez votre mot de passe ci-dessous')
                                 : undefined
                             }
                             onClick={() => void revoke(token)}
                           >
-                            Révoquer
+                            {$t('Révoquer')}
                           </Button>
                         ) : (
                           <span className="text-xs text-muted-foreground">{state}</span>
@@ -323,20 +337,20 @@ export function TokenDialog({
             </section>
 
             <section className="space-y-3">
-              <h3 className="text-sm font-medium">Nouveau jeton</h3>
+              <h3 className="text-sm font-medium">{$t('Nouveau jeton')}</h3>
               <div className="space-y-1.5">
-                <Label htmlFor="token-label">À quoi sert ce jeton ?</Label>
+                <Label htmlFor="token-label">{$t('À quoi sert ce jeton ?')}</Label>
                 <Input
                   id="token-label"
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
-                  placeholder="Synchronisation avec la comptabilité"
+                  placeholder={$t('Synchronisation avec la comptabilité')}
                   maxLength={200}
                 />
               </div>
 
               <fieldset className="space-y-1.5">
-                <legend className="mb-1.5 text-sm font-medium">Accès</legend>
+                <legend className="mb-1.5 text-sm font-medium">{$t('Accès')}</legend>
                 {SURFACES.map((s) => (
                   <div key={s.id} className="flex items-center gap-2 text-sm">
                     <Checkbox
@@ -350,25 +364,25 @@ export function TokenDialog({
                   </div>
                 ))}
                 {surfaces.size === 0 && (
-                  <p className="text-xs text-destructive">Choisissez au moins un accès.</p>
+                  <p className="text-xs text-destructive">{$t('Choisissez au moins un accès.')}</p>
                 )}
               </fieldset>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label>Droits</Label>
+                  <Label>{$t('Droits')}</Label>
                   <Select value={access} onValueChange={(v) => setAccess(v as 'read' | 'write')}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="read">Lecture seule</SelectItem>
-                      <SelectItem value="write">Lecture et écriture</SelectItem>
+                      <SelectItem value="read">{$t('Lecture seule')}</SelectItem>
+                      <SelectItem value="write">{$t('Lecture et écriture')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Validité</Label>
+                  <Label>{$t('Validité')}</Label>
                   <Select value={days} onValueChange={(v) => setDays(v as Duration)}>
                     <SelectTrigger>
                       <SelectValue />
@@ -376,7 +390,7 @@ export function TokenDialog({
                     <SelectContent>
                       {DURATIONS.map((d) => (
                         <SelectItem key={d} value={d}>
-                          {d === 'never' ? 'Sans expiration' : `${d} jours`}
+                          {d === 'never' ? $t('Sans expiration') : `${d} jours`}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -385,13 +399,13 @@ export function TokenDialog({
               </div>
               {access === 'write' && (
                 <p className="text-xs text-muted-foreground">
-                  Le jeton pourra créer et modifier des lignes, jamais en supprimer.
+                  {$t('Le jeton pourra créer et modifier des lignes, jamais en supprimer.')}
                 </p>
               )}
             </section>
 
             <div className="space-y-1.5">
-              <Label htmlFor="token-password">Votre mot de passe</Label>
+              <Label htmlFor="token-password">{$t('Votre mot de passe')}</Label>
               <Input
                 id="token-password"
                 type="password"
@@ -401,8 +415,9 @@ export function TokenDialog({
                 onKeyDown={(e) => e.key === 'Enter' && ready && void create()}
               />
               <p className="text-xs text-muted-foreground">
-                Demandé pour créer ou révoquer un jeton : ouvrir une porte vers l’extérieur exige
-                une preuve récente.
+                {$t(
+                  'Demandé pour créer ou révoquer un jeton : ouvrir une porte vers l’extérieur exige une preuve récente.',
+                )}
               </p>
             </div>
 
@@ -414,10 +429,10 @@ export function TokenDialog({
 
             <DialogFooter>
               <Button variant="ghost" onClick={onClose} disabled={busy}>
-                Fermer
+                {$t('Fermer')}
               </Button>
               <Button onClick={() => void create()} disabled={!ready}>
-                {busy ? 'Création…' : 'Créer le jeton'}
+                {busy ? $t('Création…') : $t('Créer le jeton')}
               </Button>
             </DialogFooter>
           </div>

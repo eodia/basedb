@@ -6,6 +6,7 @@ import { loadGrants, loadTarget } from '../rbac/loader.js'
 import { requireOnTable } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
+import { wantsNotification } from './notifications.js'
 import { canReadTable, contextOf, emitLive } from './signals.js'
 
 /**
@@ -247,6 +248,9 @@ async function notify(
   }
   const excerpt = excerptOf(comment.body)
   for (const notice of notices) {
+    // Refused in the person's settings (§2.3): nothing is written, and the mention is not
+    // « unreachable » for it — the person can read the row, they chose not to be told.
+    if (!(await wantsNotification(exec, notice.user, notice.kind))) continue
     await exec.query(
       `INSERT INTO _basedb.notification
          (tenant_id, user_id, kind, actor_id, base_id, table_id, record_id, comment_id, excerpt)

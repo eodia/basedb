@@ -5,7 +5,13 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testconta
 import { type JWK, SignJWT, exportJWK, generateKeyPair } from 'jose'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { loadProviders } from '../../src/auth/oidc-providers.js'
-import { completeOidc, forgetDiscoveries, resolveIdentity, startOidc } from '../../src/auth/oidc.js'
+import {
+  completeOidc,
+  forgetDiscoveries,
+  linkIdentity,
+  resolveIdentity,
+  startOidc,
+} from '../../src/auth/oidc.js'
 import { loginWithOidc } from '../../src/auth/operations.js'
 import { seal } from '../../src/auth/sealing.js'
 import type { BasedbError } from '../../src/errors/index.js'
@@ -439,6 +445,7 @@ describe('§3.5 — attachment is by `sub`, never by address', () => {
     email,
     displayName: email,
     returnTo: '/',
+    linkSession: null,
   })
 
   it('REFUSES to adopt an account that merely shares the address', async () => {
@@ -537,5 +544,99 @@ describe('§3.5 — attachment is by `sub`, never by address', () => {
       ]),
     )
     expect(user.email).toBe('apres@maison.fr')
+  })
+})
+
+describe('§3.5 — a link, made from an elevated session', () => {
+  beforeEach(async () => {
+    await declare({})
+  })
+
+  /** The refusal's reason, which the settings turn into words. */
+  async function reasonOf(promise: Promise<unknown>): Promise<unknown> {
+    try {
+      await promise
+    } catch (e) {
+      return (e as BasedbError).details?.reason
+    }
+    throw new Error('aucun refus')
+  }
+
+  async function account(email: string): Promise<string> {
+    const [row] = await pools.withConnection('catalog', (exec) =>
+      exec.query<{ id: string }>(
+        `INSERT INTO _basedb.app_user (tenant_id, email, display_name, created_by, updated_by)
+         VALUES ($1, $2, $2, $3, $3) RETURNING id::text`,
+        [tenantId, email, adminId],
+        'insert',
+      ),
+    )
+    return row.id
+  }
+
+  it('carries the session through the exchange, sealed — and a sign-in carries none', async () => {
+    const started = await startOidc(KEY, await provider(), {
+      redirectUri: REDIRECT,
+      returnTo: '/?parametres=profil',
+      linkSession: 'session-qui-lie',
+    })
+    const url = new URL(started.authorizeUrl)
+    nextIdToken = () =>
+      signIdToken({
+        sub: 'lie-1',
+        nonce: url.searchParams.get('nonce'),
+        email: 'lie@exemple.fr',
+        email_verified: true,
+      })
+    const linking = await completeOidc(KEY, await provider(), {
+      code: 'c',
+      state: url.searchParams.get('state') ?? '',
+      cookie: started.exchangeCookie,
+    })
+    expect(linking.linkSession).toBe('session-qui-lie')
+    expect(linking.returnTo).toBe('/?parametres=profil')
+
+    const trip = await roundTrip()
+    nextIdToken = () =>
+      signIdToken({ sub: 'x', nonce: trip.nonce, email: 'x@y.fr', email_verified: true })
+    const signing = await completeOidc(KEY, await provider(), {
+      code: 'c',
+      state: trip.state,
+      cookie: trip.cookie,
+    })
+    expect(signing.linkSession).toBeNull()
+  }, 30_000)
+
+  it('links once, and refuses in words what would take another way in', async () => {
+    const found = await provider()
+    const first = await account('premier@exemple.fr')
+    const second = await account('second@exemple.fr')
+
+    await pools.withConnection('catalog', (exec) => linkIdentity(exec, found, first, 'sujet-p'))
+    // The same identity again changes nothing.
+    await pools.withConnection('catalog', (exec) => linkIdentity(exec, found, first, 'sujet-p'))
+
+    // It opens the first account: linking it to the second would take that way in.
+    expect(
+      await reasonOf(
+        pools.withConnection('catalog', (exec) => linkIdentity(exec, found, second, 'sujet-p')),
+      ),
+    ).toBe('identite_deja_liee')
+    // One identity per provider and account: the first is unlinked before another.
+    expect(
+      await reasonOf(
+        pools.withConnection('catalog', (exec) => linkIdentity(exec, found, first, 'sujet-q')),
+      ),
+    ).toBe('fournisseur_deja_lie')
+
+    // Linked, it signs in: by `sub`, to the first account.
+    const resolved = await resolveIdentity(pools, found, TENANT_REF, {
+      subject: 'sujet-p',
+      email: 'premier@exemple.fr',
+      displayName: 'Premier',
+      returnTo: '/',
+      linkSession: null,
+    })
+    expect(resolved.userId).toBe(first)
   })
 })

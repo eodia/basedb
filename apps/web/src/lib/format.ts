@@ -1,3 +1,4 @@
+import { $t, intlLocale } from '@/lib/i18n'
 import type { Field } from './api/client'
 
 /**
@@ -22,16 +23,16 @@ export function formatOf(field: Pick<Field, 'kind' | 'format'>): string {
   return field.format?.display ?? (field.kind === 'number' ? 'decimal' : 'plain')
 }
 
-const DECIMAL = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 10 })
-const INTEGER = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 })
-const PERCENT = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 })
+const DECIMAL = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 10 })
+const INTEGER = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 0 })
+const PERCENT = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 2 })
 
 const currencies = new Map<string, Intl.NumberFormat>()
 function currencyFormat(code: string): Intl.NumberFormat {
   let format = currencies.get(code)
   if (format === undefined) {
     try {
-      format = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: code })
+      format = new Intl.NumberFormat(intlLocale(), { style: 'currency', currency: code })
     } catch {
       format = DECIMAL
     }
@@ -108,16 +109,44 @@ export function editText(value: unknown, field: Pick<Field, 'kind' | 'format'>):
   const n = Number(raw)
   if (!Number.isFinite(n)) return raw
   if (formatOf(field) === 'duration') return formatDuration(n)
-  // Trailing zeros are noise, and the decimal point is the one a French keyboard types.
+  // Trailing zeros are noise, and the decimal mark is the one the reader's language writes.
   return raw
     .replace(/(\.\d*?)0+$/, '$1')
     .replace(/\.$/, '')
-    .replace('.', ',')
+    .replace('.', decimalMark())
+}
+
+/** The decimal mark of the reader's language: `,` in French, `.` in English. */
+export function decimalMark(): string {
+  return (
+    new Intl.NumberFormat(intlLocale()).formatToParts(1.5).find((part) => part.type === 'decimal')
+      ?.value ?? '.'
+  )
+}
+
+/**
+ * A typed number with a decimal POINT, whatever mark and grouping it was typed with:
+ * `1 234,5`, `1.234,5`, `1,234.5` all read 1234.5. With both marks, the last one is the
+ * decimal one; with one mark alone, groups of exactly three digits after it read as
+ * thousands only where the language groups with that mark (`1.234` is 1234 in German,
+ * 1.234 in English).
+ */
+export function normalizeDecimal(typed: string): string {
+  const dot = typed.lastIndexOf('.')
+  const comma = typed.lastIndexOf(',')
+  if (dot >= 0 && comma >= 0) {
+    return dot > comma ? typed.replaceAll(',', '') : typed.replaceAll('.', '').replace(',', '.')
+  }
+  const mark = dot >= 0 ? '.' : comma >= 0 ? ',' : null
+  if (mark === null) return typed
+  const grouped = new RegExp(`^-?\\d{1,3}(\\${mark}\\d{3})+$`).test(typed)
+  if (grouped && decimalMark() !== mark) return typed.replaceAll(mark, '')
+  return mark === ',' ? typed.replace(',', '.') : typed
 }
 
 /**
  * What a person typed in a number, as the API takes it: a duration read back into seconds,
- * an amount stripped of its symbol, its spaces and its French comma. What does not read as
+ * an amount stripped of its symbol, its spaces and its grouping, its decimal mark a point. What does not read as
  * a number goes through as typed — the server's refusal names the field.
  */
 export function parseNumberInput(typed: string, field: Pick<Field, 'kind' | 'format'>): unknown {
@@ -125,11 +154,12 @@ export function parseNumberInput(typed: string, field: Pick<Field, 'kind' | 'for
     const seconds = parseDuration(typed)
     return seconds ?? typed
   }
-  const cleaned = typed
-    // `\s` includes the no-break spaces the French format puts between thousands.
-    .replace(/\s/g, '')
-    .replace(/[€$£¥%]|[A-Z]{3}$/gi, '')
-    .replace(',', '.')
+  const cleaned = normalizeDecimal(
+    typed
+      // `\s` includes the no-break spaces the French format puts between thousands.
+      .replace(/\s/g, '')
+      .replace(/[€$£¥%]|[A-Z]{3}$/gi, ''),
+  )
   const n = Number(cleaned)
   return cleaned !== '' && Number.isFinite(n) ? n : typed
 }
@@ -143,54 +173,62 @@ export interface Preset {
   readonly kind: string
   readonly format?: FormatInput
   readonly label: string
+  /** A long text holding HTML (chapter 04 §2.2). */
+  readonly rich?: boolean
 }
 
 export const PRESETS: readonly Preset[] = [
-  { value: 'short_text', kind: 'short_text', label: 'Texte court' },
-  { value: 'long_text', kind: 'long_text', label: 'Texte long' },
-  { value: 'number', kind: 'number', label: 'Nombre' },
+  { value: 'short_text', kind: 'short_text', label: $t('Texte court') },
+  { value: 'long_text', kind: 'long_text', label: $t('Texte long') },
+  { value: 'long_text:rich', kind: 'long_text', label: $t('Texte riche (HTML)'), rich: true },
+  { value: 'number', kind: 'number', label: $t('Nombre') },
   {
     value: 'number:currency',
     kind: 'number',
     format: { display: 'currency', currency: 'EUR' },
-    label: 'Monnaie',
+    label: $t('Monnaie'),
   },
-  { value: 'number:percent', kind: 'number', format: { display: 'percent' }, label: 'Pourcentage' },
-  { value: 'number:duration', kind: 'number', format: { display: 'duration' }, label: 'Durée' },
+  {
+    value: 'number:percent',
+    kind: 'number',
+    format: { display: 'percent' },
+    label: $t('Pourcentage'),
+  },
+  { value: 'number:duration', kind: 'number', format: { display: 'duration' }, label: $t('Durée') },
   {
     value: 'number:rating',
     kind: 'number',
     format: { display: 'rating', rating_max: 5 },
-    label: 'Note (étoiles)',
+    label: $t('Note (étoiles)'),
   },
-  { value: 'boolean', kind: 'boolean', label: 'Case à cocher' },
-  { value: 'date', kind: 'date', label: 'Date' },
-  { value: 'datetime', kind: 'datetime', label: 'Date et heure' },
-  { value: 'select', kind: 'select', label: 'Liste de choix' },
-  { value: 'multi_select', kind: 'multi_select', label: 'Choix multiple' },
-  { value: 'user', kind: 'user', label: 'Personne' },
-  { value: 'email', kind: 'email', label: 'E-mail' },
+  { value: 'boolean', kind: 'boolean', label: $t('Case à cocher') },
+  { value: 'date', kind: 'date', label: $t('Date') },
+  { value: 'datetime', kind: 'datetime', label: $t('Date et heure') },
+  { value: 'select', kind: 'select', label: $t('Liste de choix') },
+  { value: 'multi_select', kind: 'multi_select', label: $t('Choix multiple') },
+  { value: 'user', kind: 'user', label: $t('Personne') },
+  { value: 'email', kind: 'email', label: $t('E-mail') },
   {
     value: 'short_text:phone',
     kind: 'short_text',
     format: { display: 'phone' },
-    label: 'Téléphone',
+    label: $t('Téléphone'),
   },
-  { value: 'url', kind: 'url', label: 'Lien URL' },
+  { value: 'url', kind: 'url', label: $t('Lien URL') },
   {
     value: 'short_text:barcode',
     kind: 'short_text',
     format: { display: 'barcode' },
-    label: 'Code-barres',
+    label: $t('Code-barres'),
   },
-  { value: 'autonumber', kind: 'autonumber', label: 'Numéro automatique' },
-  { value: 'file', kind: 'file', label: 'Document' },
-  { value: 'image', kind: 'image', label: 'Image' },
-  { value: 'formula', kind: 'formula', label: 'Formule' },
-  { value: 'lookup', kind: 'lookup', label: 'Recherche' },
-  { value: 'rollup', kind: 'rollup', label: 'Cumul' },
-  { value: 'count', kind: 'count', label: 'Décompte' },
-  { value: 'button', kind: 'button', label: 'Bouton' },
+  { value: 'autonumber', kind: 'autonumber', label: $t('Numéro automatique') },
+  { value: 'file', kind: 'file', label: $t('Document') },
+  { value: 'image', kind: 'image', label: $t('Image') },
+  { value: 'formula', kind: 'formula', label: $t('Formule') },
+  { value: 'lookup', kind: 'lookup', label: $t('Recherche') },
+  { value: 'rollup', kind: 'rollup', label: $t('Cumul') },
+  { value: 'count', kind: 'count', label: $t('Décompte') },
+  { value: 'button', kind: 'button', label: $t('Bouton') },
 ]
 
 export const CURRENCIES: readonly string[] = ['EUR', 'USD', 'GBP', 'CHF', 'CAD', 'JPY']
@@ -199,19 +237,19 @@ export const CURRENCIES: readonly string[] = ['EUR', 'USD', 'GBP', 'CHF', 'CAD',
 export function formatsFor(kind: string): ReadonlyArray<readonly [string, string]> {
   if (kind === 'number') {
     return [
-      ['decimal', 'Nombre'],
-      ['integer', 'Entier'],
-      ['currency', 'Monnaie'],
-      ['percent', 'Pourcentage'],
-      ['duration', 'Durée'],
-      ['rating', 'Note (étoiles)'],
+      ['decimal', $t('Nombre')],
+      ['integer', $t('Entier')],
+      ['currency', $t('Monnaie')],
+      ['percent', $t('Pourcentage')],
+      ['duration', $t('Durée')],
+      ['rating', $t('Note (étoiles)')],
     ]
   }
   if (kind === 'short_text') {
     return [
-      ['plain', 'Texte'],
-      ['phone', 'Téléphone'],
-      ['barcode', 'Code-barres'],
+      ['plain', $t('Texte')],
+      ['phone', $t('Téléphone')],
+      ['barcode', $t('Code-barres')],
     ]
   }
   return []

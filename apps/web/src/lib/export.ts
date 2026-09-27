@@ -1,4 +1,5 @@
 import type { Field } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 
 /**
  * Exporting what is ON SCREEN — and only that.
@@ -97,7 +98,8 @@ export function toSql(
   fields: readonly Field[],
   qualifiedName: string,
 ): string {
-  if (rows.length === 0) return `-- Aucune ligne à exporter depuis ${qualifiedName}.\n`
+  if (rows.length === 0)
+    return $t('-- Aucune ligne à exporter depuis {qualifiedName}.\n', { qualifiedName })
   const columns = fields.map((f) => `"${f.name}"`).join(', ')
   const lines = rows.map((row) => {
     const values = fields.map((f) => sqlLiteral(row[f.name], f.kind)).join(', ')

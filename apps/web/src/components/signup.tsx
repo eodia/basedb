@@ -4,13 +4,14 @@ import { AccountForm } from '@/components/account-form'
 import { AuthLayout } from '@/components/auth-layout'
 import { OidcButtons } from '@/components/login'
 import { type SignupPolicy, api } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 
 /** The domains an instance admits, as a line under the address field. */
 export function domainsHint(policy: SignupPolicy | null): string | undefined {
   if (policy === null || policy.domains.length === 0) return undefined
   const list = policy.domains.map((d) => `@${d}`).join(', ')
-  return `Réservé aux adresses ${list}.`
+  return $t('Réservé aux adresses {list}.', { list })
 }
 
 /**
@@ -38,28 +39,32 @@ export function SignUp({
 
   return (
     <AuthLayout
-      title="Créez votre compte"
-      description="Vos projets, vos bases, et les personnes avec qui vous les partagez — en une minute."
+      title={$t('Créez votre compte')}
+      description={$t(
+        'Vos projets, vos bases, et les personnes avec qui vous les partagez — en une minute.',
+      )}
       footer={
         <p>
-          Déjà un compte&nbsp;?{' '}
+          {$t('Déjà un compte ?')}{' '}
           <button
             type="button"
             onClick={onSignIn}
             className="rounded-sm font-medium text-foreground underline-offset-4 hover:underline"
           >
-            Se connecter
+            {$t('Se connecter')}
           </button>
         </p>
       }
     >
       <AccountForm
-        submitLabel="Créer mon compte"
-        doneLabel="Compte créé"
+        submitLabel={$t('Créer mon compte')}
+        doneLabel={$t('Compte créé')}
         emailHint={domainsHint(policy)}
         onSubmit={({ name, email, password }) => api.signUp({ email, displayName: name, password })}
         onDone={onDone}
-        notFoundMessage="Les inscriptions sont fermées sur cette instance : demandez un lien d’invitation à qui gère le projet."
+        notFoundMessage={$t(
+          'Les inscriptions sont fermées sur cette instance : demandez un lien d’invitation à qui gère le projet.',
+        )}
       />
       <OidcButtons />
     </AuthLayout>

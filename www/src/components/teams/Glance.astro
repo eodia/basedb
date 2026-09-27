@@ -1,0 +1,518 @@
+---
+/**
+ * A dashboard that fills up as it comes into view: the figures count up, the curve draws
+ * itself, the bars and the ring grow. Drawn at 1100 × 600 and scaled to the page; asked
+ * for less motion, it is shown full at once.
+ */
+import { type Locale, i18n } from '../../i18n';
+import Icon from '../landing/Icon.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, lang, href } = i18n(locale);
+const g = t.teams.glance;
+const d = g.demo;
+
+const money = new Intl.NumberFormat(lang, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+const whole = new Intl.NumberFormat(lang);
+const percent = new Intl.NumberFormat(lang, { style: 'percent', maximumFractionDigits: 0 });
+const trend = new Intl.NumberFormat(lang, { style: 'percent', maximumFractionDigits: 0, signDisplay: 'always' });
+const months = Array.from({ length: 12 }, (_, i) =>
+	new Intl.DateTimeFormat(lang, { month: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, i, 1))),
+);
+
+// The year's revenue, month by month (thousands), drawn as a curve over 600 × 210.
+const SERIES = [9, 12, 11, 15, 14, 18, 16, 21, 19, 24, 23, 27];
+const W = 600;
+const H = 200;
+const px = (i: number) => (i / (SERIES.length - 1)) * W;
+const py = (v: number) => H - (v / 30) * H;
+const points = SERIES.map((v, i) => [px(i), py(v)] as const);
+// A smooth curve through the points (Catmull-Rom, as a cubic Bézier).
+const curve = points
+	.map(([x, y], i) => {
+		if (i === 0) return `M${x},${y}`;
+		const [x0, y0] = points[Math.max(0, i - 2)]!;
+		const [x1, y1] = points[i - 1]!;
+		const [x3, y3] = points[Math.min(points.length - 1, i + 1)]!;
+		const c1 = [x1 + (x - x0) / 6, y1 + (y - y0) / 6];
+		const c2 = [x - (x3 - x1) / 6, y - (y3 - y1) / 6];
+		return `C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${x},${y}`;
+	})
+	.join(' ');
+const area = `${curve} L${W},${H} L0,${H} Z`;
+
+const STAGES = [52, 31, 38];
+const bars = d.stages.map((label, i) => {
+	const value = STAGES[i] ?? 0;
+	return { label, value, width: `${(value * 100) / Math.max(...STAGES)}%` };
+});
+const SECTORS = [
+	{ share: 38, color: '#1fa34a' },
+	{ share: 27, color: '#0ea5a4' },
+	{ share: 21, color: '#65c43a' },
+	{ share: 14, color: '#a3dc3a' },
+];
+let turned = 0;
+const ring = SECTORS.map((s) => {
+	const offset = -turned;
+	turned += s.share;
+	return { ...s, offset };
+});
+const legend = d.sectors.map((label, i) => {
+	const sector = SECTORS[i] ?? SECTORS[0]!;
+	return { label, color: sector.color, share: percent.format(sector.share * 0.01) };
+});
+---
+
+<section class="tm-section mist glance" data-glance>
+	<div class="tm-head tm-rise">
+		<p class="tm-kicker">{g.eyebrow}</p>
+		<h2 class="tm-display">
+			<span>{g.title}</span>
+			<span class="tm-grad">{g.titleAccent}</span>
+		</h2>
+		<p class="tm-lede">{g.text}</p>
+	</div>
+
+	<div class="frame" data-frame aria-hidden="true">
+		<div class="board" data-board>
+			<header class="top">
+				<b>{d.title}</b>
+				{
+					d.filters.map((f, i) => (
+						<span class="chip">
+							<Icon name={i === 0 ? 'calendar' : 'sliders'} size={14} />
+							{f}
+						</span>
+					))
+				}
+				<span class="shared">
+					<Icon name="link" size={14} />
+					{d.shared}
+				</span>
+			</header>
+
+			<div class="kpis">
+				<div class="kpi">
+					<span>{d.revenue}</span>
+					<b data-count="184300" data-format="money">{money.format(184300)}</b>
+					<em>{trend.format(0.12)}</em>
+				</div>
+				<div class="kpi">
+					<span>{d.signed}</span>
+					<b data-count="38" data-format="whole">{whole.format(38)}</b>
+				</div>
+				<div class="kpi">
+					<span>{d.rate}</span>
+					<b data-count="64" data-format="percent">{percent.format(0.64)}</b>
+				</div>
+				<div class="kpi">
+					<span>{d.goal}</span>
+					<b data-count="68" data-format="percent">{percent.format(0.68)}</b>
+					<span class="track"><i data-grow style="--to: 68%"></i></span>
+				</div>
+			</div>
+
+			<div class="charts">
+				<div class="card wide">
+					<span class="title">{d.byMonth}</span>
+					<svg viewBox={`0 -10 ${W} ${H + 12}`} class="curve">
+						<defs>
+							<linearGradient id="gl-area" x1="0" y1="0" x2="0" y2="1">
+								<stop offset="0" stop-color="#1fa34a" stop-opacity="0.28"></stop>
+								<stop offset="1" stop-color="#1fa34a" stop-opacity="0"></stop>
+							</linearGradient>
+						</defs>
+						{[0.25, 0.5, 0.75, 1].map((f) => <line x1="0" x2={W} y1={H * f} y2={H * f} class="rule" />)}
+						<path d={area} class="area" data-area />
+						<path d={curve} class="line" data-line pathLength="1" />
+						<circle cx={points[11]![0]} cy={points[11]![1]} r="6" class="end" data-end />
+					</svg>
+					<div class="months">{months.map((m) => <span>{m}</span>)}</div>
+				</div>
+				<div class="card">
+					<span class="title">{d.byStage}</span>
+					<ul class="bars">
+						{
+							bars.map((bar) => (
+								<li>
+									<span>{bar.label}</span>
+									<span class="bar">
+										<i data-grow style={`--to: ${bar.width}`} />
+									</span>
+									<b>{bar.value}</b>
+								</li>
+							))
+						}
+					</ul>
+				</div>
+				<div class="card">
+					<span class="title">{d.bySector}</span>
+					<div class="donut">
+						<svg viewBox="0 0 42 42">
+							<circle cx="21" cy="21" r="15.915" class="hole" />
+							{
+								ring.map((s) => (
+									<circle
+										cx="21"
+										cy="21"
+										r="15.915"
+										class="seg"
+										stroke={s.color}
+										data-seg
+										style={`--share: ${s.share}; --offset: ${s.offset}`}
+									/>
+								))
+							}
+						</svg>
+						<ul>
+							{
+								legend.map((item) => (
+									<li style={`--c: ${item.color}`}>
+										{item.label}
+										<b>{item.share}</b>
+									</li>
+								))
+							}
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="tm-points">
+		<div class="tm-rise">
+			<span class="ic"><Icon name="chart" size={22} /></span>
+			<h3>{g.points.viz.title}</h3>
+			<p>{g.points.viz.text}</p>
+		</div>
+		<div class="tm-rise">
+			<span class="ic"><Icon name="sliders" size={22} /></span>
+			<h3>{g.points.filters.title}</h3>
+			<p>{g.points.filters.text}</p>
+		</div>
+		<div class="tm-rise">
+			<span class="ic"><Icon name="link" size={22} /></span>
+			<h3>{g.points.share.title}</h3>
+			<p>{g.points.share.text}</p>
+		</div>
+	</div>
+	<p class="more tm-rise"><a class="tm-link" href={href(g.link.href)}>{g.link.label}</a></p>
+</section>
+
+<script>
+	import { fit, reducedMotion } from '../../lib/motion';
+
+	const section = document.querySelector<HTMLElement>('[data-glance]');
+	const frame = section?.querySelector<HTMLElement>('[data-frame]');
+	const board = section?.querySelector<HTMLElement>('[data-board]');
+	if (section && frame && board) {
+		fit(frame, 1100);
+		const lang = document.documentElement.lang || 'fr';
+		const formats: Record<string, Intl.NumberFormat> = {
+			money: new Intl.NumberFormat(lang, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }),
+			whole: new Intl.NumberFormat(lang),
+			percent: new Intl.NumberFormat(lang, { style: 'percent', maximumFractionDigits: 0 }),
+		};
+		const counters = [...board.querySelectorAll<HTMLElement>('[data-count]')];
+		const write = (el: HTMLElement, value: number) => {
+			const kind = el.dataset.format ?? 'whole';
+			el.textContent = formats[kind]!.format(kind === 'percent' ? value / 100 : Math.round(value));
+		};
+		const play = () => {
+			board.classList.add('on');
+			if (reducedMotion()) return;
+			const start = performance.now();
+			const tick = (now: number) => {
+				const t = Math.min(1, (now - start) / 1400);
+				const e = 1 - (1 - t) ** 3;
+				for (const el of counters) write(el, Number(el.dataset.count) * e);
+				if (t < 1) requestAnimationFrame(tick);
+			};
+			requestAnimationFrame(tick);
+		};
+		if (!reducedMotion()) {
+			board.classList.add('ready');
+			for (const el of counters) write(el, 0);
+		}
+		new IntersectionObserver(
+			([entry], observer) => {
+				if (entry?.isIntersecting !== true) return;
+				play();
+				observer.disconnect();
+			},
+			{ threshold: 0.35 },
+		).observe(frame);
+	}
+</script>
+
+<style>
+	.frame {
+		--k: 1;
+		position: relative;
+		width: 100%;
+		max-width: 1100px;
+		height: calc(600px * var(--k));
+		margin: 80px auto 0;
+	}
+	.board {
+		position: absolute;
+		top: 0;
+		left: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+		width: 1100px;
+		height: 600px;
+		padding: 26px;
+		transform: scale(var(--k));
+		transform-origin: 0 0;
+		border-radius: 28px;
+		background: #fff;
+		box-shadow:
+			0 0 0 1px rgba(16, 24, 16, 0.06),
+			0 50px 100px -50px rgba(16, 40, 16, 0.4);
+		font-size: 14px;
+	}
+	.top {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+	.top b {
+		margin-right: 10px;
+		font-size: 20px;
+		letter-spacing: -0.02em;
+	}
+	.chip,
+	.shared {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 6px 12px;
+		border-radius: 999px;
+		font-size: 13px;
+		font-weight: 500;
+		color: #3a3a42;
+		background: var(--tm-mist);
+	}
+	.shared {
+		margin-left: auto;
+		color: #1b7a14;
+		background: #eaf6e6;
+	}
+	.kpis {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 14px;
+	}
+	.kpi {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 18px;
+		border-radius: 18px;
+		background: var(--tm-mist);
+	}
+	.kpi > span:first-child {
+		font-size: 13px;
+		color: var(--tm-slate);
+	}
+	.kpi b {
+		font-size: 32px;
+		font-weight: 800;
+		letter-spacing: -0.035em;
+		font-variant-numeric: tabular-nums;
+	}
+	.kpi em {
+		align-self: flex-start;
+		padding: 2px 8px;
+		border-radius: 999px;
+		font-style: normal;
+		font-size: 12.5px;
+		font-weight: 700;
+		color: #15803d;
+		background: #dcfce7;
+	}
+	.track {
+		height: 6px;
+		margin-top: 8px;
+		border-radius: 6px;
+		background: #e4e4ea;
+		overflow: hidden;
+	}
+	.track i,
+	.bar i {
+		display: block;
+		height: 100%;
+		width: var(--to);
+		border-radius: inherit;
+		background: linear-gradient(90deg, #1fa34a, #65c43a);
+		transition: width 1.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s;
+	}
+	.ready:not(.on) .track i,
+	.ready:not(.on) .bar i {
+		width: 0;
+	}
+	.charts {
+		display: grid;
+		grid-template-columns: 1.7fr 1fr 1fr;
+		gap: 14px;
+		flex: 1;
+		min-height: 0;
+	}
+	.card {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 18px;
+		border-radius: 18px;
+		box-shadow: 0 0 0 1px #ececf0;
+	}
+	.title {
+		font-size: 13.5px;
+		font-weight: 600;
+	}
+	.curve {
+		width: 100%;
+		flex: 1;
+		min-height: 0;
+		overflow: visible;
+	}
+	.rule {
+		stroke: #efeff3;
+		stroke-width: 1;
+		vector-effect: non-scaling-stroke;
+	}
+	.area {
+		fill: url(#gl-area);
+		transition: opacity 1s ease 0.6s;
+	}
+	.line {
+		fill: none;
+		stroke: #1fa34a;
+		stroke-width: 3;
+		stroke-linecap: round;
+		vector-effect: non-scaling-stroke;
+		stroke-dasharray: 1;
+		stroke-dashoffset: 0;
+		transition: stroke-dashoffset 1.6s cubic-bezier(0.45, 0, 0.2, 1);
+	}
+	.end {
+		fill: #fff;
+		stroke: #1fa34a;
+		stroke-width: 3;
+		vector-effect: non-scaling-stroke;
+		transition: opacity 0.4s ease 1.5s;
+	}
+	.ready:not(.on) .line {
+		stroke-dashoffset: 1;
+	}
+	.ready:not(.on) .area,
+	.ready:not(.on) .end {
+		opacity: 0;
+	}
+	.months {
+		display: flex;
+		justify-content: space-between;
+		font-size: 11px;
+		color: var(--tm-slate);
+		text-transform: capitalize;
+	}
+	.bars {
+		display: flex;
+		flex-direction: column;
+		justify-content: space-around;
+		gap: 16px;
+		flex: 1;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.bars li {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 6px 10px;
+		align-items: center;
+		font-size: 13px;
+		color: #3a3a42;
+	}
+	.bars .bar {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		height: 12px;
+		border-radius: 6px;
+		background: #f0f0f3;
+		overflow: hidden;
+	}
+	.bars b {
+		font-variant-numeric: tabular-nums;
+	}
+	.donut {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 14px;
+		flex: 1;
+	}
+	.donut svg {
+		width: 150px;
+		height: 150px;
+		transform: rotate(-90deg);
+	}
+	.hole {
+		fill: none;
+		stroke: #f0f0f3;
+		stroke-width: 7;
+	}
+	.seg {
+		fill: none;
+		stroke-width: 7;
+		stroke-dasharray: var(--share) calc(100 - var(--share));
+		stroke-dashoffset: var(--offset);
+		transition:
+			stroke-dasharray 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s,
+			stroke-dashoffset 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;
+	}
+	.ready:not(.on) .seg {
+		stroke-dasharray: 0 100;
+		stroke-dashoffset: 0;
+	}
+	.donut ul {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 6px 16px;
+		width: 100%;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: 12.5px;
+		color: #3a3a42;
+	}
+	.donut li {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.donut li::before {
+		content: '';
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--c);
+	}
+	.donut li b {
+		margin-left: auto;
+		font-weight: 600;
+		color: var(--tm-slate);
+	}
+	.more {
+		margin: 48px 0 0;
+		text-align: center;
+	}
+</style>

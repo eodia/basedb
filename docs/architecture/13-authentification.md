@@ -132,6 +132,33 @@ compte existant.** Règle unique, sans exception :
 L'interface affiche invariablement : « Identifiants incorrects, ou compte
 indisponible. »
 
+### 2.6 Changement d'adresse
+
+`PUT /auth/me/email`, depuis les paramètres (chapitre 11 §10). L'adresse est à la fois
+le nom de connexion et la cible d'une réinitialisation : qui s'empare d'une session
+ouverte et la change vole le compte à la réinitialisation suivante. D'où trois règles :
+
+- **session élevée** (§5), comme toute porte ;
+- **compte à mot de passe seulement** : sans identité `password`, l'adresse est celle
+  du fournisseur, qui la reporte à chaque connexion (§3.5) — refus
+  `403 ACTION_FORBIDDEN`, `reason = 'adresse_du_fournisseur'`, avant même l'élévation,
+  qu'un tel compte ne pourrait pas obtenir ;
+- **adresse libre** : ni un compte vivant du tenant, ni l'identité `password` d'un autre
+  compte ne la portent, sinon `409 EMAIL_TAKEN`.
+
+Dans une seule transaction : `app_user.email` change, le `subject` de l'identité
+`password` le suit (il en est la forme normalisée, sans quoi le mot de passe cesserait
+de fonctionner), les défis `password.reset` encore ouverts sont consommés — ils ont
+été envoyés à l'ancienne adresse —, et l'audit reçoit `user.email_change` avec les deux
+adresses. Les sessions restent ouvertes : ce n'est pas un changement de secret.
+L'**ancienne** adresse est ensuite prévenue par courriel quand l'exploitant en a
+configuré l'envoi : c'est la seule boîte qui puisse dire « ce n'était pas moi ».
+
+Rien ne prouve que la nouvelle adresse appartient à l'appelant. Aucune adresse n'est
+prouvée nulle part dans le produit — création de compte, invitation, compte créé par un
+administrateur —, et la seule personne dont ce changement redirige la réinitialisation
+est l'appelant lui-même.
+
 ## 3. OAuth / OIDC
 
 ### 3.1 Périmètre
@@ -205,8 +232,27 @@ demandé : basedb n'appelle aucune API du fournisseur.
    automatique par adresse** : un fournisseur qui laisse revendiquer une adresse qu'il
    ne vérifie pas transformerait sinon toute connexion OIDC en prise de contrôle d'un
    compte à mot de passe. L'association se fait dans l'autre sens — session ouverte au
-   mot de passe, puis `POST /auth/oidc/{slug}/link`, qui exige une session **élevée**.
+   mot de passe, puis une liaison depuis les paramètres (ci-dessous), qui exige une
+   session **élevée**.
 3. Sinon, aucun compte ne correspond : le provisionnement décide.
+
+**Lier un fournisseur depuis les paramètres.** `POST /auth/oidc/{slug}/link` est un
+appel, pas une navigation : une élévation manquante revient en `403
+ELEVATION_REQUIRED`, que l'interface traite en demandant le mot de passe. Il ouvre un
+échange comme `/start`, avec une différence : le cookie d'échange scelle aussi
+l'identifiant de la session qui l'ouvre, élevée à cet instant. La réponse donne l'adresse
+du fournisseur, où l'interface envoie le navigateur. Le retour arrive sur le même
+`/callback` : c'est une navigation intersites, que le cookie de session `SameSite=Strict`
+ne suit pas, d'où la session portée par l'échange. Le retour relit cette session — encore
+ouverte, du même tenant, sinon `401` —, lie `('oidc:<slug>', sub)` au compte, écrit
+`user.identity_link` à l'audit, **n'ouvre aucune session**, et renvoie vers l'adresse de
+retour demandée. Deux refus, dits en mots par l'écran des paramètres
+(`/?connexion=<code>&raison=<raison>`) : `400 REQUEST_INVALID` avec
+`reason = 'identite_deja_liee'` quand ce `sub` ouvre déjà un autre compte — le lier ici
+retirerait à l'autre son accès, en silence —, et `'fournisseur_deja_lie'` quand le compte
+a déjà une identité chez ce fournisseur, à délier d'abord. `DELETE
+/auth/oidc/{slug}/link`, élevé lui aussi, délie et écrit `user.identity_unlink` ; il est
+refusé sur la dernière identité du compte (`reason = 'derniere_identite'`).
 
 **Le provisionnement automatique est désactivé par défaut.** Le réglage
 `auth.oidc.<slug>.provisioning` vaut `off` (défaut), `domains` avec une liste
@@ -330,7 +376,8 @@ Toutes sous `/auth/`, sans référence de tenant, hors OpenAPI. `401` génériqu
 | `/auth/oidc/providers` | GET | — | `200` : fournisseurs actifs, rien qui dépende d'une adresse |
 | `/auth/oidc/{slug}/start` | GET | — | `302` vers le fournisseur, `404 OIDC_PROVIDER_UNKNOWN` |
 | `/auth/oidc/{slug}/callback` | GET | cookie d'échange | `302`, `400 OIDC_STATE_INVALID`, `401 OIDC_TOKEN_INVALID`, `403 PROVISIONING_REFUSED`, `409 OIDC_ACCOUNT_LINK_REQUIRED` |
-| `/auth/oidc/{slug}/link` | POST / DELETE | cookie **élevé** | `204`, `403 ELEVATION_REQUIRED` ; la dissociation est refusée sur la dernière identité |
+| `/auth/oidc/{slug}/link` | POST | cookie **élevé** | `200` : adresse du fournisseur et cookie d'échange, le retour sur `/callback` lie sans ouvrir de session (§3.5) ; `403 ELEVATION_REQUIRED` |
+| `/auth/oidc/{slug}/link` | DELETE | cookie **élevé** | `204`, `403 ELEVATION_REQUIRED` ; refusée sur la dernière identité |
 | `/auth/session/access` | POST | cookie + `X-Basedb-Csrf` | `200` : jeton d'accès et échéance, `401` |
 | `/auth/session` | DELETE | cookie | `204` |
 | `/auth/sessions` | GET / DELETE | cookie | `200` ; `204` (révocation globale) |
@@ -342,7 +389,10 @@ Toutes sous `/auth/`, sans référence de tenant, hors OpenAPI. `401` génériqu
 | `/auth/invitation` | POST | secret du lien, dans le corps | `200` : ce qu'offre l'invitation ; `404` si inconnue, expirée, servie ou annulée |
 | `/auth/bootstrap` | GET | — | `200` tant qu'aucun administrateur n'existe, `404` ensuite |
 | `/auth/bootstrap` | POST | — | `200` (cookie + jeton CSRF), `404` si clos, `422 PASSWORD_POLICY_VIOLATION`, `429` |
-| `/auth/me` | GET | cookie ou jeton d'accès | `200` : identité, tenant, locale, fuseau, élévation restante |
+| `/auth/me` | GET | cookie ou jeton d'accès | `200` : identité, tenant, élévation restante, présence d'un mot de passe, préférences (chapitre 11 §10) |
+| `/auth/me` | PATCH | cookie | `200` : le compte tel qu'il est désormais ; nom affiché, format des dates, premier jour de la semaine, notifications refusées — chacun facultatif ; `400`, `422` |
+| `/auth/me/email` | PUT | cookie **élevé** | `200`, `403 ELEVATION_REQUIRED`, `403 ACTION_FORBIDDEN` sans mot de passe, `409 EMAIL_TAKEN` (§2.6) |
+| `/auth/identities` | GET | cookie | `200` : présence d'un mot de passe, et chaque fournisseur de l'instance, lié ou non, avec ses dates |
 
 **Limitation de débit et protection par identité sont deux mécanismes distincts, et
 un seul des deux est exact.** Conformément à A4 et au §13.1 de « API REST, OpenAPI,

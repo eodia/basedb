@@ -2,6 +2,7 @@
 
 import { FieldIcon } from '@/components/app/field-icon'
 import { Badge } from '@/components/ui/badge'
+import { Choice } from '@/components/ui/choice'
 import {
   Select,
   SelectContent,
@@ -12,6 +13,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import type { Field, RollupInput, Table } from '@/lib/api/client'
 import { AGGREGATE_NAMES, effectiveKind } from '@/lib/computed'
+import { $t } from '@/lib/i18n'
 import { useRef } from 'react'
 
 /**
@@ -21,21 +23,21 @@ import { useRef } from 'react'
 
 /** The functions of the language, with how each is written — the dialog's reminder. */
 const FUNCTIONS: ReadonlyArray<readonly [string, string]> = [
-  ['SI(condition; alors; sinon)', 'une valeur ou une autre'],
-  ['SIVIDE(valeur; sinon)', 'une valeur de repli'],
-  ['ESTVIDE(valeur)', 'vrai si vide'],
-  ['ARRONDI(nombre; décimales)', 'arrondi'],
-  ['ABS · PLAFOND · PLANCHER', 'sur un nombre'],
-  ['MIN(a; b) · MAX(a; b)', 'nombres ou dates'],
-  ['MAJUSCULE · MINUSCULE · SANSESPACES', 'sur un texte'],
-  ['GAUCHE(texte; n) · DROITE(texte; n)', 'début ou fin'],
-  ['LONGUEUR(texte)', 'nombre de caractères'],
+  ['SI(condition; alors; sinon)', $t('une valeur ou une autre')],
+  ['SIVIDE(valeur; sinon)', $t('une valeur de repli')],
+  ['ESTVIDE(valeur)', $t('vrai si vide')],
+  [$t('ARRONDI(nombre; décimales)'), 'arrondi'],
+  ['ABS · PLAFOND · PLANCHER', $t('sur un nombre')],
+  ['MIN(a; b) · MAX(a; b)', $t('nombres ou dates')],
+  ['MAJUSCULE · MINUSCULE · SANSESPACES', $t('sur un texte')],
+  ['GAUCHE(texte; n) · DROITE(texte; n)', $t('début ou fin')],
+  ['LONGUEUR(texte)', $t('nombre de caractères')],
   ['TEXTE(nombre) · NOMBRE(texte)', 'conversions'],
-  ['ANNEE · MOIS · JOUR · JOURSEMAINE', 'parties d’une date'],
-  ['JOURS(fin; début)', 'jours entre deux dates'],
-  ['AJOUTER_JOURS(date; n)', 'une date déplacée'],
-  ['DATE(année; mois; jour)', 'une date'],
-  ['AUJOURDHUI() · MAINTENANT()', 'calculée à chaque lecture'],
+  ['ANNEE · MOIS · JOUR · JOURSEMAINE', $t('parties d’une date')],
+  [$t('JOURS(fin; début)'), $t('jours entre deux dates')],
+  ['AJOUTER_JOURS(date; n)', $t('une date déplacée')],
+  [$t('DATE(année; mois; jour)'), $t('une date')],
+  ['AUJOURDHUI() · MAINTENANT()', $t('calculée à chaque lecture')],
 ]
 
 /** The types a formula can cite: one value per row — never a relation or a list. */
@@ -90,7 +92,7 @@ export function FormulaEditor({
   return (
     <div className="space-y-2">
       <label htmlFor="field-formula" className="text-sm text-muted-foreground">
-        Formule
+        {$t('Formule')}
       </label>
       <Textarea
         id="field-formula"
@@ -109,8 +111,8 @@ export function FormulaEditor({
             type="button"
             onClick={() => insert(`[${f.label.replace(/]/g, ']]')}]`)}
             disabled={disabled}
-            title={`Insérer [${f.label}]`}
-            aria-label={`Insérer [${f.label}]`}
+            title={$t('Insérer [{label}]', { label: f.label })}
+            aria-label={$t('Insérer [{label}]', { label: f.label })}
           >
             <Badge variant="secondary" className="gap-1 font-normal hover:bg-secondary/70">
               <FieldIcon kind={f.kind} format={f.format?.display} className="size-3" />
@@ -120,7 +122,7 @@ export function FormulaEditor({
         ))}
       </div>
       <details className="rounded-md border px-3 py-2 text-xs text-muted-foreground">
-        <summary className="cursor-pointer select-none text-sm">Fonctions</summary>
+        <summary className="cursor-pointer select-none text-sm">{$t('Fonctions')}</summary>
         <ul className="mt-2 space-y-1">
           {FUNCTIONS.map(([syntax, meaning]) => (
             <li key={syntax}>
@@ -129,15 +131,17 @@ export function FormulaEditor({
           ))}
         </ul>
         <p className="mt-2">
-          Opérateurs : <code>+ - * /</code>, <code>&amp;</code> pour joindre des textes,{' '}
-          <code>= &lt;&gt; &lt; &lt;= &gt; &gt;=</code>, <code>ET</code>, <code>OU</code>,{' '}
-          <code>NON</code>. Le séparateur d’arguments est <code>;</code>, le décimal est le point.
+          {$t('Opérateurs :')} <code>+ - * /</code>, <code>&amp;</code>{' '}
+          {$t('pour joindre des textes,')} <code>= &lt;&gt; &lt; &lt;= &gt; &gt;=</code>,{' '}
+          <code>ET</code>, <code>OU</code>, <code>NON</code>
+          {$t('. Le séparateur d’arguments est')} <code>;</code>
+          {$t(', le décimal est le point.')}
         </p>
       </details>
       <p className="text-xs text-muted-foreground">
-        Une formule est enregistrée dans la table tant qu’elle ne dépend que de la ligne. Avec
-        AUJOURDHUI(), MAINTENANT() ou un champ lu à travers une relation, elle est calculée à chaque
-        lecture : elle se filtre et se trie, mais n’existe pas en SQL direct.
+        {$t(
+          'Une formule est enregistrée dans la table tant qu’elle ne dépend que de la ligne. Avec AUJOURDHUI(), MAINTENANT() ou un champ lu à travers une relation, elle est calculée à chaque lecture : elle se filtre et se trie, mais n’existe pas en SQL direct.',
+        )}
       </p>
     </div>
   )
@@ -173,7 +177,7 @@ export function pathsOf(table: Table, tables: readonly Table[]): Path[] {
       if ((f.kind !== 'link' && f.kind !== 'multi_link') || f.link?.target !== table.name) continue
       paths.push({
         key: `in:${other.name}:${f.name}`,
-        label: `${other.label} liées par « ${f.label} »`,
+        label: $t('{label} liées par « {label2} »', { label: other.label, label2: f.label }),
         reached: other,
         input: { via: f.name, via_table: other.name },
         single: false,
@@ -248,7 +252,9 @@ export function RollupForm({
   if (paths.length === 0) {
     return (
       <p className="rounded-md bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
-        Aucune relation ne part de cette table ni n’y arrive : ajoutez d’abord un champ relation.
+        {$t(
+          'Aucune relation ne part de cette table ni n’y arrive : ajoutez d’abord un champ relation.',
+        )}
       </p>
     )
   }
@@ -257,57 +263,51 @@ export function RollupForm({
     <div className="space-y-3">
       <div className="space-y-1.5">
         <label htmlFor="rollup-path" className="text-sm text-muted-foreground">
-          Relation suivie
+          {$t('Relation suivie')}
         </label>
-        <Select
-          value={value.path}
+        <Choice
+          id="rollup-path"
+          value={value.path === '' ? null : value.path}
           onValueChange={(next) => onChange({ path: next, target: '', aggregate: '' })}
+          options={paths.map((p) => ({ value: p.key, label: p.label }))}
+          placeholder={$t('Choisir une relation')}
+          aria-label={$t('Relation suivie')}
           disabled={disabled}
-        >
-          <SelectTrigger id="rollup-path">
-            <SelectValue placeholder="Choisir une relation" />
-          </SelectTrigger>
-          <SelectContent>
-            {paths.map((p) => (
-              <SelectItem key={p.key} value={p.key}>
-                {p.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          size="default"
+        />
       </div>
 
       {kind !== 'count' && path !== undefined && (
         <div className="space-y-1.5">
           <label htmlFor="rollup-target" className="text-sm text-muted-foreground">
-            Champ lu dans « {path.reached.label} »
+            {$t('Champ lu dans « {label} »', { label: path.reached.label })}
           </label>
-          <Select
-            value={value.target}
+          <Choice
+            id="rollup-target"
+            value={value.target === '' ? null : value.target}
             onValueChange={(next) => onChange({ ...value, target: next, aggregate: '' })}
+            options={targets.map((f) => ({
+              value: f.name,
+              label: f.label,
+              render: (
+                <span className="flex items-center gap-2">
+                  <FieldIcon kind={f.kind} format={f.format?.display} />
+                  {f.label}
+                </span>
+              ),
+            }))}
+            placeholder={$t('Choisir un champ')}
+            aria-label={$t('Champ lu')}
             disabled={disabled}
-          >
-            <SelectTrigger id="rollup-target">
-              <SelectValue placeholder="Choisir un champ" />
-            </SelectTrigger>
-            <SelectContent>
-              {targets.map((f) => (
-                <SelectItem key={f.name} value={f.name}>
-                  <span className="flex items-center gap-2">
-                    <FieldIcon kind={f.kind} format={f.format?.display} />
-                    {f.label}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            size="default"
+          />
         </div>
       )}
 
       {kind === 'rollup' && target !== undefined && (
         <div className="space-y-1.5">
           <label htmlFor="rollup-aggregate" className="text-sm text-muted-foreground">
-            Calcul
+            {$t('Calcul')}
           </label>
           <Select
             value={value.aggregate}
@@ -317,7 +317,7 @@ export function RollupForm({
             disabled={disabled}
           >
             <SelectTrigger id="rollup-aggregate">
-              <SelectValue placeholder="Choisir un calcul" />
+              <SelectValue placeholder={$t('Choisir un calcul')} />
             </SelectTrigger>
             <SelectContent>
               {aggregates.map((a) => (
@@ -332,15 +332,20 @@ export function RollupForm({
 
       {path !== undefined && (
         <p className="text-xs text-muted-foreground">
-          {kind === 'lookup'
-            ? path.single
-              ? 'La valeur du champ sur la ligne liée.'
-              : 'La liste des valeurs, une par ligne liée, dans leur ordre.'
-            : kind === 'rollup'
-              ? 'Un calcul sur toutes les lignes liées.'
-              : 'Le nombre de lignes liées.'}{' '}
-          Seules comptent les lignes que chaque lecteur peut voir ; un lecteur qui ne voit pas «{' '}
-          {path.reached.label} » ne voit pas ce champ.
+          {$t(
+            '{value} Seules comptent les lignes que chaque lecteur peut voir ; un lecteur qui ne voit pas « {label} » ne voit pas ce champ.',
+            {
+              value:
+                kind === 'lookup'
+                  ? path.single
+                    ? $t('La valeur du champ sur la ligne liée.')
+                    : $t('La liste des valeurs, une par ligne liée, dans leur ordre.')
+                  : kind === 'rollup'
+                    ? $t('Un calcul sur toutes les lignes liées.')
+                    : $t('Le nombre de lignes liées.'),
+              label: path.reached.label,
+            },
+          )}
         </p>
       )}
     </div>

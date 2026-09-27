@@ -1,5 +1,6 @@
 import { qualify, quoteIdentifier } from '@basedb/naming'
 import { type Trigger, queueTriggered } from '../automations/engine.js'
+import { wantsNotification } from '../collab/notifications.js'
 import { LIVE_MAX_IDS, canReadTable, contextOf, emitLive } from '../collab/signals.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { executorOf } from '../runtime/pool.js'
@@ -185,6 +186,7 @@ async function notifyAssigned(
       [user, owner.tenant_id],
     )
     if (member === undefined) continue
+    if (!(await wantsNotification(exec, user, 'assigned'))) continue
     if (!(await canReadTable(exec, contextOf(owner.ref, user, row.id), row.table_id))) continue
     await exec.query(
       `INSERT INTO _basedb.notification

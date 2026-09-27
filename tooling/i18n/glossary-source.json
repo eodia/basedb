@@ -1,0 +1,199 @@
+{
+  "about": "Termes de l'interface de basedb, en français, avec le contexte utile pour les traduire. Source du glossaire tooling/i18n/glossary.json.",
+  "terms": [
+    { "fr": "basedb", "note": "Nom du produit : ne se traduit jamais, toujours en minuscules." },
+    { "fr": "Espace", "note": "L'espace de travail d'une organisation (tenant) sur une instance." },
+    { "fr": "Instance", "note": "Une installation de basedb." },
+    { "fr": "Projet", "note": "Regroupe des bases ; porte des droits." },
+    {
+      "fr": "Base",
+      "note": "Une base de données de basedb (un schéma PostgreSQL) qui contient des tables. Garder un mot court et courant pour les produits de ce type."
+    },
+    { "fr": "Table", "note": "Une table de données (une vraie table PostgreSQL)." },
+    { "fr": "Champ", "note": "Une colonne typée d'une table, vue par l'utilisateur." },
+    { "fr": "Colonne", "note": "Colonne de la grille ou colonne PostgreSQL." },
+    {
+      "fr": "Ligne",
+      "note": "Un enregistrement d'une table (row). basedb dit « ligne », pas « enregistrement »."
+    },
+    { "fr": "Fiche", "note": "Le panneau qui montre une ligne entière (record detail panel)." },
+    { "fr": "Cellule", "note": "Une case de la grille." },
+    { "fr": "Vue", "note": "Une façon de lire une table (grille, kanban…)." },
+    { "fr": "Grille", "note": "Vue en tableau, type tableur." },
+    { "fr": "Kanban", "note": "Vue en colonnes de cartes." },
+    { "fr": "Calendrier", "note": "Vue calendrier." },
+    { "fr": "Chronologie", "note": "Vue en barres entre deux dates (timeline, Gantt léger)." },
+    { "fr": "Galerie", "note": "Vue en cartes avec images." },
+    { "fr": "Liste", "note": "Vue en liste compacte." },
+    { "fr": "Formulaire", "note": "Vue pour saisir une ligne ; se partage par lien." },
+    { "fr": "Questionnaire", "note": "Vue formulaire, une question à la fois (survey)." },
+    { "fr": "Vue collaborative", "note": "Vue visible de tous les membres." },
+    { "fr": "Vue personnelle", "note": "Vue visible de son seul créateur." },
+    { "fr": "Vue verrouillée", "note": "Vue dont la configuration ne peut plus être changée." },
+    { "fr": "Vue partagée", "note": "Vue publiée en lecture seule par un lien." },
+    {
+      "fr": "Formulaire partagé",
+      "note": "Formulaire publié par un lien, public ou réservé aux membres."
+    },
+    {
+      "fr": "Carte",
+      "note": "Une ligne dessinée en carte (kanban, galerie) ou un bloc d'un tableau de bord."
+    },
+    {
+      "fr": "Structure",
+      "note": "L'écran qui liste les tables et les champs d'une base et permet de les modifier (schema screen)."
+    },
+    { "fr": "Historique", "note": "Le journal des écritures et des changements de structure." },
+    {
+      "fr": "Tableau de bord",
+      "note": "Page de graphiques et de chiffres (dashboard). Pluriel : Tableaux de bord."
+    },
+    {
+      "fr": "Question",
+      "note": "Dans un tableau de bord : une requête posée à la souris ou en SQL, dont le résultat devient un graphique."
+    },
+    {
+      "fr": "Visualisation",
+      "note": "Le graphique ou tableau qui montre le résultat d'une question."
+    },
+    { "fr": "Filtre", "note": "Condition qui restreint les lignes lues." },
+    { "fr": "Tri", "note": "Ordre des lignes." },
+    { "fr": "Grouper", "note": "Regrouper les lignes selon un champ." },
+    { "fr": "Résumé", "note": "Agrégat au pied d'une colonne (somme, moyenne…)." },
+    { "fr": "Couleurs", "note": "Règles de couleur des lignes." },
+    {
+      "fr": "Automatisation",
+      "note": "Un flux qui agit tout seul (workflow). Pluriel : Automatisations."
+    },
+    { "fr": "Déclencheur", "note": "Ce qui lance une automatisation (trigger)." },
+    { "fr": "Étape", "note": "Une action d'une automatisation (step)." },
+    { "fr": "Chemin", "note": "Une branche d'une condition dans une automatisation." },
+    { "fr": "Sinon", "note": "Le chemin pris quand aucune condition n'est remplie (else)." },
+    { "fr": "Exécution", "note": "Un passage d'une automatisation (run)." },
+    {
+      "fr": "Copilot",
+      "note": "L'assistant IA conversationnel de basedb. Nom propre : ne se traduit pas."
+    },
+    { "fr": "Champ IA", "note": "Un champ rempli par un modèle d'IA." },
+    { "fr": "Demander à l'IA", "note": "Étape d'automatisation qui interroge un modèle d'IA." },
+    { "fr": "Paramètres", "note": "Réglages personnels du compte (settings)." },
+    { "fr": "Profil", "note": "Onglet des paramètres : nom, adresse." },
+    { "fr": "Sécurité", "note": "Onglet des paramètres : mot de passe, sessions." },
+    { "fr": "Apparence", "note": "Onglet des paramètres : langue, thème, dates." },
+    { "fr": "Langue", "note": "La langue de l'interface." },
+    { "fr": "Thème", "note": "Clair ou sombre." },
+    { "fr": "Suivre le système", "note": "Option de thème : celui du système d'exploitation." },
+    { "fr": "Clair", "note": "Thème clair." },
+    { "fr": "Sombre", "note": "Thème sombre." },
+    { "fr": "Notifications", "note": "Avis reçus dans basedb (mentions, réponses…)." },
+    { "fr": "Jeton", "note": "Jeton d'intégration (API token) pour l'API REST et le MCP." },
+    { "fr": "Mot de passe", "note": "" },
+    { "fr": "Session", "note": "Une connexion ouverte sur un navigateur." },
+    {
+      "fr": "Session élevée",
+      "note": "Session où le mot de passe a été retapé récemment, exigée pour l'administration (sudo mode)."
+    },
+    { "fr": "Administration", "note": "Écrans réservés aux administrateurs." },
+    { "fr": "Utilisateurs", "note": "Les comptes de l'espace." },
+    { "fr": "Groupe", "note": "Groupe de personnes qui reçoit des droits." },
+    { "fr": "Droits", "note": "Les permissions." },
+    { "fr": "Aucun accès", "note": "Niveau de droit : rien." },
+    { "fr": "Lecture", "note": "Niveau de droit : lire." },
+    { "fr": "Édition", "note": "Niveau de droit : lire et écrire les lignes." },
+    { "fr": "Gestion", "note": "Niveau de droit : tout, structure comprise (manage)." },
+    {
+      "fr": "Environnement",
+      "note": "Une déclinaison d'une base : production, recette, développement."
+    },
+    { "fr": "Production", "note": "Environnement de production." },
+    { "fr": "Recette", "note": "Environnement de test avant production (staging / acceptance)." },
+    { "fr": "Développement", "note": "Environnement de développement." },
+    { "fr": "Texte court", "note": "Type de champ : une ligne de texte." },
+    { "fr": "Texte long", "note": "Type de champ : texte multiligne en Markdown." },
+    { "fr": "Texte riche (HTML)", "note": "Type de champ : texte mis en forme, stocké en HTML." },
+    { "fr": "Nombre", "note": "Type de champ." },
+    { "fr": "Monnaie", "note": "Format de nombre (currency)." },
+    { "fr": "Pourcentage", "note": "Format de nombre." },
+    { "fr": "Durée", "note": "Format de nombre (1:30)." },
+    { "fr": "Note", "note": "Format de nombre en étoiles (rating) — pas une note écrite." },
+    { "fr": "Case à cocher", "note": "Type de champ booléen (checkbox)." },
+    { "fr": "Date", "note": "Type de champ." },
+    { "fr": "Date et heure", "note": "Type de champ (instant)." },
+    {
+      "fr": "Liste de choix",
+      "note": "Type de champ : un choix parmi des options (single select)."
+    },
+    { "fr": "Choix multiple", "note": "Type de champ : plusieurs options (multi select)." },
+    { "fr": "E-mail", "note": "Type de champ : adresse électronique." },
+    { "fr": "Téléphone", "note": "Format de texte." },
+    { "fr": "Code-barres", "note": "Format de texte." },
+    { "fr": "Lien URL", "note": "Type de champ : adresse web." },
+    { "fr": "Personne", "note": "Type de champ : un membre de l'espace (user)." },
+    {
+      "fr": "Numéro automatique",
+      "note": "Type de champ : numéro attribué par la base (autonumber)."
+    },
+    {
+      "fr": "Relation",
+      "note": "Type de champ : lien vers une ligne d'une autre table (clé étrangère)."
+    },
+    { "fr": "Relation multiple", "note": "Type de champ : liens vers plusieurs lignes." },
+    { "fr": "Formule", "note": "Type de champ calculé par une expression." },
+    {
+      "fr": "Recherche",
+      "note": "Champ calculé qui lit un champ à travers une relation (lookup) — pas une recherche plein texte."
+    },
+    { "fr": "Cumul", "note": "Champ calculé qui agrège à travers une relation (rollup)." },
+    { "fr": "Décompte", "note": "Champ calculé qui compte les lignes liées (count)." },
+    { "fr": "Bouton", "note": "Type de champ qui ouvre une adresse ou lance une automatisation." },
+    { "fr": "Document", "note": "Type de champ : fichiers joints." },
+    { "fr": "Image", "note": "Type de champ : images jointes." },
+    {
+      "fr": "Colonne d'affichage",
+      "note": "Le champ qui nomme une ligne (primary/display field)."
+    },
+    { "fr": "Informations système", "note": "Le groupe des colonnes système (_id, _created_at…)." },
+    { "fr": "Libellé", "note": "Le nom affiché d'une table ou d'un champ (label)." },
+    { "fr": "Nom physique", "note": "Le nom de la table ou de la colonne dans PostgreSQL." },
+    { "fr": "Description", "note": "" },
+    { "fr": "Obligatoire", "note": "Champ qui ne peut pas être vide (required)." },
+    {
+      "fr": "Alias de compatibilité",
+      "note": "Vue PostgreSQL qui garde servi l'ancien nom après un renommage."
+    },
+    { "fr": "Requête SQL", "note": "Un onglet SQL ou une requête enregistrée." },
+    { "fr": "Requête enregistrée", "note": "Requête SQL gardée sous les tables (saved query)." },
+    { "fr": "Vue SQL", "note": "Une vraie vue PostgreSQL définie par une requête." },
+    { "fr": "Modèle de base", "note": "Un gabarit pour créer une base (template)." },
+    { "fr": "Importer", "note": "Charger un fichier CSV ou JSON." },
+    { "fr": "Exporter", "note": "" },
+    { "fr": "Commentaire", "note": "Commentaire sur une ligne." },
+    { "fr": "Mention", "note": "@quelqu'un dans un commentaire." },
+    { "fr": "Intégrations", "note": "Slack, tables synchronisées, webhooks." },
+    { "fr": "Table synchronisée", "note": "Table tenue à jour depuis une source externe." },
+    { "fr": "Webhook", "note": "" },
+    { "fr": "Serveur MCP", "note": "Model Context Protocol : garder « MCP »." },
+    {
+      "fr": "Proposition",
+      "note": "Changement de structure proposé par un agent IA, à approuver."
+    },
+    { "fr": "Approuver", "note": "" },
+    { "fr": "Restaurer", "note": "Ramener une ligne ou une base supprimée." },
+    { "fr": "Renommer", "note": "" },
+    { "fr": "Renommer aussi en base", "note": "Case qui change aussi le nom physique PostgreSQL." },
+    {
+      "fr": "Analyse d'impact",
+      "note": "Ce qu'un renommage casserait (requêtes, vues SQL, automatisations)."
+    },
+    { "fr": "Variable", "note": "Citation d'une colonne dans un texte : {{nom}}." },
+    { "fr": "Enregistrer", "note": "Bouton : sauvegarder." },
+    { "fr": "Annuler", "note": "Bouton : ne pas faire (cancel)." },
+    { "fr": "Supprimer", "note": "" },
+    { "fr": "Modifier", "note": "Bouton : éditer." },
+    { "fr": "Ajouter", "note": "" },
+    { "fr": "Partager", "note": "" },
+    { "fr": "Se connecter", "note": "" },
+    { "fr": "Se déconnecter", "note": "" },
+    { "fr": "Auto-hébergé", "note": "Installé sur ses propres serveurs (self-hosted)." }
+  ]
+}

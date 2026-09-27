@@ -5,14 +5,8 @@ import { reportLine } from '@/components/app/environments-editor'
 import { FieldIcon, KIND_LABELS } from '@/components/app/field-icon'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Choice } from '@/components/ui/choice'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   type ApplyReport,
   type ComparedFieldCell,
@@ -28,6 +22,7 @@ import {
   type TableRowCounts,
   api,
 } from '@/lib/api/client'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import {
@@ -67,28 +62,28 @@ type Pane = { readonly kind: 'structure' } | { readonly kind: 'rows'; readonly l
 
 const STATUS: Readonly<Record<StepStatus, { label: string; tone: string; hint: string }>> = {
   ready: {
-    label: 'Prêt',
+    label: $t('Prêt'),
     tone: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300',
-    hint: 'La modification la plus récente est celle de la source.',
+    hint: $t('La modification la plus récente est celle de la source.'),
   },
   target_newer: {
-    label: 'Plus récent dans la cible',
+    label: $t('Plus récent dans la cible'),
     tone: 'bg-amber-500/15 text-amber-800 dark:text-amber-300',
-    hint: 'La cible a changé cet objet après la source : l’appliquer annulerait ce changement.',
+    hint: $t('La cible a changé cet objet après la source : l’appliquer annulerait ce changement.'),
   },
   conflict: {
-    label: 'Conflit',
+    label: $t('Conflit'),
     tone: 'bg-rose-500/15 text-rose-800 dark:text-rose-300',
-    hint: 'Les deux environnements l’ont changé depuis leur dernière synchronisation.',
+    hint: $t('Les deux environnements l’ont changé depuis leur dernière synchronisation.'),
   },
   needs_consent: {
-    label: 'IA',
+    label: $t('IA'),
     tone: 'bg-violet-500/15 text-violet-800 dark:text-violet-300',
-    hint: 'Les valeurs citées par la consigne partiront chez le fournisseur d’IA.',
+    hint: $t('Les valeurs citées par la consigne partiront chez le fournisseur d’IA.'),
   },
 }
 
-const DATE = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })
+const DATE = new Intl.DateTimeFormat(intlLocale(), { dateStyle: 'medium', timeStyle: 'short' })
 
 /** What a cell says, to compare it with production's. */
 const tableKey = (c: ComparedTableCell | null) =>
@@ -109,18 +104,13 @@ function EnvironmentSelect({
   readonly label: string
 }) {
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-8 w-44" aria-label={label}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {environments.map((env) => (
-          <SelectItem key={env.id} value={env.name}>
-            {env.environment}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Choice
+      value={value}
+      onValueChange={onChange}
+      options={environments.map((env) => ({ value: env.name, label: env.environment }))}
+      aria-label={label}
+      className="w-44"
+    />
   )
 }
 
@@ -144,7 +134,7 @@ function Pair({
         environments={environments}
         value={source}
         onChange={onSource}
-        label="Environnement source"
+        label={$t('Environnement source')}
       />
       <Button
         variant="ghost"
@@ -153,8 +143,8 @@ function Pair({
           onSource(target)
           onTarget(source)
         }}
-        aria-label="Inverser la source et la cible"
-        title="Inverser"
+        aria-label={$t('Inverser la source et la cible')}
+        title={$t('Inverser')}
       >
         <ArrowLeftRight className="size-4" />
       </Button>
@@ -162,7 +152,7 @@ function Pair({
         environments={environments}
         value={target}
         onChange={onTarget}
-        label="Environnement cible"
+        label={$t('Environnement cible')}
       />
     </div>
   )
@@ -171,7 +161,7 @@ function Pair({
 // ── Structure ───────────────────────────────────────────────────────────────────
 
 function TableCellView({ cell }: { readonly cell: ComparedTableCell | null }) {
-  if (cell === null) return <span className="text-muted-foreground">absente</span>
+  if (cell === null) return <span className="text-muted-foreground">{$t('absente')}</span>
   return (
     <span
       className={cn(
@@ -181,7 +171,9 @@ function TableCellView({ cell }: { readonly cell: ComparedTableCell | null }) {
     >
       <Table2 className="size-3.5 shrink-0 text-muted-foreground" />
       <span className="truncate">{cell.label}</span>
-      {cell.deleted && <span className="shrink-0 text-xs font-normal no-underline">supprimée</span>}
+      {cell.deleted && (
+        <span className="shrink-0 text-xs font-normal no-underline">{$t('supprimée')}</span>
+      )}
     </span>
   )
 }
@@ -194,17 +186,17 @@ function FieldCellView({ cell }: { readonly cell: ComparedFieldCell | null }) {
         <FieldIcon kind={cell.kind} />
         <span className="truncate">{cell.label}</span>
         {cell.required && (
-          <span className="shrink-0 text-destructive" title="Obligatoire">
+          <span className="shrink-0 text-destructive" title={$t('Obligatoire')}>
             *
           </span>
         )}
-        {cell.ai && <Sparkles className="size-3 shrink-0 text-violet-500" aria-label="IA" />}
+        {cell.ai && <Sparkles className="size-3 shrink-0 text-violet-500" aria-label={$t('IA')} />}
       </span>
       <span className="truncate text-[0.7rem] text-muted-foreground">
         {cell.link !== null
           ? `relation → ${cell.link}`
           : cell.options !== null
-            ? cell.options.join(', ') || 'aucun choix'
+            ? cell.options.join(', ') || $t('aucun choix')
             : (KIND_LABELS[cell.kind] ?? cell.kind)}
       </span>
     </span>
@@ -225,8 +217,8 @@ function StructureMatrix({
       <div className="flex flex-col items-center gap-2 py-16 text-center text-sm text-muted-foreground">
         <Check className="size-6 text-emerald-600" />
         {comparison.tables.length === 0
-          ? 'Aucune table dans ces environnements.'
-          : 'La structure est la même dans tous les environnements.'}
+          ? $t('Aucune table dans ces environnements.')
+          : $t('La structure est la même dans tous les environnements.')}
       </div>
     )
   }
@@ -235,7 +227,7 @@ function StructureMatrix({
       <thead className="sticky top-0 z-10 bg-background">
         <tr>
           <th className="w-56 border-b px-3 py-2 text-left text-xs font-medium text-muted-foreground">
-            Table · champ
+            {$t('Table · champ')}
           </th>
           {envs.map((env) => (
             <th key={env.id} className="min-w-52 border-b px-3 py-2 text-left">
@@ -268,7 +260,7 @@ function StructureMatrix({
                   {table.differs && (
                     <span
                       className="size-1.5 shrink-0 rounded-full bg-amber-500"
-                      aria-label="Diffère"
+                      aria-label={$t('Diffère')}
                     />
                   )}
                 </span>
@@ -384,10 +376,10 @@ function StepRow({
               <CircleSlash className="size-3" />
             )}
             {outcome.outcome === 'applied'
-              ? 'Appliquée'
+              ? $t('Appliquée')
               : outcome.outcome === 'failed'
-                ? `Échec (${outcome.code ?? '?'})`
-                : 'Ignorée'}
+                ? $t('Échec ({value})', { value: outcome.code ?? '?' })
+                : $t('Ignorée')}
             {outcome.note !== undefined && ` — ${outcome.note}`}
           </p>
         )}
@@ -473,7 +465,7 @@ function MigrationPanel({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap items-center gap-3 border-b py-3 pr-14 pl-5">
         <Button variant="ghost" size="sm" onClick={onBack}>
-          Retour à la comparaison
+          {$t('Retour à la comparaison')}
         </Button>
         <div className="flex-1" />
         <Pair
@@ -487,15 +479,22 @@ function MigrationPanel({
 
       <div className="min-h-0 flex-1 overflow-y-auto scroll-discret px-5 py-4">
         <h3 className="text-base font-semibold">
-          Migrer la structure de « {sourceEnv?.environment ?? '?'} » vers «{' '}
-          {targetEnv?.environment ?? '?'} »
+          {$t('Migrer la structure de « {value} » vers « {value2} »', {
+            value: sourceEnv?.environment ?? '?',
+            value2: targetEnv?.environment ?? '?',
+          })}
         </h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Chaque étape est une opération ordinaire, avec ses contrôles et son historique. Celles qui
-          annuleraient une modification plus récente de la cible, ou qui sont en conflit, ne sont
-          pas cochées d’office.
+          {$t(
+            'Chaque étape est une opération ordinaire, avec ses contrôles et son historique. Celles qui annuleraient une modification plus récente de la cible, ou qui sont en conflit, ne sont pas cochées d’office.',
+          )}
           {plan?.lastSync != null && (
-            <> Dernière synchronisation : {DATE.format(new Date(plan.lastSync))}.</>
+            <>
+              {' '}
+              {$t('Dernière synchronisation : {format}.', {
+                format: DATE.format(new Date(plan.lastSync)),
+              })}
+            </>
           )}
         </p>
 
@@ -506,7 +505,7 @@ function MigrationPanel({
         )}
         {source === target && (
           <p className="mt-6 text-sm text-muted-foreground">
-            Choisissez deux environnements différents.
+            {$t('Choisissez deux environnements différents.')}
           </p>
         )}
 
@@ -525,7 +524,9 @@ function MigrationPanel({
                 : 'border-emerald-500/30 bg-emerald-500/5',
             )}
           >
-            <p className="font-medium">Migration terminée — {reportLine(report)}.</p>
+            <p className="font-medium">
+              {$t('Migration terminée — {report}.', { report: reportLine(report) })}
+            </p>
             <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
               {report.results.map((r) => (
                 <li key={r.id} className="flex items-center gap-1.5">
@@ -550,7 +551,7 @@ function MigrationPanel({
         {plan !== null && plan.steps.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-12 text-center text-sm text-muted-foreground">
             <Check className="size-6 text-emerald-600" />
-            Rien à migrer : la cible a déjà la structure de la source.
+            {$t('Rien à migrer : la cible a déjà la structure de la source.')}
           </div>
         )}
 
@@ -568,17 +569,19 @@ function MigrationPanel({
                   )
                 }
               >
-                Tout cocher
+                {$t('Tout cocher')}
               </button>
               <button
                 type="button"
                 className="text-primary hover:underline"
                 onClick={() => setSelected(new Set())}
               >
-                Tout décocher
+                {$t('Tout décocher')}
               </button>
               <span className="text-muted-foreground">
-                {selected.size} étape{selected.size > 1 ? 's' : ''} sur {plan.steps.length}
+                {$tp(selected.size, '{count} étape sur {total}', '{count} étapes sur {total}', {
+                  total: plan.steps.length,
+                })}
               </span>
             </div>
             <ul className="mt-2 divide-y rounded-lg border">
@@ -605,7 +608,7 @@ function MigrationPanel({
         {plan !== null && plan.notes.length > 0 && (
           <div className="mt-4 space-y-1">
             <p className="text-xs font-medium text-muted-foreground">
-              Différences qu’aucune étape ne règle
+              {$t('Différences qu’aucune étape ne règle')}
             </p>
             <ul className="space-y-0.5 text-xs text-muted-foreground">
               {plan.notes.map((note) => (
@@ -654,8 +657,9 @@ function MigrationPanel({
                 className="mt-0.5"
               />
               <span>
-                J’accepte que, pour les champs IA reportés, les valeurs des colonnes citées soient
-                envoyées au fournisseur d’IA configuré.
+                {$t(
+                  'J’accepte que, pour les champs IA reportés, les valeurs des colonnes citées soient envoyées au fournisseur d’IA configuré.',
+                )}
               </span>
             </label>
           )}
@@ -666,7 +670,7 @@ function MigrationPanel({
             ) : (
               <GitCompareArrows className="size-4" />
             )}
-            Appliquer {selected.size} étape{selected.size > 1 ? 's' : ''}
+            {$tp(selected.size, 'Appliquer {count} étape', 'Appliquer {count} étapes')}
           </Button>
         </div>
       )}
@@ -702,12 +706,12 @@ function StructurePane({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap items-center gap-3 border-b py-3 pr-14 pl-5">
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold">Structure</h3>
+          <h3 className="text-base font-semibold">{$t('Structure')}</h3>
           <p className="text-xs text-muted-foreground">
-            Un environnement par colonne ; ce qui diffère de la production est surligné.{' '}
+            {$t('Un environnement par colonne ; ce qui diffère de la production est surligné.')}{' '}
             {differing === 0
-              ? 'Aucune différence.'
-              : `${differing} table${differing > 1 ? 's' : ''} diffère${differing > 1 ? 'nt' : ''}.`}
+              ? $t('Aucune différence.')
+              : $tp(differing, '{count} table diffère.', '{count} tables diffèrent.')}
           </p>
         </div>
         <label htmlFor="environments-only-differences" className="flex items-center gap-2 text-xs">
@@ -716,11 +720,11 @@ function StructurePane({
             checked={onlyDifferences}
             onCheckedChange={(v) => setOnlyDifferences(v === true)}
           />
-          Seulement les différences
+          {$t('Seulement les différences')}
         </label>
         <Button onClick={() => setMigrating(true)} disabled={comparison.environments.length < 2}>
           <GitCompareArrows className="size-4" />
-          Appliquer les migrations…
+          {$t('Appliquer les migrations…')}
         </Button>
       </div>
       <div className="min-h-0 flex-1 overflow-auto scroll-discret">
@@ -763,7 +767,8 @@ function Samples({
     <div className="space-y-1">
       <p className="text-xs font-medium text-muted-foreground">
         {title}
-        {total > rows.length && ` — ${rows.length} premières sur ${total}`}
+        {total > rows.length &&
+          $t(' — {rowsCount} premières sur {total}', { rowsCount: rows.length, total })}
       </p>
       <ul className="divide-y rounded-lg border text-sm">
         {rows.map((row) => (
@@ -843,7 +848,11 @@ function RowsPane({
         delete: remove,
       })
       setDone(
-        `${result.inserted} ajoutée${result.inserted > 1 ? 's' : ''}, ${result.updated} mise${result.updated > 1 ? 's' : ''} à jour, ${result.deleted} supprimée${result.deleted > 1 ? 's' : ''}.`,
+        [
+          $tp(result.inserted, '{count} ajoutée', '{count} ajoutées'),
+          $tp(result.updated, '{count} mise à jour', '{count} mises à jour'),
+          $tp(result.deleted, '{count} supprimée', '{count} supprimées'),
+        ].join(', '),
       )
       onSynced(target)
       await load()
@@ -869,11 +878,12 @@ function RowsPane({
       <div className="flex flex-wrap items-center gap-3 border-b py-3 pr-14 pl-5">
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-base font-semibold">
-            {comparison?.table.label ?? 'Lignes'}
+            {comparison?.table.label ?? $t('Lignes')}
           </h3>
           <p className="text-xs text-muted-foreground">
-            Les lignes se reconnaissent à leur <span className="font-mono">_id</span>, qu’elles
-            gardent d’un environnement à l’autre.
+            {$t('Les lignes se reconnaissent à leur')}{' '}
+            <span className="font-mono">{$t('_id')}</span>
+            {$t(', qu’elles gardent d’un environnement à l’autre.')}
           </p>
         </div>
         <Pair
@@ -893,7 +903,7 @@ function RowsPane({
         )}
         {source === target && (
           <p className="text-sm text-muted-foreground">
-            Choisissez deux environnements différents.
+            {$t('Choisissez deux environnements différents.')}
           </p>
         )}
         {comparison === null && error === null && source !== target && (
@@ -905,36 +915,44 @@ function RowsPane({
           <>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <Stat
-                label={`Seulement dans ${sourceEnv?.environment ?? 'la source'}`}
+                label={$t('Seulement dans {value}', {
+                  value: sourceEnv?.environment ?? $t('la source'),
+                })}
                 value={counts.onlySource}
                 tone="text-emerald-700 dark:text-emerald-400"
               />
               <Stat
-                label="Différentes"
+                label={$t('Différentes')}
                 value={counts.different}
                 tone="text-amber-700 dark:text-amber-400"
               />
               <Stat
-                label={`Seulement dans ${targetEnv?.environment ?? 'la cible'}`}
+                label={$t('Seulement dans {value}', {
+                  value: targetEnv?.environment ?? $t('la cible'),
+                })}
                 value={counts.onlyTarget}
                 tone="text-rose-700 dark:text-rose-400"
               />
-              <Stat label="Identiques" value={counts.identical} />
+              <Stat label={$t('Identiques')} value={counts.identical} />
             </div>
 
             <div className="space-y-3">
               <Samples
-                title={`Seulement dans ${sourceEnv?.environment ?? 'la source'}`}
+                title={$t('Seulement dans {value}', {
+                  value: sourceEnv?.environment ?? $t('la source'),
+                })}
                 rows={comparison.samples.onlySource}
                 total={counts.onlySource}
               />
               <Samples
-                title="Différentes (colonnes qui diffèrent)"
+                title={$t('Différentes (colonnes qui diffèrent)')}
                 rows={comparison.samples.different}
                 total={counts.different}
               />
               <Samples
-                title={`Seulement dans ${targetEnv?.environment ?? 'la cible'}`}
+                title={$t('Seulement dans {value}', {
+                  value: targetEnv?.environment ?? $t('la cible'),
+                })}
                 rows={comparison.samples.onlyTarget}
                 total={counts.onlyTarget}
               />
@@ -942,18 +960,23 @@ function RowsPane({
 
             <div className="space-y-1 text-xs text-muted-foreground">
               <p>
-                Colonnes recopiées :{' '}
+                {$t('Colonnes recopiées :')}{' '}
                 <span className="text-foreground">
                   {comparison.columns.map((c) => c.label).join(', ') || 'aucune'}
                 </span>
               </p>
               {comparison.skipped.map((s) => (
                 <p key={s.label}>
-                  Non recopiée — <span className="text-foreground">{s.label}</span> : {s.reason}
+                  {$t('Non recopiée —')} <span className="text-foreground">{s.label}</span> :{' '}
+                  {s.reason}
                 </p>
               ))}
               {comparison.lastSync !== null && (
-                <p>Dernière synchronisation : {DATE.format(new Date(comparison.lastSync))}.</p>
+                <p>
+                  {$t('Dernière synchronisation : {format}.', {
+                    format: DATE.format(new Date(comparison.lastSync)),
+                  })}
+                </p>
               )}
             </div>
           </>
@@ -968,7 +991,7 @@ function RowsPane({
               checked={insert}
               onCheckedChange={(v) => setInsert(v === true)}
             />
-            Ajouter les manquantes
+            {$t('Ajouter les manquantes')}
           </label>
           <label htmlFor="rows-update" className="flex items-center gap-2">
             <Checkbox
@@ -976,7 +999,7 @@ function RowsPane({
               checked={update}
               onCheckedChange={(v) => setUpdate(v === true)}
             />
-            Mettre à jour les différentes
+            {$t('Mettre à jour les différentes')}
           </label>
           <label htmlFor="rows-delete" className="flex items-center gap-2 text-destructive">
             <Checkbox
@@ -984,7 +1007,7 @@ function RowsPane({
               checked={remove}
               onCheckedChange={(v) => setRemove(v === true)}
             />
-            Supprimer celles absentes de la source
+            {$t('Supprimer celles absentes de la source')}
           </label>
           <div className="flex-1" />
           {done !== null && (
@@ -995,7 +1018,9 @@ function RowsPane({
             disabled={busy || work === 0 || (!insert && !update && !remove)}
           >
             {busy ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
-            Synchroniser {work > 0 ? `${work} ligne${work > 1 ? 's' : ''}` : ''}
+            {work > 0
+              ? $tp(work, 'Synchroniser {count} ligne', 'Synchroniser {count} lignes')
+              : $t('Synchroniser')}
           </Button>
         </div>
       )}
@@ -1088,13 +1113,13 @@ export function EnvironmentsDialog({
       <DialogContent className="flex h-[85vh] max-w-[calc(100vw-2rem)] gap-0 overflow-hidden p-0 sm:max-w-6xl">
         <aside className="flex w-60 shrink-0 flex-col border-r bg-sidebar">
           <div className="border-b px-4 py-3">
-            <DialogTitle className="text-sm">Comparer les environnements</DialogTitle>
+            <DialogTitle className="text-sm">{$t('Comparer les environnements')}</DialogTitle>
             <DialogDescription className="truncate text-xs">{base?.label}</DialogDescription>
           </div>
           <nav className="min-h-0 flex-1 space-y-4 overflow-y-auto scroll-discret p-2">
             <div className="space-y-0.5">
               <p className="px-2 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                Structure
+                {$t('Structure')}
               </p>
               <button
                 type="button"
@@ -1105,15 +1130,18 @@ export function EnvironmentsDialog({
                 )}
               >
                 <Layers className="size-4 text-muted-foreground" />
-                <span className="flex-1 truncate text-left">Tables et champs</span>
+                <span className="flex-1 truncate text-left">{$t('Tables et champs')}</span>
                 {comparison?.tables.some((t) => t.differs) && (
-                  <span className="size-1.5 rounded-full bg-amber-500" aria-label="Différences" />
+                  <span
+                    className="size-1.5 rounded-full bg-amber-500"
+                    aria-label={$t('Différences')}
+                  />
                 )}
               </button>
             </div>
             <div className="space-y-0.5">
               <p className="px-2 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                Synchronisation des lignes
+                {$t('Synchronisation des lignes')}
               </p>
               {tables.map((t) => {
                 const count = counts.find((c) => c.lineage === t.lineage)
@@ -1140,12 +1168,12 @@ export function EnvironmentsDialog({
                 )
               })}
               {tables.length === 0 && (
-                <p className="px-2 text-xs text-muted-foreground">Aucune table.</p>
+                <p className="px-2 text-xs text-muted-foreground">{$t('Aucune table.')}</p>
               )}
             </div>
           </nav>
           <p className="border-t px-4 py-2 text-[0.7rem] text-muted-foreground">
-            Les environnements s’ajoutent depuis « Modifier la base ».
+            {$t('Les environnements s’ajoutent depuis « Modifier la base ».')}
           </p>
         </aside>
 
@@ -1164,8 +1192,9 @@ export function EnvironmentsDialog({
             <div className="flex flex-1 flex-col items-center justify-center gap-2 px-8 text-center text-sm text-muted-foreground">
               <Layers className="size-6" />
               <p>
-                Cette base n’a qu’un environnement. Ajoutez une recette ou un développement depuis «
-                Modifier la base » : ils recevront une copie de sa structure.
+                {$t(
+                  'Cette base n’a qu’un environnement. Ajoutez une recette ou un développement depuis « Modifier la base » : ils recevront une copie de sa structure.',
+                )}
               </p>
             </div>
           )}

@@ -9,7 +9,9 @@
       ".next",
       "next-env.d.ts",
       ".playwright-mcp",
-      "www"
+      "www",
+      "tooling/i18n/app-source.json",
+      "apps/web/public/geo"
     ]
   },
   "formatter": {

@@ -182,7 +182,7 @@ function fieldSchema(field: ProjectedField): Schema {
     ...(field.readOnly ? { readOnly: true } : {}),
     // The API does not re-sanitize on read: the contract is that the consumer does it
     // at render time, so the specification has to say which fields are concerned.
-    ...(field.unsafeHtml ? { 'x-basedb-unsafe-html': true } : {}),
+    ...(field.unsafeHtml ? { format: 'html', 'x-basedb-unsafe-html': true } : {}),
   }
 }
 

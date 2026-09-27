@@ -150,6 +150,30 @@ describe('normalizeViewSpec', () => {
     ).toMatchObject({ reason: 'doublon' })
   })
 
+  it('keeps a card description whose variables name fields the author reads', () => {
+    const spec = normalizeViewSpec(
+      'kanban',
+      { group_by: 'statut', card_template: '  Livraison le {{ debut }} pour {{client}}.  ' },
+      FIELDS,
+    )
+    // Spaces inside the braces go; the text around them is kept, trimmed.
+    expect(spec.card_template).toBe('Livraison le {{debut}} pour {{client}}.')
+    expect(
+      reason(() =>
+        normalizeViewSpec('kanban', { group_by: 'statut', card_template: '{{inconnu}}' }, FIELDS),
+      ),
+    ).toMatchObject({ reason: 'champ_inconnu', detail: 'inconnu' })
+    expect(
+      reason(() =>
+        normalizeViewSpec('kanban', { group_by: 'statut', card_template: 'x'.repeat(501) }, FIELDS),
+      ),
+    ).toMatchObject({ reason: 'texte_trop_long' })
+    // A reader who cannot see a variable's field does not learn its name either.
+    expect(projectViewSpec(spec, new Map([['debut', 'date']])).spec.card_template).toBe(
+      'Livraison le {{debut}} pour .',
+    )
+  })
+
   it('takes only a picture field for a cover', () => {
     expect(
       reason(() => normalizeViewSpec('kanban', { group_by: 'statut', cover_field: 'nom' }, FIELDS)),

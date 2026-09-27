@@ -1,4 +1,5 @@
 import type { AppNotification } from '@/lib/api/client'
+import { $t, intlLocale } from '@/lib/i18n'
 
 /**
  * The words of collaboration — chapter 16 — kept apart from the screens so that they can
@@ -75,34 +76,37 @@ export function mentionAt(text: string, caret: number): { start: number; query: 
   return { start: caret - query.length - 1, query }
 }
 
-const DATE = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' })
+const DATE = new Intl.DateTimeFormat(intlLocale(), { day: 'numeric', month: 'short' })
 
 /** When, in words: « à l’instant », « il y a 5 min », « hier », « 3 mars ». */
 export function relativeTime(iso: string, now: Date = new Date()): string {
   const at = new Date(iso)
   const seconds = Math.round((now.getTime() - at.getTime()) / 1000)
-  if (seconds < 45) return 'à l’instant'
+  if (seconds < 45) return $t('à l’instant')
   const minutes = Math.round(seconds / 60)
-  if (minutes < 60) return `il y a ${minutes} min`
+  if (minutes < 60) return $t('il y a {minutes} min', { minutes })
   const hours = Math.round(minutes / 60)
-  if (hours < 24) return `il y a ${hours} h`
+  if (hours < 24) return $t('il y a {hours} h', { hours })
   const days = Math.round(hours / 24)
   if (days === 1) return 'hier'
-  if (days < 7) return `il y a ${days} jours`
+  if (days < 7) return $t('il y a {days} jours', { days })
   return DATE.format(at)
 }
 
 /** What a notification says, before its excerpt. */
 export function notificationSentence(n: AppNotification): string {
-  const who = n.actor?.name ?? 'Quelqu’un'
+  const who = n.actor?.name ?? $t('Quelqu’un')
   switch (n.kind) {
     case 'mention':
-      return `${who} vous a mentionné dans ${n.table.label}`
+      return $t('{who} vous a mentionné dans {label}', { who, label: n.table.label })
     case 'reply':
-      return `${who} a répondu dans ${n.table.label}`
+      return $t('{who} a répondu dans {label}', { who, label: n.table.label })
     case 'assigned':
-      return `${who} vous a désigné dans ${n.table.label}`
+      return $t('{who} vous a désigné dans {label}', { who, label: n.table.label })
     case 'automation':
-      return `${who} vous prévient par une automatisation dans ${n.table.label}`
+      return $t('{who} vous prévient par une automatisation dans {label}', {
+        who,
+        label: n.table.label,
+      })
   }
 }

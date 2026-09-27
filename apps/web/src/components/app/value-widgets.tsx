@@ -3,6 +3,7 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import type { Field } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { memberName, useMembers } from '@/lib/members'
 import { cn } from '@/lib/utils'
 import { Mail, Phone, ScanBarcode, Star } from 'lucide-react'
@@ -46,7 +47,7 @@ export function RatingStars({
     <span
       className="inline-flex items-center gap-0.5"
       role={onChange === undefined ? 'img' : 'group'}
-      aria-label={`${label ?? 'Note'} : ${current} sur ${max}`}
+      aria-label={$t('{value} : {current} sur {max}', { value: label ?? 'Note', current, max })}
     >
       {Array.from({ length: max }, (_, i) => {
         const on = i < current
@@ -70,7 +71,7 @@ export function RatingStars({
               onChange(i + 1 === current ? null : i + 1)
             }}
             className="rounded-sm transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-ring"
-            aria-label={`${i + 1} sur ${max}`}
+            aria-label={$t('{value} sur {max}', { value: i + 1, max })}
             aria-pressed={i + 1 === current}
           >
             {glyph}
@@ -130,8 +131,8 @@ export function UserPicker({
       value={value}
       onValueChange={onChange}
       options={options}
-      clearLabel={field.required === true ? undefined : 'Personne'}
-      searchPlaceholder="Rechercher une personne…"
+      clearLabel={field.required === true ? undefined : $t('Personne')}
+      searchPlaceholder={$t('Rechercher une personne…')}
       className={
         appearance === 'cell'
           ? 'h-7 border-transparent bg-transparent px-1.5 text-xs shadow-none hover:bg-muted [&>svg]:opacity-0 group-hover/row:[&>svg]:opacity-50 data-[state=open]:[&>svg]:opacity-100'

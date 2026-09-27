@@ -13,6 +13,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { type Member, type RecordComment, type TableRef, api } from '@/lib/api/client'
 import { editableText, encodeMentions, mentionAt, relativeTime, segmentsOf } from '@/lib/collab'
+import { $t, $tp } from '@/lib/i18n'
 import { memberName, useMembers } from '@/lib/members'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
@@ -77,9 +78,12 @@ export function CommentThread({
     setWarning(
       unreachable.length === 0
         ? null
-        : `${unreachable.map((id) => memberName(members, id)).join(', ')} ne ${
-            unreachable.length > 1 ? 'peuvent' : 'peut'
-          } pas voir cette ligne : pas de notification.`,
+        : $tp(
+            unreachable.length,
+            '{names} ne peut pas voir cette ligne : pas de notification.',
+            '{names} ne peuvent pas voir cette ligne : pas de notification.',
+            { names: unreachable.map((id) => memberName(members, id)).join(', ') },
+          ),
     )
   }
 
@@ -94,7 +98,7 @@ export function CommentThread({
       {comments !== null && comments.length === 0 && (
         <div className="flex flex-col items-center gap-2 py-6 text-center text-sm text-muted-foreground">
           <MessageSquare className="size-5" />
-          Aucun commentaire. Posez une question, tapez @ pour prévenir quelqu’un.
+          {$t('Aucun commentaire. Posez une question, tapez @ pour prévenir quelqu’un.')}
         </div>
       )}
       {comments?.map((comment) => (
@@ -116,7 +120,7 @@ export function CommentThread({
           {warning}
         </p>
       )}
-      <Composer members={members} submitLabel="Envoyer" onSubmit={post} />
+      <Composer members={members} submitLabel={$t('Envoyer')} onSubmit={post} />
     </div>
   )
 }
@@ -159,7 +163,7 @@ function CommentItem({
           <span className="truncate text-sm font-medium">{comment.author.name}</span>
           <span className="shrink-0 text-xs text-muted-foreground" title={comment.created_at}>
             {relativeTime(comment.created_at)}
-            {comment.edited_at !== null && ' · modifié'}
+            {comment.edited_at !== null && $t(' · modifié')}
           </span>
           {(comment.can_edit || comment.can_delete) && !editing && (
             <DropdownMenu>
@@ -168,7 +172,7 @@ function CommentItem({
                   variant="ghost"
                   size="icon-sm"
                   className="ml-auto size-6 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100"
-                  aria-label="Actions sur le commentaire"
+                  aria-label={$t('Actions sur le commentaire')}
                 >
                   <MoreHorizontal className="size-3.5" />
                 </Button>
@@ -177,7 +181,7 @@ function CommentItem({
                 {comment.can_edit && (
                   <DropdownMenuItem onSelect={() => setEditing(true)}>
                     <Pencil className="size-4" />
-                    Modifier
+                    {$t('Modifier')}
                   </DropdownMenuItem>
                 )}
                 {comment.can_delete && (
@@ -186,7 +190,7 @@ function CommentItem({
                     className="text-destructive focus:text-destructive"
                   >
                     <Trash2 className="size-4" />
-                    Supprimer
+                    {$t('Supprimer')}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -198,7 +202,7 @@ function CommentItem({
             <Composer
               members={members}
               initial={comment.body}
-              submitLabel="Enregistrer"
+              submitLabel={$t('Enregistrer')}
               onCancel={() => setEditing(false)}
               onSubmit={async (body) => {
                 onChanged(await api.editComment(comment.id, body))
@@ -213,14 +217,14 @@ function CommentItem({
         )}
         {confirming && (
           <div className="mt-1.5 flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Supprimer ce commentaire ?</span>
+            <span className="text-muted-foreground">{$t('Supprimer ce commentaire ?')}</span>
             <Button
               variant="ghost"
               size="sm"
               className="h-6 px-2 text-xs"
               onClick={() => setConfirming(false)}
             >
-              Annuler
+              {$t('Annuler')}
             </Button>
             <Button
               variant="destructive"
@@ -228,7 +232,7 @@ function CommentItem({
               className="h-6 px-2 text-xs"
               onClick={() => void remove()}
             >
-              Supprimer
+              {$t('Supprimer')}
             </Button>
           </div>
         )}
@@ -394,15 +398,15 @@ function Composer({
         }}
         onKeyDown={onKeyDown}
         onClick={track}
-        placeholder="Écrire un commentaire… @ pour mentionner"
+        placeholder={$t('Écrire un commentaire… @ pour mentionner')}
         rows={2}
         maxLength={10_000}
-        aria-label="Commentaire"
+        aria-label={$t('Commentaire')}
         className="min-h-16 resize-none pr-2 text-sm"
       />
       {suggestions.length > 0 && (
         <div
-          aria-label="Personnes à mentionner"
+          aria-label={$t('Personnes à mentionner')}
           className="absolute bottom-full left-0 z-20 mb-1 w-64 overflow-hidden rounded-md border bg-popover py-1 shadow-lg"
         >
           {suggestions.map((member, index) => (
@@ -433,11 +437,11 @@ function Composer({
       <div className="mt-1.5 flex items-center gap-2">
         {error !== null && <p className="mr-auto text-xs text-destructive">{error}</p>}
         <span className="mr-auto text-[11px] text-muted-foreground">
-          {error === null && 'Ctrl+Entrée pour envoyer'}
+          {error === null && $t('Ctrl+Entrée pour envoyer')}
         </span>
         {onCancel !== undefined && (
           <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onCancel}>
-            Annuler
+            {$t('Annuler')}
           </Button>
         )}
         <Button

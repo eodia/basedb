@@ -2,7 +2,8 @@
 
 ## Rôle de ce chapitre
 
-Ce chapitre spécifie les appels **sortants** vers OpenAI, Anthropic et Mistral : à quoi
+Ce chapitre spécifie les appels **sortants** vers OpenAI, Anthropic et Mistral — et vers
+tout serveur qui parle l'API d'OpenAI à l'adresse de l'exploitant (§ 2.5) : à quoi
 ils servent en v1, ce que le noyau expose, où vivent le fournisseur, le modèle et les
 clés, ce qui quitte l'installation, ce que cela coûte, et ce qui en est journalisé.
 
@@ -45,6 +46,7 @@ usages de brouillon restent soumis aux deux invariants sans exception.
 | `structure_draft` | Une description de besoin, plus les libellés et types des tables existantes de la base | Une proposition de tables, champs et liens, dans le vocabulaire de « Types de champs et projection vers PostgreSQL » | Le brouillon est amendé dans l'éditeur de schéma ; l'enregistrement produit une migration proposée, approuvée selon « Moteur DDL et stratégie de migration » |
 | `expression_draft` | Une phrase, plus les libellés et types des champs de la table visée | Une formule ou un filtre, dans la grammaire fermée de « Types de champs » et de « API REST, OpenAPI, webhooks, jetons d'intégration » | L'expression s'affiche dans l'éditeur, passe le validateur ordinaire, et n'est enregistrée que par une action explicite |
 | `field_compute` | La consigne d'un champ calculé par l'IA, les valeurs de la ligne qu'elle cite, les libellés de la table et du champ, le format attendu du type du champ | Une chaîne, `{ "value": string }`, relue dans le type du champ | Écrite dans la cellule par le noyau — l'exception du § 1.5 |
+| `automation` | La consigne d'une étape IA d'automatisation, les valeurs de la ligne et des étapes précédentes qu'elle cite, le nom de l'automatisation, le format attendu | Une chaîne, `{ "value": string }`, relue dans le type demandé | Citée par les étapes suivantes, qui l'écrivent ou l'envoient par leurs propres chemins (§ 1.8) |
 | `copilot` | Une conversation, la structure lisible de la base et, sur consentement, des lignes lues | Une réponse en texte et des propositions typées : filtre, requête, colonnes, table, lignes à insérer ou à modifier | Chaque proposition s'applique d'un clic, par les routes ordinaires (§ 1.6) |
 | `template_draft` | Une phrase décrivant un usage, la proposition précédente quand on l'affine, la date du jour | Un modèle de base complet au format du chapitre 20 : tables, champs, relations, lignes d'exemple, vues, tableaux de bord, automatisations | Le modèle s'affiche dans la galerie ; la base n'est créée que par « Créer la base » (§ 1.7) |
 
@@ -206,6 +208,14 @@ d'écrire cinquante lignes.
 consigne cachée dans une cellule ne peut produire qu'une proposition, que la personne
 lit avant de l'appliquer, jamais une action.
 
+**Sur les tableaux de bord**, le même copilote converse avec ses propres actions — une
+question à regarder, des modifications d'un tableau, des valeurs pour ses filtres — et
+lit, sur le même consentement, les résultats des cartes : c'est le chapitre 18 §2.6. **Sur
+les automatisations**, il propose une automatisation entière — celle de l'écran modifiée, ou
+une nouvelle —, vérifiée comme un enregistrement et posée sur le flux de l'éditeur, jamais
+enregistrée par lui : c'est le chapitre 17 §6. Les bornes, le journal et le quota sont
+ceux-ci.
+
 ### 1.7 Proposer un modèle de base
 
 *Décision du propriétaire* (A30). La galerie de modèles (chapitre 20 §5) demande à l'IA un
@@ -222,6 +232,30 @@ préparé : `manage_schema` sur le projet où la base sera créée. Chaque appel
 interactifs ; 90 secondes et 12 000 jetons par appel, le temps d'écrire des lignes
 d'exemple. Les champs calculés par l'IA que la proposition contient ne sont créés comme tels
 qu'avec le consentement du § 1.5, demandé au moment de créer la base.
+
+### 1.8 L'étape IA d'une automatisation
+
+Une automatisation peut demander une réponse au modèle dans une étape (chapitre 17 §1.3).
+C'est l'exception du § 1.5 appliquée à une étape plutôt qu'à une colonne, avec les mêmes
+bornes :
+
+1. **La réponse n'agit sur rien.** Elle est relue dans le type demandé — texte, nombre,
+   oui ou non, date, adresse, un choix parmi une liste — ou refusée
+   (`AI_RESPONSE_UNUSABLE`) ; elle devient une donnée que les étapes suivantes citent,
+   écrivent ou envoient par leurs propres chemins, avec les droits du propriétaire de
+   l'automatisation. Le modèle ne choisit aucune action.
+2. **Les valeurs partent sur consentement** : `consent: true` à chaque enregistrement de
+   l'étape, faute de quoi `AI_CONSENT_REQUIRED` ; l'écran le redemande quand la consigne
+   change. Refusée tant que l'IA n'est pas configurée (`AI_DISABLED`,
+   `AI_NOT_CONFIGURED`), comme un champ IA.
+3. **Ne part que ce qui est cité** : la consigne, les valeurs qu'elle cite de la ligne et
+   des étapes précédentes, le format attendu et le nom de l'automatisation. Une valeur
+   citée est lue par le propriétaire, avec ses droits : un champ qu'il ne voit pas se lit
+   vide.
+4. **Chaque appel est compté**, `usage_kind = 'automation'` (migration de catalogue 0008),
+   sous le plafond horaire des calculs de fond, partagé avec les champs IA (§ 6.2). Le
+   rythme est celui des exécutions : 100 par heure et par automatisation (chapitre 17
+   §2.3).
 
 ---
 
@@ -294,6 +328,33 @@ sonde par minute le refermant. Les éditeurs restant utilisables à la main, une
 indisponibilité d'IA n'est ni un incident de disponibilité, ni un échec de sonde de
 vivacité.
 
+### 2.5 Un serveur compatible, à l'adresse de l'exploitant
+
+Azure, une passerelle d'entreprise, un modèle servi sur la machine de l'exploitant (Ollama,
+vLLM…) parlent l'API d'OpenAI sans être OpenAI. Le fournisseur `openai_compatible` les
+sert : **ce n'est pas une quatrième forme**, c'est celle d'OpenAI à une autre adresse. Le
+principe du § 2.2 tient — rien de propre à Azure ne remonte à l'appelant.
+
+| Variable | Rôle |
+|---|---|
+| `BASEDB_AI_BASE_URL` | Ce qui précède `/chat/completions` (`/messages` pour `anthropic`), paramètres compris : le `?api-version=…` d'Azure reste après le chemin. Obligatoire pour `openai_compatible`, facultative pour les trois autres, joints alors par une passerelle |
+| `BASEDB_AI_HEADERS` | Objet JSON d'en-têtes ajoutés à chaque appel — l'`api-key` d'Azure, la clé d'abonnement d'une passerelle. Ils remplacent ceux de la clé, jamais le type du corps |
+
+Trois règles :
+
+- **L'environnement seul.** L'adresse et les en-têtes sont la parole de l'exploitant, pas un
+  réglage de tenant : une adresse qu'un `tenant_admin` pourrait écrire ferait de l'API une
+  porte vers le réseau de l'instance, en-têtes compris.
+- **Ils accompagnent le fournisseur de l'environnement, et lui seul.** Un tenant qui a
+  choisi un autre fournisseur (§ 3.2) ne reçoit ni l'adresse, ni les en-têtes, ni
+  `BASEDB_AI_API_KEY` : la clé Azure ne part pas chez Anthropic.
+- **La clé est facultative** pour `openai_compatible` : un modèle local n'en demande pas,
+  Azure la lit dans son en-tête. Donnée, elle part en `Authorization: Bearer`.
+
+Les appels sont journalisés sous `openai_compatible` (migration de catalogue 0010), non sous
+`openai` : le journal dit à qui les données sont parties. Le circuit du § 2.4 est tenu par
+adresse appelée : un déploiement Azure en panne ne ferme pas l'adresse d'OpenAI.
+
 ---
 
 ## 3. Configuration
@@ -311,7 +372,7 @@ Liste close des clés, en anglais (A2) :
 | Clé | Portée | Surcharge tenant | Valeur |
 |---|---|---|---|
 | `ai.enabled` | instance, tenant | oui | booléen ; **défaut `false`** |
-| `ai.provider` | instance, tenant | oui | `openai`, `anthropic` ou `mistral` |
+| `ai.provider` | instance, tenant | oui | `openai`, `anthropic`, `mistral` ou `openai_compatible` (§ 2.5) |
 | `ai.model` | instance, tenant | oui | nom de modèle, vérifié contre la table de correspondance du fournisseur |
 | `ai.quota.calls_per_month` | instance, tenant | à la baisse seulement | entier |
 | `ai.quota.tokens_per_month` | instance, tenant | à la baisse seulement | entier |
@@ -352,8 +413,9 @@ aucune n'est atteignable depuis la surface MCP ni depuis un jeton d'intégration
 
 ### 4.1 Stockage
 
-Dans `_basedb.secret`, sous `ai.openai.api_key`, `ai.anthropic.api_key` et
-`ai.mistral.api_key`, de portée `instance` ou `tenant`. Chiffrement au repos,
+Dans `_basedb.secret`, sous `ai.openai.api_key`, `ai.anthropic.api_key`,
+`ai.mistral.api_key` et `ai.openai_compatible.api_key` (facultative, § 2.5), de portée
+`instance` ou `tenant`. Chiffrement au repos,
 dérivation depuis `BASEDB_ENCRYPTION_KEY` et rôle de `key_version` : « Architecture
 logicielle » (A25). Le secret en clair n'existe qu'en mémoire du processus serveur, le
 temps de l'appel.
@@ -435,7 +497,8 @@ filtrer.
 | `structure_draft` | Le libellé de la base ; pour chaque table et champ sélectionnés, le libellé, le type, le caractère obligatoire, et pour un lien la table cible désignée par son ordinal ; la phrase saisie |
 | `expression_draft` | Le libellé de la table visée ; pour chaque champ, libellé, type, caractère obligatoire ; la phrase saisie ; le cas échéant le message du validateur sur l'essai précédent |
 | `field_compute` | Le libellé de la table et celui du champ ; la consigne, **les valeurs des colonnes citées de la ligne** mises à leur place — l'exception du § 1.5, sur consentement |
-| `copilot` | Le libellé de la base ; pour chaque table lisible, son nom physique, son libellé, ses colonnes (nom, libellé, type, libellés des choix, cible d'un lien) et les droits de la personne ; la table à l'écran et son filtre ; la conversation ; **sur consentement**, les lignes lues (§ 1.6) |
+| `automation` | Le nom de l'automatisation ; la consigne de l'étape, **les valeurs de la ligne et des étapes précédentes qu'elle cite** mises à leur place ; le format attendu — l'exception du § 1.8, sur consentement |
+| `copilot` | Le libellé de la base ; pour chaque table lisible, son nom physique, son libellé, ses colonnes (nom, libellé, type, libellés des choix, cible d'un lien) et les droits de la personne ; la table à l'écran et son filtre ; la conversation ; **sur consentement**, les lignes lues (§ 1.6). Sur les tableaux de bord : le tableau à l'écran, ses cartes et leurs questions, les questions enregistrées ; **sur consentement**, les résultats des cartes et les valeurs des filtres affichés (chapitre 18 §2.6). Sur les automatisations : leur liste, celle à l'écran telle que l'éditeur la montre, ses dernières exécutions sans aucune valeur, les personnes et canaux Slack sous des références de l'appel ; **sur consentement**, les lignes lues (chapitre 17 §6) |
 
 **Les descriptions du catalogue ne partent pas.** Un libellé est une étiquette ; une
 description est un texte libre de mille caractères, où l'on écrit volontiers un nom de
@@ -494,7 +557,9 @@ le réglage `ai.consent` :
 }
 ```
 
-Il est **lié au fournisseur et à la version de la notice**. Changer de fournisseur ou
+Il est **lié au fournisseur et à la version de la notice**. `endpoint` est l'adresse
+résolue, `BASEDB_AI_BASE_URL` comprise (§ 2.5) : la changer change de destinataire, comme
+changer de fournisseur. Changer de fournisseur ou
 étendre les catégories de données envoyées incrémente `disclosure_version` et
 l'invalide : les fonctions d'IA répondent `AI_CONSENT_REQUIRED` jusqu'à une nouvelle
 acceptation. Un consentement insensible au changement de destinataire n'en serait pas
@@ -552,7 +617,7 @@ lecture est négligeable, et un second détenteur du compte dériverait du journ
 | Charge utile : 200 tables, 2 000 champs, 64 Kio | Fixe | `AI_PAYLOAD_TOO_LARGE` |
 | Simultanéité : 1 par utilisateur, 2 par tenant | Fixe | `AI_QUOTA_EXCEEDED`, sans attente |
 | Brouillons et copilote : 120 appels par heure (`BASEDB_AI_QUOTA`) | Tenant | `AI_QUOTA_EXCEEDED` |
-| Champs calculés par l'IA : 300 appels par heure (`BASEDB_AI_FIELD_QUOTA`) | Tenant, compté à part des brouillons | `AI_QUOTA_EXCEEDED` ; le processus de fond suspend le champ dix minutes |
+| Champs calculés par l'IA et étapes IA des automatisations : 300 appels par heure (`BASEDB_AI_FIELD_QUOTA`) | Tenant, compté à part des brouillons | `AI_QUOTA_EXCEEDED` ; le processus de fond suspend le champ dix minutes, l'étape d'automatisation échoue |
 
 Une surcharge de tenant sur les quotas mensuels **ne peut que les abaisser** : sinon un
 `tenant_admin` relèverait son propre plafond et dépenserait la clé d'instance sans
@@ -655,6 +720,8 @@ Le fournisseur, le modèle et la clé se prennent dans les réglages, ou à déf
 l'environnement (`BASEDB_AI_PROVIDER`, `BASEDB_AI_MODEL`, `BASEDB_AI_API_KEY` — ou, pour
 la clé, le nom usuel du fournisseur : `MISTRAL_API_KEY`, `OPENAI_API_KEY`,
 `ANTHROPIC_API_KEY`) tant qu'aucun écran de réglage n'existe ; un réglage écrit l'emporte.
+L'adresse et les en-têtes d'un serveur compatible (`BASEDB_AI_BASE_URL`,
+`BASEDB_AI_HEADERS`) ne se prennent que là (§ 2.5).
 
 Sont reportés, et nommés pour ne pas passer pour des oublis : rotation de
 `BASEDB_ENCRYPTION_KEY`, budgets en unité monétaire, diffusion en continu, choix du

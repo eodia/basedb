@@ -15,6 +15,7 @@ import {
   invoke,
   resolveProvider,
 } from './draft.js'
+import { inLanguage } from './language.js'
 
 /**
  * The copilot — chapter 12 §1.6.
@@ -57,6 +58,8 @@ export interface CopilotRequest {
   readonly messages: readonly CopilotMessage[]
   /** The person's consent to the copilot reading rows for this conversation. */
   readonly readData?: boolean
+  /** The language of the screen (`LOCALES`): the answer's. French when absent. */
+  readonly language?: string
 }
 
 /** A column the copilot proposes, for an existing table or a new one. */
@@ -185,7 +188,7 @@ const cut = (text: string, max: number) =>
 
 // ── The catalog, as the person sees it ────────────────────────────────────────
 
-interface CatalogField {
+export interface CatalogField {
   readonly id: string
   readonly name: string
   readonly label: string
@@ -197,7 +200,7 @@ interface CatalogField {
   readonly target: string | null
 }
 
-interface CatalogTable {
+export interface CatalogTable {
   readonly id: string
   readonly name: string
   readonly label: string
@@ -206,18 +209,20 @@ interface CatalogTable {
   readonly fields: readonly CatalogField[]
 }
 
-interface Catalog {
+export interface Catalog {
   readonly baseLabel: string
   readonly tables: readonly CatalogTable[]
   readonly canManageSchema: boolean
   readonly sqlAllowed: boolean
+  /** A column of the base is withheld from third-party models: no SQL may read it. */
+  readonly agentsHidden: boolean
   readonly config: ProviderConfig
 }
 
-async function loadCatalog(
+export async function loadCatalog(
   pools: Pools,
   ctx: RequestContext,
-  request: CopilotRequest,
+  request: Pick<CopilotRequest, 'baseId' | 'readData'>,
 ): Promise<Catalog> {
   return withTransaction(
     pools,
@@ -322,6 +327,7 @@ async function loadCatalog(
         tables,
         canManageSchema,
         sqlAllowed: request.readData === true && canManageSchema && !hidden,
+        agentsHidden: hidden,
         config,
       }
     },
@@ -407,7 +413,7 @@ export async function copilotTurn(
       request.baseId,
       { ...base, observations, rounds_left: MAX_READ_ROUNDS - round },
       COPILOT_SCHEMA,
-      COPILOT_SYSTEM,
+      inLanguage(COPILOT_SYSTEM, request.language),
       { timeoutMs: TURN_TIMEOUT_MS, maxTokens: TURN_MAX_TOKENS },
     )
     const asked = Array.isArray(answer.reads) ? answer.reads.slice(0, MAX_READS_PER_ROUND) : []
@@ -444,7 +450,7 @@ export async function copilotTurn(
         rejected: { previous_answer: answer, reasons: dropped },
       },
       COPILOT_SCHEMA,
-      COPILOT_SYSTEM,
+      inLanguage(COPILOT_SYSTEM, request.language),
       { timeoutMs: TURN_TIMEOUT_MS, maxTokens: TURN_MAX_TOKENS },
     ).catch(() => null)
     if (corrected !== null) {
@@ -466,7 +472,7 @@ export async function copilotTurn(
   }
 }
 
-function trimConversation(messages: readonly CopilotMessage[]): CopilotMessage[] {
+export function trimConversation(messages: readonly CopilotMessage[]): CopilotMessage[] {
   const kept: CopilotMessage[] = []
   let total = 0
   for (const m of [...messages].slice(-MAX_MESSAGES).reverse()) {
@@ -484,7 +490,7 @@ function trimConversation(messages: readonly CopilotMessage[]): CopilotMessage[]
 // ── Reads ─────────────────────────────────────────────────────────────────────
 
 /** A value as the model reads it: a link by its display, a file by its name, text cut. */
-function plain(value: unknown): unknown {
+export function plain(value: unknown): unknown {
   if (value === null || value === undefined) return null
   if (typeof value === 'number' || typeof value === 'boolean') return value
   if (value instanceof Date) return value.toISOString()
@@ -502,7 +508,7 @@ function plain(value: unknown): unknown {
 }
 
 /** Rows dropped from the end until the observation fits its share of the payload. */
-function fit(result: {
+export function fit(result: {
   columns: string[]
   rows: unknown[][]
   [key: string]: unknown
@@ -515,7 +521,7 @@ function fit(result: {
   return out
 }
 
-async function runRead(
+export async function runRead(
   pools: Pools,
   ctx: RequestContext,
   baseId: string,

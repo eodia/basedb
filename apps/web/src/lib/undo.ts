@@ -1,6 +1,7 @@
 'use client'
 
 import { ApiError, type Write, api, onWrite } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { reasonFor } from '@/lib/messages'
 import { toast } from 'sonner'
 import { create } from 'zustand'
@@ -45,17 +46,18 @@ export function configureJournal(options: {
 
 /** The gesture a write was, in words. */
 export function describeWrite(write: Write, label: (name: string) => string = labelOf): string {
-  if (write.method === 'DELETE') return 'suppression d’une ligne'
-  if (write.path.endsWith('/batch')) return 'import de lignes'
-  if (write.method === 'POST') return 'création d’une ligne'
+  if (write.method === 'DELETE') return $t('suppression d’une ligne')
+  if (write.path.endsWith('/batch')) return $t('import de lignes')
+  if (write.method === 'POST') return $t('création d’une ligne')
   try {
     const values = (JSON.parse(write.body ?? '{}') as { values?: Record<string, unknown> }).values
     const names = Object.keys(values ?? {})
-    if (names.length === 1) return `modification de « ${label(names[0] as string)} »`
+    if (names.length === 1)
+      return $t('modification de « {names} »', { names: label(names[0] as string) })
   } catch {
     // An unreadable body is still a modification.
   }
-  return 'modification d’une ligne'
+  return $t('modification d’une ligne')
 }
 
 /** The gesture under way, when several writes are one step. */
@@ -99,12 +101,12 @@ function refusal(error: unknown): string {
   if (error instanceof ApiError && error.code === 'REVISION_SUPERSEDED') {
     const fields = Array.isArray(error.details.fields) ? (error.details.fields as string[]) : []
     const names = fields.map((f) => `« ${labelOf(f)} »`)
-    if (names.length === 1) return `${names[0]} a été modifié depuis.`
-    if (names.length > 1) return `${names.join(', ')} ont été modifiés depuis.`
-    return 'La ligne a été modifiée depuis.'
+    if (names.length === 1) return $t('{names} a été modifié depuis.', { names: names[0] })
+    if (names.length > 1) return $t('{names} ont été modifiés depuis.', { names: names.join(', ') })
+    return $t('La ligne a été modifiée depuis.')
   }
   if (error instanceof ApiError && error.code === 'RESOURCE_NOT_FOUND') {
-    return 'Cette écriture est introuvable ou trop ancienne.'
+    return $t('Cette écriture est introuvable ou trop ancienne.')
   }
   return reasonFor(error)
 }
@@ -126,12 +128,12 @@ async function replay(from: 'done' | 'undone'): Promise<void> {
         ? { done: j.done.slice(0, -1), undone: [...j.undone, inverse] }
         : { undone: j.undone.slice(0, -1), done: [...j.done, inverse].slice(-JOURNAL_LIMIT) },
     )
-    const verb = from === 'done' ? 'Annulé' : 'Rétabli'
+    const verb = from === 'done' ? $t('Annulé') : $t('Rétabli')
     toast(`${verb} : ${step.label}`, {
       action:
         from === 'done'
-          ? { label: 'Rétablir', onClick: () => void redo() }
-          : { label: 'Annuler', onClick: () => void undo() },
+          ? { label: $t('Rétablir||refaire une écriture annulée'), onClick: () => void redo() }
+          : { label: $t('Annuler||défaire la dernière écriture'), onClick: () => void undo() },
     })
   } catch (error) {
     // The step is dropped: it cannot be replayed as it stands. What did go through is
@@ -145,7 +147,9 @@ async function replay(from: 'done' | 'undone'): Promise<void> {
         : { ...rest, done: [...j.done, partial] }
     })
     toast.error(
-      `${from === 'done' ? 'Annulation' : 'Rétablissement'} impossible : ${refusal(error)}`,
+      from === 'done'
+        ? $t('Annulation impossible : {reason}', { reason: refusal(error) })
+        : $t('Rétablissement impossible : {reason}', { reason: refusal(error) }),
     )
   } finally {
     useJournal.setState({ busy: false })

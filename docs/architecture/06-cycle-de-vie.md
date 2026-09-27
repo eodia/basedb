@@ -53,11 +53,13 @@ Toute opération de ce chapitre incrémente `base.catalog_version` dans la trans
 
 ## 2. Renommage physique
 
-Renommer en base n'est pas un champ de l'écran de paramétrage. C'est une opération d'administration, avec analyse d'impact, confirmation par saisie, et trace de ce que l'administrateur avait sous les yeux.
+Renommer en base reste une opération d'administration, avec analyse d'impact, confirmation par saisie, et trace de ce que l'administrateur avait sous les yeux. Mais elle n'a plus d'écran ni d'entrée de menu à elle : **un seul geste renomme**, le dialogue qui modifie le libellé d'une base, d'une table ou d'un champ. Deux noms, un seul dialogue — la distinction du §1.1 tient dans les données, pas dans deux menus.
 
 ### 2.1 Déroulé de l'écran
 
-1. **Cible et nouveau nom.** L'écran affiche le nom actuel qualifié (`b_t4z56fq_crm.clients`, lu par `_basedb.v_physical_name_qualified`) et propose le slug dérivé du libellé courant ; l'administrateur peut saisir le nom à la main. Il est validé par l'alphabet A du chapitre 01 et soumis aux mêmes interdictions : mots réservés, préfixes réservés, budgets d'octets.
+Sous le libellé, **tout le monde** lit le nom en base, et qu'il ne change pas avec le libellé. **Un administrateur** (§1.2) trouve à la place une case : « Renommer aussi en base : `clients` → `comptes` », le nouveau nom étant le slug du libellé en cours de saisie, que le serveur recalcule au fil de la frappe (`?label=` sur l'analyse d'impact). Case décochée, le dialogue ne fait qu'un renommage de libellé, sans migration. Cochée, il déplie ce qui suit, et son bouton devient « Enregistrer et renommer en base ». Le libellé est enregistré d'abord ; un renommage physique refusé ensuite laisse le dialogue ouvert, le libellé acquis, et le dit.
+
+1. **Cible et nouveau nom.** Le dialogue affiche le nom actuel qualifié (`b_t4z56fq_crm.clients`, lu par `_basedb.v_physical_name_qualified`) et propose le slug dérivé du libellé saisi ; l'administrateur peut saisir le nom à la main. Il est validé par l'alphabet A du chapitre 01 et soumis aux mêmes interdictions : mots réservés, préfixes réservés, budgets d'octets.
 2. **Analyse d'impact.** Le moteur produit : la liste des consommateurs connus (§2.2), les colonnes de lien qui deviendront désalignées (§2.6), le nombre de lignes **estimé** et la taille de l'objet, les objets dépendants inconnus du catalogue (§3.4), et l'occupation réelle du nom visé dans `pg_class` et `pg_namespace`.
 3. **Options.** Case « créer un alias de compatibilité », cochée par défaut, échéance par défaut de 180 jours. La case est **désactivée et grisée pour un renommage de champ**, motif affiché (§3.1).
 4. **Confirmation.** Saisie du nom actuel en toutes lettres. La liste des consommateurs affichée est recopiée telle quelle dans la charge utile de l'entrée `audit_log` : on doit pouvoir savoir, six mois plus tard, ce que l'administrateur avait sous les yeux, et non ce que la même requête rendrait aujourd'hui.
@@ -742,7 +744,7 @@ Ces codes sont en anglais, à raison d'un par condition (A2, A23), et versés au
 
 ## État de la mise en œuvre (v1)
 
-**Fait.** Le renommage physique d'une base, d'une table et d'un champ (§2) : écran d'impact
+**Fait.** Le renommage physique d'une base, d'une table et d'un champ (§2), depuis le dialogue qui modifie leur libellé : impact
 (nom qualifié, lignes **estimées** et taille, webhooks abonnés, jetons actifs sur trente
 jours, colonnes de lien qui cesseront de dire leur cible, objets tiers dépendants, consignes
 d'IA qui citent la colonne), confirmation par saisie du nom actuel, et copie de cet impact

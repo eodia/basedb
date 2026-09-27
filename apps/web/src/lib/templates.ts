@@ -6,6 +6,7 @@ import {
   type TableRef,
   api,
 } from '@/lib/api/client'
+import { $t, $tp } from '@/lib/i18n'
 import {
   type ResolvedField,
   type Template,
@@ -347,6 +348,7 @@ function fieldInput(field: TemplateField) {
           })),
         }),
     ...(field.format === undefined ? {} : { format: field.format }),
+    ...(field.rich === true ? { rich: true } : {}),
   }
 }
 
@@ -386,7 +388,13 @@ export async function applyTemplate(
 
   // 1. The tables, each with its display column.
   for (const [index, table] of template.tables.entries()) {
-    onStep(`Table « ${table.label} » (${index + 1}/${template.tables.length})…`)
+    onStep(
+      $t('Table « {label} » ({value}/{tablesCount})…', {
+        label: table.label,
+        value: index + 1,
+        tablesCount: template.tables.length,
+      }),
+    )
     const [first] = table.fields
     if (first === undefined) continue
     const created = await api.createTable(
@@ -428,7 +436,7 @@ export async function applyTemplate(
   let aiOff = !options.aiConsent
   let degraded = 0
   const addAiField = async (entry: BuiltTable, field: TemplateField) => {
-    onStep(`Champ IA « ${field.label} »…`)
+    onStep($t('Champ IA « {label} »…', { label: field.label }))
     const ai = field.ai as NonNullable<TemplateField['ai']>
     let added: { name: string } | null = null
     if (!aiOff) {
@@ -468,7 +476,7 @@ export async function applyTemplate(
   for (const table of template.tables) {
     const entry = built.get(table.key) as BuiltTable
     const rest = table.fields.slice(1).filter((f) => simple(f) || f.ai !== undefined)
-    if (rest.length > 0) onStep(`Champs de « ${table.label} »…`)
+    if (rest.length > 0) onStep($t('Champs de « {label} »…', { label: table.label }))
     for (const field of rest) {
       if (field.ai !== undefined) {
         const ready = citedInText(field.ai.prompt).every(
@@ -494,7 +502,7 @@ export async function applyTemplate(
     const from = built.get(link.from)
     const to = built.get(link.to)
     if (from === undefined || to === undefined) continue
-    onStep(`Relation « ${link.label} »…`)
+    onStep($t('Relation « {label} »…', { label: link.label }))
     const created = await api.createLink(
       from.ref,
       link.label,
@@ -523,7 +531,7 @@ export async function applyTemplate(
     let lastError: unknown = null
     for (const { table, field } of pending) {
       const entry = built.get(table.key) as BuiltTable
-      onStep(`Champ calculé « ${field.label} »…`)
+      onStep($t('Champ calculé « {label} »…', { label: field.label }))
       try {
         const input =
           field.kind === 'formula'
@@ -555,8 +563,16 @@ export async function applyTemplate(
   if (degraded > 0) {
     warnings.push(
       options.aiConsent
-        ? `L’IA n’est pas configurée : ${degraded} champ${degraded > 1 ? 's' : ''} IA créé${degraded > 1 ? 's' : ''} comme des champs ordinaires, avec leurs valeurs d’exemple.`
-        : `Sans votre accord, ${degraded} champ${degraded > 1 ? 's' : ''} IA ${degraded > 1 ? 'ont' : 'a'} été créé${degraded > 1 ? 's' : ''} comme des champs ordinaires, avec leurs valeurs d’exemple.`,
+        ? $tp(
+            degraded,
+            'L’IA n’est pas configurée : {count} champ IA créé comme un champ ordinaire, avec ses valeurs d’exemple.',
+            'L’IA n’est pas configurée : {count} champs IA créés comme des champs ordinaires, avec leurs valeurs d’exemple.',
+          )
+        : $tp(
+            degraded,
+            'Sans votre accord, {count} champ IA a été créé comme un champ ordinaire, avec ses valeurs d’exemple.',
+            'Sans votre accord, {count} champs IA ont été créés comme des champs ordinaires, avec leurs valeurs d’exemple.',
+          ),
     )
   }
 
@@ -576,7 +592,7 @@ export async function applyTemplate(
     const rows = template.rows[key] ?? []
     const entry = built.get(key)
     if (entry === undefined || rows.length === 0) continue
-    onStep(`Lignes d’exemple de « ${entry.label} »…`)
+    onStep($t('Lignes d’exemple de « {label} »…', { label: entry.label }))
     const prepared = rows.map((row) => rowFor(row, entry, resolveKey, links, me, today))
     for (let start = 0; start < prepared.length; start += 1000) {
       const chunk = prepared.slice(start, start + 1000)
@@ -593,7 +609,7 @@ export async function applyTemplate(
       })
     }
   }
-  if (later.length > 0) onStep('Relations entre les lignes…')
+  if (later.length > 0) onStep($t('Relations entre les lignes…'))
   for (const { table, id, row } of later) {
     const { values } = rowFor(row, table, resolveKey, links, me, today)
     if (Object.keys(values).length > 0) await api.updateRecord(table.ref, id, values)
@@ -602,7 +618,7 @@ export async function applyTemplate(
   // 8. The buttons, after the automations they trigger.
   const automationIds = new Map<string, string>()
   for (const automation of template.automations.filter((a) => a.trigger.kind === 'button')) {
-    onStep(`Automatisation « ${automation.label} »…`)
+    onStep($t('Automatisation « {label} »…', { label: automation.label }))
     const created = await api.createAutomation(base, automationFor(automation, built, me))
     if (automation.key !== undefined) automationIds.set(automation.key, created.id)
   }
@@ -611,7 +627,7 @@ export async function applyTemplate(
     for (const field of table.fields.filter((f) => f.kind === 'button')) {
       const button = field.button
       if (button === undefined) continue
-      onStep(`Bouton « ${field.label} »…`)
+      onStep($t('Bouton « {label} »…', { label: field.label }))
       const automation =
         button.automation === undefined ? undefined : automationIds.get(button.automation)
       const added = await api.addField(entry.ref, {
@@ -643,7 +659,7 @@ export async function applyTemplate(
       const found = fieldOf(entry, field.label)
       if (found === undefined) continue
       await api.setFieldRequired(entry.ref, found.name, true).catch(() => {
-        warnings.push(`« ${field.label} » n’a pas pu être rendu obligatoire.`)
+        warnings.push($t('« {label} » n’a pas pu être rendu obligatoire.', { label: field.label }))
       })
     }
   }
@@ -652,7 +668,7 @@ export async function applyTemplate(
   for (const view of template.views) {
     const entry = built.get(view.table)
     if (entry === undefined) continue
-    onStep(`Vue « ${view.label} »…`)
+    onStep($t('Vue « {label} »…', { label: view.label }))
     await api.createView(entry.ref, {
       label: view.label,
       kind: view.kind,
@@ -661,7 +677,7 @@ export async function applyTemplate(
     })
   }
   for (const dashboard of template.dashboards) {
-    onStep(`Tableau de bord « ${dashboard.label} »…`)
+    onStep($t('Tableau de bord « {label} »…', { label: dashboard.label }))
     const blocks = dashboard.blocks
       .map((b) => blockFor(b, built))
       .filter((b): b is DashboardBlock => b !== null)
@@ -672,7 +688,7 @@ export async function applyTemplate(
     })
   }
   for (const automation of template.automations.filter((a) => a.trigger.kind !== 'button')) {
-    onStep(`Automatisation « ${automation.label} »…`)
+    onStep($t('Automatisation « {label} »…', { label: automation.label }))
     await api.createAutomation(base, automationFor(automation, built, me))
   }
   return { warnings }

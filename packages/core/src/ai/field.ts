@@ -320,16 +320,26 @@ export async function setAiField(
       name: string
       kind: string
       has_ai: boolean
+      is_rich: boolean
     }>(
       `SELECT f.table_id, n.name, f.kind,
-              EXISTS (SELECT 1 FROM _basedb.field_ai_config c WHERE c.field_id = f.id) AS has_ai
+              EXISTS (SELECT 1 FROM _basedb.field_ai_config c WHERE c.field_id = f.id) AS has_ai,
+              coalesce(tc.is_rich, false) AS is_rich
          FROM _basedb.field f
          JOIN _basedb.physical_name n ON n.id = f.name_id
+         LEFT JOIN _basedb.field_text_config tc ON tc.field_id = f.id
         WHERE f.id = $1 AND f.is_live`,
       [request.fieldId],
     )
     if (field === undefined) {
       throw new BasedbError('RESOURCE_NOT_FOUND', { details: { field: request.fieldId } })
+    }
+    // A model writes plain text, straight into the column: into a rich text it could only be
+    // refused by the column's guard, or read as markup nobody wrote (chapter 04 §2.2).
+    if (field.is_rich) {
+      throw new BasedbError('REQUEST_INVALID', {
+        details: { field: 'ai', reason: 'type_sans_ia', kind: 'rich_text' },
+      })
     }
     if (!field.has_ai) {
       // Switched on: the option comes on top of the field's type, whose values stay as

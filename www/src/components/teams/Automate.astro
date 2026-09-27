@@ -1,0 +1,411 @@
+---
+/**
+ * An automation at work in the middle of the night, run by the scroll: the line goes down
+ * the flow, each step lights up with its time as the line reaches it, the AI's step writes
+ * its answer, and the run ends « Réussie ». Beside it, the sentence given to the Copilot
+ * that built it. Asked for less motion, the run is shown done.
+ */
+import { type Locale, i18n } from '../../i18n';
+import Icon from '../landing/Icon.astro';
+import type { IconName } from '../landing/icons';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, href, number } = i18n(locale);
+const a = t.teams.automate;
+
+const STEPS: Array<{ key: keyof typeof a.steps; icon: IconName; tone: string; ms: number }> = [
+	{ key: 'find', icon: 'search', tone: 'teal', ms: 23 },
+	{ key: 'ai', icon: 'sparkles', tone: 'violet', ms: 842 },
+	{ key: 'create', icon: 'plus', tone: 'sky', ms: 41 },
+	{ key: 'notify', icon: 'bell', tone: 'sky', ms: 12 },
+	{ key: 'slack', icon: 'message', tone: 'sky', ms: 207 },
+];
+---
+
+<section class="tm-section automate" data-automate>
+	<div class="tm-head tm-rise">
+		<p class="tm-kicker">{a.eyebrow}</p>
+		<h2 class="tm-display">
+			<span>{a.title}</span>
+			<span class="tm-grad">{a.titleAccent}</span>
+		</h2>
+		<p class="tm-lede">{a.text}</p>
+	</div>
+
+	<div class="board" data-board>
+		<aside class="night" aria-hidden="true">
+			<div class="clock">
+				<Icon name="moon" size={20} />
+				<b>{a.clock}</b>
+			</div>
+			<p class="done" data-done>
+				<span class="dot"></span>
+				{a.done}
+			</p>
+		</aside>
+
+		<ol class="flow" data-flow>
+			<span class="line" data-line aria-hidden="true"><i data-fill></i></span>
+			<li class="step trigger" data-step>
+				<span class="glyph green"><Icon name="zap" size={18} /></span>
+				<span class="words">
+					<small>{a.when}</small>
+					<b>{a.trigger}</b>
+				</span>
+			</li>
+			{
+				STEPS.map((step) => (
+					<li class="step" data-step data-key={step.key}>
+						<span class={`glyph ${step.tone}`}>
+							<Icon name={step.icon} size={18} />
+						</span>
+						<span class="words">
+							<small>{a.steps[step.key].kind}</small>
+							<b>{a.steps[step.key].text}</b>
+							{step.key === 'ai' && (
+								<span class="answer" data-answer data-text={a.answer}>
+									<span data-shown />
+									<span class="rest" data-rest>
+										{a.answer}
+									</span>
+								</span>
+							)}
+						</span>
+						<span class="ms" aria-hidden="true">
+							<Icon name="check" size={15} stroke={2.2} />
+							{number(step.ms)} ms
+						</span>
+					</li>
+				))
+			}
+		</ol>
+
+		<aside class="copilot tm-rise">
+			<p class="who">
+				<Icon name="sparkles" size={16} />
+				Copilot
+			</p>
+			<p class="ask">{a.copilot.prompt}</p>
+			<p class="note">{a.copilot.text}</p>
+		</aside>
+	</div>
+
+	<p class="more"><a class="tm-link" href={href(a.link.href)}>{a.link.label}</a></p>
+</section>
+
+<script>
+	import { clamp, progress, reducedMotion } from '../../lib/motion';
+
+	const section = document.querySelector<HTMLElement>('[data-automate]');
+	const flow = section?.querySelector<HTMLElement>('[data-flow]');
+	if (section && flow) {
+		const steps = [...flow.querySelectorAll<HTMLElement>('[data-step]')];
+		const line = flow.querySelector<HTMLElement>('[data-line]')!;
+		const fill = flow.querySelector<HTMLElement>('[data-fill]')!;
+		const done = section.querySelector<HTMLElement>('[data-done]')!;
+		const answer = flow.querySelector<HTMLElement>('[data-answer]');
+		const text = answer?.dataset.text ?? '';
+		const shown = answer?.querySelector<HTMLElement>('[data-shown]');
+		const rest = answer?.querySelector<HTMLElement>('[data-rest]');
+		/** Where each step sits along the line, from 0 (the trigger) to 1 (the last). */
+		let marks: number[] = [];
+		let last = 0;
+
+		const layout = () => {
+			const centre = (el: HTMLElement) => el.offsetTop + 32;
+			const top = centre(steps[0]!);
+			const bottom = centre(steps[steps.length - 1]!);
+			line.style.top = `${top}px`;
+			line.style.height = `${bottom - top}px`;
+			marks = steps.map((s) => (centre(s) - top) / Math.max(1, bottom - top));
+			update(last);
+		};
+
+		const update = (p: number) => {
+			last = p;
+			// The line runs a little ahead of the page, so the last step is reached before the end.
+			const reach = clamp(p * 1.08);
+			fill.style.transform = `scaleY(${reach})`;
+			steps.forEach((s, i) => s.classList.toggle('lit', reach >= (marks[i] ?? 1) - 0.001));
+			if (answer && shown && rest) {
+				const i = steps.findIndex((s) => s.dataset.key === 'ai');
+				const from = marks[i] ?? 0;
+				const to = marks[i + 1] ?? 1;
+				const n = Math.round(text.length * clamp((reach - from) / Math.max(0.01, to - from)));
+				shown.textContent = text.slice(0, n);
+				rest.textContent = text.slice(n);
+			}
+			done.classList.toggle('on', reach >= 1);
+		};
+
+		layout();
+		new ResizeObserver(layout).observe(flow);
+		if (reducedMotion()) update(1);
+		else progress(flow, update, { mode: 'pass', start: 0.78, end: 0.52 });
+	}
+</script>
+
+<style>
+	.board {
+		position: relative;
+		display: grid;
+		grid-template-columns: 220px minmax(0, 420px) 280px;
+		justify-content: center;
+		align-items: start;
+		gap: 48px;
+		max-width: 1160px;
+		margin: 80px auto 0;
+		padding: 64px 48px;
+		border-radius: 36px;
+		background-color: var(--tm-mist);
+		background-image: radial-gradient(rgba(16, 24, 16, 0.09) 1px, transparent 1px);
+		background-size: 22px 22px;
+	}
+
+	/* The night: the time, and the run's result when it ends */
+	.night {
+		position: sticky;
+		top: 120px;
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+	.clock {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 22px;
+		border-radius: 22px;
+		color: #d9e1ff;
+		background: linear-gradient(160deg, #0b1026, #1a2150);
+		box-shadow: 0 24px 50px -24px rgba(11, 16, 38, 0.6);
+	}
+	.clock b {
+		font-size: 46px;
+		font-weight: 700;
+		letter-spacing: -0.04em;
+		font-variant-numeric: tabular-nums;
+		color: #fff;
+	}
+	.done {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		align-self: flex-start;
+		margin: 0;
+		padding: 7px 13px;
+		border-radius: 999px;
+		background: #fff;
+		box-shadow: 0 0 0 1px var(--tm-line);
+		font-size: 13px;
+		font-weight: 600;
+		opacity: 0;
+		transform: translateY(6px);
+		transition:
+			opacity 0.4s ease,
+			transform 0.4s ease;
+	}
+	.done.on {
+		opacity: 1;
+		transform: none;
+	}
+	.done .dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #22c55e;
+	}
+
+	/* The flow */
+	.flow {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 26px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.line {
+		position: absolute;
+		left: 36px;
+		width: 2px;
+		background: rgba(16, 24, 16, 0.12);
+	}
+	.line i {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(#22c55e, #16a34a);
+		transform: scaleY(0);
+		transform-origin: top;
+	}
+	.step {
+		position: relative;
+		display: flex;
+		align-items: flex-start;
+		gap: 14px;
+		min-height: 64px;
+		padding: 15px 16px;
+		border-radius: 18px;
+		background: #fff;
+		box-shadow:
+			0 0 0 1px rgba(16, 24, 16, 0.06),
+			0 10px 24px -16px rgba(16, 24, 16, 0.25);
+		transition:
+			box-shadow 0.35s ease,
+			transform 0.35s ease;
+	}
+	.step.lit {
+		box-shadow:
+			0 0 0 1.5px rgba(34, 197, 94, 0.55),
+			0 16px 30px -18px rgba(22, 163, 74, 0.45);
+	}
+	.glyph {
+		position: relative;
+		z-index: 1;
+		display: grid;
+		flex-shrink: 0;
+		place-items: center;
+		width: 40px;
+		height: 40px;
+		border-radius: 12px;
+		color: #9ca3af;
+		background: #f1f2f4;
+		transition:
+			color 0.35s ease,
+			background-color 0.35s ease;
+	}
+	.lit .glyph.green,
+	.trigger .glyph {
+		color: #16a34a;
+		background: #dcfce7;
+	}
+	.lit .glyph.teal {
+		color: #0f766e;
+		background: #ccfbf1;
+	}
+	.lit .glyph.violet {
+		color: #6d28d9;
+		background: #ede9fe;
+	}
+	.lit .glyph.sky {
+		color: #0369a1;
+		background: #e0f2fe;
+	}
+	.words {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+		padding-top: 1px;
+	}
+	.words small {
+		font-size: 12.5px;
+		font-weight: 600;
+		color: var(--tm-slate);
+	}
+	.words b {
+		font-size: 15.5px;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+	.answer {
+		display: block;
+		margin-top: 8px;
+		padding: 10px 12px;
+		border-radius: 12px;
+		font-size: 14px;
+		line-height: 1.5;
+		color: #3b2a6e;
+		background: #f5f3ff;
+	}
+	.answer .rest {
+		color: transparent;
+	}
+	.ms {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		margin-left: auto;
+		padding-top: 2px;
+		font-size: 12.5px;
+		font-weight: 600;
+		white-space: nowrap;
+		color: #16a34a;
+		opacity: 0;
+		transform: scale(0.8);
+		transition:
+			opacity 0.3s ease,
+			transform 0.3s cubic-bezier(0.3, 1.6, 0.5, 1);
+	}
+	.lit .ms {
+		opacity: 1;
+		transform: none;
+	}
+
+	/* The Copilot, beside */
+	.copilot {
+		position: sticky;
+		top: 120px;
+		padding: 20px;
+		border-radius: 22px;
+		background: #fff;
+		box-shadow: 0 0 0 1px rgba(16, 24, 16, 0.06);
+	}
+	.who {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		margin: 0 0 12px;
+		font-size: 13.5px;
+		font-weight: 700;
+		color: #6d28d9;
+	}
+	.ask {
+		margin: 0;
+		padding: 12px 14px;
+		border-radius: 14px 14px 4px 14px;
+		font-size: 14.5px;
+		line-height: 1.45;
+		background: var(--tm-mist);
+	}
+	.note {
+		margin: 12px 0 0;
+		font-size: 14px;
+		line-height: 1.5;
+		color: var(--tm-slate);
+	}
+	.more {
+		margin: 48px 0 0;
+		text-align: center;
+	}
+
+	@media (max-width: 1100px) {
+		.board {
+			grid-template-columns: minmax(0, 440px);
+			gap: 28px;
+			padding: 40px 20px;
+		}
+		.night,
+		.copilot {
+			position: static;
+		}
+		.night {
+			flex-direction: row;
+			align-items: center;
+			flex-wrap: wrap;
+		}
+		.clock {
+			flex-direction: row;
+			align-items: center;
+			padding: 14px 18px;
+		}
+		.clock b {
+			font-size: 30px;
+		}
+	}
+</style>

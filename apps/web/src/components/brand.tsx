@@ -1,3 +1,4 @@
+import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 /** The wordmark inherits the application's font, including on the login screen. */
@@ -27,7 +28,7 @@ export function Brand({
       />
       {!compact && (
         <span className="font-bold tracking-[-0.045em]" translate="no">
-          basedb
+          {$t('basedb')}
         </span>
       )}
     </span>

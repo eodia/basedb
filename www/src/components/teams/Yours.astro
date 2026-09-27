@@ -1,0 +1,104 @@
+---
+/**
+ * Free, and at home: the price, very large — zero, written in the reader's language —,
+ * and the three reasons it holds.
+ */
+import { type Locale, i18n } from '../../i18n';
+import Icon from '../landing/Icon.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, lang, href } = i18n(locale);
+const y = t.teams.yours;
+const price = new Intl.NumberFormat(lang, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(0);
+---
+
+<section class="tm-section night yours">
+	<div class="tm-head">
+		<p class="tm-kicker tm-rise">{y.eyebrow}</p>
+		<p class="price tm-rise" aria-label={`${price} ${y.per}`}>
+			<span class="figure">{price}</span>
+			<span class="per">{y.per}</span>
+		</p>
+		<p class="tm-lede tm-rise">{y.text}</p>
+	</div>
+
+	<div class="tm-points">
+		<div class="tm-rise">
+			<span class="ic"><Icon name="server" size={22} /></span>
+			<h3>{y.points.home.title}</h3>
+			<p>{y.points.home.text}</p>
+		</div>
+		<div class="tm-rise">
+			<span class="ic"><Icon name="code" size={22} /></span>
+			<h3>{y.points.free.title}</h3>
+			<p>{y.points.free.text}</p>
+		</div>
+		<div class="tm-rise">
+			<span class="ic"><Icon name="sparkles" size={22} /></span>
+			<h3>{y.points.ai.title}</h3>
+			<p>{y.points.ai.text}</p>
+		</div>
+	</div>
+	<p class="more tm-rise"><a class="tm-link" href={href(y.link.href)}>{y.link.label}</a></p>
+</section>
+
+<style>
+	.yours {
+		overflow: hidden;
+	}
+	.yours::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 30%;
+		width: 900px;
+		height: 600px;
+		transform: translateX(-50%);
+		background: radial-gradient(closest-side, rgba(95, 224, 122, 0.18), transparent 72%);
+		pointer-events: none;
+	}
+	.price {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin: 0;
+	}
+	.figure {
+		font-size: clamp(140px, 26vw, 340px);
+		font-weight: 800;
+		line-height: 0.86;
+		letter-spacing: -0.07em;
+		background: linear-gradient(100deg, #3ee0b2, #5fe07a 30%, #c9f06b 55%, #5fe07a 80%, #3ee0b2);
+		background-size: 220% 100%;
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+		animation: sheen 9s ease-in-out infinite alternate;
+	}
+	@keyframes sheen {
+		to {
+			background-position: 100% 0;
+		}
+	}
+	.per {
+		margin-top: 18px;
+		font-size: clamp(30px, 4.4vw, 60px);
+		font-weight: 800;
+		letter-spacing: -0.045em;
+		line-height: 1.05;
+	}
+	.more {
+		margin: 56px 0 0;
+		text-align: center;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.figure {
+			animation: none;
+		}
+	}
+</style>

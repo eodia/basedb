@@ -427,12 +427,22 @@ async function dependentsOfSchema(exec: Executor, schema: string): Promise<strin
 
 // ── Impact ─────────────────────────────────────────────────────────────────────
 
-/** What a physical rename would touch, WITHOUT doing it (§2.1, step 2). */
+/**
+ * What a physical rename would touch, WITHOUT doing it (§2.1, step 2).
+ *
+ * `label` is the label being typed in the same dialog, when the rename rides along with
+ * a relabelling: the suggested name is slugged from it rather than from the label the
+ * catalog still holds. It changes the suggestion and nothing else.
+ */
 export async function renameImpact(
   pools: Pools,
   ctx: RequestContext,
-  request: { readonly kind: PhysicalKind; readonly id: string },
+  request: { readonly kind: PhysicalKind; readonly id: string; readonly label?: string },
 ): Promise<RenameImpact> {
+  const proposed =
+    typeof request.label === 'string' && request.label.trim() !== ''
+      ? request.label.normalize('NFC').trim()
+      : null
   return withTransaction(
     pools,
     'catalog',
@@ -478,7 +488,8 @@ export async function renameImpact(
           label: base.label,
           current: slug,
           qualified: base.schema_name,
-          suggested: slugify(base.label, { max: MAX_BASE_SLUG_BYTES, nature: 'base' }).slug,
+          suggested: slugify(proposed ?? base.label, { max: MAX_BASE_SLUG_BYTES, nature: 'base' })
+            .slug,
           aliasAllowed: true,
           liveAliases: await liveAliasCount(exec, 'base', base.id),
           estimatedRows: size?.rows ?? null,
@@ -529,8 +540,10 @@ export async function renameImpact(
           label: table.table_label,
           current: table.table_name,
           qualified: `${table.schema_name}.${table.table_name}`,
-          suggested: slugify(table.table_label, { max: MAX_TABLE_NAME_BYTES, nature: 'table' })
-            .slug,
+          suggested: slugify(proposed ?? table.table_label, {
+            max: MAX_TABLE_NAME_BYTES,
+            nature: 'table',
+          }).slug,
           aliasAllowed: true,
           liveAliases: await liveAliasCount(exec, 'table', table.table_id),
           ...common,
@@ -553,7 +566,10 @@ export async function renameImpact(
         label: field.field_label,
         current: field.field_name,
         qualified: `${field.schema_name}.${field.table_name}.${field.field_name}`,
-        suggested: slugify(field.field_label, { max: MAX_FIELD_NAME_BYTES, nature: 'champ' }).slug,
+        suggested: slugify(proposed ?? field.field_label, {
+          max: MAX_FIELD_NAME_BYTES,
+          nature: 'champ',
+        }).slug,
         aliasAllowed: false,
         liveAliases: 0,
         ...common,

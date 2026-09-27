@@ -16,18 +16,20 @@ import {
   ApiError,
   type CompatibilityAlias,
   type DeletedTable,
+  type PhysicalRef,
   type PurgeExport,
   type RenameImpact,
   api,
 } from '@/lib/api/client'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { AlertTriangle, Loader2, Scissors, Trash2, Undo2 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
- * Chapter 06, on screen: the physical name of a base, a table or a field, the aliases
- * left behind by a rename, and the purge.
+ * Chapter 06, on screen: the physical name of a base, a table or a field — renamed from
+ * the dialog that edits its label —, the aliases left behind by a rename, and the purge.
  *
  * These are administration acts, and every one of them is built the same way: what the
  * act would touch first, then the name typed in full, then the act. The screens say what
@@ -35,13 +37,13 @@ import { useCallback, useEffect, useState } from 'react'
  * because promising a safety that is not there would be worse than having none.
  */
 
-const DATE = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' })
-const NUMBER = new Intl.NumberFormat('fr-FR')
+const DATE = new Intl.DateTimeFormat(intlLocale(), { dateStyle: 'medium' })
+const NUMBER = new Intl.NumberFormat(intlLocale())
 
 function size(bytes: number | null): string {
   if (bytes === null) return 'inconnue'
-  if (bytes < 1024 * 1024) return `${NUMBER.format(Math.ceil(bytes / 1024))} Ko`
-  return `${NUMBER.format(Math.round((bytes / 1024 / 1024) * 10) / 10)} Mo`
+  if (bytes < 1024 * 1024) return $t('{ceil} Ko', { ceil: NUMBER.format(Math.ceil(bytes / 1024)) })
+  return $t('{format} Mo', { format: NUMBER.format(Math.round((bytes / 1024 / 1024) * 10) / 10) })
 }
 
 function ErrorLine({ error }: { readonly error: string | null }) {
@@ -67,7 +69,7 @@ function Confirm({
   return (
     <div className="space-y-1.5">
       <Label htmlFor="confirm-name" className="text-sm">
-        Pour confirmer, saisissez {what} :{' '}
+        {$t('Pour confirmer, saisissez {what} :', { what })}{' '}
         <code className="rounded bg-muted px-1 font-mono">{expected}</code>
       </Label>
       <Input
@@ -84,233 +86,331 @@ function Confirm({
 
 // ── Physical rename ────────────────────────────────────────────────────────────
 
-export type PhysicalTarget = {
-  readonly kind: 'base' | 'table' | 'field'
-  readonly id: string
-  readonly label: string
+/** What the dialog renames: the object, and the label it has in the catalog. */
+export type PhysicalTarget = PhysicalRef & { readonly label: string }
+
+/** What a relabelling takes along when the box is ticked: the name in the database. */
+export interface PhysicalRename {
+  /** The line under the label — and, ticked, what the rename would touch. */
+  readonly element: React.ReactNode
+  /** The rename is asked for. */
+  readonly asked: boolean
+  /** Nothing asked, or everything the rename needs is filled in. */
+  readonly ready: boolean
+  /**
+   * Runs the rename if it is asked for, and answers the name before and after, as the
+   * interface names the object — for a base, its whole logical name.
+   */
+  readonly run: () => Promise<{ readonly from: string; readonly to: string } | null>
 }
 
-const KIND_NAME: Readonly<Record<PhysicalTarget['kind'], string>> = {
-  base: 'la base',
-  table: 'la table',
-  field: 'le champ',
+/** The reference behind the key `usePhysicalRename` keeps: `kind:id`, or `field:b/t/f`. */
+function refOf(opened: string): PhysicalRef {
+  const [kind, rest] = [opened.slice(0, opened.indexOf(':')), opened.slice(opened.indexOf(':') + 1)]
+  if (kind === 'field') {
+    const [base, table, field] = rest.split('/') as [string, string, string]
+    return { kind: 'field', base, table, field }
+  }
+  return { kind: kind === 'base' ? 'base' : 'table', id: rest }
 }
 
-export function PhysicalRenameDialog({
+/**
+ * The physical name, under the label of an edit dialog — chapter 06 §2.
+ *
+ * One gesture renames: the label is always editable, and an administrator finds under it
+ * « Renommer aussi en base : `clients` → `comptes` », the new name slugged from the label
+ * being typed. Only ticked does the dialog grow what a physical rename is: what it would
+ * touch, the new name to adjust, the alias, the current name typed in full. Everyone
+ * else reads the name in the database, and that it does not move.
+ *
+ * `current` is the name the object carries — shown until the impact arrives, and to those
+ * who cannot rename it.
+ */
+export function usePhysicalRename({
   target,
-  onClose,
-  onDone,
+  current,
+  label,
+  administers,
 }: {
+  /** `null` while the dialog is closed. */
   readonly target: PhysicalTarget | null
-  readonly onClose: () => void
-  /** Renamed: what the name was, and what it is now. */
-  readonly onDone: (change: { readonly from: string; readonly to: string }) => void
-}) {
+  readonly current: string
+  /** The label as typed in the dialog. */
+  readonly label: string
+  readonly administers: boolean
+}): PhysicalRename {
+  const [asked, setAsked] = useState(false)
   const [impact, setImpact] = useState<RenameImpact | null>(null)
+  // The impact could not be read — the server does not count this person as an
+  // administrator of structures: the plain line is shown instead of an offer refused.
+  const [refused, setRefused] = useState(false)
   const [name, setName] = useState('')
+  // A name typed by hand is no longer replaced by the suggestion.
+  const touched = useRef(false)
+  // The first reading is immediate; the next ones wait for the typing to pause.
+  const loaded = useRef(false)
   const [alias, setAlias] = useState(true)
   const [days, setDays] = useState('180')
   const [confirm, setConfirm] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (target === null) return
-    setImpact(null)
-    setConfirm('')
-    setError(null)
-    setSuggestion(null)
-    setAlias(target.kind !== 'field')
-    setDays('180')
-    api.renameImpact(target.kind, target.id).then(
-      (found) => {
-        setImpact(found)
-        setName(found.suggested === found.current ? '' : found.suggested)
-      },
-      (e) => setError(messageFor(e)),
-    )
-  }, [target])
+  const kind = target?.kind
+  const original = target?.label
+  // Which object the dialog is open on: another one starts afresh — and the reference
+  // the requests go to, rebuilt from it so that a new object literal each render does
+  // not count as another object.
+  const opened =
+    target === null
+      ? null
+      : target.kind === 'field'
+        ? `field:${target.base}/${target.table}/${target.field}`
+        : `${target.kind}:${target.id}`
 
-  const submit = async () => {
-    if (target === null || impact === null) return
-    setBusy(true)
-    setError(null)
+  // Opening the dialog opens the rename as it is now: nothing ticked.
+  useEffect(() => {
+    if (opened === null) return
+    setAsked(false)
+    setImpact(null)
+    setRefused(false)
+    setName('')
+    touched.current = false
+    loaded.current = false
+    setAlias(!opened.startsWith('field:'))
+    setDays('180')
+    setConfirm('')
+    setSuggestion(null)
+  }, [opened])
+
+  // The impact, read on opening and again as the label is typed — the suggestion follows
+  // it. Debounced: a keystroke is not a question to the server.
+  const typed = label.trim()
+  useEffect(() => {
+    if (!administers || opened === null) return
+    const ref = refOf(opened)
+    let live = true
+    const timer = setTimeout(
+      () => {
+        api.renameImpact(ref, typed === '' || typed === original ? undefined : typed).then(
+          (found) => {
+            if (!live) return
+            loaded.current = true
+            setImpact(found)
+            if (!touched.current) {
+              setName(found.suggested === found.current ? '' : found.suggested)
+            }
+          },
+          () => live && setRefused(true),
+        )
+      },
+      loaded.current ? 300 : 0,
+    )
+    return () => {
+      live = false
+      clearTimeout(timer)
+    }
+  }, [administers, opened, typed, original])
+
+  const offered = administers && !refused && impact !== null
+  const next = name.trim()
+  const daysOk = /^\d+$/.test(days) && Number(days) >= 1 && Number(days) <= 3650
+  const ready =
+    !asked ||
+    (impact !== null &&
+      next !== '' &&
+      next !== impact.current &&
+      confirm === impact.current &&
+      (!impact.alias_allowed || !alias || daysOk))
+
+  const run = async () => {
+    if (!asked || impact === null || opened === null) return null
     setSuggestion(null)
     try {
-      const done = await api.renamePhysical(target.kind, target.id, {
-        name: name.trim(),
+      const done = await api.renamePhysical(refOf(opened), {
+        name: next,
         confirm,
         ...(impact.alias_allowed ? { alias, alias_days: Number(days) } : {}),
       })
-      onDone({ from: impact.current, to: done.name })
+      // A base is named by its whole schema, whose tail is the slug that changed.
+      if (kind === 'base') {
+        const stem = impact.qualified.slice(0, impact.qualified.length - impact.current.length)
+        return { from: impact.qualified, to: `${stem}${done.name}` }
+      }
+      return { from: impact.current, to: done.name }
     } catch (e) {
-      setError(messageFor(e))
       if (e instanceof ApiError && typeof e.details.suggestion === 'string') {
         setSuggestion(e.details.suggestion)
       }
-    } finally {
-      setBusy(false)
+      throw e
     }
   }
 
-  const daysOk = /^\d+$/.test(days) && Number(days) >= 1 && Number(days) <= 3650
-  const ready =
-    impact !== null &&
-    name.trim() !== '' &&
-    name.trim() !== impact.current &&
-    confirm === impact.current &&
-    (!impact.alias_allowed || !alias || daysOk) &&
-    !busy
+  const element = !offered ? (
+    <p className="text-xs text-muted-foreground">
+      {$t('Nom en base')} <code className="rounded bg-muted px-1 font-mono">{current}</code>{' '}
+      {$t(
+        ': il ne change pas avec le libellé, et les requêtes SQL comme les intégrations continuent de fonctionner.',
+      )}
+    </p>
+  ) : (
+    <div className="min-w-0 space-y-3">
+      <div className="flex items-start gap-2 text-sm">
+        <Checkbox
+          id={`physical-${impact.id}`}
+          checked={asked}
+          onCheckedChange={(v) => setAsked(v === true)}
+          className="mt-0.5"
+        />
+        <Label htmlFor={`physical-${impact.id}`} className="block font-normal leading-snug">
+          {$t('Renommer aussi en base :')}{' '}
+          <code className="rounded bg-muted px-1 font-mono">{impact.current}</code>
+          {next !== '' && next !== impact.current && (
+            <>
+              {' '}
+              → <code className="rounded bg-muted px-1 font-mono">{next}</code>
+            </>
+          )}
+        </Label>
+      </div>
 
-  return (
-    <Dialog open={target !== null} onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Renommer en base — {target?.label}</DialogTitle>
-          <DialogDescription>
-            Change le nom de {target === null ? '' : KIND_NAME[target.kind]} dans PostgreSQL. Le
-            libellé ne bouge pas, et l’API, le MCP et l’interface suivent d’eux-mêmes ; ce qui
-            casse, c’est ce qui écrit l’ancien nom à la main — un script, un rapport, un modèle dbt.
-          </DialogDescription>
-        </DialogHeader>
+      {asked && (
+        <div className="min-w-0 space-y-4 rounded-lg border bg-muted/30 p-3 text-sm animate-in fade-in slide-in-from-top-1 duration-200">
+          <dl className="grid grid-cols-[9rem_1fr] gap-x-3 gap-y-1.5">
+            <dt className="text-muted-foreground">{$t('Nom actuel')}</dt>
+            <dd className="font-mono break-all">{impact.qualified}</dd>
+            {impact.kind !== 'field' && (
+              <>
+                <dt className="text-muted-foreground">{$t('Lignes')}</dt>
+                <dd>
+                  {impact.estimated_rows === null
+                    ? 'inconnu'
+                    : `${NUMBER.format(Math.round(impact.estimated_rows))} (estimation)`}{' '}
+                  · {size(impact.bytes)}
+                </dd>
+              </>
+            )}
+            <dt className="text-muted-foreground">{$t('Webhooks')}</dt>
+            <dd>{impact.webhooks.length === 0 ? 'aucun' : impact.webhooks.join(', ')}</dd>
+            <dt className="text-muted-foreground">{$t('Jetons actifs (30 j)')}</dt>
+            <dd>
+              {impact.tokens.length === 0 ? 'aucun' : impact.tokens.map((t) => t.label).join(', ')}
+            </dd>
+          </dl>
 
-        <ErrorLine error={error} />
-        {suggestion !== null && (
-          <Button variant="outline" size="sm" onClick={() => setName(suggestion)}>
-            Utiliser « {suggestion} »
-          </Button>
-        )}
-
-        {impact === null ? (
-          error === null && (
-            <div className="py-8 text-center">
-              <Loader2 className="mx-auto size-5 animate-spin text-muted-foreground" />
-            </div>
-          )
-        ) : (
-          <div className="min-w-0 space-y-4 text-sm">
-            <dl className="grid grid-cols-[10rem_1fr] gap-x-3 gap-y-1.5">
-              <dt className="text-muted-foreground">Nom actuel</dt>
-              <dd className="font-mono break-all">{impact.qualified}</dd>
-              {impact.kind !== 'field' && (
-                <>
-                  <dt className="text-muted-foreground">Lignes</dt>
-                  <dd>
-                    {impact.estimated_rows === null
-                      ? 'inconnu'
-                      : `${NUMBER.format(Math.round(impact.estimated_rows))} (estimation)`}{' '}
-                    · {size(impact.bytes)}
-                  </dd>
-                </>
+          {impact.misaligned_links.length > 0 && (
+            <p className="text-muted-foreground">
+              {$t(
+                'Ces colonnes de relation portent l’ancien nom et ne seront pas renommées : {map}.',
+                { map: impact.misaligned_links.map((l) => `${l.table}.${l.column}`).join(', ') },
               )}
-              <dt className="text-muted-foreground">Webhooks</dt>
-              <dd>{impact.webhooks.length === 0 ? 'aucun' : impact.webhooks.join(', ')}</dd>
-              <dt className="text-muted-foreground">Jetons actifs (30 j)</dt>
-              <dd>
-                {impact.tokens.length === 0
-                  ? 'aucun'
-                  : impact.tokens.map((t) => t.label).join(', ')}
-              </dd>
-            </dl>
-
-            {impact.misaligned_links.length > 0 && (
-              <p className="text-muted-foreground">
-                Ces colonnes de relation portent l’ancien nom et ne seront pas renommées :{' '}
-                {impact.misaligned_links.map((l) => `${l.table}.${l.column}`).join(', ')}.
-              </p>
-            )}
-            {impact.dependents.length > 0 && (
-              <p className="text-muted-foreground">
-                Objets créés hors de basedb qui en dépendent (ils suivent le renommage) :{' '}
-                <span className="font-mono">{impact.dependents.join(', ')}</span>.
-              </p>
-            )}
-            {impact.citing_prompts > 0 && (
-              <p className="text-muted-foreground">
-                {impact.citing_prompts} consigne{impact.citing_prompts > 1 ? 's' : ''} de champ IA
-                cite{impact.citing_prompts > 1 ? 'nt' : ''} cette colonne : elle
-                {impact.citing_prompts > 1 ? 's seront réécrites' : ' sera réécrite'}.
-              </p>
-            )}
-
-            <p className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs">
-              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
-              <span>
-                Les connexions SQL directes ne sont pas observables depuis basedb : personne ne peut
-                dire ici qui écrit encore l’ancien nom.
-                {impact.alias_allowed
-                  ? ' L’alias les protège, en lecture comme en écriture, sauf INSERT … ON CONFLICT DO UPDATE, COPY et TRUNCATE.'
-                  : ' Un champ n’a pas d’alias possible : ce renommage est sans filet.'}
-              </span>
             </p>
+          )}
+          {impact.dependents.length > 0 && (
+            <p className="text-muted-foreground">
+              {$t('Objets créés hors de basedb qui en dépendent (ils suivent le renommage) :')}{' '}
+              <span className="font-mono">{impact.dependents.join(', ')}</span>.
+            </p>
+          )}
+          {impact.citing_prompts > 0 && (
+            <p className="text-muted-foreground">
+              {$tp(
+                impact.citing_prompts,
+                '{count} consigne de champ IA cite cette colonne : elle sera réécrite.',
+                '{count} consignes de champ IA citent cette colonne : elles seront réécrites.',
+              )}
+            </p>
+          )}
 
-            <div className="space-y-1.5">
-              <Label htmlFor="physical-name">Nouveau nom</Label>
-              <Input
-                id="physical-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                spellCheck={false}
-                autoComplete="off"
-                className="font-mono"
-              />
-            </div>
+          <p className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
+            <span>
+              {$t(
+                'L’API, le MCP et l’interface suivent d’eux-mêmes ; ce qui casse, c’est ce qui écrit l’ancien nom à la main — un script, un rapport, un modèle dbt —, et ces connexions ne sont pas observables depuis basedb.{value}',
+                {
+                  value: impact.alias_allowed
+                    ? $t(
+                        ' L’alias les protège, en lecture comme en écriture, sauf INSERT … ON CONFLICT DO UPDATE, COPY et TRUNCATE.',
+                      )
+                    : $t(' Un champ n’a pas d’alias possible : ce renommage est sans filet.'),
+                },
+              )}
+            </span>
+          </p>
 
-            {impact.alias_allowed && (
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="flex items-center gap-2">
-                  <Checkbox
-                    id="physical-alias"
-                    checked={alias}
-                    onCheckedChange={(v) => setAlias(v === true)}
-                  />
-                  <Label htmlFor="physical-alias" className="font-normal">
-                    Créer un alias de compatibilité sous l’ancien nom
-                  </Label>
-                </span>
-                {alias && (
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
-                    échéance
-                    <Input
-                      value={days}
-                      onChange={(e) => setDays(e.target.value)}
-                      className="h-8 w-20"
-                      inputMode="numeric"
-                      aria-label="Échéance de l’alias, en jours"
-                    />
-                    jours
-                  </span>
-                )}
-              </div>
-            )}
-            {impact.live_aliases > 0 && (
-              <p className="text-xs text-muted-foreground">
-                {impact.live_aliases} alias déjà en place (cinq au plus).
-              </p>
-            )}
-
-            <Confirm
-              expected={impact.current}
-              value={confirm}
-              onChange={setConfirm}
-              what="le nom actuel"
+          <div className="space-y-1.5">
+            <Label htmlFor="physical-name">{$t('Nouveau nom en base')}</Label>
+            <Input
+              id="physical-name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value)
+                touched.current = true
+              }}
+              spellCheck={false}
+              autoComplete="off"
+              className="font-mono"
             />
+            {suggestion !== null && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setName(suggestion)
+                  touched.current = true
+                  setSuggestion(null)
+                }}
+              >
+                {$t('Utiliser « {suggestion} »', { suggestion })}
+              </Button>
+            )}
           </div>
-        )}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={busy}>
-            Annuler
-          </Button>
-          <Button onClick={() => void submit()} disabled={!ready}>
-            {busy && <Loader2 className="size-4 animate-spin" />}
-            Renommer en base
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          {impact.alias_allowed && (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="flex items-center gap-2">
+                <Checkbox
+                  id="physical-alias"
+                  checked={alias}
+                  onCheckedChange={(v) => setAlias(v === true)}
+                />
+                <Label htmlFor="physical-alias" className="font-normal">
+                  {$t('Créer un alias de compatibilité sous l’ancien nom')}
+                </Label>
+              </span>
+              {alias && (
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  {$t('échéance')}
+                  <Input
+                    value={days}
+                    onChange={(e) => setDays(e.target.value)}
+                    className="h-8 w-20"
+                    inputMode="numeric"
+                    aria-label={$t('Échéance de l’alias, en jours')}
+                  />
+                  {$t('jours')}
+                </span>
+              )}
+            </div>
+          )}
+          {impact.live_aliases > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {$t('{live_aliases} alias déjà en place (cinq au plus).', {
+                live_aliases: impact.live_aliases,
+              })}
+            </p>
+          )}
+
+          <Confirm
+            expected={impact.current}
+            value={confirm}
+            onChange={setConfirm}
+            what={$t('le nom actuel')}
+          />
+        </div>
+      )}
+    </div>
   )
+
+  return { element, asked, ready, run }
 }
 
 // ── Aliases ────────────────────────────────────────────────────────────────────
@@ -372,11 +472,13 @@ export function AliasesDialog({
     <Dialog open={base !== null} onOpenChange={(o) => !o && busy === null && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Alias de compatibilité — {base?.label}</DialogTitle>
+          <DialogTitle>
+            {$t('Alias de compatibilité — {label}', { label: base?.label })}
+          </DialogTitle>
           <DialogDescription>
-            Un alias garde l’ancien nom d’une base ou d’une table en service après un renommage. On
-            ne le supprime jamais sur la foi d’un compteur : la coupure à blanc le retire un temps,
-            et ceux qui s’en servaient encore se manifestent.
+            {$t(
+              'Un alias garde l’ancien nom d’une base ou d’une table en service après un renommage. On ne le supprime jamais sur la foi d’un compteur : la coupure à blanc le retire un temps, et ceux qui s’en servaient encore se manifestent.',
+            )}
           </DialogDescription>
         </DialogHeader>
         <ErrorLine error={error} />
@@ -386,7 +488,7 @@ export function AliasesDialog({
             <Loader2 className="mx-auto size-5 animate-spin text-muted-foreground" />
           </div>
         ) : aliases.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucun alias sur cette base.</p>
+          <p className="text-sm text-muted-foreground">{$t('Aucun alias sur cette base.')}</p>
         ) : (
           <ul className="min-w-0 space-y-2">
             {aliases.map((a) => (
@@ -396,12 +498,23 @@ export function AliasesDialog({
                     <p className="font-mono break-all">{a.qualified}</p>
                     <p className="text-xs text-muted-foreground">
                       {a.kind === 'schema'
-                        ? `ancien nom de la base — ${a.views} vue${a.views > 1 ? 's' : ''}`
-                        : `ancien nom de « ${a.target_label} »`}{' '}
-                      → <span className="font-mono">{a.target}</span> · créé le{' '}
-                      {DATE.format(new Date(a.created_at))}
-                      {a.drop_after !== null &&
-                        ` · échéance le ${DATE.format(new Date(a.drop_after))}`}
+                        ? $tp(
+                            a.views,
+                            'ancien nom de la base — {count} vue',
+                            'ancien nom de la base — {count} vues',
+                          )
+                        : $t('ancien nom de « {target_label} »', {
+                            target_label: a.target_label,
+                          })}{' '}
+                      → <span className="font-mono">{a.target}</span>{' '}
+                      {$t('· créé le {format}{value}', {
+                        format: DATE.format(new Date(a.created_at)),
+                        value:
+                          a.drop_after !== null &&
+                          $t(' · échéance le {format}', {
+                            format: DATE.format(new Date(a.drop_after)),
+                          }),
+                      })}
                     </p>
                   </div>
                   <div className="flex gap-1.5">
@@ -417,7 +530,7 @@ export function AliasesDialog({
                         }}
                       >
                         <Scissors className="size-4" />
-                        Couper à blanc
+                        {$t('Couper à blanc')}
                       </Button>
                     ) : (
                       <Button
@@ -427,7 +540,7 @@ export function AliasesDialog({
                         onClick={() => void act(a.id, () => api.restoreAlias(a.id))}
                       >
                         <Undo2 className="size-4" />
-                        Rétablir
+                        {$t('Rétablir')}
                       </Button>
                     )}
                     <Button
@@ -442,45 +555,49 @@ export function AliasesDialog({
                       }}
                     >
                       <Trash2 className="size-4" />
-                      Supprimer
+                      {$t('Supprimer')}
                     </Button>
                   </div>
                 </div>
 
                 {a.blank_cut !== null && (
                   <p className="text-xs text-amber-700 dark:text-amber-400">
-                    Coupé jusqu’au {DATE.format(new Date(a.blank_cut.until))}, sous le nom{' '}
-                    <span className="font-mono">{a.blank_cut.name}</span>. Les erreurs 42P01 sur
-                    l’ancien nom apparaissent dans le journal du serveur PostgreSQL.
+                    {$t('Coupé jusqu’au {format}, sous le nom', {
+                      format: DATE.format(new Date(a.blank_cut.until)),
+                    })}{' '}
+                    <span className="font-mono">{a.blank_cut.name}</span>
+                    {$t(
+                      '. Les erreurs 42P01 sur l’ancien nom apparaissent dans le journal du serveur PostgreSQL.',
+                    )}
                   </p>
                 )}
                 {a.dependents.length > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    Construit dessus hors de basedb :{' '}
-                    <span className="font-mono">{a.dependents.join(', ')}</span> — la suppression
-                    est impossible tant qu’ils existent.
+                    {$t('Construit dessus hors de basedb :')}{' '}
+                    <span className="font-mono">{a.dependents.join(', ')}</span>{' '}
+                    {$t('— la suppression est impossible tant qu’ils existent.')}
                   </p>
                 )}
 
                 {cutting?.id === a.id && (
                   <div className="flex flex-wrap items-center gap-2 border-t pt-2">
-                    <span className="text-muted-foreground">Couper pendant</span>
+                    <span className="text-muted-foreground">{$t('Couper pendant')}</span>
                     <Input
                       value={days}
                       onChange={(e) => setDays(e.target.value)}
                       className="h-8 w-20"
                       inputMode="numeric"
-                      aria-label="Durée de la coupure, en jours"
+                      aria-label={$t('Durée de la coupure, en jours')}
                     />
                     <span className="text-muted-foreground">
-                      jours (35 au moins : le cycle le plus long connu sur cette base)
+                      {$t('jours (35 au moins : le cycle le plus long connu sur cette base)')}
                     </span>
                     <Button
                       size="sm"
                       disabled={!cutOk || busy !== null}
                       onClick={() => void act(a.id, () => api.cutAlias(a.id, cutDays))}
                     >
-                      Couper
+                      {$t('Couper')}
                     </Button>
                   </div>
                 )}
@@ -490,7 +607,7 @@ export function AliasesDialog({
                       expected={a.name}
                       value={confirm}
                       onChange={setConfirm}
-                      what="le nom de l’alias"
+                      what={$t('le nom de l’alias')}
                     />
                     <div className="flex justify-end">
                       <Button
@@ -500,7 +617,7 @@ export function AliasesDialog({
                         onClick={() => void act(a.id, () => api.dropAlias(a.id, confirm))}
                       >
                         {busy === a.id && <Loader2 className="size-4 animate-spin" />}
-                        Supprimer l’alias
+                        {$t('Supprimer l’alias')}
                       </Button>
                     </div>
                   </div>
@@ -589,12 +706,15 @@ export function PurgeDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            Purger {target?.kind === 'base' ? 'la base' : 'la table'} « {target?.label} »
+            {$t('Purger {value} « {label} »', {
+              value: target?.kind === 'base' ? $t('la base') : $t('la table'),
+              label: target?.label,
+            })}
           </DialogTitle>
           <DialogDescription>
-            La seule opération irréversible de basedb : les données sont détruites. Un export CSV
-            est écrit d’abord sur le serveur d’application, et il n’est jamais effacé par basedb. Le
-            nom, lui, reste réservé pour toujours.
+            {$t(
+              'La seule opération irréversible de basedb : les données sont détruites. Un export CSV est écrit d’abord sur le serveur d’application, et il n’est jamais effacé par basedb. Le nom, lui, reste réservé pour toujours.',
+            )}
           </DialogDescription>
         </DialogHeader>
         <ErrorLine error={error} />
@@ -602,42 +722,55 @@ export function PurgeDialog({
         {residual ? (
           <div className="space-y-3 text-sm">
             <p>
-              Les tables sont détruites, mais le schéma reste : un objet créé hors de basedb s’y
-              trouve encore. Sa suppression revient à l’exploitant de la base.
+              {$t(
+                'Les tables sont détruites, mais le schéma reste : un objet créé hors de basedb s’y trouve encore. Sa suppression revient à l’exploitant de la base.',
+              )}
             </p>
             <DialogFooter>
-              <Button onClick={onDone}>Terminé</Button>
+              <Button onClick={onDone}>{$t('Terminé')}</Button>
             </DialogFooter>
           </div>
         ) : exported === null ? (
           <div className="space-y-3 text-sm">
             <p className="text-muted-foreground">
-              Supprimée le {target === null ? '' : DATE.format(new Date(target.deletedAt))}.{' '}
-              {early
-                ? `La purge est possible à partir du ${DATE.format(new Date(due))} ; avant, seul un administrateur d’instance peut l’avancer, en le justifiant.`
-                : 'Le délai de trente jours est écoulé.'}
+              {$t('Supprimée le {value}. {value2}', {
+                value: target === null ? '' : DATE.format(new Date(target.deletedAt)),
+                value2: early
+                  ? $t(
+                      'La purge est possible à partir du {format} ; avant, seul un administrateur d’instance peut l’avancer, en le justifiant.',
+                      { format: DATE.format(new Date(due)) },
+                    )
+                  : $t('Le délai de trente jours est écoulé.'),
+              })}
             </p>
             <DialogFooter>
               <Button variant="outline" onClick={onClose} disabled={busy}>
-                Annuler
+                {$t('Annuler')}
               </Button>
               <Button onClick={() => void exportNow()} disabled={busy}>
                 {busy && <Loader2 className="size-4 animate-spin" />}
-                Exporter d’abord
+                {$t('Exporter d’abord')}
               </Button>
             </DialogFooter>
           </div>
         ) : (
           <div className="min-w-0 space-y-3 text-sm">
             <p>
-              Export écrit dans <span className="font-mono break-all">{exported.directory}</span> :{' '}
-              {NUMBER.format(exported.total_rows)} ligne{exported.total_rows > 1 ? 's' : ''},{' '}
-              {size(exported.total_bytes)} en base.
+              {$t('Export écrit dans')}{' '}
+              <span className="font-mono break-all">{exported.directory}</span> :{' '}
+              {$tp(
+                exported.total_rows,
+                '{count} ligne, {size} en base.',
+                '{count} lignes, {size} en base.',
+                {
+                  size: size(exported.total_bytes),
+                },
+              )}
             </p>
             <ul className="space-y-0.5 text-xs text-muted-foreground">
               {exported.tables.map((t) => (
                 <li key={t.id}>
-                  {t.label} — {NUMBER.format(t.rows)} ligne{t.rows > 1 ? 's' : ''} ·{' '}
+                  {t.label} — {$tp(t.rows, '{count} ligne', '{count} lignes')} ·{' '}
                   <span className="font-mono">{t.file}</span>
                 </li>
               ))}
@@ -645,7 +778,7 @@ export function PurgeDialog({
             {early && (
               <div className="space-y-1.5">
                 <Label htmlFor="purge-justification">
-                  Justification (avant trente jours, administrateur d’instance)
+                  {$t('Justification (avant trente jours, administrateur d’instance)')}
                 </Label>
                 <Input
                   id="purge-justification"
@@ -658,11 +791,11 @@ export function PurgeDialog({
               expected={target?.label ?? ''}
               value={confirm}
               onChange={setConfirm}
-              what="le libellé exact"
+              what={$t('le libellé exact')}
             />
             <DialogFooter>
               <Button variant="outline" onClick={onClose} disabled={busy}>
-                Annuler
+                {$t('Annuler')}
               </Button>
               <Button
                 variant="destructive"
@@ -672,7 +805,7 @@ export function PurgeDialog({
                 }
               >
                 {busy && <Loader2 className="size-4 animate-spin" />}
-                Purger définitivement
+                {$t('Purger définitivement')}
               </Button>
             </DialogFooter>
           </div>
@@ -717,10 +850,11 @@ export function DeletedTablesDialog({
       <Dialog open={base !== null && purging === null} onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Tables supprimées — {base?.label}</DialogTitle>
+            <DialogTitle>{$t('Tables supprimées — {label}', { label: base?.label })}</DialogTitle>
             <DialogDescription>
-              Une table supprimée garde ses lignes sous un nom marqué ; elle peut être purgée trente
-              jours après, une fois exportée.
+              {$t(
+                'Une table supprimée garde ses lignes sous un nom marqué ; elle peut être purgée trente jours après, une fois exportée.',
+              )}
             </DialogDescription>
           </DialogHeader>
           <ErrorLine error={error} />
@@ -729,7 +863,7 @@ export function DeletedTablesDialog({
               <Loader2 className="mx-auto size-5 animate-spin text-muted-foreground" />
             </div>
           ) : tables.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucune table supprimée.</p>
+            <p className="text-sm text-muted-foreground">{$t('Aucune table supprimée.')}</p>
           ) : (
             <ul className="divide-y rounded-lg border text-sm">
               {tables.map((t) => (
@@ -737,8 +871,10 @@ export function DeletedTablesDialog({
                   <div className="min-w-0 flex-1">
                     <p className="truncate">{t.label}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      supprimée le {DATE.format(new Date(t.deleted_at))}
-                      {t.deleted_by !== null && ` par ${t.deleted_by}`} ·{' '}
+                      {$t('supprimée le {format}{value} ·', {
+                        format: DATE.format(new Date(t.deleted_at)),
+                        value: t.deleted_by !== null && ` par ${t.deleted_by}`,
+                      })}{' '}
                       <span className="font-mono">{t.name}</span>
                     </p>
                   </div>
@@ -755,7 +891,7 @@ export function DeletedTablesDialog({
                       })
                     }
                   >
-                    Purger…
+                    {$t('Purger…')}
                   </Button>
                 </li>
               ))}

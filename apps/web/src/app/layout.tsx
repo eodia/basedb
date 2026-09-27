@@ -1,9 +1,15 @@
+import { I18nRoot } from '@/components/i18n-root'
+import { $t } from '@/lib/i18n'
+import { i18nScript, messagesOf, requestLocale, translate } from '@/lib/i18n-server'
 import type { Metadata } from 'next'
 import '../styles/globals.css'
 
-export const metadata: Metadata = {
-  title: 'basedb',
-  description: 'Des tables PostgreSQL que l’on peut lire en SQL',
+export async function generateMetadata(): Promise<Metadata> {
+  const messages = await messagesOf(await requestLocale())
+  return {
+    title: 'basedb',
+    description: translate(messages, $t('Des tables PostgreSQL que l’on peut lire en SQL')),
+  }
 }
 
 /**
@@ -28,25 +34,30 @@ export const dynamic = 'force-dynamic'
  * run without the variable burns the fallback address into it, and the development
  * server then reuses that cache. Read here instead, at the moment it matters.
  */
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // `||`, not `??`: an empty variable (`BASEDB_API=` in a `.env` file) means unset. A value
   // starting with `/` is this page's own origin — the Docker image (docker/start.mjs).
   const api = process.env.BASEDB_API || 'http://localhost:8787'
   // The MCP entry point, shown in the configuration an agent's client needs.
   const mcp = process.env.BASEDB_MCP || ''
+  // The reader's language, and its messages — before any script of the application runs.
+  const locale = await requestLocale()
+  const messages = await messagesOf(locale)
 
   return (
-    <html lang="fr">
+    <html lang={locale}>
       <head>
         {/* Origins, not code: serialized as JSON so that no value can close the tag. */}
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: passing runtime configuration to the client has no other path in Next 15
           dangerouslySetInnerHTML={{
-            __html: `window.__BASEDB_API__=${JSON.stringify(api)};window.__BASEDB_MCP__=${JSON.stringify(mcp)}`,
+            __html: `window.__BASEDB_API__=${JSON.stringify(api)};window.__BASEDB_MCP__=${JSON.stringify(mcp)};${i18nScript(locale, messages)}`,
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <I18nRoot>{children}</I18nRoot>
+      </body>
     </html>
   )
 }

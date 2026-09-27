@@ -250,6 +250,68 @@ pivot masqué — ou supprimé, ce qui doit se lire de même — fait dire à la
 peut pas être dessinée. Une vue dont le **filtre** cite un tel champ n'est pas montrée du
 tout : montrée sans filtre, elle montrerait plus qu'elle n'a été faite pour montrer.
 
+### 1.7 Le SQL de chacun, et les requêtes enregistrées
+
+Un onglet SQL s'ouvre sur toute base qu'on voit — le « + » de la barre d'onglets, ou
+« Nouvelle requête SQL » dans le menu de la base. **Ce qu'il lit dépend de qui le lance**,
+et le résultat le dit :
+
+- qui gère la structure de la base (`manage_schema`) a la **console** : tout le schéma,
+  écritures comprises, sur le rôle `basedb_console` (chapitre 09 §1, exception assumée) ;
+- tout autre lecteur écrit du SQL **en lecture seule, avec ses propres droits** : sur un
+  rôle PostgreSQL qui lui est propre (`basedb_reader_<id>`), dont les `GRANT` sont, colonne
+  par colonne, le verdict du décideur au moment de l'appel. Une table qu'il ne lit pas
+  n'existe pas pour sa requête ; un champ masqué est une colonne absente de `SELECT *` et
+  refusée si on la nomme. Le résultat porte alors la pastille « Vos droits ».
+
+**Une requête s'enregistre** — « Enregistrer » dans la barre de l'onglet, ou « Enregistrer
+sous… » — et se range dans la navigation, sous les tables de sa base, rubrique
+« Requêtes » (`_basedb.saved_query`, chapitre 02). Trois portées, qu'une icône rappelle :
+
+| Portée | Qui la voit | Qui la crée ou la modifie |
+|---|---|---|
+| Personnelle (cadenas) | son auteur | quiconque voit la base, pour soi |
+| Toute la base | quiconque voit la base | qui gère la structure de la base |
+| Des groupes | les membres des groupes choisis, et qui gère la base | qui gère la structure de la base |
+
+**Partager une requête partage son texte, jamais ce que son auteur lit** : chacun l'exécute
+avec ses propres droits, comme ci-dessus. Ouverte depuis la navigation, elle s'exécute
+aussitôt **en lecture seule** — personne n'a encore décidé d'en lancer le texte pour de
+bon, et une requête partagée peut contenir une écriture que son lecteur n'a pas lue ;
+« Exécuter » la lance ensuite telle qu'elle est. L'onglet retient la requête qu'il montre :
+un point signale un texte modifié depuis l'enregistrement, et « Enregistrer » l'y range si
+l'on peut la modifier, sinon propose d'en faire une nouvelle.
+
+### 1.8 Les vues SQL
+
+Une **vue SQL** est une vraie vue PostgreSQL du schéma de la base (`_basedb.sql_view`,
+chapitre 02) : un `SELECT` sur ses tables et ses autres vues, qu'on lit sous son nom depuis
+`psql` comme depuis l'interface. Elle **prend place parmi les tables** dans la navigation,
+habillée comme elles — couleur, pictogramme ou image —, un petit œil à droite disant que
+c'est une vue ; un onglet de vue montre ses lignes dans la grille, en lecture, avec
+« Actualiser ».
+
+Elle se crée par « Nouvelle vue SQL… » dans le menu de la base, ou « Créer une vue SQL… »
+depuis un onglet SQL, dont le texte devient sa définition ; construire une vue est
+construire la base : `manage_schema`. Le dialogue donne son libellé, son apparence, son nom
+technique — tiré du libellé, alloué comme celui d'une table (chapitre 01) — et sa requête ;
+PostgreSQL refuse ce qu'il refuse, et l'éditeur pointe l'endroit.
+
+**Une vue ne montre jamais un champ qu'on ne voit pas.** Elle est créée
+`WITH (security_invoker = true)` : la lire, c'est lire ses tables avec les droits de qui la
+lit, colonne par colonne. La navigation n'en liste donc, à qui ne gère pas la base, que les
+vues dont il lit chaque table et chaque colonne — ce que dit `pg_depend`, exact à travers
+les renommages. Une vue ne lit que **sa** base : ses tables vivantes, ses vues et le
+catalogue de PostgreSQL ; une autre base, `_basedb` ou une fonction hors `pg_catalog` sont
+refusées, sur ce que PostgreSQL a enregistré plutôt que sur le texte.
+
+**La structure passe par-dessus les vues.** Une formule stockée recréée (`DROP COLUMN` puis
+`ADD COLUMN`) retire un instant les vues qui la lisent et les remet sur la nouvelle colonne ;
+celle qui ne tient plus reste hors de PostgreSQL, « à corriger », sa définition gardée
+(`SQL_VIEW_BROKEN` à la lecture). Une table n'est pas purgée sous une vue qui la lit
+(`DEPENDENT_OBJECT`) ; la purge d'une base emporte ses vues avant ses tables. Les vues ne
+suivent pas encore une base d'un environnement à l'autre, ni dans un modèle.
+
 ---
 
 ## 2. L'édition en ligne
@@ -383,15 +445,31 @@ HTML** — il construit des éléments, un `<script>` tapé dans une note s'affi
 ses liens partent dans un nouvel onglet, sans `opener`, et une image n'est qu'un lien : une
 image distante est une requête que le lecteur n'a pas choisi de faire.
 
-La variante riche stocke du HTML déjà assaini à l'écriture, côté serveur ; la règle
-d'interface est celle que le chapitre 08 pose comme contrat du consommateur :
+La variante riche — « Texte riche (HTML) » dans la liste des types, choisie à la création
+du champ — stocke du HTML déjà assaini à l'écriture, côté serveur. Elle s'écrit dans un
+éditeur visuel (Tiptap) : titres, gras, italique, souligné, barré, listes, citation, code,
+lien, séparateur. Son schéma **est** le profil du chapitre 04 §2.2 : ni image, ni tableau,
+ni couleur, rien de ce que le serveur retirerait sans le dire. Il s'ouvre sur la cellule
+comme l'éditeur Markdown, et en vue détail au clic ; Ctrl+Entrée enregistre, Échap
+annule. La règle de rendu est celle que le chapitre 08 pose comme contrat du consommateur :
 
 1. **Le HTML est réassaini au rendu**, sans exception : le stock peut avoir été écrit
    directement en SQL, donc sans passer par l'assainisseur. Le champ porte
-   `x-basedb-unsafe-html` dans la spécification.
-2. Le vocabulaire retenu au rendu est **au plus** celui du profil `riche_v1` ; l'éditeur
-   ne produit pas autre chose. Le fragment est rendu dans un conteneur à politique de
-   contenu restreinte, jamais inséré comme HTML brut ; les images ne sont pas rendues.
+   `unsafe_html` dans la description, `x-basedb-unsafe-html` dans la spécification.
+2. Le vocabulaire retenu au rendu est **au plus** celui du profil ; l'éditeur ne produit
+   pas autre chose. Le fragment est analysé puis **reconstruit élément par élément** —
+   les balises du profil, les liens aux seuls schémas `http`, `https` et `mailto` —,
+   jamais inséré comme HTML brut ; les images ne sont pas rendues. La grille et les
+   cartes n'en montrent que les mots.
+
+**Variables.** Un texte long, simple ou riche, peut citer une colonne de sa ligne
+(chapitre 04 §2.2). Le menu « Colonne » de la barre d'outils insère la citation au
+curseur : une pastille au libellé de la colonne dans l'éditeur riche, `{{Libellé}}` dans
+le Markdown — un libellé se lit mieux qu'un nom physique, et l'écran le traduit en nom à
+l'enregistrement, comme la description d'une carte de kanban (§1.6). Partout ailleurs,
+le texte se lit avec les valeurs de la ligne ; l'éditeur, lui, relit le texte tel qu'écrit
+(`variables=raw`) à son ouverture, pour ne pas enregistrer les valeurs à la place des
+citations.
 3. Les **libellés et les descriptions** du catalogue sont du texte, jamais du Markdown ni
    du HTML : ils sont échappés partout, titres et infobulles de colonnes compris.
 
@@ -527,20 +605,38 @@ curseur.
 ### 5.4 Automatisations et boutons
 
 Une entrée « Automatisations » de la barre latérale ouvre celles de la base (chapitre
-17) : la liste, avec leur interrupteur et leur dernière exécution ; l'éditeur — le
-déclencheur, la condition, les actions, chacune avec ses champs et des pastilles pour
-citer la ligne (`{{champ}}`) — et les exécutions, action par action. « Tester » exécute
-l'automatisation sur une ligne choisie. Un champ bouton se dessine comme un bouton dans
+17) : la liste, avec leur interrupteur et leur dernière exécution, et l'éditeur. Le flux
+s'y dessine de haut en bas — le déclencheur, puis chaque étape en carte, une condition
+ouvrant ses chemins côte à côte et les rejoignant ensuite ; un « + » sur un trait ajoute
+une étape à cet endroit, une carte ouvre ses réglages dans le panneau de droite. Chaque
+réglage n'offre que ce que ce point du flux peut nommer : les lignes sur lesquelles agir,
+et, dans un menu près de chaque texte, les valeurs à citer (`{{champ}}`, `{{e2.champ}}`),
+insérées là où est le curseur. Une carte incomplète, ou qui cite une étape qui n'a pas
+forcément eu lieu avant elle, le dit avant l'enregistrement ; un refus de l'API ouvre
+l'étape qu'il concerne. Une automatisation simple — un déclencheur et une action — tient
+en deux cartes. L'onglet « Exécutions » liste les dernières ; en choisir une la pose sur
+le flux : le chemin pris tracé, chaque étape passée avec son résultat et sa durée, le
+reste estompé. « Tester » exécute l'automatisation enregistrée sur une ligne choisie.
+**Copilot**, tout à droite de l'en-tête comme sur les tables et les tableaux de bord, ouvre
+sous l'en-tête la conversation du chapitre 17 §6 — la liste des
+automatisations se replie pour laisser la place au flux ; une proposition se pose sur le flux
+d'un clic, sans être enregistrée, et s'annule depuis sa carte. Un champ bouton se dessine comme un bouton dans
 la cellule, la carte et la fiche ; un clic dit ce qui a été lancé, ou pourquoi rien ne
 l'a été.
 
 ### 5.5 Tableaux de bord et modèles
 
-Une entrée « Interfaces » de la barre latérale ouvre les tableaux de bord de la base
-(chapitre 18) : un onglet par tableau, ses blocs sur trois colonnes. Qui construit la
-base passe en mode édition — ajouter un bloc, le régler, l'élargir, le déplacer, le
-retirer. Un bloc dont la donnée n'est pas lisible dit « Donnée inaccessible » ; une ligne
-d'un bloc liste ouvre sa fiche.
+« Tableaux de bord », dans le bloc de la base ouverte en bas de la barre latérale, ouvre
+les tableaux de bord de la base (chapitre 18) : à gauche, ses tableaux de bord, ses questions
+enregistrées et « Explorer les données » ; au centre, le tableau choisi, ses onglets, ses
+filtres et ses cartes sur une grille de vingt-quatre colonnes. Qui construit la base passe en
+mode édition — placer une question, un titre, un texte, une page intégrée, déplacer et
+redimensionner les cartes, ajouter un onglet ou un filtre et le relier aux cartes. Chaque carte
+lit avec les droits de qui regarde ; celle dont la donnée n'est pas lisible dit « Donnée
+inaccessible », et une ligne d'un tableau ouvre sa fiche. « Partager », pour qui construit la
+base, invite à la base ou donne un lien vers ce seul tableau (chapitre 18 §2.5), lu en lecture
+seule avec les droits de qui l'a publié. Une question n'est pas une requête enregistrée (§1.7) :
+elle vit dans les tableaux de bord, avec sa visualisation.
 
 **La galerie de modèles** (chapitre 20) s'ouvre du dialogue « Nouvelle base » et d'un
 projet vide. En tête, une phrase à l'IA — « Décrivez ce que vous voulez gérer » — ; à
@@ -859,6 +955,75 @@ schéma puis réessaie une fois. Un `meta.warning` n'est jamais silencieux.
 Hors tranche : sélecteur de lien avec création de la cible, liste de choix et formule dans
 l'éditeur de schéma, conversion de type, écrans de permissions, historique, administration
 des jetons et des webhooks, renommage physique et alias, vues de grille partagées.
+
+## 10. Les paramètres de la personne
+
+« Paramètres », dans le menu du profil en bas à gauche, ouvre une page à la place des
+données, ouverte à tous : tout ce qui y figure porte sur la personne connectée, rien sur
+les données, et rien de ce qu'un administrateur seul règle. Cinq onglets ; une adresse
+les nomme (`/?parametres=profil`, `securite`, `apparence`, `notifications`, `jetons`).
+
+| Onglet | Ce qu'on y fait | Garde |
+|---|---|---|
+| Profil | le nom affiché ; l'adresse de connexion (chapitre 13 §2.6) ; les fournisseurs d'identité de l'instance, liés ou non, à lier ou délier (chapitre 13 §3.5) | le nom, aucune ; l'adresse et les liaisons, une session élevée |
+| Sécurité | changer le mot de passe (chapitre 13 §2.3) ; les sessions ouvertes, à fermer une à une ou toutes | le mot de passe actuel |
+| Apparence | la langue (§10.1) ; le thème ; l'ordre d'une date — `25/09/2026` ou `2026-09-25` — pour les valeurs des champs date, à l'affichage et dans la saisie ; le premier jour de la semaine des calendriers, du sélecteur de date et de la frise | aucune |
+| Notifications | les natures refusées (chapitre 16 §2.3), une à une | aucune |
+| Jetons | les jetons d'intégration qu'on a créés, sur toutes les bases, leur dernière utilisation, et leur révocation — même sa base supprimée, même sans plus détenir `manage_tokens` | une session élevée pour révoquer |
+
+**Le thème reste au navigateur, le reste suit le compte.** « Suivre le système » est une
+propriété de l'appareil ; l'ordre des dates et le premier jour de la semaine
+(`app_user.date_format`, `week_start`) suivent la personne d'un poste à l'autre. Ils sont
+lus par les formateurs au moment où ils s'exécutent, et un écran de données est remonté
+en revenant des paramètres : il les relit alors. La saisie accepte toujours les deux
+ordres, quel que soit le choix.
+
+Un compte sans mot de passe — il se connecte par un fournisseur — ne peut ni changer son
+adresse, qui est celle du fournisseur, ni obtenir l'élévation que demandent les liaisons :
+l'écran le dit au lieu d'offrir un geste qui serait refusé. Créer un jeton reste dans le
+menu de la base, où sa base se choisit.
+
+### 10.1 La langue
+
+L'interface parle **vingt langues** (`LOCALES` de `@basedb/contracts`) : français, anglais,
+allemand, espagnol, italien, portugais du Brésil, néerlandais, polonais, tchèque, suédois,
+danois, norvégien bokmål, finnois, roumain, hongrois, turc, ukrainien, japonais, chinois
+simplifié, coréen. Aucune ne s'écrit de droite à gauche : la mise en page ne change pas.
+
+**Le français est la source, et la phrase française est la clé.** Chaque texte s'écrit en
+place, en français, dans `$t('Enregistrer')` — avec ses valeurs, `$t('Nouveau champ dans
+{table}', { table })` — ou, quand il dépend d'un nombre, `$tp(n, '{count} ligne', '{count}
+lignes')`. Chaque langue a son catalogue, `apps/web/src/locales/<code>.json`, qui associe à
+chaque phrase sa traduction, et à un pluriel ses formes selon les catégories CLDR de la
+langue (une en japonais, quatre en polonais). Une phrase que personne n'a encore traduite
+s'affiche en français, jamais vide. *Alternative écartée* : des clés abstraites
+(`settings.appearance.title`) — un code illisible, et une clé à inventer à chaque phrase ;
+la phrase française se lit dans le code et se retrouve dans le catalogue.
+
+**Quelle langue.** Le choix du compte (`app_user.locale`, migration 0009 ; `null` : aucun) ;
+sans choix, la première langue du navigateur que basedb parle ; sinon l'anglais. La page
+est servie dans sa langue : la mise en page racine lit le cookie `basedb-locale` — le choix
+du compte, retenu par le navigateur, puisque l'écran de connexion et les pages partagées se
+dessinent avant que quiconque soit connu — et, à défaut, `Accept-Language`, puis place le
+catalogue de cette langue dans la page, avant tout script de l'application. Changer de
+langue recharge la page : une table de libellés appelle `$t` une fois, au chargement de son
+module. L'application ne se dessine que dans le navigateur (`I18nRoot`) : le serveur ne
+connaît pas les messages du lecteur, et ce qu'il dessinerait ne correspondrait pas.
+
+Les nombres, les dates, les noms des mois et des jours suivent la langue (`Intl`, et les
+calendriers de `react-day-picker`) ; la saisie d'un nombre accepte les deux séparateurs
+décimaux. L'ordre d'une date reste le choix de la personne (`dmy` ou `iso`). Les copilotes
+répondent dans la langue de l'écran, que chaque appel porte (`x-basedb-locale`), et
+l'ébauche de base par l'IA propose des libellés dans cette langue ; les courriels partent
+dans la langue du compte, sinon dans celle de la requête. Restent en français, parce que
+ce ne sont pas des textes d'interface : les noms physiques, le langage des formules (`SI`,
+`ARRONDI`…), les commentaires `COMMENT ON` lus par `psql`, le contenu des modèles de base —
+leur carte de galerie, elle, est traduite.
+
+L'outillage est dans `tooling/i18n/` : `codemod.mjs` enveloppe les textes français d'un
+fichier dans `$t`, `extract.mjs` dresse le catalogue source, `check.mjs` vérifie chaque
+catalogue (phrases manquantes, `{valeurs}` perdues, pluriels incomplets), et
+`glossary.json` fixe les termes du produit dans chaque langue.
 
 ---
 

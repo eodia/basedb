@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "key": "evenements",
   "label": "Événements et inscriptions",
   "summary": "Conférences, ateliers et webinaires : les inscriptions, les places restantes, et les retours des participants lus par l'IA.",
@@ -44,7 +44,7 @@
             { "label": "Terminé", "color": "#64748b" }
           ]
         },
-        { "label": "Description", "kind": "long_text" },
+        { "label": "Description", "kind": "long_text", "rich": true },
         {
           "label": "Inscrits",
           "kind": "count",
@@ -146,7 +146,7 @@
         "Lieu": "Lyon, salle Confluence",
         "Capacité": 120,
         "Statut": "Ouvert",
-        "Description": "Trois interventions et une table ronde sur des usages concrets de l'IA dans les petites entreprises."
+        "Description": "<p>Trois interventions et une table ronde sur des usages concrets de l'IA dans les petites entreprises.</p><h3>Programme</h3><ul><li><strong>9 h 30</strong> — Accueil et café</li><li><strong>10 h 00</strong> — Trois dirigeants de PME racontent ce que l'IA a changé chez eux</li><li><strong>11 h 15</strong> — Table ronde : par où commencer ?</li><li><strong>12 h 15</strong> — Échanges avec les intervenants</li></ul>"
       },
       {
         "$key": "atelier",
@@ -157,7 +157,7 @@
         "Lieu": "Paris, espace Oberkampf",
         "Capacité": 15,
         "Statut": "Complet",
-        "Description": "Atelier pratique de trois heures, ordinateur portable nécessaire."
+        "Description": "<p>Atelier pratique de trois heures, en petit groupe.</p><h3>Au programme</h3><ol><li>Relier ses sources de données.</li><li>Construire un tableau de bord qui se met à jour seul.</li><li>Recevoir chaque lundi un rapport par e-mail.</li></ol><p><strong>À apporter :</strong> votre ordinateur portable.</p>"
       },
       {
         "$key": "webinaire",
@@ -168,7 +168,7 @@
         "Lieu": "En ligne",
         "Capacité": 500,
         "Statut": "Terminé",
-        "Description": "Présentation des nouveautés et questions-réponses."
+        "Description": "<p>Présentation des nouveautés de la rentrée, puis questions-réponses avec l'équipe produit.</p><p>Le lien de connexion est envoyé la veille ; <em>l'enregistrement</em> est adressé le lendemain à tous les inscrits.</p>"
       },
       {
         "$key": "afterwork",

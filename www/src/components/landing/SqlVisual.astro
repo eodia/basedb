@@ -1,30 +1,40 @@
 ---
 /* A field created in the interface, and what PostgreSQL receives. */
+import { type Locale, i18n } from '../../i18n';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const v = i18n(locale).t.sqlVisual;
+// The description is also the column's comment, a SQL string.
+const comment = `'${v.descriptionValue.replace(/'/g, "''")}'`;
 ---
 
 <div class="sv">
 	<div class="card form">
 		<div class="card-top">
-			<span class="pill">Interface</span>
-			<span class="title">Nouveau champ · Opportunités</span>
+			<span class="pill">{v.interface}</span>
+			<span class="title">{v.title}</span>
 		</div>
 		<div class="fields">
-			<label><span>Libellé</span><b>Montant</b></label>
+			<label><span>{v.labelField}</span><b>{v.labelValue}</b></label>
 			<label>
-				<span>Type</span>
-				<b class="type"><i>#</i> Nombre</b>
+				<span>{v.typeField}</span>
+				<b class="type"><i>#</i> {v.typeValue}</b>
 			</label>
-			<label><span>Description</span><b class="soft">Montant HT du contrat</b></label>
+			<label><span>{v.descriptionField}</span><b class="soft">{v.descriptionValue}</b></label>
 			<div class="toggles">
-				<span class="tg"><i></i>Obligatoire</span>
-				<span class="tg"><i></i>IA</span>
+				<span class="tg"><i></i>{v.required}</span>
+				<span class="tg"><i></i>{v.ai}</span>
 			</div>
 		</div>
 	</div>
 
 	<div class="arrow" aria-hidden="true">
 		<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"></path></svg>
-		<span>une migration planifiée, verrous courts</span>
+		<span>{v.migration}</span>
 	</div>
 
 	<div class="card code">
@@ -35,7 +45,7 @@
 		<pre><span class="k">ALTER TABLE</span> b_t4z56fq_ventes.opportunites
   <span class="k">ADD COLUMN</span> montant <span class="t">numeric(38,10)</span>;
 <span class="k">COMMENT ON COLUMN</span> …opportunites.montant
-  <span class="k">IS</span> <span class="s">'Montant HT du contrat'</span>;</pre>
+  <span class="k">IS</span> <span class="s">{comment}</span>;</pre>
 		<div class="psql">
 			<span class="p">basedb=&gt;</span> \d opportunites
 			<table>

@@ -311,22 +311,41 @@ export async function loadFields(
   exec: Executor,
   tableId: string,
 ): Promise<
-  Map<string, { readonly name: string; readonly kind: FieldKind; readonly stored: boolean }>
+  Map<
+    string,
+    {
+      readonly name: string
+      readonly kind: FieldKind
+      readonly stored: boolean
+      /** A long text holding HTML, sanitized on every write (chapter 04 §2.2). */
+      readonly rich: boolean
+    }
+  >
 > {
   // `stored` is false for a field with no column: a lookup, a rollup, a count, and a
   // formula computed at read time (chapter 04 §7.1, §7 ter). Whoever builds SQL over
   // columns reads it before naming one.
-  const fields = await exec.query<{ id: string; name: string; kind: FieldKind; stored: boolean }>(
+  const fields = await exec.query<{
+    id: string
+    name: string
+    kind: FieldKind
+    stored: boolean
+    rich: boolean
+  }>(
     `SELECT f.id, n.name, f.kind,
             CASE WHEN f.kind IN ('lookup', 'rollup', 'count', 'button') THEN false
                  WHEN f.kind = 'formula' THEN coalesce(fc.is_stored, true)
-                 ELSE true END AS stored
+                 ELSE true END AS stored,
+            coalesce(tc.is_rich, false) AS rich
        FROM _basedb.field f
        JOIN _basedb.physical_name n ON n.id = f.name_id
        LEFT JOIN _basedb.field_formula_config fc ON fc.field_id = f.id
+       LEFT JOIN _basedb.field_text_config tc ON tc.field_id = f.id
       WHERE f.table_id = $1 AND f.is_live
       ORDER BY f.position`,
     [tableId],
   )
-  return new Map(fields.map((f) => [f.id, { name: f.name, kind: f.kind, stored: f.stored }]))
+  return new Map(
+    fields.map((f) => [f.id, { name: f.name, kind: f.kind, stored: f.stored, rich: f.rich }]),
+  )
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { $t } from '@/lib/i18n'
 import { optionIcon } from '@/lib/option-icons'
 import { cn } from '@/lib/utils'
 import type { LucideIcon } from 'lucide-react'

@@ -3,6 +3,7 @@
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { DESCRIPTION_MAX } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { Plus } from 'lucide-react'
@@ -78,7 +79,7 @@ export function DescriptionField({
       {/* A fixed height, so the counter appearing does not nudge the box below it. */}
       <div className="flex h-4 items-center justify-between gap-2">
         <Label htmlFor={id}>
-          Description <span className="font-normal opacity-70">(facultatif)</span>
+          {$t('Description')} <span className="font-normal opacity-70">{$t('(facultatif)')}</span>
         </Label>
         <Counter text={value} />
       </div>
@@ -240,7 +241,7 @@ export function DescriptionText({
       type="button"
       onClick={onEdit}
       disabled={disabled}
-      title={text.length > MAY_BE_CLAMPED ? text : 'Cliquer pour modifier'}
+      title={text.length > MAY_BE_CLAMPED ? text : $t('Cliquer pour modifier')}
       className={cn(
         // Negative margin and matching padding: the hover wash reaches past the text
         // without moving it.
@@ -250,7 +251,7 @@ export function DescriptionText({
       )}
     >
       {body}
-      <span className="sr-only">Modifier la description pour {subject}</span>
+      <span className="sr-only">{$t('Modifier la description pour {subject}', { subject })}</span>
     </button>
   )
 }
@@ -272,7 +273,7 @@ export function AddDescription({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-label={`Ajouter une description pour ${subject}`}
+      aria-label={$t('Ajouter une description pour {subject}', { subject })}
       className={cn(
         'inline-flex shrink-0 items-center gap-1 rounded text-xs text-muted-foreground/70 transition-[color,opacity]',
         'hover:text-foreground focus-visible:text-foreground focus-visible:outline-none',
@@ -281,7 +282,7 @@ export function AddDescription({
       )}
     >
       <Plus className="size-3" />
-      Ajouter une description
+      {$t('Ajouter une description')}
     </button>
   )
 }
@@ -324,7 +325,7 @@ export function DescriptionEditor({
           }
         }}
         placeholder={placeholder}
-        aria-label={`Description pour ${subject}`}
+        aria-label={$t('Description pour {subject}', { subject })}
         aria-invalid={edit.error !== null || isTooLong(edit.draft) || undefined}
         className={cn(
           'max-h-40 min-h-9 py-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20',
@@ -338,7 +339,9 @@ export function DescriptionEditor({
             {edit.error}
           </span>
         ) : (
-          <span>{edit.saving ? 'Enregistrement…' : 'Ctrl+Entrée enregistre · Échap annule'}</span>
+          <span>
+            {edit.saving ? $t('Enregistrement…') : $t('Ctrl+Entrée enregistre · Échap annule')}
+          </span>
         )}
         <Counter text={edit.draft} className="ml-auto" />
       </div>

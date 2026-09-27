@@ -1,16 +1,65 @@
 'use client'
 
 import { Button, buttonVariants } from '@/components/ui/button'
+import { type Locale, intlLocale, locale as pageLocale } from '@/lib/i18n'
+import { weekStart } from '@/lib/preferences'
 import { cn } from '@/lib/utils'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import type * as React from 'react'
 import { useEffect, useRef } from 'react'
 import { type DayButton, DayPicker, getDefaultClassNames } from 'react-day-picker'
-import { fr } from 'react-day-picker/locale'
+import {
+  type DayPickerLocale,
+  cs,
+  da,
+  de,
+  enGB,
+  es,
+  fi,
+  fr,
+  hu,
+  it,
+  ja,
+  ko,
+  nb,
+  nl,
+  pl,
+  ptBR,
+  ro,
+  sv,
+  tr,
+  uk,
+  zhCN,
+} from 'react-day-picker/locale'
+
+/** Each language's calendar: its months, its weekdays, what a screen reader hears. */
+const DAY_PICKER_LOCALES: Readonly<Record<Locale, DayPickerLocale>> = {
+  fr,
+  en: enGB,
+  de,
+  es,
+  it,
+  'pt-BR': ptBR,
+  nl,
+  pl,
+  cs,
+  sv,
+  da,
+  nb,
+  fi,
+  ro,
+  hu,
+  tr,
+  uk,
+  ja,
+  'zh-CN': zhCN,
+  ko,
+}
 
 /**
- * The shadcn calendar, in French by default: weeks start on Monday, months and weekdays
- * are named in French, and so are the labels a screen reader hears.
+ * The shadcn calendar, in the reader's language: weeks start on Monday — or on Sunday,
+ * when the person chose it —, months and weekdays are named in that language, and so are
+ * the labels a screen reader hears.
  */
 function Calendar({
   className,
@@ -18,7 +67,7 @@ function Calendar({
   showOutsideDays = true,
   captionLayout = 'label',
   buttonVariant = 'ghost',
-  locale = fr,
+  locale = DAY_PICKER_LOCALES[pageLocale()],
   formatters,
   components,
   ...props
@@ -38,6 +87,7 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       locale={locale}
+      weekStartsOn={weekStart()}
       formatters={{
         // The short month of the calendar's own locale — « sept. » — where shadcn reads
         // the browser's, which would name the months in English on an English system.
@@ -164,7 +214,7 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString('fr-FR')}
+      data-day={day.date.toLocaleDateString(intlLocale())}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

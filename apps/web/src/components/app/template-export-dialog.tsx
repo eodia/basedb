@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { type Me, api } from '@/lib/api/client'
 import { copy, download } from '@/lib/export'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { type ExportResult, exportTemplate } from '@/lib/template-export'
 import { optionValue } from '@basedb/contracts'
@@ -89,7 +90,9 @@ export function ExportTemplateDialog({
       }
       if (action === 'instance') {
         await api.importTemplate(built.template)
-        toast.success(`« ${built.template.label} » ajouté au catalogue de l’instance`)
+        toast.success(
+          $t('« {label} » ajouté au catalogue de l’instance', { label: built.template.label }),
+        )
       }
     } catch (e) {
       setError(e instanceof Error && !('code' in e) ? e.message : messageFor(e))
@@ -104,21 +107,22 @@ export function ExportTemplateDialog({
     <Dialog open={base !== null} onOpenChange={(o) => !o && busy === null && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Enregistrer comme modèle</DialogTitle>
+          <DialogTitle>{$t('Enregistrer comme modèle')}</DialogTitle>
           <DialogDescription>
-            Les tables, les champs et leurs réglages — consignes IA comprises —, les relations, les
-            vues partagées, les tableaux de bord et les automatisations de « {base?.label} ». Ni
-            fichier, ni partage, ni webhook.
+            {$t(
+              'Les tables, les champs et leurs réglages — consignes IA comprises —, les relations, les vues partagées, les tableaux de bord et les automatisations de « {label} ». Ni fichier, ni partage, ni webhook.',
+              { label: base?.label },
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="export-label">Nom du modèle</Label>
+              <Label htmlFor="export-label">{$t('Nom du modèle')}</Label>
               <Input id="export-label" value={label} onChange={(e) => setLabel(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="export-key">Clé</Label>
+              <Label htmlFor="export-key">{$t('Clé')}</Label>
               <Input
                 id="export-key"
                 value={key}
@@ -128,21 +132,21 @@ export function ExportTemplateDialog({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="export-summary">Résumé</Label>
+            <Label htmlFor="export-summary">{$t('Résumé||présentation courte d’un modèle')}</Label>
             <Input
               id="export-summary"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              placeholder="Une phrase pour la galerie"
+              placeholder={$t('Une phrase pour la galerie')}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="export-category">Catégorie</Label>
+            <Label htmlFor="export-category">{$t('Catégorie')}</Label>
             <Input
               id="export-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              placeholder="Relation client, Produit et technique…"
+              placeholder={$t('Relation client, Produit et technique…')}
             />
           </div>
           <label htmlFor="export-rows" className="flex items-center gap-2 text-sm">
@@ -151,12 +155,14 @@ export function ExportTemplateDialog({
               checked={rows}
               onCheckedChange={(v) => setRows(v === true)}
             />
-            Emporter jusqu’à 50 lignes par table comme exemples
+            {$t('Emporter jusqu’à 50 lignes par table comme exemples')}
           </label>
           {result !== null && result.omitted.length > 0 && (
             <details className="text-xs text-muted-foreground">
               <summary className="cursor-pointer">
-                {result.omitted.length} élément(s) laissé(s) de côté
+                {$t('{omittedCount} élément(s) laissé(s) de côté', {
+                  omittedCount: result.omitted.length,
+                })}
               </summary>
               <ul className="mt-1 list-disc space-y-0.5 pl-5">
                 {result.omitted.map((line) => (
@@ -180,7 +186,7 @@ export function ExportTemplateDialog({
               ) : (
                 <Server className="size-4" />
               )}
-              Ajouter à l’instance
+              {$t('Ajouter à l’instance')}
             </Button>
           ) : (
             <span />
@@ -199,7 +205,7 @@ export function ExportTemplateDialog({
               ) : (
                 <Copy className="size-4" />
               )}
-              Copier le JSON
+              {$t('Copier le JSON')}
             </Button>
             <Button disabled={!ready} onClick={() => void run('download')} className="gap-1.5">
               {busy === 'download' ? (
@@ -207,7 +213,7 @@ export function ExportTemplateDialog({
               ) : (
                 <Download className="size-4" />
               )}
-              Télécharger
+              {$t('Télécharger')}
             </Button>
           </div>
         </DialogFooter>

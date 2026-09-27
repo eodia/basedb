@@ -753,6 +753,8 @@ Conséquence directe d'A4, à écrire parce qu'elle surprend : **les compteurs d
 
 **Liste close des dépendances d'exécution du noyau** : le pilote PostgreSQL, Drizzle, une bibliothèque de validation de schémas, une implémentation d'UUIDv7. Toute addition est une décision d'architecture. C'est le meilleur garde-fou contre la dérive du périmètre : on ne peut pas faire entrer discrètement du HTTP dans un paquet dont la liste de dépendances tient en quatre lignes revues à chaque modification. La même discipline s'applique aux applications, par la liste blanche du §1.2.
 
+**Addition décidée : `sanitize-html`**, pour la variante riche du texte long (chapitre 04 §2.2). L'assainissement est à l'écriture, sur tous les chemins — API, MCP, interface, import — : il ne peut donc vivre que dans le noyau, que tous traversent. Écrire un assainisseur HTML à la main est précisément ce qu'il ne faut pas faire, et celui-ci est mûr, sans dépendance native, et analyse puis réémet le document au lieu d'éditer la chaîne. *Alternative rejetée* : assainir dans `apps/api` — le MCP et l'import écrivent sans passer par lui.
+
 ---
 
 ## Décisions retenues
@@ -785,6 +787,7 @@ Conséquence directe d'A4, à écrire parce qu'elle surprend : **les compteurs d
 | Une seule surcharge par tenant : le modèle d'IA | C'est la seule que le cadrage demande ; un réglage en base coûte lecture, cache et invalidation | Hiérarchie de réglages généralisée |
 | Pas de rotation de clé en v1, numéro de version conservé, clé sauvegardée séparément (A25) | Une rotation annoncée sans procédure est une demi-décision ; une clé sauvegardée avec la base annule le chiffrement | Rotation esquissée ; clé dans le cliché |
 | Sauvegarde et restauration de la base entière uniquement | Restaurer un schéma seul crée une dérive immédiate et casse les `DEFAULT` de clé primaire | Restauration partielle par schéma |
+| `sanitize-html` ajouté aux dépendances du noyau | L'assainissement du texte riche est à l'écriture sur tous les chemins, que seul le noyau voit tous | Assainisseur écrit à la main ; assainissement dans `apps/api` seul |
 
 ## Risques et limites connues
 

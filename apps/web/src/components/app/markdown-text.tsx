@@ -1,8 +1,21 @@
 'use client'
 
+import { FieldIcon } from '@/components/app/field-icon'
+import { RichTextEditor, RichTextView } from '@/components/app/rich-text-editor'
+import { citableColumns, useRawText, useTableFields } from '@/components/app/table-fields'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import type { Field } from '@/lib/api/client'
+import { templateToLabels, templateToNames } from '@/lib/card-template'
+import { $t } from '@/lib/i18n'
+import { htmlToPlain } from '@/lib/rich-text'
 import { cn } from '@/lib/utils'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
@@ -17,6 +30,7 @@ import {
 import { tags } from '@lezer/highlight'
 import {
   Bold,
+  Braces,
   Code,
   Heading2,
   Italic,
@@ -28,7 +42,7 @@ import {
   Quote,
   Strikethrough,
 } from 'lucide-react'
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -40,6 +54,10 @@ import remarkGfm from 'remark-gfm'
  * the rendering is the screen's affair. Rendering never interprets HTML — `react-markdown`
  * builds React elements, and a `<script>` typed in a note is shown as text — and its links
  * leave in a new tab, without the opener, and only for the protocols a link may carry.
+ *
+ * A long text may also be the rich variant, HTML (chapter 04 §2.2), edited in its own
+ * editor (`rich-text-editor.tsx`); either may cite a column of its row, `{{nom}}`, read
+ * with the row's value in its place and written with the column's label.
  */
 
 // ── Reading ──────────────────────────────────────────────────────────────────────────
@@ -162,6 +180,28 @@ export function markdownExcerpt(source: string, max = 280): string {
   return [...text].length > max ? `${[...text].slice(0, max).join('')}…` : text
 }
 
+/** One line of a long text, Markdown or HTML: what a cell or a card shows of it. */
+export function longTextExcerpt(value: string, field: Field, max = 280): string {
+  return field.unsafe_html === true ? htmlToPlain(value, max) : markdownExcerpt(value, max)
+}
+
+/** A long text read whole, Markdown or HTML. */
+export function LongTextView({
+  value,
+  rich,
+  className,
+}: {
+  readonly value: string
+  readonly rich: boolean
+  readonly className?: string
+}) {
+  return rich ? (
+    <RichTextView html={value} className={className} />
+  ) : (
+    <MarkdownView source={value} className={className} />
+  )
+}
+
 // ── Writing ──────────────────────────────────────────────────────────────────────────
 
 const highlight = HighlightStyle.define([
@@ -265,16 +305,20 @@ const ACTIONS: ReadonlyArray<{
   readonly keys?: string
   readonly run: (view: EditorView) => boolean
 }> = [
-  { label: 'Titre', icon: Heading2, run: (v) => prefix(v, () => '## ', /^#{1,6}\s+/) },
-  { label: 'Gras', icon: Bold, keys: 'Ctrl+B', run: (v) => wrap(v, '**') },
-  { label: 'Italique', icon: Italic, keys: 'Ctrl+I', run: (v) => wrap(v, '_') },
-  { label: 'Barré', icon: Strikethrough, run: (v) => wrap(v, '~~') },
-  { label: 'Liste', icon: List, run: (v) => prefix(v, () => '- ', LIST) },
-  { label: 'Liste numérotée', icon: ListOrdered, run: (v) => prefix(v, (i) => `${i + 1}. `, LIST) },
-  { label: 'Cases à cocher', icon: ListChecks, run: (v) => prefix(v, () => '- [ ] ', LIST) },
-  { label: 'Citation', icon: Quote, run: (v) => prefix(v, () => '> ', /^>\s?/) },
-  { label: 'Code', icon: Code, run: (v) => wrap(v, '`') },
-  { label: 'Lien', icon: LinkIcon, keys: 'Ctrl+K', run: link },
+  { label: $t('Titre'), icon: Heading2, run: (v) => prefix(v, () => '## ', /^#{1,6}\s+/) },
+  { label: $t('Gras'), icon: Bold, keys: 'Ctrl+B', run: (v) => wrap(v, '**') },
+  { label: $t('Italique'), icon: Italic, keys: 'Ctrl+I', run: (v) => wrap(v, '_') },
+  { label: $t('Barré'), icon: Strikethrough, run: (v) => wrap(v, '~~') },
+  { label: $t('Liste'), icon: List, run: (v) => prefix(v, () => '- ', LIST) },
+  {
+    label: $t('Liste numérotée'),
+    icon: ListOrdered,
+    run: (v) => prefix(v, (i) => `${i + 1}. `, LIST),
+  },
+  { label: $t('Cases à cocher'), icon: ListChecks, run: (v) => prefix(v, () => '- [ ] ', LIST) },
+  { label: $t('Citation'), icon: Quote, run: (v) => prefix(v, () => '> ', /^>\s?/) },
+  { label: $t('Code'), icon: Code, run: (v) => wrap(v, '`') },
+  { label: $t('Lien'), icon: LinkIcon, keys: 'Ctrl+K', run: link },
 ]
 
 export interface MarkdownEditorProps {
@@ -293,6 +337,17 @@ export interface MarkdownEditorProps {
   readonly minHeight?: number
   readonly label: string
   readonly className?: string
+  /**
+   * The columns the text may cite, inserted as `{{Libellé}}` at the caret — none: no menu
+   * (chapter 04 §2.2, « Variables »). The caller turns labels into names when it saves.
+   */
+  readonly fields?: readonly Field[]
+}
+
+/** Types a text at the caret, in place of the selection. */
+function insertText(view: EditorView, text: string): void {
+  view.dispatch(view.state.replaceSelection(text))
+  view.focus()
 }
 
 /** A Markdown editor: a toolbar, the source with its markup coloured, and a preview. */
@@ -308,6 +363,7 @@ export function MarkdownEditor({
   minHeight = 160,
   label,
   className,
+  fields = [],
 }: MarkdownEditorProps) {
   const host = useRef<HTMLDivElement>(null)
   const view = useRef<EditorView | null>(null)
@@ -354,7 +410,7 @@ export function MarkdownEditor({
           EditorView.lineWrapping,
           EditorState.readOnly.of(readOnly),
           EditorView.contentAttributes.of({ 'aria-label': label }),
-          placeholderExtension(placeholder ?? 'Écrire en Markdown…'),
+          placeholderExtension(placeholder ?? $t('Écrire en Markdown…')),
           keymap.of([...keys, ...historyKeymap, indentWithTab, ...defaultKeymap]),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) latest.current.onChange(update.state.doc.toString())
@@ -409,6 +465,43 @@ export function MarkdownEditor({
             <action.icon className="size-3.5" />
           </button>
         ))}
+        {fields.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                title={$t('Insérer la valeur d’une colonne')}
+                disabled={readOnly || mode === 'preview'}
+                onMouseDown={(e) => e.preventDefault()}
+                className="flex h-7 items-center gap-1 rounded px-1.5 text-xs text-muted-foreground hover:bg-background hover:text-foreground disabled:opacity-40"
+              >
+                <Braces className="size-3.5" />
+                {$t('Colonne')}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="max-h-72 overflow-y-auto"
+              // The person was writing: the caret goes back to the text.
+              onCloseAutoFocus={(e) => {
+                e.preventDefault()
+                view.current?.focus()
+              }}
+            >
+              {fields.map((f) => (
+                <DropdownMenuItem
+                  key={f.name}
+                  onSelect={() =>
+                    view.current !== null && insertText(view.current, `{{${f.label}}}`)
+                  }
+                >
+                  <FieldIcon kind={f.kind} format={f.format?.display} />
+                  {f.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <div className="flex-1" />
         <div className="flex rounded-md bg-background p-0.5 text-xs">
           {(['write', 'preview'] as const).map((m) => (
@@ -422,7 +515,7 @@ export function MarkdownEditor({
                 mode === m ? 'bg-muted font-medium' : 'text-muted-foreground',
               )}
             >
-              {m === 'write' ? 'Écrire' : 'Aperçu'}
+              {m === 'write' ? $t('Écrire') : $t('Aperçu')}
             </button>
           ))}
         </div>
@@ -438,7 +531,7 @@ export function MarkdownEditor({
           style={{ minHeight, maxHeight: minHeight * 2 }}
         >
           {value.trim() === '' ? (
-            <p className="text-sm text-muted-foreground">Rien à afficher.</p>
+            <p className="text-sm text-muted-foreground">{$t('Rien à afficher.')}</p>
           ) : (
             <MarkdownView source={value} />
           )}
@@ -451,12 +544,20 @@ export function MarkdownEditor({
 // ── In the grid ──────────────────────────────────────────────────────────────────────
 
 /**
- * A long-text cell: one line of what it says, the whole text rendered on hover, and a
- * Markdown editor opened over the cell by a double click — saved with Ctrl+Entrée, the
- * button, or a click elsewhere; Échap leaves it as it was.
+ * A long-text cell: one line of what it says, the whole text rendered on hover, and an
+ * editor opened over the cell by a double click — Markdown, or the rich editor for the
+ * HTML variant — saved with Ctrl+Entrée, the button, or a click elsewhere; Échap leaves
+ * it as it was.
+ *
+ * What the cell shows is the text as READ, the row's values in place of its citations;
+ * what the editor opens is the text as WRITTEN, read again for it (`useRawText`), the
+ * citations of a Markdown text shown by their columns' labels.
  */
 export function LongTextCell({
   value,
+  name,
+  rowId,
+  rich = false,
   label,
   readOnly,
   editing,
@@ -466,6 +567,11 @@ export function LongTextCell({
   onCommit,
 }: {
   readonly value: unknown
+  /** The field's physical name: the one its citations of other columns are resolved for. */
+  readonly name: string
+  readonly rowId: string
+  /** The HTML variant (chapter 04 §2.2). */
+  readonly rich?: boolean
   readonly label: string
   readonly readOnly: boolean
   readonly editing: boolean
@@ -475,23 +581,38 @@ export function LongTextCell({
   readonly onCommit: (value: string | null) => Promise<void>
 }) {
   const initial = typeof value === 'string' ? value : ''
-  const [draft, setDraft] = useState(initial)
+  const { fields } = useTableFields()
+  const columns = useMemo(() => citableColumns(fields, name), [fields, name])
+  const raw = useRawText(rowId, name, editing, initial)
+  /** What is being written — `null` until the text as written is read. */
+  const [draft, setDraft] = useState<string | null>(null)
+  /** The draft as it started: saved only when it moved. */
+  const start = useRef('')
   const done = useRef(false)
 
   useEffect(() => {
-    if (!editing) return
-    setDraft(initial)
-    done.current = false
-  }, [editing, initial])
+    if (editing) done.current = false
+    else setDraft(null)
+  }, [editing])
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the draft starts once per opening — a column relabelled meanwhile must not wipe what is being typed.
+  useEffect(() => {
+    if (!editing || raw === null) return
+    const opened = rich ? raw : templateToLabels(raw, columns)
+    start.current = opened
+    setDraft(opened)
+  }, [editing, raw])
 
   const finish = (save: boolean) => {
     if (done.current) return
     done.current = true
     onEndEdit()
-    if (save && draft !== initial) void onCommit(draft.trim() === '' ? null : draft)
+    if (!save || draft === null || draft === start.current) return
+    const next = rich ? draft : templateToNames(draft, columns)
+    void onCommit(next.trim() === '' ? null : next)
   }
 
-  const excerpt = markdownExcerpt(initial)
+  const excerpt = rich ? htmlToPlain(initial, 280) : markdownExcerpt(initial)
   const shown = (
     <button
       type="button"
@@ -522,7 +643,7 @@ export function LongTextCell({
               align="start"
               className="max-h-80 max-w-md overflow-hidden border bg-popover px-3 py-2.5 text-popover-foreground shadow-lg"
             >
-              <MarkdownView source={initial} className="text-xs" />
+              <LongTextView value={initial} rich={rich} className="text-xs" />
             </TooltipContent>
           </Tooltip>
         )}
@@ -538,24 +659,43 @@ export function LongTextCell({
         onInteractOutside={() => finish(true)}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <MarkdownEditor
-          value={draft}
-          onChange={setDraft}
-          onSubmit={() => finish(true)}
-          onCancel={() => finish(false)}
-          autoFocus
-          minHeight={180}
-          label={label}
-        />
+        {draft === null ? (
+          <p className="flex h-44 items-center justify-center text-sm text-muted-foreground">
+            {$t('Lecture du texte…')}
+          </p>
+        ) : rich ? (
+          <RichTextEditor
+            value={draft}
+            onChange={setDraft}
+            onSubmit={() => finish(true)}
+            fields={columns}
+            autoFocus
+            placeholder={label}
+            contentClassName="max-h-96 min-h-44 overflow-y-auto scroll-discret"
+          />
+        ) : (
+          <MarkdownEditor
+            value={draft}
+            onChange={setDraft}
+            onSubmit={() => finish(true)}
+            onCancel={() => finish(false)}
+            autoFocus
+            minHeight={180}
+            label={label}
+            fields={columns}
+          />
+        )}
         <div className="mt-2 flex items-center gap-2">
           <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-            Markdown · Ctrl+Entrée pour enregistrer · Échap pour annuler
+            {$t('{value} · Ctrl+Entrée pour enregistrer · Échap pour annuler', {
+              value: rich ? $t('Texte riche') : $t('Markdown'),
+            })}
           </p>
           <Button variant="ghost" size="sm" onClick={() => finish(false)}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button size="sm" onClick={() => finish(true)}>
-            Enregistrer
+            {$t('Enregistrer')}
           </Button>
         </div>
       </PopoverContent>

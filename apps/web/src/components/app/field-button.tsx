@@ -3,6 +3,7 @@
 import type { Row } from '@/components/app/grid/cell'
 import { type Field, api } from '@/lib/api/client'
 import { buttonUrl } from '@/lib/automations'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { ExternalLink, Loader2, Zap } from 'lucide-react'
@@ -46,7 +47,7 @@ export function FieldButton({
     setBusy(true)
     try {
       await api.runAutomation(config.automation, row._id)
-      toast(`« ${config.label} » lancé`)
+      toast($t('« {label} » lancé', { label: config.label }))
     } catch (e) {
       toast.error(messageFor(e))
     } finally {
@@ -61,7 +62,7 @@ export function FieldButton({
       onClick={(e) => void click(e)}
       onPointerDown={(e) => e.stopPropagation()}
       disabled={busy}
-      title={config.action === 'url' ? 'Ouvrir' : 'Lancer l’automatisation'}
+      title={config.action === 'url' ? $t('Ouvrir') : $t('Lancer l’automatisation')}
       className={cn(
         'inline-flex max-w-full items-center gap-1 rounded-md border bg-background font-medium shadow-xs transition-colors hover:bg-accent disabled:opacity-60',
         size === 'xs' ? 'h-6 px-2 text-xs' : 'h-7 px-2.5 text-sm',

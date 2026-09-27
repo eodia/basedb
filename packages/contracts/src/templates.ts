@@ -12,7 +12,14 @@
  * refused. Either way the issues name a path and say, in French, what is wrong.
  */
 
-export const TEMPLATE_FORMAT = 1 as const
+/**
+ * The newest format of a template. Format 2 adds the rich text of a long text (`rich`): a
+ * reader of format 1 would store its HTML as Markdown, so a template that holds one says 2,
+ * and an older instance leaves it out rather than misread it. A template without one is
+ * still written — and read everywhere — as format 1.
+ */
+export const TEMPLATE_FORMAT = 2 as const
+export type TemplateFormat = 1 | typeof TEMPLATE_FORMAT
 
 export const TEMPLATE_LIMITS = {
   bytes: 1_000_000,
@@ -182,6 +189,12 @@ export interface TemplateField {
     readonly currency?: string
     readonly rating_max?: number
   }
+  /**
+   * A `long_text` that holds HTML — the rich variant of chapter 04 §2.2: its sample values
+   * are HTML, sanitized by the server as they are written. Never the display column, never
+   * computed by the AI.
+   */
+  readonly rich?: boolean
   readonly formula?: string
   readonly rollup?: {
     /** The label of the relation followed. */
@@ -316,7 +329,8 @@ export interface TemplateAutomation {
 }
 
 export interface Template {
-  readonly format: typeof TEMPLATE_FORMAT
+  /** The lowest format that carries it: 2 when a field is a rich text, 1 otherwise. */
+  readonly format: TemplateFormat
   readonly key: string
   readonly label: string
   readonly summary: string
@@ -677,6 +691,8 @@ interface Known {
 
 class Checker {
   readonly issues: TemplateIssue[] = []
+  /** The format the template says it is written in. */
+  format: TemplateFormat = TEMPLATE_FORMAT
   constructor(readonly repair: boolean) {}
 
   say(path: string, message: string): void {
@@ -763,10 +779,11 @@ export function checkTemplate(
     c.say('', 'objet non sérialisable')
     return fail()
   }
-  if (raw.format !== undefined && raw.format !== TEMPLATE_FORMAT) {
-    c.say('format', `format ${String(raw.format)} inconnu ; seul le format 1 existe`)
+  if (raw.format !== undefined && raw.format !== 1 && raw.format !== TEMPLATE_FORMAT) {
+    c.say('format', `format ${String(raw.format)} inconnu ; seuls les formats 1 et 2 existent`)
     return fail()
   }
+  if (raw.format === 1) c.format = 1
 
   const label = c.text(raw, 'label', '', TEMPLATE_LIMITS.label, true)
   let key = c.text(raw, 'key', '', 64, !c.repair) ?? undefined
@@ -1046,7 +1063,7 @@ export function checkTemplate(
   if (!c.repair && c.issues.length > 0) return fail()
 
   const template: Template = {
-    format: TEMPLATE_FORMAT,
+    format: tables.some((t) => t.fields.some((f) => f.rich === true)) ? 2 : 1,
     key,
     label,
     summary,
@@ -1163,6 +1180,13 @@ function checkField(c: Checker, rf: unknown, path: string, first: boolean): Temp
     }
   }
 
+  if (rf.rich === true) {
+    if (field.kind !== 'long_text') c.say(`${path}.rich`, 'seul un texte long peut être riche')
+    else if (first) c.say(`${path}.rich`, 'la colonne d’affichage n’est pas un texte riche')
+    else if (c.format === 1) c.say(`${path}.rich`, 'un texte riche demande "format": 2')
+    else field.rich = true
+  }
+
   if (field.kind === 'formula') {
     const formula = c.text(rf, 'formula', path, 4000, true)
     if (formula === null) return null
@@ -1204,6 +1228,8 @@ function checkField(c: Checker, rf: unknown, path: string, first: boolean): Temp
       ra === null ? null : c.text(ra, 'prompt', `${path}.ai`, TEMPLATE_LIMITS.prompt, true)
     if (!TEMPLATE_AI_KINDS.has(field.kind)) {
       c.say(`${path}.ai`, 'l’IA ne calcule pas ce type de champ')
+    } else if (field.rich === true) {
+      c.say(`${path}.ai`, 'l’IA n’écrit pas de texte riche')
     } else if (first) {
       c.say(`${path}.ai`, 'la colonne d’affichage n’est pas calculée par l’IA')
     } else if (ra !== null && prompt !== null) {

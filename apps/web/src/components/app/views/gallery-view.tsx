@@ -5,6 +5,7 @@ import { RecordCard, coverOf } from '@/components/app/views/card'
 import { usePagedRows } from '@/components/app/views/paged'
 import { Button } from '@/components/ui/button'
 import type { Field, Table } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { type GallerySpec, nextHandOrder, orderByHand, pick, titleFieldOf } from '@/lib/views'
 import {
@@ -100,7 +101,7 @@ export function GalleryView({
   if (!loading && rows.length === 0) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
-        Aucune ligne à montrer.
+        {$t('Aucune ligne à montrer.')}
       </div>
     )
   }
@@ -142,7 +143,7 @@ export function GalleryView({
           <Loader2 className="size-4 animate-spin text-muted-foreground" />
         ) : hasMore ? (
           <Button variant="outline" size="sm" onClick={loadMore}>
-            Charger plus
+            {$t('Charger plus')}
           </Button>
         ) : null}
       </div>

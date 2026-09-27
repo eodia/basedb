@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { BasedbError } from '../errors/index.js'
 import type { Executor, Pools } from '../runtime/pool.js'
+import { mailTexts } from './mail-texts.js'
 import { checkPasswordPolicy, dummyVerify, hashPassword, verifyPassword } from './password.js'
 import {
   ELEVATION_MS,
@@ -427,6 +428,15 @@ export async function whoAmI(
   /** A temporary password is in use: the interface asks for a new one before anything. */
   readonly mustChangePassword: boolean
   readonly elevatedUntil: string | null
+  /** Whether the account has a password — else it signs in through a provider only. */
+  readonly hasPassword: boolean
+  /** How dates read, and which day opens a week (chapter 11 §10). */
+  readonly dateFormat: 'dmy' | 'iso'
+  readonly weekStart: 0 | 1
+  /** The natures of notification the person refused (chapter 16 §2.3). */
+  readonly mutedNotifications: readonly string[]
+  /** The language chosen, or `null`: the browser's (chapter 11 §10). */
+  readonly locale: string | null
 }> {
   const rows = await pools.withConnection('catalog', (exec) =>
     exec.query<{
@@ -435,12 +445,20 @@ export async function whoAmI(
       is_instance_admin: boolean
       must_change_password: boolean
       in_admins: boolean
+      has_password: boolean
+      date_format: 'dmy' | 'iso'
+      week_start: number
+      muted_notifications: string[]
+      locale: string | null
     }>(
       `SELECT u.email, u.display_name, u.is_instance_admin, u.must_change_password,
               EXISTS (SELECT 1 FROM _basedb.role_member m
                         JOIN _basedb.role r ON r.id = m.role_id
                        WHERE m.user_id = u.id AND r.name = 'tenant_admin'
-                         AND r.is_system AND r.deleted_at IS NULL) AS in_admins
+                         AND r.is_system AND r.deleted_at IS NULL) AS in_admins,
+              EXISTS (SELECT 1 FROM _basedb.auth_identity i
+                       WHERE i.user_id = u.id AND i.provider = 'password') AS has_password,
+              u.date_format, u.week_start, u.muted_notifications, u.locale
          FROM _basedb.app_user u WHERE u.id = $1`,
       [authenticated.userId],
     ),
@@ -457,6 +475,11 @@ export async function whoAmI(
     isAdmin: user.is_instance_admin || user.in_admins,
     mustChangePassword: user.must_change_password,
     elevatedUntil: authenticated.elevatedUntil?.toISOString() ?? null,
+    hasPassword: user.has_password,
+    dateFormat: user.date_format,
+    weekStart: user.week_start === 0 ? 0 : 1,
+    mutedNotifications: user.muted_notifications,
+    locale: user.locale,
   }
 }
 
@@ -596,7 +619,13 @@ export type Mailer = (message: MailMessage) => Promise<void>
  */
 export async function requestPasswordReset(
   pools: Pools,
-  request: { readonly email: string; readonly now?: Date; readonly mailer?: Mailer },
+  request: {
+    readonly email: string
+    readonly now?: Date
+    readonly mailer?: Mailer
+    /** The requester's `Accept-Language`: the mail's language when the account has none. */
+    readonly acceptLanguage?: string | null
+  },
 ): Promise<void> {
   const now = request.now ?? new Date()
   const email = normalizeEmail(request.email)
@@ -627,7 +656,11 @@ export async function requestPasswordReset(
       ],
       'insert',
     )
-    return { value, email: identity.email }
+    const [account] = await exec.query<{ locale: string | null }>(
+      'SELECT locale FROM _basedb.app_user WHERE id = $1',
+      [identity.userId],
+    )
+    return { value, email: identity.email, locale: account?.locale ?? null }
   })
 
   if (secret === null || request.mailer === undefined) return
@@ -637,7 +670,7 @@ export async function requestPasswordReset(
   await request
     .mailer({
       to: secret.email,
-      subject: 'basedb — réinitialisation de votre mot de passe',
+      subject: mailTexts(secret.locale, request.acceptLanguage).resetSubject,
       body: secret.value,
     })
     .catch(() => undefined)

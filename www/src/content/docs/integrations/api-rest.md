@@ -13,7 +13,7 @@ Ses URL portent les noms physiques — ceux que vous lisez aussi en SQL.
 
 ## Un jeton
 
-Dans l’interface, menu **⋯** de la base → **Jetons API et MCP…** : on y crée un **jeton
+Dans l’interface, menu **⋯** de la base → **API et agents** → **Jetons API et MCP…** : on y crée un **jeton
 d’intégration** limité à cette base, en lecture seule par défaut, après avoir confirmé son mot de
 passe. Il n’est affiché qu’une fois ; placez-le dans une variable d’environnement.
 
@@ -36,6 +36,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `limit`, `cursor` | pagination par curseur chiffré (`next_cursor` dans la réponse) |
 | `links=display` | les relations avec leur valeur d’affichage |
 | `count=exact` | le total, plafonné à 100 000 |
+| `variables=raw` | les textes longs tels qu’écrits, `{{colonne}}` compris, plutôt qu’avec les [valeurs de la ligne](/basedb/fonctionnalites/tables-et-champs/#texte-riche-et-variables) |
 
 Les opérateurs : `eq`, `ne`, `eq_ci`, `contains`, `starts_with`, `ends_with`, `in`, `is_null`,
 `gt`, `gte`, `lt`, `lte`, `between`, combinés par `and`, `or`, `not` et des parenthèses. Un

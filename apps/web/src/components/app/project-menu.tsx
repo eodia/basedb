@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { type DeletedBase, type Project, api } from '@/lib/api/client'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import {
@@ -109,7 +110,7 @@ export function ProjectMenu({
     <DropdownMenuTrigger asChild>
       <button
         type="button"
-        aria-label={compact ? (project?.label ?? 'Aucun projet') : undefined}
+        aria-label={compact ? (project?.label ?? $t('Aucun projet')) : undefined}
         className={cn(
           'flex w-full items-center gap-2.5 rounded-lg p-2 text-left transition-colors hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent',
           compact && 'justify-center p-0.5',
@@ -137,12 +138,12 @@ export function ProjectMenu({
           <>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">
-                {project?.label ?? 'Aucun projet'}
+                {project?.label ?? $t('Aucun projet')}
               </span>
               <span className="block truncate text-[11px] text-muted-foreground">
                 {project === null
-                  ? 'Projet'
-                  : `Projet · ${baseCount} ${baseCount > 1 ? 'bases' : 'base'}`}
+                  ? $t('Projet')
+                  : $tp(baseCount, 'Projet · {count} base', 'Projet · {count} bases')}
               </span>
             </span>
             <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
@@ -165,16 +166,16 @@ export function ProjectMenu({
         {compact ? (
           <Tooltip>
             <TooltipTrigger asChild>{trigger}</TooltipTrigger>
-            <TooltipContent side="right">{project?.label ?? 'Aucun projet'}</TooltipContent>
+            <TooltipContent side="right">{project?.label ?? $t('Aucun projet')}</TooltipContent>
           </Tooltip>
         ) : (
           trigger
         )}
 
         <DropdownMenuContent side={compact ? 'right' : 'bottom'} align="start" className="w-64">
-          <DropdownMenuLabel>Projets</DropdownMenuLabel>
+          <DropdownMenuLabel>{$t('Projets')}</DropdownMenuLabel>
           {projects.length === 0 && (
-            <div className="px-2 py-1.5 text-sm text-muted-foreground">Aucun projet.</div>
+            <div className="px-2 py-1.5 text-sm text-muted-foreground">{$t('Aucun projet.')}</div>
           )}
           {projects.map((p) => (
             <DropdownMenuItem key={p.id} onSelect={() => onSelect(p.id)}>
@@ -189,18 +190,18 @@ export function ProjectMenu({
           {/* Everyone creates their own projects (05 §15.1). */}
           <DropdownMenuItem onSelect={onNew}>
             <Plus className="size-4" />
-            Nouveau projet
+            {$t('Nouveau projet')}
           </DropdownMenuItem>
 
           {project !== null && canEdit && (
             <>
               <DropdownMenuItem onSelect={() => setSharing(true)}>
                 <UserPlus className="size-4" />
-                Partager « {project.label} »…
+                {$t('Partager « {label} »…', { label: project.label })}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setEditing(true)}>
                 <Pencil className="size-4" />
-                Modifier « {project.label} »
+                {$t('Modifier « {label} »', { label: project.label })}
               </DropdownMenuItem>
             </>
           )}
@@ -210,7 +211,7 @@ export function ProjectMenu({
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="size-4" />
-              Supprimer « {project.label} »
+              {$t('Supprimer « {label} »', { label: project.label })}
             </DropdownMenuItem>
           )}
 
@@ -220,10 +221,10 @@ export function ProjectMenu({
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <History className="size-4" />
-                  Bases supprimées ({deleted.length})
+                  {$t('Bases supprimées ({deletedCount})', { deletedCount: deleted.length })}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="w-64">
-                  <DropdownMenuLabel>Cliquez pour restaurer</DropdownMenuLabel>
+                  <DropdownMenuLabel>{$t('Cliquez pour restaurer')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {deleted.map((d) => (
                     <DropdownMenuItem
@@ -242,13 +243,13 @@ export function ProjectMenu({
                       <History className="size-4" />
                       <span className="min-w-0 flex-1 truncate">{d.label}</span>
                       <span className="text-[10px] tabular-nums text-muted-foreground">
-                        {new Date(d.deleted_at).toLocaleDateString('fr-FR')}
+                        {new Date(d.deleted_at).toLocaleDateString(intlLocale())}
                       </span>
                     </DropdownMenuItem>
                   ))}
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                    Purger — définitif, après export
+                    {$t('Purger — définitif, après export')}
                   </DropdownMenuLabel>
                   {deleted.map((d) => (
                     <DropdownMenuItem
@@ -264,7 +265,9 @@ export function ProjectMenu({
                       }
                     >
                       <Trash2 className="size-4" />
-                      <span className="min-w-0 flex-1 truncate">Purger « {d.label} »…</span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {$t('Purger « {label} »…', { label: d.label })}
+                      </span>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuSubContent>
@@ -398,22 +401,23 @@ export function ProjectDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {project === undefined ? 'Nouveau projet' : 'Modifier le projet'}
+            {project === undefined ? $t('Nouveau projet') : $t('Modifier le projet')}
           </DialogTitle>
           <DialogDescription>
-            Un projet regroupe des bases. Les droits accordés sur un projet valent pour toutes ses
-            bases et toutes leurs tables, y compris celles créées plus tard.
+            {$t(
+              'Un projet regroupe des bases. Les droits accordés sur un projet valent pour toutes ses bases et toutes leurs tables, y compris celles créées plus tard.',
+            )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="project-label">Libellé</Label>
+            <Label htmlFor="project-label">{$t('Libellé')}</Label>
             <div className="flex items-center gap-2">
               {/* The look sits before the name, where the project switcher draws it. */}
               <LookButton
                 look={look}
-                label={`Apparence du projet ${label}`.trim()}
+                label={$t('Apparence du projet {label}', { label }).trim()}
                 onChange={(patch) => setLook((current) => ({ ...current, ...patch }))}
                 disabled={busy}
                 className="size-9"
@@ -429,7 +433,7 @@ export function ProjectDialog({
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Couleur, pictogramme ou image : ce qui distingue le projet dans le sélecteur.
+              {$t('Couleur, pictogramme ou image : ce qui distingue le projet dans le sélecteur.')}
             </p>
           </div>
 
@@ -438,7 +442,7 @@ export function ProjectDialog({
             value={description}
             onChange={setDescription}
             onSubmit={() => void submit()}
-            placeholder="À quoi sert ce projet ?"
+            placeholder={$t('À quoi sert ce projet ?')}
             disabled={busy}
           />
 
@@ -447,10 +451,14 @@ export function ProjectDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button onClick={() => void submit()} disabled={!ready}>
-            {busy ? 'Enregistrement…' : project === undefined ? 'Créer le projet' : 'Enregistrer'}
+            {busy
+              ? $t('Enregistrement…')
+              : project === undefined
+                ? $t('Créer le projet')
+                : $t('Enregistrer')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -499,11 +507,15 @@ function DeleteProjectDialog({
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Supprimer « {project.label} » ?</DialogTitle>
+          <DialogTitle>{$t('Supprimer « {label} » ?', { label: project.label })}</DialogTitle>
           <DialogDescription>
             {count > 0
-              ? `Ce projet contient encore ${count} ${count > 1 ? 'bases' : 'base'} : supprimez-les d’abord, chacune depuis son menu.`
-              : 'Le projet est vide. Les droits accordés dessus disparaissent avec lui.'}
+              ? $tp(
+                  count,
+                  'Ce projet contient encore {count} base : supprimez-la d’abord, depuis son menu.',
+                  'Ce projet contient encore {count} bases : supprimez-les d’abord, chacune depuis son menu.',
+                )
+              : $t('Le projet est vide. Les droits accordés dessus disparaissent avec lui.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -515,11 +527,11 @@ function DeleteProjectDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button variant="destructive" onClick={() => void submit()} disabled={busy || count > 0}>
             {busy && <Loader2 className="size-4 animate-spin" />}
-            {busy ? 'Suppression…' : 'Supprimer le projet'}
+            {busy ? $t('Suppression…') : $t('Supprimer le projet')}
           </Button>
         </DialogFooter>
       </DialogContent>

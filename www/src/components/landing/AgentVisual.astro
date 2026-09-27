@@ -1,42 +1,49 @@
 ---
 /* An agent asks through MCP; the structure change waits for a person. */
+import { type Locale, i18n } from '../../i18n';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, html } = i18n(locale);
+const v = t.agentVisual;
 ---
 
 <div class="av">
 	<div class="card chat">
 		<div class="top">
 			<span class="agent">✦</span>
-			<b>Agent</b>
-			<span class="via">connecté par MCP · jeton « Ventes »</span>
+			<b>{v.agent}</b>
+			<span class="via">{v.via}</span>
 		</div>
 		<div class="msgs">
-			<div class="msg user">Combien d’opportunités en négociation, et pour quel montant ?</div>
+			<div class="msg user">{v.question}</div>
 			<div class="tool">
 				<code>list_records</code>
-				<span>opportunites · statut = Négociation</span>
+				<span>{v.listArgs}</span>
 			</div>
-			<div class="msg bot">
-				Deux opportunités, <b>182 000 €</b> au total : Migration ERP (130 000 €) et Suivi de flotte (52 000 €).
-			</div>
-			<div class="msg user">Ajoute un champ « Probabilité » en pourcentage.</div>
+			<div class="msg bot" set:html={html(v.answer)} />
+			<div class="msg user">{v.request}</div>
 			<div class="tool">
 				<code>propose_add_field</code>
-				<span>opportunites · Probabilité · number</span>
+				<span>{v.proposeArgs}</span>
 			</div>
-			<div class="msg bot">C’est proposé : une personne de l’équipe doit l’approuver dans basedb.</div>
+			<div class="msg bot">{v.proposed}</div>
 		</div>
 	</div>
 
 	<div class="card proposal">
 		<div class="p-top">
-			<span class="badge">Proposition</span>
-			<span class="exp">expire dans 23 h</span>
+			<span class="badge">{v.badge}</span>
+			<span class="exp">{v.expires}</span>
 		</div>
-		<p class="what">Ajouter le champ <b>« Probabilité »</b> (Nombre) à <b>Opportunités</b></p>
-		<p class="by">Proposée par l’agent · jeton « Ventes »</p>
+		<p class="what" set:html={html(v.what)} />
+		<p class="by">{v.by}</p>
 		<div class="actions">
-			<span class="btn ghost">Refuser</span>
-			<span class="btn">Approuver</span>
+			<span class="btn ghost">{v.refuse}</span>
+			<span class="btn">{v.approve}</span>
 		</div>
 	</div>
 </div>

@@ -53,6 +53,14 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
+/* Titles and paragraphs break Japanese between phrases (where the browser knows how),
+   and Korean between words rather than inside them. */
+html:lang(ja) :is(h1, h2, h3, p) {
+  word-break: auto-phrase;
+}
+html:lang(ko) :is(h1, h2, h3, p) {
+  word-break: keep-all;
+}
 a {
   color: inherit;
   text-decoration: none;

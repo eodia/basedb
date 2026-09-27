@@ -615,6 +615,14 @@ describe('physical names and the purge, over HTTP — chapter 06', () => {
       await call(admin, `${V1}/admin/physical/table/${table.id}`),
     )
     expect(impact).toMatchObject({ current: 'clients', alias_allowed: true })
+    // The suggestion follows the label typed in the same dialog.
+    const typed = await data<{ suggested: string }>(
+      await call(
+        admin,
+        `${V1}/admin/physical/table/${table.id}?label=${encodeURIComponent('Comptes')}`,
+      ),
+    )
+    expect(typed.suggested).toBe('comptes')
 
     const renamed = await call(admin, `${V1}/admin/physical/table/${table.id}/rename`, 'POST', {
       name: 'comptes',
@@ -642,6 +650,26 @@ describe('physical names and the purge, over HTTP — chapter 06', () => {
     })
     expect(retired.status).toBe(409)
     expect(((await retired.json()) as { code: string }).code).toBe('NAME_RETIRED')
+
+    // A field is addressed by its names — its catalog id is not in the description.
+    const field = `${V1}/admin/bases/${base.name}/tables/comptes/fields/nom/physical`
+    const fieldImpact = await data<{ current: string; suggested: string; alias_allowed: boolean }>(
+      await call(admin, `${field}?label=${encodeURIComponent('Raison sociale')}`),
+    )
+    expect(fieldImpact).toMatchObject({
+      current: 'nom',
+      suggested: 'raison_sociale',
+      alias_allowed: false,
+    })
+    const column = await call(admin, `${field}/rename`, 'POST', {
+      name: 'raison_sociale',
+      confirm: 'nom',
+    })
+    expect(column.status).toBe(200)
+    const described = await data<{ tables: Array<{ fields: Array<{ name: string }> }> }>(
+      await call(admin, `${V1}/meta/bases/${base.name}`),
+    )
+    expect(described.tables[0]?.fields.map((f) => f.name)).toContain('raison_sociale')
 
     await call(admin, `${V1}/admin/bases/${base.name}/tables/comptes`, 'DELETE')
     const deleted = await data<Array<{ id: string; label: string }>>(

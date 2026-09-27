@@ -3,21 +3,16 @@
 import { EnvironmentBadge } from '@/components/app/environment-badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Choice } from '@/components/ui/choice'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   type ApplyReport,
   type EnvironmentFamily,
   type EnvironmentSummary,
   api,
 } from '@/lib/api/client'
+import { $t, $tp } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { Layers, Loader2, Plus, Trash2, X } from 'lucide-react'
@@ -32,16 +27,15 @@ import { useCallback, useEffect, useState } from 'react'
  * deletes it the way a base is deleted: its tables are relegated, not destroyed.
  */
 
-const EXPLANATION =
-  'Chaque environnement a son propre schéma, ses tables et ses lignes. Un nouvel environnement reçoit une copie de la structure — sans les lignes, qui se synchronisent ensuite depuis « Comparer les environnements ».'
+const EXPLANATION = $t(
+  'Chaque environnement a son propre schéma, ses tables et ses lignes. Un nouvel environnement reçoit une copie de la structure — sans les lignes, qui se synchronisent ensuite depuis « Comparer les environnements ».',
+)
 
 /** What the copy of a structure did, said in one line — and its failures, if any. */
 export function reportLine(report: ApplyReport): string {
-  const parts = [
-    `${report.applied} étape${report.applied > 1 ? 's' : ''} appliquée${report.applied > 1 ? 's' : ''}`,
-  ]
-  if (report.skipped > 0) parts.push(`${report.skipped} ignorée${report.skipped > 1 ? 's' : ''}`)
-  if (report.failed > 0) parts.push(`${report.failed} en échec`)
+  const parts = [$tp(report.applied, '{count} étape appliquée', '{count} étapes appliquées')]
+  if (report.skipped > 0) parts.push($tp(report.skipped, '{count} ignorée', '{count} ignorées'))
+  if (report.failed > 0) parts.push($t('{failed} en échec', { failed: report.failed }))
   return parts.join(' · ')
 }
 
@@ -88,7 +82,11 @@ function EnvironmentRow({
     try {
       const migration = await api.deleteEnvironment(base, env.name)
       if (migration.status !== 'applied') {
-        setError(`La suppression s’est arrêtée à l’étape « ${migration.step_label ?? '?'} ».`)
+        setError(
+          $t('La suppression s’est arrêtée à l’étape « {value} ».', {
+            value: migration.step_label ?? '?',
+          }),
+        )
         return
       }
       onChanged()
@@ -124,15 +122,15 @@ function EnvironmentRow({
           }}
           maxLength={60}
           disabled={disabled || busy}
-          aria-label={`Nom de l’environnement ${env.environment}`}
+          aria-label={$t('Nom de l’environnement {environment}', { environment: env.environment })}
           className="h-8"
         />
         {env.production ? (
           <span
             className="w-8 shrink-0 text-center text-[0.7rem] text-muted-foreground"
-            title="L’environnement par défaut"
+            title={$t('L’environnement par défaut')}
           >
-            défaut
+            {$t('défaut')}
           </span>
         ) : (
           <Button
@@ -140,7 +138,9 @@ function EnvironmentRow({
             size="icon-sm"
             onClick={() => setConfirming(true)}
             disabled={disabled || busy}
-            aria-label={`Supprimer l’environnement ${env.environment}`}
+            aria-label={$t('Supprimer l’environnement {environment}', {
+              environment: env.environment,
+            })}
             className="shrink-0 text-muted-foreground hover:text-destructive"
           >
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
@@ -148,20 +148,22 @@ function EnvironmentRow({
         )}
       </div>
       <p className="pl-26 text-xs text-muted-foreground">
-        <span className="font-mono">{env.name}</span> · {env.tableCount} table
-        {env.tableCount > 1 ? 's' : ''}
+        <span className="font-mono">{env.name}</span> ·{' '}
+        {$tp(env.tableCount, '{count} table', '{count} tables')}
       </p>
       {confirming && (
         <div className="ml-26 flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs">
           <span className="min-w-0 flex-1">
-            Supprimer « {env.environment} » ? Ses tables sont reléguées, pas détruites : la base
-            reste restaurable.
+            {$t(
+              'Supprimer « {environment} » ? Ses tables sont reléguées, pas détruites : la base reste restaurable.',
+              { environment: env.environment },
+            )}
           </span>
           <Button variant="ghost" size="sm" onClick={() => setConfirming(false)} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button variant="destructive" size="sm" onClick={() => void remove()} disabled={busy}>
-            Supprimer
+            {$t('Supprimer')}
           </Button>
         </div>
       )}
@@ -231,7 +233,7 @@ export function EnvironmentsEditor({
         <Layers className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1 space-y-1.5">
           <CardTitle className="flex items-center gap-2">
-            Environnements
+            {$t('Environnements')}
             {environments.length > 0 && (
               <span className="rounded-full bg-muted px-1.5 py-0.5 text-[0.7rem] font-medium text-muted-foreground tabular-nums">
                 {environments.length}
@@ -276,28 +278,20 @@ export function EnvironmentsEditor({
             placeholder="Ex. Recette"
             maxLength={60}
             disabled={disabled || busy || family === null}
-            aria-label="Nom du nouvel environnement"
+            aria-label={$t('Nom du nouvel environnement')}
             className="h-8"
           />
           {environments.length > 1 && (
-            <Select
-              value={source === '' ? (environments[0]?.name ?? '') : source}
+            <Choice
+              value={source === '' ? (environments[0]?.name ?? null) : source}
               onValueChange={setSource}
-            >
-              <SelectTrigger
-                className="h-8 w-52 shrink-0 whitespace-nowrap"
-                aria-label="Copier la structure de"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {environments.map((env) => (
-                  <SelectItem key={env.id} value={env.name}>
-                    Copie de {env.environment}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              options={environments.map((env) => ({
+                value: env.name,
+                label: $t('Copie de {environment}', { environment: env.environment }),
+              }))}
+              aria-label={$t('Copier la structure de')}
+              className="w-52 shrink-0"
+            />
           )}
           <Button
             size="sm"
@@ -307,7 +301,7 @@ export function EnvironmentsEditor({
             className="shrink-0"
           >
             {busy ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-            {busy ? 'Copie de la structure…' : 'Ajouter'}
+            {busy ? $t('Copie de la structure…') : $t('Ajouter')}
           </Button>
         </div>
 
@@ -322,7 +316,10 @@ export function EnvironmentsEditor({
           >
             <div className="min-w-0 flex-1">
               <p>
-                « {report.label} » créé — {reportLine(report.report)}.
+                {$t('« {label} » créé — {report}.', {
+                  label: report.label,
+                  report: reportLine(report.report),
+                })}
               </p>
               {report.report.results
                 .filter((r) => r.outcome !== 'applied')
@@ -335,7 +332,7 @@ export function EnvironmentsEditor({
             <button
               type="button"
               onClick={() => setReport(null)}
-              aria-label="Fermer"
+              aria-label={$t('Fermer')}
               className="text-muted-foreground hover:text-foreground"
             >
               <X className="size-3.5" />
@@ -379,20 +376,23 @@ export function NewEnvironmentsField({
         <Layers className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1 space-y-1.5">
           <CardTitle className="flex items-center gap-2">
-            Environnements
+            {$t('Environnements')}
             <span className="rounded-full bg-muted px-1.5 py-0.5 text-[0.7rem] font-medium text-muted-foreground tabular-nums">
               {value.length + 1}
             </span>
           </CardTitle>
           <CardDescription>
-            Facultatif. Production est l’environnement par défaut ; les autres en reçoivent une
-            copie de la structure.
+            {$t(
+              'Facultatif. Production est l’environnement par défaut ; les autres en reçoivent une copie de la structure.',
+            )}
           </CardDescription>
         </div>
       </CardHeader>
       <CardContent className="space-y-2.5">
         <div className="flex flex-wrap items-center gap-1.5">
-          <EnvironmentBadge environment={{ label: 'Production', production: true, position: 0 }} />
+          <EnvironmentBadge
+            environment={{ label: $t('Production'), production: true, position: 0 }}
+          />
           {value.map((label, index) => (
             <span key={label} className="inline-flex items-center gap-0.5">
               <EnvironmentBadge environment={{ label, production: false, position: index + 1 }} />
@@ -400,7 +400,7 @@ export function NewEnvironmentsField({
                 type="button"
                 onClick={() => onChange(value.filter((v) => v !== label))}
                 disabled={disabled}
-                aria-label={`Retirer ${label}`}
+                aria-label={$t('Retirer {label}', { label })}
                 className="text-muted-foreground hover:text-foreground"
               >
                 <X className="size-3" />
@@ -419,8 +419,8 @@ export function NewEnvironmentsField({
                 add()
               }
             }}
-            placeholder="Ex. Recette, Développement…"
-            aria-label="Nouvel environnement"
+            placeholder={$t('Ex. Recette, Développement…')}
+            aria-label={$t('Nouvel environnement')}
             maxLength={60}
             disabled={disabled}
             className="h-8"
@@ -432,7 +432,7 @@ export function NewEnvironmentsField({
             disabled={disabled || draft.trim() === ''}
           >
             <Plus className="size-4" />
-            Ajouter
+            {$t('Ajouter')}
           </Button>
         </div>
       </CardContent>

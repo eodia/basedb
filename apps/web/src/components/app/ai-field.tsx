@@ -3,6 +3,7 @@
 import { FieldIcon } from '@/components/app/field-icon'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Choice } from '@/components/ui/choice'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +21,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { type AiFieldInput, type AiFieldStatus, type Field, api } from '@/lib/api/client'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { reasonFor, sentenceFor } from '@/lib/messages'
 import {
   DAY_STEPS,
@@ -80,10 +82,10 @@ export const acceptsAi = (kind: string | undefined) => kind !== undefined && AI_
 /** What the model's answer must be, said to the author of a field that is not free text. */
 const ANSWER: Readonly<Record<string, string>> = {
   url: 'une adresse web',
-  number: 'un nombre',
-  select: 'une des valeurs de la liste',
-  boolean: 'oui ou non',
-  date: 'une date',
+  number: $t('un nombre'),
+  select: $t('une des valeurs de la liste'),
+  boolean: $t('oui ou non'),
+  date: $t('une date'),
 }
 
 /** The switch that makes a field computed by the AI. */
@@ -100,9 +102,9 @@ export function AiToggle({
     <div className="flex items-center gap-3 rounded-md border px-3 py-2.5">
       <Sparkles className="size-4 shrink-0 text-violet-500" />
       <label htmlFor="field-ai" className="min-w-0 flex-1 cursor-pointer">
-        <span className="block text-sm font-medium">IA</span>
+        <span className="block text-sm font-medium">{$t('IA')}</span>
         <span className="block text-xs text-muted-foreground">
-          Le champ est rempli par l’IA, ligne par ligne, à partir d’une consigne.
+          {$t('Le champ est rempli par l’IA, ligne par ligne, à partir d’une consigne.')}
         </span>
       </label>
       <Switch id="field-ai" checked={checked} onCheckedChange={onChange} disabled={disabled} />
@@ -229,8 +231,10 @@ export function AiFieldForm({
       />
       {kind !== undefined && ANSWER[kind] !== undefined && (
         <p className="-mt-3 text-xs text-muted-foreground">
-          La réponse doit être {ANSWER[kind]} : le modèle en est averti, et une réponse qui n’en
-          contient pas laisse la cellule vide.
+          {$t(
+            'La réponse doit être {answer} : le modèle en est averti, et une réponse qui n’en contient pas laisse la cellule vide.',
+            { answer: ANSWER[kind] },
+          )}
         </p>
       )}
 
@@ -245,13 +249,19 @@ export function AiFieldForm({
           className="mt-0.5"
         />
         <label htmlFor="ai-consent" className="cursor-pointer leading-snug">
-          J’accepte que, pour chaque ligne, les valeurs
-          {known.length === 0
-            ? ' des colonnes citées'
-            : ` de ${known.map((k) => `« ${k} »`).join(', ')}`}{' '}
-          soient envoyées au fournisseur d’IA configuré sur cette instance.
+          {$t(
+            'J’accepte que, pour chaque ligne, les valeurs{value} soient envoyées au fournisseur d’IA configuré sur cette instance.',
+            {
+              value:
+                known.length === 0
+                  ? $t(' des colonnes citées')
+                  : $t(' de {columns}', {
+                      columns: known.map((k) => $t('« {name} »', { name: k })).join(', '),
+                    }),
+            },
+          )}
           <span className="mt-0.5 block text-xs text-muted-foreground">
-            Un appel par ligne et par calcul, journalisé et plafonné par heure.
+            {$t('Un appel par ligne et par calcul, journalisé et plafonné par heure.')}
           </span>
         </label>
       </div>
@@ -302,13 +312,13 @@ function PromptEditor({
     <div className="space-y-1.5">
       <div className="flex items-end justify-between gap-2">
         <label htmlFor="ai-prompt" className="text-sm text-muted-foreground">
-          Consigne
+          {$t('Consigne')}
         </label>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" disabled={disabled || fields.length === 0}>
               <Plus className="size-3.5" />
-              Insérer une colonne
+              {$t('Insérer une colonne')}
               <ChevronDown className="size-3.5 opacity-60" />
             </Button>
           </DropdownMenuTrigger>
@@ -333,20 +343,20 @@ function PromptEditor({
         rows={5}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Résume {{Notes}} en une phrase, sur un ton neutre."
+        placeholder={$t('Résume {{Notes}} en une phrase, sur un ton neutre.')}
         className="font-mono text-[13px] leading-relaxed"
       />
       {cited.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <span className="text-muted-foreground">Colonnes citées :</span>
+          <span className="text-muted-foreground">{$t('Colonnes citées :')}</span>
           {cited.map((c) =>
             c.field === null ? (
               <span
                 key={c.raw}
                 className="rounded bg-destructive/10 px-1.5 py-0.5 text-destructive"
-                title="Aucune colonne lisible de la table ne porte ce nom"
+                title={$t('Aucune colonne lisible de la table ne porte ce nom')}
               >
-                {c.raw} — inconnue
+                {$t('{raw} — inconnue', { raw: c.raw })}
               </span>
             ) : (
               <span key={c.raw} className="flex items-center gap-1 rounded bg-muted px-1.5 py-0.5">
@@ -358,21 +368,21 @@ function PromptEditor({
         </div>
       )}
       <p className="text-xs leading-snug text-muted-foreground">
-        Ce que le modèle doit écrire pour chaque ligne. Chaque {'{{colonne}}'} est remplacée par la
-        valeur de la ligne ; la réponse est écrite dans la cellule, lue dans le type du champ. Quand
-        l’une de ces colonnes change, la cellule est recalculée.
+        {$t(
+          'Ce que le modèle doit écrire pour chaque ligne. Chaque {{colonne}} est remplacée par la valeur de la ligne ; la réponse est écrite dans la cellule, lue dans le type du champ. Quand l’une de ces colonnes change, la cellule est recalculée.',
+        )}
       </p>
     </div>
   )
 }
 
 const FREQUENCIES: ReadonlyArray<{ readonly value: Frequency; readonly label: string }> = [
-  { value: 'minutes', label: 'Toutes les N minutes' },
-  { value: 'hours', label: 'Toutes les N heures' },
-  { value: 'days', label: 'Tous les jours' },
-  { value: 'weekly', label: 'Chaque semaine' },
-  { value: 'monthly', label: 'Chaque mois' },
-  { value: 'custom', label: 'Expression cron (avancé)' },
+  { value: 'minutes', label: $t('Toutes les N minutes') },
+  { value: 'hours', label: $t('Toutes les N heures') },
+  { value: 'days', label: $t('Tous les jours') },
+  { value: 'weekly', label: $t('Chaque semaine') },
+  { value: 'monthly', label: $t('Chaque mois') },
+  { value: 'custom', label: $t('Expression cron (avancé)') },
 ]
 
 function RefreshEditor({
@@ -429,18 +439,20 @@ function RefreshEditor({
 
   return (
     <fieldset className="space-y-2">
-      <legend className="mb-2 text-sm text-muted-foreground">Rafraîchissement</legend>
+      <legend className="mb-2 text-sm text-muted-foreground">{$t('Rafraîchissement')}</legend>
       <div className="flex flex-col gap-2 sm:flex-row">
         {choice(
           'if_empty',
-          'Quand une colonne citée change',
-          'Chaque ligne est calculée dès qu’elle existe, puis de nouveau dès qu’une colonne citée change.',
+          $t('Quand une colonne citée change'),
+          $t(
+            'Chaque ligne est calculée dès qu’elle existe, puis de nouveau dès qu’une colonne citée change.',
+          ),
           CircleDashed,
         )}
         {choice(
           'schedule',
-          'Selon un planning',
-          'En plus, toutes les lignes sont recalculées à intervalles réguliers.',
+          $t('Selon un planning'),
+          $t('En plus, toutes les lignes sont recalculées à intervalles réguliers.'),
           CalendarClock,
         )}
       </div>
@@ -470,7 +482,7 @@ function RefreshEditor({
               }}
               disabled={disabled}
             >
-              <SelectTrigger className="h-8 w-56" aria-label="Fréquence">
+              <SelectTrigger className="h-8 w-56" aria-label={$t('Fréquence')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -485,40 +497,36 @@ function RefreshEditor({
             {(schedule.frequency === 'minutes' ||
               schedule.frequency === 'hours' ||
               schedule.frequency === 'days') && (
-              <Select
+              <Choice
                 value={String(schedule.every)}
                 onValueChange={(n) => set({ every: Number(n) })}
+                options={(schedule.frequency === 'minutes'
+                  ? MINUTE_STEPS
+                  : schedule.frequency === 'hours'
+                    ? HOUR_STEPS
+                    : DAY_STEPS
+                ).map((n) => ({
+                  value: String(n),
+                  label:
+                    schedule.frequency === 'minutes'
+                      ? `${n} minutes`
+                      : schedule.frequency === 'hours'
+                        ? n === 1
+                          ? $t('chaque heure')
+                          : `${n} heures`
+                        : n === 1
+                          ? $t('chaque jour')
+                          : $t('tous les {n} jours', { n }),
+                }))}
+                aria-label={$t('Intervalle')}
                 disabled={disabled}
-              >
-                <SelectTrigger className="h-8 w-40" aria-label="Intervalle">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(schedule.frequency === 'minutes'
-                    ? MINUTE_STEPS
-                    : schedule.frequency === 'hours'
-                      ? HOUR_STEPS
-                      : DAY_STEPS
-                  ).map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {schedule.frequency === 'minutes'
-                        ? `${n} minutes`
-                        : schedule.frequency === 'hours'
-                          ? n === 1
-                            ? 'chaque heure'
-                            : `${n} heures`
-                          : n === 1
-                            ? 'chaque jour'
-                            : `tous les ${n} jours`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                className="w-40"
+              />
             )}
 
             {schedule.frequency === 'hours' && (
               <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                à la minute
+                {$t('à la minute')}
                 <Input
                   type="number"
                   min={0}
@@ -530,30 +538,25 @@ function RefreshEditor({
                   }}
                   disabled={disabled}
                   className="h-8 w-16"
-                  aria-label="Minute de l’heure"
+                  aria-label={$t('Minute de l’heure')}
                 />
               </span>
             )}
 
             {schedule.frequency === 'monthly' && (
               <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                le
-                <Select
+                {$t('le')}
+                <Choice
                   value={String(schedule.dayOfMonth)}
                   onValueChange={(d) => set({ dayOfMonth: Number(d) })}
+                  options={Array.from({ length: 28 }, (_, i) => ({
+                    value: String(i + 1),
+                    label: i === 0 ? '1er' : String(i + 1),
+                  }))}
+                  aria-label={$t('Jour du mois')}
                   disabled={disabled}
-                >
-                  <SelectTrigger className="h-8 w-20" aria-label="Jour du mois">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-64">
-                    {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-                      <SelectItem key={d} value={String(d)}>
-                        {d === 1 ? '1er' : d}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  className="w-24"
+                />
               </span>
             )}
 
@@ -566,7 +569,7 @@ function RefreshEditor({
                   onChange={(e) => setTime(e.target.value)}
                   disabled={disabled}
                   className="h-8 w-28"
-                  aria-label="Heure"
+                  aria-label={$t('Heure')}
                 />
               </span>
             )}
@@ -581,14 +584,14 @@ function RefreshEditor({
                 disabled={disabled}
               />
               <label htmlFor="ai-workdays" className="cursor-pointer">
-                Du lundi au vendredi seulement
+                {$t('Du lundi au vendredi seulement')}
               </label>
             </div>
           )}
 
           {schedule.frequency === 'weekly' && (
             <fieldset className="flex gap-1">
-              <legend className="sr-only">Jours de la semaine</legend>
+              <legend className="sr-only">{$t('Jours de la semaine')}</legend>
               {WEEKDAYS.map((d) => {
                 const on = schedule.weekdays.includes(d.value)
                 return (
@@ -628,12 +631,17 @@ function RefreshEditor({
           <div className="space-y-1 text-sm">
             <p>
               <span className="font-medium">{describe(schedule)}</span>
-              <span className="text-muted-foreground"> · fuseau {value.timezone}</span>
+              <span className="text-muted-foreground">
+                {' '}
+                {$t('· fuseau {timezone}', { timezone: value.timezone })}
+              </span>
             </p>
             <SchedulePreview cron={cronOf(schedule)} timezone={value.timezone} />
             {pace !== null && (
               <p className="text-xs text-muted-foreground">
-                ≈ {pace}. Chaque recalcul appelle le modèle une fois par ligne de la table.
+                {$t('≈ {pace}. Chaque recalcul appelle le modèle une fois par ligne de la table.', {
+                  pace,
+                })}
               </p>
             )}
           </div>
@@ -646,9 +654,9 @@ function RefreshEditor({
 const CRON_PARTS = [
   { name: 'minute', range: '0–59' },
   { name: 'heure', range: '0–23' },
-  { name: 'jour du mois', range: '1–31' },
+  { name: $t('jour du mois'), range: '1–31' },
   { name: 'mois', range: '1–12' },
-  { name: 'jour de semaine', range: '0–7, 0 et 7 = dimanche' },
+  { name: $t('jour de semaine'), range: $t('0–7, 0 et 7 = dimanche') },
 ] as const
 
 function CronInput({
@@ -674,11 +682,11 @@ function CronInput({
           disabled={disabled}
           placeholder="0 8 * * 1-5"
           className="h-8 max-w-56 font-mono"
-          aria-label="Expression cron"
+          aria-label={$t('Expression cron')}
           spellCheck={false}
         />
         <Button variant="link" size="sm" className="px-0" onClick={() => setHelp(!help)}>
-          {help ? 'Masquer l’aide' : 'Aide'}
+          {help ? $t('Masquer l’aide') : $t('Aide')}
         </Button>
       </div>
       {help && (
@@ -704,16 +712,16 @@ function CronInput({
             </tbody>
           </table>
           <p className="text-muted-foreground">
-            <code>*</code> toutes les valeurs · <code>1,15</code> une liste · <code>1-5</code> un
-            intervalle · <code>*/6</code> un pas.
+            <code>*</code> {$t('toutes les valeurs ·')} <code>1,15</code> {$t('une liste ·')}{' '}
+            <code>1-5</code> {$t('un intervalle ·')} <code>*/6</code> {$t('un pas.')}
           </p>
           <ul className="space-y-0.5">
             {[
-              ['0 8 * * 1-5', 'du lundi au vendredi à 8 h'],
-              ['*/30 * * * *', 'toutes les 30 minutes'],
-              ['0 */6 * * *', 'toutes les 6 heures'],
-              ['0 9 1 * *', 'le 1er de chaque mois à 9 h'],
-              ['0 7 * * 1', 'chaque lundi à 7 h'],
+              ['0 8 * * 1-5', $t('du lundi au vendredi à 8 h')],
+              ['*/30 * * * *', $t('toutes les 30 minutes')],
+              ['0 */6 * * *', $t('toutes les 6 heures')],
+              ['0 9 1 * *', $t('le 1er de chaque mois à 9 h')],
+              ['0 7 * * 1', $t('chaque lundi à 7 h')],
             ].map(([cron, meaning]) => (
               <li key={cron}>
                 <button
@@ -728,7 +736,9 @@ function CronInput({
               </li>
             ))}
           </ul>
-          <p className="text-muted-foreground">Au plus un recalcul toutes les 15 minutes.</p>
+          <p className="text-muted-foreground">
+            {$t('Au plus un recalcul toutes les 15 minutes.')}
+          </p>
         </div>
       )}
     </div>
@@ -758,7 +768,7 @@ function SchedulePreview({ cron, timezone }: { readonly cron: string; readonly t
 
   const format = useMemo(
     () =>
-      new Intl.DateTimeFormat('fr-FR', {
+      new Intl.DateTimeFormat(intlLocale(), {
         timeZone: timezone,
         weekday: 'short',
         day: 'numeric',
@@ -780,7 +790,9 @@ function SchedulePreview({ cron, timezone }: { readonly cron: string; readonly t
   if (state.runs === undefined) return null
   return (
     <p className="text-xs text-muted-foreground">
-      Prochains passages : {state.runs.map((r) => format.format(new Date(r))).join(' · ')}
+      {$t('Prochains passages : {map}', {
+        map: state.runs.map((r) => format.format(new Date(r))).join(' · '),
+      })}
     </p>
   )
 }
@@ -788,7 +800,7 @@ function SchedulePreview({ cron, timezone }: { readonly cron: string; readonly t
 const when = (iso: string | null) =>
   iso === null
     ? null
-    : new Date(iso).toLocaleString('fr-FR', {
+    : new Date(iso).toLocaleString(intlLocale(), {
         day: 'numeric',
         month: 'short',
         hour: '2-digit',
@@ -802,18 +814,21 @@ export function AiStatusSummary({ status }: { readonly status: AiFieldStatus }) 
   return (
     <div className="space-y-1 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
       <p>
-        {status.computed_count} cellule{status.computed_count > 1 ? 's' : ''} calculée
-        {status.computed_count > 1 ? 's' : ''}
-        {lastRun !== null && ` · dernier passage le ${lastRun}`}
-        {status.refresh.mode === 'schedule' && next !== null && ` · prochain recalcul le ${next}`}
+        {$tp(status.computed_count, '{count} cellule calculée', '{count} cellules calculées')}
+        {lastRun !== null && $t(' · dernier passage le {lastRun}', { lastRun })}
+        {status.refresh.mode === 'schedule' &&
+          next !== null &&
+          $t(' · prochain recalcul le {next}', { next })}
       </p>
-      {status.sweeping && <p>Recalcul de toutes les lignes en cours…</p>}
+      {status.sweeping && <p>{$t('Recalcul de toutes les lignes en cours…')}</p>}
       {status.last_error !== null && (
         <p className="flex items-start gap-1.5 text-amber-700 dark:text-amber-400">
           <AlertTriangle className="mt-px size-3.5 shrink-0" />
           <span>
-            Dernier incident{status.last_error_at !== null && ` (${when(status.last_error_at)})`} :{' '}
-            {sentenceFor(status.last_error)}
+            {$t('Dernier incident{value} : {last_error}', {
+              value: status.last_error_at !== null && ` (${when(status.last_error_at)})`,
+              last_error: sentenceFor(status.last_error),
+            })}
           </span>
         </p>
       )}

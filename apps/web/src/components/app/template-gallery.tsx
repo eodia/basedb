@@ -24,6 +24,7 @@ import {
   api,
 } from '@/lib/api/client'
 import { copy, download } from '@/lib/export'
+import { $t, $tp } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { optionIcon } from '@/lib/option-icons'
 import { aiFieldsOf, applyTemplate } from '@/lib/templates'
@@ -74,9 +75,9 @@ const MINE = '__instance'
 const AI = '__ia'
 
 const SOURCE_LABELS: Readonly<Record<TemplateSource, string>> = {
-  instance: 'Modèle de l’instance',
-  site: 'Catalogue du site',
-  bundled: 'Intégré',
+  instance: $t('Modèle de l’instance'),
+  site: $t('Catalogue du site'),
+  bundled: $t('Intégré'),
 }
 
 function TemplateIcon({
@@ -98,15 +99,39 @@ function TemplateIcon({
   )
 }
 
-function plural(n: number, one: string, many: string): string {
-  return `${n} ${n > 1 ? many : one}`
+/**
+ * A template's card in the reader's language. The official templates are written in
+ * French, and their catalog of messages holds each label, summary and tag; a template of
+ * the instance, written by someone, reads as written.
+ */
+function localized<
+  T extends {
+    label: string
+    summary: string
+    category?: string | null
+    tags: readonly string[]
+    description?: string
+  },
+>(template: T): T {
+  return {
+    ...template,
+    label: $t(template.label),
+    summary: $t(template.summary),
+    ...(typeof template.category === 'string' ? { category: $t(template.category) } : {}),
+    ...(typeof template.description === 'string' ? { description: $t(template.description) } : {}),
+    tags: template.tags.map((tag) => $t(tag)),
+  }
+}
+
+function localizedCatalog(catalog: TemplateCatalog): TemplateCatalog {
+  return { ...catalog, templates: catalog.templates.map(localized) }
 }
 
 function countsLine(counts: TemplateItem['counts']): string {
   return [
-    plural(counts.tables, 'table', 'tables'),
-    plural(counts.rows, 'ligne', 'lignes'),
-    plural(counts.views, 'vue', 'vues'),
+    $tp(counts.tables, '{count} table', '{count} tables'),
+    $tp(counts.rows, '{count} ligne', '{count} lignes'),
+    $tp(counts.views, '{count} vue', '{count} vues'),
   ].join(' · ')
 }
 
@@ -157,7 +182,7 @@ export function TemplateGallery({
 
   const load = useCallback(async () => {
     try {
-      setCatalog(await api.templates())
+      setCatalog(localizedCatalog(await api.templates()))
       setCatalogError(null)
     } catch (e) {
       setCatalogError(messageFor(e))
@@ -168,7 +193,7 @@ export function TemplateGallery({
     setOpening(key)
     try {
       const { template, source } = await api.template(key)
-      setSelected({ kind: 'catalog', key, source, template })
+      setSelected({ kind: 'catalog', key, source, template: localized(template) })
     } catch (e) {
       toast.error(messageFor(e))
     } finally {
@@ -217,7 +242,7 @@ export function TemplateGallery({
   const categories = useMemo(() => {
     const found = new Map<string, number>()
     for (const t of catalog?.templates ?? []) {
-      const c = t.category ?? 'Autres'
+      const c = t.category ?? $t('Autres')
       found.set(c, (found.get(c) ?? 0) + 1)
     }
     return [...found.entries()].sort(([a], [b]) =>
@@ -233,7 +258,7 @@ export function TemplateGallery({
         category !== ALL &&
         category !== MINE &&
         category !== AI &&
-        (t.category ?? 'Autres') !== category
+        (t.category ?? $t('Autres')) !== category
       )
         return false
       if (needle === '') return true
@@ -249,10 +274,12 @@ export function TemplateGallery({
         <DialogHeader className="border-b px-6 py-4 pr-12">
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
-              <DialogTitle>Partir d’un modèle</DialogTitle>
+              <DialogTitle>{$t('Partir d’un modèle')}</DialogTitle>
               <DialogDescription>
-                Une base prête à l’emploi dans « {project.label} » : tables, lignes d’exemple, vues,
-                tableaux de bord et automatisations.
+                {$t(
+                  'Une base prête à l’emploi dans « {label} » : tables, lignes d’exemple, vues, tableaux de bord et automatisations.',
+                  { label: project.label },
+                )}
               </DialogDescription>
             </div>
             <div className="relative w-60">
@@ -263,8 +290,8 @@ export function TemplateGallery({
                   setSearch(e.target.value)
                   if (selected !== null && selected.kind === 'catalog') setSelected(null)
                 }}
-                placeholder="Rechercher un modèle"
-                aria-label="Rechercher un modèle"
+                placeholder={$t('Rechercher un modèle')}
+                aria-label={$t('Rechercher un modèle')}
                 className="h-9 pl-8"
               />
             </div>
@@ -276,7 +303,7 @@ export function TemplateGallery({
                 onClick={() => setImporting(true)}
               >
                 <Upload className="size-4" />
-                Importer un JSON
+                {$t('Importer un JSON')}
               </Button>
             )}
           </div>
@@ -295,8 +322,10 @@ export function TemplateGallery({
             <Input
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Décrivez ce que vous voulez gérer : « les réclamations de mes clients, avec une analyse du ton »"
-              aria-label="Décrire le besoin à l’IA"
+              placeholder={$t(
+                'Décrivez ce que vous voulez gérer : « les réclamations de mes clients, avec une analyse du ton »',
+              )}
+              aria-label={$t('Décrire le besoin à l’IA')}
               disabled={drafting}
               className="h-9 flex-1 bg-background"
             />
@@ -306,7 +335,9 @@ export function TemplateGallery({
               ) : (
                 <Wand2 className="size-4" />
               )}
-              {drafting ? `Proposition en cours… ${elapsed} s` : 'Proposer avec l’IA'}
+              {drafting
+                ? $t('Proposition en cours… {elapsed} s', { elapsed })
+                : $t('Proposer avec l’IA')}
             </Button>
           </form>
           {draftError !== null && (
@@ -317,7 +348,7 @@ export function TemplateGallery({
         <div className="flex min-h-0 flex-1">
           <nav
             className="w-52 shrink-0 space-y-0.5 overflow-y-auto border-r p-3 scroll-discret"
-            aria-label="Catégories"
+            aria-label={$t('Catégories')}
           >
             <NavItem
               active={category === ALL}
@@ -327,7 +358,7 @@ export function TemplateGallery({
               }}
               count={catalog?.templates.length}
             >
-              Tous les modèles
+              {$t('Tous les modèles')}
             </NavItem>
             {selected?.kind === 'draft' && (
               <NavItem
@@ -335,7 +366,7 @@ export function TemplateGallery({
                 onClick={() => setCategory(AI)}
                 icon={<Sparkles className="size-3.5 text-violet-600" />}
               >
-                Proposé par l’IA
+                {$t('Proposé par l’IA')}
               </NavItem>
             )}
             {mine > 0 && (
@@ -348,10 +379,12 @@ export function TemplateGallery({
                 count={mine}
                 icon={<Server className="size-3.5" />}
               >
-                De l’instance
+                {$t('De l’instance')}
               </NavItem>
             )}
-            <p className="px-2 pt-3 pb-1 text-xs font-medium text-muted-foreground">Catégories</p>
+            <p className="px-2 pt-3 pb-1 text-xs font-medium text-muted-foreground">
+              {$t('Catégories')}
+            </p>
             {categories.map(([name, n]) => (
               <NavItem
                 key={name}
@@ -369,8 +402,8 @@ export function TemplateGallery({
               <p className="px-2 pt-4 text-[11px] leading-snug text-muted-foreground">
                 <Globe className="mr-1 inline size-3" />
                 {catalog.site.error === null
-                  ? 'Catalogue du site public à jour.'
-                  : 'Le site public ne répond pas : modèles intégrés.'}
+                  ? $t('Catalogue du site public à jour.')
+                  : $t('Le site public ne répond pas : modèles intégrés.')}
               </p>
             )}
           </nav>
@@ -405,7 +438,7 @@ export function TemplateGallery({
               </div>
             ) : shown.length === 0 ? (
               <p className="p-10 text-center text-sm text-muted-foreground">
-                Aucun modèle ne correspond. Décrivez votre besoin à l’IA, en haut.
+                {$t('Aucun modèle ne correspond. Décrivez votre besoin à l’IA, en haut.')}
               </p>
             ) : (
               <div className="grid grid-cols-1 gap-3 p-5 md:grid-cols-2 xl:grid-cols-3">
@@ -475,14 +508,14 @@ function TemplateCard({
       type="button"
       onClick={onOpen}
       disabled={busy}
-      aria-label={`Modèle ${item.label}`}
+      aria-label={$t('Modèle {label}', { label: item.label })}
       className="group flex flex-col gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
     >
       <div className="flex items-start gap-3">
         <TemplateIcon icon={item.icon} color={item.color} />
         <div className="min-w-0 flex-1">
           <p className="font-medium leading-tight">{item.label}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{item.category ?? 'Autres'}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{item.category ?? $t('Autres')}</p>
         </div>
         {busy && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
       </div>
@@ -491,13 +524,13 @@ function TemplateCard({
         {item.counts.ai_fields > 0 && (
           <Badge className="border-transparent bg-violet-500/15 text-violet-700 dark:text-violet-300">
             <Sparkles />
-            IA
+            {$t('IA')}
           </Badge>
         )}
         {item.source === 'instance' && (
           <Badge variant="outline">
             <Server />
-            Instance
+            {$t('Instance')}
           </Badge>
         )}
         <span className="text-xs text-muted-foreground">{countsLine(item.counts)}</span>
@@ -561,7 +594,7 @@ function TemplateDetail({
             onClick={onBack}
           >
             <ArrowLeft className="size-4" />
-            Tous les modèles
+            {$t('Tous les modèles')}
           </Button>
           <div className="mt-2 flex items-start gap-4">
             <TemplateIcon
@@ -576,7 +609,7 @@ function TemplateDetail({
                 {selected.kind === 'draft' ? (
                   <Badge className="border-transparent bg-violet-500/15 text-violet-700 dark:text-violet-300">
                     <Sparkles />
-                    Proposé par l’IA
+                    {$t('Proposé par l’IA')}
                   </Badge>
                 ) : (
                   <Badge variant="outline">{SOURCE_LABELS[selected.source]}</Badge>
@@ -602,8 +635,11 @@ function TemplateDetail({
             {selected.draft.issues.length > 0 && (
               <details className="text-xs text-muted-foreground">
                 <summary className="cursor-pointer">
-                  {plural(selected.draft.issues.length, 'élément retiré', 'éléments retirés')} de la
-                  proposition, qui ne tenai{selected.draft.issues.length > 1 ? 'ent' : 't'} pas
+                  {$tp(
+                    selected.draft.issues.length,
+                    '{count} élément retiré de la proposition, qui ne tenait pas',
+                    '{count} éléments retirés de la proposition, qui ne tenaient pas',
+                  )}
                 </summary>
                 <ul className="mt-1.5 list-disc space-y-0.5 pl-5">
                   {selected.draft.issues.slice(0, 20).map((issue) => (
@@ -619,7 +655,7 @@ function TemplateDetail({
         )}
 
         <Section
-          title={plural(counts.tables, 'table', 'tables')}
+          title={$tp(counts.tables, '{count} table', '{count} tables')}
           icon={<LayoutGrid className="size-4 text-muted-foreground" />}
         >
           <div className="grid gap-3 lg:grid-cols-2">
@@ -636,7 +672,7 @@ function TemplateDetail({
                     />
                     <p className="font-medium">{table.label}</p>
                     <span className="ml-auto text-xs text-muted-foreground">
-                      {plural(rows, 'ligne', 'lignes')}
+                      {$tp(rows, '{count} ligne', '{count} lignes')}
                     </span>
                   </div>
                   {table.description !== undefined && (
@@ -660,7 +696,7 @@ function TemplateDetail({
                         ) : (
                           <FieldIcon
                             kind={field.kind}
-                            format={field.format?.display}
+                            format={field.rich === true ? 'html' : field.format?.display}
                             className="size-3"
                           />
                         )}
@@ -685,7 +721,7 @@ function TemplateDetail({
 
         {aiFields.length > 0 && (
           <Section
-            title="Ce que l’IA calcule"
+            title={$t('Ce que l’IA calcule')}
             icon={<Sparkles className="size-4 text-violet-600" />}
           >
             <ul className="space-y-2">
@@ -708,7 +744,7 @@ function TemplateDetail({
 
         {template.views.length > 0 && (
           <Section
-            title={plural(template.views.length, 'vue', 'vues')}
+            title={$tp(template.views.length, '{count} vue', '{count} vues')}
             icon={<LayoutGrid className="size-4 text-muted-foreground" />}
           >
             <div className="flex flex-wrap gap-2">
@@ -735,7 +771,7 @@ function TemplateDetail({
           <div className="grid gap-6 lg:grid-cols-2">
             {template.dashboards.length > 0 && (
               <Section
-                title="Tableaux de bord"
+                title={$t('Tableaux de bord')}
                 icon={<LayoutDashboard className="size-4 text-muted-foreground" />}
               >
                 <ul className="space-y-1 text-sm">
@@ -743,7 +779,7 @@ function TemplateDetail({
                     <li key={d.label}>
                       {d.label}{' '}
                       <span className="text-xs text-muted-foreground">
-                        — {plural(d.blocks.length, 'bloc', 'blocs')}
+                        — {$tp(d.blocks.length, '{count} bloc', '{count} blocs')}
                       </span>
                     </li>
                   ))}
@@ -752,7 +788,7 @@ function TemplateDetail({
             )}
             {template.automations.length > 0 && (
               <Section
-                title="Automatisations"
+                title={$t('Automatisations')}
                 icon={<Zap className="size-4 text-muted-foreground" />}
               >
                 <ul className="space-y-1 text-sm">
@@ -802,8 +838,10 @@ function Refine({
       <Textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Affiner : « ajoute une table des fournisseurs », « moins de colonnes », « des exemples pour un restaurant »…"
-        aria-label="Affiner la proposition"
+        placeholder={$t(
+          'Affiner : « ajoute une table des fournisseurs », « moins de colonnes », « des exemples pour un restaurant »…',
+        )}
+        aria-label={$t('Affiner la proposition')}
         rows={2}
         disabled={drafting}
         className="min-h-0 flex-1 resize-none bg-background text-sm"
@@ -815,7 +853,7 @@ function Refine({
         className="gap-1.5"
       >
         {drafting ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
-        Affiner
+        {$t('Affiner')}
       </Button>
     </form>
   )
@@ -864,7 +902,7 @@ function CreatePanel({
     setBusy(true)
     onBuilding(true)
     setError(null)
-    setSteps(['Base…'])
+    setSteps([$t('Base…')])
     let name: string | null = null
     try {
       const created = await api.createBase(label.trim(), template.base.description, project.id)
@@ -877,13 +915,15 @@ function CreatePanel({
         aiConsent: consent,
         me: me.id,
       })
-      toast.success(`Base « ${label.trim()} » créée`, {
+      toast.success($t('Base « {label} » créée', { label: label.trim() }), {
         description: report.warnings.length > 0 ? report.warnings.join(' ') : undefined,
       })
       onDone(created.name)
     } catch (e) {
       setError(
-        name === null ? messageFor(e) : `La base est créée, mais incomplète : ${messageFor(e)}`,
+        name === null
+          ? messageFor(e)
+          : $t('La base est créée, mais incomplète : {e}', { e: messageFor(e) }),
       )
       setBuilt(name)
     } finally {
@@ -895,7 +935,7 @@ function CreatePanel({
   return (
     <aside className="sticky top-0 flex h-full max-h-full w-80 shrink-0 flex-col gap-4 self-start border-l bg-muted/20 p-5">
       <div className="space-y-1.5">
-        <Label htmlFor="template-base-label">Libellé de la base</Label>
+        <Label htmlFor="template-base-label">{$t('Libellé de la base')}</Label>
         <Input
           id="template-base-label"
           value={label}
@@ -908,7 +948,7 @@ function CreatePanel({
         <div className="space-y-2 rounded-lg border border-violet-500/30 bg-background p-3">
           <p className="flex items-center gap-1.5 text-sm font-medium">
             <Sparkles className="size-4 text-violet-600" />
-            {plural(aiCount, 'champ calculé', 'champs calculés')} par l’IA
+            {$tp(aiCount, '{count} champ calculé par l’IA', '{count} champs calculés par l’IA')}
           </p>
           <label
             htmlFor="template-ai-consent"
@@ -921,9 +961,9 @@ function CreatePanel({
               disabled={busy}
               className="mt-0.5"
             />
-            J’accepte que les valeurs citées par leurs consignes soient envoyées au fournisseur d’IA
-            de l’instance. Sans cet accord, ce seront des champs ordinaires, avec leurs valeurs
-            d’exemple.
+            {$t(
+              'J’accepte que les valeurs citées par leurs consignes soient envoyées au fournisseur d’IA de l’instance. Sans cet accord, ce seront des champs ordinaires, avec leurs valeurs d’exemple.',
+            )}
           </label>
         </div>
       )}
@@ -934,7 +974,7 @@ function CreatePanel({
         className="gap-1.5"
       >
         {busy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
-        {busy ? 'Construction…' : 'Créer la base'}
+        {busy ? $t('Construction…') : $t('Créer la base')}
       </Button>
 
       {steps.length > 0 && (
@@ -966,7 +1006,7 @@ function CreatePanel({
           <p className="text-sm text-destructive">{error}</p>
           {built !== null && (
             <Button variant="outline" size="sm" onClick={() => onDone(built)}>
-              Ouvrir la base incomplète
+              {$t('Ouvrir la base incomplète')}
             </Button>
           )}
         </div>
@@ -975,7 +1015,7 @@ function CreatePanel({
       <div className="mt-auto space-y-2 border-t pt-4">
         <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <FileJson className="size-3.5" />
-          Le modèle en JSON
+          {$t('Le modèle en JSON')}
         </p>
         <div className="flex gap-1.5">
           <Button
@@ -990,7 +1030,7 @@ function CreatePanel({
             }}
           >
             {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-            Copier
+            {$t('Copier')}
           </Button>
           <Button
             variant="outline"
@@ -999,7 +1039,7 @@ function CreatePanel({
             onClick={() => download('json', json(), template.key)}
           >
             <Download className="size-3.5" />
-            Télécharger
+            {$t('Télécharger')}
           </Button>
         </div>
         {me.isAdmin && selected.kind === 'draft' && (
@@ -1010,7 +1050,7 @@ function CreatePanel({
             onClick={async () => {
               try {
                 await api.importTemplate(template)
-                toast.success('Ajouté au catalogue de l’instance')
+                toast.success($t('Ajouté au catalogue de l’instance'))
                 onSaved()
               } catch (e) {
                 toast.error(messageFor(e))
@@ -1018,7 +1058,7 @@ function CreatePanel({
             }}
           >
             <Server className="size-3.5" />
-            Ajouter au catalogue de l’instance
+            {$t('Ajouter au catalogue de l’instance')}
           </Button>
         )}
         {me.isAdmin && selected.kind === 'catalog' && selected.source === 'instance' && (
@@ -1029,7 +1069,7 @@ function CreatePanel({
             onClick={async () => {
               try {
                 await api.deleteTemplate(selected.key)
-                toast.success('Retiré du catalogue de l’instance')
+                toast.success($t('Retiré du catalogue de l’instance'))
                 onRemoved()
               } catch (e) {
                 toast.error(messageFor(e))
@@ -1037,7 +1077,7 @@ function CreatePanel({
             }}
           >
             <Trash2 className="size-3.5" />
-            Retirer de l’instance
+            {$t('Retirer de l’instance')}
           </Button>
         )}
       </div>
@@ -1073,13 +1113,13 @@ function ImportDialog({
     try {
       raw = JSON.parse(text)
     } catch {
-      setError('Ce n’est pas du JSON valide.')
+      setError($t('Ce n’est pas du JSON valide.'))
       return
     }
     setBusy(true)
     try {
       const imported = await api.importTemplate(raw)
-      toast.success(`« ${imported.label} » ajouté au catalogue de l’instance`)
+      toast.success($t('« {label} » ajouté au catalogue de l’instance', { label: imported.label }))
       onDone(imported.key)
     } catch (e) {
       setError(messageFor(e))
@@ -1095,18 +1135,18 @@ function ImportDialog({
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Importer un modèle</DialogTitle>
+          <DialogTitle>{$t('Importer un modèle')}</DialogTitle>
           <DialogDescription>
-            Un modèle au format JSON du chapitre 20 — exporté d’une base, proposé par l’IA ou écrit
-            à la main. Il rejoint la galerie de toute l’instance ; un modèle de même clé est
-            remplacé.
+            {$t(
+              'Un modèle au format JSON du chapitre 20 — exporté d’une base, proposé par l’IA ou écrit à la main. Il rejoint la galerie de toute l’instance ; un modèle de même clé est remplacé.',
+            )}
           </DialogDescription>
         </DialogHeader>
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder='{ "format": 1, "key": "mon-modele", "label": "…", "tables": [ … ] }'
-          aria-label="JSON du modèle"
+          aria-label={$t('JSON du modèle')}
           rows={12}
           className="font-mono text-xs"
         />
@@ -1114,7 +1154,7 @@ function ImportDialog({
           <Button variant="outline" size="sm" asChild>
             <label className="cursor-pointer gap-1.5">
               <FileJson className="size-4" />
-              Lire un fichier
+              {$t('Lire un fichier')}
               <input
                 type="file"
                 accept="application/json,.json"
@@ -1128,7 +1168,7 @@ function ImportDialog({
           </Button>
           <div className="flex-1" />
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button
             onClick={() => void submit()}
@@ -1136,7 +1176,7 @@ function ImportDialog({
             className="gap-1.5"
           >
             {busy && <Loader2 className="size-4 animate-spin" />}
-            Importer
+            {$t('Importer')}
           </Button>
         </div>
         {error !== null && <p className="text-sm text-destructive">{error}</p>}

@@ -8,6 +8,7 @@ import { SortableCard } from '@/components/app/views/gallery-view'
 import { usePagedRows } from '@/components/app/views/paged'
 import { Button } from '@/components/ui/button'
 import type { Field, Table } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { type ListSpec, nextHandOrder, orderByHand, pick, titleFieldOf } from '@/lib/views'
 import {
@@ -41,7 +42,7 @@ interface Group {
 function groupOf(row: Row, field: Field): { key: string; header: ReactNode } {
   const value = row[field.name]
   if (value === null || value === undefined || value === '') {
-    return { key: NONE, header: <span className="text-muted-foreground">Sans valeur</span> }
+    return { key: NONE, header: <span className="text-muted-foreground">{$t('Sans valeur')}</span> }
   }
   if (field.kind === 'select') {
     const option = field.options?.find((o) => o.value === value)
@@ -146,7 +147,7 @@ export function ListView({
   if (!loading && rows.length === 0) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
-        Aucune ligne à montrer.
+        {$t('Aucune ligne à montrer.')}
       </div>
     )
   }
@@ -229,7 +230,7 @@ export function ListView({
           <Loader2 className="size-4 animate-spin text-muted-foreground" />
         ) : hasMore ? (
           <Button variant="outline" size="sm" onClick={loadMore}>
-            Charger plus
+            {$t('Charger plus')}
           </Button>
         ) : null}
       </div>

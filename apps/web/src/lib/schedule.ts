@@ -1,3 +1,4 @@
+import { $t, $tp, intlLocale } from '@/lib/i18n'
 /**
  * The schedule of an AI field, as a person builds it — chapter 04 §7 bis.
  *
@@ -168,35 +169,48 @@ export function draftOf(cron: string | null | undefined): ScheduleDraft {
 
 const time = (hour: number, minute: number) => `${hour} h ${String(minute).padStart(2, '0')}`
 
+/** « lundi, mardi et jeudi », « Monday, Tuesday, and Thursday » — as the language lists. */
 const list = (words: readonly string[]) =>
-  words.length <= 1
-    ? (words[0] ?? '')
-    : `${words.slice(0, -1).join(', ')} et ${words[words.length - 1]}`
+  new Intl.ListFormat(intlLocale(), { style: 'long', type: 'conjunction' }).format(words)
 
 /** The draft in a sentence, as the person would have said it. */
 export function describe(draft: ScheduleDraft): string {
   switch (draft.frequency) {
     case 'minutes':
-      return `Toutes les ${draft.every} minutes`
+      return $t('Toutes les {every} minutes', { every: draft.every })
     case 'hours':
       return draft.every === 1
-        ? `Toutes les heures, à la minute ${draft.minute}`
-        : `Toutes les ${draft.every} heures, à ${time(0, draft.minute)} puis ${time(draft.every, draft.minute)}, ${time(2 * draft.every, draft.minute)}…`
+        ? $t('Toutes les heures, à la minute {minute}', { minute: draft.minute })
+        : $t('Toutes les {every} heures, à {time} puis {every2}, {time2}…', {
+            every: draft.every,
+            time: time(0, draft.minute),
+            every2: time(draft.every, draft.minute),
+            time2: time(2 * draft.every, draft.minute),
+          })
     case 'days':
       if (draft.every === 1) {
         return draft.workdays
-          ? `Du lundi au vendredi à ${time(draft.hour, draft.minute)}`
-          : `Tous les jours à ${time(draft.hour, draft.minute)}`
+          ? $t('Du lundi au vendredi à {hour}', { hour: time(draft.hour, draft.minute) })
+          : $t('Tous les jours à {hour}', { hour: time(draft.hour, draft.minute) })
       }
-      return `Tous les ${draft.every} jours à ${time(draft.hour, draft.minute)} (le compte repart le 1er du mois)`
+      return $t('Tous les {every} jours à {hour} (le compte repart le 1er du mois)', {
+        every: draft.every,
+        hour: time(draft.hour, draft.minute),
+      })
     case 'weekly': {
       const names = WEEKDAYS.filter((d) => draft.weekdays.includes(d.value)).map((d) => d.long)
-      return `Chaque ${list(names.length === 0 ? ['lundi'] : names)} à ${time(draft.hour, draft.minute)}`
+      return $t('Chaque {list} à {hour}', {
+        list: list(names.length === 0 ? ['lundi'] : names),
+        hour: time(draft.hour, draft.minute),
+      })
     }
     case 'monthly':
-      return `Le ${draft.dayOfMonth === 1 ? '1er' : draft.dayOfMonth} de chaque mois à ${time(draft.hour, draft.minute)}`
+      return $t('Le {value} de chaque mois à {hour}', {
+        value: draft.dayOfMonth === 1 ? $t('1er') : draft.dayOfMonth,
+        hour: time(draft.hour, draft.minute),
+      })
     case 'custom':
-      return 'Expression cron personnalisée'
+      return $t('Expression cron personnalisée')
   }
 }
 
@@ -222,8 +236,19 @@ export function runsPerDay(draft: ScheduleDraft): number | null {
 export function paceOf(draft: ScheduleDraft): string | null {
   const perDay = runsPerDay(draft)
   if (perDay === null) return null
-  const say = (n: number, unit: string) => `${n} recalcul${n > 1 ? 's' : ''} par ${unit}`
-  if (perDay >= 1) return say(Math.round(perDay), 'jour')
-  if (perDay * 7 >= 1) return say(Math.round(perDay * 7), 'semaine')
-  return say(Math.max(1, Math.round(perDay * 30)), 'mois')
+  if (perDay >= 1) {
+    return $tp(Math.round(perDay), '{count} recalcul par jour', '{count} recalculs par jour')
+  }
+  if (perDay * 7 >= 1) {
+    return $tp(
+      Math.round(perDay * 7),
+      '{count} recalcul par semaine',
+      '{count} recalculs par semaine',
+    )
+  }
+  return $tp(
+    Math.max(1, Math.round(perDay * 30)),
+    '{count} recalcul par mois',
+    '{count} recalculs par mois',
+  )
 }

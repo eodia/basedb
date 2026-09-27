@@ -1,0 +1,13 @@
+---
+/* The home page in every language but French (which lives at the root). */
+import { type Locale, PREFIXED_LOCALES } from '../../i18n';
+import Teams from '../../views/Teams.astro';
+
+export function getStaticPaths() {
+	return PREFIXED_LOCALES.map((l) => ({ params: { locale: l.code } }));
+}
+
+const locale = Astro.params.locale as Locale;
+---
+
+<Teams locale={locale} />

@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { type Webhook, type WebhookDelivery, type WebhookEvent, api } from '@/lib/api/client'
+import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { ChevronDown, Loader2, Pause, Play, Trash2, Webhook as WebhookIcon } from 'lucide-react'
@@ -32,37 +33,37 @@ import { useCallback, useEffect, useState } from 'react'
  */
 
 const EVENTS: ReadonlyArray<{ id: WebhookEvent; label: string }> = [
-  { id: 'create', label: 'Création' },
-  { id: 'update', label: 'Modification' },
-  { id: 'delete', label: 'Suppression' },
+  { id: 'create', label: $t('Création||écriture qui déclenche un webhook') },
+  { id: 'update', label: $t('Modification||écriture qui déclenche un webhook') },
+  { id: 'delete', label: $t('Suppression||écriture qui déclenche un webhook') },
 ]
 
 const STATUS: Readonly<Record<string, string>> = {
-  pending: 'En attente',
-  in_flight: 'En cours',
-  delivered: 'Livrée',
-  failed: 'Échec',
-  abandoned: 'Abandonnée',
+  pending: $t('En attente'),
+  in_flight: $t('En cours'),
+  delivered: $t('Livrée'),
+  failed: $t('Échec'),
+  abandoned: $t('Abandonnée'),
 }
 
 const REASON: Readonly<Record<string, string>> = {
-  failures: 'arrêté après des échecs répétés',
-  field_masked: 'arrêté : un champ lui est devenu invisible',
-  manual: 'arrêté',
+  failures: $t('arrêté après des échecs répétés'),
+  field_masked: $t('arrêté : un champ lui est devenu invisible'),
+  manual: $t('arrêté'),
 }
 
-const TIME = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'medium' })
+const TIME = new Intl.DateTimeFormat(intlLocale(), { dateStyle: 'short', timeStyle: 'medium' })
 
 /** How the other side checks a delivery: the HMAC of the raw body (§10.5). */
 function verification(): { lang: string; title: string; body: string }[] {
   return [
     {
       lang: 'js',
-      title: 'Vérifier la signature (Node.js)',
+      title: $t('Vérifier la signature (Node.js)'),
       body: [
         "import { createHmac, timingSafeEqual } from 'node:crypto'",
         '',
-        '// header : X-Basedb-Signature, « t=1758204180,v1=… » ; body : le corps BRUT reçu.',
+        `// ${$t('header : X-Basedb-Signature, « t=1758204180,v1=… » ; body : le corps BRUT reçu.')}`,
         'function authentique(header, body, secret) {',
         "  const { t, v1 } = Object.fromEntries(header.split(',').map((p) => p.split('=')))",
         "  const attendu = createHmac('sha256', secret).update(`${t}.${body}`).digest('hex')",
@@ -165,38 +166,42 @@ export function WebhookDialog({
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Webhooks — {base.label}</DialogTitle>
+          <DialogTitle>{$t('Webhooks — {label}', { label: base.label })}</DialogTitle>
           <DialogDescription>
-            Un webhook prévient un autre système, dans la seconde, qu’une ligne a été créée,
-            modifiée ou supprimée — y compris en SQL direct —, avec la ligne complète avant et
-            après. Chaque envoi est signé.
+            {$t(
+              'Un webhook prévient un autre système, dans la seconde, qu’une ligne a été créée, modifiée ou supprimée — y compris en SQL direct —, avec la ligne complète avant et après. Chaque envoi est signé.',
+            )}
           </DialogDescription>
         </DialogHeader>
 
         {issued !== null ? (
           <div className="min-w-0 space-y-3">
             <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-              Copiez le secret de « {issued.label} » maintenant : il ne sera plus jamais affiché. Il
-              sert au système destinataire à vérifier que chaque envoi vient bien d’ici.
+              {$t(
+                'Copiez le secret de « {label} » maintenant : il ne sera plus jamais affiché. Il sert au système destinataire à vérifier que chaque envoi vient bien d’ici.',
+                { label: issued.label },
+              )}
             </p>
             <code className="block break-all rounded-md border bg-muted px-3 py-2 font-mono text-sm select-all">
               {issued.secret}
             </code>
             <CodeGroup blocks={verification()} />
             <DialogFooter>
-              <Button onClick={() => setIssued(null)}>Terminé</Button>
+              <Button onClick={() => setIssued(null)}>{$t('Terminé')}</Button>
             </DialogFooter>
           </div>
         ) : (
           <div className="min-w-0 space-y-5">
             <section className="space-y-2">
-              <h3 className="text-sm font-medium">Webhooks de cette base</h3>
+              <h3 className="text-sm font-medium">{$t('Webhooks de cette base')}</h3>
               {hooks === null ? (
                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" /> Chargement…
+                  <Loader2 className="size-4 animate-spin" /> {$t('Chargement…')}
                 </p>
               ) : hooks.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Aucun webhook pour l’instant.</p>
+                <p className="text-sm text-muted-foreground">
+                  {$t('Aucun webhook pour l’instant.')}
+                </p>
               ) : (
                 <ul className="divide-y rounded-md border">
                   {hooks.map((hook) => (
@@ -207,10 +212,10 @@ export function WebhookDialog({
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="font-medium">{hook.label}</span>
                             {hook.active ? (
-                              <Badge variant="secondary">Actif</Badge>
+                              <Badge variant="secondary">{$t('Actif')}</Badge>
                             ) : (
                               <Badge variant="outline">
-                                {REASON[hook.disabled_reason ?? 'manual'] ?? 'arrêté'}
+                                {REASON[hook.disabled_reason ?? 'manual'] ?? $t('arrêté')}
                               </Badge>
                             )}
                           </div>
@@ -229,11 +234,14 @@ export function WebhookDialog({
                           </p>
                           {hook.last_delivery !== null && (
                             <p className="text-xs text-muted-foreground">
-                              Dernier envoi :{' '}
-                              {STATUS[hook.last_delivery.status] ?? hook.last_delivery.status}
-                              {hook.last_delivery.response_code !== null &&
-                                ` (${hook.last_delivery.response_code})`}{' '}
-                              — {TIME.format(new Date(hook.last_delivery.at))}
+                              {$t('Dernier envoi : {value}{value2} — {format}', {
+                                value:
+                                  STATUS[hook.last_delivery.status] ?? hook.last_delivery.status,
+                                value2:
+                                  hook.last_delivery.response_code !== null &&
+                                  ` (${hook.last_delivery.response_code})`,
+                                format: TIME.format(new Date(hook.last_delivery.at)),
+                              })}
                             </p>
                           )}
                         </div>
@@ -241,9 +249,11 @@ export function WebhookDialog({
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            title={hook.active ? 'Arrêter' : 'Reprendre'}
+                            title={hook.active ? $t('Arrêter') : $t('Reprendre')}
                             aria-label={
-                              hook.active ? `Arrêter ${hook.label}` : `Reprendre ${hook.label}`
+                              hook.active
+                                ? $t('Arrêter {label}', { label: hook.label })
+                                : $t('Reprendre {label}', { label: hook.label })
                             }
                             disabled={busy}
                             onClick={() =>
@@ -260,8 +270,8 @@ export function WebhookDialog({
                             variant="ghost"
                             size="icon-sm"
                             className="text-destructive"
-                            title="Supprimer"
-                            aria-label={`Supprimer ${hook.label}`}
+                            title={$t('Supprimer')}
+                            aria-label={$t('Supprimer {label}', { label: hook.label })}
                             disabled={busy}
                             onClick={() => void act(() => api.deleteWebhook(hook.id))}
                           >
@@ -282,7 +292,7 @@ export function WebhookDialog({
                             openDeliveries === hook.id && 'rotate-180',
                           )}
                         />
-                        Derniers envois
+                        {$t('Derniers envois')}
                       </button>
                       {openDeliveries === hook.id && <Deliveries webhookId={hook.id} />}
                     </li>
@@ -292,20 +302,20 @@ export function WebhookDialog({
             </section>
 
             <section className="space-y-3">
-              <h3 className="text-sm font-medium">Nouveau webhook</h3>
+              <h3 className="text-sm font-medium">{$t('Nouveau webhook')}</h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="webhook-label">Nom</Label>
+                  <Label htmlFor="webhook-label">{$t('Nom')}</Label>
                   <Input
                     id="webhook-label"
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
-                    placeholder="Synchronisation ERP"
+                    placeholder={$t('Synchronisation ERP')}
                     maxLength={200}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="webhook-url">Adresse (HTTPS)</Label>
+                  <Label htmlFor="webhook-url">{$t('Adresse (HTTPS)')}</Label>
                   <Input
                     id="webhook-url"
                     value={url}
@@ -316,12 +326,12 @@ export function WebhookDialog({
                 </div>
               </div>
               <fieldset className="space-y-1.5">
-                <legend className="mb-1.5 text-sm font-medium">Quand prévenir</legend>
+                <legend className="mb-1.5 text-sm font-medium">{$t('Quand prévenir')}</legend>
                 <div className="overflow-hidden rounded-md border">
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50 text-xs text-muted-foreground">
                       <tr>
-                        <th className="px-3 py-1.5 text-left font-medium">Table</th>
+                        <th className="px-3 py-1.5 text-left font-medium">{$t('Table')}</th>
                         {EVENTS.map((e) => (
                           <th key={e.id} className="px-3 py-1.5 font-medium">
                             {e.label}
@@ -336,7 +346,10 @@ export function WebhookDialog({
                           {EVENTS.map((e) => (
                             <td key={e.id} className="px-3 py-1.5 text-center">
                               <Checkbox
-                                aria-label={`${e.label} dans ${t.label}`}
+                                aria-label={$t('{label} dans {label2}', {
+                                  label: e.label,
+                                  label2: t.label,
+                                })}
                                 checked={(chosen[t.name] ?? []).includes(e.id)}
                                 onCheckedChange={(on) => toggle(t.name, e.id, on === true)}
                               />
@@ -348,8 +361,9 @@ export function WebhookDialog({
                   </table>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Vous devez pouvoir lire tous les champs des tables choisies : un envoi n’est
-                  jamais amputé d’un champ.
+                  {$t(
+                    'Vous devez pouvoir lire tous les champs des tables choisies : un envoi n’est jamais amputé d’un champ.',
+                  )}
                 </p>
               </fieldset>
             </section>
@@ -362,11 +376,11 @@ export function WebhookDialog({
 
             <DialogFooter>
               <Button variant="ghost" onClick={onClose} disabled={busy}>
-                Fermer
+                {$t('Fermer')}
               </Button>
               <Button onClick={() => void create()} disabled={!ready}>
                 {busy && <Loader2 className="size-4 animate-spin" />}
-                Créer le webhook
+                {$t('Créer le webhook')}
               </Button>
             </DialogFooter>
           </div>
@@ -393,7 +407,9 @@ function Deliveries({ webhookId }: { readonly webhookId: string }) {
   }
   if (error !== null) return <p className="mt-2 ml-7 text-xs text-destructive">{error}</p>
   if (rows.length === 0) {
-    return <p className="mt-2 ml-7 text-xs text-muted-foreground">Rien n’a encore été envoyé.</p>
+    return (
+      <p className="mt-2 ml-7 text-xs text-muted-foreground">{$t('Rien n’a encore été envoyé.')}</p>
+    )
   }
   return (
     <ul className="mt-2 ml-7 space-y-1 text-xs">
@@ -411,12 +427,20 @@ function Deliveries({ webhookId }: { readonly webhookId: string }) {
           <span>{TIME.format(new Date(d.created_at))}</span>
           <span>
             {d.table_label ?? '—'} ·{' '}
-            {d.op === 'insert' ? 'création' : d.op === 'update' ? 'modification' : 'suppression'}
+            {d.op === 'insert'
+              ? $t('création')
+              : d.op === 'update'
+                ? $t('modification')
+                : $t('suppression')}
           </span>
-          {d.response_code !== null && <span>HTTP {d.response_code}</span>}
-          {d.attempts > 1 && <span>{d.attempts} tentatives</span>}
+          {d.response_code !== null && (
+            <span>{$t('HTTP {response_code}', { response_code: d.response_code })}</span>
+          )}
+          {d.attempts > 1 && <span>{$t('{attempts} tentatives', { attempts: d.attempts })}</span>}
           {d.status === 'pending' && d.next_attempt_at !== null && (
-            <span>nouvel essai {TIME.format(new Date(d.next_attempt_at))}</span>
+            <span>
+              {$t('nouvel essai {format}', { format: TIME.format(new Date(d.next_attempt_at)) })}
+            </span>
           )}
         </li>
       ))}

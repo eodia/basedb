@@ -1,23 +1,45 @@
 ---
-const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+import { type Locale, fill, i18n } from '../../i18n';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, href, html, number } = i18n(locale);
+const demo = t.hero.demo;
 const dockerCmd = 'docker compose up -d';
 
-type Status = 'nouveau' | 'qualifie' | 'proposition' | 'negociation' | 'gagne' | 'perdu';
-const LABEL: Record<Status, string> = {
-	nouveau: 'Nouveau',
-	qualifie: 'Qualifié',
-	proposition: 'Proposition',
-	negociation: 'Négociation',
-	gagne: 'Gagné',
-	perdu: 'Perdu',
+type Status = keyof typeof demo.statuses;
+type Deal = keyof typeof demo.deals;
+const rows: Array<{ deal: Deal; statut: Status; montant: number; flip?: true }> = [
+	{ deal: 'portail', statut: 'gagne', montant: 48000 },
+	{ deal: 'erp', statut: 'negociation', montant: 125000, flip: true },
+	{ deal: 'audit', statut: 'qualifie', montant: 18500 },
+	{ deal: 'billetterie', statut: 'proposition', montant: 27500 },
+	{ deal: 'flotte', statut: 'negociation', montant: 52000 },
+	{ deal: 'mobile', statut: 'perdu', montant: 64000 },
+];
+
+// What psql answers, laid out as psql does — column widths follow the names of the
+// language (a CJK character takes two columns).
+const width = (s: string) =>
+	[...s].reduce((n, c) => n + (/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(c) ? 2 : 1), 0);
+const padEnd = (s: string, w: number) => s + ' '.repeat(Math.max(0, w - width(s)));
+const center = (s: string, w: number) => {
+	const left = Math.floor((w - width(s)) / 2);
+	return padEnd(' '.repeat(Math.max(0, left)) + s, w);
 };
-const rows: Array<{ nom: string; statut: Status; montant: string; client: string; flip?: true }> = [
-	{ nom: 'Refonte du portail', statut: 'gagne', montant: '48 000', client: 'Mairie de Vannes' },
-	{ nom: 'Migration ERP', statut: 'negociation', montant: '125 000', client: 'Groupe Delorme', flip: true },
-	{ nom: 'Audit de sécurité', statut: 'qualifie', montant: '18 500', client: 'Clinique Saint-Roch' },
-	{ nom: 'Billetterie en ligne', statut: 'proposition', montant: '27 500', client: 'Théâtre du Rond-Point' },
-	{ nom: 'Suivi de flotte', statut: 'negociation', montant: '52 000', client: 'Transports Kerlann' },
-	{ nom: 'Application mobile', statut: 'perdu', montant: '64 000', client: 'Atelier Moreau' },
+const won = [
+	{ nom: demo.deals.erp.name, montant: '125000' },
+	{ nom: demo.deals.portail.name, montant: '48000' },
+];
+const w = Math.max(3, ...won.map((r) => width(r.nom)));
+const psqlResult = [
+	` ${center('nom', w)} | statut | montant`,
+	`${'-'.repeat(w + 2)}+--------+---------`,
+	...won.map((r) => ` ${padEnd(r.nom, w)} | gagne  | ${r.montant.padStart(7)}`),
+	demo.psqlRows,
 ];
 ---
 
@@ -26,42 +48,33 @@ const rows: Array<{ nom: string; statut: Status; montant: string; client: string
 	<div class="lines" aria-hidden="true"></div>
 
 	<div class="text">
-		<a class="badge" href={`${base}/nouveautes/`}>
+		<a class="badge" href={href('/nouveautes/')}>
 			<span class="dot"></span>
-			Nouveau : automatisations, interfaces et formules
+			{t.hero.badge}
 			<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
 		</a>
 		<h1>
-			<span>La base collaborative</span>
-			<span>où chaque table est</span>
-			<span>une vraie table</span>
-			<span class="bd-accent">PostgreSQL.</span>
+			{t.hero.title.map((line) => <span>{line}</span>)}
+			<span class="bd-accent">{t.hero.titleAccent}</span>
 		</h1>
-		<p class="lead">
-			La simplicité d’un tableur partagé — grilles, vues, formulaires, droits — et des données
-			qui vivent dans des tables <strong>typées et nommées en clair</strong>. Votre équipe travaille dans
-			l’interface ; vos scripts, vos outils de BI, vos agents IA et <code>psql</code> lisent les mêmes
-			lignes.
-		</p>
+		<p class="lead" set:html={html(t.hero.lead)} />
 		<div class="btns">
-			<a href={`${base}/guides/installation/`} class="bd-btn bd-btn-primary">
+			<a href={href('/guides/installation/')} class="bd-btn bd-btn-primary">
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-				Installer avec Docker
+				{t.hero.install}
 			</a>
-			<a href="#fonctionnalites" class="bd-btn bd-btn-secondary">Voir les fonctionnalités</a>
+			<a href="#fonctionnalites" class="bd-btn bd-btn-secondary">{t.hero.features}</a>
 		</div>
 		<div class="docker">
 			<span class="prompt">$</span>
 			<code>{dockerCmd}</code>
-			<button type="button" class="copy" data-cmd={dockerCmd} aria-label="Copier la commande">
+			<button type="button" class="copy" data-cmd={dockerCmd} aria-label={t.hero.copy}>
 				<svg class="ic-copy" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
 				<svg class="ic-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
 			</button>
 		</div>
 		<ul class="facts">
-			<li>Auto-hébergé</li>
-			<li>AGPL-3.0</li>
-			<li>API REST &amp; serveur MCP</li>
+			{t.hero.facts.map((fact) => <li>{fact}</li>)}
 		</ul>
 	</div>
 
@@ -72,79 +85,79 @@ const rows: Array<{ nom: string; statut: Status; montant: string; client: string
 				<span class="d"></span><span class="d"></span><span class="d"></span>
 				<span class="url">
 					<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
-					basedb.votre-domaine.fr
+					{demo.url}
 				</span>
 			</div>
 			<div class="app">
 				<aside class="side">
 					<div class="proj">
 						<span class="proj-ic"></span>
-						<span><b>Projet principal</b><small>Projet · 2 bases</small></span>
+						<span><b>{demo.project}</b><small>{demo.projectMeta}</small></span>
 					</div>
 					<div class="search-row">
-						<div class="search">Filtrer les bases et les tables</div>
+						<div class="search">{demo.filter}</div>
 						<span class="new">+</span>
 					</div>
 					<div class="base">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"></path><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"></path></svg>
-						Ventes <span class="env">Production</span>
+						{demo.sales} <span class="env">{demo.environment}</span>
 					</div>
-					<div class="tbl">Clients</div>
-					<div class="tbl on">Opportunités</div>
-					<div class="tbl">Devis</div>
+					<div class="tbl">{demo.clients}</div>
+					<div class="tbl on">{demo.opportunities}</div>
+					<div class="tbl">{demo.quotes}</div>
 					<div class="base closed">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"></path><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"></path></svg>
-						Support
+						{demo.support}
 					</div>
 					<div class="card">
-						<div class="sec">Base · Ventes</div>
-						<div class="item">Structure</div>
-						<div class="item">Historique</div>
-						<div class="item">Interfaces</div>
-						<div class="item">Automatisations</div>
+						<div class="sec">{demo.baseSection}</div>
+						{demo.screens.map((screen) => <div class="item">{screen}</div>)}
 					</div>
 				</aside>
 				<div class="main">
 					<div class="crumbs">
-						Ventes <span>/</span> <b>Opportunités</b>
+						{demo.sales} <span>/</span> <b>{demo.opportunities}</b>
 						<svg class="bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
 					</div>
 					<div class="tabs">
-						<span>Clients</span><span class="on">Opportunités</span><span class="plus">+</span>
-						<span class="copilot">✦ Copilot</span>
+						<span>{demo.clients}</span><span class="on">{demo.opportunities}</span><span class="plus">+</span>
+						<span class="copilot">{demo.copilot}</span>
 					</div>
 					<div class="bar">
-						<span class="views">▦ Toutes les lignes ▾</span>
-						<span class="filter">Filtrer</span>
-						<span class="filter">Grouper</span>
-						<span class="filter">Couleurs</span>
-						<span class="find">Rechercher…</span>
-						<span class="add">+ Ajouter</span>
+						<span class="views">{demo.allRows}</span>
+						{demo.tools.map((tool) => <span class="filter">{tool}</span>)}
+						<span class="find">{demo.search}</span>
+						<span class="add">{demo.add}</span>
 					</div>
 					<div class="grid">
 						<div class="row head">
-							<span class="n">#</span><span>Nom</span><span>Statut</span><span class="num">Montant</span><span>Client</span>
+							<span class="n">#</span><span>{demo.columns.name}</span><span>{demo.columns.status}</span><span class="num">{demo.columns.amount}</span><span>{demo.columns.client}</span>
 						</div>
 						<div class="row fresh" data-fresh>
 							<span class="n">7</span>
-							<span class="nom">Refonte de l’intranet</span>
-							<span><i class="chip nouveau">Nouveau</i></span>
-							<span class="num">22 000</span>
+							<span class="nom">{demo.deals.intranet.name}</span>
+							<span><i class="chip nouveau">{demo.statuses.nouveau}</i></span>
+							<span class="num">{number(22000)}</span>
 							<span class="rel">—</span>
 						</div>
 						{
 							rows.map((r, i) => (
 								<div class="row" data-flip={r.flip ? '' : undefined}>
 									<span class="n">{i + 1}</span>
-									<span class="nom">{r.nom}</span>
+									<span class="nom">{demo.deals[r.deal].name}</span>
 									<span>
-										<i class:list={['chip', r.statut]} data-chip={r.flip ? '' : undefined}>
-											{LABEL[r.statut]}
+										<i
+											class:list={['chip', r.statut]}
+											data-chip={r.flip ? '' : undefined}
+											data-won={r.flip ? demo.statuses.gagne : undefined}
+											data-open={r.flip ? demo.statuses.negociation : undefined}
+										>
+											{demo.statuses[r.statut]}
 										</i>
 									</span>
-									<span class="num">{r.montant}</span>
+									<span class="num">{number(r.montant)}</span>
 									<span class="rel">
-										<i>{r.client}</i>
+										<i>{demo.deals[r.deal].client}</i>
 									</span>
 								</div>
 							))
@@ -158,17 +171,17 @@ const rows: Array<{ nom: string; statut: Status; montant: string; client: string
 					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
 				</span>
 				<span>
-					<b>Formulaire « Demande de devis »</b>
-					<small>réponse publique · a créé « Refonte de l’intranet »</small>
+					<b>{demo.toastTitle}</b>
+					<small>{fill(demo.toastText, { name: demo.deals.intranet.name })}</small>
 				</span>
 			</div>
 
 			<div class="cursor" data-cursor>
 				<svg width="16" height="16" viewBox="0 0 24 24"><path d="M4 2l16 9.5-7 1.6-3.6 6.9z" fill="#7C3AED" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"></path></svg>
-				<span>Camille</span>
+				<span>{demo.cursor}</span>
 			</div>
 
-			<div class="term" data-term>
+			<div class="term" data-term data-result={JSON.stringify(psqlResult)}>
 				<div class="term-top">
 					<span class="d"></span><span class="d"></span><span class="d"></span>
 					<span>psql — basedb</span>
@@ -209,20 +222,14 @@ const rows: Array<{ nom: string; statut: Status; montant: string; client: string
 			'basedb->   FROM b_t4z56fq_ventes.opportunites',
 			"basedb->  WHERE statut = 'gagne' ORDER BY montant DESC;",
 		];
-		const result = [
-			'        nom         | statut | montant',
-			'--------------------+--------+---------',
-			' Migration ERP      | gagne  |  125000',
-			' Refonte du portail | gagne  |   48000',
-			'(2 lignes)',
-		];
+		const result: string[] = JSON.parse(term.dataset.result ?? '[]');
 
 		const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 		// classList, not className: the element also carries Astro's scoping class.
 		const setChip = (won: boolean) => {
 			chip.classList.toggle('gagne', won);
 			chip.classList.toggle('negociation', !won);
-			chip.textContent = won ? 'Gagné' : 'Négociation';
+			chip.textContent = (won ? chip.dataset.won : chip.dataset.open) ?? '';
 		};
 		const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 		const paint = (lines: string[], typed: string) => {
@@ -391,7 +398,7 @@ const rows: Array<{ nom: string; statut: Status; montant: string; client: string
 		margin: 0 0 30px;
 		max-width: 540px;
 	}
-	.lead code {
+	.lead :global(code) {
 		font-size: 0.9em;
 		background: var(--bd-muted);
 		padding: 1px 6px;

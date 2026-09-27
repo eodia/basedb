@@ -366,6 +366,8 @@ Sans cette règle, filtre et tri s'appliqueraient avant la projection et liraien
 
 `include_count` rend un compte exact en dessous de 50 000 lignes et une estimation issue de `pg_class.reltuples` au-delà, avec `"count_is_estimate": true` — `reltuples = -1` distinguant une table jamais analysée d'une table vide (A1). Un `COUNT(*)` complet est le moyen le plus simple de faire souffrir l'instance.
 
+**Variables d'un texte long.** Un texte long qui cite une colonne de sa ligne, `{{nom_physique}}`, est lu avec la valeur à la place de la citation, telle que la voit le porteur (chapitre 04 §2.2) : l'agent lit ce qu'un humain lit à l'écran. Les outils MCP n'offrent pas la lecture brute en v1 ; un agent qui relirait un tel texte pour le réécrire remplacerait donc ses citations par leurs valeurs du moment — limite connue, qu'une option de lecture brute lèvera si l'usage la demande.
+
 ### 5.2 `get_record`
 
 Paramètres : `base`, `table`, `_id`, `select` (même contrainte), `expand`, et `full_fields` (`string[]`, max 3).

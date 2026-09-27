@@ -6,11 +6,11 @@ import { CommentThread } from '@/components/app/comments'
 import { DateInput } from '@/components/app/date-picker'
 import { hasDescription } from '@/components/app/description'
 import { FieldButton } from '@/components/app/field-button'
-import { FieldIcon } from '@/components/app/field-icon'
+import { FieldIcon, shownFormat } from '@/components/app/field-icon'
 import { FilesField, type Upload } from '@/components/app/files'
 import { type Row, display } from '@/components/app/grid/cell'
 import { HistoryList } from '@/components/app/history'
-import { MarkdownEditor, MarkdownView, UrlLink } from '@/components/app/markdown-text'
+import { LongTextView, MarkdownEditor, MarkdownView, UrlLink } from '@/components/app/markdown-text'
 import {
   ChoiceChips,
   EnumPicker,
@@ -23,6 +23,13 @@ import {
   linksOf,
 } from '@/components/app/pickers'
 import { ResizablePanel } from '@/components/app/resizable-panel'
+import { RichTextEditor } from '@/components/app/rich-text-editor'
+import {
+  TableFieldsProvider,
+  citableColumns,
+  useRawText,
+  useTableFields,
+} from '@/components/app/table-fields'
 import { ComputedList, RatingStars, UserPicker, UserValue } from '@/components/app/value-widgets'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -40,12 +47,14 @@ import {
   api,
   filesOf,
 } from '@/lib/api/client'
+import { templateToLabels, templateToNames } from '@/lib/card-template'
 import { shownField } from '@/lib/computed'
 import { isDateKind, storedFromText } from '@/lib/dates'
 import { editText, formatOf, parseNumberInput } from '@/lib/format'
+import { $t, intlLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { ExternalLink, Link2, Mail, Maximize2, Pencil, Phone, RefreshCw, X } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * The detail view — chapter 11 §5.
@@ -108,16 +117,16 @@ export function RecordPanel({
   )
 
   return (
-    <ResizablePanel panel="record" label="la fiche" className="bg-background">
+    <ResizablePanel panel="record" label={$t('la fiche')} className="bg-background">
       <header className="flex h-14 shrink-0 items-center gap-2 border-b px-5">
         <h2 className="flex-1 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Fiche {table.label}
+          {$t('Fiche {label}', { label: table.label })}
         </h2>
         <Viewers viewers={viewers} self={self} record={recordId} size="xs" />
-        <Button variant="ghost" size="icon-sm" disabled aria-label="Agrandir">
+        <Button variant="ghost" size="icon-sm" disabled aria-label={$t('Agrandir')}>
           <Maximize2 className="size-4" />
         </Button>
-        <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Fermer">
+        <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label={$t('Fermer')}>
           <X className="size-4" />
         </Button>
       </header>
@@ -140,9 +149,9 @@ export function RecordPanel({
         <div className="px-5 pt-4">
           <Tabs value={tab} onValueChange={(v) => setTab(v as 'details' | 'history' | 'comments')}>
             <TabsList className="w-full justify-start">
-              <TabsTrigger value="details">Détails</TabsTrigger>
-              <TabsTrigger value="comments">Commentaires</TabsTrigger>
-              <TabsTrigger value="history">Historique</TabsTrigger>
+              <TabsTrigger value="details">{$t('Détails')}</TabsTrigger>
+              <TabsTrigger value="comments">{$t('Commentaires')}</TabsTrigger>
+              <TabsTrigger value="history">{$t('Historique')}</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -159,28 +168,30 @@ export function RecordPanel({
               load={loadHistory}
               showTable={false}
               reloadKey={String(row._updated_at ?? '')}
-              empty="Aucune écriture enregistrée pour cette ligne."
+              empty={$t('Aucune écriture enregistrée pour cette ligne.')}
             />
           </div>
         )}
 
         {tab === 'details' && (
-          <FieldList
-            fields={fields}
-            row={row}
-            linkOptions={linkOptions}
-            onSearchLink={onSearchLink}
-            onCommit={onCommit}
-            onUpload={onUpload}
-            onRecompute={onRecompute}
-            onFollowLink={onFollowLink}
-          />
+          <TableFieldsProvider table={table} fields={fields}>
+            <FieldList
+              fields={fields}
+              row={row}
+              linkOptions={linkOptions}
+              onSearchLink={onSearchLink}
+              onCommit={onCommit}
+              onUpload={onUpload}
+              onRecompute={onRecompute}
+              onFollowLink={onFollowLink}
+            />
+          </TableFieldsProvider>
         )}
 
         {tab === 'details' && referenced.length > 0 && (
           <div className="border-t px-5 py-5">
             <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              Éléments liés
+              {$t('Éléments liés')}
               <Badge variant="secondary" className="rounded-full px-1.5 font-normal">
                 {total}
               </Badge>
@@ -196,7 +207,7 @@ export function RecordPanel({
                       type="button"
                       disabled={onFollowLink === undefined}
                       onClick={() => onFollowLink?.(block.table, referencing.id)}
-                      title="Ouvrir la fiche"
+                      title={$t('Ouvrir la fiche')}
                       className={cn(
                         'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/60 disabled:hover:bg-transparent',
                         index > 0 && 'border-t',
@@ -209,12 +220,12 @@ export function RecordPanel({
                     </button>
                   ))}
                   {block.rows.length === 0 && (
-                    <p className="px-3 py-2 text-sm text-muted-foreground">Aucune ligne.</p>
+                    <p className="px-3 py-2 text-sm text-muted-foreground">{$t('Aucune ligne.')}</p>
                   )}
                 </div>
                 {block.capped && (
                   <p className="mt-1.5 text-xs text-muted-foreground">
-                    Plus de {block.count} lignes.
+                    {$t('Plus de {count} lignes.', { count: block.count })}
                   </p>
                 )}
               </div>
@@ -270,10 +281,10 @@ function FieldList({
             )}
             title={field.label}
           >
-            <FieldIcon kind={field.kind} format={field.format?.display} />
+            <FieldIcon kind={field.kind} format={shownFormat(field)} />
             <span className="truncate">{field.label}</span>
             {field.required === true && (
-              <span className="text-destructive" title="Obligatoire">
+              <span className="text-destructive" title={$t('Obligatoire')}>
                 *
               </span>
             )}
@@ -373,7 +384,7 @@ export function NewRecordPanel({
   const create = async () => {
     const values = writeValues(writable, latest.current)
     if (Object.keys(values).length === 0) {
-      setError('Renseignez au moins un champ.')
+      setError($t('Renseignez au moins un champ.'))
       return
     }
     setBusy(true)
@@ -384,25 +395,27 @@ export function NewRecordPanel({
   }
 
   return (
-    <ResizablePanel panel="record" label="la fiche" className="bg-background">
+    <ResizablePanel panel="record" label={$t('la fiche')} className="bg-background">
       <header className="flex h-14 shrink-0 items-center gap-2 border-b px-5">
         <h2 className="flex-1 truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Nouvelle fiche · {table.label}
+          {$t('Nouvelle fiche · {label}', { label: table.label })}
         </h2>
-        <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Fermer">
+        <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label={$t('Fermer')}>
           <X className="size-4" />
         </Button>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto scroll-discret">
-        <FieldList
-          fields={writable}
-          row={draft}
-          linkOptions={linkOptions}
-          onSearchLink={onSearchLink}
-          onCommit={commit}
-          onUpload={onUpload}
-        />
+        <TableFieldsProvider table={table} fields={fields}>
+          <FieldList
+            fields={writable}
+            row={draft}
+            linkOptions={linkOptions}
+            onSearchLink={onSearchLink}
+            onCommit={commit}
+            onUpload={onUpload}
+          />
+        </TableFieldsProvider>
       </div>
 
       <footer className="shrink-0 space-y-2 border-t px-5 py-3">
@@ -416,10 +429,10 @@ export function NewRecordPanel({
         )}
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button onClick={() => void create()} disabled={busy}>
-            {busy ? 'Création…' : 'Créer'}
+            {busy ? $t('Création…') : $t('Créer')}
           </Button>
         </div>
       </footer>
@@ -508,7 +521,7 @@ export function PanelField({
   if (given.kind === 'button') return <FieldButton field={given} row={row} />
 
   if (!present) {
-    return <span className="text-sm text-muted-foreground">Champ masqué</span>
+    return <span className="text-sm text-muted-foreground">{$t('Champ masqué')}</span>
   }
 
   // The values a lookup reached through several rows, in their order.
@@ -553,7 +566,7 @@ export function PanelField({
           trigger={
             <span className="flex items-center gap-1 text-muted-foreground">
               <Pencil className="size-3" />
-              {links.length === 0 ? 'Choisir…' : 'Modifier'}
+              {links.length === 0 ? $t('Choisir…') : $t('Modifier')}
             </span>
           }
         />
@@ -578,7 +591,7 @@ export function PanelField({
           type="button"
           onClick={follow}
           disabled={follow === undefined}
-          title="Ouvrir la fiche liée"
+          title={$t('Ouvrir la fiche liée')}
         >
           <Badge variant="secondary" className="gap-1.5 font-normal hover:bg-secondary/70">
             <Link2 className="size-3" />
@@ -606,8 +619,8 @@ export function PanelField({
             variant="ghost"
             size="icon-sm"
             onClick={follow}
-            aria-label="Ouvrir la fiche liée"
-            title="Ouvrir la fiche liée"
+            aria-label={$t('Ouvrir la fiche liée')}
+            title={$t('Ouvrir la fiche liée')}
           >
             <ExternalLink className="size-4" />
           </Button>
@@ -620,7 +633,9 @@ export function PanelField({
     const id = typeof value === 'string' && value !== '' ? value : null
     // No author on a system column is an exact statement, not a blank (chapter 11 §5.1).
     if (field.system === true && id === null) {
-      return <span className="text-sm text-muted-foreground">écriture hors application</span>
+      return (
+        <span className="text-sm text-muted-foreground">{$t('écriture hors application')}</span>
+      )
     }
     return field.read_only === true ? (
       <span className="text-sm">
@@ -729,7 +744,7 @@ export function PanelField({
           <Button variant="ghost" size="icon-sm" asChild>
             <a
               href={href}
-              aria-label={contact === 'email' ? 'Écrire' : 'Appeler'}
+              aria-label={contact === 'email' ? $t('Écrire') : $t('Appeler')}
               title={String(value)}
             >
               {contact === 'email' ? <Mail className="size-4" /> : <Phone className="size-4" />}
@@ -767,6 +782,8 @@ export function PanelField({
       <LongTextField
         field={field}
         value={typeof value === 'string' ? value : ''}
+        // A draft — a new row, a form — has no identity yet: what it holds is as written.
+        rowId={typeof row._id === 'string' ? row._id : null}
         onCommit={(next) => onCommit(next.trim() === '' ? null : next)}
         live={live}
       />
@@ -794,7 +811,7 @@ export function PanelField({
               href={value}
               target="_blank"
               rel="noopener noreferrer nofollow"
-              aria-label="Ouvrir le lien"
+              aria-label={$t('Ouvrir le lien')}
               title={value}
             >
               <ExternalLink className="size-4" />
@@ -823,50 +840,126 @@ export function PanelField({
 }
 
 /**
- * A long text: rendered as Markdown, and written in Markdown — a click on the text, or on
- * « Modifier », opens the editor; leaving it saves, as the other fields of the panel do,
- * and Échap puts the text back as it was.
+ * A long text: rendered as Markdown — or as HTML, for the rich variant (chapter 04 §2.2) —
+ * and written in its editor — a click on the text opens it; leaving it saves, as the other
+ * fields of the panel do, and Échap puts the text back as it was.
+ *
+ * What is shown is the text as READ, the row's values in place of its citations; what the
+ * editor opens is the text as WRITTEN (`useRawText`), the citations of a Markdown text by
+ * their columns' labels.
  */
 function LongTextField({
   field,
   value,
+  rowId,
   onCommit,
   live,
 }: {
   readonly field: Field
   readonly value: string
+  readonly rowId: string | null
   readonly onCommit: (next: string) => Promise<void>
   readonly live: boolean
 }) {
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(value)
   const readOnly = field.read_only === true
+  const rich = field.unsafe_html === true
+  const { fields } = useTableFields()
+  const columns = useMemo(() => citableColumns(fields, field.name), [fields, field.name])
+  const raw = useRawText(rowId, field.name, editing, value)
+  /** What is being written — `null` until the text as written is read. */
+  const [draft, setDraft] = useState<string | null>(null)
+  /** The draft as it started: saved only when it moved. */
+  const start = useRef('')
+  /** A close decided on leaving, taken back if the focus comes back within — a menu of the toolbar. */
+  const leaving = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const stored = (text: string) => (rich ? text : templateToNames(text, columns))
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the draft starts once per opening — a column relabelled meanwhile must not wipe what is being typed.
   useEffect(() => {
-    if (!editing) setDraft(value)
-  }, [value, editing])
+    if (!editing) {
+      setDraft(null)
+      return
+    }
+    if (raw === null) return
+    const opened = rich ? raw : templateToLabels(raw, columns)
+    start.current = opened
+    setDraft(opened)
+  }, [editing, raw])
+
+  useEffect(
+    () => () => {
+      if (leaving.current !== null) clearTimeout(leaving.current)
+    },
+    [],
+  )
 
   const close = (save: boolean) => {
+    if (leaving.current !== null) clearTimeout(leaving.current)
+    leaving.current = null
     setEditing(false)
-    if (save && draft !== value) void onCommit(draft)
-    else setDraft(value)
+    if (save && draft !== null && draft !== start.current) void onCommit(stored(draft))
   }
 
   if (editing) {
+    if (draft === null) {
+      return (
+        <p className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+          {$t('Lecture du texte…')}
+        </p>
+      )
+    }
+    const change = (next: string) => {
+      setDraft(next)
+      if (live) void onCommit(stored(next))
+    }
     return (
-      <MarkdownEditor
-        value={draft}
-        onChange={(next) => {
-          setDraft(next)
-          if (live) void onCommit(next)
+      <div
+        // Leaving the editor saves — unless the focus went to one of its own menus, which
+        // live in a portal: React still bubbles their focus here, and that cancels it.
+        onBlur={
+          live
+            ? undefined
+            : () => {
+                leaving.current = setTimeout(() => close(true), 0)
+              }
+        }
+        onFocus={() => {
+          if (leaving.current !== null) clearTimeout(leaving.current)
+          leaving.current = null
         }}
-        onSubmit={() => close(true)}
-        onCancel={() => close(false)}
-        onBlur={live ? undefined : () => close(true)}
-        autoFocus
-        minHeight={140}
-        label={field.label}
-      />
+        onKeyDown={(e) => {
+          // Keys typed in a menu of the toolbar are that menu's.
+          if (!e.currentTarget.contains(e.target as Node)) return
+          if (e.key === 'Escape' && !live) {
+            e.preventDefault()
+            close(false)
+          }
+        }}
+      >
+        {rich ? (
+          <RichTextEditor
+            value={draft}
+            onChange={change}
+            onSubmit={live ? undefined : () => close(true)}
+            fields={columns}
+            autoFocus
+            placeholder={field.label}
+            contentClassName="max-h-96 min-h-32 overflow-y-auto scroll-discret"
+          />
+        ) : (
+          <MarkdownEditor
+            value={draft}
+            onChange={change}
+            onSubmit={() => close(true)}
+            autoFocus
+            minHeight={140}
+            label={field.label}
+            fields={columns}
+          />
+        )}
+      </div>
     )
   }
   return (
@@ -878,7 +971,7 @@ function LongTextField({
           onClick={() => setEditing(true)}
           className="w-full rounded-md border border-dashed px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted/40 disabled:cursor-default"
         >
-          {readOnly ? '—' : 'Écrire… (Markdown)'}
+          {readOnly ? '—' : rich ? $t('Écrire…') : $t('Écrire… (Markdown)')}
         </button>
       ) : (
         <button
@@ -891,7 +984,7 @@ function LongTextField({
           }}
           className="block max-h-72 w-full overflow-y-auto rounded-md bg-muted/40 px-3 py-2 text-left hover:bg-muted/60 disabled:cursor-default scroll-discret"
         >
-          <MarkdownView source={value} />
+          <LongTextView value={value} rich={rich} />
         </button>
       )}
     </div>
@@ -901,13 +994,19 @@ function LongTextField({
 /** A value computed by the AI, shown as its type shows it. */
 function AiShown({ field, value }: { readonly field: Field; readonly value: unknown }) {
   if (field.kind === 'select' || field.kind === 'multi_select') {
-    return <ChoiceChips field={field} values={choicesOf(value)} wrap />
+    // A single choice arrives as a string, several as an array.
+    const values = typeof value === 'string' ? [value] : choicesOf(value)
+    return <ChoiceChips field={field} values={values} wrap />
   }
   if (field.kind === 'url' && typeof value === 'string') return <UrlLink url={value} />
   if (field.kind === 'long_text' && typeof value === 'string')
     return <MarkdownView source={value} />
   const text =
-    field.kind === 'boolean' ? (value === true ? 'Oui' : 'Non') : display(String(value), field)
+    field.kind === 'boolean'
+      ? value === true
+        ? $t('Oui')
+        : $t('Non')
+      : display(String(value), field)
   return <span className="whitespace-pre-line break-words">{text}</span>
 }
 
@@ -952,7 +1051,7 @@ function AiValue({
           }}
         >
           <RefreshCw className={cn('size-3.5', busy && 'animate-spin')} />
-          {busy ? 'Calcul en cours…' : 'Recalculer'}
+          {busy ? $t('Calcul en cours…') : $t('Recalculer')}
         </Button>
       )}
     </div>
@@ -986,14 +1085,17 @@ function initialsOf(title: string): string {
 
 function modifiedAt(row: Row): string {
   const raw = row._updated_at
-  if (typeof raw !== 'string') return 'Enregistrement'
+  if (typeof raw !== 'string') return $t('Enregistrement')
   const parsed = Date.parse(raw)
-  if (Number.isNaN(parsed)) return 'Enregistrement'
+  if (Number.isNaN(parsed)) return $t('Enregistrement')
 
   const date = new Date(parsed)
   const sameDay = new Date().toDateString() === date.toDateString()
-  const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  const time = date.toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' })
   return sameDay
-    ? `Modifié aujourd’hui à ${time}`
-    : `Modifié le ${date.toLocaleDateString('fr-FR')} à ${time}`
+    ? $t('Modifié aujourd’hui à {time}', { time })
+    : $t('Modifié le {intlLocale} à {time}', {
+        intlLocale: date.toLocaleDateString(intlLocale()),
+        time,
+      })
 }

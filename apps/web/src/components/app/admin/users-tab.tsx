@@ -24,6 +24,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { type AdminUser, type Group, type Me, api } from '@/lib/api/client'
+import { $t, $tp, groupName } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import {
@@ -106,12 +107,14 @@ export function UsersTab({ me }: { readonly me: Me }) {
     <div className="mx-auto max-w-5xl space-y-4 px-6 py-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Utilisateurs</h1>
+          <h1 className="text-lg font-semibold">{$t('Utilisateurs')}</h1>
           <p className="text-sm text-muted-foreground">
             {users === null
-              ? 'Chargement…'
-              : `${active} ${active > 1 ? 'comptes actifs' : 'compte actif'}${
-                  users.length > active ? `, ${users.length - active} désactivé(s)` : ''
+              ? $t('Chargement…')
+              : `${$tp(active, '{count} compte actif', '{count} comptes actifs')}${
+                  users.length > active
+                    ? $tp(users.length - active, ', {count} désactivé', ', {count} désactivés')
+                    : ''
                 }.`}
           </p>
         </div>
@@ -121,14 +124,14 @@ export function UsersTab({ me }: { readonly me: Me }) {
             <input
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              placeholder="Rechercher"
-              aria-label="Rechercher un utilisateur"
+              placeholder={$t('Rechercher')}
+              aria-label={$t('Rechercher un utilisateur')}
               className="w-44 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
           <Button onClick={() => setDialog({ kind: 'new' })}>
             <UserPlus className="size-4" />
-            Nouvel utilisateur
+            {$t('Nouvel utilisateur')}
           </Button>
         </div>
       </div>
@@ -145,9 +148,9 @@ export function UsersTab({ me }: { readonly me: Me }) {
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
             <tr>
-              <th className="px-3 py-2 font-medium">Nom</th>
-              <th className="px-3 py-2 font-medium">Groupes</th>
-              <th className="px-3 py-2 font-medium">Dernière activité</th>
+              <th className="px-3 py-2 font-medium">{$t('Nom||nom d’une personne')}</th>
+              <th className="px-3 py-2 font-medium">{$t('Groupes')}</th>
+              <th className="px-3 py-2 font-medium">{$t('Dernière activité')}</th>
               <th className="w-10 px-3 py-2" />
             </tr>
           </thead>
@@ -175,12 +178,12 @@ export function UsersTab({ me }: { readonly me: Me }) {
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="truncate font-medium">{u.display_name}</span>
                         {u.email === me.email ? (
-                          <span className="text-xs text-muted-foreground">(vous)</span>
+                          <span className="text-xs text-muted-foreground">{$t('(vous)')}</span>
                         ) : null}
-                        {u.is_admin && <Badge variant="secondary">Administrateur</Badge>}
-                        {u.disabled && <Badge variant="outline">Désactivé</Badge>}
+                        {u.is_admin && <Badge variant="secondary">{$t('Administrateur')}</Badge>}
+                        {u.disabled && <Badge variant="outline">{$t('Désactivé')}</Badge>}
                         {!u.disabled && u.must_change_password && (
-                          <Badge variant="outline">Mot de passe temporaire</Badge>
+                          <Badge variant="outline">{$t('Mot de passe temporaire')}</Badge>
                         )}
                       </div>
                       <div className="truncate text-xs text-muted-foreground">{u.email}</div>
@@ -193,7 +196,7 @@ export function UsersTab({ me }: { readonly me: Me }) {
                       .filter((g) => groups.find((x) => x.id === g.id)?.system !== 'everyone')
                       .map((g) => (
                         <Badge key={g.id} variant="outline" className="font-normal">
-                          {g.label}
+                          {groupName(g.label)}
                         </Badge>
                       ))}
                   </div>
@@ -204,21 +207,25 @@ export function UsersTab({ me }: { readonly me: Me }) {
                 <td className="px-3 py-2.5">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon-sm" aria-label={`Actions sur ${u.email}`}>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={$t('Actions sur {email}', { email: u.email })}
+                      >
                         <Ellipsis className="size-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuItem onSelect={() => setDialog({ kind: 'edit', user: u })}>
                         <Pencil className="size-4" />
-                        Modifier…
+                        {$t('Modifier…')}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={() => setDialog({ kind: 'reset', user: u })}
                         disabled={u.disabled}
                       >
                         <KeyRound className="size-4" />
-                        Réinitialiser le mot de passe…
+                        {$t('Réinitialiser le mot de passe…')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       {u.disabled ? (
@@ -230,7 +237,7 @@ export function UsersTab({ me }: { readonly me: Me }) {
                           }
                         >
                           <UserCheck className="size-4" />
-                          Réactiver le compte
+                          {$t('Réactiver le compte')}
                         </DropdownMenuItem>
                       ) : (
                         <DropdownMenuItem
@@ -239,7 +246,7 @@ export function UsersTab({ me }: { readonly me: Me }) {
                           className="text-destructive focus:text-destructive"
                         >
                           <UserX className="size-4" />
-                          Désactiver le compte…
+                          {$t('Désactiver le compte…')}
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
@@ -250,7 +257,7 @@ export function UsersTab({ me }: { readonly me: Me }) {
             {users !== null && shown.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-3 py-6 text-center text-muted-foreground">
-                  Aucun utilisateur ne correspond.
+                  {$t('Aucun utilisateur ne correspond.')}
                 </td>
               </tr>
             )}
@@ -275,10 +282,13 @@ export function UsersTab({ me }: { readonly me: Me }) {
 
       <ConfirmDialog
         open={dialog?.kind === 'reset'}
-        title="Réinitialiser le mot de passe ?"
+        title={$t('Réinitialiser le mot de passe ?')}
         body={
           dialog?.kind === 'reset'
-            ? `Un mot de passe temporaire remplacera celui de ${dialog.user.display_name}, et ses sessions ouvertes seront fermées. Un nouveau mot de passe lui sera demandé à sa prochaine connexion.`
+            ? $t(
+                'Un mot de passe temporaire remplacera celui de {display_name}, et ses sessions ouvertes seront fermées. Un nouveau mot de passe lui sera demandé à sa prochaine connexion.',
+                { display_name: dialog.user.display_name },
+              )
             : ''
         }
         action="Réinitialiser"
@@ -294,10 +304,13 @@ export function UsersTab({ me }: { readonly me: Me }) {
 
       <ConfirmDialog
         open={dialog?.kind === 'disable'}
-        title="Désactiver ce compte ?"
+        title={$t('Désactiver ce compte ?')}
         body={
           dialog?.kind === 'disable'
-            ? `${dialog.user.display_name} ne pourra plus se connecter ; ses sessions et ses jetons d’intégration cessent immédiatement. Ses écritures restent signées de son nom, et le compte peut être réactivé.`
+            ? $t(
+                '{display_name} ne pourra plus se connecter ; ses sessions et ses jetons d’intégration cessent immédiatement. Ses écritures restent signées de son nom, et le compte peut être réactivé.',
+                { display_name: dialog.user.display_name },
+              )
             : ''
         }
         action="Désactiver"
@@ -402,11 +415,13 @@ function UserDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {user === null ? 'Nouvel utilisateur' : 'Modifier l’utilisateur'}
+            {user === null ? $t('Nouvel utilisateur') : $t('Modifier l’utilisateur')}
           </DialogTitle>
           <DialogDescription>
             {user === null
-              ? 'Un mot de passe temporaire sera affiché une seule fois : transmettez-le à la personne, qui en choisira un à sa première connexion.'
+              ? $t(
+                  'Un mot de passe temporaire sera affiché une seule fois : transmettez-le à la personne, qui en choisira un à sa première connexion.',
+                )
               : user.email}
           </DialogDescription>
         </DialogHeader>
@@ -414,7 +429,7 @@ function UserDialog({
         <div className="space-y-4">
           {user === null && (
             <div className="space-y-1.5">
-              <Label htmlFor="user-email">Adresse électronique</Label>
+              <Label htmlFor="user-email">{$t('Adresse électronique')}</Label>
               <Input
                 id="user-email"
                 type="email"
@@ -427,22 +442,22 @@ function UserDialog({
             </div>
           )}
           <div className="space-y-1.5">
-            <Label htmlFor="user-name">Nom affiché</Label>
+            <Label htmlFor="user-name">{$t('Nom affiché')}</Label>
             <Input
               id="user-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void submit()}
-              placeholder="Prénom Nom"
+              placeholder={$t('Prénom Nom')}
               autoFocus={user !== null}
               disabled={busy}
             />
           </div>
 
           <fieldset className="space-y-2">
-            <legend className="mb-1.5 text-sm font-medium">Groupes</legend>
+            <legend className="mb-1.5 text-sm font-medium">{$t('Groupes')}</legend>
             <p className="text-xs text-muted-foreground">
-              Tout le monde fait partie de « Tous les utilisateurs ».
+              {$t('Tout le monde fait partie de « Tous les utilisateurs ».')}
             </p>
             <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border p-2 scroll-discret">
               {choosable.map((g) => (
@@ -457,15 +472,15 @@ function UserDialog({
                     disabled={busy}
                   />
                   <label htmlFor={`user-group-${g.id}`} className="flex-1 cursor-pointer">
-                    {g.label}
+                    {groupName(g.label)}
                   </label>
                   {g.system === 'admins' && (
-                    <span className="text-xs text-muted-foreground">tous les droits</span>
+                    <span className="text-xs text-muted-foreground">{$t('tous les droits')}</span>
                   )}
                 </div>
               ))}
               {choosable.length === 0 && (
-                <p className="px-1.5 py-1 text-sm text-muted-foreground">Aucun groupe.</p>
+                <p className="px-1.5 py-1 text-sm text-muted-foreground">{$t('Aucun groupe.')}</p>
               )}
             </div>
           </fieldset>
@@ -475,11 +490,11 @@ function UserDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button onClick={() => void submit()} disabled={!ready}>
             {busy && <Loader2 className="size-4 animate-spin" />}
-            {user === null ? 'Créer le compte' : 'Enregistrer'}
+            {user === null ? $t('Créer le compte') : $t('Enregistrer')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -518,10 +533,12 @@ function PasswordDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Mot de passe temporaire</DialogTitle>
+          <DialogTitle>{$t('Mot de passe temporaire')}</DialogTitle>
           <DialogDescription>
-            Transmettez-le à {user?.display_name ?? 'la personne'} ({user?.email}). Il ne sera plus
-            jamais affiché ; un nouveau mot de passe lui sera demandé à sa première connexion.
+            {$t(
+              'Transmettez-le à {value} ({email}). Il ne sera plus jamais affiché ; un nouveau mot de passe lui sera demandé à sa première connexion.',
+              { value: user?.display_name ?? $t('la personne'), email: user?.email },
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center gap-2">
@@ -530,11 +547,11 @@ function PasswordDialog({
           </code>
           <Button variant="outline" onClick={() => void copy()}>
             {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-            {copied ? 'Copié' : 'Copier'}
+            {copied ? $t('Copié') : $t('Copier')}
           </Button>
         </div>
         <DialogFooter>
-          <Button onClick={onClose}>Terminé</Button>
+          <Button onClick={onClose}>{$t('Terminé')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -592,7 +609,7 @@ export function ConfirmDialog({
         )}
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Annuler
+            {$t('Annuler')}
           </Button>
           <Button
             variant={destructive ? 'destructive' : 'default'}

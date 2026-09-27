@@ -108,6 +108,17 @@ la ligne ; si elle n'est plus lisible, la notification le dit et n'ouvre rien.
 
 Les notifications lues ou non sont conservées 90 jours (A24).
 
+### 2.3 Ce que chacun refuse
+
+Chaque personne peut refuser une nature de notification, depuis ses paramètres
+(chapitre 11 §10) : `app_user.muted_notifications` liste les natures refusées —
+`mention`, `reply`, `assigned`, et `automation` (chapitre 17). Chaque endroit qui écrit
+une notification le demande **avant** d'écrire : une notification refusée n'est pas
+écrite du tout, plutôt qu'écrite puis cachée. Elle ne compte donc jamais comme non lue,
+ne passe pas par le flux, et réaccepter la nature ne fait pas revenir ce qui s'est passé
+entre-temps. Une mention refusée n'est pas pour autant « injoignable » (§1.3) : la
+personne peut lire la ligne, elle a choisi de ne pas en être avertie.
+
 ---
 
 ## 3. Temps réel

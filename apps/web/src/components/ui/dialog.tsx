@@ -1,5 +1,6 @@
 'use client'
 
+import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { XIcon } from 'lucide-react'
@@ -46,7 +47,7 @@ function DialogContent({
         {children}
         <DialogPrimitive.Close className="absolute top-4 right-4 rounded-md p-1 opacity-60 transition-opacity hover:opacity-100">
           <XIcon className="size-4" />
-          <span className="sr-only">Fermer</span>
+          <span className="sr-only">{$t('Fermer')}</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>

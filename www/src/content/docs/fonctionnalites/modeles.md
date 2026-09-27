@@ -91,6 +91,10 @@ Les règles essentielles :
   `"-2w"`, `"+1m"` ; une date-heure ajoute l’heure, `"+1d 14:30"`. Une personne s’écrit `"$moi"`.
 - Un **champ IA** porte `"ai": { "prompt": "…" }` et peut recevoir une valeur d’exemple, écrite
   seulement quand l’IA n’est pas utilisée.
+- Un **texte long riche** porte `"rich": true` : ses valeurs d’exemple s’écrivent en HTML simple
+  (`<p>`, `<h2>`, `<strong>`, `<ul>`…), nettoyé à l’écriture comme toute valeur riche. Pas sur la
+  colonne d’affichage, ni sur un champ IA. Un modèle qui en a un déclare `"format": 2` : une
+  instance plus ancienne, qui lirait ce HTML comme du Markdown, le laisse alors de côté.
 - Un modèle ne contient **jamais** de partage, de droit, de webhook, de fichier ou de personne
   autre que `"$moi"` : il vient parfois d’ailleurs, et ne doit rien ouvrir.
 
@@ -121,6 +125,8 @@ Un administrateur peut **importer un modèle JSON** dans son instance, depuis la
 de même clé. Une proposition de l’IA peut y être ajoutée d’un clic.
 
 Toute base peut aussi devenir un modèle : **Enregistrer comme modèle** dans le menu de la
-base. Ses tables, champs, consignes IA, relations, vues partagées, tableaux de bord et
+base, sous **Autres actions**. Ses tables, champs, consignes IA, relations, vues partagées, tableaux de bord et
 automatisations — et, si vous le voulez, jusqu’à 50 lignes par table — se téléchargent en
-JSON, prêts à rejoindre le catalogue officiel ou celui de l’instance.
+JSON, prêts à rejoindre le catalogue officiel ou celui de l’instance. Une automatisation qui
+cherche une ligne, prend des chemins ou cite une étape précédente reste en dehors pour
+l’instant, et l’écran le dit.

@@ -5,6 +5,7 @@ import { PermissionsTab } from '@/components/app/admin/permissions-tab'
 import { UsersTab } from '@/components/app/admin/users-tab'
 import { SidebarToggle } from '@/components/app/sidebar'
 import type { Me } from '@/lib/api/client'
+import { $t, intlLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Shield, UserRound, Users } from 'lucide-react'
 
@@ -26,9 +27,9 @@ import { Shield, UserRound, Users } from 'lucide-react'
 export type AdminTab = 'users' | 'groups' | 'permissions'
 
 const TABS: ReadonlyArray<{ id: AdminTab; label: string; icon: typeof Users }> = [
-  { id: 'users', label: 'Utilisateurs', icon: UserRound },
-  { id: 'groups', label: 'Groupes', icon: Users },
-  { id: 'permissions', label: 'Permissions', icon: Shield },
+  { id: 'users', label: $t('Utilisateurs'), icon: UserRound },
+  { id: 'groups', label: $t('Groupes'), icon: Users },
+  { id: 'permissions', label: $t('Permissions'), icon: Shield },
 ]
 
 export function AdminPanel({
@@ -50,8 +51,11 @@ export function AdminPanel({
     <div className="flex min-w-0 flex-1 flex-col">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
         <SidebarToggle />
-        <span className="text-sm font-medium">Administration</span>
-        <nav className="ml-2 flex items-center gap-1" aria-label="Sections de l’administration">
+        <span className="text-sm font-medium">{$t('Administration')}</span>
+        <nav
+          className="ml-2 flex items-center gap-1"
+          aria-label={$t('Sections de l’administration')}
+        >
           {TABS.map((t) => {
             const Icon = t.icon
             return (
@@ -98,14 +102,14 @@ export function initials(name: string, email: string): string {
 
 /** « il y a 3 jours », or the date when it is older than a month. */
 export function sinceWhen(iso: string | null): string {
-  if (iso === null) return 'Jamais'
+  if (iso === null) return $t('Jamais')
   const at = Date.parse(iso)
   const minutes = Math.round((Date.now() - at) / 60_000)
-  if (minutes < 1) return 'À l’instant'
-  if (minutes < 60) return `Il y a ${minutes} min`
+  if (minutes < 1) return $t('À l’instant')
+  if (minutes < 60) return $t('Il y a {minutes} min', { minutes })
   const hours = Math.round(minutes / 60)
-  if (hours < 24) return `Il y a ${hours} h`
+  if (hours < 24) return $t('Il y a {hours} h', { hours })
   const days = Math.round(hours / 24)
-  if (days < 31) return `Il y a ${days} j`
-  return new Date(at).toLocaleDateString('fr-FR')
+  if (days < 31) return $t('Il y a {days} j', { days })
+  return new Date(at).toLocaleDateString(intlLocale())
 }

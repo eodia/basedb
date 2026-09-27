@@ -1,0 +1,217 @@
+---
+/**
+ * The home page, for teams — the people who will use basedb, not the ones who install it —
+ * told like a product keynote: one idea per screen, the product doing the talking.
+ * `src/pages/index.astro` (French) and `src/pages/[locale]/index.astro` show it; the page
+ * for developers is `Home.astro`, at `/developpeurs/`.
+ *
+ * Its texts are `teams` in the dictionary (`src/i18n/ui/fr.ts`); its shared styles,
+ * `src/styles/teams.css`.
+ */
+import '../styles/teams.css';
+import Ai from '../components/teams/Ai.astro';
+import Automate from '../components/teams/Automate.astro';
+import Features from '../components/teams/Features.astro';
+import Film from '../components/teams/Film.astro';
+import Gallery from '../components/teams/Gallery.astro';
+import Glance from '../components/teams/Glance.astro';
+import Story from '../components/teams/Story.astro';
+import Together from '../components/teams/Together.astro';
+import Yours from '../components/teams/Yours.astro';
+import { type Locale, i18n } from '../i18n';
+import Landing from '../layouts/Landing.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, href } = i18n(locale);
+const p = t.teams;
+---
+
+<Landing locale={locale} path="/" title={p.meta.title} description={p.meta.description}>
+	<main class="tm">
+		<Story locale={locale} />
+		<Film locale={locale} />
+		<Together locale={locale} />
+		<Automate locale={locale} />
+		<Glance locale={locale} />
+		<Ai locale={locale} />
+		<Features locale={locale} />
+		<Yours locale={locale} />
+		<Gallery locale={locale} />
+
+		<section class="devs">
+			<div class="devs-inner tm-rise">
+				<div>
+					<h2>{p.developers.title}</h2>
+					<p>{p.developers.text}</p>
+					<a class="tm-link" href={href('/developpeurs/')}>{p.developers.link}</a>
+				</div>
+				<pre aria-hidden="true"><span class="c">$</span> docker compose up -d
+<span class="c">basedb=&gt;</span> select nom, etape
+<span class="c">basedb-&gt;</span>   from ventes.clients;</pre>
+			</div>
+		</section>
+
+		<section class="tm-section faq" id="faq">
+			<h2 class="tm-display tm-rise">{p.faq.title}</h2>
+			<div class="faq-list tm-rise">
+				{
+					p.faq.items.map((item) => (
+						<details>
+							<summary>{item.q}</summary>
+							<p>{item.a}</p>
+						</details>
+					))
+				}
+			</div>
+		</section>
+
+		<section class="tm-section finale">
+			<div class="tm-head">
+				<h2 class="tm-display tm-rise">
+					<span>{p.cta.title}</span>
+					<span class="tm-grad">{p.cta.titleAccent}</span>
+				</h2>
+				<p class="tm-lede tm-rise">{p.cta.text}</p>
+				<div class="tm-actions tm-rise">
+					<a class="tm-pill" href={href('/modeles/')}>{p.cta.primary}</a>
+					<a class="tm-link" href={href('/guides/installation/')}>{p.cta.secondary}</a>
+				</div>
+			</div>
+		</section>
+	</main>
+</Landing>
+
+<script>
+	// What rises into view, once.
+	const risers = document.querySelectorAll('.tm-rise');
+	const observer = new IntersectionObserver(
+		(entries) => {
+			for (const entry of entries) {
+				if (!entry.isIntersecting) continue;
+				entry.target.classList.add('is-in');
+				observer.unobserve(entry.target);
+			}
+		},
+		{ rootMargin: '0px 0px -12% 0px' },
+	);
+	for (const el of risers) observer.observe(el);
+</script>
+
+<style>
+	/* The bridge to the developers' page */
+	.devs {
+		padding: 0 24px;
+	}
+	.devs-inner {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		align-items: center;
+		gap: 48px;
+		max-width: 1180px;
+		margin: 0 auto;
+		padding: 56px;
+		border-radius: 32px;
+		background: var(--tm-mist);
+	}
+	.devs h2 {
+		margin: 0;
+		font-size: clamp(28px, 3.4vw, 44px);
+		font-weight: 800;
+		letter-spacing: -0.04em;
+	}
+	.devs p {
+		margin: 14px 0 20px;
+		font-size: 17px;
+		line-height: 1.55;
+		color: var(--tm-slate);
+	}
+	.devs pre {
+		margin: 0;
+		padding: 26px 28px;
+		border-radius: 20px;
+		font-size: 14.5px;
+		line-height: 1.9;
+		color: #d8e6d4;
+		background: var(--bd-ink);
+		white-space: pre-wrap;
+		box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.5);
+	}
+	.devs .c {
+		color: var(--bd-primary-vivid);
+	}
+
+	/* Questions */
+	.faq {
+		display: grid;
+		grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr);
+		gap: 64px;
+		max-width: 1180px;
+		margin: 0 auto;
+		align-items: start;
+	}
+	.faq .tm-display {
+		font-size: clamp(40px, 5vw, 64px);
+	}
+	.faq-list {
+		border-top: 1px solid var(--tm-line);
+	}
+	details {
+		border-bottom: 1px solid var(--tm-line);
+	}
+	summary {
+		display: flex;
+		justify-content: space-between;
+		gap: 16px;
+		padding: 24px 2px;
+		font-size: 19px;
+		font-weight: 600;
+		letter-spacing: -0.015em;
+		cursor: pointer;
+		list-style: none;
+	}
+	summary::-webkit-details-marker {
+		display: none;
+	}
+	summary::after {
+		content: '+';
+		font-size: 26px;
+		font-weight: 300;
+		line-height: 1;
+		color: var(--tm-slate);
+		transition: transform 0.25s ease;
+	}
+	details[open] summary::after {
+		transform: rotate(45deg);
+	}
+	details p {
+		max-width: 680px;
+		margin: -6px 0 26px;
+		font-size: 17px;
+		line-height: 1.6;
+		color: var(--tm-slate);
+	}
+
+	/* The last word */
+	.finale {
+		padding-top: 80px;
+		padding-bottom: clamp(120px, 16vw, 200px);
+	}
+	.finale .tm-display {
+		font-size: clamp(38px, 5.4vw, 76px);
+	}
+
+	@media (max-width: 900px) {
+		.devs-inner,
+		.faq {
+			grid-template-columns: 1fr;
+			gap: 32px;
+		}
+		.devs-inner {
+			padding: 32px 24px;
+		}
+	}
+</style>

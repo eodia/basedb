@@ -21,6 +21,7 @@
  */
 
 import type { Field } from '@/lib/api/client'
+import { $t, $tp } from '@/lib/i18n'
 
 /** The three keywords that combine predicates. Case-insensitive, per §4.1. */
 export const KEYWORDS = ['and', 'or', 'not'] as const
@@ -227,7 +228,7 @@ export function check(input: string, fields: readonly Field[]): Problem[] {
         problems.push({
           from: token.from,
           to: token.to,
-          message: 'Parenthèse fermante en trop.',
+          message: $t('Parenthèse fermante en trop.'),
           severity: 'error',
         })
         depth = 0
@@ -247,7 +248,7 @@ export function check(input: string, fields: readonly Field[]): Problem[] {
         problems.push({
           from: token.from,
           to: token.to,
-          message: `Champ inconnu : « ${token.text} ».`,
+          message: $t('Champ inconnu : « {text} ».', { text: token.text }),
           severity: 'error',
         })
       }
@@ -266,8 +267,10 @@ export function check(input: string, fields: readonly Field[]): Problem[] {
           from: token.from,
           to: token.to,
           message:
-            `« ${operator} » ne s’applique pas à un champ de type ${lastField.kind}. ` +
-            `Opérateurs acceptés : ${allowed.join(', ')}.`,
+            $t('« {operator} » ne s’applique pas à un champ de type {kind}. ', {
+              operator,
+              kind: lastField.kind,
+            }) + $t('Opérateurs acceptés : {allowed}.', { allowed: allowed.join(', ') }),
           severity: 'error',
         })
       }
@@ -280,7 +283,7 @@ export function check(input: string, fields: readonly Field[]): Problem[] {
     problems.push({
       from: Math.max(0, input.length - 1),
       to: input.length,
-      message: `${depth} parenthèse${depth > 1 ? 's' : ''} non fermée${depth > 1 ? 's' : ''}.`,
+      message: $tp(depth, '{count} parenthèse non fermée.', '{count} parenthèses non fermées.'),
       severity: 'error',
     })
   }
@@ -289,7 +292,7 @@ export function check(input: string, fields: readonly Field[]): Problem[] {
     problems.push({
       from: lastFieldToken.from,
       to: lastFieldToken.to,
-      message: `Il manque un opérateur après « ${lastFieldToken.text} ».`,
+      message: $t('Il manque un opérateur après « {text} ».', { text: lastFieldToken.text }),
       severity: 'warning',
     })
   }

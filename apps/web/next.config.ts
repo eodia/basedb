@@ -26,15 +26,13 @@ const config: NextConfig = {
     : {}),
   // A shared view may be framed by another site only at `/v/<jeton>?embed=1`, and only
   // when its sharing allows it — which the page checks (ch. 15 §10). Anywhere else under
-  // `/v/`, no frame.
+  // `/v/`, no frame. A shared dashboard likewise, at `/d/<jeton>?embed=1` (ch. 18 §2.5).
   async headers() {
-    return [
-      {
-        source: '/v/:token',
-        missing: [{ type: 'query', key: 'embed', value: '1' }],
-        headers: [{ key: 'Content-Security-Policy', value: "frame-ancestors 'none'" }],
-      },
-    ]
+    return ['/v/:token', '/d/:token'].map((source) => ({
+      source,
+      missing: [{ type: 'query' as const, key: 'embed', value: '1' }],
+      headers: [{ key: 'Content-Security-Policy', value: "frame-ancestors 'none'" }],
+    }))
   },
   // No `env` block for BASEDB_API: Next would inline its build-time value into the
   // SERVER code too, and the address the layout reads at run time (app/layout.tsx)

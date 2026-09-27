@@ -1,0 +1,19 @@
+---
+/* A template's page in every language but French; its JSON stays at the root (`/modeles/<key>.json`). */
+import type { Template } from '../../../../../packages/contracts/src/templates';
+import { type Locale, PREFIXED_LOCALES } from '../../../i18n';
+import { catalog } from '../../../lib/modeles';
+import Modele from '../../../views/Modele.astro';
+
+export async function getStaticPaths() {
+	const templates = (await catalog()).map((entry) => entry.template);
+	return PREFIXED_LOCALES.flatMap((l) =>
+		templates.map((template) => ({ params: { locale: l.code, key: template.key }, props: { template } })),
+	);
+}
+
+const locale = Astro.params.locale as Locale;
+const { template } = Astro.props as { template: Template };
+---
+
+<Modele locale={locale} template={template} />

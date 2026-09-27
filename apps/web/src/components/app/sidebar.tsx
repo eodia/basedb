@@ -10,16 +10,13 @@ import {
   writeEnvironmentChoice,
 } from '@/components/app/environment-badge'
 import { EnvironmentsDialog } from '@/components/app/environments-dialog'
-import {
-  AliasesDialog,
-  DeletedTablesDialog,
-  PhysicalRenameDialog,
-  type PhysicalTarget,
-} from '@/components/app/lifecycle-dialogs'
+import { AliasesDialog, DeletedTablesDialog } from '@/components/app/lifecycle-dialogs'
 import { LookIcon, type OptionLook } from '@/components/app/option-badge'
 import { ProjectMenu } from '@/components/app/project-menu'
 import { ProposalDialog } from '@/components/app/proposal-dialog'
+import type { SettingsTab } from '@/components/app/settings/settings-panel'
 import { ShareAccessDialog } from '@/components/app/share-access-dialog'
+import { audienceIcon } from '@/components/app/sql/query-dialog'
 import { ExportTemplateDialog } from '@/components/app/template-export-dialog'
 import { TokenDialog } from '@/components/app/token-dialog'
 import { UserMenu } from '@/components/app/user-menu'
@@ -50,7 +47,15 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import type { DescribedBase, Me, Project, ProjectBase } from '@/lib/api/client'
+import type {
+  DescribedBase,
+  Me,
+  Project,
+  ProjectBase,
+  QuerySummary,
+  SqlViewSummary,
+} from '@/lib/api/client'
+import { $t, $tp } from '@/lib/i18n'
 import { useSidebar } from '@/lib/store/sidebar'
 import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
@@ -61,13 +66,15 @@ import {
   Check,
   ChevronRight,
   Clock,
-  CodeXml,
   Copy,
   Database,
   Ellipsis,
+  Eye,
+  FileCode2,
   FileJson,
   FolderOpen,
   GitCompareArrows,
+  KeyRound,
   Layers,
   LayoutDashboard,
   type LucideIcon,
@@ -77,18 +84,18 @@ import {
   Plus,
   Puzzle,
   Search,
-  Settings,
   Shield,
   Table2,
   Terminal,
   Trash2,
+  TriangleAlert,
   Upload,
   UserPlus,
   Users,
   Webhook,
   Zap,
 } from 'lucide-react'
-import { createContext, useContext, useEffect, useState } from 'react'
+import { type ReactNode, createContext, useContext, useEffect, useState } from 'react'
 
 /**
  * The left column — chapter 11, reorganized around projects (chapter 05 §15).
@@ -111,17 +118,28 @@ export type Section =
   | 'data'
   | 'structure'
   | 'history'
-  | 'interfaces'
+  | 'dashboards'
   | 'automations'
   | 'integrations'
   | 'doc'
   | 'admin'
+  | 'settings'
 
 /** What a base's menu asks of the page: each makes the base the current one first. */
-export type BaseIntent = 'open' | 'structure' | 'doc' | 'sql' | 'new-table'
+export type BaseIntent =
+  | 'open'
+  | 'structure'
+  | 'history'
+  | 'doc'
+  | 'sql'
+  | 'new-table'
+  | 'new-sql-view'
 
 /** What a table's menu asks of the page. */
-export type TableIntent = 'open' | 'import' | 'edit' | 'delete' | 'rename-physical'
+export type TableIntent = 'open' | 'import' | 'edit' | 'delete'
+
+/** What the menu of a SQL view, or of a saved query, asks of the page. */
+export type SavedIntent = 'open' | 'edit'
 
 interface Props {
   readonly projects: readonly Project[]
@@ -140,8 +158,14 @@ interface Props {
   readonly onBaseChanged: (name: string) => void
   readonly onBaseDeleted: (name: string) => void
   readonly onTable: (base: string, table: string, intent: TableIntent) => void
+  /** A SQL view of a base, opened or edited (chapter 11 §1.8). */
+  readonly onSqlView: (base: string, view: SqlViewSummary, intent: SavedIntent) => void
+  /** A saved query of a base, opened, or renamed and shared (chapter 11 §1.7). */
+  readonly onQuery: (base: string, query: QuerySummary, intent: SavedIntent) => void
   readonly onSection: (section: Section) => void
   readonly onAdmin: (tab: AdminTab) => void
+  /** One's own settings, bottom-left — opened on a tab, the profile by default. */
+  readonly onSettings: (tab: SettingsTab) => void
   readonly onSignedOut: () => void
   /** A base or a table renamed in the database: tabs and URLs carry the old name. */
   readonly onRenamed?: (change: {
@@ -159,7 +183,6 @@ type BaseDialog = {
     | 'mcp'
     | 'webhooks'
     | 'proposals'
-    | 'rename-physical'
     | 'aliases'
     | 'deleted-tables'
     | 'environments'
@@ -184,8 +207,11 @@ export function Sidebar({
   onBaseChanged,
   onBaseDeleted,
   onTable,
+  onSqlView,
+  onQuery,
   onSection,
   onAdmin,
+  onSettings,
   onSignedOut,
   onRenamed,
 }: Props) {
@@ -194,10 +220,6 @@ export function Sidebar({
   const [filter, setFilter] = useState('')
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
   const [dialog, setDialog] = useState<BaseDialog | null>(null)
-  const [physicalTable, setPhysicalTable] = useState<{
-    readonly base: string
-    readonly target: PhysicalTarget
-  } | null>(null)
 
   const collapsed = useSidebar((s) => s.collapsed)
 
@@ -213,6 +235,15 @@ export function Sidebar({
     section === 'data' && active?.kind === 'table' && active.table !== null
       ? { base: active.base, table: active.table }
       : null
+  // The SQL view, or the saved query, the active tab shows — ticked like a table.
+  const activeSaved =
+    section !== 'data' || active === null
+      ? null
+      : active.kind === 'sqlview' && active.sqlViewId !== null
+        ? { base: active.base, id: active.sqlViewId }
+        : active.kind === 'sql' && active.queryId !== null
+          ? { base: active.base, id: active.queryId }
+          : null
 
   // One line per base, whatever its number of environments (chapter 14): the line shows
   // the environment being worked in, or the one last chosen, or production.
@@ -235,14 +266,25 @@ export function Sidebar({
 
   const needle = filter.trim().toLowerCase()
   const matches = (text: string) => text.toLowerCase().includes(needle)
+  // A base as the tree lists it: its tables, its SQL views among them, its queries beneath.
+  const whole = (b: ProjectBase) => ({
+    base: b,
+    tables: b.tables,
+    sqlViews: b.sqlViews ?? [],
+    queries: b.queries ?? [],
+  })
   const shown =
     needle === ''
-      ? bases.map((b) => ({ base: b, tables: b.tables }))
+      ? bases.map(whole)
       : bases.flatMap((b) => {
-          // A base whose own label matches shows all its tables; otherwise only those that do.
-          if (matches(`${b.label} ${b.name}`)) return [{ base: b, tables: b.tables }]
+          // A base whose own label matches shows all it holds; otherwise only what does.
+          if (matches(`${b.label} ${b.name}`)) return [whole(b)]
           const tables = b.tables.filter((t) => matches(`${t.label} ${t.name}`))
-          return tables.length > 0 ? [{ base: b, tables }] : []
+          const sqlViews = (b.sqlViews ?? []).filter((v) => matches(`${v.label} ${v.name}`))
+          const queries = (b.queries ?? []).filter((q) => matches(q.label))
+          return tables.length + sqlViews.length + queries.length > 0
+            ? [{ base: b, tables, sqlViews, queries }]
+            : []
         })
 
   const canCreateBase = project?.actions.includes('manage_schema') === true
@@ -258,33 +300,39 @@ export function Sidebar({
   // Declared once and placed twice: under their group titles in full, one after the other
   // in the reduced column, which has no room for titles.
   // No « Nouvelle requête SQL » here: the tab bar's « + » opens one, and a base's menu too.
-  const baseItems = (
+  // Nor « Structure » and « Historique » in full: the base's own menu holds them. The
+  // reduced column has no tree, hence no such menu, and keeps them.
+  const screenItems = (
     <>
       <Item
         icon={Layers}
-        label="Structure"
+        label={$t('Structure')}
         active={section === 'structure'}
         onClick={() => onSection('structure')}
         disabled={base === null}
       />
       <Item
         icon={Clock}
-        label="Historique"
+        label={$t('Historique')}
         active={section === 'history'}
         onClick={() => onSection('history')}
         disabled={base === null}
       />
+    </>
+  )
+  const baseItems = (
+    <>
       <Item
         icon={LayoutDashboard}
-        label="Interfaces"
-        active={section === 'interfaces'}
-        onClick={() => onSection('interfaces')}
+        label={$t('Tableaux de bord')}
+        active={section === 'dashboards'}
+        onClick={() => onSection('dashboards')}
         disabled={base === null}
       />
       {base?.actions.includes('manage_schema') === true && (
         <Item
           icon={Zap}
-          label="Automatisations"
+          label={$t('Automatisations')}
           active={section === 'automations'}
           onClick={() => onSection('automations')}
         />
@@ -310,10 +358,15 @@ export function Sidebar({
       <EditBaseDialog
         open={dialog.kind === 'edit'}
         base={dialog.base}
+        administers={user.isAdmin}
         onClose={() => setDialog(null)}
         onDone={() => {
           setDialog(null)
           onBaseChanged(dialog.base.name)
+        }}
+        onRenamed={(change) => {
+          setDialog(null)
+          onRenamed?.({ kind: 'base', base: change.from, ...change })
         }}
         onEnvironmentsChanged={() => onBaseChanged(dialog.base.name)}
       />
@@ -332,18 +385,6 @@ export function Sidebar({
         base={dialog.base}
         onClose={() => setDialog(null)}
         onApplied={() => onBaseChanged(dialog.base.name)}
-      />
-      <PhysicalRenameDialog
-        target={
-          dialog.kind === 'rename-physical'
-            ? { kind: 'base', id: dialog.base.id, label: dialog.base.label }
-            : null
-        }
-        onClose={() => setDialog(null)}
-        onDone={(change) => {
-          setDialog(null)
-          onRenamed?.({ kind: 'base', base: change.from, ...change })
-        }}
       />
       <AliasesDialog
         base={dialog.kind === 'aliases' ? dialog.base : null}
@@ -383,18 +424,6 @@ export function Sidebar({
     </>
   )
 
-  const physicalDialog = (
-    <PhysicalRenameDialog
-      target={physicalTable?.target ?? null}
-      onClose={() => setPhysicalTable(null)}
-      onDone={(change) => {
-        const base = physicalTable?.base ?? ''
-        setPhysicalTable(null)
-        onRenamed?.({ kind: 'table', base, ...change })
-      }}
-    />
-  )
-
   // Documentation, integrations, people and rights: in the profile menu, bottom-left.
   const entries = (
     <WorkspaceEntries base={base} user={user} onSection={onSection} onAdmin={onAdmin} />
@@ -413,23 +442,33 @@ export function Sidebar({
               disabled={project === null}
               canCreateBase={canCreateBase && !busy}
               onOpen={(b, t) => onTable(b, t, 'open')}
+              onSqlView={(b, v) => onSqlView(b, v, 'open')}
+              onQuery={(b, q) => onQuery(b, q, 'open')}
               onNewBase={onNewBase}
             />
           </nav>
 
           {base !== null && (
             <div className="px-2 pb-2">
-              <div className="space-y-1 rounded-xl border bg-card p-1 shadow-xs">{baseItems}</div>
+              <div className="space-y-1 rounded-xl border bg-card p-1 shadow-xs">
+                {screenItems}
+                {baseItems}
+              </div>
             </div>
           )}
 
           <Separator />
 
           <div className="p-2">
-            <UserMenu user={user} compact onSignedOut={onSignedOut} entries={entries} />
+            <UserMenu
+              user={user}
+              compact
+              onSettings={() => onSettings('profile')}
+              onSignedOut={onSignedOut}
+              entries={entries}
+            />
           </div>
           {dialogs}
-          {physicalDialog}
         </aside>
       </Compact.Provider>
     )
@@ -447,16 +486,16 @@ export function Sidebar({
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filtrer les bases et les tables"
+            placeholder={$t('Filtrer la navigation')}
             className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
-            aria-label="Filtrer les bases et les tables"
+            aria-label={$t('Filtrer les bases, tables et requêtes')}
           />
           {filter !== '' && (
             <button
               type="button"
               onClick={() => setFilter('')}
               className="text-xs text-muted-foreground hover:text-foreground"
-              aria-label="Effacer"
+              aria-label={$t('Effacer')}
             >
               ×
             </button>
@@ -471,25 +510,30 @@ export function Sidebar({
                 className="size-8 shrink-0"
                 onClick={onNewBase}
                 disabled={busy}
-                aria-label="Nouvelle base"
+                aria-label={$t('Nouvelle base')}
               >
                 <Plus className="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Nouvelle base dans ce projet</TooltipContent>
+            <TooltipContent>{$t('Nouvelle base dans ce projet')}</TooltipContent>
           </Tooltip>
         )}
       </div>
 
       <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-3 scroll-discret">
         <div className="space-y-0.5">
-          {shown.map(({ base: b, tables }) => (
+          {shown.map(({ base: b, tables, sqlViews, queries }) => (
             <BaseNode
               key={b.id}
               base={b}
               family={familyOf.get(b.name) ?? [b]}
               onEnvironment={switchEnvironment}
               tables={tables}
+              sqlViews={sqlViews}
+              queries={queries}
+              activeSaved={activeSaved?.base === b.name ? activeSaved.id : null}
+              onSqlView={(view, intent) => onSqlView(b.name, view, intent)}
+              onQuery={(query, intent) => onQuery(b.name, query, intent)}
               current={base?.name === b.name}
               expanded={needle !== '' || expanded.has(b.name)}
               activeTable={activeTable?.base === b.name ? activeTable.table : null}
@@ -502,26 +546,16 @@ export function Sidebar({
               onIntent={(intent) => onBase(b.name, intent)}
               administers={user.isAdmin}
               onDialog={(kind) => setDialog({ kind, base: b })}
-              onTable={(table, intent) => {
-                const found = b.tables.find((x) => x.name === table)
-                if (intent === 'rename-physical' && found !== undefined) {
-                  setPhysicalTable({
-                    base: b.name,
-                    target: { kind: 'table', id: found.id, label: found.label },
-                  })
-                  return
-                }
-                onTable(b.name, table, intent)
-              }}
+              onTable={(table, intent) => onTable(b.name, table, intent)}
             />
           ))}
           {project !== null && shown.length === 0 && (
             <p className="px-2 py-1.5 text-xs text-muted-foreground">
               {needle !== ''
-                ? 'Rien ne correspond.'
+                ? $t('Rien ne correspond.')
                 : canCreateBase
-                  ? 'Aucune base : créez la première avec « + ».'
-                  : 'Aucune base visible dans ce projet.'}
+                  ? $t('Aucune base : créez la première avec « + ».')
+                  : $t('Aucune base visible dans ce projet.')}
             </p>
           )}
         </div>
@@ -533,7 +567,7 @@ export function Sidebar({
         <div className="px-3 pb-3">
           <Card className="p-1.5">
             <p className="truncate px-2 pt-1 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Base · {base.label}
+              {$t('Base · {label}', { label: base.label })}
             </p>
             <div className="space-y-0.5">{baseItems}</div>
           </Card>
@@ -543,10 +577,14 @@ export function Sidebar({
       <Separator />
 
       <div className="p-3">
-        <UserMenu user={user} onSignedOut={onSignedOut} entries={entries} />
+        <UserMenu
+          user={user}
+          onSettings={() => onSettings('profile')}
+          onSignedOut={onSignedOut}
+          entries={entries}
+        />
       </div>
       {dialogs}
-      {physicalDialog}
     </aside>
   )
 }
@@ -558,7 +596,7 @@ export function Sidebar({
 export function SidebarToggle() {
   const collapsed = useSidebar((s) => s.collapsed)
   const toggle = useSidebar((s) => s.toggle)
-  const label = collapsed ? 'Agrandir le panneau' : 'Réduire le panneau'
+  const label = collapsed ? $t('Agrandir le panneau') : $t('Réduire le panneau')
 
   return (
     <Tooltip>
@@ -592,12 +630,12 @@ function WorkspaceEntries({
     <>
       <DropdownMenuItem disabled={base === null} onSelect={() => onSection('doc')}>
         <BookOpen className="size-4" />
-        Documentation API et MCP
+        {$t('Documentation API et MCP')}
       </DropdownMenuItem>
       {base?.actions.includes('manage_schema') === true && (
         <DropdownMenuItem onSelect={() => onSection('integrations')}>
           <Puzzle className="size-4" />
-          Intégrations
+          {$t('Intégrations')}
         </DropdownMenuItem>
       )}
       {/* People, groups and permissions: shown to those who administer, absent otherwise —
@@ -606,22 +644,18 @@ function WorkspaceEntries({
         <>
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-            Administration
+            {$t('Administration')}
           </DropdownMenuLabel>
           <DropdownMenuItem onSelect={() => onAdmin('users')}>
             <Users className="size-4" />
-            Utilisateurs et groupes
+            {$t('Utilisateurs et groupes')}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => onAdmin('permissions')}>
             <Shield className="size-4" />
-            Permissions
+            {$t('Permissions')}
           </DropdownMenuItem>
         </>
       )}
-      <DropdownMenuItem disabled>
-        <Settings className="size-4" />
-        Paramètres
-      </DropdownMenuItem>
     </>
   )
 }
@@ -674,7 +708,14 @@ const CONTEXT_KIT: MenuKit = {
   SubContent: ContextMenuSubContent,
 }
 
-/** What one does to a base: its « ⋯ » menu, and its right-click menu. */
+/**
+ * What one does to a base: its « ⋯ » menu, and its right-click menu.
+ *
+ * At the root, what one does every day — create, query, look at the structure and at what
+ * changed, share, modify. What one does now and then waits one level down: the doors
+ * opened to programs and agents in one submenu, everything else in another, the
+ * administrator's entries at its foot. Deleting comes last, alone, away from the rest.
+ */
 function BaseMenuEntries({
   kit: M,
   base,
@@ -691,98 +732,131 @@ function BaseMenuEntries({
   readonly onDialog: (kind: BaseDialog['kind']) => void
 }) {
   const manages = base.actions.includes('manage_schema')
+  // What agents proposed and awaits a decision: counted on the submenu that holds it too.
+  const waiting = manages && base.openProposals > 0 && (
+    <span className="text-xs text-amber-700 dark:text-amber-400">{base.openProposals}</span>
+  )
   return (
     <>
       <M.Label className="truncate">{base.label}</M.Label>
       {manages && (
         <M.Item onSelect={() => onIntent('new-table')} disabled={busy}>
           <Plus className="size-4" />
-          Nouvelle table
+          {$t('Nouvelle table')}
         </M.Item>
       )}
       <M.Item onSelect={() => onIntent('sql')}>
         <Terminal className="size-4" />
-        Nouvelle requête SQL
+        {$t('Nouvelle requête SQL')}
       </M.Item>
-      <M.Item onSelect={() => onIntent('structure')}>
-        <Layers className="size-4" />
-        Structure
-      </M.Item>
-      <M.Item onSelect={() => onIntent('doc')}>
-        <BookOpen className="size-4" />
-        Documentation API et MCP
-      </M.Item>
-      <M.Separator />
-      <M.Item onSelect={() => onDialog('mcp')}>
-        <Plug className="size-4" />
-        Jetons API et MCP…
-      </M.Item>
-      {/* Like tokens: offered to whoever may manage the base's doors. */}
-      {base.actions.includes('manage_tokens') && (
-        <M.Item onSelect={() => onDialog('webhooks')}>
-          <Webhook className="size-4" />
-          Webhooks…
+      {manages && (
+        <M.Item onSelect={() => onIntent('new-sql-view')} disabled={busy}>
+          <Eye className="size-4" />
+          {$t('Nouvelle vue SQL…')}
         </M.Item>
       )}
+      <M.Separator />
+      <M.Item onSelect={() => onIntent('structure')}>
+        <Layers className="size-4" />
+        {$t('Structure')}
+      </M.Item>
+      <M.Item onSelect={() => onIntent('history')}>
+        <Clock className="size-4" />
+        {$t('Historique')}
+      </M.Item>
       {manages && (
         <>
+          <M.Separator />
           <M.Item onSelect={() => onDialog('share')}>
             <UserPlus className="size-4" />
-            Partager la base…
-          </M.Item>
-          <M.Item onSelect={() => onDialog('proposals')}>
-            <Bot className="size-4" />
-            <span className="flex-1">Propositions des agents…</span>
-            {base.openProposals > 0 && (
-              <span className="text-xs text-amber-700 dark:text-amber-400">
-                {base.openProposals}
-              </span>
-            )}
+            {$t('Partager la base…')}
           </M.Item>
           <M.Item onSelect={() => onDialog('edit')}>
             <Pencil className="size-4" />
-            Modifier la base…
+            {$t('Modifier la base…')}
           </M.Item>
-          <M.Item onSelect={() => onDialog('environments')}>
-            <GitCompareArrows className="size-4" />
-            Comparer les environnements…
+        </>
+      )}
+      <M.Separator />
+      <M.Sub>
+        <M.SubTrigger>
+          <Plug className="size-4" />
+          <span className="flex-1">{$t('API et agents')}</span>
+          {waiting}
+        </M.SubTrigger>
+        <M.SubContent className="w-64">
+          <M.Item onSelect={() => onIntent('doc')}>
+            <BookOpen className="size-4" />
+            {$t('Documentation API et MCP')}
           </M.Item>
-          <M.Item onSelect={() => onDialog('template')}>
-            <FileJson className="size-4" />
-            Enregistrer comme modèle…
+          <M.Item onSelect={() => onDialog('mcp')}>
+            <KeyRound className="size-4" />
+            {$t('Jetons API et MCP…')}
           </M.Item>
+          {/* Like tokens: offered to whoever may manage the base's doors. */}
+          {base.actions.includes('manage_tokens') && (
+            <M.Item onSelect={() => onDialog('webhooks')}>
+              <Webhook className="size-4" />
+              {$t('Webhooks…')}
+            </M.Item>
+          )}
+          {manages && (
+            <M.Item onSelect={() => onDialog('proposals')}>
+              <Bot className="size-4" />
+              <span className="flex-1">{$t('Propositions des agents…')}</span>
+              {waiting}
+            </M.Item>
+          )}
+        </M.SubContent>
+      </M.Sub>
+      {(manages || administers) && (
+        <M.Sub>
+          <M.SubTrigger>
+            <Ellipsis className="size-4" />
+            {$t('Autres actions')}
+          </M.SubTrigger>
+          <M.SubContent className="w-64">
+            {manages && (
+              <>
+                <M.Item onSelect={() => onDialog('environments')}>
+                  <GitCompareArrows className="size-4" />
+                  {$t('Comparer les environnements…')}
+                </M.Item>
+                <M.Item onSelect={() => onDialog('template')}>
+                  <FileJson className="size-4" />
+                  {$t('Enregistrer comme modèle…')}
+                </M.Item>
+              </>
+            )}
+            {administers && (
+              <>
+                {manages && <M.Separator />}
+                <M.Label className="text-xs font-normal text-muted-foreground">
+                  {$t('Administration')}
+                </M.Label>
+                <M.Item onSelect={() => onDialog('aliases')}>
+                  <Copy className="size-4" />
+                  {$t('Alias de compatibilité…')}
+                </M.Item>
+                <M.Item onSelect={() => onDialog('deleted-tables')}>
+                  <ArchiveX className="size-4" />
+                  {$t('Tables supprimées…')}
+                </M.Item>
+              </>
+            )}
+          </M.SubContent>
+        </M.Sub>
+      )}
+      {manages && (
+        <>
+          <M.Separator />
           <M.Item
             onSelect={() => onDialog('delete')}
             className="text-destructive focus:text-destructive"
           >
             <Trash2 className="size-4 text-destructive" />
-            Supprimer la base…
+            {$t('Supprimer la base…')}
           </M.Item>
-        </>
-      )}
-      {administers && (
-        <>
-          <M.Separator />
-          <M.Sub>
-            <M.SubTrigger>
-              <Shield className="size-4" />
-              Administration
-            </M.SubTrigger>
-            <M.SubContent className="w-56">
-              <M.Item onSelect={() => onDialog('rename-physical')}>
-                <CodeXml className="size-4" />
-                Renommer en base…
-              </M.Item>
-              <M.Item onSelect={() => onDialog('aliases')}>
-                <Copy className="size-4" />
-                Alias de compatibilité…
-              </M.Item>
-              <M.Item onSelect={() => onDialog('deleted-tables')}>
-                <ArchiveX className="size-4" />
-                Tables supprimées…
-              </M.Item>
-            </M.SubContent>
-          </M.Sub>
         </>
       )}
     </>
@@ -793,12 +867,10 @@ function BaseMenuEntries({
  * A base in the tree, its menu, and its tables when unfolded.
  *
  * The chevron folds; a click on the label also makes the base the current one — the one
- * « Structure », « Historique » and the SQL console speak of. The « ⋯ » holds what one does
- * to the base itself; « Nouvelle table » and « Modifier » appear only to whoever holds
- * `manage_schema` on it, which is what the server would demand anyway. What only an
- * administrator does — physical name, aliases, deleted tables — waits in a submenu of its
- * own, out of the way of the daily entries. A right-click on the line opens the same menu,
- * as it does on a table.
+ * the card below and the SQL console speak of. The « ⋯ » holds what one does to the base
+ * itself, its structure and its history among it; « Nouvelle table » and « Modifier »
+ * appear only to whoever holds `manage_schema` on it, which is what the server would demand
+ * anyway. A right-click on the line opens the same menu, as it does on a table.
  */
 function BaseNode({
   base,
@@ -815,12 +887,25 @@ function BaseNode({
   onDialog,
   onTable,
   administers,
+  sqlViews,
+  queries,
+  activeSaved,
+  onSqlView,
+  onQuery,
 }: {
   readonly base: ProjectBase
   /** Every environment of this base, production first — the base alone when it has one. */
   readonly family: readonly ProjectBase[]
   readonly onEnvironment: (environment: ProjectBase) => void
   readonly tables: ProjectBase['tables']
+  /** Its SQL views, listed among the tables, each marked as a view. */
+  readonly sqlViews: readonly SqlViewSummary[]
+  /** Its saved queries, listed beneath the tables. */
+  readonly queries: readonly QuerySummary[]
+  /** The SQL view or saved query the active tab shows, by its id. */
+  readonly activeSaved: string | null
+  readonly onSqlView: (view: SqlViewSummary, intent: SavedIntent) => void
+  readonly onQuery: (query: QuerySummary, intent: SavedIntent) => void
   readonly current: boolean
   readonly expanded: boolean
   readonly activeTable: string | null
@@ -830,7 +915,7 @@ function BaseNode({
   readonly onIntent: (intent: BaseIntent) => void
   readonly onDialog: (kind: BaseDialog['kind']) => void
   readonly onTable: (table: string, intent: TableIntent) => void
-  /** The administration role: physical names, aliases, purge (chapter 06 §1.2). */
+  /** The administration role: aliases and deleted tables (chapter 06 §1.2). */
   readonly administers: boolean
 }) {
   const manages = base.actions.includes('manage_schema')
@@ -849,7 +934,11 @@ function BaseNode({
               <button
                 type="button"
                 onClick={onToggle}
-                aria-label={expanded ? `Replier ${base.label}` : `Déplier ${base.label}`}
+                aria-label={
+                  expanded
+                    ? $t('Replier {label}', { label: base.label })
+                    : $t('Déplier {label}', { label: base.label })
+                }
                 aria-expanded={expanded}
                 className="flex h-8 w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
               >
@@ -876,8 +965,11 @@ function BaseNode({
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      aria-label={`Environnement de ${base.label} : ${base.environment.label}`}
-                      title="Changer d’environnement"
+                      aria-label={$t('Environnement de {label} : {label2}', {
+                        label: base.label,
+                        label2: base.environment.label,
+                      })}
+                      title={$t('Changer d’environnement')}
                       className="flex shrink-0 items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <EnvironmentBadge environment={base.environment} className="cursor-pointer" />
@@ -885,7 +977,7 @@ function BaseNode({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-56">
                     <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                      Environnements de {base.label}
+                      {$t('Environnements de {label}', { label: base.label })}
                     </DropdownMenuLabel>
                     {family.map((env) => (
                       <DropdownMenuItem key={env.id} onSelect={() => onEnvironment(env)}>
@@ -901,7 +993,7 @@ function BaseNode({
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onSelect={() => onDialog('environments')}>
                           <GitCompareArrows className="size-4" />
-                          Comparer les environnements…
+                          {$t('Comparer les environnements…')}
                         </DropdownMenuItem>
                       </>
                     )}
@@ -913,8 +1005,15 @@ function BaseNode({
                 <button
                   type="button"
                   onClick={() => onDialog('proposals')}
-                  title={`${base.openProposals} proposition${base.openProposals > 1 ? 's' : ''} d’agent en attente`}
-                  aria-label={`Propositions en attente sur ${base.label} : ${base.openProposals}`}
+                  title={$tp(
+                    base.openProposals,
+                    '{count} proposition d’agent en attente',
+                    '{count} propositions d’agent en attente',
+                  )}
+                  aria-label={$t('Propositions en attente sur {label} : {openProposals}', {
+                    label: base.label,
+                    openProposals: base.openProposals,
+                  })}
                   className="ml-1 flex h-5 min-w-5 shrink-0 items-center justify-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 text-[0.7rem] font-medium text-amber-700 hover:bg-amber-500/25 dark:text-amber-400"
                 >
                   <Bot className="size-3" />
@@ -928,7 +1027,7 @@ function BaseNode({
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  aria-label={`Actions sur la base ${base.label}`}
+                  aria-label={$t('Actions sur la base {label}', { label: base.label })}
                   className="absolute top-1/2 right-1 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/base:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
                 >
                   <Ellipsis className="size-4" />
@@ -966,11 +1065,65 @@ function BaseNode({
               key={t.id}
               table={t}
               active={activeTable === t.name}
-              administers={administers}
               onIntent={(intent) => onTable(t.name, intent)}
             />
           ))}
-          {tables.length === 0 && (
+          {sqlViews.map((v) => (
+            <SavedRow
+              key={v.id}
+              icon={Table2}
+              look={v}
+              label={v.label}
+              hint={
+                v.broken
+                  ? $t('{name} — vue SQL à corriger', { name: v.name })
+                  : $t('{name} — vue SQL', { name: v.name })
+              }
+              mark={
+                v.broken ? (
+                  <TriangleAlert className="size-3 text-amber-600" aria-label={$t('à corriger')} />
+                ) : (
+                  <Eye className="size-3" aria-label={$t('vue SQL')} />
+                )
+              }
+              kind={$t('la vue')}
+              active={activeSaved === v.id}
+              editable={manages}
+              editLabel={$t('Modifier la vue…')}
+              onIntent={(intent) => onSqlView(v, intent)}
+            />
+          ))}
+          {queries.length > 0 && (
+            <div className="pt-1.5">
+              <p className="px-2 pb-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {$t('Requêtes')}
+              </p>
+              {queries.map((q) => {
+                const Audience = audienceIcon(q.audience)
+                return (
+                  <SavedRow
+                    key={q.id}
+                    icon={FileCode2}
+                    label={q.label}
+                    hint={
+                      q.audience === 'personal'
+                        ? $t('Requête personnelle')
+                        : q.audience === 'base'
+                          ? $t('Requête partagée avec toute la base')
+                          : $t('Requête partagée avec des groupes')
+                    }
+                    mark={<Audience className="size-3" aria-hidden />}
+                    kind={$t('la requête')}
+                    active={activeSaved === q.id}
+                    editable={q.audience === 'personal' ? q.mine : manages}
+                    editLabel={$t('Nom et partage…')}
+                    onIntent={(intent) => onQuery(q, intent)}
+                  />
+                )
+              })}
+            </div>
+          )}
+          {tables.length === 0 && sqlViews.length === 0 && (
             <p className="px-2 py-1.5 text-xs text-muted-foreground">
               {manages ? (
                 <button
@@ -978,10 +1131,10 @@ function BaseNode({
                   onClick={() => onIntent('new-table')}
                   className="underline-offset-2 hover:text-foreground hover:underline"
                 >
-                  Créer la première table
+                  {$t('Créer la première table')}
                 </button>
               ) : (
-                'Aucune table.'
+                $t('Aucune table.')
               )}
             </p>
           )}
@@ -1004,6 +1157,8 @@ function BasesMenu({
   disabled,
   canCreateBase,
   onOpen,
+  onSqlView,
+  onQuery,
   onNewBase,
 }: {
   readonly bases: readonly ProjectBase[]
@@ -1011,6 +1166,8 @@ function BasesMenu({
   readonly disabled: boolean
   readonly canCreateBase: boolean
   readonly onOpen: (base: string, table: string) => void
+  readonly onSqlView: (base: string, view: SqlViewSummary) => void
+  readonly onQuery: (base: string, query: QuerySummary) => void
   readonly onNewBase: () => void
 }) {
   return (
@@ -1021,7 +1178,7 @@ function BasesMenu({
             <button
               type="button"
               disabled={disabled}
-              aria-label="Bases et tables"
+              aria-label={$t('Bases et tables')}
               className={cn(
                 'flex h-9 w-full items-center justify-center rounded-lg transition-colors',
                 'hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent disabled:pointer-events-none disabled:opacity-40',
@@ -1037,7 +1194,7 @@ function BasesMenu({
             </button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
-        <TooltipContent side="right">Bases et tables</TooltipContent>
+        <TooltipContent side="right">{$t('Bases et tables')}</TooltipContent>
       </Tooltip>
 
       <DropdownMenuContent side="right" align="start" className="max-h-[70vh] w-64 overflow-y-auto">
@@ -1058,20 +1215,33 @@ function BasesMenu({
                 )}
               </DropdownMenuItem>
             ))}
-            {b.tables.length === 0 && (
-              <div className="px-2 py-1 text-xs text-muted-foreground">Aucune table.</div>
+            {(b.sqlViews ?? []).map((v) => (
+              <DropdownMenuItem key={v.id} onSelect={() => onSqlView(b.name, v)}>
+                <LookIcon look={v} fallback={Table2} />
+                <span className="min-w-0 flex-1 truncate">{v.label}</span>
+                <Eye className="size-3 text-muted-foreground" aria-label={$t('vue SQL')} />
+              </DropdownMenuItem>
+            ))}
+            {b.tables.length === 0 && (b.sqlViews ?? []).length === 0 && (
+              <div className="px-2 py-1 text-xs text-muted-foreground">{$t('Aucune table.')}</div>
             )}
+            {(b.queries ?? []).map((q) => (
+              <DropdownMenuItem key={q.id} onSelect={() => onQuery(b.name, q)}>
+                <FileCode2 className="size-4" />
+                <span className="min-w-0 flex-1 truncate">{q.label}</span>
+              </DropdownMenuItem>
+            ))}
           </div>
         ))}
         {bases.length === 0 && (
-          <div className="px-2 py-1.5 text-sm text-muted-foreground">Aucune base.</div>
+          <div className="px-2 py-1.5 text-sm text-muted-foreground">{$t('Aucune base.')}</div>
         )}
         {canCreateBase && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={onNewBase}>
               <Plus className="size-4" />
-              Nouvelle base
+              {$t('Nouvelle base')}
             </DropdownMenuItem>
           </>
         )}
@@ -1095,12 +1265,10 @@ function BasesMenu({
 function TableRow({
   table,
   active,
-  administers,
   onIntent,
 }: {
   readonly table: ProjectBase['tables'][number]
   readonly active: boolean
-  readonly administers: boolean
   readonly onIntent: (intent: TableIntent) => void
 }) {
   // Offered only to whoever may: importing writes rows, deleting changes the structure.
@@ -1124,7 +1292,7 @@ function TableRow({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                aria-label={`Actions sur la table ${table.label}`}
+                aria-label={$t('Actions sur la table {label}', { label: table.label })}
                 className="absolute top-1/2 right-1 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/table:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
               >
                 <Ellipsis className="size-4" />
@@ -1133,33 +1301,27 @@ function TableRow({
             <DropdownMenuContent align="start" className="w-52">
               <DropdownMenuItem onSelect={() => onIntent('open')}>
                 <FolderOpen className="size-4" />
-                Ouvrir
+                {$t('Ouvrir')}
               </DropdownMenuItem>
               {imports && (
                 <DropdownMenuItem onSelect={() => onIntent('import')}>
                   <Upload className="size-4" />
-                  Importer…
+                  {$t('Importer…')}
                 </DropdownMenuItem>
               )}
               {manages && (
                 <>
                   <DropdownMenuItem onSelect={() => onIntent('edit')}>
                     <Pencil className="size-4" />
-                    Modifier la table…
+                    {$t('Modifier la table…')}
                   </DropdownMenuItem>
-                  {administers && (
-                    <DropdownMenuItem onSelect={() => onIntent('rename-physical')}>
-                      <CodeXml className="size-4" />
-                      Renommer en base…
-                    </DropdownMenuItem>
-                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onSelect={() => onIntent('delete')}
                     className="text-destructive focus:text-destructive"
                   >
                     <Trash2 className="size-4" />
-                    Supprimer la table
+                    {$t('Supprimer la table')}
                   </DropdownMenuItem>
                 </>
               )}
@@ -1171,37 +1333,113 @@ function TableRow({
       <ContextMenuContent className="w-52">
         <ContextMenuItem onSelect={() => onIntent('open')}>
           <FolderOpen className="size-4" />
-          Ouvrir
+          {$t('Ouvrir')}
         </ContextMenuItem>
         {imports && (
           <ContextMenuItem onSelect={() => onIntent('import')}>
             <Upload className="size-4" />
-            Importer…
+            {$t('Importer…')}
           </ContextMenuItem>
         )}
         {manages && (
           <>
             <ContextMenuItem onSelect={() => onIntent('edit')}>
               <Pencil className="size-4" />
-              Modifier la table…
+              {$t('Modifier la table…')}
             </ContextMenuItem>
-            {administers && (
-              <ContextMenuItem onSelect={() => onIntent('rename-physical')}>
-                <CodeXml className="size-4" />
-                Renommer en base…
-              </ContextMenuItem>
-            )}
             <ContextMenuSeparator />
             <ContextMenuItem
               onSelect={() => onIntent('delete')}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="size-4 text-destructive" />
-              Supprimer la table
+              {$t('Supprimer la table')}
             </ContextMenuItem>
           </>
         )}
       </ContextMenuContent>
+    </ContextMenu>
+  )
+}
+
+/**
+ * A SQL view among the tables, or a saved query beneath them: the click opens it, the
+ * « ⋯ » and the right-click open it or change it. A small mark at the right says what it
+ * is — a view, whatever look it wears; a query, and who sees it —, and gives its place to
+ * the « ⋯ » on hover.
+ */
+function SavedRow({
+  icon,
+  look,
+  label,
+  hint,
+  mark,
+  kind,
+  active,
+  editable,
+  editLabel,
+  onIntent,
+}: {
+  readonly icon: LucideIcon
+  readonly look?: OptionLook
+  readonly label: string
+  readonly hint: string
+  readonly mark: ReactNode
+  /** « la vue », « la requête » — for a screen reader, in the menu's name. */
+  readonly kind: string
+  readonly active: boolean
+  readonly editable: boolean
+  readonly editLabel: string
+  readonly onIntent: (intent: SavedIntent) => void
+}) {
+  const entries = (Menu: typeof DropdownMenuItem | typeof ContextMenuItem) => (
+    <>
+      <Menu onSelect={() => onIntent('open')}>
+        <FolderOpen className="size-4" />
+        {$t('Ouvrir')}
+      </Menu>
+      {editable && (
+        <Menu onSelect={() => onIntent('edit')}>
+          <Pencil className="size-4" />
+          {editLabel}
+        </Menu>
+      )}
+    </>
+  )
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div className="group/saved relative">
+          <Item
+            icon={icon}
+            look={look}
+            label={label}
+            hint={hint}
+            active={active}
+            onClick={() => onIntent('open')}
+            trailing={
+              <span className="flex shrink-0 items-center text-muted-foreground/70 transition-opacity group-hover/saved:opacity-0">
+                {mark}
+              </span>
+            }
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label={$t('Actions sur {kind} {label}', { kind, label })}
+                className="absolute top-1/2 right-1 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/saved:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+              >
+                <Ellipsis className="size-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-52">
+              {entries(DropdownMenuItem)}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-52">{entries(ContextMenuItem)}</ContextMenuContent>
     </ContextMenu>
   )
 }
@@ -1214,6 +1452,7 @@ function Item({
   active = false,
   disabled = false,
   onClick,
+  trailing,
 }: {
   readonly icon: LucideIcon
   /** A look of its own — a table's —, worn instead of the plain glyph. */
@@ -1223,6 +1462,8 @@ function Item({
   readonly active?: boolean
   readonly disabled?: boolean
   readonly onClick?: () => void
+  /** A mark after the label, at the right edge — what a SQL view or a query is. */
+  readonly trailing?: ReactNode
 }) {
   const compact = useContext(Compact)
 
@@ -1246,6 +1487,7 @@ function Item({
         className={active ? 'text-foreground' : 'text-muted-foreground'}
       />
       {!compact && <span className="truncate">{label}</span>}
+      {!compact && trailing !== undefined && <span className="ml-auto pl-1">{trailing}</span>}
     </button>
   )
 

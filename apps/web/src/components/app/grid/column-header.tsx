@@ -1,7 +1,7 @@
 'use client'
 
 import { hasDescription } from '@/components/app/description'
-import { FieldIcon } from '@/components/app/field-icon'
+import { FieldIcon, shownFormat } from '@/components/app/field-icon'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/context-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Field } from '@/lib/api/client'
+import { $t } from '@/lib/i18n'
 import type { SortTerm } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
 import { useSortable } from '@dnd-kit/sortable'
@@ -85,7 +86,7 @@ export function ColumnHeader({
   const rank = sorts.findIndex((s) => s.field === field.name)
   const term = rank === -1 ? null : sorts[rank]
 
-  const hint = sortable ? 'Trier (Maj+clic pour un tri secondaire)' : 'Non triable'
+  const hint = sortable ? $t('Trier (Maj+clic pour un tri secondaire)') : $t('Non triable')
 
   // The same node with or without a description: only a wrapper and a tooltip come and go,
   // so a column that has none is laid out exactly as before.
@@ -107,7 +108,7 @@ export function ColumnHeader({
         className="flex min-w-0 flex-1 items-center gap-1.5 text-left disabled:pointer-events-none"
       >
         {pinned && <Pin className="size-2.5 shrink-0 text-primary" />}
-        <FieldIcon kind={field.kind} format={field.format?.display} />
+        <FieldIcon kind={field.kind} format={shownFormat(field)} />
         <span className="truncate text-xs font-medium">{field.label}</span>
         {term === null ? (
           sortable && <ArrowUpDown className="ml-auto size-3 shrink-0 text-muted-foreground/25" />
@@ -155,7 +156,7 @@ export function ColumnHeader({
             {...attributes}
             {...listeners}
             className="flex w-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground/25 transition-colors hover:text-muted-foreground active:cursor-grabbing"
-            aria-label={`Déplacer la colonne ${field.label}`}
+            aria-label={$t('Déplacer la colonne {label}', { label: field.label })}
           >
             <GripVertical className="size-3" />
           </span>
@@ -184,28 +185,28 @@ export function ColumnHeader({
 
         <ContextMenuItem onSelect={onFilter}>
           <Filter className="size-4" />
-          Filtrer sur ce champ
+          {$t('Filtrer sur ce champ')}
         </ContextMenuItem>
         <ContextMenuItem onSelect={onPin}>
           {pinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
-          {pinned ? 'Détacher la colonne' : 'Ancrer la colonne'}
+          {pinned ? $t('Détacher la colonne') : $t('Ancrer la colonne')}
         </ContextMenuItem>
 
         <ContextMenuSeparator />
 
         <ContextMenuItem onSelect={onFitWidth}>
           <MoveHorizontal className="size-4" />
-          Adapter la taille
-          <ContextMenuShortcut>Double-clic</ContextMenuShortcut>
+          {$t('Adapter la taille')}
+          <ContextMenuShortcut>{$t('Double-clic')}</ContextMenuShortcut>
         </ContextMenuItem>
         <ContextMenuItem onSelect={onHide}>
           <EyeOff className="size-4" />
-          Cacher la colonne
+          {$t('Cacher la colonne')}
         </ContextMenuItem>
         {hiddenCount > 0 && (
           <ContextMenuItem onSelect={onShowHidden}>
             <Eye className="size-4" />
-            Tout réafficher ({hiddenCount})
+            {$t('Tout réafficher ({hiddenCount})', { hiddenCount })}
           </ContextMenuItem>
         )}
       </ContextMenuContent>

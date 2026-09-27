@@ -85,6 +85,25 @@ export function urlCheck(column: string): string {
   return `${column} IS NULL OR (char_length(${column}) <= ${MAX_URL_CHARS} AND ${column} ~* '^(https?://[^[:space:]]+|mailto:[^[:space:]@]+@[^[:space:]]+)$')`
 }
 
+/**
+ * The patterns the guard of a RICH long text refuses — chapter 04 §2.2 — written for
+ * PostgreSQL. `\y` is its word boundary: `\b` would be a backspace there, and the first
+ * pattern would never match anything.
+ */
+export const RICH_TEXT_FORBIDDEN_SQL: readonly string[] = [
+  '<\\s*/?\\s*(script|iframe|object|embed|style|link|meta|svg|form|img|base|frame|frameset|applet|math)\\y',
+  '\\son[a-z]+\\s*=',
+  'javascript\\s*:',
+]
+
+/**
+ * The body of the `ck_…__format` of a rich long text: a guard against a direct SQL write,
+ * which bypasses the sanitizer — never a security policy, a CHECK is no HTML parser.
+ */
+export function richTextCheck(column: string): string {
+  return `${column} IS NULL OR (${RICH_TEXT_FORBIDDEN_SQL.map((p) => `${column} !~* '${p}'`).join(' AND ')})`
+}
+
 /** The longest address an `email` field holds (RFC 5321's path limit). */
 export const MAX_EMAIL_CHARS = 254
 

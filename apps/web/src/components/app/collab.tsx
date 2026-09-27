@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { type AppNotification, type Viewer, api } from '@/lib/api/client'
 import { notificationSentence, relativeTime } from '@/lib/collab'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { AtSign, Bell, CheckCheck, CornerDownRight, Loader2, UserCheck, Zap } from 'lucide-react'
@@ -54,7 +55,7 @@ export function Viewers({
   return (
     <div
       className="flex items-center -space-x-1.5"
-      aria-label={`Aussi ici : ${others.map((v) => v.name).join(', ')}`}
+      aria-label={$t('Aussi ici : {map}', { map: others.map((v) => v.name).join(', ') })}
     >
       {shown.map((v) => (
         <Tooltip key={v.user}>
@@ -67,7 +68,7 @@ export function Viewers({
           </TooltipTrigger>
           <TooltipContent>
             {v.name}
-            {record === undefined && v.record !== null ? ' — une fiche ouverte' : ''}
+            {record === undefined && v.record !== null ? $t(' — une fiche ouverte') : ''}
           </TooltipContent>
         </Tooltip>
       ))}
@@ -151,7 +152,9 @@ export function NotificationBell({
           variant="ghost"
           size="icon-sm"
           className="relative"
-          aria-label={unread > 0 ? `Notifications, ${unread} non lues` : 'Notifications'}
+          aria-label={
+            unread > 0 ? $t('Notifications, {unread} non lues', { unread }) : $t('Notifications')
+          }
         >
           <Bell className="size-4" />
           {unread > 0 && (
@@ -163,7 +166,7 @@ export function NotificationBell({
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
-          <span className="text-sm font-semibold">Notifications</span>
+          <span className="text-sm font-semibold">{$t('Notifications')}</span>
           <Button
             variant="ghost"
             size="sm"
@@ -172,7 +175,7 @@ export function NotificationBell({
             onClick={() => void markAll()}
           >
             <CheckCheck className="size-3.5" />
-            Tout marquer comme lu
+            {$t('Tout marquer comme lu')}
           </Button>
         </div>
         <div className="max-h-[420px] overflow-y-auto scroll-discret">
@@ -184,8 +187,9 @@ export function NotificationBell({
           {error !== null && <p className="px-3 py-4 text-sm text-destructive">{error}</p>}
           {items !== null && items.length === 0 && (
             <p className="px-3 py-8 text-center text-sm text-muted-foreground">
-              Rien de nouveau. Vous serez prévenu ici quand on vous mentionne, vous répond ou vous
-              désigne.
+              {$t(
+                'Rien de nouveau. Vous serez prévenu ici quand on vous mentionne, vous répond ou vous désigne.',
+              )}
             </p>
           )}
           {items?.map((n) => {
@@ -219,13 +223,13 @@ export function NotificationBell({
                   )}
                   <span className="mt-1 block text-[11px] text-muted-foreground">
                     {relativeTime(n.created_at)} · {n.base.label}
-                    {!n.readable && ' · ligne plus accessible'}
+                    {!n.readable && $t(' · ligne plus accessible')}
                   </span>
                 </span>
                 {n.read_at === null && (
                   <span
                     className="mt-2 size-2 shrink-0 rounded-full bg-primary"
-                    aria-label="Non lue"
+                    aria-label={$t('Non lue')}
                   />
                 )}
               </button>

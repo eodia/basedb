@@ -10,7 +10,24 @@
  * psql — and never by an identifier the user would have to look up.
  */
 
-import type { Template, TemplateIssue, TemplateSummary } from '@basedb/contracts'
+import { $t, locale } from '@/lib/i18n'
+import type {
+  Constraint,
+  DashboardCard,
+  DashboardCopilotAnswer,
+  DashboardParameter,
+  DashboardTab,
+  LegacyBlock,
+  Locale,
+  ParameterValue,
+  QueryResult,
+  QuestionQuery,
+  Template,
+  TemplateIssue,
+  TemplateSummary,
+  Visualization,
+} from '@basedb/contracts'
+import { isLocale } from '@basedb/contracts'
 
 declare global {
   interface Window {
@@ -188,6 +205,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
       ...init,
       headers: {
         'content-type': 'application/json',
+        // The language of the screen: what a copilot answers in (chapter 11 §10).
+        'x-basedb-locale': locale(),
         ...(bearer === undefined ? {} : { authorization: `Bearer ${bearer}` }),
         ...init?.headers,
       },
@@ -295,6 +314,79 @@ export interface ProjectBase extends Look {
       readonly actions: readonly Action[]
     } & Look
   >
+  /** Its SQL views the caller reads, listed among the tables with a mark of their own. */
+  readonly sqlViews: readonly SqlViewSummary[]
+  /** Its saved queries the caller may open, listed beneath the tables. */
+  readonly queries: readonly QuerySummary[]
+}
+
+/**
+ * What a SQL statement returned — typed in a SQL tab, saved as a query, or read from a
+ * SQL view. `mode` says with whose reach: `console` for whoever manages the base, writes
+ * included; `reader` for everyone else — read only, their own tables and fields.
+ */
+export interface SqlResult {
+  readonly columns: ReadonlyArray<{ readonly name: string; readonly dataType: string }>
+  readonly rows: ReadonlyArray<Record<string, unknown>>
+  readonly row_count: number
+  readonly command: string
+  readonly duration_ms: number
+  readonly truncated: boolean
+  readonly schema: string
+  readonly mode: 'console' | 'reader'
+}
+
+/** Who sees a saved query: its author, whoever reads the base, or some groups. */
+export type QueryAudience = 'personal' | 'base' | 'groups'
+
+/** A saved query as the navigation lists it, beneath the tables of its base. */
+export interface QuerySummary {
+  readonly id: string
+  readonly label: string
+  readonly audience: QueryAudience
+  readonly mine: boolean
+}
+
+/**
+ * A saved query (chapter 11 §1.7). Its text is shared, never its author's reach: whoever
+ * opens it runs it with their own.
+ */
+export interface SavedQuery {
+  readonly id: string
+  readonly label: string
+  readonly description: string | null
+  readonly statement: string
+  readonly audience: QueryAudience
+  readonly groups: ReadonlyArray<{ readonly id: string; readonly label: string }>
+  readonly owner: { readonly id: string; readonly name: string }
+  readonly mine: boolean
+  /** Its author may change a personal one; whoever manages the base a shared one. */
+  readonly editable: boolean
+  readonly updated_at: string
+}
+
+/** A SQL view as the navigation lists it, among the tables of its base. */
+export interface SqlViewSummary extends Look {
+  readonly id: string
+  readonly name: string
+  readonly label: string
+  /** A structure operation had to take it out of PostgreSQL: its text is to be corrected. */
+  readonly broken: boolean
+}
+
+/**
+ * A SQL view (chapter 11 §1.8): a real PostgreSQL view of the base's schema, read with the
+ * rights of whoever reads it.
+ */
+export interface SqlView extends Look {
+  readonly id: string
+  readonly name: string
+  readonly label: string
+  readonly description: string | null
+  readonly definition: string
+  readonly broken: string | null
+  readonly editable: boolean
+  readonly updated_at: string
 }
 
 /** A project as the navigation shows it: the bases and tables the caller can see in it. */
@@ -317,6 +409,71 @@ export interface Me {
   readonly isAdmin: boolean
   /** Signed in with a temporary password an administrator handed over. */
   readonly mustChangePassword: boolean
+  /** Whether the account has a password — else it signs in through a provider only. */
+  readonly hasPassword: boolean
+  /** How dates read, and which day opens a week (chapter 11 §10). */
+  readonly dateFormat: 'dmy' | 'iso'
+  readonly weekStart: 0 | 1
+  /** The natures of notification the person refused (chapter 16 §2.3). */
+  readonly mutedNotifications: readonly NotificationKind[]
+  /** The language chosen in the settings, or `null`: the browser's (chapter 11 §10). */
+  readonly locale: Locale | null
+}
+
+/** What notifies (chapter 16 §2.1) — each nature a person may refuse. */
+export type NotificationKind = 'mention' | 'reply' | 'assigned' | 'automation'
+
+/** `/auth/me`, as the server writes it. */
+interface MeBody {
+  readonly id: string
+  readonly email: string
+  readonly display_name: string
+  readonly tenant: string
+  readonly is_admin?: boolean
+  readonly must_change_password?: boolean
+  readonly has_password?: boolean
+  readonly date_format?: 'dmy' | 'iso'
+  readonly week_start?: number
+  readonly muted_notifications?: readonly NotificationKind[]
+  readonly locale?: string | null
+}
+
+function meOf(body: MeBody): Me {
+  return {
+    id: body.id,
+    email: body.email,
+    displayName: body.display_name,
+    tenant: body.tenant,
+    isAdmin: body.is_admin === true,
+    mustChangePassword: body.must_change_password === true,
+    hasPassword: body.has_password !== false,
+    dateFormat: body.date_format === 'iso' ? 'iso' : 'dmy',
+    weekStart: body.week_start === 0 ? 0 : 1,
+    mutedNotifications: body.muted_notifications ?? [],
+    locale: isLocale(body.locale) ? body.locale : null,
+  }
+}
+
+/** The ways in to one's account: the password, and each provider of this instance. */
+export interface Identities {
+  readonly password: boolean
+  readonly providers: ReadonlyArray<{
+    readonly slug: string
+    readonly label: string
+    /** `null`: not linked to this account. */
+    readonly linked_at: string | null
+    readonly last_used_at: string | null
+  }>
+}
+
+/** A token of one's own, with the base it opens — `null` once that base is deleted. */
+export interface OwnApiToken extends ApiToken {
+  readonly base: {
+    readonly name: string
+    readonly label: string
+    readonly environment: string
+    readonly production: boolean
+  } | null
 }
 
 /** A person, as the administration lists them. */
@@ -541,6 +698,11 @@ export interface Field {
   readonly kind: string
   readonly required?: boolean
   readonly read_only?: boolean
+  /**
+   * A long text holding HTML — the rich variant (chapter 04 §2.2): edited in a rich editor,
+   * read as sanitized HTML. Absent on every other field.
+   */
+  readonly unsafe_html?: boolean
   /** Filled by the AI (chapter 12 §1.5): an option of the type, and read-only for people. */
   readonly ai?: boolean
   readonly system?: boolean
@@ -1004,6 +1166,27 @@ export interface DeletedBase {
 }
 
 /** What renaming a base, a table or a field in the database would touch (chapter 06 §2.1). */
+/**
+ * What a physical rename addresses: a base or a table by its catalog id, a field by its
+ * names — the description of a base does not carry the ids of its fields.
+ */
+export type PhysicalRef =
+  | { readonly kind: 'base' | 'table'; readonly id: string }
+  | {
+      readonly kind: 'field'
+      readonly base: string
+      readonly table: string
+      readonly field: string
+    }
+
+function physicalPath(target: PhysicalRef): string {
+  if (target.kind === 'field') {
+    const [base, table, field] = [target.base, target.table, target.field].map(encodeURIComponent)
+    return `${v1()}/admin/bases/${base}/tables/${table}/fields/${field}/physical`
+  }
+  return `${v1()}/admin/physical/${target.kind}/${encodeURIComponent(target.id)}`
+}
+
 export interface RenameImpact {
   readonly kind: 'base' | 'table' | 'field'
   readonly id: string
@@ -1370,53 +1553,35 @@ export interface TemplateDraft {
 
 // ── Dashboards — chapter 18 ──────────────────────────────────────────────────
 
-/** A block of a dashboard: it reads through the ordinary routes, on the reader's rights. */
-export type DashboardBlock =
-  | {
-      readonly kind: 'number'
-      readonly width: number
-      readonly title: string
-      /** The table's identifier. */
-      readonly table: string
-      readonly aggregate: 'count' | 'sum' | 'avg' | 'min' | 'max'
-      readonly field: string | null
-      readonly filter: string
-    }
-  | {
-      readonly kind: 'chart'
-      readonly width: number
-      readonly title: string
-      readonly table: string
-      readonly group_by: string
-      readonly filter: string
-      readonly style: 'bar' | 'pie'
-    }
-  | {
-      readonly kind: 'list'
-      readonly width: number
-      readonly title: string
-      readonly table: string
-      readonly fields: readonly string[]
-      readonly filter: string
-      readonly sort: string
-      readonly limit: number
-    }
-  | { readonly kind: 'text'; readonly width: number; readonly title: string; readonly body: string }
-  | {
-      readonly kind: 'embed'
-      readonly width: number
-      readonly title: string
-      readonly url: string
-      readonly height: number
-    }
+/**
+ * A block of the first dashboards, before the grid. Still what a base template brings; the
+ * server makes cards of it.
+ */
+export type DashboardBlock = LegacyBlock
 
+/** A dashboard: cards on a grid, in tabs, under filters (chapter 18). */
 export interface Dashboard {
   readonly id: string
   readonly label: string
   readonly description: string | null
   readonly position: number
-  readonly blocks: readonly DashboardBlock[]
+  readonly tabs: readonly DashboardTab[]
+  readonly cards: readonly DashboardCard[]
+  readonly parameters: readonly DashboardParameter[]
   readonly updated_at: string
+}
+
+/** A saved question: a reading of the base, and how it is shown (chapter 18 §3). */
+export interface Question {
+  readonly id: string
+  readonly label: string
+  readonly description: string | null
+  readonly kind: 'builder' | 'sql'
+  readonly query: QuestionQuery
+  readonly visualization: Visualization
+  readonly position: number
+  readonly updated_at: string
+  readonly updated_by: { readonly id: string; readonly name: string }
 }
 
 // ── Automations — chapter 17 ─────────────────────────────────────────────────
@@ -1440,27 +1605,113 @@ export interface AutomationSchedule {
   readonly timezone: string
 }
 
-export type AutomationAction =
-  | { readonly kind: 'update_record'; readonly values: Readonly<Record<string, unknown>> }
+/**
+ * A step of an automation's flow (chapter 17 §1.3). `record` names the row it acts on:
+ * `trigger`, or a step before it that found, created or modified one. The identifiers,
+ * always there on the way out, may be left to the API on the way in.
+ */
+export type AutomationStep =
   | {
+      readonly id?: string
+      readonly kind: 'update_record'
+      readonly record?: string
+      readonly values: Readonly<Record<string, unknown>>
+    }
+  | {
+      readonly id?: string
       readonly kind: 'create_record'
       /** The table's identifier. */
       readonly table: string
       readonly values: Readonly<Record<string, unknown>>
     }
   | {
+      readonly id?: string
+      readonly kind: 'find_record'
+      readonly table: string
+      readonly filter: string
+      readonly sort: string | null
+    }
+  | {
+      readonly id?: string
       readonly kind: 'notify'
+      readonly record?: string | null
       readonly users: readonly string[]
       readonly user_field: string | null
       readonly message: string
     }
-  | { readonly kind: 'webhook'; readonly url: string }
   | {
+      readonly id?: string
+      readonly kind: 'webhook'
+      readonly record?: string | null
+      readonly url: string
+    }
+  | {
+      readonly id?: string
       readonly kind: 'slack'
       /** The Slack connection's identifier. */
       readonly integration: string
       readonly message: string
     }
+  | {
+      readonly id?: string
+      readonly kind: 'ai'
+      /** The instruction to the model, citing what came before. */
+      readonly prompt: string
+      /** What the answer is read into — the types of an AI field; free text when absent. */
+      readonly answer?: AutomationAiAnswer
+      /** The choices of a `select` answer, by label. */
+      readonly options?: readonly string[]
+      /** The author agreed that what the prompt cites leaves for the provider. */
+      readonly consent?: boolean
+    }
+  | { readonly id?: string; readonly kind: 'branch'; readonly paths: readonly AutomationPath[] }
+
+/** What an AI step's answer is read into. */
+export type AutomationAiAnswer =
+  | 'long_text'
+  | 'short_text'
+  | 'number'
+  | 'boolean'
+  | 'date'
+  | 'url'
+  | 'select'
+
+/** A way out of a branch: the first whose row satisfies its filter; `when: null`, otherwise. */
+export interface AutomationPath {
+  readonly id?: string
+  readonly label: string
+  readonly when: { readonly record: string; readonly condition: string } | null
+  readonly steps: readonly AutomationStep[]
+}
+
+/** What chapter 17 first called an action. */
+export type AutomationAction = AutomationStep
+
+/** A definition as the copilot proposes it — the API's shape, tables by identifier. */
+export interface AutomationDefinition {
+  readonly label: string
+  readonly description: string | null
+  readonly enabled: boolean
+  readonly trigger: Automation['trigger']
+  readonly condition: string | null
+  readonly actions: readonly AutomationStep[]
+}
+
+/** An automation proposed by the copilot (chapter 17 §6): laid on the flow, never saved. */
+export interface AutomationCopilotAction {
+  readonly type: 'automation'
+  readonly target: 'current' | 'new'
+  readonly definition: AutomationDefinition
+  readonly changes: readonly string[]
+  readonly aiSteps: number
+}
+
+export interface AutomationCopilotAnswer {
+  readonly message: string
+  readonly actions: readonly AutomationCopilotAction[]
+  readonly reads: readonly CopilotRead[]
+  readonly dropped: readonly string[]
+}
 
 export interface Automation {
   readonly id: string
@@ -1505,11 +1756,17 @@ export interface AutomationRun {
   readonly status: 'queued' | 'running' | 'succeeded' | 'failed' | 'skipped'
   readonly reason: string | null
   readonly error_code: string | null
+  /** Each step passed, in order; `action` alone for a run from before flows. */
   readonly steps: ReadonlyArray<{
-    readonly action: string
+    readonly step?: string
+    readonly kind?: string
+    readonly action?: string
     readonly status: string
+    /** The path a branch took; `null`: none held. */
+    readonly path?: string | null
     readonly detail?: string
     readonly error_code?: string
+    readonly ms?: number
   }>
   readonly queued_at: string
   readonly started_at: string | null
@@ -1691,6 +1948,71 @@ export interface SharedView {
   readonly next_cursor: string | null
 }
 
+/** Why a shared dashboard does not open — or `open` (chapter 18 §2.5). */
+export type DashboardShareState = 'open' | 'inactive' | 'authority'
+
+export interface DashboardShare {
+  readonly id: string
+  readonly dashboard_id: string
+  readonly access: ShareAccess
+  readonly active: boolean
+  /** The secret of the link: the page is `/d/<token>`. */
+  readonly token: string
+  readonly published_by: { readonly id: string; readonly name: string | null }
+  readonly groups: readonly string[]
+  readonly state: DashboardShareState
+  readonly can_embed: boolean
+}
+
+export interface DashboardSharing {
+  readonly share: DashboardShare | null
+  readonly groups: ReadonlyArray<{ readonly id: string; readonly label: string }>
+}
+
+export interface DashboardShareSettings {
+  readonly access: ShareAccess
+  readonly active: boolean
+  readonly groups: readonly string[]
+  readonly can_embed?: boolean
+}
+
+/** A card of a shared dashboard: where it sits and how it shows — never what it runs. */
+export interface SharedDashboardCard {
+  readonly id: string
+  readonly tab: string | null
+  readonly x: number
+  readonly y: number
+  readonly w: number
+  readonly h: number
+  readonly kind: DashboardCard['kind']
+  readonly title: string
+  readonly text?: string
+  readonly url?: string
+  readonly visualization?: Visualization
+  /** Its question sorts its rows itself: the chart keeps their order. */
+  readonly sorted: boolean
+  /** The filters tied to it. */
+  readonly filters: readonly string[]
+}
+
+/** A dashboard read through its link, and of the base the fields its cards show. */
+export interface SharedDashboard {
+  readonly title: string
+  readonly description: string | null
+  readonly access: ShareAccess
+  readonly reader: string | null
+  readonly can_embed: boolean
+  readonly tabs: readonly DashboardTab[]
+  readonly parameters: readonly DashboardParameter[]
+  readonly cards: readonly SharedDashboardCard[]
+  readonly tables: ReadonlyArray<{
+    readonly id: string
+    readonly name: string
+    readonly label: string
+    readonly fields: readonly SharedViewField[]
+  }>
+}
+
 /** A shared form as the person answering sees it. */
 export interface SharedForm {
   readonly kind: 'form' | 'survey'
@@ -1716,6 +2038,44 @@ export interface SharedForm {
  * the form wants a signed-in member, once more with the session's access token if there
  * is a session in this browser.
  */
+/** A shared dashboard once known to want a sign-in: its next reads carry the token at once. */
+let sharedWantsBearer = false
+
+/** A read of a shared dashboard: as anyone first, as the signed-in person when it asks. */
+async function sharedCall<T>(path: string, init?: RequestInit): Promise<T> {
+  const send = (bearer?: string) =>
+    fetch(`${BASE}${path}`, {
+      ...init,
+      headers: {
+        'content-type': 'application/json',
+        ...(bearer === undefined ? {} : { authorization: `Bearer ${bearer}` }),
+      },
+      credentials: 'include',
+      cache: 'no-store',
+    })
+  let bearer = sharedWantsBearer ? await accessToken().catch(() => undefined) : undefined
+  let r = await send(bearer)
+  if (r.status === 401 && bearer === undefined) {
+    bearer = await accessToken().catch(() => undefined)
+    if (bearer !== undefined) {
+      sharedWantsBearer = true
+      r = await send(bearer)
+    }
+  }
+  const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+  if (!r.ok) {
+    throw new ApiError(
+      String(body.code ?? 'INTERNAL_ERROR'),
+      r.status,
+      String(body.request_id ?? ''),
+      typeof body.details === 'object' && body.details !== null
+        ? (body.details as Record<string, unknown>)
+        : {},
+    )
+  }
+  return (body as { data: T }).data
+}
+
 async function formCall<T>(path: string, init?: RequestInit): Promise<T> {
   const send = (bearer?: string) =>
     fetch(`${BASE}${path}`, {
@@ -1867,29 +2227,68 @@ export const api = {
   /** Re-opens a session left by a previous page load, from the cookie alone. */
   resume: async (): Promise<Me | null> => {
     try {
-      const body = await call<{
-        data: {
-          id: string
-          email: string
-          display_name: string
-          tenant: string
-          is_admin?: boolean
-          must_change_password?: boolean
-        }
-      }>('/auth/me')
+      const body = await call<{ data: MeBody }>('/auth/me')
       tenant = body.data.tenant
-      return {
-        id: body.data.id,
-        email: body.data.email,
-        displayName: body.data.display_name,
-        tenant: body.data.tenant,
-        isAdmin: body.data.is_admin === true,
-        mustChangePassword: body.data.must_change_password === true,
-      }
+      return meOf(body.data)
     } catch {
       return null
     }
   },
+
+  /** Renames oneself, or sets how dates read and what notifies — the account as it now is. */
+  updateProfile: async (change: {
+    readonly displayName?: string
+    readonly dateFormat?: 'dmy' | 'iso'
+    readonly weekStart?: 0 | 1
+    readonly mutedNotifications?: readonly NotificationKind[]
+    /** A language, or `null` to follow the browser's. */
+    readonly locale?: Locale | null
+  }): Promise<Me> =>
+    meOf(
+      await data<MeBody>('/auth/me', {
+        method: 'PATCH',
+        headers: { 'x-basedb-csrf': csrfToken() },
+        body: JSON.stringify({
+          display_name: change.displayName,
+          date_format: change.dateFormat,
+          week_start: change.weekStart,
+          muted_notifications: change.mutedNotifications,
+          locale: change.locale,
+        }),
+      }),
+    ),
+
+  /** Changes the address one signs in with. Wants an elevated session (chapter 13 §2.6). */
+  changeEmail: async (email: string): Promise<Me> =>
+    meOf(
+      await data<MeBody>('/auth/me/email', {
+        method: 'PUT',
+        headers: { 'x-basedb-csrf': csrfToken() },
+        body: JSON.stringify({ email }),
+      }),
+    ),
+
+  /** Whether one has a password, and which providers are linked. */
+  identities: () => data<Identities>('/auth/identities'),
+
+  /**
+   * Opens an exchange that LINKS a provider to this account, and answers where to send
+   * the browser. A fetch first, so a missing elevation comes back as a code the screen
+   * can answer; the navigation follows, and the provider's return completes the link.
+   */
+  oidcLinkStart: (slug: string, returnTo: string) =>
+    data<{ url: string }>(`/auth/oidc/${encodeURIComponent(slug)}/link`, {
+      method: 'POST',
+      headers: { 'x-basedb-csrf': csrfToken() },
+      body: JSON.stringify({ return_to: returnTo }),
+    }),
+
+  /** Unlinks a provider — refused on the account's last way in. Wants an elevated session. */
+  oidcUnlink: (slug: string) =>
+    call<void>(`/auth/oidc/${encodeURIComponent(slug)}/link`, {
+      method: 'DELETE',
+      headers: { 'x-basedb-csrf': csrfToken() },
+    }),
 
   /**
    * Changes the password, and comes back SIGNED IN.
@@ -1968,6 +2367,9 @@ export const api = {
         expires_in_days: request.expiresInDays,
       }),
     }),
+
+  /** The tokens one minted, on every base — the settings list them in one place. */
+  ownTokens: () => data<readonly OwnApiToken[]>(`${v1()}/me/tokens`),
 
   revokeToken: (id: string) =>
     call<void>(`${v1()}/admin/tokens/${encodeURIComponent(id)}`, { method: 'DELETE' }),
@@ -2078,6 +2480,8 @@ export const api = {
         url?: string
         automation?: string
       }
+      /** A long text that holds HTML (chapter 04 §2.2) — chosen at creation, for good. */
+      rich?: boolean
     },
   ) =>
     data<{ id: string; name: string; label: string; kind: string; description: string | null }>(
@@ -2309,7 +2713,7 @@ export const api = {
         body: JSON.stringify({
           label,
           description,
-          fields: [{ label: 'Nom', kind: 'short_text' }],
+          fields: [{ label: $t('Nom'), kind: 'short_text' }],
         }),
       },
     ),
@@ -2372,6 +2776,17 @@ export const api = {
     if (request.group !== undefined && request.group !== null) q.set('group', request.group)
     return data<Aggregates>(`${path(table)}/aggregate?${q}`)
   },
+
+  /**
+   * One row with its long texts AS WRITTEN — `{{nom}}` and all — for an editor to open
+   * (chapter 04 §2.2, « Variables »). Every other read serves them with the row's values.
+   */
+  rawRecord: async (table: TableRef, id: string): Promise<Record<string, unknown>> =>
+    (
+      await call<{ data: Record<string, unknown> }>(
+        `${path(table)}/${encodeURIComponent(id)}?variables=raw`,
+      )
+    ).data,
 
   list: (table: TableRef, view: View = {}) => {
     // `URLSearchParams` does the encoding itself: the filter grammar contains spaces
@@ -2513,16 +2928,18 @@ export const api = {
     data<readonly DeletedTable[]>(`${v1()}/admin/bases/${encodeURIComponent(base)}/deleted-tables`),
 
   /** What a physical rename would touch — shown before anyone confirms. */
-  renameImpact: (kind: RenameImpact['kind'], id: string) =>
-    data<RenameImpact>(`${v1()}/admin/physical/${kind}/${encodeURIComponent(id)}`),
+  /** What renaming in the database would touch; `label` makes the suggestion follow it. */
+  renameImpact: (target: PhysicalRef, label?: string) =>
+    data<RenameImpact>(
+      `${physicalPath(target)}${label === undefined ? '' : `?label=${encodeURIComponent(label)}`}`,
+    ),
 
   renamePhysical: (
-    kind: RenameImpact['kind'],
-    id: string,
+    target: PhysicalRef,
     request: { name: string; confirm: string; alias?: boolean; alias_days?: number },
   ) =>
     data<{ name: string; alias: string | null; migration: Migration }>(
-      `${v1()}/admin/physical/${kind}/${encodeURIComponent(id)}/rename`,
+      `${physicalPath(target)}/rename`,
       { method: 'POST', body: JSON.stringify(request) },
     ),
 
@@ -2616,21 +3033,124 @@ export const api = {
    *
    * The one call of this client that carries SQL. The server runs it on a separate
    * PostgreSQL role holding that one schema and nothing else, so `_basedb` is out of
-   * reach, and it records the statement in the audit log.
+   * reach, and it records the statement in the audit log. Whoever does not manage the base
+   * runs it read only, with their own tables and fields (`mode: 'reader'`).
+   *
+   * `readOnly` asks for a READ ONLY transaction whatever the reach: what opening a saved
+   * query runs, before anyone has decided to run its text for real.
    */
-  runSql: (base: string, sql: string, limit?: number) =>
-    data<{
-      columns: ReadonlyArray<{ name: string; dataType: string }>
-      rows: ReadonlyArray<Record<string, unknown>>
-      row_count: number
-      command: string
-      duration_ms: number
-      truncated: boolean
-      schema: string
-    }>(`${v1()}/sql/${encodeURIComponent(base)}`, {
+  runSql: (base: string, sql: string, limit?: number, options: { readOnly?: boolean } = {}) =>
+    data<SqlResult>(`${v1()}/sql/${encodeURIComponent(base)}`, {
       method: 'POST',
-      body: JSON.stringify({ sql, limit }),
+      body: JSON.stringify({
+        sql,
+        limit,
+        ...(options.readOnly === true ? { read_only: true } : {}),
+      }),
     }),
+
+  /** The saved queries of a base the caller may open (chapter 11 §1.7). */
+  queries: (base: string) =>
+    data<readonly SavedQuery[]>(`${v1()}/meta/bases/${encodeURIComponent(base)}/queries`),
+
+  query: (base: string, id: string) =>
+    data<SavedQuery>(
+      `${v1()}/meta/bases/${encodeURIComponent(base)}/queries/${encodeURIComponent(id)}`,
+    ),
+
+  /** The groups a query may be shared with — for whoever manages the base. */
+  queryGroups: (base: string) =>
+    data<ReadonlyArray<{ readonly id: string; readonly label: string }>>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/query-groups`,
+    ),
+
+  createQuery: (
+    base: string,
+    input: {
+      label: string
+      statement: string
+      description?: string | null
+      audience?: QueryAudience
+      group_ids?: readonly string[]
+    },
+  ) =>
+    data<SavedQuery>(`${v1()}/admin/bases/${encodeURIComponent(base)}/queries`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
+  updateQuery: (
+    base: string,
+    id: string,
+    input: {
+      label?: string
+      statement?: string
+      description?: string | null
+      audience?: QueryAudience
+      group_ids?: readonly string[]
+    },
+  ) =>
+    data<SavedQuery>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/queries/${encodeURIComponent(id)}`,
+      { method: 'PATCH', body: JSON.stringify(input) },
+    ),
+
+  deleteQuery: (base: string, id: string) =>
+    call<void>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/queries/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+    ),
+
+  /** The SQL views of a base the caller reads (chapter 11 §1.8). */
+  sqlViews: (base: string) =>
+    data<readonly SqlView[]>(`${v1()}/meta/bases/${encodeURIComponent(base)}/sql-views`),
+
+  sqlView: (base: string, id: string) =>
+    data<SqlView>(
+      `${v1()}/meta/bases/${encodeURIComponent(base)}/sql-views/${encodeURIComponent(id)}`,
+    ),
+
+  /** The rows of a SQL view, with the reader's reach. */
+  readSqlView: (base: string, id: string, limit?: number) =>
+    data<SqlResult>(
+      `${v1()}/sql/${encodeURIComponent(base)}/views/${encodeURIComponent(id)}${
+        limit === undefined ? '' : `?limit=${limit}`
+      }`,
+    ),
+
+  createSqlView: (
+    base: string,
+    input: {
+      label: string
+      definition: string
+      name?: string
+      description?: string | null
+    } & Partial<Look>,
+  ) =>
+    data<SqlView>(`${v1()}/admin/bases/${encodeURIComponent(base)}/sql-views`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
+  updateSqlView: (
+    base: string,
+    id: string,
+    input: {
+      label?: string
+      definition?: string
+      description?: string | null
+    } & Partial<Look>,
+  ) =>
+    data<SqlView>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/sql-views/${encodeURIComponent(id)}`,
+      { method: 'PATCH', body: JSON.stringify(input) },
+    ),
+
+  deleteSqlView: (base: string, id: string) =>
+    call<void>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/sql-views/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+    ),
 
   /**
    * Drafts a filter expression from a sentence — chapter 12, `expression_draft`.
@@ -2669,6 +3189,59 @@ export const api = {
         sort: request.sort,
         messages: request.messages,
         read_data: request.readData,
+      }),
+    }),
+
+  /**
+   * One turn of the copilot of the automations (chapter 17 §6): the automation on screen
+   * goes with the conversation, as its editor shows it — saved or not.
+   */
+  automationCopilot: (
+    base: string,
+    request: {
+      automation: string | null
+      draft: AutomationInput | null
+      messages: readonly CopilotMessage[]
+      readData: boolean
+    },
+  ) =>
+    data<AutomationCopilotAnswer>(
+      `${v1()}/ai/bases/${encodeURIComponent(base)}/automation-copilot`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          automation: request.automation,
+          draft: request.draft,
+          messages: request.messages,
+          read_data: request.readData,
+        }),
+      },
+    ),
+
+  /**
+   * One turn of the copilot of the dashboards (chapter 18 §2.6): what is on screen goes
+   * with the conversation — the dashboard, its tab, its filters' values.
+   */
+  dashboardCopilot: (
+    base: string,
+    request: {
+      dashboard: string | null
+      tab: string | null
+      values: Readonly<Record<string, ParameterValue | null>>
+      messages: readonly CopilotMessage[]
+      readData: boolean
+    },
+  ) =>
+    data<DashboardCopilotAnswer>(`${v1()}/ai/bases/${encodeURIComponent(base)}/dashboard-copilot`, {
+      method: 'POST',
+      body: JSON.stringify({
+        dashboard: request.dashboard,
+        tab: request.tab,
+        values: request.values,
+        messages: request.messages,
+        read_data: request.readData,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        week_start: 1,
       }),
     }),
 
@@ -2827,9 +3400,17 @@ export const api = {
   dashboards: (base: string) =>
     data<readonly Dashboard[]>(`${v1()}/meta/bases/${encodeURIComponent(base)}/dashboards`),
 
+  /** A dashboard: blocks of old (a template's), or cards. */
   createDashboard: (
     base: string,
-    input: { label: string; description?: string | null; blocks: readonly DashboardBlock[] },
+    input: {
+      label: string
+      description?: string | null
+      blocks?: readonly DashboardBlock[]
+      tabs?: readonly DashboardTab[]
+      cards?: readonly DashboardCard[]
+      parameters?: readonly DashboardParameter[]
+    },
   ) =>
     data<Dashboard>(`${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards`, {
       method: 'POST',
@@ -2842,7 +3423,9 @@ export const api = {
     input: {
       label?: string
       description?: string | null
-      blocks?: readonly DashboardBlock[]
+      tabs?: readonly DashboardTab[]
+      cards?: readonly DashboardCard[]
+      parameters?: readonly DashboardParameter[]
       position?: number
     },
   ) =>
@@ -2856,6 +3439,135 @@ export const api = {
       `${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards/${encodeURIComponent(id)}`,
       { method: 'DELETE' },
     ),
+
+  /** How a dashboard is shared: its link and settings, or none (chapter 18 §2.5). */
+  dashboardSharing: (base: string, id: string) =>
+    data<DashboardSharing>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards/${encodeURIComponent(id)}/share`,
+    ),
+
+  /** Shares a dashboard, or changes how. Whoever saves becomes its publisher. */
+  saveDashboardSharing: (base: string, id: string, settings: DashboardShareSettings) =>
+    data<DashboardSharing>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards/${encodeURIComponent(id)}/share`,
+      { method: 'PUT', body: JSON.stringify(settings) },
+    ),
+
+  /** A new link: the old one stops working at once. */
+  regenerateDashboardShare: (base: string, id: string) =>
+    data<DashboardSharing>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards/${encodeURIComponent(id)}/share/regenerate`,
+      { method: 'POST' },
+    ),
+
+  deleteDashboardShare: (base: string, id: string) =>
+    call<void>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/dashboards/${encodeURIComponent(id)}/share`,
+      { method: 'DELETE' },
+    ),
+
+  /** Opens a shared dashboard by its link — no right on the base needed. */
+  sharedDashboard: (token: string) =>
+    sharedCall<SharedDashboard>(`/api/v1/dashboards/${encodeURIComponent(token)}`),
+
+  /** Runs one card of a shared dashboard, under the values of its filters. */
+  runSharedCard: (
+    token: string,
+    card: string,
+    values: Readonly<Record<string, ParameterValue | null>>,
+    signal?: AbortSignal,
+  ) =>
+    sharedCall<QueryResult>(
+      `/api/v1/dashboards/${encodeURIComponent(token)}/cards/${encodeURIComponent(card)}`,
+      {
+        method: 'POST',
+        signal,
+        body: JSON.stringify({
+          values,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          week_start: 1,
+        }),
+      },
+    ),
+
+  /** The values a category filter of a shared dashboard offers. */
+  sharedParameterValues: (token: string, parameter: string, signal?: AbortSignal) =>
+    sharedCall<ReadonlyArray<{ value: string; label: string; color: string | null }>>(
+      `/api/v1/dashboards/${encodeURIComponent(token)}/parameters/${encodeURIComponent(parameter)}/values`,
+      { signal },
+    ),
+
+  /**
+   * The regions a map draws — GeoJSON served beside the interface (`public/geo`), not by
+   * the API: the same for every instance, and no data of anyone's.
+   */
+  geo: async (region: string): Promise<unknown> => {
+    const response = await fetch(`/geo/${encodeURIComponent(region)}.json`)
+    if (!response.ok) throw new ApiError('GEO_UNAVAILABLE', response.status, '')
+    return response.json()
+  },
+
+  /** The saved questions of a base, for whoever sees it (chapter 18 §3). */
+  questions: (base: string) =>
+    data<readonly Question[]>(`${v1()}/meta/bases/${encodeURIComponent(base)}/questions`),
+
+  createQuestion: (
+    base: string,
+    input: {
+      label: string
+      description?: string | null
+      query: QuestionQuery
+      visualization: Visualization
+    },
+  ) =>
+    data<Question>(`${v1()}/admin/bases/${encodeURIComponent(base)}/questions`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
+  updateQuestion: (
+    base: string,
+    id: string,
+    input: {
+      label?: string
+      description?: string | null
+      query?: QuestionQuery
+      visualization?: Visualization
+    },
+  ) =>
+    data<Question>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/questions/${encodeURIComponent(id)}`,
+      { method: 'PATCH', body: JSON.stringify(input) },
+    ),
+
+  deleteQuestion: (base: string, id: string) =>
+    call<void>(
+      `${v1()}/admin/bases/${encodeURIComponent(base)}/questions/${encodeURIComponent(id)}`,
+      { method: 'DELETE' },
+    ),
+
+  /**
+   * Runs a question with the reader's rights — a saved one by its identifier, or one given
+   * whole — under a dashboard's filters. Dates are cut in the browser's zone.
+   */
+  runQuestion: (
+    base: string,
+    request: ({ readonly question: string } | { readonly query: QuestionQuery }) & {
+      readonly constraints?: readonly Constraint[]
+      readonly weekStart?: 0 | 1
+    },
+    signal?: AbortSignal,
+  ) =>
+    data<QueryResult>(`${v1()}/query/${encodeURIComponent(base)}`, {
+      method: 'POST',
+      signal,
+      body: JSON.stringify({
+        ...('question' in request ? { question: request.question } : { query: request.query }),
+        constraints: request.constraints ?? [],
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        week_start: request.weekStart ?? 1,
+      }),
+    }),
 
   /** The automations of a base (chapter 17). */
   automations: (base: string) =>

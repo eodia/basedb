@@ -9,7 +9,7 @@ assistant de code, votre propre agent — y découvre les bases, lit et écrit d
 
 ## Brancher un agent
 
-Créez un jeton depuis **Jetons API et MCP…** (menu de la base), accès MCP coché. Le même jeton
+Créez un jeton depuis **Jetons API et MCP…** (menu de la base, sous **API et agents**), accès MCP coché. Le même jeton
 sert à l’API REST et au MCP.
 
 Pour un client qui parle HTTP, l’adresse est `http://localhost:3000/mcp` avec

@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "key": "gestion-projet",
   "label": "Gestion de projet",
   "summary": "Projets, tâches et jalons : une feuille de route, des dépendances entre tâches, un kanban et un calendrier.",
@@ -48,7 +48,7 @@
           "format": { "display": "currency", "currency": "EUR" }
         },
         { "label": "Chef de projet", "kind": "user" },
-        { "label": "Description", "kind": "long_text" },
+        { "label": "Description", "kind": "long_text", "rich": true },
         { "label": "Tâches", "kind": "count", "rollup": { "via": "Projet", "table": "taches" } },
         {
           "label": "Heures prévues",
@@ -148,7 +148,7 @@
         "Fin": "+30d",
         "Budget": 25000,
         "Chef de projet": "$moi",
-        "Description": "Nouveau site vitrine et espace client. Les maquettes sont validées, l'intégration a pris une semaine de retard à cause d'un changement de prestataire d'hébergement.",
+        "Description": "<h3>Objectif</h3><p>Un nouveau site vitrine et un espace client.</p><h3>Où en est-on ?</h3><ul><li>Maquettes validées.</li><li>Intégration : <strong>une semaine de retard</strong>, à cause d'un changement de prestataire d'hébergement.</li></ul>",
         "Météo": "Nuageux"
       },
       {
@@ -159,7 +159,7 @@
         "Début": "+10d",
         "Fin": "+60d",
         "Budget": 12000,
-        "Description": "Remplacer les tableurs de l'équipe commerciale. Éditeur choisi, formation prévue en deux sessions.",
+        "Description": "<h3>Objectif</h3><p>Remplacer les tableurs de l'équipe commerciale.</p><h3>Où en est-on ?</h3><ul><li>Éditeur choisi.</li><li>Formation prévue en deux sessions.</li></ul>",
         "Météo": "Ensoleillé"
       },
       {
@@ -170,7 +170,7 @@
         "Début": "-7d",
         "Fin": "+45d",
         "Budget": 18000,
-        "Description": "Stand de 24 m², supports imprimés et démonstrations. Le fournisseur du stand ne répond plus depuis dix jours et l'acompte est versé.",
+        "Description": "<h3>Objectif</h3><p>Un stand de 24 m², des supports imprimés et des démonstrations.</p><h3>Où en est-on ?</h3><ul><li>Acompte versé au fournisseur du stand.</li><li><strong>Le fournisseur ne répond plus depuis dix jours.</strong></li></ul>",
         "Météo": "Orageux"
       }
     ],

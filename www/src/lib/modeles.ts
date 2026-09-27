@@ -5,6 +5,8 @@ import {
 	checkTemplate,
 	summarizeTemplate,
 } from '../../../packages/contracts/src/templates';
+import { type Locale, getDict, getOverrides, localeInfo } from '../i18n';
+import type { TemplateText } from '../i18n/types';
 
 /**
  * The catalog the site publishes — chapter 20 §3.1. Every file is checked by the same
@@ -21,6 +23,7 @@ export async function catalog(): Promise<Array<{ template: Template; summary: Te
 		}
 		return { template: check.template, summary: summarizeTemplate(check.template) };
 	});
+	warnOnce(out.map((e) => e.template));
 	// The demonstration first, then by category and label.
 	return out.sort((a, b) =>
 		a.template.key === 'demo'
@@ -32,38 +35,57 @@ export async function catalog(): Promise<Array<{ template: Template; summary: Te
 	);
 }
 
-export const KIND_LABELS: Record<string, string> = {
-	short_text: 'Texte court',
-	long_text: 'Texte long',
-	number: 'Nombre',
-	boolean: 'Case à cocher',
-	date: 'Date',
-	datetime: 'Date et heure',
-	select: 'Choix',
-	multi_select: 'Choix multiples',
-	url: 'Lien URL',
-	email: 'E-mail',
-	user: 'Personne',
-	autonumber: 'Numéro automatique',
-	formula: 'Formule',
-	lookup: 'Recherche',
-	rollup: 'Cumul',
-	count: 'Décompte',
-	button: 'Bouton',
-	link: 'Relation',
-	multi_link: 'Relation multiple',
-};
+/**
+ * What the gallery shows of a template in a language: its own translation when the
+ * language has one (`templates.<key>` of `src/i18n/ui/<code>.ts`), the file's French
+ * otherwise. The template's contents stay French.
+ */
+export function templateText(locale: Locale, template: Template): TemplateText {
+	const own = (getOverrides(locale)?.templates as Record<string, Partial<TemplateText> | undefined> | undefined)?.[
+		template.key
+	];
+	const category = template.category ?? getDict(locale).gallery.otherCategory;
+	return {
+		label: own?.label ?? template.label,
+		summary: own?.summary ?? template.summary,
+		description: own?.description ?? template.description ?? '',
+		category: own?.category ?? category,
+		tags: own?.tags ?? [...template.tags],
+	};
+}
 
-export const VIEW_LABELS: Record<string, string> = {
-	grid: 'Grille',
-	kanban: 'Kanban',
-	calendar: 'Calendrier',
-	timeline: 'Chronologie',
-	gallery: 'Galerie',
-	list: 'Liste',
-	form: 'Formulaire',
-};
+/** The catalog in a language's order: the demonstration first, then by category and name as it reads them. */
+export function sortForLocale<T extends { template: Template }>(locale: Locale, entries: T[]): T[] {
+	const collator = new Intl.Collator(localeInfo(locale).lang);
+	const text = new Map(entries.map((e) => [e.template.key, templateText(locale, e.template)]));
+	return [...entries].sort((a, b) => {
+		if (a.template.key === 'demo') return -1;
+		if (b.template.key === 'demo') return 1;
+		const ta = text.get(a.template.key)!;
+		const tb = text.get(b.template.key)!;
+		return collator.compare(ta.category, tb.category) || collator.compare(ta.label, tb.label);
+	});
+}
 
-export function plural(n: number, one: string, many: string): string {
-	return `${n} ${n > 1 ? many : one}`;
+let warned = false;
+
+/** The French of `src/i18n/ui/fr.ts` mirrors the files, for translators: say when they part. */
+function warnOnce(templates: readonly Template[]): void {
+	if (warned) return;
+	warned = true;
+	const french = getDict('fr').templates as Record<string, TemplateText | undefined>;
+	for (const t of templates) {
+		const text = french[t.key];
+		if (text === undefined) {
+			console.warn(`[i18n] le modèle « ${t.key} » manque à src/i18n/ui/fr.ts (templates) : ses traductions ne le verront pas.`);
+			continue;
+		}
+		const differs =
+			text.label !== t.label ||
+			text.summary !== t.summary ||
+			text.description !== (t.description ?? '') ||
+			text.category !== (t.category ?? '') ||
+			text.tags.join('|') !== t.tags.join('|');
+		if (differs) console.warn(`[i18n] le modèle « ${t.key} » a changé : mettez à jour templates.${t.key} dans src/i18n/ui/fr.ts.`);
+	}
 }

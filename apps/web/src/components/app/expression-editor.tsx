@@ -10,6 +10,7 @@ import {
   format,
   tokenize,
 } from '@/lib/expression'
+import { $t } from '@/lib/i18n'
 import {
   type Completion,
   type CompletionContext,
@@ -200,7 +201,7 @@ function completions(fields: readonly Field[]) {
         options.unshift({
           label: '[]',
           type: 'keyword',
-          detail: operator === 'between' ? 'deux bornes' : 'liste de valeurs',
+          detail: operator === 'between' ? $t('deux bornes') : $t('liste de valeurs'),
           apply: (view, _completion, from, to) => {
             view.dispatch({
               changes: { from, to, insert: '[]' },
@@ -254,7 +255,7 @@ function completions(fields: readonly Field[]) {
       options.push({
         label: `${field.name}.`,
         type: 'namespace',
-        detail: `chemin vers ${field.link.target}`,
+        detail: $t('chemin vers {target}', { target: field.link.target }),
       })
     }
 
@@ -281,21 +282,21 @@ function fieldOf(
 }
 
 const OPERATOR_HELP: Readonly<Record<string, string>> = {
-  eq: 'égal',
-  ne: 'différent',
-  eq_ci: 'égal, casse ignorée',
+  eq: $t('égal'),
+  ne: $t('différent'),
+  eq_ci: $t('égal, casse ignorée'),
   contains: 'contient',
-  starts_with: 'commence par',
-  ends_with: 'finit par',
-  in: 'parmi une liste',
-  is_null: 'non renseigné',
-  gt: 'supérieur à',
-  gte: 'supérieur ou égal',
-  lt: 'inférieur à',
-  lte: 'inférieur ou égal',
-  between: 'entre deux bornes',
-  has_any: 'contient au moins une des valeurs',
-  has_all: 'contient toutes les valeurs',
+  starts_with: $t('commence par'),
+  ends_with: $t('finit par'),
+  in: $t('parmi une liste'),
+  is_null: $t('non renseigné'),
+  gt: $t('supérieur à'),
+  gte: $t('supérieur ou égal'),
+  lt: $t('inférieur à'),
+  lte: $t('inférieur ou égal'),
+  between: $t('entre deux bornes'),
+  has_any: $t('contient au moins une des valeurs'),
+  has_all: $t('contient toutes les valeurs'),
 }
 
 // ── The component ────────────────────────────────────────────────────────────
@@ -331,7 +332,7 @@ export function ExpressionEditor({
         theme,
         lintGutter(),
         EditorView.lineWrapping,
-        placeholderExtension(placeholder ?? 'montant gt 100 and payee eq false'),
+        placeholderExtension(placeholder ?? $t('montant gt 100 and payee eq false')),
         language.current.of([
           autocompletion({ activateOnTyping: true, icons: true, override: [completions(fields)] }),
           linter((v) => diagnosticsFor(v, latest.current.fields, latest.current.serverError)),

@@ -71,6 +71,11 @@ export interface AddFieldRequest {
   readonly rollup?: RollupInput
   /** A button's label and action (chapter 17 §4). */
   readonly button?: ButtonInput
+  /**
+   * A `long_text` that holds HTML — the rich variant of chapter 04 §2.2: sanitized on every
+   * write, guarded by a CHECK against direct SQL. Chosen at creation, for good.
+   */
+  readonly rich?: boolean
 }
 
 export interface ButtonInput {
@@ -149,6 +154,19 @@ export async function addField(
     request.kind === 'count'
   ) {
     return addComputed(pools, ctx, request, description)
+  }
+  const rich = request.rich === true
+  if (rich && request.kind !== 'long_text') {
+    throw new BasedbError('REQUEST_INVALID', {
+      details: { field: 'rich', reason: 'texte_long_seul' },
+    })
+  }
+  // A model's answer is plain text, written straight into the column: into HTML it could
+  // only be refused by the column's guard, or read as markup nobody wrote.
+  if (rich && request.ai !== undefined) {
+    throw new BasedbError('REQUEST_INVALID', {
+      details: { field: 'ai', reason: 'type_sans_ia', kind: 'rich_text' },
+    })
   }
   if (isChoiceKind(request.kind) && (request.options ?? []).length === 0) {
     // A select with no option is a column nothing can be written into. Refusing it here
@@ -255,6 +273,16 @@ export async function addField(
           column.name,
         )),
       )
+    } else if (rich) {
+      // HTML, multiline, the `rich` profile — and the guard against direct SQL.
+      await exec.query(
+        `INSERT INTO _basedb.field_text_config
+           (field_id, kind, is_rich, is_multiline, sanitizer_profile)
+         VALUES ($1, 'long_text', true, true, 'rich')`,
+        [field.id],
+        'insert',
+      )
+      sql.push(...(await addPatternCheck(exec, ctx, where, field.id, column.name, 'format')))
     } else {
       await insertSatellite(exec, field.id, request.kind)
       if (format !== null) await writeFormat(exec, field.id, request.kind, format)

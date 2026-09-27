@@ -1,6 +1,7 @@
 'use client'
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Check, ChevronDownIcon, LoaderCircle, Search } from 'lucide-react'
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
@@ -69,6 +70,10 @@ interface ComboboxProps {
   readonly selected?: ReadonlySet<string>
   /** Styles the trigger, which otherwise looks like a `SelectTrigger`. */
   readonly className?: string
+  /** Greys the trigger out and keeps the list closed, as a disabled `SelectTrigger`. */
+  readonly disabled?: boolean
+  /** The trigger's id — what a `<Label htmlFor>` points at. */
+  readonly id?: string
   readonly 'aria-label'?: string
   /** What the trigger shows: the chosen value, or a placeholder. */
   readonly children: ReactNode
@@ -90,10 +95,12 @@ export function Combobox({
   loading = false,
   notice = null,
   clearLabel,
-  searchPlaceholder = 'Rechercher…',
-  emptyLabel = 'Aucun résultat',
+  searchPlaceholder = $t('Rechercher…'),
+  emptyLabel = $t('Aucun résultat'),
   selected: checked,
   className,
+  disabled = false,
+  id,
   'aria-label': ariaLabel,
   children,
 }: ComboboxProps) {
@@ -134,6 +141,9 @@ export function Combobox({
 
   return (
     <Popover
+      // Modal, as a Select is: the list gets its own scroll lock. Otherwise, opened from a
+      // dialog, it sits outside the dialog's lock — the wheel does nothing over it.
+      modal
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
@@ -148,11 +158,14 @@ export function Combobox({
           aria-expanded={open}
           aria-haspopup="listbox"
           aria-controls={open ? listId : undefined}
+          id={id}
           aria-label={ariaLabel}
+          disabled={disabled}
           className={cn(
             // The same look as `SelectTrigger`, so a form mixing both stays even.
             "flex h-9 w-full items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow] [&_svg:not([class*='size-'])]:size-4",
             'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25',
+            'disabled:cursor-not-allowed disabled:opacity-50',
             className,
           )}
         >

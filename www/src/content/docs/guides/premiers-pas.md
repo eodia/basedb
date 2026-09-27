@@ -25,7 +25,7 @@ le formulaire et dans la documentation générée.
 ## 2. Créer une table et ses champs
 
 Depuis le menu **⋯** de la base : **Nouvelle table**. Ajoutez ensuite ses champs depuis
-**Structure** — dans le bloc de la base ouverte, en bas de la barre latérale — et son bouton
+**Structure** — dans ce même menu — et son bouton
 **Champ** :
 
 | Champ | Type |
@@ -79,5 +79,10 @@ FROM b_t4z56fq_ventes.opportunites
 WHERE statut = 'gagne'
 ORDER BY montant DESC;
 ```
+
+**Enregistrer** la range sous les tables, rubrique « Requêtes » — pour vous, ou pour toute la
+base — et **⋯** → **Créer une vue SQL…** en fait une vraie vue PostgreSQL, rangée parmi les
+tables. Chacun les lit avec ses propres droits. Voir
+[Requêtes et vues SQL](/basedb/fonctionnalites/requetes-et-vues-sql/).
 
 C’est la même chose depuis `psql` ou votre outil de BI. Voir [SQL direct](/basedb/integrations/sql/).

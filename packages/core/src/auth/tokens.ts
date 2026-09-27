@@ -337,8 +337,82 @@ export async function listApiTokens(
   )
 }
 
+/** A token of one's own, with the base it opens — the settings list them all at once. */
+export interface OwnApiToken extends ApiTokenSummary {
+  /** `null` once the base is deleted: the token opens nothing any more. */
+  readonly base: {
+    readonly name: string
+    readonly label: string
+    readonly environment: string
+    readonly production: boolean
+  } | null
+}
+
+/**
+ * The tokens the caller minted, on every base — chapter 11 §10.
+ *
+ * Where a base's list answers "who opened this base", this one answers "which doors did
+ * I open", which is the question a person asks when a laptop is lost. No right is needed
+ * beyond being their creator: the list names only doors the caller made, and never a
+ * secret. The live ones first, then the dead, newest first in each.
+ */
+export async function listOwnApiTokens(
+  pools: Pools,
+  ctx: RequestContext,
+): Promise<readonly OwnApiToken[]> {
+  refuseTokenActor(ctx)
+  return withTransaction(
+    pools,
+    'catalog',
+    ctx,
+    async (exec) => {
+      const rows = await exec.query<
+        TokenRow & {
+          base_name: string | null
+          base_label: string | null
+          environment: string | null
+          is_production: boolean | null
+        }
+      >(
+        `SELECT ${SUMMARY_COLUMNS},
+                sn.name AS base_name, b.label AS base_label,
+                b.environment, b.is_production
+           FROM _basedb.api_token tk
+           JOIN _basedb.tenant t ON t.id = tk.tenant_id
+           LEFT JOIN _basedb.base b
+                  ON b.id = tk.base_id AND b.is_live AND b.deleted_at IS NULL
+           LEFT JOIN _basedb.db_schema s
+                  ON s.base_id = b.id AND s.role = 'current' AND s.dropped_at IS NULL
+           LEFT JOIN _basedb.physical_name sn ON sn.id = s.name_id
+          WHERE tk.created_by = $1 AND t.ref = $2
+          ORDER BY (tk.revoked_at IS NULL
+                    AND (tk.expires_at IS NULL OR tk.expires_at > clock_timestamp())) DESC,
+                   tk.created_at DESC`,
+        [ctx.actor.id, ctx.tenantId],
+      )
+      return rows.map((row) => ({
+        ...summaryOf(row),
+        base:
+          row.base_name === null || row.base_label === null
+            ? null
+            : {
+                name: row.base_name,
+                label: row.base_label,
+                environment: row.environment ?? 'Production',
+                production: row.is_production !== false,
+              },
+      }))
+    },
+    { readOnly: true },
+  )
+}
+
 /**
  * Revokes a token — at once, and for good (08 §11.4).
+ *
+ * Whoever holds `manage_tokens` on its base may, and so may its creator, always: closing
+ * a door one opened takes nothing away from anyone, and a creator who has since lost the
+ * right — or whose base is gone — must not be left holding a door they cannot shut.
  *
  * The write moves `authz_version`, which empties every cached snapshot, and the token
  * cache of this process is dropped here; another process believes the token for at most
@@ -362,8 +436,13 @@ export async function revokeApiToken(
       throw new BasedbError('ELEVATION_REQUIRED')
     }
 
-    const tokens = await exec.query<{ id: string; base_id: string | null; label: string }>(
-      `SELECT tk.id, tk.base_id, tk.label
+    const tokens = await exec.query<{
+      id: string
+      base_id: string | null
+      label: string
+      created_by: string
+    }>(
+      `SELECT tk.id, tk.base_id, tk.label, tk.created_by
          FROM _basedb.api_token tk
          JOIN _basedb.tenant t ON t.id = tk.tenant_id
         WHERE tk.id::text = $1 AND t.ref = $2`,
@@ -373,7 +452,9 @@ export async function revokeApiToken(
     if (token === undefined || token.base_id === null) {
       throw new BasedbError('RESOURCE_NOT_FOUND', { details: { token: request.tokenId } })
     }
-    await requireManageTokens(exec, ctx, await baseTarget(exec, ctx, token.base_id))
+    if (token.created_by !== ctx.actor.id) {
+      await requireManageTokens(exec, ctx, await baseTarget(exec, ctx, token.base_id))
+    }
 
     await exec.query(
       `UPDATE _basedb.api_token

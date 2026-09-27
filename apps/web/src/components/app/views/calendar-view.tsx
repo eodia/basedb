@@ -7,7 +7,9 @@ import { loadRows } from '@/components/app/views/load'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { type Field, type Table, api } from '@/lib/api/client'
+import { $t, intlLocale, weekdayNames } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
+import { weekStart } from '@/lib/preferences'
 import { cn } from '@/lib/utils'
 import {
   type CalendarSpec,
@@ -48,10 +50,17 @@ import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'r
  */
 
 const CEILING = 1000
-const WEEKDAYS = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.']
-const MONTH = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' })
-const SHORT = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
-const TIME = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' })
+const WEEKDAYS = weekdayNames('short')
+
+/** The heads of the columns, from the day the person's week opens on. */
+const weekdays = () => (weekStart() === 0 ? [WEEKDAYS[6] ?? '', ...WEEKDAYS.slice(0, 6)] : WEEKDAYS)
+const MONTH = new Intl.DateTimeFormat(intlLocale(), { month: 'long', year: 'numeric' })
+const SHORT = new Intl.DateTimeFormat(intlLocale(), {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+})
+const TIME = new Intl.DateTimeFormat(intlLocale(), { hour: '2-digit', minute: '2-digit' })
 
 const keyOf = (date: Date) => storedOfDate(date, 'date')
 
@@ -203,7 +212,7 @@ export function CalendarView({
   if (dateField === null) {
     return (
       <Unavailable>
-        Le champ date de ce calendrier n’existe plus, ou ne vous est pas ouvert.
+        {$t('Le champ date de ce calendrier n’existe plus, ou ne vous est pas ouvert.')}
       </Unavailable>
     )
   }
@@ -237,14 +246,14 @@ export function CalendarView({
           className="h-7 px-2 text-xs"
           onClick={() => setAnchor(startOfDay(new Date()))}
         >
-          Aujourd’hui
+          {$t('Aujourd’hui')}
         </Button>
         <Button
           variant="ghost"
           size="icon-sm"
           className="size-7"
           onClick={() => step(-1)}
-          aria-label="Précédent"
+          aria-label={$t('Précédent')}
         >
           <ChevronLeft className="size-4" />
         </Button>
@@ -253,17 +262,21 @@ export function CalendarView({
           size="icon-sm"
           className="size-7"
           onClick={() => step(1)}
-          aria-label="Suivant"
+          aria-label={$t('Suivant')}
         >
           <ChevronRight className="size-4" />
         </Button>
         <h2 className="text-sm font-semibold first-letter:uppercase">
-          {mode === 'month' ? MONTH.format(anchor) : `Semaine du ${SHORT.format(from)}`}
+          {mode === 'month'
+            ? MONTH.format(anchor)
+            : $t('Semaine du {from}', { from: SHORT.format(from) })}
         </h2>
         {loading && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
         {capped && (
           <span className="text-xs text-destructive">
-            Plus de {CEILING} lignes sur la période : resserrez le filtre.
+            {$t('Plus de {ceiling} lignes sur la période : resserrez le filtre.', {
+              ceiling: CEILING,
+            })}
           </span>
         )}
         <div className="flex-1" />
@@ -271,7 +284,7 @@ export function CalendarView({
           <Undated rows={undated.rows} count={undated.count} title={title} onOpen={onOpen} />
         )}
         <fieldset className="flex rounded-md border p-0.5">
-          <legend className="sr-only">{'Période'}</legend>
+          <legend className="sr-only">{$t('Période')}</legend>
           {(['month', 'week'] as const).map((m) => (
             <button
               key={m}
@@ -285,14 +298,14 @@ export function CalendarView({
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >
-              {m === 'month' ? 'Mois' : 'Semaine'}
+              {m === 'month' ? $t('Mois') : $t('Semaine')}
             </button>
           ))}
         </fieldset>
       </div>
 
       <div className="grid shrink-0 grid-cols-7 border-b bg-muted/30">
-        {WEEKDAYS.map((d) => (
+        {weekdays().map((d) => (
           <div
             key={d}
             className="px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
@@ -396,7 +409,7 @@ function DayCell({
             type="button"
             onClick={onAdd}
             className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/day:opacity-100"
-            aria-label="Ajouter une ligne à cette date"
+            aria-label={$t('Ajouter une ligne à cette date')}
           >
             <Plus className="size-3.5" />
           </button>
@@ -411,7 +424,7 @@ function DayCell({
                 type="button"
                 className="px-1 text-left text-[11px] text-muted-foreground hover:text-foreground"
               >
-                {hidden} de plus
+                {$t('{hidden} de plus', { hidden })}
               </button>
             </PopoverTrigger>
             <PopoverContent align="start" className="flex w-64 flex-col gap-0.5 p-2">
@@ -502,12 +515,12 @@ function Undated({
       <PopoverTrigger asChild>
         <Button variant="ghost" size="sm" className="h-7 gap-1.5 px-2 text-xs">
           <CalendarX2 className="size-3.5" />
-          {total} sans date
+          {$t('{total} sans date', { total })}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 p-1">
         <p className="px-2 py-1.5 text-xs text-muted-foreground">
-          Ouvrez une ligne pour lui donner une date.
+          {$t('Ouvrez une ligne pour lui donner une date.')}
         </p>
         <div className="max-h-72 overflow-y-auto scroll-discret">
           {rows.map((row) => (
@@ -523,7 +536,7 @@ function Undated({
         </div>
         {total > rows.length && (
           <p className="px-2 py-1.5 text-xs text-muted-foreground">
-            Et {total - rows.length} autres.
+            {$t('Et {value} autres.', { value: total - rows.length })}
           </p>
         )}
       </PopoverContent>

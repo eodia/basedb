@@ -15,6 +15,8 @@ import {
   snapshot,
   targetFactory,
 } from './projection.js'
+import { type QuerySummary, querySummaries } from './queries.js'
+import { type SqlViewSummary, sqlViewSummaries } from './sql-views.js'
 
 /**
  * Projects — the level above the base (chapter 02, chapter 05 §15).
@@ -58,6 +60,10 @@ export interface ProjectBase extends Look {
       readonly actions: readonly Action[]
     } & Look
   >
+  /** Its SQL views the caller reads everything of, listed among the tables (ch. 11 §1.8). */
+  readonly sqlViews: readonly SqlViewSummary[]
+  /** Its saved queries the caller may open, listed beneath the tables (ch. 11 §1.7). */
+  readonly queries: readonly QuerySummary[]
 }
 
 export interface ProjectSummary extends Look {
@@ -95,12 +101,37 @@ export async function listProjects(
 
   // The badge of the « Propositions » queue — for the bases whose structure one manages.
   const deciding = bases.filter((b) => b.baseActions.includes('manage_schema')).map((b) => b.id)
-  const open =
-    deciding.length === 0
-      ? new Map<string, number>()
-      : await withTransaction(pools, 'catalog', ctx, (exec) => openProposalCounts(exec, deciding), {
-          readOnly: true,
-        })
+  const managed = new Set(deciding)
+  // What the navigation lists under each base besides its tables: its SQL views — those
+  // whose every column the caller reads, all of them for whoever manages it — and its
+  // saved queries.
+  const { open, queries, sqlViews } = await withTransaction(
+    pools,
+    'catalog',
+    ctx,
+    async (exec) => ({
+      open:
+        deciding.length === 0
+          ? new Map<string, number>()
+          : await openProposalCounts(exec, deciding),
+      queries: await querySummaries(
+        exec,
+        ctx,
+        bases.map((b) => b.id),
+        managed,
+      ),
+      sqlViews: await sqlViewSummaries(
+        exec,
+        bases.map((b) => ({
+          id: b.id,
+          schema: b.name,
+          readable: new Map(b.tables.map((t) => [t.name, new Set(t.fields.map((f) => f.name))])),
+        })),
+        managed,
+      ),
+    }),
+    { readOnly: true },
+  )
 
   const out: ProjectSummary[] = []
   for (const row of raw.projects) {
@@ -143,6 +174,8 @@ export async function listProjects(
           image: t.image,
           actions: tableActions(t.id, t.actions),
         })),
+        sqlViews: sqlViews.get(b.id) ?? [],
+        queries: queries.get(b.id) ?? [],
       })),
     })
   }

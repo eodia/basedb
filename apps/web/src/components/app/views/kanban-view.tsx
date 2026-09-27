@@ -1,11 +1,12 @@
 'use client'
 
 import type { Row } from '@/components/app/grid/cell'
-import { OptionBadge } from '@/components/app/option-badge'
-import { RecordCard, coverOf } from '@/components/app/views/card'
+import { OptionBadge, OptionGlyph } from '@/components/app/option-badge'
+import { CardDescription, RecordCard, coverOf } from '@/components/app/views/card'
 import { Button } from '@/components/ui/button'
 import { type Field, type FieldOption, type Table, api } from '@/lib/api/client'
 import { quoteLiteral } from '@/lib/expression'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import {
@@ -22,11 +23,11 @@ import {
   type DragEndEvent,
   DragOverlay,
   type DragStartEvent,
+  type DropAnimation,
   PointerSensor,
   closestCenter,
-  rectIntersection,
+  defaultDropAnimationSideEffects,
   useDraggable,
-  useDroppable,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
@@ -36,14 +37,17 @@ import {
   horizontalListSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { Loader2, Plus } from 'lucide-react'
+import { CSS, type Coordinates, getEventCoordinates } from '@dnd-kit/utilities'
+import { Inbox, Loader2, Plus } from 'lucide-react'
 import {
   type CSSProperties,
   type ReactNode,
+  type RefObject,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 
@@ -58,10 +62,21 @@ import {
  * Two things are dragged, and they write two different things:
  *
  *   une CARTE change de colonne — un `PATCH` d'un champ de la ligne, affiché aussitôt et
- *   remis en place si la base le refuse ;
+ *   remis en place si la base le refuse — ou de rang, quand la vue est rangée à la main ;
  *   une COLONNE, prise par son en-tête, change de place — l'ordre de la vue
  *   (`spec.group_order`), jamais celui de la liste de choix, qui reste le même partout
  *   ailleurs. La colonne « Sans valeur » reste en tête : elle n'est pas un choix.
+ *
+ * Each column wears its choice's colour — a band on top, the body faintly tinted — so the
+ * board reads at a glance as the list it is made of. A card may carry a description under
+ * its title, a sentence whose variables are the row's values (`spec.card_template`).
+ *
+ * While a card travels, it is drawn where it would land — a ghost, faded and outlined —
+ * and the others make room for it. That place follows the pointer: the column under it,
+ * and the rank among its cards when the view is ranked by hand; else the rank the view
+ * gives it, the top of the column under a sort, which decides once the card is written.
+ * The cards glide rather than jump as it goes (`useGlide`), and dropped, it settles into
+ * its ghost's place (`settle`) — unless the reader asked for less motion.
  */
 
 const PAGE = 50
@@ -92,9 +107,22 @@ const EMPTY: ColumnState = {
   error: null,
 }
 
+/** The card being dragged, and the column it comes from. */
+interface Dragged {
+  readonly row: Row
+  readonly from: string
+}
+
+/** Where a card being dragged would land: the column, and its rank among the others. */
+interface Landing {
+  readonly column: string
+  readonly index: number
+}
+
 /**
  * A column dragged lands on the column CLOSEST to it — among the choices alone, never on
- * « Sans valeur »; a card lands on the column it is dropped over.
+ * « Sans valeur ». A card collides with nothing: where it lands is its ghost's place,
+ * which the pointer sets (`landingAt`).
  */
 const collision: CollisionDetection = (args) =>
   args.active.data.current?.type === 'column'
@@ -104,7 +132,32 @@ const collision: CollisionDetection = (args) =>
           (c) => c.data.current?.type === 'column',
         ),
       })
-    : rectIntersection(args)
+    : []
+
+/** The ease of every motion of the board: quick to leave, gentle to arrive. */
+const EASE = 'cubic-bezier(0.2, 0, 0, 1)'
+const GLIDE = 200
+
+/** Asked for less motion, the board has none: the cards jump, the dropped one vanishes. */
+const still = () =>
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+/**
+ * Dropped, the card flies to its ghost's place, straightening on the way, and takes it —
+ * hidden meanwhile. A column's header flies to its column, which stays in sight.
+ */
+const settle: DropAnimation = {
+  duration: GLIDE,
+  easing: EASE,
+  sideEffects: (parameters) => {
+    if (parameters.active.data.current?.type === 'column') return
+    parameters.dragOverlay.node.firstElementChild?.animate(
+      [{ rotate: '3deg' }, { rotate: '0deg' }],
+      { duration: GLIDE, easing: EASE, fill: 'forwards' },
+    )
+    return defaultDropAnimationSideEffects({ styles: { active: { opacity: '0' } } })(parameters)
+  },
+}
 
 export function KanbanView({
   table,
@@ -193,13 +246,16 @@ export function KanbanView({
     setPendingCards(null)
   }, [savedCards])
   const byHand = sort === ''
-  /** A column's cards as drawn: by hand when no sort says otherwise. */
+  /** Cards in the order drawn: by hand when no sort says otherwise. */
+  const arrange = useCallback(
+    (rows: readonly Row[]): readonly Row[] =>
+      byHand ? orderByHand(rows, pendingCards ?? spec.manual_order) : rows,
+    [byHand, pendingCards, spec.manual_order],
+  )
+  /** A column's cards as drawn. */
   const drawn = useCallback(
-    (key: string): readonly Row[] => {
-      const rows = state[key]?.rows ?? []
-      return byHand ? orderByHand(rows, pendingCards ?? spec.manual_order) : rows
-    },
-    [state, byHand, pendingCards, spec.manual_order],
+    (key: string): readonly Row[] => arrange(state[key]?.rows ?? []),
+    [state, arrange],
   )
 
   const clause = useCallback(
@@ -212,6 +268,9 @@ export function KanbanView({
     [group],
   )
 
+  const board = useRef<HTMLDivElement>(null)
+  const glide = useGlide(board)
+
   const loadColumn = useCallback(
     async (column: Column, after: string | null) => {
       setState((s) => ({ ...s, [column.key]: { ...(s[column.key] ?? EMPTY), loading: true } }))
@@ -223,6 +282,8 @@ export function KanbanView({
           after: after ?? undefined,
           count: after === null,
         })
+        // Read again after a drop, a card may stand elsewhere: it glides there.
+        glide()
         setState((s) => {
           const previous = s[column.key] ?? EMPTY
           return {
@@ -245,7 +306,7 @@ export function KanbanView({
         }))
       }
     },
-    [table, filter, sort, clause],
+    [table, filter, sort, clause, glide],
   )
 
   // Keyed on the columns as LOADED, not as drawn: moving a column reads nothing again.
@@ -258,8 +319,71 @@ export function KanbanView({
   // ── Dragging ───────────────────────────────────────────────────────────────────────
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
-  const [dragged, setDragged] = useState<Row | null>(null)
+  const [dragged, setDragged] = useState<Dragged | null>(null)
   const [draggedColumn, setDraggedColumn] = useState<Column | null>(null)
+  // Where the card's ghost stands; `null` where it was — dropped there, nothing moves.
+  const [landing, setLanding] = useState<Landing | null>(null)
+  const pointer = useRef<Coordinates | null>(null)
+  /** A card takes the rank it is dropped at: the view is ranked by hand, and may change. */
+  const ranked = byHand && onReorderCards !== undefined
+
+  const columnOf = (key: string) => columns.find((c) => c.key === key)
+
+  // The pointer, followed while a card travels: where it is says where the card lands.
+  useEffect(() => {
+    if (dragged === null) return
+    const follow = (e: PointerEvent) => {
+      pointer.current = { x: e.clientX, y: e.clientY }
+    }
+    window.addEventListener('pointermove', follow, { passive: true })
+    return () => window.removeEventListener('pointermove', follow)
+  }, [dragged])
+
+  /**
+   * Where the card would land, the pointer where it is: the column under it — anywhere
+   * across its width — and, ranked by hand, before the first other card whose middle is
+   * below the pointer. `null` out of the board, or where it may not go: back where it
+   * was. `undefined` between two columns: the ghost stays where it stood.
+   */
+  const landingAt = (card: Dragged): Landing | null | undefined => {
+    const host = board.current
+    const at = pointer.current
+    if (group === null || host === null || at === null) return undefined
+    const bounds = host.getBoundingClientRect()
+    if (at.x < bounds.left || at.x > bounds.right || at.y < bounds.top || at.y > bounds.bottom)
+      return null
+    for (const section of host.querySelectorAll<HTMLElement>('[data-column]')) {
+      const r = section.getBoundingClientRect()
+      if (at.x < r.left || at.x > r.right) continue
+      const key = section.dataset.column ?? ''
+      const home = key === card.from
+      if (!home && !movable) return null
+      if (!ranked) {
+        if (home) return null
+        // Its rank is the view's: the one it takes once written in this column.
+        const moved = { ...card.row, [group.name]: columnOf(key)?.value ?? null } as Row
+        const others = (state[key]?.rows ?? []).filter((row) => row._id !== card.row._id)
+        return { column: key, index: arrange([moved, ...others]).indexOf(moved) }
+      }
+      let index = 0
+      for (const other of section.querySelectorAll<HTMLElement>('[data-card]')) {
+        if (other.dataset.card === card.row._id) continue
+        const c = other.getBoundingClientRect()
+        if (at.y > c.top + c.height / 2) index += 1
+      }
+      return { column: key, index }
+    }
+    return undefined
+  }
+
+  const aim = () => {
+    if (dragged === null) return
+    const next = landingAt(dragged)
+    if (next === undefined) return
+    if (next?.column === landing?.column && next?.index === landing?.index) return
+    glide()
+    setLanding(next)
+  }
 
   const onDragStart = (event: DragStartEvent) => {
     const id = String(event.active.id)
@@ -267,10 +391,12 @@ export function KanbanView({
       setDraggedColumn(choices.find((c) => c.key === id) ?? null)
       return
     }
-    for (const column of Object.values(state)) {
-      const row = column.rows.find((r) => r._id === id)
-      if (row !== undefined) setDragged(row)
-    }
+    const from = columns.find((c) => state[c.key]?.rows.some((r) => r._id === id))
+    const row = from === undefined ? undefined : state[from.key]?.rows.find((r) => r._id === id)
+    if (from === undefined || row === undefined) return
+    pointer.current = getEventCoordinates(event.activatorEvent)
+    setLanding(null)
+    setDragged({ row, from: from.key })
   }
 
   const moveColumn = async (event: DragEndEvent) => {
@@ -291,47 +417,44 @@ export function KanbanView({
     }
   }
 
-  /** A card dropped on another of its own column: it takes that card's place. */
-  const reorderCard = async (column: Column, id: string, overId: string) => {
-    if (onReorderCards === undefined || !byHand) return
-    const ids = drawn(column.key).map((r) => r._id)
-    const from = ids.indexOf(id)
-    const to = ids.indexOf(overId)
-    if (from === -1 || to === -1 || from === to) return
-    const moved = arrayMove(ids, from, to)
-    // Every column as drawn, this one as dropped: the order is the view's, whole.
-    const all = columns.flatMap((c) =>
-      c.key === column.key ? moved : drawn(c.key).map((r) => r._id),
-    )
-    const next = nextHandOrder(all, spec.manual_order)
-    setPendingCards(next)
-    onError(null)
-    try {
-      await onReorderCards(next)
-    } catch (e) {
-      setPendingCards(null)
-      onError(messageFor(e))
-    }
-  }
+  /** The card dropped where its ghost stood: in another column, at another rank, or both. */
+  const moveCard = async (card: Dragged, to: Landing) => {
+    const source = columnOf(card.from)
+    const target = columnOf(to.column)
+    if (group === null || source === undefined || target === undefined) return
+    const id = card.row._id
+    const others = (key: string) =>
+      drawn(key)
+        .map((r) => r._id)
+        .filter((other) => other !== id)
+    const placed = others(target.key)
+    placed.splice(to.index, 0, id)
+    // Every column as drawn, the card where it was dropped: the order is the view's, whole.
+    const order = ranked
+      ? nextHandOrder(
+          columns.flatMap((c) => (c.key === target.key ? placed : others(c.key))),
+          spec.manual_order,
+        )
+      : null
 
-  const moveCard = async (event: DragEndEvent) => {
-    if (group === null || event.over === null) return
-    const id = String(event.active.id)
-    // Dropped on a card: the column that card is in; on a column: that column.
-    const overCard = event.over.data.current?.type === 'card-target'
-    const overKey = overCard ? String(event.over.data.current?.column) : String(event.over.id)
-    const target = columns.find((c) => c.key === overKey)
-    const source = columns.find((c) => state[c.key]?.rows.some((r) => r._id === id))
-    if (target === undefined || source === undefined) return
     if (target.key === source.key) {
-      if (overCard) await reorderCard(source, id, String(event.over.data.current?.row))
+      const before = drawn(source.key).map((r) => r._id)
+      if (order === null || onReorderCards === undefined) return
+      if (placed.every((other, i) => other === before[i])) return
+      setPendingCards(order)
+      onError(null)
+      try {
+        await onReorderCards(order)
+      } catch (e) {
+        setPendingCards(null)
+        onError(messageFor(e))
+      }
       return
     }
-    const row = state[source.key]?.rows.find((r) => r._id === id)
-    if (row === undefined) return
 
-    // Shown where it was dropped, at the top, before the server answers.
-    const moved = { ...row, [group.name]: target.value } as Row
+    // Shown where it was dropped before the server answers: at its rank, or at the top.
+    const moved = { ...card.row, [group.name]: target.value } as Row
+    if (order !== null) setPendingCards(order)
     setState((s) => {
       const from = s[source.key] ?? EMPTY
       const to = s[target.key] ?? EMPTY
@@ -352,7 +475,10 @@ export function KanbanView({
     onError(null)
     try {
       await api.updateRecord(table, id, { [group.name]: target.value })
+      // Its rank once it is there: saved before, it would name a card still elsewhere.
+      if (order !== null) await onReorderCards?.(order)
     } catch (e) {
+      setPendingCards(null)
       onError(messageFor(e))
     } finally {
       // Either way the two columns are read again: the sort may place the card elsewhere,
@@ -362,17 +488,35 @@ export function KanbanView({
     }
   }
 
-  const onDragEnd = (event: DragEndEvent) => {
-    const column = event.active.data.current?.type === 'column'
+  const stop = () => {
     setDragged(null)
     setDraggedColumn(null)
-    void (column ? moveColumn(event) : moveCard(event))
+    setLanding(null)
+  }
+
+  const onDragEnd = (event: DragEndEvent) => {
+    if (event.active.data.current?.type === 'column') {
+      stop()
+      void moveColumn(event)
+      return
+    }
+    glide()
+    stop()
+    if (dragged !== null && landing !== null) void moveCard(dragged, landing)
+  }
+
+  // Given up — the window lost, say —, the card glides back where it was.
+  const onDragCancel = () => {
+    glide()
+    stop()
   }
 
   if (group === null) {
     return (
       <Unavailable>
-        Le champ qui forme les colonnes de ce kanban n’existe plus, ou ne vous est pas ouvert.
+        {$t(
+          'Le champ qui forme les colonnes de ce kanban n’existe plus, ou ne vous est pas ouvert.',
+        )}
       </Unavailable>
     )
   }
@@ -388,21 +532,34 @@ export function KanbanView({
     return s === undefined || s.loading || s.rows.length > 0
   })
 
-  const cards = (column: Column) =>
-    drawn(column.key).map((row) => (
-      <DraggableCard
-        key={row._id}
-        id={row._id}
-        column={column.key}
-        disabled={!movable && !(byHand && onReorderCards !== undefined)}
-      >
+  const describe = (row: Row) =>
+    spec.card_template === '' ? undefined : (
+      <CardDescription template={spec.card_template} row={row} fields={fields} />
+    )
+  /** A column's cards as shown: the one travelling stands where it would land. */
+  const listed = (key: string): readonly Row[] => {
+    const rows = drawn(key)
+    if (dragged === null || landing === null) return rows
+    const others = rows.filter((row) => row._id !== dragged.row._id)
+    if (key !== landing.column) return others
+    return [...others.slice(0, landing.index), dragged.row, ...others.slice(landing.index)]
+  }
+  /** The column the card would be written into — not the one it comes from. */
+  const receives = (column: Column) =>
+    dragged !== null && landing?.column === column.key && column.key !== dragged.from
+  const cards = (rows: readonly Row[]) =>
+    rows.map((row) => (
+      <DraggableCard key={row._id} id={row._id} disabled={!movable && !ranked}>
         <RecordCard
           row={row}
           title={title}
           fields={shown}
           cover={coverOf(row, cover)}
+          coverClassName="h-32"
+          description={describe(row)}
           selected={row._id === openedId}
           onOpen={() => onOpen(row)}
+          className="rounded-xl border-border/70 transition-[box-shadow,transform,opacity] duration-150 hover:-translate-y-0.5"
         />
       </DraggableCard>
     ))
@@ -416,27 +573,23 @@ export function KanbanView({
       sensors={sensors}
       collisionDetection={collision}
       onDragStart={onDragStart}
+      onDragMove={aim}
       onDragEnd={onDragEnd}
-      onDragCancel={() => {
-        setDragged(null)
-        setDraggedColumn(null)
-      }}
+      onDragCancel={onDragCancel}
     >
-      <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto p-4 scroll-discret">
+      <div ref={board} className="flex min-h-0 flex-1 gap-4 overflow-x-auto p-4 scroll-discret">
         {none !== undefined && showNone && (
-          <DroppableColumn column={none}>
-            {(frame) => (
-              <ColumnFrame
-                {...frame}
-                column={none}
-                state={noneState}
-                onMore={(cursor) => void loadColumn(none, cursor)}
-                onAdd={adder(none)}
-              >
-                {cards(none)}
-              </ColumnFrame>
-            )}
-          </DroppableColumn>
+          <ColumnFrame
+            column={none}
+            state={noneState}
+            shown={listed(none.key).length}
+            receives={receives(none)}
+            onMore={(cursor) => void loadColumn(none, cursor)}
+            onAdd={adder(none)}
+            droppable={movable}
+          >
+            {cards(listed(none.key))}
+          </ColumnFrame>
         )}
         <SortableContext items={visible.map((c) => c.key)} strategy={horizontalListSortingStrategy}>
           {visible.map((column) => (
@@ -446,31 +599,37 @@ export function KanbanView({
                   {...frame}
                   column={column}
                   state={state[column.key] ?? EMPTY}
+                  shown={listed(column.key).length}
+                  receives={receives(column)}
                   onMore={(cursor) => void loadColumn(column, cursor)}
                   onAdd={adder(column)}
+                  droppable={movable}
                 >
-                  {cards(column)}
+                  {cards(listed(column.key))}
                 </ColumnFrame>
               )}
             </SortableColumn>
           ))}
         </SortableContext>
         {visible.length === 0 && !showNone && (
-          <p className="m-auto text-sm text-muted-foreground">Aucune ligne à afficher.</p>
+          <p className="m-auto text-sm text-muted-foreground">{$t('Aucune ligne à afficher.')}</p>
         )}
       </div>
-      <DragOverlay dropAnimation={null}>
+      <DragOverlay dropAnimation={still() ? null : settle}>
         {dragged !== null && (
           <RecordCard
-            row={dragged}
+            row={dragged.row}
             title={title}
             fields={shown}
-            cover={coverOf(dragged, cover)}
-            className="w-68 rotate-2 cursor-grabbing shadow-lg"
+            cover={coverOf(dragged.row, cover)}
+            coverClassName="h-32"
+            description={describe(dragged.row)}
+            // The card's own width, so that it fits its place exactly once dropped.
+            className="w-full rotate-3 cursor-grabbing rounded-xl shadow-xl ring-1 ring-primary/30"
           />
         )}
         {draggedColumn?.option != null && (
-          <div className="flex h-10 w-72 cursor-grabbing items-center gap-2 rounded-xl bg-muted px-3 shadow-lg ring-1 ring-primary/40">
+          <div className="flex h-11 w-72 cursor-grabbing items-center gap-2 rounded-2xl bg-card px-3 shadow-xl ring-1 ring-primary/40">
             <OptionBadge option={draggedColumn.option} />
           </div>
         )}
@@ -479,17 +638,19 @@ export function KanbanView({
   )
 }
 
-/** What a column wrapper hands its frame: where it is, and how its header is grabbed. */
+/**
+ * What a column wrapper hands its frame: where it is, and how its header is grabbed.
+ * « Sans valeur » is never moved: it has none of it.
+ */
 interface Frame {
-  readonly setNodeRef: (node: HTMLElement | null) => void
+  readonly setNodeRef?: (node: HTMLElement | null) => void
   readonly style?: CSSProperties
-  readonly isOver: boolean
-  readonly isDragging: boolean
+  readonly isDragging?: boolean
   /** Spread on the header when the column can be moved; absent otherwise. */
   readonly handle?: Record<string, unknown>
 }
 
-/** A choice's column: dropped on by cards, and moved by its header. */
+/** A choice's column, moved by its header. */
 function SortableColumn({
   column,
   disabled,
@@ -499,93 +660,120 @@ function SortableColumn({
   readonly disabled: boolean
   readonly children: (frame: Frame) => ReactNode
 }) {
-  const { setNodeRef, attributes, listeners, transform, transition, isOver, isDragging, active } =
-    useSortable({ id: column.key, data: { type: 'column' }, disabled })
+  const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({
+    id: column.key,
+    data: { type: 'column' },
+    disabled,
+  })
   return children({
     setNodeRef,
     style: { transform: CSS.Translate.toString(transform), transition },
-    // A card over it asks for the highlight; another column passing by does not.
-    isOver: isOver && active?.data.current?.type !== 'column',
     isDragging,
     handle: disabled ? undefined : { ...attributes, ...listeners },
   })
 }
 
-/** « Sans valeur »: dropped on by cards, never moved. */
-function DroppableColumn({
-  column,
-  children,
-}: {
-  readonly column: Column
-  readonly children: (frame: Frame) => ReactNode
-}) {
-  const { setNodeRef, isOver } = useDroppable({ id: column.key, data: { type: 'none' } })
-  return children({ setNodeRef, isOver, isDragging: false })
-}
+/** The column's colour, or a neutral one for « Sans valeur » and a choice without one. */
+const NEUTRAL = 'var(--muted-foreground)'
 
 function ColumnFrame({
   column,
   state,
+  shown,
+  receives,
   onMore,
   onAdd,
+  droppable,
   setNodeRef,
   style,
-  isOver,
-  isDragging,
+  isDragging = false,
   handle,
   children,
 }: Frame & {
   readonly column: Column
   readonly state: ColumnState
+  /** The cards drawn — a card passing through counted where its ghost stands. */
+  readonly shown: number
+  /** A card from another column would be written into this one. */
+  readonly receives: boolean
   readonly onMore: (cursor: string) => void
   readonly onAdd?: () => void
+  /** Cards may be dropped here: an empty column says so. */
+  readonly droppable: boolean
   readonly children: ReactNode
 }) {
   const count = state.count === null ? state.rows.length : state.capped ? '100 000+' : state.count
+  const color = column.option?.color ?? null
+  const tint = color ?? NEUTRAL
+  const empty = !state.loading && shown === 0 && state.error === null
   return (
     <section
       ref={setNodeRef}
-      style={style}
+      data-column={column.key}
+      style={{
+        ...style,
+        // The body faintly in the choice's colour, over the muted surface of the board.
+        backgroundColor: `color-mix(in srgb, ${tint} ${color === null ? 4 : 7}%, var(--muted))`,
+      }}
       className={cn(
-        'flex w-72 shrink-0 flex-col rounded-xl bg-muted/50 transition-colors',
-        isOver && 'bg-primary/10 ring-1 ring-primary/40',
+        'flex w-72 shrink-0 flex-col overflow-hidden rounded-2xl border border-border/60 transition-[box-shadow,opacity]',
+        receives && 'shadow-md ring-2 ring-primary/50',
         // Its place stays marked while it travels, as an outline.
         isDragging && 'opacity-40 outline-2 outline-dashed outline-primary/50',
       )}
-      aria-label={column.option?.label ?? 'Sans valeur'}
+      aria-label={column.option?.label ?? $t('Sans valeur')}
     >
+      <span aria-hidden className="h-1 shrink-0" style={{ backgroundColor: tint }} />
       <header
         {...handle}
-        // The header is the handle: grabbing anywhere on it but its buttons moves the column.
-        title={handle === undefined ? undefined : 'Glisser pour déplacer la colonne'}
+        // The header is the handle: grabbing anywhere on it moves the column.
+        title={handle === undefined ? undefined : $t('Glisser pour déplacer la colonne')}
         className={cn(
-          'flex h-10 shrink-0 items-center gap-2 rounded-t-xl px-3 outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+          'flex h-11 shrink-0 items-center gap-2 px-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/40',
           handle !== undefined && 'cursor-grab active:cursor-grabbing',
         )}
       >
         {column.option === null ? (
-          <span className="text-xs font-medium text-muted-foreground">Sans valeur</span>
+          <span className="truncate text-sm font-semibold text-muted-foreground">
+            {$t('Sans valeur')}
+          </span>
         ) : (
-          <OptionBadge option={column.option} />
+          <>
+            <OptionGlyph
+              look={column.option}
+              // A pictogram or a picture reads at the size of the label; a plain colour is a dot.
+              className={
+                (column.option.icon ?? null) !== null || (column.option.image ?? null) !== null
+                  ? 'size-4'
+                  : 'size-2.5'
+              }
+            />
+            <span
+              className="truncate text-sm font-semibold"
+              style={
+                color === null
+                  ? undefined
+                  : { color: `color-mix(in oklab, ${color} 70%, var(--foreground))` }
+              }
+            >
+              {column.option.label}
+            </span>
+          </>
         )}
-        <span className="text-xs tabular-nums text-muted-foreground">{count}</span>
+        <span className="shrink-0 rounded-full bg-background/80 px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground ring-1 ring-border/60">
+          {count}
+        </span>
         <div className="flex-1" />
         {state.loading && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
-        {onAdd !== undefined && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="size-7 cursor-pointer"
-            onClick={onAdd}
-            aria-label="Ajouter une carte dans cette colonne"
-            title="Ajouter une carte"
-          >
-            <Plus className="size-4" />
-          </Button>
-        )}
       </header>
-      <div className="flex min-h-16 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2 scroll-discret">
+      <div className="flex min-h-16 flex-1 flex-col gap-2.5 overflow-y-auto px-2.5 pb-2.5 scroll-discret">
         {children}
+        {empty && (
+          <div className="flex flex-col items-center gap-1 rounded-xl border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
+            <Inbox className="size-4 opacity-60" />
+            {droppable ? $t('Déposez une carte ici') : $t('Aucune carte')}
+          </div>
+        )}
         {state.error !== null && (
           <p className="rounded-md bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
             {state.error}
@@ -598,22 +786,32 @@ function ColumnFrame({
             className="h-7 text-xs text-muted-foreground"
             onClick={() => onMore(state.cursor as string)}
           >
-            Charger plus
+            {$t('Charger plus')}
           </Button>
         )}
       </div>
+      {onAdd !== undefined && (
+        <div className="shrink-0 px-2.5 pb-2.5">
+          <button
+            type="button"
+            onClick={onAdd}
+            className="flex h-8 w-full cursor-pointer items-center gap-1.5 rounded-lg px-2 text-xs text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          >
+            <Plus className="size-3.5" />
+            {$t('Ajouter une carte')}
+          </button>
+        </div>
+      )}
     </section>
   )
 }
 
 function DraggableCard({
   id,
-  column,
   disabled,
   children,
 }: {
   readonly id: string
-  readonly column: string
   readonly disabled: boolean
   readonly children: ReactNode
 }) {
@@ -622,30 +820,83 @@ function DraggableCard({
     disabled,
     data: { type: 'card' },
   })
-  // Each card is also a place to drop on: another card of its column takes its rank.
-  const target = useDroppable({
-    id: `card:${id}`,
-    data: { type: 'card-target', column, row: id },
-  })
   return (
     <div
-      ref={(node) => {
-        setNodeRef(node)
-        target.setNodeRef(node)
-      }}
+      ref={setNodeRef}
       {...attributes}
       {...listeners}
+      // Where the pointer looks for the cards of a column (`landingAt`).
+      data-card={id}
       // The card itself is the button that opens the row; the wrapper only carries the drag.
       tabIndex={-1}
       role="presentation"
       className={cn(
-        isDragging && 'opacity-30',
-        target.isOver && !isDragging && 'rounded-lg ring-2 ring-primary/40',
+        // While it travels, its ghost: where it would land, faded and outlined.
+        isDragging &&
+          'pointer-events-none rounded-xl outline-2 -outline-offset-2 outline-dashed outline-primary/60 *:opacity-40 *:shadow-none',
       )}
     >
       {children}
     </div>
   )
+}
+
+/** Where a card stands: its column, and its box on the screen as seen. */
+interface Place {
+  readonly column: string
+  readonly rect: DOMRect
+}
+
+const placeOf = (card: HTMLElement): Place => ({
+  column: card.closest<HTMLElement>('[data-column]')?.dataset.column ?? '',
+  rect: card.getBoundingClientRect(),
+})
+
+/**
+ * The cards glide to their new places rather than jump there (FLIP): the returned
+ * function takes where each one stands just before a change, and once the change is drawn,
+ * each card that moved plays the way from there. One that changed column fades in instead:
+ * it would fly across the board. Taken where they are SEEN, a glide cut short by the next
+ * change carries on from where it was.
+ */
+function useGlide(board: RefObject<HTMLElement | null>) {
+  const places = useRef<Map<string, Place> | null>(null)
+  const capture = useCallback(() => {
+    const host = board.current
+    // The first places taken hold until the change is drawn: the way starts there.
+    if (host === null || places.current !== null) return
+    places.current = new Map(
+      [...host.querySelectorAll<HTMLElement>('[data-card]')].map((card) => [
+        card.dataset.card ?? '',
+        placeOf(card),
+      ]),
+    )
+  }, [board])
+  // After every render: a change captured is played once drawn, then forgotten.
+  useLayoutEffect(() => {
+    const before = places.current
+    places.current = null
+    const host = board.current
+    if (before === null || host === null || still()) return
+    for (const card of host.querySelectorAll<HTMLElement>('[data-card]')) {
+      const was = before.get(card.dataset.card ?? '')
+      if (was === undefined) continue
+      for (const motion of card.getAnimations()) motion.cancel()
+      const now = placeOf(card)
+      if (now.column !== was.column) {
+        card.animate([{ opacity: 0 }, { opacity: 1 }], { duration: GLIDE, easing: EASE })
+        continue
+      }
+      const dx = was.rect.left - now.rect.left
+      const dy = was.rect.top - now.rect.top
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue
+      card.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
+        duration: GLIDE,
+        easing: EASE,
+      })
+    }
+  })
+  return capture
 }
 
 /** A view that cannot be drawn, and why — its pivot gone, most often. */
