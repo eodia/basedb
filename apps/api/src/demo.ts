@@ -1,21 +1,49 @@
+import { FALLBACK_LOCALE, type Locale } from '@basedb/contracts'
 import { BasedbError, type ProviderTransport } from '@basedb/core'
 
 /**
  * The public demo — `BASEDB_DEMO=1`.
  *
- * One shared account, whose address and password the login screen prefills, on an
- * instance anyone can open. A visitor reads everything and edits what exists; they create
- * nothing and delete nothing — no base, table, row, file, comment, account, token or link
- * —, and the AI answers that it is not part of the demo. The operator puts the database
- * back every night: what a visitor changes lasts until then.
+ * Shared accounts, whose address and password the login screen prefills, on an instance
+ * anyone can open: one for every language the demo speaks, each seeing its own copy of
+ * the demo in that language — or a single one, the administrator, for all of them. A
+ * visitor reads everything and edits what exists; they create nothing and delete nothing
+ * — no base, table, row, file, comment, account, token or link —, and the AI answers that
+ * it is not part of the demo. The operator puts the database back every night: what a
+ * visitor changes lasts until then.
  *
  * A list of what is ALLOWED, not of what is refused: a route added later stays refused
  * until it is named here.
  */
 
-export interface DemoAccount {
-  readonly email: string
+export interface DemoConfig {
+  /** The shared accounts, one per language; the first answers a language that has none. */
+  readonly accounts: ReadonlyArray<{ readonly locale: Locale; readonly email: string }>
+  /** Their password, the same for all, published with them. */
   readonly password: string
+}
+
+/**
+ * The account the login screen prefills for a screen in `language`: that language's,
+ * else English's, else the first — and the others, for a picker.
+ */
+export function demoAccountFor(demo: DemoConfig, language: string) {
+  const account =
+    demo.accounts.find((a) => a.locale === language) ??
+    demo.accounts.find((a) => a.locale === FALLBACK_LOCALE) ??
+    (demo.accounts[0] as DemoConfig['accounts'][number])
+  return {
+    email: account.email,
+    password: demo.password,
+    locale: account.locale,
+    accounts: demo.accounts.map((a) => ({ locale: a.locale, email: a.email })),
+  }
+}
+
+/** Whether an address is one of the demo's shared accounts — case aside, as at sign-in. */
+export function isDemoAddress(demo: DemoConfig, email: string): boolean {
+  const wanted = email.trim().toLowerCase()
+  return demo.accounts.some((a) => a.email.toLowerCase() === wanted)
 }
 
 /** The tenant segment of the product's routes. */
@@ -59,7 +87,6 @@ const ALLOWED: ReadonlyArray<readonly [string, RegExp]> = (
     ['PUT', `${T}/admin/bases/${SEGMENT}/sql-views/order`],
     ['PATCH', `${T}/admin/bases/${SEGMENT}/dashboards/${SEGMENT}`],
     ['PATCH', `${T}/admin/bases/${SEGMENT}/questions/${SEGMENT}`],
-    ['PATCH', `${T}/admin/bases/${SEGMENT}/queries/${SEGMENT}`],
   ] as const
 ).map(([method, path]) => [method, new RegExp(`^${path}$`)] as const)
 

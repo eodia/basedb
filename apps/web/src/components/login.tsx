@@ -10,10 +10,11 @@ import {
   revealAt,
 } from '@/components/auth-layout'
 import { Button } from '@/components/ui/button'
+import { Choice } from '@/components/ui/choice'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ApiError, api } from '@/lib/api/client'
-import { $t } from '@/lib/i18n'
+import { ApiError, type DemoAccount, api } from '@/lib/api/client'
+import { $t, LOCALE_NAMES } from '@/lib/i18n'
 import { reasonFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
 import { Check, ChevronDown, Loader2 } from 'lucide-react'
@@ -58,8 +59,8 @@ export function Login({
   const [signedIn, setSignedIn] = useState(false)
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [signupOpen, setSignupOpen] = useState(false)
-  // The public demo: its shared account, prefilled whole.
-  const [demo, setDemo] = useState(false)
+  // The public demo: its shared account, prefilled whole — the one of the language chosen.
+  const [demo, setDemo] = useState<DemoAccount | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -73,7 +74,7 @@ export function Login({
       if (!alive || account === null) return
       setEmail(account.email)
       setPassword(account.password)
-      setDemo(true)
+      setDemo(account)
     })
     // Back from a sign-in provider that refused: the code travels in the address, and is
     // taken out of it once read — a reload must not show it again.
@@ -118,16 +119,16 @@ export function Login({
 
   return (
     <AuthLayout
-      title={demo ? $t('Essayez basedb') : title}
+      title={demo !== null ? $t('Essayez basedb') : title}
       description={
-        demo
+        demo !== null
           ? $t(
               'Le compte de démonstration est prérempli : connectez-vous pour explorer une base d’exemple.',
             )
           : description
       }
       footer={
-        demo ? (
+        demo !== null ? (
           <p className="max-w-sm leading-relaxed">
             {$t(
               'Les créations et les suppressions sont désactivées, et les données reviennent à leur état initial chaque nuit.',
@@ -163,6 +164,28 @@ export function Login({
       }
     >
       <form onSubmit={submit} className="grid gap-5" aria-busy={busy}>
+        {/* The demo in another language: another account, which sees its own copy. */}
+        {demo !== null && demo.accounts.length > 1 && (
+          <div className={cn('grid gap-2', REVEAL)} style={revealAt(0)}>
+            <Label>{$t('Langue de la démo')}</Label>
+            <Choice
+              aria-label={$t('Langue de la démo')}
+              value={demo.accounts.find((a) => a.email === email)?.locale ?? demo.locale}
+              onValueChange={(next) => {
+                const account = demo.accounts.find((a) => a.locale === next)
+                if (account !== undefined) setEmail(account.email)
+              }}
+              options={demo.accounts.map((a) => ({
+                value: a.locale,
+                label: LOCALE_NAMES[a.locale],
+              }))}
+              size="default"
+              disabled={busy}
+              className="h-10"
+            />
+          </div>
+        )}
+
         <div className={cn('group grid gap-2', REVEAL)} style={revealAt(0)}>
           <Label htmlFor="email" className="transition-colors group-focus-within:text-primary">
             {$t('Adresse e-mail')}

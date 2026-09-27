@@ -46,7 +46,13 @@ import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { cors } from 'hono/cors'
 import { streamSSE } from 'hono/streaming'
 import { providerTransport } from './ai-transport.js'
-import { type DemoAccount, demoRefusal, demoTransport } from './demo.js'
+import {
+  type DemoConfig,
+  demoAccountFor,
+  demoRefusal,
+  demoTransport,
+  isDemoAddress,
+} from './demo.js'
 import { RateLimiter } from './rate-limit.js'
 
 /**
@@ -98,11 +104,12 @@ export interface AppOptions {
   /** Tenant these unauthenticated `/auth` routes belong to, while sessions carry none. */
   readonly tenantRef?: string
   /**
-   * The public demo's shared account (`BASEDB_DEMO=1`, see `demo.ts`): published on
-   * `/auth/demo` for the login form to prefill, and every write that would create or
-   * delete refused. Absent everywhere else, and then none of this exists.
+   * The public demo's shared accounts (`BASEDB_DEMO=1`, see `demo.ts`): published on
+   * `/auth/demo` for the login form to prefill — the one of the screen's language —, and
+   * every write that would create or delete refused. Absent everywhere else, and then
+   * none of this exists.
    */
-  readonly demo?: DemoAccount
+  readonly demo?: DemoConfig
 }
 
 /** Normalized error shape of chapter 08 §6. */
@@ -301,10 +308,11 @@ export function createApp(options: AppOptions) {
     app.get('/api/v1/dev/account', (c) => c.json({ email }))
   }
 
-  // The demo's shared account, password included: the demo publishes it, and the login
-  // route below signs its address in with it whatever was typed.
+  // The demo's shared account for the screen's language, password included, and the
+  // others: the demo publishes them, and the login route below signs their addresses in
+  // with it whatever was typed.
   if (demo !== undefined) {
-    app.get('/auth/demo', (c) => c.json({ data: { email: demo.email, password: demo.password } }))
+    app.get('/auth/demo', (c) => c.json({ data: demoAccountFor(demo, screenLanguage(c)) }))
   }
 
   /** The code registry, as the API publishes it. Not a catalog projection. */
@@ -394,9 +402,7 @@ export function createApp(options: AppOptions) {
         // The demo's account opens with its published password, whatever was typed: wrong
         // attempts would otherwise lock it (§2.4) for every visitor at once.
         password:
-          demo !== undefined && body.email.trim().toLowerCase() === demo.email.toLowerCase()
-            ? demo.password
-            : body.password,
+          demo !== undefined && isDemoAddress(demo, body.email) ? demo.password : body.password,
         ip: address === 'inconnue' ? null : address,
         userAgent: c.req.header('user-agent') ?? null,
       })
@@ -581,10 +587,14 @@ export function createApp(options: AppOptions) {
       .catch(() => ({}) as { password?: string })
     if (typeof body.password !== 'string') throw new BasedbError('CREDENTIALS_INVALID')
 
-    // In the demo, the shared account's password, for the same reason as at sign-in.
+    // In the demo, a shared account's password, for the same reason as at sign-in.
+    const cookie = getCookie(c, SESSION_COOKIE)
+    const shared =
+      demo !== undefined &&
+      isDemoAddress(demo, (await options.kernel.whoAmI(await cookieHolder(c))).email)
     const elevated = await options.kernel.elevate(
-      getCookie(c, SESSION_COOKIE),
-      demo?.password ?? body.password,
+      cookie,
+      shared ? (demo as DemoConfig).password : body.password,
     )
     plantSession(c, elevated.session.sessionToken, elevated.session.csrfToken)
     return c.json({ data: { elevated_until: elevated.elevatedUntil.toISOString() } })

@@ -413,18 +413,31 @@ describe('public demo', () => {
   // that sends none.
   const from = { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.21' }
   const demo = () =>
-    createApp({ kernel, demo: { email: 'bootstrap@basedb.local', password: PASSWORD } })
+    createApp({
+      kernel,
+      demo: {
+        accounts: [
+          { locale: 'fr', email: 'bootstrap@basedb.local' },
+          { locale: 'de', email: 'demo-de@basedb.local' },
+        ],
+        password: PASSWORD,
+      },
+    })
 
   it('is not published outside the demo', async () => {
     expect((await app.request('/auth/demo')).status).toBe(404)
   })
 
-  it('publishes its shared account, and signs it in whatever password is typed', async () => {
+  it('publishes the account of the screen’s language, and signs it in whatever password is typed', async () => {
     const target = demo()
-    const published = await target.request('/auth/demo')
-    expect(await published.json()).toEqual({
-      data: { email: 'bootstrap@basedb.local', password: PASSWORD },
+    const published = await target.request('/auth/demo', { headers: { 'x-basedb-locale': 'de' } })
+    expect(await published.json()).toMatchObject({
+      data: { email: 'demo-de@basedb.local', password: PASSWORD, locale: 'de' },
     })
+    const french = await target.request('/auth/demo', { headers: { 'x-basedb-locale': 'fr' } })
+    expect(((await french.json()) as { data: { email: string } }).data.email).toBe(
+      'bootstrap@basedb.local',
+    )
     // A wrong password would count towards the lockout, which would close the demo to
     // every visitor at once.
     const login = await target.request('/auth/password/login', {

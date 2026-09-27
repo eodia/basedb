@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
+import { type Locale, SOURCE_LOCALE, isLocale } from '@basedb/contracts'
 import {
   type BasedbError,
   type FileStorageConfig,
@@ -11,7 +12,7 @@ import {
 import { serve } from '@hono/node-server'
 import { providerTransport } from './ai-transport.js'
 import { createApp } from './app.js'
-import { type DemoAccount, demoTransport } from './demo.js'
+import { type DemoConfig, demoTransport } from './demo.js'
 
 /**
  * Server startup — chapter 10 §9.2.
@@ -256,23 +257,56 @@ if (aiProvider !== undefined) {
 const port = Number(setting('PORT') ?? 8787)
 
 /**
- * The public demo — `BASEDB_DEMO=1`, see `demo.ts`. Its shared account is the first
- * administrator the environment names, with the password it gives: reapplied at every
- * start, and published for the login form to prefill.
+ * The public demo — `BASEDB_DEMO=1`, see `demo.ts`. Its shared accounts, published for
+ * the login form to prefill:
+ *
+ *   BASEDB_DEMO_ACCOUNTS=fr=demo@demo.com,en=demo-en@demo.com,…   one per language
+ *   BASEDB_DEMO_PASSWORD=…                                          theirs, the same for all
+ *
+ * The operator creates them, each with its project, before turning the demo on; the
+ * administrator stays apart, with a password of its own. Without BASEDB_DEMO_ACCOUNTS,
+ * the one shared account is the administrator the environment names, with the password
+ * it gives — reapplied at every start.
  */
-let demo: DemoAccount | undefined
+let demo: DemoConfig | undefined
 if (setting('BASEDB_DEMO') === '1') {
-  const email = setting('BASEDB_ADMIN_EMAIL')
-  const password = setting('BASEDB_ADMIN_PASSWORD')
-  if (email === undefined || password === undefined) {
-    console.error(
-      'BASEDB_DEMO=1 : le compte de la démo est l’administrateur que nomment BASEDB_ADMIN_EMAIL et BASEDB_ADMIN_PASSWORD, qui manquent.',
-    )
-    process.exit(1)
+  const listed = (setting('BASEDB_DEMO_ACCOUNTS') ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry !== '')
+  if (listed.length > 0) {
+    const accounts: Array<{ locale: Locale; email: string }> = []
+    for (const entry of listed) {
+      const [locale, email] = entry.split('=').map((part) => part.trim())
+      if (!isLocale(locale) || email === undefined || !email.includes('@')) {
+        console.error(
+          `BASEDB_DEMO_ACCOUNTS : « ${entry} » n’est pas une langue et une adresse (fr=demo@demo.com).`,
+        )
+        process.exit(1)
+      }
+      accounts.push({ locale, email })
+    }
+    const password = setting('BASEDB_DEMO_PASSWORD')
+    if (password === undefined) {
+      console.error(
+        'BASEDB_DEMO_ACCOUNTS demande BASEDB_DEMO_PASSWORD, le mot de passe des comptes de la démo.',
+      )
+      process.exit(1)
+    }
+    demo = { accounts, password }
+  } else {
+    const email = setting('BASEDB_ADMIN_EMAIL')
+    const password = setting('BASEDB_ADMIN_PASSWORD')
+    if (email === undefined || password === undefined) {
+      console.error(
+        'BASEDB_DEMO=1 : sans BASEDB_DEMO_ACCOUNTS, le compte de la démo est l’administrateur que nomment BASEDB_ADMIN_EMAIL et BASEDB_ADMIN_PASSWORD, qui manquent.',
+      )
+      process.exit(1)
+    }
+    demo = { accounts: [{ locale: SOURCE_LOCALE, email }], password }
   }
-  demo = { email, password }
   console.log(
-    `Démo publique : ${email}, identifiants publiés ; créations et suppressions refusées, IA factice.`,
+    `Démo publique : ${demo.accounts.map((a) => `${a.email} (${a.locale})`).join(', ')}, identifiants publiés ; créations et suppressions refusées, IA factice.`,
   )
 }
 // The demo's AI calls no provider, the work in the background included.

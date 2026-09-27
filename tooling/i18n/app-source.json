@@ -8816,6 +8816,11 @@
       "components/app/settings/appearance-tab.tsx:68"
     ]
   },
+  "Langue de la démo": {
+    "where": [
+      "components/login.tsx:170"
+    ]
+  },
   "Langue du navigateur ({localeNames})": {
     "where": [
       "components/app/settings/appearance-tab.tsx:76"

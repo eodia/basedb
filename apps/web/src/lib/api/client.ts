@@ -2106,6 +2106,14 @@ async function formCall<T>(path: string, init?: RequestInit): Promise<T> {
   return (body as { data: T }).data
 }
 
+/** The public demo's shared accounts, one per language, and their password. */
+export interface DemoAccount {
+  readonly email: string
+  readonly password: string
+  readonly locale: Locale
+  readonly accounts: ReadonlyArray<{ readonly locale: Locale; readonly email: string }>
+}
+
 export const api = {
   health: () => call<{ status: string }>('/healthz'),
 
@@ -2124,12 +2132,13 @@ export const api = {
   },
 
   /**
-   * The public demo's shared account, password included — `null` anywhere else, where the
-   * route does not exist.
+   * The public demo's shared account for the screen's language, password included, and
+   * the accounts of its other languages — `null` anywhere else, where the route does not
+   * exist.
    */
-  demoAccount: async (): Promise<{ email: string; password: string } | null> => {
+  demoAccount: async (): Promise<DemoAccount | null> => {
     try {
-      return await data<{ email: string; password: string }>('/auth/demo')
+      return await data<DemoAccount>('/auth/demo')
     } catch {
       return null
     }

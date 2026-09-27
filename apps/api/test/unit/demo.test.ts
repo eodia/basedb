@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { demoRefusal, demoTransport } from '../../src/demo.js'
+import { demoAccountFor, demoRefusal, demoTransport, isDemoAddress } from '../../src/demo.js'
 
 /**
  * The public demo — what a visitor may do. Reading and editing what exists pass; creating
@@ -86,6 +86,37 @@ describe('demoRefusal', () => {
       'AI_DISABLED',
     )
     expect(refused('POST', `${T}/ai/schedule/preview`)).toBeNull()
+  })
+})
+
+describe('demoAccountFor', () => {
+  const demo = {
+    accounts: [
+      { locale: 'fr', email: 'demo@demo.com' },
+      { locale: 'en', email: 'demo-en@demo.com' },
+      { locale: 'de', email: 'demo-de@demo.com' },
+    ],
+    password: 'essayez-basedb',
+  } as const
+
+  it('prefills the account of the screen’s language, with the others for a picker', () => {
+    expect(demoAccountFor(demo, 'de')).toEqual({
+      email: 'demo-de@demo.com',
+      password: 'essayez-basedb',
+      locale: 'de',
+      accounts: demo.accounts,
+    })
+  })
+
+  it('falls back on English, then on the first account', () => {
+    expect(demoAccountFor(demo, 'ja').email).toBe('demo-en@demo.com')
+    const single = { accounts: [{ locale: 'fr', email: 'demo@demo.com' }], password: 'x' } as const
+    expect(demoAccountFor(single, 'ja').email).toBe('demo@demo.com')
+  })
+
+  it('knows its addresses whatever their case, and no other', () => {
+    expect(isDemoAddress(demo, ' Demo-EN@demo.com ')).toBe(true)
+    expect(isDemoAddress(demo, 'admin@demo.com')).toBe(false)
   })
 })
 
