@@ -264,6 +264,31 @@ dans `_basedb.template` (chapitre 02), et se retire de la galerie.
 Sous une même clé, le modèle de l'instance l'emporte sur celui du site, qui l'emporte sur
 le modèle intégré. La galerie dit la source de chacun.
 
+### 3.4 Dans la langue de l'écran
+
+Un modèle officiel s'écrit en français. Ses textes dans une autre langue sont un
+dictionnaire, `packages/templates/i18n/<langue>/<clé>.json` : le texte français → sa
+traduction. Les libellés, les descriptions, les choix, les lignes d'exemple — noms
+d'entreprises, de personnes et de villes adaptés à la langue —, les vues, les tableaux de
+bord, les automatisations et les consignes de l'IA s'y trouvent ; un texte absent reste en
+français.
+
+L'instance sert les modèles du site et les modèles intégrés dans la langue de l'écran qui
+les demande (`x-basedb-locale`, sinon `Accept-Language`) : `localizeTemplate`
+(`@basedb/contracts`) passe chaque texte par le dictionnaire et **suit chaque libellé là où
+il est cité** — clés des lignes, formules, filtres, champs des vues, tableaux de bord,
+automatisations, `{{…}}` des consignes et des messages —, puis le validateur du §2.9 relit
+le résultat. Un dictionnaire qui casserait le modèle (une citation perdue, deux libellés
+devenus un) n'est pas servi : le modèle français l'est. Les fonctions des formules restent
+françaises, comme le langage des formules ; les noms physiques suivent les libellés
+traduits. Un modèle de l'instance est écrit par quelqu'un : il se lit tel qu'il est écrit.
+
+Le site publie les dictionnaires à côté du catalogue, `/modeles/i18n/<langue>.json`
+(`{ "format": 1, "locale": "en", "templates": { "<clé>": { … } } }`), lus et gardés une
+heure comme lui ; l'application porte les mêmes fichiers, qui servent quand le site ne
+répond pas. Les pages de la galerie du site montrent chaque modèle dans la langue de la
+page.
+
 ---
 
 ## 4. Appliquer un modèle
@@ -348,6 +373,9 @@ automatisation.
   ne pourrait faire, et ne contient rien qui ouvre une porte (§1.3).
 - **Réparer la proposition de l'IA plutôt que la refuser** : un modèle aux trois quarts
   juste vaut mieux qu'un refus, à condition de dire ce qui a été retiré.
+- **Un modèle officiel, un texte français, des dictionnaires** (§3.4) plutôt qu'une copie
+  par langue : la structure ne s'écrit qu'une fois, et le traducteur ne voit que des
+  textes — les citations sont réécrites par le code, et le validateur juge le résultat.
 
 ## Risques et limites connues
 

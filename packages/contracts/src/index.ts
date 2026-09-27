@@ -145,6 +145,14 @@ export {
 } from './templates.js'
 
 export {
+  localizeTemplate,
+  templateTexts,
+  type TemplateDictionary,
+  type TemplateText,
+  type TemplateTextKind,
+} from './template-i18n.js'
+
+export {
   FALLBACK_LOCALE,
   LOCALES,
   LOCALE_NAMES,

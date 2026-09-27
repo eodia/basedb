@@ -87,6 +87,7 @@ const ALLOWED: ReadonlyArray<readonly [string, RegExp]> = (
     ['PUT', `${T}/admin/bases/${SEGMENT}/sql-views/order`],
     ['PATCH', `${T}/admin/bases/${SEGMENT}/dashboards/${SEGMENT}`],
     ['PATCH', `${T}/admin/bases/${SEGMENT}/questions/${SEGMENT}`],
+    ['PATCH', `${T}/admin/bases/${SEGMENT}/queries/${SEGMENT}`],
   ] as const
 ).map(([method, path]) => [method, new RegExp(`^${path}$`)] as const)
 

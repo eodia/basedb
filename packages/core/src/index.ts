@@ -1981,9 +1981,12 @@ export interface Kernel {
   dispatchWebhooks(): Promise<number>
   /** Moves what the capture buffered into the journals now; returns the rows moved. */
   drainHistory(): Promise<number>
-  /** The catalog of base templates (chapter 20): the instance's, the site's, the carried ones. */
-  listTemplates(ctx: RequestContext): Promise<CatalogListing>
-  getTemplate(ctx: RequestContext, key: string): Promise<CatalogEntry>
+  /**
+   * The catalog of base templates (chapter 20): the instance's, the site's, the carried
+   * ones — the official ones in `locale`, the reader's language, when it has their texts.
+   */
+  listTemplates(ctx: RequestContext, locale?: string): Promise<CatalogListing>
+  getTemplate(ctx: RequestContext, key: string, locale?: string): Promise<CatalogEntry>
   /** Imports a template into the instance — an administrator of the instance. */
   importTemplate(ctx: RequestContext, raw: unknown): ReturnType<typeof importTemplate>
   deleteTemplate(ctx: RequestContext, key: string): Promise<void>
@@ -2911,8 +2914,8 @@ export function startKernel(config: KernelConfig): Kernel {
     restoreRecord: (ctx, request) => restoreRecord(pools, ctx, request),
     drainHistory: () => drainHistory(pools),
     undoTransaction: (ctx, request) => undoTransaction(pools, ctx, request),
-    listTemplates: (ctx) => listTemplates(pools, ctx, templates),
-    getTemplate: (ctx, key) => getTemplate(pools, ctx, templates, key),
+    listTemplates: (ctx, locale) => listTemplates(pools, ctx, templates, locale),
+    getTemplate: (ctx, key, locale) => getTemplate(pools, ctx, templates, key, locale),
     importTemplate: (ctx, raw) => importTemplate(pools, ctx, raw),
     deleteTemplate: (ctx, key) => deleteTemplate(pools, ctx, key),
     draftTemplate: (ctx, transport, request) => draftTemplate(pools, ctx, transport, request),

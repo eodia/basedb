@@ -7,17 +7,19 @@ import {
 } from '../../../packages/contracts/src/templates';
 import { type Locale, fill, i18n } from '../i18n';
 import Landing from '../layouts/Landing.astro';
-import { templateText } from '../lib/modeles';
+import { localizedTemplate, templateText } from '../lib/modeles';
 
 interface Props {
 	locale: Locale;
 	template: Template;
 }
 
-const { locale, template } = Astro.props;
+const { locale } = Astro.props;
+// Its contents in the page's language, as an instance applies it.
+const template = localizedTemplate(locale, Astro.props.template);
 const { t, lang, href, html, plural, number } = i18n(locale);
 const g = t.gallery;
-const text = templateText(locale, template);
+const text = templateText(locale, Astro.props.template);
 const tableLabel = (key: string) => template.tables.find((t) => t.key === key)?.label ?? key;
 const aiFields = template.tables.flatMap((t) =>
 	t.fields.filter((f) => f.ai !== undefined).map((f) => ({ table: t.label, field: f.label, prompt: f.ai?.prompt ?? '' })),

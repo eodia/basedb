@@ -11,6 +11,7 @@ on:
       - main
     paths:
       - 'packages/templates/catalog/**'
+      - 'packages/templates/i18n/**'
   workflow_dispatch:
 
 permissions:
@@ -34,6 +35,7 @@ jobs:
           sparse-checkout: |
             www
             packages/templates/catalog
+            packages/templates/i18n
             packages/contracts/src
             tooling/typescript
 

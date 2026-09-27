@@ -43,12 +43,24 @@ const catalogue = {
   ],
 }
 
-const call = (path: string, method = 'GET', body?: unknown) =>
+/** In French unless said otherwise: the official templates follow the screen's language. */
+const call = (path: string, method = 'GET', body?: unknown, locale = 'fr') =>
   app.request(path, {
     method,
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${access}` },
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${access}`,
+      'x-basedb-locale': locale,
+    },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
+
+/** The site's texts in English for its own template, beside its catalog. */
+const english = {
+  format: 1,
+  locale: 'en',
+  templates: { 'du-site': { 'Seulement sur le site': 'Site only', Titre: 'Title' } },
+}
 
 interface Summary {
   key: string
@@ -71,6 +83,10 @@ beforeAll(async () => {
   stub = createHttpServer((req, res) => {
     if (req.url === '/modeles/catalogue.json' && siteStatus === 200) {
       res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(catalogue))
+      return
+    }
+    if (req.url === '/modeles/i18n/en.json' && siteStatus === 200) {
+      res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(english))
       return
     }
     res.writeHead(siteStatus === 200 ? 404 : siteStatus).end()
@@ -170,6 +186,30 @@ describe('the gallery', () => {
     })
     expect((await call(`${V1}/admin/templates/demo`, 'DELETE')).status).toBe(204)
     expect((await gallery()).data.find((t) => t.key === 'demo')?.source).toBe('site')
+  })
+
+  it('serves the official templates in the language of the screen', async () => {
+    type Whole = {
+      data: { label: string; tables: Array<{ label: string; fields: Array<{ label: string }> }> }
+    }
+    const read = async (key: string, locale: string) =>
+      (await (await call(`${V1}/meta/templates/${key}`, 'GET', undefined, locale)).json()) as Whole
+    // The site's texts for the site's template…
+    const site = await read('du-site', 'en')
+    expect(site.data.label).toBe('Site only')
+    expect(site.data.tables[0]?.fields[0]?.label).toBe('Title')
+    expect((await read('du-site', 'fr')).data.label).toBe('Seulement sur le site')
+    // …the carried ones for a carried template, whose citations follow its labels.
+    const carried = await read('suivi-tickets', 'en')
+    const french = await read('suivi-tickets', 'fr')
+    expect(carried.data.tables.length).toBe(french.data.tables.length)
+    const fields = (t: Whole) => t.data.tables.flatMap((table) => table.fields.map((f) => f.label))
+    expect(fields(carried)).toHaveLength(fields(french).length)
+    expect(fields(carried)).not.toEqual(fields(french))
+    // In French, the gallery shows the template’s own words.
+    expect((await gallery()).data.find((t) => t.key === 'suivi-tickets')?.label).toBe(
+      french.data.label,
+    )
   })
 
   it('falls back on the carried templates when the site does not answer', async () => {

@@ -2758,13 +2758,14 @@ export function createApp(options: AppOptions) {
   // ── Base templates — chapter 20 ──
   app.get('/api/v1/:tenantRef/meta/templates', async (c) => {
     const ctx = await contextFor(c, await bearer(c))
-    const listing = await options.kernel.listTemplates(ctx)
+    // The official templates in the language of the screen they are shown on.
+    const listing = await options.kernel.listTemplates(ctx, screenLanguage(c))
     return c.json({ data: listing.templates, meta: { site: listing.site } })
   })
 
   app.get('/api/v1/:tenantRef/meta/templates/:key', async (c) => {
     const ctx = await contextFor(c, await bearer(c))
-    const entry = await options.kernel.getTemplate(ctx, c.req.param('key'))
+    const entry = await options.kernel.getTemplate(ctx, c.req.param('key'), screenLanguage(c))
     return c.json({ data: entry.template, meta: { source: entry.source } })
   })
 

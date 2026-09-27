@@ -1,11 +1,15 @@
 import {
+  SOURCE_LOCALE,
   type Template,
+  type TemplateDictionary,
   type TemplateIssue,
   type TemplateSummary,
   checkTemplate,
+  isLocale,
+  localizeTemplate,
   summarizeTemplate,
 } from '@basedb/contracts'
-import { bundledTemplates } from '@basedb/templates'
+import { bundledDictionaries, bundledTemplates } from '@basedb/templates'
 import { BasedbError } from '../errors/index.js'
 import { loadGrants } from '../rbac/loader.js'
 import type { Pools } from '../runtime/pool.js'
@@ -20,6 +24,11 @@ import { type TargetPolicy, checkTarget } from '../webhooks/target.js'
  * the site's, as they were when it was built. Under one key the instance's wins over the
  * site's, which wins over the carried one. Every template is checked by the shared
  * validator before it is served; a broken one is left out without leaving out the others.
+ *
+ * The official templates — the site's and the carried ones — are served in the reader's
+ * language: their French, through that language's dictionaries (`localizeTemplate`), the
+ * site's when it publishes them, else the carried ones. A template of the instance is
+ * someone's own words, and reads as written.
  */
 
 export type TemplateSource = 'instance' | 'site' | 'bundled'
@@ -86,6 +95,8 @@ export function resetTemplateCatalog(): void {
   site = null
   inflight = null
   carried = null
+  carriedWords.clear()
+  siteWords.clear()
 }
 
 async function readSite(config: CatalogConfig): Promise<SiteState | null> {
@@ -168,6 +179,103 @@ async function fetchCatalog(url: string, targets: TargetPolicy): Promise<string>
   return Buffer.concat(chunks).toString('utf8')
 }
 
+// ── The official templates in the reader's language ──────────────────────────────────
+
+type Dictionaries = Readonly<Record<string, TemplateDictionary>>
+
+const carriedWords = new Map<string, Dictionaries>()
+
+function carriedDictionaries(locale: string): Dictionaries {
+  let found = carriedWords.get(locale)
+  if (found === undefined) {
+    found = bundledDictionaries(locale)
+    carriedWords.set(locale, found)
+  }
+  return found
+}
+
+interface SiteWords {
+  readonly dictionaries: Dictionaries
+  readonly nextAt: number
+  readonly inflight: Promise<void> | null
+}
+
+const siteWords = new Map<string, SiteWords>()
+
+/**
+ * Where the site publishes a language's dictionaries: beside its catalog,
+ * `…/modeles/i18n/<langue>.json`. A catalog of one's own, at another address, has none.
+ */
+function dictionariesUrl(catalogUrl: string, locale: string): string | null {
+  const name = 'catalogue.json'
+  return catalogUrl.endsWith(`/${name}`)
+    ? `${catalogUrl.slice(0, -name.length)}i18n/${locale}.json`
+    : null
+}
+
+async function fetchSiteWords(url: string, targets: TargetPolicy): Promise<void> {
+  const previous = siteWords.get(url)?.dictionaries ?? {}
+  try {
+    const body = JSON.parse(await fetchCatalog(url, targets)) as unknown
+    const templates =
+      typeof body === 'object' && body !== null
+        ? (body as { templates?: unknown }).templates
+        : undefined
+    if (typeof templates !== 'object' || templates === null) throw new Error('illisible')
+    const dictionaries = Object.fromEntries(
+      Object.entries(templates as Record<string, unknown>).filter(
+        (entry): entry is [string, TemplateDictionary] =>
+          typeof entry[1] === 'object' && entry[1] !== null && !Array.isArray(entry[1]),
+      ),
+    )
+    siteWords.set(url, { dictionaries, nextAt: Date.now() + TTL_MS, inflight: null })
+  } catch {
+    // The carried dictionaries stand in, and the site is asked again sooner.
+    siteWords.set(url, { dictionaries: previous, nextAt: Date.now() + RETRY_MS, inflight: null })
+  }
+}
+
+async function readSiteWords(config: CatalogConfig, locale: string): Promise<Dictionaries> {
+  const url = config.url === null ? null : dictionariesUrl(config.url, locale)
+  if (url === null) return {}
+  const state = siteWords.get(url)
+  if (state === undefined || Date.now() >= state.nextAt) {
+    const inflight = state?.inflight ?? fetchSiteWords(url, config.targets)
+    siteWords.set(url, {
+      dictionaries: state?.dictionaries ?? {},
+      nextAt: Number.POSITIVE_INFINITY,
+      inflight,
+    })
+    await inflight
+  } else if (state.inflight !== null) {
+    await state.inflight
+  }
+  return siteWords.get(url)?.dictionaries ?? {}
+}
+
+/** A template localized once per dictionary: the gallery asks for all of them at a time. */
+const localizedOnce = new WeakMap<Template, Map<string, { of: TemplateDictionary; is: Template }>>()
+
+function localized(
+  template: Template,
+  locale: string,
+  dictionary: TemplateDictionary | undefined,
+): Template {
+  if (dictionary === undefined) return template
+  let byLocale = localizedOnce.get(template)
+  if (byLocale === undefined) {
+    byLocale = new Map()
+    localizedOnce.set(template, byLocale)
+  }
+  const done = byLocale.get(locale)
+  if (done !== undefined && done.of === dictionary) return done.is
+  // A dictionary that breaks the template is not served: the French one is.
+  const check = localizeTemplate(template, dictionary)
+  const is = check.ok ? check.template : template
+  byLocale.set(locale, { of: dictionary, is })
+  return is
+}
+
 // ── The instance's ───────────────────────────────────────────────────────────────────
 
 async function instanceTemplates(pools: Pools, ctx: RequestContext): Promise<Template[]> {
@@ -196,11 +304,26 @@ async function entries(
   pools: Pools,
   ctx: RequestContext,
   config: CatalogConfig,
+  locale: string | undefined,
 ): Promise<{
   readonly entries: CatalogEntry[]
   readonly site: SiteState | null
 }> {
-  const [own, read] = await Promise.all([instanceTemplates(pools, ctx), readSite(config)])
+  const language = isLocale(locale) && locale !== SOURCE_LOCALE ? locale : null
+  const [own, read, words] = await Promise.all([
+    instanceTemplates(pools, ctx),
+    readSite(config),
+    language === null ? Promise.resolve({}) : readSiteWords(config, language),
+  ])
+  const carriedOnes = language === null ? {} : carriedDictionaries(language)
+  const official = (template: Template): Template =>
+    language === null
+      ? template
+      : localized(
+          template,
+          language,
+          (words as Dictionaries)[template.key] ?? carriedOnes[template.key],
+        )
   const out: CatalogEntry[] = []
   const taken = new Set<string>()
   const add = (templates: readonly Template[], source: TemplateSource) => {
@@ -211,18 +334,22 @@ async function entries(
     }
   }
   add(own, 'instance')
-  add(read?.templates ?? [], 'site')
-  add(bundled(), 'bundled')
+  add((read?.templates ?? []).map(official), 'site')
+  add(bundled().map(official), 'bundled')
   return { entries: out, site: read }
 }
 
-/** The gallery: a summary of each template, where it comes from, and how the site is doing. */
+/**
+ * The gallery: a summary of each template, where it comes from, and how the site is doing —
+ * the official ones in `locale`, the reader's language.
+ */
 export async function listTemplates(
   pools: Pools,
   ctx: RequestContext,
   config: CatalogConfig,
+  locale?: string,
 ): Promise<CatalogListing> {
-  const found = await entries(pools, ctx, config)
+  const found = await entries(pools, ctx, config, locale)
   return {
     templates: found.entries.map(({ template, source }) => ({
       ...summarizeTemplate(template),
@@ -240,14 +367,17 @@ export async function listTemplates(
   }
 }
 
-/** One template, whole. */
+/** One template, whole — an official one in `locale`, the reader's language. */
 export async function getTemplate(
   pools: Pools,
   ctx: RequestContext,
   config: CatalogConfig,
   key: string,
+  locale?: string,
 ): Promise<CatalogEntry> {
-  const found = (await entries(pools, ctx, config)).entries.find((e) => e.template.key === key)
+  const found = (await entries(pools, ctx, config, locale)).entries.find(
+    (e) => e.template.key === key,
+  )
   if (found === undefined)
     throw new BasedbError('RESOURCE_NOT_FOUND', { details: { template: key } })
   return found

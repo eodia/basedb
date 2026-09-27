@@ -47,6 +47,24 @@ node tooling/i18n/check.mjs de  # une langue : manquantes, {valeurs} perdues, pl
 - Consignes données aux traducteurs : `app-translation-brief.md`, `docs-translation-brief.md`,
   `site-translation-brief.md`.
 
+## Les modèles de base (`packages/templates`)
+
+Un modèle officiel s'écrit en français (`packages/templates/catalog/<clé>.json`) ; ses
+textes dans une langue sont un dictionnaire, `packages/templates/i18n/<code>/<clé>.json` —
+le texte français → sa traduction —, que l'instance et le site appliquent par
+`localizeTemplate` (`@basedb/contracts`, chapitre 20 §3.4). Les citations (`[Libellé]` des
+formules et des filtres, `{{Libellé}}` des consignes) restent en français dans les
+traductions : le code les réécrit.
+
+```sh
+npx tsc -b packages/templates
+node tooling/i18n/templates.mjs extract          # templates-source.json : chaque texte, sa sorte, sa place
+node tooling/i18n/templates.mjs check de         # manquants, citations perdues, modèle traduit encore valide
+node tooling/i18n/templates.mjs prefill de       # part des cartes de la galerie déjà traduites dans l'app
+```
+
+Consigne donnée aux traducteurs : `templates-translation-brief.md`.
+
 ## Le site (`www/`)
 
 Les textes des pages d'accueil sont dans `www/src/i18n/ui/fr.ts`, traduits dans

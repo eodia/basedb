@@ -12,8 +12,11 @@ Tous les textes de l’accueil, des nouveautés, de la feuille de route et de la
 modèles sont dans **`ui/fr.ts`** : titres et descriptions des pages, navigation, pied de
 page, blocs, cartes, questions, textes des maquettes, textes alternatifs des images,
 entrées des nouveautés et de la feuille de route, et ce que la galerie montre de chaque
-modèle (`templates` : nom, résumé, description, catégorie, étiquettes — le contenu des
-modèles, lui, reste en français).
+modèle (`templates` : nom, résumé, description, catégorie, étiquettes). Le contenu des
+modèles — tables, champs, lignes, vues — se traduit dans les dictionnaires des modèles,
+`packages/templates/i18n/<langue>/<clé>.json` (voir `tooling/i18n/README.md`) : la page d’un
+modèle le montre dans la langue de la page, et le site publie ces dictionnaires pour les
+instances (`/modeles/i18n/<langue>.json`).
 
 Les pages sont écrites une fois, dans `src/views/`, et reçoivent la langue :
 `src/pages/index.astro` (français) et `src/pages/[locale]/index.astro` (les dix-neuf autres)

@@ -1,0 +1,4702 @@
+{
+  "analyse-avis": {
+    "Avis": {
+      "kind": "label",
+      "where": "tables.avis.label"
+    },
+    "Un avis par ligne, d'où qu'il vienne.": {
+      "kind": "text",
+      "where": "tables.avis.description"
+    },
+    "Auteur": {
+      "kind": "label",
+      "where": "tables.avis.fields.Auteur.label"
+    },
+    "Le texte du client, tel quel.": {
+      "kind": "text",
+      "where": "tables.avis.fields.Avis.description"
+    },
+    "Note": {
+      "kind": "label",
+      "where": "tables.avis.fields.Note.label"
+    },
+    "Source": {
+      "kind": "label",
+      "where": "tables.avis.fields.Source.label"
+    },
+    "Site web": {
+      "kind": "option",
+      "where": "tables.avis.fields.Source.options"
+    },
+    "Google": {
+      "kind": "option",
+      "where": "tables.avis.fields.Source.options"
+    },
+    "Formulaire": {
+      "kind": "option",
+      "where": "tables.avis.fields.Source.options"
+    },
+    "E-mail": {
+      "kind": "option",
+      "where": "tables.avis.fields.Source.options"
+    },
+    "En boutique": {
+      "kind": "option",
+      "where": "tables.avis.fields.Source.options"
+    },
+    "Reçu le": {
+      "kind": "label",
+      "where": "tables.avis.fields.Reçu le.label"
+    },
+    "Sentiment": {
+      "kind": "label",
+      "where": "tables.avis.fields.Sentiment.label"
+    },
+    "Très positif": {
+      "kind": "option",
+      "where": "tables.avis.fields.Sentiment.options"
+    },
+    "Positif": {
+      "kind": "option",
+      "where": "tables.avis.fields.Sentiment.options"
+    },
+    "Mitigé": {
+      "kind": "option",
+      "where": "tables.avis.fields.Sentiment.options"
+    },
+    "Négatif": {
+      "kind": "option",
+      "where": "tables.avis.fields.Sentiment.options"
+    },
+    "Très négatif": {
+      "kind": "option",
+      "where": "tables.avis.fields.Sentiment.options"
+    },
+    "Voici un avis client, noté {{Note}}/5 :\n« {{Avis}} »\nQuel est son sentiment global ?": {
+      "kind": "prompt",
+      "where": "tables.avis.fields.Sentiment.ai.prompt"
+    },
+    "Thème": {
+      "kind": "label",
+      "where": "tables.avis.fields.Thème.label"
+    },
+    "Qualité du produit": {
+      "kind": "option",
+      "where": "tables.avis.fields.Thème.options"
+    },
+    "Prix": {
+      "kind": "option",
+      "where": "tables.avis.fields.Thème.options"
+    },
+    "Livraison": {
+      "kind": "option",
+      "where": "tables.avis.fields.Thème.options"
+    },
+    "Service client": {
+      "kind": "option",
+      "where": "tables.avis.fields.Thème.options"
+    },
+    "Site et commande": {
+      "kind": "option",
+      "where": "tables.avis.fields.Thème.options"
+    },
+    "Autre": {
+      "kind": "option",
+      "where": "tables.avis.fields.Thème.options"
+    },
+    "Quel est le sujet principal de cet avis client ?\n« {{Avis}} »": {
+      "kind": "prompt",
+      "where": "tables.avis.fields.Thème.ai.prompt"
+    },
+    "Réponse urgente": {
+      "kind": "label",
+      "where": "tables.avis.fields.Réponse urgente.label"
+    },
+    "Cet avis demande-t-il une réponse rapide de l'entreprise (client en colère, problème non résolu, risque de mauvaise publicité, question posée) ?\n« {{Avis}} » ({{Note}}/5)": {
+      "kind": "prompt",
+      "where": "tables.avis.fields.Réponse urgente.ai.prompt"
+    },
+    "Suggestion du client": {
+      "kind": "label",
+      "where": "tables.avis.fields.Suggestion du client.label"
+    },
+    "Si ce client suggère une amélioration concrète, résume-la en 12 mots au plus ; sinon réponds par une chaîne vide.\n« {{Avis}} »": {
+      "kind": "prompt",
+      "where": "tables.avis.fields.Suggestion du client.ai.prompt"
+    },
+    "Réponse proposée": {
+      "kind": "label",
+      "where": "tables.avis.fields.Réponse proposée.label"
+    },
+    "Rédige une réponse publique à cet avis, en trois phrases au plus : remercie, réponds précisément à ce que dit le client, propose une solution s'il y a un problème. Ton chaleureux et professionnel, vouvoiement, sans formule creuse.\nAvis de {{Auteur}} ({{Note}}/5) : « {{Avis}} »": {
+      "kind": "prompt",
+      "where": "tables.avis.fields.Réponse proposée.ai.prompt"
+    },
+    "Traité": {
+      "kind": "label",
+      "where": "tables.avis.fields.Traité.label"
+    },
+    "Coché quand la réponse a été publiée.": {
+      "kind": "text",
+      "where": "tables.avis.fields.Traité.description"
+    },
+    "Produits": {
+      "kind": "label",
+      "where": "tables.produits.label"
+    },
+    "Ce sur quoi portent les avis.": {
+      "kind": "text",
+      "where": "tables.produits.description"
+    },
+    "Nom": {
+      "kind": "label",
+      "where": "tables.produits.fields.Nom.label"
+    },
+    "Gamme": {
+      "kind": "label",
+      "where": "tables.produits.fields.Gamme.label"
+    },
+    "Cafés": {
+      "kind": "option",
+      "where": "tables.produits.fields.Gamme.options"
+    },
+    "Thés": {
+      "kind": "option",
+      "where": "tables.produits.fields.Gamme.options"
+    },
+    "Accessoires": {
+      "kind": "option",
+      "where": "tables.produits.fields.Gamme.options"
+    },
+    "Note moyenne": {
+      "kind": "label",
+      "where": "tables.produits.fields.Note moyenne.label"
+    },
+    "Note la plus basse": {
+      "kind": "label",
+      "where": "tables.produits.fields.Note la plus basse.label"
+    },
+    "Produit": {
+      "kind": "label",
+      "where": "links.avis.Produit"
+    },
+    "Café d'Éthiopie Yirgacheffe": {
+      "kind": "value",
+      "where": "rows.produits[0].Nom"
+    },
+    "Mélange Espresso Maison": {
+      "kind": "value",
+      "where": "rows.produits[1].Nom"
+    },
+    "Thé vert Sencha": {
+      "kind": "value",
+      "where": "rows.produits[2].Nom"
+    },
+    "Moulin à café manuel": {
+      "kind": "value",
+      "where": "rows.produits[3].Nom"
+    },
+    "Camille R.": {
+      "kind": "value",
+      "where": "rows.avis[0].Auteur"
+    },
+    "Un café incroyable, des notes de fruits rouges et de fleurs. Livré en deux jours dans un emballage soigné. Je recommande sans hésiter !": {
+      "kind": "long",
+      "where": "rows.avis[0].Avis"
+    },
+    "Marc D.": {
+      "kind": "value",
+      "where": "rows.avis[1].Auteur"
+    },
+    "Colis arrivé avec une semaine de retard et aucune réponse du service client à mes deux e-mails. Le café est bon mais l'expérience est décevante.": {
+      "kind": "long",
+      "where": "rows.avis[1].Avis"
+    },
+    "Répondre aux e-mails et prévenir en cas de retard": {
+      "kind": "value",
+      "where": "rows.avis[1].Suggestion du client"
+    },
+    "Inès B.": {
+      "kind": "value",
+      "where": "rows.avis[2].Auteur"
+    },
+    "Le moulin est joli mais la mouture n'est pas régulière, impossible d'obtenir une mouture fine pour l'espresso. Assez cher pour ce résultat.": {
+      "kind": "long",
+      "where": "rows.avis[2].Avis"
+    },
+    "Proposer un réglage de mouture plus fin": {
+      "kind": "value",
+      "where": "rows.avis[2].Suggestion du client"
+    },
+    "Thomas L.": {
+      "kind": "value",
+      "where": "rows.avis[3].Auteur"
+    },
+    "Bon thé, frais et parfumé. Dommage que le sachet ne soit pas refermable.": {
+      "kind": "long",
+      "where": "rows.avis[3].Avis"
+    },
+    "Un sachet refermable": {
+      "kind": "value",
+      "where": "rows.avis[3].Suggestion du client"
+    },
+    "Aurélie P.": {
+      "kind": "value",
+      "where": "rows.avis[4].Auteur"
+    },
+    "Le site plante à chaque fois que j'essaie de payer avec PayPal. J'ai fini par commander par téléphone. Vendeuse adorable au passage.": {
+      "kind": "long",
+      "where": "rows.avis[4].Avis"
+    },
+    "Réparer le paiement PayPal": {
+      "kind": "value",
+      "where": "rows.avis[4].Suggestion du client"
+    },
+    "Jean-Paul V.": {
+      "kind": "value",
+      "where": "rows.avis[5].Auteur"
+    },
+    "Toujours aussi bon, j'en commande tous les mois depuis deux ans.": {
+      "kind": "long",
+      "where": "rows.avis[5].Avis"
+    },
+    "Léa M.": {
+      "kind": "value",
+      "where": "rows.avis[6].Auteur"
+    },
+    "Un peu cher par rapport aux cafés de supermarché, mais la différence de goût est réelle.": {
+      "kind": "long",
+      "where": "rows.avis[6].Avis"
+    },
+    "Karim S.": {
+      "kind": "value",
+      "where": "rows.avis[7].Auteur"
+    },
+    "Reçu un thé périmé depuis trois mois. Inadmissible, je veux un remboursement.": {
+      "kind": "long",
+      "where": "rows.avis[7].Avis"
+    },
+    "Vérifier les dates avant expédition": {
+      "kind": "value",
+      "where": "rows.avis[7].Suggestion du client"
+    },
+    "À traiter": {
+      "kind": "label",
+      "where": "views[0].label"
+    },
+    "Urgents": {
+      "kind": "label",
+      "where": "views[1].label"
+    },
+    "Par sentiment": {
+      "kind": "label",
+      "where": "views[2].label"
+    },
+    "Par thème": {
+      "kind": "label",
+      "where": "views[3].label"
+    },
+    "Votre avis compte": {
+      "kind": "text",
+      "where": "views[4].spec.title"
+    },
+    "Dites-nous ce que vous avez pensé de votre commande.": {
+      "kind": "text",
+      "where": "views[4].spec.description"
+    },
+    "Votre prénom et l'initiale de votre nom": {
+      "kind": "text",
+      "where": "views[4].spec.fields[0].label"
+    },
+    "Votre avis": {
+      "kind": "text",
+      "where": "views[4].spec.fields[2].label"
+    },
+    "Publier mon avis": {
+      "kind": "text",
+      "where": "views[4].spec.submit_label"
+    },
+    "Merci pour votre avis !": {
+      "kind": "text",
+      "where": "views[4].spec.success_message"
+    },
+    "Laisser un avis": {
+      "kind": "label",
+      "where": "views[4].label"
+    },
+    "Catalogue": {
+      "kind": "label",
+      "where": "views[5].label"
+    },
+    "Satisfaction": {
+      "kind": "label",
+      "where": "dashboards[0].label"
+    },
+    "Avis à traiter": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[1].title"
+    },
+    "Réponses urgentes": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[2].title"
+    },
+    "Thèmes abordés": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[4].title"
+    },
+    "Derniers avis négatifs": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[5].title"
+    },
+    "Alerte avis urgent": {
+      "kind": "label",
+      "where": "automations[0].label"
+    },
+    "Prévient quand l'IA juge qu'un avis demande une réponse rapide.": {
+      "kind": "text",
+      "where": "automations[0].description"
+    },
+    "Avis urgent de {{Auteur}} ({{Note}}/5) : « {{Avis}} »": {
+      "kind": "message",
+      "where": "automations[0].actions[0].message"
+    },
+    "Analyse d'avis clients": {
+      "kind": "label",
+      "where": "label"
+    },
+    "Collectez les avis, laissez l'IA en tirer le sentiment, les thèmes, l'urgence et un brouillon de réponse.": {
+      "kind": "text",
+      "where": "summary"
+    },
+    "Pour un commerce, un restaurant ou une marque : les avis arrivent d'un formulaire public ou d'un import, et l'IA lit chacun d'eux. Elle classe le sentiment, repère le thème principal, signale ceux qui demandent une réponse rapide, extrait la suggestion du client et rédige une réponse à relire. Les produits cumulent leur note moyenne et leur nombre d'avis ; un tableau de bord suit la satisfaction.": {
+      "kind": "text",
+      "where": "description"
+    },
+    "Relation client": {
+      "kind": "label",
+      "where": "category"
+    },
+    "IA": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Tableau de bord": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Avis clients": {
+      "kind": "label",
+      "where": "base.label"
+    },
+    "Les avis des clients, lus et classés par l'IA, pour savoir ce qui plaît et ce qui fâche.": {
+      "kind": "text",
+      "where": "base.description"
+    }
+  },
+  "base-connaissances": {
+    "Articles": {
+      "kind": "label",
+      "where": "tables.articles.label"
+    },
+    "Titre": {
+      "kind": "label",
+      "where": "tables.articles.fields.Titre.label"
+    },
+    "Catégorie": {
+      "kind": "label",
+      "where": "tables.articles.fields.Catégorie.label"
+    },
+    "Premiers pas": {
+      "kind": "option",
+      "where": "tables.articles.fields.Catégorie.options"
+    },
+    "Compte et facturation": {
+      "kind": "option",
+      "where": "tables.articles.fields.Catégorie.options"
+    },
+    "Fonctionnalités": {
+      "kind": "option",
+      "where": "tables.articles.fields.Catégorie.options"
+    },
+    "Dépannage": {
+      "kind": "option",
+      "where": "tables.articles.fields.Catégorie.options"
+    },
+    "Statut": {
+      "kind": "label",
+      "where": "tables.articles.fields.Statut.label"
+    },
+    "Brouillon": {
+      "kind": "option",
+      "where": "tables.articles.fields.Statut.options"
+    },
+    "Publié": {
+      "kind": "option",
+      "where": "tables.articles.fields.Statut.options"
+    },
+    "À revoir": {
+      "kind": "option",
+      "where": "tables.articles.fields.Statut.options"
+    },
+    "Contenu": {
+      "kind": "label",
+      "where": "tables.articles.fields.Contenu.label"
+    },
+    "Auteur": {
+      "kind": "label",
+      "where": "tables.articles.fields.Auteur.label"
+    },
+    "Mis à jour le": {
+      "kind": "label",
+      "where": "tables.articles.fields.Mis à jour le.label"
+    },
+    "Utile": {
+      "kind": "label",
+      "where": "tables.articles.fields.Utile.label"
+    },
+    "Nombre de lecteurs qui ont trouvé l'article utile.": {
+      "kind": "text",
+      "where": "tables.articles.fields.Utile.description"
+    },
+    "Questions liées": {
+      "kind": "label",
+      "where": "tables.articles.fields.Questions liées.label"
+    },
+    "Résumé": {
+      "kind": "label",
+      "where": "tables.articles.fields.Résumé.label"
+    },
+    "Résume cet article d'aide en une phrase de 20 mots au plus.\n{{Titre}}\n{{Contenu}}": {
+      "kind": "prompt",
+      "where": "tables.articles.fields.Résumé.ai.prompt"
+    },
+    "Niveau": {
+      "kind": "label",
+      "where": "tables.articles.fields.Niveau.label"
+    },
+    "Débutant": {
+      "kind": "option",
+      "where": "tables.articles.fields.Niveau.options"
+    },
+    "Intermédiaire": {
+      "kind": "option",
+      "where": "tables.articles.fields.Niveau.options"
+    },
+    "Avancé": {
+      "kind": "option",
+      "where": "tables.articles.fields.Niveau.options"
+    },
+    "À quel niveau d'utilisateur s'adresse cet article d'aide ?\n{{Titre}} — {{Contenu}}": {
+      "kind": "prompt",
+      "where": "tables.articles.fields.Niveau.ai.prompt"
+    },
+    "Questions": {
+      "kind": "label",
+      "where": "tables.questions.label"
+    },
+    "Question": {
+      "kind": "label",
+      "where": "tables.questions.fields.Question.label"
+    },
+    "Détails": {
+      "kind": "label",
+      "where": "tables.questions.fields.Détails.label"
+    },
+    "Posée par": {
+      "kind": "label",
+      "where": "tables.questions.fields.Posée par.label"
+    },
+    "Reçue le": {
+      "kind": "label",
+      "where": "tables.questions.fields.Reçue le.label"
+    },
+    "Nouvelle": {
+      "kind": "option",
+      "where": "tables.questions.fields.Statut.options"
+    },
+    "En cours": {
+      "kind": "option",
+      "where": "tables.questions.fields.Statut.options"
+    },
+    "Répondue": {
+      "kind": "option",
+      "where": "tables.questions.fields.Statut.options"
+    },
+    "Dans quelle catégorie du support ranger cette question ?\n{{Question}}\n{{Détails}}": {
+      "kind": "prompt",
+      "where": "tables.questions.fields.Catégorie.ai.prompt"
+    },
+    "Réponse suggérée": {
+      "kind": "label",
+      "where": "tables.questions.fields.Réponse suggérée.label"
+    },
+    "Rédige une réponse courte, claire et bienveillante à cette question d'un client, en vouvoyant. Si elle manque de précisions, demande-les poliment.\nQuestion : {{Question}}\nDétails : {{Détails}}": {
+      "kind": "prompt",
+      "where": "tables.questions.fields.Réponse suggérée.ai.prompt"
+    },
+    "Article": {
+      "kind": "label",
+      "where": "links.questions.Article"
+    },
+    "L'article qui répond à la question, quand il existe.": {
+      "kind": "text",
+      "where": "links.questions.Article.description"
+    },
+    "Créer votre compte en trois minutes": {
+      "kind": "value",
+      "where": "rows.articles[0].Titre"
+    },
+    "<p>Trois étapes suffisent pour ouvrir votre compte.</p><ol><li>Rendez-vous sur la page d'inscription et saisissez votre <strong>e-mail professionnel</strong>.</li><li>Choisissez un mot de passe d'<strong>au moins douze caractères</strong>.</li><li>Ouvrez l'e-mail de confirmation et cliquez sur le lien pour activer votre compte.</li></ol><blockquote><p>Pas d'e-mail au bout de cinq minutes ? Regardez dans vos courriers indésirables avant de recommencer.</p></blockquote>": {
+      "kind": "rich",
+      "where": "rows.articles[0].Contenu"
+    },
+    "Inscription avec un e-mail professionnel, un mot de passe solide et une confirmation par e-mail.": {
+      "kind": "value",
+      "where": "rows.articles[0].Résumé"
+    },
+    "Changer de formule d'abonnement": {
+      "kind": "value",
+      "where": "rows.articles[1].Titre"
+    },
+    "<p>Depuis <strong>Paramètres</strong>, puis <strong>Abonnement</strong>, choisissez la nouvelle formule et confirmez.</p><ul><li>Le changement est <strong>immédiat</strong> : les fonctions de la nouvelle formule sont disponibles tout de suite.</li><li>La différence de prix est calculée <em>au prorata</em> et figure sur votre prochaine facture.</li></ul>": {
+      "kind": "rich",
+      "where": "rows.articles[1].Contenu"
+    },
+    "Le changement de formule se fait dans Paramètres et se facture au prorata.": {
+      "kind": "value",
+      "where": "rows.articles[1].Résumé"
+    },
+    "Importer vos données depuis un tableur": {
+      "kind": "value",
+      "where": "rows.articles[2].Titre"
+    },
+    "<h2>Préparer le fichier</h2><p>Exportez votre tableur au format <strong>CSV</strong>. Les dates s'écrivent <code>AAAA-MM-JJ</code>, par exemple <code>2026-03-15</code>.</p><h2>Importer</h2><ol><li>Ouvrez le menu de la table, puis <strong>Importer</strong>.</li><li>Choisissez votre fichier CSV.</li><li>Associez chaque colonne à un champ, puis lancez l'import.</li></ol>": {
+      "kind": "rich",
+      "where": "rows.articles[2].Contenu"
+    },
+    "Import d'un CSV en associant chaque colonne à un champ, dates au format AAAA-MM-JJ.": {
+      "kind": "value",
+      "where": "rows.articles[2].Résumé"
+    },
+    "Que faire si la synchronisation échoue ?": {
+      "kind": "value",
+      "where": "rows.articles[3].Titre"
+    },
+    "<ol><li>Vérifiez que l'adresse de la source est toujours accessible.</li><li>Relancez la synchronisation.</li></ol><p>Si l'erreur persiste, contactez le support en joignant <strong>le message affiché</strong> : il nous aide à trouver la cause plus vite.</p>": {
+      "kind": "rich",
+      "where": "rows.articles[3].Contenu"
+    },
+    "Vérifier l'accès à la source, relancer, puis contacter le support si besoin.": {
+      "kind": "value",
+      "where": "rows.articles[3].Résumé"
+    },
+    "Comment récupérer mes factures de l'an dernier ?": {
+      "kind": "value",
+      "where": "rows.questions[0].Question"
+    },
+    "J'ai besoin des factures de janvier à décembre pour mon comptable.": {
+      "kind": "long",
+      "where": "rows.questions[0].Détails"
+    },
+    "comptabilite@exemple.fr": {
+      "kind": "email",
+      "where": "rows.questions[0].Posée par"
+    },
+    "Bonjour, vos factures sont disponibles dans Paramètres, puis Facturation : vous pouvez les télécharger une à une ou toutes ensemble au format PDF. N'hésitez pas à revenir vers nous si vous ne les trouvez pas.": {
+      "kind": "long",
+      "where": "rows.questions[0].Réponse suggérée"
+    },
+    "Mon import CSV mélange les dates": {
+      "kind": "value",
+      "where": "rows.questions[1].Question"
+    },
+    "Les dates 03/04 deviennent le 4 mars au lieu du 3 avril.": {
+      "kind": "long",
+      "where": "rows.questions[1].Détails"
+    },
+    "lucie@exemple.fr": {
+      "kind": "email",
+      "where": "rows.questions[1].Posée par"
+    },
+    "Bonjour, l'import attend des dates au format AAAA-MM-JJ : convertissez la colonne dans votre tableur avant l'export, et vos dates seront lues correctement.": {
+      "kind": "long",
+      "where": "rows.questions[1].Réponse suggérée"
+    },
+    "Peut-on inviter un collègue gratuitement ?": {
+      "kind": "value",
+      "where": "rows.questions[2].Question"
+    },
+    "marc@exemple.fr": {
+      "kind": "email",
+      "where": "rows.questions[2].Posée par"
+    },
+    "Bonjour, chaque formule inclut un nombre de membres ; pourriez-vous nous préciser votre formule actuelle afin que nous vous répondions précisément ?": {
+      "kind": "long",
+      "where": "rows.questions[2].Réponse suggérée"
+    },
+    "La synchronisation affiche « source injoignable »": {
+      "kind": "value",
+      "where": "rows.questions[3].Question"
+    },
+    "Depuis ce matin, plus rien ne se met à jour.": {
+      "kind": "long",
+      "where": "rows.questions[3].Détails"
+    },
+    "it@exemple.fr": {
+      "kind": "email",
+      "where": "rows.questions[3].Posée par"
+    },
+    "Par catégorie": {
+      "kind": "label",
+      "where": "views[0].label"
+    },
+    "Fiches": {
+      "kind": "label",
+      "where": "views[2].label"
+    },
+    "File d'attente": {
+      "kind": "label",
+      "where": "views[3].label"
+    },
+    "Une question ?": {
+      "kind": "text",
+      "where": "views[4].spec.title"
+    },
+    "Décrivez votre question : le support vous répond par e-mail, en général dans la journée.": {
+      "kind": "text",
+      "where": "views[4].spec.description"
+    },
+    "Votre question": {
+      "kind": "text",
+      "where": "views[4].spec.fields[0].label"
+    },
+    "Ce que vous avez essayé, les messages affichés.": {
+      "kind": "text",
+      "where": "views[4].spec.fields[1].help"
+    },
+    "Votre e-mail": {
+      "kind": "text",
+      "where": "views[4].spec.fields[2].label"
+    },
+    "Envoyer": {
+      "kind": "text",
+      "where": "views[4].spec.submit_label"
+    },
+    "Merci, nous vous répondons au plus vite.": {
+      "kind": "text",
+      "where": "views[4].spec.success_message"
+    },
+    "Poser une question": {
+      "kind": "label",
+      "where": "views[4].label"
+    },
+    "Support": {
+      "kind": "label",
+      "where": "dashboards[0].label"
+    },
+    "Questions en attente": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[0].title"
+    },
+    "Articles publiés": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[1].title"
+    },
+    "Votes « utile »": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[2].title"
+    },
+    "Questions par catégorie": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[3].title"
+    },
+    "Articles par niveau": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[4].title"
+    },
+    "Questions récentes": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[5].title"
+    },
+    "Nouvelle question": {
+      "kind": "label",
+      "where": "automations[0].label"
+    },
+    "Prévient à chaque question reçue.": {
+      "kind": "text",
+      "where": "automations[0].description"
+    },
+    "Nouvelle question : {{Question}}": {
+      "kind": "message",
+      "where": "automations[0].actions[0].message"
+    },
+    "Base de connaissances": {
+      "kind": "label",
+      "where": "label"
+    },
+    "Articles d'aide et questions des clients : l'IA résume, classe et propose une réponse à partir des articles.": {
+      "kind": "text",
+      "where": "summary"
+    },
+    "Pour un service support. Les articles d'aide sont rangés par catégorie et suivis dans le temps ; les questions des clients arrivent par un formulaire public. L'IA résume chaque article et en évalue le niveau, classe chaque question et rédige un brouillon de réponse à relire.": {
+      "kind": "text",
+      "where": "description"
+    },
+    "IA": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Formulaire": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Liste": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Les articles d'aide du support et les questions posées par les clients.": {
+      "kind": "text",
+      "where": "base.description"
+    }
+  },
+  "calendrier-editorial": {
+    "Contenus": {
+      "kind": "label",
+      "where": "tables.contenus.label"
+    },
+    "Titre": {
+      "kind": "label",
+      "where": "tables.contenus.fields.Titre.label"
+    },
+    "Format": {
+      "kind": "label",
+      "where": "tables.contenus.fields.Format.label"
+    },
+    "Article": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Format.options"
+    },
+    "Newsletter": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Format.options"
+    },
+    "Post LinkedIn": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Format.options"
+    },
+    "Vidéo": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Format.options"
+    },
+    "Podcast": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Format.options"
+    },
+    "Statut": {
+      "kind": "label",
+      "where": "tables.contenus.fields.Statut.label"
+    },
+    "Idée": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Statut.options"
+    },
+    "Rédaction": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Statut.options"
+    },
+    "Relecture": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Statut.options"
+    },
+    "Programmé": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Statut.options"
+    },
+    "Publié": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Statut.options"
+    },
+    "Publication": {
+      "kind": "label",
+      "where": "tables.contenus.fields.Publication.label"
+    },
+    "Canaux": {
+      "kind": "label",
+      "where": "tables.contenus.fields.Canaux.label"
+    },
+    "Blog": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Canaux.options"
+    },
+    "LinkedIn": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Canaux.options"
+    },
+    "Instagram": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Canaux.options"
+    },
+    "YouTube": {
+      "kind": "option",
+      "where": "tables.contenus.fields.Canaux.options"
+    },
+    "Brief": {
+      "kind": "label",
+      "where": "tables.contenus.fields.Brief.label"
+    },
+    "Le sujet, la cible, le message à faire passer.": {
+      "kind": "text",
+      "where": "tables.contenus.fields.Brief.description"
+    },
+    "Proposé par": {
+      "kind": "label",
+      "where": "tables.contenus.fields.Proposé par.label"
+    },
+    "Accroche": {
+      "kind": "label",
+      "where": "tables.contenus.fields.Accroche.label"
+    },
+    "Écris une accroche de 15 mots au plus, percutante et sans point d'exclamation, pour ce contenu ({{Format}}) intitulé « {{Titre}} ».\nBrief : {{Brief}}": {
+      "kind": "prompt",
+      "where": "tables.contenus.fields.Accroche.ai.prompt"
+    },
+    "Mots-clés": {
+      "kind": "label",
+      "where": "tables.contenus.fields.Mots-clés.label"
+    },
+    "Donne cinq mots-clés de référencement pour ce contenu, séparés par des virgules.\n{{Titre}} — {{Brief}}": {
+      "kind": "prompt",
+      "where": "tables.contenus.fields.Mots-clés.ai.prompt"
+    },
+    "Campagnes": {
+      "kind": "label",
+      "where": "tables.campagnes.label"
+    },
+    "Nom": {
+      "kind": "label",
+      "where": "tables.campagnes.fields.Nom.label"
+    },
+    "Début": {
+      "kind": "label",
+      "where": "tables.campagnes.fields.Début.label"
+    },
+    "Fin": {
+      "kind": "label",
+      "where": "tables.campagnes.fields.Fin.label"
+    },
+    "Objectif": {
+      "kind": "label",
+      "where": "tables.campagnes.fields.Objectif.label"
+    },
+    "Auteurs": {
+      "kind": "label",
+      "where": "tables.auteurs.label"
+    },
+    "Rôle": {
+      "kind": "label",
+      "where": "tables.auteurs.fields.Rôle.label"
+    },
+    "Graphisme": {
+      "kind": "option",
+      "where": "tables.auteurs.fields.Rôle.options"
+    },
+    "Invité": {
+      "kind": "option",
+      "where": "tables.auteurs.fields.Rôle.options"
+    },
+    "E-mail": {
+      "kind": "label",
+      "where": "tables.auteurs.fields.E-mail.label"
+    },
+    "Campagne": {
+      "kind": "label",
+      "where": "links.contenus.Campagne"
+    },
+    "Auteur": {
+      "kind": "label",
+      "where": "links.contenus.Auteur"
+    },
+    "Léa Dubois": {
+      "kind": "value",
+      "where": "rows.auteurs[0].Nom"
+    },
+    "lea@exemple.fr": {
+      "kind": "email",
+      "where": "rows.auteurs[0].E-mail"
+    },
+    "Sami Haddad": {
+      "kind": "value",
+      "where": "rows.auteurs[1].Nom"
+    },
+    "sami@exemple.fr": {
+      "kind": "email",
+      "where": "rows.auteurs[1].E-mail"
+    },
+    "Inès Morel": {
+      "kind": "value",
+      "where": "rows.auteurs[2].Nom"
+    },
+    "ines@exemple.fr": {
+      "kind": "email",
+      "where": "rows.auteurs[2].E-mail"
+    },
+    "Rentrée : nouvelle offre": {
+      "kind": "value",
+      "where": "rows.campagnes[0].Nom"
+    },
+    "Faire connaître la nouvelle offre aux clients existants et générer 50 demandes de démonstration.": {
+      "kind": "long",
+      "where": "rows.campagnes[0].Objectif"
+    },
+    "Salon de novembre": {
+      "kind": "value",
+      "where": "rows.campagnes[1].Nom"
+    },
+    "Obtenir des rendez-vous sur le stand avant l'ouverture du salon.": {
+      "kind": "long",
+      "where": "rows.campagnes[1].Objectif"
+    },
+    "Cinq façons de gagner une heure par jour": {
+      "kind": "value",
+      "where": "rows.contenus[0].Titre"
+    },
+    "Article pratique pour les responsables d'équipe : automatiser les tâches répétitives, avec des exemples concrets.": {
+      "kind": "long",
+      "where": "rows.contenus[0].Brief"
+    },
+    "Une heure de plus chaque jour, sans travailler plus vite.": {
+      "kind": "value",
+      "where": "rows.contenus[0].Accroche"
+    },
+    "productivité, automatisation, équipe, organisation, temps": {
+      "kind": "value",
+      "where": "rows.contenus[0].Mots-clés"
+    },
+    "Découvrez la nouvelle offre en 90 secondes": {
+      "kind": "value",
+      "where": "rows.contenus[1].Titre"
+    },
+    "Vidéo courte qui montre les trois nouveautés, avec une démonstration à l'écran.": {
+      "kind": "long",
+      "where": "rows.contenus[1].Brief"
+    },
+    "Trois nouveautés, quatre-vingt-dix secondes, zéro jargon.": {
+      "kind": "value",
+      "where": "rows.contenus[1].Accroche"
+    },
+    "nouvelle offre, démonstration, nouveautés, vidéo, logiciel": {
+      "kind": "value",
+      "where": "rows.contenus[1].Mots-clés"
+    },
+    "Newsletter de rentrée": {
+      "kind": "value",
+      "where": "rows.contenus[2].Titre"
+    },
+    "Récapitulatif des nouveautés, lien vers la vidéo, invitation à réserver une démonstration.": {
+      "kind": "long",
+      "where": "rows.contenus[2].Brief"
+    },
+    "Témoignage client : la clinique des Tilleuls": {
+      "kind": "value",
+      "where": "rows.contenus[3].Titre"
+    },
+    "Interview de la directrice : avant, pendant et après le déploiement ; chiffres clés.": {
+      "kind": "long",
+      "where": "rows.contenus[3].Brief"
+    },
+    "Coulisses de notre stand": {
+      "kind": "value",
+      "where": "rows.contenus[4].Titre"
+    },
+    "Photos de la préparation du stand et présentation de l'équipe présente au salon.": {
+      "kind": "long",
+      "where": "rows.contenus[4].Brief"
+    },
+    "Épisode 4 : bien choisir ses outils": {
+      "kind": "value",
+      "where": "rows.contenus[5].Titre"
+    },
+    "Discussion avec un consultant sur les critères de choix d'un logiciel métier.": {
+      "kind": "long",
+      "where": "rows.contenus[5].Brief"
+    },
+    "Calendrier": {
+      "kind": "label",
+      "where": "views[0].label"
+    },
+    "Production": {
+      "kind": "label",
+      "where": "views[1].label"
+    },
+    "Par format": {
+      "kind": "label",
+      "where": "views[2].label"
+    },
+    "Une idée de contenu ?": {
+      "kind": "text",
+      "where": "views[3].spec.title"
+    },
+    "Proposez un sujet à l'équipe marketing : article, vidéo, témoignage…": {
+      "kind": "text",
+      "where": "views[3].spec.description"
+    },
+    "Votre idée en une phrase": {
+      "kind": "text",
+      "where": "views[3].spec.fields[0].label"
+    },
+    "Pourquoi ce sujet, pour qui ?": {
+      "kind": "text",
+      "where": "views[3].spec.fields[2].label"
+    },
+    "Votre e-mail": {
+      "kind": "text",
+      "where": "views[3].spec.fields[3].label"
+    },
+    "Proposer": {
+      "kind": "text",
+      "where": "views[3].spec.submit_label"
+    },
+    "Merci ! L'équipe marketing étudiera votre idée.": {
+      "kind": "text",
+      "where": "views[3].spec.success_message"
+    },
+    "Proposer un sujet": {
+      "kind": "label",
+      "where": "views[3].label"
+    },
+    "Chronologie": {
+      "kind": "label",
+      "where": "views[4].label"
+    },
+    "À publier ce mois-ci": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[0].title"
+    },
+    "Publiés": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[1].title"
+    },
+    "Par statut": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[4].title"
+    },
+    "Prochaines parutions": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[5].title"
+    },
+    "Contenu publié": {
+      "kind": "label",
+      "where": "automations[0].label"
+    },
+    "Publié : {{Titre}} ({{Format}})": {
+      "kind": "message",
+      "where": "automations[0].actions[0].message"
+    },
+    "Calendrier éditorial": {
+      "kind": "label",
+      "where": "label"
+    },
+    "Articles, posts et newsletters planifiés sur un calendrier ; l'IA propose accroches et mots-clés.": {
+      "kind": "text",
+      "where": "summary"
+    },
+    "Pour une équipe marketing ou une rédaction. Chaque contenu avance de l'idée à la publication, se place sur le calendrier des parutions et appartient à une campagne. L'IA propose une accroche et des mots-clés à partir du brief, et un formulaire permet à toute l'entreprise de suggérer un sujet.": {
+      "kind": "text",
+      "where": "description"
+    },
+    "Marketing": {
+      "kind": "label",
+      "where": "category"
+    },
+    "IA": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Kanban": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Formulaire": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Les contenus à produire et à publier, par canal et par campagne.": {
+      "kind": "text",
+      "where": "base.description"
+    }
+  },
+  "crm": {
+    "Opportunités": {
+      "kind": "label",
+      "where": "tables.opportunites.label"
+    },
+    "Une vente possible, de la découverte à la signature ou à l'abandon.": {
+      "kind": "text",
+      "where": "tables.opportunites.description"
+    },
+    "Nom": {
+      "kind": "label",
+      "where": "tables.opportunites.fields.Nom.label"
+    },
+    "Étape": {
+      "kind": "label",
+      "where": "tables.opportunites.fields.Étape.label"
+    },
+    "Découverte": {
+      "kind": "option",
+      "where": "tables.opportunites.fields.Étape.options"
+    },
+    "Qualification": {
+      "kind": "option",
+      "where": "tables.opportunites.fields.Étape.options"
+    },
+    "Proposition": {
+      "kind": "option",
+      "where": "tables.opportunites.fields.Étape.options"
+    },
+    "Négociation": {
+      "kind": "option",
+      "where": "tables.opportunites.fields.Étape.options"
+    },
+    "Gagnée": {
+      "kind": "option",
+      "where": "tables.opportunites.fields.Étape.options"
+    },
+    "Perdue": {
+      "kind": "option",
+      "where": "tables.opportunites.fields.Étape.options"
+    },
+    "Montant": {
+      "kind": "label",
+      "where": "tables.opportunites.fields.Montant.label"
+    },
+    "Probabilité (%)": {
+      "kind": "label",
+      "where": "tables.opportunites.fields.Probabilité (%).label"
+    },
+    "Chance de signer, de 0 à 100.": {
+      "kind": "text",
+      "where": "tables.opportunites.fields.Probabilité (%).description"
+    },
+    "Montant pondéré": {
+      "kind": "label",
+      "where": "tables.opportunites.fields.Montant pondéré.label"
+    },
+    "Le montant multiplié par la probabilité.": {
+      "kind": "text",
+      "where": "tables.opportunites.fields.Montant pondéré.description"
+    },
+    "Clôture prévue": {
+      "kind": "label",
+      "where": "tables.opportunites.fields.Clôture prévue.label"
+    },
+    "Responsable": {
+      "kind": "label",
+      "where": "tables.opportunites.fields.Responsable.label"
+    },
+    "Notes": {
+      "kind": "label",
+      "where": "tables.opportunites.fields.Notes.label"
+    },
+    "Ce que l'on sait du besoin, du budget, des décideurs et des objections.": {
+      "kind": "text",
+      "where": "tables.opportunites.fields.Notes.description"
+    },
+    "Risque": {
+      "kind": "label",
+      "where": "tables.opportunites.fields.Risque.label"
+    },
+    "Faible": {
+      "kind": "option",
+      "where": "tables.opportunites.fields.Risque.options"
+    },
+    "Moyen": {
+      "kind": "option",
+      "where": "tables.opportunites.fields.Risque.options"
+    },
+    "Élevé": {
+      "kind": "option",
+      "where": "tables.opportunites.fields.Risque.options"
+    },
+    "Voici les notes d'un commercial sur une opportunité à l'étape « {{Étape}} », d'un montant de {{Montant}} € :\n{{Notes}}\nQuel est le risque de ne pas signer ?": {
+      "kind": "prompt",
+      "where": "tables.opportunites.fields.Risque.ai.prompt"
+    },
+    "Prochaine étape conseillée": {
+      "kind": "label",
+      "where": "tables.opportunites.fields.Prochaine étape conseillée.label"
+    },
+    "En une phrase de 15 mots au plus, quelle est la prochaine action commerciale la plus utile pour faire avancer cette opportunité (étape « {{Étape}} ») ?\nNotes : {{Notes}}": {
+      "kind": "prompt",
+      "where": "tables.opportunites.fields.Prochaine étape conseillée.ai.prompt"
+    },
+    "Entreprises": {
+      "kind": "label",
+      "where": "tables.entreprises.label"
+    },
+    "Les comptes clients et prospects.": {
+      "kind": "text",
+      "where": "tables.entreprises.description"
+    },
+    "Secteur": {
+      "kind": "label",
+      "where": "tables.entreprises.fields.Secteur.label"
+    },
+    "Industrie": {
+      "kind": "option",
+      "where": "tables.entreprises.fields.Secteur.options"
+    },
+    "Services": {
+      "kind": "option",
+      "where": "tables.entreprises.fields.Secteur.options"
+    },
+    "Commerce": {
+      "kind": "option",
+      "where": "tables.entreprises.fields.Secteur.options"
+    },
+    "Santé": {
+      "kind": "option",
+      "where": "tables.entreprises.fields.Secteur.options"
+    },
+    "Public": {
+      "kind": "option",
+      "where": "tables.entreprises.fields.Secteur.options"
+    },
+    "Taille": {
+      "kind": "label",
+      "where": "tables.entreprises.fields.Taille.label"
+    },
+    "TPE": {
+      "kind": "option",
+      "where": "tables.entreprises.fields.Taille.options"
+    },
+    "PME": {
+      "kind": "option",
+      "where": "tables.entreprises.fields.Taille.options"
+    },
+    "ETI": {
+      "kind": "option",
+      "where": "tables.entreprises.fields.Taille.options"
+    },
+    "Grand compte": {
+      "kind": "option",
+      "where": "tables.entreprises.fields.Taille.options"
+    },
+    "Ville": {
+      "kind": "label",
+      "where": "tables.entreprises.fields.Ville.label"
+    },
+    "Site web": {
+      "kind": "label",
+      "where": "tables.entreprises.fields.Site web.label"
+    },
+    "Montant en jeu": {
+      "kind": "label",
+      "where": "tables.entreprises.fields.Montant en jeu.label"
+    },
+    "Contacts": {
+      "kind": "label",
+      "where": "tables.contacts.label"
+    },
+    "Les personnes à qui l'on parle chez les clients.": {
+      "kind": "text",
+      "where": "tables.contacts.description"
+    },
+    "Fonction": {
+      "kind": "label",
+      "where": "tables.contacts.fields.Fonction.label"
+    },
+    "E-mail": {
+      "kind": "label",
+      "where": "tables.contacts.fields.E-mail.label"
+    },
+    "Téléphone": {
+      "kind": "label",
+      "where": "tables.contacts.fields.Téléphone.label"
+    },
+    "Rôle dans la décision": {
+      "kind": "label",
+      "where": "tables.contacts.fields.Rôle dans la décision.label"
+    },
+    "Décideur": {
+      "kind": "option",
+      "where": "tables.contacts.fields.Rôle dans la décision.options"
+    },
+    "Prescripteur": {
+      "kind": "option",
+      "where": "tables.contacts.fields.Rôle dans la décision.options"
+    },
+    "Utilisateur": {
+      "kind": "option",
+      "where": "tables.contacts.fields.Rôle dans la décision.options"
+    },
+    "Acheteur": {
+      "kind": "option",
+      "where": "tables.contacts.fields.Rôle dans la décision.options"
+    },
+    "Écrire": {
+      "kind": "label",
+      "where": "tables.contacts.fields.Écrire.label"
+    },
+    "mailto:{{E-mail}}": {
+      "kind": "url",
+      "where": "tables.contacts.fields.Écrire.button.url"
+    },
+    "Échanges": {
+      "kind": "label",
+      "where": "tables.echanges.label"
+    },
+    "Appels, rendez-vous, démonstrations : ce qui s'est dit, et quand.": {
+      "kind": "text",
+      "where": "tables.echanges.description"
+    },
+    "Sujet": {
+      "kind": "label",
+      "where": "tables.echanges.fields.Sujet.label"
+    },
+    "Type": {
+      "kind": "label",
+      "where": "tables.echanges.fields.Type.label"
+    },
+    "Appel": {
+      "kind": "option",
+      "where": "tables.echanges.fields.Type.options"
+    },
+    "Rendez-vous": {
+      "kind": "option",
+      "where": "tables.echanges.fields.Type.options"
+    },
+    "Démonstration": {
+      "kind": "option",
+      "where": "tables.echanges.fields.Type.options"
+    },
+    "Date": {
+      "kind": "label",
+      "where": "tables.echanges.fields.Date.label"
+    },
+    "Compte rendu": {
+      "kind": "label",
+      "where": "tables.echanges.fields.Compte rendu.label"
+    },
+    "Points clés": {
+      "kind": "label",
+      "where": "tables.echanges.fields.Points clés.label"
+    },
+    "Résume en 20 mots au plus les points clés de cet échange commercial :\n{{Compte rendu}}": {
+      "kind": "prompt",
+      "where": "tables.echanges.fields.Points clés.ai.prompt"
+    },
+    "Entreprise": {
+      "kind": "label",
+      "where": "links.opportunites.Entreprise"
+    },
+    "Contact": {
+      "kind": "label",
+      "where": "links.opportunites.Contact"
+    },
+    "Opportunité": {
+      "kind": "label",
+      "where": "links.echanges.Opportunité"
+    },
+    "Chimie du Rhône": {
+      "kind": "value",
+      "where": "rows.entreprises[0].Nom"
+    },
+    "Lyon": {
+      "kind": "value",
+      "where": "rows.entreprises[0].Ville"
+    },
+    "https://chimie-rhone.example": {
+      "kind": "url",
+      "where": "rows.entreprises[0].Site web"
+    },
+    "Optique Martin & Fils": {
+      "kind": "value",
+      "where": "rows.entreprises[1].Nom"
+    },
+    "Rennes": {
+      "kind": "value",
+      "where": "rows.entreprises[1].Ville"
+    },
+    "Groupe Santé Atlantique": {
+      "kind": "value",
+      "where": "rows.entreprises[2].Nom"
+    },
+    "Nantes": {
+      "kind": "value",
+      "where": "rows.entreprises[2].Ville"
+    },
+    "https://sante-atlantique.example": {
+      "kind": "url",
+      "where": "rows.entreprises[2].Site web"
+    },
+    "Mairie de Villeurbanne": {
+      "kind": "value",
+      "where": "rows.entreprises[3].Nom"
+    },
+    "Villeurbanne": {
+      "kind": "value",
+      "where": "rows.entreprises[3].Ville"
+    },
+    "Atelier Conseil": {
+      "kind": "value",
+      "where": "rows.entreprises[4].Nom"
+    },
+    "Paris": {
+      "kind": "value",
+      "where": "rows.entreprises[4].Ville"
+    },
+    "Nathalie Perrin": {
+      "kind": "value",
+      "where": "rows.contacts[0].Nom"
+    },
+    "Directrice des achats": {
+      "kind": "value",
+      "where": "rows.contacts[0].Fonction"
+    },
+    "n.perrin@chimie-rhone.example": {
+      "kind": "email",
+      "where": "rows.contacts[0].E-mail"
+    },
+    "04 72 00 00 01": {
+      "kind": "value",
+      "where": "rows.contacts[0].Téléphone"
+    },
+    "Julien Martin": {
+      "kind": "value",
+      "where": "rows.contacts[1].Nom"
+    },
+    "Gérant": {
+      "kind": "value",
+      "where": "rows.contacts[1].Fonction"
+    },
+    "julien@optique-martin.example": {
+      "kind": "email",
+      "where": "rows.contacts[1].E-mail"
+    },
+    "02 99 00 00 02": {
+      "kind": "value",
+      "where": "rows.contacts[1].Téléphone"
+    },
+    "Dr Hélène Robin": {
+      "kind": "value",
+      "where": "rows.contacts[2].Nom"
+    },
+    "Directrice des systèmes d'information": {
+      "kind": "value",
+      "where": "rows.contacts[2].Fonction"
+    },
+    "h.robin@sante-atlantique.example": {
+      "kind": "email",
+      "where": "rows.contacts[2].E-mail"
+    },
+    "Karim Benali": {
+      "kind": "value",
+      "where": "rows.contacts[3].Nom"
+    },
+    "Responsable de la commande publique": {
+      "kind": "value",
+      "where": "rows.contacts[3].Fonction"
+    },
+    "k.benali@villeurbanne.example": {
+      "kind": "email",
+      "where": "rows.contacts[3].E-mail"
+    },
+    "Chloé Garnier": {
+      "kind": "value",
+      "where": "rows.contacts[4].Nom"
+    },
+    "Associée": {
+      "kind": "value",
+      "where": "rows.contacts[4].Fonction"
+    },
+    "chloe@atelier-conseil.example": {
+      "kind": "email",
+      "where": "rows.contacts[4].E-mail"
+    },
+    "Chimie du Rhône — logiciel de maintenance": {
+      "kind": "value",
+      "where": "rows.opportunites[0].Nom"
+    },
+    "Budget validé en comité. Ils comparent avec un concurrent 15 % moins cher. La directrice des achats veut une remise ou un accompagnement renforcé.": {
+      "kind": "long",
+      "where": "rows.opportunites[0].Notes"
+    },
+    "Proposer un accompagnement au déploiement plutôt qu'une remise.": {
+      "kind": "value",
+      "where": "rows.opportunites[0].Prochaine étape conseillée"
+    },
+    "Optique Martin — caisse et fidélité": {
+      "kind": "value",
+      "where": "rows.opportunites[1].Nom"
+    },
+    "Très intéressé par le programme de fidélité. Hésite sur le calendrier : il veut attendre après les soldes.": {
+      "kind": "long",
+      "where": "rows.opportunites[1].Notes"
+    },
+    "Proposer un démarrage en deux temps, fidélité après les soldes.": {
+      "kind": "value",
+      "where": "rows.opportunites[1].Prochaine étape conseillée"
+    },
+    "Santé Atlantique — portail patients": {
+      "kind": "value",
+      "where": "rows.opportunites[2].Nom"
+    },
+    "Projet stratégique mais pas encore budgété. La DSI est favorable ; la direction générale n'a pas été rencontrée. Appel d'offres probable.": {
+      "kind": "long",
+      "where": "rows.opportunites[2].Notes"
+    },
+    "Obtenir un rendez-vous avec la direction générale.": {
+      "kind": "value",
+      "where": "rows.opportunites[2].Prochaine étape conseillée"
+    },
+    "Villeurbanne — réservation des salles": {
+      "kind": "value",
+      "where": "rows.opportunites[3].Nom"
+    },
+    "Premier contact au salon des collectivités. Marché public à venir, cahier des charges en rédaction.": {
+      "kind": "long",
+      "where": "rows.opportunites[3].Notes"
+    },
+    "Demander à être consulté pour le cahier des charges.": {
+      "kind": "value",
+      "where": "rows.opportunites[3].Prochaine étape conseillée"
+    },
+    "Atelier Conseil — abonnement annuel": {
+      "kind": "value",
+      "where": "rows.opportunites[4].Nom"
+    },
+    "Signé après la démonstration. Souhaite une formation pour deux nouveaux collaborateurs en janvier.": {
+      "kind": "long",
+      "where": "rows.opportunites[4].Notes"
+    },
+    "Planifier la formation de janvier.": {
+      "kind": "value",
+      "where": "rows.opportunites[4].Prochaine étape conseillée"
+    },
+    "Chimie du Rhône — module qualité": {
+      "kind": "value",
+      "where": "rows.opportunites[5].Nom"
+    },
+    "Perdu face à la solution déjà en place chez leur maison mère.": {
+      "kind": "long",
+      "where": "rows.opportunites[5].Notes"
+    },
+    "Démonstration du logiciel": {
+      "kind": "value",
+      "where": "rows.echanges[0].Sujet"
+    },
+    "Démonstration devant quatre personnes. Très bon accueil sur la planification ; questions sur l'import des historiques et sur l'hébergement en France.": {
+      "kind": "long",
+      "where": "rows.echanges[0].Compte rendu"
+    },
+    "Bon accueil, questions sur l'import des historiques et l'hébergement.": {
+      "kind": "value",
+      "where": "rows.echanges[0].Points clés"
+    },
+    "Point sur la proposition": {
+      "kind": "value",
+      "where": "rows.echanges[1].Sujet"
+    },
+    "La directrice des achats trouve l'offre chère. Un concurrent propose 15 % de moins. Elle attend un geste avant la fin du mois.": {
+      "kind": "long",
+      "where": "rows.echanges[1].Compte rendu"
+    },
+    "Offre jugée chère, concurrent moins cher, geste attendu avant la fin du mois.": {
+      "kind": "value",
+      "where": "rows.echanges[1].Points clés"
+    },
+    "Présentation du programme de fidélité": {
+      "kind": "value",
+      "where": "rows.echanges[2].Sujet"
+    },
+    "Rendez-vous en boutique. Le gérant veut des cartes dématérialisées et un envoi de SMS à l'anniversaire des clients.": {
+      "kind": "long",
+      "where": "rows.echanges[2].Compte rendu"
+    },
+    "Cartes dématérialisées et SMS d'anniversaire demandés.": {
+      "kind": "value",
+      "where": "rows.echanges[2].Points clés"
+    },
+    "Découverte du besoin": {
+      "kind": "value",
+      "where": "rows.echanges[3].Sujet"
+    },
+    "À préparer : liste des services concernés, volumétrie des patients, contraintes d'hébergement de données de santé.": {
+      "kind": "long",
+      "where": "rows.echanges[3].Compte rendu"
+    },
+    "Envoi du contrat signé": {
+      "kind": "value",
+      "where": "rows.echanges[4].Sujet"
+    },
+    "Contrat reçu signé. Facture à émettre, formation à planifier en janvier.": {
+      "kind": "long",
+      "where": "rows.echanges[4].Compte rendu"
+    },
+    "Contrat signé, facture à émettre, formation en janvier.": {
+      "kind": "value",
+      "where": "rows.echanges[4].Points clés"
+    },
+    "Pipeline": {
+      "kind": "label",
+      "where": "views[0].label"
+    },
+    "En cours par risque": {
+      "kind": "label",
+      "where": "views[1].label"
+    },
+    "Clôtures": {
+      "kind": "label",
+      "where": "views[2].label"
+    },
+    "Agenda": {
+      "kind": "label",
+      "where": "views[3].label"
+    },
+    "Comptes": {
+      "kind": "label",
+      "where": "views[4].label"
+    },
+    "Par entreprise": {
+      "kind": "label",
+      "where": "views[5].label"
+    },
+    "Ventes": {
+      "kind": "label",
+      "where": "dashboards[0].label"
+    },
+    "En jeu": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[0].title"
+    },
+    "Gagné": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[1].title"
+    },
+    "Opportunités ouvertes": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[2].title"
+    },
+    "Pipeline par étape": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[3].title"
+    },
+    "Prochaines clôtures": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[5].title"
+    },
+    "Opportunité gagnée": {
+      "kind": "label",
+      "where": "automations[0].label"
+    },
+    "Prévient le responsable quand une opportunité est gagnée.": {
+      "kind": "text",
+      "where": "automations[0].description"
+    },
+    "Gagnée : {{Nom}} ({{Montant}} €)": {
+      "kind": "message",
+      "where": "automations[0].actions[0].message"
+    },
+    "CRM commercial": {
+      "kind": "label",
+      "where": "label"
+    },
+    "Entreprises, contacts et opportunités : un pipeline de vente, les échanges, et l'IA qui conseille la prochaine étape.": {
+      "kind": "text",
+      "where": "summary"
+    },
+    "Un CRM léger pour une équipe commerciale. Les opportunités avancent dans un pipeline, portent un montant pondéré par leur probabilité, et l'IA en évalue le risque et conseille la prochaine action à partir des notes. Les échanges avec les clients sont consignés et résumés, les entreprises cumulent ce qu'elles représentent.": {
+      "kind": "text",
+      "where": "description"
+    },
+    "IA": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Kanban": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Calendrier": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "CRM": {
+      "kind": "label",
+      "where": "base.label"
+    },
+    "Les clients, leurs contacts et les ventes en cours, de la découverte à la signature.": {
+      "kind": "text",
+      "where": "base.description"
+    }
+  },
+  "demo": {
+    "Clients": {
+      "kind": "label",
+      "where": "tables.clients.label"
+    },
+    "Les organisations pour qui l'agence travaille, prospects compris. Une ligne par client.": {
+      "kind": "text",
+      "where": "tables.clients.description"
+    },
+    "Nom": {
+      "kind": "label",
+      "where": "tables.clients.fields.Nom.label"
+    },
+    "Nom usuel du client, tel qu'il apparaît sur les devis.": {
+      "kind": "text",
+      "where": "tables.clients.fields.Nom.description"
+    },
+    "Secteur": {
+      "kind": "label",
+      "where": "tables.clients.fields.Secteur.label"
+    },
+    "Commerce": {
+      "kind": "option",
+      "where": "tables.clients.fields.Secteur.options"
+    },
+    "Santé": {
+      "kind": "option",
+      "where": "tables.clients.fields.Secteur.options"
+    },
+    "Éducation": {
+      "kind": "option",
+      "where": "tables.clients.fields.Secteur.options"
+    },
+    "Industrie": {
+      "kind": "option",
+      "where": "tables.clients.fields.Secteur.options"
+    },
+    "Association": {
+      "kind": "option",
+      "where": "tables.clients.fields.Secteur.options"
+    },
+    "Statut": {
+      "kind": "label",
+      "where": "tables.clients.fields.Statut.label"
+    },
+    "Prospect": {
+      "kind": "option",
+      "where": "tables.clients.fields.Statut.options"
+    },
+    "Actif": {
+      "kind": "option",
+      "where": "tables.clients.fields.Statut.options"
+    },
+    "Ancien": {
+      "kind": "option",
+      "where": "tables.clients.fields.Statut.options"
+    },
+    "Ville": {
+      "kind": "label",
+      "where": "tables.clients.fields.Ville.label"
+    },
+    "E-mail": {
+      "kind": "label",
+      "where": "tables.clients.fields.E-mail.label"
+    },
+    "Adresse du contact principal.": {
+      "kind": "text",
+      "where": "tables.clients.fields.E-mail.description"
+    },
+    "Site web": {
+      "kind": "label",
+      "where": "tables.clients.fields.Site web.label"
+    },
+    "Projets": {
+      "kind": "label",
+      "where": "tables.clients.fields.Projets.label"
+    },
+    "Nombre de projets menés pour ce client.": {
+      "kind": "text",
+      "where": "tables.clients.fields.Projets.description"
+    },
+    "Chiffre d'affaires": {
+      "kind": "label",
+      "where": "tables.clients.fields.Chiffre d'affaires.label"
+    },
+    "Somme des montants HT facturés au client.": {
+      "kind": "text",
+      "where": "tables.clients.fields.Chiffre d'affaires.description"
+    },
+    "Note moyenne": {
+      "kind": "label",
+      "where": "tables.clients.fields.Note moyenne.label"
+    },
+    "Moyenne des notes laissées par le client, sur 5.": {
+      "kind": "text",
+      "where": "tables.clients.fields.Note moyenne.description"
+    },
+    "Écrire": {
+      "kind": "label",
+      "where": "tables.clients.fields.Écrire.label"
+    },
+    "mailto:{{E-mail}}": {
+      "kind": "url",
+      "where": "tables.clients.fields.Écrire.button.url"
+    },
+    "Les missions de l'agence, de l'idée à la livraison. Un projet a un client et des tâches.": {
+      "kind": "text",
+      "where": "tables.projets.description"
+    },
+    "Idée": {
+      "kind": "option",
+      "where": "tables.projets.fields.Statut.options"
+    },
+    "En cours": {
+      "kind": "option",
+      "where": "tables.projets.fields.Statut.options"
+    },
+    "En pause": {
+      "kind": "option",
+      "where": "tables.projets.fields.Statut.options"
+    },
+    "Livré": {
+      "kind": "option",
+      "where": "tables.projets.fields.Statut.options"
+    },
+    "Début": {
+      "kind": "label",
+      "where": "tables.projets.fields.Début.label"
+    },
+    "Fin": {
+      "kind": "label",
+      "where": "tables.projets.fields.Fin.label"
+    },
+    "Budget": {
+      "kind": "label",
+      "where": "tables.projets.fields.Budget.label"
+    },
+    "Durée (jours)": {
+      "kind": "label",
+      "where": "tables.projets.fields.Durée (jours).label"
+    },
+    "Nombre de jours entre le début et la fin prévue.": {
+      "kind": "text",
+      "where": "tables.projets.fields.Durée (jours).description"
+    },
+    "Ville du client": {
+      "kind": "label",
+      "where": "tables.projets.fields.Ville du client.label"
+    },
+    "Tâches": {
+      "kind": "label",
+      "where": "tables.projets.fields.Tâches.label"
+    },
+    "Brief": {
+      "kind": "label",
+      "where": "tables.projets.fields.Brief.label"
+    },
+    "Le besoin du client, les livrables et ce qu'il faut savoir.": {
+      "kind": "text",
+      "where": "tables.projets.fields.Brief.description"
+    },
+    "Le travail à faire, projet par projet. Une tâche peut dépendre d'autres tâches.": {
+      "kind": "text",
+      "where": "tables.taches.description"
+    },
+    "Titre": {
+      "kind": "label",
+      "where": "tables.taches.fields.Titre.label"
+    },
+    "À faire": {
+      "kind": "option",
+      "where": "tables.taches.fields.Statut.options"
+    },
+    "En revue": {
+      "kind": "option",
+      "where": "tables.taches.fields.Statut.options"
+    },
+    "Fait": {
+      "kind": "option",
+      "where": "tables.taches.fields.Statut.options"
+    },
+    "Priorité": {
+      "kind": "label",
+      "where": "tables.taches.fields.Priorité.label"
+    },
+    "Haute": {
+      "kind": "option",
+      "where": "tables.taches.fields.Priorité.options"
+    },
+    "Moyenne": {
+      "kind": "option",
+      "where": "tables.taches.fields.Priorité.options"
+    },
+    "Basse": {
+      "kind": "option",
+      "where": "tables.taches.fields.Priorité.options"
+    },
+    "Échéance": {
+      "kind": "label",
+      "where": "tables.taches.fields.Échéance.label"
+    },
+    "Assigné à": {
+      "kind": "label",
+      "where": "tables.taches.fields.Assigné à.label"
+    },
+    "Estimation (h)": {
+      "kind": "label",
+      "where": "tables.taches.fields.Estimation (h).label"
+    },
+    "Notes": {
+      "kind": "label",
+      "where": "tables.taches.fields.Notes.label"
+    },
+    "Terminée le": {
+      "kind": "label",
+      "where": "tables.taches.fields.Terminée le.label"
+    },
+    "Rempli par l'automatisation « Tâche terminée ».": {
+      "kind": "text",
+      "where": "tables.taches.fields.Terminée le.description"
+    },
+    "Factures": {
+      "kind": "label",
+      "where": "tables.factures.label"
+    },
+    "Les factures émises. Une facture vise un client, et souvent un projet.": {
+      "kind": "text",
+      "where": "tables.factures.description"
+    },
+    "Numéro": {
+      "kind": "label",
+      "where": "tables.factures.fields.Numéro.label"
+    },
+    "Référence imprimée sur la facture, par exemple F-2026-012.": {
+      "kind": "text",
+      "where": "tables.factures.fields.Numéro.description"
+    },
+    "Émise le": {
+      "kind": "label",
+      "where": "tables.factures.fields.Émise le.label"
+    },
+    "Montant HT": {
+      "kind": "label",
+      "where": "tables.factures.fields.Montant HT.label"
+    },
+    "Taux de TVA": {
+      "kind": "label",
+      "where": "tables.factures.fields.Taux de TVA.label"
+    },
+    "0,2 pour 20 %.": {
+      "kind": "text",
+      "where": "tables.factures.fields.Taux de TVA.description"
+    },
+    "Montant TTC": {
+      "kind": "label",
+      "where": "tables.factures.fields.Montant TTC.label"
+    },
+    "Payée": {
+      "kind": "label",
+      "where": "tables.factures.fields.Payée.label"
+    },
+    "En retard": {
+      "kind": "label",
+      "where": "tables.factures.fields.En retard.label"
+    },
+    "Vrai quand l'échéance est passée et la facture non payée.": {
+      "kind": "text",
+      "where": "tables.factures.fields.En retard.description"
+    },
+    "Avis clients": {
+      "kind": "label",
+      "where": "tables.avis.label"
+    },
+    "Ce que les clients disent du travail livré. L'IA lit chaque avis : sentiment, thème et proposition de réponse.": {
+      "kind": "text",
+      "where": "tables.avis.description"
+    },
+    "Auteur": {
+      "kind": "label",
+      "where": "tables.avis.fields.Auteur.label"
+    },
+    "Avis": {
+      "kind": "label",
+      "where": "tables.avis.fields.Avis.label"
+    },
+    "Le texte laissé par le client.": {
+      "kind": "text",
+      "where": "tables.avis.fields.Avis.description"
+    },
+    "Note": {
+      "kind": "label",
+      "where": "tables.avis.fields.Note.label"
+    },
+    "Reçu le": {
+      "kind": "label",
+      "where": "tables.avis.fields.Reçu le.label"
+    },
+    "Sentiment": {
+      "kind": "label",
+      "where": "tables.avis.fields.Sentiment.label"
+    },
+    "Calculé par l'IA à partir du texte et de la note.": {
+      "kind": "text",
+      "where": "tables.avis.fields.Sentiment.description"
+    },
+    "Positif": {
+      "kind": "option",
+      "where": "tables.avis.fields.Sentiment.options"
+    },
+    "Neutre": {
+      "kind": "option",
+      "where": "tables.avis.fields.Sentiment.options"
+    },
+    "Négatif": {
+      "kind": "option",
+      "where": "tables.avis.fields.Sentiment.options"
+    },
+    "Voici l'avis d'un client sur une agence de design, noté {{Note}}/5 :\n« {{Avis}} »\nQuel est le sentiment général de cet avis ?": {
+      "kind": "prompt",
+      "where": "tables.avis.fields.Sentiment.ai.prompt"
+    },
+    "Thème": {
+      "kind": "label",
+      "where": "tables.avis.fields.Thème.label"
+    },
+    "Le sujet principal de l'avis, selon l'IA.": {
+      "kind": "text",
+      "where": "tables.avis.fields.Thème.description"
+    },
+    "Qualité": {
+      "kind": "option",
+      "where": "tables.avis.fields.Thème.options"
+    },
+    "Délais": {
+      "kind": "option",
+      "where": "tables.avis.fields.Thème.options"
+    },
+    "Prix": {
+      "kind": "option",
+      "where": "tables.avis.fields.Thème.options"
+    },
+    "Communication": {
+      "kind": "option",
+      "where": "tables.avis.fields.Thème.options"
+    },
+    "Autre": {
+      "kind": "option",
+      "where": "tables.avis.fields.Thème.options"
+    },
+    "De quoi parle principalement cet avis client ? « {{Avis}} »": {
+      "kind": "prompt",
+      "where": "tables.avis.fields.Thème.ai.prompt"
+    },
+    "Réponse suggérée": {
+      "kind": "label",
+      "where": "tables.avis.fields.Réponse suggérée.label"
+    },
+    "Un brouillon de réponse, à relire avant envoi.": {
+      "kind": "text",
+      "where": "tables.avis.fields.Réponse suggérée.description"
+    },
+    "Rédige en trois phrases au plus une réponse chaleureuse et professionnelle à cet avis client, noté {{Note}}/5. Remercie, réponds précisément aux remarques, et signe « L'équipe Atelier Lumen ».\nAvis de {{Auteur}} : « {{Avis}} »": {
+      "kind": "prompt",
+      "where": "tables.avis.fields.Réponse suggérée.ai.prompt"
+    },
+    "Client": {
+      "kind": "label",
+      "where": "links.projets.Client"
+    },
+    "Le client pour qui le projet est mené.": {
+      "kind": "text",
+      "where": "links.projets.Client.description"
+    },
+    "Projet": {
+      "kind": "label",
+      "where": "links.taches.Projet"
+    },
+    "Dépend de": {
+      "kind": "label",
+      "where": "links.taches.Dépend de"
+    },
+    "Les tâches à terminer avant de commencer celle-ci.": {
+      "kind": "text",
+      "where": "links.taches.Dépend de.description"
+    },
+    "Boulangerie Martin": {
+      "kind": "value",
+      "where": "rows.clients[0].Nom"
+    },
+    "Lyon": {
+      "kind": "value",
+      "where": "rows.clients[0].Ville"
+    },
+    "contact@boulangerie-martin.example": {
+      "kind": "email",
+      "where": "rows.clients[0].E-mail"
+    },
+    "https://boulangerie-martin.example": {
+      "kind": "url",
+      "where": "rows.clients[0].Site web"
+    },
+    "Clinique des Tilleuls": {
+      "kind": "value",
+      "where": "rows.clients[1].Nom"
+    },
+    "Nantes": {
+      "kind": "value",
+      "where": "rows.clients[1].Ville"
+    },
+    "communication@tilleuls.example": {
+      "kind": "email",
+      "where": "rows.clients[1].E-mail"
+    },
+    "Lycée Jean Moulin": {
+      "kind": "value",
+      "where": "rows.clients[2].Nom"
+    },
+    "Bordeaux": {
+      "kind": "value",
+      "where": "rows.clients[2].Ville"
+    },
+    "direction@jeanmoulin.example": {
+      "kind": "email",
+      "where": "rows.clients[2].E-mail"
+    },
+    "Forges du Rhône": {
+      "kind": "value",
+      "where": "rows.clients[3].Nom"
+    },
+    "Vienne": {
+      "kind": "value",
+      "where": "rows.clients[3].Ville"
+    },
+    "marketing@forges-rhone.example": {
+      "kind": "email",
+      "where": "rows.clients[3].E-mail"
+    },
+    "https://forges-rhone.example": {
+      "kind": "url",
+      "where": "rows.clients[3].Site web"
+    },
+    "Vélo Solidaire": {
+      "kind": "value",
+      "where": "rows.clients[4].Nom"
+    },
+    "Grenoble": {
+      "kind": "value",
+      "where": "rows.clients[4].Ville"
+    },
+    "bonjour@velo-solidaire.example": {
+      "kind": "email",
+      "where": "rows.clients[4].E-mail"
+    },
+    "L'Épicerie fine": {
+      "kind": "value",
+      "where": "rows.clients[5].Nom"
+    },
+    "gerance@epicerie-fine.example": {
+      "kind": "email",
+      "where": "rows.clients[5].E-mail"
+    },
+    "Site vitrine et commande en ligne": {
+      "kind": "value",
+      "where": "rows.projets[0].Nom"
+    },
+    "<p>La boulangerie veut prendre les commandes la veille pour le lendemain.</p><h3>Livrables</h3><ul><li>Un site vitrine de cinq pages</li><li>La commande en ligne, avec retrait en boutique</li><li>Une demi-journée de formation pour l'équipe</li></ul><p><strong>À savoir :</strong> les photos des produits seront prises en boutique.</p>": {
+      "kind": "rich",
+      "where": "rows.projets[0].Brief"
+    },
+    "Nouvelle charte graphique": {
+      "kind": "value",
+      "where": "rows.projets[1].Nom"
+    },
+    "<p>Moderniser l'image de la clinique sans perdre la confiance des patients.</p><h3>Livrables</h3><ul><li>Un logo et une palette de couleurs</li><li>La signalétique des deux bâtiments</li><li>Des modèles de documents</li></ul><p><strong>À savoir :</strong> le comité de direction valide chaque étape.</p>": {
+      "kind": "rich",
+      "where": "rows.projets[1].Brief"
+    },
+    "Campagne portes ouvertes": {
+      "kind": "value",
+      "where": "rows.projets[2].Nom"
+    },
+    "<p>Faire venir plus de familles aux portes ouvertes du lycée.</p><h3>Livrables</h3><ul><li>Affiches et flyers</li><li>Des visuels pour les réseaux sociaux</li></ul><blockquote><p>Bilan : 30 % de visiteurs en plus.</p></blockquote>": {
+      "kind": "rich",
+      "where": "rows.projets[2].Brief"
+    },
+    "Catalogue produits 2026": {
+      "kind": "value",
+      "where": "rows.projets[3].Nom"
+    },
+    "<p>Le catalogue annuel des Forges du Rhône, en français et en anglais.</p><h3>Livrables</h3><ul><li>Les photos des pièces, prises à l'atelier</li><li>La mise en page et les fichiers pour l'imprimeur</li><li>Une version PDF pour le site</li></ul>": {
+      "kind": "rich",
+      "where": "rows.projets[3].Brief"
+    },
+    "Application de réservation": {
+      "kind": "value",
+      "where": "rows.projets[4].Nom"
+    },
+    "<p>Réserver un vélo en ligne et le retirer à l'atelier de l'association.</p><p><strong>En pause :</strong> l'association doit d'abord fixer ses tarifs de location.</p>": {
+      "kind": "rich",
+      "where": "rows.projets[4].Brief"
+    },
+    "Identité visuelle": {
+      "kind": "value",
+      "where": "rows.projets[5].Nom"
+    },
+    "<p>L'épicerie veut une identité à la hauteur de ses produits : logo, étiquettes et devanture.</p><p><em>Proposition commerciale à envoyer.</em></p>": {
+      "kind": "rich",
+      "where": "rows.projets[5].Brief"
+    },
+    "Atelier de cadrage avec la boulangerie": {
+      "kind": "value",
+      "where": "rows.taches[0].Titre"
+    },
+    "Maquettes de la page d'accueil": {
+      "kind": "value",
+      "where": "rows.taches[1].Titre"
+    },
+    "Intégration du tunnel de commande": {
+      "kind": "value",
+      "where": "rows.taches[2].Titre"
+    },
+    "Recette et mise en ligne": {
+      "kind": "value",
+      "where": "rows.taches[3].Titre"
+    },
+    "Audit de l'identité actuelle": {
+      "kind": "value",
+      "where": "rows.taches[4].Titre"
+    },
+    "Trois pistes de logo": {
+      "kind": "value",
+      "where": "rows.taches[5].Titre"
+    },
+    "Présentation au comité de direction": {
+      "kind": "value",
+      "where": "rows.taches[6].Titre"
+    },
+    "Déclinaison de la signalétique": {
+      "kind": "value",
+      "where": "rows.taches[7].Titre"
+    },
+    "Affiches et réseaux sociaux": {
+      "kind": "value",
+      "where": "rows.taches[8].Titre"
+    },
+    "Bilan de la campagne": {
+      "kind": "value",
+      "where": "rows.taches[9].Titre"
+    },
+    "Parcours de réservation": {
+      "kind": "value",
+      "where": "rows.taches[10].Titre"
+    },
+    "En attente du retour de l'association sur les tarifs.": {
+      "kind": "long",
+      "where": "rows.taches[10].Notes"
+    },
+    "Relancer l'association pour les tarifs": {
+      "kind": "value",
+      "where": "rows.taches[11].Titre"
+    },
+    "Proposition commerciale pour l'épicerie": {
+      "kind": "value",
+      "where": "rows.taches[12].Titre"
+    },
+    "F-2026-001": {
+      "kind": "value",
+      "where": "rows.factures[0].Numéro"
+    },
+    "F-2026-002": {
+      "kind": "value",
+      "where": "rows.factures[1].Numéro"
+    },
+    "F-2026-003": {
+      "kind": "value",
+      "where": "rows.factures[2].Numéro"
+    },
+    "F-2026-004": {
+      "kind": "value",
+      "where": "rows.factures[3].Numéro"
+    },
+    "F-2026-005": {
+      "kind": "value",
+      "where": "rows.factures[4].Numéro"
+    },
+    "F-2026-006": {
+      "kind": "value",
+      "where": "rows.factures[5].Numéro"
+    },
+    "F-2026-007": {
+      "kind": "value",
+      "where": "rows.factures[6].Numéro"
+    },
+    "Claire, Lycée Jean Moulin": {
+      "kind": "value",
+      "where": "rows.avis[0].Auteur"
+    },
+    "Campagne livrée en temps et en heure, des visuels qui ont vraiment plu aux familles. Nous avons eu 30 % de visiteurs en plus aux portes ouvertes !": {
+      "kind": "long",
+      "where": "rows.avis[0].Avis"
+    },
+    "Merci Claire pour ce retour enthousiaste ! Nous sommes ravis que la campagne ait attiré autant de familles. À très bientôt pour la prochaine édition — l'équipe Atelier Lumen": {
+      "kind": "long",
+      "where": "rows.avis[0].Réponse suggérée"
+    },
+    "Service marketing, Forges du Rhône": {
+      "kind": "value",
+      "where": "rows.avis[1].Auteur"
+    },
+    "Beau catalogue, mais deux semaines de retard sur l'impression et des relances nécessaires pour obtenir les fichiers définitifs.": {
+      "kind": "long",
+      "where": "rows.avis[1].Avis"
+    },
+    "Merci pour votre franchise. Le retard d'impression n'aurait pas dû arriver et nous avons revu notre planning de livraison des fichiers. Nous serions heureux de vous le prouver sur un prochain projet — l'équipe Atelier Lumen": {
+      "kind": "long",
+      "where": "rows.avis[1].Réponse suggérée"
+    },
+    "Julien, Vélo Solidaire": {
+      "kind": "value",
+      "where": "rows.avis[2].Auteur"
+    },
+    "Équipe à l'écoute et prix très raisonnable pour une association. Hâte de voir l'application terminée.": {
+      "kind": "long",
+      "where": "rows.avis[2].Avis"
+    },
+    "Merci Julien ! Travailler avec Vélo Solidaire est un vrai plaisir ; nous avançons sur l'application dès réception des tarifs. — l'équipe Atelier Lumen": {
+      "kind": "long",
+      "where": "rows.avis[2].Réponse suggérée"
+    },
+    "Direction, Clinique des Tilleuls": {
+      "kind": "value",
+      "where": "rows.avis[3].Auteur"
+    },
+    "Les premières pistes sont intéressantes, mais nous aurions aimé être davantage consultés avant l'atelier.": {
+      "kind": "long",
+      "where": "rows.avis[3].Avis"
+    },
+    "Merci pour ce retour. Nous planifions un point d'étape hebdomadaire pour vous associer à chaque décision d'ici la présentation au comité. — l'équipe Atelier Lumen": {
+      "kind": "long",
+      "where": "rows.avis[3].Réponse suggérée"
+    },
+    "Sophie, Boulangerie Martin": {
+      "kind": "value",
+      "where": "rows.avis[4].Auteur"
+    },
+    "Les maquettes sont superbes mais le devis a augmenté en cours de route sans qu'on nous prévienne vraiment. Un peu déçue.": {
+      "kind": "long",
+      "where": "rows.avis[4].Avis"
+    },
+    "Sophie, merci de nous l'avoir dit. Vous avez raison : l'évolution du devis aurait dû être expliquée avant d'être engagée. Nous vous appelons cette semaine pour la revoir ensemble. — l'équipe Atelier Lumen": {
+      "kind": "long",
+      "where": "rows.avis[4].Réponse suggérée"
+    },
+    "Cartes": {
+      "kind": "label",
+      "where": "views[0].label"
+    },
+    "Par secteur": {
+      "kind": "label",
+      "where": "views[1].label"
+    },
+    "Par statut": {
+      "kind": "label",
+      "where": "views[2].label"
+    },
+    "Planning": {
+      "kind": "label",
+      "where": "views[3].label"
+    },
+    "Tableau": {
+      "kind": "label",
+      "where": "views[4].label"
+    },
+    "Échéances": {
+      "kind": "label",
+      "where": "views[5].label"
+    },
+    "Dépendances": {
+      "kind": "label",
+      "where": "views[6].label"
+    },
+    "Impayées": {
+      "kind": "label",
+      "where": "views[8].label"
+    },
+    "Par sentiment": {
+      "kind": "label",
+      "where": "views[9].label"
+    },
+    "Votre avis sur Atelier Lumen": {
+      "kind": "text",
+      "where": "views[10].spec.title"
+    },
+    "Deux minutes pour nous dire ce que vous avez pensé de notre travail. Merci !": {
+      "kind": "text",
+      "where": "views[10].spec.description"
+    },
+    "Votre nom et votre organisation": {
+      "kind": "text",
+      "where": "views[10].spec.fields[0].label"
+    },
+    "Votre avis": {
+      "kind": "text",
+      "where": "views[10].spec.fields[2].label"
+    },
+    "Ce qui vous a plu, ce que nous pourrions mieux faire.": {
+      "kind": "text",
+      "where": "views[10].spec.fields[2].help"
+    },
+    "Envoyer mon avis": {
+      "kind": "text",
+      "where": "views[10].spec.submit_label"
+    },
+    "Merci, votre avis nous aide à progresser.": {
+      "kind": "text",
+      "where": "views[10].spec.success_message"
+    },
+    "Donnez votre avis": {
+      "kind": "label",
+      "where": "views[10].label"
+    },
+    "Pilotage de l'agence": {
+      "kind": "label",
+      "where": "dashboards[0].label"
+    },
+    "L'essentiel en un coup d'œil.": {
+      "kind": "text",
+      "where": "dashboards[0].description"
+    },
+    "Projets en cours": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[0].title"
+    },
+    "Encaissé (HT)": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[1].title"
+    },
+    "Note moyenne des avis": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[2].title"
+    },
+    "Tâches par statut": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[3].title"
+    },
+    "Sentiment des avis": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[4].title"
+    },
+    "Prochaines échéances": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[5].title"
+    },
+    "Bienvenue": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[6].title"
+    },
+    "Cette base est une démonstration. Ouvrez « Avis clients » pour voir l'IA lire les avis, « Tâches » pour les vues kanban, calendrier et dépendances, et « Automatisations » pour ce qui se passe quand une tâche est terminée.": {
+      "kind": "text",
+      "where": "dashboards[0].blocks[6].body"
+    },
+    "Tâche terminée": {
+      "kind": "label",
+      "where": "automations[0].label"
+    },
+    "Note l'heure à laquelle une tâche passe à « Fait ».": {
+      "kind": "text",
+      "where": "automations[0].description"
+    },
+    "Avis négatif": {
+      "kind": "label",
+      "where": "automations[1].label"
+    },
+    "Prévient dès que l'IA juge un avis négatif.": {
+      "kind": "text",
+      "where": "automations[1].description"
+    },
+    "Avis négatif de {{Auteur}} : « {{Avis}} »": {
+      "kind": "message",
+      "where": "automations[1].actions[0].message"
+    },
+    "Démo : Atelier Lumen": {
+      "kind": "label",
+      "where": "label"
+    },
+    "Une petite agence, ses clients, projets, tâches, factures et avis : toutes les facettes de basedb dans une seule base.": {
+      "kind": "text",
+      "where": "summary"
+    },
+    "La base de démonstration. Atelier Lumen est une agence de design fictive. Sa base montre les relations entre tables, les recherches et cumuls (chiffre d'affaires par client, note moyenne), les formules (montant TTC, retard), trois champs calculés par l'IA sur les avis clients (sentiment, thème, réponse suggérée), chaque sorte de vue — grille, kanban, calendrier, chronologie avec dépendances, galerie, liste, formulaire —, un tableau de bord et deux automatisations.": {
+      "kind": "text",
+      "where": "description"
+    },
+    "Démonstration": {
+      "kind": "label",
+      "where": "category"
+    },
+    "IA": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Relations": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Toutes les vues": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Tableau de bord": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Démo — Atelier Lumen": {
+      "kind": "label",
+      "where": "base.label"
+    },
+    "Base de démonstration : une agence de design, ses clients, projets, tâches, factures et avis. Elle sert à explorer les relations, les calculs, l'IA, les vues, les tableaux de bord et les automatisations.": {
+      "kind": "text",
+      "where": "base.description"
+    }
+  },
+  "evenements": {
+    "Événements": {
+      "kind": "label",
+      "where": "tables.evenements.label"
+    },
+    "Nom": {
+      "kind": "label",
+      "where": "tables.evenements.fields.Nom.label"
+    },
+    "Type": {
+      "kind": "label",
+      "where": "tables.evenements.fields.Type.label"
+    },
+    "Conférence": {
+      "kind": "option",
+      "where": "tables.evenements.fields.Type.options"
+    },
+    "Atelier": {
+      "kind": "option",
+      "where": "tables.evenements.fields.Type.options"
+    },
+    "Webinaire": {
+      "kind": "option",
+      "where": "tables.evenements.fields.Type.options"
+    },
+    "Afterwork": {
+      "kind": "option",
+      "where": "tables.evenements.fields.Type.options"
+    },
+    "Début": {
+      "kind": "label",
+      "where": "tables.evenements.fields.Début.label"
+    },
+    "Fin": {
+      "kind": "label",
+      "where": "tables.evenements.fields.Fin.label"
+    },
+    "Lieu": {
+      "kind": "label",
+      "where": "tables.evenements.fields.Lieu.label"
+    },
+    "Capacité": {
+      "kind": "label",
+      "where": "tables.evenements.fields.Capacité.label"
+    },
+    "Statut": {
+      "kind": "label",
+      "where": "tables.evenements.fields.Statut.label"
+    },
+    "Brouillon": {
+      "kind": "option",
+      "where": "tables.evenements.fields.Statut.options"
+    },
+    "Ouvert": {
+      "kind": "option",
+      "where": "tables.evenements.fields.Statut.options"
+    },
+    "Complet": {
+      "kind": "option",
+      "where": "tables.evenements.fields.Statut.options"
+    },
+    "Terminé": {
+      "kind": "option",
+      "where": "tables.evenements.fields.Statut.options"
+    },
+    "Description": {
+      "kind": "label",
+      "where": "tables.evenements.fields.Description.label"
+    },
+    "Inscrits": {
+      "kind": "label",
+      "where": "tables.evenements.fields.Inscrits.label"
+    },
+    "Places restantes": {
+      "kind": "label",
+      "where": "tables.evenements.fields.Places restantes.label"
+    },
+    "Inscriptions": {
+      "kind": "label",
+      "where": "tables.inscriptions.label"
+    },
+    "Participant": {
+      "kind": "label",
+      "where": "tables.inscriptions.fields.Participant.label"
+    },
+    "Le nom de la personne inscrite.": {
+      "kind": "text",
+      "where": "tables.inscriptions.fields.Participant.description"
+    },
+    "Inscrit": {
+      "kind": "option",
+      "where": "tables.inscriptions.fields.Statut.options"
+    },
+    "Confirmé": {
+      "kind": "option",
+      "where": "tables.inscriptions.fields.Statut.options"
+    },
+    "Présent": {
+      "kind": "option",
+      "where": "tables.inscriptions.fields.Statut.options"
+    },
+    "Absent": {
+      "kind": "option",
+      "where": "tables.inscriptions.fields.Statut.options"
+    },
+    "Annulé": {
+      "kind": "option",
+      "where": "tables.inscriptions.fields.Statut.options"
+    },
+    "Inscrit le": {
+      "kind": "label",
+      "where": "tables.inscriptions.fields.Inscrit le.label"
+    },
+    "Retour": {
+      "kind": "label",
+      "where": "tables.inscriptions.fields.Retour.label"
+    },
+    "Ce que le participant a pensé de l'événement.": {
+      "kind": "text",
+      "where": "tables.inscriptions.fields.Retour.description"
+    },
+    "Sentiment": {
+      "kind": "label",
+      "where": "tables.inscriptions.fields.Sentiment.label"
+    },
+    "Enthousiaste": {
+      "kind": "option",
+      "where": "tables.inscriptions.fields.Sentiment.options"
+    },
+    "Satisfait": {
+      "kind": "option",
+      "where": "tables.inscriptions.fields.Sentiment.options"
+    },
+    "Mitigé": {
+      "kind": "option",
+      "where": "tables.inscriptions.fields.Sentiment.options"
+    },
+    "Déçu": {
+      "kind": "option",
+      "where": "tables.inscriptions.fields.Sentiment.options"
+    },
+    "Voici le retour d'un participant après un événement :\n« {{Retour}} »\nQuel est son sentiment ?": {
+      "kind": "prompt",
+      "where": "tables.inscriptions.fields.Sentiment.ai.prompt"
+    },
+    "À retenir": {
+      "kind": "label",
+      "where": "tables.inscriptions.fields.À retenir.label"
+    },
+    "Qu'est-ce que l'organisateur doit retenir de ce retour, en 15 mots au plus ? « {{Retour}} »": {
+      "kind": "prompt",
+      "where": "tables.inscriptions.fields.À retenir.ai.prompt"
+    },
+    "Participants": {
+      "kind": "label",
+      "where": "tables.participants.label"
+    },
+    "E-mail": {
+      "kind": "label",
+      "where": "tables.participants.fields.E-mail.label"
+    },
+    "Entreprise": {
+      "kind": "label",
+      "where": "tables.participants.fields.Entreprise.label"
+    },
+    "Fonction": {
+      "kind": "label",
+      "where": "tables.participants.fields.Fonction.label"
+    },
+    "Centres d'intérêt": {
+      "kind": "label",
+      "where": "tables.participants.fields.Centres d'intérêt.label"
+    },
+    "Produit": {
+      "kind": "option",
+      "where": "tables.participants.fields.Centres d'intérêt.options"
+    },
+    "Technique": {
+      "kind": "option",
+      "where": "tables.participants.fields.Centres d'intérêt.options"
+    },
+    "Marketing": {
+      "kind": "option",
+      "where": "tables.participants.fields.Centres d'intérêt.options"
+    },
+    "Ressources humaines": {
+      "kind": "option",
+      "where": "tables.participants.fields.Centres d'intérêt.options"
+    },
+    "Finance": {
+      "kind": "option",
+      "where": "tables.participants.fields.Centres d'intérêt.options"
+    },
+    "Événement": {
+      "kind": "label",
+      "where": "links.inscriptions.Événement"
+    },
+    "Personne": {
+      "kind": "label",
+      "where": "links.inscriptions.Personne"
+    },
+    "Conférence : l'IA au service des PME": {
+      "kind": "value",
+      "where": "rows.evenements[0].Nom"
+    },
+    "Lyon, salle Confluence": {
+      "kind": "value",
+      "where": "rows.evenements[0].Lieu"
+    },
+    "<p>Trois interventions et une table ronde sur des usages concrets de l'IA dans les petites entreprises.</p><h3>Programme</h3><ul><li><strong>9 h 30</strong> — Accueil et café</li><li><strong>10 h 00</strong> — Trois dirigeants de PME racontent ce que l'IA a changé chez eux</li><li><strong>11 h 15</strong> — Table ronde : par où commencer ?</li><li><strong>12 h 15</strong> — Échanges avec les intervenants</li></ul>": {
+      "kind": "rich",
+      "where": "rows.evenements[0].Description"
+    },
+    "Atelier : automatiser ses tableaux de bord": {
+      "kind": "value",
+      "where": "rows.evenements[1].Nom"
+    },
+    "Paris, espace Oberkampf": {
+      "kind": "value",
+      "where": "rows.evenements[1].Lieu"
+    },
+    "<p>Atelier pratique de trois heures, en petit groupe.</p><h3>Au programme</h3><ol><li>Relier ses sources de données.</li><li>Construire un tableau de bord qui se met à jour seul.</li><li>Recevoir chaque lundi un rapport par e-mail.</li></ol><p><strong>À apporter :</strong> votre ordinateur portable.</p>": {
+      "kind": "rich",
+      "where": "rows.evenements[1].Description"
+    },
+    "Webinaire : les nouveautés de la rentrée": {
+      "kind": "value",
+      "where": "rows.evenements[2].Nom"
+    },
+    "En ligne": {
+      "kind": "value",
+      "where": "rows.evenements[2].Lieu"
+    },
+    "<p>Présentation des nouveautés de la rentrée, puis questions-réponses avec l'équipe produit.</p><p>Le lien de connexion est envoyé la veille ; <em>l'enregistrement</em> est adressé le lendemain à tous les inscrits.</p>": {
+      "kind": "rich",
+      "where": "rows.evenements[2].Description"
+    },
+    "Afterwork clients": {
+      "kind": "value",
+      "where": "rows.evenements[3].Nom"
+    },
+    "Lyon, rooftop du centre": {
+      "kind": "value",
+      "where": "rows.evenements[3].Lieu"
+    },
+    "Claire Fontaine": {
+      "kind": "value",
+      "where": "rows.participants[0].Nom"
+    },
+    "claire.fontaine@exemple.fr": {
+      "kind": "email",
+      "where": "rows.participants[0].E-mail"
+    },
+    "Fontaine & Associés": {
+      "kind": "value",
+      "where": "rows.participants[0].Entreprise"
+    },
+    "Gérante": {
+      "kind": "value",
+      "where": "rows.participants[0].Fonction"
+    },
+    "Mehdi Saïdi": {
+      "kind": "value",
+      "where": "rows.participants[1].Nom"
+    },
+    "mehdi.saidi@exemple.fr": {
+      "kind": "email",
+      "where": "rows.participants[1].E-mail"
+    },
+    "Logistique Express": {
+      "kind": "value",
+      "where": "rows.participants[1].Entreprise"
+    },
+    "Responsable informatique": {
+      "kind": "value",
+      "where": "rows.participants[1].Fonction"
+    },
+    "Sophie Lambert": {
+      "kind": "value",
+      "where": "rows.participants[2].Nom"
+    },
+    "sophie.lambert@exemple.fr": {
+      "kind": "email",
+      "where": "rows.participants[2].E-mail"
+    },
+    "Studio Lambert": {
+      "kind": "value",
+      "where": "rows.participants[2].Entreprise"
+    },
+    "Directrice marketing": {
+      "kind": "value",
+      "where": "rows.participants[2].Fonction"
+    },
+    "Antoine Mercier": {
+      "kind": "value",
+      "where": "rows.participants[3].Nom"
+    },
+    "antoine.mercier@exemple.fr": {
+      "kind": "email",
+      "where": "rows.participants[3].E-mail"
+    },
+    "Mercier Industrie": {
+      "kind": "value",
+      "where": "rows.participants[3].Entreprise"
+    },
+    "DRH": {
+      "kind": "value",
+      "where": "rows.participants[3].Fonction"
+    },
+    "Très clair, les démonstrations étaient parfaites. J'aurais aimé une heure de plus pour les questions.": {
+      "kind": "long",
+      "where": "rows.inscriptions[3].Retour"
+    },
+    "Prévoir plus de temps pour les questions.": {
+      "kind": "value",
+      "where": "rows.inscriptions[3].À retenir"
+    },
+    "Le son coupait régulièrement et la moitié des nouveautés ne concernait pas les équipes techniques.": {
+      "kind": "long",
+      "where": "rows.inscriptions[4].Retour"
+    },
+    "Soigner le son et prévoir une session technique.": {
+      "kind": "value",
+      "where": "rows.inscriptions[4].À retenir"
+    },
+    "Calendrier": {
+      "kind": "label",
+      "where": "views[0].label"
+    },
+    "Affiches": {
+      "kind": "label",
+      "where": "views[1].label"
+    },
+    "Suivi": {
+      "kind": "label",
+      "where": "views[2].label"
+    },
+    "Retours": {
+      "kind": "label",
+      "where": "views[3].label"
+    },
+    "Rester informé de nos événements": {
+      "kind": "text",
+      "where": "views[4].spec.title"
+    },
+    "Laissez vos coordonnées : nous vous prévenons de chaque nouvel événement qui vous concerne.": {
+      "kind": "text",
+      "where": "views[4].spec.description"
+    },
+    "Prénom et nom": {
+      "kind": "text",
+      "where": "views[4].spec.fields[0].label"
+    },
+    "M'inscrire à la liste": {
+      "kind": "text",
+      "where": "views[4].spec.submit_label"
+    },
+    "C'est noté, à bientôt !": {
+      "kind": "text",
+      "where": "views[4].spec.success_message"
+    },
+    "Rejoindre la liste": {
+      "kind": "label",
+      "where": "views[4].label"
+    },
+    "Événements à venir": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[0].title"
+    },
+    "Inscriptions par statut": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[3].title"
+    },
+    "Sentiment des retours": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[4].title"
+    },
+    "Prochains événements": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[5].title"
+    },
+    "Date d'inscription": {
+      "kind": "label",
+      "where": "automations[0].label"
+    },
+    "Note la date de chaque nouvelle inscription.": {
+      "kind": "text",
+      "where": "automations[0].description"
+    },
+    "Événements et inscriptions": {
+      "kind": "label",
+      "where": "label"
+    },
+    "Conférences, ateliers et webinaires : les inscriptions, les places restantes, et les retours des participants lus par l'IA.": {
+      "kind": "text",
+      "where": "summary"
+    },
+    "Pour organiser des événements récurrents. Chaque événement compte ses inscrits et ses places restantes ; les inscriptions avancent jusqu'à la présence. Après l'événement, les participants laissent un retour que l'IA classe par sentiment et résume. Un formulaire public permet de rejoindre la liste de diffusion.": {
+      "kind": "text",
+      "where": "description"
+    },
+    "Événementiel": {
+      "kind": "label",
+      "where": "category"
+    },
+    "IA": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Formulaire": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Cumuls": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Les événements organisés, leurs participants et leurs inscriptions.": {
+      "kind": "text",
+      "where": "base.description"
+    }
+  },
+  "gestion-projet": {
+    "Projets": {
+      "kind": "label",
+      "where": "tables.projets.label"
+    },
+    "Nom": {
+      "kind": "label",
+      "where": "tables.projets.fields.Nom.label"
+    },
+    "Statut": {
+      "kind": "label",
+      "where": "tables.projets.fields.Statut.label"
+    },
+    "Idée": {
+      "kind": "option",
+      "where": "tables.projets.fields.Statut.options"
+    },
+    "Planifié": {
+      "kind": "option",
+      "where": "tables.projets.fields.Statut.options"
+    },
+    "En cours": {
+      "kind": "option",
+      "where": "tables.projets.fields.Statut.options"
+    },
+    "Terminé": {
+      "kind": "option",
+      "where": "tables.projets.fields.Statut.options"
+    },
+    "Suspendu": {
+      "kind": "option",
+      "where": "tables.projets.fields.Statut.options"
+    },
+    "Priorité": {
+      "kind": "label",
+      "where": "tables.projets.fields.Priorité.label"
+    },
+    "Haute": {
+      "kind": "option",
+      "where": "tables.projets.fields.Priorité.options"
+    },
+    "Moyenne": {
+      "kind": "option",
+      "where": "tables.projets.fields.Priorité.options"
+    },
+    "Basse": {
+      "kind": "option",
+      "where": "tables.projets.fields.Priorité.options"
+    },
+    "Début": {
+      "kind": "label",
+      "where": "tables.projets.fields.Début.label"
+    },
+    "Fin": {
+      "kind": "label",
+      "where": "tables.projets.fields.Fin.label"
+    },
+    "Budget": {
+      "kind": "label",
+      "where": "tables.projets.fields.Budget.label"
+    },
+    "Chef de projet": {
+      "kind": "label",
+      "where": "tables.projets.fields.Chef de projet.label"
+    },
+    "Description": {
+      "kind": "label",
+      "where": "tables.projets.fields.Description.label"
+    },
+    "Tâches": {
+      "kind": "label",
+      "where": "tables.projets.fields.Tâches.label"
+    },
+    "Heures prévues": {
+      "kind": "label",
+      "where": "tables.projets.fields.Heures prévues.label"
+    },
+    "Météo": {
+      "kind": "label",
+      "where": "tables.projets.fields.Météo.label"
+    },
+    "Ensoleillé": {
+      "kind": "option",
+      "where": "tables.projets.fields.Météo.options"
+    },
+    "Nuageux": {
+      "kind": "option",
+      "where": "tables.projets.fields.Météo.options"
+    },
+    "Orageux": {
+      "kind": "option",
+      "where": "tables.projets.fields.Météo.options"
+    },
+    "Voici un projet au statut « {{Statut}} », prévu du {{Début}} au {{Fin}} :\n{{Description}}\nQuelle est sa météo : tout va bien, des points d'attention, ou de sérieux problèmes ?": {
+      "kind": "prompt",
+      "where": "tables.projets.fields.Météo.ai.prompt"
+    },
+    "Titre": {
+      "kind": "label",
+      "where": "tables.taches.fields.Titre.label"
+    },
+    "À faire": {
+      "kind": "option",
+      "where": "tables.taches.fields.Statut.options"
+    },
+    "Bloqué": {
+      "kind": "option",
+      "where": "tables.taches.fields.Statut.options"
+    },
+    "Fait": {
+      "kind": "option",
+      "where": "tables.taches.fields.Statut.options"
+    },
+    "Échéance": {
+      "kind": "label",
+      "where": "tables.taches.fields.Échéance.label"
+    },
+    "Estimation (h)": {
+      "kind": "label",
+      "where": "tables.taches.fields.Estimation (h).label"
+    },
+    "Assigné à": {
+      "kind": "label",
+      "where": "tables.taches.fields.Assigné à.label"
+    },
+    "Notes": {
+      "kind": "label",
+      "where": "tables.taches.fields.Notes.label"
+    },
+    "Jours restants": {
+      "kind": "label",
+      "where": "tables.taches.fields.Jours restants.label"
+    },
+    "Négatif quand l'échéance est dépassée.": {
+      "kind": "text",
+      "where": "tables.taches.fields.Jours restants.description"
+    },
+    "Terminée le": {
+      "kind": "label",
+      "where": "tables.taches.fields.Terminée le.label"
+    },
+    "Jalons": {
+      "kind": "label",
+      "where": "tables.jalons.label"
+    },
+    "Date": {
+      "kind": "label",
+      "where": "tables.jalons.fields.Date.label"
+    },
+    "Atteint": {
+      "kind": "label",
+      "where": "tables.jalons.fields.Atteint.label"
+    },
+    "Projet": {
+      "kind": "label",
+      "where": "links.taches.Projet"
+    },
+    "Dépend de": {
+      "kind": "label",
+      "where": "links.taches.Dépend de"
+    },
+    "Les tâches à terminer avant celle-ci.": {
+      "kind": "text",
+      "where": "links.taches.Dépend de.description"
+    },
+    "Refonte du site web": {
+      "kind": "value",
+      "where": "rows.projets[0].Nom"
+    },
+    "<h3>Objectif</h3><p>Un nouveau site vitrine et un espace client.</p><h3>Où en est-on ?</h3><ul><li>Maquettes validées.</li><li>Intégration : <strong>une semaine de retard</strong>, à cause d'un changement de prestataire d'hébergement.</li></ul>": {
+      "kind": "rich",
+      "where": "rows.projets[0].Description"
+    },
+    "Déploiement du CRM": {
+      "kind": "value",
+      "where": "rows.projets[1].Nom"
+    },
+    "<h3>Objectif</h3><p>Remplacer les tableurs de l'équipe commerciale.</p><h3>Où en est-on ?</h3><ul><li>Éditeur choisi.</li><li>Formation prévue en deux sessions.</li></ul>": {
+      "kind": "rich",
+      "where": "rows.projets[1].Description"
+    },
+    "Salon professionnel de printemps": {
+      "kind": "value",
+      "where": "rows.projets[2].Nom"
+    },
+    "<h3>Objectif</h3><p>Un stand de 24 m², des supports imprimés et des démonstrations.</p><h3>Où en est-on ?</h3><ul><li>Acompte versé au fournisseur du stand.</li><li><strong>Le fournisseur ne répond plus depuis dix jours.</strong></li></ul>": {
+      "kind": "rich",
+      "where": "rows.projets[2].Description"
+    },
+    "Valider les maquettes": {
+      "kind": "value",
+      "where": "rows.taches[0].Titre"
+    },
+    "Intégrer les pages principales": {
+      "kind": "value",
+      "where": "rows.taches[1].Titre"
+    },
+    "Migrer l'hébergement": {
+      "kind": "value",
+      "where": "rows.taches[2].Titre"
+    },
+    "En attente des accès du nouveau prestataire.": {
+      "kind": "long",
+      "where": "rows.taches[2].Notes"
+    },
+    "Recette et mise en ligne": {
+      "kind": "value",
+      "where": "rows.taches[3].Titre"
+    },
+    "Paramétrer le CRM": {
+      "kind": "value",
+      "where": "rows.taches[4].Titre"
+    },
+    "Former l'équipe commerciale": {
+      "kind": "value",
+      "where": "rows.taches[5].Titre"
+    },
+    "Relancer le fournisseur du stand": {
+      "kind": "value",
+      "where": "rows.taches[6].Titre"
+    },
+    "Commander les supports imprimés": {
+      "kind": "value",
+      "where": "rows.taches[7].Titre"
+    },
+    "Maquettes validées": {
+      "kind": "value",
+      "where": "rows.jalons[0].Nom"
+    },
+    "Mise en ligne du site": {
+      "kind": "value",
+      "where": "rows.jalons[1].Nom"
+    },
+    "CRM en production": {
+      "kind": "value",
+      "where": "rows.jalons[2].Nom"
+    },
+    "Ouverture du salon": {
+      "kind": "value",
+      "where": "rows.jalons[3].Nom"
+    },
+    "Feuille de route": {
+      "kind": "label",
+      "where": "views[0].label"
+    },
+    "Portefeuille": {
+      "kind": "label",
+      "where": "views[1].label"
+    },
+    "Tableau": {
+      "kind": "label",
+      "where": "views[2].label"
+    },
+    "Planning": {
+      "kind": "label",
+      "where": "views[3].label"
+    },
+    "Calendrier": {
+      "kind": "label",
+      "where": "views[5].label"
+    },
+    "Projets en cours": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[0].title"
+    },
+    "Tâches bloquées": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[1].title"
+    },
+    "Heures restantes": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[2].title"
+    },
+    "Météo des projets": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[3].title"
+    },
+    "Tâches par statut": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[4].title"
+    },
+    "Échéances proches": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[5].title"
+    },
+    "Tâche terminée": {
+      "kind": "label",
+      "where": "automations[0].label"
+    },
+    "Note l'heure à laquelle une tâche passe à « Fait ».": {
+      "kind": "text",
+      "where": "automations[0].description"
+    },
+    "Tâche bloquée": {
+      "kind": "label",
+      "where": "automations[1].label"
+    },
+    "Prévient quand une tâche est bloquée.": {
+      "kind": "text",
+      "where": "automations[1].description"
+    },
+    "Tâche bloquée : {{Titre}}": {
+      "kind": "message",
+      "where": "automations[1].actions[0].message"
+    },
+    "Gestion de projet": {
+      "kind": "label",
+      "where": "label"
+    },
+    "Projets, tâches et jalons : une feuille de route, des dépendances entre tâches, un kanban et un calendrier.": {
+      "kind": "text",
+      "where": "summary"
+    },
+    "Pour piloter plusieurs projets en parallèle. Chaque projet cumule ses tâches et ses heures ; les tâches se suivent en kanban, se planifient sur une chronologie qui dessine leurs dépendances, et les jalons se lisent dans un calendrier. L'IA rédige une météo du projet pour la direction à partir de sa description et de son avancement.": {
+      "kind": "text",
+      "where": "description"
+    },
+    "Organisation": {
+      "kind": "label",
+      "where": "category"
+    },
+    "Chronologie": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Dépendances": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Kanban": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "IA": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Les projets de l'équipe, leurs tâches et leurs jalons.": {
+      "kind": "text",
+      "where": "base.description"
+    }
+  },
+  "inventaire": {
+    "Articles": {
+      "kind": "label",
+      "where": "tables.articles.label"
+    },
+    "Nom": {
+      "kind": "label",
+      "where": "tables.articles.fields.Nom.label"
+    },
+    "Référence": {
+      "kind": "label",
+      "where": "tables.articles.fields.Référence.label"
+    },
+    "Catégorie": {
+      "kind": "label",
+      "where": "tables.articles.fields.Catégorie.label"
+    },
+    "Matériel": {
+      "kind": "option",
+      "where": "tables.articles.fields.Catégorie.options"
+    },
+    "Consommable": {
+      "kind": "option",
+      "where": "tables.articles.fields.Catégorie.options"
+    },
+    "Mobilier": {
+      "kind": "option",
+      "where": "tables.articles.fields.Catégorie.options"
+    },
+    "Emballage": {
+      "kind": "option",
+      "where": "tables.articles.fields.Catégorie.options"
+    },
+    "Unité": {
+      "kind": "label",
+      "where": "tables.articles.fields.Unité.label"
+    },
+    "pièce": {
+      "kind": "option",
+      "where": "tables.articles.fields.Unité.options"
+    },
+    "boîte": {
+      "kind": "option",
+      "where": "tables.articles.fields.Unité.options"
+    },
+    "carton": {
+      "kind": "option",
+      "where": "tables.articles.fields.Unité.options"
+    },
+    "kg": {
+      "kind": "option",
+      "where": "tables.articles.fields.Unité.options"
+    },
+    "litre": {
+      "kind": "option",
+      "where": "tables.articles.fields.Unité.options"
+    },
+    "Seuil d'alerte": {
+      "kind": "label",
+      "where": "tables.articles.fields.Seuil d'alerte.label"
+    },
+    "Prix unitaire": {
+      "kind": "label",
+      "where": "tables.articles.fields.Prix unitaire.label"
+    },
+    "Stock": {
+      "kind": "label",
+      "where": "tables.articles.fields.Stock.label"
+    },
+    "La somme des mouvements : les sorties sont négatives.": {
+      "kind": "text",
+      "where": "tables.articles.fields.Stock.description"
+    },
+    "À commander": {
+      "kind": "label",
+      "where": "tables.articles.fields.À commander.label"
+    },
+    "Valeur du stock": {
+      "kind": "label",
+      "where": "tables.articles.fields.Valeur du stock.label"
+    },
+    "Fiche": {
+      "kind": "label",
+      "where": "tables.articles.fields.Fiche.label"
+    },
+    "Rédige en deux phrases une fiche descriptive neutre de cet article de la catégorie « {{Catégorie}} », vendu à l'unité « {{Unité}} » : {{Nom}}.": {
+      "kind": "prompt",
+      "where": "tables.articles.fields.Fiche.ai.prompt"
+    },
+    "Mouvements": {
+      "kind": "label",
+      "where": "tables.mouvements.label"
+    },
+    "Libellé": {
+      "kind": "label",
+      "where": "tables.mouvements.fields.Libellé.label"
+    },
+    "Date": {
+      "kind": "label",
+      "where": "tables.mouvements.fields.Date.label"
+    },
+    "Type": {
+      "kind": "label",
+      "where": "tables.mouvements.fields.Type.label"
+    },
+    "Entrée": {
+      "kind": "option",
+      "where": "tables.mouvements.fields.Type.options"
+    },
+    "Sortie": {
+      "kind": "option",
+      "where": "tables.mouvements.fields.Type.options"
+    },
+    "Inventaire": {
+      "kind": "option",
+      "where": "tables.mouvements.fields.Type.options"
+    },
+    "Quantité": {
+      "kind": "label",
+      "where": "tables.mouvements.fields.Quantité.label"
+    },
+    "Positive pour une entrée, négative pour une sortie.": {
+      "kind": "text",
+      "where": "tables.mouvements.fields.Quantité.description"
+    },
+    "Commentaire": {
+      "kind": "label",
+      "where": "tables.mouvements.fields.Commentaire.label"
+    },
+    "Fournisseurs": {
+      "kind": "label",
+      "where": "tables.fournisseurs.label"
+    },
+    "Contact": {
+      "kind": "label",
+      "where": "tables.fournisseurs.fields.Contact.label"
+    },
+    "E-mail": {
+      "kind": "label",
+      "where": "tables.fournisseurs.fields.E-mail.label"
+    },
+    "Téléphone": {
+      "kind": "label",
+      "where": "tables.fournisseurs.fields.Téléphone.label"
+    },
+    "Délai (jours)": {
+      "kind": "label",
+      "where": "tables.fournisseurs.fields.Délai (jours).label"
+    },
+    "Commander": {
+      "kind": "label",
+      "where": "tables.fournisseurs.fields.Commander.label"
+    },
+    "mailto:{{E-mail}}?subject=Commande": {
+      "kind": "url",
+      "where": "tables.fournisseurs.fields.Commander.button.url"
+    },
+    "Fournisseur": {
+      "kind": "label",
+      "where": "links.articles.Fournisseur"
+    },
+    "Article": {
+      "kind": "label",
+      "where": "links.mouvements.Article"
+    },
+    "Bureau Plus": {
+      "kind": "value",
+      "where": "rows.fournisseurs[0].Nom"
+    },
+    "Sandrine": {
+      "kind": "value",
+      "where": "rows.fournisseurs[0].Contact"
+    },
+    "commandes@bureauplus.example": {
+      "kind": "email",
+      "where": "rows.fournisseurs[0].E-mail"
+    },
+    "01 23 45 67 89": {
+      "kind": "value",
+      "where": "rows.fournisseurs[0].Téléphone"
+    },
+    "Emballages du Centre": {
+      "kind": "value",
+      "where": "rows.fournisseurs[1].Nom"
+    },
+    "Patrick": {
+      "kind": "value",
+      "where": "rows.fournisseurs[1].Contact"
+    },
+    "contact@emballages-centre.example": {
+      "kind": "email",
+      "where": "rows.fournisseurs[1].E-mail"
+    },
+    "InfoMatériel": {
+      "kind": "value",
+      "where": "rows.fournisseurs[2].Nom"
+    },
+    "pro@infomateriel.example": {
+      "kind": "email",
+      "where": "rows.fournisseurs[2].E-mail"
+    },
+    "Écran 27 pouces": {
+      "kind": "value",
+      "where": "rows.articles[0].Nom"
+    },
+    "3760001000011": {
+      "kind": "value",
+      "where": "rows.articles[0].Référence"
+    },
+    "Écran de 27 pouces pour poste de travail. Livré avec son pied et ses câbles.": {
+      "kind": "long",
+      "where": "rows.articles[0].Fiche"
+    },
+    "Ramette de papier A4": {
+      "kind": "value",
+      "where": "rows.articles[1].Nom"
+    },
+    "3760001000028": {
+      "kind": "value",
+      "where": "rows.articles[1].Référence"
+    },
+    "Carton de cinq ramettes de papier A4 80 g. Pour imprimantes et photocopieurs.": {
+      "kind": "long",
+      "where": "rows.articles[1].Fiche"
+    },
+    "Chaise de bureau ergonomique": {
+      "kind": "value",
+      "where": "rows.articles[2].Nom"
+    },
+    "3760001000035": {
+      "kind": "value",
+      "where": "rows.articles[2].Référence"
+    },
+    "Carton d'expédition 40 × 30 × 20": {
+      "kind": "value",
+      "where": "rows.articles[3].Nom"
+    },
+    "3760001000042": {
+      "kind": "value",
+      "where": "rows.articles[3].Référence"
+    },
+    "Clavier sans fil": {
+      "kind": "value",
+      "where": "rows.articles[4].Nom"
+    },
+    "3760001000059": {
+      "kind": "value",
+      "where": "rows.articles[4].Référence"
+    },
+    "Réception commande InfoMatériel": {
+      "kind": "value",
+      "where": "rows.mouvements[0].Libellé"
+    },
+    "Postes des nouveaux arrivants": {
+      "kind": "value",
+      "where": "rows.mouvements[1].Libellé"
+    },
+    "Commande mensuelle papier": {
+      "kind": "value",
+      "where": "rows.mouvements[2].Libellé"
+    },
+    "Consommation du mois": {
+      "kind": "value",
+      "where": "rows.mouvements[3].Libellé"
+    },
+    "Inventaire annuel": {
+      "kind": "value",
+      "where": "rows.mouvements[4].Libellé"
+    },
+    "Réception cartons": {
+      "kind": "value",
+      "where": "rows.mouvements[5].Libellé"
+    },
+    "Expéditions de la semaine": {
+      "kind": "value",
+      "where": "rows.mouvements[6].Libellé"
+    },
+    "Pic d'activité lié aux soldes.": {
+      "kind": "long",
+      "where": "rows.mouvements[6].Commentaire"
+    },
+    "Réception claviers": {
+      "kind": "value",
+      "where": "rows.mouvements[7].Libellé"
+    },
+    "Catalogue": {
+      "kind": "label",
+      "where": "views[1].label"
+    },
+    "Par catégorie": {
+      "kind": "label",
+      "where": "views[2].label"
+    },
+    "Journal": {
+      "kind": "label",
+      "where": "views[3].label"
+    },
+    "Calendrier": {
+      "kind": "label",
+      "where": "views[4].label"
+    },
+    "Stocks": {
+      "kind": "label",
+      "where": "dashboards[0].label"
+    },
+    "Articles à commander": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[0].title"
+    },
+    "Articles suivis": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[1].title"
+    },
+    "Sorties ce mois-ci": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[2].title"
+    },
+    "Articles par catégorie": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[3].title"
+    },
+    "Mouvements par type": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[4].title"
+    },
+    "Derniers mouvements": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[5].title"
+    },
+    "Grosse sortie": {
+      "kind": "label",
+      "where": "automations[0].label"
+    },
+    "Prévient quand une sortie dépasse 50 unités.": {
+      "kind": "text",
+      "where": "automations[0].description"
+    },
+    "Grosse sortie : {{Libellé}} ({{Quantité}})": {
+      "kind": "message",
+      "where": "automations[0].actions[0].message"
+    },
+    "Inventaire et stocks": {
+      "kind": "label",
+      "where": "label"
+    },
+    "Articles, fournisseurs et mouvements : le stock se calcule tout seul, les ruptures se voient d'avance.": {
+      "kind": "text",
+      "where": "summary"
+    },
+    "Pour un atelier, une boutique ou un service généraux. Chaque entrée ou sortie est un mouvement ; le stock de chaque article en est la somme, sa valeur une formule, et les articles sous leur seuil apparaissent dans « À commander ». L'IA rédige la fiche de chaque article à partir de son nom et de sa catégorie.": {
+      "kind": "text",
+      "where": "description"
+    },
+    "Opérations": {
+      "kind": "label",
+      "where": "category"
+    },
+    "Cumuls": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Formules": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Galerie": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "IA": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Les articles en stock, leurs fournisseurs et les entrées et sorties.": {
+      "kind": "text",
+      "where": "base.description"
+    }
+  },
+  "recrutement": {
+    "Candidats": {
+      "kind": "label",
+      "where": "tables.candidats.label"
+    },
+    "Nom": {
+      "kind": "label",
+      "where": "tables.candidats.fields.Nom.label"
+    },
+    "E-mail": {
+      "kind": "label",
+      "where": "tables.candidats.fields.E-mail.label"
+    },
+    "Téléphone": {
+      "kind": "label",
+      "where": "tables.candidats.fields.Téléphone.label"
+    },
+    "Étape": {
+      "kind": "label",
+      "where": "tables.candidats.fields.Étape.label"
+    },
+    "Candidature": {
+      "kind": "option",
+      "where": "tables.candidats.fields.Étape.options"
+    },
+    "Présélection": {
+      "kind": "option",
+      "where": "tables.candidats.fields.Étape.options"
+    },
+    "Entretien": {
+      "kind": "option",
+      "where": "tables.candidats.fields.Étape.options"
+    },
+    "Offre": {
+      "kind": "option",
+      "where": "tables.candidats.fields.Étape.options"
+    },
+    "Embauché": {
+      "kind": "option",
+      "where": "tables.candidats.fields.Étape.options"
+    },
+    "Refusé": {
+      "kind": "option",
+      "where": "tables.candidats.fields.Étape.options"
+    },
+    "Source": {
+      "kind": "label",
+      "where": "tables.candidats.fields.Source.label"
+    },
+    "Site carrières": {
+      "kind": "option",
+      "where": "tables.candidats.fields.Source.options"
+    },
+    "LinkedIn": {
+      "kind": "option",
+      "where": "tables.candidats.fields.Source.options"
+    },
+    "Cooptation": {
+      "kind": "option",
+      "where": "tables.candidats.fields.Source.options"
+    },
+    "Salon": {
+      "kind": "option",
+      "where": "tables.candidats.fields.Source.options"
+    },
+    "Candidature spontanée": {
+      "kind": "option",
+      "where": "tables.candidats.fields.Source.options"
+    },
+    "Reçue le": {
+      "kind": "label",
+      "where": "tables.candidats.fields.Reçue le.label"
+    },
+    "Lettre de motivation": {
+      "kind": "label",
+      "where": "tables.candidats.fields.Lettre de motivation.label"
+    },
+    "Notes": {
+      "kind": "label",
+      "where": "tables.candidats.fields.Notes.label"
+    },
+    "Les impressions de l'équipe au fil du processus.": {
+      "kind": "text",
+      "where": "tables.candidats.fields.Notes.description"
+    },
+    "Évaluation": {
+      "kind": "label",
+      "where": "tables.candidats.fields.Évaluation.label"
+    },
+    "La note de l'équipe, après entretien.": {
+      "kind": "text",
+      "where": "tables.candidats.fields.Évaluation.description"
+    },
+    "Poste visé": {
+      "kind": "label",
+      "where": "tables.candidats.fields.Poste visé.label"
+    },
+    "Synthèse": {
+      "kind": "label",
+      "where": "tables.candidats.fields.Synthèse.label"
+    },
+    "Résume en trois phrases factuelles cette candidature : parcours, motivations, points forts.\nLettre : {{Lettre de motivation}}\nNotes de l'équipe : {{Notes}}": {
+      "kind": "prompt",
+      "where": "tables.candidats.fields.Synthèse.ai.prompt"
+    },
+    "Questions à poser": {
+      "kind": "label",
+      "where": "tables.candidats.fields.Questions à poser.label"
+    },
+    "Propose trois questions précises à poser en entretien pour vérifier ce qui reste flou dans cette candidature. Une question par ligne.\nLettre : {{Lettre de motivation}}": {
+      "kind": "prompt",
+      "where": "tables.candidats.fields.Questions à poser.ai.prompt"
+    },
+    "Postes": {
+      "kind": "label",
+      "where": "tables.postes.label"
+    },
+    "Intitulé": {
+      "kind": "label",
+      "where": "tables.postes.fields.Intitulé.label"
+    },
+    "Service": {
+      "kind": "label",
+      "where": "tables.postes.fields.Service.label"
+    },
+    "Technique": {
+      "kind": "option",
+      "where": "tables.postes.fields.Service.options"
+    },
+    "Commercial": {
+      "kind": "option",
+      "where": "tables.postes.fields.Service.options"
+    },
+    "Support": {
+      "kind": "option",
+      "where": "tables.postes.fields.Service.options"
+    },
+    "Marketing": {
+      "kind": "option",
+      "where": "tables.postes.fields.Service.options"
+    },
+    "Administration": {
+      "kind": "option",
+      "where": "tables.postes.fields.Service.options"
+    },
+    "Contrat": {
+      "kind": "label",
+      "where": "tables.postes.fields.Contrat.label"
+    },
+    "CDI": {
+      "kind": "option",
+      "where": "tables.postes.fields.Contrat.options"
+    },
+    "CDD": {
+      "kind": "option",
+      "where": "tables.postes.fields.Contrat.options"
+    },
+    "Stage": {
+      "kind": "option",
+      "where": "tables.postes.fields.Contrat.options"
+    },
+    "Alternance": {
+      "kind": "option",
+      "where": "tables.postes.fields.Contrat.options"
+    },
+    "Lieu": {
+      "kind": "label",
+      "where": "tables.postes.fields.Lieu.label"
+    },
+    "Ouvert": {
+      "kind": "label",
+      "where": "tables.postes.fields.Ouvert.label"
+    },
+    "Description": {
+      "kind": "label",
+      "where": "tables.postes.fields.Description.label"
+    },
+    "Candidatures": {
+      "kind": "label",
+      "where": "tables.postes.fields.Candidatures.label"
+    },
+    "Entretiens": {
+      "kind": "label",
+      "where": "tables.entretiens.label"
+    },
+    "Titre": {
+      "kind": "label",
+      "where": "tables.entretiens.fields.Titre.label"
+    },
+    "Date": {
+      "kind": "label",
+      "where": "tables.entretiens.fields.Date.label"
+    },
+    "Type": {
+      "kind": "label",
+      "where": "tables.entretiens.fields.Type.label"
+    },
+    "Visio": {
+      "kind": "option",
+      "where": "tables.entretiens.fields.Type.options"
+    },
+    "Sur place": {
+      "kind": "option",
+      "where": "tables.entretiens.fields.Type.options"
+    },
+    "Cas pratique": {
+      "kind": "option",
+      "where": "tables.entretiens.fields.Type.options"
+    },
+    "Intervieweur": {
+      "kind": "label",
+      "where": "tables.entretiens.fields.Intervieweur.label"
+    },
+    "Avis": {
+      "kind": "label",
+      "where": "tables.entretiens.fields.Avis.label"
+    },
+    "Favorable": {
+      "kind": "option",
+      "where": "tables.entretiens.fields.Avis.options"
+    },
+    "Réservé": {
+      "kind": "option",
+      "where": "tables.entretiens.fields.Avis.options"
+    },
+    "Défavorable": {
+      "kind": "option",
+      "where": "tables.entretiens.fields.Avis.options"
+    },
+    "Compte rendu": {
+      "kind": "label",
+      "where": "tables.entretiens.fields.Compte rendu.label"
+    },
+    "Poste": {
+      "kind": "label",
+      "where": "links.candidats.Poste"
+    },
+    "Candidat": {
+      "kind": "label",
+      "where": "links.entretiens.Candidat"
+    },
+    "Développeuse ou développeur full stack": {
+      "kind": "value",
+      "where": "rows.postes[0].Intitulé"
+    },
+    "Lyon ou télétravail": {
+      "kind": "value",
+      "where": "rows.postes[0].Lieu"
+    },
+    "<p>Faire évoluer notre application web (TypeScript, PostgreSQL) au sein d'une équipe de six personnes.</p><h3>Vos missions</h3><ul><li>Concevoir et livrer de nouvelles fonctionnalités, de la base de données à l'interface.</li><li>Relire le code de l'équipe et partager les bonnes pratiques.</li><li>Prendre part aux choix techniques.</li></ul><h3>Votre profil</h3><ul><li>Trois ans d'expérience au moins en développement web.</li><li>À l'aise avec TypeScript et SQL.</li></ul><p>Poste basé à Lyon, <strong>télétravail complet possible</strong>.</p>": {
+      "kind": "rich",
+      "where": "rows.postes[0].Description"
+    },
+    "Chargé·e de clientèle": {
+      "kind": "value",
+      "where": "rows.postes[1].Intitulé"
+    },
+    "Paris": {
+      "kind": "value",
+      "where": "rows.postes[1].Lieu"
+    },
+    "<p>Accompagner une cinquantaine de clients PME, de la signature au renouvellement.</p><h3>Vos missions</h3><ul><li>Accueillir chaque nouveau client et suivre sa mise en route.</li><li>Faire régulièrement le point avec vos clients et repérer leurs nouveaux besoins.</li><li>Préparer les renouvellements avec l'équipe commerciale.</li></ul><h3>Votre profil</h3><ul><li>Une première expérience de la relation client, idéalement auprès d'entreprises.</li><li>Le sens de l'écoute et de l'organisation.</li></ul>": {
+      "kind": "rich",
+      "where": "rows.postes[1].Description"
+    },
+    "Stage marketing de contenu": {
+      "kind": "value",
+      "where": "rows.postes[2].Intitulé"
+    },
+    "Lyon": {
+      "kind": "value",
+      "where": "rows.postes[2].Lieu"
+    },
+    "<p>Six mois pour produire articles, vidéos et newsletters avec l'équipe marketing.</p><h3>Ce que vous ferez</h3><ul><li>Rédiger des articles de blog et des témoignages clients.</li><li>Monter de courtes vidéos pour les réseaux sociaux.</li><li>Préparer la newsletter mensuelle.</li></ul><p><em>Stage de fin d'études.</em></p>": {
+      "kind": "rich",
+      "where": "rows.postes[2].Description"
+    },
+    "Inès Garnier": {
+      "kind": "value",
+      "where": "rows.candidats[0].Nom"
+    },
+    "ines.garnier@exemple.fr": {
+      "kind": "email",
+      "where": "rows.candidats[0].E-mail"
+    },
+    "06 12 34 56 78": {
+      "kind": "value",
+      "where": "rows.candidats[0].Téléphone"
+    },
+    "Cinq ans de développement web dans une agence, dont deux en tant que référente technique. J'ai migré une application de PHP vers TypeScript et je cherche un produit sur lequel m'investir dans la durée.": {
+      "kind": "long",
+      "where": "rows.candidats[0].Lettre de motivation"
+    },
+    "Très bon premier appel. À vérifier : expérience de PostgreSQL au-delà des requêtes simples.": {
+      "kind": "long",
+      "where": "rows.candidats[0].Notes"
+    },
+    "Développeuse avec cinq ans d'expérience en agence, dont deux comme référente technique. A mené une migration vers TypeScript. Cherche un produit pour s'investir durablement.": {
+      "kind": "long",
+      "where": "rows.candidats[0].Synthèse"
+    },
+    "Quelle a été la plus grande difficulté de la migration vers TypeScript ?\nQuelles requêtes PostgreSQL complexes avez-vous déjà écrites ?\nQu'attendez-vous d'une équipe produit par rapport à une agence ?": {
+      "kind": "long",
+      "where": "rows.candidats[0].Questions à poser"
+    },
+    "Tom Leroy": {
+      "kind": "value",
+      "where": "rows.candidats[1].Nom"
+    },
+    "tom.leroy@exemple.fr": {
+      "kind": "email",
+      "where": "rows.candidats[1].E-mail"
+    },
+    "Commercial terrain depuis trois ans dans l'équipement de bureau, j'aimerais évoluer vers un rôle de suivi de clients dans le logiciel.": {
+      "kind": "long",
+      "where": "rows.candidats[1].Lettre de motivation"
+    },
+    "Mathilde Roux": {
+      "kind": "value",
+      "where": "rows.candidats[2].Nom"
+    },
+    "mathilde.roux@exemple.fr": {
+      "kind": "email",
+      "where": "rows.candidats[2].E-mail"
+    },
+    "Développeuse back-end, spécialiste des bases de données. J'ai conçu le modèle de données d'une application de gestion utilisée par 200 entreprises.": {
+      "kind": "long",
+      "where": "rows.candidats[2].Lettre de motivation"
+    },
+    "Excellente au cas pratique. Prétentions salariales dans le haut de la fourchette.": {
+      "kind": "long",
+      "where": "rows.candidats[2].Notes"
+    },
+    "Yanis Belkacem": {
+      "kind": "value",
+      "where": "rows.candidats[3].Nom"
+    },
+    "yanis.b@exemple.fr": {
+      "kind": "email",
+      "where": "rows.candidats[3].E-mail"
+    },
+    "Rencontré sur votre stand au salon de l'entrepreneuriat. Deux ans de relation client chez un opérateur télécom.": {
+      "kind": "long",
+      "where": "rows.candidats[3].Lettre de motivation"
+    },
+    "Clara Nguyen": {
+      "kind": "value",
+      "where": "rows.candidats[4].Nom"
+    },
+    "clara.nguyen@exemple.fr": {
+      "kind": "email",
+      "where": "rows.candidats[4].E-mail"
+    },
+    "Étudiante en école de communication, je cherche un stage de six mois en marketing de contenu.": {
+      "kind": "long",
+      "where": "rows.candidats[4].Lettre de motivation"
+    },
+    "Profil intéressant mais le stage a été pourvu.": {
+      "kind": "long",
+      "where": "rows.candidats[4].Notes"
+    },
+    "Inès Garnier — entretien technique": {
+      "kind": "value",
+      "where": "rows.entretiens[0].Titre"
+    },
+    "Inès Garnier — premier appel": {
+      "kind": "value",
+      "where": "rows.entretiens[1].Titre"
+    },
+    "Motivée, parcours cohérent, bonne communication.": {
+      "kind": "long",
+      "where": "rows.entretiens[1].Compte rendu"
+    },
+    "Mathilde Roux — cas pratique": {
+      "kind": "value",
+      "where": "rows.entretiens[2].Titre"
+    },
+    "Modèle de données très propre, bonnes explications de ses choix.": {
+      "kind": "long",
+      "where": "rows.entretiens[2].Compte rendu"
+    },
+    "Yanis Belkacem — appel de présélection": {
+      "kind": "value",
+      "where": "rows.entretiens[3].Titre"
+    },
+    "Pipeline": {
+      "kind": "label",
+      "where": "views[0].label"
+    },
+    "À traiter": {
+      "kind": "label",
+      "where": "views[1].label"
+    },
+    "Postuler": {
+      "kind": "text",
+      "where": "views[2].spec.title"
+    },
+    "Présentez-vous en quelques lignes : nous répondons à chaque candidature sous dix jours.": {
+      "kind": "text",
+      "where": "views[2].spec.description"
+    },
+    "Prénom et nom": {
+      "kind": "text",
+      "where": "views[2].spec.fields[0].label"
+    },
+    "Pourquoi nous rejoindre ?": {
+      "kind": "text",
+      "where": "views[2].spec.fields[3].label"
+    },
+    "Votre parcours, ce que vous cherchez, le poste qui vous intéresse.": {
+      "kind": "text",
+      "where": "views[2].spec.fields[3].help"
+    },
+    "Envoyer ma candidature": {
+      "kind": "text",
+      "where": "views[2].spec.submit_label"
+    },
+    "Merci ! Nous revenons vers vous sous dix jours.": {
+      "kind": "text",
+      "where": "views[2].spec.success_message"
+    },
+    "Agenda": {
+      "kind": "label",
+      "where": "views[3].label"
+    },
+    "Postes ouverts": {
+      "kind": "label",
+      "where": "views[4].label"
+    },
+    "Recrutements": {
+      "kind": "label",
+      "where": "dashboards[0].label"
+    },
+    "Candidatures en cours": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[0].title"
+    },
+    "Évaluation moyenne": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[2].title"
+    },
+    "Par étape": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[3].title"
+    },
+    "Sources": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[4].title"
+    },
+    "Prochains entretiens": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[5].title"
+    },
+    "Nouvelle candidature": {
+      "kind": "label",
+      "where": "automations[0].label"
+    },
+    "Prévient à chaque candidature reçue.": {
+      "kind": "text",
+      "where": "automations[0].description"
+    },
+    "Nouvelle candidature : {{Nom}}": {
+      "kind": "message",
+      "where": "automations[0].actions[0].message"
+    },
+    "Recrutement": {
+      "kind": "label",
+      "where": "label"
+    },
+    "Postes ouverts, candidats et entretiens ; l'IA synthétise chaque candidature et suggère les points à creuser.": {
+      "kind": "text",
+      "where": "summary"
+    },
+    "Un suivi des recrutements, de la candidature à l'embauche. Les candidats postulent par un formulaire public, avancent étape par étape dans un kanban, et les entretiens se planifient dans un calendrier. L'IA lit la lettre de motivation et les notes : une synthèse, et les questions à poser en entretien. Elle aide à lire, elle ne décide pas.": {
+      "kind": "text",
+      "where": "description"
+    },
+    "Ressources humaines": {
+      "kind": "label",
+      "where": "category"
+    },
+    "IA": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Formulaire": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Kanban": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Calendrier": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Les postes ouverts, les candidatures reçues et les entretiens.": {
+      "kind": "text",
+      "where": "base.description"
+    }
+  },
+  "suivi-tickets": {
+    "Tickets": {
+      "kind": "label",
+      "where": "tables.tickets.label"
+    },
+    "Un ticket par problème signalé ou demande d'évolution.": {
+      "kind": "text",
+      "where": "tables.tickets.description"
+    },
+    "Titre": {
+      "kind": "label",
+      "where": "tables.tickets.fields.Titre.label"
+    },
+    "Le problème ou la demande, en une phrase.": {
+      "kind": "text",
+      "where": "tables.tickets.fields.Titre.description"
+    },
+    "N°": {
+      "kind": "label",
+      "where": "tables.tickets.fields.N°.label"
+    },
+    "Numéro du ticket, attribué à la création.": {
+      "kind": "text",
+      "where": "tables.tickets.fields.N°.description"
+    },
+    "Description": {
+      "kind": "label",
+      "where": "tables.tickets.fields.Description.label"
+    },
+    "Ce qui se passe, ce qui était attendu, comment le reproduire.": {
+      "kind": "text",
+      "where": "tables.tickets.fields.Description.description"
+    },
+    "Statut": {
+      "kind": "label",
+      "where": "tables.tickets.fields.Statut.label"
+    },
+    "Nouveau": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Statut.options"
+    },
+    "À faire": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Statut.options"
+    },
+    "En cours": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Statut.options"
+    },
+    "En revue": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Statut.options"
+    },
+    "Résolu": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Statut.options"
+    },
+    "Fermé": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Statut.options"
+    },
+    "Priorité": {
+      "kind": "label",
+      "where": "tables.tickets.fields.Priorité.label"
+    },
+    "Critique": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Priorité.options"
+    },
+    "Haute": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Priorité.options"
+    },
+    "Normale": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Priorité.options"
+    },
+    "Basse": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Priorité.options"
+    },
+    "Catégorie": {
+      "kind": "label",
+      "where": "tables.tickets.fields.Catégorie.label"
+    },
+    "Proposée par l'IA à partir du titre et de la description.": {
+      "kind": "text",
+      "where": "tables.tickets.fields.Catégorie.description"
+    },
+    "Bug": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Catégorie.options"
+    },
+    "Évolution": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Catégorie.options"
+    },
+    "Question": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Catégorie.options"
+    },
+    "Performance": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Catégorie.options"
+    },
+    "Sécurité": {
+      "kind": "option",
+      "where": "tables.tickets.fields.Catégorie.options"
+    },
+    "Classe ce ticket d'une équipe logiciel.\nTitre : {{Titre}}\nDescription : {{Description}}": {
+      "kind": "prompt",
+      "where": "tables.tickets.fields.Catégorie.ai.prompt"
+    },
+    "Gravité estimée": {
+      "kind": "label",
+      "where": "tables.tickets.fields.Gravité estimée.label"
+    },
+    "L'avis de l'IA, pour aider au tri ; la priorité reste une décision de l'équipe.": {
+      "kind": "text",
+      "where": "tables.tickets.fields.Gravité estimée.description"
+    },
+    "Sur une échelle de 1 (gêne mineure) à 5 (service inutilisable ou données en danger), quelle est la gravité de ce problème pour les utilisateurs ?\nTitre : {{Titre}}\nDescription : {{Description}}": {
+      "kind": "prompt",
+      "where": "tables.tickets.fields.Gravité estimée.ai.prompt"
+    },
+    "Résumé": {
+      "kind": "label",
+      "where": "tables.tickets.fields.Résumé.label"
+    },
+    "Résume ce ticket en une phrase de 15 mots au plus, sans jargon.\n{{Titre}} — {{Description}}": {
+      "kind": "prompt",
+      "where": "tables.tickets.fields.Résumé.ai.prompt"
+    },
+    "Assigné à": {
+      "kind": "label",
+      "where": "tables.tickets.fields.Assigné à.label"
+    },
+    "Signalé par": {
+      "kind": "label",
+      "where": "tables.tickets.fields.Signalé par.label"
+    },
+    "Ouvert le": {
+      "kind": "label",
+      "where": "tables.tickets.fields.Ouvert le.label"
+    },
+    "Estimation (points)": {
+      "kind": "label",
+      "where": "tables.tickets.fields.Estimation (points).label"
+    },
+    "Résolu le": {
+      "kind": "label",
+      "where": "tables.tickets.fields.Résolu le.label"
+    },
+    "Rempli par l'automatisation « Date de résolution ».": {
+      "kind": "text",
+      "where": "tables.tickets.fields.Résolu le.description"
+    },
+    "Âge (jours)": {
+      "kind": "label",
+      "where": "tables.tickets.fields.Âge (jours).label"
+    },
+    "Depuis combien de jours le ticket est ouvert.": {
+      "kind": "text",
+      "where": "tables.tickets.fields.Âge (jours).description"
+    },
+    "Composants": {
+      "kind": "label",
+      "where": "tables.composants.label"
+    },
+    "Les parties du produit, pour savoir où se concentrent les problèmes.": {
+      "kind": "text",
+      "where": "tables.composants.description"
+    },
+    "Nom": {
+      "kind": "label",
+      "where": "tables.composants.fields.Nom.label"
+    },
+    "Responsable": {
+      "kind": "label",
+      "where": "tables.composants.fields.Responsable.label"
+    },
+    "Sprints": {
+      "kind": "label",
+      "where": "tables.sprints.label"
+    },
+    "Les itérations de deux semaines de l'équipe.": {
+      "kind": "text",
+      "where": "tables.sprints.description"
+    },
+    "Début": {
+      "kind": "label",
+      "where": "tables.sprints.fields.Début.label"
+    },
+    "Fin": {
+      "kind": "label",
+      "where": "tables.sprints.fields.Fin.label"
+    },
+    "Objectif": {
+      "kind": "label",
+      "where": "tables.sprints.fields.Objectif.label"
+    },
+    "Points engagés": {
+      "kind": "label",
+      "where": "tables.sprints.fields.Points engagés.label"
+    },
+    "Composant": {
+      "kind": "label",
+      "where": "links.tickets.Composant"
+    },
+    "Sprint": {
+      "kind": "label",
+      "where": "links.tickets.Sprint"
+    },
+    "Bloqué par": {
+      "kind": "label",
+      "where": "links.tickets.Bloqué par"
+    },
+    "Les tickets à résoudre avant celui-ci.": {
+      "kind": "text",
+      "where": "links.tickets.Bloqué par.description"
+    },
+    "Application mobile": {
+      "kind": "value",
+      "where": "rows.composants[0].Nom"
+    },
+    "Site web": {
+      "kind": "value",
+      "where": "rows.composants[1].Nom"
+    },
+    "API": {
+      "kind": "value",
+      "where": "rows.composants[2].Nom"
+    },
+    "Paiement": {
+      "kind": "value",
+      "where": "rows.composants[3].Nom"
+    },
+    "Sprint 14": {
+      "kind": "value",
+      "where": "rows.sprints[0].Nom"
+    },
+    "Stabiliser le paiement avant les soldes.": {
+      "kind": "long",
+      "where": "rows.sprints[0].Objectif"
+    },
+    "Sprint 15": {
+      "kind": "value",
+      "where": "rows.sprints[1].Nom"
+    },
+    "Nouveau parcours d'inscription sur mobile.": {
+      "kind": "long",
+      "where": "rows.sprints[1].Objectif"
+    },
+    "Sprint 16": {
+      "kind": "value",
+      "where": "rows.sprints[2].Nom"
+    },
+    "Performances de l'API.": {
+      "kind": "long",
+      "where": "rows.sprints[2].Objectif"
+    },
+    "L'application plante à l'ouverture sur Android 12": {
+      "kind": "value",
+      "where": "rows.tickets[0].Titre"
+    },
+    "Depuis la version 3.4, l'application se ferme aussitôt ouverte sur plusieurs Pixel 6. Aucun message d'erreur.": {
+      "kind": "long",
+      "where": "rows.tickets[0].Description"
+    },
+    "support@exemple.fr": {
+      "kind": "email",
+      "where": "rows.tickets[0].Signalé par"
+    },
+    "Plantage immédiat au démarrage sur certains téléphones Android 12.": {
+      "kind": "value",
+      "where": "rows.tickets[0].Résumé"
+    },
+    "Double débit lors d'un paiement par carte": {
+      "kind": "value",
+      "where": "rows.tickets[1].Titre"
+    },
+    "Deux clients ont été débités deux fois après avoir cliqué deux fois sur « Payer ». Le bouton ne se désactive pas.": {
+      "kind": "long",
+      "where": "rows.tickets[1].Description"
+    },
+    "Un double clic sur « Payer » débite deux fois le client.": {
+      "kind": "value",
+      "where": "rows.tickets[1].Résumé"
+    },
+    "Pouvoir se connecter avec son compte Apple": {
+      "kind": "value",
+      "where": "rows.tickets[2].Titre"
+    },
+    "Plusieurs utilisateurs iPhone demandent la connexion avec Apple, plus rapide que la création d'un mot de passe.": {
+      "kind": "long",
+      "where": "rows.tickets[2].Description"
+    },
+    "Ajouter la connexion avec un compte Apple.": {
+      "kind": "value",
+      "where": "rows.tickets[2].Résumé"
+    },
+    "La liste des commandes met 8 secondes à charger": {
+      "kind": "value",
+      "where": "rows.tickets[3].Titre"
+    },
+    "Pour les clients qui ont plus de 200 commandes, la page « Mes commandes » est très lente.": {
+      "kind": "long",
+      "where": "rows.tickets[3].Description"
+    },
+    "La page des commandes est très lente pour les gros clients.": {
+      "kind": "value",
+      "where": "rows.tickets[3].Résumé"
+    },
+    "Mot de passe visible dans les journaux du serveur": {
+      "kind": "value",
+      "where": "rows.tickets[4].Titre"
+    },
+    "La requête de connexion est journalisée avec son corps complet, mot de passe compris.": {
+      "kind": "long",
+      "where": "rows.tickets[4].Description"
+    },
+    "Les mots de passe apparaissent en clair dans les journaux.": {
+      "kind": "value",
+      "where": "rows.tickets[4].Résumé"
+    },
+    "Comment exporter mes factures ?": {
+      "kind": "value",
+      "where": "rows.tickets[5].Titre"
+    },
+    "Je ne trouve pas où télécharger mes factures de l'année dernière pour ma comptabilité.": {
+      "kind": "long",
+      "where": "rows.tickets[5].Description"
+    },
+    "client@exemple.fr": {
+      "kind": "email",
+      "where": "rows.tickets[5].Signalé par"
+    },
+    "Un client cherche comment télécharger ses factures.": {
+      "kind": "value",
+      "where": "rows.tickets[5].Résumé"
+    },
+    "Le bouton « Payer » reste cliquable pendant le traitement": {
+      "kind": "value",
+      "where": "rows.tickets[6].Titre"
+    },
+    "Cause du double débit : désactiver le bouton et afficher un indicateur de chargement.": {
+      "kind": "long",
+      "where": "rows.tickets[6].Description"
+    },
+    "Désactiver le bouton de paiement pendant le traitement.": {
+      "kind": "value",
+      "where": "rows.tickets[6].Résumé"
+    },
+    "Nouveau parcours d'inscription en trois étapes": {
+      "kind": "value",
+      "where": "rows.tickets[7].Titre"
+    },
+    "Réduire le formulaire d'inscription à trois écrans : e-mail, mot de passe, préférences.": {
+      "kind": "long",
+      "where": "rows.tickets[7].Description"
+    },
+    "Simplifier l'inscription mobile en trois écrans.": {
+      "kind": "value",
+      "where": "rows.tickets[7].Résumé"
+    },
+    "Mettre en cache le détail des produits": {
+      "kind": "value",
+      "where": "rows.tickets[8].Titre"
+    },
+    "Chaque fiche produit interroge la base à chaque affichage ; un cache de 5 minutes suffirait.": {
+      "kind": "long",
+      "where": "rows.tickets[8].Description"
+    },
+    "Ajouter un cache court sur les fiches produit.": {
+      "kind": "value",
+      "where": "rows.tickets[8].Résumé"
+    },
+    "Tableau": {
+      "kind": "label",
+      "where": "views[0].label"
+    },
+    "À trier": {
+      "kind": "label",
+      "where": "views[1].label"
+    },
+    "Ouverts par priorité": {
+      "kind": "label",
+      "where": "views[2].label"
+    },
+    "Par composant": {
+      "kind": "label",
+      "where": "views[3].label"
+    },
+    "Signaler un problème": {
+      "kind": "text",
+      "where": "views[4].spec.title"
+    },
+    "Décrivez ce qui ne va pas : l'équipe reçoit votre ticket immédiatement.": {
+      "kind": "text",
+      "where": "views[4].spec.description"
+    },
+    "En une phrase, que se passe-t-il ?": {
+      "kind": "text",
+      "where": "views[4].spec.fields[0].label"
+    },
+    "Ce que vous faisiez, ce qui s'est passé, ce que vous attendiez.": {
+      "kind": "text",
+      "where": "views[4].spec.fields[1].help"
+    },
+    "Votre e-mail": {
+      "kind": "text",
+      "where": "views[4].spec.fields[2].label"
+    },
+    "Envoyer le signalement": {
+      "kind": "text",
+      "where": "views[4].spec.submit_label"
+    },
+    "Merci ! Votre signalement a été transmis à l'équipe.": {
+      "kind": "text",
+      "where": "views[4].spec.success_message"
+    },
+    "Planning": {
+      "kind": "label",
+      "where": "views[5].label"
+    },
+    "Santé du produit": {
+      "kind": "label",
+      "where": "dashboards[0].label"
+    },
+    "Tickets ouverts": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[0].title"
+    },
+    "Critiques ouverts": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[1].title"
+    },
+    "Par catégorie": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[3].title"
+    },
+    "Par statut": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[4].title"
+    },
+    "Critiques à traiter": {
+      "kind": "label",
+      "where": "dashboards[0].blocks[5].title"
+    },
+    "Date de résolution": {
+      "kind": "label",
+      "where": "automations[0].label"
+    },
+    "Note quand un ticket passe à « Résolu ».": {
+      "kind": "text",
+      "where": "automations[0].description"
+    },
+    "Ticket critique": {
+      "kind": "label",
+      "where": "automations[1].label"
+    },
+    "Prévient dès qu'un ticket est marqué critique.": {
+      "kind": "text",
+      "where": "automations[1].description"
+    },
+    "Ticket critique : {{Titre}}": {
+      "kind": "message",
+      "where": "automations[1].actions[0].message"
+    },
+    "Suivi de tickets": {
+      "kind": "label",
+      "where": "label"
+    },
+    "Bugs et demandes triés par l'IA, suivis par sprint jusqu'à leur résolution, avec un formulaire de signalement.": {
+      "kind": "text",
+      "where": "summary"
+    },
+    "Un gestionnaire de tickets pour une équipe produit. Chaque ticket est rattaché à un composant et à un sprint ; l'IA propose une catégorie, estime la gravité et résume le signalement. Un kanban suit l'avancement, une chronologie montre les sprints, un formulaire permet à n'importe qui de signaler un problème, et une automatisation note la date de résolution.": {
+      "kind": "text",
+      "where": "description"
+    },
+    "Produit et technique": {
+      "kind": "label",
+      "where": "category"
+    },
+    "IA": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Kanban": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Formulaire": {
+      "kind": "tag",
+      "where": "tags"
+    },
+    "Les bugs et demandes de l'équipe produit, du signalement à la résolution.": {
+      "kind": "text",
+      "where": "base.description"
+    }
+  }
+}

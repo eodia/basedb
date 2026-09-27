@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 /**
@@ -11,6 +11,12 @@ import { fileURLToPath } from 'node:url'
 
 /** Where the files are — the site reads the same directory. */
 export const CATALOG_DIR = fileURLToPath(new URL('../catalog/', import.meta.url))
+
+/**
+ * Where their texts in the other languages are: `i18n/<langue>/<clé>.json`, each the French
+ * text → its translation (`localizeTemplate` of `@basedb/contracts` applies it).
+ */
+export const I18N_DIR = fileURLToPath(new URL('../i18n/', import.meta.url))
 
 export interface BundledTemplate {
   /** The file's name, `suivi-tickets.json`. */
@@ -31,4 +37,22 @@ export function bundledTemplates(): BundledTemplate[] {
         return { file, raw: null }
       }
     })
+}
+
+/**
+ * The dictionaries of one language, by template key — empty for a language that has none
+ * (French, the templates' own). A file that does not parse is left out.
+ */
+export function bundledDictionaries(locale: string): Record<string, Record<string, string>> {
+  const dir = `${I18N_DIR}${locale}/`
+  if (!/^[A-Za-z-]{2,10}$/.test(locale) || !existsSync(dir)) return {}
+  const out: Record<string, Record<string, string>> = {}
+  for (const file of readdirSync(dir).filter((f) => f.endsWith('.json'))) {
+    try {
+      out[file.replace(/\.json$/, '')] = JSON.parse(readFileSync(`${dir}${file}`, 'utf8'))
+    } catch {
+      // Left out: the template reads in French.
+    }
+  }
+  return out
 }
