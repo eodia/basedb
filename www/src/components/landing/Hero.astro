@@ -1,13 +1,13 @@
 ---
 import { type Locale, fill, i18n } from '../../i18n';
-import { DEMO_URL } from '../../lib/demo';
+import { demoUrl } from '../../lib/demo';
 
 interface Props {
 	locale: Locale;
 }
 
 const { locale } = Astro.props;
-const { t, href, html, number } = i18n(locale);
+const { t, lang, href, html, number } = i18n(locale);
 const demo = t.hero.demo;
 const dockerCmd = 'docker compose up -d';
 
@@ -64,7 +64,7 @@ const psqlResult = [
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
 				{t.hero.install}
 			</a>
-			<a href={DEMO_URL} class="bd-btn bd-btn-secondary">{t.demo.cta}</a>
+			<a href={demoUrl(lang)} class="bd-btn bd-btn-secondary">{t.demo.cta}</a>
 			<a href="#fonctionnalites" class="bd-btn bd-btn-secondary">{t.hero.features}</a>
 		</div>
 		<div class="docker">

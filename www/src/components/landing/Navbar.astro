@@ -11,7 +11,7 @@
  * Under 1024 px the same content unfolds in a sheet, section by section.
  */
 import { type Locale, i18n } from '../../i18n';
-import { DEMO_URL } from '../../lib/demo';
+import { demoUrl } from '../../lib/demo';
 import { catalog, templateText } from '../../lib/modeles';
 import Icon from './Icon.astro';
 import type { IconName } from './icons';
@@ -25,7 +25,7 @@ interface Props {
 }
 
 const { locale, path } = Astro.props;
-const { t, href, date } = i18n(locale);
+const { t, lang, href, date } = i18n(locale);
 const m = t.nav.menu;
 
 /** Each entry's icon, by its key in the dictionary. */
@@ -301,7 +301,7 @@ const resources = groupsOf(m.resources.groups);
 				>
 				<span class="gh-label">GitHub</span>
 			</a>
-			<a href={DEMO_URL} class="bd-nav-demo">{t.demo.short}</a>
+			<a href={demoUrl(lang)} class="bd-nav-demo">{t.demo.short}</a>
 			<a href={href('/guides/installation/')} class="bd-nav-cta">{t.nav.install}</a>
 			<button type="button" class="bd-burger" aria-expanded="false" aria-controls="bd-sheet" aria-label={m.open} data-open-label={m.open} data-close-label={m.close}>
 				<span></span><span></span>
@@ -398,7 +398,7 @@ const resources = groupsOf(m.resources.groups);
 	</details>
 	<div class="sheet-actions">
 		<a href={href('/guides/installation/')} class="bd-btn bd-btn-primary">{t.nav.install}</a>
-		<a href={DEMO_URL} class="bd-btn bd-btn-secondary">{t.demo.cta}</a>
+		<a href={demoUrl(lang)} class="bd-btn bd-btn-secondary">{t.demo.cta}</a>
 		<a href="https://github.com/eodia/basedb" class="bd-btn bd-btn-secondary">GitHub</a>
 	</div>
 </div>

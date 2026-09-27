@@ -11,7 +11,7 @@
  * a plain first screen: the headline, then the table.
  */
 import { type Locale, i18n } from '../../i18n';
-import { DEMO_URL } from '../../lib/demo';
+import { demoUrl } from '../../lib/demo';
 import Stage from './Stage.astro';
 
 interface Props {
@@ -19,7 +19,7 @@ interface Props {
 }
 
 const { locale } = Astro.props;
-const { t, href } = i18n(locale);
+const { t, lang, href } = i18n(locale);
 const h = t.teams.hero;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const STEPS = ['grid', 'copilot', 'kanban', 'calendar', 'dashboard'] as const;
@@ -42,7 +42,7 @@ const steps = STEPS.map((id) => ({ id, ...t.teams.story[id], label: t.teams.stag
 			<p class="tm-lede">{h.lead}</p>
 			<div class="tm-actions">
 				<a class="tm-pill" href={href('/modeles/')}>{h.primary}</a>
-				<a class="tm-pill ghost" href={DEMO_URL}>{t.demo.cta}</a>
+				<a class="tm-pill ghost" href={demoUrl(lang)}>{t.demo.cta}</a>
 				<a class="tm-link watch" href="#demo" data-play-demo>
 					<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor" opacity="0.14"></circle><path d="M10 8.2v7.6a.6.6 0 0 0 .9.5l6-3.8a.6.6 0 0 0 0-1l-6-3.8a.6.6 0 0 0-.9.5z" fill="currentColor"></path></svg>
 					{h.secondary}

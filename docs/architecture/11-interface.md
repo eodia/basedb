@@ -1005,9 +1005,12 @@ sans choix, la première langue du navigateur que basedb parle ; sinon l'anglais
 est servie dans sa langue : la mise en page racine lit le cookie `basedb-locale` — le choix
 du compte, retenu par le navigateur, puisque l'écran de connexion et les pages partagées se
 dessinent avant que quiconque soit connu — et, à défaut, `Accept-Language`, puis place le
-catalogue de cette langue dans la page, avant tout script de l'application. Changer de
-langue recharge la page : une table de libellés appelle `$t` une fois, au chargement de son
-module. L'application ne se dessine que dans le navigateur (`I18nRoot`) : le serveur ne
+catalogue de cette langue dans la page, avant tout script de l'application. Un lien peut
+demander une langue — `?lang=de`, comme le site public vers la démo — : le middleware
+(`apps/web/src/middleware.ts`) la retient dans ce cookie comme si elle avait été choisie,
+puis renvoie à la même adresse sans le paramètre, pour qu'un rechargement n'écrase pas,
+plus tard, la langue du compte connecté. Changer de langue recharge la page : une table de
+libellés appelle `$t` une fois, au chargement de son module. L'application ne se dessine que dans le navigateur (`I18nRoot`) : le serveur ne
 connaît pas les messages du lecteur, et ce qu'il dessinerait ne correspondrait pas.
 
 Les nombres, les dates, les noms des mois et des jours suivent la langue (`Intl`, et les
@@ -1017,8 +1020,8 @@ répondent dans la langue de l'écran, que chaque appel porte (`x-basedb-locale`
 l'ébauche de base par l'IA propose des libellés dans cette langue ; les courriels partent
 dans la langue du compte, sinon dans celle de la requête. Restent en français, parce que
 ce ne sont pas des textes d'interface : les noms physiques, le langage des formules (`SI`,
-`ARRONDI`…), les commentaires `COMMENT ON` lus par `psql`, le contenu des modèles de base —
-leur carte de galerie, elle, est traduite.
+`ARRONDI`…), les commentaires `COMMENT ON` lus par `psql`. Les modèles de base officiels
+sont servis dans la langue de l'écran, par leurs dictionnaires (chapitre 20 §3.4).
 
 L'outillage est dans `tooling/i18n/` : `codemod.mjs` enveloppe les textes français d'un
 fichier dans `$t`, `extract.mjs` dresse le catalogue source, `check.mjs` vérifie chaque
