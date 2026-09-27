@@ -1,6 +1,6 @@
 ---
 title: Yhteistyö
-description: Kommentit ja maininnat, ilmoitukset, reaaliaikaiset päivitykset ja läsnäolo.
+description: Kommentit ja maininnat, ilmoitukset, reaaliaikaiset päivitykset, läsnäolo ja linkki jokaiseen näkymään.
 ---
 
 Useat henkilöt työskentelevät samassa tietokannassa samaan aikaan: kukin näkee muiden
@@ -44,6 +44,28 @@ käyttöoikeuksillasi. Solua, jota olet muokkaamassa, ei koskaan korvata kesken 
 **Samaa taulukkoa** katsovien henkilöiden kasvot näkyvät näytön yläosassa; **saman rivin**
 avanneiden kasvot sen rivin tietojen otsakkeessa. Ruudukossa muiden osoitin näkyy solussa,
 jonka päällä he ovat.
+
+## Linkki jokaiseen näkymään
+
+Selaimen osoite seuraa sitä, mitä katselet: taulukkoa, jotakin sen näkymistä, rivin tietoja,
+koontinäyttöä, automaatiota, kysymystä, asetuksiasi. Liitä se viestiin: kollegasi päätyy samaan
+paikkaan, omilla käyttöoikeuksillaan. Lisää se kirjanmerkkeihin; selaimen edellinen- ja
+seuraava-painikkeet palaavat sinne, missä olit.
+
+| Osoite | Minne se vie |
+|---|---|
+| `/bases/ventes/tables/opportunites` | tietokannan ”Ventes” taulukko ”Opportunités” |
+| `/bases/ventes/tables/opportunites?vue=…` | jokin sen näkymistä |
+| `/bases/ventes/tables/opportunites?ligne=…` | jonkin sen rivin tiedot |
+| `/bases/ventes/tableaux-de-bord/…` | koontinäyttö |
+| `/bases/ventes/automatisations/…` | automaatio |
+| `/parametres/apparence` | asetuksesi |
+
+Osoite nimeää **paikan**, ei tilaa, johon jätit sen: suodattimet, lajittelut ja sarakkeiden
+leveydet pysyvät kunkin selaimen omina. Tietokanta ja taulukko kirjoitetaan osoitteeseen
+PostgreSQL-nimellään: uudelleennimettyinä vanha osoite ei enää vie minnekään. Osoite, joka ei vie
+minnekään – kirjoitusvirhe, poistettu kohde, tai jokin, jota et saa nähdä – näyttää tekstin
+”Tätä sivua ei ole”.
 
 ## Kumoaminen
 

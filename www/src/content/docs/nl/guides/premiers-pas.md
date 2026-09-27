@@ -37,7 +37,7 @@ Via het menu **⋯** van de database: **Nieuwe tabel**. Voeg daarna de velden to
 | Client | Relatie → Clients |
 | Notes | Lange tekst (Markdown) |
 
-Later voeg je op dezelfde manier een formule (`JOURS([Échéance]; AUJOURDHUI())`), een opzoekveld
+Later voeg je op dezelfde manier een formule (`DAYS([Échéance], TODAY())`), een opzoekveld
 (de stad van de klant) of een aggregatie (het totaalbedrag per klant) toe — zie
 [Tabellen en velden](/basedb/nl/fonctionnalites/tables-et-champs/).
 
@@ -71,7 +71,7 @@ enig recht te geven. Details in [Gedeelde formulieren](/basedb/nl/fonctionnalite
 
 ## 6. Lezen in SQL
 
-Menu **⋯** van de database → **Nieuwe SQL-query**: je tabellen staan er, onder hun echte naam.
+Menu **⋯** van de database → **SQL-query**: je tabellen staan er, onder hun echte naam.
 
 ```sql
 SELECT nom, statut, montant

@@ -4,6 +4,7 @@ import { Refusal, SettingsSection, TabHeading } from '@/components/app/settings/
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Hint } from '@/components/ui/tooltip'
 import { type Me, api } from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
@@ -184,15 +185,16 @@ function SessionsSection() {
         'Les appareils connectés à votre compte. Fermez celles que vous ne reconnaissez pas.',
       )}
       action={
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={busy !== null || sessions === null || sessions.length < 2}
-          title={$t('Toutes, celle-ci comprise : vous devrez vous reconnecter.')}
-          onClick={() => void closeAll()}
-        >
-          {$t('Tout fermer')}
-        </Button>
+        <Hint label={$t('Toutes, celle-ci comprise : vous devrez vous reconnecter.')}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy !== null || sessions === null || sessions.length < 2}
+            onClick={() => void closeAll()}
+          >
+            {$t('Tout fermer')}
+          </Button>
+        </Hint>
       }
     >
       {sessions === null && error === null ? (

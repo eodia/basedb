@@ -3,6 +3,7 @@
 import { OptionBadge, hasLook } from '@/components/app/option-badge'
 import { Badge } from '@/components/ui/badge'
 import { Combobox, type ComboboxOption, filterOptions } from '@/components/ui/combobox'
+import { Hint } from '@/components/ui/tooltip'
 import type { Field, LinkOption } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -414,7 +415,8 @@ export function LinkChips({
               v.masked === true && 'text-muted-foreground italic',
               onFollow !== undefined && v.id !== null && 'hover:bg-secondary/70',
             )}
-            title={label}
+            // A chip that opens its row already names it in its tooltip.
+            title={onFollow !== undefined && v.id !== null ? undefined : label}
           >
             <Link2 className="size-3 shrink-0" />
             <span className="truncate">{label}</span>
@@ -422,16 +424,16 @@ export function LinkChips({
         )
         const id = v.id
         return onFollow !== undefined && id !== null ? (
-          <button
-            key={key}
-            type="button"
-            className={cn('flex', holder)}
-            onClick={() => onFollow(id)}
-            title={$t('Ouvrir « {label} »', { label })}
-            aria-label={$t('Ouvrir « {label} »', { label })}
-          >
-            {chip}
-          </button>
+          <Hint key={key} label={$t('Ouvrir « {label} »', { label })}>
+            <button
+              type="button"
+              className={cn('flex', holder)}
+              onClick={() => onFollow(id)}
+              aria-label={$t('Ouvrir « {label} »', { label })}
+            >
+              {chip}
+            </button>
+          </Hint>
         ) : (
           <span key={key} className={cn('flex', holder)}>
             {chip}

@@ -85,6 +85,24 @@ Voir [Comptes et connexion](/basedb/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | calculs de champs IA par heure et par tenant |
 | `BASEDB_AI_WORKER` | `1` | `0` : pas de calcul de fond dans ce processus |
 
+## Démo publique
+
+Une instance ouverte à tous, comme [demo.basedb.eodia.com](https://demo.basedb.eodia.com) :
+l’écran de connexion préremplit un compte partagé, le visiteur lit tout et modifie ce qui existe,
+mais ne crée ni ne supprime rien — base, table, ligne, fichier, commentaire, compte, jeton,
+lien —, et l’IA répond qu’elle ne fait pas partie de la démo. La console SQL n’y fait que lire.
+Remettre la base en état chaque nuit reste à votre charge.
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1` : l’instance devient une démo publique |
+| `BASEDB_DEMO_ACCOUNTS` | — | un compte par langue, séparés par des virgules : `fr=demo@demo.com,en=demo-en@demo.com` ; l’écran de connexion préremplit celui de sa langue, sinon l’anglais, sinon le premier, et propose les autres. Créez ces comptes, chacun avec son projet, avant d’activer la démo : elle refuse les créations à tous, administrateur compris |
+| `BASEDB_DEMO_PASSWORD` | — | avec `BASEDB_DEMO_ACCOUNTS`, leur mot de passe, le même pour tous, publié avec eux |
+
+Sans `BASEDB_DEMO_ACCOUNTS`, le compte partagé est l’administrateur que nomment
+`BASEDB_ADMIN_EMAIL` et `BASEDB_ADMIN_PASSWORD`. Une adresse de la démo se connecte avec le mot de
+passe publié, quoi qu’on tape : des essais faux ne la verrouillent pas pour tout le monde.
+
 ## Développement seulement
 
 | Variable | Rôle |

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Choice } from '@/components/ui/choice'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type ColumnOption,
   FN_LABELS,
@@ -983,29 +984,35 @@ export function Notebook({
               }}
             >
               {(query.sort ?? []).map((order, index) => (
-                <Chip
+                <Hint
                   // biome-ignore lint/suspicious/noArrayIndexKey: sort terms are edited in place, by position
                   key={index}
-                  tone="neutral"
-                  onClick={() =>
-                    update({
-                      sort: (query.sort ?? []).map((s, i) =>
-                        i === index ? { ...s, desc: s.desc !== true } : s,
-                      ),
-                    })
-                  }
-                  onRemove={() =>
-                    update({ sort: (query.sort ?? []).filter((_, i) => i !== index) })
-                  }
-                  title={$t('Inverser l’ordre')}
+                  label={$t('Inverser l’ordre')}
                 >
-                  {order.desc === true ? (
-                    <ArrowDown className="size-3.5" />
-                  ) : (
-                    <ArrowUp className="size-3.5" />
-                  )}
-                  {sortLabel(order, query, columns)}
-                </Chip>
+                  {/* Chip forwards props onto its inner button, not its outer span. */}
+                  <span className="inline-flex">
+                    <Chip
+                      tone="neutral"
+                      onClick={() =>
+                        update({
+                          sort: (query.sort ?? []).map((s, i) =>
+                            i === index ? { ...s, desc: s.desc !== true } : s,
+                          ),
+                        })
+                      }
+                      onRemove={() =>
+                        update({ sort: (query.sort ?? []).filter((_, i) => i !== index) })
+                      }
+                    >
+                      {order.desc === true ? (
+                        <ArrowDown className="size-3.5" />
+                      ) : (
+                        <ArrowUp className="size-3.5" />
+                      )}
+                      {sortLabel(order, query, columns)}
+                    </Chip>
+                  </span>
+                </Hint>
               ))}
               <SortPopover
                 query={query}

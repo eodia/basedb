@@ -10,6 +10,8 @@ import {
   type QuestionQuery,
   type Visualization,
   cardConstraints,
+  questionCards,
+  variableCard,
 } from '@basedb/contracts'
 import type { Dashboard } from '../catalog/dashboards.js'
 import type { ProjectedBase, ProjectedTable } from '../catalog/projection.js'
@@ -34,6 +36,10 @@ export interface SharedDashboardCard {
   readonly kind: CardKind
   readonly title: string
   readonly text?: string
+  /** The text is HTML, not Markdown. */
+  readonly rich?: boolean
+  /** What the text cites, without what it runs. */
+  readonly variables?: readonly SharedTextVariable[]
   readonly url?: string
   readonly visualization?: Visualization
   /** The question sorts its rows itself: the chart keeps their order. */
@@ -41,6 +47,19 @@ export interface SharedDashboardCard {
   /** The filters tied to the card: the page reruns it when one of them changes. */
   readonly filters: readonly string[]
 }
+
+/**
+ * A value a shared text cites: a question — run by its name, again when one of its
+ * filters changes, and shown as its number would be — or a filter's value.
+ */
+export type SharedTextVariable =
+  | {
+      readonly name: string
+      readonly kind: 'question'
+      readonly visualization: Visualization
+      readonly filters: readonly string[]
+    }
+  | { readonly name: string; readonly kind: 'parameter'; readonly parameter: string }
 
 export interface SharedDashboardTable {
   readonly id: string
@@ -82,6 +101,30 @@ export function cardQuestion(
   return { label: '', query: card.query, visualization: card.visualization ?? { type: 'table' } }
 }
 
+/**
+ * What a text cites, as the page reads it: never a query. A card cited reads under its own
+ * filters; a query, under those the text ties to it.
+ */
+function sharedVariables(
+  card: DashboardCard,
+  dashboard: Dashboard,
+  questions: ReadonlyMap<string, SavedQuestion>,
+): SharedTextVariable[] {
+  return (card.variables ?? []).map((variable) => {
+    if ('parameter' in variable) {
+      return { name: variable.name, kind: 'parameter', parameter: variable.parameter }
+    }
+    const runs = variableCard(card, variable, dashboard.cards)
+    const question = runs === null ? null : cardQuestion(runs, questions)
+    return {
+      name: variable.name,
+      kind: 'question',
+      visualization: question?.visualization ?? { type: 'scalar' },
+      filters: [...new Set((runs?.mappings ?? []).map((m) => m.parameter))],
+    }
+  })
+}
+
 /** The cards the page draws, without what they run. */
 export function sharedCards(
   dashboard: Dashboard,
@@ -90,6 +133,12 @@ export function sharedCards(
   return dashboard.cards.map((card) => {
     const question = card.kind === 'question' ? cardQuestion(card, questions) : null
     const title = card.title?.trim() || question?.label || ''
+    const variables = card.kind === 'text' ? sharedVariables(card, dashboard, questions) : []
+    // A text depends on the filters its questions are tied to, and on those it cites.
+    const filters = [
+      ...(card.mappings ?? []).map((m) => m.parameter),
+      ...variables.flatMap((v) => (v.kind === 'question' ? v.filters : [v.parameter])),
+    ]
     return {
       id: card.id,
       tab: card.tab,
@@ -100,12 +149,14 @@ export function sharedCards(
       kind: card.kind,
       title,
       ...(card.text === undefined ? {} : { text: card.text }),
+      ...(card.rich === true ? { rich: true } : {}),
+      ...(variables.length === 0 ? {} : { variables }),
       ...(card.url === undefined ? {} : { url: card.url }),
       ...(question === null ? {} : { visualization: question.visualization }),
       sorted:
         question !== null &&
         (question.query.kind === 'sql' || (question.query.sort ?? []).length > 0),
-      filters: [...new Set((card.mappings ?? []).map((m) => m.parameter))],
+      filters: [...new Set(filters)],
     }
   })
 }
@@ -216,15 +267,32 @@ export function visitorValues(
   return out
 }
 
-/** What a card runs for a visitor: its question, and its filters tied by the kernel. */
+/**
+ * What a card runs for a visitor: its question, and its filters tied by the kernel — or,
+ * given a variable, the question its text cites under that name.
+ */
 export function sharedRun(
   dashboard: Dashboard,
   cardId: string,
   questions: ReadonlyMap<string, SavedQuestion>,
   rawValues: unknown,
+  variableName?: string,
 ) {
-  const card = dashboard.cards.find((c) => c.id === cardId && c.kind === 'question')
-  if (card === undefined) throw new BasedbError('RESOURCE_NOT_FOUND', { details: { card: cardId } })
+  const found = dashboard.cards.find(
+    (c) => c.id === cardId && c.kind === (variableName === undefined ? 'question' : 'text'),
+  )
+  const variable = found?.variables?.find((v) => v.name === variableName)
+  const card =
+    found === undefined || variableName === undefined
+      ? found
+      : variable === undefined
+        ? undefined
+        : (variableCard(found, variable, dashboard.cards) ?? undefined)
+  if (card === undefined) {
+    throw new BasedbError('RESOURCE_NOT_FOUND', {
+      details: { card: cardId, ...(variableName === undefined ? {} : { variable: variableName }) },
+    })
+  }
   const question = cardQuestion(card, questions)
   if (question === null) {
     throw new BasedbError('RESOURCE_NOT_FOUND', { details: { question: card.question ?? null } })
@@ -250,7 +318,7 @@ export function valuesQuery(
     throw new BasedbError('RESOURCE_NOT_FOUND', { details: { parameter: parameterId } })
   }
   if (parameter.type !== 'category') return null
-  for (const card of dashboard.cards) {
+  for (const card of questionCards(dashboard.cards)) {
     const mapping = (card.mappings ?? []).find(
       (m) => m.parameter === parameterId && 'column' in m.target,
     )

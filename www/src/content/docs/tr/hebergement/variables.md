@@ -83,6 +83,24 @@ Bkz. [Hesaplar ve giriş](/basedb/tr/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | saat ve çalışma alanı başına yapay zeka alanı hesaplamaları |
 | `BASEDB_AI_WORKER` | `1` | `0`: bu süreçte arka plan hesaplaması yapılmaz |
 
+## Herkese açık demo
+
+[demo.basedb.eodia.com](https://demo.basedb.eodia.com) gibi herkese açık bir kurulumda: giriş
+ekranı paylaşılan bir hesabı önceden doldurur, ziyaretçi her şeyi okur ve var olanı değiştirir,
+ama hiçbir şey oluşturmaz ya da silmez — veritabanı, tablo, satır, dosya, yorum, hesap, jeton,
+bağlantı —, ve yapay zeka demonun bir parçası olmadığını yanıtlar. SQL konsolu orada yalnızca
+okur. Veritabanını her gece eski hâline getirmek size kalır.
+
+| Değişken | Varsayılan | Rol |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: kurulum herkese açık bir demoya dönüşür |
+| `BASEDB_DEMO_ACCOUNTS` | — | dil başına bir hesap, virgülle ayrılmış: `fr=demo@demo.com,en=demo-en@demo.com`; giriş ekranı kendi dilindekini, yoksa İngilizceyi, yoksa ilkini önceden doldurur ve diğerlerini önerir. Demoyu etkinleştirmeden önce bu hesapları, her birini kendi projesiyle birlikte oluşturun: demo, yönetici dahil herkes için oluşturmaları reddeder |
+| `BASEDB_DEMO_PASSWORD` | — | `BASEDB_DEMO_ACCOUNTS` ile birlikte, hepsi için aynı olan ve onlarla birlikte yayımlanan şifreleri |
+
+`BASEDB_DEMO_ACCOUNTS` olmadan, paylaşılan hesap `BASEDB_ADMIN_EMAIL` ve
+`BASEDB_ADMIN_PASSWORD`'ün adlandırdığı yöneticidir. Demonun bir adresi, ne yazılırsa yazılsın,
+yayımlanan şifreyle giriş yapar: yanlış denemeler onu herkes için kilitlemez.
+
 ## Yalnızca geliştirme
 
 | Değişken | Rol |

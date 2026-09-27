@@ -30,7 +30,7 @@ taltion `/data` Tiedosto- ja Kuva-kenttien tiedostoille.
 |---|---|
 | `latest` | viimeisin julkaistu versio |
 | `0.3` | viimeisin 0.3.x-versio |
-| `0.3.0` | täsmälleen tämä versio |
+| `0.3.1` | täsmälleen tämä versio |
 
 ## Palvelut
 

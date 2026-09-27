@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
 import {
   ApiError,
   type Me,
@@ -312,36 +313,58 @@ export function TemplateGallery({
         {/* The sentence to the AI. */}
         <div className="border-b bg-gradient-to-r from-violet-500/10 via-fuchsia-500/5 to-transparent px-6 py-3">
           <form
-            className="flex items-center gap-2"
+            className="group relative rounded-full p-0.5"
             onSubmit={(e) => {
               e.preventDefault()
               void propose(prompt)
             }}
           >
-            <Sparkles className="size-5 shrink-0 text-violet-600" />
-            <Input
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder={$t(
-                'Décrivez ce que vous voulez gérer : « les réclamations de mes clients, avec une analyse du ton »',
+            {/* The edge glows as on the site's page, its halo brighter while typing; the
+                colours turn faster while the AI thinks. */}
+            <span
+              aria-hidden
+              className={cn(
+                'bg-ai-edge absolute inset-0 rounded-full opacity-35 blur-md transition-opacity group-focus-within:opacity-70 animate-ai-turn motion-reduce:animate-none',
+                drafting && 'opacity-70 [animation-duration:1.5s]',
               )}
-              aria-label={$t('Décrire le besoin à l’IA')}
-              disabled={drafting}
-              className="h-9 flex-1 bg-background"
             />
-            <Button type="submit" disabled={drafting || prompt.trim() === ''} className="gap-1.5">
-              {drafting ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Wand2 className="size-4" />
+            <span
+              aria-hidden
+              className={cn(
+                'bg-ai-edge absolute inset-0 rounded-full animate-ai-turn motion-reduce:animate-none',
+                drafting && '[animation-duration:1.5s]',
               )}
-              {drafting
-                ? $t('Proposition en cours… {elapsed} s', { elapsed })
-                : $t('Proposer avec l’IA')}
-            </Button>
+            />
+            <div className="relative flex items-center gap-2 rounded-full bg-background py-1 pr-1 pl-4">
+              <Sparkles className="size-5 shrink-0 text-violet-600 dark:text-violet-400" />
+              <Input
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder={$t(
+                  'Décrivez ce que vous voulez gérer : « les réclamations de mes clients, avec une analyse du ton »',
+                )}
+                aria-label={$t('Décrire le besoin à l’IA')}
+                disabled={drafting}
+                className="h-9 flex-1 border-0 px-1 shadow-none focus-visible:ring-0 focus-visible:outline-none"
+              />
+              <Button
+                type="submit"
+                disabled={drafting || prompt.trim() === ''}
+                className="gap-1.5 rounded-full bg-foreground text-background hover:bg-foreground/85"
+              >
+                {drafting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Wand2 className="size-4" />
+                )}
+                {drafting
+                  ? $t('Proposition en cours… {elapsed} s', { elapsed })
+                  : $t('Proposer avec l’IA')}
+              </Button>
+            </div>
           </form>
           {draftError !== null && (
-            <p className="mt-1.5 pl-7 text-sm text-destructive">{draftError}</p>
+            <p className="mt-1.5 pl-11 text-sm text-destructive">{draftError}</p>
           )}
         </div>
 
@@ -680,28 +703,31 @@ function TemplateDetail({
                   )}
                   <div className="mt-2 flex flex-wrap gap-1">
                     {table.fields.map((field) => (
-                      <span
+                      <Hint
                         key={field.label}
-                        title={field.ai?.prompt ?? field.formula ?? field.description}
-                        className={cn(
-                          'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs',
-                          field.ai !== undefined &&
-                            'border-violet-500/40 bg-violet-500/10 text-violet-800 dark:text-violet-200',
-                        )}
+                        label={field.ai?.prompt ?? field.formula ?? field.description}
                       >
-                        {field.ai !== undefined ? (
-                          <Sparkles className="size-3 text-violet-600" />
-                        ) : ['formula', 'lookup', 'rollup', 'count'].includes(field.kind) ? (
-                          <Sigma className="size-3 text-muted-foreground" />
-                        ) : (
-                          <FieldIcon
-                            kind={field.kind}
-                            format={field.rich === true ? 'html' : field.format?.display}
-                            className="size-3"
-                          />
-                        )}
-                        {field.label}
-                      </span>
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs',
+                            field.ai !== undefined &&
+                              'border-violet-500/40 bg-violet-500/10 text-violet-800 dark:text-violet-200',
+                          )}
+                        >
+                          {field.ai !== undefined ? (
+                            <Sparkles className="size-3 text-violet-600" />
+                          ) : ['formula', 'lookup', 'rollup', 'count'].includes(field.kind) ? (
+                            <Sigma className="size-3 text-muted-foreground" />
+                          ) : (
+                            <FieldIcon
+                              kind={field.kind}
+                              format={field.rich === true ? 'html' : field.format?.display}
+                              className="size-3"
+                            />
+                          )}
+                          {field.label}
+                        </span>
+                      </Hint>
                     ))}
                     {tableLinks.map((link) => (
                       <span
@@ -813,6 +839,7 @@ function TemplateDetail({
         project={project}
         me={me}
         aiCount={aiFields.length}
+        rowCount={counts.rows}
         onBuilding={onBuilding}
         onRemoved={onRemoved}
         onSaved={onSaved}
@@ -865,6 +892,7 @@ function CreatePanel({
   project,
   me,
   aiCount,
+  rowCount,
   onBuilding,
   onRemoved,
   onSaved,
@@ -875,6 +903,7 @@ function CreatePanel({
   readonly project: { readonly id: string; readonly label: string }
   readonly me: Me
   readonly aiCount: number
+  readonly rowCount: number
   readonly onBuilding: (busy: boolean) => void
   readonly onRemoved: () => void
   readonly onSaved: () => void
@@ -882,6 +911,7 @@ function CreatePanel({
 }) {
   const [label, setLabel] = useState(template.base.label)
   const [consent, setConsent] = useState(false)
+  const [withRows, setWithRows] = useState(true)
   const [busy, setBusy] = useState(false)
   const [steps, setSteps] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -913,6 +943,7 @@ function CreatePanel({
           requestAnimationFrame(() => stepsEnd.current?.scrollIntoView({ block: 'nearest' }))
         },
         aiConsent: consent,
+        rows: withRows,
         me: me.id,
       })
       toast.success($t('Base « {label} » créée', { label: label.trim() }), {
@@ -944,6 +975,33 @@ function CreatePanel({
         />
       </div>
 
+      {rowCount > 0 && (
+        <label
+          htmlFor="template-rows"
+          className="flex items-start gap-2 rounded-lg border bg-background p-3"
+        >
+          <Checkbox
+            id="template-rows"
+            checked={withRows}
+            onCheckedChange={(v) => setWithRows(v === true)}
+            disabled={busy}
+            className="mt-0.5"
+          />
+          <span className="space-y-0.5">
+            <span className="block text-sm font-medium">{$t('Charger les données d’exemple')}</span>
+            <span className="block text-xs leading-snug text-muted-foreground">
+              {withRows
+                ? $tp(
+                    rowCount,
+                    '{count} ligne dans les tables, pour voir la base à l’œuvre.',
+                    '{count} lignes dans les tables, pour voir la base à l’œuvre.',
+                  )
+                : $t('Les tables restent vides, prêtes pour vos propres données.')}
+            </span>
+          </span>
+        </label>
+      )}
+
       {aiCount > 0 && (
         <div className="space-y-2 rounded-lg border border-violet-500/30 bg-background p-3">
           <p className="flex items-center gap-1.5 text-sm font-medium">
@@ -961,9 +1019,13 @@ function CreatePanel({
               disabled={busy}
               className="mt-0.5"
             />
-            {$t(
-              'J’accepte que les valeurs citées par leurs consignes soient envoyées au fournisseur d’IA de l’instance. Sans cet accord, ce seront des champs ordinaires, avec leurs valeurs d’exemple.',
-            )}
+            {withRows && rowCount > 0
+              ? $t(
+                  'J’accepte que les valeurs citées par leurs consignes soient envoyées au fournisseur d’IA de l’instance. Sans cet accord, ce seront des champs ordinaires, avec leurs valeurs d’exemple.',
+                )
+              : $t(
+                  'J’accepte que les valeurs citées par leurs consignes soient envoyées au fournisseur d’IA de l’instance. Sans cet accord, ce seront des champs ordinaires.',
+                )}
           </label>
         </div>
       )}

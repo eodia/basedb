@@ -19,8 +19,22 @@ la sua etichetta e, se ci sono campi IA, il tuo consenso affinché i valori che 
 vengano inviati al fornitore di IA dell’istanza. Senza questo consenso, sono campi
 ordinari, compilati con i loro valori di esempio.
 
+**Carica i dati di esempio**, spuntata per impostazione predefinita, riempie le tabelle di righe
+di esempio per vedere il database all’opera. Deselezionata, le tabelle restano vuote, pronte per
+i tuoi dati — viste, dashboard e automazioni vengono create comunque.
+
 Un progetto vuoto propone anche il **database di dimostrazione**: una piccola agenzia, i suoi clienti,
 progetti, attività, fatture e recensioni, che mostra tutte le sfaccettature di basedb.
+
+## Nella tua lingua
+
+I modelli ufficiali si leggono e si creano **nella lingua dello schermo**: tabelle, campi,
+opzioni, righe di esempio, viste, dashboard, automazioni e istruzioni per l’IA. Le righe di
+esempio cambiano mondo con la lingua: la «Boulangerie Martin» di Lione diventa «Panetteria
+Martin» a Milano in italiano.
+
+Un modello importato nella tua istanza, o salvato da un database, è scritto da qualcuno: si
+legge così com’è stato scritto.
 
 ## Chiederlo all’IA
 
@@ -109,6 +123,15 @@ sito basta a cambiare la galleria di tutte le istanze.
 
 Ogni modello viene verificato durante la build del sito, dallo stesso validatore del server:
 un modello non valido fa fallire la build invece di arrivare agli utenti.
+
+Un modello ufficiale si scrive una volta, in francese. I suoi testi in un’altra lingua sono un
+dizionario,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+— il testo francese, poi la sua traduzione —, che il sito pubblica accanto al catalogo
+(`/basedb/modeles/i18n/<langue>.json`). L’istanza vi passa ogni testo e segue ogni etichetta
+ovunque sia citata — formule, filtri, viste, istruzioni —, poi rilegge il risultato: un
+dizionario che romperebbe il modello non viene servito, viene servito il modello francese. Un
+testo assente dal dizionario resta in francese.
 
 L’istanza legge l’indirizzo `BASEDB_TEMPLATES_URL` — per impostazione predefinita quello del sito pubblico. Puntalo
 verso un tuo catalogo, oppure imposta `off` per non leggerne nessuno: l’istanza serve allora i

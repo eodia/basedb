@@ -72,13 +72,12 @@ arvoihin. Se ei rajaa arvoa: arvio 7 viisiportaisella asteikolla pysyy 7:nä.
 
 ## Kaavat
 
-Kaava kirjoitetaan ranskaksi, kentät hakasulkeissa ja argumentit puolipisteellä `;`
-erotettuina:
+Kaava kirjoitetaan englanniksi (myös ranskankieliset nimet toimivat), kentät hakasulkeissa ja argumentit `,`-merkillä erotettuina:
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 Editori ehdottaa lisättäviä kenttiä ja näyttää funktiopaneelin; virheilmoitus nimeää kentän tai
@@ -86,14 +85,14 @@ merkin, josta virhe johtuu.
 
 | Ryhmä | Funktiot |
 |---|---|
-| Logiikka | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` |
-| Luvut | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` |
-| Teksti | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` |
-| Päivämäärät | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` |
+| Logiikka | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
+| Luvut | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
+| Teksti | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
+| Päivämäärät | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
 | Operaattorit | `+ - * /`, `&` tekstin yhdistämiseen, `= <> < <= > >=` |
 
 Kaavasta tulee PostgreSQL:n **generoitu sarake**: `psql` ja työkalusi lukevat sitä kuten muita.
-Kaava, joka riippuu päivästä (`AUJOURDHUI()`, `MAINTENANT()`) tai viittaa hakuun tai koosteeseen,
+Kaava, joka riippuu päivästä (`TODAY()`, `NOW()`) tai viittaa hakuun tai koosteeseen,
 **lasketaan luettaessa**: sitä voi suodattaa ja lajitella basedb:ssä, mutta suorassa SQL:ssä sitä
 ei ole.
 

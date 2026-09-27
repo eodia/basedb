@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Hint, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Field } from '@/lib/api/client'
 import { templateToLabels, templateToNames } from '@/lib/card-template'
 import { $t } from '@/lib/i18n'
@@ -451,34 +451,38 @@ export function MarkdownEditor({
     <div className={cn('overflow-hidden rounded-md border bg-background', className)}>
       <div className="flex items-center gap-0.5 border-b bg-muted/40 px-1.5 py-1">
         {ACTIONS.map((action) => (
-          <button
+          <Hint
             key={action.label}
-            type="button"
-            title={action.keys === undefined ? action.label : `${action.label} (${action.keys})`}
-            aria-label={action.label}
-            disabled={readOnly || mode === 'preview'}
-            // The editor keeps its selection: a mousedown on the toolbar would take it away.
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => view.current !== null && action.run(view.current)}
-            className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-background hover:text-foreground disabled:opacity-40"
+            label={action.keys === undefined ? action.label : `${action.label} (${action.keys})`}
           >
-            <action.icon className="size-3.5" />
-          </button>
+            <button
+              type="button"
+              aria-label={action.label}
+              disabled={readOnly || mode === 'preview'}
+              // The editor keeps its selection: a mousedown on the toolbar would take it away.
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => view.current !== null && action.run(view.current)}
+              className="flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-background hover:text-foreground disabled:opacity-40"
+            >
+              <action.icon className="size-3.5" />
+            </button>
+          </Hint>
         ))}
         {fields.length > 0 && (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                title={$t('Insérer la valeur d’une colonne')}
-                disabled={readOnly || mode === 'preview'}
-                onMouseDown={(e) => e.preventDefault()}
-                className="flex h-7 items-center gap-1 rounded px-1.5 text-xs text-muted-foreground hover:bg-background hover:text-foreground disabled:opacity-40"
-              >
-                <Braces className="size-3.5" />
-                {$t('Colonne')}
-              </button>
-            </DropdownMenuTrigger>
+            <Hint label={$t('Insérer la valeur d’une colonne')}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  disabled={readOnly || mode === 'preview'}
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="flex h-7 items-center gap-1 rounded px-1.5 text-xs text-muted-foreground hover:bg-background hover:text-foreground disabled:opacity-40"
+                >
+                  <Braces className="size-3.5" />
+                  {$t('Colonne')}
+                </button>
+              </DropdownMenuTrigger>
+            </Hint>
             <DropdownMenuContent
               align="start"
               className="max-h-72 overflow-y-auto"

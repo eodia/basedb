@@ -1,6 +1,7 @@
 'use client'
 
 import type { Row } from '@/components/app/grid/cell'
+import { Hint } from '@/components/ui/tooltip'
 import { type Field, api } from '@/lib/api/client'
 import { buttonUrl } from '@/lib/automations'
 import { $t } from '@/lib/i18n'
@@ -57,20 +58,23 @@ export function FieldButton({
 
   const Icon = busy ? Loader2 : config.action === 'url' ? ExternalLink : Zap
   return (
-    <button
-      type="button"
-      onClick={(e) => void click(e)}
-      onPointerDown={(e) => e.stopPropagation()}
-      disabled={busy}
-      title={config.action === 'url' ? $t('Ouvrir') : $t('Lancer l’automatisation')}
-      className={cn(
-        'inline-flex max-w-full items-center gap-1 rounded-md border bg-background font-medium shadow-xs transition-colors hover:bg-accent disabled:opacity-60',
-        size === 'xs' ? 'h-6 px-2 text-xs' : 'h-7 px-2.5 text-sm',
-      )}
-      style={config.color === null ? undefined : { borderColor: config.color, color: config.color }}
-    >
-      <Icon className={cn('size-3.5 shrink-0', busy && 'animate-spin')} />
-      <span className="truncate">{config.label}</span>
-    </button>
+    <Hint label={config.action === 'url' ? $t('Ouvrir') : $t('Lancer l’automatisation')}>
+      <button
+        type="button"
+        onClick={(e) => void click(e)}
+        onPointerDown={(e) => e.stopPropagation()}
+        disabled={busy}
+        className={cn(
+          'inline-flex max-w-full items-center gap-1 rounded-md border bg-background font-medium shadow-xs transition-colors hover:bg-accent disabled:opacity-60',
+          size === 'xs' ? 'h-6 px-2 text-xs' : 'h-7 px-2.5 text-sm',
+        )}
+        style={
+          config.color === null ? undefined : { borderColor: config.color, color: config.color }
+        }
+      >
+        <Icon className={cn('size-3.5 shrink-0', busy && 'animate-spin')} />
+        <span className="truncate">{config.label}</span>
+      </button>
+    </Hint>
   )
 }

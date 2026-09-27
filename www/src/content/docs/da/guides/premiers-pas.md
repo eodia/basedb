@@ -37,7 +37,7 @@ Fra databasens **⋯**-menu: **Ny tabel**. Tilføj derefter dens felter fra
 | Client | Relation → Clients |
 | Notes | Lang tekst (Markdown) |
 
-Senere tilføjes en formel (`JOURS([Échéance]; AUJOURDHUI())`), et opslag (kundens by) eller
+Senere tilføjes en formel (`DAYS([Échéance], TODAY())`), et opslag (kundens by) eller
 en aggregering (det samlede beløb pr. kunde) på samme måde — se
 [Tabeller og felter](/basedb/da/fonctionnalites/tables-et-champs/).
 
@@ -71,7 +71,7 @@ tilladelser. Detaljer i [Delte formularer](/basedb/da/fonctionnalites/formulaire
 
 ## 6. Læs i SQL
 
-Databasens **⋯**-menu → **Ny SQL-forespørgsel**: dine tabeller er der under deres rigtige navn.
+Databasens **⋯**-menu → **SQL-forespørgsel**: dine tabeller er der under deres rigtige navn.
 
 ```sql
 SELECT nom, statut, montant

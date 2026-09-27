@@ -72,7 +72,7 @@ export default {
 							tables: {
 								href: '/fonctionnalites/tables-et-champs/',
 								title: 'テーブルとフィールド',
-								text: 'あらゆる用途のフィールド、リレーション、フランス語で書く数式。',
+								text: 'あらゆる用途のフィールド、リレーション、表計算ソフトのような数式。',
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
@@ -763,9 +763,9 @@ export default {
 					href: '/fonctionnalites/tableaux-de-bord/',
 				},
 				formulas: {
-					code: 'SI([Montant] > 10000; "Grand compte"; "")',
-					title: 'フランス語で書く数式',
-					text: '表計算ソフトと同じように — SI、ARRONDI、JOURS… — でも、チーム全員のために計算されます。',
+					code: 'IF([Montant] > 10000, "Grand compte", "")',
+					title: 'フランス語でも英語でも書ける数式',
+					text: '表計算ソフトと同じように — SI、ARRONDI、JOURS…、またはIF、ROUND、DAYS — でも、チーム全員のために計算されます。',
 					href: '/fonctionnalites/tables-et-champs/#数式',
 				},
 				rights: {
@@ -873,7 +873,7 @@ export default {
 			items: [
 				{
 					q: 'コーディングの知識は必要ですか？',
-					a: '不要です。テーブル、ビュー、フォーム、ダッシュボード、オートメーションは、すべてマウス操作で作成できます。数式は表計算ソフトと同じようにフランス語で書きます：SI、ARRONDI、JOURS…',
+					a: '不要です。テーブル、ビュー、フォーム、ダッシュボード、オートメーションは、すべてマウス操作で作成できます。数式は表計算ソフトと同じように、フランス語でも英語でも書けます：SIまたはIF、ARRONDIまたはROUND、JOURSまたはDAYS…',
 				},
 				{
 					q: '費用はどれくらいかかりますか？',
@@ -1240,8 +1240,8 @@ export default {
 			},
 			formulas: {
 				title: 'リレーションと数式',
-				text: '本物の外部キー、PostgreSQLが計算するフランス語の数式、そしてリレーションをまたぐルックアップ、ロールアップ、カウント。',
-				code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+				text: '本物の外部キー、PostgreSQLが計算するフランス語または英語の数式、そしてリレーションをまたぐルックアップ、ロールアップ、カウント。',
+				code: 'ROUND([Montant HT] * (1 + [Taux de TVA]), 2)',
 				href: '/fonctionnalites/tables-et-champs/#数式',
 			},
 			richText: {
@@ -1385,6 +1385,76 @@ export default {
 		title: 'basedbの変更点',
 		intro: '変更の詳細は<a href="https://github.com/eodia/basedb/commits/main">リポジトリの履歴</a>にあります。今後の予定は<a href="/feuille-de-route/">ロードマップ</a>をご覧ください。',
 		entries: {
+			formulaLanguages: {
+				date: '2026-09-28',
+				title: '数式はフランス語でも英語でも',
+				tag: '新機能',
+				items: [
+					'<strong>フランス語でも英語でも、どの画面でも数式を入力できます</strong>。両方を混ぜても構いません:<code>SI</code>または<code>IF</code>、<code>ARRONDI</code>または<code>ROUND</code>、<code>JOURS</code>または<code>DAYS</code>…引数は<code>;</code>または<code>,</code>で区切ります。<a href="/fonctionnalites/tables-et-champs/#数式">数式</a>',
+					'<strong>数式は画面の言語で読み直されます</strong>:フランス語の画面ではフランス語、ほかの19の言語では英語で——既存の数式や「関数」パネルも同じです。APIは、指定された言語で数式を返し、指定がなければ英語で返します。',
+					'フランス語以外の言語で提供される公式テンプレートは、数式が英語で書かれた状態で届きます。データベース側では何も変わりません:列もSQLも同じで、マイグレーションも不要です。',
+				],
+			},
+			search: {
+				date: '2026-09-27',
+				title: 'すべてを見つける:Ctrl+K',
+				tag: '新機能',
+				items: [
+					'<strong>すべてをひとつのフィールドで</strong>——<strong>Ctrl+K</strong>、または上部バー中央のフィールドから:テーブル、ビュー、質問、ダッシュボード、オートメーション、列、そして行そのものまで、自分の権限で読み取ります。大きな画面では、選んだ結果のプレビューも表示されます。<a href="/fonctionnalites/recherche/">検索</a>',
+					'<strong>思いつくままに入力</strong>:アクセント記号や大文字・小文字を区別せず、頭文字でも——「新しい顧客」には<code>新顧</code>——、入力ミスも1つまで許容し、<code>顧客 大阪</code>でテーブル「顧客」から「大阪」を検索できます。よく開くものが上位に来ます。',
+					'<strong>すべての操作をキーボードで</strong>:作成する、移動する、閉じる、元に戻す、テーマを変更する、ページのリンクをコピーする。<code>&gt;</code>はコマンドだけ、<code>#</code>はオブジェクトだけ、<code>/</code>は行だけを検索します。<strong>Tab</strong>は、テーブルまたはデータベースの中を検索します。',
+					'<strong>質問があるときは</strong>、そのまま入力してください:<strong>Copilotに質問</strong>が、開いているデータベースでその質問を送ります。',
+				],
+			},
+			questions: {
+				date: '2026-09-27',
+				title: '自分の質問、テキスト内の数値',
+				tag: '新機能',
+				items: [
+					'<strong>誰もが自分の質問を保存できます</strong>、管理レベルがなくても:個人用の質問は自分だけが見られます。データベースを管理する人は、クエリと同じように、データベース全体またはグループと共有できます。<a href="/fonctionnalites/tableaux-de-bord/">ダッシュボード</a>',
+					'<strong>質問はタブの中に</strong>、テーブルと並んで開きます:<strong>新しい質問</strong>と<strong>新しいSQL質問</strong>が、タブバーの<strong>+</strong>とデータベースのメニューにあります。タブは、そこに残した内容を保持します。<strong>コピーを保存</strong>は、変更できない質問を自分のものにします。',
+					'<strong>テキスト内の数値</strong>:書式が使えるようになったダッシュボードのテキストが、カード、質問、フィルターから取り出した値——<code>{{chiffre_affaires}}</code>——を引用します。読む人の権限で計算され、リンクで共有されたダッシュボードでも同じです。<a href="/fonctionnalites/tableaux-de-bord/#テキスト内の数値">テキスト内の数値</a>',
+					'クエリ、SQLビュー、質問も、それぞれのメニューから右クリックで削除できます。',
+				],
+			},
+			addresses: {
+				date: '2026-09-27',
+				title: 'どの画面にもアドレスを',
+				tag: '新機能',
+				items: [
+					'<strong>アドレスが画面に従います</strong>:テーブル、ビュー、行の詳細、ダッシュボード、オートメーション、質問、個人設定——<code>/bases/ventes/tables/opportunites?ligne=…</code>。お気に入りに登録したり、メッセージに貼り付けたりすれば、誰でも自分の権限のまま同じ場所にたどり着きます。<a href="/fonctionnalites/collaboration/#各画面へのリンク">各画面へのリンク</a>',
+					'ブラウザーの<strong>戻る</strong>・<strong>進む</strong>ボタンで、いた場所に戻れます。どこにもつながらないアドレスには「このページは存在しません」と表示されます。',
+				],
+			},
+			demo: {
+				date: '2026-09-27',
+				title: '試せるデモを、ご利用の言語で',
+				tag: '新機能',
+				items: [
+					'<strong>デモ</strong>は<a href="https://demo.basedb.eodia.com">demo.basedb.eodia.com</a>にあります。アカウントには、お使いのブラウザーの言語があらかじめ入力されており、そのデータベースもその言語です。すべて閲覧でき、既存のものは変更できますが、作成、削除、AIは無効になっており、データベースは毎晩最初の状態に戻ります。',
+					'<strong>自分だけのデモ</strong>:<code>BASEDB_DEMO=1</code>が、言語ごとにあらかじめ用意された共有アカウントを持つ、誰にでも開かれたインスタンスにします。<a href="/hebergement/variables/#公開デモ">変数</a>',
+					'<strong>リンクごとの言語</strong>:basedbのアドレスの末尾に付けた<code>?lang=de</code>は、ログイン画面や共有ページをドイツ語で表示します。こうしてサイトは、そのページの言語でデモへ案内します。<a href="/fonctionnalites/droits/#個人設定">個人設定</a>',
+				],
+			},
+			templateLanguages: {
+				date: '2026-09-27',
+				title: 'テンプレートを、ご利用の言語で',
+				tag: '新機能',
+				items: [
+					'<strong>公式テンプレートは、画面の言語で作成されます</strong>:テーブル、フィールド、選択肢、ビュー、ダッシュボード、オートメーション、AIへの指示——そして、言語ごとに舞台が変わるサンプル行。Lyonにある「Boulangerie Martin」は、日本語では大阪の「田中ベーカリー」になります。<a href="/fonctionnalites/modeles/#ご利用の言語で">テンプレート</a>',
+					'<a href="/modeles/">サイトのギャラリー</a>は、各テンプレートをそのページの言語で表示します。',
+					'<strong>ひとつのテンプレート、複数の辞書</strong>:テンプレートはフランス語で一度だけ書かれます。各言語はそのテキストだけを翻訳し、basedb自身が、それが引用されている箇所まで各ラベルを追いかけます。テンプレートを壊してしまう辞書は使われません。<a href="/fonctionnalites/modeles/#すべてのインスタンス向けにテンプレートを公開する">テンプレートを公開する</a>',
+				],
+			},
+			details: {
+				date: '2026-09-27',
+				title: 'そのほか',
+				items: [
+					'<strong>サンプル行のないテンプレート</strong>:「サンプルデータを読み込む」のチェックを外すと、空のテーブルが作成され、自分のデータを入れる準備が整います。<a href="/fonctionnalites/modeles/#テンプレートから始める">テンプレートから始める</a>',
+					'<strong>各データベースのAPIとMCPのドキュメント</strong>は、画面の言語で書かれます。<a href="/integrations/api-rest/#生成されるドキュメント">生成されるドキュメント</a>',
+					'ブラウザーが独自のツールチップを表示していた場所には、アプリのテーマに沿ったツールチップを表示します。メニューの「削除」は赤色で表示されます。コメントの時刻にマウスを合わせると、完全な日付が表示されます。',
+				],
+			},
 			languages: {
 				date: '2026-09-27',
 				title: 'リッチテキスト、変数、より見やすいカンバン',

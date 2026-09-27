@@ -13,7 +13,7 @@ nástroje.
 
 ## Každý se svými oprávněními
 
-**+** na liště záložek nebo nabídka **⋯** databáze → **Nový dotaz SQL** otevře záložku SQL: editor
+**+** na liště záložek nebo nabídka **⋯** databáze → **Dotaz SQL** otevře záložku SQL: editor
 se zvýrazněním syntaxe a doplňováním, **Ctrl+Enter** pro spuštění a výsledek ve stejné mřížce
 jako vaše tabulky. Co dotaz smí číst, závisí na tom, kdo ho spouští:
 
@@ -34,7 +34,8 @@ nebo server MCP.
 **Uložit** na liště záložky zařadí dotaz pod tabulky databáze do sekce **Dotazy**. Znovu se
 otevře jedním kliknutím; **⋯** → **Uložit jako…** vytvoří kopii, **Název a sdílení…** (na
 záložce nebo v jeho nabídce v postranním panelu) ho přejmenuje, změní, kdo ho vidí, nebo ho
-odstraní.
+odstraní — **Odstranit** je také v jeho nabídce, pravým kliknutím. Záložka, která ho
+zobrazovala, si ponechá svůj text.
 
 ![Uložení dotazu: jeho název, co ukazuje a kdo ho vidí](../../../../assets/screens/requete-enregistrer.png)
 
@@ -83,7 +84,8 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 každé tabulce a každému sloupci, který pohled čte; postranní panel ho zobrazí jen tomu, kdo smí
 číst vše, co pohled čte. Čte jen **svou** databázi: jiná databáze nebo katalog basedb jsou
 odmítnuty už při vytvoření. Jeho vytvoření, úprava nebo odstranění vyžaduje úroveň **Správa**
-nad databází.
+nad databází. **Odstranit**, v jeho nabídce v postranním panelu, ho odebere pro všechny,
+včetně skriptů a nástrojů; tabulky, které čte, zůstanou nedotčené.
 
 ### Když se změní struktura
 

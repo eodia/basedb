@@ -12,9 +12,9 @@ senare.
 | Nivå | Tillåter |
 |---|---|
 | **Ingen åtkomst** | ingenting: resursen är osynlig |
-| **Läsa** | se raderna, kommentera dem, skapa egna personliga vyer, visa strukturen och instrumentpanelerna, ställa egna frågor, skriva skrivskyddad SQL och spara sina personliga frågor |
+| **Läsa** | se raderna, kommentera dem, skapa egna personliga vyer, visa strukturen och instrumentpanelerna, ställa och spara egna frågor, skriva skrivskyddad SQL och spara sina personliga frågor |
 | **Redigera** | och dessutom skapa, ändra och ta bort rader |
-| **Hantera** | och dessutom ändra strukturen, skapa gemensamma vyer, instrumentpaneler och sparade frågor, dela en instrumentpanel via en länk, dela frågor, skapa SQL-vyer, automatiseringar, integrationer och tokens; SQL på den nivån når hela databasen, skrivningar inräknade |
+| **Hantera** | och dessutom ändra strukturen, skapa gemensamma vyer och instrumentpaneler, dela en instrumentpanel via en länk, dela frågor, skapa SQL-vyer, automatiseringar, integrationer och tokens; SQL på den nivån når hela databasen, skrivningar inräknade |
 
 Behörigheterna **läggs ihop**: en person får den högsta nivå som någon av hens grupper ger. Att
 ge en tabell mindre än dess databas gör den ”granulär”.
@@ -70,6 +70,11 @@ basedb talar **tjugo språk**: franska, engelska, tyska, spanska, italienska, po
 ungerska, turkiska, ukrainska, japanska, förenklad kinesiska och koreanska. Som standard använder
 gränssnittet webbläsarens språk; **Språk**, under **Utseende**, väljer ett annat. Tal och datum
 följer det valda språket.
+
+En länk kan också begära ett språk: `?lang=de` sist i en basedb-adress visar inloggningsskärmen,
+ett delat formulär, en delad vy eller en delad instrumentpanel på tyska. Så leder webbplatsen till
+demot på sidans språk. Efter inloggning följer basedb ditt konto: språket som valts under
+**Utseende**, annars webbläsarens.
 
 Temat hör till webbläsaren; språket, datumordningen och veckans första dag följer dig från en
 dator till en annan. Att byta adress eller koppla en leverantör kräver en förhöjd session; ett

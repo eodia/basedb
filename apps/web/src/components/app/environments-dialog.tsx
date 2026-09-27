@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Choice } from '@/components/ui/choice'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type ApplyReport,
   type ComparedFieldCell,
@@ -136,18 +137,19 @@ function Pair({
         onChange={onSource}
         label={$t('Environnement source')}
       />
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => {
-          onSource(target)
-          onTarget(source)
-        }}
-        aria-label={$t('Inverser la source et la cible')}
-        title={$t('Inverser')}
-      >
-        <ArrowLeftRight className="size-4" />
-      </Button>
+      <Hint label={$t('Inverser')}>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => {
+            onSource(target)
+            onTarget(source)
+          }}
+          aria-label={$t('Inverser la source et la cible')}
+        >
+          <ArrowLeftRight className="size-4" />
+        </Button>
+      </Hint>
       <EnvironmentSelect
         environments={environments}
         value={target}
@@ -186,9 +188,9 @@ function FieldCellView({ cell }: { readonly cell: ComparedFieldCell | null }) {
         <FieldIcon kind={cell.kind} />
         <span className="truncate">{cell.label}</span>
         {cell.required && (
-          <span className="shrink-0 text-destructive" title={$t('Obligatoire')}>
-            *
-          </span>
+          <Hint label={$t('Obligatoire')}>
+            <span className="shrink-0 text-destructive">*</span>
+          </Hint>
         )}
         {cell.ai && <Sparkles className="size-3 shrink-0 text-violet-500" aria-label={$t('IA')} />}
       </span>
@@ -332,12 +334,13 @@ function StepRow({
           <span className={cn('text-sm', step.destructive && 'text-destructive')}>
             {step.summary}
           </span>
-          <span
-            className={cn('rounded-full px-1.5 py-0.5 text-[0.7rem] font-medium', status.tone)}
-            title={status.hint}
-          >
-            {status.label}
-          </span>
+          <Hint label={status.hint}>
+            <span
+              className={cn('rounded-full px-1.5 py-0.5 text-[0.7rem] font-medium', status.tone)}
+            >
+              {status.label}
+            </span>
+          </Hint>
           {step.table.label !== '' && step.field !== undefined && (
             <span className="text-xs text-muted-foreground">{step.table.label}</span>
           )}

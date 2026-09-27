@@ -12,8 +12,18 @@ górze strony sterują kartami, które się z nimi połączy.
 
 Wszystko otwiera się z **Pulpity**, w bloku otwartej bazy na dole paska bocznego. Po lewej
 pulpity i zapisane pytania bazy oraz **Eksploruj dane**, aby zadać pytanie bez zapisywania
-czegokolwiek. Każdy, kto czyta bazę, może je przeglądać i eksplorować; tworzenie, zmiana i
-zapisywanie wymagają poziomu **Zarządzanie**.
+czegokolwiek. Każdy, kto czyta bazę, może je przeglądać, eksplorować i zapisywać własne pytania;
+tworzenie pulpitu i udostępnianie pytania wymagają poziomu **Zarządzanie**.
+
+Zapisane pytanie jest **osobiste** — widzisz je tylko ty —, dla **całej bazy** albo dla
+**grup**. Jego menu, prawym kliknięciem albo przez **⋯**, otwiera je w zakładce obok tabel,
+zmienia jego nazwę i udostępnianie, albo je usuwa. **+** na pasku zakładek proponuje też **Nowe
+pytanie** i **Nowe pytanie SQL**.
+
+**Zapisz**, w nagłówku pytania, zachowuje je; pytanie, którego nie możesz zmieniać, proponuje
+zamiast tego **Zapisz kopię**, która staje się twoja. **⋯** (**Więcej działań**) oferuje też
+**Nazwa i udostępnianie…**, **Zapisz kopię…** i **Usuń pytanie**; zakładka, która je pokazywała,
+zachowuje swoją zawartość, znów niezapisaną.
 
 ## Zadawanie pytania myszą
 
@@ -107,8 +117,10 @@ filtr pulpitu może sterować pytaniem SQL tak jak każdym innym.
 
 **Edytuj** przełącza pulpit w tryb edycji:
 
-- **Pytanie** umieszcza zapisane pytanie albo tworzy pytanie właściwe tylko tej karcie;
-- **Tytuł** i **Tekst** dodają tytuł sekcji lub tekst w Markdownie;
+- **Pytanie** umieszcza zapisane pytanie — pytanie osobiste jest przy tym kopiowane —, albo
+  tworzy pytanie właściwe tylko tej karcie;
+- **Tytuł** dodaje tytuł sekcji, **Tekst** — tekst sformatowany: nagłówki, listy, linki —,
+  który może przytaczać liczby (patrz niżej);
 - **Osadzona strona** wyświetla adres `https://` w odizolowanej ramce, która nie otrzymuje ani
   sesji, ani danych;
 - **Zakładka** rozkłada karty na kilka stron; dwukrotne kliknięcie zmienia nazwę zakładki.
@@ -116,6 +128,26 @@ filtr pulpitu może sterować pytaniem SQL tak jak każdym innym.
 Karty przesuwa się za uchwyt i zmienia ich rozmiar za róg, na siatce 24 kolumn. **Zapisz**
 zachowuje całość; **Anuluj** wraca do poprzedniej wersji. Tytuł karty, w trybie odczytu,
 otwiera jej pytanie do eksploracji, łącznie z filtrami pulpitu.
+
+### Liczby w tekście
+
+Tekst przytacza wartość przez nazwę w podwójnych nawiasach klamrowych: „W tym miesiącu
+`{{chiffre_affaires}}` przychodu przy `{{commandes}}` zamówieniach.” Każda nazwa staje się
+plakietką, którą można połączyć jednym kliknięciem — albo przez **Zmienna** na pasku edytora —
+z:
+
+| Źródło | Co pokazuje tekst |
+|---|---|
+| **kartą** pulpitu | to, co ona pokazuje, pod swoimi własnymi filtrami |
+| **zapisanym pytaniem** całej bazy | jego wartość, a filtry pulpitu łączą się z nim jak z kartą |
+| **pytaniem zachowanym w tekście** | jego wartość; w ten sposób przytacza się pytanie osobiste |
+| **filtrem** pulpitu | wybraną wartość, tak jak mówi jego etykieta |
+
+Wartość pytania to ta, którą pokazałaby jego **Liczba**: jego pierwsza miara, na ostatnim
+wierszu. Oblicza się ją z uprawnieniami czytającego i zawsze wyświetla jako tekst. Tekst
+przytacza najwyżej 20 wartości; nazwę zapisuje się małymi literami, cyframi i `_`. Teksty
+napisane w Markdownie przed edytorem czyta się jak dawniej i stają się sformatowane, gdy tylko
+się je przepisze. Sam Copilot pisze swoje teksty w Markdownie.
 
 ## Filtry
 

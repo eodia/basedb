@@ -13,7 +13,7 @@ araçlarınızın da okuduğu gerçek bir PostgreSQL görünümü.
 
 ## Herkes kendi izinleriyle
 
-Sekme çubuğundaki **+** ya da veritabanının **⋯** menüsü → **Yeni SQL sorgusu**, bir SQL
+Sekme çubuğundaki **+** ya da veritabanının **⋯** menüsü → **SQL sorgusu**, bir SQL
 sekmesi açar: sözdizimi renklendirmesi ve otomatik tamamlama sunan bir düzenleyici, çalıştırmak
 için **Ctrl+Enter** ve tablolarınızla aynı ızgarada sonuç. Sorgunun neyi okuyabileceği, onu
 kimin çalıştırdığına bağlıdır:
@@ -35,7 +35,8 @@ sunucusunun göstermeyeceği hiçbir şeyi gösteremez.
 Sekmenin çubuğundaki **Kaydet**, sorguyu veritabanının tablolarının altına, **Sorgular**
 bölümüne yerleştirir. Sorgu tek tıkla yeniden açılır; **⋯** → **Farklı kaydet…** bir kopyasını
 oluşturur, **Ad ve paylaşım…** (sekmede ya da kenar çubuğundaki menüsünde) onu yeniden
-adlandırır, kimin göreceğini değiştirir ya da siler.
+adlandırır, kimin göreceğini değiştirir ya da siler — **Sil** de, sağ tıklamayla açılan
+menüsünde yer alır. Onu gösteren bir sekme, metnini korur.
 
 ![Bir sorguyu kaydetme: adı, ne gösterdiği ve kimin gördüğü](../../../../assets/screens/requete-enregistrer.png)
 
@@ -85,7 +86,9 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 sütun üzerinde kendi izinleriyle okur; kenar çubuğu onu yalnızca görünümün okuduğu her şeyi
 okuyabilen kişilere listeler. Görünüm yalnızca **kendi** veritabanını okur: başka bir
 veritabanı ya da basedb kataloğu daha oluşturma anında reddedilir. Onu oluşturmak, değiştirmek
-ya da silmek veritabanı üzerinde **Yönetim** düzeyini gerektirir.
+ya da silmek veritabanı üzerinde **Yönetim** düzeyini gerektirir. **Sil**, kenar
+çubuğundaki menüsünde, onu betikler ve araçlar dahil herkes için kaldırır; okuduğu tablolar
+bundan etkilenmez.
 
 ### Yapı değiştiğinde
 

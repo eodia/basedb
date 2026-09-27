@@ -72,7 +72,7 @@ export default {
 							tables: {
 								href: '/fonctionnalites/tables-et-champs/',
 								title: '테이블과 필드',
-								text: '모든 것을 위한 필드, 관계, 프랑스어 수식.',
+								text: '모든 것을 위한 필드, 관계, 스프레드시트 같은 수식.',
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
@@ -765,9 +765,9 @@ export default {
 					href: '/fonctionnalites/tableaux-de-bord/',
 				},
 				formulas: {
-					code: 'SI([Montant] > 10000; "Grand compte"; "")',
-					title: '프랑스어 수식',
-					text: '스프레드시트처럼 — SI, ARRONDI, JOURS… — 그러나 팀 전체를 위해 계산됩니다.',
+					code: 'IF([Montant] > 10000, "Grand compte", "")',
+					title: '프랑스어 또는 영어로 쓰는 수식',
+					text: '스프레드시트처럼 — SI, ARRONDI, JOURS… 또는 IF, ROUND, DAYS — 그러나 팀 전체를 위해 계산됩니다.',
 					href: '/fonctionnalites/tables-et-champs/#수식',
 				},
 				rights: {
@@ -875,7 +875,7 @@ export default {
 			items: [
 				{
 					q: '코딩을 할 줄 알아야 하나요?',
-					a: '아니요. 테이블, 보기, 양식, 대시보드, 자동화를 모두 마우스로 만듭니다. 수식은 스프레드시트처럼 작성하며, 함수 이름은 프랑스어입니다: SI, ARRONDI, JOURS…',
+					a: '아니요. 테이블, 보기, 양식, 대시보드, 자동화를 모두 마우스로 만듭니다. 수식은 스프레드시트처럼 작성하며, 프랑스어나 영어를 쓸 수 있습니다: SI 또는 IF, ARRONDI 또는 ROUND, JOURS 또는 DAYS…',
 				},
 				{
 					q: '비용은 얼마인가요?',
@@ -1242,8 +1242,8 @@ export default {
 			},
 			formulas: {
 				title: '관계와 수식',
-				text: '실제 외래 키, PostgreSQL이 계산하는 프랑스어 수식, 그리고 관계를 거치는 조회, 롤업, 개수.',
-				code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+				text: '실제 외래 키, PostgreSQL이 계산하는 프랑스어 또는 영어 수식, 그리고 관계를 거치는 조회, 롤업, 개수.',
+				code: 'ROUND([Montant HT] * (1 + [Taux de TVA]), 2)',
 				href: '/fonctionnalites/tables-et-champs/#수식',
 			},
 			richText: {
@@ -1387,6 +1387,76 @@ export default {
 		title: 'basedb에서 바뀐 내용',
 		intro: '각 변경의 자세한 내용은 <a href="https://github.com/eodia/basedb/commits/main">저장소 기록</a>에 있습니다. 앞으로의 계획은 <a href="/feuille-de-route/">로드맵</a>에서 확인하세요.',
 		entries: {
+			formulaLanguages: {
+				date: '2026-09-28',
+				title: '프랑스어 또는 영어로 쓰는 수식',
+				tag: '신규',
+				items: [
+					'<strong>어느 화면에서든 프랑스어나 영어로 수식을 입력할 수 있습니다</strong>, 두 언어를 섞어 써도 됩니다: <code>SI</code> 또는 <code>IF</code>, <code>ARRONDI</code> 또는 <code>ROUND</code>, <code>JOURS</code> 또는 <code>DAYS</code>… 인수는 <code>;</code> 또는 <code>,</code>로 구분합니다. <a href="/fonctionnalites/tables-et-champs/#수식">수식</a>',
+					'<strong>수식은 화면의 언어로 다시 표시됩니다</strong>: 프랑스어 화면에서는 프랑스어로, 나머지 열아홉 개 언어에서는 영어로 — 기존 수식과 「함수」 패널도 마찬가지입니다. API는 요청한 언어로 수식을 반환하며, 지정하지 않으면 영어로 반환합니다.',
+					'프랑스어가 아닌 언어로 제공되는 공식 템플릿은 수식이 영어로 담겨 옵니다. 데이터베이스에서는 아무것도 바뀌지 않습니다: 열도 SQL도 그대로이며, 마이그레이션도 필요 없습니다.',
+				],
+			},
+			search: {
+				date: '2026-09-27',
+				title: '무엇이든 찾기: Ctrl+K',
+				tag: '신규',
+				items: [
+					'<strong>무엇이든 하나의 입력창으로</strong> — <strong>Ctrl+K</strong>, 또는 위쪽 바 가운데의 입력창: 테이블, 보기, 질문, 대시보드, 자동화, 열, 그리고 행 자체까지 내 권한으로 읽습니다. 큰 화면에서는 선택한 결과의 미리보기도 보여 줍니다. <a href="/fonctionnalites/recherche/">검색</a>',
+					'<strong>떠오르는 대로 입력하기</strong>: 대소문자나 발음 구별 부호를 가리지 않고, 초성으로도 — 「새 고객」은 <code>새고</code> — 오타 한 글자는 눈감아 주며, <code>고객 대전</code>은 고객 테이블에서 「대전」을 찾습니다. 자주 여는 항목이 위로 올라옵니다.',
+					'<strong>모든 명령을 키보드로</strong>: 만들기, 이동하기, 닫기, 실행 취소, 테마 변경, 페이지 링크 복사. <code>&gt;</code>는 명령만, <code>#</code>는 개체만, <code>/</code>는 행만 찾습니다. <strong>Tab</strong>은 테이블이나 데이터베이스 안에서 찾습니다.',
+					'<strong>질문이 있나요?</strong> 그대로 입력하세요: <strong>Copilot에게 질문</strong>이 열린 데이터베이스를 대상으로 그 질문을 전달합니다.',
+				],
+			},
+			questions: {
+				date: '2026-09-27',
+				title: '나만의 질문, 텍스트 속 숫자',
+				tag: '신규',
+				items: [
+					'<strong>누구나 자신의 질문을 저장할 수 있습니다</strong>, 관리 권한이 없어도: 개인 질문은 본인만 볼 수 있고, 데이터베이스를 관리하는 사람은 쿼리처럼 데이터베이스 전체나 그룹과 공유할 수 있습니다. <a href="/fonctionnalites/tableaux-de-bord/">대시보드</a>',
+					'<strong>질문은 탭에서 열립니다</strong>, 테이블 옆에서: <strong>새 질문</strong>과 <strong>새 SQL 질문</strong>은 탭 바의 <strong>+</strong>와 데이터베이스 메뉴에 있습니다. 탭은 그 안에 남겨 둔 내용을 그대로 유지합니다. <strong>복사본 저장</strong>은 수정할 수 없는 질문을 내 것으로 만듭니다.',
+					'<strong>텍스트 속 숫자</strong>: 이제 서식을 지원하는 대시보드 텍스트가 카드, 질문, 필터에서 가져온 값 — <code>{{chiffre_affaires}}</code> — 을 인용합니다. 읽는 사람의 권한으로 계산되며, 링크로 공유된 대시보드에서도 마찬가지입니다. <a href="/fonctionnalites/tableaux-de-bord/#텍스트-속-숫자">텍스트 속 숫자</a>',
+					'쿼리, SQL 뷰, 질문도 각자의 메뉴에서 마우스 오른쪽 클릭으로 삭제할 수 있습니다.',
+				],
+			},
+			addresses: {
+				date: '2026-09-27',
+				title: '화면마다 하나씩의 주소',
+				tag: '신규',
+				items: [
+					'<strong>주소가 화면을 따라갑니다</strong>: 테이블, 보기, 행의 세부 정보, 대시보드, 자동화, 질문, 내 설정 — <code>/bases/ventes/tables/opportunites?ligne=…</code>. 즐겨찾기에 추가하거나 메시지에 붙여 넣으면, 누구나 자신의 권한으로 같은 곳에 도착합니다. <a href="/fonctionnalites/collaboration/#각-화면으로-가는-링크">각 화면으로 가는 링크</a>',
+					'브라우저의 <strong>뒤로</strong>·<strong>앞으로</strong> 버튼을 누르면 있던 곳으로 돌아갑니다. 아무것도 가리키지 않는 주소는 「이 페이지는 존재하지 않습니다」를 표시합니다.',
+				],
+			},
+			demo: {
+				date: '2026-09-27',
+				title: '체험할 수 있는 데모, 내 언어로',
+				tag: '신규',
+				items: [
+					'<strong>데모</strong>는 <a href="https://demo.basedb.eodia.com">demo.basedb.eodia.com</a>에 있습니다: 계정에는 브라우저 언어가 미리 채워지고, 그 언어의 데이터베이스가 함께 제공됩니다. 모든 것을 읽고 이미 있는 것을 수정할 수 있지만, 생성, 삭제, AI는 비활성화되어 있으며, 데이터베이스는 매일 밤 처음 상태로 돌아갑니다.',
+					'<strong>나만의 데모</strong>: <code>BASEDB_DEMO=1</code>은 언어별로 미리 준비된 공유 계정을 갖춘, 누구에게나 열린 인스턴스를 만듭니다. <a href="/hebergement/variables/#공개-데모">변수</a>',
+					'<strong>링크마다 다른 언어</strong>: basedb 주소 끝에 붙이는 <code>?lang=de</code>는 로그인 화면이나 공유된 페이지를 독일어로 보여 줍니다. 이렇게 사이트는 페이지의 언어로 데모까지 안내합니다. <a href="/fonctionnalites/droits/#내-설정">내 설정</a>',
+				],
+			},
+			templateLanguages: {
+				date: '2026-09-27',
+				title: '템플릿도 내 언어로',
+				tag: '신규',
+				items: [
+					'<strong>공식 템플릿은 화면의 언어로 만들어집니다</strong>: 테이블, 필드, 선택지, 보기, 대시보드, 자동화, AI 지시문 — 그리고 언어에 따라 배경이 통째로 바뀌는 예시 행까지. 리옹의 「Boulangerie Martin」은 한국어에서는 대전의 「미소당」이 됩니다. <a href="/fonctionnalites/modeles/#내-언어로">템플릿</a>',
+					'<a href="/modeles/">사이트의 갤러리</a>는 각 템플릿을 페이지의 언어로 보여 줍니다.',
+					'<strong>템플릿 하나에 여러 사전</strong>: 템플릿은 프랑스어로 한 번만 작성됩니다. 각 언어는 그 텍스트만 번역하며, basedb가 스스로 각 레이블이 인용되는 곳까지 따라갑니다. 템플릿을 망가뜨릴 사전은 제공되지 않습니다. <a href="/fonctionnalites/modeles/#모든-인스턴스에-템플릿-게시하기">템플릿 게시하기</a>',
+				],
+			},
+			details: {
+				date: '2026-09-27',
+				title: '그 외에도',
+				items: [
+					'<strong>예시 행이 없는 템플릿</strong>: 「예시 데이터 불러오기」를 선택하지 않으면 빈 테이블이 만들어져 내 데이터를 바로 채울 수 있습니다. <a href="/fonctionnalites/modeles/#템플릿으로-시작하기">템플릿으로 시작하기</a>',
+					'<strong>API 및 MCP 문서</strong>는 각 데이터베이스마다 화면의 언어로 작성됩니다. <a href="/integrations/api-rest/#자동-생성-문서">자동 생성 문서</a>',
+					'브라우저가 자체 도구 설명을 보여 주던 곳에는 이제 앱 테마에 맞춘 도구 설명이 표시됩니다. 메뉴의 「삭제」는 빨간색으로 표시됩니다. 댓글의 시간에 마우스를 올리면 전체 날짜가 표시됩니다.',
+				],
+			},
 			languages: {
 				date: '2026-09-27',
 				title: '서식 있는 텍스트, 변수, 더 읽기 쉬운 칸반',

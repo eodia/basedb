@@ -37,7 +37,7 @@ No menu **⋯** da base: **Nova tabela**. Depois, adicione os campos dela em
 | Client | Relação → Clients |
 | Notes | Texto longo (Markdown) |
 
-Mais tarde, uma fórmula (`JOURS([Échéance]; AUJOURDHUI())`), uma pesquisa (a cidade do cliente)
+Mais tarde, uma fórmula (`DAYS([Échéance], TODAY())`), uma pesquisa (a cidade do cliente)
 ou uma agregação (o valor total por cliente) são adicionadas da mesma forma — veja
 [Tabelas e campos](/basedb/pt-br/fonctionnalites/tables-et-champs/).
 
@@ -71,7 +71,7 @@ responde. Detalhes em [Formulários compartilhados](/basedb/pt-br/fonctionnalite
 
 ## 6. Ler em SQL
 
-Menu **⋯** da base → **Nova consulta SQL**: suas tabelas estão lá, com o nome verdadeiro.
+Menu **⋯** da base → **Consulta SQL**: suas tabelas estão lá, com o nome verdadeiro.
 
 ```sql
 SELECT nom, statut, montant

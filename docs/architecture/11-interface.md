@@ -252,8 +252,8 @@ tout : montrée sans filtre, elle montrerait plus qu'elle n'a été faite pour m
 
 ### 1.7 Le SQL de chacun, et les requêtes enregistrées
 
-Un onglet SQL s'ouvre sur toute base qu'on voit — le « + » de la barre d'onglets, ou
-« Nouvelle requête SQL » dans le menu de la base. **Ce qu'il lit dépend de qui le lance**,
+Un onglet SQL s'ouvre sur toute base qu'on voit — « Requête SQL », au « + » de la barre
+d'onglets ou dans le menu de la base. **Ce qu'il lit dépend de qui le lance**,
 et le résultat le dit :
 
 - qui gère la structure de la base (`manage_schema`) a la **console** : tout le schéma,
@@ -627,8 +627,8 @@ l'a été.
 ### 5.5 Tableaux de bord et modèles
 
 « Tableaux de bord », dans le bloc de la base ouverte en bas de la barre latérale, ouvre
-les tableaux de bord de la base (chapitre 18) : à gauche, ses tableaux de bord, ses questions
-enregistrées et « Explorer les données » ; au centre, le tableau choisi, ses onglets, ses
+les tableaux de bord de la base (chapitre 18) : à gauche, ses tableaux de bord, les questions
+enregistrées qu'on peut ouvrir et « Explorer les données » ; au centre, le tableau choisi, ses onglets, ses
 filtres et ses cartes sur une grille de vingt-quatre colonnes. Qui construit la base passe en
 mode édition — placer une question, un titre, un texte, une page intégrée, déplacer et
 redimensionner les cartes, ajouter un onglet ou un filtre et le relier aux cartes. Chaque carte
@@ -637,6 +637,15 @@ inaccessible », et une ligne d'un tableau ouvre sa fiche. « Partager », pour 
 base, invite à la base ou donne un lien vers ce seul tableau (chapitre 18 §2.5), lu en lecture
 seule avec les droits de qui l'a publié. Une question n'est pas une requête enregistrée (§1.7) :
 elle vit dans les tableaux de bord, avec sa visualisation.
+
+Chacun enregistre ses questions, que lui seul voit ; qui construit la base les partage avec
+toute la base ou avec des groupes — les trois portées des requêtes enregistrées (§1.7), et le
+même dialogue « Nom et partage ». Un tableau de bord ne cite qu'une question de toute la base :
+une autre y entre recopiée dans la carte. Le menu d'une question de la liste — clic droit, ou
+« ⋯ » au survol — l'ouvre, l'ouvre dans un onglet de l'espace de travail, change son nom et sa
+portée, ou la supprime ; « Nouvelle question » et « Nouvelle question SQL », au « + » de la
+barre d'onglets et dans le menu de la base, en ouvrent une dans un onglet. Un onglet de question
+garde ce qu'on y a laissé, modifications comprises.
 
 **La galerie de modèles** (chapitre 20) s'ouvre du dialogue « Nouvelle base » et d'un
 projet vide. En tête, une phrase à l'IA — « Décrivez ce que vous voulez gérer » — ; à
@@ -961,7 +970,8 @@ des jetons et des webhooks, renommage physique et alias, vues de grille partagé
 « Paramètres », dans le menu du profil en bas à gauche, ouvre une page à la place des
 données, ouverte à tous : tout ce qui y figure porte sur la personne connectée, rien sur
 les données, et rien de ce qu'un administrateur seul règle. Cinq onglets ; une adresse
-les nomme (`/?parametres=profil`, `securite`, `apparence`, `notifications`, `jetons`).
+les nomme (`/parametres/profil`, `securite`, `apparence`, `notifications`, `jetons` ;
+l'ancienne forme `/?parametres=profil`, celle du retour d'un fournisseur, y mène encore).
 
 | Onglet | Ce qu'on y fait | Garde |
 |---|---|---|
@@ -1027,6 +1037,43 @@ L'outillage est dans `tooling/i18n/` : `codemod.mjs` enveloppe les textes franç
 fichier dans `$t`, `extract.mjs` dresse le catalogue source, `check.mjs` vérifie chaque
 catalogue (phrases manquantes, `{valeurs}` perdues, pluriels incomplets), et
 `glossary.json` fixe les termes du produit dans chaque langue.
+
+## 11. Les adresses
+
+L'application est une seule page, mais **l'adresse suit l'écran** : on met en favori une
+table, une vue, une fiche, un tableau de bord, on colle le lien dans un message, et les
+boutons précédent et suivant du navigateur ramènent où l'on était. Une adresse nomme un
+**endroit**, jamais l'état où on l'a laissé : filtres, tris et largeurs restent la surcharge
+du navigateur (§1.4).
+
+| Adresse | Endroit |
+|---|---|
+| `/bases/<base>` | la base : l'onglet ouvert sur elle, sinon sa première table |
+| `/bases/<base>/tables/<table>` | une table ; `?vue=<id>` une vue enregistrée, `?ligne=<id>` la fiche ouverte |
+| `/bases/<base>/vues-sql/<id>`, `/requetes/<id>`, `/questions/<id>` | une vue SQL, une requête, une question dans un onglet |
+| `/bases/<base>/tableaux-de-bord[/<id>]`, `…/questions/<id>` | les tableaux de bord, l'un d'eux, une question à côté |
+| `/bases/<base>/automatisations[/<id>]` | les automatisations, l'une d'elles |
+| `/bases/<base>/structure`, `historique`, `integrations`, `documentation` | une section de la base |
+| `/projets/<id>` | un projet sans base |
+| `/parametres/<onglet>`, `/administration/<onglet>` | les paramètres (§10), l'administration |
+
+**Des noms plutôt que des identifiants**, là où l'objet en a un : une base s'écrit sans le
+préfixe `b_<tenant>_` que partagent toutes celles de l'instance (chapitre 01 §5), une table
+par son nom physique. Renommées, leurs onglets se ferment et se rouvrent sous le nouveau nom
+(chapitre 06 §2), et l'ancienne adresse ne mène plus à rien. Tout est rangé sous un mot
+(`/bases/…`) : une base peut s'appeler `v`, `api` ou `mcp`, qui mènent déjà ailleurs.
+
+**Une entrée d'historique par geste.** Un clic ou une touche ouvre une entrée ; ce que
+l'écran choisit ensuite de lui-même — le tableau de bord qu'il ouvre, la première table
+d'une base, la fiche qu'un lien ouvre une fois sa table là — la remplace, sans quoi il
+faudrait presser deux fois « précédent » pour quitter une section. L'adresse d'arrivée est
+remplacée, pas empilée.
+
+**Une adresse qui ne mène à rien** — faute de frappe, objet renommé, supprimé, ou que la
+personne ne voit pas — affiche « Cette page n'existe pas » à la place des données, la
+navigation restant à gauche : les deux cas se lisent à l'identique (§7). Ce qui vit à
+l'intérieur d'une section — une vue, une fiche, un tableau de bord disparus — laisse
+l'écran sur ce qu'il peut montrer, et l'adresse le dit.
 
 ---
 

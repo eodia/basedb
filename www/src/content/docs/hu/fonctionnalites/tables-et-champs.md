@@ -74,12 +74,12 @@ A formátum utólag is módosítható (**Megjelenítés**, a mező szerkesztés�
 
 ## Képletek
 
-A képlet franciául íródik, a mezők szögletes zárójelben, az argumentumokat `;` választja el:
+A képlet angolul íródik (a francia nevek is működnek), a mezők szögletes zárójelben, az argumentumokat `,` választja el:
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 A szerkesztő felkínálja a beszúrható mezőket és egy függvénypanelt; hiba esetén megnevezi a
@@ -87,14 +87,14 @@ hibás mezőt vagy karaktert.
 
 | Család | Függvények |
 |---|---|
-| Logikai | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` |
-| Számok | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` |
-| Szöveg | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` |
-| Dátumok | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` |
+| Logikai | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
+| Számok | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
+| Szöveg | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
+| Dátumok | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
 | Operátorok | `+ - * /`, `&` szövegek összefűzéséhez, `= <> < <= > >=` |
 
 A képletből a PostgreSQL **generált oszlopa** lesz: a `psql` és az Ön eszközei ugyanúgy
-olvassák, mint a többit. Az a képlet, amely a mai naptól függ (`AUJOURDHUI()`, `MAINTENANT()`),
+olvassák, mint a többit. Az a képlet, amely a mai naptól függ (`TODAY()`, `NOW()`),
 vagy amely kikeresésre, illetve aggregálásra hivatkozik, **olvasáskor számítódik**: a
 basedb-ben szűrhető és rendezhető, de közvetlen SQL-ben nem létezik.
 

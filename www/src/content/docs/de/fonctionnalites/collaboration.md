@@ -1,6 +1,6 @@
 ---
 title: Zusammenarbeit
-description: Kommentare und Erwähnungen, Benachrichtigungen, Aktualisierungen in Echtzeit und Präsenz.
+description: Kommentare und Erwähnungen, Benachrichtigungen, Aktualisierungen in Echtzeit, Präsenz und ein Link zu jedem Bildschirm.
 ---
 
 Mehrere Personen arbeiten gleichzeitig an derselben Datenbank: Jede sieht die Schreibvorgänge der
@@ -46,6 +46,29 @@ unter den Fingern ersetzt.
 Die Gesichter der Personen, die **dieselbe Tabelle** ansehen, erscheinen oben auf dem Bildschirm;
 die derjenigen, die **dieselbe Zeile** geöffnet haben, im Kopf ihrer Zeilendetails. Im Raster
 erscheint der Mauszeiger der anderen auf der Zelle, über der er gerade steht.
+
+## Ein Link zu jedem Bildschirm
+
+Die Adresse des Browsers folgt dem, was Sie gerade ansehen: eine Tabelle, eine ihrer Ansichten, die
+Zeilendetails einer Zeile, ein Dashboard, eine Automatisierung, eine Frage, Ihre Einstellungen.
+Fügen Sie sie in eine Nachricht ein: Ihr Kollege oder Ihre Kollegin kommt an derselben Stelle an,
+mit den eigenen Berechtigungen. Setzen Sie ein Lesezeichen; die Zurück- und Vorwärts-Schaltflächen
+des Browsers bringen Sie dorthin zurück, wo Sie waren.
+
+| Adresse | Was sie öffnet |
+|---|---|
+| `/bases/ventes/tables/opportunites` | die Tabelle „Opportunités“ der Datenbank „Ventes“ |
+| `/bases/ventes/tables/opportunites?vue=…` | eine ihrer Ansichten |
+| `/bases/ventes/tables/opportunites?ligne=…` | die Zeilendetails einer ihrer Zeilen |
+| `/bases/ventes/tableaux-de-bord/…` | ein Dashboard |
+| `/bases/ventes/automatisations/…` | eine Automatisierung |
+| `/parametres/apparence` | Ihre Einstellungen |
+
+Eine Adresse nennt einen **Ort**, nicht den Zustand, in dem Sie sie verlassen haben: Filter,
+Sortierungen und Spaltenbreiten bleiben die des jeweiligen Browsers. Eine Datenbank und eine
+Tabelle werden darin mit ihrem PostgreSQL-Namen geschrieben: Werden sie umbenannt, führt die alte
+Adresse ins Leere. Eine Adresse, die ins Leere führt – ein Tippfehler, ein gelöschtes Objekt, oder
+etwas, das Sie nicht sehen dürfen – zeigt „Diese Seite existiert nicht“.
 
 ## Rückgängig machen
 

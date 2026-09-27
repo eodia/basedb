@@ -9,6 +9,7 @@ import {
 } from '@/components/app/settings/section'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Hint } from '@/components/ui/tooltip'
 import { type Identities, type Me, api } from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
@@ -334,22 +335,29 @@ function IdentitiesSection() {
                         })}
                   </span>
                 </span>
-                <Button
-                  variant={linked ? 'ghost' : 'outline'}
-                  size="sm"
-                  disabled={busy !== null || last || found?.password === false}
-                  title={
+                {/* A disabled button raises no pointer events: the hint hangs on a wrapper so
+                    it can still say why the account cannot be unlinked. */}
+                <Hint
+                  label={
                     last
                       ? $t('Votre seul moyen de connexion : il ne peut pas être délié.')
                       : found?.password === false
                         ? $t('Demande de confirmer un mot de passe, et votre compte n’en a pas.')
                         : undefined
                   }
-                  onClick={() => void (linked ? unlink(p.slug) : link(p.slug))}
                 >
-                  {busy === p.slug && <Loader2 className="animate-spin" />}
-                  {linked ? $t('Délier') : $t('Lier')}
-                </Button>
+                  <span className="inline-flex">
+                    <Button
+                      variant={linked ? 'ghost' : 'outline'}
+                      size="sm"
+                      disabled={busy !== null || last || found?.password === false}
+                      onClick={() => void (linked ? unlink(p.slug) : link(p.slug))}
+                    >
+                      {busy === p.slug && <Loader2 className="animate-spin" />}
+                      {linked ? $t('Délier') : $t('Lier')}
+                    </Button>
+                  </span>
+                </Hint>
               </li>
             )
           })}

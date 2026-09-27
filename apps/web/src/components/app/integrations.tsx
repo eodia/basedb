@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type DescribedBase,
   type Integration,
@@ -444,21 +445,22 @@ function Synced({
                 <RefreshCw className={cn('size-3.5', busy === table.table && 'animate-spin')} />
                 {$t('Synchroniser')}
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs text-muted-foreground"
-                title={$t('La table redevient une table ordinaire, avec ses lignes')}
-                onClick={async () => {
-                  await api
-                    .stopSyncedTable(base.name, table.table)
-                    .catch((e) => setError(messageFor(e)))
-                  void load()
-                  onChanged()
-                }}
-              >
-                {$t('Arrêter')}
-              </Button>
+              <Hint label={$t('La table redevient une table ordinaire, avec ses lignes')}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-muted-foreground"
+                  onClick={async () => {
+                    await api
+                      .stopSyncedTable(base.name, table.table)
+                      .catch((e) => setError(messageFor(e)))
+                    void load()
+                    onChanged()
+                  }}
+                >
+                  {$t('Arrêter')}
+                </Button>
+              </Hint>
             </div>
           ))}
         </div>

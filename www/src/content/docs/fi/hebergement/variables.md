@@ -84,6 +84,24 @@ Katso [Tilit ja kirjautuminen](/basedb/fi/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | tekoälykenttien laskennat tuntia ja työtilaa kohden |
 | `BASEDB_AI_WORKER` | `1` | `0`: ei taustalaskentaa tässä prosessissa |
 
+## Julkinen esittely
+
+Kaikille avoin instanssi, kuten [demo.basedb.eodia.com](https://demo.basedb.eodia.com):
+kirjautumisnäkymä esitäyttää jaetun tilin, vierailija lukee kaiken ja muokkaa olemassa olevaa,
+mutta ei luo eikä poista mitään – tietokantaa, taulukkoa, riviä, tiedostoa, kommenttia, tiliä,
+tunnusta, linkkiä –, ja tekoäly vastaa, ettei se kuulu esittelyyn. SQL-konsoli vain lukee
+siellä. Tietokannan palauttaminen ennalleen joka yö on omalla vastuullasi.
+
+| Muuttuja | Oletus | Tehtävä |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: instanssista tulee julkinen esittely |
+| `BASEDB_DEMO_ACCOUNTS` | — | yksi tili kieltä kohden, pilkuilla erotettuina: `fr=demo@demo.com,en=demo-en@demo.com`; kirjautumisnäkymä esitäyttää oman kielensä tilin, muuten englanninkielisen, muuten ensimmäisen, ja tarjoaa muut vaihtoehtoina. Luo nämä tilit, kukin omalla projektillaan, ennen esittelyn käyttöönottoa: se estää luomisen kaikilta, ylläpitäjä mukaan lukien |
+| `BASEDB_DEMO_PASSWORD` | — | yhdessä `BASEDB_DEMO_ACCOUNTS`-muuttujan kanssa niiden salasana, sama kaikille, julkaistuna niiden kanssa |
+
+Ilman `BASEDB_DEMO_ACCOUNTS`-muuttujaa jaettu tili on ylläpitäjä, jonka nimeävät
+`BASEDB_ADMIN_EMAIL` ja `BASEDB_ADMIN_PASSWORD`. Esittelyn osoite kirjautuu sisään julkaistulla
+salasanalla, kirjoitettiinpa mitä tahansa: väärät yritykset eivät lukitse sitä kaikilta.
+
 ## Vain kehityskäyttöön
 
 | Muuttuja | Tehtävä |

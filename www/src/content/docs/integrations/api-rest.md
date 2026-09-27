@@ -81,7 +81,8 @@ une session de l’interface : un jeton lit et écrit des lignes, il ne change p
 
 Chaque base a sa page **Documentation API et MCP** : pour chaque table, ses points d’accès, ses
 colonnes, des exemples en cURL et en JavaScript. Elle est **filtrée par vos droits** — deux
-lecteurs en obtiennent deux versions — et existe aussi en OpenAPI 3.1
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+lecteurs en obtiennent deux versions —, écrite **dans la langue de votre écran**, et existe aussi
+en OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Les noms, les chemins et les
+codes d’erreur restent les mêmes dans toutes les langues.
 
 ![La documentation générée d’une base](../../../assets/screens/documentation-api.png)

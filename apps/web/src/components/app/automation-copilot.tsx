@@ -5,6 +5,7 @@ import { ResizablePanel } from '@/components/app/resizable-panel'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type AutomationCopilotAction,
   type AutomationCopilotAnswer,
@@ -252,16 +253,17 @@ export function AutomationCopilot({
           </span>
         </span>
         {conversation.turns.length > 0 && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={restart}
-            disabled={busy}
-            aria-label={$t('Nouvelle conversation')}
-            title={$t('Nouvelle conversation')}
-          >
-            <RotateCcw className="size-4" />
-          </Button>
+          <Hint label={$t('Nouvelle conversation')}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={restart}
+              disabled={busy}
+              aria-label={$t('Nouvelle conversation')}
+            >
+              <RotateCcw className="size-4" />
+            </Button>
+          </Hint>
         )}
         <Button
           variant="ghost"

@@ -72,7 +72,7 @@ export default {
 							tables: {
 								href: '/fonctionnalites/tables-et-champs/',
 								title: 'Tabele și câmpuri',
-								text: 'Câmpuri pentru orice, relații, formule în franceză.',
+								text: 'Câmpuri pentru orice, relații, formule ca într-o foaie de calcul.',
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
@@ -776,9 +776,9 @@ export default {
 					href: '/fonctionnalites/tableaux-de-bord/',
 				},
 				formulas: {
-					code: 'SI([Montant] > 10000; "Grand compte"; "")',
-					title: 'Formule în franceză',
-					text: 'Ca într-o foaie de calcul — SI, ARRONDI, JOURS… — dar calculate pentru toată echipa.',
+					code: 'IF([Montant] > 10000, "Grand compte", "")',
+					title: 'Formule în franceză sau engleză',
+					text: 'Ca într-o foaie de calcul — SI, ARRONDI, JOURS… sau IF, ROUND, DAYS — dar calculate pentru toată echipa.',
 					href: '/fonctionnalites/tables-et-champs/#formule',
 				},
 				rights: {
@@ -886,7 +886,7 @@ export default {
 			items: [
 				{
 					q: 'Trebuie să știți să programați?',
-					a: 'Nu. Tabelele, vizualizările, formularele, tablourile de bord și automatizările dumneavoastră se creează cu mouse-ul. Formulele se scriu în franceză, ca într-o foaie de calcul: SI, ARRONDI, JOURS…',
+					a: 'Nu. Tabelele, vizualizările, formularele, tablourile de bord și automatizările dumneavoastră se creează cu mouse-ul. Formulele se scriu ca într-o foaie de calcul, în franceză sau în engleză: SI sau IF, ARRONDI sau ROUND, JOURS sau DAYS…',
 				},
 				{
 					q: 'Cât costă?',
@@ -1253,8 +1253,8 @@ export default {
 			},
 			formulas: {
 				title: 'Relații și formule',
-				text: 'Chei străine reale, formule în franceză calculate de PostgreSQL și căutări, agregări și numărări prin relații.',
-				code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+				text: 'Chei străine reale, formule în franceză sau în engleză calculate de PostgreSQL și căutări, agregări și numărări prin relații.',
+				code: 'ROUND([Montant HT] * (1 + [Taux de TVA]), 2)',
 				href: '/fonctionnalites/tables-et-champs/#formule',
 			},
 			richText: {
@@ -1398,6 +1398,76 @@ export default {
 		title: 'Ce s-a schimbat în basedb',
 		intro: 'Detaliile fiecărei schimbări se află în <a href="https://github.com/eodia/basedb/commits/main">istoricul depozitului</a>. Ce urmează: <a href="/feuille-de-route/">foaia de parcurs</a>.',
 		entries: {
+			formulaLanguages: {
+				date: '2026-09-28',
+				title: 'Formule în franceză sau în engleză',
+				tag: 'Nou',
+				items: [
+					'<strong>Tastați o formulă în franceză sau în engleză</strong>, pe orice ecran, chiar și combinând cele două limbi: <code>SI</code> sau <code>IF</code>, <code>ARRONDI</code> sau <code>ROUND</code>, <code>JOURS</code> sau <code>DAYS</code>… Argumentele se separă prin <code>;</code> sau prin <code>,</code>. <a href="/fonctionnalites/tables-et-champs/#formule">Formulele</a>',
+					'<strong>Ea se recitește în limba ecranului</strong>: în franceză pe un ecran francez, în engleză în celelalte nouăsprezece limbi — inclusiv formulele existente și panoul „Funcții”. API-ul redă o formulă în limba cerută, altfel în engleză.',
+					'Șabloanele oficiale, servite într-o altă limbă decât franceza, vin cu formulele lor în engleză. Nimic nu se schimbă în bază: aceleași coloane, același SQL, fără migrare.',
+				],
+			},
+			search: {
+				date: '2026-09-27',
+				title: 'Totul, dintr-un singur loc: Ctrl+K',
+				tag: 'Nou',
+				items: [
+					'<strong>Un singur câmp pentru tot</strong> — <strong>Ctrl+K</strong>, sau câmpul din centrul barei de sus: tabele, vizualizări, întrebări, tablouri de bord, automatizări, coloane și rândurile în sine, citite cu drepturile dumneavoastră; pe un ecran mare, previzualizarea rezultatului ales. <a href="/fonctionnalites/recherche/">Căutarea</a>',
+					'<strong>Tastați așa cum gândiți</strong>: fără diacritice și fără majuscule, după inițiale — <code>cn</code> pentru „Client nou” —, o greșeală de tastare este iertată, <code>clienti cluj</code> pentru a căuta „cluj” în tabelul clienților; ce deschideți des revine în frunte.',
+					'<strong>Toate comenzile de la tastatură</strong>: creați, mergeți la, închideți, anulați, schimbați tema, copiați linkul paginii. <code>&gt;</code> caută doar în comenzi, <code>#</code> în obiecte, <code>/</code> în rânduri; <strong>Tab</strong> caută într-un tabel sau într-o bază.',
+					'<strong>Aveți o întrebare?</strong> Tastați-o: <strong>Întrebați Copilot</strong> i-o adresează, pe baza deschisă.',
+				],
+			},
+			questions: {
+				date: '2026-09-27',
+				title: 'Întrebări proprii, cifre în text',
+				tag: 'Nou',
+				items: [
+					'<strong>Fiecare își salvează întrebările</strong>, fără nivelul Gestionare: personale, doar dumneavoastră le vedeți; cine gestionează baza le partajează cu toată baza sau cu grupuri, ca interogările. <a href="/fonctionnalites/tableaux-de-bord/">Tablourile de bord</a>',
+					'<strong>O întrebare într-o filă</strong>, alături de tabele: <strong>Întrebare nouă</strong> și <strong>Întrebare SQL nouă</strong>, la <strong>+</strong> din bara de file și în meniul bazei; fila păstrează ce ați lăsat în ea. <strong>Salvați o copie</strong> face a dumneavoastră o întrebare pe care nu o puteți modifica.',
+					'<strong>Cifre în text</strong>: un text de tablou de bord, acum formatat, citează o valoare — <code>{{chiffre_affaires}}</code> — extrasă dintr-un card, o întrebare sau un filtru, calculată cu drepturile cititorului, chiar și într-un tablou de bord partajat printr-un link. <a href="/fonctionnalites/tableaux-de-bord/#cifre-în-text">Cifre în text</a>',
+					'Interogările, vizualizările SQL și întrebările se șterg și din meniul lor, cu un clic dreapta.',
+				],
+			},
+			addresses: {
+				date: '2026-09-27',
+				title: 'O adresă pentru fiecare ecran',
+				tag: 'Nou',
+				items: [
+					'<strong>Adresa urmează ecranul</strong>: un tabel, o vizualizare, detaliile unui rând, un tablou de bord, o automatizare, o întrebare, setările dumneavoastră — <code>/bases/ventes/tables/opportunites?ligne=…</code>. Adăugați-o la favorite, lipiți-o într-un mesaj: se ajunge în același loc, cu drepturile proprii. <a href="/fonctionnalites/collaboration/#un-link-către-fiecare-ecran">Un link către fiecare ecran</a>',
+					'Butoanele <strong>înapoi</strong> și <strong>înainte</strong> ale navigatorului vă readuc unde erați; o adresă care nu duce nicăieri afișează „Această pagină nu există”.',
+				],
+			},
+			demo: {
+				date: '2026-09-27',
+				title: 'O demonstrație de încercat, în limba dumneavoastră',
+				tag: 'Nou',
+				items: [
+					'<strong>Demonstrația</strong>, pe <a href="https://demo.basedb.eodia.com">demo.basedb.eodia.com</a>: contul este precompletat în limba navigatorului dumneavoastră, cu o bază în această limbă. Puteți citi tot și modifica ce există deja; creările, ștergerile și AI-ul sunt dezactivate acolo, iar baza revine în fiecare noapte la starea inițială.',
+					'<strong>Propria dumneavoastră demonstrație</strong>: <code>BASEDB_DEMO=1</code> deschide o instanță pentru toată lumea, cu un cont partajat pe limbă, pregătit dinainte. <a href="/hebergement/variables/#demo-publică">Variabilele</a>',
+					'<strong>O limbă pentru fiecare link</strong>: <code>?lang=de</code> la finalul unei adrese basedb arată în germană ecranul de conectare sau o pagină partajată; astfel site-ul duce la demonstrație în limba paginii. <a href="/fonctionnalites/droits/#setările-dumneavoastră">Setările dumneavoastră</a>',
+				],
+			},
+			templateLanguages: {
+				date: '2026-09-27',
+				title: 'Șabloanele în limba dumneavoastră',
+				tag: 'Nou',
+				items: [
+					'<strong>Șabloanele oficiale se creează în limba ecranului</strong>: tabele, câmpuri, opțiuni, vizualizări, tablouri de bord, automatizări, instrucțiuni pentru AI — și rânduri de exemplu dintr-o lume adaptată fiecărei limbi: „Boulangerie Martin” din Lyon devine „Martin’s Bakery” în Portland. <a href="/fonctionnalites/modeles/#în-limba-dumneavoastră">Șabloanele</a>',
+					'<a href="/modeles/">Galeria site-ului</a> arată fiecare șablon în limba paginii.',
+					'<strong>Un șablon, mai multe dicționare</strong>: un șablon se scrie o singură dată, în franceză; fiecare limbă îi traduce doar textele, iar basedb urmărește el însuși fiecare etichetă oriunde este citată. Un dicționar care ar rupe șablonul nu este servit. <a href="/fonctionnalites/modeles/#publicarea-unui-șablon-pentru-toate-instanțele">Publicarea unui șablon</a>',
+				],
+			},
+			details: {
+				date: '2026-09-27',
+				title: 'Și altele',
+				items: [
+					'<strong>Un șablon fără rândurile sale de exemplu</strong>: „Încărcați datele de exemplu”, debifată, creează tabele goale, pregătite pentru datele dumneavoastră. <a href="/fonctionnalites/modeles/#pornirea-de-la-un-șablon">Pornirea de la un șablon</a>',
+					'<strong>Documentația API și MCP</strong> a fiecărei baze se scrie în limba ecranului dumneavoastră. <a href="/integrations/api-rest/#documentația-generată">Documentația generată</a>',
+					'Indicii vizuale în tema aplicației, pretutindeni unde navigatorul le arăta pe ale sale; „Ștergeți” din meniuri, în roșu; data completă la trecerea peste ora unui comentariu.',
+				],
+			},
 			aiProvider: {
 				date: '2026-09-27',
 				title: 'AI-ul ales de dumneavoastră, chiar și pe propriul server',

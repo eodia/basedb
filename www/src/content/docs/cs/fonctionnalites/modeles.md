@@ -19,8 +19,22 @@ její popisek a, obsahuje-li pole AI, na váš souhlas s tím, aby hodnoty, kter
 citují, odcházely k poskytovateli AI instance. Bez tohoto souhlasu jde o běžná pole
 vyplněná ukázkovými hodnotami.
 
+**Načíst ukázková data**, ve výchozím stavu zaškrtnuté, naplní tabulky ukázkovými řádky, abyste
+viděli databázi v akci. Po odškrtnutí zůstanou tabulky prázdné, připravené pro vaše vlastní
+data – zobrazení, řídicí panely a automatizace se přesto vytvoří.
+
 Prázdný projekt nabízí také **ukázkovou databázi**: malou agenturu, její klienty, projekty,
 úkoly, faktury a recenze, která předvádí všechny stránky basedb.
+
+## Ve vašem jazyce
+
+Oficiální šablony se čtou a vytvářejí **v jazyce obrazovky**: tabulky, pole, možnosti volby,
+ukázkové řádky, zobrazení, řídicí panely, automatizace a pokyny pro AI. Ukázkové řádky mění
+svět podle jazyka: z „Boulangerie Martin“ z Lyonu se v češtině stává „Pekárna Novákova“
+v Brně.
+
+Šablona importovaná do vaší instance, nebo uložená z databáze, je napsaná někým: čte se tak,
+jak byla napsána.
 
 ## Vyžádání od AI
 
@@ -109,6 +123,14 @@ a galerie se změní ve všech instancích.
 
 Každá šablona se při sestavení webu ověřuje stejným validátorem, jaký používá server:
 neplatná šablona způsobí selhání sestavení, místo aby se dostala k uživatelům.
+
+Oficiální šablona se píše jednou, francouzsky. Její texty v jiném jazyce jsou slovník,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+– francouzský text, pak jeho překlad –, který web zveřejňuje vedle katalogu
+(`/basedb/modeles/i18n/<langue>.json`). Instance do něj dosadí každý text a sleduje každý
+popisek všude, kde je citován – ve vzorcích, filtrech, zobrazeních, pokynech –, a pak výsledek
+znovu přečte: slovník, který by šablonu rozbil, se neposkytne, francouzská šablona ano. Text
+chybějící ve slovníku zůstává francouzský.
 
 Instance čte adresu `BASEDB_TEMPLATES_URL` – ve výchozím nastavení adresu veřejného webu.
 Nasměrujte ji na vlastní katalog, nebo nastavte `off`, aby nečetla žádný: instance pak

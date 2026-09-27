@@ -1,4 +1,5 @@
 import { BasedbError } from '../errors/index.js'
+import { formulaDialect } from '../formula/language.js'
 import type { Pools } from '../runtime/pool.js'
 import type { RequestContext } from '../tx/context.js'
 import { DOCUMENT_MAX_BYTES, documentCache, etagFor } from './cache.js'
@@ -40,13 +41,16 @@ export interface ServedMeta {
  * happen. `private` because two readers get two different documents.
  */
 export const CACHE_CONTROL = 'private, max-age=0, must-revalidate'
-export const VARY = 'Authorization, Accept-Encoding'
+/** The documentation is written in the language of the screen that asks for it. */
+export const VARY = 'Authorization, Accept-Encoding, X-Basedb-Locale, Accept-Language'
 
 /**
  * Serves one of the four catalog documents.
  *
  * `reference` is the base, empty for the listing. `ifNoneMatch` is the caller's
- * validator, as their browser or their client sends it back.
+ * validator, as their browser or their client sends it back. `language` is the reader's:
+ * the documentation is written in it, and a base's description gives its formulas in
+ * French or in English according to it (`formulaDialect`).
  */
 export async function serveMeta(
   pools: Pools,
@@ -54,12 +58,26 @@ export async function serveMeta(
   kind: MetaKind,
   reference: string,
   ifNoneMatch?: string,
+  language = 'fr',
 ): Promise<ServedMeta> {
   const { grants, raw, versions } = await snapshot(pools, ctx)
+  const dialect = formulaDialect(language)
 
   // The validator is computed from the counters alone — never from the bytes. That is
-  // what lets the next two lines end the request.
-  const etag = etagFor(ctx, versions, grants, kind === 'bases' ? 'meta' : kind, reference)
+  // what lets the next two lines end the request. Two languages are two documents, so
+  // the documentation's validator — and its place in the cache — includes the language,
+  // and a base's description's, the language of its formulas.
+  const etag = etagFor(
+    ctx,
+    versions,
+    grants,
+    kind === 'bases' ? 'meta' : kind,
+    kind === 'doc'
+      ? `${reference}|${language}`
+      : kind === 'meta'
+        ? `${reference}|${dialect}`
+        : reference,
+  )
 
   if (ifNoneMatch !== undefined && matches(ifNoneMatch, etag)) {
     return { etag, notModified: true, bytes: 0 }
@@ -70,7 +88,7 @@ export async function serveMeta(
     return { etag, notModified: false, body: JSON.parse(cached), bytes: cached.length }
   }
 
-  const bases = project(ctx, grants, raw)
+  const bases = project(ctx, grants, raw, dialect)
 
   let body: unknown
   if (kind === 'bases') {
@@ -98,7 +116,7 @@ export async function serveMeta(
       kind === 'openapi'
         ? toOpenApi(found, ctx.tenantId)
         : kind === 'doc'
-          ? toDocumentation(found, ctx.tenantId)
+          ? toDocumentation(found, ctx.tenantId, language)
           : toMeta(found)
   }
 

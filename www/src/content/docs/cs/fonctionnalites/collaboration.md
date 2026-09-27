@@ -1,6 +1,6 @@
 ---
 title: Spolupráce
-description: Komentáře a zmínky, oznámení, aktualizace v reálném čase a přítomnost.
+description: Komentáře a zmínky, oznámení, aktualizace v reálném čase, přítomnost a odkaz na každou obrazovku.
 ---
 
 Na stejné databázi pracuje současně více lidí: každý vidí, jak přicházejí zápisy ostatních,
@@ -43,6 +43,28 @@ právě upravujete, se vám pod rukama nikdy nepřepíše.
 Tváře lidí, kteří se dívají na **stejnou tabulku**, se zobrazují nahoře na obrazovce; tváře
 těch, kdo otevřeli **stejný řádek**, v záhlaví jeho detailu. V mřížce se ukazatel ostatních
 objevuje na buňce, nad kterou se právě nacházejí.
+
+## Odkaz na každou obrazovku
+
+Adresa v prohlížeči sleduje to, na co se díváte: tabulku, jedno z jejích zobrazení, detail
+řádku, řídicí panel, automatizaci, otázku, vaše nastavení. Vložte ji do zprávy: váš kolega se
+dostane na stejné místo, se svými vlastními oprávněními. Přidejte si ji do záložek; tlačítka
+zpět a vpřed v prohlížeči vás vrátí tam, kde jste byli.
+
+| Adresa | Co otevře |
+|---|---|
+| `/bases/ventes/tables/opportunites` | tabulku „Opportunités“ databáze „Ventes“ |
+| `/bases/ventes/tables/opportunites?vue=…` | jedno z jejích zobrazení |
+| `/bases/ventes/tables/opportunites?ligne=…` | detail jednoho z jejích řádků |
+| `/bases/ventes/tableaux-de-bord/…` | řídicí panel |
+| `/bases/ventes/automatisations/…` | automatizaci |
+| `/parametres/apparence` | vaše nastavení |
+
+Adresa pojmenovává **místo**, ne stav, ve kterém jste ho opustili: filtry, řazení a šířky
+sloupců zůstávají takové, jaké má každý prohlížeč. Databáze a tabulka se do ní zapisují svým
+názvem v PostgreSQL: po přejmenování stará adresa nikam nevede. Adresa, která nikam nevede —
+překlep, odstraněný objekt, nebo něco, co nemáte právo vidět — zobrazí „Tato stránka
+neexistuje“.
 
 ## Vrácení změn
 

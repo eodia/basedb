@@ -1,6 +1,6 @@
 ---
 title: Samarbete
-description: Kommentarer och omnämnanden, aviseringar, uppdateringar i realtid och närvaro.
+description: Kommentarer och omnämnanden, aviseringar, uppdateringar i realtid, närvaro och en länk till varje skärm.
 ---
 
 Flera personer arbetar i samma databas samtidigt: var och en ser de andras skrivningar komma in,
@@ -45,6 +45,28 @@ cell som du håller på att redigera ersätts aldrig mitt under fingrarna på di
 Ansiktena på dem som tittar på **samma tabell** visas högst upp på skärmen; de som har öppnat
 **samma rad** visas i sidhuvudet i dess raddetaljer. I rutnätet syns de andras pekare på den
 cell de hovrar över.
+
+## En länk till varje skärm
+
+Webbläsarens adress följer det du tittar på: en tabell, en av dess vyer, raddetaljerna för en
+rad, en instrumentpanel, en automatisering, en fråga, dina inställningar. Klistra in den i ett
+meddelande: din kollega hamnar på samma ställe, med sina egna behörigheter. Lägg den som
+bokmärke; webbläsarens bakåt- och framåtknappar tar dig tillbaka dit du var.
+
+| Adress | Vad den öppnar |
+|---|---|
+| `/bases/ventes/tables/opportunites` | tabellen ”Opportunités” i databasen ”Ventes” |
+| `/bases/ventes/tables/opportunites?vue=…` | en av dess vyer |
+| `/bases/ventes/tables/opportunites?ligne=…` | raddetaljerna för en av dess rader |
+| `/bases/ventes/tableaux-de-bord/…` | en instrumentpanel |
+| `/bases/ventes/automatisations/…` | en automatisering |
+| `/parametres/apparence` | dina inställningar |
+
+En adress namnger en **plats**, inte det tillstånd du lämnade den i: filter, sorteringar och
+kolumnbredder följer varje webbläsare för sig. En databas och en tabell skrivs där med sitt
+PostgreSQL-namn: byts det namnet, leder den gamla adressen ingenstans. En adress som inte leder
+någonstans — ett skrivfel, ett borttaget objekt, eller något du inte har rätt att se — visar
+”Den här sidan finns inte”.
 
 ## Ångra
 

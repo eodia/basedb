@@ -30,8 +30,12 @@ function DialogOverlay({
 function DialogContent({
   className,
   children,
+  showCloseButton = true,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>) {
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  /** False when the content brings its own way out — a full-screen editor's « Fermer ». */
+  readonly showCloseButton?: boolean
+}) {
   return (
     <DialogPrimitive.Portal>
       <DialogOverlay />
@@ -45,10 +49,12 @@ function DialogContent({
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute top-4 right-4 rounded-md p-1 opacity-60 transition-opacity hover:opacity-100">
-          <XIcon className="size-4" />
-          <span className="sr-only">{$t('Fermer')}</span>
-        </DialogPrimitive.Close>
+        {showCloseButton && (
+          <DialogPrimitive.Close className="absolute top-4 right-4 rounded-md p-1 opacity-60 transition-opacity hover:opacity-100">
+            <XIcon className="size-4" />
+            <span className="sr-only">{$t('Fermer')}</span>
+          </DialogPrimitive.Close>
+        )}
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
   )

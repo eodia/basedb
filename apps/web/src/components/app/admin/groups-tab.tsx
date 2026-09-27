@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Hint } from '@/components/ui/tooltip'
 import { type AdminUser, type Group, api } from '@/lib/api/client'
 import { $t, groupName } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
@@ -225,15 +226,16 @@ export function GroupsTab() {
                     <span className="block truncate text-xs text-muted-foreground">{m.email}</span>
                   </span>
                   {group.system !== 'everyone' && (
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={$t('Retirer {email} du groupe', { email: m.email })}
-                      title={$t('Retirer du groupe')}
-                      onClick={() => void act(() => api.setGroupMember(group.id, m.id, false))}
-                    >
-                      <UserMinus className="size-4" />
-                    </Button>
+                    <Hint label={$t('Retirer du groupe')}>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={$t('Retirer {email} du groupe', { email: m.email })}
+                        onClick={() => void act(() => api.setGroupMember(group.id, m.id, false))}
+                      >
+                        <UserMinus className="size-4" />
+                      </Button>
+                    </Hint>
                   )}
                 </li>
               ))}

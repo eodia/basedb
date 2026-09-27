@@ -19,8 +19,22 @@ son libellé et, s’il y a des champs IA, votre accord pour que les valeurs qu�
 partent chez le fournisseur d’IA de l’instance. Sans cet accord, ce sont des champs
 ordinaires, remplis de leurs valeurs d’exemple.
 
+**Charger les données d’exemple**, cochée d’office, remplit les tables de lignes d’exemple
+pour voir la base à l’œuvre. Décochée, les tables restent vides, prêtes pour vos propres
+données — vues, tableaux de bord et automatisations sont créés quand même.
+
 Un projet vide propose aussi la **base de démonstration** : une petite agence, ses clients,
 projets, tâches, factures et avis, qui montre toutes les facettes de basedb.
+
+## Dans votre langue
+
+Les modèles officiels se lisent et se créent **dans la langue de l’écran** : tables, champs,
+choix, lignes d’exemple, vues, tableaux de bord, automatisations et consignes de l’IA. Les
+lignes d’exemple changent de monde avec la langue : la « Boulangerie Martin » de Lyon devient
+« Martin’s Bakery » à Portland en anglais, « Bäckerei Keller » à Leipzig en allemand.
+
+Un modèle importé dans votre instance, ou enregistré depuis une base, est écrit par quelqu’un :
+il se lit tel qu’il a été écrit.
 
 ## Le demander à l’IA
 
@@ -113,6 +127,15 @@ site suffit à changer la galerie de toutes les instances.
 
 Chaque modèle est vérifié à la construction du site, par le même validateur que le serveur :
 un modèle invalide fait échouer la construction au lieu d’arriver chez les utilisateurs.
+
+Un modèle officiel s’écrit une fois, en français. Ses textes dans une autre langue sont un
+dictionnaire,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+— le texte français, puis sa traduction —, que le site publie à côté du catalogue
+(`/basedb/modeles/i18n/<langue>.json`). L’instance y passe chaque texte et suit chaque libellé
+là où il est cité — formules, filtres, vues, consignes —, puis relit le résultat : un
+dictionnaire qui casserait le modèle n’est pas servi, le modèle français l’est. Un texte absent
+du dictionnaire reste en français.
 
 L’instance lit l’adresse `BASEDB_TEMPLATES_URL` — par défaut celle du site public. Pointez-la
 vers un catalogue à vous, ou mettez `off` pour n’en lire aucun : l’instance sert alors les

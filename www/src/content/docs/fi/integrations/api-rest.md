@@ -82,7 +82,9 @@ istunnolle: tunnus lukee ja kirjoittaa rivejä, se ei muuta tietokantaa.
 
 Jokaisella tietokannalla on **API- ja MCP-dokumentaatio**-sivu: jokaisesta taulukosta sen
 päätepisteet, sarakkeet sekä esimerkit cURL:llä ja JavaScriptillä. Se on **suodatettu
-käyttöoikeuksiesi mukaan** – kaksi lukijaa saa kaksi eri versiota – ja se on saatavilla myös
-OpenAPI 3.1 -muodossa (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+käyttöoikeuksiesi mukaan** – kaksi lukijaa saa kaksi eri versiota –, kirjoitettu **näytön
+kielellä**, ja se on saatavilla myös OpenAPI 3.1 -muodossa
+(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Nimet, polut ja virhekoodit pysyvät samoina
+kaikilla kielillä.
 
 ![Tietokannan luotu dokumentaatio](../../../../assets/screens/documentation-api.png)

@@ -32,6 +32,20 @@ const TABS: ReadonlyArray<{ id: AdminTab; label: string; icon: typeof Users }> =
   { id: 'permissions', label: $t('Permissions'), icon: Shield },
 ]
 
+/** The tabs as an address names them — `/administration/groupes` —, and back. */
+const SLUGS: Readonly<Record<AdminTab, string>> = {
+  users: 'utilisateurs',
+  groups: 'groupes',
+  permissions: 'permissions',
+}
+
+export const slugOfAdminTab = (tab: AdminTab): string => SLUGS[tab]
+
+export function adminTabOfSlug(slug: string | null): AdminTab | null {
+  const found = (Object.keys(SLUGS) as AdminTab[]).find((tab) => SLUGS[tab] === slug)
+  return found ?? null
+}
+
 export function AdminPanel({
   tab,
   me,

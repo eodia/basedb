@@ -14,7 +14,18 @@ sind.
 Alles öffnet sich über **Dashboards** im Block der geöffneten Datenbank unten in der Seitenleiste.
 Links stehen die Dashboards und die gespeicherten Fragen der Datenbank sowie **Daten erkunden**, um
 eine Frage zu stellen, ohne etwas zu speichern. Alle, die die Datenbank lesen dürfen, können sie
-ansehen und erkunden; Anlegen, Bearbeiten und Speichern erfordern die Stufe **Verwalten**.
+ansehen, erkunden und eigene Fragen speichern; ein Dashboard anzulegen und eine Frage freizugeben
+erfordern die Stufe **Verwalten**.
+
+Eine gespeicherte Frage ist **persönlich** – nur Sie sehen sie –, für **die ganze Datenbank** oder
+für **Gruppen**. Ihr Menü, per Rechtsklick oder über **⋯**, öffnet sie in einem Reiter neben den
+Tabellen, ändert ihren Namen und ihre Freigabe oder löscht sie. Das **+** der Reiterleiste bietet
+außerdem **Neue Frage** und **Neue SQL-Frage** an.
+
+**Speichern**, im Kopfbereich einer Frage, behält sie; eine Frage, die Sie nicht bearbeiten dürfen,
+bietet stattdessen **Kopie speichern** an, die dann Ihnen gehört. **⋯** (**Weitere Aktionen**)
+bietet außerdem **Name und Freigabe…**, **Kopie speichern…** und **Frage löschen** an; ein Reiter,
+der sie zeigte, behält ihren Inhalt, der wieder nicht gespeichert ist.
 
 ## Eine Frage per Maus stellen
 
@@ -108,8 +119,10 @@ nichts gewählt ist. So kann ein Filter des Dashboards eine SQL-Frage wie alle a
 
 **Bearbeiten** schaltet das Dashboard in den Bearbeitungsmodus:
 
-- **Frage** setzt eine gespeicherte Frage ein oder legt eine eigene für die Karte an;
-- **Titel** und **Text** fügen einen Abschnittstitel oder einen Text in Markdown hinzu;
+- **Frage** setzt eine gespeicherte Frage ein – eine persönliche Frage wird dabei in sie kopiert –,
+  oder legt eine eigene für die Karte an;
+- **Titel** fügt einen Abschnittstitel hinzu, **Text** einen formatierten Text – Überschriften,
+  Listen, Links –, der Zahlen zitieren kann (siehe weiter unten);
 - **Eingebettete Seite** zeigt eine `https://`-Adresse in einem isolierten Rahmen, der weder
   Sitzung noch Daten erhält;
 - **Reiter** verteilt die Karten auf mehrere Seiten; ein Doppelklick benennt einen Reiter um.
@@ -118,6 +131,26 @@ Die Karten werden über ihren Ziehgriff verschoben und über ihre Ecke in der Gr
 einem Raster von 24 Spalten. **Speichern** behält alles; **Abbrechen** kehrt zur vorherigen Version
 zurück. Ein Kartentitel öffnet beim Lesen seine Frage zum Erkunden, Filter des Dashboards
 eingeschlossen.
+
+### Zahlen im Text
+
+Ein Text zitiert einen Wert durch einen Namen in doppelten geschweiften Klammern: „Diesen Monat
+`{{chiffre_affaires}}` Umsatz bei `{{commandes}}` Bestellungen.“ Jeder Name wird zu einer Pastille,
+die sich mit einem Klick – oder über **Variable** in der Leiste des Editors – verknüpfen lässt mit:
+
+| Quelle | Was der Text zeigt |
+|---|---|
+| **einer Karte** des Dashboards | was sie zeigt, unter ihren eigenen Filtern |
+| **einer gespeicherten Frage** der ganzen Datenbank | ihr Wert, und die Filter des Dashboards verknüpfen sich damit wie mit einer Karte |
+| **einer im Text aufbewahrten Frage** | ihr Wert; so zitiert man eine persönliche Frage |
+| **einem Filter** des Dashboards | der gewählte Wert, wie ihn seine Beschriftung nennt |
+
+Der Wert einer Frage ist der, den ihre **Kennzahl** zeigen würde: ihre erste Messung, auf der
+letzten Zeile. Er wird mit den Berechtigungen der lesenden Person berechnet und immer als Text
+angezeigt. Ein Text zitiert höchstens 20 Werte; ein Name wird in Kleinbuchstaben, Ziffern und `_`
+geschrieben. Texte, die vor dem Editor in Markdown geschrieben wurden, lesen sich wie zuvor und
+werden formatiert, sobald man sie neu schreibt. Der Copilot selbst schreibt seine Texte in
+Markdown.
 
 ## Die Filter
 

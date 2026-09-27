@@ -1,7 +1,7 @@
 import { qualify } from '@basedb/naming'
 import { COMPUTED_KINDS } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
-import { type Node, renderFormula } from '../formula/language.js'
+import { type FormulaDialect, type Node, renderFormula } from '../formula/language.js'
 import type { ActorGrants } from '../rbac/decide.js'
 import { type Action, SYSTEM_COLUMNS, type Target, decide } from '../rbac/decide.js'
 import { loadGrants } from '../rbac/loader.js'
@@ -630,12 +630,13 @@ export function targetFactory(
  *
  * Takes no executor on purpose: the projection renders NO decision against the database,
  * exactly as the decider does not read it. That is what makes it testable without a
- * database, and what bounds its cost.
+ * database, and what bounds its cost. `dialect` is the language formulas are written in.
  */
 export function project(
   ctx: RequestContext,
   grants: ActorGrants,
   raw: RawCatalog,
+  dialect: FormulaDialect = 'fr',
 ): ProjectedBase[] {
   const fieldsByTable = fieldsByTableOf(raw)
   const projectById = new Map(raw.projects.map((p) => [p.id, p]))
@@ -785,7 +786,11 @@ export function project(
             resultKind: field.formula_result_kind ?? 'short_text',
             stored: field.formula_is_stored !== false,
             multiple: false,
-            expression: renderFormula(field.formula_ast, (id) => fieldById.get(id)?.label ?? '?'),
+            expression: renderFormula(
+              field.formula_ast,
+              (id) => fieldById.get(id)?.label ?? '?',
+              dialect,
+            ),
             timezone: field.formula_timezone,
           }
         }

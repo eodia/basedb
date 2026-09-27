@@ -1,3 +1,4 @@
+import { type FormulaDialect, formulaInEnglish } from './formula-words.js'
 import {
   type Template,
   type TemplateCheck,
@@ -61,22 +62,34 @@ interface Words {
   readonly text: (text: string, kind: TemplateTextKind, where: string) => string
   /** A label cited somewhere, or a choice compared in a filter: its translation, if any. */
   readonly cited: (label: string) => string
+  /** A formula once its citations are rewritten: its words in the reader's language. */
+  readonly formula?: (text: string) => string
 }
 
 /**
  * The template in the language of `dictionary`, checked. `ok: false` when the dictionary
  * breaks it — the issues say where —, in which case the caller serves the French one.
+ * `formulas` is the language its formulas are written in: `formulaDialect` of the reader's.
  */
 export function localizeTemplate(
   template: Template,
   dictionary: TemplateDictionary,
+  formulas: FormulaDialect = 'fr',
 ): TemplateCheck {
   const lookup = (text: string) => {
     const translated = dictionary[text]
     return typeof translated === 'string' && translated.trim() !== '' ? translated : text
   }
-  return checkTemplate(rewrite(template, { text: lookup, cited: lookup }))
+  return checkTemplate(
+    rewrite(template, {
+      text: lookup,
+      cited: lookup,
+      ...(formulas === 'en' ? { formula: formulaInEnglish } : {}),
+    }),
+  )
 }
+
+const same = (text: string) => text
 
 /** Every text a translator has to write for a template, each once, in reading order. */
 export function templateTexts(template: Template): TemplateText[] {
@@ -191,7 +204,9 @@ function rewrite(template: Template, words: Words): Record<string, unknown> {
               }),
           ...(field.format === undefined ? {} : { format: field.format }),
           ...(field.rich === true ? { rich: true } : {}),
-          ...(field.formula === undefined ? {} : { formula: expression(field.formula, words) }),
+          ...(field.formula === undefined
+            ? {}
+            : { formula: (words.formula ?? same)(expression(field.formula, words)) }),
           ...(field.rollup === undefined
             ? {}
             : {

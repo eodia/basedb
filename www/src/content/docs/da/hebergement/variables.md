@@ -83,6 +83,24 @@ Se [Konti og login](/basedb/da/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | beregninger af AI-felter pr. time og pr. arbejdsområde |
 | `BASEDB_AI_WORKER` | `1` | `0`: ingen baggrundsberegning i denne proces |
 
+## Offentlig demo
+
+En instans, der er åben for alle, som [demo.basedb.eodia.com](https://demo.basedb.eodia.com):
+login-skærmen udfylder en delt konto på forhånd, den besøgende læser alt og ændrer det, der
+findes, men opretter og sletter intet — database, tabel, række, fil, kommentar, konto, token,
+link —, og AI'en svarer, at den ikke er en del af demoen. SQL-konsollen kan der kun læse.
+At sætte databasen tilbage hver nat er stadig dit ansvar.
+
+| Variabel | Standard | Rolle |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: instansen bliver en offentlig demo |
+| `BASEDB_DEMO_ACCOUNTS` | — | en konto pr. sprog, adskilt af kommaer: `fr=demo@demo.com,en=demo-en@demo.com`; login-skærmen udfylder på forhånd den for sit eget sprog, ellers engelsk, ellers den første, og tilbyder de andre. Opret disse konti, hver med sit eget projekt, før du aktiverer demoen: den afviser oprettelser for alle, administrator inklusive |
+| `BASEDB_DEMO_PASSWORD` | — | sammen med `BASEDB_DEMO_ACCOUNTS`, deres adgangskode, den samme for alle, offentliggjort sammen med dem |
+
+Uden `BASEDB_DEMO_ACCOUNTS` er den delte konto den administrator, som `BASEDB_ADMIN_EMAIL` og
+`BASEDB_ADMIN_PASSWORD` navngiver. En adresse fra demoen logger ind med den offentliggjorte
+adgangskode, uanset hvad der tastes: forkerte forsøg låser den ikke for alle andre.
+
 ## Kun udvikling
 
 | Variabel | Rolle |

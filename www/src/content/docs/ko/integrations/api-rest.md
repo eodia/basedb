@@ -81,7 +81,8 @@ curl -X POST "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportu
 
 모든 데이터베이스에는 **API 및 MCP 문서** 페이지가 있습니다. 테이블마다 엔드포인트, 열, cURL과
 JavaScript 예제를 보여 줍니다. 이 문서는 **내 권한에 따라 필터링되므로** 두 사람이 읽으면 두
-가지 버전이 나오며, OpenAPI 3.1 형식으로도 제공됩니다
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+가지 버전이 나오고, **화면의 언어로 작성되며**, OpenAPI 3.1 형식으로도 제공됩니다
+(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). 이름, 경로, 오류 코드는 모든 언어에서
+동일하게 유지됩니다.
 
 ![데이터베이스의 자동 생성 문서](../../../../assets/screens/documentation-api.png)

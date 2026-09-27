@@ -57,7 +57,7 @@ est historisé. Vos données restent exploitables sans basedb.
 ## Ce que vous y trouverez
 
 - **Des champs typés** — monnaie, durée, note, e-mail, personne, numéro automatique, fichiers —
-  des **relations** simples ou multiples, des **formules** en français (`JOURS([Fin]; [Début])`)
+  des **relations** simples ou multiples, des **formules** en français ou en anglais (`JOURS([Fin]; [Début])`)
   calculées par PostgreSQL, des **recherches** et des **cumuls** à travers les relations.
 - **Huit vues** sur les mêmes lignes : grille, kanban, calendrier, chronologie, galerie, liste,
   formulaire, questionnaire — collaboratives ou personnelles.
@@ -65,6 +65,9 @@ est historisé. Vos données restent exploitables sans basedb.
   seule intégrable à un site, un calendrier auquel s’abonner depuis son agenda.
 - **La collaboration** : commentaires et mentions, notifications, écritures des autres en temps
   réel, et **Ctrl+Z** qui refuse plutôt que d’écraser le travail d’un autre.
+- **Tout au clavier** : **Ctrl+K** cherche tables, vues, tableaux de bord, lignes et commandes,
+  sans souci des accents ni des fautes de frappe ; chaque écran a son adresse, à partager ou à
+  mettre en favori.
 - **Des automatisations** — quand une ligne change, à heure fixe ou d’un clic : modifier, créer,
   prévenir, appeler un webhook, écrire sur Slack.
 - **Des tableaux de bord** : des questions posées à la souris ou en SQL, quinze graphiques —
@@ -102,8 +105,9 @@ est historisé. Vos données restent exploitables sans basedb.
 ## Démarrer
 
 Pour essayer sans rien installer : **<https://demo.basedb.eodia.com>**. Le compte de démonstration
-est prérempli ; les créations et les suppressions y sont désactivées, l’IA aussi, et la base revient
-chaque nuit à son état initial.
+est prérempli, dans la langue de votre navigateur, avec sa base dans cette langue ; les créations
+et les suppressions y sont désactivées, l’IA aussi, et la base revient chaque nuit à son état
+initial. `BASEDB_DEMO=1` fait de même de votre instance.
 
 Avec Docker, sur n’importe quel hôte — deux fichiers suffisent :
 

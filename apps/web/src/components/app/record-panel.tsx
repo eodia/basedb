@@ -38,6 +38,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type Field,
   type LinkOption,
@@ -202,22 +203,22 @@ export function RecordPanel({
                 <p className="mb-2 text-sm text-muted-foreground">{block.label}</p>
                 <div className="overflow-hidden rounded-lg border">
                   {block.rows.map((referencing, index) => (
-                    <button
-                      key={referencing.id}
-                      type="button"
-                      disabled={onFollowLink === undefined}
-                      onClick={() => onFollowLink?.(block.table, referencing.id)}
-                      title={$t('Ouvrir la fiche')}
-                      className={cn(
-                        'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/60 disabled:hover:bg-transparent',
-                        index > 0 && 'border-t',
-                      )}
-                    >
-                      <span className="min-w-0 flex-1 truncate text-primary">
-                        {referencing.display ?? referencing.id.slice(0, 8)}
-                      </span>
-                      <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
-                    </button>
+                    <Hint key={referencing.id} label={$t('Ouvrir la fiche')}>
+                      <button
+                        type="button"
+                        disabled={onFollowLink === undefined}
+                        onClick={() => onFollowLink?.(block.table, referencing.id)}
+                        className={cn(
+                          'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/60 disabled:hover:bg-transparent',
+                          index > 0 && 'border-t',
+                        )}
+                      >
+                        <span className="min-w-0 flex-1 truncate text-primary">
+                          {referencing.display ?? referencing.id.slice(0, 8)}
+                        </span>
+                        <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
+                      </button>
+                    </Hint>
                   ))}
                   {block.rows.length === 0 && (
                     <p className="px-3 py-2 text-sm text-muted-foreground">{$t('Aucune ligne.')}</p>
@@ -284,9 +285,9 @@ function FieldList({
             <FieldIcon kind={field.kind} format={shownFormat(field)} />
             <span className="truncate">{field.label}</span>
             {field.required === true && (
-              <span className="text-destructive" title={$t('Obligatoire')}>
-                *
-              </span>
+              <Hint label={$t('Obligatoire')}>
+                <span className="text-destructive">*</span>
+              </Hint>
             )}
           </dt>
           <dd className="min-w-0">
@@ -587,18 +588,15 @@ export function PanelField({
         <span className="text-sm text-muted-foreground">—</span>
       ) : (
         // Nothing to edit here: the badge itself is the way to the row.
-        <button
-          type="button"
-          onClick={follow}
-          disabled={follow === undefined}
-          title={$t('Ouvrir la fiche liée')}
-        >
-          <Badge variant="secondary" className="gap-1.5 font-normal hover:bg-secondary/70">
-            <Link2 className="size-3" />
-            {link.display ?? link.id.slice(0, 8)}
-            <ExternalLink className="size-3 text-muted-foreground" />
-          </Badge>
-        </button>
+        <Hint label={$t('Ouvrir la fiche liée')}>
+          <button type="button" onClick={follow} disabled={follow === undefined}>
+            <Badge variant="secondary" className="gap-1.5 font-normal hover:bg-secondary/70">
+              <Link2 className="size-3" />
+              {link.display ?? link.id.slice(0, 8)}
+              <ExternalLink className="size-3 text-muted-foreground" />
+            </Badge>
+          </button>
+        </Hint>
       )
     }
     return (
@@ -615,15 +613,16 @@ export function PanelField({
           />
         </div>
         {follow !== undefined && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={follow}
-            aria-label={$t('Ouvrir la fiche liée')}
-            title={$t('Ouvrir la fiche liée')}
-          >
-            <ExternalLink className="size-4" />
-          </Button>
+          <Hint label={$t('Ouvrir la fiche liée')}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={follow}
+              aria-label={$t('Ouvrir la fiche liée')}
+            >
+              <ExternalLink className="size-4" />
+            </Button>
+          </Hint>
         )}
       </div>
     )
@@ -741,15 +740,13 @@ export function PanelField({
           aria-label={field.label}
         />
         {href !== null && (
-          <Button variant="ghost" size="icon-sm" asChild>
-            <a
-              href={href}
-              aria-label={contact === 'email' ? $t('Écrire') : $t('Appeler')}
-              title={String(value)}
-            >
-              {contact === 'email' ? <Mail className="size-4" /> : <Phone className="size-4" />}
-            </a>
-          </Button>
+          <Hint label={String(value)}>
+            <Button variant="ghost" size="icon-sm" asChild>
+              <a href={href} aria-label={contact === 'email' ? $t('Écrire') : $t('Appeler')}>
+                {contact === 'email' ? <Mail className="size-4" /> : <Phone className="size-4" />}
+              </a>
+            </Button>
+          </Hint>
         )}
       </div>
     )
@@ -806,17 +803,18 @@ export function PanelField({
           aria-label={field.label}
         />
         {typeof value === 'string' && value !== '' && (
-          <Button variant="ghost" size="icon-sm" asChild>
-            <a
-              href={value}
-              target="_blank"
-              rel="noopener noreferrer nofollow"
-              aria-label={$t('Ouvrir le lien')}
-              title={value}
-            >
-              <ExternalLink className="size-4" />
-            </a>
-          </Button>
+          <Hint label={value}>
+            <Button variant="ghost" size="icon-sm" asChild>
+              <a
+                href={value}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                aria-label={$t('Ouvrir le lien')}
+              >
+                <ExternalLink className="size-4" />
+              </a>
+            </Button>
+          </Hint>
         )}
       </div>
     )

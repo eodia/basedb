@@ -12,9 +12,9 @@ eronder valt, ook voor wat later wordt aangemaakt.
 | Niveau | Staat toe |
 |---|---|
 | **Geen toegang** | niets: de resource is onzichtbaar |
-| **Lezen** | de rijen zien, er opmerkingen bij plaatsen, persoonlijke weergaven maken, de structuur en de dashboards bekijken, eigen vragen stellen, alleen-lezen SQL schrijven en persoonlijke query’s opslaan |
+| **Lezen** | de rijen zien, er opmerkingen bij plaatsen, persoonlijke weergaven maken, de structuur en de dashboards bekijken, eigen vragen stellen en opslaan, alleen-lezen SQL schrijven en persoonlijke query’s opslaan |
 | **Bewerken** | plus rijen aanmaken, wijzigen en verwijderen |
-| **Beheren** | plus de structuur wijzigen, gedeelde weergaven, dashboards en opgeslagen vragen aanmaken, een dashboard via een link delen, query’s delen, SQL-views, automatiseringen, integraties en tokens aanmaken; de SQL heeft toegang tot de hele database, schrijfacties inbegrepen |
+| **Beheren** | plus de structuur wijzigen, gedeelde weergaven en dashboards aanmaken, een dashboard via een link delen, vragen en query’s delen, SQL-views, automatiseringen, integraties en tokens aanmaken; de SQL heeft toegang tot de hele database, schrijfacties inbegrepen |
 
 Rechten **tellen op**: iemand krijgt het hoogste niveau dat een van
 zijn groepen hem geeft. Een tabel minder geven dan haar database maakt haar “granulair”.
@@ -70,6 +70,11 @@ basedb spreekt **twintig talen**: Frans, Engels, Duits, Spaans, Italiaans, Portu
 Turks, Oekraïens, Japans, vereenvoudigd Chinees en Koreaans. Standaard neemt de interface de taal
 van je browser over; **Taal**, onder **Uiterlijk**, stelt een andere in. Getallen en datums
 volgen de gekozen taal.
+
+Een link kan ook een taal aanvragen: `?lang=de` achter een adres van basedb toont het inlogscherm,
+een formulier, een weergave of een gedeeld dashboard in het Duits. Zo leidt de site naar de demo in
+de taal van de pagina. Eenmaal ingelogd volgt basedb je account: de taal die je bij **Uiterlijk**
+hebt gekozen, anders die van de browser.
 
 Het thema blijft gebonden aan de browser; de taal, de volgorde van datums en de eerste dag van de
 week volgen je van het ene apparaat naar het andere. Je adres wijzigen of een provider koppelen vraagt een verhoogde

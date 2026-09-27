@@ -12,9 +12,9 @@ později.
 | Úroveň | Umožňuje |
 |---|---|
 | **Bez přístupu** | nic: prostředek je neviditelný |
-| **Čtení** | vidět řádky a komentovat je, vytvářet si osobní zobrazení, prohlížet strukturu a řídicí panely, klást vlastní otázky, psát SQL jen pro čtení a ukládat své osobní dotazy |
+| **Čtení** | vidět řádky a komentovat je, vytvářet si osobní zobrazení, prohlížet strukturu a řídicí panely, klást a ukládat vlastní otázky, psát SQL jen pro čtení a ukládat své osobní dotazy |
 | **Úpravy** | navíc vytvářet, upravovat a odstraňovat řádky |
-| **Správa** | navíc měnit strukturu, vytvářet sdílená zobrazení, řídicí panely a uložené otázky, sdílet řídicí panel odkazem, sdílet dotazy, vytvářet pohledy SQL, automatizace, integrace a tokeny; její SQL má přístup k celé databázi včetně zápisů |
+| **Správa** | navíc měnit strukturu, vytvářet sdílená zobrazení a řídicí panely, sdílet řídicí panel odkazem, sdílet otázky a dotazy, vytvářet pohledy SQL, automatizace, integrace a tokeny; její SQL má přístup k celé databázi včetně zápisů |
 
 Oprávnění **se sčítají**: osoba dostane nejvyšší úroveň, kterou jí dává některá z jejích
 skupin. Když tabulce dáte méně než její databázi, stane se „granulární“.
@@ -70,6 +70,11 @@ portugalštinu (Brazílie), nizozemštinu, polštinu, češtinu, švédštinu, d
 finštinu, rumunštinu, maďarštinu, turečtinu, ukrajinštinu, japonštinu, zjednodušenou čínštinu
 a korejštinu. Ve výchozím nastavení rozhraní převezme jazyk vašeho prohlížeče; **Jazyk** na
 záložce **Vzhled** nastaví jiný. Čísla a data se řídí zvoleným jazykem.
+
+Jazyk si může vyžádat i odkaz: `?lang=de` na konci adresy basedb zobrazí v němčině přihlašovací
+obrazovku, formulář, sdílené zobrazení nebo sdílený řídicí panel. Takto vede web k demoverzi
+v jazyce dané stránky. Po přihlášení basedb sleduje váš účet: zvolený jazyk v **Vzhled**, jinak
+jazyk prohlížeče.
 
 Motiv zůstává vázaný na prohlížeč; jazyk, pořadí data a první den týdne vás provázejí
 z jednoho počítače na druhý. Změna adresy nebo propojení poskytovatele vyžaduje privilegovanou

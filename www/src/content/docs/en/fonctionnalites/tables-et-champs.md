@@ -72,12 +72,12 @@ stored values. It does not bound the value: a rating of 7 on a 5-star scale stay
 
 ## Formulas
 
-A formula is written in French, with fields in square brackets and arguments separated by `;`:
+Formulas are written in English (the French names work too), with fields in square brackets and arguments separated by `,`:
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 The editor suggests fields to insert and has a functions panel; an error names the field or
@@ -85,14 +85,14 @@ the character at fault.
 
 | Family | Functions |
 |---|---|
-| Logic | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` |
-| Numbers | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` |
-| Text | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` |
-| Dates | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` |
+| Logic | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
+| Numbers | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
+| Text | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
+| Dates | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
 | Operators | `+ - * /`, `&` to join text, `= <> < <= > >=` |
 
 A formula becomes a PostgreSQL **generated column**: `psql` and your tools read it like any
-other. One that depends on the current day (`AUJOURDHUI()`, `MAINTENANT()`) or that cites a
+other. One that depends on the current day (`TODAY()`, `NOW()`) or that cites a
 lookup or a rollup is **computed on read**: it can be filtered and sorted in basedb, but does
 not exist in direct SQL.
 

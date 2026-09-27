@@ -2,13 +2,17 @@ import { describe, expect, it } from 'vitest'
 import {
   cardConstraints,
   cardsFromBlocks,
+  citedNames,
   flowLayout,
   parameterFits,
   parameterHasValue,
   periodExpression,
+  questionCards,
   resolveDateExpression,
   resultNames,
   sqlVariableNames,
+  variableCard,
+  withoutVariables,
 } from '../src/analytics.js'
 
 /**
@@ -228,5 +232,91 @@ describe('the filters a card applies', () => {
     expect(parameterHasValue([null, null])).toBe(false)
     expect(parameterHasValue([null, 3])).toBe(true)
     expect(parameterHasValue(['fait'])).toBe(true)
+  })
+})
+
+describe('a text that cites values', () => {
+  it('cites each name once, in order, spaces allowed inside the braces', () => {
+    expect(citedNames('<p>{{ total }} sur {{periode}}, {{total}}, {{Pas_un_nom}} {x}</p>')).toEqual(
+      ['total', 'periode'],
+    )
+  })
+
+  it('runs the queries it cites, as cards in its place, and nothing for a filter', () => {
+    const cards = questionCards([
+      { id: 'q', tab: null, x: 0, y: 0, w: 6, h: 4, kind: 'question', question: 'q1' },
+      {
+        id: 't',
+        tab: 'o1',
+        x: 6,
+        y: 0,
+        w: 12,
+        h: 4,
+        kind: 'text',
+        text: '{{a}} {{b}}',
+        variables: [
+          { name: 'a', question: 'q2', mappings: [{ parameter: 'p', target: { variable: 'v' } }] },
+          { name: 'b', parameter: 'p' },
+        ],
+      },
+      { id: 'h', tab: null, x: 0, y: 4, w: 24, h: 2, kind: 'heading', text: 'Titre' },
+    ])
+    expect(cards.map((c) => [c.id, c.question])).toEqual([
+      ['q', 'q1'],
+      ['t', 'q2'],
+    ])
+    expect(cards[1]).toMatchObject({
+      kind: 'question',
+      tab: 'o1',
+      mappings: [{ parameter: 'p', target: { variable: 'v' } }],
+    })
+  })
+})
+
+describe('a text citing a card, or a query of its own', () => {
+  const chart = {
+    id: 'c1',
+    tab: null,
+    x: 0,
+    y: 0,
+    w: 6,
+    h: 4,
+    kind: 'question' as const,
+    query: { kind: 'builder' as const, source: 't1' },
+    mappings: [{ parameter: 'p', target: { column: { field: 'jour' } } }],
+  }
+  const text = {
+    id: 't',
+    tab: null,
+    x: 6,
+    y: 0,
+    w: 12,
+    h: 4,
+    kind: 'text' as const,
+    text: '<p>{{carte}} et {{mienne}}, sur {{periode}}</p>',
+    variables: [
+      { name: 'carte', card: 'c1' },
+      { name: 'mienne', query: { kind: 'sql' as const, sql: 'SELECT 1' }, label: 'À moi' },
+      { name: 'periode', parameter: 'p' },
+    ],
+  }
+
+  it('runs the card it cites, under that card’s own filters', () => {
+    expect(variableCard(text, { name: 'carte', card: 'c1' }, [chart, text])).toBe(chart)
+    expect(variableCard(text, { name: 'carte', card: 'absente' }, [chart, text])).toBeNull()
+    expect(variableCard(text, { name: 'mienne', query: chart.query })).toMatchObject({
+      id: 't',
+      kind: 'question',
+      query: chart.query,
+    })
+    // The card is already among the dashboard's questions: not twice.
+    expect(questionCards([chart, text]).map((c) => c.id)).toEqual(['c1', 't'])
+  })
+
+  it('loses a value gone, and the words that cited it', () => {
+    const left = withoutVariables(text, (v) => 'card' in v && v.card === 'c1')
+    expect(left.text).toBe('<p> et {{mienne}}, sur {{periode}}</p>')
+    expect(left.variables?.map((v) => v.name)).toEqual(['mienne', 'periode'])
+    expect(withoutVariables(text, () => false)).toBe(text)
   })
 })

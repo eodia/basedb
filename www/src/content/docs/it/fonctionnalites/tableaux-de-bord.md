@@ -14,7 +14,18 @@ schede a cui sono collegati.
 Tutto si apre da **Dashboard**, nel riquadro del database aperto in fondo alla barra
 laterale. A sinistra, le dashboard e le domande salvate del database, e
 **Esplora i dati** per porre una domanda senza salvare nulla. Ogni lettore del database
-le consulta ed esplora; creare, modificare e salvare richiedono il livello **Gestione**.
+le consulta, le esplora e salva le proprie domande; creare una dashboard e condividere una
+domanda richiedono il livello **Gestione**.
+
+Una domanda salvata è **personale** — solo tu la vedi —, per **tutto il database** o per
+**gruppi**. Il suo menu, con un clic destro o tramite **⋯**, la apre in una tab accanto alle
+tabelle, cambia il suo nome e la sua condivisione, oppure la elimina. Il **+** della barra delle
+tab propone anche **Nuova domanda** e **Nuova domanda SQL**.
+
+**Salva**, nell’intestazione di una domanda, la conserva; una domanda che non puoi modificare
+propone invece **Salva una copia**, che diventa tua. **⋯** (**Altre azioni**) offre anche **Nome
+e condivisione…**, **Salva una copia…** e **Elimina la domanda**; una tab che la mostrava
+conserva il suo contenuto, tornato non salvato.
 
 ## Porre una domanda con il mouse
 
@@ -109,8 +120,10 @@ come le altre.
 
 **Modifica** mette la dashboard in modalità modifica:
 
-- **Domanda** inserisce una domanda salvata, o ne crea una propria della scheda;
-- **Titolo** e **Testo** aggiungono un titolo di sezione o un testo in Markdown;
+- **Domanda** inserisce una domanda salvata — una domanda personale viene copiata in essa —,
+  oppure ne crea una propria della scheda;
+- **Titolo** aggiunge un titolo di sezione, **Testo** un testo formattato — titoli, elenchi,
+  link — che può citare dei numeri (vedi più sotto);
 - **Pagina incorporata** mostra un indirizzo `https://` in un riquadro isolato, che non riceve né
   sessione né dati;
 - **Tab** distribuisce le schede su più pagine; un doppio clic rinomina una tab.
@@ -118,6 +131,25 @@ come le altre.
 Le schede si spostano dalla loro maniglia e si ridimensionano dall’angolo, su una griglia di
 24 colonne. **Salva** conserva il tutto; **Annulla** torna alla versione precedente. Il titolo
 di una scheda, in lettura, apre la sua domanda per esplorarla, filtri della dashboard compresi.
+
+### Numeri nel testo
+
+Un testo cita un valore con un nome tra doppie graffe: «Questo mese, `{{chiffre_affaires}}` di
+fatturato su `{{commandes}}` ordini.» Ogni nome diventa un badge, da collegare con un clic — o
+tramite **Variabile** nella barra dell’editor — a:
+
+| Fonte | Cosa mostra il testo |
+|---|---|
+| **una scheda** della dashboard | ciò che mostra, con i propri filtri |
+| **una domanda salvata** di tutto il database | il suo valore, e i filtri della dashboard vi si collegano come a una scheda |
+| **una domanda conservata nel testo** | il suo valore; è così che si cita una domanda personale |
+| **un filtro** della dashboard | il valore scelto, come lo indica la sua impostazione |
+
+Il valore di una domanda è quello che mostrerebbe il suo **Numero**: la sua prima misura,
+sull’ultima riga. Si calcola con i permessi del lettore, e viene sempre mostrato come testo. Un
+testo cita al massimo 20 valori; un nome si scrive in minuscolo, cifre e `_`. I testi scritti in
+Markdown prima dell’editor si leggono come prima, e diventano formattati non appena vengono
+riscritti. Il Copilot, invece, scrive i suoi testi in Markdown.
 
 ## I filtri
 

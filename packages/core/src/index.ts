@@ -4,6 +4,7 @@ import {
   type DashboardCopilotAnswer,
   ERROR_CODES,
   type QueryResult,
+  questionCards,
 } from '@basedb/contracts'
 import {
   type AccessChange,
@@ -565,7 +566,7 @@ export type {
 } from './admin/sharing.js'
 export type { SignupPolicy } from './auth/signup.js'
 export type { Block, Dashboard, DashboardInput } from './catalog/dashboards.js'
-export type { Question, QuestionInput } from './catalog/questions.js'
+export type { Question, QuestionAudience, QuestionInput } from './catalog/questions.js'
 export type {
   DashboardShare,
   DashboardShareSettings,
@@ -575,6 +576,7 @@ export type {
   SharedDashboardCard,
   SharedDashboardPage,
   SharedDashboardTable,
+  SharedTextVariable,
   ValueChoice,
 } from './analytics/shared-dashboard.js'
 export type { QueryAudience, QueryInput, QuerySummary, SavedQuery } from './catalog/queries.js'
@@ -1365,19 +1367,24 @@ export interface Kernel {
    * would become the leak.
    */
   openApi(ctx: RequestContext, reference: string): Promise<Record<string, unknown>>
-  /** Readable documentation of the same projection, for a human integrator (§9.4). */
-  documentation(ctx: RequestContext, reference: string): Promise<Documentation>
+  /**
+   * Readable documentation of the same projection, for a human integrator (§9.4), in the
+   * reader's language — French when none is given.
+   */
+  documentation(ctx: RequestContext, reference: string, language?: string): Promise<Documentation>
   /**
    * Serves one of the four catalog documents WITH its validator (§9.2).
    *
    * A `304` is answered without building the document: the `ETag` derives from the two
-   * counters, not from the bytes.
+   * counters, not from the bytes. `language` is the screen's: the documentation is
+   * written in it.
    */
   serveMeta(
     ctx: RequestContext,
     kind: MetaKind,
     reference: string,
     ifNoneMatch?: string,
+    language?: string,
   ): Promise<ServedMeta>
   /**
    * Resolves `{base}/{table}` to a catalog key — chapter 08 §1.1.
@@ -1822,7 +1829,7 @@ export interface Kernel {
     request: { baseId: string; queryId: string; input: QueryInput },
   ): Promise<SavedQuery>
   deleteQuery(ctx: RequestContext, request: { baseId: string; queryId: string }): Promise<void>
-  /** The groups a query may be shared with — for whoever manages the base. */
+  /** The groups a query or a question may be shared with — for whoever manages the base. */
   listQueryGroups(
     ctx: RequestContext,
     request: { baseId: string },
@@ -2045,7 +2052,11 @@ export interface Kernel {
     request: { baseId: string; id: string; input: DashboardInput },
   ): Promise<Dashboard>
   deleteDashboard(ctx: RequestContext, request: { baseId: string; id: string }): Promise<void>
-  /** The saved questions of a base (chapter 18 §3), for whoever sees it. */
+  /**
+   * The questions of a base (chapter 18 §1) the caller may see: personal, the base's, or
+   * some groups'. Built or written in SQL, each with its visualization; what is shared is
+   * the question, never its author's reach — each runs it with their own.
+   */
   listQuestions(ctx: RequestContext, request: { baseId: string }): Promise<Question[]>
   getQuestion(ctx: RequestContext, request: { baseId: string; id: string }): Promise<Question>
   createQuestion(
@@ -2106,13 +2117,15 @@ export interface Kernel {
   }): Promise<SharedDashboardPage>
   /**
    * Runs one card of a shared dashboard on the publisher's authority, its filters tied by
-   * the kernel from the visitor's `values` — never a query of the visitor's.
+   * the kernel from the visitor's `values` — never a query of the visitor's. With
+   * `variable`, the question a text card cites under that name.
    */
   runSharedCard(request: {
     token: string
     reader: RequestContext | null
     requestId: string
     card: string
+    variable?: string
     values?: unknown
     timezone?: string
     weekStart?: 0 | 1
@@ -2344,16 +2357,18 @@ export function startKernel(config: KernelConfig): Kernel {
     })
   }
 
-  /** The saved questions of a base, as a shared dashboard's cards run them. */
+  /**
+   * The questions of a base a shared dashboard's cards may run: those of the whole base,
+   * never one its publisher keeps for themselves.
+   */
   const sharedQuestions = async (
     authority: RequestContext,
     baseId: string,
   ): Promise<Map<string, SavedQuestion>> =>
     new Map(
-      (await listQuestions(pools, authority, { baseId })).map((q) => [
-        q.id,
-        { label: q.label, query: q.query, visualization: q.visualization },
-      ]),
+      (await listQuestions(pools, authority, { baseId }))
+        .filter((q) => q.audience === 'base')
+        .map((q) => [q.id, { label: q.label, query: q.query, visualization: q.visualization }]),
     )
 
   /**
@@ -2683,10 +2698,10 @@ export function startKernel(config: KernelConfig): Kernel {
     projectBase: (ctx, reference) => projectBase(pools, ctx, reference),
     openApi: async (ctx, reference) =>
       toOpenApi(await projectBase(pools, ctx, reference), ctx.tenantId),
-    documentation: async (ctx, reference) =>
-      toDocumentation(await projectBase(pools, ctx, reference), ctx.tenantId),
-    serveMeta: (ctx, kind, reference, ifNoneMatch) =>
-      serveMeta(pools, ctx, kind, reference, ifNoneMatch),
+    documentation: async (ctx, reference, language) =>
+      toDocumentation(await projectBase(pools, ctx, reference), ctx.tenantId, language),
+    serveMeta: (ctx, kind, reference, ifNoneMatch, language) =>
+      serveMeta(pools, ctx, kind, reference, ifNoneMatch, language),
     resolveTable: (ctx, baseRef, tableRef) => resolveTable(pools, ctx, baseRef, tableRef),
     resolveBase: (ctx, reference) => resolveBase(pools, ctx, reference),
     resolveField: (ctx, baseRef, tableRef, fieldRef) =>
@@ -3002,8 +3017,7 @@ export function startKernel(config: KernelConfig): Kernel {
       const admitted = await admitSharedDashboard(pools, request)
       const questions = await sharedQuestions(admitted.authority, admitted.baseId)
       const base = await projectBase(pools, admitted.authority, admitted.baseId)
-      const queries = admitted.dashboard.cards
-        .filter((c) => c.kind === 'question')
+      const queries = questionCards(admitted.dashboard.cards)
         .map((c) => (c.question === undefined ? c.query : questions.get(c.question)?.query))
         .filter((q): q is NonNullable<typeof q> => q !== undefined)
       const { dashboard } = admitted
@@ -3022,7 +3036,13 @@ export function startKernel(config: KernelConfig): Kernel {
     runSharedCard: async (request) => {
       const admitted = await admitSharedDashboard(pools, request)
       const questions = await sharedQuestions(admitted.authority, admitted.baseId)
-      const run = sharedRun(admitted.dashboard, request.card, questions, request.values)
+      const run = sharedRun(
+        admitted.dashboard,
+        request.card,
+        questions,
+        request.values,
+        request.variable,
+      )
       const result = await runAnyQuery(
         admitted.authority,
         admitted.baseId,

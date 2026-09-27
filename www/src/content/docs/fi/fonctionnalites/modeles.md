@@ -19,8 +19,22 @@ ja, jos mallissa on tekoälykenttiä, suostumustasi siihen, että niiden viittaa
 instanssin tekoälypalveluntarjoajalle. Ilman suostumusta ne ovat tavallisia kenttiä, jotka on
 täytetty esimerkkiarvoillaan.
 
+**Lataa esimerkkitiedot**, joka on oletuksena valittuna, täyttää taulukot esimerkkiriveillä,
+jotta näet tietokannan toiminnassa. Kun valinta poistetaan, taulukot jäävät tyhjiksi, valmiina
+omille tiedoillesi – näkymät, koontinäytöt ja automaatiot luodaan silti.
+
 Tyhjä projekti tarjoaa myös **esittelytietokannan**: pieni toimisto asiakkaineen, projekteineen,
 tehtävineen, laskuineen ja arvioineen, joka näyttää basedb:n kaikki puolet.
+
+## Omalla kielelläsi
+
+Viralliset mallit luetaan ja luodaan **näytön kielellä**: taulukot, kentät, valinnat,
+esimerkkirivit, näkymät, koontinäytöt, automaatiot ja tekoälyn kehotteet. Esimerkkirivit
+vaihtavat maailmaa kielen mukana: Lyonin ”Boulangerie Martin” on suomeksi Tampereen ”Leipomo
+Mäkinen”.
+
+Instanssiisi tuotu tai tietokannasta tallennettu malli on jonkun kirjoittama: se luetaan
+sellaisena kuin se on kirjoitettu.
 
 ## Pyydä tekoälyltä
 
@@ -110,6 +124,14 @@ julkaiseminen uudelleen riittää muuttamaan kaikkien instanssien gallerian.
 
 Jokainen malli tarkistetaan sivustoa koottaessa samalla validaattorilla kuin palvelimella:
 virheellinen malli kaataa koonnin sen sijaan, että päätyisi käyttäjille.
+
+Virallinen malli kirjoitetaan kerran, ranskaksi. Sen tekstit muilla kielillä ovat sanakirja,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+– ranskankielinen teksti ja sen käännös –, jonka sivusto julkaisee katalogin vierestä
+(`/basedb/modeles/i18n/<langue>.json`). Instanssi käy siitä läpi jokaisen tekstin ja seuraa
+jokaista nimikettä kaikkialla, missä siihen viitataan – kaavoissa, suodattimissa, näkymissä,
+kehotteissa –, ja lukee tuloksen uudelleen: sanakirjaa, joka rikkoisi mallin, ei tarjota, vaan
+ranskankielinen malli tarjotaan sen sijaan. Sanakirjasta puuttuva teksti pysyy ranskankielisenä.
 
 Instanssi lukee osoitteen `BASEDB_TEMPLATES_URL` – oletuksena julkisen sivuston osoitteen.
 Osoita se omaan katalogiisi tai aseta arvoksi `off`, jolloin mitään katalogia ei lueta:

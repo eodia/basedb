@@ -63,7 +63,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Hint, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   type AiFieldInput,
   type AiFieldStatus,
@@ -757,13 +757,12 @@ function FieldRow({
         {FORMAT_LABELS[shownFormat(field) ?? ''] ?? KIND_LABELS[field.kind] ?? field.kind}
         {/* The AI is an option of the type, said where the type is. */}
         {field.ai === true && (
-          <span
-            className="inline-flex items-center gap-0.5 text-xs text-violet-600 dark:text-violet-400"
-            title={$t('Rempli par l’IA')}
-          >
-            <Sparkles className="size-3" />
-            {$t('IA')}
-          </span>
+          <Hint label={$t('Rempli par l’IA')}>
+            <span className="inline-flex items-center gap-0.5 text-xs text-violet-600 dark:text-violet-400">
+              <Sparkles className="size-3" />
+              {$t('IA')}
+            </span>
+          </Hint>
         )}
       </span>
 
@@ -859,12 +858,16 @@ function FieldRow({
         </Tooltip>
       ) : (
         // The display column is still worth knowing; only the designation is withheld.
-        <span
-          className="flex size-8 shrink-0 items-center justify-center"
-          title={isDisplay ? $t('Colonne d’affichage, montrée dans les relations') : undefined}
-        >
-          {isDisplay && <Star className="size-4 fill-primary text-primary" />}
-        </span>
+        <Hint label={isDisplay ? $t('Colonne d’affichage, montrée dans les relations') : undefined}>
+          <span
+            className="flex size-8 shrink-0 items-center justify-center"
+            aria-label={
+              isDisplay ? $t('Colonne d’affichage, montrée dans les relations') : undefined
+            }
+          >
+            {isDisplay && <Star className="size-4 fill-primary text-primary" />}
+          </span>
+        </Hint>
       )}
     </div>
   )

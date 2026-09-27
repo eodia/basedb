@@ -19,8 +19,22 @@ lui, vizualizările, automatizările și instrucțiunea fiecăruia dintre câmpu
 valorile pe care le citează să plece la furnizorul de AI al instanței. Fără acest acord, ele
 sunt câmpuri obișnuite, completate cu valorile lor de exemplu.
 
+**Încărcați datele de exemplu**, bifată implicit, umple tabelele cu rânduri de exemplu pentru
+a vedea baza la lucru. Debifată, tabelele rămân goale, pregătite pentru propriile dumneavoastră
+date — vizualizările, tablourile de bord și automatizările sunt create oricum.
+
 Un proiect gol propune și **baza demonstrativă**: o mică agenție, cu clienții, proiectele,
 sarcinile, facturile și recenziile ei, care arată toate fațetele basedb.
+
+## În limba dumneavoastră
+
+Șabloanele oficiale se citesc și se creează **în limba ecranului**: tabele, câmpuri, opțiuni,
+rânduri de exemplu, vizualizări, tablouri de bord, automatizări și instrucțiuni ale AI-ului.
+Rândurile de exemplu își schimbă lumea odată cu limba: „Brutăria Ioniță” din Cluj-Napoca devine
+„Martin’s Bakery” la Portland în engleză, „Bäckerei Keller” la Leipzig în germană.
+
+Un șablon importat în instanța dumneavoastră, sau salvat dintr-o bază, este scris de cineva: se
+citește așa cum a fost scris.
 
 ## Cereți-l de la AI
 
@@ -109,6 +123,15 @@ site-ului sunt suficiente pentru a schimba galeria tuturor instanțelor.
 
 Fiecare șablon este verificat la construirea site-ului, de același validator ca serverul: un
 șablon invalid face construirea să eșueze în loc să ajungă la utilizatori.
+
+Un șablon oficial se scrie o singură dată, în franceză. Textele lui într-o altă limbă sunt un
+dicționar,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+— textul francez, apoi traducerea lui —, pe care site-ul îl publică lângă catalog
+(`/basedb/modeles/i18n/<langue>.json`). Instanța trece prin el fiecare text și urmărește fiecare
+etichetă acolo unde este citată — formule, filtre, vizualizări, instrucțiuni —, apoi recitește
+rezultatul: un dicționar care ar strica șablonul nu este servit, șablonul francez este cel
+servit. Un text absent din dicționar rămâne în franceză.
 
 Instanța citește adresa `BASEDB_TEMPLATES_URL` — în mod implicit cea a site-ului public.
 Îndreptați-o către propriul dumneavoastră catalog sau setați `off` pentru a nu citi niciunul:

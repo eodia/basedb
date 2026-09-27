@@ -19,8 +19,22 @@ etiketten og, hvis det finnes KI-felt, samtykket ditt til at verdiene de referer
 sendes til instansens KI-leverandør. Uten dette samtykket er de vanlige
 felt, fylt ut med eksempelverdiene sine.
 
+**Last inn eksempeldata**, avkrysset som standard, fyller tabellene med eksempelrader for å se
+databasen i bruk. Fjernes avkrysningen, forblir tabellene tomme, klare for dine egne data –
+visninger, instrumentbord og automatiseringer opprettes likevel.
+
 Et tomt prosjekt tilbyr også **demodatabasen**: et lite byrå med kunder,
 prosjekter, oppgaver, fakturaer og tilbakemeldinger, som viser alle sidene ved basedb.
+
+## På ditt språk
+
+De offisielle malene leses og opprettes **i skjermens språk**: tabeller, felt, valg,
+eksempelrader, visninger, instrumentbord, automatiseringer og KI-instruksjoner. Eksempelradene
+bytter verden med språket: den franske «Boulangerie Martin» i Lyon blir til «Martins bakeri»
+i Bergen på bokmål.
+
+En mal som er importert til instansen din, eller lagret fra en database, er skrevet av noen:
+den leses slik den ble skrevet.
 
 ## Be KI om en mal
 
@@ -109,6 +123,14 @@ nettstedet på nytt er nok til å endre galleriet på alle instanser.
 
 Hver mal kontrolleres når nettstedet bygges, av den samme validatoren som serveren:
 en ugyldig mal får byggingen til å mislykkes i stedet for å nå brukerne.
+
+En offisiell mal skrives én gang, på fransk. Tekstene i et annet språk er en ordbok,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+– den franske teksten, så oversettelsen –, som nettstedet publiserer ved siden av katalogen
+(`/basedb/modeles/i18n/<langue>.json`). Instansen setter inn hver tekst der og følger hver
+etikett der den siteres – formler, filtre, visninger, instruksjoner –, og leser så resultatet på
+nytt: en ordbok som ville ødelagt malen, blir ikke servert, den franske malen blir det. En tekst
+som mangler i ordboken, forblir på fransk.
 
 Instansen leser adressen `BASEDB_TEMPLATES_URL` – som standard det offentlige nettstedets. Pek den
 mot en egen katalog, eller sett `off` for ikke å lese noen: instansen serverer da

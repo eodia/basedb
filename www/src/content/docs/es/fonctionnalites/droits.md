@@ -12,9 +12,9 @@ debajo, incluido lo que se cree más adelante.
 | Nivel | Permite |
 |---|---|
 | **Sin acceso** | nada: el recurso es invisible |
-| **Lectura** | ver las filas, comentarlas, crearse vistas personales, consultar la estructura y los paneles, hacer sus propias preguntas, escribir SQL en solo lectura y guardar sus consultas personales |
+| **Lectura** | ver las filas, comentarlas, crearse vistas personales, consultar la estructura y los paneles, hacer y guardar sus propias preguntas, escribir SQL en solo lectura y guardar sus consultas personales |
 | **Edición** | además, crear, modificar y eliminar filas |
-| **Gestión** | además, cambiar la estructura, crear las vistas compartidas, los paneles y las preguntas guardadas, compartir un panel mediante un enlace, compartir consultas, crear vistas SQL, las automatizaciones, las integraciones y los tokens; su SQL abarca toda la base, escrituras incluidas |
+| **Gestión** | además, cambiar la estructura, crear las vistas compartidas y los paneles, compartir un panel mediante un enlace, compartir preguntas y consultas, crear vistas SQL, las automatizaciones, las integraciones y los tokens; su SQL abarca toda la base, escrituras incluidas |
 
 Los permisos **se suman**: una persona recibe el nivel más alto que le otorgue cualquiera de
 sus grupos. Dar menos a una tabla que a su base la vuelve «granular».
@@ -70,6 +70,11 @@ basedb habla **veinte idiomas**: francés, inglés, alemán, español, italiano,
 turco, ucraniano, japonés, chino simplificado y coreano. De forma predeterminada, la interfaz usa el idioma
 de tu navegador; **Idioma**, en **Apariencia**, fija otro. Los números y las fechas
 siguen el idioma elegido.
+
+Un enlace también puede pedir un idioma: `?lang=de` al final de una dirección de basedb muestra
+en alemán la pantalla de inicio de sesión, un formulario, una vista o un panel compartidos. Así
+es como el sitio lleva a la demo en el idioma de la página. Una vez conectado, basedb sigue tu
+cuenta: el idioma elegido en **Apariencia**, si no, el del navegador.
 
 El tema es propio de cada navegador; el idioma, el orden de las fechas y el primer día de la
 semana te acompañan de un equipo a otro. Cambiar de dirección o vincular un proveedor requiere una sesión

@@ -279,9 +279,10 @@ les demande (`x-basedb-locale`, sinon `Accept-Language`) : `localizeTemplate`
 il est cité** — clés des lignes, formules, filtres, champs des vues, tableaux de bord,
 automatisations, `{{…}}` des consignes et des messages —, puis le validateur du §2.9 relit
 le résultat. Un dictionnaire qui casserait le modèle (une citation perdue, deux libellés
-devenus un) n'est pas servi : le modèle français l'est. Les fonctions des formules restent
-françaises, comme le langage des formules ; les noms physiques suivent les libellés
-traduits. Un modèle de l'instance est écrit par quelqu'un : il se lit tel qu'il est écrit.
+devenus un) n'est pas servi : le modèle français l'est. Un modèle s'écrit avec les fonctions
+françaises des formules ; servi dans une autre langue que le français, il les donne en
+anglais (`SI` → `IF`, `;` → `,`), comme l'écran les relira (chapitre 04 §7.2). Les noms
+physiques suivent les libellés traduits. Un modèle de l'instance est écrit par quelqu'un : il se lit tel qu'il est écrit.
 
 Le site publie les dictionnaires à côté du catalogue, `/modeles/i18n/<langue>.json`
 (`{ "format": 1, "locale": "en", "templates": { "<clé>": { … } } }`), lus et gardés une

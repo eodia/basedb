@@ -72,13 +72,12 @@ hodnoty. Hodnotu neomezuje: hodnocení 7 na pětibodové stupnici zůstane 7.
 
 ## Vzorce
 
-Vzorec se píše s francouzskými názvy funkcí, pole v hranatých závorkách, argumenty oddělené
-`;`:
+Vzorec se píše anglicky (fungují i francouzské názvy), pole v hranatých závorkách, argumenty oddělené `,`:
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 Editor nabízí pole k vložení a panel funkcí; chyba pojmenuje pole nebo znak, který ji
@@ -86,14 +85,14 @@ způsobil.
 
 | Skupina | Funkce |
 |---|---|
-| Logické | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` |
-| Čísla | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` |
-| Text | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` |
-| Data | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` |
+| Logické | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
+| Čísla | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
+| Text | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
+| Data | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
 | Operátory | `+ - * /`, `&` pro spojení textu, `= <> < <= > >=` |
 
 Vzorec se stane **generovaným sloupcem** PostgreSQL: `psql` a vaše nástroje ho čtou jako
-ostatní. Vzorec, který závisí na dni (`AUJOURDHUI()`, `MAINTENANT()`) nebo cituje vyhledávání
+ostatní. Vzorec, který závisí na dni (`TODAY()`, `NOW()`) nebo cituje vyhledávání
 či agregaci, se **počítá při čtení**: v basedb se podle něj dá filtrovat i řadit, ale v přímém
 SQL neexistuje.
 

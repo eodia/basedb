@@ -80,8 +80,9 @@ una sesión de la interfaz: un token lee y escribe filas, no cambia la base.
 ## La documentación generada
 
 Cada base tiene su página **Documentación de API y MCP**: para cada tabla, sus endpoints, sus
-columnas, ejemplos en cURL y en JavaScript. Está **filtrada por tus permisos** (dos
-lectores obtienen dos versiones) y existe también en OpenAPI 3.1
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+columnas, ejemplos en cURL y en JavaScript. Está **filtrada por tus permisos** —dos
+lectores obtienen dos versiones—, escrita **en el idioma de tu pantalla**, y existe también en
+OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Los nombres, las rutas y los
+códigos de error son los mismos en todos los idiomas.
 
 ![La documentación generada de una base](../../../../assets/screens/documentation-api.png)

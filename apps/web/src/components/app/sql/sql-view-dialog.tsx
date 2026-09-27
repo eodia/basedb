@@ -301,3 +301,71 @@ export function SqlViewDialog({
     </Dialog>
   )
 }
+
+/**
+ * « Supprimer », from a SQL view's menu in the navigation: asked once, then the view is
+ * dropped from the schema — for everyone, `psql` included. Another view that reads it
+ * stops the deletion, and the refusal names it.
+ */
+export function DeleteSqlViewDialog({
+  base,
+  view,
+  onClose,
+  onDeleted,
+}: {
+  /** The base's name. */
+  readonly base: string
+  readonly view: { readonly id: string; readonly label: string }
+  readonly onClose: () => void
+  readonly onDeleted: (id: string) => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const remove = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await api.deleteSqlView(base, view.id)
+      onDeleted(view.id)
+      onClose()
+    } catch (e) {
+      setError(messageFor(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(next) => !next && !busy && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {$t('Supprimer la vue SQL « {label} » ?', { label: view.label })}
+          </DialogTitle>
+          <DialogDescription>
+            {$t(
+              'Elle disparaît de la base pour tout le monde, scripts et outils compris. Les tables qu’elle lit ne sont pas touchées.',
+            )}
+          </DialogDescription>
+        </DialogHeader>
+        {error !== null && (
+          <p
+            role="alert"
+            className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-sm text-destructive"
+          >
+            {error}
+          </p>
+        )}
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            {$t('Annuler')}
+          </Button>
+          <Button variant="destructive" onClick={() => void remove()} disabled={busy}>
+            {busy ? $t('Suppression…') : $t('Supprimer la vue')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

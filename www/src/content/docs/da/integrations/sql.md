@@ -22,7 +22,7 @@ beskrivelserne (`COMMENT ON`).
 
 ## I brugerfladen
 
-**+** i fanelinjen eller databasens **⋯**-menu → **Ny SQL-forespørgsel**: en editor med
+**+** i fanelinjen eller databasens **⋯**-menu → **SQL-forespørgsel**: en editor med
 syntaksfremhævning og autofuldførelse, hvis resultat vises i samme gitter som dine tabeller.
 
 ![En gemt forespørgsel og to SQL-views placeret blandt tabellerne](../../../../assets/screens/requete-sql.png)

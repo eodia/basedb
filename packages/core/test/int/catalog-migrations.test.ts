@@ -336,3 +336,53 @@ describe('a migration that fails', () => {
     expect(exists?.found).toBe(false)
   })
 })
+
+describe('the questions of 0.3.0', () => {
+  it('stay with the whole base; a new one is its author’s', async () => {
+    const uri = await installation('0.3.0')
+    const made = await withClient(uri, async (client) => {
+      const { rows } = await client.query<{ tenant: string; admin: string; project: string }>(
+        `SELECT t.id AS tenant, t.created_by AS admin, p.id AS project
+           FROM _basedb.tenant t JOIN _basedb.project p ON p.tenant_id = t.id`,
+      )
+      const at = rows[0] as { tenant: string; admin: string; project: string }
+      const insert = async (sql: string, values: unknown[]) =>
+        ((await client.query<{ id: string }>(sql, values)).rows[0] as { id: string }).id
+      const base = await insert(
+        `INSERT INTO _basedb.base (tenant_id, project_id, label, label_key, created_by, updated_by)
+         VALUES ($1, $2, 'Ventes', 'ventes', $3, $3) RETURNING id`,
+        [at.tenant, at.project, at.admin],
+      )
+      const question = await insert(
+        `INSERT INTO _basedb.question (base_id, label, kind, query, created_by, updated_by)
+         VALUES ($1, 'Chiffre du mois', 'sql', '{"kind":"sql","sql":"SELECT 1"}', $2, $2)
+         RETURNING id`,
+        [base, at.admin],
+      )
+      return { base, admin: at.admin, question }
+    })
+
+    const kernel = startKernel({ connectionString: uri, encryptionKey: 'cle-de-test-0123456789' })
+    try {
+      await kernel.migrateCatalog()
+    } finally {
+      await kernel.close()
+    }
+
+    await withClient(uri, async (client) => {
+      const { rows } = await client.query('SELECT id::text, audience FROM _basedb.question')
+      expect(rows).toEqual([{ id: made.question, audience: 'base' }])
+      const fresh = await client.query<{ audience: string }>(
+        `INSERT INTO _basedb.question (base_id, label, kind, query, created_by, updated_by)
+         VALUES ($1, 'À moi', 'sql', '{"kind":"sql","sql":"SELECT 2"}', $2, $2)
+         RETURNING audience`,
+        [made.base, made.admin],
+      )
+      expect(fresh.rows[0]?.audience).toBe('personal')
+      const saved = await client.query<{ found: boolean }>(
+        "SELECT to_regclass('_basedb.saved_query') IS NOT NULL AS found",
+      )
+      expect(saved.rows[0]?.found).toBe(true)
+    })
+  })
+})

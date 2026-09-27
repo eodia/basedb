@@ -11,9 +11,9 @@ base or a table flows down to everything below it, including what will be create
 | Level | Allows |
 |---|---|
 | **No access** | nothing: the resource is invisible |
-| **Read** | seeing rows, commenting on them, making personal views, viewing the schema and dashboards, asking your own questions, writing read-only SQL and saving your personal queries |
+| **Read** | seeing rows, commenting on them, making personal views, viewing the schema and dashboards, asking and saving your own questions, writing read-only SQL and saving your personal queries |
 | **Edit** | plus creating, updating and deleting rows |
-| **Manage** | plus changing the schema, creating shared views, dashboards and saved questions, sharing a dashboard through a link, sharing queries, creating SQL views, automations, integrations and tokens; its SQL has the whole base, writes included |
+| **Manage** | plus changing the schema, creating shared views and dashboards, sharing a dashboard through a link, sharing questions and queries, creating SQL views, automations, integrations and tokens; its SQL has the whole base, writes included |
 
 Permissions **add up**: a person gets the highest level any of their groups gives them. Giving
 a table less than its base makes it “granular”.
@@ -68,6 +68,11 @@ basedb speaks **twenty languages**: French, English, German, Spanish, Italian, P
 Turkish, Ukrainian, Japanese, Simplified Chinese and Korean. By default, the interface uses
 your browser’s language; **Language**, in **Appearance**, sets another one. Numbers and dates
 follow the chosen language.
+
+A link can also request a language: `?lang=de` at the end of a basedb address shows the sign-in
+screen, a form, or a shared view or dashboard, in German. This is how the site leads to the demo
+in the page’s language. Once signed in, basedb follows your account: the language chosen in
+**Appearance**, otherwise the browser’s.
 
 The theme stays specific to the browser; the language, the date order and the first day of the
 week follow you from one computer to another. Changing your address or linking a provider

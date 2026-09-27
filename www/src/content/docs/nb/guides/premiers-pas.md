@@ -37,7 +37,7 @@ Fra databasens **⋯**-meny: **Ny tabell**. Legg deretter til feltene fra
 | Client | Relasjon → Clients |
 | Notes | Lang tekst (Markdown) |
 
-Senere legges en formel (`JOURS([Échéance]; AUJOURDHUI())`), et oppslag (kundens by)
+Senere legges en formel (`DAYS([Échéance], TODAY())`), et oppslag (kundens by)
 eller en aggregering (totalbeløpet per kunde) til på samme måte – se
 [Tabeller og felt](/basedb/nb/fonctionnalites/tables-et-champs/).
 
@@ -71,7 +71,7 @@ svarer. Detaljer i [Delte skjemaer](/basedb/nb/fonctionnalites/formulaires-parta
 
 ## 6. Les i SQL
 
-Databasens **⋯**-meny → **Ny SQL-spørring**: tabellene dine er der, under sine ekte navn.
+Databasens **⋯**-meny → **SQL-spørring**: tabellene dine er der, under sine ekte navn.
 
 ```sql
 SELECT nom, statut, montant

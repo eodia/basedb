@@ -72,7 +72,7 @@ export default {
 							tables: {
 								href: '/fonctionnalites/tables-et-champs/',
 								title: 'Tabulky a pole',
-								text: 'Pole pro vše, vazby, vzorce ve francouzštině.',
+								text: 'Pole pro vše, vazby, vzorce jako v tabulkovém procesoru.',
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
@@ -778,9 +778,9 @@ export default {
 					href: '/fonctionnalites/tableaux-de-bord/',
 				},
 				formulas: {
-					code: 'SI([Montant] > 10000; "Klíčový klient"; "")',
-					title: 'Vzorce ve francouzštině',
-					text: 'Jako v tabulkovém procesoru – SI, ARRONDI, JOURS… – ale počítané pro celý tým.',
+					code: 'IF([Montant] > 10000, "Grand compte", "")',
+					title: 'Vzorce ve francouzštině nebo angličtině',
+					text: 'Jako v tabulkovém procesoru – SI, ARRONDI, JOURS… nebo IF, ROUND, DAYS – ale počítané pro celý tým.',
 					href: '/fonctionnalites/tables-et-champs/#vzorce',
 				},
 				rights: {
@@ -888,7 +888,7 @@ export default {
 			items: [
 				{
 					q: 'Musím umět programovat?',
-					a: 'Ne. Tabulky, zobrazení, formuláře, řídicí panely i automatizace vytvoříte myší. Vzorce se píší ve francouzštině, jako v tabulkovém procesoru: SI, ARRONDI, JOURS…',
+					a: 'Ne. Tabulky, zobrazení, formuláře, řídicí panely i automatizace vytvoříte myší. Vzorce se píší jako v tabulkovém procesoru, ve francouzštině nebo angličtině: SI nebo IF, ARRONDI nebo ROUND, JOURS nebo DAYS…',
 				},
 				{
 					q: 'Kolik to stojí?',
@@ -1255,8 +1255,8 @@ export default {
 			},
 			formulas: {
 				title: 'Vazby a vzorce',
-				text: 'Skutečné cizí klíče, vzorce ve francouzštině počítané PostgreSQL a vyhledávání, agregace a počty přes vazby.',
-				code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+				text: 'Skutečné cizí klíče, vzorce ve francouzštině nebo angličtině počítané PostgreSQL a vyhledávání, agregace a počty přes vazby.',
+				code: 'ROUND([Montant HT] * (1 + [Taux de TVA]), 2)',
 				href: '/fonctionnalites/tables-et-champs/#vzorce',
 			},
 			richText: {
@@ -1400,6 +1400,76 @@ export default {
 		title: 'Co se v basedb změnilo',
 		intro: 'Podrobnosti o každé změně najdete v <a href="https://github.com/eodia/basedb/commits/main">historii repozitáře</a>. Co přijde dál: <a href="/feuille-de-route/">plán vývoje</a>.',
 		entries: {
+			formulaLanguages: {
+				date: '2026-09-28',
+				title: 'Vzorce ve francouzštině nebo angličtině',
+				tag: 'Novinka',
+				items: [
+					'<strong>Vzorec napište ve francouzštině nebo angličtině</strong>, na jakékoli obrazovce, i s mísením obou jazyků: <code>SI</code> nebo <code>IF</code>, <code>ARRONDI</code> nebo <code>ROUND</code>, <code>JOURS</code> nebo <code>DAYS</code>… Argumenty se oddělují znakem <code>;</code> nebo <code>,</code>. <a href="/fonctionnalites/tables-et-champs/#vzorce">Vzorce</a>',
+					'<strong>Znovu se čte v jazyce obrazovky</strong>: ve francouzštině na francouzské obrazovce, v angličtině v ostatních devatenácti jazycích – včetně existujících vzorců a panelu „Funkce“. API vrátí vzorec v požadovaném jazyce, jinak v angličtině.',
+					'Oficiální šablony, nabízené v jiném jazyce než francouzštině, přicházejí se svými vzorci v angličtině. V databázi se nic nemění: stejné sloupce, stejné SQL, bez migrace.',
+				],
+			},
+			search: {
+				date: '2026-09-27',
+				title: 'Najít vše: Ctrl+K',
+				tag: 'Novinka',
+				items: [
+					'<strong>Jedno pole pro vše</strong> — <strong>Ctrl+K</strong>, nebo pole uprostřed horní lišty: tabulky, zobrazení, otázky, řídicí panely, automatizace, sloupce a samotné řádky, čtené s vašimi oprávněními; na velké obrazovce náhled zvoleného výsledku. <a href="/fonctionnalites/recherche/">Vyhledávání</a>',
+					'<strong>Pište, jak přemýšlíte</strong>: bez diakritiky a velkých písmen, podle iniciál — <code>nk</code> pro „Nový klient“ —, jeden překlep se promine, <code>zakaznici praha</code> pro vyhledání „praha“ v tabulce klientů; co často otevíráte, se posouvá nahoru.',
+					'<strong>Všechny příkazy z klávesnice</strong>: vytvořit, přejít na, zavřít, vrátit zpět, změnit motiv, kopírovat odkaz na stránku. <code>&gt;</code> hledá jen příkazy, <code>#</code> objekty, <code>/</code> řádky; <strong>Tab</strong> hledá uvnitř tabulky nebo databáze.',
+					'<strong>Máte otázku?</strong> Napište ji: <strong>Zeptat se Copilota</strong> ji položí, na otevřené databázi.',
+				],
+			},
+			questions: {
+				date: '2026-09-27',
+				title: 'Vlastní otázky, čísla v textu',
+				tag: 'Novinka',
+				items: [
+					'<strong>Každý si ukládá své otázky</strong>, bez úrovně Správa: osobní vidíte jen vy; kdo správuje databázi, je sdílí s celou databází nebo se skupinami, stejně jako dotazy. <a href="/fonctionnalites/tableaux-de-bord/">Řídicí panely</a>',
+					'<strong>Otázka na záložce</strong>, vedle tabulek: <strong>Nová otázka</strong> a <strong>Nová otázka SQL</strong>, u <strong>+</strong> na liště záložek a v nabídce databáze; záložka si ponechá, co jste v ní zanechali. <strong>Uložit kopii</strong> udělá vaší otázku, kterou nemůžete upravit.',
+					'<strong>Čísla v textu</strong>: text řídicího panelu, nyní formátovaný, cituje hodnotu — <code>{{chiffre_affaires}}</code> — pocházející z karty, otázky nebo filtru, počítanou s oprávněními čtenáře, i v řídicím panelu sdíleném odkazem. <a href="/fonctionnalites/tableaux-de-bord/#čísla-v-textu">Čísla v textu</a>',
+					'Dotazy, pohledy SQL a otázky se dají odstranit i z jejich nabídky, pravým kliknutím.',
+				],
+			},
+			addresses: {
+				date: '2026-09-27',
+				title: 'Adresa pro každou obrazovku',
+				tag: 'Novinka',
+				items: [
+					'<strong>Adresa sleduje obrazovku</strong>: tabulka, zobrazení, detail řádku, řídicí panel, automatizace, otázka, vaše nastavení — <code>/bases/ventes/tables/opportunites?ligne=…</code>. Přidejte si ji do záložek, vložte ji do zprávy: dostanete se na stejné místo, se svými vlastními oprávněními. <a href="/fonctionnalites/collaboration/#odkaz-na-každou-obrazovku">Odkaz na každou obrazovku</a>',
+					'Tlačítka <strong>zpět</strong> a <strong>vpřed</strong> v prohlížeči vás vrátí tam, kde jste byli; adresa, která nikam nevede, zobrazí „Tato stránka neexistuje“.',
+				],
+			},
+			demo: {
+				date: '2026-09-27',
+				title: 'Demoverze k vyzkoušení, ve vašem jazyce',
+				tag: 'Novinka',
+				items: [
+					'<strong>Demoverze</strong> na <a href="https://demo.basedb.eodia.com">demo.basedb.eodia.com</a>: účet je přednastavený v jazyce vašeho prohlížeče, s databází v tomto jazyce. Vše se tam čte a upravuje to, co existuje; vytváření, mazání a AI jsou tam vypnuté a databáze se každou noc vrací do svého výchozího stavu.',
+					'<strong>Vaše vlastní demoverze</strong>: <code>BASEDB_DEMO=1</code> otevře instanci všem, se sdíleným účtem na jazyk, připraveným předem. <a href="/hebergement/variables/#veřejná-demoverze">Proměnné</a>',
+					'<strong>Jeden jazyk na odkaz</strong>: <code>?lang=de</code> na konci adresy basedb zobrazí německy přihlašovací obrazovku nebo sdílenou stránku; web tak vede k demoverzi v jazyce stránky. <a href="/fonctionnalites/droits/#vaše-nastavení">Vaše nastavení</a>',
+				],
+			},
+			templateLanguages: {
+				date: '2026-09-27',
+				title: 'Šablony ve vašem jazyce',
+				tag: 'Novinka',
+				items: [
+					'<strong>Oficiální šablony se vytvářejí v jazyce obrazovky</strong>: tabulky, pole, možnosti volby, zobrazení, řídicí panely, automatizace, pokyny pro AI — a ukázkové řádky ze světa upraveného pro každý jazyk: z „Boulangerie Martin“ z Lyonu se stává „Pekárna Novákova“ v Brně. <a href="/fonctionnalites/modeles/#ve-vašem-jazyce">Šablony</a>',
+					'<a href="/modeles/">Galerie na webu</a> zobrazuje každou šablonu v jazyce stránky.',
+					'<strong>Jedna šablona, více slovníků</strong>: šablona se píše jednou, ve francouzštině; každý jazyk v ní překládá jen texty, a basedb sám sleduje každý popisek všude, kde je citován. Slovník, který by šablonu porušil, se nepoužije. <a href="/fonctionnalites/modeles/#zveřejnění-šablony-pro-všechny-instance">Zveřejnění šablony</a>',
+				],
+			},
+			details: {
+				date: '2026-09-27',
+				title: 'A také',
+				items: [
+					'<strong>Šablona bez ukázkových řádků</strong>: „Načíst ukázková data“, odškrtnuté, vytvoří prázdné tabulky, připravené pro vaše data. <a href="/fonctionnalites/modeles/#začít-ze-šablony">Začít ze šablony</a>',
+					'<strong>Dokumentace API a MCP</strong> každé databáze se píše v jazyce vaší obrazovky. <a href="/integrations/api-rest/#vygenerovaná-dokumentace">Vygenerovaná dokumentace</a>',
+					'Bublinové nápovědy v motivu aplikace, všude, kde dřív prohlížeč ukazoval své vlastní; „Odstranit“ v nabídkách červeně; úplné datum po najetí na čas komentáře.',
+				],
+			},
 			languages: {
 				date: '2026-09-27',
 				title: 'Formátovaný text, proměnné, přehlednější kanban',

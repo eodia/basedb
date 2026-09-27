@@ -14,7 +14,18 @@ kaarten aan die eraan gekoppeld zijn.
 Alles opent via **Dashboards**, in het blok van de geopende database onderaan de
 zijbalk. Links staan de dashboards en de opgeslagen vragen van de database, en
 **Gegevens verkennen** om een vraag te stellen zonder iets op te slaan. Iedere lezer van de database
-kan ze bekijken en verkennen; aanmaken, wijzigen en opslaan vraagt het niveau **Beheren**.
+kan ze bekijken, verkennen en er eigen vragen bij opslaan; een dashboard bouwen en een vraag
+delen vragen het niveau **Beheren**.
+
+Een opgeslagen vraag is **persoonlijk** — alleen jij ziet haar —, voor **de hele database** of voor
+**groepen**. Haar menu, met een rechtsklik of via **⋯**, opent haar in een tabblad naast de
+tabellen, wijzigt haar naam en het delen ervan, of verwijdert haar. De **+** in de tabbladbalk biedt
+ook **Nieuwe vraag** en **Nieuwe SQL-vraag** aan.
+
+**Opslaan**, in de kop van een vraag, bewaart haar; een vraag die je niet mag wijzigen, biedt in
+plaats daarvan **Kopie opslaan** aan, die van jou wordt. **⋯** (Meer acties) biedt ook **Naam en
+delen…**, **Kopie opslaan…** en **Vraag verwijderen** aan; een tabblad dat haar toonde, behoudt
+zijn inhoud, weer niet-opgeslagen.
 
 ## Een vraag stellen met de muis
 
@@ -109,8 +120,10 @@ net als de andere.
 
 **Bewerken** zet het dashboard in bewerkmodus:
 
-- **Vraag** plaatst een opgeslagen vraag, of maakt er een die alleen bij de kaart hoort;
-- **Titel** en **Tekst** voegen een sectietitel of een tekst in Markdown toe;
+- **Vraag** plaatst een opgeslagen vraag — een persoonlijke vraag wordt daarbij gekopieerd —, of
+  maakt er een die alleen bij de kaart hoort;
+- **Titel** voegt een sectietitel toe, **Tekst** een opgemaakte tekst — koppen, lijsten,
+  links — die cijfers kan citeren (zie hieronder);
 - **Ingesloten pagina** toont een `https://`-adres in een geïsoleerd frame, dat geen
   sessie en geen gegevens ontvangt;
 - **Tabblad** verdeelt de kaarten over meerdere pagina’s; dubbelklikken hernoemt een tabblad.
@@ -118,6 +131,25 @@ net als de andere.
 De kaarten verplaats je met hun sleepgreep en vergroot of verklein je via hun hoek, op een raster van
 24 kolommen. **Opslaan** bewaart het geheel; **Annuleren** gaat terug naar de vorige versie. Een
 kaarttitel opent, in leesmodus, de vraag om haar te verkennen, met de filters van het dashboard.
+
+### Cijfers in de tekst
+
+Een tekst citeert een waarde met een naam tussen dubbele accolades: “Deze maand:
+`{{chiffre_affaires}}` omzet op `{{commandes}}` bestellingen.” Elke naam wordt een pastille, die je
+met één klik koppelt — of via **Variabele** in de balk van de editor — aan:
+
+| Bron | Wat de tekst toont |
+|---|---|
+| **een kaart** van het dashboard | wat zij toont, onder haar eigen filters |
+| **een opgeslagen vraag** van de hele database | haar waarde, en de filters van het dashboard koppelen zich eraan zoals aan een kaart |
+| **een vraag bewaard in de tekst** | haar waarde; zo citeer je een persoonlijke vraag |
+| **een filter** van het dashboard | de gekozen waarde, zoals het bedieningselement ervan aangeeft |
+
+De waarde van een vraag is die welke haar **Getal** zou tonen: haar eerste maat, op de laatste
+rij. Ze wordt berekend met de rechten van de lezer, en wordt altijd als tekst getoond. Een tekst
+citeert hooguit 20 waarden; een naam wordt in kleine letters geschreven, cijfers en `_`. Teksten
+die vóór de editor in Markdown zijn geschreven, lezen als voorheen, en worden opgemaakt zodra ze
+opnieuw worden geschreven. De Copilot schrijft zijn teksten in Markdown.
 
 ## Filters
 

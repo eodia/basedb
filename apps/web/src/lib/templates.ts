@@ -56,6 +56,8 @@ export interface ApplyOptions {
   readonly onStep: (message: string) => void
   /** The person's yes to the AI fields' cited values leaving for the provider (ch. 12 §1.5). */
   readonly aiConsent: boolean
+  /** Writes the sample rows; without them, the tables are left empty. */
+  readonly rows?: boolean
   /** Who applies it — what `$moi` becomes. */
   readonly me: string | null
   readonly today?: Date
@@ -377,6 +379,7 @@ export async function applyTemplate(
   options: ApplyOptions,
 ): Promise<ApplyReport> {
   const { onStep, me } = options
+  const withRows = options.rows !== false
   const today = options.today ?? new Date()
   const warnings: string[] = []
   const built = new Map<string, BuiltTable>()
@@ -560,19 +563,33 @@ export async function applyTemplate(
 
   // 5. The AI fields that cite a relation or a computed field, now that those exist.
   for (const { entry, field } of laterAi) await addAiField(entry, field)
+  // Their sample values, when there are rows to hold them.
+  const sampled = withRows && Object.values(template.rows).some((rows) => rows.length > 0)
   if (degraded > 0) {
     warnings.push(
       options.aiConsent
-        ? $tp(
-            degraded,
-            'L’IA n’est pas configurée : {count} champ IA créé comme un champ ordinaire, avec ses valeurs d’exemple.',
-            'L’IA n’est pas configurée : {count} champs IA créés comme des champs ordinaires, avec leurs valeurs d’exemple.',
-          )
-        : $tp(
-            degraded,
-            'Sans votre accord, {count} champ IA a été créé comme un champ ordinaire, avec ses valeurs d’exemple.',
-            'Sans votre accord, {count} champs IA ont été créés comme des champs ordinaires, avec leurs valeurs d’exemple.',
-          ),
+        ? sampled
+          ? $tp(
+              degraded,
+              'L’IA n’est pas configurée : {count} champ IA créé comme un champ ordinaire, avec ses valeurs d’exemple.',
+              'L’IA n’est pas configurée : {count} champs IA créés comme des champs ordinaires, avec leurs valeurs d’exemple.',
+            )
+          : $tp(
+              degraded,
+              'L’IA n’est pas configurée : {count} champ IA créé comme un champ ordinaire.',
+              'L’IA n’est pas configurée : {count} champs IA créés comme des champs ordinaires.',
+            )
+        : sampled
+          ? $tp(
+              degraded,
+              'Sans votre accord, {count} champ IA a été créé comme un champ ordinaire, avec ses valeurs d’exemple.',
+              'Sans votre accord, {count} champs IA ont été créés comme des champs ordinaires, avec leurs valeurs d’exemple.',
+            )
+          : $tp(
+              degraded,
+              'Sans votre accord, {count} champ IA a été créé comme un champ ordinaire.',
+              'Sans votre accord, {count} champs IA ont été créés comme des champs ordinaires.',
+            ),
     )
   }
 
@@ -584,11 +601,12 @@ export async function applyTemplate(
     if (display !== undefined) await api.setDisplayColumn(entry.ref, display.name)
   }
 
-  // 7. The rows, relations resolved by their keys — afterwards for those not yet created.
+  // 7. The rows, relations resolved by their keys — afterwards for those not yet created;
+  // none when the person starts from empty tables.
   const ids = new Map<string, string>()
   const resolveKey = (tableKey: string, rowKey: string) => ids.get(`${tableKey}:${rowKey}`)
   const later: Array<{ table: BuiltTable; id: string; row: Readonly<Record<string, unknown>> }> = []
-  for (const key of rowOrder(template)) {
+  for (const key of withRows ? rowOrder(template) : []) {
     const rows = template.rows[key] ?? []
     const entry = built.get(key)
     if (entry === undefined || rows.length === 0) continue

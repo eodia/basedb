@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Hint } from '@/components/ui/tooltip'
 import type { Field, LinkOption } from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -186,10 +187,7 @@ export function DataGrid({
                           <ExternalLink className="size-4" />
                           {$t('Ouvrir la fiche')}
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => void onDelete(id)}
-                          className="text-destructive focus:text-destructive"
-                        >
+                        <DropdownMenuItem onSelect={() => void onDelete(id)} variant="destructive">
                           <Trash2 className="size-4" />
                           {$t('Supprimer')}
                         </DropdownMenuItem>
@@ -273,12 +271,9 @@ function Cell({
   // Masked for this reader: never read, so there is nothing to show and nothing to write.
   if (!present) {
     return (
-      <span
-        className="flex h-12 items-center px-3 text-muted-foreground"
-        title={$t('Champ masqué')}
-      >
-        ···
-      </span>
+      <Hint label={$t('Champ masqué')}>
+        <span className="flex h-12 items-center px-3 text-muted-foreground">···</span>
+      </Hint>
     )
   }
 

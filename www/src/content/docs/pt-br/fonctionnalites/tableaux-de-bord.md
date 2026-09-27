@@ -14,7 +14,18 @@ cartões vinculados a eles.
 Tudo abre em **Painéis**, no bloco da base aberta, na parte de baixo da barra
 lateral. À esquerda, os painéis e as perguntas salvas da base, e
 **Explorar os dados** para fazer uma pergunta sem salvar nada. Todo leitor da base
-pode consultá-los e explorá-los; criar, editar e salvar exigem o nível **Gerenciamento**.
+pode consultá-los, explorá-los e salvar suas próprias perguntas; criar um painel e compartilhar
+uma pergunta exigem o nível **Gerenciamento**.
+
+Uma pergunta salva é **pessoal** — só você a vê —, para **toda a base** ou para **grupos**. Seu
+menu, com um clique com o botão direito ou por **⋯**, a abre em uma aba ao lado das tabelas, muda
+seu nome e seu compartilhamento, ou a exclui. O **+** da barra de abas também oferece **Nova
+pergunta** e **Nova pergunta SQL**.
+
+**Salvar**, no cabeçalho de uma pergunta, a mantém; uma pergunta que você não pode editar
+oferece em vez disso **Salvar uma cópia**, que se torna sua. **⋯** (Mais ações) também oferece
+**Nome e compartilhamento…**, **Salvar uma cópia…** e **Excluir a pergunta**; uma aba que a
+mostrava mantém o conteúdo, agora não salvo.
 
 ## Fazer uma pergunta com o mouse
 
@@ -109,8 +120,10 @@ como as outras.
 
 **Editar** coloca o painel em modo de edição:
 
-- **Pergunta** posiciona uma pergunta salva ou cria uma exclusiva do cartão;
-- **Título** e **Texto** adicionam um título de seção ou um texto em Markdown;
+- **Pergunta** posiciona uma pergunta salva — uma pergunta pessoal é copiada nela —, ou cria uma
+  exclusiva do cartão;
+- **Título** adiciona um título de seção, **Texto** um texto formatado — títulos, listas,
+  links — que pode citar números (veja mais abaixo);
 - **Página incorporada** exibe um endereço `https://` em um frame isolado, que não recebe
   sessão nem dados;
 - **Aba** distribui os cartões em várias páginas; um clique duplo renomeia uma aba.
@@ -118,6 +131,25 @@ como as outras.
 Os cartões são movidos pela alça e redimensionados pelo canto, em uma grade de
 24 colunas. **Salvar** guarda tudo; **Cancelar** volta à versão anterior. O título
 de um cartão, em modo de leitura, abre sua pergunta para explorá-la, incluindo os filtros do painel.
+
+### Números no texto
+
+Um texto cita um valor por um nome entre chaves duplas: “Este mês, `{{chiffre_affaires}}` de
+faturamento em `{{commandes}}` pedidos.” Cada nome se torna uma etiqueta, para vincular com um
+clique — ou por **Variável** na barra do editor — a:
+
+| Fonte | O que o texto mostra |
+|---|---|
+| **um cartão** do painel | o que ele mostra, sob os próprios filtros |
+| **uma pergunta salva** de toda a base | seu valor, e os filtros do painel se vinculam a ela como a um cartão |
+| **uma pergunta guardada no texto** | seu valor; é assim que se cita uma pergunta pessoal |
+| **um filtro** do painel | o valor escolhido, como o comando dele diz |
+
+O valor de uma pergunta é o que o seu **Número** mostraria: sua primeira medida, na última
+linha. Ele é calculado com as permissões do leitor, e sempre é exibido como texto. Um texto cita
+no máximo 20 valores; um nome se escreve em minúsculas, dígitos e `_`. Os textos escritos em
+Markdown antes do editor continuam sendo lidos como antes, e passam a ser formatados assim que
+são reescritos. Já o Copilot escreve seus textos em Markdown.
 
 ## Os filtros
 

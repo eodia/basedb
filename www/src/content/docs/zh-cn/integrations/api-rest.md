@@ -67,6 +67,6 @@ curl -X POST "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportu
 
 ## 自动生成的文档
 
-每个数据库都有自己的 **API 与 MCP 文档**页面：针对每张数据表，列出其端点、列，以及 cURL 和 JavaScript 示例。该文档**按您的权限过滤**——两位读者会得到两个不同的版本——同时还提供 OpenAPI 3.1 格式（`/api/v1/<tenant>/meta/bases/<base>/openapi.json`）。
+每个数据库都有自己的 **API 与 MCP 文档**页面：针对每张数据表，列出其端点、列，以及 cURL 和 JavaScript 示例。该文档**按您的权限过滤**——两位读者会得到两个不同的版本——并以**您屏幕所使用的语言**编写，同时还提供 OpenAPI 3.1 格式（`/api/v1/<tenant>/meta/bases/<base>/openapi.json`）。名称、路径和错误代码在所有语言中保持不变。
 
 ![数据库的自动生成文档](../../../../assets/screens/documentation-api.png)

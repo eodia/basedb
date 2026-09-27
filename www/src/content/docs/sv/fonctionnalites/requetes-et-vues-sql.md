@@ -13,7 +13,7 @@ dina verktyg också läser.
 
 ## Var och en med sina behörigheter
 
-**+** i flikfältet, eller databasens **⋯**-meny → **Ny SQL-fråga**, öppnar en SQL-flik: en
+**+** i flikfältet, eller databasens **⋯**-meny → **SQL-fråga**, öppnar en SQL-flik: en
 redigerare med syntaxfärgning och komplettering, **Ctrl+Enter** för att köra och resultatet i
 samma rutnät som dina tabeller. Vad frågan kan läsa beror på vem som kör den:
 
@@ -34,7 +34,8 @@ MCP-servern inte skulle visa dig.
 **Spara**, i flikens verktygsfält, placerar frågan under databasens tabeller, i avsnittet
 **Frågor**. Den öppnas igen med ett klick; **⋯** → **Spara som…** gör en kopia, och **Namn och
 delning…** (i fliken eller i dess meny i sidofältet) byter namn på den, ändrar vem som ser den
-eller tar bort den.
+eller tar bort den — **Ta bort** finns också i dess meny, med ett högerklick. En flik som visade
+den behåller sin text.
 
 ![Spara en fråga: dess namn, vad den visar och vem som ser den](../../../../assets/screens/requete-enregistrer.png)
 
@@ -83,7 +84,8 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 för varje tabell och varje kolumn som den läser; sidofältet listar den bara för den som får läsa
 allt den läser. Den läser bara **sin egen** databas: en annan databas, eller basedbs katalog,
 avvisas redan när vyn skapas. Att skapa, ändra eller ta bort den kräver nivån **Hantera** på
-databasen.
+databasen. **Ta bort**, i dess meny i sidofältet, tar bort den för alla, skript och verktyg
+inräknade; tabellerna den läser påverkas inte.
 
 ### När strukturen ändras
 

@@ -11,9 +11,9 @@ projekt, en database eller en tabel, gælder for alt derunder, også det, der op
 | Niveau | Tillader |
 |---|---|
 | **Ingen adgang** | intet: ressourcen er usynlig |
-| **Læse** | se rækkerne, kommentere dem, lave personlige visninger, se strukturen og dashboards, stille egne spørgsmål, skrive skrivebeskyttet SQL og gemme personlige forespørgsler |
+| **Læse** | se rækkerne, kommentere dem, lave personlige visninger, se strukturen og dashboards, stille og gemme egne spørgsmål, skrive skrivebeskyttet SQL og gemme personlige forespørgsler |
 | **Redigere** | og oprette, redigere og slette rækker |
-| **Administrere** | og ændre strukturen, oprette delte visninger, dashboards og gemte spørgsmål, dele et dashboard via et link, dele forespørgsler, oprette SQL-views, automatiseringer, integrationer og tokens; personens SQL har adgang til hele databasen, skrivninger inklusive |
+| **Administrere** | og ændre strukturen, oprette delte visninger og dashboards, dele et dashboard via et link, dele spørgsmål og forespørgsler, oprette SQL-views, automatiseringer, integrationer og tokens; personens SQL har adgang til hele databasen, skrivninger inklusive |
 
 Tilladelser **lægges sammen**: en person får det højeste niveau, som en af personens grupper
 giver. Giver du en tabel mindre end dens database, bliver den »granulær«.
@@ -71,6 +71,11 @@ basedb taler **tyve sprog**: fransk, engelsk, tysk, spansk, italiensk, portugisi
 tyrkisk, ukrainsk, japansk, forenklet kinesisk og koreansk. Som standard bruger brugerfladen
 din browsers sprog; **Sprog** under **Udseende** vælger et andet. Tal og datoer følger det
 valgte sprog.
+
+Et link kan også anmode om et sprog: `?lang=de` sidst i en basedb-adresse viser login-skærmen,
+en delt formular, en delt visning eller et delt dashboard på tysk. Det er sådan, sitet fører til
+demoen på sidens sprog. Når du er logget ind, følger basedb din konto: det sprog, du har valgt
+under **Udseende**, ellers browserens.
 
 Temaet gælder kun for browseren; sproget, datoernes rækkefølge og ugens første dag følger dig
 fra computer til computer. At skifte adresse eller tilknytte en udbyder kræver en forhøjet

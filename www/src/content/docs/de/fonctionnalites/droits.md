@@ -12,9 +12,9 @@ dessen, was später angelegt wird.
 | Stufe | Erlaubt |
 |---|---|
 | **Kein Zugriff** | nichts: Die Ressource ist unsichtbar |
-| **Lesen** | Zeilen sehen und kommentieren, sich persönliche Ansichten anlegen, die Struktur und die Dashboards ansehen, eigene Fragen stellen, schreibgeschütztes SQL schreiben und persönliche Abfragen speichern |
+| **Lesen** | Zeilen sehen und kommentieren, sich persönliche Ansichten anlegen, die Struktur und die Dashboards ansehen, eigene Fragen stellen und speichern, schreibgeschütztes SQL schreiben und persönliche Abfragen speichern |
 | **Bearbeiten** | außerdem Zeilen anlegen, ändern und löschen |
-| **Verwalten** | außerdem die Struktur ändern, freigegebene Ansichten, Dashboards und gespeicherte Fragen anlegen, ein Dashboard per Link freigeben, Abfragen freigeben, SQL-Views, Automatisierungen, Integrationen und Token anlegen; ihr SQL hat die ganze Datenbank, Schreibvorgänge eingeschlossen |
+| **Verwalten** | außerdem die Struktur ändern, freigegebene Ansichten und Dashboards anlegen, ein Dashboard per Link freigeben, Fragen und Abfragen freigeben, SQL-Views, Automatisierungen, Integrationen und Token anlegen; ihr SQL hat die ganze Datenbank, Schreibvorgänge eingeschlossen |
 
 Berechtigungen **addieren sich**: Eine Person erhält die höchste Stufe, die ihr eine ihrer Gruppen
 gibt. Einer Tabelle weniger zu geben als ihrer Datenbank macht sie „granular“.
@@ -73,6 +73,11 @@ Portugiesisch (Brasilien), Niederländisch, Polnisch, Tschechisch, Schwedisch, D
 Finnisch, Rumänisch, Ungarisch, Türkisch, Ukrainisch, Japanisch, vereinfachtes Chinesisch und
 Koreanisch. Standardmäßig übernimmt die Oberfläche die Sprache Ihres Browsers; **Sprache** unter
 **Darstellung** legt eine andere fest. Zahlen und Datumsangaben folgen der gewählten Sprache.
+
+Ein Link kann auch eine Sprache anfordern: `?lang=de` am Ende einer Adresse von basedb zeigt den
+Anmeldebildschirm, ein Formular, eine freigegebene Ansicht oder ein freigegebenes Dashboard auf
+Deutsch. So führt die Website zur Demo in der Sprache der Seite. Nach der Anmeldung folgt basedb
+Ihrem Konto: der in **Darstellung** gewählten Sprache, sonst der des Browsers.
 
 Das Design bleibt an den Browser gebunden; Sprache, Datumsreihenfolge und erster Wochentag folgen
 Ihnen von einem Rechner zum anderen. Die Adresse zu ändern oder einen Anbieter zu verbinden

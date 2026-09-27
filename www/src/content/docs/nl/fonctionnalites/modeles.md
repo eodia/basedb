@@ -19,8 +19,22 @@ om een label en, als er AI-velden zijn, om je toestemming om de waarden die ze c
 naar de AI-provider van de instantie te sturen. Zonder die toestemming zijn het gewone
 velden, gevuld met hun voorbeeldwaarden.
 
+**Voorbeeldgegevens laden**, standaard aangevinkt, vult de tabellen met voorbeeldrijen om de
+database in actie te zien. Uitgevinkt blijven de tabellen leeg, klaar voor je eigen gegevens —
+weergaven, dashboards en automatiseringen worden toch aangemaakt.
+
 Een leeg project biedt ook de **demodatabase** aan: een klein bureau met zijn klanten,
 projecten, taken, facturen en reviews, dat alle facetten van basedb laat zien.
+
+## In je taal
+
+De officiële sjablonen worden **in de taal van het scherm** gelezen en aangemaakt: tabellen,
+velden, keuzes, voorbeeldrijen, weergaven, dashboards, automatiseringen en AI-instructies. De
+voorbeeldrijen veranderen van wereld met de taal: de “Boulangerie Martin” van Lyon wordt “Bakkerij
+De Boer” in Utrecht in het Nederlands.
+
+Een sjabloon dat in je instantie is geïmporteerd, of vanuit een database opgeslagen, is door
+iemand geschreven: het wordt gelezen zoals het is geschreven.
 
 ## Aan de AI vragen
 
@@ -109,6 +123,15 @@ publiceren volstaat om de galerie van alle instanties te veranderen.
 
 Elk sjabloon wordt bij het bouwen van de site gecontroleerd, door dezelfde validator als de server:
 een ongeldig sjabloon laat de build mislukken in plaats van bij de gebruikers terecht te komen.
+
+Een officieel sjabloon wordt één keer geschreven, in het Frans. De teksten ervan in een andere
+taal zijn een woordenboek,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+— de Franse tekst, gevolgd door de vertaling ervan —, dat de site naast de catalogus publiceert
+(`/basedb/modeles/i18n/<langue>.json`). De instantie vult er elke tekst mee in en volgt elk label
+overal waar het wordt aangehaald — formules, filters, weergaven, instructies —, en leest het
+resultaat daarna na: een woordenboek dat het sjabloon zou breken, wordt niet gebruikt, het Franse
+sjabloon wel. Een tekst die in het woordenboek ontbreekt, blijft Frans.
 
 De instantie leest het adres `BASEDB_TEMPLATES_URL` — standaard dat van de openbare site. Laat het
 verwijzen naar een eigen catalogus, of zet het op `off` om er geen enkele te lezen: de instantie serveert dan de

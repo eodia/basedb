@@ -81,7 +81,8 @@ brugerfladen: et token læser og skriver rækker, det ændrer ikke databasen.
 
 Hver database har sin side **API- og MCP-dokumentation**: for hver tabel dens endpoints, dens
 kolonner og eksempler i cURL og JavaScript. Den er **filtreret efter dine tilladelser** — to
-læsere får to versioner — og findes også i OpenAPI 3.1
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+læsere får to versioner —, skrevet **på din skærms sprog**, og findes også i OpenAPI 3.1
+(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Navnene, stierne og fejlkoderne forbliver
+de samme på alle sprog.
 
 ![Den genererede dokumentation for en database](../../../../assets/screens/documentation-api.png)

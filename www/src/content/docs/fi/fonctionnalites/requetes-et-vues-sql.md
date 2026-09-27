@@ -13,7 +13,7 @@ jota myös `psql` ja työkalusi lukevat.
 
 ## Kukin omilla käyttöoikeuksillaan
 
-Välilehtipalkin **+** tai tietokannan **⋯**-valikko → **Uusi SQL-kysely** avaa SQL-välilehden:
+Välilehtipalkin **+** tai tietokannan **⋯**-valikko → **SQL-kysely** avaa SQL-välilehden:
 editori, jossa on korostus ja täydennys, **Ctrl+Enter** suorittamiseen ja tulos samassa
 ruudukossa kuin taulukkosi. Se, mitä kysely voi lukea, riippuu sen suorittajasta:
 
@@ -34,7 +34,8 @@ MCP-palvelin eivät näyttäisi.
 Välilehden palkin **Tallenna** sijoittaa kyselyn tietokannan taulukoiden alle **Kyselyt**-osioon.
 Sen voi avata uudelleen yhdellä napsautuksella; **⋯** → **Tallenna nimellä…** tekee siitä
 kopion, ja **Nimi ja jakaminen…** (välilehdessä tai sen sivupalkin valikossa) nimeää sen
-uudelleen, muuttaa sitä, kuka sen näkee, tai poistaa sen.
+uudelleen, muuttaa sitä, kuka sen näkee, tai poistaa sen — **Poista** on myös sen valikossa,
+hiiren oikealla painikkeella. Sitä näyttänyt välilehti säilyttää tekstinsä.
 
 ![Kyselyn tallentaminen: sen nimi, mitä se näyttää ja kuka sen näkee](../../../../assets/screens/requete-enregistrer.png)
 
@@ -84,7 +85,9 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 käyttöoikeuksillaan jokaiseen taulukkoon ja jokaiseen sarakkeeseen, jota se lukee; sivupalkki
 näyttää sen vain niille, jotka voivat lukea kaiken, mitä se lukee. Se lukee vain **omaa**
 tietokantaansa: toinen tietokanta tai basedb:n katalogi hylätään jo luotaessa. Sen luominen,
-muokkaaminen tai poistaminen vaatii tietokannan **Hallintaoikeus**-tason.
+muokkaaminen tai poistaminen vaatii tietokannan **Hallintaoikeus**-tason. **Poista**, sen
+sivupalkin valikossa, poistaa sen kaikilta, myös skripteiltä ja työkaluilta; taulukot, joita se
+lukee, eivät muutu.
 
 ### Kun rakenne muuttuu
 

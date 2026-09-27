@@ -72,7 +72,7 @@ export default {
 							tables: {
 								href: '/fonctionnalites/tables-et-champs/',
 								title: 'Táblák és mezők',
-								text: 'Mezők mindenre, kapcsolatok és francia nyelvű képletek.',
+								text: 'Mezők mindenre, kapcsolatok és képletek, mint egy táblázatkezelőben.',
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
@@ -776,9 +776,9 @@ export default {
 					href: '/fonctionnalites/tableaux-de-bord/',
 				},
 				formulas: {
-					code: 'SI([Montant] > 10000; "Grand compte"; "")',
-					title: 'Francia nyelvű képletek',
-					text: 'Mint egy táblázatkezelőben — SI, ARRONDI, JOURS… — de az egész csapat számára kiszámítva.',
+					code: 'IF([Montant] > 10000, "Grand compte", "")',
+					title: 'Francia vagy angol nyelvű képletek',
+					text: 'Mint egy táblázatkezelőben — SI, ARRONDI, JOURS… vagy IF, ROUND, DAYS — de az egész csapat számára kiszámítva.',
 					href: '/fonctionnalites/tables-et-champs/#képletek',
 				},
 				rights: {
@@ -886,7 +886,7 @@ export default {
 			items: [
 				{
 					q: 'Kell tudni kódolni?',
-					a: 'Nem. A táblákat, nézeteket, űrlapokat, irányítópultokat és automatizálásokat egérrel hozza létre. A képletek franciául íródnak, mint egy táblázatkezelőben: SI, ARRONDI, JOURS…',
+					a: 'Nem. A táblákat, nézeteket, űrlapokat, irányítópultokat és automatizálásokat egérrel hozza létre. A képletek úgy íródnak, mint egy táblázatkezelőben, franciául vagy angolul: SI vagy IF, ARRONDI vagy ROUND, JOURS vagy DAYS…',
 				},
 				{
 					q: 'Mennyibe kerül?',
@@ -1253,8 +1253,8 @@ export default {
 			},
 			formulas: {
 				title: 'Kapcsolatok és képletek',
-				text: 'Valódi idegen kulcsok, francia nyelvű, a PostgreSQL által számított képletek, valamint kikeresések, aggregálások és darabszámok a kapcsolatokon keresztül.',
-				code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+				text: 'Valódi idegen kulcsok, franciául vagy angolul írt és a PostgreSQL által számított képletek, valamint kikeresések, aggregálások és darabszámok a kapcsolatokon keresztül.',
+				code: 'ROUND([Montant HT] * (1 + [Taux de TVA]), 2)',
 				href: '/fonctionnalites/tables-et-champs/#képletek',
 			},
 			richText: {
@@ -1398,6 +1398,76 @@ export default {
 		title: 'Mi változott a basedb-ben',
 		intro: 'Minden változás részletei <a href="https://github.com/eodia/basedb/commits/main">a tároló előzményeiben</a> találhatók. Ami ezután jön: az <a href="/feuille-de-route/">ütemterv</a>.',
 		entries: {
+			formulaLanguages: {
+				date: '2026-09-28',
+				title: 'Francia vagy angol nyelvű képletek',
+				tag: 'Új',
+				items: [
+					'<strong>Írjon képletet franciául vagy angolul</strong>, bármelyik képernyőn, akár a kettőt keverve is: <code>SI</code> vagy <code>IF</code>, <code>ARRONDI</code> vagy <code>ROUND</code>, <code>JOURS</code> vagy <code>DAYS</code>… Az argumentumokat <code>;</code> vagy <code>,</code> választja el. <a href="/fonctionnalites/tables-et-champs/#képletek">A képletek</a>',
+					'<strong>A képernyő nyelvén olvasható vissza</strong>: franciául egy francia képernyőn, angolul a másik tizenkilenc nyelven — a meglévő képletekkel és a „Függvények” panellel is. Az API a kért nyelven adja vissza a képletet, egyébként angolul.',
+					'A hivatalos sablonok, amelyeket egy franciától eltérő nyelven szolgálnak ki, angol nyelvű képletekkel érkeznek. Az adatbázisban semmi nem változik: ugyanazok az oszlopok, ugyanaz az SQL, migrálás nélkül.',
+				],
+			},
+			search: {
+				date: '2026-09-27',
+				title: 'Minden megtalálása: Ctrl+K',
+				tag: 'Új',
+				items: [
+					'<strong>Egyetlen mező mindenre</strong> — <strong>Ctrl+K</strong>, vagy a felső sáv közepén lévő mező: táblák, nézetek, kérdések, irányítópultok, automatizálások, oszlopok, és maguk a sorok, az Ön jogosultságaival olvasva; nagy képernyőn a kiválasztott találat előnézete. <a href="/fonctionnalites/recherche/">A keresés</a>',
+					'<strong>Gépeljen úgy, ahogyan gondolkodik</strong>: sem ékezetek, sem nagybetűk nem számítanak, kezdőbetűkkel — <code>kp</code> a „Kovács Pékség” névre —, egy elgépelést megbocsát, <code>ügyfelek debrecen</code> a „debrecen” szó kereséséhez az ügyfelek táblájában; amit gyakran megnyit, felkerül a lista elejére.',
+					'<strong>Minden billentyűzetes parancs</strong>: létrehozás, ugrás, bezárás, visszavonás, témaváltás, az oldal hivatkozásának másolása. A <code>&gt;</code> csak a parancsok között keres, a <code>#</code> az objektumok között, a <code>/</code> a sorok között; a <strong>Tab</strong> egy táblán vagy adatbázison belül keres.',
+					'<strong>Van egy kérdése?</strong> Írja be: a <strong>Copilot megkérdezése</strong> feladja neki, a megnyitott adatbázisban.',
+				],
+			},
+			questions: {
+				date: '2026-09-27',
+				title: 'Saját kérdések, számok a szövegben',
+				tag: 'Új',
+				items: [
+					'<strong>Mindenki elmenti saját kérdéseit</strong>, Kezelés szint nélkül: a személyeseket csak Ön látja; aki kezeli az adatbázist, megosztja őket a teljes adatbázissal vagy csoportokkal, mint a lekérdezéseket. <a href="/fonctionnalites/tableaux-de-bord/">Az irányítópultok</a>',
+					'<strong>Egy kérdés saját lapon</strong>, a táblák mellett: <strong>Új kérdés</strong> és <strong>Új SQL-kérdés</strong>, a lapsáv <strong>+</strong> gombján és az adatbázis menüjében; a lap megtartja, amit rajta hagyott. A <strong>Másolat mentése</strong> az Önévé tesz egy kérdést, amelyet nem tud módosítani.',
+					'<strong>Számok a szövegben</strong>: egy irányítópult szövege, immár formázva, egy értékre hivatkozik — <code>{{chiffre_affaires}}</code> — amely egy kártyából, egy kérdésből vagy egy szűrőből származik, az olvasó jogosultságaival kiszámítva, akár egy linkkel megosztott irányítópulton belül is. <a href="/fonctionnalites/tableaux-de-bord/#számok-a-szövegben">Számok a szövegben</a>',
+					'A lekérdezések, az SQL-nézetek és a kérdések a menüjükből is törölhetők, jobb kattintással.',
+				],
+			},
+			addresses: {
+				date: '2026-09-27',
+				title: 'Egy cím minden képernyőhöz',
+				tag: 'Új',
+				items: [
+					'<strong>A cím követi a képernyőt</strong>: egy tábla, egy nézet, egy sor részletei, egy irányítópult, egy automatizálás, egy kérdés, az Ön beállításai — <code>/bases/ventes/tables/opportunites?ligne=…</code>. Tegye könyvjelzőbe, illessze be egy üzenetbe: ugyanarra a helyre érkezik, a saját jogosultságaival. <a href="/fonctionnalites/collaboration/#hivatkozás-minden-képernyőhöz">Hivatkozás minden képernyőhöz</a>',
+					'A böngésző <strong>vissza</strong> és <strong>előre</strong> gombjai odavezetik, ahol volt; egy sehová nem vezető cím a „Ez az oldal nem létezik” üzenetet jeleníti meg.',
+				],
+			},
+			demo: {
+				date: '2026-09-27',
+				title: 'Egy kipróbálható demó, az Ön nyelvén',
+				tag: 'Új',
+				items: [
+					'<strong>A demó</strong>, a <a href="https://demo.basedb.eodia.com">demo.basedb.eodia.com</a> oldalon: a fiók az Ön böngészőjének nyelvén van előre kitöltve, egy ezen a nyelven lévő adatbázissal. Ott mindent elolvashat, és módosíthatja, ami már létezik; a létrehozás, a törlés és az MI ki van kapcsolva, és az adatbázis minden éjjel visszaáll a kiinduló állapotába.',
+					'<strong>Az Ön saját demója</strong>: a <code>BASEDB_DEMO=1</code> mindenki számára megnyit egy példányt, nyelvenként egy előre elkészített, megosztott fiókkal. <a href="/hebergement/variables/#nyilvános-demó">A változók</a>',
+					'<strong>Egy nyelv linkenként</strong>: a <code>?lang=de</code> egy basedb-cím végén németül jeleníti meg a bejelentkezési képernyőt vagy egy megosztott lapot; a webhely így az oldal nyelvén vezet a demóhoz. <a href="/fonctionnalites/droits/#az-ön-beállításai">Az Ön beállításai</a>',
+				],
+			},
+			templateLanguages: {
+				date: '2026-09-27',
+				title: 'A sablonok az Ön nyelvén',
+				tag: 'Új',
+				items: [
+					'<strong>A hivatalos sablonok a képernyő nyelvén jönnek létre</strong>: táblák, mezők, választási lehetőségek, nézetek, irányítópultok, automatizálások, MI-utasítások — és mintasorok egy, az adott nyelvhez igazított világból: a lyoni „Boulangerie Martin” a portlandi „Martin’s Bakery”-vé válik. <a href="/fonctionnalites/modeles/#az-ön-nyelvén">A sablonok</a>',
+					'A <a href="/modeles/">webhely galériája</a> minden sablont a lap nyelvén mutat meg.',
+					'<strong>Egy sablon, több szótár</strong>: egy sablon egyszer íródik meg, franciául; minden nyelv csak a szövegeit fordítja le, és a basedb maga követi minden feliratot, ahol azt idézik. Egy szótárt, amely megtörné a sablont, nem szolgál ki. <a href="/fonctionnalites/modeles/#sablon-közzététele-minden-példány-számára">Sablon közzététele</a>',
+				],
+			},
+			details: {
+				date: '2026-09-27',
+				title: 'És egyebek',
+				items: [
+					'<strong>Egy sablon a mintasorai nélkül</strong>: a „Példaadatok betöltése” kikapcsolva, üres táblákat hoz létre, készen az Ön adataira. <a href="/fonctionnalites/modeles/#indulás-egy-sablonból">Indulás egy sablonból</a>',
+					'<strong>Az API- és MCP-dokumentáció</strong> minden adatbázishoz az Ön képernyőjének nyelvén íródik. <a href="/integrations/api-rest/#a-generált-dokumentáció">A generált dokumentáció</a>',
+					'Súgóbuborékok az alkalmazás témájában, mindenhol, ahol korábban a böngésző mutatta a saját változatait; a menük „Törlés” gombja pirossal; egy megjegyzés idejére mutatva a teljes dátum.',
+				],
+			},
 			aiProvider: {
 				date: '2026-09-27',
 				title: 'A választott MI, akár a saját gépén',

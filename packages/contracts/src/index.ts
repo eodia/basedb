@@ -38,6 +38,7 @@ export {
   cardConstraints,
   cardSize,
   cardsFromBlocks,
+  citedNames,
   columnName,
   finerUnit,
   flowLayout,
@@ -47,6 +48,7 @@ export {
   parameterHasValue,
   periodExpression,
   placedAfter,
+  questionCards,
   resolveDateExpression,
   resultNames,
   ruleColor,
@@ -55,6 +57,9 @@ export {
   sortTerms,
   sqlVariableNames,
   startOfPeriod,
+  tiesItself,
+  variableCard,
+  withoutVariables,
   type Aggregation,
   type AggregationFn,
   type Breakout,
@@ -92,6 +97,8 @@ export {
   type TemporalExtraction,
   type TemporalTruncation,
   type TemporalUnit,
+  type TextVariable,
+  type TiedVariable,
   type Visualization,
   type VisualizationSettings,
   type VisualizationType,
@@ -151,6 +158,13 @@ export {
   type TemplateText,
   type TemplateTextKind,
 } from './template-i18n.js'
+
+export {
+  FORMULA_ENGLISH,
+  formulaDialect,
+  formulaInEnglish,
+  type FormulaDialect,
+} from './formula-words.js'
 
 export {
   FALLBACK_LOCALE,

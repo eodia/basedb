@@ -1,15 +1,19 @@
-import type { QueryResult, ResultColumn } from '@basedb/contracts'
+import type { DashboardCard, QueryResult, ResultColumn } from '@basedb/contracts'
 import { describe, expect, it } from 'vitest'
 import { chartModel, escapeHtml } from '../../src/lib/analytics/charts'
 import {
   autoMap,
   blocksOf,
   cardsTaking,
+  citedVariables,
   constraintsFor,
   mappingCandidates,
   pointConstraints,
   pointFilterOf,
+  tiedVariable,
+  variableName,
   withConstraints,
+  withoutParameter,
 } from '../../src/lib/analytics/dashboard'
 import { inkOf, periodText, toCsv, valueText } from '../../src/lib/analytics/format'
 import {
@@ -443,5 +447,126 @@ describe('a click that filters the whole dashboard', () => {
       { target: { column: { join: 'f', field: 'statut' } }, type: 'category', value: ['payee'] },
     ])
     expect(pointConstraints(cards[3] as never, [point], questions, base)).toEqual([])
+  })
+})
+
+describe('a text that cites values', () => {
+  const saved = (id: string, source: string) =>
+    ({
+      id,
+      label: id,
+      audience: 'base',
+      query: { kind: 'builder', source, aggregations: [{ fn: 'count' }] },
+      visualization: { type: 'scalar' },
+    }) as unknown as Question
+  const questions = new Map([
+    ['q-factures', saved('q-factures', 't-factures')],
+    ['q-clients', saved('q-clients', 't-clients')],
+  ])
+  const text: DashboardCard = {
+    id: 'x',
+    tab: null,
+    x: 0,
+    y: 0,
+    w: 12,
+    h: 4,
+    kind: 'text',
+    rich: true,
+    text: '<p>{{factures}} factures, {{clients}} clients, sur {{periode}}</p>',
+    variables: [
+      { name: 'factures', question: 'q-factures' },
+      { name: 'clients', question: 'q-clients' },
+      { name: 'periode', parameter: 'p1' },
+    ],
+  }
+  const date = { id: 'p1', label: 'Période', type: 'date' as const }
+  const onDate = [{ parameter: 'p1', target: { column: { field: 'emise_le' } } }]
+
+  it('names a value by its label: lower case, no accent, once', () => {
+    expect(variableName('Chiffre d’affaires 2026', new Set())).toBe('chiffre_d_affaires_2026')
+    expect(variableName('Période', new Set(['periode']))).toBe('periode_2')
+    expect(variableName('!!!', new Set())).toBe('valeur')
+  })
+
+  it('keeps the values it still cites — those it had rather than those offered', () => {
+    const kept = [{ name: 'factures', question: 'q-factures', mappings: onDate }]
+    const offered = new Map([
+      ['clients', { name: 'clients', question: 'q-clients' }],
+      ['factures', { name: 'factures', question: 'autre' }],
+    ])
+    expect(citedVariables('<p>{{clients}} puis {{ factures }}</p>', kept, offered)).toEqual([
+      { name: 'clients', question: 'q-clients' },
+      kept[0],
+    ])
+    expect(citedVariables('<p>plus rien</p>', kept, offered)).toEqual([])
+  })
+
+  it('ties the queries it cites to a filter, as cards are', () => {
+    const [tied] = autoMap([text], date, base, questions)
+    expect(tied?.variables).toEqual([
+      { name: 'factures', question: 'q-factures', mappings: onDate },
+      // Clients have no date of their own.
+      { name: 'clients', question: 'q-clients' },
+      { name: 'periode', parameter: 'p1' },
+    ])
+    expect(
+      tiedVariable({ name: 'n', question: 'q-factures' }, [], [date], base, questions),
+    ).toEqual({ name: 'n', question: 'q-factures', mappings: onDate })
+  })
+
+  it('ties a query it keeps as one it names, and leaves a card cited to its own ties', () => {
+    const [tied] = autoMap(
+      [
+        {
+          ...text,
+          variables: [
+            { name: 'mienne', query: { kind: 'builder', source: 't-factures' } },
+            { name: 'carte', card: 'c1' },
+          ],
+        },
+      ],
+      date,
+      base,
+      questions,
+    )
+    expect(tied?.variables).toEqual([
+      { name: 'mienne', query: { kind: 'builder', source: 't-factures' }, mappings: onDate },
+      { name: 'carte', card: 'c1' },
+    ])
+  })
+
+  it('loses a filter taken away: its ties, and its value from the words', () => {
+    const [tied] = autoMap([text], date, base, questions)
+    const without = withoutParameter(tied as DashboardCard, 'p1')
+    expect(without.text).toBe('<p>{{factures}} factures, {{clients}} clients, sur </p>')
+    expect(without.variables).toEqual([
+      { name: 'factures', question: 'q-factures' },
+      { name: 'clients', question: 'q-clients' },
+    ])
+  })
+
+  it('is one card a click filters, and goes into a template as its words', () => {
+    const twice: DashboardCard = {
+      ...text,
+      id: 'y',
+      variables: [
+        { name: 'a', question: 'q-factures' },
+        { name: 'b', question: 'q-factures' },
+      ],
+    }
+    expect(cardsTaking({ table: 't-factures', field: 'statut' }, [twice], questions, base)).toBe(1)
+    expect(
+      cardsTaking({ table: 't-factures', field: 'statut' }, [text, twice], questions, base),
+    ).toBe(2)
+    const { blocks, omitted } = blocksOf([text], [], questions)
+    expect(blocks).toEqual([
+      {
+        kind: 'text',
+        width: 2,
+        title: '',
+        body: '{{factures}} factures, {{clients}} clients, sur {{periode}}',
+      },
+    ])
+    expect(omitted).toHaveLength(1)
   })
 })

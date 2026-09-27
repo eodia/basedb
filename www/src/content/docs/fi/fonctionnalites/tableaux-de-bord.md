@@ -12,8 +12,19 @@ SQL:llä – ja sivun yläosan **suodattimet** ohjaavat niihin yhdistettyjä kor
 
 Kaikki avataan kohdasta **Koontinäytöt** sivupalkin alaosan avoimen tietokannan lohkosta.
 Vasemmalla ovat tietokannan koontinäytöt ja tallennetut kysymykset sekä **Tutki tietoja**, jolla
-voi esittää kysymyksen tallentamatta mitään. Jokainen tietokannan lukija voi selata ja tutkia
-niitä; luominen, muokkaaminen ja tallentaminen vaativat **Hallintaoikeus**-tason.
+voi esittää kysymyksen tallentamatta mitään. Jokainen tietokannan lukija voi selata niitä,
+tutkia niitä ja tallentaa omia kysymyksiään; koontinäytön rakentaminen ja kysymyksen jakaminen
+vaativat **Hallintaoikeus**-tason.
+
+Tallennettu kysymys on **henkilökohtainen** – vain sinä näet sen –, **koko tietokannalle** tai
+**ryhmille**. Sen valikko, hiiren oikealla painikkeella tai **⋯**-kuvakkeesta, avaa sen
+välilehdelle taulukoiden vierelle, muuttaa sen nimen ja jakamisen tai poistaa sen.
+Välilehtipalkin **+** tarjoaa myös **Uusi kysymys** ja **Uusi SQL-kysymys**.
+
+**Tallenna**, kysymyksen otsakkeessa, säilyttää sen; kysymys, jota et voi muokata, tarjoaa sen
+sijaan **Tallenna kopio**, josta tulee sinun. **⋯** (**Lisää toimintoja**) tarjoaa myös **Nimi ja
+jakaminen…**, **Tallenna kopio…** ja **Poista kysymys**; sitä näyttänyt välilehti säilyttää
+sisältönsä, josta tulee jälleen tallentamaton.
 
 ## Kysymyksen rakentaminen hiirellä
 
@@ -108,8 +119,10 @@ ole valittu. Näin koontinäytön suodatin voi ohjata SQL-kysymystä kuten muita
 
 **Muokkaa** vie koontinäytön muokkaustilaan:
 
-- **Kysymys** sijoittaa tallennetun kysymyksen tai luo kortille oman kysymyksen;
-- **Otsikko** ja **Teksti** lisäävät osion otsikon tai Markdown-tekstin;
+- **Kysymys** sijoittaa tallennetun kysymyksen – henkilökohtainen kysymys kopioituu sinne –, tai
+  luo kortille oman kysymyksen;
+- **Otsikko** lisää osion otsikon, **Teksti** muotoillun tekstin – otsikkoja, luetteloita,
+  linkkejä – joka voi sisältää lukuja (katso alempana);
 - **Upotettu sivu** näyttää `https://`-osoitteen eristetyssä kehyksessä, joka ei saa istuntoa
   eikä tietoja;
 - **Välilehti** jakaa kortit usealle sivulle; kaksoisnapsautus nimeää välilehden uudelleen.
@@ -117,6 +130,27 @@ ole valittu. Näin koontinäytön suodatin voi ohjata SQL-kysymystä kuten muita
 Kortteja siirretään kahvasta ja niiden kokoa muutetaan kulmasta 24 sarakkeen ruudukossa.
 **Tallenna** tallentaa kaiken; **Peruuta** palaa edelliseen versioon. Lukutilassa kortin otsikko
 avaa sen kysymyksen tutkittavaksi koontinäytön suodattimineen.
+
+### Lukuja tekstissä
+
+Teksti viittaa arvoon nimellä kaksoisaaltosulkeiden sisällä: ”Tässä kuussa liikevaihtoa
+`{{chiffre_affaires}}`, `{{commandes}}` tilauksella.” Jokaisesta nimestä tulee pieni merkki,
+jonka voi yhdistää yhdellä napsautuksella – tai editorin palkin **Muuttuja**-painikkeella –
+johonkin näistä:
+
+| Lähde | Mitä teksti näyttää |
+|---|---|
+| **kortti** koontinäytöllä | se, mitä se näyttää, omilla suodattimillaan |
+| **koko tietokannan tallennettu kysymys** | sen arvo, ja koontinäytön suodattimet yhdistyvät siihen kuten korttiin |
+| **tekstiin tallennettu kysymys** | sen arvo; näin viitataan henkilökohtaiseen kysymykseen |
+| **koontinäytön suodatin** | valittu arvo, sen ohjaimen mukaisesti |
+
+Kysymyksen arvo on se, jonka sen **Luku**-visualisointi näyttäisi: sen ensimmäinen mittari,
+viimeisellä rivillä. Se lasketaan lukijan käyttöoikeuksilla, ja se näkyy aina tekstinä. Teksti
+voi viitata enintään 20 arvoon; nimi kirjoitetaan pienin kirjaimin, numeroin ja merkillä `_`.
+Ennen editoria Markdownilla kirjoitetut tekstit näkyvät kuten ennenkin, ja muuttuvat
+muotoilluiksi heti, kun ne kirjoitetaan uudelleen. Copilot puolestaan kirjoittaa tekstinsä
+Markdownilla.
 
 ## Suodattimet
 

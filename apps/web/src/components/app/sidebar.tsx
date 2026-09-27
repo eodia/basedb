@@ -46,7 +46,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Hint, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type {
   DescribedBase,
   Me,
@@ -85,6 +85,7 @@ import {
   Puzzle,
   Search,
   Shield,
+  SquareTerminal,
   Table2,
   Terminal,
   Trash2,
@@ -93,6 +94,7 @@ import {
   UserPlus,
   Users,
   Webhook,
+  Workflow,
   Zap,
 } from 'lucide-react'
 import { type ReactNode, createContext, useContext, useEffect, useState } from 'react'
@@ -132,6 +134,8 @@ export type BaseIntent =
   | 'history'
   | 'doc'
   | 'sql'
+  | 'question'
+  | 'question-sql'
   | 'new-table'
   | 'new-sql-view'
 
@@ -139,7 +143,7 @@ export type BaseIntent =
 export type TableIntent = 'open' | 'import' | 'edit' | 'delete'
 
 /** What the menu of a SQL view, or of a saved query, asks of the page. */
-export type SavedIntent = 'open' | 'edit'
+export type SavedIntent = 'open' | 'edit' | 'delete'
 
 interface Props {
   readonly projects: readonly Project[]
@@ -668,6 +672,7 @@ interface MenuKit {
   readonly Item: React.ComponentType<{
     readonly onSelect?: () => void
     readonly disabled?: boolean
+    readonly variant?: 'default' | 'destructive'
     readonly className?: string
     readonly children: React.ReactNode
   }>
@@ -744,9 +749,17 @@ function BaseMenuEntries({
           {$t('Nouvelle table')}
         </M.Item>
       )}
+      <M.Item onSelect={() => onIntent('question')}>
+        <Workflow className="size-4" />
+        {$t('Nouvelle question')}
+      </M.Item>
+      <M.Item onSelect={() => onIntent('question-sql')}>
+        <SquareTerminal className="size-4" />
+        {$t('Nouvelle question SQL')}
+      </M.Item>
       <M.Item onSelect={() => onIntent('sql')}>
         <Terminal className="size-4" />
-        {$t('Nouvelle requête SQL')}
+        {$t('Requête SQL')}
       </M.Item>
       {manages && (
         <M.Item onSelect={() => onIntent('new-sql-view')} disabled={busy}>
@@ -849,11 +862,8 @@ function BaseMenuEntries({
       {manages && (
         <>
           <M.Separator />
-          <M.Item
-            onSelect={() => onDialog('delete')}
-            className="text-destructive focus:text-destructive"
-          >
-            <Trash2 className="size-4 text-destructive" />
+          <M.Item onSelect={() => onDialog('delete')} variant="destructive">
+            <Trash2 className="size-4" />
             {$t('Supprimer la base…')}
           </M.Item>
         </>
@@ -945,35 +955,40 @@ function BaseNode({
                   className={cn('size-3.5 transition-transform', expanded && 'rotate-90')}
                 />
               </button>
-              <button
-                type="button"
-                onClick={onSelect}
-                title={base.name}
-                className="flex h-8 min-w-0 flex-1 items-center gap-2 pr-1 text-left"
-              >
-                <LookIcon
-                  look={base}
-                  fallback={Database}
-                  className={current ? 'text-foreground' : 'text-muted-foreground'}
-                />
-                <span className="truncate">{base.label}</span>
-              </button>
+              <Hint label={base.name}>
+                <button
+                  type="button"
+                  onClick={onSelect}
+                  className="flex h-8 min-w-0 flex-1 items-center gap-2 pr-1 text-left"
+                >
+                  <LookIcon
+                    look={base}
+                    fallback={Database}
+                    className={current ? 'text-foreground' : 'text-muted-foreground'}
+                  />
+                  <span className="truncate">{base.label}</span>
+                </button>
+              </Hint>
               {/* The environment one works in, and where one changes it (chapter 14). */}
               {family.length > 1 && (
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label={$t('Environnement de {label} : {label2}', {
-                        label: base.label,
-                        label2: base.environment.label,
-                      })}
-                      title={$t('Changer d’environnement')}
-                      className="flex shrink-0 items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <EnvironmentBadge environment={base.environment} className="cursor-pointer" />
-                    </button>
-                  </DropdownMenuTrigger>
+                  <Hint label={$t('Changer d’environnement')}>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={$t('Environnement de {label} : {label2}', {
+                          label: base.label,
+                          label2: base.environment.label,
+                        })}
+                        className="flex shrink-0 items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <EnvironmentBadge
+                          environment={base.environment}
+                          className="cursor-pointer"
+                        />
+                      </button>
+                    </DropdownMenuTrigger>
+                  </Hint>
                   <DropdownMenuContent align="start" className="w-56">
                     <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                       {$t('Environnements de {label}', { label: base.label })}
@@ -1001,23 +1016,26 @@ function BaseNode({
               )}
               {/* What agents proposed and awaits a decision: said where one looks, not buried. */}
               {base.openProposals > 0 && (
-                <button
-                  type="button"
-                  onClick={() => onDialog('proposals')}
-                  title={$tp(
+                <Hint
+                  label={$tp(
                     base.openProposals,
                     '{count} proposition d’agent en attente',
                     '{count} propositions d’agent en attente',
                   )}
-                  aria-label={$t('Propositions en attente sur {label} : {openProposals}', {
-                    label: base.label,
-                    openProposals: base.openProposals,
-                  })}
-                  className="ml-1 flex h-5 min-w-5 shrink-0 items-center justify-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 text-[0.7rem] font-medium text-amber-700 hover:bg-amber-500/25 dark:text-amber-400"
                 >
-                  <Bot className="size-3" />
-                  {base.openProposals}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => onDialog('proposals')}
+                    aria-label={$t('Propositions en attente sur {label} : {openProposals}', {
+                      label: base.label,
+                      openProposals: base.openProposals,
+                    })}
+                    className="ml-1 flex h-5 min-w-5 shrink-0 items-center justify-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 text-[0.7rem] font-medium text-amber-700 hover:bg-amber-500/25 dark:text-amber-400"
+                  >
+                    <Bot className="size-3" />
+                    {base.openProposals}
+                  </button>
+                </Hint>
               )}
               <span className="w-7 shrink-0" aria-hidden />
             </div>
@@ -1089,6 +1107,7 @@ function BaseNode({
               active={activeSaved === v.id}
               editable={manages}
               editLabel={$t('Modifier la vue…')}
+              deletable={manages}
               onIntent={(intent) => onSqlView(v, intent)}
             />
           ))}
@@ -1116,6 +1135,7 @@ function BaseNode({
                     active={activeSaved === q.id}
                     editable={q.audience === 'personal' ? q.mine : manages}
                     editLabel={$t('Nom et partage…')}
+                    deletable={q.audience === 'personal' ? q.mine : manages}
                     onIntent={(intent) => onQuery(q, intent)}
                   />
                 )
@@ -1315,10 +1335,7 @@ function TableRow({
                     {$t('Modifier la table…')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onSelect={() => onIntent('delete')}
-                    className="text-destructive focus:text-destructive"
-                  >
+                  <DropdownMenuItem onSelect={() => onIntent('delete')} variant="destructive">
                     <Trash2 className="size-4" />
                     {$t('Supprimer la table')}
                   </DropdownMenuItem>
@@ -1347,11 +1364,8 @@ function TableRow({
               {$t('Modifier la table…')}
             </ContextMenuItem>
             <ContextMenuSeparator />
-            <ContextMenuItem
-              onSelect={() => onIntent('delete')}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="size-4 text-destructive" />
+            <ContextMenuItem onSelect={() => onIntent('delete')} variant="destructive">
+              <Trash2 className="size-4" />
               {$t('Supprimer la table')}
             </ContextMenuItem>
           </>
@@ -1377,6 +1391,7 @@ function SavedRow({
   active,
   editable,
   editLabel,
+  deletable = false,
   onIntent,
 }: {
   readonly icon: LucideIcon
@@ -1389,19 +1404,30 @@ function SavedRow({
   readonly active: boolean
   readonly editable: boolean
   readonly editLabel: string
+  /** « Supprimer » is offered — the page asks before it deletes. */
+  readonly deletable?: boolean
   readonly onIntent: (intent: SavedIntent) => void
 }) {
-  const entries = (Menu: typeof DropdownMenuItem | typeof ContextMenuItem) => (
+  const entries = (kit: MenuKit) => (
     <>
-      <Menu onSelect={() => onIntent('open')}>
+      <kit.Item onSelect={() => onIntent('open')}>
         <FolderOpen className="size-4" />
         {$t('Ouvrir')}
-      </Menu>
+      </kit.Item>
       {editable && (
-        <Menu onSelect={() => onIntent('edit')}>
+        <kit.Item onSelect={() => onIntent('edit')}>
           <Pencil className="size-4" />
           {editLabel}
-        </Menu>
+        </kit.Item>
+      )}
+      {deletable && (
+        <>
+          <kit.Separator />
+          <kit.Item variant="destructive" onSelect={() => onIntent('delete')}>
+            <Trash2 className="size-4" />
+            {$t('Supprimer')}
+          </kit.Item>
+        </>
       )}
     </>
   )
@@ -1433,12 +1459,12 @@ function SavedRow({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-52">
-              {entries(DropdownMenuItem)}
+              {entries(DROPDOWN_KIT)}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </ContextMenuTrigger>
-      <ContextMenuContent className="w-52">{entries(ContextMenuItem)}</ContextMenuContent>
+      <ContextMenuContent className="w-52">{entries(CONTEXT_KIT)}</ContextMenuContent>
     </ContextMenu>
   )
 }
@@ -1471,7 +1497,6 @@ function Item({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      title={compact ? undefined : hint}
       aria-label={compact ? label : undefined}
       className={cn(
         'flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-sm transition-colors',
@@ -1490,7 +1515,7 @@ function Item({
     </button>
   )
 
-  if (!compact) return button
+  if (!compact) return <Hint label={hint}>{button}</Hint>
 
   // The tooltip hangs on a wrapper: a disabled button raises no pointer events, and the icon
   // of a section that is not there yet would otherwise never say what it is.

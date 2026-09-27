@@ -22,7 +22,7 @@ kuvaukset (`COMMENT ON`).
 
 ## Käyttöliittymässä
 
-Välilehtipalkin **+** tai tietokannan **⋯**-valikko → **Uusi SQL-kysely**: editori, jossa on
+Välilehtipalkin **+** tai tietokannan **⋯**-valikko → **SQL-kysely**: editori, jossa on
 korostus ja täydennys ja jonka tulos näkyy samassa ruudukossa kuin taulukkosi.
 
 ![Tallennettu kysely ja kaksi SQL-näkymää taulukoiden joukossa](../../../../assets/screens/requete-sql.png)

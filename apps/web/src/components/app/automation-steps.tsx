@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type Automation,
   type AutomationTriggerKind,
@@ -194,17 +195,18 @@ function CitingText({
         <Input {...props} className={cn('h-8', className)} />
       )}
       <DropdownMenu modal={false}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label={$t('Citer une valeur')}
-            title={$t('Citer une valeur')}
-            className="shrink-0"
-          >
-            <Braces className="size-3.5" />
-          </Button>
-        </DropdownMenuTrigger>
+        <Hint label={$t('Citer une valeur')}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              aria-label={$t('Citer une valeur')}
+              className="shrink-0"
+            >
+              <Braces className="size-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+        </Hint>
         <DropdownMenuContent
           align="end"
           className="max-h-80 w-72 overflow-y-auto"
@@ -1093,16 +1095,17 @@ function BranchSettings({
                     </Button>
                   </>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  disabled={step.paths.length === 1}
-                  onClick={() => setPaths(step.paths.filter((p) => p.id !== path.id))}
-                  aria-label={$t('Retirer le chemin {label}', { label: path.label })}
-                  title={path.steps.length > 0 ? $t('Retire aussi ses étapes') : undefined}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
+                <Hint label={path.steps.length > 0 ? $t('Retire aussi ses étapes') : undefined}>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    disabled={step.paths.length === 1}
+                    onClick={() => setPaths(step.paths.filter((p) => p.id !== path.id))}
+                    aria-label={$t('Retirer le chemin {label}', { label: path.label })}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </Hint>
               </div>
             )
           })}

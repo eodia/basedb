@@ -32,16 +32,22 @@ function DropdownMenuContent({
   )
 }
 
+/** `destructive`: an entry that deletes — its words and its icon in red, hovered or not. */
 function DropdownMenuItem({
   className,
+  variant = 'default',
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Item>) {
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
+  variant?: 'default' | 'destructive'
+}) {
   return (
     <DropdownMenuPrimitive.Item
       data-slot="dropdown-menu-item"
+      data-variant={variant}
       className={cn(
         "relative flex cursor-default select-none items-center gap-2.5 rounded-md px-2 py-1.5 text-sm outline-none transition-colors [&_svg]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground",
         'focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:[&_svg]:text-destructive!',
         className,
       )}
       {...props}

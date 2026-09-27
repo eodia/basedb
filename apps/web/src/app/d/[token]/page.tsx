@@ -1,8 +1,15 @@
 'use client'
 
 import { ParameterControl } from '@/components/app/analytics/parameters'
+import {
+  type CitedRun,
+  type CitedValue,
+  TextBody,
+  filterText,
+  headlineText,
+  useCitedResults,
+} from '@/components/app/analytics/text-card'
 import { VisualizationView } from '@/components/app/analytics/visualization'
-import { MarkdownView } from '@/components/app/markdown-text'
 import { Login } from '@/components/login'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import type { FormatBase } from '@/lib/analytics/format'
@@ -14,12 +21,13 @@ import {
   api,
 } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
-import { KnownMembers } from '@/lib/members'
+import { KnownMembers, useMembers } from '@/lib/members'
 import { messageFor } from '@/lib/messages'
 import { useTheme } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 import {
   DASHBOARD_ROW_HEIGHT,
+  type DashboardParameter,
   type ParameterValue,
   type QueryResult,
   parameterHasValue,
@@ -159,6 +167,17 @@ export default function SharedDashboardPage() {
 
   const dashboard = page.kind === 'ready' ? page.dashboard : null
   const base = useMemo(() => (dashboard === null ? null : formatBaseOf(dashboard)), [dashboard])
+  // The labels of the category filters' values, for a text citing one.
+  const labels = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(choices).map(([id, list]) => [
+          id,
+          new Map(list.map((c) => [c.value, c.label])) as ReadonlyMap<string, string>,
+        ]),
+      ),
+    [choices],
+  )
 
   if (frame === null) return null
 
@@ -323,6 +342,8 @@ export default function SharedDashboardPage() {
                       card={card}
                       base={base}
                       values={values}
+                      parameters={shown.dashboard.parameters}
+                      labels={labels}
                     />
                   ))}
                 </div>
@@ -352,11 +373,15 @@ function SharedCard({
   card,
   base,
   values,
+  parameters,
+  labels,
 }: {
   readonly token: string
   readonly card: SharedDashboardCard
   readonly base: FormatBase
   readonly values: Values
+  readonly parameters: readonly DashboardParameter[]
+  readonly labels: Readonly<Record<string, ReadonlyMap<string, string>>>
 }) {
   const height = card.h * DASHBOARD_ROW_HEIGHT + (card.h - 1) * GAP
   const style = {
@@ -385,7 +410,14 @@ function SharedCard({
       {card.kind === 'text' ? (
         <div className="min-h-0 flex-1 overflow-auto px-4 py-3 scroll-discret">
           {card.text !== undefined && card.text !== '' && (
-            <MarkdownView source={card.text} className="text-sm" />
+            <SharedText
+              token={token}
+              card={card}
+              base={base}
+              values={values}
+              parameters={parameters}
+              labels={labels}
+            />
           )}
         </div>
       ) : card.kind === 'embed' ? (
@@ -411,6 +443,62 @@ function SharedCard({
         <SharedQuestion token={token} card={card} base={base} values={values} />
       )}
     </section>
+  )
+}
+
+/**
+ * A text and the values it cites: each query run by the kernel under its name, on the
+ * publisher's authority, again when one of its filters changes; a filter, as its control says.
+ */
+function SharedText({
+  token,
+  card,
+  base,
+  values,
+  parameters,
+  labels,
+}: {
+  readonly token: string
+  readonly card: SharedDashboardCard
+  readonly base: FormatBase
+  readonly values: Values
+  readonly parameters: readonly DashboardParameter[]
+  readonly labels: Readonly<Record<string, ReadonlyMap<string, string>>>
+}) {
+  const members = useMembers()
+  const variables = card.variables ?? []
+  const runs = variables.flatMap((variable): CitedRun[] => {
+    if (variable.kind !== 'question') return []
+    const own = Object.fromEntries(
+      variable.filters.map((id) => [id, parameterHasValue(values[id]) ? values[id] : null]),
+    )
+    return [
+      {
+        name: variable.name,
+        key: JSON.stringify(own),
+        run: (signal) => api.runSharedCard(token, card.id, own, signal, variable.name),
+      },
+    ]
+  })
+  const results = useCitedResults(runs)
+  const value = useCallback<CitedValue>(
+    (name) => {
+      const variable = variables.find((v) => v.name === name)
+      if (variable === undefined) return undefined
+      if (variable.kind === 'parameter') {
+        const parameter = parameters.find((p) => p.id === variable.parameter)
+        if (parameter === undefined) return undefined
+        return filterText(parameter, values[parameter.id], labels[parameter.id]) ?? '—'
+      }
+      const read = results.get(name)
+      if (read === undefined) return null
+      if (read.failed) return '—'
+      return headlineText(read.result, variable.visualization, { base, members }) ?? '—'
+    },
+    [variables, parameters, values, labels, results, base, members],
+  )
+  return (
+    <TextBody text={card.text ?? ''} rich={card.rich === true} value={value} className="text-sm" />
   )
 }
 

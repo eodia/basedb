@@ -22,7 +22,7 @@ beskrivningarna (`COMMENT ON`).
 
 ## I gränssnittet
 
-**+** i flikfältet, eller databasens **⋯**-meny → **Ny SQL-fråga**: en redigerare med
+**+** i flikfältet, eller databasens **⋯**-meny → **SQL-fråga**: en redigerare med
 syntaxfärgning och komplettering, vars resultat visas i samma rutnät som dina tabeller.
 
 ![En sparad fråga, och två SQL-vyer placerade bland tabellerna](../../../../assets/screens/requete-sql.png)

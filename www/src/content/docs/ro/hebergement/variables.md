@@ -83,6 +83,24 @@ Consultați [Conturi și conectare](/basedb/ro/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | calcule de câmpuri AI pe oră și pe spațiu de lucru |
 | `BASEDB_AI_WORKER` | `1` | `0`: fără calcul în fundal în acest proces |
 
+## Demo publică
+
+O instanță deschisă tuturor, precum [demo.basedb.eodia.com](https://demo.basedb.eodia.com):
+ecranul de conectare precompletează un cont partajat, vizitatorul citește tot și modifică ce
+există, dar nu creează și nu șterge nimic — bază, tabel, rând, fișier, comentariu, cont, token,
+link —, iar AI-ul răspunde că nu face parte din demo. Consola SQL doar citește acolo. Repunerea
+bazei în starea inițială în fiecare noapte rămâne în sarcina dumneavoastră.
+
+| Variabilă | Implicit | Rol |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: instanța devine o demo publică |
+| `BASEDB_DEMO_ACCOUNTS` | — | un cont pe limbă, separate prin virgule: `fr=demo@demo.com,en=demo-en@demo.com`; ecranul de conectare precompletează contul limbii lui, altfel engleza, altfel primul, și le propune pe celelalte. Creați aceste conturi, fiecare cu proiectul lui, înainte de a activa demo: aceasta refuză creările tuturor, administratorul inclusiv |
+| `BASEDB_DEMO_PASSWORD` | — | împreună cu `BASEDB_DEMO_ACCOUNTS`, parola lor, aceeași pentru toate, publicată împreună cu ele |
+
+Fără `BASEDB_DEMO_ACCOUNTS`, contul partajat este administratorul numit de `BASEDB_ADMIN_EMAIL`
+și `BASEDB_ADMIN_PASSWORD`. O adresă a demo se conectează cu parola publicată, indiferent ce se
+tastează: încercările greșite nu o blochează pentru toată lumea.
+
 ## Doar pentru dezvoltare
 
 | Variabilă | Rol |

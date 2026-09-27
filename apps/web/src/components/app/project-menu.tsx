@@ -3,8 +3,9 @@
 import { DescriptionField, isTooLong } from '@/components/app/description'
 import { PurgeDialog, type PurgeTarget } from '@/components/app/lifecycle-dialogs'
 import { LookButton, type LookValue, lookOf, sameLook } from '@/components/app/look-picker'
-import { LookIcon } from '@/components/app/option-badge'
+import { LookIcon, hasLook } from '@/components/app/option-badge'
 import { ShareAccessDialog } from '@/components/app/share-access-dialog'
+import { BrandIcon } from '@/components/brand'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -105,6 +106,7 @@ export function ProjectMenu({
   const canEdit = project?.actions.includes('manage_schema') === true
   // A base counts once, whatever its number of environments (chapter 14).
   const baseCount = new Set(project?.bases.map((b) => b.environment.lineage) ?? []).size
+  const defaultLook = !hasLook(project ?? {})
 
   const trigger = (
     <DropdownMenuTrigger asChild>
@@ -116,11 +118,17 @@ export function ProjectMenu({
           compact && 'justify-center p-0.5',
         )}
       >
-        {/* The project's own look when it has one, like a base or a table in the tree. */}
+        {/* basedb is the default; a project's chosen appearance takes precedence. */}
         <span
+          aria-hidden="true"
           className={cn(
             'flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg',
-            project?.color == null && project?.image == null && 'bg-foreground text-background',
+            defaultLook &&
+              'bg-primary/10 text-[color:color-mix(in_oklab,var(--primary)_65%,var(--foreground))] ring-1 ring-inset ring-primary/10',
+            !defaultLook &&
+              project?.color == null &&
+              project?.image == null &&
+              'bg-foreground text-background',
           )}
           style={
             project?.color != null && project.image == null
@@ -128,11 +136,15 @@ export function ProjectMenu({
               : undefined
           }
         >
-          <LookIcon
-            look={{ icon: project?.icon ?? null, image: project?.image ?? null, color: null }}
-            fallback={FolderKanban}
-            className={project?.image != null ? 'size-full rounded-none' : 'size-4.5'}
-          />
+          {defaultLook ? (
+            <BrandIcon className="size-5.5" />
+          ) : (
+            <LookIcon
+              look={{ icon: project?.icon ?? null, image: project?.image ?? null, color: null }}
+              fallback={FolderKanban}
+              className={project?.image != null ? 'size-full rounded-none' : 'size-4.5'}
+            />
+          )}
         </span>
         {!compact && (
           <>
@@ -206,10 +218,7 @@ export function ProjectMenu({
             </>
           )}
           {project !== null && canEdit && (
-            <DropdownMenuItem
-              onSelect={() => setDeleting(true)}
-              className="text-destructive focus:text-destructive"
-            >
+            <DropdownMenuItem onSelect={() => setDeleting(true)} variant="destructive">
               <Trash2 className="size-4" />
               {$t('Supprimer « {label} »', { label: project.label })}
             </DropdownMenuItem>
@@ -254,7 +263,7 @@ export function ProjectMenu({
                   {deleted.map((d) => (
                     <DropdownMenuItem
                       key={`purge:${d.id}`}
-                      className="text-destructive focus:text-destructive"
+                      variant="destructive"
                       onSelect={() =>
                         setPurging({
                           kind: 'base',

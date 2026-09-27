@@ -21,6 +21,7 @@ import {
 } from '../catalog/dashboards.js'
 import { listQuestions } from '../catalog/questions.js'
 import { BasedbError } from '../errors/index.js'
+import { richTextToPlain } from '../records/rich-text.js'
 import type { Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import {
@@ -214,11 +215,14 @@ export async function dashboardCopilotTurn(
     request.dashboardId === null
       ? null
       : (dashboards.find((d) => d.id === request.dashboardId) ?? null)
+  // The queries a card may place: those of the whole base.
   const saved = new Map<string, EditQuestion & { readonly id: string }>(
-    (await listQuestions(pools, ctx, { baseId: request.baseId })).map((q) => [
-      q.id,
-      { id: q.id, label: q.label, query: q.query, visualization: q.visualization },
-    ]),
+    (await listQuestions(pools, ctx, { baseId: request.baseId }))
+      .filter((q) => q.audience === 'base')
+      .map((q) => [
+        q.id,
+        { id: q.id, label: q.label, query: q.query, visualization: q.visualization },
+      ]),
   )
   const values: Record<string, ParameterValue | null> = {}
   for (const p of dashboard?.parameters ?? []) {
@@ -308,7 +312,9 @@ export async function dashboardCopilotTurn(
                 filters: [...new Set((c.mappings ?? []).map((m) => m.parameter))],
               }
             : {}),
-          ...(c.text === undefined ? {} : { text: cut(c.text, 300) }),
+          ...(c.text === undefined
+            ? {}
+            : { text: cut(c.rich === true ? richTextToPlain(c.text) : c.text, 300) }),
           ...(c.url === undefined ? {} : { url: c.url }),
         }
       }),

@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Hint } from '@/components/ui/tooltip'
 import { type Webhook, type WebhookDelivery, type WebhookEvent, api } from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
@@ -246,37 +247,39 @@ export function WebhookDialog({
                           )}
                         </div>
                         <div className="flex shrink-0 items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            title={hook.active ? $t('Arrêter') : $t('Reprendre')}
-                            aria-label={
-                              hook.active
-                                ? $t('Arrêter {label}', { label: hook.label })
-                                : $t('Reprendre {label}', { label: hook.label })
-                            }
-                            disabled={busy}
-                            onClick={() =>
-                              void act(() => api.setWebhookActive(hook.id, !hook.active))
-                            }
-                          >
-                            {hook.active ? (
-                              <Pause className="size-4" />
-                            ) : (
-                              <Play className="size-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="text-destructive"
-                            title={$t('Supprimer')}
-                            aria-label={$t('Supprimer {label}', { label: hook.label })}
-                            disabled={busy}
-                            onClick={() => void act(() => api.deleteWebhook(hook.id))}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
+                          <Hint label={hook.active ? $t('Arrêter') : $t('Reprendre')}>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={
+                                hook.active
+                                  ? $t('Arrêter {label}', { label: hook.label })
+                                  : $t('Reprendre {label}', { label: hook.label })
+                              }
+                              disabled={busy}
+                              onClick={() =>
+                                void act(() => api.setWebhookActive(hook.id, !hook.active))
+                              }
+                            >
+                              {hook.active ? (
+                                <Pause className="size-4" />
+                              ) : (
+                                <Play className="size-4" />
+                              )}
+                            </Button>
+                          </Hint>
+                          <Hint label={$t('Supprimer')}>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-destructive"
+                              aria-label={$t('Supprimer {label}', { label: hook.label })}
+                              disabled={busy}
+                              onClick={() => void act(() => api.deleteWebhook(hook.id))}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </Hint>
                         </div>
                       </div>
                       <button

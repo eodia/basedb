@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Hint } from '@/components/ui/tooltip'
 import type { SavedView, ViewKind } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -150,10 +151,9 @@ export function ViewSwitcher({
             <Icon className="size-3.5 text-primary" />
             <span className="truncate">{active?.label ?? $t('Toutes les lignes')}</span>
             {modified && (
-              <span
-                className="size-1.5 shrink-0 rounded-full bg-amber-500"
-                title={$t('Modifiée, non enregistrée')}
-              />
+              <Hint label={$t('Modifiée, non enregistrée')}>
+                <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
+              </Hint>
             )}
             <ChevronDown className="size-3 opacity-60" />
           </Button>
@@ -259,19 +259,19 @@ export function ViewSwitcher({
                 {VIEW_KINDS.map((kind) => {
                   const KindIcon = KIND_INFO[kind].icon
                   return (
-                    <button
-                      key={kind}
-                      type="button"
-                      onClick={() => {
-                        setOpen(false)
-                        onCreate(kind)
-                      }}
-                      title={KIND_INFO[kind].summary}
-                      className="flex flex-col items-center gap-1 rounded-md px-1 py-2 text-[11px] hover:bg-accent"
-                    >
-                      <KindIcon className="size-4 text-muted-foreground" />
-                      {KIND_INFO[kind].label}
-                    </button>
+                    <Hint key={kind} label={KIND_INFO[kind].summary}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpen(false)
+                          onCreate(kind)
+                        }}
+                        className="flex flex-col items-center gap-1 rounded-md px-1 py-2 text-[11px] hover:bg-accent"
+                      >
+                        <KindIcon className="size-4 text-muted-foreground" />
+                        {KIND_INFO[kind].label}
+                      </button>
+                    </Hint>
                   )
                 })}
               </div>
@@ -521,11 +521,7 @@ function SortableView({
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onSelect={onDelete}
-                    disabled={!editable}
-                    className="text-destructive focus:text-destructive"
-                  >
+                  <DropdownMenuItem onSelect={onDelete} disabled={!editable} variant="destructive">
                     <Trash2 className="size-4" />
                     {$t('Supprimer')}
                   </DropdownMenuItem>

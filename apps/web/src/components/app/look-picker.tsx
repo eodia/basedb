@@ -4,6 +4,7 @@ import { OptionGlyph, hasLook } from '@/components/app/option-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Hint } from '@/components/ui/tooltip'
 import { $t } from '@/lib/i18n'
 import { OPTION_ICONS } from '@/lib/option-icons'
 import { MAX_IMAGE_CHARS, PRESET_COLORS, normalizeHex, shrinkImage } from '@/lib/options'
@@ -75,25 +76,26 @@ export function LookButton({
         if (next) setMode(draft.image !== null ? 'image' : 'icon')
       }}
     >
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          disabled={disabled}
-          aria-label={label}
-          title={$t('Couleur, pictogramme ou image')}
-          className={cn(
-            'flex size-8 shrink-0 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-accent',
-            !hasLook(draft) && 'border-dashed',
-            className,
-          )}
-        >
-          {hasLook(draft) ? (
-            <OptionGlyph look={draft} className="size-5" />
-          ) : (
-            <Palette className="size-4" />
-          )}
-        </button>
-      </PopoverTrigger>
+      <Hint label={$t('Couleur, pictogramme ou image')}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            disabled={disabled}
+            aria-label={label}
+            className={cn(
+              'flex size-8 shrink-0 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-accent',
+              !hasLook(draft) && 'border-dashed',
+              className,
+            )}
+          >
+            {hasLook(draft) ? (
+              <OptionGlyph look={draft} className="size-5" />
+            ) : (
+              <Palette className="size-4" />
+            )}
+          </button>
+        </PopoverTrigger>
+      </Hint>
 
       <PopoverContent
         className="w-80 space-y-3"
@@ -171,27 +173,28 @@ function ColorPane({
           />
         ))}
         {/* Any other colour: the browser's own picker, which also takes a typed hex. */}
-        <label
-          title={$t('Une autre couleur')}
-          className={cn(
-            'relative flex size-6 cursor-pointer items-center justify-center rounded-full border text-muted-foreground',
-            color !== null && !PRESET_COLORS.includes(color) && 'ring-2 ring-ring ring-offset-1',
-          )}
-          style={
-            color !== null && !PRESET_COLORS.includes(color)
-              ? { backgroundColor: color }
-              : undefined
-          }
-        >
-          <input
-            type="color"
-            aria-label={$t('Choisir une autre couleur')}
-            value={color ?? '#6b7280'}
-            onChange={(e) => onChange(normalizeHex(e.target.value))}
-            className="absolute inset-0 size-full cursor-pointer opacity-0"
-          />
-          <Pipette className="size-3" />
-        </label>
+        <Hint label={$t('Une autre couleur')}>
+          <label
+            className={cn(
+              'relative flex size-6 cursor-pointer items-center justify-center rounded-full border text-muted-foreground',
+              color !== null && !PRESET_COLORS.includes(color) && 'ring-2 ring-ring ring-offset-1',
+            )}
+            style={
+              color !== null && !PRESET_COLORS.includes(color)
+                ? { backgroundColor: color }
+                : undefined
+            }
+          >
+            <input
+              type="color"
+              aria-label={$t('Choisir une autre couleur')}
+              value={color ?? '#6b7280'}
+              onChange={(e) => onChange(normalizeHex(e.target.value))}
+              className="absolute inset-0 size-full cursor-pointer opacity-0"
+            />
+            <Pipette className="size-3" />
+          </label>
+        </Hint>
       </div>
       {color !== null && <p className="font-mono text-[11px] text-muted-foreground">{color}</p>}
     </div>
@@ -229,20 +232,20 @@ function IconPane({
 
       <div className="scroll-discret grid max-h-44 grid-cols-7 gap-1 overflow-y-auto">
         {shown.map(({ name, label, Icon }) => (
-          <button
-            key={name}
-            type="button"
-            title={label}
-            aria-label={label}
-            aria-pressed={icon === name}
-            onClick={() => onChange(name)}
-            className="flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground aria-pressed:bg-accent aria-pressed:text-foreground aria-pressed:ring-1 aria-pressed:ring-ring"
-          >
-            <Icon
-              className="size-4"
-              style={icon === name && color !== null ? { color } : undefined}
-            />
-          </button>
+          <Hint key={name} label={label}>
+            <button
+              type="button"
+              aria-label={label}
+              aria-pressed={icon === name}
+              onClick={() => onChange(name)}
+              className="flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground aria-pressed:bg-accent aria-pressed:text-foreground aria-pressed:ring-1 aria-pressed:ring-ring"
+            >
+              <Icon
+                className="size-4"
+                style={icon === name && color !== null ? { color } : undefined}
+              />
+            </button>
+          </Hint>
         ))}
         {shown.length === 0 && (
           <p className="col-span-7 py-4 text-center text-xs text-muted-foreground">

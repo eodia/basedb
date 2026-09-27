@@ -22,7 +22,7 @@ les descriptions (`COMMENT ON`).
 
 ## Dans l’interface
 
-Le **+** de la barre d’onglets, ou menu **⋯** de la base → **Nouvelle requête SQL** : un éditeur
+Le **+** de la barre d’onglets, ou menu **⋯** de la base → **Requête SQL** : un éditeur
 avec coloration et complétion, dont le résultat s’affiche dans la même grille que vos tables.
 
 ![Une requête enregistrée, et deux vues SQL rangées parmi les tables](../../../assets/screens/requete-sql.png)

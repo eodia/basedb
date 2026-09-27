@@ -337,3 +337,72 @@ export function QueryDialog({
     </Dialog>
   )
 }
+
+/**
+ * « Supprimer », from a saved query's menu in the navigation: asked once, then gone for
+ * whoever saw it. A tab that shows it keeps its text, as a statement no longer saved.
+ */
+export function DeleteQueryDialog({
+  base,
+  query,
+  onClose,
+  onDeleted,
+}: {
+  /** The base's name. */
+  readonly base: string
+  readonly query: { readonly id: string; readonly label: string; readonly audience: QueryAudience }
+  readonly onClose: () => void
+  readonly onDeleted: (id: string) => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const remove = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await api.deleteQuery(base, query.id)
+      onDeleted(query.id)
+      onClose()
+    } catch (e) {
+      setError(messageFor(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(next) => !next && !busy && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {$t('Supprimer la requête « {label} » ?', { label: query.label })}
+          </DialogTitle>
+          <DialogDescription>
+            {query.audience === 'personal'
+              ? $t('Elle disparaît de vos requêtes. Un onglet qui la montre garde son texte.')
+              : $t(
+                  'Elle disparaît pour tous ceux qui la voient. Un onglet qui la montre garde son texte.',
+                )}
+          </DialogDescription>
+        </DialogHeader>
+        {error !== null && (
+          <p
+            role="alert"
+            className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-sm text-destructive"
+          >
+            {error}
+          </p>
+        )}
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            {$t('Annuler')}
+          </Button>
+          <Button variant="destructive" onClick={() => void remove()} disabled={busy}>
+            {busy ? $t('Suppression…') : $t('Supprimer la requête')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

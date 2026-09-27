@@ -1,6 +1,6 @@
 ---
 title: Colaboración
-description: Comentarios y menciones, notificaciones, actualizaciones en tiempo real y presencia.
+description: Comentarios y menciones, notificaciones, actualizaciones en tiempo real, presencia, y un enlace a cada pantalla.
 ---
 
 Varias personas trabajan en la misma base a la vez: cada una ve llegar las escrituras de las
@@ -45,6 +45,28 @@ editas.
 Las caras de las personas que miran **la misma tabla** se muestran en la parte superior de la pantalla; las
 de quienes han abierto **la misma fila**, en el encabezado de sus detalles. En la cuadrícula, el puntero de los
 demás aparece en la celda sobre la que pasan.
+
+## Un enlace a cada pantalla
+
+La dirección del navegador sigue lo que estás mirando: una tabla, una de sus vistas, los detalles
+de una fila, un panel, una automatización, una pregunta, tu configuración. Cópiala en un
+mensaje: tu compañero llega al mismo lugar, con sus propios permisos. Guárdala en favoritos; los
+botones atrás y adelante del navegador te devuelven a donde estabas.
+
+| Dirección | Lo que abre |
+|---|---|
+| `/bases/ventes/tables/opportunites` | la tabla «Opportunités» de la base «Ventes» |
+| `/bases/ventes/tables/opportunites?vue=…` | una de sus vistas |
+| `/bases/ventes/tables/opportunites?ligne=…` | los detalles de una de sus filas |
+| `/bases/ventes/tableaux-de-bord/…` | un panel |
+| `/bases/ventes/automatisations/…` | una automatización |
+| `/parametres/apparence` | tu configuración |
+
+Una dirección nombra un **lugar**, no el estado en el que la dejaste: filtros, ordenaciones y
+anchos de columna siguen siendo los de cada navegador. Una base y una tabla se escriben en ella
+por su nombre PostgreSQL: al renombrarlas, la dirección antigua ya no lleva a ningún sitio. Una
+dirección que no lleva a nada —una errata, un objeto eliminado, o algo que no tienes permiso
+para ver— muestra «Esta página no existe».
 
 ## Deshacer
 

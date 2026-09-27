@@ -73,12 +73,12 @@ valores guardados. No limita el valor: una valoración de 7 en una escala de 5 s
 
 ## Fórmulas
 
-Una fórmula se escribe en francés, con los campos entre corchetes y los argumentos separados por `;`:
+Una fórmula se escribe en inglés (los nombres en francés también funcionan), con los campos entre corchetes y los argumentos separados por `,`:
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 El editor propone los campos que insertar y una lista de funciones; un error indica el campo o
@@ -86,14 +86,14 @@ el carácter que lo provoca.
 
 | Familia | Funciones |
 |---|---|
-| Lógica | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` |
-| Números | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` |
-| Texto | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` |
-| Fechas | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` |
+| Lógica | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
+| Números | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
+| Texto | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
+| Fechas | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
 | Operadores | `+ - * /`, `&` para unir texto, `= <> < <= > >=` |
 
 Una fórmula se convierte en una **columna generada** por PostgreSQL: `psql` y tus herramientas la leen
-como las demás. La que depende del día (`AUJOURDHUI()`, `MAINTENANT()`) o que cita una
+como las demás. La que depende del día (`TODAY()`, `NOW()`) o que cita una
 búsqueda o un acumulado se **calcula en la lectura**: se puede filtrar y ordenar en basedb, pero
 no existe en SQL directo.
 

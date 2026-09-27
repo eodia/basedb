@@ -19,8 +19,22 @@ su etiqueta y, si hay campos de IA, tu consentimiento para que los valores que c
 se envíen al proveedor de IA de la instancia. Sin ese consentimiento, son campos
 normales, rellenados con sus valores de ejemplo.
 
+**Cargar los datos de ejemplo**, marcada por defecto, rellena las tablas con filas de ejemplo
+para ver la base en funcionamiento. Desmarcada, las tablas quedan vacías, listas para tus
+propios datos —las vistas, los paneles y las automatizaciones se crean de todas formas.
+
 Un proyecto vacío ofrece también la **base de demostración**: una pequeña agencia, sus clientes,
 proyectos, tareas, facturas y reseñas, que muestra todas las facetas de basedb.
+
+## En tu idioma
+
+Las plantillas oficiales se leen y se crean **en el idioma de la pantalla**: tablas, campos,
+opciones, filas de ejemplo, vistas, paneles, automatizaciones e instrucciones de la IA. Las filas
+de ejemplo cambian de mundo con el idioma: la «Boulangerie Martin» de Lyon se convierte en
+«Panadería Martín» en Valencia en español.
+
+Una plantilla importada en tu instancia, o guardada desde una base, la escribió alguien: se lee
+tal como se escribió.
 
 ## Pedírselo a la IA
 
@@ -109,6 +123,15 @@ sitio basta para cambiar la galería de todas las instancias.
 
 Cada plantilla se valida al construir el sitio, con el mismo validador que el servidor:
 una plantilla no válida hace fallar la construcción en lugar de llegar a los usuarios.
+
+Una plantilla oficial se escribe una vez, en francés. Sus textos en otro idioma son un
+diccionario,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+—el texto en francés, y después su traducción—, que el sitio publica junto al catálogo
+(`/basedb/modeles/i18n/<langue>.json`). La instancia le pasa cada texto y sigue cada etiqueta
+allí donde se cita —fórmulas, filtros, vistas, instrucciones—, y después vuelve a leer el
+resultado: un diccionario que rompiera la plantilla no se sirve, se sirve la plantilla en
+francés. Un texto ausente del diccionario se queda en francés.
 
 La instancia lee la dirección `BASEDB_TEMPLATES_URL`, que de forma predeterminada es la del sitio público. Apúntala
 a un catálogo propio, o pon `off` para no leer ninguno: la instancia sirve entonces las

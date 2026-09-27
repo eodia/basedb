@@ -13,9 +13,11 @@ import {
   type ParameterValue,
   type QuestionQuery,
   TEMPORAL_UNITS,
+  type TextVariable,
   VISUALIZATIONS,
   type Visualization,
   cardsFromBlocks,
+  citedNames,
   columnName,
 } from '@basedb/contracts'
 import { checkBuilderQuery } from '../analytics/query.js'
@@ -24,6 +26,7 @@ import { canReadTable } from '../collab/signals.js'
 import { BasedbError } from '../errors/index.js'
 import { SYSTEM_COLUMNS } from '../rbac/decide.js'
 import { requireOnBase } from '../rbac/require.js'
+import { sanitizeRichText } from '../records/rich-text.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 
@@ -427,6 +430,18 @@ function checkedCards(
   const ids = new Set<string>()
   const tabs = new Set(context.tabs.map((t) => t.id))
   const parameters = new Set(context.parameters.map((p) => p.id))
+  // The question cards a text may cite, wherever they come in the list.
+  const cited = {
+    tables: context.tables,
+    questions: context.questions,
+    parameters,
+    cards: new Set(
+      raw.flatMap((item) => {
+        const c = (item ?? {}) as Record<string, unknown>
+        return c.kind === 'question' && typeof c.id === 'string' ? [c.id] : []
+      }),
+    ),
+  }
   return raw.map((item, i): DashboardCard => {
     const at = `cards[${i}]`
     const c = (item ?? {}) as Record<string, unknown>
@@ -451,11 +466,12 @@ function checkedCards(
     const title = text(c.title, DASHBOARD_LIMITS.label)
     const common = { id: c.id, tab, x, y, w, h, ...(title === '' ? {} : { title }) }
     switch (c.kind as DashboardCard['kind']) {
-      case 'heading':
-      case 'text': {
+      case 'heading': {
         const body = typeof c.text === 'string' ? c.text.slice(0, DASHBOARD_LIMITS.text) : ''
-        return { ...common, kind: c.kind as 'heading' | 'text', text: body }
+        return { ...common, kind: 'heading', text: body }
       }
+      case 'text':
+        return { ...common, kind: 'text', ...checkedText(c, at, cited) }
       case 'embed':
         return { ...common, kind: 'embed', url: checkedUrl(c.url, `${at}.url`) }
       case 'question': {
@@ -472,29 +488,7 @@ function checkedCards(
           c.visualization === undefined || c.visualization === null
             ? {}
             : { visualization: checkedVisualization(c.visualization, `${at}.visualization`) }
-        const mappings = (Array.isArray(c.mappings) ? c.mappings : []).map((m, j): CardMapping => {
-          const where = `${at}.mappings[${j}]`
-          const mapping = (m ?? {}) as Record<string, unknown>
-          if (typeof mapping.parameter !== 'string' || !parameters.has(mapping.parameter)) {
-            throw invalid(`${where}.parameter`, 'filtre_inconnu', mapping.parameter)
-          }
-          const target = (mapping.target ?? {}) as Record<string, unknown>
-          if (typeof target.variable === 'string' && target.variable !== '') {
-            return {
-              parameter: mapping.parameter,
-              target: { variable: target.variable.slice(0, 63) },
-            }
-          }
-          const column = (target.column ?? {}) as Record<string, unknown>
-          if (typeof column.field !== 'string' || column.field === '') {
-            throw invalid(`${where}.target`, 'cible_invalide')
-          }
-          const ref: ColumnRef =
-            typeof column.join === 'string' && column.join !== ''
-              ? { join: column.join, field: column.field }
-              : { field: column.field }
-          return { parameter: mapping.parameter, target: { column: ref } }
-        })
+        const mappings = checkedMappings(c.mappings, at, parameters)
         return {
           ...common,
           kind: 'question',
@@ -505,6 +499,114 @@ function checkedCards(
       }
     }
   })
+}
+
+/** The filters a card, or a question its text cites, ties — each to a column or a variable. */
+function checkedMappings(raw: unknown, at: string, parameters: ReadonlySet<string>): CardMapping[] {
+  return (Array.isArray(raw) ? raw : []).map((m, j): CardMapping => {
+    const where = `${at}.mappings[${j}]`
+    const mapping = (m ?? {}) as Record<string, unknown>
+    if (typeof mapping.parameter !== 'string' || !parameters.has(mapping.parameter)) {
+      throw invalid(`${where}.parameter`, 'filtre_inconnu', mapping.parameter)
+    }
+    const target = (mapping.target ?? {}) as Record<string, unknown>
+    if (typeof target.variable === 'string' && target.variable !== '') {
+      return {
+        parameter: mapping.parameter,
+        target: { variable: target.variable.slice(0, 63) },
+      }
+    }
+    const column = (target.column ?? {}) as Record<string, unknown>
+    if (typeof column.field !== 'string' || column.field === '') {
+      throw invalid(`${where}.target`, 'cible_invalide')
+    }
+    const ref: ColumnRef =
+      typeof column.join === 'string' && column.join !== ''
+        ? { join: column.join, field: column.field }
+        : { field: column.field }
+    return { parameter: mapping.parameter, target: { column: ref } }
+  })
+}
+
+/** The name a text cites a value by: `{{nom}}`. */
+const VARIABLE_NAME = /^[a-z0-9_]{1,63}$/
+
+/**
+ * A text card's text, and the values it cites. A rich text is sanitized as a long text's
+ * is (chapter 04 §2.2) — the same profile, on write; a Markdown one is kept as typed. A
+ * variable the text no longer cites goes, whatever it named.
+ */
+function checkedText(
+  c: Record<string, unknown>,
+  at: string,
+  context: {
+    readonly tables: Tables
+    /** The saved queries of the whole base. */
+    readonly questions: ReadonlySet<string>
+    readonly parameters: ReadonlySet<string>
+    /** The question cards of the dashboard. */
+    readonly cards: ReadonlySet<string>
+  },
+): Pick<DashboardCard, 'text' | 'rich' | 'variables'> {
+  const { parameters } = context
+  const raw = typeof c.text === 'string' ? c.text : ''
+  const rich = c.rich === true
+  const body = rich ? sanitizeRichText(raw) : raw.slice(0, DASHBOARD_LIMITS.text)
+  if (rich && body.length > DASHBOARD_LIMITS.html) {
+    throw invalid(`${at}.text`, 'texte_trop_long', DASHBOARD_LIMITS.html)
+  }
+  const cited = new Set(citedNames(body))
+  const names = new Set<string>()
+  const variables = (Array.isArray(c.variables) ? c.variables : []).flatMap(
+    (item, j): TextVariable[] => {
+      const where = `${at}.variables[${j}]`
+      const v = (item ?? {}) as Record<string, unknown>
+      if (typeof v.name !== 'string' || !VARIABLE_NAME.test(v.name) || names.has(v.name)) {
+        throw invalid(`${where}.name`, 'nom_invalide', v.name)
+      }
+      names.add(v.name)
+      if (!cited.has(v.name)) return []
+      if (typeof v.parameter === 'string') {
+        if (!parameters.has(v.parameter)) {
+          throw invalid(`${where}.parameter`, 'filtre_inconnu', v.parameter)
+        }
+        return [{ name: v.name, parameter: v.parameter }]
+      }
+      if (typeof v.card === 'string') {
+        if (!context.cards.has(v.card)) throw invalid(`${where}.card`, 'carte_inconnue', v.card)
+        return [{ name: v.name, card: v.card }]
+      }
+      const mappings = checkedMappings(v.mappings, where, parameters)
+      const tied = mappings.length === 0 ? {} : { mappings }
+      // A query of one's own goes in by its content, as into a card: checked the same way.
+      if (v.query !== undefined && v.query !== null) {
+        const label = text(v.label, DASHBOARD_LIMITS.label)
+        return [
+          {
+            name: v.name,
+            query: checkedQuery(v.query, context.tables, `${where}.query`),
+            ...(label === '' ? {} : { label }),
+            ...(v.visualization === undefined || v.visualization === null
+              ? {}
+              : { visualization: checkedVisualization(v.visualization, `${where}.visualization`) }),
+            ...tied,
+          },
+        ]
+      }
+      if (typeof v.question !== 'string' || !context.questions.has(v.question)) {
+        throw invalid(`${where}.question`, 'question_inconnue', v.question)
+      }
+      return [{ name: v.name, question: v.question, ...tied }]
+    },
+  )
+  if (variables.length > DASHBOARD_LIMITS.variables) {
+    throw invalid(`${at}.variables`, 'trop_de_variables', DASHBOARD_LIMITS.variables)
+  }
+  return {
+    text: body,
+    ...(rich ? { rich: true } : {}),
+    ...(variables.length === 0 ? {} : { variables }),
+  }
 }
 
 // ── Storage ─────────────────────────────────────────────────────────────────
@@ -550,9 +652,14 @@ export async function readDashboard(
   return row === undefined ? null : shaped(row)
 }
 
+/**
+ * The queries a card may place: those of the whole base — whoever sees the dashboard
+ * sees what its cards run. A personal query goes into a card by its content.
+ */
 async function questionsOf(exec: Executor, baseId: string): Promise<Set<string>> {
   const rows = await exec.query<{ id: string }>(
-    'SELECT id::text FROM _basedb.question WHERE base_id = $1 AND deleted_at IS NULL',
+    `SELECT id::text FROM _basedb.question
+      WHERE base_id = $1 AND deleted_at IS NULL AND audience = 'base'`,
     [baseId],
   )
   return new Set(rows.map((r) => r.id))

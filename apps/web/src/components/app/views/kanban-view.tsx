@@ -4,6 +4,7 @@ import type { Row } from '@/components/app/grid/cell'
 import { OptionBadge, OptionGlyph } from '@/components/app/option-badge'
 import { CardDescription, RecordCard, coverOf } from '@/components/app/views/card'
 import { Button } from '@/components/ui/button'
+import { Hint } from '@/components/ui/tooltip'
 import { type Field, type FieldOption, type Table, api } from '@/lib/api/client'
 import { quoteLiteral } from '@/lib/expression'
 import { $t } from '@/lib/i18n'
@@ -724,48 +725,49 @@ function ColumnFrame({
       aria-label={column.option?.label ?? $t('Sans valeur')}
     >
       <span aria-hidden className="h-1 shrink-0" style={{ backgroundColor: tint }} />
-      <header
-        {...handle}
-        // The header is the handle: grabbing anywhere on it moves the column.
-        title={handle === undefined ? undefined : $t('Glisser pour déplacer la colonne')}
-        className={cn(
-          'flex h-11 shrink-0 items-center gap-2 px-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/40',
-          handle !== undefined && 'cursor-grab active:cursor-grabbing',
-        )}
-      >
-        {column.option === null ? (
-          <span className="truncate text-sm font-semibold text-muted-foreground">
-            {$t('Sans valeur')}
-          </span>
-        ) : (
-          <>
-            <OptionGlyph
-              look={column.option}
-              // A pictogram or a picture reads at the size of the label; a plain colour is a dot.
-              className={
-                (column.option.icon ?? null) !== null || (column.option.image ?? null) !== null
-                  ? 'size-4'
-                  : 'size-2.5'
-              }
-            />
-            <span
-              className="truncate text-sm font-semibold"
-              style={
-                color === null
-                  ? undefined
-                  : { color: `color-mix(in oklab, ${color} 70%, var(--foreground))` }
-              }
-            >
-              {column.option.label}
+      <Hint label={handle === undefined ? undefined : $t('Glisser pour déplacer la colonne')}>
+        <header
+          {...handle}
+          // The header is the handle: grabbing anywhere on it moves the column.
+          className={cn(
+            'flex h-11 shrink-0 items-center gap-2 px-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/40',
+            handle !== undefined && 'cursor-grab active:cursor-grabbing',
+          )}
+        >
+          {column.option === null ? (
+            <span className="truncate text-sm font-semibold text-muted-foreground">
+              {$t('Sans valeur')}
             </span>
-          </>
-        )}
-        <span className="shrink-0 rounded-full bg-background/80 px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground ring-1 ring-border/60">
-          {count}
-        </span>
-        <div className="flex-1" />
-        {state.loading && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
-      </header>
+          ) : (
+            <>
+              <OptionGlyph
+                look={column.option}
+                // A pictogram or a picture reads at the size of the label; a plain colour is a dot.
+                className={
+                  (column.option.icon ?? null) !== null || (column.option.image ?? null) !== null
+                    ? 'size-4'
+                    : 'size-2.5'
+                }
+              />
+              <span
+                className="truncate text-sm font-semibold"
+                style={
+                  color === null
+                    ? undefined
+                    : { color: `color-mix(in oklab, ${color} 70%, var(--foreground))` }
+                }
+              >
+                {column.option.label}
+              </span>
+            </>
+          )}
+          <span className="shrink-0 rounded-full bg-background/80 px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground ring-1 ring-border/60">
+            {count}
+          </span>
+          <div className="flex-1" />
+          {state.loading && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
+        </header>
+      </Hint>
       <div className="flex min-h-16 flex-1 flex-col gap-2.5 overflow-y-auto px-2.5 pb-2.5 scroll-discret">
         {children}
         {empty && (

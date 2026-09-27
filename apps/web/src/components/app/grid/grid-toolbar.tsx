@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Hint } from '@/components/ui/tooltip'
 import type { Field } from '@/lib/api/client'
 import { effectiveKind } from '@/lib/computed'
 import { compileMatcher } from '@/lib/evaluate'
@@ -153,17 +154,18 @@ export function HeightMenu({
 }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="size-7"
-          aria-label={$t('Hauteur des lignes')}
-          title={$t('Hauteur des lignes')}
-        >
-          <Rows3 className="size-3.5" />
-        </Button>
-      </DropdownMenuTrigger>
+      <Hint label={$t('Hauteur des lignes')}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="size-7"
+            aria-label={$t('Hauteur des lignes')}
+          >
+            <Rows3 className="size-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+      </Hint>
       <DropdownMenuContent align="start" className="w-44">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
           {$t('Hauteur des lignes')}

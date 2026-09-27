@@ -19,8 +19,22 @@ database** beder om en etiket og, hvis der er AI-felter, dit samtykke til, at de
 citerer, sendes til instansens AI-udbyder. Uden dette samtykke er de almindelige felter, udfyldt
 med deres eksempelværdier.
 
+**Indlæs eksempeldata**, som er markeret som standard, fylder tabellerne med eksempelrækker,
+så du kan se databasen i brug. Fjernes markeringen, forbliver tabellerne tomme, klar til dine
+egne data — visninger, dashboards og automatiseringer oprettes alligevel.
+
 Et tomt projekt tilbyder også **demodatabasen**: et lille bureau med dets kunder, projekter,
 opgaver, fakturaer og anmeldelser, som viser alle sider af basedb.
+
+## På dit sprog
+
+De officielle skabeloner læses og oprettes **på skærmens sprog**: tabeller, felter, valg,
+eksempelrækker, visninger, dashboards, automatiseringer og AI-instruktioner. Eksempelrækkerne
+skifter verden med sproget: det franske »Boulangerie Martin« i Lyon bliver til »Martins Bageri«
+i Aarhus på dansk.
+
+En skabelon, der importeres i din instans, eller gemmes fra en database, er skrevet af nogen:
+den læses, som den er skrevet.
 
 ## Bed AI om en skabelon
 
@@ -110,6 +124,14 @@ til at ændre galleriet på alle instanser.
 
 Hver skabelon kontrolleres, når webstedet bygges, af den samme validator som serveren: en
 ugyldig skabelon får bygningen til at mislykkes i stedet for at nå ud til brugerne.
+
+En officiel skabelon skrives én gang, på fransk. Dens tekster på et andet sprog er en ordbog,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+— den franske tekst, så dens oversættelse —, som webstedet udgiver ved siden af kataloget
+(`/basedb/modeles/i18n/<langue>.json`). Instansen sætter hver tekst ind og følger hver etiket,
+der hvor den citeres — formler, filtre, visninger, instruktioner —, og læser derefter resultatet
+igen: en ordbog, der ville ødelægge skabelonen, serveres ikke, den franske skabelon serveres i
+stedet. En tekst, der mangler i ordbogen, forbliver på fransk.
 
 Instansen læser adressen `BASEDB_TEMPLATES_URL` — som standard det offentlige websteds. Peg den
 mod dit eget katalog, eller sæt den til `off` for ikke at læse noget: instansen serverer så de

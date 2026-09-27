@@ -4,6 +4,7 @@ import {
   checkTemplate,
   citedInText,
   citedLabels,
+  formulaDialect,
   localizeTemplate,
   templateTexts,
 } from '@basedb/contracts'
@@ -82,6 +83,16 @@ describe('localizeTemplate', () => {
     expect(check.template.label).toBe(demo.label)
   })
 
+  it('writes the formulas in English for a reader who is not French', () => {
+    const demo = templates.find((t) => t.key === 'demo') as Template
+    const check = localizeTemplate(demo, { 'Montant HT': 'Net amount' }, 'en')
+    expect(check.ok).toBe(true)
+    if (!check.ok) return
+    const formulas = check.template.tables.flatMap((t) => t.fields.map((f) => f.formula))
+    expect(formulas).toContain('ROUND([Net amount] * (1 + [Taux de TVA]), 2)')
+    expect(formulas).toContain('DAYS([Fin], [Début])')
+  })
+
   it('refuses a dictionary that makes two labels one', () => {
     const demo = templates.find((t) => t.key === 'demo') as Template
     const [first, second] = demo.tables[0]?.fields ?? []
@@ -114,7 +125,7 @@ describe('the dictionaries', () => {
       for (const template of templates) {
         const dictionary = dictionaries[template.key]
         expect([template.key, dictionary === undefined]).toEqual([template.key, false])
-        const check = localizeTemplate(template, dictionary ?? {})
+        const check = localizeTemplate(template, dictionary ?? {}, formulaDialect(locale))
         expect([template.key, check.issues]).toEqual([template.key, []])
       }
     })

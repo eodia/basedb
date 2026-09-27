@@ -1,6 +1,6 @@
 ---
 title: Collaboration
-description: Comments and mentions, notifications, real-time updates and presence.
+description: Comments and mentions, notifications, real-time updates, presence, and a link to every screen.
 ---
 
 Several people work on the same base at the same time: each one sees the others’ writes come
@@ -43,6 +43,27 @@ cell you are editing is never replaced under your fingers.
 The faces of the people looking at **the same table** appear at the top of the screen; those
 who have opened **the same row**, in the header of its details. In the grid, other people’s
 pointers appear on the cell they are hovering over.
+
+## A link to every screen
+
+The browser’s address follows what you are looking at: a table, one of its views, a row’s
+details, a dashboard, an automation, a question, your settings. Paste it into a message: your
+colleague arrives at the same place, with their own permissions. Bookmark it; the browser’s back
+and forward buttons bring you back to where you were.
+
+| Address | What it opens |
+|---|---|
+| `/bases/ventes/tables/opportunites` | the “Opportunités” table in the “Ventes” base |
+| `/bases/ventes/tables/opportunites?vue=…` | one of its views |
+| `/bases/ventes/tables/opportunites?ligne=…` | the details of one of its rows |
+| `/bases/ventes/tableaux-de-bord/…` | a dashboard |
+| `/bases/ventes/automatisations/…` | an automation |
+| `/parametres/apparence` | your settings |
+
+An address names a **place**, not the state you left it in: filters, sorts and column widths
+stay those of each browser. A base and a table are written there by their PostgreSQL name:
+renamed, the old address no longer leads anywhere. An address that leads nowhere — a typo, a
+deleted object, or one you are not allowed to see — shows “This page does not exist”.
 
 ## Undo
 

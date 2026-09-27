@@ -346,9 +346,10 @@ describe('a dashboard of blocks, as the first ones were', () => {
 describe('a question', () => {
   let question = ''
 
-  it('is saved by whoever builds the base, checked against its tables', async () => {
+  it('is shared by whoever builds the base, checked against its tables', async () => {
     const r = await call(admin, QUESTIONS(), 'POST', {
       label: 'Montant par mois',
+      audience: 'base',
       query: {
         kind: 'builder',
         source: 'visites',
@@ -367,14 +368,28 @@ describe('a question', () => {
       query: { kind: 'builder', source: visites, breakouts: [{ field: 'absent' }] },
     })
     expect(await unknown.json()).toMatchObject({ details: { reason: 'champ_inconnu' } })
+    // A reader keeps queries of their own; sharing one is building the base.
     expect(
       (
         await call(alice, QUESTIONS(), 'POST', {
-          label: 'À moi',
+          label: 'Pour tous',
+          audience: 'base',
           query: { kind: 'builder', source: visites },
         })
       ).status,
     ).toBe(403)
+    const own = await call(alice, QUESTIONS(), 'POST', {
+      label: 'À moi',
+      query: { kind: 'builder', source: visites },
+    })
+    expect(own.status).toBe(201)
+    const mine = await data<{ id: string }>(own)
+    expect(mine).toMatchObject({ audience: 'personal', mine: true, editable: true })
+    const seen = await data<Array<{ id: string }>>(
+      await call(admin, `${V1}/meta/bases/${base}/questions`),
+    )
+    expect(seen.map((q) => q.id)).not.toContain(mine.id)
+    expect((await call(alice, `${QUESTIONS()}/${mine.id}`, 'DELETE')).status).toBe(204)
   })
 
   it('is listed to whoever sees the base, and runs with their rights', async () => {
@@ -600,6 +615,128 @@ describe('a dashboard of cards', () => {
     expect(created.cards[1]).toMatchObject({ tab: 't1' })
   })
 
+  it('keeps a rich text sanitized, and of the values it cites those it still cites', async () => {
+    const question = (
+      await data<Array<{ id: string }>>(await call(admin, `${V1}/meta/bases/${base}/questions`))
+    )[0]?.id
+    const text = (variables: unknown[], body = '<p>{{total}}</p>') =>
+      call(admin, DASHBOARDS(), 'POST', {
+        label: 'Lettre',
+        parameters: [{ id: 'p1', label: 'Période', type: 'date' }],
+        cards: [
+          { id: 'c1', tab: null, x: 0, y: 0, w: 12, h: 4, kind: 'text', rich: true, text: body },
+        ].map((c) => ({ ...c, variables })),
+      })
+    const r = await text(
+      [
+        {
+          name: 'total',
+          question,
+          mappings: [{ parameter: 'p1', target: { column: { field: 'jour' } } }],
+        },
+        { name: 'periode', parameter: 'p1' },
+        { name: 'oubliee', question },
+      ],
+      '<p onclick="x()">Total : <strong>{{total}}</strong> sur {{ periode }}<script>alert(1)</script></p>',
+    )
+    expect(r.status).toBe(201)
+    const card = (await data<{ cards: Array<Record<string, unknown>> }>(r)).cards[0]
+    expect(card).toMatchObject({
+      kind: 'text',
+      rich: true,
+      text: '<p>Total : <strong>{{total}}</strong> sur {{ periode }}</p>',
+    })
+    // A value the text no longer cites goes.
+    expect(card?.variables).toEqual([
+      {
+        name: 'total',
+        question,
+        mappings: [{ parameter: 'p1', target: { column: { field: 'jour' } } }],
+      },
+      { name: 'periode', parameter: 'p1' },
+    ])
+    const absent = await text([{ name: 'total', question: '00000000-0000-0000-0000-000000000000' }])
+    expect(await absent.json()).toMatchObject({ details: { reason: 'question_inconnue' } })
+    const filter = await text([{ name: 'total', parameter: 'absent' }])
+    expect(await filter.json()).toMatchObject({ details: { reason: 'filtre_inconnu' } })
+    const named = await text([{ name: 'Total', question }], '<p>{{Total}}</p>')
+    expect(await named.json()).toMatchObject({ details: { reason: 'nom_invalide' } })
+    const gone = await text([{ name: 'total', card: 'absente' }])
+    expect(await gone.json()).toMatchObject({ details: { reason: 'carte_inconnue' } })
+  })
+
+  it('cites a card of the dashboard, or a query of its own kept by its content', async () => {
+    const r = await call(admin, DASHBOARDS(), 'POST', {
+      label: 'Lettre',
+      cards: [
+        {
+          id: 'c1',
+          tab: null,
+          x: 0,
+          y: 0,
+          w: 12,
+          h: 4,
+          kind: 'question',
+          query: { kind: 'builder', source: visites, aggregations: [{ fn: 'count' }] },
+        },
+        {
+          id: 'c2',
+          tab: null,
+          x: 12,
+          y: 0,
+          w: 12,
+          h: 4,
+          kind: 'text',
+          rich: true,
+          text: '<p>{{visites}} visites, {{mienne}}</p>',
+          variables: [
+            { name: 'visites', card: 'c1' },
+            {
+              name: 'mienne',
+              label: 'À moi',
+              query: { kind: 'builder', source: visites, aggregations: [{ fn: 'count' }] },
+              visualization: { type: 'scalar' },
+            },
+          ],
+        },
+      ],
+    })
+    expect(r.status).toBe(201)
+    const card = (await data<{ cards: Array<Record<string, unknown>> }>(r)).cards[1]
+    expect(card?.variables).toEqual([
+      { name: 'visites', card: 'c1' },
+      {
+        name: 'mienne',
+        label: 'À moi',
+        query: { kind: 'builder', source: visites, aggregations: [{ fn: 'count' }] },
+        visualization: { type: 'scalar' },
+      },
+    ])
+    // A query kept in the text is checked as a card's is.
+    const wrong = await call(admin, DASHBOARDS(), 'POST', {
+      label: 'Lettre',
+      cards: [
+        {
+          id: 'c2',
+          tab: null,
+          x: 0,
+          y: 0,
+          w: 12,
+          h: 4,
+          kind: 'text',
+          text: '{{mienne}}',
+          variables: [
+            {
+              name: 'mienne',
+              query: { kind: 'builder', source: visites, fields: [{ field: 'absent' }] },
+            },
+          ],
+        },
+      ],
+    })
+    expect(await wrong.json()).toMatchObject({ details: { reason: 'champ_inconnu' } })
+  })
+
   it('refuses a card off the grid, or tied to a filter it does not have', async () => {
     const wide = await call(admin, DASHBOARDS(), 'POST', {
       label: 'Cassé',
@@ -642,6 +779,11 @@ describe('a shared dashboard', () => {
     })
 
   beforeAll(async () => {
+    const question = (
+      await data<Array<{ id: string; label: string }>>(
+        await call(admin, `${V1}/meta/bases/${base}/questions`),
+      )
+    ).find((q) => q.label === 'Montant par mois')?.id
     const r = await call(admin, DASHBOARDS(), 'POST', {
       label: 'Chantiers en cours',
       description: 'Pour les partenaires',
@@ -691,7 +833,24 @@ describe('a shared dashboard', () => {
           kind: 'question',
           query: { kind: 'builder', source: visites, fields: [{ field: 'nom' }] },
         },
-        { id: 'mot', tab: null, x: 0, y: 10, w: 24, h: 2, kind: 'text', text: 'Bonjour' },
+        {
+          id: 'mot',
+          tab: null,
+          x: 0,
+          y: 10,
+          w: 24,
+          h: 2,
+          kind: 'text',
+          rich: true,
+          text: '<p>Bonjour : {{montant}} au total</p>',
+          variables: [
+            {
+              name: 'montant',
+              question,
+              mappings: [{ parameter: 'statut', target: { column: { field: 'statut' } } }],
+            },
+          ],
+        },
       ],
     })
     expect(r.status).toBe(201)
@@ -762,6 +921,32 @@ describe('a shared dashboard', () => {
     )
     expect(smuggled.columns.map((c) => c.name)).not.toContain('note')
     expect((await visit(`${token}/cards/mot`, 'POST', {})).status).toBe(404)
+  })
+
+  it('runs a query a text cites, by its name, tied as the text ties it', async () => {
+    const page = await data<{ cards: Array<Record<string, unknown>> }>(await visit(token))
+    const text = page.cards.find((c) => c.id === 'mot')
+    expect(text).toMatchObject({
+      rich: true,
+      text: '<p>Bonjour : {{montant}} au total</p>',
+      variables: [{ name: 'montant', kind: 'question', filters: ['statut'] }],
+      filters: ['statut'],
+    })
+    // Never what it runs, nor which query.
+    expect(JSON.stringify(text)).not.toContain('aggregations')
+    expect(Object.keys((text?.variables as object[])[0] ?? {})).not.toContain('question')
+    const sum = (result: Result) => result.rows.reduce((t, row) => t + Number(row[1] ?? 0), 0)
+    const every = await visit(`${token}/cards/mot/variables/montant`, 'POST', {})
+    expect(every.status).toBe(200)
+    const byStatus = await data<Result>(await visit(`${token}/cards/total`, 'POST', {}))
+    expect(sum(await data<Result>(every))).toBe(sum(byStatus))
+    const done = await data<Result>(
+      await visit(`${token}/cards/mot/variables/montant`, 'POST', { values: { statut: ['fait'] } }),
+    )
+    expect(sum(done)).toBe(130)
+    // A name the text does not cite, or a card that is no text: nothing to run.
+    expect((await visit(`${token}/cards/mot/variables/absente`, 'POST', {})).status).toBe(404)
+    expect((await visit(`${token}/cards/total/variables/montant`, 'POST', {})).status).toBe(404)
   })
 
   it('names people, and keeps no way to open a row', async () => {

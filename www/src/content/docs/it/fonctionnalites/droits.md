@@ -12,9 +12,9 @@ sotto, compreso ciò che verrà creato in seguito.
 | Livello | Consente |
 |---|---|
 | **Nessun accesso** | niente: la risorsa è invisibile |
-| **Lettura** | vedere le righe, commentarle, crearsi viste personali, consultare la struttura e le dashboard, porre le proprie domande, scrivere SQL in sola lettura e salvare le proprie query personali |
+| **Lettura** | vedere le righe, commentarle, crearsi viste personali, consultare la struttura e le dashboard, porre e salvare le proprie domande, scrivere SQL in sola lettura e salvare le proprie query personali |
 | **Modifica** | in più creare, modificare, eliminare righe |
-| **Gestione** | in più modificare la struttura, creare le viste condivise, le dashboard e le domande salvate, condividere una dashboard tramite link, condividere query, creare viste SQL, le automazioni, le integrazioni e i token; il suo SQL ha accesso a tutto il database, scritture comprese |
+| **Gestione** | in più modificare la struttura, creare le viste condivise e le dashboard, condividere una dashboard tramite link, condividere domande e query, creare viste SQL, le automazioni, le integrazioni e i token; il suo SQL ha accesso a tutto il database, scritture comprese |
 
 I permessi **si sommano**: una persona riceve il livello più alto che le dà uno dei
 suoi gruppi. Dare a una tabella meno che al suo database la rende «granulare».
@@ -70,6 +70,11 @@ basedb parla **venti lingue**: francese, inglese, tedesco, spagnolo, italiano, p
 turco, ucraino, giapponese, cinese semplificato e coreano. Per impostazione predefinita, l’interfaccia usa la lingua
 del tuo browser; **Lingua**, in **Aspetto**, ne imposta un’altra. I numeri e le date
 seguono la lingua scelta.
+
+Un link può anche richiedere una lingua: `?lang=de` in fondo a un indirizzo di basedb mostra in
+tedesco la schermata di accesso, un modulo, una vista o una dashboard condivisi. È così che il
+sito porta alla demo nella lingua della pagina. Una volta connesso, basedb segue il tuo account:
+la lingua scelta in **Aspetto**, altrimenti quella del browser.
 
 Il tema resta proprio del browser; la lingua, l’ordine delle date e il primo giorno della
 settimana ti seguono da un dispositivo all’altro. Cambiare indirizzo o collegare un fornitore richiede una sessione

@@ -36,7 +36,7 @@ meny – och dess knapp **Fält**:
 | Client | Relation → Clients |
 | Notes | Lång text (Markdown) |
 
-Senare läggs en formel (`JOURS([Échéance]; AUJOURDHUI())`), ett uppslag (kundens stad) eller en
+Senare läggs en formel (`DAYS([Échéance], TODAY())`), ett uppslag (kundens stad) eller en
 aggregering (totalbeloppet per kund) till på samma sätt – se
 [Tabeller och fält](/basedb/sv/fonctionnalites/tables-et-champs/).
 
@@ -69,7 +69,7 @@ behörigheter. Detaljer finns i [Delade formulär](/basedb/sv/fonctionnalites/fo
 
 ## 6. Läs i SQL
 
-Databasens **⋯**-meny → **Ny SQL-fråga**: dina tabeller finns där, under sina riktiga namn.
+Databasens **⋯**-meny → **SQL-fråga**: dina tabeller finns där, under sina riktiga namn.
 
 ```sql
 SELECT nom, statut, montant

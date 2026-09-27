@@ -82,7 +82,8 @@ munkamenetnek van fenntartva: egy token sorokat olvas és ír, az adatbázist ne
 
 Minden adatbázisnak van egy **API- és MCP-dokumentáció** oldala: minden táblához a végpontjai,
 az oszlopai, cURL- és JavaScript-példák. **Az Ön jogosultságai szerint szűrt** – két olvasó
-két különböző változatot kap –, és OpenAPI 3.1 formátumban is elérhető
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+két különböző változatot kap –, **az Ön képernyőjének nyelvén** íródik, és OpenAPI 3.1
+formátumban is elérhető (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). A nevek, az
+útvonalak és a hibakódok minden nyelven ugyanazok maradnak.
 
 ![Egy adatbázis generált dokumentációja](../../../../assets/screens/documentation-api.png)

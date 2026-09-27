@@ -36,7 +36,7 @@ description: 데이터베이스, 테이블, 필드, 보기, 양식을 만듭니�
 | Client | 관계 → Clients |
 | Notes | 긴 텍스트(Markdown) |
 
-나중에 수식(`JOURS([Échéance]; AUJOURDHUI())`), 조회(고객의 도시), 롤업(고객별 총금액)도
+나중에 수식(`DAYS([Échéance], TODAY())`), 조회(고객의 도시), 롤업(고객별 총금액)도
 같은 방법으로 추가합니다. [테이블과 필드](/basedb/ko/fonctionnalites/tables-et-champs/)를
 참고하세요.
 
@@ -70,7 +70,7 @@ CSV나 JSON **파일을 가져올** 수도 있습니다. 가져오기 기능은 
 
 ## 6. SQL로 읽기
 
-데이터베이스의 **⋯** 메뉴 → **새 SQL 쿼리**: 테이블이 실제 이름 그대로 나타납니다.
+데이터베이스의 **⋯** 메뉴 → **SQL 쿼리**: 테이블이 실제 이름 그대로 나타납니다.
 
 ```sql
 SELECT nom, statut, montant

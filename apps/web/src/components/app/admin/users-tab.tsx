@@ -243,7 +243,7 @@ export function UsersTab({ me }: { readonly me: Me }) {
                         <DropdownMenuItem
                           onSelect={() => setDialog({ kind: 'disable', user: u })}
                           disabled={u.email === me.email}
-                          className="text-destructive focus:text-destructive"
+                          variant="destructive"
                         >
                           <UserX className="size-4" />
                           {$t('Désactiver le compte…')}

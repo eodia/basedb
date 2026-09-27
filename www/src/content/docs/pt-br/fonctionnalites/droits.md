@@ -12,9 +12,9 @@ abaixo, inclusive o que for criado mais tarde.
 | Nível | Permite |
 |---|---|
 | **Sem acesso** | nada: o recurso fica invisível |
-| **Leitura** | ver as linhas, comentá-las, criar visões pessoais, consultar a estrutura e os painéis, fazer as próprias perguntas, escrever SQL somente para leitura e salvar suas consultas pessoais |
+| **Leitura** | ver as linhas, comentá-las, criar visões pessoais, consultar a estrutura e os painéis, fazer e salvar as próprias perguntas, escrever SQL somente para leitura e salvar suas consultas pessoais |
 | **Edição** | e também criar, editar e excluir linhas |
-| **Gerenciamento** | e também mudar a estrutura, criar as visões compartilhadas, os painéis e as perguntas salvas, compartilhar um painel por um link, compartilhar consultas, criar visões SQL, as automações, as integrações e os tokens; o SQL tem acesso à base inteira, inclusive escritas |
+| **Gerenciamento** | e também mudar a estrutura, criar as visões compartilhadas e os painéis, compartilhar um painel por um link, compartilhar perguntas e consultas, criar visões SQL, as automações, as integrações e os tokens; o SQL tem acesso à base inteira, inclusive escritas |
 
 As permissões **se somam**: uma pessoa recebe o nível mais alto que um de
 seus grupos lhe dá. Dar menos a uma tabela do que à base dela a torna “granular”.
@@ -70,6 +70,11 @@ O basedb fala **vinte idiomas**: francês, inglês, alemão, espanhol, italiano,
 turco, ucraniano, japonês, chinês simplificado e coreano. Por padrão, a interface usa o idioma
 do seu navegador; **Idioma**, em **Aparência**, define outro. Os números e as datas
 seguem o idioma escolhido.
+
+Um link também pode pedir um idioma: `?lang=de` no final de um endereço do basedb exibe em
+alemão a tela de login, um formulário, uma visão ou um painel compartilhados. É assim que o
+site leva à demonstração no idioma da página. Depois de conectado, o basedb segue a sua conta:
+o idioma escolhido em **Aparência**, senão o do navegador.
 
 O tema fica vinculado ao navegador; o idioma, a ordem das datas e o primeiro dia da
 semana acompanham você de um computador para outro. Mudar de endereço ou vincular um provedor exige uma sessão

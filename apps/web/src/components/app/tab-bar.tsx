@@ -1,5 +1,6 @@
 'use client'
 
+import { VIZ_ICONS } from '@/components/app/analytics/viz-settings'
 import { EnvironmentBadge } from '@/components/app/environment-badge'
 import { LookIcon, type OptionLook } from '@/components/app/option-badge'
 import {
@@ -10,6 +11,13 @@ import {
   ContextMenuShortcut,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { BaseEnvironment, Table } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
@@ -25,7 +33,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Eye, FileCode2, Plus, Table2, Terminal, X } from 'lucide-react'
+import { Eye, FileCode2, Plus, SquareTerminal, Table2, Terminal, Workflow, X } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 
 /**
@@ -41,7 +49,8 @@ import { useEffect, useMemo } from 'react'
  */
 
 interface Props {
-  readonly onNewSql: () => void
+  /** A new question — built with the mouse, or in SQL —, or a SQL statement to run. */
+  readonly onNew: (kind: 'builder' | 'sql' | 'statement') => void
   /** The tables whose look a tab wears; a tab of a table not listed keeps the plain glyph. */
   readonly tables?: readonly Table[]
   /**
@@ -51,7 +60,7 @@ interface Props {
   readonly environments?: ReadonlyMap<string, BaseEnvironment>
 }
 
-export function TabBar({ onNewSql, tables = [], environments }: Props) {
+export function TabBar({ onNew, tables = [], environments }: Props) {
   const tabs = useWorkspace((s) => s.tabs)
   const activeId = useWorkspace((s) => s.activeId)
   const looks = useMemo(() => new Map(tables.map((t) => [`${t.base}.${t.name}`, t])), [tables])
@@ -117,19 +126,37 @@ export function TabBar({ onNewSql, tables = [], environments }: Props) {
               />
             ))}
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={onNewSql}
-                  className="flex shrink-0 items-center justify-center px-2.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  aria-label={$t('Nouvel onglet SQL')}
-                >
-                  <Plus className="size-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>{$t('Nouvelle requête SQL')}</TooltipContent>
-            </Tooltip>
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex shrink-0 items-center justify-center px-2.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      aria-label={$t('Nouvel onglet')}
+                    >
+                      <Plus className="size-3.5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>{$t('Nouvel onglet')}</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuItem onSelect={() => onNew('builder')}>
+                  <Workflow className="size-4" />
+                  {$t('Nouvelle question')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onNew('sql')}>
+                  <SquareTerminal className="size-4" />
+                  {$t('Nouvelle question SQL')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => onNew('statement')}>
+                  <Terminal className="size-4" />
+                  {$t('Requête SQL')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </SortableContext>
       </DndContext>
@@ -166,15 +193,23 @@ function SortableTab({
     id: tab.id,
   })
 
-  // A table, a SQL view, a saved query, a statement being written.
+  // A table, a SQL view, a question — its chart, or how it is built —, a saved query, a
+  // statement being written.
+  const chart = tab.question?.visualization?.type
   const Icon =
     tab.kind === 'table'
       ? Table2
       : tab.kind === 'sqlview'
         ? Eye
-        : tab.queryId !== null
-          ? FileCode2
-          : Terminal
+        : tab.kind === 'question'
+          ? chart !== undefined && chart !== 'table'
+            ? VIZ_ICONS[chart]
+            : tab.question?.query?.kind === 'sql'
+              ? SquareTerminal
+              : Workflow
+          : tab.queryId !== null
+            ? FileCode2
+            : Terminal
 
   return (
     <ContextMenu>
@@ -238,7 +273,7 @@ function SortableTab({
         <ContextMenuItem onSelect={onCloseToLeft}>{$t('Fermer à gauche')}</ContextMenuItem>
         <ContextMenuItem onSelect={onCloseToRight}>{$t('Fermer à droite')}</ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem onSelect={onCloseAll} className="text-destructive focus:text-destructive">
+        <ContextMenuItem onSelect={onCloseAll} variant="destructive">
           {$t('Tout fermer')}
         </ContextMenuItem>
       </ContextMenuContent>

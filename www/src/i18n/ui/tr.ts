@@ -72,7 +72,7 @@ export default {
 							tables: {
 								href: '/fonctionnalites/tables-et-champs/',
 								title: 'Tablolar ve alanlar',
-								text: 'Her şey için alanlar, ilişkiler, Fransızca formüller.',
+								text: 'Her şey için alanlar, ilişkiler, bir tablo programındaki gibi formüller.',
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
@@ -780,9 +780,9 @@ export default {
 					href: '/fonctionnalites/tableaux-de-bord/',
 				},
 				formulas: {
-					code: 'SI([Montant] > 10000; "Grand compte"; "")',
-					title: 'Fransızca formüller',
-					text: 'Bir tablo programındaki gibi — SI, ARRONDI, JOURS… — ama tüm ekip için hesaplanır.',
+					code: 'IF([Montant] > 10000, "Grand compte", "")',
+					title: 'Fransızca ya da İngilizce formüller',
+					text: 'Bir tablo programındaki gibi — SI, ARRONDI, JOURS… ya da IF, ROUND, DAYS — ama tüm ekip için hesaplanır.',
 					href: '/fonctionnalites/tables-et-champs/#formüller',
 				},
 				rights: {
@@ -890,7 +890,7 @@ export default {
 			items: [
 				{
 					q: 'Kod yazmayı bilmek gerekir mi?',
-					a: 'Hayır. Tablolarınızı, görünümlerinizi, formlarınızı, panolarınızı ve otomasyonlarınızı fareyle oluşturursunuz. Formüller bir tablo programındaki gibi Fransızca yazılır: SI, ARRONDI, JOURS…',
+					a: 'Hayır. Tablolarınızı, görünümlerinizi, formlarınızı, panolarınızı ve otomasyonlarınızı fareyle oluşturursunuz. Formüller bir tablo programındaki gibi, Fransızca ya da İngilizce yazılır: SI ya da IF, ARRONDI ya da ROUND, JOURS ya da DAYS…',
 				},
 				{
 					q: 'Ne kadara mal olur?',
@@ -1257,8 +1257,8 @@ export default {
 			},
 			formulas: {
 				title: 'İlişkiler ve formüller',
-				text: 'Gerçek yabancı anahtarlar, Fransızca yazılıp PostgreSQL’in hesapladığı formüller ve ilişkiler üzerinden aramalar, toplamalar ve sayımlar.',
-				code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+				text: 'Gerçek yabancı anahtarlar, Fransızca ya da İngilizce yazılıp PostgreSQL’in hesapladığı formüller ve ilişkiler üzerinden aramalar, toplamalar ve sayımlar.',
+				code: 'ROUND([Montant HT] * (1 + [Taux de TVA]), 2)',
 				href: '/fonctionnalites/tables-et-champs/#formüller',
 			},
 			richText: {
@@ -1402,6 +1402,76 @@ export default {
 		title: 'basedb’de neler değişti',
 		intro: 'Her değişikliğin ayrıntısı <a href="https://github.com/eodia/basedb/commits/main">deponun geçmişinde</a>. Sırada ne var: <a href="/feuille-de-route/">yol haritası</a>.',
 		entries: {
+			formulaLanguages: {
+				date: '2026-09-28',
+				title: 'Fransızca ya da İngilizce formüller',
+				tag: 'Yeni',
+				items: [
+					'<strong>Bir formülü Fransızca ya da İngilizce yazın</strong>, hangi ekranda olursa olsun, ikisini karıştırarak bile: <code>SI</code> ya da <code>IF</code>, <code>ARRONDI</code> ya da <code>ROUND</code>, <code>JOURS</code> ya da <code>DAYS</code>… Argümanlar <code>;</code> ya da <code>,</code> ile ayrılır. <a href="/fonctionnalites/tables-et-champs/#formüller">Formüller</a>',
+					'<strong>Ekranın dilinde geri okunur</strong>: Fransızca bir ekranda Fransızca, diğer on dokuz dilde İngilizce — mevcut formüller ve “Fonksiyonlar” paneli dahil. API, kendisinden istenen dilde bir formül döndürür, aksi halde İngilizce.',
+					'Fransızca dışında bir dilde sunulan resmi şablonlar, formülleriyle İngilizce olarak gelir. Veritabanında hiçbir şey değişmez: aynı sütunlar, aynı SQL, geçiş işlemi olmadan.',
+				],
+			},
+			search: {
+				date: '2026-09-27',
+				title: 'Her şeyi bulma: Ctrl+K',
+				tag: 'Yeni',
+				items: [
+					'<strong>Her şey için tek bir alan</strong> — <strong>Ctrl+K</strong>, ya da üst çubuğun ortasındaki alan: tablolar, görünümler, sorular, panolar, otomasyonlar, sütunlar ve izinlerinizle okunan satırların kendisi; büyük bir ekranda, seçilen sonucun önizlemesi. <a href="/fonctionnalites/recherche/">Arama</a>',
+					'<strong>Aklınıza geldiği gibi yazın</strong>: ne aksan ne büyük harf, baş harflerle — “Yeni müşteri” için <code>ym</code> —, bağışlanan bir yazım hatası, müşteriler tablosunda “bursa”yı aramak için <code>müşteriler bursa</code>; sık açtıklarınız öne çıkar.',
+					'<strong>Klavyeden tüm komutlar</strong>: oluşturmak, gitmek, kapatmak, geri almak, temayı değiştirmek, sayfanın bağlantısını kopyalamak. <code>&gt;</code> yalnızca komutları arar, <code>#</code> nesneleri, <code>/</code> satırları; <strong>Tab</strong> bir tablo ya da veritabanı içinde arar.',
+					'<strong>Bir sorunuz mu var?</strong> Yazın: <strong>Copilot’a sor</strong> açık veritabanında bu soruyu ona sorar.',
+				],
+			},
+			questions: {
+				date: '2026-09-27',
+				title: 'Kişiye özel sorular, metindeki rakamlar',
+				tag: 'Yeni',
+				items: [
+					'<strong>Herkes kendi sorularını kaydeder</strong>, Yönetim düzeyi olmadan: kişisel olanları yalnızca siz görürsünüz; veritabanını yöneten kişi bunları tüm veritabanıyla ya da gruplarla, sorgular gibi paylaşır. <a href="/fonctionnalites/tableaux-de-bord/">Panolar</a>',
+					'<strong>Bir sekmede bir soru</strong>, tabloların yanında: sekme çubuğunun <strong>+</strong>’ında ve veritabanının menüsünde <strong>Yeni soru</strong> ve <strong>Yeni SQL sorusu</strong>; sekme, içinde bıraktığınızı korur. <strong>Bir kopya kaydet</strong>, değiştiremediğiniz bir soruyu sizin yapar.',
+					'<strong>Metindeki rakamlar</strong>: artık biçimlendirilebilen bir pano metni, bir karttan, bir sorudan ya da bir filtreden alınan — <code>{{chiffre_affaires}}</code> — bir değere atıfta bulunur; bu değer, bir bağlantıyla paylaşılan bir panoda bile, okuyucunun izinleriyle hesaplanır. <a href="/fonctionnalites/tableaux-de-bord/#metindeki-rakamlar">Metindeki rakamlar</a>',
+					'Sorgular, SQL görünümleri ve sorular da menülerinden, sağ tıklamayla silinebilir.',
+				],
+			},
+			addresses: {
+				date: '2026-09-27',
+				title: 'Her ekran için bir adres',
+				tag: 'Yeni',
+				items: [
+					'<strong>Adres ekranı takip eder</strong>: bir tablo, bir görünüm, bir satırın ayrıntıları, bir pano, bir otomasyon, bir soru, ayarlarınız — <code>/bases/ventes/tables/opportunites?ligne=…</code>. Onu favorilere ekleyin, bir mesaja yapıştırın: kendi izinlerinizle aynı yere ulaşılır. <a href="/fonctionnalites/collaboration/#her-ekrana-giden-bir-bağlantı">Her ekrana giden bir bağlantı</a>',
+					'Tarayıcının <strong>geri</strong> ve <strong>ileri</strong> düğmeleri sizi bulunduğunuz yere geri getirir; hiçbir yere gitmeyen bir adres “Bu sayfa mevcut değil” gösterir.',
+				],
+			},
+			demo: {
+				date: '2026-09-27',
+				title: 'Denenecek bir demo, kendi dilinizde',
+				tag: 'Yeni',
+				items: [
+					'<strong>Demo</strong>, <a href="https://demo.basedb.eodia.com">demo.basedb.eodia.com</a> adresinde: hesap, tarayıcınızın dilinde önceden doldurulmuştur, bu dilde bir veritabanıyla birlikte. Orada her şeyi okuyabilir ve var olanı değiştirebilirsiniz; oluşturma, silme ve yapay zeka orada devre dışıdır ve veritabanı her gece başlangıç durumuna döner.',
+					'<strong>Kendi demonuz</strong>: <code>BASEDB_DEMO=1</code>, dile göre önceden hazırlanmış, paylaşılan bir hesapla herkese açık bir kurulum açar. <a href="/hebergement/variables/#herkese-açık-demo">Değişkenler</a>',
+					'<strong>Bağlantı başına bir dil</strong>: bir basedb adresinin sonundaki <code>?lang=de</code>, giriş ekranını ya da paylaşılan bir sayfayı Almanca gösterir; site böylece demoya sayfanın dilinde götürür. <a href="/fonctionnalites/droits/#ayarlarınız">Ayarlarınız</a>',
+				],
+			},
+			templateLanguages: {
+				date: '2026-09-27',
+				title: 'Kendi dilinizdeki şablonlar',
+				tag: 'Yeni',
+				items: [
+					'<strong>Resmi şablonlar ekranın dilinde oluşturulur</strong>: tablolar, alanlar, seçenekler, görünümler, panolar, otomasyonlar, yapay zeka talimatları — ve her dile uyarlanmış bir dünyadan örnek satırlar: Lyon’daki “Boulangerie Martin”, Portland’da “Martin’s Bakery”’ye dönüşür. <a href="/fonctionnalites/modeles/#kendi-dilinizde">Şablonlar</a>',
+					'<a href="/modeles/">Sitenin galerisi</a> her şablonu sayfanın dilinde gösterir.',
+					'<strong>Bir şablon, birçok sözlük</strong>: bir şablon bir kez, Fransızca yazılır; her dil yalnızca metinlerini çevirir ve basedb her etiketi, andığı her yerde kendisi takip eder. Şablonu bozacak bir sözlük sunulmaz. <a href="/fonctionnalites/modeles/#bir-şablonu-tüm-kurulumlar-için-yayımlama">Bir şablonu yayımlama</a>',
+				],
+			},
+			details: {
+				date: '2026-09-27',
+				title: 'Ayrıca',
+				items: [
+					'<strong>Örnek satırları olmayan bir şablon</strong>: işareti kaldırılan “Örnek verileri yükle”, boş tablolar oluşturur, verileriniz için hazır. <a href="/fonctionnalites/modeles/#bir-şablondan-başlama">Bir şablondan başlama</a>',
+					'<strong>Her veritabanının API ve MCP belgeleri</strong>, ekranınızın dilinde yazılır. <a href="/integrations/api-rest/#oluşturulan-belgeler">Oluşturulan belgeler</a>',
+					'Tarayıcının kendi ipuçlarını gösterdiği her yerde, uygulamanın temasındaki araç ipuçları; menülerdeki “Sil” kırmızı renkte; bir yorumun saatinin üzerine gelindiğinde tam tarih.',
+				],
+			},
 			languages: {
 				date: '2026-09-27',
 				title: 'Zengin metin, değişkenler, daha okunaklı bir kanban',

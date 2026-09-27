@@ -83,6 +83,24 @@ Viz [Účty a přihlášení](/basedb/cs/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | výpočty polí AI za hodinu na pracovní prostor |
 | `BASEDB_AI_WORKER` | `1` | `0`: žádné výpočty na pozadí v tomto procesu |
 
+## Veřejná demoverze
+
+Instance otevřená všem, jako [demo.basedb.eodia.com](https://demo.basedb.eodia.com): přihlašovací
+obrazovka přednastaví sdílený účet, návštěvník vše čte a upravuje, co existuje, ale nic nevytváří
+ani neodstraňuje — databázi, tabulku, řádek, soubor, komentář, účet, token, odkaz —, a AI
+odpoví, že není součástí demoverze. SQL konzole zde jen čte. Uvedení databáze zpět do
+výchozího stavu každou noc zůstává na vás.
+
+| Proměnná | Výchozí | Role |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: instance se stane veřejnou demoverzí |
+| `BASEDB_DEMO_ACCOUNTS` | — | jeden účet na jazyk, oddělené čárkami: `fr=demo@demo.com,en=demo-en@demo.com`; přihlašovací obrazovka přednastaví ten pro svůj jazyk, jinak angličtinu, jinak první, a nabídne ostatní. Vytvořte tyto účty, každý s jeho projektem, před zapnutím demoverze: ta odmítá vytváření všem, správce nevyjímaje |
+| `BASEDB_DEMO_PASSWORD` | — | spolu s `BASEDB_DEMO_ACCOUNTS` jejich heslo, stejné pro všechny, zveřejněné spolu s nimi |
+
+Bez `BASEDB_DEMO_ACCOUNTS` je sdíleným účtem správce, kterého určují `BASEDB_ADMIN_EMAIL`
+a `BASEDB_ADMIN_PASSWORD`. Adresa demoverze se přihlásí se zveřejněným heslem, ať se zadá
+cokoli: chybné pokusy ji nezamknou pro všechny.
+
 ## Jen pro vývoj
 
 | Proměnná | Role |

@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type DateKind,
   dateOfDay,
@@ -193,19 +194,20 @@ export function DateInput({
       <PopoverAnchor asChild>
         <div ref={wrapper} className={cn('relative', appearance === 'cell' && 'size-full')}>
           {appearance === 'form' && (
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                onClick={() => {
-                  focusCalendar.current = true
-                }}
-                className="absolute left-1 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                aria-label={$t('Ouvrir le calendrier')}
-                title={$t('Ouvrir le calendrier')}
-              >
-                <CalendarDays className="size-4" />
-              </button>
-            </PopoverTrigger>
+            <Hint label={$t('Ouvrir le calendrier')}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => {
+                    focusCalendar.current = true
+                  }}
+                  className="absolute left-1 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  aria-label={$t('Ouvrir le calendrier')}
+                >
+                  <CalendarDays className="size-4" />
+                </button>
+              </PopoverTrigger>
+            </Hint>
           )}
           <input
             ref={input}

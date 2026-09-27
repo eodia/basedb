@@ -72,7 +72,7 @@ export default {
 							tables: {
 								href: '/fonctionnalites/tables-et-champs/',
 								title: 'Tabeller og felt',
-								text: 'Felt for alt, relasjoner, formler på fransk.',
+								text: 'Felt for alt, relasjoner, formler som i et regneark.',
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
@@ -776,9 +776,9 @@ export default {
 					href: '/fonctionnalites/tableaux-de-bord/',
 				},
 				formulas: {
-					code: 'SI([Montant] > 10000; "Grand compte"; "")',
-					title: 'Formler på fransk',
-					text: 'Som i et regneark – SI, ARRONDI, JOURS … – men beregnet for hele teamet.',
+					code: 'IF([Montant] > 10000, "Grand compte", "")',
+					title: 'Formler på fransk eller engelsk',
+					text: 'Som i et regneark – SI, ARRONDI, JOURS … eller IF, ROUND, DAYS – men beregnet for hele teamet.',
 					href: '/fonctionnalites/tables-et-champs/#formler',
 				},
 				rights: {
@@ -886,7 +886,7 @@ export default {
 			items: [
 				{
 					q: 'Må man kunne kode?',
-					a: 'Nei. Du oppretter tabellene, visningene, skjemaene, instrumentbordene og automatiseringene dine med musen. Formlene skrives på fransk, som i et regneark: SI, ARRONDI, JOURS …',
+					a: 'Nei. Du oppretter tabellene, visningene, skjemaene, instrumentbordene og automatiseringene dine med musen. Formlene skrives som i et regneark, på fransk eller engelsk: SI eller IF, ARRONDI eller ROUND, JOURS eller DAYS …',
 				},
 				{
 					q: 'Hva koster det?',
@@ -1262,8 +1262,8 @@ export default {
 			},
 			formulas: {
 				title: 'Relasjoner og formler',
-				text: 'Ekte fremmednøkler, formler på fransk beregnet av PostgreSQL, og oppslag, aggregeringer og antall på tvers av relasjonene.',
-				code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+				text: 'Ekte fremmednøkler, formler på fransk eller engelsk beregnet av PostgreSQL, og oppslag, aggregeringer og antall på tvers av relasjonene.',
+				code: 'ROUND([Montant HT] * (1 + [Taux de TVA]), 2)',
 				href: '/fonctionnalites/tables-et-champs/#formler',
 			},
 			richText: {
@@ -1407,6 +1407,76 @@ export default {
 		title: 'Hva som er endret i basedb',
 		intro: 'Detaljene i hver endring står i <a href="https://github.com/eodia/basedb/commits/main">historikken til depotet</a>. Hva som kommer videre: <a href="/feuille-de-route/">veikartet</a>.',
 		entries: {
+			formulaLanguages: {
+				date: '2026-09-28',
+				title: 'Formler på fransk eller engelsk',
+				tag: 'Nytt',
+				items: [
+					'<strong>Skriv en formel på fransk eller engelsk</strong>, på hvilken som helst skjerm, selv om du blander de to: <code>SI</code> eller <code>IF</code>, <code>ARRONDI</code> eller <code>ROUND</code>, <code>JOURS</code> eller <code>DAYS</code> … Argumentene skilles med <code>;</code> eller med <code>,</code>. <a href="/fonctionnalites/tables-et-champs/#formler">Formlene</a>',
+					'<strong>Den leses tilbake i skjermens språk</strong>: på fransk på en fransk skjerm, på engelsk i de nitten andre språkene – eksisterende formler og «Funksjoner»-panelet inkludert. API-et gir en formel i språket man ber om, ellers på engelsk.',
+					'De offisielle malene, levert på et annet språk enn fransk, kommer med formlene sine på engelsk. Ingenting endres i databasen: samme kolonner, samme SQL, uten migrering.',
+				],
+			},
+			search: {
+				date: '2026-09-27',
+				title: 'Finne alt: Ctrl+K',
+				tag: 'Nytt',
+				items: [
+					'<strong>Ett eneste felt for alt</strong> – <strong>Ctrl+K</strong>, eller feltet midt i den øverste linjen: tabeller, visninger, spørsmål, instrumentbord, automatiseringer, kolonner, og selve radene, lest med dine rettigheter; på en stor skjerm, forhåndsvisningen av det valgte resultatet. <a href="/fonctionnalites/recherche/">Søket</a>',
+					'<strong>Skriv slik du tenker</strong>: ingen aksenter, ingen store bokstaver, ved forbokstaver – <code>nk</code> for «Ny kunde» –, en skrivefeil tilgis, <code>kunder bergen</code> for å søke etter «bergen» i kundetabellen; det du åpner ofte, stiger til toppen.',
+					'<strong>Alle kommandoene fra tastaturet</strong>: opprette, gå til, lukke, angre, bytte tema, kopiere lenken til siden. <code>&gt;</code> søker bare i kommandoene, <code>#</code> i objektene, <code>/</code> i radene; <strong>Tab</strong> søker i en tabell eller en database.',
+					'<strong>Et spørsmål?</strong> Skriv det: <strong>Spør Copilot</strong> stiller det videre, på den åpne databasen.',
+				],
+			},
+			questions: {
+				date: '2026-09-27',
+				title: 'Egne spørsmål, tall i teksten',
+				tag: 'Nytt',
+				items: [
+					'<strong>Alle lagrer sine egne spørsmål</strong>, uten nivået Administrere: personlige spørsmål ser bare du; den som administrerer databasen, deler dem med hele databasen eller med grupper, som spørringene. <a href="/fonctionnalites/tableaux-de-bord/">Instrumentbord</a>',
+					'<strong>Et spørsmål i en fane</strong>, ved siden av tabellene: <strong>Nytt spørsmål</strong> og <strong>Nytt SQL-spørsmål</strong>, på <strong>+</strong> i fanelinjen og i menyen til databasen; fanen holder på det du har latt ligge der. <strong>Lagre en kopi</strong> gjør et spørsmål du ikke kan endre, til ditt eget.',
+					'<strong>Tall i teksten</strong>: en tekst i et instrumentbord, nå formatert, viser til en verdi – <code>{{chiffre_affaires}}</code> – tatt fra et kort, et spørsmål eller et filter, beregnet med leserens rettigheter, også i et instrumentbord delt med en lenke. <a href="/fonctionnalites/tableaux-de-bord/#tall-i-teksten">Tall i teksten</a>',
+					'Spørringer, SQL-visninger og spørsmål slettes også fra menyen sin, med høyreklikk.',
+				],
+			},
+			addresses: {
+				date: '2026-09-27',
+				title: 'En adresse for hver skjerm',
+				tag: 'Nytt',
+				items: [
+					'<strong>Adressen følger skjermen</strong>: en tabell, en visning, raddetaljene for en rad, et instrumentbord, en automatisering, et spørsmål, innstillingene dine – <code>/bases/ventes/tables/opportunites?ligne=…</code>. Legg den til favoritter, lim den inn i en melding: man kommer til samme sted, med sine egne rettigheter. <a href="/fonctionnalites/collaboration/#en-lenke-til-hver-skjerm">En lenke til hver skjerm</a>',
+					'Nettleserens knapper <strong>tilbake</strong> og <strong>fremover</strong> fører deg dit du var; en adresse som ikke leder noe sted, viser «Denne siden finnes ikke».',
+				],
+			},
+			demo: {
+				date: '2026-09-27',
+				title: 'En demo å prøve, på ditt språk',
+				tag: 'Nytt',
+				items: [
+					'<strong>Demoen</strong>, på <a href="https://demo.basedb.eodia.com">demo.basedb.eodia.com</a>: kontoen er forhåndsutfylt på nettleserens språk, med en database på det språket. Der leser du alt og endrer det som finnes; oppretting, sletting og KI er slått av, og databasen går hver natt tilbake til utgangspunktet.',
+					'<strong>Din egen demo</strong>: <code>BASEDB_DEMO=1</code> åpner en instans for alle, med en konto delt per språk, forberedt på forhånd. <a href="/hebergement/variables/#offentlig-demo">Variablene</a>',
+					'<strong>Ett språk per lenke</strong>: <code>?lang=de</code> på slutten av en basedb-adresse viser innloggingsskjermen eller en delt side på tysk; slik fører nettstedet til demoen i sidens språk. <a href="/fonctionnalites/droits/#innstillingene-dine">Innstillingene dine</a>',
+				],
+			},
+			templateLanguages: {
+				date: '2026-09-27',
+				title: 'Malene på ditt språk',
+				tag: 'Nytt',
+				items: [
+					'<strong>De offisielle malene skapes på skjermens språk</strong>: tabeller, felt, valg, visninger, instrumentbord, automatiseringer, KI-instrukser – og eksempelrader fra en verden tilpasset hvert språk: «Boulangerie Martin» i Lyon blir «Martin’s Bakery» i Portland. <a href="/fonctionnalites/modeles/#på-ditt-språk">Malene</a>',
+					'<a href="/modeles/">Nettstedets galleri</a> viser hver mal på sidens språk.',
+					'<strong>Én mal, mange ordbøker</strong>: en mal skrives én gang, på fransk; hvert språk oversetter bare tekstene, og basedb følger selv opp hver etikett der den siteres. En ordbok som ville brutt malen, blir ikke tatt i bruk. <a href="/fonctionnalites/modeles/#publiser-en-mal-for-alle-instanser">Publiser en mal</a>',
+				],
+			},
+			details: {
+				date: '2026-09-27',
+				title: 'Og ellers',
+				items: [
+					'<strong>En mal uten eksempelradene sine</strong>: «Last inn eksempeldata», ikke avkrysset, oppretter tomme tabeller, klare for dine egne data. <a href="/fonctionnalites/modeles/#start-fra-en-mal">Start fra en mal</a>',
+					'<strong>API- og MCP-dokumentasjonen</strong> til hver database skrives på skjermens språk. <a href="/integrations/api-rest/#den-genererte-dokumentasjonen">Den genererte dokumentasjonen</a>',
+					'Verktøytips i appens tema, overalt der nettleseren viste sine egne; «Slett» i menyene i rødt; hele datoen ved å holde musen over klokkeslettet til en kommentar.',
+				],
+			},
 			languages: {
 				date: '2026-09-27',
 				title: 'Formatert tekst, variabler, en mer lesbar kanban',

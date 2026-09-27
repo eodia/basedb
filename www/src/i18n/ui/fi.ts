@@ -72,7 +72,7 @@ export default {
 							tables: {
 								href: '/fonctionnalites/tables-et-champs/',
 								title: 'Taulukot ja kentät',
-								text: 'Kentät kaikkeen, suhteet, kaavat ranskaksi.',
+								text: 'Kentät kaikkeen, suhteet, kaavat kuten taulukkolaskennassa.',
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
@@ -776,10 +776,10 @@ export default {
 					href: '/fonctionnalites/tableaux-de-bord/',
 				},
 				formulas: {
-					code: 'SI([Montant] > 10000; "Grand compte"; "")',
-					title: 'Kaavat ranskaksi',
-					text: 'Kuten taulukkolaskennassa – SI, ARRONDI, JOURS… – mutta laskettuna koko tiimille.',
-					href: '/fonctionnalites/tables-et-champs/#formules',
+					code: 'IF([Montant] > 10000, "Grand compte", "")',
+					title: 'Kaavat ranskaksi tai englanniksi',
+					text: 'Kuten taulukkolaskennassa – SI, ARRONDI, JOURS… tai IF, ROUND, DAYS – mutta laskettuna koko tiimille.',
+					href: '/fonctionnalites/tables-et-champs/#kaavat',
 				},
 				rights: {
 					title: 'Kukin näkee sen, minkä pitää',
@@ -886,7 +886,7 @@ export default {
 			items: [
 				{
 					q: 'Täytyykö osata koodata?',
-					a: 'Ei. Taulukot, näkymät, lomakkeet, koontinäytöt ja automaatiot luodaan hiirellä. Kaavat kirjoitetaan ranskaksi, kuten taulukkolaskennassa: SI, ARRONDI, JOURS…',
+					a: 'Ei. Taulukot, näkymät, lomakkeet, koontinäytöt ja automaatiot luodaan hiirellä. Kaavat kirjoitetaan kuten taulukkolaskennassa, ranskaksi tai englanniksi: SI tai IF, ARRONDI tai ROUND, JOURS tai DAYS…',
 				},
 				{
 					q: 'Mitä se maksaa?',
@@ -1253,8 +1253,8 @@ export default {
 			},
 			formulas: {
 				title: 'Viittaukset ja kaavat',
-				text: 'Oikeat vierasavaimet, ranskankieliset PostgreSQL:n laskemat kaavat sekä haut, koosteet ja määrät viittausten yli.',
-				code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+				text: 'Oikeat vierasavaimet, ranskaksi tai englanniksi kirjoitetut ja PostgreSQL:n laskemat kaavat sekä haut, koosteet ja määrät viittausten yli.',
+				code: 'ROUND([Montant HT] * (1 + [Taux de TVA]), 2)',
 				href: '/fonctionnalites/tables-et-champs/#kaavat',
 			},
 			richText: {
@@ -1398,6 +1398,76 @@ export default {
 		title: 'Mitä basedb:ssä on muuttunut',
 		intro: 'Jokaisen muutoksen yksityiskohdat ovat <a href="https://github.com/eodia/basedb/commits/main">tietovaraston historiassa</a>. Mitä seuraavaksi: <a href="/feuille-de-route/">tiekartta</a>.',
 		entries: {
+			formulaLanguages: {
+				date: '2026-09-28',
+				title: 'Kaavat ranskaksi tai englanniksi',
+				tag: 'Uutta',
+				items: [
+					'<strong>Kirjoita kaava ranskaksi tai englanniksi</strong>, millä tahansa näytöllä, myös kahta kieltä sekoittaen: <code>SI</code> tai <code>IF</code>, <code>ARRONDI</code> tai <code>ROUND</code>, <code>JOURS</code> tai <code>DAYS</code>… Argumentit erotetaan <code>;</code>- tai <code>,</code>-merkillä. <a href="/fonctionnalites/tables-et-champs/#kaavat">Kaavat</a>',
+					'<strong>Se luetaan takaisin näytön kielellä</strong>: ranskaksi ranskankielisellä näytöllä, englanniksi yhdeksällätoista muulla kielellä – myös olemassa olevat kaavat ja ”Funktiot”-paneeli. API antaa kaavan pyydetyllä kielellä, muuten englanniksi.',
+					'Viralliset mallit, jotka tarjotaan muulla kielellä kuin ranskaksi, tulevat kaavoineen englanniksi. Tietokannassa mikään ei muutu: samat sarakkeet, sama SQL, ei migraatiota.',
+				],
+			},
+			search: {
+				date: '2026-09-27',
+				title: 'Löydä kaikki: Ctrl+K',
+				tag: 'Uutta',
+				items: [
+					'<strong>Yksi kenttä kaikkeen</strong> – <strong>Ctrl+K</strong>, tai kenttä ylärivin keskellä: taulukot, näkymät, kysymykset, koontinäytöt, automaatiot, sarakkeet ja itse rivit, luettuina omilla oikeuksillasi; isolla näytöllä valitun tuloksen esikatselu. <a href="/fonctionnalites/recherche/">Haku</a>',
+					'<strong>Kirjoita niin kuin ajattelet</strong>: ei tarkkeita eikä isoja kirjaimia, alkukirjaimilla – <code>up</code> sanoista ”Uusi projekti” –, yksi kirjoitusvirhe annetaan anteeksi, <code>asiakkaat lyon</code> etsii sanaa ”lyon” asiakastaulukosta; se, mitä avaat usein, nousee kärkeen.',
+					'<strong>Kaikki komennot näppäimistöltä</strong>: luoda, siirtyä, sulkea, kumota, vaihtaa teemaa, kopioida sivun linkki. <code>&gt;</code> etsii vain komennoista, <code>#</code> kohteista, <code>/</code> riveistä; <strong>Tab</strong> etsii taulukosta tai tietokannasta.',
+					'<strong>Onko kysymys?</strong> Kirjoita se: <strong>Kysy Copilotilta</strong> esittää sen avoimelle tietokannalle.',
+				],
+			},
+			questions: {
+				date: '2026-09-27',
+				title: 'Omat kysymykset, lukuja tekstissä',
+				tag: 'Uutta',
+				items: [
+					'<strong>Kaikki tallentavat omat kysymyksensä</strong>, ilman Hallintaoikeus-tasoa: henkilökohtaiset näkyvät vain sinulle; tietokantaa hallinnoiva jakaa ne koko tietokannalle tai ryhmille, kuten kyselyt. <a href="/fonctionnalites/tableaux-de-bord/">Koontinäytöt</a>',
+					'<strong>Kysymys omassa välilehdessään</strong>, taulukoiden vierellä: <strong>Uusi kysymys</strong> ja <strong>Uusi SQL-kysymys</strong>, välilehtipalkin <strong>+</strong>-kuvakkeessa ja tietokannan valikossa; välilehti säilyttää sen, mitä siihen on jätetty. <strong>Tallenna kopio</strong> tekee omaksesi kysymyksen, jota et voi muokata.',
+					'<strong>Lukuja tekstissä</strong>: koontinäytön teksti, nyt muotoiltuna, viittaa arvoon – <code>{{chiffre_affaires}}</code> – joka on peräisin kortista, kysymyksestä tai suodattimesta ja lasketaan lukijan oikeuksilla, myös linkillä jaetussa koontinäytössä. <a href="/fonctionnalites/tableaux-de-bord/#lukuja-tekstissä">Lukuja tekstissä</a>',
+					'Myös kyselyt, SQL-näkymät ja kysymykset poistetaan valikostaan hiiren oikealla painikkeella.',
+				],
+			},
+			addresses: {
+				date: '2026-09-27',
+				title: 'Osoite jokaiselle näytölle',
+				tag: 'Uutta',
+				items: [
+					'<strong>Osoite seuraa näyttöä</strong>: taulukko, näkymä, rivin tiedot, koontinäyttö, automaatio, kysymys, omat asetukset – <code>/bases/ventes/tables/opportunites?ligne=…</code>. Lisää se kirjanmerkiksi, liitä se viestiin: sama paikka avautuu, omilla oikeuksilla. <a href="/fonctionnalites/collaboration/#linkki-jokaiseen-näkymään">Linkki jokaiseen näkymään</a>',
+					'Selaimen <strong>edellinen</strong>- ja <strong>seuraava</strong>-painikkeet palauttavat sinut siihen, missä olit; osoite, joka ei johda mihinkään, näyttää ”Tätä sivua ei ole”.',
+				],
+			},
+			demo: {
+				date: '2026-09-27',
+				title: 'Kokeiltava esittely, omalla kielelläsi',
+				tag: 'Uutta',
+				items: [
+					'<strong>Esittely</strong>, osoitteessa <a href="https://demo.basedb.eodia.com">demo.basedb.eodia.com</a>: tili on esitäytetty selaimen kielellä, ja tietokanta on samalla kielellä. Siellä kaiken voi lukea ja olemassa olevaa muokata; luonti, poistaminen ja tekoäly on poistettu käytöstä, ja tietokanta palautuu alkutilaansa joka yö.',
+					'<strong>Oma esittelysi</strong>: <code>BASEDB_DEMO=1</code> avaa instanssin kaikille, kielikohtaisella jaetulla tilillä, valmiiksi valmisteltuna. <a href="/hebergement/variables/#julkinen-esittely">Muuttujat</a>',
+					'<strong>Yksi kieli linkkiä kohti</strong>: <code>?lang=de</code> basedb-osoitteen lopussa näyttää kirjautumisruudun tai jaetun sivun saksaksi; sivusto johdattaa näin esittelyyn sivun kielellä. <a href="/fonctionnalites/droits/#asetuksesi">Asetuksesi</a>',
+				],
+			},
+			templateLanguages: {
+				date: '2026-09-27',
+				title: 'Mallit omalla kielelläsi',
+				tag: 'Uutta',
+				items: [
+					'<strong>Viralliset mallit luodaan näytön kielellä</strong>: taulukot, kentät, valinnat, näkymät, koontinäytöt, automaatiot, tekoälyn ohjeet – ja esimerkkirivit maailmasta, joka on mukautettu kullekin kielelle: Lyonin ”Boulangerie Martin” muuttuu Portlandin ”Martin’s Bakery”:ksi. <a href="/fonctionnalites/modeles/#omalla-kielelläsi">Mallit</a>',
+					'<a href="/modeles/">Sivuston galleria</a> näyttää kunkin mallin sivun kielellä.',
+					'<strong>Yksi malli, monta sanakirjaa</strong>: malli kirjoitetaan kerran, ranskaksi; kukin kieli kääntää siitä vain tekstit, ja basedb seuraa itse kutakin nimikettä kaikkialla, missä siihen viitataan. Sanakirjaa, joka rikkoisi mallin, ei oteta käyttöön. <a href="/fonctionnalites/modeles/#mallin-julkaiseminen-kaikille-instansseille">Mallin julkaiseminen</a>',
+				],
+			},
+			details: {
+				date: '2026-09-27',
+				title: 'Ja muuta',
+				items: [
+					'<strong>Malli ilman esimerkkirivejä</strong>: ”Lataa esimerkkitiedot”, ei valittuna, luo tyhjiä taulukoita, valmiina omalle datallesi. <a href="/fonctionnalites/modeles/#aloittaminen-mallista">Aloittaminen mallista</a>',
+					'<strong>API- ja MCP-dokumentaatio</strong> kirjoitetaan kullekin tietokannalle näytön kielellä. <a href="/integrations/api-rest/#luotu-dokumentaatio">Luotu dokumentaatio</a>',
+					'Työkaluvihjeet sovelluksen teemalla, kaikkialla, missä selain aiemmin näytti omansa; valikkojen ”Poista” punaisella; kommentin ajan täysi päivämäärä hiiren viedessä sen päälle.',
+				],
+			},
 			languages: {
 				date: '2026-09-27',
 				title: 'Muotoiltu teksti, muuttujat, selkeämpi kanban',

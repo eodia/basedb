@@ -18,8 +18,22 @@ its automations, and the prompt of each of its AI fields. **Create base** asks f
 and, if there are AI fields, your consent for the values they cite to go to the instance’s AI
 provider. Without that consent, they are ordinary fields, filled with their sample values.
 
+**Load sample data**, checked by default, fills the tables with sample rows to see the base at
+work. Unchecked, the tables stay empty, ready for your own data — views, dashboards and
+automations are created all the same.
+
 An empty project also offers the **demo base**: a small agency, its clients, projects, tasks,
 invoices and reviews, which shows every facet of basedb.
+
+## In your language
+
+Official templates are read and created **in the language of the screen**: tables, fields,
+choices, sample rows, views, dashboards, automations and the AI’s prompts. Sample rows change
+worlds with the language: Lyon’s “Boulangerie Martin” becomes “Martin’s Bakery” in Portland in
+English, “Bäckerei Keller” in Leipzig in German.
+
+A template imported into your instance, or saved from a base, is written by someone: it reads
+exactly as it was written.
 
 ## Asking the AI
 
@@ -111,6 +125,15 @@ is enough to change the gallery of every instance.
 
 Each template is checked when the site is built, by the same validator as the server: an
 invalid template makes the build fail instead of reaching users.
+
+An official template is written once, in French. Its texts in another language are a
+dictionary,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+— the French text, then its translation —, which the site publishes next to the catalog
+(`/basedb/modeles/i18n/<langue>.json`). The instance passes each text through it and follows
+each label wherever it is cited — formulas, filters, views, prompts —, then re-checks the
+result: a dictionary that would break the template is not served, the French template is. A text
+missing from the dictionary stays in French.
 
 The instance reads the `BASEDB_TEMPLATES_URL` address — by default, the public site’s. Point it
 to a catalog of your own, or set it to `off` to read none: the instance then serves the

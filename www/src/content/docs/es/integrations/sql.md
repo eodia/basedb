@@ -22,7 +22,7 @@ las descripciones (`COMMENT ON`).
 
 ## En la interfaz
 
-El **+** de la barra de pestañas, o el menú **⋯** de la base → **Nueva consulta SQL**: un editor
+El **+** de la barra de pestañas, o el menú **⋯** de la base → **Consulta SQL**: un editor
 con resaltado y autocompletado, cuyo resultado se muestra en la misma cuadrícula que tus tablas.
 
 ![Una consulta guardada y dos vistas SQL colocadas entre las tablas](../../../../assets/screens/requete-sql.png)

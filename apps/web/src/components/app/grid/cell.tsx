@@ -26,6 +26,7 @@ import {
 } from '@/components/app/value-widgets'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Hint } from '@/components/ui/tooltip'
 import { type Field, type LinkOption, filesOf } from '@/lib/api/client'
 import { shownField } from '@/lib/computed'
 import { type DateKind, displayStored, isDateKind, storedFromText } from '@/lib/dates'
@@ -125,12 +126,9 @@ export function Cell({
 
   if (!present) {
     return (
-      <span
-        className="flex w-full items-center px-2 text-muted-foreground/60"
-        title={$t('Champ masqué')}
-      >
-        ···
-      </span>
+      <Hint label={$t('Champ masqué')}>
+        <span className="flex w-full items-center px-2 text-muted-foreground/60">···</span>
+      </Hint>
     )
   }
 

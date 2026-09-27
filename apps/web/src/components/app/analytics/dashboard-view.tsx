@@ -12,9 +12,18 @@ import {
 } from '@/components/app/analytics/parameters'
 import { type QuestionDraft, QuestionView, draftOf } from '@/components/app/analytics/question-view'
 import { ShareDashboardDialog } from '@/components/app/analytics/share-dashboard-dialog'
+import {
+  type CitedRun,
+  type CitedValue,
+  TextBody,
+  filterText,
+  headlineText,
+  useCitedResults,
+} from '@/components/app/analytics/text-card'
 import { type DrillEvent, VisualizationView } from '@/components/app/analytics/visualization'
 import { VIZ_ICONS } from '@/components/app/analytics/viz-settings'
 import { MarkdownView } from '@/components/app/markdown-text'
+import { RichTextEditor, type VariableChoice } from '@/components/app/rich-text-editor'
 import { Button } from '@/components/ui/button'
 import { Choice } from '@/components/ui/choice'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -26,13 +35,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
 import {
   PARAMETER_LABELS,
   type PointFilter,
   autoMap,
   cardQuestion,
   cardsTaking,
+  citedVariables,
   constraintsFor,
   defaultValues,
   mappingCandidates,
@@ -42,8 +52,13 @@ import {
   pointFilterOf,
   sameTarget,
   sizeFor,
+  tiedVariable,
+  variableName,
+  variableQuery,
   withConstraints,
   withMapping,
+  withVariableMapping,
+  withoutParameter,
 } from '@/lib/analytics/dashboard'
 import { valueText } from '@/lib/analytics/format'
 import { autoVisualization, columnsOf, findColumn, tableOf } from '@/lib/analytics/model'
@@ -65,9 +80,14 @@ import {
   type ParameterValue,
   type QueryResult,
   type ResultColumn,
+  type TextVariable,
   type Visualization,
   periodExpression,
+  questionCards,
   sameColumnRef,
+  tiesItself,
+  variableCard,
+  withoutVariables,
 } from '@basedb/contracts'
 import {
   AppWindow,
@@ -88,7 +108,7 @@ import {
   Type,
   X,
 } from 'lucide-react'
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ReactGridLayout, {
   type Layout,
   useContainerWidth,
@@ -162,6 +182,13 @@ export function DashboardView({
   const [refresh, setRefresh] = useState(0)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** The labels of the filters' values — a person's name, a choice's —, for a text citing one. */
+  const [labels, setLabels] = useState<Readonly<Record<string, ReadonlyMap<string, string>>>>({})
+  const onLabels = useCallback(
+    (id: string, map: ReadonlyMap<string, string>) =>
+      setLabels((l) => (l[id] === map ? l : { ...l, [id]: map })),
+    [],
+  )
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: a dashboard opened afresh starts from its defaults
   useEffect(() => {
@@ -302,7 +329,7 @@ export function DashboardView({
 
   // Where a filter's values come from: the first card it is tied to on a column.
   const sourceOf = (parameter: DashboardParameter): ValueSource | null => {
-    for (const card of content.cards) {
+    for (const card of questionCards(content.cards)) {
       const mapping = (card.mappings ?? []).find((m) => m.parameter === parameter.id)
       if (mapping === undefined || !('column' in mapping.target)) continue
       const question = cardQuestion(card, questions)
@@ -369,7 +396,7 @@ export function DashboardView({
               variant="ghost"
               size="sm"
               className="gap-1.5"
-              onClick={() => addCard({ kind: 'text', text: '' })}
+              onClick={() => addCard({ kind: 'text', text: '', rich: true })}
             >
               <Type className="size-4" /> {$t('Texte')}
             </Button>
@@ -448,15 +475,16 @@ export function DashboardView({
               </div>
               {!editing && (
                 <div className="flex shrink-0 items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={$t('Actualiser')}
-                    title={$t('Actualiser')}
-                    onClick={() => setRefresh((r) => r + 1)}
-                  >
-                    <RefreshCw className="size-4" />
-                  </Button>
+                  <Hint label={$t('Actualiser')}>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={$t('Actualiser')}
+                      onClick={() => setRefresh((r) => r + 1)}
+                    >
+                      <RefreshCw className="size-4" />
+                    </Button>
+                  </Hint>
                   {builds && (
                     <>
                       <Button
@@ -502,7 +530,7 @@ export function DashboardView({
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-destructive"
+                            variant="destructive"
                             onSelect={async () => {
                               if (
                                 !window.confirm(
@@ -561,6 +589,7 @@ export function DashboardView({
                     value={values[p.id] ?? null}
                     source={sourceOf(p)}
                     onChange={(value) => setValues((v) => ({ ...v, [p.id]: value }))}
+                    onLabels={onLabels}
                     selected={editing && selected === p.id}
                     onSelect={
                       editing ? () => setSelected((s) => (s === p.id ? null : p.id)) : undefined
@@ -619,6 +648,7 @@ export function DashboardView({
                           card={card}
                           content={content}
                           values={values}
+                          labels={labels}
                           questions={questions}
                           editing={false}
                           selected={null}
@@ -659,6 +689,7 @@ export function DashboardView({
                         card={card}
                         content={content}
                         values={values}
+                        labels={labels}
                         questions={questions}
                         editing={editing}
                         selected={selectedParameter}
@@ -669,7 +700,14 @@ export function DashboardView({
                         onPointFilter={setPoint}
                         onChange={(change) => setCard(card.id, change)}
                         onRemove={() =>
-                          update({ cards: draft.cards.filter((c) => c.id !== card.id) })
+                          update({
+                            // A text citing it loses its value, and the words citing it.
+                            cards: draft.cards
+                              .filter((c) => c.id !== card.id)
+                              .map((c) =>
+                                withoutVariables(c, (v) => 'card' in v && v.card === card.id),
+                              ),
+                          })
                         }
                         onDuplicate={() =>
                           setDraft((d) => ({
@@ -719,9 +757,11 @@ export function DashboardView({
           parameter={selectedParameter}
           source={sourceOf(selectedParameter)}
           tied={
-            draft.cards.filter((c) =>
-              (c.mappings ?? []).some((m) => m.parameter === selectedParameter.id),
-            ).length
+            new Set(
+              questionCards(draft.cards)
+                .filter((c) => (c.mappings ?? []).some((m) => m.parameter === selectedParameter.id))
+                .map((c) => c.id),
+            ).size
           }
           onChange={(p) => {
             update({ parameters: draft.parameters.map((x) => (x.id === p.id ? p : x)) })
@@ -731,7 +771,7 @@ export function DashboardView({
           onRemove={() => {
             update({
               parameters: draft.parameters.filter((x) => x.id !== selectedParameter.id),
-              cards: draft.cards.map((c) => withMapping(c, selectedParameter.id, null)),
+              cards: draft.cards.map((c) => withoutParameter(c, selectedParameter.id)),
             })
             setSelected(null)
           }}
@@ -753,8 +793,16 @@ export function DashboardView({
           questions={[...questions.values()]}
           onClose={() => setAdding(false)}
           onPick={(question) => {
+            // A card places a question of the whole base; any other goes in by its content.
             addCard(
-              { kind: 'question', question: question.id },
+              question.audience === 'base'
+                ? { kind: 'question', question: question.id }
+                : {
+                    kind: 'question',
+                    query: question.query,
+                    visualization: question.visualization,
+                    title: question.label,
+                  },
               sizeFor('question', question.visualization.type),
             )
             setAdding(false)
@@ -777,12 +825,17 @@ export function DashboardView({
 
       {editor !== null && (
         <Dialog open onOpenChange={(open) => !open && setEditor(null)}>
-          <DialogContent className="flex h-[92vh] w-[96vw] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none">
+          <DialogContent
+            showCloseButton={false}
+            className="flex h-[92vh] w-[96vw] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
+          >
             <DialogTitle className="sr-only">{$t('Question')}</DialogTitle>
             <QuestionView
               base={base}
               initial={editor.draft}
-              builds={builds}
+              question={editor.draft.id === null ? null : (questions.get(editor.draft.id) ?? null)}
+              manages={builds}
+              saveAudience="base"
               backLabel={$t('Fermer')}
               onBack={() => setEditor(null)}
               useLabel={
@@ -813,15 +866,24 @@ export function DashboardView({
               }}
               onSaved={async (saved) => {
                 await onQuestionsChanged()
+                // Kept by the card by reference when the whole base sees it, else by content.
+                const source =
+                  saved.audience === 'base'
+                    ? { question: saved.id }
+                    : { query: saved.query, visualization: saved.visualization }
                 if (editor.card === null) {
                   addCard(
-                    { kind: 'question', question: saved.id },
+                    {
+                      kind: 'question',
+                      ...source,
+                      ...(saved.audience === 'base' ? {} : { title: saved.label }),
+                    },
                     sizeFor('question', saved.visualization.type),
                   )
                 } else {
                   setCard(editor.card, (c) => {
-                    const { query: _q, visualization: _v, ...rest } = c
-                    return { ...rest, question: saved.id }
+                    const { query: _q, visualization: _v, question: _s, ...rest } = c
+                    return { ...rest, ...source }
                   })
                 }
                 setEditor(null)
@@ -877,14 +939,15 @@ function TabButton({
           className="w-32 rounded border bg-background px-1 text-sm"
         />
       ) : (
-        <button
-          type="button"
-          onClick={onSelect}
-          onDoubleClick={() => editing && setRenaming(true)}
-          title={editing ? $t('Double-cliquez pour renommer') : undefined}
-        >
-          {tab.label}
-        </button>
+        <Hint label={editing ? $t('Double-cliquez pour renommer') : undefined}>
+          <button
+            type="button"
+            onClick={onSelect}
+            onDoubleClick={() => editing && setRenaming(true)}
+          >
+            {tab.label}
+          </button>
+        </Hint>
       )}
       {editing && active && (
         <button
@@ -910,27 +973,28 @@ function PointFilterChip({
   readonly onRemove: () => void
 }) {
   return (
-    <span
-      className="inline-flex h-9 max-w-80 items-center gap-2 rounded-lg border border-dashed border-primary/60 bg-primary/5 pr-1.5 pl-3 text-sm"
-      title={$t(
+    <Hint
+      label={$t(
         'Filtre posé d’un clic : il s’applique à chaque carte qui lit cette colonne, et n’est pas enregistré.',
       )}
     >
-      <MousePointerClick className="size-4 shrink-0 text-muted-foreground" />
-      <span className="truncate text-muted-foreground">{filter.label}</span>
-      <span className="truncate font-medium">{filter.text}</span>
-      <button
-        type="button"
-        aria-label={$t('Retirer le filtre {label} : {text}', {
-          label: filter.label,
-          text: filter.text,
-        })}
-        onClick={onRemove}
-        className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-      >
-        <X className="size-3.5" />
-      </button>
-    </span>
+      <span className="inline-flex h-9 max-w-80 items-center gap-2 rounded-lg border border-dashed border-primary/60 bg-primary/5 pr-1.5 pl-3 text-sm">
+        <MousePointerClick className="size-4 shrink-0 text-muted-foreground" />
+        <span className="truncate text-muted-foreground">{filter.label}</span>
+        <span className="truncate font-medium">{filter.text}</span>
+        <button
+          type="button"
+          aria-label={$t('Retirer le filtre {label} : {text}', {
+            label: filter.label,
+            text: filter.text,
+          })}
+          onClick={onRemove}
+          className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <X className="size-3.5" />
+        </button>
+      </span>
+    </Hint>
   )
 }
 
@@ -940,16 +1004,20 @@ function ParameterSlot(props: {
   readonly value: ParameterValue | null
   readonly source: ValueSource | null
   readonly onChange: (value: ParameterValue | null) => void
+  readonly onLabels?: (id: string, labels: ReadonlyMap<string, string>) => void
   readonly selected: boolean
   readonly onSelect?: () => void
 }) {
+  const { onLabels, ...control } = props
   const { values } = useColumnValues(
     props.base,
     props.parameter.type === 'category' ? (props.source?.query ?? null) : null,
     props.parameter.type === 'category' ? (props.source?.column ?? null) : null,
   )
   const labels = useMemo(() => new Map(values.map((v) => [v.value, v.label])), [values])
-  return <ParameterControl {...props} labels={labels} />
+  const id = props.parameter.id
+  useEffect(() => onLabels?.(id, labels), [onLabels, id, labels])
+  return <ParameterControl {...control} labels={labels} />
 }
 
 // ── A card ──────────────────────────────────────────────────────────────────
@@ -959,6 +1027,8 @@ interface CardProps {
   readonly card: DashboardCard
   readonly content: Content
   readonly values: Values
+  /** The labels of the filters' values, by filter. */
+  readonly labels?: Readonly<Record<string, ReadonlyMap<string, string>>>
   readonly questions: ReadonlyMap<string, Question>
   readonly editing: boolean
   /** The filter being tied, in edit mode. */
@@ -999,7 +1069,7 @@ function CardMenu({ card, onRemove, onDuplicate, onEditQuestion }: CardProps) {
             <Copy /> {$t('Dupliquer')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-destructive" onSelect={onRemove}>
+          <DropdownMenuItem variant="destructive" onSelect={onRemove}>
             <Trash2 /> {$t('Retirer du tableau')}
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -1077,14 +1147,15 @@ function CardHeader({
           className="card-still min-w-0 flex-1 rounded bg-transparent px-1 text-sm font-semibold outline-none hover:bg-accent focus:bg-accent"
         />
       ) : onTitle !== undefined ? (
-        <button
-          type="button"
-          onClick={onTitle}
-          className="min-w-0 flex-1 truncate text-left text-sm font-semibold hover:text-primary"
-          title={$t('Explorer cette question')}
-        >
-          {title}
-        </button>
+        <Hint label={$t('Explorer cette question')}>
+          <button
+            type="button"
+            onClick={onTitle}
+            className="min-w-0 flex-1 truncate text-left text-sm font-semibold hover:text-primary"
+          >
+            {title}
+          </button>
+        </Hint>
       ) : (
         <h3 className="min-w-0 flex-1 truncate text-sm font-semibold">{title}</h3>
       )}
@@ -1094,27 +1165,293 @@ function CardHeader({
   )
 }
 
+/**
+ * A text: rich, written in the HTML editor, and citing values — `{{nom}}`, a pill in the
+ * editor: what a card of the dashboard shows, under its filters; what a query gives, under
+ * the filters the text ties to it; a filter's value. A Markdown text of before, or of the
+ * copilot, reads as it was, and becomes rich once rewritten.
+ */
 function TextCard(props: CardProps) {
-  const { card, editing } = props
+  const { card, editing, selected } = props
+  const cites = (card.variables ?? []).some(tiesItself)
   return (
     <>
       {editing && <CardHeader props={props} title={$t('Texte')} />}
-      <div className="min-h-0 flex-1 overflow-auto px-4 py-3 scroll-discret">
+      <div
+        className={cn(
+          'relative min-h-0 flex-1',
+          editing ? 'card-still px-3 pb-3' : 'overflow-auto px-4 py-3 scroll-discret',
+        )}
+      >
         {editing ? (
-          <Textarea
-            value={card.text ?? ''}
-            onChange={(e) => props.onChange?.((c) => ({ ...c, text: e.target.value }))}
-            placeholder={$t('Markdown : **gras**, listes, liens…')}
-            aria-label={$t('Texte de la carte')}
-            className="card-still size-full min-h-16 resize-none font-mono text-xs"
-          />
+          <TextEditor {...props} />
         ) : card.text === undefined || card.text === '' ? (
           <p className="text-sm text-muted-foreground">{$t('Texte vide.')}</p>
         ) : (
-          <MarkdownView source={card.text} className="text-sm" />
+          <TextReading {...props} />
+        )}
+        {editing && selected !== null && cites && (
+          <TextMappingOverlay {...props} parameter={selected} />
         )}
       </div>
     </>
+  )
+}
+
+function TextReading(props: CardProps) {
+  const { base, card, content, values, labels, questions, refresh } = props
+  const members = useMembers()
+  const pointFilters = props.pointFilters
+  const variables = card.variables ?? []
+  // Each value runs as a card does: a card cited under its own filters, a query under
+  // those the text ties to it.
+  const runs = variables.flatMap((variable): CitedRun[] => {
+    const cited = variableCard(card, variable, content.cards)
+    if (cited === null || cardQuestion(cited, questions) === null) return []
+    const source =
+      cited.question !== undefined
+        ? { question: cited.question }
+        : { query: cited.query as NonNullable<DashboardCard['query']> }
+    const constraints = [
+      ...constraintsFor(cited, content.parameters, values),
+      ...pointConstraints(cited, pointFilters ?? [], questions, base),
+    ]
+    return [
+      {
+        name: variable.name,
+        key: JSON.stringify([source, constraints, refresh]),
+        run: (signal) =>
+          api.runQuestion(
+            base.name,
+            { ...source, constraints: constraints as never, weekStart: weekStart() },
+            signal,
+          ),
+      },
+    ]
+  })
+  const results = useCitedResults(runs)
+  const value = useCallback<CitedValue>(
+    (name) => {
+      const variable = variables.find((v) => v.name === name)
+      if (variable === undefined) return undefined
+      if ('parameter' in variable) {
+        const parameter = content.parameters.find((p) => p.id === variable.parameter)
+        if (parameter === undefined) return undefined
+        return filterText(parameter, values[parameter.id], labels?.[parameter.id]) ?? '—'
+      }
+      const cited = variableCard(card, variable, content.cards)
+      const question = cited === null ? null : cardQuestion(cited, questions)
+      const read = results.get(name)
+      if (question === null || read?.failed === true) return '—'
+      if (read === undefined) return null
+      return headlineText(read.result, question.visualization, { base, members }) ?? '—'
+    },
+    [card, variables, content, values, labels, questions, results, base, members],
+  )
+  return (
+    <TextBody text={card.text ?? ''} rich={card.rich === true} value={value} className="text-sm" />
+  )
+}
+
+function TextEditor(props: CardProps) {
+  const { base, card, content, questions } = props
+  const variables = card.variables ?? []
+  // A Markdown text is read once as HTML — rendered out of sight, then taken as the editor's
+  // text; it is kept as it was until the person writes.
+  const markdown = useRef<HTMLDivElement>(null)
+  const [converted, setConverted] = useState<string | null>(null)
+  useEffect(() => {
+    if (card.rich !== true && converted === null) setConverted(markdown.current?.innerHTML ?? '')
+  }, [card.rich, converted])
+
+  // What the text may cite: the dashboard's cards, the queries, the filters — by the name it
+  // already cites them with, else by a new one taken from their label.
+  const { choices, offered } = useMemo(() => {
+    const taken = new Set(variables.map((v) => v.name))
+    const offered = new Map<string, TextVariable>()
+    const choices: VariableChoice[] = []
+    const nameOf = (
+      label: string,
+      existing: TextVariable | undefined,
+      fresh: (name: string) => TextVariable,
+    ) => {
+      if (existing !== undefined) return existing.name
+      const name = variableName(label, taken)
+      taken.add(name)
+      offered.set(name, fresh(name))
+      return name
+    }
+    for (const shown of content.cards) {
+      if (shown.kind !== 'question') continue
+      const question = cardQuestion(shown, questions)
+      const label = shown.title || question?.label || $t('Question')
+      const Icon = VIZ_ICONS[question?.visualization.type ?? 'table']
+      const existing = variables.find((v) => 'card' in v && v.card === shown.id)
+      choices.push({
+        name: nameOf(label, existing, (name) => ({ name, card: shown.id })),
+        label,
+        icon: <Icon />,
+        group: $t('Cartes du tableau'),
+      })
+    }
+    for (const question of questions.values()) {
+      const Icon = VIZ_ICONS[question.visualization.type]
+      // A query of the whole base is cited by reference; any other by its content, as a
+      // card places it: whoever reads the dashboard reads what the text runs.
+      const shared = question.audience === 'base'
+      const kept = JSON.stringify(question.query)
+      const existing = variables.find((v) =>
+        shared
+          ? 'question' in v && v.question === question.id
+          : 'query' in v && JSON.stringify(v.query) === kept,
+      )
+      choices.push({
+        name: nameOf(question.label, existing, (name) =>
+          shared
+            ? { name, question: question.id }
+            : {
+                name,
+                query: question.query,
+                label: question.label,
+                visualization: question.visualization,
+              },
+        ),
+        label: question.label,
+        icon: <Icon />,
+        group: $t('Questions'),
+      })
+    }
+    for (const parameter of content.parameters) {
+      const Icon = PARAMETER_ICONS[parameter.type]
+      const existing = variables.find((v) => 'parameter' in v && v.parameter === parameter.id)
+      choices.push({
+        name: nameOf(parameter.label, existing, (name) => ({ name, parameter: parameter.id })),
+        label: parameter.label,
+        icon: <Icon />,
+        group: $t('Filtres'),
+      })
+    }
+    // A value cited whose source is no longer offered keeps a name on its pill.
+    for (const v of variables) {
+      if (choices.some((c) => c.name === v.name)) continue
+      choices.push({ name: v.name, label: ('label' in v && v.label) || v.name, hidden: true })
+    }
+    return { choices, offered }
+  }, [variables, questions, content.cards, content.parameters])
+
+  // The editor tidies what it opens — a paragraph after a closing list —, and says so: only
+  // what the person writes changes the card, and a Markdown text nobody touched stays one.
+  const touched = useRef(false)
+  const touch = () => {
+    touched.current = true
+  }
+
+  const value = card.rich === true ? (card.text ?? '') : converted
+  return (
+    <div className="h-full" onPointerDown={touch} onKeyDown={touch} onPaste={touch} onDrop={touch}>
+      {card.rich !== true && (
+        <div ref={markdown} hidden>
+          <MarkdownView source={card.text ?? ''} />
+        </div>
+      )}
+      {value !== null && (
+        <RichTextEditor
+          value={value}
+          fill
+          variables={choices}
+          variablesLabel={$t('Variable')}
+          placeholder={$t('Texte de la carte')}
+          className="h-full"
+          contentClassName="min-h-full"
+          onChange={(next) =>
+            touched.current &&
+            props.onChange?.((c) => {
+              const kept = c.variables ?? []
+              // A query just cited is tied to the filters, as a card added would be.
+              const cited = citedVariables(next, kept, offered).map((v) =>
+                kept.includes(v)
+                  ? v
+                  : tiedVariable(v, content.cards, content.parameters, base, questions),
+              )
+              const { variables: _old, ...rest } = c
+              return {
+                ...rest,
+                text: next,
+                rich: true,
+                ...(cited.length === 0 ? {} : { variables: cited }),
+              }
+            })
+          }
+        />
+      )}
+    </div>
+  )
+}
+
+/** Tying a filter to the queries a text cites: one column each, as on a card. */
+function TextMappingOverlay({
+  base,
+  card,
+  questions,
+  parameter,
+  onChange,
+}: CardProps & { readonly parameter: DashboardParameter }) {
+  const cited = (card.variables ?? []).filter(tiesItself)
+  return (
+    <div className="card-still absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 overflow-y-auto bg-background/90 p-3 text-center backdrop-blur-[1px]">
+      <p className="text-sm font-medium">
+        {$t('Relier « {label} » à', { label: parameter.label })}
+      </p>
+      {cited.map((variable) => {
+        const label =
+          ('question' in variable ? questions.get(variable.question)?.label : variable.label) ??
+          variable.name
+        const query = variableQuery(variable, questions)
+        const candidates = query === null ? [] : mappingCandidates(base, parameter.type, query)
+        const current = (variable.mappings ?? []).find((m) => m.parameter === parameter.id)
+        const index =
+          current === undefined
+            ? -1
+            : candidates.findIndex((c) => sameTarget(c.target, current.target))
+        return (
+          <div key={variable.name} className="flex w-full max-w-md items-center gap-2 text-left">
+            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={label}>
+              {label}
+            </span>
+            {candidates.length === 0 ? (
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {$t('Aucune colonne ne convient.')}
+              </span>
+            ) : (
+              <Choice
+                value={String(index)}
+                onValueChange={(next) => {
+                  const target = candidates[Number(next)]?.target ?? null
+                  onChange?.((c) => ({
+                    ...c,
+                    variables: (c.variables ?? []).map((v) =>
+                      v.name === variable.name ? withVariableMapping(v, parameter.id, target) : v,
+                    ),
+                  }))
+                }}
+                options={[
+                  { value: '-1', label: $t('Aucune colonne') },
+                  ...candidates.map((c, i) => ({ value: String(i), label: c.label })),
+                ]}
+                aria-label={$t('Colonne de « {question} » filtrée par {label}', {
+                  question: label,
+                  label: parameter.label,
+                })}
+                className={cn(
+                  'w-44 shrink-0 bg-background',
+                  index >= 0 && 'border-primary text-primary',
+                )}
+              />
+            )}
+          </div>
+        )
+      })}
+    </div>
   )
 }
 

@@ -2,6 +2,7 @@
 
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
 import { DESCRIPTION_MAX } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
@@ -237,22 +238,23 @@ export function DescriptionText({
   }
 
   return (
-    <button
-      type="button"
-      onClick={onEdit}
-      disabled={disabled}
-      title={text.length > MAY_BE_CLAMPED ? text : $t('Cliquer pour modifier')}
-      className={cn(
-        // Negative margin and matching padding: the hover wash reaches past the text
-        // without moving it.
-        '-mx-1.5 block w-[calc(100%+0.75rem)] cursor-text rounded-md px-1.5 py-0.5 text-left text-muted-foreground transition-colors',
-        'hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:text-foreground focus-visible:outline-none',
-        'disabled:pointer-events-none',
-      )}
-    >
-      {body}
-      <span className="sr-only">{$t('Modifier la description pour {subject}', { subject })}</span>
-    </button>
+    <Hint label={text.length > MAY_BE_CLAMPED ? text : $t('Cliquer pour modifier')}>
+      <button
+        type="button"
+        onClick={onEdit}
+        disabled={disabled}
+        className={cn(
+          // Negative margin and matching padding: the hover wash reaches past the text
+          // without moving it.
+          '-mx-1.5 block w-[calc(100%+0.75rem)] cursor-text rounded-md px-1.5 py-0.5 text-left text-muted-foreground transition-colors',
+          'hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:text-foreground focus-visible:outline-none',
+          'disabled:pointer-events-none',
+        )}
+      >
+        {body}
+        <span className="sr-only">{$t('Modifier la description pour {subject}', { subject })}</span>
+      </button>
+    </Hint>
   )
 }
 

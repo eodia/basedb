@@ -1,6 +1,6 @@
 ---
 title: Samarbeid
-description: Kommentarer og omtaler, varsler, oppdateringer i sanntid og tilstedeværelse.
+description: Kommentarer og omtaler, varsler, oppdateringer i sanntid, tilstedeværelse, og en lenke til hver skjerm.
 ---
 
 Flere personer jobber i den samme databasen samtidig: hver av dem ser skrivingen til de
@@ -45,6 +45,28 @@ skriver.
 Ansiktene til personene som ser på **den samme tabellen**, vises øverst på skjermen; de
 som har åpnet **den samme raden**, i toppen av raddetaljene. I rutenettet vises pekeren til de
 andre på cellen de holder musen over.
+
+## En lenke til hver skjerm
+
+Nettleseradressen følger det du ser på: en tabell, en av visningene dens, raddetaljene til en
+rad, et instrumentbord, en automatisering, et spørsmål, innstillingene dine. Lim den inn i en
+melding: kollegaen din kommer til samme sted, med sine egne tillatelser. Legg den til som
+bokmerke; nettleserens tilbake- og frem-knapper fører deg dit du var.
+
+| Adresse | Hva den åpner |
+|---|---|
+| `/bases/ventes/tables/opportunites` | tabellen «Opportunités» i databasen «Ventes» |
+| `/bases/ventes/tables/opportunites?vue=…` | en av visningene dens |
+| `/bases/ventes/tables/opportunites?ligne=…` | raddetaljene til en av radene dens |
+| `/bases/ventes/tableaux-de-bord/…` | et instrumentbord |
+| `/bases/ventes/automatisations/…` | en automatisering |
+| `/parametres/apparence` | innstillingene dine |
+
+En adresse navngir et **sted**, ikke tilstanden du forlot det i: filtre, sortering og
+kolonnebredder følger hver enkelt nettleser. En database og en tabell skrives der med sitt
+PostgreSQL-navn: gis de nytt navn, fører den gamle adressen ikke lenger noe sted. En adresse
+som ikke fører noe sted – en skrivefeil, et slettet objekt, eller noe du ikke har lov til å se –
+viser «Denne siden finnes ikke».
 
 ## Angre
 

@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type DashboardShareState,
   type DashboardSharing,
@@ -218,36 +219,38 @@ export function ShareDashboardDialog({
                       aria-label={$t('Lien du tableau de bord')}
                       className="h-8 font-mono text-xs"
                     />
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      onClick={() => void copy('link')}
-                      disabled={url === null}
-                      aria-label={$t('Copier le lien')}
-                      title={$t('Copier le lien')}
-                    >
-                      {copied === 'link' ? (
-                        <Check className="size-4" />
-                      ) : (
-                        <Copy className="size-4" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      asChild={url !== null}
-                      disabled={url === null}
-                      aria-label={$t('Ouvrir le tableau de bord partagé')}
-                      title={$t('Ouvrir le tableau de bord partagé')}
-                    >
-                      {url === null ? (
-                        <ExternalLink className="size-4" />
-                      ) : (
-                        <a href={url} target="_blank" rel="noopener noreferrer">
+                    <Hint label={$t('Copier le lien')}>
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={() => void copy('link')}
+                        disabled={url === null}
+                        aria-label={$t('Copier le lien')}
+                      >
+                        {copied === 'link' ? (
+                          <Check className="size-4" />
+                        ) : (
+                          <Copy className="size-4" />
+                        )}
+                      </Button>
+                    </Hint>
+                    <Hint label={$t('Ouvrir le tableau de bord partagé')}>
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        asChild={url !== null}
+                        disabled={url === null}
+                        aria-label={$t('Ouvrir le tableau de bord partagé')}
+                      >
+                        {url === null ? (
                           <ExternalLink className="size-4" />
-                        </a>
-                      )}
-                    </Button>
+                        ) : (
+                          <a href={url} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="size-4" />
+                          </a>
+                        )}
+                      </Button>
+                    </Hint>
                   </div>
                   {renewing ? (
                     <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5 text-xs">
@@ -366,19 +369,20 @@ export function ShareDashboardDialog({
                         aria-label={$t('Code d’intégration')}
                         className="min-w-0 flex-1 resize-none rounded-md border bg-muted/40 px-2 py-1.5 font-mono text-[11px] leading-snug"
                       />
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={() => void copy('code')}
-                        aria-label={$t('Copier le code')}
-                        title={$t('Copier le code')}
-                      >
-                        {copied === 'code' ? (
-                          <Check className="size-4" />
-                        ) : (
-                          <Copy className="size-4" />
-                        )}
-                      </Button>
+                      <Hint label={$t('Copier le code')}>
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          onClick={() => void copy('code')}
+                          aria-label={$t('Copier le code')}
+                        >
+                          {copied === 'code' ? (
+                            <Check className="size-4" />
+                          ) : (
+                            <Copy className="size-4" />
+                          )}
+                        </Button>
+                      </Hint>
                     </div>
                   </div>
                 )}

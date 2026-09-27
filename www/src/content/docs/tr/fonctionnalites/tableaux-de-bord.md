@@ -12,8 +12,19 @@ sayfanın üstündeki **filtreler** kendilerine bağlanan kartları yönetir.
 
 Her şey, kenar çubuğunun altındaki açık veritabanı bloğunda yer alan **Panolar** bağlantısından
 açılır. Solda veritabanının panoları ve kayıtlı soruları ile hiçbir şey kaydetmeden soru sormak
-için **Verileri keşfet** bulunur. Veritabanının her okuyucusu bunlara bakabilir ve
-keşfedebilir; oluşturmak, değiştirmek ve kaydetmek **Yönetim** düzeyini gerektirir.
+için **Verileri keşfet** bulunur. Veritabanının her okuyucusu bunlara bakabilir, bunları
+keşfedebilir ve kendi sorularını kaydedebilir; bir pano oluşturmak ve bir soruyu paylaşmak
+**Yönetim** düzeyini gerektirir.
+
+Kayıtlı bir soru **kişiseldir** — yalnızca siz görürsünüz —, **tüm veritabanı** ya da
+**gruplar** içindir. Menüsü, sağ tıklama ya da **⋯** ile, onu tabloların yanında bir sekmede
+açar, adını ve paylaşımını değiştirir ya da siler. Sekme çubuğundaki **+**, **Yeni soru** ve
+**Yeni SQL sorusu** seçeneklerini de sunar.
+
+**Kaydet**, bir sorunun başlığında, onu saklar; değiştiremediğiniz bir soru bunun yerine
+**Bir kopya kaydet** sunar, bu da sizin olur. **⋯** (Diğer eylemler) ayrıca **Ad ve
+paylaşım…**, **Bir kopya kaydet…** ve **Soruyu sil** seçeneklerini sunar; onu gösteren bir
+sekme, yeniden kaydedilmemiş hâliyle içeriğini korur.
 
 ## Fareyle soru sorma
 
@@ -109,8 +120,10 @@ diğerleri gibi yönetmesini sağlayan budur.
 
 **Düzenle** panoyu düzenleme moduna geçirir:
 
-- **Soru** kayıtlı bir soru yerleştirir ya da karta özel bir soru oluşturur;
-- **Başlık** ve **Metin** bir bölüm başlığı ya da Markdown ile yazılmış bir metin ekler;
+- **Soru** kayıtlı bir soru yerleştirir — kişisel bir soru buraya kopyalanır —, ya da karta özel
+  bir soru oluşturur;
+- **Başlık** bir bölüm başlığı, **Metin** ise biçimlendirilmiş bir metin ekler — başlıklar,
+  listeler, bağlantılar — ve rakamlara yer verebilir (aşağıya bakın);
 - **Gömülü sayfa**, hiçbir oturum ya da veri almayan yalıtılmış bir çerçevede bir `https://`
   adresi gösterir;
 - **Sekme** kartları birkaç sayfaya dağıtır; çift tıklama bir sekmeyi yeniden adlandırır.
@@ -118,6 +131,25 @@ diğerleri gibi yönetmesini sağlayan budur.
 Kartlar, 24 sütunluk bir ızgara üzerinde tutamaçlarından taşınır ve köşelerinden yeniden
 boyutlandırılır. **Kaydet** hepsini saklar; **İptal** önceki sürüme döner. Okuma modunda bir
 kart başlığı, kartın sorusunu panonun filtreleri dahil keşfetmek üzere açar.
+
+### Metindeki rakamlar
+
+Bir metin, çift süslü parantez arasındaki bir adla bir değere atıf yapar: “Bu ay,
+`{{chiffre_affaires}}` cirosu, `{{commandes}}` sipariş üzerinden.” Her ad bir pastile
+dönüşür, tek tıkla — ya da düzenleyici çubuğundaki **Değişken** ile — şuna bağlanır:
+
+| Kaynak | Metnin gösterdiği |
+|---|---|
+| tablonun **bir kartı** | gösterdiği şey, kendi filtreleri altında |
+| tüm veritabanının **kayıtlı bir sorusu** | değeri; tablonun filtreleri ona da bir kart gibi bağlanır |
+| **metinde tutulan bir soru** | değeri; kişisel bir soruya böyle atıf yapılır |
+| tablonun **bir filtresi** | seçilen değer, komutunun söylediği gibi |
+
+Bir sorunun değeri, onun **Sayı** görselleştirmesinin göstereceği değerdir: ilk ölçüsü, son
+satır üzerinden. Bu değer okuyanın izinleriyle hesaplanır ve her zaman metin olarak görünür. Bir
+metin en fazla 20 değere atıf yapar; bir ad küçük harflerle, rakamlarla ve `_` ile yazılır.
+Düzenleyiciden önce Markdown ile yazılmış metinler eskisi gibi okunur ve yeniden
+yazıldıklarında zengin metne dönüşür. Copilot ise metinlerini Markdown ile yazar.
 
 ## Filtreler
 

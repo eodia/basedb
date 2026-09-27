@@ -36,7 +36,7 @@ menu — and its **Field** button:
 | Client | Relation → Clients |
 | Notes | Long text (Markdown) |
 
-Later, a formula (`JOURS([Échéance]; AUJOURDHUI())`), a lookup (the client’s city) or a rollup
+Later, a formula (`DAYS([Échéance], TODAY())`), a lookup (the client’s city) or a rollup
 (the total amount per client) are added the same way — see
 [Tables and fields](/basedb/en/fonctionnalites/tables-et-champs/).
 
@@ -68,7 +68,7 @@ Details in [Shared forms](/basedb/en/fonctionnalites/formulaires-partages/).
 
 ## 6. Read in SQL
 
-The base’s **⋯** menu → **New SQL query**: your tables are there, under their real names.
+The base’s **⋯** menu → **SQL query**: your tables are there, under their real names.
 
 ```sql
 SELECT nom, statut, montant

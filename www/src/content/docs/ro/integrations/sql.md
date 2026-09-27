@@ -22,7 +22,7 @@ arată descrierile (`COMMENT ON`).
 
 ## În interfață
 
-Butonul **+** din bara de file sau meniul **⋯** al bazei → **Interogare SQL nouă**: un editor
+Butonul **+** din bara de file sau meniul **⋯** al bazei → **Interogare SQL**: un editor
 cu evidențiere și completare, al cărui rezultat se afișează în aceeași grilă ca tabelele
 dumneavoastră.
 

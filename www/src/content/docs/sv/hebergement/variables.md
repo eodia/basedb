@@ -84,6 +84,24 @@ Se [Konton och inloggning](/basedb/sv/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | beräkningar av AI-fält per timme och arbetsyta |
 | `BASEDB_AI_WORKER` | `1` | `0`: inga bakgrundsberäkningar i den här processen |
 
+## Offentlig demo
+
+En instans öppen för alla, som [demo.basedb.eodia.com](https://demo.basedb.eodia.com): inloggningsskärmen
+fyller i förväg i ett delat konto, besökaren läser allt och ändrar det som redan finns, men
+varken skapar eller tar bort något — databas, tabell, rad, fil, kommentar, konto, token, länk —,
+och AI:n svarar att den inte ingår i demot. SQL-konsolen läser bara där. Att återställa databasen
+varje natt är ditt eget ansvar.
+
+| Variabel | Standard | Roll |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: instansen blir en offentlig demo |
+| `BASEDB_DEMO_ACCOUNTS` | — | ett konto per språk, kommaseparerade: `fr=demo@demo.com,en=demo-en@demo.com`; inloggningsskärmen fyller i förväg i det som matchar sitt språk, annars engelska, annars det första, och erbjuder de andra. Skapa dessa konton, vart och ett med sitt eget projekt, innan du aktiverar demot: det vägrar skapande för alla, administratören inräknad |
+| `BASEDB_DEMO_PASSWORD` | — | tillsammans med `BASEDB_DEMO_ACCOUNTS`, deras lösenord, samma för alla, publicerat med dem |
+
+Utan `BASEDB_DEMO_ACCOUNTS` är det delade kontot den administratör som anges av
+`BASEDB_ADMIN_EMAIL` och `BASEDB_ADMIN_PASSWORD`. En adress i demot loggar in med det publicerade
+lösenordet, oavsett vad man skriver: felaktiga försök låser den inte för alla andra.
+
 ## Endast utveckling
 
 | Variabel | Roll |

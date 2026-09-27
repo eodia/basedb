@@ -275,7 +275,7 @@ describe('/meta — the catalog projection', () => {
   })
 
   it('serves a readable documentation describing every visible relation', async () => {
-    const r = await GET(`${V1}/meta/bases/b_${TENANT_REF}_crm/doc`)
+    const r = await GET(`${V1}/meta/bases/b_${TENANT_REF}_crm/doc`, { 'x-basedb-locale': 'fr' })
     expect(r.status).toBe(200)
     const body = (await r.json()) as {
       data: { title: string; sections: Array<{ id: string; markdown: string }> }
@@ -284,6 +284,19 @@ describe('/meta — the catalog projection', () => {
     // It says the one thing a machine contract cannot: what happens in direct SQL.
     const sql = body.data.sections.find((s) => s.id === 'ecrire-en-sql')
     expect(sql?.markdown).toContain('ne s’appliquent pas en SQL direct')
+  })
+
+  it('writes the documentation in the language of the screen, one validator per language', async () => {
+    const path = `${V1}/meta/bases/b_${TENANT_REF}_crm/doc`
+    const french = await GET(path, { 'x-basedb-locale': 'fr' })
+    const english = await GET(path, { 'x-basedb-locale': 'en' })
+    const body = (await english.json()) as {
+      data: { sections: Array<{ id: string; markdown: string }> }
+    }
+    const sql = body.data.sections.find((s) => s.id === 'ecrire-en-sql')
+    expect(sql?.markdown).not.toContain('ne s’appliquent pas en SQL direct')
+    expect(english.headers.get('etag')).not.toBe(french.headers.get('etag'))
+    expect(english.headers.get('vary')).toContain('X-Basedb-Locale')
   })
 
   it('carries a validator, and answers 304 when the caller sends it back', async () => {

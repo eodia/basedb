@@ -72,13 +72,12 @@ salvate. El nu limitează valoarea: o evaluare de 7 pe o scară de 5 rămâne 7.
 
 ## Formule
 
-O formulă se scrie în franceză, cu câmpurile între paranteze drepte și argumentele separate
-prin `;`:
+O formulă se scrie în engleză (merg și numele în franceză), cu câmpurile între paranteze drepte și argumentele separate prin `,`:
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 Editorul propune câmpurile de inserat și un panou cu funcțiile; o eroare numește câmpul sau
@@ -86,14 +85,14 @@ caracterul în cauză.
 
 | Familie | Funcții |
 |---|---|
-| Logică | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` |
-| Numere | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` |
-| Text | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` |
-| Date | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` |
+| Logică | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
+| Numere | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
+| Text | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
+| Date | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
 | Operatori | `+ - * /`, `&` pentru a alătura text, `= <> < <= > >=` |
 
 O formulă devine o **coloană generată** de PostgreSQL: `psql` și instrumentele dumneavoastră
-o citesc ca pe celelalte. Cea care depinde de ziua curentă (`AUJOURDHUI()`, `MAINTENANT()`)
+o citesc ca pe celelalte. Cea care depinde de ziua curentă (`TODAY()`, `NOW()`)
 sau care citează o căutare ori o agregare este **calculată la citire**: se poate filtra și
 sorta în basedb, dar nu există în SQL direct.
 

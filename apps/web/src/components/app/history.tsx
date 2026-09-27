@@ -4,6 +4,7 @@ import { SidebarToggle } from '@/components/app/sidebar'
 import { StructureHistory } from '@/components/app/structure-history'
 import { Button } from '@/components/ui/button'
 import { Choice } from '@/components/ui/choice'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type DescribedBase,
   type Revision,
@@ -218,21 +219,24 @@ function Entry({
 
   return (
     <li className="flex gap-3 py-3">
-      <span
-        className={cn(
-          'flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-medium',
-          author.icon === 'user' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
-        )}
-        title={author.hint ?? undefined}
-      >
-        {author.icon === 'token' ? (
-          <Bot className="size-3.5" />
-        ) : author.icon === 'sql' ? (
-          <Terminal className="size-3.5" />
-        ) : (
-          initials(author.name)
-        )}
-      </span>
+      <Hint label={author.hint ?? undefined}>
+        <span
+          className={cn(
+            'flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-medium',
+            author.icon === 'user'
+              ? 'bg-primary/10 text-primary'
+              : 'bg-muted text-muted-foreground',
+          )}
+        >
+          {author.icon === 'token' ? (
+            <Bot className="size-3.5" />
+          ) : author.icon === 'sql' ? (
+            <Terminal className="size-3.5" />
+          ) : (
+            initials(author.name)
+          )}
+        </span>
+      </Hint>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-1.5 text-sm">
           <span className="font-medium">{author.name}</span>
@@ -245,39 +249,43 @@ function Entry({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-          <time dateTime={revision.occurred_at} title={FULL.format(new Date(revision.occurred_at))}>
-            {TIME.format(new Date(revision.occurred_at))}
-          </time>
+          <Hint label={FULL.format(new Date(revision.occurred_at))}>
+            <time dateTime={revision.occurred_at}>
+              {TIME.format(new Date(revision.occurred_at))}
+            </time>
+          </Hint>
           {author.hint !== null && <span className="truncate">· {author.hint}</span>}
         </div>
         <Changes revision={revision} />
       </div>
       <div className="flex shrink-0 items-start gap-1">
         {revision.actions.includes('revert') && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            disabled={busy}
-            onClick={() => onAct(revision, 'revert')}
-            title={$t('Remettre les valeurs d’avant cette modification')}
-          >
-            <Undo2 className="size-3.5" />
-            {$t('Annuler')}
-          </Button>
+          <Hint label={$t('Remettre les valeurs d’avant cette modification')}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              disabled={busy}
+              onClick={() => onAct(revision, 'revert')}
+            >
+              <Undo2 className="size-3.5" />
+              {$t('Annuler')}
+            </Button>
+          </Hint>
         )}
         {revision.actions.includes('restore') && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            disabled={busy}
-            onClick={() => onAct(revision, 'restore')}
-            title={$t('Rétablir cette ligne telle qu’elle était')}
-          >
-            <RotateCcw className="size-3.5" />
-            {$t('Restaurer')}
-          </Button>
+          <Hint label={$t('Rétablir cette ligne telle qu’elle était')}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              disabled={busy}
+              onClick={() => onAct(revision, 'restore')}
+            >
+              <RotateCcw className="size-3.5" />
+              {$t('Restaurer')}
+            </Button>
+          </Hint>
         )}
       </div>
     </li>

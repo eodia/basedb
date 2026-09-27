@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type AccessCell,
   type AccessGraph,
@@ -406,9 +407,11 @@ function Row({
         </button>
       )}
       <Icon className="size-4 shrink-0 text-muted-foreground" />
-      <span className={cn('min-w-0 flex-1 truncate text-sm', strong && 'font-medium')} title={hint}>
-        {label}
-      </span>
+      <Hint label={hint}>
+        <span className={cn('min-w-0 flex-1 truncate text-sm', strong && 'font-medium')}>
+          {label}
+        </span>
+      </Hint>
 
       {inherited && <span className="text-[11px] text-muted-foreground">{$t('hérité')}</span>}
       {saving && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}

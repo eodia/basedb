@@ -28,7 +28,7 @@ description: 创建数据库、数据表、字段、视图和表单。
 | Client | 关联 → Clients |
 | Notes | 长文本（Markdown） |
 
-之后，公式（`JOURS([Échéance]; AUJOURDHUI())`）、查找引用（客户所在城市）或汇总（每个客户的总金额）也以同样的方式添加——参见[数据表和字段](/basedb/zh-cn/fonctionnalites/tables-et-champs/)。
+之后，公式（`DAYS([Échéance], TODAY())`）、查找引用（客户所在城市）或汇总（每个客户的总金额）也以同样的方式添加——参见[数据表和字段](/basedb/zh-cn/fonctionnalites/tables-et-champs/)。
 
 您也可以**导入** CSV 或 JSON 文件：导入功能会推测各列类型并允许您修改，然后创建数据表或向已有数据表追加数据，并逐行说明哪些数据被拒绝。
 
@@ -50,7 +50,7 @@ description: 创建数据库、数据表、字段、视图和表单。
 
 ## 6. 用 SQL 读取
 
-数据库的 **⋯** 菜单 → **新建 SQL 查询**：您的数据表都在这里，使用的是它们的真实名称。
+数据库的 **⋯** 菜单 → **SQL 查询**：您的数据表都在这里，使用的是它们的真实名称。
 
 ```sql
 SELECT nom, statut, montant

@@ -1,5 +1,6 @@
 'use client'
 
+import { Hint } from '@/components/ui/tooltip'
 import type { Field, Table } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -108,16 +109,17 @@ function SortableRow({
   const handle = disabled ? (
     <span className="size-4 shrink-0" />
   ) : (
-    <button
-      type="button"
-      {...attributes}
-      {...listeners}
-      aria-label={$t('Déplacer le champ {label}', { label })}
-      title={$t('Glisser pour changer l’ordre des colonnes')}
-      className="-ml-1 flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-muted-foreground/50 hover:bg-muted hover:text-foreground focus-visible:text-foreground active:cursor-grabbing"
-    >
-      <GripVertical className="size-4" />
-    </button>
+    <Hint label={$t('Glisser pour changer l’ordre des colonnes')}>
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label={$t('Déplacer le champ {label}', { label })}
+        className="-ml-1 flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-muted-foreground/50 hover:bg-muted hover:text-foreground focus-visible:text-foreground active:cursor-grabbing"
+      >
+        <GripVertical className="size-4" />
+      </button>
+    </Hint>
   )
   return (
     <div

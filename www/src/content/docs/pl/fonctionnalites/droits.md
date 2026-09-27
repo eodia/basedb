@@ -12,9 +12,9 @@ później.
 | Poziom | Co pozwala robić |
 |---|---|
 | **Brak dostępu** | nic: zasób jest niewidoczny |
-| **Odczyt** | oglądać wiersze, komentować je, tworzyć sobie widoki osobiste, przeglądać strukturę i pulpity, zadawać własne pytania, pisać SQL tylko do odczytu i zapisywać osobiste zapytania |
+| **Odczyt** | oglądać wiersze, komentować je, tworzyć sobie widoki osobiste, przeglądać strukturę i pulpity, zadawać i zapisywać własne pytania, pisać SQL tylko do odczytu i zapisywać osobiste zapytania |
 | **Edycja** | a do tego tworzyć, zmieniać i usuwać wiersze |
-| **Zarządzanie** | a do tego zmieniać strukturę, tworzyć widoki udostępnione, pulpity i zapisane pytania, udostępniać pulpit przez link, udostępniać zapytania, tworzyć widoki SQL, automatyzacje, integracje i tokeny; jego SQL obejmuje całą bazę, łącznie z zapisami |
+| **Zarządzanie** | a do tego zmieniać strukturę, tworzyć widoki udostępnione i pulpity, udostępniać pulpit przez link, udostępniać pytania i zapytania, tworzyć widoki SQL, automatyzacje, integracje i tokeny; jego SQL obejmuje całą bazę, łącznie z zapisami |
 
 Uprawnienia **się sumują**: osoba otrzymuje najwyższy poziom, jaki daje jej którakolwiek z jej
 grup. Nadanie tabeli mniej niż jej bazie czyni ją „szczegółową”.
@@ -71,6 +71,11 @@ włoskim, portugalskim (Brazylia), niderlandzkim, polskim, czeskim, szwedzkim, d
 norweskim, fińskim, rumuńskim, węgierskim, tureckim, ukraińskim, japońskim, chińskim
 uproszczonym i koreańskim. Domyślnie interfejs przyjmuje język twojej przeglądarki; **Język**,
 w zakładce **Wygląd**, ustawia inny. Liczby i daty są zgodne z wybranym językiem.
+
+Link może też żądać języka: `?lang=de` na końcu adresu basedb pokazuje po niemiecku ekran
+logowania, formularz, udostępniony widok lub udostępniony pulpit. W ten sposób witryna prowadzi
+do demo w języku strony. Po zalogowaniu basedb podąża za twoim kontem: językiem wybranym w
+**Wygląd**, w przeciwnym razie językiem przeglądarki.
 
 Motyw jest zapamiętywany w przeglądarce; język, kolejność elementów daty i pierwszy dzień
 tygodnia towarzyszą ci na każdym komputerze. Zmiana adresu lub powiązanie dostawcy wymaga sesji

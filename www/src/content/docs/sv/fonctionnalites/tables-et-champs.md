@@ -72,12 +72,12 @@ värdena påverkas. Det begränsar inte värdet: betyget 7 på en skala till 5 f
 
 ## Formler
 
-En formel skrivs på franska, med fälten inom hakparenteser och argumenten åtskilda med `;`:
+En formel skrivs på engelska (de franska namnen fungerar också), med fälten inom hakparenteser och argumenten åtskilda med `,`:
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 Redigeraren föreslår fält att infoga och har en panel med funktionerna; ett fel pekar ut fältet
@@ -85,14 +85,14 @@ eller tecknet som orsakar det.
 
 | Grupp | Funktioner |
 |---|---|
-| Logik | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` |
-| Tal | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` |
-| Text | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` |
-| Datum | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` |
+| Logik | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
+| Tal | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
+| Text | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
+| Datum | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
 | Operatorer | `+ - * /`, `&` för att sammanfoga text, `= <> < <= > >=` |
 
 En formel blir en **genererad kolumn** i PostgreSQL: `psql` och dina verktyg läser den som
-vilken kolumn som helst. En formel som beror på dagens datum (`AUJOURDHUI()`, `MAINTENANT()`)
+vilken kolumn som helst. En formel som beror på dagens datum (`TODAY()`, `NOW()`)
 eller som citerar ett uppslag eller en aggregering **beräknas vid läsning**: den kan filtreras
 och sorteras i basedb, men finns inte i direkt SQL.
 

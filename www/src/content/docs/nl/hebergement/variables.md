@@ -83,6 +83,25 @@ Zie [Accounts en inloggen](/basedb/nl/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | berekeningen van AI-velden per uur en per werkruimte |
 | `BASEDB_AI_WORKER` | `1` | `0`: geen achtergrondberekeningen in dit proces |
 
+## Openbare demo
+
+Een instantie die voor iedereen open staat, zoals
+[demo.basedb.eodia.com](https://demo.basedb.eodia.com): het inlogscherm vult een gedeeld account
+vooraf in, de bezoeker leest alles en wijzigt wat bestaat, maar maakt niets aan en verwijdert niets
+— database, tabel, rij, bestand, opmerking, account, token, link —, en de AI antwoordt dat ze geen
+deel uitmaakt van de demo. De SQL-console doet er alleen lezen. De database elke nacht terugzetten
+blijft jouw verantwoordelijkheid.
+
+| Variabele | Standaard | Rol |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: de instantie wordt een openbare demo |
+| `BASEDB_DEMO_ACCOUNTS` | — | een account per taal, gescheiden door komma’s: `fr=demo@demo.com,en=demo-en@demo.com`; het inlogscherm vult dat van zijn taal vooraf in, anders het Engels, anders het eerste, en biedt de andere aan. Maak deze accounts aan, elk met zijn eigen project, voordat je de demo activeert: ze weigert het aanmaken voor iedereen, de beheerder inbegrepen |
+| `BASEDB_DEMO_PASSWORD` | — | samen met `BASEDB_DEMO_ACCOUNTS`, hun wachtwoord, hetzelfde voor allemaal, samen met hen gepubliceerd |
+
+Zonder `BASEDB_DEMO_ACCOUNTS` is het gedeelde account de beheerder die `BASEDB_ADMIN_EMAIL` en
+`BASEDB_ADMIN_PASSWORD` noemen. Een adres van de demo logt in met het gepubliceerde wachtwoord, wat
+je ook typt: verkeerde pogingen sluiten hem niet voor iedereen af.
+
 ## Alleen voor ontwikkeling
 
 | Variabele | Rol |

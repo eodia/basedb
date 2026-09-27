@@ -13,7 +13,7 @@ Tabellen, die auch `psql` und Ihre Werkzeuge lesen.
 
 ## Jede Person mit ihren Berechtigungen
 
-Das **+** der Reiterleiste oder das Menü **⋯** der Datenbank → **Neue SQL-Abfrage** öffnet einen
+Das **+** der Reiterleiste oder das Menü **⋯** der Datenbank → **SQL-Abfrage** öffnet einen
 SQL-Reiter: einen Editor mit Syntaxhervorhebung und Autovervollständigung, **Strg+Eingabe** zum
 Ausführen, und das Ergebnis im selben Raster wie Ihre Tabellen. Was die Abfrage lesen kann, hängt
 davon ab, wer sie startet:
@@ -36,7 +36,8 @@ Raster, die API oder der MCP-Server Ihnen nicht zeigen würden.
 **Speichern** in der Leiste des Reiters legt die Abfrage unter den Tabellen der Datenbank ab, in der
 Rubrik **Abfragen**. Sie öffnet sich mit einem Klick wieder; **⋯** → **Speichern unter …** erstellt
 eine Kopie, **Name und Freigabe …** (im Reiter oder in ihrem Menü in der Seitenleiste) benennt sie
-um, ändert, wer sie sieht, oder löscht sie.
+um, ändert, wer sie sieht, oder löscht sie – **Löschen** steht auch in ihrem Menü, per Rechtsklick.
+Ein Reiter, der sie zeigte, behält ihren Text.
 
 ![Eine Abfrage speichern: ihr Name, was sie zeigt und wer sie sieht](../../../../assets/screens/requete-enregistrer.png)
 
@@ -90,7 +91,9 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 Berechtigungen, auf jeder Tabelle und jeder Spalte, die sie liest; die Seitenleiste listet sie nur
 für diejenigen auf, die alles lesen dürfen, was sie liest. Sie liest nur **ihre** Datenbank: Eine
 andere Datenbank oder der Katalog von basedb werden schon beim Anlegen abgelehnt. Sie anzulegen,
-zu bearbeiten oder zu löschen erfordert die Stufe **Verwalten** auf der Datenbank.
+zu bearbeiten oder zu löschen erfordert die Stufe **Verwalten** auf der Datenbank. **Löschen**, in
+ihrem Menü der Seitenleiste, entfernt sie für alle, Skripte und Werkzeuge eingeschlossen; die
+Tabellen, die sie liest, bleiben unberührt.
 
 ### Wenn sich die Struktur ändert
 

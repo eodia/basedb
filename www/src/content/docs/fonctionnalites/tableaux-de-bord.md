@@ -14,7 +14,18 @@ cartes qu’on leur relie.
 Tout s’ouvre depuis **Tableaux de bord**, dans le bloc de la base ouverte en bas de la barre
 latérale. À gauche, les tableaux de bord et les questions enregistrées de la base, et
 **Explorer les données** pour poser une question sans rien enregistrer. Tout lecteur de la base
-les consulte et explore ; créer, modifier et enregistrer demandent le niveau **Gestion**.
+les consulte, les explore et enregistre ses propres questions ; construire un tableau de bord et
+partager une question demandent le niveau **Gestion**.
+
+Une question enregistrée est **personnelle** — vous seul la voyez —, à **toute la base** ou à
+**des groupes**. Son menu, d’un clic droit ou par **⋯**, l’ouvre dans un onglet à côté des
+tables, change son nom et son partage, ou la supprime. Le **+** de la barre d’onglets propose
+aussi **Nouvelle question** et **Nouvelle question SQL**.
+
+**Enregistrer**, dans l’en-tête d’une question, la garde ; une question que vous ne pouvez pas
+modifier propose à la place **Enregistrer une copie**, qui devient la vôtre. **⋯** (Plus
+d’actions) offre aussi **Nom et partage…**, **Enregistrer une copie…** et **Supprimer la
+question** ; un onglet qui la montrait garde son contenu, redevenu non enregistré.
 
 ## Poser une question à la souris
 
@@ -109,8 +120,10 @@ comme les autres.
 
 **Modifier** passe le tableau en édition :
 
-- **Question** place une question enregistrée, ou en crée une propre à la carte ;
-- **Titre** et **Texte** ajoutent un titre de section ou un texte en Markdown ;
+- **Question** place une question enregistrée — une question personnelle y est recopiée —, ou
+  en crée une propre à la carte ;
+- **Titre** ajoute un titre de section, **Texte** un texte mis en forme — titres, listes,
+  liens — qui peut citer des chiffres (voir plus bas) ;
 - **Page intégrée** affiche une adresse `https://` dans un cadre isolé, qui ne reçoit ni
   session ni donnée ;
 - **Onglet** répartit les cartes sur plusieurs pages ; un double clic renomme un onglet.
@@ -118,6 +131,25 @@ comme les autres.
 Les cartes se déplacent par leur poignée et se redimensionnent par leur coin, sur une grille de
 24 colonnes. **Enregistrer** garde le tout ; **Annuler** revient à la version d’avant. Un titre
 de carte, en lecture, ouvre sa question pour l’explorer, filtres du tableau compris.
+
+### Des chiffres dans le texte
+
+Un texte cite une valeur par un nom entre doubles accolades : « Ce mois-ci,
+`{{chiffre_affaires}}` de chiffre d’affaires sur `{{commandes}}` commandes. » Chaque nom devient
+une pastille, à relier d’un clic — ou par **Variable** dans la barre de l’éditeur — à :
+
+| Source | Ce que le texte montre |
+|---|---|
+| **une carte** du tableau | ce qu’elle montre, sous ses propres filtres |
+| **une question enregistrée** de toute la base | sa valeur, et les filtres du tableau s’y relient comme à une carte |
+| **une question gardée dans le texte** | sa valeur ; c’est ainsi qu’on cite une question personnelle |
+| **un filtre** du tableau | la valeur choisie, comme sa commande la dit |
+
+La valeur d’une question est celle que montrerait son **Chiffre** : sa première mesure, sur la
+dernière ligne. Elle se calcule avec les droits du lecteur, et s’affiche toujours comme du texte.
+Un texte cite 20 valeurs au plus ; un nom s’écrit en minuscules, chiffres et `_`. Les textes
+écrits en Markdown avant l’éditeur se lisent comme avant, et deviennent riches dès qu’on les
+réécrit. Le Copilot, lui, écrit ses textes en Markdown.
 
 ## Les filtres
 

@@ -22,7 +22,7 @@ açıklamaları (`COMMENT ON`) gösterir.
 
 ## Arayüzde
 
-Sekme çubuğundaki **+** ya da veritabanının **⋯** menüsü → **Yeni SQL sorgusu**: sonucu
+Sekme çubuğundaki **+** ya da veritabanının **⋯** menüsü → **SQL sorgusu**: sonucu
 tablolarınızla aynı ızgarada görüntülenen, sözdizimi renklendirmesi ve otomatik tamamlama sunan
 bir düzenleyici.
 

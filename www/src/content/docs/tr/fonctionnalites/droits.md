@@ -11,9 +11,9 @@ tabloya verilen bir düzey, daha sonra oluşturulacaklar dahil, altındaki her �
 | Düzey | Neye izin verir |
 |---|---|
 | **Erişim yok** | hiçbir şeye: kaynak görünmezdir |
-| **Okuma** | satırları görmek, onlara yorum yapmak, kendine kişisel görünümler oluşturmak, yapıya ve panolara bakmak, kendi sorularını sormak, salt okunur SQL yazmak ve kişisel sorgularını kaydetmek |
+| **Okuma** | satırları görmek, onlara yorum yapmak, kendine kişisel görünümler oluşturmak, yapıya ve panolara bakmak, kendi sorularını sormak ve kaydetmek, salt okunur SQL yazmak ve kişisel sorgularını kaydetmek |
 | **Düzenleme** | ek olarak satır oluşturmak, değiştirmek, silmek |
-| **Yönetim** | ek olarak yapıyı değiştirmek, paylaşılan görünümleri, panoları ve kayıtlı soruları oluşturmak, bir panoyu bağlantıyla paylaşmak, sorguları paylaşmak, SQL görünümleri, otomasyonlar, entegrasyonlar ve token'lar oluşturmak; SQL'i yazmalar dahil tüm veritabanına erişir |
+| **Yönetim** | ek olarak yapıyı değiştirmek, paylaşılan görünümleri ve panoları oluşturmak, bir panoyu bağlantıyla paylaşmak, soruları ve sorguları paylaşmak, SQL görünümleri, otomasyonlar, entegrasyonlar ve token'lar oluşturmak; SQL'i yazmalar dahil tüm veritabanına erişir |
 
 İzinler **toplanır**: bir kişi, gruplarından birinin ona verdiği en yüksek düzeyi alır. Bir
 tabloya veritabanından daha az izin vermek onu “ince ayarlı” yapar.
@@ -71,6 +71,11 @@ basedb **yirmi dil** konuşur: Fransızca, İngilizce, Almanca, İspanyolca, İt
 Türkçe, Ukraynaca, Japonca, Basitleştirilmiş Çince ve Korece. Varsayılan olarak arayüz
 tarayıcınızın dilini kullanır; **Görünüş** içindeki **Dil** başka bir dil belirler. Sayılar ve
 tarihler seçilen dili izler.
+
+Bir bağlantı da bir dil isteyebilir: bir basedb adresinin sonundaki `?lang=de`, giriş ekranını,
+bir formu, paylaşılan bir görünümü ya da paylaşılan bir panoyu Almanca gösterir. Site, demoyu
+sayfanın dilinde göstermek için tam olarak bunu kullanır. Giriş yaptıktan sonra basedb
+hesabınızı izler: **Görünüş**'te seçilen dili, yoksa tarayıcının dilini.
 
 Tema tarayıcıya özgü kalır; dil, tarih sırası ve haftanın ilk günü sizi bir bilgisayardan
 diğerine izler. Adresi değiştirmek ya da bir sağlayıcı bağlamak yükseltilmiş bir oturum gerektirir; bir sağlayıcıyla giriş yapan şifresiz bir hesap, bu

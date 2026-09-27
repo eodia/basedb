@@ -1,11 +1,12 @@
 import { type Template, checkTemplate } from '@basedb/contracts'
-import { describe, expect, it } from 'vitest'
-import type { Field } from '../../src/lib/api/client'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { type Field, api } from '../../src/lib/api/client'
 import { filterToLabels, templateValue, textToLabels } from '../../src/lib/template-export'
 import {
   type BuiltField,
   type BuiltTable,
   aiFieldsOf,
+  applyTemplate,
   automationFor,
   blockFor,
   rowFor,
@@ -194,6 +195,53 @@ describe('applying a template', () => {
       produit: 'r-app',
     })
     expect(deferred).toEqual({ 'Bloqué par': ['@k2'] })
+  })
+})
+
+describe('the sample rows of a template', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  const build = async (rows?: boolean) => {
+    const check = checkTemplate({
+      key: 'taches',
+      label: 'Tâches',
+      tables: [
+        { key: 'taches', label: 'Tâches', fields: [{ label: 'Titre', kind: 'short_text' }] },
+      ],
+      rows: { taches: [{ Titre: 'Écrire' }, { Titre: 'Relire' }] },
+    })
+    expect(check.ok).toBe(true)
+    vi.spyOn(api, 'createTable').mockResolvedValue({
+      id: 't1',
+      name: 'taches',
+      fields: [{ name: 'titre', label: 'Titre' }],
+    } as never)
+    vi.spyOn(api, 'setDisplayColumn').mockResolvedValue({ field: 'titre', name: 'titre' })
+    const createRecords = vi
+      .spyOn(api, 'createRecords')
+      .mockResolvedValue({ results: [{ id: 'r1' }, { id: 'r2' }] } as never)
+    const steps: string[] = []
+    await applyTemplate((check as { template: Template }).template, 'projet', {
+      onStep: (step) => steps.push(step),
+      aiConsent: false,
+      me: null,
+      ...(rows === undefined ? {} : { rows }),
+    })
+    return { createRecords, steps }
+  }
+
+  it('are written by default', async () => {
+    const { createRecords } = await build()
+    expect(createRecords).toHaveBeenCalledWith({ base: 'projet', name: 'taches' }, [
+      { titre: 'Écrire' },
+      { titre: 'Relire' },
+    ])
+  })
+
+  it('are left out on request: the tables stay empty', async () => {
+    const { createRecords, steps } = await build(false)
+    expect(createRecords).not.toHaveBeenCalled()
+    expect(steps.some((step) => step.includes('exemple'))).toBe(false)
   })
 })
 

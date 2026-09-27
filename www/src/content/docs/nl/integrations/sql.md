@@ -22,7 +22,7 @@ de beschrijvingen (`COMMENT ON`).
 
 ## In de interface
 
-De **+** in de tabbladbalk, of het menu **⋯** van de database → **Nieuwe SQL-query**: een editor
+De **+** in de tabbladbalk, of het menu **⋯** van de database → **SQL-query**: een editor
 met syntaxiskleuring en aanvulling, waarvan het resultaat in hetzelfde raster als je tabellen verschijnt.
 
 ![Een opgeslagen query, en twee SQL-views tussen de tabellen](../../../../assets/screens/requete-sql.png)

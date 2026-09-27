@@ -22,7 +22,7 @@ opisy (`COMMENT ON`).
 
 ## W interfejsie
 
-**+** na pasku zakładek albo menu **⋯** bazy → **Nowe zapytanie SQL**: edytor z kolorowaniem
+**+** na pasku zakładek albo menu **⋯** bazy → **Zapytanie SQL**: edytor z kolorowaniem
 składni i podpowiadaniem, którego wynik wyświetla się w tej samej siatce co twoje tabele.
 
 ![Zapisane zapytanie i dwa widoki SQL ułożone wśród tabel](../../../../assets/screens/requete-sql.png)

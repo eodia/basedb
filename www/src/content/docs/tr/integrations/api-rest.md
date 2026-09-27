@@ -82,7 +82,8 @@ oturuma ayrılmıştır: bir token satırları okur ve yazar, veritabanını de�
 
 Her veritabanının bir **API ve MCP belgeleri** sayfası vardır: her tablo için uç noktaları,
 sütunları, cURL ve JavaScript örnekleri. Sayfa **izinlerinize göre filtrelenir** — iki okuyucu
-iki farklı sürüm görür — ve OpenAPI 3.1 olarak da sunulur
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+iki farklı sürüm görür —, **ekranınızın dilinde** yazılır ve OpenAPI 3.1 olarak da sunulur
+(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Adlar, yollar ve hata kodları tüm
+dillerde aynı kalır.
 
 ![Bir veritabanının oluşturulan belgeleri](../../../../assets/screens/documentation-api.png)

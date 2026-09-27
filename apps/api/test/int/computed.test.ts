@@ -336,8 +336,31 @@ describe('reading through a relation', () => {
       sortable: false,
       computed: { multiple: true, result_kind: 'short_text' },
     })
+    // Typed in French; read back in English by a screen that is not French.
     expect(fields.find((f) => f.name === 'total_ttc')).toMatchObject({
-      computed: { expression: 'SIVIDE([Total facturé]; 0) * 1.2', stored: false },
+      computed: { expression: 'IFBLANK([Total facturé], 0) * 1.2', stored: false },
+    })
+  })
+
+  it('writes formulas in French for a French screen, and reads English from any', async () => {
+    await addField('clients', {
+      label: 'Nom court',
+      kind: 'formula',
+      formula: { expression: 'IF(ISBLANK([Nom]), "?", LEFT(UPPER([Nom]), 3))' },
+    })
+    const names = await rows<{ nom: string; nom_court: string }>('clients', '?sort=nom')
+    expect(names.map((r) => r.nom_court)).toEqual(['ACM', 'GLO', 'INI'])
+
+    const meta = await read<{
+      data: { tables: Array<{ name: string; fields: Array<Record<string, unknown>> }> }
+    }>(
+      await app.request(`${V1}/meta/bases/${base}`, {
+        headers: { ...auth(), 'x-basedb-locale': 'fr' },
+      }),
+    )
+    const fields = meta.data.tables.find((t) => t.name === 'clients')?.fields ?? []
+    expect(fields.find((f) => f.name === 'nom_court')).toMatchObject({
+      computed: { expression: 'SI(ESTVIDE([Nom]); "?"; GAUCHE(MAJUSCULE([Nom]); 3))' },
     })
   })
 })

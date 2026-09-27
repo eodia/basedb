@@ -1,17 +1,20 @@
+import { checkTemplate, formulaInEnglish } from '@basedb/contracts'
+import { bundledTemplates } from '@basedb/templates'
 import { describe, expect, it } from 'vitest'
 import { BasedbError } from '../../src/errors/index.js'
 import {
   type FormulaField,
   type FormulaType,
   emitFormula,
+  formulaDialect,
   parseFormula,
   renderFormula,
   resolveFormula,
 } from '../../src/formula/language.js'
 
 /**
- * The formula language — chapter 04 §7: French grammar, fields by label, typing that
- * refuses what PostgreSQL would refuse later, SQL emitted from the tree alone.
+ * The formula language — chapter 04 §7: French or English words, fields by label, typing
+ * that refuses what PostgreSQL would refuse later, SQL emitted from the tree alone.
  */
 
 const key = (label: string) => label.normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim()
@@ -121,6 +124,67 @@ describe('reading and typing', () => {
     expect(refusal(() => resolve('SI(1; 2)')).code).toBe('FORMULA_SYNTAX')
     expect(refusal(() => resolve('"ouvert')).code).toBe('FORMULA_SYNTAX')
     expect(refusal(() => resolve('FOO(1)')).code).toBe('FORMULA_SYNTAX')
+  })
+})
+
+describe('English', () => {
+  it('reads the English words into the same tree as the French ones', () => {
+    const pairs: ReadonlyArray<readonly [string, string]> = [
+      ['SI([Prix HT] > 100; "cher"; "abordable")', 'IF([Prix HT] > 100, "cher", "abordable")'],
+      ['SIVIDE([Nom]; "?") & MAJUSCULE([Nom])', 'IFBLANK([Nom], "?") & UPPER([Nom])'],
+      ['ESTVIDE([Nom]) OU NON VRAI ET FAUX', 'ISBLANK([Nom]) OR NOT TRUE AND FALSE'],
+      ['ARRONDI(ABS([Prix HT]); 2)', 'ROUND(ABS([Prix HT]), 2)'],
+      ['PLAFOND([Prix HT]) + PLANCHER([Taux TVA])', 'CEILING([Prix HT]) + FLOOR([Taux TVA])'],
+      ['MIN([Début]; [Fin])', 'MIN([Début], [Fin])'],
+      ['MINUSCULE(SANSESPACES([Nom]))', 'LOWER(TRIM([Nom]))'],
+      ['GAUCHE([Nom]; 2) & DROITE([Nom]; 2)', 'LEFT([Nom], 2) & RIGHT([Nom], 2)'],
+      ['LONGUEUR(TEXTE(NOMBRE([Nom])))', 'LEN(TEXT(VALUE([Nom])))'],
+      [
+        'ANNEE([Début]) + MOIS([Début]) + JOUR([Début])',
+        'YEAR([Début]) + MONTH([Début]) + DAY([Début])',
+      ],
+      ['JOURSEMAINE(DATE(2026; 9; 27))', 'WEEKDAY(DATE(2026, 9, 27))'],
+      ['JOURS(AJOUTER_JOURS([Fin]; 3); AUJOURDHUI())', 'DAYS(ADD_DAYS([Fin], 3), TODAY())'],
+      ['MAINTENANT()', 'now()'],
+    ]
+    for (const [french, english] of pairs) expect(resolve(english).ast).toEqual(resolve(french).ast)
+  })
+
+  it('takes a comma or a semicolon between arguments, in either language', () => {
+    expect(resolve('SI([Prix HT] > 1, 2; 3)').ast).toEqual(resolve('IF([Prix HT] > 1; 2, 3)').ast)
+  })
+
+  it('renders in English, and the English reads back to the same tree', () => {
+    const { ast } = resolve(
+      'SI(NON ESTVIDE([Nom]) ET VRAI; ARRONDI([Prix HT]; 2); AUJOURDHUI() - [Début])',
+    )
+    const label = (id: string) => BY_ID.get(id)?.label ?? id
+    const english = renderFormula(ast, label, 'en')
+    expect(english).toBe('IF(NOT ISBLANK([Nom]) AND TRUE, ROUND([Prix HT], 2), TODAY() - [Début])')
+    expect(renderFormula(ast, label)).toBe(
+      'SI(NON ESTVIDE([Nom]) ET VRAI; ARRONDI([Prix HT]; 2); AUJOURDHUI() - [Début])',
+    )
+    expect(resolve(english).ast).toEqual(ast)
+  })
+
+  it('reads every formula of the official templates, once in English, as the same tree', () => {
+    // Positions aside: the English words are not as long as the French ones.
+    const tree = (text: string) =>
+      JSON.stringify(parseFormula(text), (k, v) => (k === 'at' ? undefined : v))
+    const formulas = bundledTemplates().flatMap(({ raw }) => {
+      const check = checkTemplate(raw)
+      if (!check.ok) return []
+      return check.template.tables.flatMap((t) => t.fields.flatMap((f) => f.formula ?? []))
+    })
+    expect(formulas.length).toBeGreaterThan(0)
+    for (const formula of formulas) expect(tree(formulaInEnglish(formula))).toBe(tree(formula))
+  })
+
+  it('writes in French on a French screen only', () => {
+    expect(formulaDialect('fr')).toBe('fr')
+    expect(formulaDialect('en')).toBe('en')
+    expect(formulaDialect('de')).toBe('en')
+    expect(formulaDialect('ja')).toBe('en')
   })
 })
 

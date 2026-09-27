@@ -22,7 +22,7 @@ Beschreibungen (`COMMENT ON`).
 
 ## In der Oberfläche
 
-Das **+** der Reiterleiste oder das Menü **⋯** der Datenbank → **Neue SQL-Abfrage**: ein Editor mit
+Das **+** der Reiterleiste oder das Menü **⋯** der Datenbank → **SQL-Abfrage**: ein Editor mit
 Syntaxhervorhebung und Autovervollständigung, dessen Ergebnis im selben Raster erscheint wie Ihre
 Tabellen.
 

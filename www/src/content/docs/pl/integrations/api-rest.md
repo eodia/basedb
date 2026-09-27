@@ -81,7 +81,8 @@ interfejsu: token czyta i zapisuje wiersze, nie zmienia bazy.
 
 Każda baza ma swoją stronę **Dokumentacja API i MCP**: dla każdej tabeli jej punkty dostępowe,
 kolumny, przykłady w cURL i w JavaScripcie. Jest **filtrowana według twoich uprawnień** – dwie
-osoby czytające otrzymują dwie wersje – i istnieje też w formacie OpenAPI 3.1
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+osoby czytające otrzymują dwie wersje –, napisana **w języku twojego ekranu**, i istnieje też
+w formacie OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Nazwy, ścieżki i
+kody błędów pozostają takie same we wszystkich językach.
 
 ![Generowana dokumentacja bazy](../../../../assets/screens/documentation-api.png)

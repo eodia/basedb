@@ -236,3 +236,111 @@ describe('a result, as a visitor receives it', () => {
     })
   })
 })
+
+describe('a text that cites values', () => {
+  const texts: Dashboard = {
+    ...dashboard,
+    cards: [
+      {
+        id: 't1',
+        tab: null,
+        x: 0,
+        y: 0,
+        w: 12,
+        h: 4,
+        kind: 'text',
+        rich: true,
+        text: '<p>Montant : <strong>{{montant}}</strong> sur {{periode}}</p>',
+        variables: [
+          {
+            name: 'montant',
+            question: 'q1',
+            mappings: [{ parameter: 'statut', target: { column: { field: 'statut' } } }],
+          },
+          { name: 'periode', parameter: 'periode' },
+        ],
+      },
+    ],
+  }
+
+  it('tells the page what it cites and the filters it follows, never what it runs', () => {
+    const [card] = sharedCards(texts, questions)
+    expect(card).toMatchObject({ kind: 'text', rich: true, filters: ['statut', 'periode'] })
+    expect(card?.variables).toEqual([
+      { name: 'montant', kind: 'question', visualization: { type: 'pie' }, filters: ['statut'] },
+      { name: 'periode', kind: 'parameter', parameter: 'periode' },
+    ])
+    expect(JSON.stringify(card)).not.toContain('q1')
+    expect(JSON.stringify(card)).not.toContain('aggregations')
+  })
+
+  it('runs a query it cites by its name, its filters tied as the text ties them', () => {
+    const run = sharedRun(texts, 't1', questions, { periode: '2026-01' }, 'montant')
+    expect(run.query).toBe(questions.get('q1')?.query)
+    expect(run.constraints).toEqual([
+      { target: { column: { field: 'statut' } }, type: 'category', value: ['fait'] },
+    ])
+    // A filter's value runs nothing; nor does a name it does not cite, or the text itself.
+    expect(() => sharedRun(texts, 't1', questions, {}, 'periode')).toThrow()
+    expect(() => sharedRun(texts, 't1', questions, {}, 'absente')).toThrow()
+    expect(() => sharedRun(texts, 't1', questions, {})).toThrow()
+    expect(() => sharedRun(dashboard, 'c1', questions, {}, 'montant')).toThrow()
+  })
+
+  it('lends a category filter the values of a query it cites', () => {
+    expect(valuesQuery(texts, 'statut', questions)).toMatchObject({
+      source: 't1',
+      breakouts: [{ field: 'statut' }],
+    })
+  })
+})
+
+describe('a text that cites a card, or a query of its own', () => {
+  const texts: Dashboard = {
+    ...dashboard,
+    cards: [
+      ...dashboard.cards,
+      {
+        id: 't2',
+        tab: null,
+        x: 0,
+        y: 12,
+        w: 12,
+        h: 4,
+        kind: 'text',
+        rich: true,
+        text: '<p>{{carte}} — {{mienne}}</p>',
+        variables: [
+          { name: 'carte', card: 'c1' },
+          {
+            name: 'mienne',
+            query: { kind: 'builder', source: 't2', aggregations: [{ fn: 'count' }] },
+            label: 'Sites',
+          },
+        ],
+      },
+    ],
+  }
+
+  it('reads a card cited under that card’s filters, and shows it as that card does', () => {
+    const card = sharedCards(texts, questions).find((c) => c.id === 't2')
+    expect(card?.variables).toEqual([
+      {
+        name: 'carte',
+        kind: 'question',
+        visualization: { type: 'pie' },
+        filters: ['statut', 'periode'],
+      },
+      { name: 'mienne', kind: 'question', visualization: { type: 'table' }, filters: [] },
+    ])
+    const run = sharedRun(texts, 't2', questions, { periode: '2026-01' }, 'carte')
+    expect(run.query).toBe(questions.get('q1')?.query)
+    expect(run.constraints).toHaveLength(2)
+  })
+
+  it('runs a query it keeps, under the filters it ties to it — none here', () => {
+    const run = sharedRun(texts, 't2', questions, {}, 'mienne')
+    expect(run.query).toEqual({ kind: 'builder', source: 't2', aggregations: [{ fn: 'count' }] })
+    expect(run.constraints).toEqual([])
+  })
+})

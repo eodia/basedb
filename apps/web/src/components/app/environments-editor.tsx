@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Choice } from '@/components/ui/choice'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type ApplyReport,
   type EnvironmentFamily,
@@ -126,12 +127,11 @@ function EnvironmentRow({
           className="h-8"
         />
         {env.production ? (
-          <span
-            className="w-8 shrink-0 text-center text-[0.7rem] text-muted-foreground"
-            title={$t('L’environnement par défaut')}
-          >
-            {$t('défaut')}
-          </span>
+          <Hint label={$t('L’environnement par défaut')}>
+            <span className="w-8 shrink-0 text-center text-[0.7rem] text-muted-foreground">
+              {$t('défaut')}
+            </span>
+          </Hint>
         ) : (
           <Button
             variant="ghost"

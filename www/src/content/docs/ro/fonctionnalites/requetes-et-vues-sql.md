@@ -13,7 +13,7 @@ pe care o citesc și `psql` și instrumentele dumneavoastră.
 
 ## Fiecare cu permisiunile sale
 
-Butonul **+** din bara de file sau meniul **⋯** al bazei → **Interogare SQL nouă** deschide o
+Butonul **+** din bara de file sau meniul **⋯** al bazei → **Interogare SQL** deschide o
 filă SQL: un editor cu evidențiere și completare, **Ctrl+Enter** pentru execuție și rezultatul
 în aceeași grilă ca tabelele dumneavoastră. Ce poate citi interogarea depinde de cine o
 lansează:
@@ -35,7 +35,9 @@ API-ul sau serverul MCP.
 
 **Salvați**, în bara filei, așază interogarea sub tabelele bazei, la rubrica **Interogări**. Se
 redeschide cu un clic; **⋯** → **Salvați ca…** face o copie, **Nume și partajare…** (în filă
-sau în meniul ei din bara laterală) o redenumește, schimbă cine o vede sau o șterge.
+sau în meniul ei din bara laterală) o redenumește, schimbă cine o vede sau o șterge —
+**Ștergeți** este de asemenea în meniul ei, printr-un clic dreapta. O filă care o arăta își
+păstrează textul.
 
 ![Salvarea unei interogări: numele ei, ce arată și cine o vede](../../../../assets/screens/requete-enregistrer.png)
 
@@ -85,7 +87,9 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 propriile permisiuni, pe fiecare tabel și fiecare coloană pe care le citește ea; bara laterală
 o listează doar celor care pot citi tot ce citește ea. Nu citește decât **propria** bază: o
 altă bază sau catalogul basedb sunt refuzate încă de la creare. Crearea, modificarea sau
-ștergerea ei cer nivelul **Gestionare** pe bază.
+ștergerea ei cer nivelul **Gestionare** pe bază. **Ștergeți**, din meniul ei din bara laterală,
+o retrage pentru toată lumea, scripturi și instrumente incluse; tabelele pe care le citește nu
+sunt afectate.
 
 ### Când se schimbă structura
 

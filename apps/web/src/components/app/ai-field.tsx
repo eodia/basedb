@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
 import { type AiFieldInput, type AiFieldStatus, type Field, api } from '@/lib/api/client'
 import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { reasonFor, sentenceFor } from '@/lib/messages'
@@ -351,13 +352,11 @@ function PromptEditor({
           <span className="text-muted-foreground">{$t('Colonnes citées :')}</span>
           {cited.map((c) =>
             c.field === null ? (
-              <span
-                key={c.raw}
-                className="rounded bg-destructive/10 px-1.5 py-0.5 text-destructive"
-                title={$t('Aucune colonne lisible de la table ne porte ce nom')}
-              >
-                {$t('{raw} — inconnue', { raw: c.raw })}
-              </span>
+              <Hint key={c.raw} label={$t('Aucune colonne lisible de la table ne porte ce nom')}>
+                <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-destructive">
+                  {$t('{raw} — inconnue', { raw: c.raw })}
+                </span>
+              </Hint>
             ) : (
               <span key={c.raw} className="flex items-center gap-1 rounded bg-muted px-1.5 py-0.5">
                 <FieldIcon kind={c.field.kind} className="size-3" />
@@ -595,26 +594,26 @@ function RefreshEditor({
               {WEEKDAYS.map((d) => {
                 const on = schedule.weekdays.includes(d.value)
                 return (
-                  <button
-                    key={d.value}
-                    type="button"
-                    aria-pressed={on}
-                    title={d.long}
-                    disabled={disabled}
-                    onClick={() =>
-                      set({
-                        weekdays: on
-                          ? schedule.weekdays.filter((v) => v !== d.value)
-                          : [...schedule.weekdays, d.value],
-                      })
-                    }
-                    className={cn(
-                      'size-8 rounded-full border text-xs font-medium transition-colors',
-                      on ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-muted',
-                    )}
-                  >
-                    {d.short}
-                  </button>
+                  <Hint key={d.value} label={d.long}>
+                    <button
+                      type="button"
+                      aria-pressed={on}
+                      disabled={disabled}
+                      onClick={() =>
+                        set({
+                          weekdays: on
+                            ? schedule.weekdays.filter((v) => v !== d.value)
+                            : [...schedule.weekdays, d.value],
+                        })
+                      }
+                      className={cn(
+                        'size-8 rounded-full border text-xs font-medium transition-colors',
+                        on ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-muted',
+                      )}
+                    >
+                      {d.short}
+                    </button>
+                  </Hint>
                 )
               })}
             </fieldset>

@@ -72,7 +72,7 @@ export default {
 							tables: {
 								href: '/fonctionnalites/tables-et-champs/',
 								title: 'Tablas y campos',
-								text: 'Campos para todo, relaciones, fórmulas en francés.',
+								text: 'Campos para todo, relaciones, fórmulas como en una hoja de cálculo.',
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
@@ -776,9 +776,9 @@ export default {
 					href: '/fonctionnalites/tableaux-de-bord/',
 				},
 				formulas: {
-					code: 'SI([Montant] > 10000; "Grand compte"; "")',
-					title: 'Fórmulas en francés',
-					text: 'Como en una hoja de cálculo — SI, ARRONDI, JOURS… — pero calculadas para todo el equipo.',
+					code: 'IF([Montant] > 10000, "Grand compte", "")',
+					title: 'Fórmulas en francés o en inglés',
+					text: 'Como en una hoja de cálculo — SI, ARRONDI, JOURS… o IF, ROUND, DAYS — pero calculadas para todo el equipo.',
 					href: '/fonctionnalites/tables-et-champs/#fórmulas',
 				},
 				rights: {
@@ -886,7 +886,7 @@ export default {
 			items: [
 				{
 					q: '¿Hay que saber programar?',
-					a: 'No. Las tablas, las vistas, los formularios, los paneles y las automatizaciones se crean con el ratón. Las fórmulas se escriben en francés, como en una hoja de cálculo: SI, ARRONDI, JOURS…',
+					a: 'No. Las tablas, las vistas, los formularios, los paneles y las automatizaciones se crean con el ratón. Las fórmulas se escriben como en una hoja de cálculo, en francés o en inglés: SI o IF, ARRONDI o ROUND, JOURS o DAYS…',
 				},
 				{
 					q: '¿Cuánto cuesta?',
@@ -1262,8 +1262,8 @@ export default {
 			},
 			formulas: {
 				title: 'Relaciones y fórmulas',
-				text: 'Claves foráneas reales, fórmulas en francés calculadas por PostgreSQL, y búsquedas, acumulados y recuentos a través de las relaciones.',
-				code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+				text: 'Claves foráneas reales, fórmulas en francés o en inglés calculadas por PostgreSQL, y búsquedas, acumulados y recuentos a través de las relaciones.',
+				code: 'ROUND([Montant HT] * (1 + [Taux de TVA]), 2)',
 				href: '/fonctionnalites/tables-et-champs/#fórmulas',
 			},
 			richText: {
@@ -1407,6 +1407,76 @@ export default {
 		title: 'Lo que ha cambiado en basedb',
 		intro: 'El detalle de cada cambio está en <a href="https://github.com/eodia/basedb/commits/main">el historial del repositorio</a>. Lo que viene después: la <a href="/feuille-de-route/">hoja de ruta</a>.',
 		entries: {
+			formulaLanguages: {
+				date: '2026-09-28',
+				title: 'Fórmulas en francés o en inglés',
+				tag: 'Novedad',
+				items: [
+					'<strong>Escribe una fórmula en francés o en inglés</strong>, en cualquier pantalla, incluso mezclando ambos: <code>SI</code> o <code>IF</code>, <code>ARRONDI</code> o <code>ROUND</code>, <code>JOURS</code> o <code>DAYS</code>… Los argumentos se separan con <code>;</code> o con <code>,</code>. <a href="/fonctionnalites/tables-et-champs/#fórmulas">Las fórmulas</a>',
+					'<strong>Se relee en el idioma de la pantalla</strong>: en francés en una pantalla francesa, en inglés en los otros diecinueve idiomas — fórmulas existentes y el panel «Funciones» incluidos. La API devuelve una fórmula en el idioma que se le pida, y en inglés si no se especifica ninguno.',
+					'Las plantillas oficiales, servidas en un idioma distinto del francés, llegan con sus fórmulas en inglés. Nada cambia en la base de datos: mismas columnas, mismo SQL, sin migración.',
+				],
+			},
+			search: {
+				date: '2026-09-27',
+				title: 'Encontrarlo todo: Ctrl+K',
+				tag: 'Novedad',
+				items: [
+					'<strong>Un único campo para todo</strong> — <strong>Ctrl+K</strong>, o el campo en el centro de la barra superior: tablas, vistas, preguntas, paneles, automatizaciones, columnas y las propias filas, leídas con tus permisos; en una pantalla grande, la vista previa del resultado elegido. <a href="/fonctionnalites/recherche/">La búsqueda</a>',
+					'<strong>Escribe como piensas</strong>: sin acentos ni mayúsculas, por iniciales — <code>nc</code> para «Nuevo cliente» —, una falta de ortografía perdonada, <code>clients lyon</code> para buscar «lyon» en la tabla de clientes; lo que abres a menudo sube arriba.',
+					'<strong>Todos los comandos con el teclado</strong>: crear, ir a, cerrar, deshacer, cambiar de tema, copiar el enlace de la página. <code>&gt;</code> solo busca comandos, <code>#</code> los objetos, <code>/</code> las filas; <strong>Tab</strong> busca dentro de una tabla o una base.',
+					'<strong>¿Tienes una pregunta?</strong> Escríbela: <strong>Preguntar al Copilot</strong> se la plantea a él, en la base abierta.',
+				],
+			},
+			questions: {
+				date: '2026-09-27',
+				title: 'Preguntas propias, cifras en el texto',
+				tag: 'Novedad',
+				items: [
+					'<strong>Cada uno guarda sus propias preguntas</strong>, sin el nivel Gestión: personales, solo tú las ves; quien gestiona la base las comparte con toda la base o con grupos, como las consultas. <a href="/fonctionnalites/tableaux-de-bord/">Los paneles</a>',
+					'<strong>Una pregunta en una pestaña</strong>, junto a las tablas: <strong>Nueva pregunta</strong> y <strong>Nueva pregunta SQL</strong>, en el <strong>+</strong> de la barra de pestañas y en el menú de la base; la pestaña conserva lo que has dejado en ella. <strong>Guardar una copia</strong> hace tuya una pregunta que no puedes modificar.',
+					'<strong>Cifras en el texto</strong>: un texto de panel, ahora con formato, cita un valor — <code>{{chiffre_affaires}}</code> — extraído de una tarjeta, una pregunta o un filtro, calculado con los permisos de quien lo lee, incluso en un panel compartido por enlace. <a href="/fonctionnalites/tableaux-de-bord/#cifras-en-el-texto">Cifras en el texto</a>',
+					'Las consultas, las vistas SQL y las preguntas también se eliminan desde su menú, con un clic derecho.',
+				],
+			},
+			addresses: {
+				date: '2026-09-27',
+				title: 'Una dirección para cada pantalla',
+				tag: 'Novedad',
+				items: [
+					'<strong>La dirección sigue a la pantalla</strong>: una tabla, una vista, la ficha de una fila, un panel, una automatización, una pregunta, tu configuración — <code>/bases/ventes/tables/opportunites?ligne=…</code>. Guárdala como favorita, pégala en un mensaje: se llega al mismo sitio, con sus propios permisos. <a href="/fonctionnalites/collaboration/#un-enlace-a-cada-pantalla">Un enlace a cada pantalla</a>',
+					'Los botones <strong>atrás</strong> y <strong>adelante</strong> del navegador te devuelven a donde estabas; una dirección que no lleva a nada muestra «Esta página no existe».',
+				],
+			},
+			demo: {
+				date: '2026-09-27',
+				title: 'Una demo para probar, en tu idioma',
+				tag: 'Novedad',
+				items: [
+					'<strong>La demo</strong>, en <a href="https://demo.basedb.eodia.com">demo.basedb.eodia.com</a>: la cuenta viene rellenada en el idioma de tu navegador, con una base en ese idioma. Se puede leer todo y modificar lo que ya existe; las creaciones, las eliminaciones y la IA están desactivadas, y la base vuelve cada noche a su estado inicial.',
+					'<strong>Tu propia demo</strong>: <code>BASEDB_DEMO=1</code> abre una instancia a todo el mundo, con una cuenta compartida por idioma, preparada de antemano. <a href="/hebergement/variables/#demo-pública">Las variables</a>',
+					'<strong>Un idioma por enlace</strong>: <code>?lang=de</code> al final de una dirección de basedb muestra en alemán la pantalla de inicio de sesión o una página compartida; así el sitio lleva a la demo en el idioma de la página. <a href="/fonctionnalites/droits/#tu-configuración">Tu configuración</a>',
+				],
+			},
+			templateLanguages: {
+				date: '2026-09-27',
+				title: 'Las plantillas en tu idioma',
+				tag: 'Novedad',
+				items: [
+					'<strong>Las plantillas oficiales se crean en el idioma de la pantalla</strong>: tablas, campos, opciones, vistas, paneles, automatizaciones, instrucciones de la IA — y filas de ejemplo de un mundo adaptado a cada idioma: la «Boulangerie Martin» de Lyon se convierte en «Martin’s Bakery» en Portland. <a href="/fonctionnalites/modeles/#en-tu-idioma">Las plantillas</a>',
+					'La <a href="/modeles/">galería del sitio</a> muestra cada plantilla en el idioma de la página.',
+					'<strong>Una plantilla, varios diccionarios</strong>: una plantilla se escribe una sola vez, en francés; cada idioma solo traduce sus textos, y basedb sigue por sí mismo cada etiqueta allí donde se cita. Un diccionario que rompiera la plantilla no se sirve. <a href="/fonctionnalites/modeles/#publicar-una-plantilla-para-todas-las-instancias">Publicar una plantilla</a>',
+				],
+			},
+			details: {
+				date: '2026-09-27',
+				title: 'Y también',
+				items: [
+					'<strong>Una plantilla sin sus filas de ejemplo</strong>: «Cargar datos de ejemplo», desmarcada, crea tablas vacías, listas para tus datos. <a href="/fonctionnalites/modeles/#partir-de-una-plantilla">Partir de una plantilla</a>',
+					'<strong>La documentación de la API y MCP</strong> de cada base se escribe en el idioma de tu pantalla. <a href="/integrations/api-rest/#la-documentación-generada">La documentación generada</a>',
+					'La información sobre herramientas sigue ahora el tema de la aplicación, en todos los lugares donde antes el navegador mostraba la suya; los «Eliminar» de los menús, en rojo; la fecha completa al pasar el cursor sobre la hora de un comentario.',
+				],
+			},
 			languages: {
 				date: '2026-09-27',
 				title: 'Texto enriquecido, variables, un kanban más legible',

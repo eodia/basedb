@@ -63,25 +63,25 @@ Foreign-key constraints:
 
 ## 数式
 
-数式はフランス語で書きます。フィールドは角かっこで囲み、引数は`;`で区切ります：
+数式は英語で書きます（フランス語の関数名も使えます）。フィールドは角かっこで囲み、引数は`,`で区切ります：
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 エディターには、挿入できるフィールドと関数のパネルが表示されます。エラーが起きると、原因となったフィールドや文字が示されます。
 
 | 分類 | 関数 |
 |---|---|
-| 論理 | `SI`、`SIVIDE`、`ESTVIDE`、`ET`、`OU`、`NON`、`VRAI`、`FAUX` |
-| 数値 | `ARRONDI`、`ABS`、`PLAFOND`、`PLANCHER`、`MIN`、`MAX` |
-| テキスト | `MAJUSCULE`、`MINUSCULE`、`SANSESPACES`、`GAUCHE`、`DROITE`、`LONGUEUR`、`TEXTE`、`NOMBRE` |
-| 日付 | `ANNEE`、`MOIS`、`JOUR`、`JOURSEMAINE`、`JOURS`、`AJOUTER_JOURS`、`DATE`、`AUJOURDHUI`、`MAINTENANT` |
+| 論理 | `IF`、`IFBLANK`、`ISBLANK`、`AND`、`OR`、`NOT`、`TRUE`、`FALSE` |
+| 数値 | `ROUND`、`ABS`、`CEILING`、`FLOOR`、`MIN`、`MAX` |
+| テキスト | `UPPER`、`LOWER`、`TRIM`、`LEFT`、`RIGHT`、`LEN`、`TEXT`、`VALUE` |
+| 日付 | `YEAR`、`MONTH`、`DAY`、`WEEKDAY`、`DAYS`、`ADD_DAYS`、`DATE`、`TODAY`、`NOW` |
 | 演算子 | `+ - * /`、テキストの連結には`&`、`= <> < <= > >=` |
 
-数式はPostgreSQLの**生成列**になります。`psql`や各種ツールからも、ほかの列と同じように読めます。日付に依存する数式（`AUJOURDHUI()`、`MAINTENANT()`）や、ルックアップ・ロールアップを参照する数式は**読み取り時に計算**されます。basedb内ではフィルターや並べ替えに使えますが、直接SQLからは存在しません。
+数式はPostgreSQLの**生成列**になります。`psql`や各種ツールからも、ほかの列と同じように読めます。日付に依存する数式（`TODAY()`、`NOW()`）や、ルックアップ・ロールアップを参照する数式は**読み取り時に計算**されます。basedb内ではフィルターや並べ替えに使えますが、直接SQLからは存在しません。
 
 数式から別の数式やリレーションを直接参照することはできません。それにはルックアップを使います。テキストの一部の抽出や置換には、今後対応する予定です。
 

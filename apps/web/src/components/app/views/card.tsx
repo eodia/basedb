@@ -7,6 +7,7 @@ import { longTextExcerpt, urlLabel } from '@/components/app/markdown-text'
 import { OptionBadge } from '@/components/app/option-badge'
 import { ChoiceChips, LinkChips, choicesOf, linksOf } from '@/components/app/pickers'
 import { BarcodeValue, ComputedList, RatingStars, UserValue } from '@/components/app/value-widgets'
+import { Hint } from '@/components/ui/tooltip'
 import { type Field, type Member, fileHref, filesOf } from '@/lib/api/client'
 import { parseTemplate } from '@/lib/card-template'
 import { shownField } from '@/lib/computed'
@@ -208,19 +209,17 @@ export function CardFields({
   return (
     <dl className="mt-1.5 space-y-1">
       {fields.map((field) => (
-        <div
-          key={field.name}
-          className="flex min-w-0 items-center gap-1.5 text-xs"
-          title={field.label}
-        >
-          <dt className="shrink-0 text-muted-foreground">
-            <FieldIcon kind={field.kind} format={field.format?.display} className="size-3" />
-            <span className="sr-only">{field.label}</span>
-          </dt>
-          <dd className="flex min-w-0 flex-1 items-center">
-            <CardValue field={field} row={row} />
-          </dd>
-        </div>
+        <Hint key={field.name} label={field.label}>
+          <div className="flex min-w-0 items-center gap-1.5 text-xs">
+            <dt className="shrink-0 text-muted-foreground">
+              <FieldIcon kind={field.kind} format={field.format?.display} className="size-3" />
+              <span className="sr-only">{field.label}</span>
+            </dt>
+            <dd className="flex min-w-0 flex-1 items-center">
+              <CardValue field={field} row={row} />
+            </dd>
+          </div>
+        </Hint>
       ))}
     </dl>
   )

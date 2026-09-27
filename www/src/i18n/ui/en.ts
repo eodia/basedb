@@ -72,7 +72,7 @@ export default {
 							tables: {
 								href: '/fonctionnalites/tables-et-champs/',
 								title: 'Tables and fields',
-								text: 'Fields for everything, relations, and formulas in French.',
+								text: 'Fields for everything, relations, and formulas like in a spreadsheet.',
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
@@ -776,9 +776,9 @@ export default {
 					href: '/fonctionnalites/tableaux-de-bord/',
 				},
 				formulas: {
-					code: 'SI([Montant] > 10000; "Grand compte"; "")',
-					title: 'Formulas in French',
-					text: 'Just like in a spreadsheet — SI, ARRONDI, JOURS… — but computed for the whole team.',
+					code: 'IF([Montant] > 10000, "Grand compte", "")',
+					title: 'Formulas in French or English',
+					text: 'Just like in a spreadsheet — SI, ARRONDI, JOURS… or IF, ROUND, DAYS — but computed for the whole team.',
 					href: '/fonctionnalites/tables-et-champs/#formulas',
 				},
 				rights: {
@@ -886,7 +886,7 @@ export default {
 			items: [
 				{
 					q: 'Do I need to know how to code?',
-					a: 'No. You create your tables, views, forms, dashboards and automations with the mouse. Formulas are written in French, just like in a spreadsheet: SI, ARRONDI, JOURS…',
+					a: 'No. You create your tables, views, forms, dashboards and automations with the mouse. Formulas are written just like in a spreadsheet, in French or English: SI or IF, ARRONDI or ROUND, JOURS or DAYS…',
 				},
 				{
 					q: 'How much does it cost?',
@@ -1253,8 +1253,8 @@ export default {
 			},
 			formulas: {
 				title: 'Relations and formulas',
-				text: 'Real foreign keys, formulas written in French and computed by PostgreSQL, and lookups, rollups and counts across relations.',
-				code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+				text: 'Real foreign keys, formulas written in French or English and computed by PostgreSQL, and lookups, rollups and counts across relations.',
+				code: 'ROUND([Montant HT] * (1 + [Taux de TVA]), 2)',
 				href: '/fonctionnalites/tables-et-champs/#formulas',
 			},
 			richText: {
@@ -1398,6 +1398,76 @@ export default {
 		title: 'What changed in basedb',
 		intro: 'The details of every change are in <a href="https://github.com/eodia/basedb/commits/main">the repository history</a>. What comes next: the <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			formulaLanguages: {
+				date: '2026-09-28',
+				title: 'Formulas in French or English',
+				tag: 'New',
+				items: [
+					'<strong>Type a formula in French or English</strong>, on any screen, even mixing the two: <code>SI</code> or <code>IF</code>, <code>ARRONDI</code> or <code>ROUND</code>, <code>JOURS</code> or <code>DAYS</code>… Arguments are separated by <code>;</code> or by <code>,</code>. <a href="/fonctionnalites/tables-et-champs/#formulas">Formulas</a>',
+					'<strong>It reads back in the screen’s language</strong>: in French on a French screen, in English in the other nineteen languages — existing formulas and the “Functions” panel included. The API renders a formula in whatever language you ask for, in English otherwise.',
+					'Official templates, served in a language other than French, arrive with their formulas in English. Nothing changes in the database: same columns, same SQL, no migration.',
+				],
+			},
+			search: {
+				date: '2026-09-27',
+				title: 'Find everything: Ctrl+K',
+				tag: 'New',
+				items: [
+					'<strong>One field for everything</strong> — <strong>Ctrl+K</strong>, or the field at the center of the top bar: tables, views, questions, dashboards, automations, columns, and the rows themselves, read with your permissions; on a large screen, a preview of the selected result. <a href="/fonctionnalites/recherche/">Search</a>',
+					'<strong>Type the way you think</strong>: no accents or capitals needed, by initials — <code>nc</code> for “New client” —, a typo forgiven, <code>clients lyon</code> to search for “lyon” in the clients table; what you open often rises to the top.',
+					'<strong>Every command, from the keyboard</strong>: create, go to, close, undo, switch theme, copy the page’s link. <code>&gt;</code> searches only commands, <code>#</code> objects, <code>/</code> rows; <strong>Tab</strong> searches within a table or a base.',
+					'<strong>Got a question?</strong> Type it: <strong>Ask the Copilot</strong> asks it for you, on the open base.',
+				],
+			},
+			questions: {
+				date: '2026-09-27',
+				title: 'Questions of your own, figures in text',
+				tag: 'New',
+				items: [
+					'<strong>Everyone saves their own questions</strong>, without the Manage level: personal, only you see them; whoever manages the base shares them with the whole base or with groups, like queries. <a href="/fonctionnalites/tableaux-de-bord/">Dashboards</a>',
+					'<strong>A question in a tab</strong>, next to the tables: <strong>New question</strong> and <strong>New SQL question</strong>, at the <strong>+</strong> of the tab bar and in the base’s menu; the tab keeps what you left in it. <strong>Save a copy</strong> makes yours a question you can’t edit.',
+					'<strong>Figures in text</strong>: a dashboard text, now formatted, cites a value — <code>{{chiffre_affaires}}</code> — pulled from a card, a question or a filter, computed with the reader’s permissions, even in a dashboard shared through a link. <a href="/fonctionnalites/tableaux-de-bord/#figures-in-text">Figures in text</a>',
+					'Queries, SQL views and questions can also be deleted from their menu, with a right-click.',
+				],
+			},
+			addresses: {
+				date: '2026-09-27',
+				title: 'An address for every screen',
+				tag: 'New',
+				items: [
+					'<strong>The address follows the screen</strong>: a table, a view, a row’s details, a dashboard, an automation, a question, your settings — <code>/bases/ventes/tables/opportunites?ligne=…</code>. Bookmark it, paste it into a message: everyone lands in the same place, with their own permissions. <a href="/fonctionnalites/collaboration/#a-link-to-every-screen">A link to every screen</a>',
+					'The browser’s <strong>back</strong> and <strong>forward</strong> buttons take you back where you were; an address that leads nowhere shows “This page doesn’t exist”.',
+				],
+			},
+			demo: {
+				date: '2026-09-27',
+				title: 'A demo to try, in your language',
+				tag: 'New',
+				items: [
+					'<strong>The demo</strong>, at <a href="https://demo.basedb.eodia.com">demo.basedb.eodia.com</a>: the account is pre-filled in your browser’s language, with a base in that language. You can read everything and edit what exists; creating, deleting and AI are disabled there, and the base returns to its starting state every night.',
+					'<strong>Your own demo</strong>: <code>BASEDB_DEMO=1</code> opens an instance to everyone, with a shared account per language, prepared in advance. <a href="/hebergement/variables/#public-demo">Variables</a>',
+					'<strong>One language per link</strong>: <code>?lang=de</code> at the end of a basedb address shows the sign-in screen or a shared page in German; the site leads to the demo in the page’s language this way. <a href="/fonctionnalites/droits/#your-settings">Your settings</a>',
+				],
+			},
+			templateLanguages: {
+				date: '2026-09-27',
+				title: 'Templates in your language',
+				tag: 'New',
+				items: [
+					'<strong>Official templates are created in the screen’s language</strong>: tables, fields, choices, views, dashboards, automations, AI instructions — and sample rows from a world adapted to each language: the “Boulangerie Martin” from Lyon becomes “Martin’s Bakery” in Portland. <a href="/fonctionnalites/modeles/#in-your-language">Templates</a>',
+					'The <a href="/modeles/">site’s gallery</a> shows every template in the page’s language.',
+					'<strong>One template, many dictionaries</strong>: a template is written once, in French; each language only translates its texts, and basedb itself follows every label wherever it is cited. A dictionary that would break the template isn’t served. <a href="/fonctionnalites/modeles/#publishing-a-template-for-every-instance">Publishing a template</a>',
+				],
+			},
+			details: {
+				date: '2026-09-27',
+				title: 'And also',
+				items: [
+					'<strong>A template without its sample rows</strong>: “Load sample data”, unchecked, creates empty tables, ready for your data. <a href="/fonctionnalites/modeles/#starting-from-a-template">Starting from a template</a>',
+					'<strong>The API and MCP documentation</strong> for every base is written in your screen’s language. <a href="/integrations/api-rest/#the-generated-documentation">The generated documentation</a>',
+					'Tooltips in the application’s theme, everywhere the browser used to show its own; the “Delete” entries in menus, now in red; the full date when hovering a comment’s time.',
+				],
+			},
 			languages: {
 				date: '2026-09-27',
 				title: 'Rich text, variables, a more readable kanban',

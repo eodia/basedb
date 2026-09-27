@@ -1,6 +1,6 @@
 ---
 title: Collaborazione
-description: Commenti e menzioni, notifiche, aggiornamenti in tempo reale e presenza.
+description: Commenti e menzioni, notifiche, aggiornamenti in tempo reale, presenza, e un link a ogni schermata.
 ---
 
 Più persone lavorano sullo stesso database contemporaneamente: ognuna vede arrivare le scritture
@@ -45,6 +45,28 @@ dita.
 I volti delle persone che guardano **la stessa tabella** compaiono in cima allo schermo; quelli
 di chi ha aperto **la stessa riga**, nell’intestazione dei suoi dettagli. Nella griglia, il puntatore degli
 altri compare sulla cella che stanno sorvolando.
+
+## Un link per ogni schermata
+
+L’indirizzo del browser segue quello che stai guardando: una tabella, una delle sue viste, i
+dettagli di una riga, una dashboard, un’automazione, una domanda, le tue impostazioni. Incollalo
+in un messaggio: il tuo collega arriva nello stesso punto, con i propri permessi. Salvalo nei
+preferiti; i pulsanti indietro e avanti del browser ti riportano dove eri.
+
+| Indirizzo | Cosa apre |
+|---|---|
+| `/bases/ventes/tables/opportunites` | la tabella «Opportunités» del database «Ventes» |
+| `/bases/ventes/tables/opportunites?vue=…` | una delle sue viste |
+| `/bases/ventes/tables/opportunites?ligne=…` | i dettagli di una delle sue righe |
+| `/bases/ventes/tableaux-de-bord/…` | una dashboard |
+| `/bases/ventes/automatisations/…` | un’automazione |
+| `/parametres/apparence` | le tue impostazioni |
+
+Un indirizzo indica un **luogo**, non lo stato in cui l’hai lasciato: filtri, ordinamenti e
+larghezze delle colonne restano quelli di ciascun browser. Un database e una tabella vi
+compaiono con il loro nome PostgreSQL: rinominati, il vecchio indirizzo non porta più da nessuna
+parte. Un indirizzo che non porta da nessuna parte — un errore di battitura, un oggetto
+eliminato, o che non hai il diritto di vedere — mostra «Questa pagina non esiste».
 
 ## Annullare
 

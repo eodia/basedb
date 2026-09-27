@@ -30,7 +30,7 @@ volume, `/data`, for the files of File and Image fields.
 |---|---|
 | `latest` | the latest published version |
 | `0.3` | the latest 0.3.x version |
-| `0.3.0` | exactly this version |
+| `0.3.1` | exactly this version |
 
 ## The services
 

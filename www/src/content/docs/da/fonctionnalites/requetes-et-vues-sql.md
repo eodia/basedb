@@ -13,7 +13,7 @@ tabellerne, som `psql` og dine værktøjer også kan læse.
 
 ## Hver med sine tilladelser
 
-**+** i fanelinjen eller databasens **⋯**-menu → **Ny SQL-forespørgsel** åbner en SQL-fane: en
+**+** i fanelinjen eller databasens **⋯**-menu → **SQL-forespørgsel** åbner en SQL-fane: en
 editor med syntaksfremhævning og autofuldførelse, **Ctrl+Enter** for at køre og resultatet i
 samme gitter som dine tabeller. Hvad forespørgslen kan læse, afhænger af, hvem der kører den:
 
@@ -34,7 +34,8 @@ API'et eller MCP-serveren ikke ville vise dig.
 **Gem** i fanens værktøjslinje placerer forespørgslen under databasens tabeller i afsnittet
 **Forespørgsler**. Den åbnes igen med ét klik; **⋯** → **Gem som…** laver en kopi, og
 **Navn og deling…** (i fanen eller i dens menu i sidepanelet) omdøber den, ændrer, hvem der kan
-se den, eller sletter den.
+se den, eller sletter den — **Slet** findes også i dens menu, ved et højreklik. En fane, der
+viste den, beholder dens tekst.
 
 ![Gem en forespørgsel: dens navn, hvad den viser, og hvem der kan se den](../../../../assets/screens/requete-enregistrer.png)
 
@@ -85,7 +86,8 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 tilladelser på hver tabel og hver kolonne, det læser; sidepanelet viser det kun for dem, der kan
 læse alt det, det læser. Det læser kun **sin egen** database: en anden database eller basedbs
 katalog afvises allerede ved oprettelsen. At oprette, redigere eller slette det kræver niveauet
-**Administrere** på databasen.
+**Administrere** på databasen. **Slet**, i dens menu i sidepanelet, fjerner det for alle,
+scripts og værktøjer inklusive; de tabeller, det læser, berøres ikke.
 
 ### Når strukturen ændres
 

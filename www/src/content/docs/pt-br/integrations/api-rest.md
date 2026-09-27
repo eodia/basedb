@@ -81,7 +81,8 @@ uma sessão da interface: um token lê e escreve linhas, ele não muda a base.
 
 Cada base tem sua página **Documentação de API e MCP**: para cada tabela, seus endpoints, suas
 colunas, exemplos em cURL e em JavaScript. Ela é **filtrada pelas suas permissões** — dois
-leitores obtêm duas versões — e existe também em OpenAPI 3.1
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+leitores obtêm duas versões —, escrita **no idioma da sua tela**, e existe também em OpenAPI 3.1
+(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Os nomes, os caminhos e os códigos de erro
+continuam os mesmos em todos os idiomas.
 
 ![A documentação gerada de uma base](../../../../assets/screens/documentation-api.png)

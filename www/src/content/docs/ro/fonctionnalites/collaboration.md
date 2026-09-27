@@ -1,6 +1,6 @@
 ---
 title: Colaborare
-description: Comentarii și mențiuni, notificări, actualizări în timp real și prezență.
+description: Comentarii și mențiuni, notificări, actualizări în timp real, prezență și un link către fiecare ecran.
 ---
 
 Mai multe persoane lucrează în aceeași bază în același timp: fiecare vede sosind scrierile
@@ -45,6 +45,28 @@ dumneavoastră. O celulă pe care o modificați nu este niciodată înlocuită �
 Fețele persoanelor care se uită la **același tabel** apar în partea de sus a ecranului; ale
 celor care au deschis **același rând**, în antetul detaliilor rândului. În grilă, cursorul
 celorlalți apare pe celula peste care trec.
+
+## Un link către fiecare ecran
+
+Adresa din browser urmărește ce priviți: un tabel, una dintre vizualizările lui, detaliile unui
+rând, un tablou de bord, o automatizare, o întrebare, setările dumneavoastră. Copiați-o
+într-un mesaj: colegul dumneavoastră ajunge în același loc, cu propriile permisiuni. Adăugați-o
+la favorite; butoanele înainte și înapoi ale browserului vă readuc unde ați fost.
+
+| Adresă | Ce deschide |
+|---|---|
+| `/bases/ventes/tables/opportunites` | tabelul „Opportunités” al bazei „Ventes” |
+| `/bases/ventes/tables/opportunites?vue=…` | una dintre vizualizările lui |
+| `/bases/ventes/tables/opportunites?ligne=…` | detaliile unuia dintre rândurile lui |
+| `/bases/ventes/tableaux-de-bord/…` | un tablou de bord |
+| `/bases/ventes/automatisations/…` | o automatizare |
+| `/parametres/apparence` | setările dumneavoastră |
+
+O adresă numește un **loc**, nu starea în care ați lăsat-o: filtrele, sortările și lățimile
+coloanelor rămân cele ale fiecărui browser. O bază și un tabel sunt scrise acolo prin numele lor
+PostgreSQL: redenumite, vechea adresă nu mai duce nicăieri. O adresă care nu duce nicăieri — o
+greșeală de tastare, un obiect șters, sau ceva ce nu aveți dreptul să vedeți — afișează „Această
+pagină nu există”.
 
 ## Anulare
 

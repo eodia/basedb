@@ -13,7 +13,7 @@ ook lezen.
 
 ## Ieder met zijn eigen rechten
 
-De **+** in de tabbladbalk, of het menu **⋯** van de database → **Nieuwe SQL-query**, opent een
+De **+** in de tabbladbalk, of het menu **⋯** van de database → **SQL-query**, opent een
 SQL-tabblad: een editor met syntaxiskleuring en aanvulling, **Ctrl+Enter** om uit te voeren, en het
 resultaat in hetzelfde raster als je tabellen. Wat de query mag lezen, hangt af van wie hem uitvoert:
 
@@ -34,7 +34,8 @@ MCP-server je niet zouden laten zien.
 **Opslaan**, in de balk van het tabblad, zet de query onder de tabellen van de database, in de
 rubriek **Query’s**. Je opent hem opnieuw met één klik; **⋯** → **Opslaan als…** maakt er een
 kopie van, **Naam en delen…** (in het tabblad of in zijn menu in de zijbalk) hernoemt hem, wijzigt
-wie hem ziet, of verwijdert hem.
+wie hem ziet, of verwijdert hem — **Verwijderen** staat ook in zijn menu, via een rechtsklik. Een
+tabblad dat hem toonde, behoudt zijn tekst.
 
 ![Een query opslaan: de naam, wat hij toont, en wie hem ziet](../../../../assets/screens/requete-enregistrer.png)
 
@@ -85,7 +86,8 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 op elke tabel en elke kolom die hij leest; de zijbalk toont hem alleen aan wie alles mag
 lezen wat hij leest. Hij leest alleen **zijn eigen** database: een andere database, of de catalogus van basedb,
 worden al bij het aanmaken geweigerd. Hem aanmaken, wijzigen of verwijderen vraagt het niveau **Beheren**
-op de database.
+op de database. **Verwijderen**, in zijn menu in de zijbalk, haalt hem weg voor iedereen, scripts
+en tools inbegrepen; de tabellen die hij leest, blijven onaangetast.
 
 ### Als de structuur verandert
 

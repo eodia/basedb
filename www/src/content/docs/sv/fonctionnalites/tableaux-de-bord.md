@@ -12,8 +12,19 @@ skriven i SQL – och **filter** högst upp på sidan styr de kort som kopplas t
 
 Allt öppnas från **Instrumentpaneler**, i blocket för den öppna databasen längst ned i
 sidofältet. Till vänster finns databasens instrumentpaneler och sparade frågor, och **Utforska
-data** för att ställa en fråga utan att spara något. Alla som kan läsa databasen kan visa och
-utforska dem; att skapa, redigera och spara kräver nivån **Hantera**.
+data** för att ställa en fråga utan att spara något. Alla som kan läsa databasen kan visa,
+utforska och spara egna frågor; att bygga en instrumentpanel och dela en fråga kräver nivån
+**Hantera**.
+
+En sparad fråga är **personlig** — bara du ser den —, för **hela databasen** eller för
+**grupper**. Dess meny, med högerklick eller via **⋯**, öppnar den i en flik bredvid tabellerna,
+ändrar dess namn och delning, eller tar bort den. **+** i flikfältet erbjuder också **Ny fråga**
+och **Ny SQL-fråga**.
+
+**Spara**, i en frågas sidhuvud, behåller den; en fråga du inte får ändra erbjuder i stället
+**Spara en kopia**, som blir din egen. **⋯** (**Fler åtgärder**) erbjuder också **Namn och
+delning…**, **Spara en kopia…** och **Ta bort frågan**; en flik som visade den behåller sitt
+innehåll, nu åter osparat.
 
 ## Ställa en fråga med musen
 
@@ -107,8 +118,10 @@ det som gör att ett filter på instrumentpanelen kan styra en SQL-fråga precis
 
 **Redigera** växlar panelen till redigeringsläge:
 
-- **Fråga** placerar en sparad fråga, eller skapar en som hör till kortet;
-- **Rubrik** och **Text** lägger till en avsnittsrubrik eller en text i Markdown;
+- **Fråga** placerar en sparad fråga — en personlig fråga kopieras då in —, eller skapar en som
+  hör till kortet;
+- **Rubrik** lägger till en avsnittsrubrik, **Text** en formaterad text — rubriker, listor,
+  länkar — som kan citera siffror (se nedan);
 - **Inbäddad sida** visar en `https://`-adress i en isolerad ram, som varken får session eller
   data;
 - **Flik** fördelar korten på flera sidor; ett dubbelklick byter namn på en flik.
@@ -116,6 +129,25 @@ det som gör att ett filter på instrumentpanelen kan styra en SQL-fråga precis
 Korten flyttas med sitt handtag och ändrar storlek med sitt hörn, på ett rutnät med 24
 kolumner. **Spara** behåller alltihop; **Avbryt** går tillbaka till den tidigare versionen. I
 läsläge öppnar ett korts rubrik dess fråga så att du kan utforska den, med panelens filter.
+
+### Tal i texten
+
+En text citerar ett värde med ett namn inom dubbla måsvingar: ”Den här månaden:
+`{{chiffre_affaires}}` i omsättning på `{{commandes}}` beställningar.” Varje namn blir en
+pastill, som kopplas med ett klick — eller via **Variabel** i redigerarens verktygsfält — till:
+
+| Källa | Vad texten visar |
+|---|---|
+| **ett kort** i panelen | det det visar, under sina egna filter |
+| **en sparad fråga** i hela databasen | dess värde, och panelens filter kopplas till den som till ett kort |
+| **en fråga som behålls i texten** | dess värde; så citerar du en personlig fråga |
+| **ett filter** i panelen | det valda värdet, som dess kommando säger |
+
+En frågas värde är det som dess **Tal** skulle visa: dess första mått, på den sista raden. Det
+beräknas med läsarens behörigheter och visas alltid som text. En text citerar högst 20 värden;
+ett namn skrivs med gemener, siffror och `_`. Texter som skrevs i Markdown innan redigeraren
+fanns läses som förut, och blir formaterade så fort de skrivs om. Copilot däremot skriver sina
+texter i Markdown.
 
 ## Filtren
 

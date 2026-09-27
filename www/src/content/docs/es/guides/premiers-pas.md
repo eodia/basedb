@@ -37,7 +37,7 @@ Desde el menú **⋯** de la base: **Nueva tabla**. Añade después sus campos d
 | Client | Relación → Clients |
 | Notes | Texto largo (Markdown) |
 
-Más adelante, una fórmula (`JOURS([Échéance]; AUJOURDHUI())`), una búsqueda (la ciudad del cliente)
+Más adelante, una fórmula (`DAYS([Échéance], TODAY())`), una búsqueda (la ciudad del cliente)
 o un acumulado (el importe total por cliente) se añaden de la misma forma; consulta
 [Tablas y campos](/basedb/es/fonctionnalites/tables-et-champs/).
 
@@ -71,7 +71,7 @@ responde. Más detalles en [Formularios compartidos](/basedb/es/fonctionnalites/
 
 ## 6. Leer en SQL
 
-Menú **⋯** de la base → **Nueva consulta SQL**: ahí están tus tablas, con su nombre real.
+Menú **⋯** de la base → **Consulta SQL**: ahí están tus tablas, con su nombre real.
 
 ```sql
 SELECT nom, statut, montant

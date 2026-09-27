@@ -13,7 +13,7 @@ aussi.
 
 ## Chacun avec ses droits
 
-Le **+** de la barre d’onglets, ou menu **⋯** de la base → **Nouvelle requête SQL**, ouvre un
+Le **+** de la barre d’onglets, ou menu **⋯** de la base → **Requête SQL**, ouvre un
 onglet SQL : un éditeur avec coloration et complétion, **Ctrl+Entrée** pour exécuter, et le
 résultat dans la même grille que vos tables. Ce que la requête peut lire dépend de qui la lance :
 
@@ -34,7 +34,8 @@ serveur MCP ne vous montreraient pas.
 **Enregistrer**, dans la barre de l’onglet, range la requête sous les tables de la base, dans la
 rubrique **Requêtes**. Elle se rouvre d’un clic ; **⋯** → **Enregistrer sous…** en fait une
 copie, **Nom et partage…** (dans l’onglet ou dans son menu de la barre latérale) la renomme, change
-qui la voit, ou la supprime.
+qui la voit, ou la supprime — **Supprimer** est aussi dans son menu, d’un clic droit. Un onglet
+qui la montrait garde son texte.
 
 ![Enregistrer une requête : son nom, ce qu’elle montre, et qui la voit](../../../assets/screens/requete-enregistrer.png)
 
@@ -85,7 +86,8 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 sur chaque table et chaque colonne qu’elle lit ; la barre latérale ne la liste qu’à qui peut tout
 lire de ce qu’elle lit. Elle ne lit que **sa** base : une autre base, ou le catalogue de basedb,
 sont refusés dès la création. La créer, la modifier ou la supprimer demande le niveau **Gestion**
-sur la base.
+sur la base. **Supprimer**, dans son menu de la barre latérale, la retire pour tout le monde,
+scripts et outils compris ; les tables qu’elle lit ne sont pas touchées.
 
 ### Quand la structure change
 

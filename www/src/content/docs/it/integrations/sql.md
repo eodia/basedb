@@ -22,7 +22,7 @@ le descrizioni (`COMMENT ON`).
 
 ## Nell’interfaccia
 
-Il **+** della barra delle tab, oppure menu **⋯** del database → **Nuova query SQL**: un editor
+Il **+** della barra delle tab, oppure menu **⋯** del database → **Query SQL**: un editor
 con evidenziazione della sintassi e completamento, il cui risultato compare nella stessa griglia delle tue tabelle.
 
 ![Una query salvata, e due viste SQL disposte tra le tabelle](../../../../assets/screens/requete-sql.png)

@@ -1,5 +1,6 @@
 'use client'
 
+import { Hint } from '@/components/ui/tooltip'
 import { $t } from '@/lib/i18n'
 import { MAIN_MIN, PANEL_DEFAULTS, PANEL_MIN, type PanelKey, usePanels } from '@/lib/store/panels'
 import { cn } from '@/lib/utils'
@@ -110,19 +111,20 @@ export function ResizablePanel({
       style={{ width, minWidth: PANEL_MIN, maxWidth: `calc(100% - ${MAIN_MIN}px)` }}
     >
       {/* The focusable window splitter of the ARIA Authoring Practices. */}
-      <div
-        role="separator"
-        aria-orientation="vertical"
-        aria-label={$t('Redimensionner {label}', { label })}
-        aria-valuenow={width}
-        aria-valuemin={PANEL_MIN}
-        tabIndex={0}
-        title={$t('Glisser pour redimensionner — double-clic : largeur par défaut')}
-        onPointerDown={onPointerDown}
-        onDoubleClick={() => reset(panel)}
-        onKeyDown={onKeyDown}
-        className="absolute inset-y-0 -left-[3px] z-30 w-1.5 cursor-col-resize outline-none transition-colors hover:bg-primary/40 focus-visible:bg-primary/60 active:bg-primary/60"
-      />
+      <Hint label={$t('Glisser pour redimensionner — double-clic : largeur par défaut')}>
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={$t('Redimensionner {label}', { label })}
+          aria-valuenow={width}
+          aria-valuemin={PANEL_MIN}
+          tabIndex={0}
+          onPointerDown={onPointerDown}
+          onDoubleClick={() => reset(panel)}
+          onKeyDown={onKeyDown}
+          className="absolute inset-y-0 -left-[3px] z-30 w-1.5 cursor-col-resize outline-none transition-colors hover:bg-primary/40 focus-visible:bg-primary/60 active:bg-primary/60"
+        />
+      </Hint>
       {children}
     </aside>
   )

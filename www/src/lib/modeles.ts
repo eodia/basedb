@@ -1,4 +1,5 @@
 import { getCollection } from 'astro:content';
+import { formulaDialect } from '../../../packages/contracts/src/formula-words';
 import { type TemplateDictionary, localizeTemplate } from '../../../packages/contracts/src/template-i18n';
 import {
 	type Template,
@@ -68,9 +69,11 @@ export function templateDictionaries(): Map<string, Record<string, TemplateDicti
  * serves it; the French file when the language has none, or when the dictionary would break it.
  */
 export function localizedTemplate(locale: Locale, template: Template): Template {
-	const dictionary = templateDictionary(localeInfo(locale).lang, template.key);
+	const { lang } = localeInfo(locale);
+	const dictionary = templateDictionary(lang, template.key);
 	if (dictionary === undefined) return template;
-	const check = localizeTemplate(template, dictionary);
+	// Its formulas in the language an instance would write them in for this reader.
+	const check = localizeTemplate(template, dictionary, formulaDialect(lang));
 	return check.ok ? check.template : template;
 }
 

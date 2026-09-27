@@ -57,7 +57,7 @@ source grew; what matters is 0 missing and 0 errors).
   basedb variables: keep them as they are.
 - **Keep untranslated**: product names (basedb, PostgreSQL, Copilot, MCP, SQL, OpenAPI,
   Slack, Google, OpenAI…), formula function names (SI, ARRONDI, JOURS, AUJOURDHUI, ET, OU…
-  — the formula language is French), SQL keywords and operators (`eq`, `contains`,
+  — the code shows them in English on any screen that is not French), SQL keywords and operators (`eq`, `contains`,
   `is_null`…), code, identifiers like `_id`, units like `ms`, file extensions, `UUID v7`.
 - **Meaning after `||`**: a key such as `Moyenne||hauteur de ligne` is the French word before
   `||`, and its meaning after it (here a medium row height, not an average). Translate the

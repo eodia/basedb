@@ -81,7 +81,8 @@ een sessie in de interface: een token leest en schrijft rijen, het verandert de 
 
 Elke database heeft een pagina **API- en MCP-documentatie**: voor elke tabel de endpoints, de
 kolommen, voorbeelden in cURL en in JavaScript. Ze wordt **gefilterd op jouw rechten** — twee
-lezers krijgen twee versies — en bestaat ook in OpenAPI 3.1
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+lezers krijgen twee versies —, geschreven **in de taal van je scherm**, en bestaat ook in
+OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). De namen, de paden en de
+foutcodes blijven in elke taal hetzelfde.
 
 ![De gegenereerde documentatie van een database](../../../../assets/screens/documentation-api.png)

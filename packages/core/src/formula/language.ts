@@ -1,3 +1,4 @@
+import { FORMULA_ENGLISH, type FormulaDialect, formulaDialect } from '@basedb/contracts'
 import { BasedbError } from '../errors/index.js'
 
 /**
@@ -6,7 +7,8 @@ import { BasedbError } from '../errors/index.js'
  * Three stages, each with one job:
  *
  *   1. `parseFormula` reads the text a person typed into a tree, fields still named by
- *      their LABEL — the grammar of §7.2, in French, `;` between arguments;
+ *      their LABEL — the grammar of §7.2, in French or in English, `;` or `,` between
+ *      arguments;
  *   2. `resolveFormula` names each field by its catalog key, types every node, and says
  *      whether the result can be stored — the rules of §7.3 and §7.4;
  *   3. `emitFormula` turns the typed tree into SQL — from the tree alone, never from the
@@ -15,6 +17,9 @@ import { BasedbError } from '../errors/index.js'
  *
  * `renderFormula` goes back from the tree to text with the labels of the day: a renamed
  * field reads under its new name, and no substitution ever runs on what was typed.
+ *
+ * The tree spells every word in French — the stored spelling. A formula is typed in either
+ * language, and rendered in the reader's: French on a French screen, English on any other.
  */
 
 // ── The tree ──────────────────────────────────────────────────────────────────────
@@ -77,6 +82,19 @@ export const MAX_FORMULA_DEPTH = 16
 function syntax(at: number, detail: string): BasedbError {
   return new BasedbError('FORMULA_SYNTAX', { details: { position: at, detail } })
 }
+
+export { type FormulaDialect, formulaDialect }
+
+const FROM_ENGLISH: ReadonlyMap<string, string> = new Map(
+  Object.entries(FORMULA_ENGLISH).map(([french, english]) => [english, french]),
+)
+
+/** A word as the tree spells it, whichever language it was typed in. */
+const canonical = (word: string): string => FROM_ENGLISH.get(word) ?? word
+
+/** A word of the tree in the reader's language. */
+const spell = (word: string, dialect: FormulaDialect): string =>
+  dialect === 'en' ? (FORMULA_ENGLISH[word] ?? word) : word
 
 // ── 1. Reading ────────────────────────────────────────────────────────────────────
 
@@ -153,14 +171,15 @@ function tokenize(input: string): Token[] {
       i += 2
       continue
     }
-    if ('+-*/&=<>();'.includes(ch)) {
-      tokens.push({ k: 'op', v: ch, at })
+    if ('+-*/&=<>();,'.includes(ch)) {
+      // `,` separates arguments as `;` does — the decimal is the point, so it means nothing else.
+      tokens.push({ k: 'op', v: ch === ',' ? ';' : ch, at })
       i++
       continue
     }
     const word = /^[\p{L}_][\p{L}\p{N}_]*/u.exec(input.slice(i))
     if (word !== null) {
-      tokens.push({ k: 'word', v: word[0].toUpperCase(), at })
+      tokens.push({ k: 'word', v: canonical(word[0].toUpperCase()), at })
       i += word[0].length
       continue
     }
@@ -857,10 +876,17 @@ const PRECEDENCE: Readonly<Record<Operator, number>> = {
 }
 
 /**
- * The text of a stored tree, with today's labels — what the editor shows. Parentheses
- * are written where precedence needs them, so re-reading the text gives the same tree.
+ * The text of a stored tree, with today's labels and in the reader's language — what the
+ * editor shows. Parentheses are written where precedence needs them, so re-reading the
+ * text gives the same tree.
  */
-export function renderFormula(ast: Node, labelOf: (id: string) => string): string {
+export function renderFormula(
+  ast: Node,
+  labelOf: (id: string) => string,
+  dialect: FormulaDialect = 'fr',
+): string {
+  const word = (w: string) => spell(w, dialect)
+  const separator = dialect === 'en' ? ', ' : '; '
   const render = (node: Node, parent = 0): string => {
     switch (node.t) {
       case 'number':
@@ -868,20 +894,22 @@ export function renderFormula(ast: Node, labelOf: (id: string) => string): strin
       case 'text':
         return `"${node.v.replace(/"/g, '""')}"`
       case 'boolean':
-        return node.v ? 'VRAI' : 'FAUX'
+        return word(node.v ? 'VRAI' : 'FAUX')
       case 'null':
         return 'NULL'
       case 'field':
         return `[${labelOf(node.id).replace(/]/g, ']]')}]`
-      case 'not':
-        return parent > 3 ? `(NON ${render(node.e, 4)})` : `NON ${render(node.e, 4)}`
+      case 'not': {
+        const text = `${word('NON')} ${render(node.e, 4)}`
+        return parent > 3 ? `(${text})` : text
+      }
       case 'negate':
         return `-${render(node.e, 7)}`
       case 'call':
-        return `${node.fn}(${node.args.map((a) => render(a)).join('; ')})`
+        return `${word(node.fn)}(${node.args.map((a) => render(a)).join(separator)})`
       case 'binary': {
         const p = PRECEDENCE[node.op]
-        const text = `${render(node.left, p)} ${node.op} ${render(node.right, p + 1)}`
+        const text = `${render(node.left, p)} ${word(node.op)} ${render(node.right, p + 1)}`
         return p < parent ? `(${text})` : text
       }
     }

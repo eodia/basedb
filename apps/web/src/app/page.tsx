@@ -1,10 +1,16 @@
 'use client'
 
 import { ApiDocs } from '@/components/api-reference/api-docs'
-import { AdminPanel, type AdminTab } from '@/components/app/admin/admin-panel'
+import {
+  AdminPanel,
+  type AdminTab,
+  adminTabOfSlug,
+  slugOfAdminTab,
+} from '@/components/app/admin/admin-panel'
 import { AutomationsPanel } from '@/components/app/automations'
 import { BaseIllustration } from '@/components/app/base-illustration'
 import { NewBaseDialog } from '@/components/app/base-menu'
+import { CommandPalette } from '@/components/app/command-palette'
 import { DashboardsPanel } from '@/components/app/dashboards'
 import { ElevationProvider } from '@/components/app/elevation'
 import { EnvironmentBadge } from '@/components/app/environment-badge'
@@ -19,6 +25,7 @@ import {
   type LinkNotice,
   SettingsPanel,
   type SettingsTab,
+  slugOfTab,
   tabOfSlug,
 } from '@/components/app/settings/settings-panel'
 import {
@@ -29,8 +36,8 @@ import {
   SidebarToggle,
   type TableIntent,
 } from '@/components/app/sidebar'
-import { QueryDialog } from '@/components/app/sql/query-dialog'
-import { SqlViewDialog } from '@/components/app/sql/sql-view-dialog'
+import { DeleteQueryDialog, QueryDialog } from '@/components/app/sql/query-dialog'
+import { DeleteSqlViewDialog, SqlViewDialog } from '@/components/app/sql/sql-view-dialog'
 import { TableDialogs, useTableActions } from '@/components/app/table-actions'
 import { TemplateGallery } from '@/components/app/template-gallery'
 import { Workspace } from '@/components/app/workspace'
@@ -39,6 +46,7 @@ import { Login } from '@/components/login'
 import { SignUp } from '@/components/signup'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { type DashboardFocus, type Place, addressOf, placeOf } from '@/lib/address-bar'
 import {
   type ApiDocumentation,
   ApiError,
@@ -56,10 +64,11 @@ import { messageFor, reasonFor } from '@/lib/messages'
 import { applyPreferences } from '@/lib/preferences'
 import { usePanels } from '@/lib/store/panels'
 import { useSidebar } from '@/lib/store/sidebar'
-import { hydrateWorkspace, useActiveTab, useWorkspace } from '@/lib/store/workspace'
+import { type Tab, hydrateWorkspace, useActiveTab, useWorkspace } from '@/lib/store/workspace'
 import { useTheme } from '@/lib/theme'
+import { useAddressBar } from '@/lib/use-address-bar'
 import { useTitle } from '@/lib/use-title'
-import { Database, FolderKanban, Loader2, Plus, Sparkles } from 'lucide-react'
+import { Database, FolderKanban, Loader2, Plus, SearchX, Sparkles } from 'lucide-react'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { Toaster } from 'sonner'
 
@@ -135,6 +144,21 @@ export default function App() {
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('profile')
   /** What a provider answered to a link asked for from the settings (chapter 13 §3.5). */
   const [linkNotice, setLinkNotice] = useState<LinkNotice | null>(null)
+  /**
+   * The address names nothing this person may open — a typo, a table renamed, deleted or
+   * not theirs, which the screen does not tell apart (chapter 11 §7). Left by going elsewhere.
+   */
+  const [missing, setMissing] = useState(false)
+  /** The dashboard, or the question, shown in the dashboards of a base — for the address. */
+  const [dashboardFocus, setDashboardFocus] = useState<{
+    readonly base: string
+    readonly focus: DashboardFocus | null
+  } | null>(null)
+  /** The automation shown in the automations of a base — for the address. */
+  const [automationFocus, setAutomationFocus] = useState<{
+    readonly base: string
+    readonly id: string | null
+  } | null>(null)
 
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -153,6 +177,16 @@ export default function App() {
   const [queryEdit, setQueryEdit] = useState<{
     readonly base: string
     readonly query: SavedQuery
+  } | null>(null)
+  /** A SQL view about to be deleted — from its menu in the navigation. */
+  const [viewDelete, setViewDelete] = useState<{
+    readonly base: string
+    readonly view: SqlViewSummary
+  } | null>(null)
+  /** A saved query about to be deleted — from its menu in the navigation. */
+  const [queryDelete, setQueryDelete] = useState<{
+    readonly base: string
+    readonly query: QuerySummary
   } | null>(null)
 
   const [doc, setDoc] = useState<ApiDocumentation | null>(null)
@@ -180,10 +214,16 @@ export default function App() {
   // Declared before the early returns below, because a hook may not be conditional —
   // and because the title of a screen that is still checking the session is simply the
   // product's, which is what the empty segments produce.
-  useTitle([
-    section === 'data' ? activeTab?.label : SECTION_TITLES[section],
-    section === 'admin' || section === 'settings' ? undefined : (base?.label ?? project?.label),
-  ])
+  useTitle(
+    missing
+      ? [$t('Cette page n’existe pas')]
+      : [
+          section === 'data' ? activeTab?.label : SECTION_TITLES[section],
+          section === 'admin' || section === 'settings'
+            ? undefined
+            : (base?.label ?? project?.label),
+        ],
+  )
 
   // The theme, the open tabs, the width of the sidebar and of the panels on the right are
   // restored AFTER mount: all live in `localStorage`, which does not exist where Next.js
@@ -227,6 +267,8 @@ export default function App() {
   // WHO is signed in, rather than the account as a whole: the first load below must run
   // once per person, not again because they renamed themselves in the settings.
   const signedIn = me === null || me.mustChangePassword ? null : me.id
+  /** Whose bases an address names: it writes them without their tenant. */
+  const tenant = me?.tenant ?? null
 
   useEffect(() => {
     void resume()
@@ -275,8 +317,13 @@ export default function App() {
    * table, else nothing, and the empty base offers to create one.
    */
   const focusBase = useCallback(
-    async (name: string, intent: BaseIntent, options: { readonly keepSection?: boolean } = {}) => {
+    async (
+      name: string,
+      intent: BaseIntent | 'dashboards' | 'automations' | 'integrations',
+      options: { readonly keepSection?: boolean } = {},
+    ) => {
       setError(null)
+      setMissing(false)
       try {
         const found = await describe(name)
         setBaseName(name)
@@ -297,18 +344,28 @@ export default function App() {
             break
           }
           case 'structure':
-            setSection('structure')
-            break
           case 'history':
-            setSection('history')
-            break
           case 'doc':
-            setSection('doc')
+          case 'dashboards':
+          case 'automations':
+          case 'integrations':
+            setSection(intent)
             break
           case 'sql': {
             setSection('data')
             const count = state.tabs.filter((t) => t.kind === 'sql').length + 1
             openSql(name, null, $t('Requête {count}', { count }))
+            break
+          }
+          case 'question':
+          case 'question-sql': {
+            setSection('data')
+            const count = state.tabs.filter((t) => t.kind === 'question').length + 1
+            state.openNewQuestion(
+              name,
+              intent === 'question' ? 'builder' : 'sql',
+              $t('Question {count}', { count }),
+            )
             break
           }
           case 'new-table':
@@ -370,6 +427,11 @@ export default function App() {
     )
   }, [signedIn])
 
+  /** Where an address leads — set further down, once all it calls is declared. */
+  const goTo = useRef<(place: Place, known: readonly Project[]) => Promise<boolean>>(
+    async () => false,
+  )
+
   useEffect(() => {
     if (signedIn === null) return
     let stale = false
@@ -377,6 +439,14 @@ export default function App() {
       try {
         const found = await loadProjects()
         if (stale) return
+        // An address naming a place — a bookmark, a link — lands there; one naming nothing
+        // says so. The settings and the administration are drawn over the base chosen below.
+        const addressed = placeOf(window.location.pathname, window.location.search, tenant ?? '')
+        const reached = addressed !== null && (await goTo.current(addressed, found))
+        if (stale) return
+        if (addressed === null || !reached) setMissing(true)
+        const over = addressed?.kind === 'settings' || addressed?.kind === 'admin'
+        if (reached && addressed.kind !== 'home' && !over) return
         const state = useWorkspace.getState()
         const tab = state.tabs.find((t) => t.id === state.activeId)
         const tabProject = found.find((p) => p.bases.some((b) => b.name === tab?.base))
@@ -385,8 +455,8 @@ export default function App() {
         selectProject(chosen?.id ?? null)
         const target =
           tab !== undefined && tabProject !== undefined ? tab.base : chosen?.bases[0]?.name
-        if (target !== undefined) {
-          await focusBase(target, 'open', { keepSection: landing.current })
+        if (target !== undefined && reached) {
+          await focusBase(target, 'open', { keepSection: landing.current || over })
         }
       } catch (e) {
         setError(messageFor(e))
@@ -397,7 +467,7 @@ export default function App() {
     return () => {
       stale = true
     }
-  }, [signedIn, loadProjects, focusBase, selectProject])
+  }, [signedIn, tenant, loadProjects, focusBase, selectProject])
 
   // Activating a tab makes its base the current one. Keyed on the tab alone: a base chosen
   // in the sidebar must not be taken back by a tab that merely stayed active.
@@ -440,6 +510,7 @@ export default function App() {
 
   const openProject = useCallback(
     async (id: string, known?: readonly Project[]) => {
+      setMissing(false)
       selectProject(id)
       const chosen = (known ?? projects).find((p) => p.id === id)
       const state = useWorkspace.getState()
@@ -461,6 +532,7 @@ export default function App() {
   const onTable = useCallback(
     async (name: string, table: string, intent: TableIntent) => {
       setError(null)
+      setMissing(false)
       try {
         const found = described[name] ?? (await describe(name))
         const target = found.tables.find((t) => t.name === table)
@@ -504,6 +576,11 @@ export default function App() {
   const onSqlView = useCallback(
     async (name: string, view: SqlViewSummary, intent: SavedIntent) => {
       setError(null)
+      setMissing(false)
+      if (intent === 'delete') {
+        setViewDelete({ base: name, view })
+        return
+      }
       try {
         const found = described[name] ?? (await describe(name))
         setBaseName(name)
@@ -528,6 +605,11 @@ export default function App() {
   const onQuery = useCallback(
     async (name: string, summary: QuerySummary, intent: SavedIntent) => {
       setError(null)
+      setMissing(false)
+      if (intent === 'delete') {
+        setQueryDelete({ base: name, query: summary })
+        return
+      }
       try {
         const found = described[name] ?? (await describe(name))
         const query = await api.query(name, summary.id)
@@ -561,6 +643,112 @@ export default function App() {
   }, [pendingRecord, onTable, section])
 
   /**
+   * Goes where an address leads — on landing, and on the browser's back and forward.
+   *
+   * `known`: the projects as last read, which list what this person may open. Says whether
+   * the place is there: one that is not — a base, a table, a view deleted, renamed or not
+   * theirs — makes the page that does not exist, never a refusal (chapter 11 §7). What sits
+   * inside a section — a dashboard, an automation, a saved view, a row — is shown when it is
+   * still there, and the address then says what was shown instead.
+   */
+  const followAddress = useCallback(
+    async (place: Place, known: readonly Project[]): Promise<boolean> => {
+      setMissing(false)
+      const store = useWorkspace.getState()
+      if (place.kind !== 'table') store.requestView(null)
+      switch (place.kind) {
+        case 'home':
+          return true
+        case 'settings':
+          setSettingsTab(tabOfSlug(place.tab) ?? 'profile')
+          setSection('settings')
+          return true
+        case 'admin':
+          if (me?.isAdmin !== true) return false
+          setAdminTab(adminTabOfSlug(place.tab) ?? 'users')
+          setSection('admin')
+          return true
+        case 'project':
+          if (!known.some((p) => p.id === place.project)) return false
+          await openProject(place.project, known)
+          return true
+      }
+      const listed = known.flatMap((p) => p.bases).find((b) => b.name === place.base)
+      if (listed === undefined) return false
+      switch (place.kind) {
+        case 'base':
+          await focusBase(place.base, 'open')
+          return true
+        case 'section':
+          await focusBase(place.base, place.section)
+          return true
+        case 'dashboards':
+          setDashboardFocus({ base: place.base, focus: place.focus })
+          await focusBase(place.base, 'dashboards')
+          return true
+        case 'automations':
+          setAutomationFocus({ base: place.base, id: place.automation })
+          await focusBase(place.base, 'automations')
+          return true
+        case 'table': {
+          if (!listed.tables.some((t) => t.name === place.table)) return false
+          const active = store.tabs.find((t) => t.id === store.activeId)
+          const there =
+            section === 'data' &&
+            active?.kind === 'table' &&
+            active.base === place.base &&
+            active.table === place.table
+          await onTable(place.base, place.table, 'open')
+          store.requestView({ base: place.base, table: place.table, viewId: place.view })
+          // The row: opened once its table is on screen — or closed, back where none was.
+          const shown = useWorkspace.getState().shownRecord
+          if (place.record === null) {
+            if (shown !== null) store.closeRecord()
+          } else if (!there || shown !== place.record) {
+            store.requestRecord({ base: place.base, table: place.table, id: place.record })
+          }
+          return true
+        }
+        case 'sqlview': {
+          const view = listed.sqlViews.find((v) => v.id === place.id)
+          if (view === undefined) return false
+          await onSqlView(place.base, view, 'open')
+          return true
+        }
+        case 'query': {
+          const query = listed.queries.find((q) => q.id === place.id)
+          if (query === undefined) return false
+          await onQuery(place.base, query, 'open')
+          return true
+        }
+        case 'question': {
+          const question = await api.question(place.base, place.id).catch(() => null)
+          if (question === null) return false
+          const found = described[place.base] ?? (await describe(place.base))
+          setBaseName(place.base)
+          selectProject(found.project.id)
+          setSection('data')
+          useWorkspace.getState().openQuestion(place.base, question)
+          return true
+        }
+      }
+    },
+    [
+      described,
+      describe,
+      focusBase,
+      me,
+      onQuery,
+      onSqlView,
+      onTable,
+      openProject,
+      section,
+      selectProject,
+    ],
+  )
+  goTo.current = followAddress
+
+  /**
    * A new table in a base — which is what the button says. The description is read back
    * rather than patched: the catalog decides the table's name, its system columns and the
    * order it appears in.
@@ -575,6 +763,7 @@ export default function App() {
         setBaseName(name)
         refreshDoc(name)
         await loadProjects().catch(() => undefined)
+        setMissing(false)
         setSection('data')
         const opened = refreshed.tables.find((t) => t.name === created.name)
         if (opened !== undefined) openTable(opened, opened.label)
@@ -601,6 +790,47 @@ export default function App() {
     useWorkspace.getState().closeAll()
   }, [])
 
+  /**
+   * A question to the copilot, from the search: the data of its base are brought on screen
+   * — the copilot speaks over a table —, then the question is put.
+   */
+  const askCopilot = useCallback(
+    async (name: string, question: string) => {
+      const state = useWorkspace.getState()
+      const current = state.tabs.find((t) => t.id === state.activeId)
+      if (section !== 'data' || current?.base !== name) await focusBase(name, 'open')
+      useWorkspace.getState().askCopilot(question)
+    },
+    [section, focusBase],
+  )
+
+  // What the screen shows, as the address says it. Nothing before the first load — the
+  // address is still being followed —, nor over a page that does not exist: that address
+  // stays as it was typed.
+  const shownRecord = useWorkspace((s) => s.shownRecord)
+  const address =
+    !loaded || missing || me === null
+      ? null
+      : addressOf(
+          placeOnScreen({
+            section,
+            administers: me.isAdmin,
+            adminTab,
+            settingsTab,
+            project,
+            base,
+            activeTab,
+            shownRecord,
+            dashboardFocus,
+            automationFocus,
+          }),
+        )
+  useAddressBar(address, async () => {
+    if (!loaded || me === null) return
+    const place = placeOf(window.location.pathname, window.location.search, me.tenant)
+    if (place === null || !(await followAddress(place, projects))) setMissing(true)
+  })
+
   // Nothing is shown before we know whether a session is open: a flash of the login
   // screen for someone already connected reads as having been signed out.
   if (checking) return <div className="min-h-screen bg-background" />
@@ -623,7 +853,12 @@ export default function App() {
     return signingUp ? (
       <SignUp onDone={() => void resume()} onSignIn={() => setSigningUp(false)} />
     ) : (
-      <Login onSignedIn={() => void resume()} onSignUp={() => setSigningUp(true)} />
+      <Login
+        onSignedIn={() => void resume()}
+        onSignUp={() => setSigningUp(true)}
+        // Signed in through a provider, one comes back to the address one came by.
+        returnTo={`${window.location.pathname}${window.location.search}`}
+      />
     )
   }
 
@@ -803,19 +1038,32 @@ export default function App() {
                 openTable(renamed, renamed.label)
               })().catch((e) => setError(messageFor(e)))
             }}
-            onSection={setSection}
+            onSection={(next) => {
+              setMissing(false)
+              setSection(next)
+            }}
             onAdmin={(tab) => {
+              setMissing(false)
               setAdminTab(tab)
               setSection('admin')
             }}
             onSettings={(tab) => {
+              setMissing(false)
               setSettingsTab(tab)
               setSection('settings')
             }}
             onSignedOut={signOut}
           />
 
-          {section === 'settings' ? (
+          {missing ? (
+            <Empty
+              icon={SearchX}
+              title={$t('Cette page n’existe pas')}
+              body={$t(
+                'Son adresse est peut-être mal écrite, ou ce qu’elle désignait a été renommé ou supprimé.',
+              )}
+            />
+          ) : section === 'settings' ? (
             <SettingsPanel
               tab={settingsTab}
               me={me}
@@ -837,9 +1085,21 @@ export default function App() {
           ) : section === 'history' ? (
             <HistoryPanel base={base} onBack={() => void focusBase(base.name, 'open')} />
           ) : section === 'dashboards' ? (
-            <DashboardsPanel base={base} />
+            <DashboardsPanel
+              base={base}
+              focus={dashboardFocus?.base === base.name ? dashboardFocus.focus : null}
+              onFocus={(focus) => setDashboardFocus({ base: base.name, focus })}
+              onOpenInTab={(question) => {
+                setSection('data')
+                useWorkspace.getState().openQuestion(base.name, question)
+              }}
+            />
           ) : section === 'automations' ? (
-            <AutomationsPanel base={base} />
+            <AutomationsPanel
+              base={base}
+              focus={automationFocus?.base === base.name ? automationFocus.id : null}
+              onFocus={(id) => setAutomationFocus({ base: base.name, id })}
+            />
           ) : section === 'integrations' ? (
             <IntegrationsPanel
               base={base}
@@ -947,6 +1207,30 @@ export default function App() {
             />
           )}
 
+          {viewDelete !== null && (
+            <DeleteSqlViewDialog
+              base={viewDelete.base}
+              view={viewDelete.view}
+              onClose={() => setViewDelete(null)}
+              onDeleted={(id) => {
+                useWorkspace.getState().dropSqlView(id)
+                void loadProjects().catch(() => undefined)
+              }}
+            />
+          )}
+
+          {queryDelete !== null && (
+            <DeleteQueryDialog
+              base={queryDelete.base}
+              query={queryDelete.query}
+              onClose={() => setQueryDelete(null)}
+              onDeleted={(id) => {
+                useWorkspace.getState().detachQuery(id)
+                void loadProjects().catch(() => undefined)
+              }}
+            />
+          )}
+
           <ProjectDialog
             open={newProject}
             onClose={() => setNewProject(false)}
@@ -977,6 +1261,35 @@ export default function App() {
           base={section === 'data' ? (tabBase ?? base) : base}
           administers={me.isAdmin}
           onBaseChanged={() => refreshBase()}
+        />
+
+        <CommandPalette
+          me={me}
+          projects={projects}
+          project={project}
+          base={base}
+          described={described}
+          section={section}
+          describe={describe}
+          onGo={(place) => {
+            void followAddress(place, projects).then((reached) => {
+              if (!reached) setMissing(true)
+            })
+          }}
+          onTab={(id) => {
+            setMissing(false)
+            setSection('data')
+            activate(id)
+          }}
+          onBase={(name, intent) => void focusBase(name, intent)}
+          onTable={(name, table, intent) => void onTable(name, table, intent)}
+          onNewProject={() => setNewProject(true)}
+          onNewBase={() => setNewBase(true)}
+          onGallery={(key) => setGallery({ initialKey: key })}
+          onAskCopilot={(name, question) => void askCopilot(name, question)}
+          onSignOut={() => {
+            void api.logout().finally(signOut)
+          }}
         />
       </ElevationProvider>
     </TooltipProvider>
@@ -1064,6 +1377,68 @@ function buildableTables(projects: readonly Project[], baseName: string): Readon
   return new Set(
     (found?.tables ?? []).filter((t) => t.actions.includes('manage_schema')).map((t) => t.name),
   )
+}
+
+/**
+ * Where the screen is, as an address names it — in the order the screen itself chooses what
+ * to draw: the settings, the administration, a section of the current base, else the data,
+ * which follow the active tab.
+ */
+function placeOnScreen(screen: {
+  readonly section: Section
+  readonly administers: boolean
+  readonly adminTab: AdminTab
+  readonly settingsTab: SettingsTab
+  readonly project: Project | null
+  readonly base: DescribedBase | null
+  readonly activeTab: Tab | null
+  readonly shownRecord: string | null
+  readonly dashboardFocus: { readonly base: string; readonly focus: DashboardFocus | null } | null
+  readonly automationFocus: { readonly base: string; readonly id: string | null } | null
+}): Place {
+  const { section, project, base, activeTab } = screen
+  if (section === 'settings') return { kind: 'settings', tab: slugOfTab(screen.settingsTab) }
+  if (section === 'admin' && screen.administers) {
+    return { kind: 'admin', tab: slugOfAdminTab(screen.adminTab) }
+  }
+  if (section !== 'data' && section !== 'admin' && base !== null) {
+    if (section === 'dashboards') {
+      const focus = screen.dashboardFocus?.base === base.name ? screen.dashboardFocus.focus : null
+      return { kind: 'dashboards', base: base.name, focus }
+    }
+    if (section === 'automations') {
+      const id = screen.automationFocus?.base === base.name ? screen.automationFocus.id : null
+      return { kind: 'automations', base: base.name, automation: id }
+    }
+    return { kind: 'section', base: base.name, section }
+  }
+  // A project with no base to show the tab with draws itself, whatever tab is open.
+  if (project !== null && project.bases.length === 0 && (activeTab === null || base === null)) {
+    return { kind: 'project', project: project.id }
+  }
+  if (activeTab !== null) return placeOfTab(activeTab, screen.shownRecord)
+  if (base !== null) return { kind: 'base', base: base.name }
+  if (project !== null) return { kind: 'project', project: project.id }
+  return { kind: 'home' }
+}
+
+/** A tab's address: what it shows when that was saved — an unsaved statement has none. */
+function placeOfTab(tab: Tab, record: string | null): Place {
+  const base: Place = { kind: 'base', base: tab.base }
+  switch (tab.kind) {
+    case 'table':
+      return tab.table === null
+        ? base
+        : { kind: 'table', base: tab.base, table: tab.table, view: tab.viewId, record }
+    case 'sqlview':
+      return tab.sqlViewId === null ? base : { kind: 'sqlview', base: tab.base, id: tab.sqlViewId }
+    case 'sql':
+      return tab.queryId === null ? base : { kind: 'query', base: tab.base, id: tab.queryId }
+    case 'question':
+      return tab.questionId === null
+        ? base
+        : { kind: 'question', base: tab.base, id: tab.questionId }
+  }
 }
 
 /** The sections of a base: its structure, its documentation, and what is not written yet. */

@@ -72,7 +72,7 @@ export default {
 							tables: {
 								href: '/fonctionnalites/tables-et-champs/',
 								title: 'Tabelle e campi',
-								text: 'Campi per tutto, relazioni, formule in francese.',
+								text: 'Campi per tutto, relazioni, formule come in un foglio di calcolo.',
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
@@ -776,9 +776,9 @@ export default {
 					href: '/fonctionnalites/tableaux-de-bord/',
 				},
 				formulas: {
-					code: 'SI([Montant] > 10000; "Grand compte"; "")',
-					title: 'Formule in francese',
-					text: 'Come in un foglio di calcolo — SI, ARRONDI, JOURS… — ma calcolate per tutto il team.',
+					code: 'IF([Montant] > 10000, "Grand compte", "")',
+					title: 'Formule in francese o in inglese',
+					text: 'Come in un foglio di calcolo — SI, ARRONDI, JOURS… o IF, ROUND, DAYS — ma calcolate per tutto il team.',
 					href: '/fonctionnalites/tables-et-champs/#formule',
 				},
 				rights: {
@@ -886,7 +886,7 @@ export default {
 			items: [
 				{
 					q: 'Bisogna sapere programmare?',
-					a: 'No. Si creano le proprie tabelle, viste, moduli, dashboard e automazioni con il mouse. Le formule si scrivono in francese, come in un foglio di calcolo: SI, ARRONDI, JOURS…',
+					a: 'No. Si creano le proprie tabelle, viste, moduli, dashboard e automazioni con il mouse. Le formule si scrivono come in un foglio di calcolo, in francese o in inglese: SI o IF, ARRONDI o ROUND, JOURS o DAYS…',
 				},
 				{
 					q: 'Quanto costa?',
@@ -1262,8 +1262,8 @@ export default {
 			},
 			formulas: {
 				title: 'Relazioni e formule',
-				text: 'Vere chiavi esterne, formule in francese calcolate da PostgreSQL, e ricerche, aggregazioni e conteggi attraverso le relazioni.',
-				code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+				text: 'Vere chiavi esterne, formule in francese o in inglese calcolate da PostgreSQL, e ricerche, aggregazioni e conteggi attraverso le relazioni.',
+				code: 'ROUND([Montant HT] * (1 + [Taux de TVA]), 2)',
 				href: '/fonctionnalites/tables-et-champs/#formule',
 			},
 			richText: {
@@ -1407,6 +1407,76 @@ export default {
 		title: 'Cosa è cambiato in basedb',
 		intro: 'Il dettaglio di ogni modifica è nella <a href="https://github.com/eodia/basedb/commits/main">cronologia del repository</a>. Cosa arriverà dopo: la <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			formulaLanguages: {
+				date: '2026-09-28',
+				title: 'Formule in francese o in inglese',
+				tag: 'Novità',
+				items: [
+					'<strong>Scrivi una formula in francese o in inglese</strong>, su qualsiasi schermata, anche mescolando le due lingue: <code>SI</code> o <code>IF</code>, <code>ARRONDI</code> o <code>ROUND</code>, <code>JOURS</code> o <code>DAYS</code>… Gli argomenti si separano con <code>;</code> o con <code>,</code>. <a href="/fonctionnalites/tables-et-champs/#formule">Le formule</a>',
+					'<strong>Si rilegge nella lingua della schermata</strong>: in francese su una schermata francese, in inglese nelle altre diciannove lingue — formule esistenti e pannello «Funzioni» compresi. L’API restituisce una formula nella lingua richiesta, altrimenti in inglese.',
+					'I modelli ufficiali, serviti in una lingua diversa dal francese, arrivano con le loro formule in inglese. Nel database non cambia nulla: stesse colonne, stesso SQL, senza migrazione.',
+				],
+			},
+			search: {
+				date: '2026-09-27',
+				title: 'Trovare tutto: Ctrl+K',
+				tag: 'Novità',
+				items: [
+					'<strong>Un solo campo per tutto</strong> — <strong>Ctrl+K</strong>, o il campo al centro della barra superiore: tabelle, viste, domande, dashboard, automazioni, colonne e le righe stesse, lette con i tuoi permessi; su uno schermo grande, l’anteprima del risultato scelto. <a href="/fonctionnalites/recherche/">La ricerca</a>',
+					'<strong>Scrivi come pensi</strong>: senza accenti né maiuscole, per iniziali — <code>nc</code> per «Nuovo cliente» —, un errore di battitura perdonato, <code>clients lyon</code> per cercare «lyon» nella tabella dei clienti; ciò che apri spesso risale in alto.',
+					'<strong>Tutti i comandi da tastiera</strong>: creare, andare a, chiudere, annullare, cambiare tema, copiare il link della pagina. <code>&gt;</code> cerca solo i comandi, <code>#</code> gli oggetti, <code>/</code> le righe; <strong>Tab</strong> cerca in una tabella o in un database.',
+					'<strong>Hai una domanda?</strong> Scrivila: <strong>Chiedi al Copilot</strong> gliela pone, sul database aperto.',
+				],
+			},
+			questions: {
+				date: '2026-09-27',
+				title: 'Domande personali, numeri nel testo',
+				tag: 'Novità',
+				items: [
+					'<strong>Ognuno salva le proprie domande</strong>, senza il livello Gestione: personali, solo tu le vedi; chi gestisce il database le condivide con tutto il database o con dei gruppi, come le query. <a href="/fonctionnalites/tableaux-de-bord/">I dashboard</a>',
+					'<strong>Una domanda in un tab</strong>, accanto alle tabelle: <strong>Nuova domanda</strong> e <strong>Nuova domanda SQL</strong>, al <strong>+</strong> della barra dei tab e nel menu del database; il tab conserva ciò che hai lasciato. <strong>Salva una copia</strong> rende tua una domanda che non puoi modificare.',
+					'<strong>Numeri nel testo</strong>: un testo di dashboard, ora formattato, cita un valore — <code>{{chiffre_affaires}}</code> — preso da una scheda, una domanda o un filtro, calcolato con i permessi di chi legge, anche in una dashboard condivisa tramite link. <a href="/fonctionnalites/tableaux-de-bord/#numeri-nel-testo">Numeri nel testo</a>',
+					'Query, viste SQL e domande si eliminano anche dal loro menu, con un clic destro.',
+				],
+			},
+			addresses: {
+				date: '2026-09-27',
+				title: 'Un indirizzo per ogni schermata',
+				tag: 'Novità',
+				items: [
+					'<strong>L’indirizzo segue la schermata</strong>: una tabella, una vista, la scheda di una riga, una dashboard, un’automazione, una domanda, le tue impostazioni — <code>/bases/ventes/tables/opportunites?ligne=…</code>. Aggiungilo ai preferiti, incollalo in un messaggio: si arriva nello stesso punto, con i propri permessi. <a href="/fonctionnalites/collaboration/#un-link-per-ogni-schermata">Un link per ogni schermata</a>',
+					'I pulsanti <strong>indietro</strong> e <strong>avanti</strong> del browser ti riportano dove eri; un indirizzo che non porta a nulla mostra «Questa pagina non esiste».',
+				],
+			},
+			demo: {
+				date: '2026-09-27',
+				title: 'Una demo da provare, nella tua lingua',
+				tag: 'Novità',
+				items: [
+					'<strong>La demo</strong>, su <a href="https://demo.basedb.eodia.com">demo.basedb.eodia.com</a>: l’account è precompilato nella lingua del tuo browser, con un database in quella lingua. Si legge tutto e si modifica ciò che esiste; creazioni, eliminazioni e IA sono disattivate, e il database torna ogni notte al suo stato iniziale.',
+					'<strong>La tua demo</strong>: <code>BASEDB_DEMO=1</code> apre un’istanza a tutti, con un account condiviso per lingua, preparato in anticipo. <a href="/hebergement/variables/#demo-pubblica">Le variabili</a>',
+					'<strong>Una lingua per link</strong>: <code>?lang=de</code> alla fine di un indirizzo di basedb mostra in tedesco la schermata di accesso o una pagina condivisa; così il sito porta alla demo nella lingua della pagina. <a href="/fonctionnalites/droits/#le-tue-impostazioni">Le tue impostazioni</a>',
+				],
+			},
+			templateLanguages: {
+				date: '2026-09-27',
+				title: 'I modelli nella tua lingua',
+				tag: 'Novità',
+				items: [
+					'<strong>I modelli ufficiali si creano nella lingua della schermata</strong>: tabelle, campi, scelte, viste, dashboard, automazioni, istruzioni per l’IA — e righe di esempio di un mondo adattato a ogni lingua: la «Boulangerie Martin» di Lyon diventa «Martin’s Bakery» a Portland. <a href="/fonctionnalites/modeles/#nella-tua-lingua">I modelli</a>',
+					'La <a href="/modeles/">galleria del sito</a> mostra ogni modello nella lingua della pagina.',
+					'<strong>Un modello, più dizionari</strong>: un modello si scrive una sola volta, in francese; ogni lingua ne traduce solo i testi, e basedb stesso segue ogni etichetta ovunque sia citata. Un dizionario che romperebbe il modello non viene servito. <a href="/fonctionnalites/modeles/#pubblicare-un-modello-per-tutte-le-istanze">Pubblicare un modello</a>',
+				],
+			},
+			details: {
+				date: '2026-09-27',
+				title: 'E anche',
+				items: [
+					'<strong>Un modello senza le sue righe di esempio</strong>: «Caricare dati di esempio», deselezionata, crea tabelle vuote, pronte per i tuoi dati. <a href="/fonctionnalites/modeles/#partire-da-un-modello">Partire da un modello</a>',
+					'<strong>La documentazione API e MCP</strong> di ogni database è scritta nella lingua del tuo schermo. <a href="/integrations/api-rest/#la-documentazione-generata">La documentazione generata</a>',
+					'I tooltip seguono ora il tema dell’applicazione, ovunque il browser mostrasse prima i propri; le voci «Elimina» dei menu, in rosso; la data completa al passaggio del mouse sull’ora di un commento.',
+				],
+			},
 			aiProvider: {
 				date: '2026-09-27',
 				title: 'L’IA di tua scelta, persino sul tuo computer',

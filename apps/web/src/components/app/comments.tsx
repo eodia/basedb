@@ -11,9 +11,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
 import { type Member, type RecordComment, type TableRef, api } from '@/lib/api/client'
 import { editableText, encodeMentions, mentionAt, relativeTime, segmentsOf } from '@/lib/collab'
-import { $t, $tp } from '@/lib/i18n'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { memberName, useMembers } from '@/lib/members'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
@@ -33,6 +34,9 @@ import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 're
  * to write in where `@` offers the people of the tenant. Reading the row is enough to
  * take part.
  */
+
+/** The full date behind the relative one, in its tooltip. */
+const FULL = new Intl.DateTimeFormat(intlLocale(), { dateStyle: 'long', timeStyle: 'short' })
 
 export function CommentThread({
   table,
@@ -161,10 +165,12 @@ function CommentItem({
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <span className="truncate text-sm font-medium">{comment.author.name}</span>
-          <span className="shrink-0 text-xs text-muted-foreground" title={comment.created_at}>
-            {relativeTime(comment.created_at)}
-            {comment.edited_at !== null && $t(' · modifié')}
-          </span>
+          <Hint label={FULL.format(new Date(comment.created_at))}>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {relativeTime(comment.created_at)}
+              {comment.edited_at !== null && $t(' · modifié')}
+            </span>
+          </Hint>
           {(comment.can_edit || comment.can_delete) && !editing && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -185,10 +191,7 @@ function CommentItem({
                   </DropdownMenuItem>
                 )}
                 {comment.can_delete && (
-                  <DropdownMenuItem
-                    onSelect={() => setConfirming(true)}
-                    className="text-destructive focus:text-destructive"
-                  >
+                  <DropdownMenuItem onSelect={() => setConfirming(true)} variant="destructive">
                     <Trash2 className="size-4" />
                     {$t('Supprimer')}
                   </DropdownMenuItem>

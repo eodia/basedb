@@ -849,6 +849,7 @@ export function createApp(options: AppOptions) {
       kind,
       reference,
       c.req.header('if-none-match'),
+      screenLanguage(c),
     )
 
     c.header('etag', served.etag)
@@ -1333,8 +1334,19 @@ export function createApp(options: AppOptions) {
     query: q.query,
     visualization: q.visualization,
     position: q.position,
+    audience: q.audience,
+    groups: q.groups,
+    owner: q.owner,
+    mine: q.mine,
+    editable: q.editable,
     updated_at: q.updatedAt,
     updated_by: q.updatedBy,
+  })
+
+  /** A query's body, in the API's words: `group_ids` for the groups of a `groups` query. */
+  const questionInput = (body: Record<string, unknown>) => ({
+    ...body,
+    ...(body.group_ids === undefined ? {} : { groupIds: body.group_ids }),
   })
 
   app.get('/api/v1/:tenantRef/meta/bases/:base/dashboards', async (c) => {
@@ -1445,7 +1457,8 @@ export function createApp(options: AppOptions) {
     return c.body(null, 204)
   })
 
-  // Saved questions — chapter 18 §3. Seen by whoever sees the base, written by its builders.
+  // Saved questions — chapter 18 §1. Personal, the base's or some groups': anyone who sees
+  // the base keeps their own, its builders share them.
   app.get('/api/v1/:tenantRef/meta/bases/:base/questions', async (c) => {
     const ctx = await dataContext(c)
     const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
@@ -1467,7 +1480,10 @@ export function createApp(options: AppOptions) {
     const body = await c.req.json<Record<string, unknown>>()
     const ctx = await contextFor(c, await bearer(c))
     const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
-    const created = await options.kernel.createQuestion(ctx, { baseId: base.baseId, input: body })
+    const created = await options.kernel.createQuestion(ctx, {
+      baseId: base.baseId,
+      input: questionInput(body),
+    })
     return c.json({ data: serializeQuestion(created) }, 201)
   })
 
@@ -1478,7 +1494,7 @@ export function createApp(options: AppOptions) {
     const updated = await options.kernel.updateQuestion(ctx, {
       baseId: base.baseId,
       id: c.req.param('id'),
-      input: body,
+      input: questionInput(body),
     })
     return c.json({ data: serializeQuestion(updated) })
   })
@@ -3918,24 +3934,30 @@ export function createApp(options: AppOptions) {
     })
   })
 
-  // One card, run on the publisher's authority. The body gives the filters' values alone:
-  // what they filter is the dashboard's, never the visitor's.
-  app.post('/api/v1/dashboards/:token/cards/:card', async (c) => {
+  // One card, run on the publisher's authority — or the question its text cites under a
+  // name. The body gives the filters' values alone: what they filter is the dashboard's,
+  // never the visitor's.
+  const runSharedCard = async (c: Context<{ Variables: Variables }, string>, variable?: string) => {
     admitDashboardRead(c)
     const body = await c.req
       .json<{ values?: unknown; timezone?: unknown; week_start?: unknown }>()
       .catch(() => ({}) as { values?: unknown; timezone?: unknown; week_start?: unknown })
     const result = await options.kernel.runSharedCard({
-      token: c.req.param('token'),
+      token: c.req.param('token') ?? '',
       reader: await respondentOf(c),
       requestId: c.get('requestId'),
-      card: c.req.param('card'),
+      card: c.req.param('card') ?? '',
+      ...(variable === undefined ? {} : { variable }),
       values: body.values,
       timezone: typeof body.timezone === 'string' ? body.timezone : undefined,
       weekStart: body.week_start === 0 ? 0 : 1,
     })
     return c.json({ data: result })
-  })
+  }
+  app.post('/api/v1/dashboards/:token/cards/:card', (c) => runSharedCard(c))
+  app.post('/api/v1/dashboards/:token/cards/:card/variables/:variable', (c) =>
+    runSharedCard(c, c.req.param('variable')),
+  )
 
   app.get('/api/v1/dashboards/:token/parameters/:parameter/values', async (c) => {
     admitDashboardRead(c)

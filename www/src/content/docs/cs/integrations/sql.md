@@ -22,7 +22,7 @@ popisy (`COMMENT ON`).
 
 ## V rozhraní
 
-**+** na liště záložek nebo nabídka **⋯** databáze → **Nový dotaz SQL**: editor se
+**+** na liště záložek nebo nabídka **⋯** databáze → **Dotaz SQL**: editor se
 zvýrazněním syntaxe a doplňováním, jehož výsledek se zobrazí ve stejné mřížce jako vaše
 tabulky.
 

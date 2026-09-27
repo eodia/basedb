@@ -64,5 +64,11 @@
     "name": "0011_langue_choisie.sql",
     "sha256": "d977b8383d3db028f061142750e28b4ff49bcd7405c62d9b4b016727fe6bf981",
     "release": "0.3.0"
+  },
+  {
+    "version": 12,
+    "name": "0012_portee_des_questions.sql",
+    "sha256": "1522de92b197f343b9fbdebaff7c7ccc9285f9613879cfa907fb49ed1b550cbf",
+    "release": "0.3.1"
   }
 ]

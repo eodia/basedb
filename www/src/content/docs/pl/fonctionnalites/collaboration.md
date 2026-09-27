@@ -1,6 +1,6 @@
 ---
 title: Współpraca
-description: Komentarze i wzmianki, powiadomienia, aktualizacje w czasie rzeczywistym i obecność.
+description: Komentarze i wzmianki, powiadomienia, aktualizacje w czasie rzeczywistym, obecność i link do każdego ekranu.
 ---
 
 Kilka osób pracuje nad tą samą bazą jednocześnie: każda widzi, jak napływają zapisy
@@ -44,6 +44,28 @@ twoimi palcami.
 Awatary osób, które patrzą na **tę samą tabelę**, wyświetlają się u góry ekranu; tych, które
 otworzyły **ten sam wiersz** – w nagłówku jego szczegółów. W siatce kursor innych osób pojawia
 się na komórce, nad którą go trzymają.
+
+## Link do każdego ekranu
+
+Adres w przeglądarce podąża za tym, na co patrzysz: tabelę, jeden z jej widoków, szczegóły
+wiersza, pulpit, automatyzację, pytanie, twoje ustawienia. Wklej go w wiadomości: kolega trafia
+w to samo miejsce, z własnymi uprawnieniami. Dodaj go do zakładek; przyciski wstecz i dalej w
+przeglądarce wracają tam, gdzie byłeś.
+
+| Adres | Co otwiera |
+|---|---|
+| `/bases/ventes/tables/opportunites` | tabelę „Opportunités” bazy „Ventes” |
+| `/bases/ventes/tables/opportunites?vue=…` | jeden z jej widoków |
+| `/bases/ventes/tables/opportunites?ligne=…` | szczegóły jednego z jej wierszy |
+| `/bases/ventes/tableaux-de-bord/…` | pulpit |
+| `/bases/ventes/automatisations/…` | automatyzację |
+| `/parametres/apparence` | twoje ustawienia |
+
+Adres nazywa **miejsce**, a nie stan, w jakim je zostawiłeś: filtry, sortowania i szerokości
+kolumn pozostają właściwe każdej przeglądarce. Baza i tabela zapisują się w nim pod swoją nazwą
+PostgreSQL: po zmianie nazwy stary adres nigdzie nie prowadzi. Adres, który nigdzie nie prowadzi
+— literówka, usunięty obiekt albo coś, czego nie masz prawa widzieć — pokazuje „Ta strona nie
+istnieje”.
 
 ## Cofanie
 

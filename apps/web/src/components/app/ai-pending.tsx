@@ -1,6 +1,7 @@
 'use client'
 
 import type { Row } from '@/components/app/grid/cell'
+import { Hint } from '@/components/ui/tooltip'
 import { type Field, type TableRef, api } from '@/lib/api/client'
 import { quoteLiteral } from '@/lib/expression'
 import { $t } from '@/lib/i18n'
@@ -159,9 +160,9 @@ export function AiEmpty({
     return appearance === 'panel' ? (
       <p className="py-2 text-sm text-muted-foreground">{NOTHING}.</p>
     ) : (
-      <span className="flex w-full items-center px-2 text-muted-foreground" title={NOTHING}>
-        —
-      </span>
+      <Hint label={NOTHING}>
+        <span className="flex w-full items-center px-2 text-muted-foreground">—</span>
+      </Hint>
     )
   }
 
@@ -174,16 +175,17 @@ export function AiEmpty({
     )
   }
   return (
-    <span
-      className="flex w-full items-center gap-1.5 px-2 text-xs text-muted-foreground/70"
-      title={
+    <Hint
+      label={
         waiting
           ? $t('Calcul en cours : la valeur s’affiche dès que l’IA a répondu')
           : $t('Pas encore calculé : la cellule est remplie au prochain passage de l’IA')
       }
     >
-      <Icon className={cn('size-3 shrink-0', waiting && 'animate-spin text-emerald-500')} />
-      {waiting ? $t('calcul…') : $t('en attente')}
-    </span>
+      <span className="flex w-full items-center gap-1.5 px-2 text-xs text-muted-foreground/70">
+        <Icon className={cn('size-3 shrink-0', waiting && 'animate-spin text-emerald-500')} />
+        {waiting ? $t('calcul…') : $t('en attente')}
+      </span>
+    </Hint>
   )
 }

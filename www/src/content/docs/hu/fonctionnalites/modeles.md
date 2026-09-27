@@ -20,9 +20,23 @@ címkét, és ha vannak MI-mezők, az Ön hozzájárulását ahhoz, hogy az ált
 a példány MI-szolgáltatójához kerüljenek. E hozzájárulás nélkül ezek közönséges mezők, a
 példaértékeikkel kitöltve.
 
+A **Példaadatok betöltése**, amely alapból be van jelölve, példasorokkal tölti fel a táblákat,
+hogy lássa az adatbázist működés közben. Ha kikapcsolja, a táblák üresek maradnak, készen az Ön
+saját adataira – a nézetek, az irányítópultok és az automatizálások ettől függetlenül létrejönnek.
+
 Egy üres projekt a **bemutató adatbázist** is felkínálja: egy kis ügynökség az ügyfeleivel,
 projektjeivel, feladataival, számláival és értékeléseivel, amely a basedb minden oldalát
 bemutatja.
+
+## Az Ön nyelvén
+
+A hivatalos sablonok **a képernyő nyelvén** olvashatók és hozhatók létre: táblák, mezők,
+választási lehetőségek, példasorok, nézetek, irányítópultok, automatizálások és MI-utasítások. A
+példasorok nyelvet váltanak a nyelvvel együtt: a lyoni „Boulangerie Martin” magyarul a debreceni
+„Kovács Pékség” lesz.
+
+Egy sablon, amelyet importált a példányába, vagy amelyet egy adatbázisból mentett, valaki által
+van megírva: úgy olvasható, ahogyan megírták.
 
 ## Kérje az MI-től
 
@@ -111,6 +125,14 @@ módosítása és a webhely újbóli közzététele elég ahhoz, hogy minden pé
 
 Minden sablont a webhely buildelésekor ugyanaz a validátor ellenőriz, mint a szerveren: egy
 érvénytelen sablon a build meghiúsulását okozza, ahelyett hogy a felhasználókhoz kerülne.
+
+Egy hivatalos sablon egyszer íródik meg, franciául. A más nyelvű szövegei egy szótárban vannak,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+– előbb a francia szöveg, majd a fordítása –, amelyet a webhely a katalógus mellett tesz közzé
+(`/basedb/modeles/i18n/<langue>.json`). A példány minden szöveget átereszt rajta, és minden
+címkét követ ott, ahol hivatkozzák – képletekben, szűrőkben, nézetekben, utasításokban –, majd
+újraolvassa az eredményt: egy olyan szótárt, amely tönkretenné a sablont, nem szolgál ki, a
+francia sablont viszont igen. Egy, a szótárból hiányzó szöveg franciául marad.
 
 A példány a `BASEDB_TEMPLATES_URL` címet olvassa – alapértelmezés szerint a nyilvános
 webhelyét. Állítsa egy saját katalógusra, vagy adja meg az `off` értéket, ha egyiket sem

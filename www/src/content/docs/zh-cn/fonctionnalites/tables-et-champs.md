@@ -63,25 +63,25 @@ Foreign-key constraints:
 
 ## 公式
 
-公式用法语书写，字段放在方括号中，参数之间用 `;` 分隔：
+公式用英语书写（法语函数名同样可用），字段放在方括号中，参数之间用 `,` 分隔：
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 编辑器会提示可插入的字段，并提供函数面板；出错时会指明有问题的字段或字符。
 
 | 类别 | 函数 |
 |---|---|
-| 逻辑 | `SI`、`SIVIDE`、`ESTVIDE`、`ET`、`OU`、`NON`、`VRAI`、`FAUX` |
-| 数字 | `ARRONDI`、`ABS`、`PLAFOND`、`PLANCHER`、`MIN`、`MAX` |
-| 文本 | `MAJUSCULE`、`MINUSCULE`、`SANSESPACES`、`GAUCHE`、`DROITE`、`LONGUEUR`、`TEXTE`、`NOMBRE` |
-| 日期 | `ANNEE`、`MOIS`、`JOUR`、`JOURSEMAINE`、`JOURS`、`AJOUTER_JOURS`、`DATE`、`AUJOURDHUI`、`MAINTENANT` |
+| 逻辑 | `IF`、`IFBLANK`、`ISBLANK`、`AND`、`OR`、`NOT`、`TRUE`、`FALSE` |
+| 数字 | `ROUND`、`ABS`、`CEILING`、`FLOOR`、`MIN`、`MAX` |
+| 文本 | `UPPER`、`LOWER`、`TRIM`、`LEFT`、`RIGHT`、`LEN`、`TEXT`、`VALUE` |
+| 日期 | `YEAR`、`MONTH`、`DAY`、`WEEKDAY`、`DAYS`、`ADD_DAYS`、`DATE`、`TODAY`、`NOW` |
 | 运算符 | `+ - * /`、用于连接文本的 `&`、`= <> < <= > >=` |
 
-公式会成为 PostgreSQL 的**生成列**：`psql` 和您的工具可以像读取其他列一样读取它。依赖当天日期（`AUJOURDHUI()`、`MAINTENANT()`）或引用了查找引用、汇总的公式会**在读取时计算**：在 basedb 中可以对其筛选和排序，但在直接 SQL 中并不存在。
+公式会成为 PostgreSQL 的**生成列**：`psql` 和您的工具可以像读取其他列一样读取它。依赖当天日期（`TODAY()`、`NOW()`）或引用了查找引用、汇总的公式会**在读取时计算**：在 basedb 中可以对其筛选和排序，但在直接 SQL 中并不存在。
 
 公式不能引用其他公式，也不能直接引用关联——这由查找引用来完成。提取或替换文本中的一部分将在后续版本中提供。
 

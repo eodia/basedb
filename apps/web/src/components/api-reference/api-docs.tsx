@@ -4,7 +4,7 @@ import { TokenDialog } from '@/components/app/token-dialog'
 import { Markdown, headings, unescapeText } from '@/components/markdown'
 import { Button } from '@/components/ui/button'
 import { Choice } from '@/components/ui/choice'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Hint, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { type ApiDocumentation, type DocSection, api } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
@@ -438,17 +438,18 @@ function SpecDownload({ base }: { readonly base: string }) {
   }
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => void download()}
-      disabled={busy}
-      title={failure ?? $t('Télécharger la spécification OpenAPI 3.1')}
-      className={cn(failure !== null && 'border-destructive/40 text-destructive')}
-    >
-      <FileJson />
-      {busy ? $t('Export…') : failure !== null ? $t('Échec — réessayer') : 'openapi.json'}
-    </Button>
+    <Hint label={failure ?? $t('Télécharger la spécification OpenAPI 3.1')}>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => void download()}
+        disabled={busy}
+        className={cn(failure !== null && 'border-destructive/40 text-destructive')}
+      >
+        <FileJson />
+        {busy ? $t('Export…') : failure !== null ? $t('Échec — réessayer') : 'openapi.json'}
+      </Button>
+    </Hint>
   )
 }
 
@@ -469,15 +470,12 @@ function TokenButton({ base }: { readonly base: DocBase }) {
   if (base.actions?.includes('manage_tokens') !== true) return null
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setOpen(true)}
-        title={$t('Créer un jeton pour l’API REST ou le MCP')}
-      >
-        <Plug />
-        {$t('Jetons')}
-      </Button>
+      <Hint label={$t('Créer un jeton pour l’API REST ou le MCP')}>
+        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+          <Plug />
+          {$t('Jetons')}
+        </Button>
+      </Hint>
       <TokenDialog open={open} base={base} onClose={() => setOpen(false)} />
     </>
   )

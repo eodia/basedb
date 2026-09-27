@@ -72,12 +72,12 @@ Foreign-key constraints:
 
 ## 수식
 
-수식은 프랑스어로 작성하며, 필드는 대괄호로 감싸고 인수는 `;`로 구분합니다.
+수식은 영어로 작성하며(프랑스어 함수 이름도 사용할 수 있습니다), 필드는 대괄호로 감싸고 인수는 `,`로 구분합니다.
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 편집기는 삽입할 필드와 함수 패널을 제공하며, 오류가 나면 문제가 된 필드나 문자를
@@ -85,14 +85,14 @@ JOURS([Fin]; [Début])
 
 | 분류 | 함수 |
 |---|---|
-| 논리 | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` |
-| 숫자 | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` |
-| 텍스트 | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` |
-| 날짜 | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` |
+| 논리 | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
+| 숫자 | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
+| 텍스트 | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
+| 날짜 | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
 | 연산자 | `+ - * /`, 텍스트를 이어 붙이는 `&`, `= <> < <= > >=` |
 
 수식은 PostgreSQL의 **생성 열**이 됩니다. `psql`과 사용 중인 도구가 다른 열처럼 읽습니다.
-날짜에 따라 달라지는 수식(`AUJOURDHUI()`, `MAINTENANT()`)이나 조회 또는 롤업을 인용하는
+날짜에 따라 달라지는 수식(`TODAY()`, `NOW()`)이나 조회 또는 롤업을 인용하는
 수식은 **읽을 때 계산**됩니다. basedb에서는 필터링하고 정렬할 수 있지만, SQL로 직접 접근하면
 존재하지 않습니다.
 

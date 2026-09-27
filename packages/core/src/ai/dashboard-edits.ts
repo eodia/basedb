@@ -14,13 +14,16 @@ import {
   type ParameterValue,
   type QuestionQuery,
   TEMPORAL_UNITS,
+  type TextVariable,
   type Visualization,
   type VisualizationType,
   cardSize,
   isTemporalUnit,
   parameterFits,
   placedAfter,
+  withoutVariables,
 } from '@basedb/contracts'
+import { richTextToPlain } from '../records/rich-text.js'
 
 /**
  * What the copilot of the dashboards proposes, made into what a save takes — chapter 18
@@ -189,7 +192,9 @@ const clampInt = (raw: unknown, min: number, max: number): number | null =>
 /** What a card says it is, in a line: its title, or its question's label. */
 function cardTitle(card: DashboardCard, questions: ReadonlyMap<string, EditQuestion>): string {
   if (card.title !== undefined && card.title.trim() !== '') return card.title
-  if (card.kind === 'heading' || card.kind === 'text') return cut(card.text ?? 'Texte', 40)
+  if (card.kind === 'heading' || card.kind === 'text') {
+    return cut(card.rich === true ? richTextToPlain(card.text ?? '') : (card.text ?? 'Texte'), 40)
+  }
   if (card.question !== undefined) return questions.get(card.question)?.label ?? 'Question'
   return 'Question'
 }
@@ -505,7 +510,10 @@ export async function editDashboard(
             said.push(`titre « ${next.title} »`)
           }
           if (typeof o.text === 'string' && (card.kind === 'text' || card.kind === 'heading')) {
-            next = { ...next, text: cut(o.text.trim(), DASHBOARD_LIMITS.text) }
+            // The copilot writes Markdown: a rich text it rewrites becomes one; the values
+            // it still cites stay.
+            const { rich: _rich, ...plain } = next
+            next = { ...plain, text: cut(o.text.trim(), DASHBOARD_LIMITS.text) }
             said.push('texte')
           }
           if (
@@ -563,7 +571,9 @@ export async function editDashboard(
         case 'remove_card': {
           const card = findCard(o.card)
           if (card === undefined) throw new Error(`carte inconnue (« ${String(o.card)} »)`)
-          cards = cards.filter((c) => c.id !== card.id)
+          // A text citing it loses its value, and the words that cited it.
+          const cites = (v: TextVariable) => 'card' in v && v.card === card.id
+          cards = cards.filter((c) => c.id !== card.id).map((c) => withoutVariables(c, cites))
           const i = added.findIndex((c) => c.id === card.id)
           if (i >= 0) added.splice(i, 1)
           changes.push({ kind: 'remove_card', text: `Retirer « ${cardTitle(card, questions)} »` })

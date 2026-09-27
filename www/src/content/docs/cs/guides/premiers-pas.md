@@ -37,7 +37,7 @@ V nabídce **⋯** databáze zvolte **Nová tabulka**. Poté přidejte její pol
 | Client | Vazba → Clients |
 | Notes | Dlouhý text (Markdown) |
 
-Později se stejným způsobem přidá vzorec (`JOURS([Échéance]; AUJOURDHUI())`), vyhledávání
+Později se stejným způsobem přidá vzorec (`DAYS([Échéance], TODAY())`), vyhledávání
 (město klienta) nebo agregace (celková částka na klienta) – viz
 [Tabulky a pole](/basedb/cs/fonctionnalites/tables-et-champs/).
 
@@ -71,7 +71,7 @@ získal jakákoli oprávnění. Podrobnosti najdete v článku
 
 ## 6. Čtení v SQL
 
-Nabídka **⋯** databáze → **Nový dotaz SQL**: vaše tabulky jsou tam pod svými skutečnými
+Nabídka **⋯** databáze → **Dotaz SQL**: vaše tabulky jsou tam pod svými skutečnými
 názvy.
 
 ```sql

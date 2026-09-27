@@ -1,6 +1,6 @@
 ---
 title: İşbirliği
-description: Yorumlar ve bahsetmeler, bildirimler, gerçek zamanlı güncellemeler ve çevrimiçi durum.
+description: Yorumlar ve bahsetmeler, bildirimler, gerçek zamanlı güncellemeler, çevrimiçi durum ve her ekrana giden bir bağlantı.
 ---
 
 Birkaç kişi aynı veritabanı üzerinde aynı anda çalışır: her biri diğerlerinin yazdıklarının
@@ -46,6 +46,28 @@ değiştirilmez.
 **Aynı tabloya** bakan kişilerin yüzleri ekranın üstünde görünür; **aynı satırı** açmış
 olanlarınki ise satır ayrıntılarının başlığında. Izgarada, diğerlerinin imleci üzerinde
 gezindikleri hücrede görünür.
+
+## Her ekrana giden bir bağlantı
+
+Tarayıcının adresi baktığınız şeyi izler: bir tablo, onun bir görünümü, bir satırın
+ayrıntıları, bir pano, bir otomasyon, bir soru, ayarlarınız. Bunu bir mesaja yapıştırın: iş
+arkadaşınız aynı yere, kendi izinleriyle ulaşır. Sık kullanılanlara ekleyin; tarayıcının geri ve
+ileri düğmeleri bulunduğunuz yere geri götürür.
+
+| Adres | Neyi açar |
+|---|---|
+| `/bases/ventes/tables/opportunites` | “Ventes” veritabanının “Opportunités” tablosu |
+| `/bases/ventes/tables/opportunites?vue=…` | tablonun bir görünümü |
+| `/bases/ventes/tables/opportunites?ligne=…` | bir satırının ayrıntıları |
+| `/bases/ventes/tableaux-de-bord/…` | bir pano |
+| `/bases/ventes/automatisations/…` | bir otomasyon |
+| `/parametres/apparence` | ayarlarınız |
+
+Bir adres bir **yeri** adlandırır, onu bıraktığınız durumu değil: filtreler, sıralamalar ve
+sütun genişlikleri her tarayıcıya özgü kalır. Bir veritabanı ve bir tablo, oraya PostgreSQL
+adlarıyla yazılır: yeniden adlandırıldıklarında eski adres artık hiçbir yere götürmez. Hiçbir
+yere götürmeyen bir adres — bir yazım hatası, silinmiş bir nesne ya da görmeye hakkınız
+olmayan bir şey — “Bu sayfa mevcut değil” gösterir.
 
 ## Geri alma
 

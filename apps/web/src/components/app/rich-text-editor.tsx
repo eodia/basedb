@@ -6,6 +6,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -59,8 +61,27 @@ import {
  * server would silently drop.
  *
  * A column of the row can be cited: `{{nom}}` in the stored HTML, a pill here, the row's
- * value wherever the text is read (chapter 04 §2.2, « Variables »).
+ * value wherever the text is read (chapter 04 §2.2, « Variables »). Elsewhere, what may be
+ * cited is given as `variables` — a dashboard's text cites its questions and its filters.
  */
+
+/** A value a text may cite: `{{name}}` as stored, its label on the pill and in the menu. */
+export interface VariableChoice {
+  readonly name: string
+  readonly label: string
+  readonly icon?: ReactNode
+  /** The heading it is listed under. */
+  readonly group?: string
+  /** Named on its pill, not offered: a value cited whose source is no longer listed. */
+  readonly hidden?: boolean
+}
+
+const choicesOf = (fields: readonly Field[]): VariableChoice[] =>
+  fields.map((f) => ({
+    name: f.name,
+    label: f.label,
+    icon: <FieldIcon kind={f.kind} format={f.format?.display} />,
+  }))
 
 /** The typography of a rich text, the same in the editor and wherever it is read. */
 export const RICH_TEXT_CLASSES = cn(
@@ -132,6 +153,9 @@ export function RichTextEditor({
   value,
   onChange,
   fields = [],
+  variables,
+  variablesLabel = $t('Colonne'),
+  fill = false,
   autoFocus = false,
   placeholder = $t('Écrire…'),
   className,
@@ -145,6 +169,12 @@ export function RichTextEditor({
   readonly onChange: (next: string) => void
   /** The columns a variable may cite — none: no variable offered. */
   readonly fields?: readonly Field[]
+  /** What a variable may cite, in place of columns. */
+  readonly variables?: readonly VariableChoice[]
+  /** The button of the variables' menu. */
+  readonly variablesLabel?: string
+  /** Fills its box: the toolbar stays, the text scrolls under it. */
+  readonly fill?: boolean
   readonly autoFocus?: boolean
   readonly placeholder?: string
   readonly className?: string
@@ -154,9 +184,10 @@ export function RichTextEditor({
   readonly onSubmit?: () => void
   readonly disabled?: boolean
 }) {
-  // The labels are read through a ref: the extension is built once, the fields may change.
-  const labels = useRef(fields)
-  labels.current = fields
+  const choices = useMemo(() => variables ?? choicesOf(fields), [variables, fields])
+  // The labels are read through a ref: the extension is built once, the choices may change.
+  const labels = useRef(choices)
+  labels.current = choices
   const change = useRef(onChange)
   change.current = onChange
   const submit = useRef(onSubmit)
@@ -181,7 +212,7 @@ export function RichTextEditor({
         },
       }),
       Variable.configure({
-        labelOf: (name) => labels.current.find((f) => f.name === name)?.label ?? name,
+        labelOf: (name) => labels.current.find((c) => c.name === name)?.label ?? name,
       }),
       // A function, not the ref: `configure` copies the objects it is given, and a copied
       // ref would keep the handler of the first render — and its stale draft.
@@ -229,20 +260,32 @@ export function RichTextEditor({
     <div
       className={cn(
         'overflow-hidden rounded-md border bg-background focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/25',
+        fill && 'flex h-full min-h-0 flex-col',
         disabled && 'opacity-60',
         className,
       )}
     >
-      {editor !== null && !disabled && <Toolbar editor={editor} fields={fields} />}
-      <EditorContent editor={editor} />
+      {editor !== null && !disabled && (
+        <Toolbar editor={editor} choices={choices} choicesLabel={variablesLabel} />
+      )}
+      <EditorContent
+        editor={editor}
+        className={fill ? 'min-h-0 flex-1 overflow-y-auto scroll-discret' : undefined}
+      />
     </div>
   )
 }
 
 function Toolbar({
   editor,
-  fields,
-}: { readonly editor: Editor; readonly fields: readonly Field[] }) {
+  choices,
+  choicesLabel,
+}: {
+  readonly editor: Editor
+  readonly choices: readonly VariableChoice[]
+  readonly choicesLabel: string
+}) {
+  const listed = choices.filter((c) => c.hidden !== true)
   return (
     <div
       role="toolbar"
@@ -310,14 +353,14 @@ function Toolbar({
         label={$t('Séparateur||trait horizontal dans un texte')}
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
       />
-      {fields.length > 0 && (
+      {choices.some((c) => c.hidden !== true) && (
         <>
           <Separator />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs">
                 <Braces className="size-3.5" />
-                {$t('Colonne')}
+                {choicesLabel}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -329,24 +372,30 @@ function Toolbar({
                 editor.commands.focus()
               }}
             >
-              {fields.map((f) => (
-                <DropdownMenuItem
-                  key={f.name}
-                  onSelect={() =>
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContent([
-                        { type: 'variable', attrs: { name: f.name } },
-                        { type: 'text', text: ' ' },
-                      ])
-                      .run()
-                  }
-                >
-                  <FieldIcon kind={f.kind} format={f.format?.display} />
-                  {f.label}
-                </DropdownMenuItem>
-              ))}
+              {listed.map((c, i) => {
+                const heading = c.group !== undefined && c.group !== listed[i - 1]?.group
+                return (
+                  <Fragment key={c.name}>
+                    {heading && i > 0 && <DropdownMenuSeparator />}
+                    {heading && <DropdownMenuLabel>{c.group}</DropdownMenuLabel>}
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        editor
+                          .chain()
+                          .focus()
+                          .insertContent([
+                            { type: 'variable', attrs: { name: c.name } },
+                            { type: 'text', text: ' ' },
+                          ])
+                          .run()
+                      }
+                    >
+                      {c.icon}
+                      <span className="truncate">{c.label}</span>
+                    </DropdownMenuItem>
+                  </Fragment>
+                )
+              })}
             </DropdownMenuContent>
           </DropdownMenu>
         </>
@@ -481,17 +530,39 @@ const SHOWN = new Set([
 const TEXT_NODE = 3
 const ELEMENT_NODE = 1
 
+/** What a citation reads as: a value, or `undefined` to leave `{{nom}}` as written. */
+export type Cite = (name: string) => ReactNode | undefined
+
+/** A run of text, each citation it holds replaced by what it reads as. */
+function citing(text: string, cite: Cite): ReactNode {
+  const out: ReactNode[] = []
+  let at = 0
+  for (const match of text.matchAll(/\{\{\s*([a-z0-9_]+)\s*\}\}/g)) {
+    const shown = cite(match[1] as string)
+    if (shown === undefined) continue
+    out.push(text.slice(at, match.index), <Fragment key={match.index}>{shown}</Fragment>)
+    at = match.index + match[0].length
+  }
+  if (at === 0) return text
+  out.push(text.slice(at))
+  return out
+}
+
 /**
  * One node of a parsed rich text, as React elements — the allowed tags and nothing else,
  * links with a safe scheme only. The server already stores the sanitized form; rebuilding
- * it element by element rather than injecting it keeps a second, independent barrier.
+ * it element by element rather than injecting it keeps a second, independent barrier. A
+ * value cited is a React text, never markup.
  */
-function toReact(node: ChildNode, key: number): ReactNode {
-  if (node.nodeType === TEXT_NODE) return node.textContent
+function toReact(node: ChildNode, key: number, cite?: Cite): ReactNode {
+  if (node.nodeType === TEXT_NODE) {
+    const text = node.textContent ?? ''
+    return cite === undefined ? text : <Fragment key={key}>{citing(text, cite)}</Fragment>
+  }
   if (node.nodeType !== ELEMENT_NODE) return null
   const element = node as Element
   const tag = element.tagName.toLowerCase()
-  const children = [...element.childNodes].map(toReact)
+  const children = [...element.childNodes].map((child, i) => toReact(child, i, cite))
   if (!SHOWN.has(tag)) return <Fragment key={key}>{children}</Fragment>
   if (tag === 'br' || tag === 'hr') return createElement(tag, { key })
   if (tag === 'a') {
@@ -510,15 +581,16 @@ function toReact(node: ChildNode, key: number): ReactNode {
   return createElement(tag, { key }, ...children)
 }
 
-/** A rich text, read — in the same typography as its editor. */
+/** A rich text, read — in the same typography as its editor; `cite` reads its variables. */
 export function RichTextView({
   html,
   className,
-}: { readonly html: string; readonly className?: string }) {
+  cite,
+}: { readonly html: string; readonly className?: string; readonly cite?: Cite }) {
   const nodes = useMemo(() => {
     if (typeof window === 'undefined') return null
     const body = new DOMParser().parseFromString(html, 'text/html').body
-    return [...body.childNodes].map(toReact)
-  }, [html])
+    return [...body.childNodes].map((node, i) => toReact(node, i, cite))
+  }, [html, cite])
   return <div className={cn(RICH_TEXT_CLASSES, className)}>{nodes}</div>
 }

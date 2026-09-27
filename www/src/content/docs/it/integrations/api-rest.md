@@ -81,7 +81,8 @@ una sessione dell’interfaccia: un token legge e scrive righe, non modifica il 
 
 Ogni database ha la sua pagina **Documentazione API e MCP**: per ogni tabella, i suoi endpoint, le sue
 colonne, esempi in cURL e in JavaScript. È **filtrata in base ai tuoi permessi** — due
-lettori ne ottengono due versioni — ed esiste anche in OpenAPI 3.1
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+lettori ne ottengono due versioni —, scritta **nella lingua del tuo schermo**, ed esiste anche
+in OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). I nomi, i percorsi e i codici
+di errore restano gli stessi in tutte le lingue.
 
 ![La documentazione generata di un database](../../../../assets/screens/documentation-api.png)

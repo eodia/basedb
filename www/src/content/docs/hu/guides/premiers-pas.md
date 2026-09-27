@@ -36,7 +36,7 @@ képernyőn – ugyanebben a menüben – a **Mező** gombbal:
 | Client | Kapcsolat → Clients |
 | Notes | Hosszú szöveg (Markdown) |
 
-Később egy képlet (`JOURS([Échéance]; AUJOURDHUI())`), egy kikeresés (az ügyfél városa) vagy
+Később egy képlet (`DAYS([Échéance], TODAY())`), egy kikeresés (az ügyfél városa) vagy
 egy aggregálás (az ügyfelenkénti teljes összeg) ugyanígy adható hozzá – lásd:
 [Táblák és mezők](/basedb/hu/fonctionnalites/tables-et-champs/).
 
@@ -71,7 +71,7 @@ anélkül hogy a válaszadó bármilyen jogosultságot kapna. Részletek:
 
 ## 6. Olvasás SQL-ben
 
-Az adatbázis **⋯** menüje → **Új SQL-lekérdezés**: a táblái ott vannak, a valódi nevükön.
+Az adatbázis **⋯** menüje → **SQL-lekérdezés**: a táblái ott vannak, a valódi nevükön.
 
 ```sql
 SELECT nom, statut, montant

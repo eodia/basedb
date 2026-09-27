@@ -80,7 +80,8 @@ session i gränssnittet: en token läser och skriver rader, den ändrar inte dat
 
 Varje databas har sin sida **API- och MCP-dokumentation**: för varje tabell dess slutpunkter,
 dess kolumner, exempel i cURL och i JavaScript. Den är **filtrerad efter dina behörigheter** –
-två läsare får två olika versioner – och finns också i OpenAPI 3.1
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+två läsare får två olika versioner –, skriven **på skärmens språk**, och finns också i OpenAPI 3.1
+(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Namnen, sökvägarna och felkoderna är desamma
+på alla språk.
 
 ![Den genererade dokumentationen för en databas](../../../../assets/screens/documentation-api.png)

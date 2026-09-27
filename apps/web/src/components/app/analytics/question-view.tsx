@@ -3,6 +3,7 @@
 import { DrillMenu } from '@/components/app/analytics/drill-menu'
 import { useValueLabel } from '@/components/app/analytics/filter-editor'
 import { Notebook } from '@/components/app/analytics/notebook'
+import { QuestionDialog } from '@/components/app/analytics/question-dialog'
 import {
   SqlQuestionEditor,
   testConstraints,
@@ -10,17 +11,18 @@ import {
 } from '@/components/app/analytics/sql-question'
 import { type DrillEvent, VisualizationView } from '@/components/app/analytics/visualization'
 import { VIZ_ICONS, VizPicker, VizSettings } from '@/components/app/analytics/viz-settings'
+import { SqlIllustration } from '@/components/app/sql-illustration'
+import { audienceIcon } from '@/components/app/sql/query-dialog'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
 import { toCsv } from '@/lib/analytics/format'
 import {
   VIZ_LABELS,
@@ -29,12 +31,18 @@ import {
   describeFilter,
   tableOf,
 } from '@/lib/analytics/model'
-import { ApiError, type DescribedBase, type Question, api } from '@/lib/api/client'
+import {
+  ApiError,
+  type DescribedBase,
+  type QueryAudience,
+  type Question,
+  api,
+} from '@/lib/api/client'
 import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { useMembers } from '@/lib/members'
 import { messageFor } from '@/lib/messages'
 import { weekStart } from '@/lib/preferences'
-import { useWorkspace } from '@/lib/store/workspace'
+import { type QuestionDraft, useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
 import type {
   BuilderQuery,
@@ -45,9 +53,12 @@ import type {
 } from '@basedb/contracts'
 import {
   ArrowLeft,
+  Copy,
   Download,
+  Ellipsis,
   Loader2,
   NotebookPen,
+  PencilLine,
   RefreshCw,
   Settings2,
   Table2,
@@ -58,22 +69,14 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
- * A question, opened — chapter 18 §3. Built with the mouse in its notebook or written in
- * SQL; run with the rights of whoever looks; drawn the way it reads best, or the way its
- * builder chose; explored by a click on a point, each step a question of its own that can
- * be walked back. Whoever builds the base saves it, or puts it in a dashboard.
+ * A question, opened — chapter 18 §1: among the dashboards, or in a tab of the workspace.
+ * Built with the mouse in its notebook or written in SQL; run with the rights of whoever
+ * looks, read only; drawn the way it reads best, or the way its author chose; explored by
+ * a click on a point, each step a question of its own that can be walked back. Anyone
+ * keeps their own; whoever builds the base shares them, or puts them in a dashboard.
  */
 
-export interface QuestionDraft {
-  /** The saved question it is, when it is one. */
-  readonly id: string | null
-  readonly label: string
-  readonly description: string | null
-  /** `null`: a question built with the mouse whose table is not picked yet. */
-  readonly query: QuestionQuery | null
-  /** `null`: drawn the way its result reads best. */
-  readonly visualization: Visualization | null
-}
+export type { QuestionDraft }
 
 export const draftOf = (question: Question): QuestionDraft => ({
   id: question.id,
@@ -98,17 +101,25 @@ function download(name: string, text: string) {
 export function QuestionView({
   base,
   initial,
-  builds,
+  question: savedQuestion = null,
+  manages,
+  saveAudience = 'personal',
   onSaved,
   onDeleted,
   onBack,
   backLabel = $t('Retour'),
   onUse,
   useLabel = $t('Ajouter au tableau de bord'),
+  onDraftChange,
 }: {
   readonly base: DescribedBase
   readonly initial: QuestionDraft
-  readonly builds: boolean
+  /** The saved question, as the server knows it — who sees it, whether the caller may change it. */
+  readonly question?: Question | null
+  /** The caller manages the base's structure: they may share a question. */
+  readonly manages: boolean
+  /** Who a new question is offered to when saved — the whole base, for a dashboard's. */
+  readonly saveAudience?: QueryAudience
   readonly onSaved?: (question: Question) => void
   readonly onDeleted?: () => void
   readonly onBack?: () => void
@@ -116,8 +127,16 @@ export function QuestionView({
   /** In a dashboard being edited: the question goes into it. */
   readonly onUse?: (draft: QuestionDraft) => void
   readonly useLabel?: string
+  /** Each change of the draft — a tab keeps it for when it comes back. */
+  readonly onDraftChange?: (draft: QuestionDraft) => void
 }) {
   const [draft, setDraft] = useState(initial)
+  const [saved, setSaved] = useState<Question | null>(savedQuestion)
+  useEffect(() => setSaved(savedQuestion), [savedQuestion])
+  // A draft not saved is its builder's; a saved question, its author's or its base's builders'.
+  const editable = draft.id === null || saved === null || saved.editable
+  const [properties, setProperties] = useState(false)
+  const [copying, setCopying] = useState(false)
   const [history, setHistory] = useState<QuestionDraft[]>([])
   const [dirty, setDirty] = useState(false)
   const sql = draft.query?.kind === 'sql'
@@ -176,6 +195,9 @@ export function QuestionView({
     setDraft((d) => ({ ...d, ...patch }))
     setDirty(true)
   }
+  const draftChanged = useRef(onDraftChange)
+  draftChanged.current = onDraftChange
+  useEffect(() => draftChanged.current?.(draft), [draft])
   const query = draft.query
   const visualization: Visualization = draft.visualization ?? {
     type: query === null ? 'table' : autoVisualization(query, result),
@@ -228,6 +250,57 @@ export function QuestionView({
         : $t('Nouvelle question')
       : table.label)
 
+  /** Saves in place what the caller may change; anything else is saved anew. */
+  const save = async () => {
+    if (!complete(query)) return
+    if (draft.id === null || !editable) {
+      setSaving(true)
+      return
+    }
+    setError(null)
+    try {
+      const updated = await api.updateQuestion(base.name, draft.id, {
+        label: draft.label.trim() === '' ? title : draft.label.trim(),
+        query,
+        visualization,
+      })
+      done(updated)
+    } catch (e) {
+      setError(messageFor(e))
+    }
+  }
+  const done = (question: Question) => {
+    setSaved(question)
+    setDraft({
+      id: question.id,
+      label: question.label,
+      description: question.description,
+      query: question.query,
+      visualization: question.visualization,
+    })
+    setDirty(false)
+    setHistory([])
+    onSaved?.(question)
+  }
+  const remove = async () => {
+    if (draft.id === null) return
+    if (
+      !window.confirm(
+        $t('Supprimer la question « {label} » ? Les tableaux de bord qui la montrent le diront.', {
+          label: draft.label,
+        }),
+      )
+    )
+      return
+    try {
+      await api.deleteQuestion(base.name, draft.id)
+      onDeleted?.()
+    } catch (e) {
+      setError(messageFor(e))
+    }
+  }
+  const Audience = saved === null ? null : audienceIcon(saved.audience)
+
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <header className="flex shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2">
@@ -238,18 +311,23 @@ export function QuestionView({
           </Button>
         )}
         {history.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={back}
-            className="gap-1 px-2"
-            title={$t('Revenir à l’étape précédente')}
-          >
-            <Undo2 className="size-4" />
-          </Button>
+          <Hint label={$t('Revenir à l’étape précédente')}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={back}
+              className="gap-1 px-2"
+              aria-label={$t('Revenir à l’étape précédente')}
+            >
+              <Undo2 className="size-4" />
+            </Button>
+          </Hint>
         )}
-        <div className="min-w-0 flex-1">
-          {builds ? (
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          {Audience !== null && draft.id !== null && (
+            <Audience className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          )}
+          {editable ? (
             <input
               value={draft.label}
               placeholder={title}
@@ -289,38 +367,41 @@ export function QuestionView({
             {useLabel}
           </Button>
         )}
-        {builds && complete(query) && (
-          <Button size="sm" onClick={() => setSaving(true)}>
-            {$t('Enregistrer')}
+        {complete(query) && (draft.id === null || dirty) && (
+          <Button size="sm" onClick={() => void save()}>
+            {draft.id !== null && !editable ? $t('Enregistrer une copie') : $t('Enregistrer')}
           </Button>
         )}
-        {builds && draft.id !== null && onDeleted !== undefined && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={$t('Supprimer la question')}
-            title={$t('Supprimer la question')}
-            onClick={async () => {
-              if (draft.id === null) return
-              if (
-                !window.confirm(
-                  $t(
-                    'Supprimer la question « {label} » ? Les tableaux de bord qui la montrent le diront.',
-                    { label: draft.label },
-                  ),
-                )
-              )
-                return
-              try {
-                await api.deleteQuestion(base.name, draft.id)
-                onDeleted()
-              } catch (e) {
-                setError(messageFor(e))
-              }
-            }}
-          >
-            <Trash2 className="size-4" />
-          </Button>
+        {draft.id !== null && (
+          <DropdownMenu>
+            <Hint label={$t('Plus d’actions')}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label={$t('Plus d’actions')}>
+                  <Ellipsis className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+            </Hint>
+            <DropdownMenuContent align="end">
+              {editable && (
+                <DropdownMenuItem onSelect={() => setProperties(true)}>
+                  <PencilLine /> {$t('Nom et partage…')}
+                </DropdownMenuItem>
+              )}
+              {complete(query) && (
+                <DropdownMenuItem onSelect={() => setCopying(true)}>
+                  <Copy /> {$t('Enregistrer une copie…')}
+                </DropdownMenuItem>
+              )}
+              {editable && onDeleted !== undefined && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive" onSelect={() => void remove()}>
+                    <Trash2 /> {$t('Supprimer la question')}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </header>
 
@@ -437,10 +518,15 @@ export function QuestionView({
                 </div>
               )}
               {result === null && !running && errorText === null && (
-                <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-                  {sql
-                    ? $t('Écrivez une requête, puis exécutez-la.')
-                    : $t('Rien à montrer encore.')}
+                <div className="flex flex-1 p-4 text-center">
+                  <div className="m-auto w-full max-w-sm">
+                    {sql && <SqlIllustration />}
+                    <p className="text-sm text-muted-foreground">
+                      {sql
+                        ? $t('Écrivez une requête, puis exécutez-la.')
+                        : $t('Rien à montrer encore.')}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -497,35 +583,38 @@ export function QuestionView({
               })}
             </span>
           )}
-          <Button
-            variant={rawTable ? 'secondary' : 'ghost'}
-            size="icon-sm"
-            aria-label={$t('Voir les données en tableau')}
-            title={$t('Voir les données en tableau')}
-            onClick={() => setRawTable((r) => !r)}
-            disabled={visualization.type === 'table'}
-          >
-            <Table2 className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={$t('Télécharger en CSV')}
-            title={$t('Télécharger en CSV')}
-            disabled={result === null}
-            onClick={() => result !== null && download(title, toCsv(result, { base, members }))}
-          >
-            <Download className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={$t('Relancer')}
-            title={$t('Relancer')}
-            onClick={() => void run()}
-          >
-            <RefreshCw className={cn('size-4', running && 'animate-spin')} />
-          </Button>
+          <Hint label={$t('Voir les données en tableau')}>
+            <Button
+              variant={rawTable ? 'secondary' : 'ghost'}
+              size="icon-sm"
+              aria-label={$t('Voir les données en tableau')}
+              onClick={() => setRawTable((r) => !r)}
+              disabled={visualization.type === 'table'}
+            >
+              <Table2 className="size-4" />
+            </Button>
+          </Hint>
+          <Hint label={$t('Télécharger en CSV')}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={$t('Télécharger en CSV')}
+              disabled={result === null}
+              onClick={() => result !== null && download(title, toCsv(result, { base, members }))}
+            >
+              <Download className="size-4" />
+            </Button>
+          </Hint>
+          <Hint label={$t('Relancer')}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={$t('Relancer')}
+              onClick={() => void run()}
+            >
+              <RefreshCw className={cn('size-4', running && 'animate-spin')} />
+            </Button>
+          </Hint>
         </footer>
       )}
 
@@ -539,119 +628,41 @@ export function QuestionView({
         />
       )}
 
-      {saving && complete(query) && (
-        <SaveDialog
-          base={base}
-          draft={{ ...draft, query, label: draft.label || title, visualization }}
-          onClose={() => setSaving(false)}
-          onSaved={(saved) => {
+      {complete(query) && (
+        <QuestionDialog
+          open={saving || copying}
+          base={base.name}
+          manages={manages}
+          question={null}
+          audience={saveAudience}
+          draft={{
+            label: copying ? $t('{label} (copie)', { label: title }) : draft.label || title,
+            description: draft.description,
+            query,
+            visualization,
+          }}
+          onClose={() => {
             setSaving(false)
-            setDraft(draftOf(saved))
-            setDirty(false)
-            setHistory([])
-            onSaved?.(saved)
+            setCopying(false)
+          }}
+          onSaved={done}
+        />
+      )}
+
+      {saved !== null && (
+        <QuestionDialog
+          open={properties}
+          base={base.name}
+          manages={manages}
+          question={saved}
+          onClose={() => setProperties(false)}
+          onSaved={(question) => {
+            setSaved(question)
+            setDraft((d) => ({ ...d, label: question.label, description: question.description }))
+            onSaved?.(question)
           }}
         />
       )}
     </div>
-  )
-}
-
-function SaveDialog({
-  base,
-  draft,
-  onClose,
-  onSaved,
-}: {
-  readonly base: DescribedBase
-  readonly draft: QuestionDraft & {
-    readonly query: QuestionQuery
-    readonly visualization: Visualization
-  }
-  readonly onClose: () => void
-  readonly onSaved: (question: Question) => void
-}) {
-  const [label, setLabel] = useState(draft.label)
-  const [description, setDescription] = useState(draft.description ?? '')
-  const [replace, setReplace] = useState(draft.id !== null)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const save = async () => {
-    setBusy(true)
-    setError(null)
-    try {
-      const input = {
-        label: label.trim(),
-        description: description.trim() === '' ? null : description.trim(),
-        query: draft.query,
-        visualization: draft.visualization,
-      }
-      const saved =
-        replace && draft.id !== null
-          ? await api.updateQuestion(base.name, draft.id, input)
-          : await api.createQuestion(base.name, input)
-      onSaved(saved)
-    } catch (e) {
-      setError(messageFor(e))
-      setBusy(false)
-    }
-  }
-  return (
-    <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{$t('Enregistrer la question')}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          {draft.id !== null && (
-            <div className="space-y-1.5 text-sm">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  className="accent-primary"
-                  checked={replace}
-                  onChange={() => setReplace(true)}
-                />
-                {$t('Remplacer la question d’origine')}
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  className="accent-primary"
-                  checked={!replace}
-                  onChange={() => setReplace(false)}
-                />
-                {$t('En faire une nouvelle question')}
-              </label>
-            </div>
-          )}
-          <Input
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            aria-label={$t('Nom')}
-            placeholder={$t('Nom de la question')}
-            maxLength={255}
-            autoFocus
-          />
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            aria-label={$t('Description')}
-            placeholder={$t('Ce qu’elle montre, pour qui (facultatif)')}
-            rows={3}
-          />
-          {error !== null && <p className="text-sm text-destructive">{error}</p>}
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
-            {$t('Annuler')}
-          </Button>
-          <Button onClick={() => void save()} disabled={busy || label.trim() === ''}>
-            {busy && <Loader2 className="size-4 animate-spin" />}
-            {$t('Enregistrer')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }

@@ -11,7 +11,7 @@ import {
   ContextMenuShortcut,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Hint, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Field } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import type { SortTerm } from '@/lib/store/workspace'
@@ -92,13 +92,8 @@ export function ColumnHeader({
   // so a column that has none is laid out exactly as before.
   const label = (
     // The wrapper, not the button, carries the hover: a disabled button raises no pointer
-    // events, and a column that cannot be sorted would never show its description. It also
-    // holds the native hint of a column WITHOUT a description; a described one shows the
-    // hint inside its tooltip instead, rather than two tooltips at once.
-    <div
-      className="flex min-w-0 flex-1"
-      title={hasDescription(field.description) ? undefined : hint}
-    >
+    // events, and a column that cannot be sorted would never show its tooltip.
+    <div className="flex min-w-0 flex-1">
       <button
         type="button"
         onClick={(e) => {
@@ -170,7 +165,7 @@ export function ColumnHeader({
               </TooltipContent>
             </Tooltip>
           ) : (
-            label
+            <Hint label={hint}>{label}</Hint>
           )}
 
           <ResizeHandle onResizeStart={onResizeStart} onResize={onResize} onFit={onFitWidth} />

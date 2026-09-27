@@ -83,6 +83,24 @@ Siehe [Konten und Anmeldung](/basedb/de/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | Berechnungen von KI-Feldern pro Stunde und pro Arbeitsbereich |
 | `BASEDB_AI_WORKER` | `1` | `0`: keine Hintergrundberechnung in diesem Prozess |
 
+## Öffentliche Demo
+
+Eine für alle offene Instanz, wie [demo.basedb.eodia.com](https://demo.basedb.eodia.com): Der
+Anmeldebildschirm füllt ein gemeinsames Konto vorab aus, die besuchende Person liest alles und
+ändert, was existiert, legt aber nichts an und löscht nichts – Datenbank, Tabelle, Zeile, Datei,
+Kommentar, Konto, Token, Link –, und die KI antwortet, dass sie nicht Teil der Demo ist. Die
+SQL-Konsole liest dort nur. Die Datenbank jede Nacht zurückzusetzen bleibt Ihre Aufgabe.
+
+| Variable | Standard | Rolle |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: Die Instanz wird zu einer öffentlichen Demo |
+| `BASEDB_DEMO_ACCOUNTS` | — | ein Konto pro Sprache, durch Kommas getrennt: `fr=demo@demo.com,en=demo-en@demo.com`; der Anmeldebildschirm füllt das seiner Sprache vorab aus, sonst Englisch, sonst das erste, und bietet die anderen an. Legen Sie diese Konten an, jedes mit seinem Projekt, bevor Sie die Demo aktivieren: Sie verweigert allen das Anlegen, Administratoren eingeschlossen |
+| `BASEDB_DEMO_PASSWORD` | — | zusammen mit `BASEDB_DEMO_ACCOUNTS` deren Passwort, für alle dasselbe, mit ihnen veröffentlicht |
+
+Ohne `BASEDB_DEMO_ACCOUNTS` ist das gemeinsame Konto der Administrator, den `BASEDB_ADMIN_EMAIL`
+und `BASEDB_ADMIN_PASSWORD` benennen. Eine Adresse der Demo meldet sich mit dem veröffentlichten
+Passwort an, egal was eingegeben wird: Falsche Versuche sperren sie nicht für alle.
+
 ## Nur für die Entwicklung
 
 | Variable | Rolle |

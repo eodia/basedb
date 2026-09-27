@@ -83,6 +83,24 @@ Veja [Contas e login](/basedb/pt-br/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | cálculos de campos de IA por hora e por tenant |
 | `BASEDB_AI_WORKER` | `1` | `0`: nenhum cálculo em segundo plano neste processo |
 
+## Demonstração pública
+
+Uma instância aberta a todos, como [demo.basedb.eodia.com](https://demo.basedb.eodia.com): a tela
+de login preenche antecipadamente uma conta compartilhada, o visitante lê tudo e modifica o que já
+existe, mas não cria nem exclui nada — base, tabela, linha, arquivo, comentário, conta, token,
+link —, e a IA responde que não faz parte da demonstração. O console SQL só lê ali. Deixar a base
+de volta ao estado inicial todas as noites continua sendo responsabilidade sua.
+
+| Variável | Padrão | Função |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: a instância se torna uma demonstração pública |
+| `BASEDB_DEMO_ACCOUNTS` | — | uma conta por idioma, separadas por vírgulas: `fr=demo@demo.com,en=demo-en@demo.com`; a tela de login preenche antecipadamente a do idioma dela, senão o inglês, senão a primeira, e oferece as outras. Crie essas contas, cada uma com seu projeto, antes de ativar a demonstração: ela recusa as criações para todos, administrador incluído |
+| `BASEDB_DEMO_PASSWORD` | — | com `BASEDB_DEMO_ACCOUNTS`, a senha delas, a mesma para todas, publicada com elas |
+
+Sem `BASEDB_DEMO_ACCOUNTS`, a conta compartilhada é o administrador nomeado por
+`BASEDB_ADMIN_EMAIL` e `BASEDB_ADMIN_PASSWORD`. Um endereço da demonstração entra com a senha
+publicada, seja o que for digitado: tentativas erradas não a bloqueiam para todo mundo.
+
 ## Somente desenvolvimento
 
 | Variável | Função |

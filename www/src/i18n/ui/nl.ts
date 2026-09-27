@@ -72,7 +72,7 @@ export default {
 							tables: {
 								href: '/fonctionnalites/tables-et-champs/',
 								title: 'Tabellen en velden',
-								text: 'Velden voor alles, relaties, formules in het Frans.',
+								text: 'Velden voor alles, relaties, formules net als in een spreadsheet.',
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
@@ -776,9 +776,9 @@ export default {
 					href: '/fonctionnalites/tableaux-de-bord/',
 				},
 				formulas: {
-					code: 'SI([Montant] > 10000; "Grand compte"; "")',
-					title: 'Formules in het Frans',
-					text: 'Net als in een spreadsheet — SI, ARRONDI, JOURS… — maar berekend voor het hele team.',
+					code: 'IF([Montant] > 10000, "Grand compte", "")',
+					title: 'Formules in het Frans of het Engels',
+					text: 'Net als in een spreadsheet — SI, ARRONDI, JOURS… of IF, ROUND, DAYS — maar berekend voor het hele team.',
 					href: '/fonctionnalites/tables-et-champs/#formules',
 				},
 				rights: {
@@ -886,7 +886,7 @@ export default {
 			items: [
 				{
 					q: 'Moet je kunnen programmeren?',
-					a: 'Nee. Je maakt je tabellen, weergaven, formulieren, dashboards en automatiseringen met de muis. Formules schrijf je in het Frans, net als in een spreadsheet: SI, ARRONDI, JOURS…',
+					a: 'Nee. Je maakt je tabellen, weergaven, formulieren, dashboards en automatiseringen met de muis. Formules schrijf je net als in een spreadsheet, in het Frans of het Engels: SI of IF, ARRONDI of ROUND, JOURS of DAYS…',
 				},
 				{
 					q: 'Hoeveel kost het?',
@@ -1253,8 +1253,8 @@ export default {
 			},
 			formulas: {
 				title: 'Relaties en formules',
-				text: 'Echte foreign keys, formules met Franse functienamen die PostgreSQL berekent, en opzoekvelden, aggregaties en aantallen via relaties.',
-				code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+				text: 'Echte foreign keys, formules in het Frans of het Engels die PostgreSQL berekent, en opzoekvelden, aggregaties en aantallen via relaties.',
+				code: 'ROUND([Montant HT] * (1 + [Taux de TVA]), 2)',
 				href: '/fonctionnalites/tables-et-champs/#formules',
 			},
 			richText: {
@@ -1398,6 +1398,76 @@ export default {
 		title: 'Wat er in basedb is veranderd',
 		intro: 'Elke wijziging in detail staat in <a href="https://github.com/eodia/basedb/commits/main">de geschiedenis van de repository</a>. Wat er hierna komt: de <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			formulaLanguages: {
+				date: '2026-09-28',
+				title: 'Formules in het Frans of het Engels',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Typ een formule in het Frans of het Engels</strong>, op elk scherm, ook door de twee te mengen: <code>SI</code> of <code>IF</code>, <code>ARRONDI</code> of <code>ROUND</code>, <code>JOURS</code> of <code>DAYS</code>… De argumenten worden gescheiden door <code>;</code> of door <code>,</code>. <a href="/fonctionnalites/tables-et-champs/#formules">De formules</a>',
+					'<strong>Ze wordt teruggelezen in de taal van het scherm</strong>: in het Frans op een Frans scherm, in het Engels in de negentien andere talen — bestaande formules en het paneel “Functies” inbegrepen. De API geeft een formule terug in de gevraagde taal, anders in het Engels.',
+					'De officiële sjablonen, aangeboden in een andere taal dan het Frans, komen met hun formules in het Engels. Er verandert niets in de database: dezelfde kolommen, dezelfde SQL, zonder migratie.',
+				],
+			},
+			search: {
+				date: '2026-09-27',
+				title: 'Alles vinden: Ctrl+K',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Één enkel veld voor alles</strong> — <strong>Ctrl+K</strong>, of het veld in het midden van de bovenste balk: tabellen, weergaven, vragen, dashboards, automatiseringen, kolommen, en de rijen zelf, gelezen met jouw rechten; op een groot scherm de voorvertoning van het gekozen resultaat. <a href="/fonctionnalites/recherche/">Zoeken</a>',
+					'<strong>Typ zoals je denkt</strong>: zonder accenten of hoofdletters, met initialen — <code>nk</code> voor “Nieuwe klant” —, één typefout wordt vergeven, <code>klanten utrecht</code> om “utrecht” te zoeken in de tabel van de klanten; wat je vaak opent, komt boven.',
+					'<strong>Alle opdrachten via het toetsenbord</strong>: aanmaken, naar iets gaan, sluiten, ongedaan maken, van thema wisselen, de link van de pagina kopiëren. <code>&gt;</code> zoekt alleen opdrachten, <code>#</code> objecten, <code>/</code> rijen; <strong>Tab</strong> zoekt binnen een tabel of database.',
+					'<strong>Een vraag?</strong> Typ hem: <strong>Aan de Copilot vragen</strong> stelt hem, op de geopende database.',
+				],
+			},
+			questions: {
+				date: '2026-09-27',
+				title: 'Eigen vragen, cijfers in de tekst',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Iedereen slaat zijn eigen vragen op</strong>, zonder het niveau Beheren: persoonlijke vragen ziet alleen jij; wie de database beheert, deelt ze met de hele database of met groepen, zoals de query’s. <a href="/fonctionnalites/tableaux-de-bord/">Dashboards</a>',
+					'<strong>Een vraag in een tabblad</strong>, naast de tabellen: <strong>Nieuwe vraag</strong> en <strong>Nieuwe SQL-vraag</strong>, bij de <strong>+</strong> van de tabbladbalk en in het menu van de database; het tabblad bewaart wat je erin hebt achtergelaten. <strong>Kopie opslaan</strong> maakt een vraag die je niet mag wijzigen van jou.',
+					'<strong>Cijfers in de tekst</strong>: een tekst van een dashboard, nu met opmaak, citeert een waarde — <code>{{chiffre_affaires}}</code> — afkomstig van een kaart, een vraag of een filter, berekend met de rechten van de lezer, ook in een dashboard dat via een link is gedeeld. <a href="/fonctionnalites/tableaux-de-bord/#cijfers-in-de-tekst">Cijfers in de tekst</a>',
+					'Query’s, SQL-views en vragen kun je ook verwijderen vanuit hun menu, met een rechtsklik.',
+				],
+			},
+			addresses: {
+				date: '2026-09-27',
+				title: 'Een adres voor elk scherm',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Het adres volgt het scherm</strong>: een tabel, een weergave, de rijdetails van een rij, een dashboard, een automatisering, een vraag, jouw instellingen — <code>/bases/ventes/tables/opportunites?ligne=…</code>. Sla het op als favoriet, plak het in een bericht: je komt op dezelfde plek terecht, met je eigen rechten. <a href="/fonctionnalites/collaboration/#een-link-naar-elk-scherm">Een link naar elk scherm</a>',
+					'De knoppen <strong>vorige</strong> en <strong>volgende</strong> van de browser brengen je terug naar waar je was; een adres dat nergens naartoe leidt, toont “Deze pagina bestaat niet”.',
+				],
+			},
+			demo: {
+				date: '2026-09-27',
+				title: 'Een demo om te proberen, in je taal',
+				tag: 'Nieuw',
+				items: [
+					'<strong>De demo</strong>, op <a href="https://demo.basedb.eodia.com">demo.basedb.eodia.com</a>: het account is vooraf ingevuld in de taal van je browser, met een database in die taal. Je leest er alles en wijzigt wat bestaat; aanmaken, verwijderen en AI staan er uit, en de database komt elke nacht terug in haar oorspronkelijke staat.',
+					'<strong>Je eigen demo</strong>: <code>BASEDB_DEMO=1</code> opent een instantie voor iedereen, met een gedeeld account per taal, van tevoren voorbereid. <a href="/hebergement/variables/#openbare-demo">De variabelen</a>',
+					'<strong>Eén taal per link</strong>: <code>?lang=de</code> achter een basedb-adres toont het inlogscherm of een gedeelde pagina in het Duits; zo leidt de site naar de demo in de taal van de pagina. <a href="/fonctionnalites/droits/#jouw-instellingen">Jouw instellingen</a>',
+				],
+			},
+			templateLanguages: {
+				date: '2026-09-27',
+				title: 'De sjablonen in je taal',
+				tag: 'Nieuw',
+				items: [
+					'<strong>De officiële sjablonen worden aangemaakt in de taal van het scherm</strong>: tabellen, velden, keuzes, weergaven, dashboards, automatiseringen, AI-instructies — en voorbeeldrijen uit een wereld die is aangepast aan elke taal: de “Boulangerie Martin” uit Lyon wordt “Bakkerij De Boer” in Utrecht. <a href="/fonctionnalites/modeles/#in-je-taal">De sjablonen</a>',
+					'De <a href="/modeles/">galerie van de site</a> toont elk sjabloon in de taal van de pagina.',
+					'<strong>Één sjabloon, meerdere woordenboeken</strong>: een sjabloon wordt één keer geschreven, in het Frans; elke taal vertaalt er alleen de teksten van, en basedb volgt zelf elk label waar het wordt aangehaald. Een woordenboek dat het sjabloon zou breken, wordt niet gebruikt. <a href="/fonctionnalites/modeles/#een-sjabloon-publiceren-voor-alle-instanties">Een sjabloon publiceren</a>',
+				],
+			},
+			details: {
+				date: '2026-09-27',
+				title: 'En verder',
+				items: [
+					'<strong>Een sjabloon zonder zijn voorbeeldrijen</strong>: “Voorbeeldgegevens laden”, uitgevinkt, maakt lege tabellen, klaar voor je eigen gegevens. <a href="/fonctionnalites/modeles/#starten-vanuit-een-sjabloon">Starten vanuit een sjabloon</a>',
+					'<strong>De API- en MCP-documentatie</strong> van elke database wordt geschreven in de taal van je scherm. <a href="/integrations/api-rest/#de-gegenereerde-documentatie">De gegenereerde documentatie</a>',
+					'Tooltips in het thema van de applicatie, overal waar de browser vroeger de zijne toonde; de “Verwijderen” in de menu’s in rood; de volledige datum bij het hoveren over het tijdstip van een opmerking.',
+				],
+			},
 			languages: {
 				date: '2026-09-27',
 				title: 'Opgemaakte tekst, variabelen, een beter leesbaar kanban',

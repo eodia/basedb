@@ -84,6 +84,24 @@ Zobacz [Konta i logowanie](/basedb/pl/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | obliczenia pól AI na godzinę i na tenanta |
 | `BASEDB_AI_WORKER` | `1` | `0`: brak obliczeń w tle w tym procesie |
 
+## Publiczne demo
+
+Instancja otwarta dla wszystkich, jak [demo.basedb.eodia.com](https://demo.basedb.eodia.com):
+ekran logowania wypełnia z góry wspólne konto, odwiedzający czyta wszystko i modyfikuje to, co
+istnieje, ale niczego nie tworzy ani nie usuwa — bazy, tabeli, wiersza, pliku, komentarza,
+konta, tokenu, linku —, a AI odpowiada, że nie jest częścią demo. Konsola SQL tylko tam czyta.
+Przywracanie bazy do stanu wyjściowego każdej nocy pozostaje po twojej stronie.
+
+| Zmienna | Domyślnie | Rola |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: instancja staje się publicznym demo |
+| `BASEDB_DEMO_ACCOUNTS` | — | jedno konto na język, rozdzielone przecinkami: `fr=demo@demo.com,en=demo-en@demo.com`; ekran logowania wypełnia z góry konto swojego języka, w przeciwnym razie angielskie, w przeciwnym razie pierwsze, i proponuje pozostałe. Utwórz te konta, każde z własnym projektem, przed włączeniem demo: odrzuca ono tworzenie czegokolwiek dla wszystkich, łącznie z administratorem |
+| `BASEDB_DEMO_PASSWORD` | — | razem z `BASEDB_DEMO_ACCOUNTS` — ich hasło, takie samo dla wszystkich, publikowane razem z nimi |
+
+Bez `BASEDB_DEMO_ACCOUNTS` wspólnym kontem jest administrator wskazany przez
+`BASEDB_ADMIN_EMAIL` i `BASEDB_ADMIN_PASSWORD`. Adres demo loguje się opublikowanym hasłem,
+niezależnie od tego, co się wpisze: błędne próby nie blokują go dla wszystkich.
+
 ## Tylko dla deweloperów
 
 | Zmienna | Rola |

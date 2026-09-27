@@ -25,6 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Hint } from '@/components/ui/tooltip'
 import type { Field, LinkOption, PointerAt, RemotePointer } from '@/lib/api/client'
 import { effectiveKind } from '@/lib/computed'
 import { isDateKind, storedFromText } from '@/lib/dates'
@@ -731,37 +732,38 @@ export function DataGrid({
                   className="absolute inset-x-0 flex items-center border-b bg-muted/60"
                   style={{ height: GROUP_HEIGHT, transform: `translateY(${virtual.start}px)` }}
                 >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCollapsed((current) => {
-                        const next = new Set(current)
-                        if (next.has(item.key)) next.delete(item.key)
-                        else next.add(item.key)
-                        return next
-                      })
-                    }
-                    className="sticky left-0 flex h-full max-w-[min(100%,36rem)] items-center gap-2 px-2 text-left text-xs"
-                    aria-expanded={!folded}
-                    title={folded ? $t('Déplier le groupe') : $t('Replier le groupe')}
-                  >
-                    {folded ? (
-                      <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
-                    )}
-                    <span className="shrink-0 text-muted-foreground">{groupField.label}</span>
-                    <span className="flex min-w-0 items-center">
-                      {item.key === '∅' ? (
-                        <span className="text-muted-foreground">{$t('Sans valeur')}</span>
+                  <Hint label={folded ? $t('Déplier le groupe') : $t('Replier le groupe')}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCollapsed((current) => {
+                          const next = new Set(current)
+                          if (next.has(item.key)) next.delete(item.key)
+                          else next.add(item.key)
+                          return next
+                        })
+                      }
+                      className="sticky left-0 flex h-full max-w-[min(100%,36rem)] items-center gap-2 px-2 text-left text-xs"
+                      aria-expanded={!folded}
+                    >
+                      {folded ? (
+                        <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
                       ) : (
-                        <CardValue field={groupField} row={first} />
+                        <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
                       )}
-                    </span>
-                    <span className="shrink-0 rounded-full bg-background px-1.5 tabular-nums text-muted-foreground">
-                      {count.toLocaleString(intlLocale())}
-                    </span>
-                  </button>
+                      <span className="shrink-0 text-muted-foreground">{groupField.label}</span>
+                      <span className="flex min-w-0 items-center">
+                        {item.key === '∅' ? (
+                          <span className="text-muted-foreground">{$t('Sans valeur')}</span>
+                        ) : (
+                          <CardValue field={groupField} row={first} />
+                        )}
+                      </span>
+                      <span className="shrink-0 rounded-full bg-background px-1.5 tabular-nums text-muted-foreground">
+                        {count.toLocaleString(intlLocale())}
+                      </span>
+                    </button>
+                  </Hint>
                 </div>
               )
             }
@@ -895,21 +897,22 @@ export function DataGrid({
                               Hidden while the cell is being edited: the control would sit
                               on top of the caret, at the end of the text being typed. */}
                           {columnIndex === 0 && editable && !isEditing && (
-                            <button
-                              type="button"
-                              // The grid starts a selection on mousedown; this one is a
-                              // button, not a cell, and must not drag a rectangle out.
-                              onMouseDown={(e) => e.stopPropagation()}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onOpenRecord(row)
-                              }}
-                              className="absolute right-1 hidden size-6 items-center justify-center rounded-md border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground group-hover/row:flex"
-                              aria-label={$t('Ouvrir la fiche')}
-                              title={$t('Ouvrir la fiche')}
-                            >
-                              <Maximize2 className="size-3" />
-                            </button>
+                            <Hint label={$t('Ouvrir la fiche')}>
+                              <button
+                                type="button"
+                                // The grid starts a selection on mousedown; this one is a
+                                // button, not a cell, and must not drag a rectangle out.
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onOpenRecord(row)
+                                }}
+                                className="absolute right-1 hidden size-6 items-center justify-center rounded-md border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground group-hover/row:flex"
+                                aria-label={$t('Ouvrir la fiche')}
+                              >
+                                <Maximize2 className="size-3" />
+                              </button>
+                            </Hint>
                           )}
                         </div>
                       )
@@ -935,10 +938,7 @@ export function DataGrid({
                   {editable && canDelete && (
                     <>
                       <ContextMenuSeparator />
-                      <ContextMenuItem
-                        onSelect={() => void onDelete(id)}
-                        className="text-destructive focus:text-destructive"
-                      >
+                      <ContextMenuItem onSelect={() => void onDelete(id)} variant="destructive">
                         <Trash2 className="size-4" />
                         {$t('Supprimer la ligne')}
                       </ContextMenuItem>
@@ -1002,13 +1002,14 @@ export function DataGrid({
 
         {summaries !== undefined && onSummary !== undefined && (
           <div className="sticky bottom-0 z-20 flex border-t bg-background">
-            <div
-              className="sticky left-0 z-10 flex shrink-0 items-center border-r bg-background px-2 text-[10px] tabular-nums text-muted-foreground"
-              style={{ width: GUTTER_WIDTH }}
-              title={$t('Lignes que garde le filtre, toutes pages confondues')}
-            >
-              {summaryTotal === null ? '' : summaryTotal.toLocaleString(intlLocale())}
-            </div>
+            <Hint label={$t('Lignes que garde le filtre, toutes pages confondues')}>
+              <div
+                className="sticky left-0 z-10 flex shrink-0 items-center border-r bg-background px-2 text-[10px] tabular-nums text-muted-foreground"
+                style={{ width: GUTTER_WIDTH }}
+              >
+                {summaryTotal === null ? '' : summaryTotal.toLocaleString(intlLocale())}
+              </div>
+            </Hint>
             {fields.map((field) => (
               <SummaryCell
                 key={field.name}

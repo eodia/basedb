@@ -22,7 +22,7 @@ descriptions (`COMMENT ON`).
 
 ## In the interface
 
-The **+** in the tab bar, or the base’s **⋯** menu → **New SQL query**: an editor with syntax
+The **+** in the tab bar, or the base’s **⋯** menu → **SQL query**: an editor with syntax
 highlighting and completion, whose result is shown in the same grid as your tables.
 
 ![A saved query, and two SQL views filed among the tables](../../../../assets/screens/requete-sql.png)

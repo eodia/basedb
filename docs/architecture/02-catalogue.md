@@ -1592,7 +1592,7 @@ Un **tableau de bord** n'a pas de droit propre : ses blocs lisent par les routes
 
 ### Questions et tableaux de bord en grille
 
-Migrations de catalogue 0005 et 0006 (chapitre 18).
+Migrations de catalogue 0005, 0006 et 0012 (chapitre 18).
 
 ```sql
 -- Une lecture nommee d'une base, construite a la souris ou ecrite en SQL, et sa
@@ -1606,6 +1606,11 @@ CREATE TABLE _basedb.question (
   query         jsonb NOT NULL,
   visualization jsonb NOT NULL DEFAULT '{}'::jsonb,
   position      integer NOT NULL DEFAULT 0,
+  -- personal : son auteur (created_by) seul ; base : quiconque lit la base ; groups :
+  -- les groupes de question_role, et qui gere la base (0012 ; les questions d'avant sont
+  -- a toute la base).
+  audience      text NOT NULL DEFAULT 'personal'
+                  CHECK (audience IN ('personal', 'base', 'groups')),
   created_at    timestamptz NOT NULL DEFAULT clock_timestamp(),
   created_by    uuid NOT NULL REFERENCES _basedb.app_user(id) ON DELETE RESTRICT,
   updated_at    timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -1616,13 +1621,19 @@ CREATE INDEX idx_question_base    ON _basedb.question (base_id, position);
 CREATE INDEX idx_question_creator ON _basedb.question (created_by);
 CREATE INDEX idx_question_updater ON _basedb.question (updated_by);
 
+CREATE TABLE _basedb.question_role (
+  question_id uuid NOT NULL REFERENCES _basedb.question(id) ON DELETE CASCADE,
+  role_id     uuid NOT NULL REFERENCES _basedb.role(id) ON DELETE CASCADE,
+  PRIMARY KEY (question_id, role_id)
+);
+
 ALTER TABLE _basedb.dashboard
   ADD COLUMN tabs       jsonb NOT NULL DEFAULT '[]'::jsonb,  -- [{id, label}]
   ADD COLUMN cards      jsonb NULL,                          -- nul : pas encore traduit des blocs
   ADD COLUMN parameters jsonb NOT NULL DEFAULT '[]'::jsonb;  -- les filtres du tableau
 ```
 
-`query`, `visualization`, `tabs`, `cards` et `parameters` sont des documents de `@basedb/contracts` (`analytics.ts`), validés par le noyau à l'écriture : les tables sont celles de la base, par clé, les champs y existent, la place d'une carte tient dans la grille de 24 colonnes, un filtre relié existe. Ils ne produisent aucun DDL et ne donnent accès à rien : une question construite est exécutée sur les plans de lecture du lecteur, une question SQL par son lecteur SQL, en lecture seule. Tant que `cards` est nul, le noyau lit `blocks` comme des cartes ; le premier enregistrement écrit `cards` et vide `blocks`.
+`query`, `visualization`, `tabs`, `cards` et `parameters` sont des documents de `@basedb/contracts` (`analytics.ts`), validés par le noyau à l'écriture : les tables sont celles de la base, par clé, les champs y existent, la place d'une carte tient dans la grille de 24 colonnes, un filtre relié existe, une carte ne cite qu'une question de toute la base (`audience = 'base'`). Ils ne produisent aucun DDL et ne donnent accès à rien : une question construite est exécutée sur les plans de lecture du lecteur, une question SQL par son lecteur SQL, en lecture seule. Tant que `cards` est nul, le noyau lit `blocks` comme des cartes ; le premier enregistrement écrit `cards` et vide `blocks`.
 
 ### Partage d'un tableau de bord par un lien
 

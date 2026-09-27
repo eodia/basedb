@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Hint } from '@/components/ui/tooltip'
 import type { AutomationRun, DescribedBase, Member } from '@/lib/api/client'
 import {
   END_NODE,
@@ -277,22 +278,23 @@ function RunMark({ run }: { readonly run: RunStepRecord }) {
   const Icon =
     run.status === 'succeeded' ? CircleCheck : run.status === 'failed' ? CircleX : CircleSlash
   return (
-    <span
-      className={cn(
-        'flex items-center gap-1 text-[11px]',
-        run.status === 'succeeded'
-          ? 'text-emerald-600 dark:text-emerald-400'
-          : run.status === 'failed'
-            ? 'text-destructive'
-            : 'text-muted-foreground',
-      )}
-      title={runStepSentence(run)}
-    >
-      <Icon className="size-4" />
-      {run.ms !== undefined && (
-        <span className="tabular-nums">{$t('{ms} ms', { ms: run.ms })}</span>
-      )}
-    </span>
+    <Hint label={runStepSentence(run)}>
+      <span
+        className={cn(
+          'flex items-center gap-1 text-[11px]',
+          run.status === 'succeeded'
+            ? 'text-emerald-600 dark:text-emerald-400'
+            : run.status === 'failed'
+              ? 'text-destructive'
+              : 'text-muted-foreground',
+        )}
+      >
+        <Icon className="size-4" />
+        {run.ms !== undefined && (
+          <span className="tabular-nums">{$t('{ms} ms', { ms: run.ms })}</span>
+        )}
+      </span>
+    </Hint>
   )
 }
 
@@ -347,26 +349,27 @@ function PathChip({ id, data }: NodeProps<PathNode>) {
   return (
     <div style={{ width: data.width, height: data.height }} className="flex justify-center">
       <Ports />
-      <button
-        type="button"
-        onClick={() => select(id)}
-        title={pathSummary(data.path)}
-        className={cn(
-          'flex h-full max-w-full items-center gap-1.5 rounded-full border bg-card px-3 text-xs shadow-xs transition-[opacity,border-color]',
-          'hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          data.path.otherwise && 'border-dashed',
-          data.taken && 'border-primary text-primary',
-          data.selected && 'border-primary ring-2 ring-primary/25',
-          data.dimmed && 'opacity-40',
-        )}
-      >
-        <span className="shrink-0 font-medium">{data.path.label || $t('Chemin')}</span>
-        {!data.path.otherwise && (
-          <span className="truncate font-mono text-[11px] text-muted-foreground">
-            {pathSummary(data.path)}
-          </span>
-        )}
-      </button>
+      <Hint label={pathSummary(data.path)}>
+        <button
+          type="button"
+          onClick={() => select(id)}
+          className={cn(
+            'flex h-full max-w-full items-center gap-1.5 rounded-full border bg-card px-3 text-xs shadow-xs transition-[opacity,border-color]',
+            'hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            data.path.otherwise && 'border-dashed',
+            data.taken && 'border-primary text-primary',
+            data.selected && 'border-primary ring-2 ring-primary/25',
+            data.dimmed && 'opacity-40',
+          )}
+        >
+          <span className="shrink-0 font-medium">{data.path.label || $t('Chemin')}</span>
+          {!data.path.otherwise && (
+            <span className="truncate font-mono text-[11px] text-muted-foreground">
+              {pathSummary(data.path)}
+            </span>
+          )}
+        </button>
+      </Hint>
     </div>
   )
 }
@@ -471,16 +474,20 @@ function Link({
               pointerEvents: 'all',
             }}
           >
-            <AddStepMenu slot={data.insert}>
-              <button
-                type="button"
-                aria-label={$t('Ajouter une étape ici')}
-                title={$t('Ajouter une étape ici')}
-                className="flex size-5 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-xs transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <Plus className="size-3" />
-              </button>
-            </AddStepMenu>
+            {/* AddStepMenu doesn't forward props to its button, so the tooltip hangs on a wrapping span */}
+            <Hint label={$t('Ajouter une étape ici')}>
+              <span className="inline-flex">
+                <AddStepMenu slot={data.insert}>
+                  <button
+                    type="button"
+                    aria-label={$t('Ajouter une étape ici')}
+                    className="flex size-5 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-xs transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Plus className="size-3" />
+                  </button>
+                </AddStepMenu>
+              </span>
+            </Hint>
           </div>
         </EdgeLabelRenderer>
       )}
@@ -679,36 +686,39 @@ function Canvas({
       >
         <Background gap={20} size={1.2} />
         <Panel position="bottom-left" className="flex gap-1">
-          <Button
-            variant="outline"
-            size="icon-sm"
-            className="bg-card"
-            aria-label={$t('Zoom avant')}
-            title={$t('Zoom avant')}
-            onClick={() => void flow.zoomIn({ duration: 150 })}
-          >
-            <ZoomIn className="size-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            className="bg-card"
-            aria-label={$t('Zoom arrière')}
-            title={$t('Zoom arrière')}
-            onClick={() => void flow.zoomOut({ duration: 150 })}
-          >
-            <ZoomOut className="size-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            className="bg-card"
-            aria-label={$t('Tout voir')}
-            title={$t('Tout voir')}
-            onClick={() => void flow.fitView({ maxZoom: 1, padding: 0.12, duration: 200 })}
-          >
-            <Maximize className="size-4" />
-          </Button>
+          <Hint label={$t('Zoom avant')}>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              className="bg-card"
+              aria-label={$t('Zoom avant')}
+              onClick={() => void flow.zoomIn({ duration: 150 })}
+            >
+              <ZoomIn className="size-4" />
+            </Button>
+          </Hint>
+          <Hint label={$t('Zoom arrière')}>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              className="bg-card"
+              aria-label={$t('Zoom arrière')}
+              onClick={() => void flow.zoomOut({ duration: 150 })}
+            >
+              <ZoomOut className="size-4" />
+            </Button>
+          </Hint>
+          <Hint label={$t('Tout voir')}>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              className="bg-card"
+              aria-label={$t('Tout voir')}
+              onClick={() => void flow.fitView({ maxZoom: 1, padding: 0.12, duration: 200 })}
+            >
+              <Maximize className="size-4" />
+            </Button>
+          </Hint>
         </Panel>
       </ReactFlow>
     </Actions.Provider>

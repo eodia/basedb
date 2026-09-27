@@ -72,13 +72,12 @@ opgeslagen waarden te raken. Het begrenst de waarde niet: een beoordeling van 7 
 
 ## Formules
 
-Een formule schrijf je met Franse functienamen, de velden tussen vierkante haken, de argumenten
-gescheiden door `;`:
+Een formule schrijf je in het Engels (de Franse namen werken ook), met velden tussen vierkante haken en argumenten gescheiden door `,`:
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 De editor stelt velden voor om in te voegen en toont een paneel met de functies; een fout noemt het veld of
@@ -86,14 +85,14 @@ het teken dat het probleem veroorzaakt.
 
 | Familie | Functies |
 |---|---|
-| Logica | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` |
-| Getallen | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` |
-| Tekst | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` |
-| Datums | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` |
+| Logica | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
+| Getallen | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
+| Tekst | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
+| Datums | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
 | Operatoren | `+ - * /`, `&` om tekst samen te voegen, `= <> < <= > >=` |
 
 Een formule wordt een **gegenereerde kolom** in PostgreSQL: `psql` en je tools lezen haar
-zoals de andere kolommen. Een formule die van de dag afhangt (`AUJOURDHUI()`, `MAINTENANT()`) of die een
+zoals de andere kolommen. Een formule die van de dag afhangt (`TODAY()`, `NOW()`) of die een
 opzoekveld of een aggregatie citeert, wordt **bij het lezen berekend**: je kunt erop filteren en sorteren in basedb, maar
 ze bestaat niet in directe SQL.
 

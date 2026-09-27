@@ -6,6 +6,7 @@ import { colorOf, titleOf } from '@/components/app/views/card'
 import { Unavailable } from '@/components/app/views/kanban-view'
 import { loadRows } from '@/components/app/views/load'
 import { Button } from '@/components/ui/button'
+import { Hint } from '@/components/ui/tooltip'
 import { type Field, type Table, api } from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
@@ -287,9 +288,11 @@ export function TimelineView({
         )}
         <div className="flex-1" />
         {undated !== null && undated > 0 && (
-          <span className="text-xs text-muted-foreground" title={$t('Lignes sans date de début')}>
-            {$t('{undated} sans date', { undated })}
-          </span>
+          <Hint label={$t('Lignes sans date de début')}>
+            <span className="text-xs text-muted-foreground">
+              {$t('{undated} sans date', { undated })}
+            </span>
+          </Hint>
         )}
         <fieldset className="flex rounded-md border p-0.5">
           <legend className="sr-only">{$t('Échelle')}</legend>

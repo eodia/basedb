@@ -4,9 +4,10 @@
 
 Une base se lit aussi autrement qu'en table. Une **question** est une lecture nommée de la
 base — combien de tâches en retard, le chiffre d'affaires par mois, qui porte quoi — construite
-à la souris ou écrite en SQL, avec la façon de la montrer. Un **tableau de bord** (anciennement
-« interface ») range des questions sur une grille, en onglets, sous des filtres communs. Une
-**extension** y ajoute une page venue d'ailleurs. Un **modèle** évite de partir d'une base vide.
+à la souris ou écrite en SQL, avec la façon de la montrer ; elle s'ouvre dans les tableaux de
+bord ou dans un onglet de l'espace de travail (chapitre 11 §5.5). Un **tableau de bord**
+(anciennement « interface ») range des questions sur une grille, en onglets, sous des filtres
+communs. Une **extension** y ajoute une page venue d'ailleurs. Un **modèle** évite de partir d'une base vide.
 
 Trois principes :
 
@@ -34,7 +35,9 @@ construit, et les deux calculent les mêmes dates relatives.
 ### 1.1 Ce qu'est une question
 
 Elle appartient à une base (`_basedb.question`, chapitre 02) : un nom, une description, une
-requête (`query`, jsonb) et une visualisation (`visualization`, jsonb). Elle est de deux sortes :
+requête (`query`, jsonb), une visualisation (`visualization`, jsonb), un auteur (`created_by`)
+et une portée (`audience`) — personnelle, toute la base, ou des groupes (`question_role`),
+comme au chapitre 11 §1.7. Elle est de deux sortes :
 
 | Sorte | Requête | Exécution |
 |---|---|---|
@@ -189,13 +192,41 @@ place (`x`, `y`, `w`, `h` ; une rangée fait 40 px).
 |---|---|
 | `question` | une question enregistrée (`question`) ou gardée dans la carte (`query`), sa visualisation propre si elle en a une, et ce que chaque filtre du tableau y filtre (`mappings`) |
 | `heading` | un titre de section |
-| `text` | un texte en Markdown (5 000 caractères) |
+| `text` | un texte riche (`rich`) — le HTML des textes longs (chapitre 04 §2.2), 20 000 caractères —, qui peut citer des valeurs (`variables`) ; ou un texte en Markdown (5 000 caractères) |
 | `embed` | une page extérieure dans un cadre isolé (§3) |
 
 Une carte sans onglet, ou d'un onglet disparu, va dans le premier. Les cartes sont vérifiées à
 l'enregistrement — leur place tient dans la grille, la question existe dans la base, la requête
 cite des tables et des champs de la base, un filtre relié existe — et relues, droits compris, à
 chaque affichage.
+
+**Les valeurs qu'un texte cite.** Un texte s'écrit dans l'éditeur des textes riches et cite une
+valeur par un nom entre doubles accolades, `{{chiffre_d_affaires}}` : une pastille dans
+l'éditeur, la valeur à la lecture. Chaque nom (`[a-z0-9_]`, 20 au plus) est déclaré dans
+`variables` :
+
+| Variable | Ce que le texte montre à sa place |
+|---|---|
+| `{ name, card }` | ce que montre une carte question du tableau, sous ses propres filtres |
+| `{ name, question, mappings? }` | ce que donne une question enregistrée de toute la base ; les filtres du tableau s'y relient comme à une carte (`mappings`) |
+| `{ name, query, label?, visualization?, mappings? }` | ce que donne une question gardée dans le texte, comme une carte garde la sienne — ainsi se cite une question personnelle : quiconque lit le tableau lit ce que le texte exécute |
+| `{ name, parameter }` | la valeur choisie d'un filtre du tableau, comme sa commande la dit |
+
+La valeur d'une question est celle que montrerait son « Nombre » : sa première mesure, sur sa
+dernière ligne ; sans mesure, la première valeur de la première ligne. Elle s'exécute avec les
+droits du lecteur.
+
+Le HTML est assaini à l'enregistrement, par le même profil que celui d'un texte long ; une
+variable que le texte ne cite plus disparaît ; une question gardée est vérifiée comme celle d'une
+carte ; une question inconnue ou qui n'est pas à toute la base, une carte qui n'est pas une carte
+question du tableau, un filtre inconnu, un nom mal formé sont refusés (`question_inconnue`,
+`carte_inconnue`, `filtre_inconnu`, `nom_invalide`). Une carte retirée — à l'écran ou par le
+copilote — quitte les textes qui la citaient. Une question citée par un texte, comme une question placée, ne peut plus être
+retirée à la base (`dans_un_tableau_de_bord`). La valeur lue est insérée comme du texte, jamais
+comme du balisage. Un filtre ajouté se relie aux questions citées comme aux cartes ; un filtre
+retiré s'en délie, et sa valeur quitte les textes qui la citaient. Un texte en Markdown — écrit
+avant l'éditeur, ou par le copilote — se lit comme avant, variables comprises, et devient riche
+dès qu'il est réécrit dans l'éditeur.
 
 ### 2.2 Les filtres
 
@@ -217,14 +248,21 @@ les filtres ; un filtre, piloter une, plusieurs ou toutes les cartes.
 
 | Geste | Condition |
 |---|---|
-| Voir les tableaux de bord et les questions d'une base | voir la base : pouvoir lire au moins une de ses tables |
-| Exécuter une question, explorer | voir la base ; la question lit avec ses droits |
+| Voir les tableaux de bord d'une base | voir la base : pouvoir lire au moins une de ses tables |
+| Voir une question | voir la base, et selon sa portée : son auteur, toute la base, ou les membres de ses groupes et qui gère la base |
+| Exécuter une question, explorer | la voir ; la question lit avec ses droits |
 | Voir une carte | pouvoir lire ce qu'elle cite ; sinon « Donnée inaccessible » |
-| Construire, modifier, supprimer un tableau de bord ou une question | `manage_schema` sur la base, en session |
+| Enregistrer une question personnelle, la modifier, la supprimer | voir la base, en session ; son auteur |
+| Partager une question (toute la base, des groupes), modifier ou supprimer une question partagée | `manage_schema` sur la base, en session |
+| Construire, modifier, supprimer un tableau de bord | `manage_schema` sur la base, en session |
 
-Les listes sont les mêmes pour tous les lecteurs de la base : ce sont les cartes qui se taisent,
-pas le tableau qui disparaît. Une question SQL est réservée aux personnes : un jeton exécute les
-questions construites, pas le SQL.
+La liste des tableaux de bord est la même pour tous les lecteurs de la base : ce sont les cartes
+qui se taisent, pas le tableau qui disparaît. **Une carte ne cite par son identifiant qu'une
+question de toute la base** — quiconque voit le tableau voit ce que la carte exécute ; une
+question personnelle ou de groupes y entre par son contenu (`cards[].query`). Tant qu'une carte
+la cite, une question de toute la base ne peut pas redevenir personnelle ou de groupes (refus
+`dans_un_tableau_de_bord`, avec les tableaux en cause). Une question SQL est réservée aux
+personnes : un jeton exécute les questions construites de toute la base, pas le SQL.
 
 ### 2.4 Les blocs des premiers tableaux de bord
 
@@ -262,6 +300,10 @@ Le visiteur lit **ce que le tableau montre, et rien d'autre** :
 - une carte s'exécute **par son identifiant** ; le visiteur donne les valeurs des filtres du
   tableau, et le noyau les relie lui-même à chaque carte telles que le tableau les relie
   (`cardConstraints`). Un filtre inconnu est refusé ; une requête fournie est ignorée ;
+- un texte reçoit ses mots et, des questions qu'il cite, le nom, la visualisation et les filtres
+  reliés — jamais la requête ; chacune s'exécute par son nom
+  (`POST /api/v1/dashboards/<jeton>/cards/<carte>/variables/<nom>`), reliée par le noyau comme
+  une carte ;
 - la liste d'un filtre de catégorie vient de la première colonne à laquelle il est relié, lue
   elle aussi sur l'autorité de qui publie ;
 - ni exploration d'un clic, ni ligne ouverte : le résultat perd la colonne cachée qui permet
@@ -344,9 +386,10 @@ applique. Leurs tableaux de bord y gardent le format des blocs (§2.4).
 | `GET` | `/meta/bases/{base}/dashboards` | les tableaux de bord de la base, dans leur ordre : onglets, cartes, filtres | voir la base | session, jeton |
 | `POST` | `/admin/bases/{base}/dashboards` | en créer un : `{label, description?, tabs?, cards?, parameters?}` — ou `{label, blocks}` | `manage_schema` | session seule |
 | `PATCH` `DELETE` | `/admin/bases/{base}/dashboards/{id}` | le modifier (`tabs`, `cards`, `parameters` remplacés en entier, `position`) ; le supprimer | `manage_schema` | session seule |
-| `GET` | `/meta/bases/{base}/questions` `/{id}` | les questions enregistrées ; une question | voir la base | session, jeton |
-| `POST` | `/admin/bases/{base}/questions` | en enregistrer une : `{label, description?, query, visualization?}` | `manage_schema` | session seule |
-| `PATCH` `DELETE` | `/admin/bases/{base}/questions/{id}` | la modifier ; la supprimer | `manage_schema` | session seule |
+| `GET` | `/meta/bases/{base}/questions` `/{id}` | les questions que l'appelant voit, avec `audience`, `groups`, `owner`, `mine`, `editable` ; une question | voir la base | session, jeton |
+| `POST` | `/admin/bases/{base}/questions` | en enregistrer une : `{label, description?, query, visualization?, audience?, group_ids?}` — personnelle par défaut | voir la base ; `manage_schema` pour la partager | session seule |
+| `PATCH` `DELETE` | `/admin/bases/{base}/questions/{id}` | la modifier (sa portée comprise) ; la supprimer | son auteur si personnelle ; `manage_schema` sinon | session seule |
+| `GET` | `/admin/bases/{base}/query-groups` | les groupes avec qui la partager | `manage_schema` | session seule |
 | `POST` | `/query/{base}` | exécuter une question : `{question}` (telle qu'enregistrée) ou `{query}`, avec `constraints`, `timezone`, `week_start` | voir la base, et lire ce qu'elle cite | session, jeton (question construite) |
 | `GET` `PUT` `DELETE` | `/admin/bases/{base}/dashboards/{id}/share` | le partage par lien : le lire ; le créer ou le changer (`{access, active, groups, can_embed}`, qui enregistre devient la personne qui publie) ; l'arrêter | `manage_schema` | session seule |
 | `POST` | `/admin/bases/{base}/dashboards/{id}/share/regenerate` | un nouveau lien, l'ancien éteint | `manage_schema` | session seule |

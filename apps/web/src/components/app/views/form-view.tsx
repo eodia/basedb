@@ -7,6 +7,7 @@ import type { SearchLink } from '@/components/app/pickers'
 import { PanelField, emptyDraft, writeValues } from '@/components/app/record-panel'
 import { Unavailable } from '@/components/app/views/kanban-view'
 import { Button } from '@/components/ui/button'
+import { Hint } from '@/components/ui/tooltip'
 import { type Field, type LinkOption, type Table, api, filesOf } from '@/lib/api/client'
 import { $t, $tp } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
@@ -465,9 +466,9 @@ function QuestionBlock({
       <p className={cn('font-medium', large ? 'text-lg' : 'text-sm')}>
         {question.label}
         {question.required && (
-          <span className="ml-0.5 text-destructive" title={$t('Obligatoire')}>
-            *
-          </span>
+          <Hint label={$t('Obligatoire')}>
+            <span className="ml-0.5 text-destructive">*</span>
+          </Hint>
         )}
       </p>
       {question.help !== null && (

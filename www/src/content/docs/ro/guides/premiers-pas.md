@@ -37,7 +37,7 @@ același meniu — cu butonul
 | Client | Relație → Clients |
 | Notes | Text lung (Markdown) |
 
-Mai târziu, o formulă (`JOURS([Échéance]; AUJOURDHUI())`), o căutare (orașul clientului) sau
+Mai târziu, o formulă (`DAYS([Échéance], TODAY())`), o căutare (orașul clientului) sau
 o agregare (suma totală pe client) se adaugă în același mod — consultați
 [Tabele și câmpuri](/basedb/ro/fonctionnalites/tables-et-champs/).
 
@@ -71,7 +71,7 @@ care răspunde. Detalii în [Formulare partajate](/basedb/ro/fonctionnalites/for
 
 ## 6. Citiți în SQL
 
-Meniul **⋯** al bazei → **Interogare SQL nouă**: tabelele dumneavoastră sunt acolo, sub numele
+Meniul **⋯** al bazei → **Interogare SQL**: tabelele dumneavoastră sunt acolo, sub numele
 lor real.
 
 ```sql

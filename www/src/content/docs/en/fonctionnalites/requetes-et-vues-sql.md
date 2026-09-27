@@ -13,7 +13,7 @@ tools read too.
 
 ## Everyone with their own permissions
 
-The **+** in the tab bar, or the base’s **⋯** menu → **New SQL query**, opens an SQL tab: an
+The **+** in the tab bar, or the base’s **⋯** menu → **SQL query**, opens an SQL tab: an
 editor with syntax highlighting and completion, **Ctrl+Enter** to run, and the result in the
 same grid as your tables. What the query can read depends on who runs it:
 
@@ -33,7 +33,8 @@ or the MCP server would not show you.
 
 **Save**, in the tab’s bar, files the query under the base’s tables, in the **Queries**
 section. It reopens in one click; **⋯** → **Save as…** makes a copy of it, **Name and
-sharing…** (in the tab or in its sidebar menu) renames it, changes who sees it, or deletes it.
+sharing…** (in the tab or in its sidebar menu) renames it, changes who sees it, or deletes it —
+**Delete** is also in its menu, with a right click. A tab that was showing it keeps its text.
 
 ![Saving a query: its name, what it shows, and who sees it](../../../../assets/screens/requete-enregistrer.png)
 
@@ -82,7 +83,8 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 on every table and every column it reads; the sidebar only lists it for those who can read
 everything it reads. It only reads **its own** base: another base, or basedb’s catalog, are
 refused at creation. Creating, editing or deleting one requires the **Manage** level on the
-base.
+base. **Delete**, in its sidebar menu, removes it for everyone, scripts and tools included; the
+tables it reads are not affected.
 
 ### When the schema changes
 

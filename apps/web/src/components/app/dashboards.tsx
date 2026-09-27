@@ -5,17 +5,37 @@ import {
   type DashboardScreen,
 } from '@/components/app/analytics/dashboard-copilot'
 import { DashboardView } from '@/components/app/analytics/dashboard-view'
+import { QuestionDialog } from '@/components/app/analytics/question-dialog'
 import { type QuestionDraft, QuestionView, draftOf } from '@/components/app/analytics/question-view'
 import { VIZ_ICONS } from '@/components/app/analytics/viz-settings'
 import { CopilotToggle } from '@/components/app/copilot-toggle'
 import { SidebarToggle } from '@/components/app/sidebar'
+import { audienceIcon } from '@/components/app/sql/query-dialog'
 import { Button } from '@/components/ui/button'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Hint } from '@/components/ui/tooltip'
+import type { DashboardFocus } from '@/lib/address-bar'
 import { type Dashboard, type DescribedBase, type Question, api } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { MembersProvider } from '@/lib/members'
@@ -24,21 +44,26 @@ import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
 import {
   Compass,
+  Ellipsis,
+  FolderOpen,
   LayoutDashboard,
   Loader2,
   PanelLeftClose,
   PanelLeftOpen,
+  PanelTop,
+  Pencil,
   Plus,
   SquareTerminal,
+  Trash2,
   Workflow,
 } from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * The dashboards and questions of a base — chapter 18, on screen. Everyone who sees the
  * base reads them, and explores from them, with their own rights: a card citing what they
- * cannot read says so and shows nothing. Whoever builds the base arranges the dashboards
- * and saves the questions.
+ * cannot read says so and shows nothing. Anyone keeps questions of their own; whoever
+ * builds the base arranges the dashboards and shares the questions.
  */
 
 type View =
@@ -88,20 +113,47 @@ function remember(base: string, id: string): void {
   }
 }
 
-export function DashboardsPanel({ base }: { readonly base: DescribedBase }) {
+export function DashboardsPanel({
+  base,
+  focus = null,
+  onFocus,
+  onOpenInTab,
+}: {
+  readonly base: DescribedBase
+  /** What the address names: a dashboard, or a saved question — shown once they are read. */
+  readonly focus?: DashboardFocus | null
+  /** What the panel shows, for the address: told whenever it shows something else. */
+  readonly onFocus?: (focus: DashboardFocus | null) => void
+  /** A question opened in a tab of the workspace, among the tables. */
+  readonly onOpenInTab?: (question: Question) => void
+}) {
   return (
     <MembersProvider>
-      <Panel base={base} />
+      <Panel base={base} focus={focus} onFocus={onFocus} onOpenInTab={onOpenInTab} />
     </MembersProvider>
   )
 }
 
 let opened = 0
 
-function Panel({ base }: { readonly base: DescribedBase }) {
+function Panel({
+  base,
+  focus,
+  onFocus,
+  onOpenInTab,
+}: {
+  readonly base: DescribedBase
+  readonly focus: DashboardFocus | null
+  readonly onFocus?: ((focus: DashboardFocus | null) => void) | undefined
+  readonly onOpenInTab?: ((question: Question) => void) | undefined
+}) {
   const builds = base.actions.includes('manage_schema')
   const [dashboards, setDashboards] = useState<readonly Dashboard[] | null>(null)
   const [questions, setQuestions] = useState<readonly Question[]>([])
+  /** A question of the list being renamed or shared, or deleted. */
+  const [editing, setEditing] = useState<Question | null>(null)
+  const [deleting, setDeleting] = useState<Question | null>(null)
+  const [removing, setRemoving] = useState(false)
   const [view, setView] = useState<View>({ kind: 'none' })
   const [error, setError] = useState<string | null>(null)
   const [folded, setFolded] = useState(false)
@@ -137,15 +189,64 @@ function Panel({ base }: { readonly base: DescribedBase }) {
     }
   }, [base.name])
 
+  // Read when the list is, not followed: the panel reads it again for another base, and the
+  // address names what the panel shows once it has told it.
+  const focusAtLoad = useRef(focus)
+  focusAtLoad.current = focus
   useEffect(() => {
     setView({ kind: 'none' })
+    // The dashboard the address names, else the one last opened here, else the first. A
+    // question named is opened below, once the questions are read.
+    const wanted = focusAtLoad.current
     void load().then((list) => {
-      if (list === null || list.length === 0) return
+      if (list === null || list.length === 0 || wanted?.kind === 'question') return
       const last = remembered(base.name)
-      const pick = list.find((d) => d.id === last) ?? list[0]
+      const pick =
+        list.find((d) => d.id === wanted?.id) ?? list.find((d) => d.id === last) ?? list[0]
       if (pick !== undefined) setView({ kind: 'dashboard', id: pick.id })
     })
   }, [load, base.name])
+
+  // Another address — the browser's back, a link: the panel shows what it names. Keyed on the
+  // address alone, never on the view: a dashboard just clicked must not be taken back by the
+  // address that has not heard of it yet.
+  const focusKind = focus?.kind ?? null
+  const focusId = focus?.id ?? null
+  useEffect(() => {
+    if (focusKind === null || focusId === null || dashboards === null) return
+    const question = focusKind === 'question' ? questions.find((q) => q.id === focusId) : undefined
+    const key = opened + 1
+    setView((current) => {
+      if (focusKind === 'dashboard') {
+        if (current.kind === 'dashboard' && current.id === focusId) return current
+        return dashboards.some((d) => d.id === focusId)
+          ? { kind: 'dashboard', id: focusId }
+          : current
+      }
+      if (question === undefined) return current
+      if (current.kind === 'question' && current.draft.id === focusId) return current
+      return { kind: 'question', draft: draftOf(question), from: null, key }
+    })
+    opened = key
+  }, [focusKind, focusId, dashboards, questions])
+
+  // What the panel shows, told to the address. Nothing while the list is read: the address
+  // still names what the panel is about to show.
+  const tell = useRef(onFocus)
+  tell.current = onFocus
+  const shownKind =
+    view.kind === 'dashboard'
+      ? 'dashboard'
+      : view.kind === 'question' && view.draft.id !== null
+        ? 'question'
+        : null
+  const shownId =
+    view.kind === 'dashboard' ? view.id : view.kind === 'question' ? view.draft.id : null
+  const nothing = view.kind === 'none' && dashboards?.length === 0
+  useEffect(() => {
+    if (shownKind !== null && shownId !== null) tell.current?.({ kind: shownKind, id: shownId })
+    else if (nothing || view.kind === 'question') tell.current?.(null)
+  }, [shownKind, shownId, nothing, view.kind])
 
   const byId = useMemo(() => new Map(questions.map((q) => [q.id, q])), [questions])
   const openDashboard = (id: string) => {
@@ -164,6 +265,25 @@ function Panel({ base }: { readonly base: DescribedBase }) {
       query: kind === 'sql' ? { kind: 'sql', sql: '' } : null,
       visualization: null,
     })
+
+  /** A question gone from the list: its view closes, its tabs keep what they were editing. */
+  const remove = async (question: Question) => {
+    setRemoving(true)
+    try {
+      await api.deleteQuestion(base.name, question.id)
+      useWorkspace.getState().detachQuestion(question.id)
+      if (view.kind === 'question' && view.draft.id === question.id) {
+        setView(view.from ?? { kind: 'none' })
+      }
+      setDeleting(null)
+      await loadQuestions()
+    } catch (e) {
+      setError(messageFor(e))
+      setDeleting(null)
+    } finally {
+      setRemoving(false)
+    }
+  }
 
   const create = async () => {
     try {
@@ -185,21 +305,22 @@ function Panel({ base }: { readonly base: DescribedBase }) {
     <div className="flex min-w-0 flex-1 flex-col">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
         <SidebarToggle />
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="hidden md:inline-flex"
-          onClick={() => fold(!folded)}
-          aria-label={
-            folded
-              ? $t('Montrer la liste des tableaux et des questions')
-              : $t('Replier la liste des tableaux et des questions')
-          }
-          title={folded ? $t('Montrer la liste') : $t('Replier la liste')}
-          aria-expanded={!folded}
-        >
-          {folded ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
-        </Button>
+        <Hint label={folded ? $t('Montrer la liste') : $t('Replier la liste')}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="hidden md:inline-flex"
+            onClick={() => fold(!folded)}
+            aria-label={
+              folded
+                ? $t('Montrer la liste des tableaux et des questions')
+                : $t('Replier la liste des tableaux et des questions')
+            }
+            aria-expanded={!folded}
+          >
+            {folded ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+          </Button>
+        </Hint>
         <span className="text-sm text-muted-foreground">{base.label}</span>
         <span className="text-sm text-muted-foreground">/</span>
         <span className="text-sm font-medium">{$t('Tableaux de bord')}</span>
@@ -217,16 +338,17 @@ function Panel({ base }: { readonly base: DescribedBase }) {
             title={$t('Tableaux de bord')}
             action={
               builds ? (
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="size-6"
-                  onClick={() => void create()}
-                  aria-label={$t('Nouveau tableau de bord')}
-                  title={$t('Nouveau tableau de bord')}
-                >
-                  <Plus className="size-3.5" />
-                </Button>
+                <Hint label={$t('Nouveau tableau de bord')}>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="size-6"
+                    onClick={() => void create()}
+                    aria-label={$t('Nouveau tableau de bord')}
+                  >
+                    <Plus className="size-3.5" />
+                  </Button>
+                </Hint>
               ) : null
             }
           >
@@ -249,29 +371,28 @@ function Panel({ base }: { readonly base: DescribedBase }) {
           <Group
             title={$t('Questions')}
             action={
-              builds ? (
-                <DropdownMenu>
+              <DropdownMenu>
+                <Hint label={$t('Nouvelle question')}>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon-sm"
                       className="size-6"
                       aria-label={$t('Nouvelle question')}
-                      title={$t('Nouvelle question')}
                     >
                       <Plus className="size-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuItem onSelect={() => newQuestion('builder')}>
-                      <Workflow /> {$t('Avec l’éditeur visuel')}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => newQuestion('sql')}>
-                      <SquareTerminal /> {$t('En SQL')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null
+                </Hint>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onSelect={() => newQuestion('builder')}>
+                    <Workflow /> {$t('Avec l’éditeur visuel')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => newQuestion('sql')}>
+                    <SquareTerminal /> {$t('En SQL')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             }
           >
             {questions.length === 0 && dashboards !== null && (
@@ -280,12 +401,14 @@ function Panel({ base }: { readonly base: DescribedBase }) {
               </p>
             )}
             {questions.map((q) => (
-              <Entry
+              <QuestionEntry
                 key={q.id}
-                icon={VIZ_ICONS[q.visualization.type]}
-                label={q.label}
+                question={q}
                 active={view.kind === 'question' && view.draft.id === q.id}
-                onClick={() => openQuestion(draftOf(q))}
+                onOpen={() => openQuestion(draftOf(q))}
+                onOpenInTab={onOpenInTab === undefined ? undefined : () => onOpenInTab(q)}
+                onEdit={() => setEditing(q)}
+                onDelete={() => setDeleting(q)}
               />
             ))}
           </Group>
@@ -306,11 +429,16 @@ function Panel({ base }: { readonly base: DescribedBase }) {
               key={view.key}
               base={base}
               initial={view.draft}
-              builds={builds}
+              question={view.draft.id === null ? null : (byId.get(view.draft.id) ?? null)}
+              manages={builds}
               onBack={view.from === null ? undefined : () => setView(view.from ?? { kind: 'none' })}
               backLabel={view.from?.kind === 'dashboard' ? $t('Tableau de bord') : $t('Retour')}
-              onSaved={() => void loadQuestions()}
+              onSaved={(saved) => {
+                useWorkspace.getState().renameQuestion(saved.id, saved.label)
+                void loadQuestions()
+              }}
               onDeleted={() => {
+                if (view.draft.id !== null) useWorkspace.getState().detachQuestion(view.draft.id)
                 void loadQuestions()
                 setView(view.from ?? { kind: 'none' })
               }}
@@ -410,7 +538,156 @@ function Panel({ base }: { readonly base: DescribedBase }) {
           />
         )}
       </div>
+
+      <QuestionDialog
+        open={editing !== null}
+        base={base.name}
+        manages={builds}
+        question={editing}
+        onClose={() => setEditing(null)}
+        onSaved={(saved) => {
+          useWorkspace.getState().renameQuestion(saved.id, saved.label)
+          void loadQuestions()
+        }}
+      />
+
+      <Dialog
+        open={deleting !== null}
+        onOpenChange={(next) => !next && !removing && setDeleting(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {$t('Supprimer la question « {label} » ?', { label: deleting?.label })}
+            </DialogTitle>
+            <DialogDescription>
+              {deleting?.audience === 'personal'
+                ? $t('Elle disparaît de vos questions.')
+                : $t(
+                    'Elle disparaît pour tous ceux qui la voient. Les tableaux de bord qui la montrent le diront.',
+                  )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDeleting(null)} disabled={removing}>
+              {$t('Annuler')}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={removing}
+              onClick={() => deleting !== null && void remove(deleting)}
+            >
+              {removing ? $t('Suppression…') : $t('Supprimer la question')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  )
+}
+
+/**
+ * A saved question of the list: opened with a click; opened in a tab, renamed, shared or
+ * deleted from its menu — a right click, or the button that shows on hover.
+ */
+function QuestionEntry({
+  question,
+  active,
+  onOpen,
+  onOpenInTab,
+  onEdit,
+  onDelete,
+}: {
+  readonly question: Question
+  readonly active: boolean
+  readonly onOpen: () => void
+  readonly onOpenInTab: (() => void) | undefined
+  readonly onEdit: () => void
+  readonly onDelete: () => void
+}) {
+  const Chart = VIZ_ICONS[question.visualization.type]
+  const Audience = audienceIcon(question.audience)
+  const hint =
+    question.audience === 'personal'
+      ? $t('Question personnelle')
+      : question.audience === 'base'
+        ? $t('Question partagée avec toute la base')
+        : $t('Question partagée avec des groupes')
+  const entries = (kit: {
+    readonly Item: typeof DropdownMenuItem | typeof ContextMenuItem
+    readonly Separator: typeof DropdownMenuSeparator | typeof ContextMenuSeparator
+  }) => (
+    <>
+      <kit.Item onSelect={onOpen}>
+        <FolderOpen className="size-4" />
+        {$t('Ouvrir')}
+      </kit.Item>
+      {onOpenInTab !== undefined && (
+        <kit.Item onSelect={onOpenInTab}>
+          <PanelTop className="size-4" />
+          {$t('Ouvrir dans un onglet')}
+        </kit.Item>
+      )}
+      {question.editable && (
+        <>
+          <kit.Item onSelect={onEdit}>
+            <Pencil className="size-4" />
+            {$t('Nom et partage…')}
+          </kit.Item>
+          <kit.Separator />
+          <kit.Item variant="destructive" onSelect={onDelete}>
+            <Trash2 className="size-4" />
+            {$t('Supprimer')}
+          </kit.Item>
+        </>
+      )}
+    </>
+  )
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div className="group/question relative">
+          <Hint label={hint}>
+            <button
+              type="button"
+              onClick={onOpen}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-md py-1.5 pr-8 pl-2 text-left text-sm',
+                active
+                  ? 'bg-accent font-medium text-foreground'
+                  : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
+              )}
+            >
+              <Chart className="size-4 shrink-0" />
+              <span className="min-w-0 flex-1 truncate">{question.label}</span>
+              {question.audience !== 'base' && (
+                <Audience
+                  className="size-3 shrink-0 text-muted-foreground/70 transition-opacity group-hover/question:opacity-0"
+                  aria-hidden
+                />
+              )}
+            </button>
+          </Hint>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label={$t('Actions sur la question {label}', { label: question.label })}
+                className="absolute top-1/2 right-1 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/question:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100"
+              >
+                <Ellipsis className="size-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-52">
+              {entries({ Item: DropdownMenuItem, Separator: DropdownMenuSeparator })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-52">
+        {entries({ Item: ContextMenuItem, Separator: ContextMenuSeparator })}
+      </ContextMenuContent>
+    </ContextMenu>
   )
 }
 

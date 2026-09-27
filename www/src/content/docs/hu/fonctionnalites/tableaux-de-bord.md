@@ -14,8 +14,19 @@ vezérlik.
 Minden az **Irányítópultok** menüpontból nyílik, az oldalsáv alján, a megnyitott adatbázis
 blokkjában. Bal oldalt az adatbázis irányítópultjai és mentett kérdései láthatók, valamint az
 **Adatok felfedezése**, amellyel úgy tehet fel kérdést, hogy semmit nem ment. Az adatbázis
-minden olvasója megtekintheti és felfedezheti őket; a létrehozáshoz, módosításhoz és mentéshez
-**Kezelés** szint szükséges.
+minden olvasója megtekintheti, felfedezheti őket és elmentheti a saját kérdéseit; egy
+irányítópult felépítéséhez és egy kérdés megosztásához **Kezelés** szint szükséges.
+
+Egy mentett kérdés **személyes** – csak Ön látja –, a **teljes adatbázisnak** vagy
+**csoportoknak** szól. A menüje, jobb kattintással vagy a **⋯**-vel, egy lapon nyitja meg a
+táblák mellett, megváltoztatja a nevét és a megosztását, vagy törli. A lapsáv **+** gombja
+emellett az **Új kérdés** és az **Új SQL-kérdés** lehetőségeket is felkínálja.
+
+A **Mentés**, egy kérdés fejlécében, megőrzi azt; egy olyan kérdés, amelyet nem módosíthat,
+helyette a **Másolat mentése** lehetőséget kínálja, amely az Öné lesz. A **⋯** (**További
+műveletek**) emellett a **Név és megosztás…**, a **Másolat mentése…** és a **Kérdés törlése**
+lehetőségeket is kínálja; az őt megjelenítő lap megtartja a tartalmát, ismét nem mentett
+állapotban.
 
 ## Kérdés feltevése egérrel
 
@@ -112,8 +123,10 @@ SQL-kérdést, mint a többit.
 
 A **Szerkesztés** szerkesztési módba kapcsolja az irányítópultot:
 
-- a **Kérdés** elhelyez egy mentett kérdést, vagy létrehoz egyet, amely csak a kártyához tartozik;
-- a **Cím** és a **Szöveg** szakaszcímet vagy Markdown-szöveget ad hozzá;
+- a **Kérdés** elhelyez egy mentett kérdést – egy személyes kérdés ide másolódik –, vagy létrehoz
+  egyet, amely csak a kártyához tartozik;
+- a **Cím** szakaszcímet ad hozzá, a **Szöveg** pedig formázott szöveget – címeket, listákat,
+  hivatkozásokat –, amely számokra is hivatkozhat (lásd lentebb);
 - a **Beágyazott oldal** egy `https://` címet jelenít meg egy elszigetelt keretben, amely sem
   munkamenetet, sem adatot nem kap;
 - a **Lap** több oldalra osztja el a kártyákat; dupla kattintással átnevezhető egy lap.
@@ -121,6 +134,26 @@ A **Szerkesztés** szerkesztési módba kapcsolja az irányítópultot:
 A kártyák a fogantyújuknál fogva mozgathatók, és a sarkuknál átméretezhetők, egy 24 oszlopos
 rácson. A **Mentés** mindent megőriz; a **Mégse** visszaáll az előző változatra. Olvasási
 módban a kártya címe megnyitja a kérdését felfedezésre, az irányítópult szűrőivel együtt.
+
+### Számok a szövegben
+
+Egy szöveg egy értéket egy dupla kapcsos zárójelbe tett névvel hivatkozik meg: „Ebben a hónapban
+`{{chiffre_affaires}}` árbevétel `{{commandes}}` rendelésből.” Minden név egy jelvénnyé válik,
+amely egy kattintással – vagy a szerkesztő sávjában lévő **Változó** paranccsal – köthető össze
+a következőkkel:
+
+| Forrás | Mit mutat a szöveg |
+|---|---|
+| **egy kártya** az irányítópultból | amit mutat, a saját szűrői szerint |
+| **egy mentett kérdés** a teljes adatbázisból | az értékét, és az irányítópult szűrői ugyanúgy kapcsolódnak hozzá, mint egy kártyához |
+| **egy a szövegben megőrzött kérdés** | az értékét; így lehet egy személyes kérdésre hivatkozni |
+| **egy szűrő** az irányítópultból | a kiválasztott értéket, ahogy a parancsa mondja |
+
+Egy kérdés értéke az, amelyet a **Szám** vizualizációja mutatna: az első mértéke, az utolsó
+soron. A néző jogosultságaival számolódik ki, és mindig szövegként jelenik meg. Egy szöveg
+legfeljebb 20 értéket hivatkozhat meg; egy név kisbetűkből, számokból és `_` jelből áll. A
+szerkesztő előtt Markdownban írt szövegek úgy olvashatók, mint korábban, és gazdaggá válnak,
+amint valaki újraírja őket. A Copilot viszont Markdownban írja a szövegeit.
 
 ## A szűrők
 

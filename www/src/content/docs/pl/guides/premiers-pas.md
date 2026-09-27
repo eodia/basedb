@@ -36,7 +36,7 @@ samym menu – za pomocą przycisku **Pole**:
 | Client | Relacja → Clients |
 | Notes | Długi tekst (Markdown) |
 
-Później w ten sam sposób dodasz formułę (`JOURS([Échéance]; AUJOURDHUI())`), odnośnik (miasto
+Później w ten sam sposób dodasz formułę (`DAYS([Échéance], TODAY())`), odnośnik (miasto
 klienta) albo agregację (łączna kwota na klienta) – zobacz
 [Tabele i pola](/basedb/pl/fonctionnalites/tables-et-champs/).
 
@@ -69,7 +69,7 @@ uprawnień. Szczegóły w [Formularze udostępnione](/basedb/pl/fonctionnalites/
 
 ## 6. Czytaj w SQL
 
-Menu **⋯** bazy → **Nowe zapytanie SQL**: twoje tabele są tam pod swoimi prawdziwymi nazwami.
+Menu **⋯** bazy → **Zapytanie SQL**: twoje tabele są tam pod swoimi prawdziwymi nazwami.
 
 ```sql
 SELECT nom, statut, montant

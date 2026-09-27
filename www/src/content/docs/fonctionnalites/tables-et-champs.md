@@ -72,7 +72,8 @@ valeurs enregistrées. Il ne borne pas la valeur : une note de 7 sur une échell
 
 ## Formules
 
-Une formule s’écrit en français, les champs entre crochets, les arguments séparés par `;` :
+Une formule s’écrit en français ou en anglais, les champs entre crochets, les arguments séparés
+par `;` (ou `,`) :
 
 ```text
 ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
@@ -81,15 +82,16 @@ JOURS([Fin]; [Début])
 ```
 
 L’éditeur propose les champs à insérer et un volet des fonctions ; une erreur nomme le champ ou
-le caractère en cause.
+le caractère en cause. Les deux langues se lisent partout, et l’interface réécrit la formule dans
+la sienne : en français sur un écran en français, en anglais dans toutes les autres langues.
 
-| Famille | Fonctions |
-|---|---|
-| Logique | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` |
-| Nombres | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` |
-| Texte | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` |
-| Dates | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` |
-| Opérateurs | `+ - * /`, `&` pour joindre du texte, `= <> < <= > >=` |
+| Famille | Fonctions | En anglais |
+|---|---|---|
+| Logique | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
+| Nombres | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
+| Texte | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
+| Dates | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
+| Opérateurs | `+ - * /`, `&` pour joindre du texte, `= <> < <= > >=` | les mêmes |
 
 Une formule devient une **colonne générée** par PostgreSQL : `psql` et vos outils la lisent
 comme les autres. Celle qui dépend du jour (`AUJOURDHUI()`, `MAINTENANT()`) ou qui cite une

@@ -12,9 +12,9 @@ ami később jön létre.
 | Szint | Mit enged |
 |---|---|
 | **Nincs hozzáférés** | semmit: az erőforrás láthatatlan |
-| **Olvasás** | a sorok megtekintését és megjegyzésekkel való ellátását, személyes nézetek készítését, a struktúra és az irányítópultok megtekintését, saját kérdések feltevését, csak olvasási SQL írását és személyes lekérdezések mentését |
+| **Olvasás** | a sorok megtekintését és megjegyzésekkel való ellátását, személyes nézetek készítését, a struktúra és az irányítópultok megtekintését, saját kérdések feltevését és mentését, csak olvasási SQL írását és személyes lekérdezések mentését |
 | **Szerkesztés** | ezenfelül sorok létrehozását, módosítását és törlését |
-| **Kezelés** | ezenfelül a struktúra módosítását, megosztott nézetek, irányítópultok és mentett kérdések létrehozását, irányítópult megosztását hivatkozással, lekérdezések megosztását, SQL-nézetek, automatizálások, integrációk és tokenek létrehozását; az SQL-je a teljes adatbázishoz hozzáfér, az írást is beleértve |
+| **Kezelés** | ezenfelül a struktúra módosítását, megosztott nézetek és irányítópultok létrehozását, irányítópult megosztását hivatkozással, kérdések és lekérdezések megosztását, SQL-nézetek, automatizálások, integrációk és tokenek létrehozását; az SQL-je a teljes adatbázishoz hozzáfér, az írást is beleértve |
 
 A jogosultságok **összeadódnak**: egy személy azt a legmagasabb szintet kapja, amelyet
 valamelyik csoportja ad neki. Ha egy tábla kevesebbet kap, mint az adatbázisa, akkor
@@ -74,6 +74,11 @@ holland, lengyel, cseh, svéd, dán, norvég, finn, román, magyar, török, ukr
 egyszerűsített kínai és koreai. Alapértelmezés szerint a felület a böngészője nyelvét
 használja; a **Megjelenés** lapon a **Nyelv** beállítással másikat választhat. A számok és a
 dátumok a választott nyelvet követik.
+
+Egy hivatkozás nyelvet is kérhet: a `?lang=de`, egy basedb-cím végén, németül jeleníti meg a
+bejelentkezési képernyőt, egy megosztott űrlapot, nézetet vagy irányítópultot. Így vezet a
+honlap a demóhoz az oldal nyelvén. Bejelentkezés után a basedb az Ön fiókját követi: a
+**Megjelenés**ben választott nyelvet, ennek hiányában a böngészőjét.
 
 A téma böngészőnként külön marad; a nyelv, a dátumok sorrendje és a hét első napja gépről gépre
 követi Önt. Az e-mail-cím megváltoztatásához vagy egy szolgáltató összekapcsolásához emelt

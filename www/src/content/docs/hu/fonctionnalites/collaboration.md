@@ -1,6 +1,6 @@
 ---
 title: Együttműködés
-description: Megjegyzések és említések, értesítések, valós idejű frissítések és jelenlét.
+description: Megjegyzések és említések, értesítések, valós idejű frissítések, jelenlét, és egy hivatkozás minden képernyőhöz.
 ---
 
 Egyszerre több személy dolgozik ugyanazon az adatbázison: mindenki látja beérkezni a többiek
@@ -45,6 +45,28 @@ jogosultságaival. Az a cella, amelyet éppen szerkeszt, soha nem cserélődik l
 Az **ugyanazt a táblát** néző személyek arcképe a képernyő tetején jelenik meg; az **ugyanazt a
 sort** megnyitóké a sor részletei panel fejlécében. A rácsban a többiek mutatója azon a cellán
 látszik, amely fölött éppen járnak.
+
+## Hivatkozás minden képernyőhöz
+
+A böngésző címe azt követi, amit éppen néz: egy táblát, annak egy nézetét, egy sor részleteit,
+egy irányítópultot, egy automatizálást, egy kérdést, az Ön beállításait. Illessze be egy
+üzenetbe: a kollégája ugyanoda érkezik, a saját jogosultságaival. Tegye könyvjelzőbe; a böngésző
+vissza és előre gombjai oda viszik, ahol korábban járt.
+
+| Cím | Mit nyit meg |
+|---|---|
+| `/bases/ventes/tables/opportunites` | a „Ventes” adatbázis „Opportunités” táblája |
+| `/bases/ventes/tables/opportunites?vue=…` | egyik nézete |
+| `/bases/ventes/tables/opportunites?ligne=…` | egyik sorának részletei |
+| `/bases/ventes/tableaux-de-bord/…` | egy irányítópult |
+| `/bases/ventes/automatisations/…` | egy automatizálás |
+| `/parametres/apparence` | az Ön beállításai |
+
+Egy cím egy **helyet** nevez meg, nem azt az állapotot, amelyben hagyta: a szűrők, a rendezések
+és az oszlopszélességek böngészőnként megmaradnak. Egy adatbázis és egy tábla a PostgreSQL-nevén
+íródik bele: átnevezés után a régi cím már semmire nem vezet. Egy olyan cím, amely semmire nem
+vezet – egy elgépelés, egy törölt objektum, vagy amit Önnek nincs joga látni –, a „Ez az oldal
+nem létezik” feliratot mutatja.
 
 ## Visszavonás
 

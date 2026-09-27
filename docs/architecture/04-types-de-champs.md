@@ -974,9 +974,9 @@ Notation EBNF, littéraux entre guillemets. Espaces libres entre lexèmes.
 
 ```
 expression  = ou ;
-ou          = et , { "OU" , et } ;
-et          = non , { "ET" , non } ;
-non         = [ "NON" ] , comparaison ;
+ou          = et , { ( "OU" | "OR" ) , et } ;
+et          = non , { ( "ET" | "AND" ) , non } ;
+non         = [ "NON" | "NOT" ] , comparaison ;
 comparaison = somme , [ ( "=" | "<>" | "<" | "<=" | ">" | ">=" ) , somme ] ;
 somme       = produit , { ( "+" | "-" | "&" ) , produit } ;
 produit     = unaire , { ( "*" | "/" ) , unaire } ;
@@ -984,42 +984,47 @@ unaire      = [ "-" ] , primaire ;
 primaire    = nombre | texte | booleen | "NULL" | champ | appel
             | "(" , expression , ")" ;
 champ       = "[" , libelle , "]" ;
-appel       = nom_fonction , "(" , [ expression , { ";" , expression } ] , ")" ;
+appel       = nom_fonction , "(" , [ expression , { separateur , expression } ] , ")" ;
+separateur  = ";" | "," ;
 nombre      = chiffre , { chiffre } , [ "." , chiffre , { chiffre } ] ;
 texte       = '"' , { caractere | '""' } , '"' ;
-booleen     = "VRAI" | "FAUX" ;
+booleen     = "VRAI" | "FAUX" | "TRUE" | "FALSE" ;
 ```
 
-Un champ se cite **par son libellé, entre crochets** : `[Prix HT] * (1 + [Taux TVA])`. Le séparateur d'arguments est `;` et le séparateur décimal est le point : le point-virgule évite l'ambiguïté avec la virgule décimale que les utilisateurs francophones taperont, le point décimal reste imposé pour rester cohérent avec le JSON de l'API. Profondeur d'imbrication limitée à 16, longueur de l'expression à 4 000 caractères. Le langage de saisie est en français : c'est une surface produit, pas un identifiant système.
+Un champ se cite **par son libellé, entre crochets** : `[Prix HT] * (1 + [Taux TVA])`. Le séparateur d'arguments est `;` ou `,`, et le séparateur décimal est le point : le point-virgule évite l'ambiguïté avec la virgule décimale que les utilisateurs francophones taperont, la virgule est celle qu'un anglophone attend, et le point décimal, imposé pour rester cohérent avec le JSON de l'API, est ce qui laisse la virgule libre. Profondeur d'imbrication limitée à 16, longueur de l'expression à 4 000 caractères. Le langage de saisie est en français ou en anglais : c'est une surface produit, pas un identifiant système.
 
 **La citation par libellé est déterministe** parce que le chapitre 01 impose déjà l'unicité du libellé parmi les objets vivants d'un même parent (index unique partiel sur `field.label_key`). La résolution d'un `[…]` emploie **la clé de comparaison de libellé** de ce même chapitre, si bien que `[prix ht]` et `[Prix HT]` désignent le même champ. Un libellé introuvable est refusé par `FORMULA_FIELD_NOT_FOUND`, avec la position du lexème.
 
 **Le crochet fermant se double** dans un libellé cité, sur le même principe que le guillemet dans un littéral texte. Seul `]` se double ; `[` n'a pas à l'être, l'analyseur ne cherchant que la fin de la citation. Un champ « Prix [HT] » se cite donc `[Prix [HT]]]`. Sans cette règle, un libellé parfaitement légal — le chapitre 01 n'interdit qu'un jeu restreint de caractères dans un *nom physique*, jamais un crochet dans un libellé — refermerait la citation par surprise.
 
+**Deux langues, un seul arbre.** Chaque mot du langage s'écrit en français ou en anglais, au besoin dans la même formule : `SI` ou `IF`, `ET` ou `AND`, `VRAI` ou `TRUE` (correspondance au §7.3). L'arbre enregistré (`field_formula_config.ast`) épelle toujours le mot français : les formules existantes ne changent pas, et l'émission SQL ne connaît qu'un nom par fonction. La formule se relit dans la langue de l'écran : en français sur un écran français, en anglais sur tous les autres (`formulaDialect`). C'est ainsi que la description d'une base (`GET /meta/bases/{base}`) la rend, et son validateur tient compte de cette langue. Le texte relu vient de l'arbre, jamais d'une substitution sur le texte saisi, comme pour un libellé renommé. *Alternative rejetée* : une langue fixée par formule ou par base, qui montrerait `SI` à un lecteur anglophone et `IF` à un lecteur francophone.
+
 ### 7.3 Fonctions autorisées — liste close v1
 
-| Formule | Projection SQL | Note |
-|---|---|---|
-| `SI(c;a;b)` | `CASE WHEN <c> THEN <a> ELSE <b> END` | `a` et `b` de même type |
-| `SIVIDE(a;b)` | `coalesce(<a>,<b>)` | |
-| `ESTVIDE(a)` | `(<a> IS NULL)` | seul moyen de tester `NULL` |
-| `ARRONDI(x;n)` | `round(<x>, least(greatest(<n>,-1000),1000)::int)` | `round(numeric, numeric)` n'existe pas : le second argument est **toujours** converti, et borné |
-| `ABS` `PLAFOND` `PLANCHER` | `abs` `ceil` `floor` | nombre uniquement |
-| `MIN(a;b)` `MAX(a;b)` | `least` `greatest` | **nombre et date uniquement** |
-| `MAJUSCULE` `MINUSCULE` | `upper(<x> COLLATE "und-x-icu")` `lower(…)` | collation explicite, même motif que `_basedb_local.fold_v1` |
-| `SANSESPACES(x)` | `btrim(<x>)` | |
-| `LONGUEUR(x)` | `length(<x>)::numeric` | |
-| `GAUCHE(x;n)` `DROITE(x;n)` | `left(<x>, least(greatest(<n>,0),1000000)::int)` | garde contre `n` négatif **et** contre le dépassement d'entier |
-| `TEXTE(x)` | `<x>::text` | **nombres et booléens seulement** |
-| `NOMBRE(x)` | `CASE WHEN <x> ~ '^-?\d+(\.\d+)?$' THEN <x>::numeric ELSE NULL END` | jamais un cast nu ; le motif exclut aussi `NaN` et les infinis |
-| `ANNEE` `MOIS` `JOUR` | `extract(<part> from <d>)::numeric` | **champ de `kind = 'date'` uniquement** |
-| `a & b` | `(coalesce(<a>::text,'') \|\| coalesce(<b>::text,''))` | pas `concat()`, qui est `STABLE` |
-| `JOURS(a;b)` | `(<a> - <b>)::numeric` | nombre de jours de `b` à `a` ; **dates uniquement** |
-| `AJOUTER_JOURS(d;n)` | `(<d> + least(greatest(<n>,-100000),100000)::int)` | date ; `n` borné |
-| `DATE(a;m;j)` | `make_date(…)` sur des arguments bornés, `NULL` si la date n'existe pas | par une fonction immuable de `_basedb_local`, jamais une erreur à l'écriture |
-| `JOURSEMAINE(d)` | `extract(isodow from <d>)::numeric` | 1 lundi … 7 dimanche |
-| `AUJOURDHUI()` | `(pg_catalog.now() AT TIME ZONE '<fuseau>')::date` | **rend la formule calculée à la lecture** (§7.1) |
-| `MAINTENANT()` | `pg_catalog.now()` | idem ; résultat `datetime` |
+| Formule | En anglais | Projection SQL | Note |
+|---|---|---|---|
+| `SI(c;a;b)` | `IF(c,a,b)` | `CASE WHEN <c> THEN <a> ELSE <b> END` | `a` et `b` de même type |
+| `SIVIDE(a;b)` | `IFBLANK(a,b)` | `coalesce(<a>,<b>)` | |
+| `ESTVIDE(a)` | `ISBLANK(a)` | `(<a> IS NULL)` | seul moyen de tester `NULL` |
+| `ARRONDI(x;n)` | `ROUND(x,n)` | `round(<x>, least(greatest(<n>,-1000),1000)::int)` | `round(numeric, numeric)` n'existe pas : le second argument est **toujours** converti, et borné |
+| `ABS` `PLAFOND` `PLANCHER` | `ABS` `CEILING` `FLOOR` | `abs` `ceil` `floor` | nombre uniquement |
+| `MIN(a;b)` `MAX(a;b)` | `MIN(a,b)` `MAX(a,b)` | `least` `greatest` | **nombre et date uniquement** |
+| `MAJUSCULE` `MINUSCULE` | `UPPER` `LOWER` | `upper(<x> COLLATE "und-x-icu")` `lower(…)` | collation explicite, même motif que `_basedb_local.fold_v1` |
+| `SANSESPACES(x)` | `TRIM(x)` | `btrim(<x>)` | |
+| `LONGUEUR(x)` | `LEN(x)` | `length(<x>)::numeric` | |
+| `GAUCHE(x;n)` `DROITE(x;n)` | `LEFT(x,n)` `RIGHT(x,n)` | `left(<x>, least(greatest(<n>,0),1000000)::int)` | garde contre `n` négatif **et** contre le dépassement d'entier |
+| `TEXTE(x)` | `TEXT(x)` | `<x>::text` | **nombres et booléens seulement** |
+| `NOMBRE(x)` | `VALUE(x)` | `CASE WHEN <x> ~ '^-?\d+(\.\d+)?$' THEN <x>::numeric ELSE NULL END` | jamais un cast nu ; le motif exclut aussi `NaN` et les infinis |
+| `ANNEE` `MOIS` `JOUR` | `YEAR` `MONTH` `DAY` | `extract(<part> from <d>)::numeric` | **champ de `kind = 'date'` uniquement** |
+| `a & b` | `a & b` | `(coalesce(<a>::text,'') \|\| coalesce(<b>::text,''))` | pas `concat()`, qui est `STABLE` |
+| `JOURS(a;b)` | `DAYS(a,b)` | `(<a> - <b>)::numeric` | nombre de jours de `b` à `a` ; **dates uniquement** |
+| `AJOUTER_JOURS(d;n)` | `ADD_DAYS(d,n)` | `(<d> + least(greatest(<n>,-100000),100000)::int)` | date ; `n` borné |
+| `DATE(a;m;j)` | `DATE(y,m,d)` | `make_date(…)` sur des arguments bornés, `NULL` si la date n'existe pas | par une fonction immuable de `_basedb_local`, jamais une erreur à l'écriture |
+| `JOURSEMAINE(d)` | `WEEKDAY(d)` | `extract(isodow from <d>)::numeric` | 1 lundi … 7 dimanche |
+| `AUJOURDHUI()` | `TODAY()` | `(pg_catalog.now() AT TIME ZONE '<fuseau>')::date` | **rend la formule calculée à la lecture** (§7.1) |
+| `MAINTENANT()` | `NOW()` | `pg_catalog.now()` | idem ; résultat `datetime` |
+
+`ET` `OU` `NON` s'écrivent aussi `AND` `OR` `NOT`, `VRAI` `FAUX` aussi `TRUE` `FALSE` (§7.2).
 
 Quatre précisions qui décident de points non évidents.
 

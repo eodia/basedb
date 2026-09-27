@@ -14,7 +14,18 @@ tarjetas vinculadas a ellos.
 Todo se abre desde **Paneles**, en el bloque de la base abierta en la parte inferior de la barra
 lateral. A la izquierda, los paneles y las preguntas guardadas de la base, y
 **Explorar los datos** para hacer una pregunta sin guardar nada. Cualquier lector de la base
-puede consultarlos y explorar; crear, modificar y guardar requieren el nivel **Gestión**.
+puede consultarlos, explorarlos y guardar sus propias preguntas; crear un panel y compartir una
+pregunta requieren el nivel **Gestión**.
+
+Una pregunta guardada es **personal** — solo tú la ves —, para **toda la base** o para
+**grupos**. Su menú, con un clic derecho o por **⋯**, la abre en una pestaña junto a las tablas,
+cambia su nombre y su uso compartido, o la elimina. El **+** de la barra de pestañas también
+ofrece **Nueva pregunta** y **Nueva pregunta SQL**.
+
+**Guardar**, en el encabezado de una pregunta, la conserva; una pregunta que no puedes modificar
+propone en su lugar **Guardar una copia**, que pasa a ser tuya. **⋯** (Más acciones) también
+ofrece **Nombre y uso compartido…**, **Guardar una copia…** y **Eliminar la pregunta**; una
+pestaña que la mostraba conserva su contenido, que vuelve a quedar sin guardar.
 
 ## Hacer una pregunta con el ratón
 
@@ -109,8 +120,10 @@ como las demás.
 
 **Editar** pone el panel en modo edición:
 
-- **Pregunta** coloca una pregunta guardada, o crea una propia de la tarjeta;
-- **Título** y **Texto** añaden un título de sección o un texto en Markdown;
+- **Pregunta** coloca una pregunta guardada — una pregunta personal se copia en ella —, o crea
+  una propia de la tarjeta;
+- **Título** añade un título de sección, **Texto** un texto con formato —títulos, listas,
+  enlaces— que puede citar cifras (ver más abajo);
 - **Página insertada** muestra una dirección `https://` en un marco aislado, que no recibe ni
   sesión ni datos;
 - **Pestaña** reparte las tarjetas en varias páginas; un doble clic cambia el nombre de una pestaña.
@@ -118,6 +131,25 @@ como las demás.
 Las tarjetas se mueven por su tirador y se redimensionan por su esquina, sobre una cuadrícula de
 24 columnas. **Guardar** lo conserva todo; **Cancelar** vuelve a la versión anterior. El título
 de una tarjeta, en modo lectura, abre su pregunta para explorarla, filtros del panel incluidos.
+
+### Cifras en el texto
+
+Un texto cita un valor mediante un nombre entre dobles llaves: «Este mes,
+`{{chiffre_affaires}}` de facturación sobre `{{commandes}}` pedidos». Cada nombre se convierte
+en una pastilla, que se vincula con un clic —o con **Variable** en la barra del editor— a:
+
+| Origen | Lo que muestra el texto |
+|---|---|
+| **una tarjeta** del panel | lo que muestra, con sus propios filtros |
+| **una pregunta guardada** de toda la base | su valor, y los filtros del panel se vinculan a ella como a una tarjeta |
+| **una pregunta guardada en el texto** | su valor; así es como se cita una pregunta personal |
+| **un filtro** del panel | el valor elegido, tal como lo expresa su propio enunciado |
+
+El valor de una pregunta es el que mostraría su **Cifra**: su primera medida, en la última fila.
+Se calcula con los permisos del lector, y siempre se muestra como texto. Un texto cita 20
+valores como máximo; un nombre se escribe en minúsculas, cifras y `_`. Los textos escritos en
+Markdown antes del editor se leen como antes, y se vuelven enriquecidos en cuanto se
+reescriben. El Copilot, por su parte, escribe sus textos en Markdown.
 
 ## Los filtros
 

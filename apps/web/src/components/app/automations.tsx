@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Hint } from '@/components/ui/tooltip'
 import {
   ApiError,
   type Automation,
@@ -78,15 +79,33 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
  * runs, each laid over the flow to show the way it took and how each step went.
  */
 
-export function AutomationsPanel({ base }: { readonly base: DescribedBase }) {
+export function AutomationsPanel({
+  base,
+  focus = null,
+  onFocus,
+}: {
+  readonly base: DescribedBase
+  /** The automation the address names — shown once the list is read. */
+  readonly focus?: string | null
+  /** The automation the panel shows, for the address — `null` for a new one. */
+  readonly onFocus?: (id: string | null) => void
+}) {
   return (
     <MembersProvider>
-      <Panel base={base} />
+      <Panel base={base} focus={focus} onFocus={onFocus} />
     </MembersProvider>
   )
 }
 
-function Panel({ base }: { readonly base: DescribedBase }) {
+function Panel({
+  base,
+  focus,
+  onFocus,
+}: {
+  readonly base: DescribedBase
+  readonly focus: string | null
+  readonly onFocus?: ((id: string | null) => void) | undefined
+}) {
   const [automations, setAutomations] = useState<readonly Automation[] | null>(null)
   const [selected, setSelected] = useState<string | 'new' | null>(null)
   // A new automation opens empty, or with what the copilot proposed on its flow.
@@ -136,12 +155,35 @@ function Panel({ base }: { readonly base: DescribedBase }) {
     }
   }, [base.name])
 
+  // The automation the address names, else the first. Read when the list is, not followed:
+  // the address names what the panel shows once it has told it.
+  const focusAtLoad = useRef(focus)
+  focusAtLoad.current = focus
   useEffect(() => {
     setSelected(null)
+    const wanted = focusAtLoad.current
     void load().then((list) => {
-      if (list !== null && list.length > 0) setSelected(list[0]?.id ?? null)
+      if (list === null || list.length === 0) return
+      setSelected((list.find((a) => a.id === wanted) ?? list[0])?.id ?? null)
     })
   }, [load])
+
+  // Another address — the browser's back, a link: the panel shows the automation it names.
+  // Keyed on the address alone: one just clicked must not be taken back by an address that
+  // has not heard of it yet.
+  useEffect(() => {
+    if (focus === null || automations === null) return
+    if (automations.some((a) => a.id === focus)) setSelected(focus)
+  }, [focus, automations])
+
+  // What the panel shows, told to the address. Nothing while the list is read.
+  const tell = useRef(onFocus)
+  tell.current = onFocus
+  const nothing = selected === null && automations?.length === 0
+  useEffect(() => {
+    if (selected === 'new' || nothing) tell.current?.(null)
+    else if (selected !== null) tell.current?.(selected)
+  }, [selected, nothing])
 
   // The last run of each, kept fresh while the screen is open.
   useEffect(() => {
@@ -167,20 +209,21 @@ function Panel({ base }: { readonly base: DescribedBase }) {
     <div className="flex min-w-0 flex-1 flex-col">
       <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
         <SidebarToggle />
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => setFolded(!folded)}
-          aria-label={
-            folded
-              ? $t('Montrer la liste des automatisations')
-              : $t('Replier la liste des automatisations')
-          }
-          title={folded ? $t('Montrer la liste') : $t('Replier la liste')}
-          aria-expanded={!folded}
-        >
-          {folded ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
-        </Button>
+        <Hint label={folded ? $t('Montrer la liste') : $t('Replier la liste')}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setFolded(!folded)}
+            aria-label={
+              folded
+                ? $t('Montrer la liste des automatisations')
+                : $t('Replier la liste des automatisations')
+            }
+            aria-expanded={!folded}
+          >
+            {folded ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+          </Button>
+        </Hint>
         <span className="text-sm text-muted-foreground">{base.label}</span>
         <span className="text-sm text-muted-foreground">/</span>
         <span className="text-sm font-medium">{$t('Automatisations')}</span>
@@ -511,7 +554,7 @@ function Editor({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
+                variant="destructive"
                 disabled={busy}
                 onSelect={() => void remove()}
               >
@@ -670,26 +713,28 @@ function Inspector({
         tone="bg-muted text-foreground"
         footer={
           <>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              disabled={where === null || where.index === 0}
-              onClick={() => onSteps((s) => moveStep(s, step.id, -1))}
-              aria-label={$t('Monter l’étape')}
-              title={$t('Monter l’étape')}
-            >
-              <ArrowUp className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              disabled={where === null || where.index === where.length - 1}
-              onClick={() => onSteps((s) => moveStep(s, step.id, 1))}
-              aria-label={$t('Descendre l’étape')}
-              title={$t('Descendre l’étape')}
-            >
-              <ArrowDown className="size-4" />
-            </Button>
+            <Hint label={$t('Monter l’étape')}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={where === null || where.index === 0}
+                onClick={() => onSteps((s) => moveStep(s, step.id, -1))}
+                aria-label={$t('Monter l’étape')}
+              >
+                <ArrowUp className="size-4" />
+              </Button>
+            </Hint>
+            <Hint label={$t('Descendre l’étape')}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={where === null || where.index === where.length - 1}
+                onClick={() => onSteps((s) => moveStep(s, step.id, 1))}
+                aria-label={$t('Descendre l’étape')}
+              >
+                <ArrowDown className="size-4" />
+              </Button>
+            </Hint>
             <div className="flex-1" />
             <Button
               variant="ghost"
@@ -837,7 +882,7 @@ function TestRun({
   const table = base.tables.find((t) => t.id === automation.trigger.table) ?? null
   const [rows, setRows] = useState<ReadonlyArray<{ id: string; label: string }> | null>(null)
   const [busy, setBusy] = useState(false)
-  const title = disabled
+  const hint = disabled
     ? $t('Enregistrez d’abord : l’essai exécute ce qui est enregistré')
     : undefined
 
@@ -868,33 +913,35 @@ function TestRun({
 
   if (table === null) {
     return (
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={busy || disabled}
-        title={title}
-        onClick={() => void run(null)}
-        className="gap-1.5"
-      >
-        <Play className="size-4" />
-        {$t('Tester')}
-      </Button>
+      // A disabled button raises no pointer events, so the hint hangs on a wrapping span.
+      <Hint label={hint}>
+        <span className="inline-flex">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy || disabled}
+            onClick={() => void run(null)}
+            className="gap-1.5"
+          >
+            <Play className="size-4" />
+            {$t('Tester')}
+          </Button>
+        </span>
+      </Hint>
     )
   }
   return (
     <DropdownMenu onOpenChange={(open) => open && void loadRows()}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={busy || disabled}
-          title={title}
-          className="gap-1.5"
-        >
-          <Play className="size-4" />
-          {$t('Tester sur une ligne')}
-        </Button>
-      </DropdownMenuTrigger>
+      <Hint label={hint}>
+        <span className="inline-flex">
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" disabled={busy || disabled} className="gap-1.5">
+              <Play className="size-4" />
+              {$t('Tester sur une ligne')}
+            </Button>
+          </DropdownMenuTrigger>
+        </span>
+      </Hint>
       <DropdownMenuContent align="end" className="max-h-72 w-64 overflow-y-auto">
         {rows === null && (
           <div className="flex justify-center py-3">

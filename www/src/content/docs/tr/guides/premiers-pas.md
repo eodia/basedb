@@ -36,7 +36,7 @@ ekranından, bu ekranın **Alan** düğmesiyle ekleyin:
 | Client | İlişki → Clients |
 | Notes | Uzun metin (Markdown) |
 
-Daha sonra bir formül (`JOURS([Échéance]; AUJOURDHUI())`), bir arama (müşterinin şehri) ya da
+Daha sonra bir formül (`DAYS([Échéance], TODAY())`), bir arama (müşterinin şehri) ya da
 bir toplama (müşteri başına toplam tutar) aynı şekilde eklenir — bkz.
 [Tablolar ve alanlar](/basedb/tr/fonctionnalites/tables-et-champs/).
 
@@ -71,7 +71,7 @@ sayfasında.
 
 ## 6. SQL ile okuyun
 
-Veritabanının **⋯** menüsü → **Yeni SQL sorgusu**: tablolarınız gerçek adlarıyla oradadır.
+Veritabanının **⋯** menüsü → **SQL sorgusu**: tablolarınız gerçek adlarıyla oradadır.
 
 ```sql
 SELECT nom, statut, montant

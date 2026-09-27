@@ -72,7 +72,7 @@ export default {
 							tables: {
 								href: '/fonctionnalites/tables-et-champs/',
 								title: '数据表与字段',
-								text: '各种类型的字段、关联，以及用法语编写的公式。',
+								text: '各种类型的字段、关联，以及像电子表格一样的公式。',
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
@@ -765,9 +765,9 @@ export default {
 					href: '/fonctionnalites/tableaux-de-bord/',
 				},
 				formulas: {
-					code: 'SI([Montant] > 10000; "Grand compte"; "")',
-					title: '公式，用法语写',
-					text: '就像在电子表格里——SI、ARRONDI、JOURS……——但为整个团队计算。',
+					code: 'IF([Montant] > 10000, "Grand compte", "")',
+					title: '公式，法语或英语皆可',
+					text: '就像在电子表格里——SI、ARRONDI、JOURS……或 IF、ROUND、DAYS——但为整个团队计算。',
 					href: '/fonctionnalites/tables-et-champs/#公式',
 				},
 				rights: {
@@ -875,7 +875,7 @@ export default {
 			items: [
 				{
 					q: '需要懂编程吗？',
-					a: '不需要。数据表、视图、表单、仪表盘和自动化，都可以用鼠标创建。公式用法语书写，就像在电子表格里一样：SI、ARRONDI、JOURS……',
+					a: '不需要。数据表、视图、表单、仪表盘和自动化，都可以用鼠标创建。公式的写法就像在电子表格里一样，可以用法语或英语：SI 或 IF、ARRONDI 或 ROUND、JOURS 或 DAYS……',
 				},
 				{
 					q: '要花多少钱？',
@@ -1242,8 +1242,8 @@ export default {
 			},
 			formulas: {
 				title: '关联与公式',
-				text: '真正的外键，用法语编写、由 PostgreSQL 计算的公式，以及跨关联的查找引用、汇总和计数。',
-				code: 'ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)',
+				text: '真正的外键，由 PostgreSQL 计算的法语或英语公式，以及跨关联的查找引用、汇总和计数。',
+				code: 'ROUND([Montant HT] * (1 + [Taux de TVA]), 2)',
 				href: '/fonctionnalites/tables-et-champs/#公式',
 			},
 			richText: {
@@ -1387,6 +1387,76 @@ export default {
 		title: 'basedb 的变化',
 		intro: '每项变更的细节见<a href="https://github.com/eodia/basedb/commits/main">仓库的提交历史</a>。接下来要做的：<a href="/feuille-de-route/">路线图</a>。',
 		entries: {
+			formulaLanguages: {
+				date: '2026-09-28',
+				title: '公式支持法语或英语',
+				tag: '新功能',
+				items: [
+					'<strong>在任意屏幕上，都可以用法语或英语输入公式</strong>，甚至可以混用两种语言：<code>SI</code> 或 <code>IF</code>、<code>ARRONDI</code> 或 <code>ROUND</code>、<code>JOURS</code> 或 <code>DAYS</code>……参数之间用 <code>;</code> 或 <code>,</code> 分隔。<a href="/fonctionnalites/tables-et-champs/#公式">公式</a>',
+					'<strong>公式会以屏幕所用的语言重新显示</strong>：法语屏幕上显示法语，其余十九种语言中显示英语——已有的公式和「函数」面板也是如此。API 会以请求的语言返回公式，未指定时则用英语。',
+					'以非法语语言提供的官方模板，其公式会以英语形式提供。数据库中不会有任何变化：列不变，SQL 不变，也无需迁移。',
+				],
+			},
+			search: {
+				date: '2026-09-27',
+				title: '一键查找一切：Ctrl+K',
+				tag: '新功能',
+				items: [
+					'<strong>一个输入框查找一切</strong>——<strong>Ctrl+K</strong>，或顶部工具栏中央的输入框：数据表、视图、问题、仪表盘、自动化、列，以及行本身，均按您的权限读取；在大屏幕上还会显示所选结果的预览。<a href="/fonctionnalites/recherche/">搜索</a>',
+					'<strong>想到什么就打什么</strong>：不区分重音符号和大小写，输入开头也可以——<code>新客</code>对应「新客户」——容忍一次打字错误，<code>客户 成都</code>可在客户数据表中查找「成都」；您常打开的内容会排到前面。',
+					'<strong>所有命令都能用键盘完成</strong>：新建、前往、关闭、撤销、切换主题、复制页面链接。<code>&gt;</code>只查找命令，<code>#</code>只查找对象，<code>/</code>只查找行；<strong>Tab</strong> 在某个数据表或数据库内查找。',
+					'<strong>有问题吗？</strong>直接输入：<strong>向 Copilot 提问</strong>会把它交给当前打开的数据库。',
+				],
+			},
+			questions: {
+				date: '2026-09-27',
+				title: '专属问题，文本中的数字',
+				tag: '新功能',
+				items: [
+					'<strong>每个人都能保存自己的问题</strong>，即使没有可管理级别：个人问题只有自己能看到；管理数据库的人可以像查询一样，把问题共享给整个数据库或指定用户组。<a href="/fonctionnalites/tableaux-de-bord/">仪表盘</a>',
+					'<strong>问题在标签页中打开</strong>，与数据表并列：<strong>新建问题</strong>和<strong>新建 SQL 问题</strong>位于标签栏的 <strong>+</strong> 和数据库菜单中；标签页会保留您留在其中的内容。<strong>保存副本</strong>能让您拥有一个自己无法修改的问题。',
+					'<strong>文本中的数字</strong>：如今支持排版的仪表盘文本，可以引用取自某张卡片、某个问题或某个筛选条件的值——<code>{{chiffre_affaires}}</code>——按读者的权限计算，即使在通过链接共享的仪表盘中也是如此。<a href="/fonctionnalites/tableaux-de-bord/#文本中的数字">文本中的数字</a>',
+					'查询、SQL 视图和问题也可以在各自的菜单中右键删除。',
+				],
+			},
+			addresses: {
+				date: '2026-09-27',
+				title: '每个屏幕都有自己的地址',
+				tag: '新功能',
+				items: [
+					'<strong>地址跟随屏幕</strong>：一张数据表、一个视图、某一行的详情、一个仪表盘、一个自动化、一个问题、您的设置——<code>/bases/ventes/tables/opportunites?ligne=…</code>。把它加入收藏夹，或粘贴到消息里：任何人都能按自己的权限到达同一个位置。<a href="/fonctionnalites/collaboration/#指向每个屏幕的链接">指向每个屏幕的链接</a>',
+					'浏览器的<strong>后退</strong>和<strong>前进</strong>按钮会带您回到之前所在的位置；无法访问的地址会显示「此页面不存在」。',
+				],
+			},
+			demo: {
+				date: '2026-09-27',
+				title: '可试用的演示，使用您的语言',
+				tag: '新功能',
+				items: [
+					'<strong>演示</strong>位于<a href="https://demo.basedb.eodia.com">demo.basedb.eodia.com</a>：账户会预填您浏览器所用的语言，并配有该语言的数据库。您可以查看一切并修改已有内容；创建、删除和 AI 均已禁用，数据库每晚都会恢复到初始状态。',
+					'<strong>您自己的演示</strong>：<code>BASEDB_DEMO=1</code> 会开放一个面向所有人的实例，并为每种语言配好一个预先准备的共享账户。<a href="/hebergement/variables/#公开演示">变量</a>',
+					'<strong>按链接指定语言</strong>：在 basedb 地址末尾加上 <code>?lang=de</code>，会以德语显示登录界面或某个共享页面；网站正是这样以页面所用的语言引导到演示。<a href="/fonctionnalites/droits/#您的设置">您的设置</a>',
+				],
+			},
+			templateLanguages: {
+				date: '2026-09-27',
+				title: '模板，用您的语言',
+				tag: '新功能',
+				items: [
+					'<strong>官方模板会以屏幕所用的语言创建</strong>：数据表、字段、选项、视图、仪表盘、自动化、AI 指令——以及随语言换一个世界的示例行：里昂的「Boulangerie Martin」面包店，到了中文版就变成了成都的「陈记面包坊」。<a href="/fonctionnalites/modeles/#在您的语言中">模板</a>',
+					'<a href="/modeles/">网站的模板库</a>会以页面所用的语言展示每个模板。',
+					'<strong>一份模板，多份词典</strong>：模板只用法语写一次；每种语言只翻译其中的文本，basedb 会自动追踪每个标签被引用的所有位置。会破坏模板的词典不会被使用。<a href="/fonctionnalites/modeles/#向所有实例发布模板">发布模板</a>',
+				],
+			},
+			details: {
+				date: '2026-09-27',
+				title: '还有',
+				items: [
+					'<strong>不带示例行的模板</strong>：取消勾选「加载示例数据」，会创建空的数据表，可直接用于您自己的数据。<a href="/fonctionnalites/modeles/#从模板开始">从模板开始</a>',
+					'<strong>每个数据库的 API 与 MCP 文档</strong>都用您屏幕所用的语言编写。<a href="/integrations/api-rest/#自动生成的文档">自动生成的文档</a>',
+					'在浏览器原本显示自己提示框的地方，现在改用应用主题的提示框；菜单中的「删除」项显示为红色；将鼠标悬停在评论的时间上，会显示完整日期。',
+				],
+			},
 			languages: {
 				date: '2026-09-27',
 				title: '富文本、变量、更易读的看板',

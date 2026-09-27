@@ -43,7 +43,8 @@ import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useStat
  * so it follows the theme and looks like what opens next. Its data is the demonstration
  * base's, never the visitor's: nobody is signed in yet.
  *
- * Three small scenes play in it, in a loop, named by the tabs above the window:
+ * Three small scenes play in it, in a loop, named by the tabs above the window — a click on
+ * one plays its scene from the beginning, and the loop goes on from there:
  * - the tables: a query types itself out and the rows it returns light up; a colleague
  *   changes a cell and the result follows, live; the question changes, and so does the
  *   answer;
@@ -331,8 +332,24 @@ interface Spot {
 /** What the colleague's pointer heads for: a cell of the table, the dashboard's filter. */
 type Aim = 'cell' | 'filter'
 
-/** The scenes: which one plays, and where each of them is. */
+/** A run that has gone through every card, as the automation's scene ends. */
+const DONE: Run = { passed: STEPS.length + 1, on: null }
+
+/**
+ * The scenes: which one plays, and where each of them is.
+ *
+ * `play` is a tab's click: the scene it names starts again from its beginning, and the
+ * loop goes on from there.
+ */
 function useScenes(measure: (target: Aim) => Spot | null) {
+  const [from, setFrom] = useState<{ readonly scene: Scene; readonly asked: number }>({
+    scene: 'data',
+    asked: 0,
+  })
+  const play = useCallback(
+    (next: Scene) => setFrom((f) => ({ scene: next, asked: f.asked + 1 })),
+    [],
+  )
   const [scene, setScene] = useState<Scene>('data')
   const [cycle, setCycle] = useState(0)
   const [still, setStill] = useState(false)
@@ -353,18 +370,25 @@ function useScenes(measure: (target: Aim) => Spot | null) {
   const [answer, setAnswer] = useState('')
 
   useEffect(() => {
-    // Asked for less motion: the first answer, at once, and nothing moving after it.
+    // Asked for less motion: each scene as it ends, at once, and nothing moving after it.
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setStill(true)
+      setScene(from.scene)
       setText(query(BY_STATUS))
       setClause(BY_STATUS)
+      setGrown(true)
+      setRun(DONE)
+      setAnswer(WELCOME)
       return
     }
 
-    // Unmounting clears the pending timer, and the scenes simply never wake up again.
+    // Unmounting — or a tab asking for another scene — clears the pending timer, and the
+    // scenes that were playing simply never wake up again.
+    let live = true
     const timers = new Set<ReturnType<typeof setTimeout>>()
     const sleep = (ms: number) =>
       new Promise<void>((resolve) => {
+        if (!live) return
         const timer = setTimeout(() => {
           timers.delete(timer)
           resolve()
@@ -456,11 +480,9 @@ function useScenes(measure: (target: Aim) => Spot | null) {
       }
     }
 
-    void (async () => {
-      for (;;) {
-        // The tables: a query, a colleague's change, another query, another change.
-        let start = performance.now()
-        setScene('data')
+    const scenes: Readonly<Record<Scene, () => Promise<void>>> = {
+      // The tables: a query, a colleague's change, another query, another change.
+      data: async () => {
         await sleep(1100)
         await ask(BY_STATUS, 34)
         await sleep(1600)
@@ -469,41 +491,61 @@ function useScenes(measure: (target: Aim) => Spot | null) {
         await ask(BY_CITY)
         await sleep(2000)
         await edit('Prospect')
-        await until(start + SCENE_MS.data)
-
-        // A dashboard: its figures rise, then a filter narrows every card to Lyon.
-        start = performance.now()
-        setScene('dashboard')
+      },
+      // A dashboard: its figures rise, then a filter narrows every card to Lyon.
+      dashboard: async () => {
         await sleep(650)
         setGrown(true)
         await sleep(2900)
         await filter()
-        await until(start + SCENE_MS.dashboard)
-
-        // An automation: the client made active sets it off.
-        start = performance.now()
-        setScene('automation')
+      },
+      // An automation: the client made active sets it off.
+      automation: async () => {
         await sleep(900)
         await automate()
-        await until(start + SCENE_MS.automation)
+      },
+    }
+    // Every scene starts again from its beginning, as it was before anything happened.
+    const reset = () => {
+      show('')
+      setTyping(false)
+      setClause(null)
+      setEdited(CLIENTS[EDITED].status)
+      setEditing(false)
+      setCursor(null)
+      setPressing(false)
+      setGrown(false)
+      setLyon(false)
+      setRun(IDLE)
+      setAnswer('')
+      // The tabs' progress starts over too, even on the tab that was already playing.
+      setCycle((c) => c + 1)
+    }
 
-        // Back to the table, as it was: every scene starts again from its beginning.
-        show('')
-        setClause(null)
-        setGrown(false)
-        setLyon(false)
-        setRun(IDLE)
-        setAnswer('')
-        setCycle((c) => c + 1)
+    const order = SCENES.map((s) => s.id)
+    void (async () => {
+      // A tab's click: whatever was playing stops where it was.
+      if (from.asked > 0) reset()
+      let first = true
+      for (let i = order.indexOf(from.scene); ; i = (i + 1) % order.length) {
+        // Back to the table after the last scene: the loop starts over.
+        if (i === 0 && !first) reset()
+        first = false
+        const start = performance.now()
+        setScene(order[i])
+        await scenes[order[i]]()
+        await until(start + SCENE_MS[order[i]])
       }
     })()
 
     return () => {
+      live = false
       for (const timer of timers) clearTimeout(timer)
     }
-  }, [measure])
+  }, [measure, from])
 
   return {
+    play,
     scene,
     cycle,
     still,
@@ -545,31 +587,43 @@ function Counter({
   return <>{format(shown)}</>
 }
 
-/** The scenes' tabs, above the window; the one playing fills up over its time. */
+/**
+ * The scenes' tabs, above the window; the one playing fills up over its time. A click
+ * plays the scene it names, from its beginning — even the one already playing.
+ */
 function SceneTabs({
   scene,
   cycle,
   still,
-}: { readonly scene: Scene; readonly cycle: number; readonly still: boolean }) {
+  onPlay,
+}: {
+  readonly scene: Scene
+  readonly cycle: number
+  readonly still: boolean
+  readonly onPlay: (scene: Scene) => void
+}) {
   return (
     <div className="mt-6 flex flex-wrap gap-2 short:mt-4">
       {SCENES.map((s, i) => {
         const on = s.id === scene
         return (
-          <span
+          <button
             key={s.id}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onPlay(s.id)}
             className={cn(
-              'relative flex animate-in fade-in slide-in-from-bottom-1 items-center gap-1.5 overflow-hidden rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-300 fill-mode-both',
+              'relative flex cursor-pointer animate-in fade-in slide-in-from-bottom-1 items-center gap-1.5 overflow-hidden rounded-full border px-3 py-1.5 text-xs font-medium outline-none transition-colors duration-300 fill-mode-both focus-visible:ring-[3px] focus-visible:ring-ring/50',
               on
                 ? 'border-primary/30 bg-background text-foreground shadow-xs'
-                : 'border-transparent text-muted-foreground',
+                : 'border-transparent text-muted-foreground hover:bg-background/60 hover:text-foreground',
             )}
             style={{ animationDelay: `${320 + i * 70}ms` }}
           >
             <s.Icon className={cn('size-3.5', on && 'text-primary')} />
             {s.label}
             {on && !still && <Progress key={cycle} ms={s.ms} />}
-          </span>
+          </button>
         )
       })}
     </div>
@@ -970,6 +1024,7 @@ export function ProductGlimpse() {
       : { x: box.left - origin.left + box.width * 0.55, y: box.top - origin.top + box.height * 0.6 }
   }, [])
   const {
+    play,
     scene,
     cycle,
     still,
@@ -1000,9 +1055,7 @@ export function ProductGlimpse() {
             'Suivi commercial, stock, recrutement, événements… Créez les bases dont vous avez besoin, reliez vos tables et partagez-les en quelques clics — sur une vraie base de données.',
           )}
         </p>
-        <div aria-hidden="true">
-          <SceneTabs scene={scene} cycle={cycle} still={still} />
-        </div>
+        <SceneTabs scene={scene} cycle={cycle} still={still} onPlay={play} />
       </div>
 
       {/* The window: it runs off the right and bottom edges, as a glimpse does. */}

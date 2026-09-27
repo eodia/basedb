@@ -13,7 +13,18 @@ Fiecare card arată acolo o **întrebare** — o citire a bazei, construită cu 
 Totul se deschide din **Tablouri de bord**, în blocul bazei deschise din partea de jos a barei
 laterale. În stânga, tablourile de bord și întrebările salvate ale bazei, precum și
 **Explorați datele** pentru a pune o întrebare fără a salva nimic. Orice cititor al bazei le
-poate consulta și explora; crearea, modificarea și salvarea cer nivelul **Gestionare**.
+poate consulta, le poate explora și își poate salva propriile întrebări; construirea unui
+tablou de bord și partajarea unei întrebări cer nivelul **Gestionare**.
+
+O întrebare salvată este **personală** — doar dumneavoastră o vedeți —, pentru **toată baza**
+sau pentru **grupuri**. Meniul ei, cu un clic dreapta sau prin **⋯**, o deschide într-o filă
+alături de tabele, îi schimbă numele și partajarea sau o șterge. Butonul **+** din bara de file
+propune, de asemenea, **Întrebare nouă** și **Întrebare SQL nouă**.
+
+**Salvați**, în antetul unei întrebări, o păstrează; o întrebare pe care nu o puteți modifica
+propune în schimb **Salvați o copie**, care devine a dumneavoastră. **⋯** (**Mai multe
+acțiuni**) oferă, de asemenea, **Nume și partajare…**, **Salvați o copie…** și **Ștergeți
+întrebarea**; o filă care o arăta își păstrează conținutul, redevenit nesalvat.
 
 ## Formularea unei întrebări cu mouse-ul
 
@@ -109,8 +120,10 @@ celelalte.
 
 **Editați** trece tabloul în modul de editare:
 
-- **Întrebare** plasează o întrebare salvată sau creează una proprie cardului;
-- **Titlu** și **Text** adaugă un titlu de secțiune sau un text în Markdown;
+- **Întrebare** plasează o întrebare salvată — o întrebare personală este copiată aici —, sau
+  creează una proprie cardului;
+- **Titlu** adaugă un titlu de secțiune, **Text** un text formatat — titluri, liste,
+  linkuri — care poate cita cifre (vedeți mai jos);
 - **Pagină încorporată** afișează o adresă `https://` într-un cadru izolat, care nu primește
   nici sesiune, nici date;
 - **Filă** repartizează cardurile pe mai multe pagini; un dublu clic redenumește o filă.
@@ -119,6 +132,25 @@ Cardurile se mută trăgând de mânerul lor și se redimensionează din colț, 
 coloane. **Salvați** păstrează totul; **Anulați** revine la versiunea anterioară. Titlul unui
 card, în modul de citire, îi deschide întrebarea pentru explorare, inclusiv cu filtrele
 tabloului.
+
+### Cifre în text
+
+Un text citează o valoare printr-un nume între acolade duble: „În luna aceasta,
+`{{chiffre_affaires}}` cifră de afaceri din `{{commandes}}` comenzi.” Fiecare nume devine o
+pastilă, de legat cu un clic — sau prin **Variabilă** din bara editorului — de:
+
+| Sursă | Ce arată textul |
+|---|---|
+| **un card** al tabloului | ceea ce arată el, sub propriile sale filtre |
+| **o întrebare salvată** din toată baza | valoarea ei, iar filtrele tabloului se leagă de ea ca de un card |
+| **o întrebare păstrată în text** | valoarea ei; astfel se citează o întrebare personală |
+| **un filtru** al tabloului | valoarea aleasă, așa cum o spune comanda lui |
+
+Valoarea unei întrebări este cea pe care ar arăta-o **Cifra** ei: prima ei măsură, pe ultimul
+rând. Se calculează cu permisiunile cititorului și se afișează întotdeauna ca text. Un text
+citează cel mult 20 de valori; un nume se scrie cu litere mici, cifre și `_`. Textele scrise în
+Markdown înainte de editor se citesc ca înainte și devin formatate de îndată ce sunt rescrise.
+Copilot, la rândul lui, își scrie textele în Markdown.
 
 ## Filtrele
 

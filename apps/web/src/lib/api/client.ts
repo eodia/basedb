@@ -336,7 +336,7 @@ export interface SqlResult {
   readonly mode: 'console' | 'reader'
 }
 
-/** Who sees a saved query: its author, whoever reads the base, or some groups. */
+/** Who sees a saved query, or a question: its author, whoever reads the base, or some groups. */
 export type QueryAudience = 'personal' | 'base' | 'groups'
 
 /** A saved query as the navigation lists it, beneath the tables of its base. */
@@ -1571,7 +1571,11 @@ export interface Dashboard {
   readonly updated_at: string
 }
 
-/** A saved question: a reading of the base, and how it is shown (chapter 18 §3). */
+/**
+ * A saved question (chapter 18 §1): built with the mouse or written in SQL, with the way it
+ * is shown. What is shared is the question, never its author's reach: whoever opens it runs
+ * it with their own, read only.
+ */
 export interface Question {
   readonly id: string
   readonly label: string
@@ -1580,6 +1584,13 @@ export interface Question {
   readonly query: QuestionQuery
   readonly visualization: Visualization
   readonly position: number
+  readonly audience: QueryAudience
+  /** The groups a `groups` question is open to — empty for the two others. */
+  readonly groups: ReadonlyArray<{ readonly id: string; readonly label: string }>
+  readonly owner: { readonly id: string; readonly name: string }
+  readonly mine: boolean
+  /** Its author may change a personal one; whoever manages the base a shared one. */
+  readonly editable: boolean
   readonly updated_at: string
   readonly updated_by: { readonly id: string; readonly name: string }
 }
@@ -1987,13 +1998,27 @@ export interface SharedDashboardCard {
   readonly kind: DashboardCard['kind']
   readonly title: string
   readonly text?: string
+  /** The text is HTML, not Markdown. */
+  readonly rich?: boolean
+  /** What the text cites, without what it runs. */
+  readonly variables?: readonly SharedTextVariable[]
   readonly url?: string
   readonly visualization?: Visualization
   /** Its question sorts its rows itself: the chart keeps their order. */
   readonly sorted: boolean
-  /** The filters tied to it. */
+  /** The filters tied to it — for a text, those of the questions it cites, and those it cites. */
   readonly filters: readonly string[]
 }
+
+/** A value a shared text cites: a question, run by its name, or a filter's value. */
+export type SharedTextVariable =
+  | {
+      readonly name: string
+      readonly kind: 'question'
+      readonly visualization: Visualization
+      readonly filters: readonly string[]
+    }
+  | { readonly name: string; readonly kind: 'parameter'; readonly parameter: string }
 
 /** A dashboard read through its link, and of the base the fields its cards show. */
 export interface SharedDashboard {
@@ -3079,7 +3104,7 @@ export const api = {
       `${v1()}/meta/bases/${encodeURIComponent(base)}/queries/${encodeURIComponent(id)}`,
     ),
 
-  /** The groups a query may be shared with — for whoever manages the base. */
+  /** The groups a query or a question may be shared with — for whoever manages the base. */
   queryGroups: (base: string) =>
     data<ReadonlyArray<{ readonly id: string; readonly label: string }>>(
       `${v1()}/admin/bases/${encodeURIComponent(base)}/query-groups`,
@@ -3497,9 +3522,13 @@ export const api = {
     card: string,
     values: Readonly<Record<string, ParameterValue | null>>,
     signal?: AbortSignal,
+    /** The question the card's text cites under this name, rather than the card's own. */
+    variable?: string,
   ) =>
     sharedCall<QueryResult>(
-      `/api/v1/dashboards/${encodeURIComponent(token)}/cards/${encodeURIComponent(card)}`,
+      `/api/v1/dashboards/${encodeURIComponent(token)}/cards/${encodeURIComponent(card)}${
+        variable === undefined ? '' : `/variables/${encodeURIComponent(variable)}`
+      }`,
       {
         method: 'POST',
         signal,
@@ -3528,9 +3557,14 @@ export const api = {
     return response.json()
   },
 
-  /** The saved questions of a base, for whoever sees it (chapter 18 §3). */
+  /** The saved questions of a base the caller may open (chapter 18 §1). */
   questions: (base: string) =>
     data<readonly Question[]>(`${v1()}/meta/bases/${encodeURIComponent(base)}/questions`),
+
+  question: (base: string, id: string) =>
+    data<Question>(
+      `${v1()}/meta/bases/${encodeURIComponent(base)}/questions/${encodeURIComponent(id)}`,
+    ),
 
   createQuestion: (
     base: string,
@@ -3539,6 +3573,8 @@ export const api = {
       description?: string | null
       query: QuestionQuery
       visualization: Visualization
+      audience?: QueryAudience
+      group_ids?: readonly string[]
     },
   ) =>
     data<Question>(`${v1()}/admin/bases/${encodeURIComponent(base)}/questions`, {
@@ -3554,6 +3590,8 @@ export const api = {
       description?: string | null
       query?: QuestionQuery
       visualization?: Visualization
+      audience?: QueryAudience
+      group_ids?: readonly string[]
     },
   ) =>
     data<Question>(

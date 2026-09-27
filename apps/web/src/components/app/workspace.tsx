@@ -2,6 +2,7 @@
 
 import { AiWaitingProvider, useAiWatch } from '@/components/app/ai-pending'
 import { NotificationBell, Viewers } from '@/components/app/collab'
+import { SearchField } from '@/components/app/command-palette'
 import { CopilotPanel } from '@/components/app/copilot-panel'
 import { CopilotToggle } from '@/components/app/copilot-toggle'
 import { EnvironmentBadge } from '@/components/app/environment-badge'
@@ -15,9 +16,11 @@ import { PaginationBar } from '@/components/app/grid/pagination-bar'
 import { SelectionBar } from '@/components/app/grid/selection-bar'
 import { LookIcon } from '@/components/app/option-badge'
 import type { SearchLink } from '@/components/app/pickers'
+import { QuestionTab } from '@/components/app/question-tab'
 import { NewRecordPanel, RecordPanel } from '@/components/app/record-panel'
 import { SidebarToggle } from '@/components/app/sidebar'
 import { SqlEditor } from '@/components/app/sql-editor'
+import { SqlIllustration } from '@/components/app/sql-illustration'
 import { QueryDialog, audienceIcon } from '@/components/app/sql/query-dialog'
 import { SqlViewDialog } from '@/components/app/sql/sql-view-dialog'
 import { TabBar } from '@/components/app/tab-bar'
@@ -43,7 +46,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Hint, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   type Aggregates,
   ApiError,
@@ -206,6 +209,7 @@ export function Workspace({
   const patchView = useWorkspace((s) => s.patchView)
   const setDraft = useWorkspace((s) => s.setDraft)
   const openSql = useWorkspace((s) => s.openSql)
+  const openNewQuestion = useWorkspace((s) => s.openNewQuestion)
   const openTableTab = useWorkspace((s) => s.openTable)
   const reloadRows = useWorkspace((s) => s.reload)
   const checked = useWorkspace((s) => s.checked)
@@ -289,7 +293,7 @@ export function Workspace({
   )
   /** What the active tab is — a result tab (`sql`, `sqlview`) holds no page of a table. */
   const tabKind = tab?.kind ?? null
-  const resultTab = tabKind !== null && tabKind !== 'table'
+  const resultTab = tabKind === 'sql' || tabKind === 'sqlview'
 
   /** The saved view on screen, `null` for the table's own grid. */
   const activeView = useMemo(
@@ -1088,6 +1092,21 @@ export function Workspace({
     if (!views.some((v) => v.id === tab.viewId)) enterView(null)
   }, [tab, table, views, viewsOf, enterView])
 
+  // The view an address names — a bookmark, the browser's back: shown once the table's views
+  // are read. One no longer there leaves the grid as it is, and the address says so.
+  const pendingView = useWorkspace((s) => s.pendingView)
+  const requestView = useWorkspace((s) => s.requestView)
+  useEffect(() => {
+    if (pendingView === null || tab === null || tab.kind !== 'table' || table === null) return
+    if (tab.base !== pendingView.base || tab.table !== pendingView.table) return
+    if (viewsOf !== table.name) return
+    requestView(null)
+    if (tab.viewId === pendingView.viewId) return
+    const target =
+      pendingView.viewId === null ? null : views.find((v) => v.id === pendingView.viewId)
+    if (target !== undefined) enterView(target)
+  }, [pendingView, tab, table, views, viewsOf, enterView, requestView])
+
   /** A view as the server returned it, put in the list at once — before the list reloads. */
   const keepView = useCallback((saved: SavedView) => {
     setViews((current) =>
@@ -1251,6 +1270,17 @@ export function Workspace({
     setDrafting(false)
   }, [tableKey])
 
+  // The row in the panel is part of the address; and the browser going back to where no row
+  // was open closes it. Gone from the screen with the workspace.
+  const setShownRecord = useWorkspace((s) => s.setShownRecord)
+  const closeRecordTick = useWorkspace((s) => s.closeRecordTick)
+  const shownId = opened?._id ?? null
+  useEffect(() => setShownRecord(shownId), [shownId, setShownRecord])
+  useEffect(() => () => setShownRecord(null), [setShownRecord])
+  useEffect(() => {
+    if (closeRecordTick > 0) setOpened(null)
+  }, [closeRecordTick])
+
   /** Opens the new-record panel, the row already holding `values`. */
   const addRecord = useCallback((values: Readonly<Record<string, unknown>>) => {
     setOpened(null)
@@ -1413,40 +1443,215 @@ export function Workspace({
               <TabBar
                 tables={tables}
                 environments={environments}
-                onNewSql={() =>
-                  openSql(
-                    base.name,
-                    null,
-                    $t('Requête {value}', {
-                      value:
-                        useWorkspace.getState().tabs.filter((t) => t.kind === 'sql').length + 1,
-                    }),
-                  )
-                }
+                onNew={(kind) => {
+                  const tabs = useWorkspace.getState().tabs
+                  if (kind === 'statement') {
+                    openSql(
+                      base.name,
+                      null,
+                      $t('Requête {value}', {
+                        value: tabs.filter((t) => t.kind === 'sql').length + 1,
+                      }),
+                    )
+                  } else {
+                    openNewQuestion(
+                      base.name,
+                      kind,
+                      $t('Question {count}', {
+                        count: tabs.filter((t) => t.kind === 'question').length + 1,
+                      }),
+                    )
+                  }
+                }}
               />
 
-              {/* The SQL pane — an editor, and a splitter that is a real one. */}
-              {tab.kind === 'sql' && (
+              {tab.kind === 'question' ? (
+                <QuestionTab
+                  key={tab.id}
+                  base={base}
+                  tab={tab}
+                  manages={manages}
+                  onNavigationChanged={() => onNavigationChanged?.()}
+                />
+              ) : (
                 <>
-                  <div
-                    className="flex shrink-0 flex-col border-b bg-background"
-                    style={{ height: editorHeight }}
-                  >
-                    <div className="flex h-9 shrink-0 items-center gap-2 border-b px-3">
-                      {shownQuery !== null ? (
-                        <QueryTitle
-                          query={shownQuery}
-                          modified={shownQuery.statement !== tab.draft}
+                  {/* The SQL pane — an editor, and a splitter that is a real one. */}
+                  {tab.kind === 'sql' && (
+                    <>
+                      <div
+                        className="flex shrink-0 flex-col border-b bg-background"
+                        style={{ height: editorHeight }}
+                      >
+                        <div className="flex h-9 shrink-0 items-center gap-2 border-b px-3">
+                          {shownQuery !== null ? (
+                            <QueryTitle
+                              query={shownQuery}
+                              modified={shownQuery.statement !== tab.draft}
+                            />
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              {$t('Sur')} <span className="text-foreground">{base.label}</span>
+                            </span>
+                          )}
+                          {sqlResult !== null && (
+                            <span className="text-xs tabular-nums text-muted-foreground">
+                              {$t('{command} · {row_count} · {duration_ms} ms', {
+                                command: sqlResult.command,
+                                row_count: $tp(
+                                  sqlResult.row_count,
+                                  '{count} ligne',
+                                  '{count} lignes',
+                                ),
+                                duration_ms: sqlResult.duration_ms,
+                              })}
+                              {sqlResult.truncated && (
+                                <span className="ml-1 text-destructive">{$t('— tronqué')}</span>
+                              )}
+                            </span>
+                          )}
+                          {sqlResult?.mode === 'reader' && <ReaderBadge />}
+                          <div className="flex-1" />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 gap-1 px-2 text-xs"
+                                onClick={() => void saveQuery()}
+                                disabled={savingQuery || tab.draft.trim() === ''}
+                              >
+                                {savingQuery ? (
+                                  <Loader2 className="size-3.5 animate-spin" />
+                                ) : (
+                                  <Save className="size-3.5" />
+                                )}
+                                {$t('Enregistrer')}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {shownQuery?.editable === true
+                                ? $t('Enregistrer le texte de « {label} »', {
+                                    label: shownQuery.label,
+                                  })
+                                : $t('Ranger cette requête sous les tables de la base')}
+                            </TooltipContent>
+                          </Tooltip>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="size-7"
+                                aria-label={$t('Autres actions sur la requête')}
+                              >
+                                <Ellipsis className="size-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-60">
+                              <DropdownMenuItem
+                                disabled={tab.draft.trim() === ''}
+                                onSelect={() => setQueryDialog({ query: null })}
+                              >
+                                <BookmarkPlus className="size-4" />
+                                {$t('Enregistrer sous…')}
+                              </DropdownMenuItem>
+                              {shownQuery?.editable === true && (
+                                <DropdownMenuItem
+                                  onSelect={() => setQueryDialog({ query: shownQuery })}
+                                >
+                                  <Pencil className="size-4" />
+                                  {$t('Nom et partage…')}
+                                </DropdownMenuItem>
+                              )}
+                              {manages && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    disabled={tab.draft.trim() === ''}
+                                    onSelect={() =>
+                                      setSqlViewDialog({ view: null, definition: tab.draft })
+                                    }
+                                  >
+                                    <Eye className="size-4" />
+                                    {$t('Créer une vue SQL…')}
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 gap-1 px-2 text-xs"
+                                onClick={() => formatRef.current?.()}
+                              >
+                                <Wand2 className="size-3.5" />
+                                {$t('Mettre en forme')}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{$t('Maj+Alt+F')}</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                className="h-7 gap-1 px-2 text-xs"
+                                onClick={() => void runSql(tab.draft)}
+                                disabled={running}
+                              >
+                                {running ? (
+                                  <Loader2 className="size-3.5 animate-spin" />
+                                ) : (
+                                  <Play className="size-3.5" />
+                                )}
+                                {$t('Exécuter')}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{$t('Ctrl+Entrée')}</TooltipContent>
+                          </Tooltip>
+                        </div>
+
+                        <SqlEditor
+                          value={tab.draft}
+                          base={base}
+                          onChange={(next) => setDraft(tab.id, next)}
+                          onRun={(statement) => void runSql(statement)}
+                          serverError={sqlError}
+                          onReady={(api) => {
+                            formatRef.current = api.format
+                          }}
                         />
-                      ) : (
-                        <span className="text-xs text-muted-foreground">
-                          {$t('Sur')} <span className="text-foreground">{base.label}</span>
-                        </span>
+                      </div>
+                      <Splitter
+                        onResize={(delta) => setEditorHeight((h) => Math.max(96, h + delta))}
+                      />
+                    </>
+                  )}
+
+                  {/* A SQL view: what it is, how many rows it gave, and a way to read it again. */}
+                  {tab.kind === 'sqlview' && (
+                    <div className="flex h-10 shrink-0 items-center gap-2 border-b bg-background px-3">
+                      <LookIcon
+                        look={shownView ?? {}}
+                        fallback={Eye}
+                        className="text-muted-foreground"
+                      />
+                      <span className="truncate text-sm font-medium">
+                        {shownView?.label ?? tab.label}
+                      </span>
+                      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
+                        {$t('Vue SQL')}
+                      </span>
+                      {shownView !== null && (
+                        <code className="hidden truncate font-mono text-xs text-muted-foreground md:inline">
+                          {shownView.name}
+                        </code>
                       )}
                       {sqlResult !== null && (
-                        <span className="text-xs tabular-nums text-muted-foreground">
-                          {$t('{command} · {row_count} · {duration_ms} ms', {
-                            command: sqlResult.command,
+                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                          {$t('{row_count} · {duration_ms} ms', {
                             row_count: $tp(sqlResult.row_count, '{count} ligne', '{count} lignes'),
                             duration_ms: sqlResult.duration_ms,
                           })}
@@ -1457,670 +1662,545 @@ export function Workspace({
                       )}
                       {sqlResult?.mode === 'reader' && <ReaderBadge />}
                       <div className="flex-1" />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 gap-1 px-2 text-xs"
-                            onClick={() => void saveQuery()}
-                            disabled={savingQuery || tab.draft.trim() === ''}
-                          >
-                            {savingQuery ? (
-                              <Loader2 className="size-3.5 animate-spin" />
-                            ) : (
-                              <Save className="size-3.5" />
-                            )}
-                            {$t('Enregistrer')}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {shownQuery?.editable === true
-                            ? $t('Enregistrer le texte de « {label} »', { label: shownQuery.label })
-                            : $t('Ranger cette requête sous les tables de la base')}
-                        </TooltipContent>
-                      </Tooltip>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="size-7"
-                            aria-label={$t('Autres actions sur la requête')}
-                          >
-                            <Ellipsis className="size-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-60">
-                          <DropdownMenuItem
-                            disabled={tab.draft.trim() === ''}
-                            onSelect={() => setQueryDialog({ query: null })}
-                          >
-                            <BookmarkPlus className="size-4" />
-                            {$t('Enregistrer sous…')}
-                          </DropdownMenuItem>
-                          {shownQuery?.editable === true && (
-                            <DropdownMenuItem
-                              onSelect={() => setQueryDialog({ query: shownQuery })}
-                            >
-                              <Pencil className="size-4" />
-                              {$t('Nom et partage…')}
-                            </DropdownMenuItem>
-                          )}
-                          {manages && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                disabled={tab.draft.trim() === ''}
-                                onSelect={() =>
-                                  setSqlViewDialog({ view: null, definition: tab.draft })
-                                }
-                              >
-                                <Eye className="size-4" />
-                                {$t('Créer une vue SQL…')}
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 gap-1 px-2 text-xs"
-                            onClick={() => formatRef.current?.()}
-                          >
-                            <Wand2 className="size-3.5" />
-                            {$t('Mettre en forme')}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>{$t('Maj+Alt+F')}</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            className="h-7 gap-1 px-2 text-xs"
-                            onClick={() => void runSql(tab.draft)}
-                            disabled={running}
-                          >
-                            {running ? (
-                              <Loader2 className="size-3.5 animate-spin" />
-                            ) : (
-                              <Play className="size-3.5" />
-                            )}
-                            {$t('Exécuter')}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>{$t('Ctrl+Entrée')}</TooltipContent>
-                      </Tooltip>
-                    </div>
-
-                    <SqlEditor
-                      value={tab.draft}
-                      base={base}
-                      onChange={(next) => setDraft(tab.id, next)}
-                      onRun={(statement) => void runSql(statement)}
-                      serverError={sqlError}
-                      onReady={(api) => {
-                        formatRef.current = api.format
-                      }}
-                    />
-                  </div>
-                  <Splitter onResize={(delta) => setEditorHeight((h) => Math.max(96, h + delta))} />
-                </>
-              )}
-
-              {/* A SQL view: what it is, how many rows it gave, and a way to read it again. */}
-              {tab.kind === 'sqlview' && (
-                <div className="flex h-10 shrink-0 items-center gap-2 border-b bg-background px-3">
-                  <LookIcon
-                    look={shownView ?? {}}
-                    fallback={Eye}
-                    className="text-muted-foreground"
-                  />
-                  <span className="truncate text-sm font-medium">
-                    {shownView?.label ?? tab.label}
-                  </span>
-                  <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
-                    {$t('Vue SQL')}
-                  </span>
-                  {shownView !== null && (
-                    <code className="hidden truncate font-mono text-xs text-muted-foreground md:inline">
-                      {shownView.name}
-                    </code>
-                  )}
-                  {sqlResult !== null && (
-                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                      {$t('{row_count} · {duration_ms} ms', {
-                        row_count: $tp(sqlResult.row_count, '{count} ligne', '{count} lignes'),
-                        duration_ms: sqlResult.duration_ms,
-                      })}
-                      {sqlResult.truncated && (
-                        <span className="ml-1 text-destructive">{$t('— tronqué')}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-1 px-2 text-xs"
+                        onClick={() => void readSqlView()}
+                        disabled={running}
+                      >
+                        {running ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="size-3.5" />
+                        )}
+                        {$t('Actualiser')}
+                      </Button>
+                      {shownView?.editable === true && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1 px-2 text-xs"
+                          onClick={() => setSqlViewDialog({ view: shownView })}
+                        >
+                          <Pencil className="size-3.5" />
+                          {$t('Modifier la vue…')}
+                        </Button>
                       )}
-                    </span>
+                    </div>
                   )}
-                  {sqlResult?.mode === 'reader' && <ReaderBadge />}
-                  <div className="flex-1" />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1 px-2 text-xs"
-                    onClick={() => void readSqlView()}
-                    disabled={running}
-                  >
-                    {running ? (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    ) : (
-                      <RefreshCw className="size-3.5" />
-                    )}
-                    {$t('Actualiser')}
-                  </Button>
-                  {shownView?.editable === true && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 gap-1 px-2 text-xs"
-                      onClick={() => setSqlViewDialog({ view: shownView })}
-                    >
-                      <Pencil className="size-3.5" />
-                      {$t('Modifier la vue…')}
-                    </Button>
-                  )}
-                </div>
-              )}
 
-              {/* Toolbar, or the selection bar that replaces it. */}
-              {someSelected ? (
-                <SelectionBar
-                  count={checked.size}
-                  cellCount={cells.size}
-                  deleting={deleting}
-                  editable={!isSql && table?.actions.includes('delete') === true}
-                  onClear={() => {
-                    setChecked(new Set())
-                    setCells(new Set())
-                  }}
-                  onDelete={() => void removeChecked()}
-                  onCopy={onCopy}
-                  onExport={onExport}
-                />
-              ) : (
-                <Toolbar
-                  table={table}
-                  view={view}
-                  hidden={gridShown ? hidden : []}
-                  systemHidden={gridShown ? systemHidden : []}
-                  filterOpen={filterOpen}
-                  loading={gridShown && loading}
-                  filterable={dataView}
-                  switcher={
-                    !isSql && table !== null ? (
-                      <ViewSwitcher
-                        views={views}
-                        activeId={activeView?.id ?? null}
-                        canManage={canManageViews}
-                        modified={modified}
-                        onSelect={(id) => {
-                          if (id === (activeView?.id ?? null)) return
-                          enterView(id === null ? null : (views.find((v) => v.id === id) ?? null))
-                        }}
-                        onCreate={(kind) => setViewDialog({ kind })}
-                        onConfigure={(target) => setViewDialog({ kind: target.kind, view: target })}
-                        onRename={renameView}
-                        onDuplicate={(target) => void duplicateView(target)}
-                        onDelete={deleteView}
-                        onReorder={reorderViews}
-                        onShare={(target) => setSharing(target)}
-                        onLock={(target, locked) => void lockView(target, locked)}
-                      />
-                    ) : undefined
-                  }
-                  sortMenu={
-                    !isSql && !gridShown && dataView ? (
-                      <SortMenu
-                        fields={businessFields}
-                        sorts={view.sorts}
-                        onChange={(sorts) => patch({ sorts, cursors: [] })}
-                      />
-                    ) : undefined
-                  }
-                  gridTools={
-                    !isSql && table !== null && gridShown ? (
-                      <>
-                        <GroupMenu
-                          fields={businessFields}
-                          value={view.groupBy}
-                          onChange={(groupBy) => patch({ groupBy, cursors: [], total: null })}
-                        />
-                        <ColorMenu
-                          fields={businessFields}
-                          field={view.colorField}
-                          rules={view.colorRules}
-                          colorStyle={view.colorStyle}
-                          onField={(colorField) => patch({ colorField })}
-                          onRules={(colorRules) => patch({ colorRules })}
-                          onStyle={(colorStyle) => patch({ colorStyle })}
-                        />
-                        <HeightMenu
-                          value={view.rowHeight}
-                          onChange={(rowHeight) => patch({ rowHeight })}
-                        />
-                      </>
-                    ) : undefined
-                  }
-                  search={
-                    !isSql && table !== null && dataView ? (
-                      <SearchBox
-                        value={view.search}
-                        onChange={(text) => patch({ search: text, cursors: [], total: null })}
-                      />
-                    ) : undefined
-                  }
-                  viewActions={
-                    isSql || table === null ? undefined : (
-                      <>
-                        {modified && activeView !== null && (
-                          <div className="flex items-center gap-0.5 rounded-md bg-amber-500/10 pl-2 text-xs">
-                            <span className="text-amber-700 dark:text-amber-400">
-                              {$t('Vue modifiée')}
-                            </span>
-                            {canEditView && (
+                  {/* Toolbar, or the selection bar that replaces it. */}
+                  {someSelected ? (
+                    <SelectionBar
+                      count={checked.size}
+                      cellCount={cells.size}
+                      deleting={deleting}
+                      editable={!isSql && table?.actions.includes('delete') === true}
+                      onClear={() => {
+                        setChecked(new Set())
+                        setCells(new Set())
+                      }}
+                      onDelete={() => void removeChecked()}
+                      onCopy={onCopy}
+                      onExport={onExport}
+                    />
+                  ) : (
+                    <Toolbar
+                      table={table}
+                      view={view}
+                      hidden={gridShown ? hidden : []}
+                      systemHidden={gridShown ? systemHidden : []}
+                      filterOpen={filterOpen}
+                      loading={gridShown && loading}
+                      filterable={dataView}
+                      switcher={
+                        !isSql && table !== null ? (
+                          <ViewSwitcher
+                            views={views}
+                            activeId={activeView?.id ?? null}
+                            canManage={canManageViews}
+                            modified={modified}
+                            onSelect={(id) => {
+                              if (id === (activeView?.id ?? null)) return
+                              enterView(
+                                id === null ? null : (views.find((v) => v.id === id) ?? null),
+                              )
+                            }}
+                            onCreate={(kind) => setViewDialog({ kind })}
+                            onConfigure={(target) =>
+                              setViewDialog({ kind: target.kind, view: target })
+                            }
+                            onRename={renameView}
+                            onDuplicate={(target) => void duplicateView(target)}
+                            onDelete={deleteView}
+                            onReorder={reorderViews}
+                            onShare={(target) => setSharing(target)}
+                            onLock={(target, locked) => void lockView(target, locked)}
+                          />
+                        ) : undefined
+                      }
+                      sortMenu={
+                        !isSql && !gridShown && dataView ? (
+                          <SortMenu
+                            fields={businessFields}
+                            sorts={view.sorts}
+                            onChange={(sorts) => patch({ sorts, cursors: [] })}
+                          />
+                        ) : undefined
+                      }
+                      gridTools={
+                        !isSql && table !== null && gridShown ? (
+                          <>
+                            <GroupMenu
+                              fields={businessFields}
+                              value={view.groupBy}
+                              onChange={(groupBy) => patch({ groupBy, cursors: [], total: null })}
+                            />
+                            <ColorMenu
+                              fields={businessFields}
+                              field={view.colorField}
+                              rules={view.colorRules}
+                              colorStyle={view.colorStyle}
+                              onField={(colorField) => patch({ colorField })}
+                              onRules={(colorRules) => patch({ colorRules })}
+                              onStyle={(colorStyle) => patch({ colorStyle })}
+                            />
+                            <HeightMenu
+                              value={view.rowHeight}
+                              onChange={(rowHeight) => patch({ rowHeight })}
+                            />
+                          </>
+                        ) : undefined
+                      }
+                      search={
+                        !isSql && table !== null && dataView ? (
+                          <SearchBox
+                            value={view.search}
+                            onChange={(text) => patch({ search: text, cursors: [], total: null })}
+                          />
+                        ) : undefined
+                      }
+                      viewActions={
+                        isSql || table === null ? undefined : (
+                          <>
+                            {modified && activeView !== null && (
+                              <div className="flex items-center gap-0.5 rounded-md bg-amber-500/10 pl-2 text-xs">
+                                <span className="text-amber-700 dark:text-amber-400">
+                                  {$t('Vue modifiée')}
+                                </span>
+                                {canEditView && (
+                                  <Hint
+                                    label={$t(
+                                      'Enregistrer le filtre, le tri et les colonnes dans la vue, pour tous',
+                                    )}
+                                  >
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 gap-1 px-2 text-xs"
+                                      onClick={() => void saveView()}
+                                    >
+                                      <Save className="size-3.5" />
+                                      {$t('Enregistrer')}
+                                    </Button>
+                                  </Hint>
+                                )}
+                                <Hint label={$t('Revenir à la vue telle qu’elle est enregistrée')}>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 gap-1 px-2 text-xs"
+                                    onClick={() => enterView(activeView)}
+                                  >
+                                    <RotateCcw className="size-3.5" />
+                                    {$t('Rétablir')}
+                                  </Button>
+                                </Hint>
+                              </div>
+                            )}
+                            {activeView?.locked && (
+                              <Hint
+                                label={$t(
+                                  'Vue verrouillée : déverrouillez-la depuis le sélecteur pour la modifier',
+                                )}
+                              >
+                                <span className="flex items-center gap-1 px-1 text-xs text-muted-foreground">
+                                  <Lock className="size-3.5" />
+                                  {$t('Verrouillée')}
+                                </span>
+                              </Hint>
+                            )}
+                            {activeView !== null && canEditView && (
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 gap-1 px-2 text-xs"
-                                onClick={() => void saveView()}
-                                title={$t(
-                                  'Enregistrer le filtre, le tri et les colonnes dans la vue, pour tous',
-                                )}
+                                className="h-7 gap-1.5 px-2 text-xs"
+                                onClick={() =>
+                                  setViewDialog({ kind: activeView.kind, view: activeView })
+                                }
                               >
-                                <Save className="size-3.5" />
-                                {$t('Enregistrer')}
+                                <Settings2 className="size-3.5" />
+                                {$t('Configurer')}
                               </Button>
                             )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 gap-1 px-2 text-xs"
-                              onClick={() => enterView(activeView)}
-                              title={$t('Revenir à la vue telle qu’elle est enregistrée')}
-                            >
-                              <RotateCcw className="size-3.5" />
-                              {$t('Rétablir')}
-                            </Button>
-                          </div>
-                        )}
-                        {activeView?.locked && (
-                          <span
-                            className="flex items-center gap-1 px-1 text-xs text-muted-foreground"
-                            title={$t(
-                              'Vue verrouillée : déverrouillez-la depuis le sélecteur pour la modifier',
+                            {activeView === null && ownGridArranged && (
+                              <Hint
+                                label={
+                                  canManageViews
+                                    ? $t('Garder ce filtre, ce tri et ces colonnes dans une vue')
+                                    : $t(
+                                        'Garder ce filtre, ce tri et ces colonnes dans une vue personnelle',
+                                      )
+                                }
+                              >
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 gap-1.5 px-2 text-xs"
+                                  onClick={() => setViewDialog({ kind: 'grid', fromLayout: true })}
+                                >
+                                  <BookmarkPlus className="size-3.5" />
+                                  {$t('Enregistrer comme vue')}
+                                </Button>
+                              </Hint>
                             )}
-                          >
-                            <Lock className="size-3.5" />
-                            {$t('Verrouillée')}
-                          </span>
-                        )}
-                        {activeView !== null && canEditView && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 gap-1.5 px-2 text-xs"
-                            onClick={() =>
-                              setViewDialog({ kind: activeView.kind, view: activeView })
-                            }
-                          >
-                            <Settings2 className="size-3.5" />
-                            {$t('Configurer')}
-                          </Button>
-                        )}
-                        {activeView === null && ownGridArranged && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 gap-1.5 px-2 text-xs"
-                            onClick={() => setViewDialog({ kind: 'grid', fromLayout: true })}
-                            title={
-                              canManageViews
-                                ? $t('Garder ce filtre, ce tri et ces colonnes dans une vue')
-                                : $t(
-                                    'Garder ce filtre, ce tri et ces colonnes dans une vue personnelle',
-                                  )
-                            }
-                          >
-                            <BookmarkPlus className="size-3.5" />
-                            {$t('Enregistrer comme vue')}
-                          </Button>
-                        )}
-                      </>
-                    )
-                  }
-                  // On an expression tab the filter IS the pane above and the rows are a
-                  // result, not a table: offering a second filter control and an "Ajouter"
-                  // button would be two ways in for one thing, and one verb with nowhere to go.
-                  editable={!isSql}
-                  // Adding writes rows: not offered where the reader may not.
-                  writable={table?.actions.includes('create') === true}
-                  onToggleFilter={() => setFilterOpen((o) => !o)}
-                  onClearSort={() => patch({ sorts: [], cursors: [] })}
-                  onDropSort={(field) =>
-                    patch({ sorts: view.sorts.filter((s) => s.field !== field), cursors: [] })
-                  }
-                  onShow={(name) => patch({ hidden: view.hidden.filter((h) => h !== name) })}
-                  onShowAll={() => patch({ hidden: [] })}
-                  onShowSystem={(name) => patch({ systemColumns: [...view.systemColumns, name] })}
-                  onAdd={() => addRecord({})}
-                />
-              )}
-
-              {/* On a table tab the filter is an inline strip; on an expression tab it is the
-            pane above, and showing both would be two editors of one thing. */}
-              {!isSql && filterOpen && table !== null && (
-                <div className="shrink-0 border-b bg-background px-4 py-2">
-                  <div className="flex items-start gap-2">
-                    <div className="flex min-h-9 flex-1 rounded-lg border">
-                      <ExpressionEditor
-                        value={tab.draft}
-                        fields={businessFields}
-                        placeholder={$t('montant gt 100 and nom contains "a"')}
-                        onChange={(next) => setDraft(tab.id, next)}
-                        onRun={() => applyFilter(tab.draft)}
-                        serverError={error}
-                      />
-                    </div>
-                    <Button size="sm" onClick={() => applyFilter(tab.draft)}>
-                      {$t('Appliquer')}
-                    </Button>
-                    {view.filter !== '' && (
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => {
-                          setDraft(tab.id, '')
-                          applyFilter('')
-                        }}
-                        aria-label={$t('Retirer le filtre')}
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    )}
-                  </div>
-                  <p className="mt-1.5 text-[11px] text-muted-foreground">
-                    {$t('Ctrl+Espace pour l’autocomplétion.')}
-                  </p>
-                </div>
-              )}
-
-              {error !== null && !filterOpen && !isSql && (
-                <div className="mx-4 my-2 shrink-0 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-                  {error}
-                </div>
-              )}
-
-              {/* A SQL tab has no table by design — its columns come from the result. The
-            missing-table message belongs to a table tab whose table was deleted. */}
-              {!isSql && table === null ? (
-                <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-                  {$t('Cette table n’existe plus.')}
-                </div>
-              ) : isSql && sqlError !== null ? (
-                // The refusal goes HERE, not only in the gutter. A marker in the margin says
-                // that something is wrong; a console user needs to read what.
-                <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto scroll-discret p-6">
-                  <div className="w-full max-w-2xl rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-                    <p className="text-sm font-medium text-destructive">
-                      {tab.kind === 'sqlview'
-                        ? $t('La vue ne peut pas être lue')
-                        : $t('Erreur SQL')}
-                    </p>
-                    <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs text-destructive">
-                      {sqlError.message}
-                    </pre>
-                    {tab.kind === 'sqlview' && shownView?.editable === true && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-3"
-                        onClick={() => setSqlViewDialog({ view: shownView })}
-                      >
-                        <Pencil className="size-4" />
-                        {$t('Modifier la vue…')}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ) : isSql && sqlResult === null ? (
-                <div className="flex flex-1 flex-col items-center justify-center gap-1 text-sm text-muted-foreground">
-                  <p>
-                    {tab.kind === 'sqlview'
-                      ? $t('Lecture de la vue…')
-                      : running
-                        ? $t('Exécution…')
-                        : $t('Écrivez une requête, puis Ctrl+Entrée.')}
-                  </p>
-                </div>
-              ) : activeView?.filter_hidden === true ? (
-                // Shown unfiltered, it would show more than it was made to: it is not shown.
-                <Unavailable>
-                  {$t(
-                    'Le filtre de cette vue porte sur un champ qui ne vous est pas ouvert, ou qui n’existe plus : elle ne peut pas vous être montrée.',
-                  )}
-                </Unavailable>
-              ) : !gridShown && table !== null && activeView !== null ? (
-                activeView.kind === 'kanban' ? (
-                  <KanbanView
-                    key={activeView.id}
-                    table={table}
-                    fields={businessFields}
-                    spec={kanbanSpec(activeView.spec)}
-                    filter={effectiveFilter}
-                    sort={sortParameter(view.sorts)}
-                    reloadKey={dataTick + reloadTick}
-                    openedId={opened?._id ?? null}
-                    onOpen={(row) => void openRecord(row)}
-                    onAdd={table.actions.includes('create') ? addRecord : undefined}
-                    onReorderColumns={canEditView ? saveGroupOrder : undefined}
-                    onReorderCards={canEditView ? saveManualOrder : undefined}
-                    onError={setError}
-                  />
-                ) : activeView.kind === 'calendar' ? (
-                  <CalendarView
-                    key={activeView.id}
-                    table={table}
-                    fields={businessFields}
-                    spec={calendarSpec(activeView.spec)}
-                    filter={effectiveFilter}
-                    sort={sortParameter(view.sorts)}
-                    reloadKey={dataTick + reloadTick}
-                    openedId={opened?._id ?? null}
-                    onOpen={(row) => void openRecord(row)}
-                    onAdd={table.actions.includes('create') ? addRecord : undefined}
-                    onError={setError}
-                  />
-                ) : activeView.kind === 'timeline' ? (
-                  <TimelineView
-                    key={activeView.id}
-                    table={table}
-                    fields={businessFields}
-                    spec={timelineSpec(activeView.spec)}
-                    filter={effectiveFilter}
-                    sort={sortParameter(view.sorts)}
-                    reloadKey={dataTick + reloadTick}
-                    openedId={opened?._id ?? null}
-                    onOpen={(row) => void openRecord(row)}
-                    onError={setError}
-                  />
-                ) : activeView.kind === 'gallery' ? (
-                  <GalleryView
-                    key={activeView.id}
-                    table={table}
-                    fields={businessFields}
-                    spec={gallerySpec(activeView.spec)}
-                    filter={effectiveFilter}
-                    sort={sortParameter(view.sorts)}
-                    reloadKey={dataTick + reloadTick}
-                    openedId={opened?._id ?? null}
-                    onOpen={(row) => void openRecord(row)}
-                    onReorder={canEditView ? saveManualOrder : undefined}
-                    onError={setError}
-                  />
-                ) : activeView.kind === 'list' ? (
-                  <ListView
-                    key={activeView.id}
-                    table={table}
-                    fields={businessFields}
-                    spec={listSpec(activeView.spec)}
-                    filter={effectiveFilter}
-                    sort={sortParameter(view.sorts)}
-                    reloadKey={dataTick + reloadTick}
-                    openedId={opened?._id ?? null}
-                    onOpen={(row) => void openRecord(row)}
-                    onReorder={canEditView ? saveManualOrder : undefined}
-                    onError={setError}
-                  />
-                ) : (
-                  <FormView
-                    // A reconfigured form starts a fresh draft: its questions changed.
-                    key={`${activeView.id}:${activeView.updated_at}`}
-                    kind={activeView.kind === 'survey' ? 'survey' : 'form'}
-                    table={table}
-                    fields={businessFields}
-                    spec={formSpec(activeView.spec)}
-                    viewLabel={activeView.label}
-                    linkOptions={linkOptions}
-                    onSearchLink={searchLink}
-                    onUpload={upload}
-                    onCreated={bumpData}
-                    onShare={canManageViews ? () => setSharing(activeView) : undefined}
-                  />
-                )
-              ) : (
-                <TableFieldsProvider
-                  table={isSql ? null : table}
-                  fields={isSql ? [] : businessFields}
-                >
-                  <DataGrid
-                    fields={visible}
-                    hiddenFields={hidden}
-                    rows={rows}
-                    view={view}
-                    linkOptions={linkOptions}
-                    onSearchLink={searchLink}
-                    sortableFields={sortableFields}
-                    checked={checked}
-                    cells={cells}
-                    busy={busy}
-                    openedId={opened?._id ?? null}
-                    editable={!isSql}
-                    canCreate={!isSql && table?.actions.includes('create') === true}
-                    emptyState={
-                      (isSql ? running : loading || error !== null) ? null : (
-                        <TableEmptyState
-                          kind={
-                            isSql
-                              ? 'result'
-                              : view.cursors.length > 0
-                                ? 'page'
-                                : effectiveFilter !== ''
-                                  ? 'filtered'
-                                  : 'empty'
-                          }
-                          onAdd={
-                            !isSql && table?.actions.includes('create') === true
-                              ? () => addRecord({})
-                              : undefined
-                          }
-                          onFirstPage={() => patch({ cursors: [] })}
-                        />
-                      )
-                    }
-                    canDelete={!isSql && table?.actions.includes('delete') === true}
-                    onPatchView={patch}
-                    onChecked={setChecked}
-                    onCells={setCells}
-                    onCommit={commit}
-                    onUpload={upload}
-                    onCreate={create}
-                    onDelete={remove}
-                    // A result row is not a record: it has no identity in the catalog, so there
-                    // is no detail view to open and nothing the panel could write back to.
-                    onOpenRecord={(row) => {
-                      if (!isSql) void openRecord(row)
-                    }}
-                    onFollowLink={isSql ? undefined : followLink}
-                    rowHeight={ROW_HEIGHTS[view.rowHeight]}
-                    groupField={isSql ? null : groupField}
-                    groupCounts={groupCounts}
-                    summaries={isSql ? undefined : view.summaries}
-                    summaryValues={aggregates?.values ?? null}
-                    summaryTotal={aggregates?.total ?? null}
-                    onSummary={
-                      isSql
-                        ? undefined
-                        : (field, fn) => {
-                            const { [field]: _dropped, ...rest } = view.summaries
-                            patch({ summaries: fn === null ? rest : { ...rest, [field]: fn } })
-                          }
-                    }
-                    rowColor={isSql || !colored ? undefined : rowColor}
-                    // The others' pointers on this table — one's own other windows left out.
-                    pointers={isSql ? [] : live.pointers.filter((p) => p.user !== self)}
-                    onPointer={isSql ? undefined : live.movePointer}
-                    onFilterField={(field) => {
-                      if (isSql) {
-                        // On a SQL tab the column menu drops the NAME into the statement, which
-                        // is the useful thing there. A basedb filter expression would not parse.
-                        setDraft(
-                          tab.id,
-                          `${tab.draft}${tab.draft.endsWith(' ') ? '' : ' '}${field.label}`,
+                          </>
                         )
-                        return
                       }
-                      const addition = `${field.name} eq `
-                      setDraft(tab.id, tab.draft === '' ? addition : `${tab.draft} and ${addition}`)
-                      setFilterOpen(true)
-                    }}
-                  />
-                </TableFieldsProvider>
-              )}
+                      // On an expression tab the filter IS the pane above and the rows are a
+                      // result, not a table: offering a second filter control and an "Ajouter"
+                      // button would be two ways in for one thing, and one verb with nowhere to go.
+                      editable={!isSql}
+                      // Adding writes rows: not offered where the reader may not.
+                      writable={table?.actions.includes('create') === true}
+                      onToggleFilter={() => setFilterOpen((o) => !o)}
+                      onClearSort={() => patch({ sorts: [], cursors: [] })}
+                      onDropSort={(field) =>
+                        patch({ sorts: view.sorts.filter((s) => s.field !== field), cursors: [] })
+                      }
+                      onShow={(name) => patch({ hidden: view.hidden.filter((h) => h !== name) })}
+                      onShowAll={() => patch({ hidden: [] })}
+                      onShowSystem={(name) =>
+                        patch({ systemColumns: [...view.systemColumns, name] })
+                      }
+                      onAdd={() => addRecord({})}
+                    />
+                  )}
 
-              {gridShown && (
-                <PaginationBar
-                  rowCount={rows.length}
-                  // A result is not a page: there is no cursor to walk, so the bar shows the
-                  // first page and nothing else. The limit still matters — it is the row cap the
-                  // statement runs under — and "recharger" re-runs the statement.
-                  pageIndex={isSql ? 0 : view.cursors.length}
-                  pageSize={view.pageSize}
-                  hasNextPage={isSql ? false : hasNextPage}
-                  total={isSql ? (sqlResult?.row_count ?? null) : view.total}
-                  totalCapped={isSql ? (sqlResult?.truncated ?? false) : view.totalCapped}
-                  counting={counting}
-                  loading={isSql ? running : loading}
-                  countable={!isSql}
-                  onPageSize={(size) => patch({ pageSize: size, cursors: [] })}
-                  onFirst={() => patch({ cursors: [] })}
-                  onPrevious={() => patch({ cursors: view.cursors.slice(0, -1) })}
-                  onNext={() => {
-                    if (nextCursor === null) return
-                    patch({ cursors: [...view.cursors, nextCursor] })
-                  }}
-                  onRefresh={() =>
-                    tab.kind === 'sqlview'
-                      ? void readSqlView()
-                      : isSql
-                        ? void runSql(tab.draft)
-                        : void load()
-                  }
-                  onCount={() => {
-                    setCounting(true)
-                    void load({ count: true })
-                  }}
-                  onExport={onExport}
-                />
+                  {/* On a table tab the filter is an inline strip; on an expression tab it is the
+                pane above, and showing both would be two editors of one thing. */}
+                  {!isSql && filterOpen && table !== null && (
+                    <div className="shrink-0 border-b bg-background px-4 py-2">
+                      <div className="flex items-start gap-2">
+                        <div className="flex min-h-9 flex-1 rounded-lg border">
+                          <ExpressionEditor
+                            value={tab.draft}
+                            fields={businessFields}
+                            placeholder={$t('montant gt 100 and nom contains "a"')}
+                            onChange={(next) => setDraft(tab.id, next)}
+                            onRun={() => applyFilter(tab.draft)}
+                            serverError={error}
+                          />
+                        </div>
+                        <Button size="sm" onClick={() => applyFilter(tab.draft)}>
+                          {$t('Appliquer')}
+                        </Button>
+                        {view.filter !== '' && (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => {
+                              setDraft(tab.id, '')
+                              applyFilter('')
+                            }}
+                            aria-label={$t('Retirer le filtre')}
+                          >
+                            <X className="size-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <p className="mt-1.5 text-[11px] text-muted-foreground">
+                        {$t('Ctrl+Espace pour l’autocomplétion.')}
+                      </p>
+                    </div>
+                  )}
+
+                  {error !== null && !filterOpen && !isSql && (
+                    <div className="mx-4 my-2 shrink-0 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                      {error}
+                    </div>
+                  )}
+
+                  {/* A SQL tab has no table by design — its columns come from the result. The
+                missing-table message belongs to a table tab whose table was deleted. */}
+                  {!isSql && table === null ? (
+                    <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                      {$t('Cette table n’existe plus.')}
+                    </div>
+                  ) : isSql && sqlError !== null ? (
+                    // The refusal goes HERE, not only in the gutter. A marker in the margin says
+                    // that something is wrong; a console user needs to read what.
+                    <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto scroll-discret p-6">
+                      <div className="w-full max-w-2xl rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                        <p className="text-sm font-medium text-destructive">
+                          {tab.kind === 'sqlview'
+                            ? $t('La vue ne peut pas être lue')
+                            : $t('Erreur SQL')}
+                        </p>
+                        <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs text-destructive">
+                          {sqlError.message}
+                        </pre>
+                        {tab.kind === 'sqlview' && shownView?.editable === true && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-3"
+                            onClick={() => setSqlViewDialog({ view: shownView })}
+                          >
+                            <Pencil className="size-4" />
+                            {$t('Modifier la vue…')}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ) : isSql && sqlResult === null ? (
+                    <div className="scroll-discret flex min-h-0 flex-1 overflow-auto p-6">
+                      <div className="m-auto w-full max-w-sm text-center">
+                        {tab.kind !== 'sqlview' && !running && <SqlIllustration />}
+                        <p className="text-sm text-muted-foreground">
+                          {tab.kind === 'sqlview'
+                            ? $t('Lecture de la vue…')
+                            : running
+                              ? $t('Exécution…')
+                              : $t('Écrivez une requête, puis Ctrl+Entrée.')}
+                        </p>
+                      </div>
+                    </div>
+                  ) : activeView?.filter_hidden === true ? (
+                    // Shown unfiltered, it would show more than it was made to: it is not shown.
+                    <Unavailable>
+                      {$t(
+                        'Le filtre de cette vue porte sur un champ qui ne vous est pas ouvert, ou qui n’existe plus : elle ne peut pas vous être montrée.',
+                      )}
+                    </Unavailable>
+                  ) : !gridShown && table !== null && activeView !== null ? (
+                    activeView.kind === 'kanban' ? (
+                      <KanbanView
+                        key={activeView.id}
+                        table={table}
+                        fields={businessFields}
+                        spec={kanbanSpec(activeView.spec)}
+                        filter={effectiveFilter}
+                        sort={sortParameter(view.sorts)}
+                        reloadKey={dataTick + reloadTick}
+                        openedId={opened?._id ?? null}
+                        onOpen={(row) => void openRecord(row)}
+                        onAdd={table.actions.includes('create') ? addRecord : undefined}
+                        onReorderColumns={canEditView ? saveGroupOrder : undefined}
+                        onReorderCards={canEditView ? saveManualOrder : undefined}
+                        onError={setError}
+                      />
+                    ) : activeView.kind === 'calendar' ? (
+                      <CalendarView
+                        key={activeView.id}
+                        table={table}
+                        fields={businessFields}
+                        spec={calendarSpec(activeView.spec)}
+                        filter={effectiveFilter}
+                        sort={sortParameter(view.sorts)}
+                        reloadKey={dataTick + reloadTick}
+                        openedId={opened?._id ?? null}
+                        onOpen={(row) => void openRecord(row)}
+                        onAdd={table.actions.includes('create') ? addRecord : undefined}
+                        onError={setError}
+                      />
+                    ) : activeView.kind === 'timeline' ? (
+                      <TimelineView
+                        key={activeView.id}
+                        table={table}
+                        fields={businessFields}
+                        spec={timelineSpec(activeView.spec)}
+                        filter={effectiveFilter}
+                        sort={sortParameter(view.sorts)}
+                        reloadKey={dataTick + reloadTick}
+                        openedId={opened?._id ?? null}
+                        onOpen={(row) => void openRecord(row)}
+                        onError={setError}
+                      />
+                    ) : activeView.kind === 'gallery' ? (
+                      <GalleryView
+                        key={activeView.id}
+                        table={table}
+                        fields={businessFields}
+                        spec={gallerySpec(activeView.spec)}
+                        filter={effectiveFilter}
+                        sort={sortParameter(view.sorts)}
+                        reloadKey={dataTick + reloadTick}
+                        openedId={opened?._id ?? null}
+                        onOpen={(row) => void openRecord(row)}
+                        onReorder={canEditView ? saveManualOrder : undefined}
+                        onError={setError}
+                      />
+                    ) : activeView.kind === 'list' ? (
+                      <ListView
+                        key={activeView.id}
+                        table={table}
+                        fields={businessFields}
+                        spec={listSpec(activeView.spec)}
+                        filter={effectiveFilter}
+                        sort={sortParameter(view.sorts)}
+                        reloadKey={dataTick + reloadTick}
+                        openedId={opened?._id ?? null}
+                        onOpen={(row) => void openRecord(row)}
+                        onReorder={canEditView ? saveManualOrder : undefined}
+                        onError={setError}
+                      />
+                    ) : (
+                      <FormView
+                        // A reconfigured form starts a fresh draft: its questions changed.
+                        key={`${activeView.id}:${activeView.updated_at}`}
+                        kind={activeView.kind === 'survey' ? 'survey' : 'form'}
+                        table={table}
+                        fields={businessFields}
+                        spec={formSpec(activeView.spec)}
+                        viewLabel={activeView.label}
+                        linkOptions={linkOptions}
+                        onSearchLink={searchLink}
+                        onUpload={upload}
+                        onCreated={bumpData}
+                        onShare={canManageViews ? () => setSharing(activeView) : undefined}
+                      />
+                    )
+                  ) : (
+                    <TableFieldsProvider
+                      table={isSql ? null : table}
+                      fields={isSql ? [] : businessFields}
+                    >
+                      <DataGrid
+                        fields={visible}
+                        hiddenFields={hidden}
+                        rows={rows}
+                        view={view}
+                        linkOptions={linkOptions}
+                        onSearchLink={searchLink}
+                        sortableFields={sortableFields}
+                        checked={checked}
+                        cells={cells}
+                        busy={busy}
+                        openedId={opened?._id ?? null}
+                        editable={!isSql}
+                        canCreate={!isSql && table?.actions.includes('create') === true}
+                        emptyState={
+                          (isSql ? running : loading || error !== null) ? null : (
+                            <TableEmptyState
+                              kind={
+                                isSql
+                                  ? 'result'
+                                  : view.cursors.length > 0
+                                    ? 'page'
+                                    : effectiveFilter !== ''
+                                      ? 'filtered'
+                                      : 'empty'
+                              }
+                              onAdd={
+                                !isSql && table?.actions.includes('create') === true
+                                  ? () => addRecord({})
+                                  : undefined
+                              }
+                              onFirstPage={() => patch({ cursors: [] })}
+                            />
+                          )
+                        }
+                        canDelete={!isSql && table?.actions.includes('delete') === true}
+                        onPatchView={patch}
+                        onChecked={setChecked}
+                        onCells={setCells}
+                        onCommit={commit}
+                        onUpload={upload}
+                        onCreate={create}
+                        onDelete={remove}
+                        // A result row is not a record: it has no identity in the catalog, so there
+                        // is no detail view to open and nothing the panel could write back to.
+                        onOpenRecord={(row) => {
+                          if (!isSql) void openRecord(row)
+                        }}
+                        onFollowLink={isSql ? undefined : followLink}
+                        rowHeight={ROW_HEIGHTS[view.rowHeight]}
+                        groupField={isSql ? null : groupField}
+                        groupCounts={groupCounts}
+                        summaries={isSql ? undefined : view.summaries}
+                        summaryValues={aggregates?.values ?? null}
+                        summaryTotal={aggregates?.total ?? null}
+                        onSummary={
+                          isSql
+                            ? undefined
+                            : (field, fn) => {
+                                const { [field]: _dropped, ...rest } = view.summaries
+                                patch({ summaries: fn === null ? rest : { ...rest, [field]: fn } })
+                              }
+                        }
+                        rowColor={isSql || !colored ? undefined : rowColor}
+                        // The others' pointers on this table — one's own other windows left out.
+                        pointers={isSql ? [] : live.pointers.filter((p) => p.user !== self)}
+                        onPointer={isSql ? undefined : live.movePointer}
+                        onFilterField={(field) => {
+                          if (isSql) {
+                            // On a SQL tab the column menu drops the NAME into the statement, which
+                            // is the useful thing there. A basedb filter expression would not parse.
+                            setDraft(
+                              tab.id,
+                              `${tab.draft}${tab.draft.endsWith(' ') ? '' : ' '}${field.label}`,
+                            )
+                            return
+                          }
+                          const addition = `${field.name} eq `
+                          setDraft(
+                            tab.id,
+                            tab.draft === '' ? addition : `${tab.draft} and ${addition}`,
+                          )
+                          setFilterOpen(true)
+                        }}
+                      />
+                    </TableFieldsProvider>
+                  )}
+
+                  {gridShown && (
+                    <PaginationBar
+                      rowCount={rows.length}
+                      // A result is not a page: there is no cursor to walk, so the bar shows the
+                      // first page and nothing else. The limit still matters — it is the row cap the
+                      // statement runs under — and "recharger" re-runs the statement.
+                      pageIndex={isSql ? 0 : view.cursors.length}
+                      pageSize={view.pageSize}
+                      hasNextPage={isSql ? false : hasNextPage}
+                      total={isSql ? (sqlResult?.row_count ?? null) : view.total}
+                      totalCapped={isSql ? (sqlResult?.truncated ?? false) : view.totalCapped}
+                      counting={counting}
+                      loading={isSql ? running : loading}
+                      countable={!isSql}
+                      onPageSize={(size) => patch({ pageSize: size, cursors: [] })}
+                      onFirst={() => patch({ cursors: [] })}
+                      onPrevious={() => patch({ cursors: view.cursors.slice(0, -1) })}
+                      onNext={() => {
+                        if (nextCursor === null) return
+                        patch({ cursors: [...view.cursors, nextCursor] })
+                      }}
+                      onRefresh={() =>
+                        tab.kind === 'sqlview'
+                          ? void readSqlView()
+                          : isSql
+                            ? void runSql(tab.draft)
+                            : void load()
+                      }
+                      onCount={() => {
+                        setCounting(true)
+                        void load({ count: true })
+                      }}
+                      onExport={onExport}
+                    />
+                  )}
+                </>
               )}
             </div>
 
@@ -2342,10 +2422,15 @@ function Header({
   /** Who else is here, the bell and the copilot — on the right. */
   readonly tools?: ReactNode
 }) {
+  // The breadcrumb and the tools share what the search leaves, in equal halves: the
+  // search stays in the middle of the bar, whatever either side holds.
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
       <SidebarToggle />
-      <nav className="flex min-w-0 items-center gap-2 text-sm" aria-label={$t('Fil d’Ariane')}>
+      <nav
+        className="flex min-w-0 flex-1 basis-0 items-center gap-2 text-sm"
+        aria-label={$t('Fil d’Ariane')}
+      >
         <span className="truncate text-muted-foreground">{base.label}</span>
         {/* Outside production, which environment is being written to is never implicit. */}
         {base.environment !== undefined && !base.environment.production && (
@@ -2356,20 +2441,22 @@ function Header({
             <span className="text-muted-foreground">/</span>
             <span className="truncate font-medium">{table.label}</span>
             {table.synced === true && (
-              <span
-                className="flex shrink-0 items-center gap-1 rounded-full bg-sky-500/10 px-2 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-300"
-                title={$t(
+              <Hint
+                label={$t(
                   'Ses lignes viennent d’une source extérieure et ne s’écrivent pas à la main (Intégrations)',
                 )}
               >
-                <RefreshCw className="size-3" />
-                {$t('Synchronisée')}
-              </span>
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-sky-500/10 px-2 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-300">
+                  <RefreshCw className="size-3" />
+                  {$t('Synchronisée')}
+                </span>
+              </Hint>
             )}
           </>
         )}
       </nav>
-      <div className="ml-auto flex items-center gap-2">{tools}</div>
+      <SearchField className="w-9 shrink-0 sm:w-full sm:max-w-md sm:shrink" />
+      <div className="flex flex-1 basis-0 items-center justify-end gap-2">{tools}</div>
     </header>
   )
 }
@@ -2452,26 +2539,28 @@ function Toolbar({
       {filterable && view.sorts.length > 0 && (
         <div className="flex items-center gap-1">
           {view.sorts.map((term, index) => (
-            <button
-              key={term.field}
-              type="button"
-              onClick={() => onDropSort(term.field)}
-              className="flex h-7 items-center gap-1 rounded-md bg-secondary px-2 text-xs"
-              title={$t('Retirer ce critère de tri')}
-            >
-              {view.sorts.length > 1 && (
-                <span className="text-[9px] font-bold tabular-nums text-primary">{index + 1}</span>
-              )}
-              {term.direction === 'asc' ? (
-                <ArrowUp className="size-3 text-primary" />
-              ) : (
-                <ArrowDown className="size-3 text-primary" />
-              )}
-              <span className="max-w-24 truncate">
-                {table?.fields.find((f) => f.name === term.field)?.label ?? term.field}
-              </span>
-              <X className="size-3 opacity-50" />
-            </button>
+            <Hint key={term.field} label={$t('Retirer ce critère de tri')}>
+              <button
+                type="button"
+                onClick={() => onDropSort(term.field)}
+                className="flex h-7 items-center gap-1 rounded-md bg-secondary px-2 text-xs"
+              >
+                {view.sorts.length > 1 && (
+                  <span className="text-[9px] font-bold tabular-nums text-primary">
+                    {index + 1}
+                  </span>
+                )}
+                {term.direction === 'asc' ? (
+                  <ArrowUp className="size-3 text-primary" />
+                ) : (
+                  <ArrowDown className="size-3 text-primary" />
+                )}
+                <span className="max-w-24 truncate">
+                  {table?.fields.find((f) => f.name === term.field)?.label ?? term.field}
+                </span>
+                <X className="size-3 opacity-50" />
+              </button>
+            </Hint>
           ))}
           <Button variant="ghost" size="sm" className="h-7 px-1.5 text-xs" onClick={onClearSort}>
             {$t('Tout retirer')}

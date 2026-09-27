@@ -18,8 +18,21 @@ automatyzacje i polecenie każdego z jego pól AI. **Utwórz bazę** prosi o jej
 jeśli są pola AI, o twoją zgodę na to, by przytaczane przez nie wartości trafiały do dostawcy
 AI instancji. Bez tej zgody są to zwykłe pola, wypełnione przykładowymi wartościami.
 
+**Wczytaj przykładowe dane**, zaznaczone domyślnie, wypełnia tabele wierszami przykładowymi, aby
+zobaczyć bazę w działaniu. Odznaczone, tabele pozostają puste, gotowe na twoje własne dane —
+widoki, pulpity i automatyzacje są tworzone mimo to.
+
 Pusty projekt proponuje też **bazę demonstracyjną**: małą agencję, jej klientów, projekty,
 zadania, faktury i opinie, która pokazuje wszystkie oblicza basedb.
+
+## W twoim języku
+
+Oficjalne szablony czyta się i tworzy **w języku ekranu**: tabele, pola, opcje wyboru, wiersze
+przykładowe, widoki, pulpity, automatyzacje i polecenia AI. Wiersze przykładowe zmieniają świat
+wraz z językiem: „Boulangerie Martin” z Lyonu to po polsku „Piekarnia Kowalski” w Krakowie.
+
+Szablon zaimportowany do twojej instancji, albo zapisany na podstawie bazy, jest napisany przez
+kogoś: czyta się go tak, jak został napisany.
 
 ## Poproś AI o szablon
 
@@ -106,6 +119,14 @@ opublikować witrynę, by zmienić galerię we wszystkich instancjach.
 
 Każdy szablon jest sprawdzany podczas budowania witryny tym samym walidatorem co na serwerze:
 nieprawidłowy szablon przerywa budowanie, zamiast trafić do użytkowników.
+
+Oficjalny szablon pisze się raz, po francusku. Jego teksty w innym języku to słownik,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+— tekst francuski, a potem jego tłumaczenie —, który witryna publikuje obok katalogu
+(`/basedb/modeles/i18n/<langue>.json`). Instancja przekazuje mu każdy tekst i śledzi każdą
+etykietę tam, gdzie jest cytowana — formuły, filtry, widoki, polecenia —, a potem odczytuje
+wynik ponownie: słownik, który zepsułby szablon, nie jest serwowany, francuski szablon owszem.
+Tekst nieobecny w słowniku pozostaje po francusku.
 
 Instancja czyta adres `BASEDB_TEMPLATES_URL` – domyślnie adres publicznej witryny. Wskaż własny
 katalog albo ustaw `off`, aby nie czytać żadnego: instancja serwuje wtedy szablony wbudowane w

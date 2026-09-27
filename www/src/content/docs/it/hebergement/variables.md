@@ -83,6 +83,24 @@ Vedi [Account e accesso](/basedb/it/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | calcoli dei campi IA per ora e per tenant |
 | `BASEDB_AI_WORKER` | `1` | `0`: nessun calcolo in background in questo processo |
 
+## Demo pubblica
+
+Un’istanza aperta a tutti, come [demo.basedb.eodia.com](https://demo.basedb.eodia.com): la
+schermata di accesso precompila un account condiviso, il visitatore legge tutto e modifica ciò
+che esiste, ma non crea né elimina nulla — database, tabella, riga, file, commento, account,
+token, link —, e l’IA risponde che non fa parte della demo. La console SQL vi si limita a
+leggere. Riportare il database allo stato iniziale ogni notte resta a tuo carico.
+
+| Variabile | Predefinito | Ruolo |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: l’istanza diventa una demo pubblica |
+| `BASEDB_DEMO_ACCOUNTS` | — | un account per lingua, separati da virgole: `fr=demo@demo.com,en=demo-en@demo.com`; la schermata di accesso precompila quello della sua lingua, altrimenti l’inglese, altrimenti il primo, e propone gli altri. Crea questi account, ciascuno con il proprio progetto, prima di attivare la demo: rifiuta le creazioni a tutti, amministratore compreso |
+| `BASEDB_DEMO_PASSWORD` | — | con `BASEDB_DEMO_ACCOUNTS`, la loro password, la stessa per tutti, pubblicata insieme a loro |
+
+Senza `BASEDB_DEMO_ACCOUNTS`, l’account condiviso è l’amministratore indicato da
+`BASEDB_ADMIN_EMAIL` e `BASEDB_ADMIN_PASSWORD`. Un indirizzo della demo accede con la password
+pubblicata, qualunque cosa si digiti: tentativi sbagliati non la bloccano per tutti.
+
 ## Solo per lo sviluppo
 
 | Variabile | Ruolo |

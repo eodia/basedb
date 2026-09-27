@@ -1,6 +1,7 @@
 'use client'
 
 import type { Field, Table } from '@/lib/api/client'
+import type { QuestionQuery, Visualization } from '@basedb/contracts'
 import { create } from 'zustand'
 
 /**
@@ -18,9 +19,34 @@ import { create } from 'zustand'
 
 /**
  * `table`: a grid of a table. `sql`: a statement and its result — a saved query's when
- * `queryId` says so. `sqlview`: the rows of a SQL view of the base (chapter 11 §1.8).
+ * `queryId` says so. `question`: a question (chapter 18 §1), built or written in SQL, with
+ * its chart — a saved one when `questionId` says so. `sqlview`: the rows of a SQL view of
+ * the base (chapter 11 §1.8).
  */
-export type TabKind = 'table' | 'sql' | 'sqlview'
+export type TabKind = 'table' | 'sql' | 'question' | 'sqlview'
+
+const TAB_KINDS: readonly TabKind[] = ['table', 'sql', 'question', 'sqlview']
+
+/** A question as a tab holds it while it is edited: saved or not, run or not. */
+export interface QuestionDraft {
+  /** The saved question it is, when it is one. */
+  readonly id: string | null
+  readonly label: string
+  readonly description: string | null
+  /** `null`: a question built with the mouse whose table is not picked yet. */
+  readonly query: QuestionQuery | null
+  /** `null`: drawn the way its result reads best. */
+  readonly visualization: Visualization | null
+}
+
+/** A new question: to build with the mouse, or to write in SQL. */
+export const newQuestionDraft = (kind: 'builder' | 'sql'): QuestionDraft => ({
+  id: null,
+  label: '',
+  description: null,
+  query: kind === 'sql' ? { kind: 'sql', sql: '' } : null,
+  visualization: null,
+})
 
 /** One sort term. At most three, per chapter 11 §1.3. */
 export interface SortTerm {
@@ -126,6 +152,13 @@ export interface Tab {
   readonly ownView: ViewState | null
   /** For a `sql` tab: the saved query it shows (`_basedb.saved_query`), `null` when unsaved. */
   readonly queryId: string | null
+  /** For a `question` tab: the saved question it shows (`_basedb.question`), `null` when unsaved. */
+  readonly questionId: string | null
+  /**
+   * For a `question` tab: the question as it is being edited — `null` until a saved one is
+   * read. Kept here so that another tab and back finds it as it was left.
+   */
+  readonly question: QuestionDraft | null
   /** For a `sqlview` tab: the SQL view it shows (`_basedb.sql_view`). */
   readonly sqlViewId: string | null
 }
@@ -186,6 +219,24 @@ interface WorkspaceState {
   detachQuery: (queryId: string) => void
   /** A saved query was renamed: its tabs take its new name. */
   renameQuery: (queryId: string, label: string) => void
+  /**
+   * Opens a saved question: the tab already showing it if there is one — as it was left
+   * there, edits included —, else a new one that reads it.
+   */
+  openQuestion: (
+    base: string,
+    question: { readonly id: string; readonly label: string },
+  ) => { readonly id: string; readonly created: boolean }
+  /** Opens a new question, to build with the mouse or to write in SQL. */
+  openNewQuestion: (base: string, kind: 'builder' | 'sql', label: string) => string
+  /** A question tab's draft changed: kept for when the tab comes back. */
+  setQuestionDraft: (id: string, draft: QuestionDraft | null) => void
+  /** A tab's question was just saved, or saved again under a new name. */
+  attachQuestion: (id: string, questionId: string, label: string) => void
+  /** A saved question is gone: its tabs keep what they were editing, as a question not saved. */
+  detachQuestion: (questionId: string) => void
+  /** A saved question was renamed: its tabs take its new name. */
+  renameQuestion: (questionId: string, label: string) => void
   /** A SQL view is gone, or renamed: its tabs close, or take its new name. */
   dropSqlView: (sqlViewId: string) => void
   renameSqlView: (sqlViewId: string, label: string) => void
@@ -207,6 +258,13 @@ interface WorkspaceState {
   setChecked: (next: ReadonlySet<string>) => void
   setCells: (next: ReadonlySet<string>) => void
   setCopilotOpen: (open: boolean) => void
+  /**
+   * A question put to the copilot from elsewhere — the command palette: the panel opens,
+   * sends it as if typed, and clears it. `seq` tells the same question asked twice apart.
+   */
+  readonly copilotAsk: { readonly text: string; readonly seq: number } | null
+  askCopilot: (text: string) => void
+  clearCopilotAsk: () => void
   /** Drops every tab of a base — called when that base is deleted or renamed away. */
   dropBase: (base: string) => void
   /** Drops the tabs of one table — called when it is deleted: they would only fail to load. */
@@ -219,6 +277,22 @@ interface WorkspaceState {
    */
   pendingRecord: { readonly base: string; readonly table: string; readonly id: string } | null
   requestRecord: (target: { base: string; table: string; id: string } | null) => void
+  /** The row open in the panel, as the workspace shows it — for the address bar. */
+  readonly shownRecord: string | null
+  setShownRecord: (id: string | null) => void
+  /** Moves to close the row's panel: the browser went back to where none was open. */
+  readonly closeRecordTick: number
+  closeRecord: () => void
+  /**
+   * A saved view to show in a table's tab — `viewId: null`, its own grid — asked by an
+   * address: the workspace shows it once that table's views are read, and clears the request.
+   */
+  pendingView: {
+    readonly base: string
+    readonly table: string
+    readonly viewId: string | null
+  } | null
+  requestView: (target: { base: string; table: string; viewId: string | null } | null) => void
 }
 
 const STORAGE_KEY = 'basedb.workspace.v1'
@@ -249,10 +323,17 @@ function restore(): { tabs: readonly Tab[]; activeId: string | null } {
           typeof t.ownView === 'object' && t.ownView !== null
             ? { ...emptyView(), ...t.ownView }
             : null,
-        // Nor one saved before saved queries and SQL views existed.
+        // Nor one saved before saved queries, SQL views and questions existed.
         queryId: typeof t.queryId === 'string' ? t.queryId : null,
         sqlViewId: typeof t.sqlViewId === 'string' ? t.sqlViewId : null,
+        questionId: typeof t.questionId === 'string' ? t.questionId : null,
+        question:
+          typeof t.question === 'object' && t.question !== null && 'query' in t.question
+            ? t.question
+            : null,
       }))
+      // A tab of a kind this version does not know could only fail to show.
+      .filter((t) => TAB_KINDS.includes(t.kind))
       // A SQL view's tab without its view says nothing: it could only fail to load.
       .filter((t) => t.kind !== 'sqlview' || t.sqlViewId !== null)
     return {
@@ -308,6 +389,8 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       ownView: null,
       queryId: null,
       sqlViewId: null,
+      questionId: null,
+      question: null,
     }
     const tabs = [...get().tabs, tab]
     set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
@@ -328,6 +411,8 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       ownView: null,
       queryId: null,
       sqlViewId: null,
+      questionId: null,
+      question: null,
     }
     const tabs = [...get().tabs, tab]
     set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
@@ -356,6 +441,8 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       ownView: null,
       queryId: query.id,
       sqlViewId: null,
+      questionId: null,
+      question: null,
     }
     const tabs = [...get().tabs, tab]
     set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
@@ -384,6 +471,8 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       ownView: null,
       queryId: null,
       sqlViewId: view.id,
+      questionId: null,
+      question: null,
     }
     const tabs = [...get().tabs, tab]
     set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
@@ -405,6 +494,104 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
 
   renameQuery: (queryId, label) => {
     const tabs = get().tabs.map((t) => (t.queryId === queryId ? { ...t, label } : t))
+    set({ tabs })
+    persist(tabs, get().activeId)
+  },
+
+  openQuestion: (base, question) => {
+    const existing = get().tabs.find(
+      (t) => t.kind === 'question' && t.base === base && t.questionId === question.id,
+    )
+    if (existing !== undefined) {
+      set({ activeId: existing.id, checked: new Set(), cells: new Set() })
+      persist(get().tabs, existing.id)
+      return { id: existing.id, created: false }
+    }
+    const tab: Tab = {
+      id: nextId(),
+      kind: 'question',
+      base,
+      table: null,
+      label: question.label,
+      view: emptyView(),
+      draft: '',
+      viewId: null,
+      ownView: null,
+      queryId: null,
+      sqlViewId: null,
+      questionId: question.id,
+      question: null,
+    }
+    const tabs = [...get().tabs, tab]
+    set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
+    persist(tabs, tab.id)
+    return { id: tab.id, created: true }
+  },
+
+  openNewQuestion: (base, kind, label) => {
+    const tab: Tab = {
+      id: nextId(),
+      kind: 'question',
+      base,
+      table: null,
+      label,
+      view: emptyView(),
+      draft: '',
+      viewId: null,
+      ownView: null,
+      queryId: null,
+      sqlViewId: null,
+      questionId: null,
+      question: newQuestionDraft(kind),
+    }
+    const tabs = [...get().tabs, tab]
+    set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
+    persist(tabs, tab.id)
+    return tab.id
+  },
+
+  setQuestionDraft: (id, draft) => {
+    const tabs = get().tabs.map((t) => (t.id === id ? { ...t, question: draft } : t))
+    set({ tabs })
+    persist(tabs, get().activeId)
+  },
+
+  attachQuestion: (id, questionId, label) => {
+    const tabs = get().tabs.map((t) =>
+      t.id !== id
+        ? t
+        : {
+            ...t,
+            questionId,
+            label,
+            question: t.question === null ? null : { ...t.question, id: questionId, label },
+          },
+    )
+    set({ tabs })
+    persist(tabs, get().activeId)
+  },
+
+  detachQuestion: (questionId) => {
+    const { tabs, activeId } = get()
+    // A tab that never read the question has nothing to keep: it closes.
+    const next = tabs
+      .filter((t) => t.questionId !== questionId || t.question !== null)
+      .map((t) =>
+        t.questionId === questionId && t.question !== null
+          ? { ...t, questionId: null, question: { ...t.question, id: null } }
+          : t,
+      )
+    const nextActive = next.some((t) => t.id === activeId) ? activeId : (next[0]?.id ?? null)
+    set({ tabs: next, activeId: nextActive })
+    persist(next, nextActive)
+  },
+
+  renameQuestion: (questionId, label) => {
+    const tabs = get().tabs.map((t) =>
+      t.questionId === questionId
+        ? { ...t, label, question: t.question === null ? null : { ...t.question, label } }
+        : t,
+    )
     set({ tabs })
     persist(tabs, get().activeId)
   },
@@ -517,6 +704,10 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   setChecked: (next) => set({ checked: next }),
   setCells: (next) => set({ cells: next }),
   setCopilotOpen: (open) => set({ copilotOpen: open }),
+  copilotAsk: null,
+  askCopilot: (text) =>
+    set((s) => ({ copilotOpen: true, copilotAsk: { text, seq: (s.copilotAsk?.seq ?? 0) + 1 } })),
+  clearCopilotAsk: () => set({ copilotAsk: null }),
 
   dropBase: (base) => {
     const { tabs, activeId } = get()
@@ -538,6 +729,14 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
 
   pendingRecord: null,
   requestRecord: (target) => set({ pendingRecord: target }),
+
+  shownRecord: null,
+  setShownRecord: (id) => set({ shownRecord: id }),
+  closeRecordTick: 0,
+  closeRecord: () => set((s) => ({ closeRecordTick: s.closeRecordTick + 1 })),
+
+  pendingView: null,
+  requestView: (target) => set({ pendingView: target }),
 }))
 
 /**

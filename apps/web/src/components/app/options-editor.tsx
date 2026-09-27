@@ -4,6 +4,7 @@ import { LookButton } from '@/components/app/look-picker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
 import { copy } from '@/lib/export'
 import { $t } from '@/lib/i18n'
 import {
@@ -124,19 +125,24 @@ export function OptionsEditor({ value, onChange, known = NO_VALUES, disabled = f
                   disabled={disabled}
                   className="h-8"
                 />
-                <p
-                  className="mt-0.5 flex items-center gap-1 truncate px-1 font-mono text-[11px] text-muted-foreground"
-                  title={
+                <Hint
+                  label={
                     draft.locked
                       ? $t('Valeur enregistrée (non modifiable)')
                       : $t('Valeur enregistrée, dérivée du libellé')
                   }
                 >
-                  {draft.locked ? <Lock className="size-3 shrink-0" /> : <span aria-hidden>→</span>}
-                  <span className="truncate">
-                    {draft.label.trim() === '' && !draft.locked ? '…' : stored[index]}
-                  </span>
-                </p>
+                  <p className="mt-0.5 flex items-center gap-1 truncate px-1 font-mono text-[11px] text-muted-foreground">
+                    {draft.locked ? (
+                      <Lock className="size-3 shrink-0" />
+                    ) : (
+                      <span aria-hidden>→</span>
+                    )}
+                    <span className="truncate">
+                      {draft.label.trim() === '' && !draft.locked ? '…' : stored[index]}
+                    </span>
+                  </p>
+                </Hint>
               </div>
 
               <Button

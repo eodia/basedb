@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type ApiToken,
   type DescribedBase,
@@ -312,20 +313,27 @@ export function TokenDialog({
                             : $t('Lecture seule')}
                         </Badge>
                         {state === null ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive"
-                            disabled={password === '' || busy}
-                            title={
+                          // Disabled buttons raise no pointer events: the hint hangs on a wrapper
+                          // so it can still say why, while the password field is empty.
+                          <Hint
+                            label={
                               password === ''
                                 ? $t('Saisissez votre mot de passe ci-dessous')
                                 : undefined
                             }
-                            onClick={() => void revoke(token)}
                           >
-                            {$t('Révoquer')}
-                          </Button>
+                            <span className="inline-flex">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive"
+                                disabled={password === '' || busy}
+                                onClick={() => void revoke(token)}
+                              >
+                                {$t('Révoquer')}
+                              </Button>
+                            </span>
+                          </Hint>
                         ) : (
                           <span className="text-xs text-muted-foreground">{state}</span>
                         )}

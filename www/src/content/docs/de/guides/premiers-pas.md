@@ -38,7 +38,7 @@ Im Menü **⋯** der Datenbank: **Neue Tabelle**. Fügen Sie anschließend ihre 
 | Client | Verknüpfung → Clients |
 | Notes | Langtext (Markdown) |
 
-Später kommen eine Formel (`JOURS([Échéance]; AUJOURDHUI())`), ein Nachschlagefeld (der Ort
+Später kommen eine Formel (`DAYS([Échéance], TODAY())`), ein Nachschlagefeld (der Ort
 des Kunden) oder eine Aggregation (der Gesamtbetrag pro Kunde) auf dieselbe Weise hinzu – siehe
 [Tabellen und Felder](/basedb/de/fonctionnalites/tables-et-champs/).
 
@@ -73,7 +73,7 @@ eine Zeile hinzu, ohne der antwortenden Person irgendeine Berechtigung zu geben.
 
 ## 6. In SQL lesen
 
-Menü **⋯** der Datenbank → **Neue SQL-Abfrage**: Ihre Tabellen sind da, unter ihrem echten Namen.
+Menü **⋯** der Datenbank → **SQL-Abfrage**: Ihre Tabellen sind da, unter ihrem echten Namen.
 
 ```sql
 SELECT nom, statut, montant

@@ -13,7 +13,7 @@ twoje narzędzia.
 
 ## Każdy ze swoimi uprawnieniami
 
-**+** na pasku zakładek albo menu **⋯** bazy → **Nowe zapytanie SQL** otwiera zakładkę SQL: edytor z
+**+** na pasku zakładek albo menu **⋯** bazy → **Zapytanie SQL** otwiera zakładkę SQL: edytor z
 kolorowaniem składni i podpowiadaniem, **Ctrl+Enter**, aby wykonać, i wynik w tej samej siatce
 co twoje tabele. To, co zapytanie może czytać, zależy od tego, kto je uruchamia:
 
@@ -34,7 +34,8 @@ siatka, API czy serwer MCP.
 **Zapisz**, na pasku zakładki, umieszcza zapytanie pod tabelami bazy, w sekcji **Zapytania**.
 Otwiera się je ponownie jednym kliknięciem; **⋯** → **Zapisz jako…** tworzy kopię, a **Nazwa i
 udostępnianie…** (w zakładce lub w menu zapytania na pasku bocznym) zmienia nazwę, zmienia, kto je
-widzi, albo je usuwa.
+widzi, albo je usuwa — **Usuń** jest też w jego menu, dostępnym kliknięciem prawym przyciskiem.
+Zakładka, która je pokazywała, zachowuje swój tekst.
 
 ![Zapisywanie zapytania: jego nazwa, co pokazuje i kto je widzi](../../../../assets/screens/requete-enregistrer.png)
 
@@ -84,7 +85,8 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 uprawnieniami, do każdej tabeli i każdej kolumny, którą widok czyta; pasek boczny pokazuje go
 tylko osobom, które mogą czytać wszystko, co on czyta. Czyta tylko **swoją** bazę: inna baza
 czy katalog basedb są odrzucane już przy tworzeniu. Utworzenie, zmiana lub usunięcie widoku
-wymaga poziomu **Zarządzanie** na bazie.
+wymaga poziomu **Zarządzanie** na bazie. **Usuń**, w jego menu na pasku bocznym, usuwa go dla
+wszystkich, łącznie ze skryptami i narzędziami; tabele, które czyta, pozostają nietknięte.
 
 ### Gdy zmienia się struktura
 

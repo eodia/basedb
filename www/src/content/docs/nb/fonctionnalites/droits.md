@@ -12,9 +12,9 @@ under, inkludert det som opprettes senere.
 | Nivå | Tillater |
 |---|---|
 | **Ingen tilgang** | ingenting: ressursen er usynlig |
-| **Lese** | se radene, kommentere dem, lage personlige visninger, se strukturen og instrumentbordene, stille egne spørsmål, skrive skrivebeskyttet SQL og lagre personlige spørringer |
+| **Lese** | se radene, kommentere dem, lage personlige visninger, se strukturen og instrumentbordene, stille og lagre egne spørsmål, skrive skrivebeskyttet SQL og lagre personlige spørringer |
 | **Redigere** | i tillegg opprette, endre og slette rader |
-| **Administrere** | i tillegg endre strukturen, opprette de delte visningene, instrumentbordene og de lagrede spørsmålene, dele et instrumentbord med en lenke, dele spørringer, opprette SQL-visninger, automatiseringene, integrasjonene og tokenene; SQL-en har tilgang til hele databasen, skriving inkludert |
+| **Administrere** | i tillegg endre strukturen, opprette de delte visningene og instrumentbordene, dele et instrumentbord med en lenke, dele spørsmål og spørringer, opprette SQL-visninger, automatiseringene, integrasjonene og tokenene; SQL-en har tilgang til hele databasen, skriving inkludert |
 
 Tillatelser **legges sammen**: en person får det høyeste nivået som en av
 gruppene vedkommende er med i, gir. Å gi mindre på en tabell enn på databasen gjør den «granulær».
@@ -70,6 +70,11 @@ basedb snakker **tjue språk**: fransk, engelsk, tysk, spansk, italiensk, portug
 tyrkisk, ukrainsk, japansk, forenklet kinesisk og koreansk. Som standard bruker grensesnittet språket
 i nettleseren din; **Språk**, under **Utseende**, velger et annet. Tall og datoer
 følger det valgte språket.
+
+En lenke kan også be om et språk: `?lang=de` til slutt i en basedb-adresse viser
+innloggingsskjermen, et skjema, en delt visning eller et delt instrumentbord på tysk. Det er
+slik nettstedet fører til demoen i språket til siden. Når du er logget inn, følger basedb
+kontoen din: språket valgt under **Utseende**, ellers nettleserens.
 
 Temaet hører til nettleseren; språket, datorekkefølgen og første ukedag
 følger deg fra én maskin til en annen. Å endre adresse eller koble til en leverandør krever en forhøyet

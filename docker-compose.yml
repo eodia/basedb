@@ -83,6 +83,10 @@ services:
       BASEDB_AI_WORKER: ${BASEDB_AI_WORKER:-}
       # Where the base templates' catalog is read — the public site by default, `off` for none.
       BASEDB_TEMPLATES_URL: ${BASEDB_TEMPLATES_URL:-}
+      # A public demo: shared accounts, prefilled; no creation, no deletion, no AI.
+      BASEDB_DEMO: ${BASEDB_DEMO:-}
+      BASEDB_DEMO_ACCOUNTS: ${BASEDB_DEMO_ACCOUNTS:-}
+      BASEDB_DEMO_PASSWORD: ${BASEDB_DEMO_PASSWORD:-}
       # Development only.
       BASEDB_DEV_MAIL: ${BASEDB_DEV_MAIL:-}
       BASEDB_WEBHOOK_DEV: ${BASEDB_WEBHOOK_DEV:-}

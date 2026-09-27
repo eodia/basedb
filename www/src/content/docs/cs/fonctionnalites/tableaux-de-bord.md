@@ -12,8 +12,18 @@ zobrazuje **otázku** – čtení databáze sestavené myší nebo napsané v SQ
 
 Vše se otevírá přes **Řídicí panely** v bloku otevřené databáze dole v postranním panelu.
 Vlevo jsou řídicí panely a uložené otázky databáze a **Prozkoumat data** pro položení otázky
-bez ukládání. Každý čtenář databáze je může prohlížet a zkoumat; vytváření, úpravy a ukládání
-vyžadují úroveň **Správa**.
+bez ukládání. Každý čtenář databáze je může prohlížet, zkoumat a ukládat si vlastní otázky;
+vytvoření řídicího panelu a sdílení otázky vyžadují úroveň **Správa**.
+
+Uložená otázka je **osobní** — vidíte ji jen vy —, pro **celou databázi** nebo pro
+**skupiny**. Její nabídka, pravým kliknutím nebo přes **⋯**, ji otevře na záložce vedle
+tabulek, změní její název a sdílení, nebo ji odstraní. **+** na liště záložek nabízí také
+**Nová otázka** a **Nová otázka SQL**.
+
+**Uložit** v záhlaví otázky ji uloží; otázka, kterou nemůžete upravit, nabízí místo toho
+**Uložit kopii**, která se stane vaší. **⋯** (Další akce) nabízí také **Název a sdílení…**,
+**Uložit kopii…** a **Odstranit otázku**; záložka, která ji zobrazovala, si ponechá svůj
+obsah, znovu neuložený.
 
 ## Položení otázky myší
 
@@ -107,8 +117,10 @@ tomu může filtr řídicího panelu řídit otázku SQL stejně jako ostatní.
 
 **Upravit** přepne panel do režimu úprav:
 
-- **Otázka** umístí uloženou otázku nebo vytvoří otázku vlastní dané kartě;
-- **Nadpis** a **Text** přidají nadpis sekce nebo text v Markdownu;
+- **Otázka** umístí uloženou otázku — osobní otázka se přitom zkopíruje —, nebo vytvoří otázku
+  vlastní dané kartě;
+- **Nadpis** přidá nadpis sekce, **Text** formátovaný text — nadpisy, seznamy, odkazy — který
+  může citovat čísla (viz níže);
 - **Vložená stránka** zobrazí adresu `https://` v izolovaném rámci, který nedostává relaci
   ani data;
 - **Záložka** rozdělí karty na více stránek; dvojklik záložku přejmenuje.
@@ -116,6 +128,25 @@ tomu může filtr řídicího panelu řídit otázku SQL stejně jako ostatní.
 Karty se přesouvají za úchyt a jejich velikost se mění tažením za roh, na mřížce o 24
 sloupcích. **Uložit** uloží vše; **Zrušit** se vrátí k předchozí verzi. Nadpis karty
 v režimu čtení otevře její otázku k prozkoumání, včetně filtrů panelu.
+
+### Čísla v textu
+
+Text odkazuje na hodnotu pomocí názvu ve dvojitých složených závorkách: „Tento měsíc
+`{{chiffre_affaires}}` obratu z `{{commandes}}` objednávek.“ Každý název se změní na štítek,
+který kliknutím propojíte — nebo přes **Proměnná** v liště editoru — s:
+
+| Zdroj | Co text zobrazí |
+|---|---|
+| **kartou** panelu | to, co zobrazuje, pod svými vlastními filtry |
+| **uloženou otázkou** z celé databáze | její hodnotu, a filtry panelu se k ní připojí jako ke kartě |
+| **otázkou uloženou v textu** | její hodnotu; takto se cituje osobní otázka |
+| **filtrem** panelu | zvolenou hodnotu, tak, jak ji uvádí jeho ovládací prvek |
+
+Hodnota otázky je ta, kterou by ukázalo její **Číslo**: její první míra, na posledním řádku.
+Počítá se s oprávněními čtenáře a vždy se zobrazuje jako text. Text cituje nejvýše 20 hodnot;
+název se píše malými písmeny, číslicemi a `_`. Texty napsané v Markdownu před zavedením
+editoru se čtou jako dřív a stanou se formátovanými, jakmile je někdo znovu uloží. Copilot
+naopak píše své texty v Markdownu.
 
 ## Filtry
 

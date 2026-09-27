@@ -12,8 +12,18 @@ and **filters** at the top of the page drive the cards linked to them.
 
 Everything opens from **Dashboards**, in the block of the open base at the bottom of the
 sidebar. On the left, the base’s dashboards and saved questions, and **Explore data** to ask a
-question without saving anything. Every reader of the base can view and explore them; creating,
-editing and saving require the **Manage** level.
+question without saving anything. Every reader of the base can view, explore and save their own
+questions; building a dashboard and sharing a question require the **Manage** level.
+
+A saved question is **personal** — only you see it —, to **the whole base** or to **groups**.
+Its menu, right click or **⋯**, opens it in a tab next to the tables, changes its name and
+sharing, or deletes it. The **+** in the tab bar also offers **New question** and **New SQL
+question**.
+
+**Save**, in a question’s header, keeps it; a question you cannot edit offers **Save a copy**
+instead, which becomes your own. **⋯** (**More actions**) also offers **Name and sharing…**,
+**Save a copy…** and **Delete question**; a tab that was showing it keeps its content, now
+unsaved again.
 
 ## Asking a question with the mouse
 
@@ -107,8 +117,10 @@ is what lets a dashboard filter drive an SQL question like any other.
 
 **Edit** switches the dashboard to editing:
 
-- **Question** places a saved question, or creates one of the card’s own;
-- **Heading** and **Text** add a section heading or a Markdown text;
+- **Question** places a saved question — a personal question is copied into it —, or creates
+  one of the card’s own;
+- **Heading** adds a section heading, **Text** a formatted text — headings, lists, links — that
+  can cite figures (see below);
 - **Embedded page** shows an `https://` address in an isolated frame, which receives neither
   session nor data;
 - **Tab** spreads the cards over several pages; a double click renames a tab.
@@ -116,6 +128,25 @@ is what lets a dashboard filter drive an SQL question like any other.
 Cards are moved by their handle and resized by their corner, on a 24-column grid. **Save**
 keeps it all; **Cancel** goes back to the previous version. A card title, when reading, opens
 its question to explore it, dashboard filters included.
+
+### Figures in text
+
+A text cites a value by a name between double curly braces: “This month, `{{chiffre_affaires}}`
+in revenue across `{{commandes}}` orders.” Each name becomes a chip, linked in one click — or
+through **Variable** in the editor’s toolbar — to:
+
+| Source | What the text shows |
+|---|---|
+| **a card** on the dashboard | what it shows, under its own filters |
+| **a saved question** from the whole base | its value, and the dashboard’s filters link to it like to a card |
+| **a question kept in the text** | its value; this is how you cite a personal question |
+| **a filter** on the dashboard | the chosen value, as its control states it |
+
+A question’s value is the one its **Number** visualization would show: its first measure, on
+the last row. It is computed with the reader’s permissions, and always displayed as text. A text
+cites 20 values at most; a name is written in lowercase, digits and `_`. Texts written in
+Markdown before the editor existed still read as they did, and become rich text as soon as they
+are rewritten. Copilot, for its part, writes its texts in Markdown.
 
 ## Filters
 

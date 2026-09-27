@@ -20,8 +20,22 @@ anlegen** fragt nach ihrer Bezeichnung und, wenn es KI-Felder gibt, nach Ihrer Z
 Werte, die sie zitieren, an den KI-Anbieter der Instanz gehen. Ohne diese Zustimmung sind es
 gewöhnliche Felder, gefüllt mit ihren Beispielwerten.
 
+**Beispieldaten laden**, standardmäßig angehakt, füllt die Tabellen mit Beispielzeilen, um die
+Datenbank in Aktion zu sehen. Ist es nicht angehakt, bleiben die Tabellen leer, bereit für Ihre
+eigenen Daten – Ansichten, Dashboards und Automatisierungen werden trotzdem angelegt.
+
 Ein leeres Projekt bietet außerdem die **Demo-Datenbank** an: eine kleine Agentur mit ihren Kunden,
 Projekten, Aufgaben, Rechnungen und Bewertungen, die alle Facetten von basedb zeigt.
+
+## In Ihrer Sprache
+
+Die offiziellen Vorlagen werden **in der Sprache des Bildschirms** gelesen und angelegt: Tabellen,
+Felder, Auswahlwerte, Beispielzeilen, Ansichten, Dashboards, Automatisierungen und KI-Anweisungen.
+Die Beispielzeilen wechseln mit der Sprache die Welt: Aus der „Boulangerie Martin“ aus Lyon wird
+auf Deutsch „Bäckerei Keller“ in Leipzig.
+
+Eine Vorlage, die in Ihre Instanz importiert oder aus einer Datenbank gespeichert wurde, wurde von
+jemandem geschrieben: Sie wird so gelesen, wie sie geschrieben wurde.
 
 ## Bei der KI anfragen
 
@@ -111,6 +125,15 @@ veröffentlichen genügt, um die Galerie aller Instanzen zu ändern.
 
 Jede Vorlage wird beim Bauen der Website mit demselben Validator geprüft wie auf dem Server: Eine
 ungültige Vorlage lässt den Build fehlschlagen, statt bei den Benutzern anzukommen.
+
+Eine offizielle Vorlage wird einmal geschrieben, auf Französisch. Ihre Texte in einer anderen
+Sprache sind ein Wörterbuch,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+– der französische Text, dann seine Übersetzung –, das die Website neben dem Katalog veröffentlicht
+(`/basedb/modeles/i18n/<langue>.json`). Die Instanz übergibt ihm jeden Text und verfolgt jede
+Bezeichnung dort, wo sie zitiert wird – Formeln, Filter, Ansichten, Anweisungen –, und liest dann
+das Ergebnis erneut: Ein Wörterbuch, das die Vorlage kaputt machen würde, wird nicht ausgeliefert,
+die französische Vorlage schon. Ein im Wörterbuch fehlender Text bleibt auf Französisch.
 
 Die Instanz liest die Adresse `BASEDB_TEMPLATES_URL` – standardmäßig die der öffentlichen Website.
 Richten Sie sie auf einen eigenen Katalog oder setzen Sie `off`, um keinen zu lesen: Die Instanz

@@ -82,7 +82,8 @@ der Oberfläche vorbehalten: Ein Token liest und schreibt Zeilen, es ändert nic
 
 Jede Datenbank hat ihre Seite **API- und MCP-Dokumentation**: für jede Tabelle ihre Endpunkte, ihre
 Spalten, Beispiele in cURL und JavaScript. Sie ist **nach Ihren Berechtigungen gefiltert** – zwei
-Lesende erhalten zwei Fassungen – und existiert auch als OpenAPI 3.1
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+Lesende erhalten zwei Fassungen –, geschrieben **in der Sprache Ihres Bildschirms**, und existiert
+auch als OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Die Namen, die Pfade und
+die Fehlercodes bleiben in allen Sprachen gleich.
 
 ![Die generierte Dokumentation einer Datenbank](../../../../assets/screens/documentation-api.png)

@@ -5,6 +5,7 @@ import { ResizablePanel } from '@/components/app/resizable-panel'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type CopilotAction,
   type CopilotAnswer,
@@ -17,6 +18,7 @@ import {
 import { addFields, createTable, insertRecords, updateRecords } from '@/lib/copilot'
 import { $t, $tp } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
+import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
 import {
   ArrowUp,
@@ -190,6 +192,17 @@ export function CopilotPanel({
     [busy, conversation, update, base.name, table, view],
   )
 
+  // A question put from the command palette: sent as if typed here, once the panel is free.
+  const asked = useWorkspace((s) => s.copilotAsk)
+  useEffect(() => {
+    if (asked === null || busy) return
+    // Taken from the store, not from this render: an effect run twice sends it once.
+    const store = useWorkspace.getState()
+    if (store.copilotAsk?.seq !== asked.seq) return
+    store.clearCopilotAsk()
+    void send(asked.text)
+  }, [asked, busy, send])
+
   const setCard = useCallback(
     (turnId: number, index: number, state: CardState) =>
       update((c) => ({
@@ -268,16 +281,17 @@ export function CopilotPanel({
           {$t('Copilot')} <span className="font-normal text-muted-foreground">· {base.label}</span>
         </span>
         {conversation.turns.length > 0 && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={restart}
-            disabled={busy}
-            aria-label={$t('Nouvelle conversation')}
-            title={$t('Nouvelle conversation')}
-          >
-            <RotateCcw className="size-4" />
-          </Button>
+          <Hint label={$t('Nouvelle conversation')}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={restart}
+              disabled={busy}
+              aria-label={$t('Nouvelle conversation')}
+            >
+              <RotateCcw className="size-4" />
+            </Button>
+          </Hint>
         )}
         <Button
           variant="ghost"

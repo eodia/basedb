@@ -82,6 +82,18 @@ description: basedb 读取的所有变量及其默认值。
 | `BASEDB_AI_FIELD_QUOTA` | `300` | 每个租户每小时的 AI 字段计算次数 |
 | `BASEDB_AI_WORKER` | `1` | `0`：此进程中不执行后台计算 |
 
+## 公开演示
+
+一个面向所有人开放的实例，例如 [demo.basedb.eodia.com](https://demo.basedb.eodia.com)：登录界面会预填一个共享账户，访问者可以查看一切并修改已有内容，但不能创建或删除任何东西——数据库、数据表、行、文件、评论、账户、令牌、链接皆不可创建或删除——AI 会回答说自己不参与演示。SQL 控制台在这里只能读取。每天夜里把数据库恢复原状仍由您自己负责。
+
+| 变量 | 默认值 | 作用 |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`：将实例变为公开演示 |
+| `BASEDB_DEMO_ACCOUNTS` | — | 每种语言一个账户，以逗号分隔：`fr=demo@demo.com,en=demo-en@demo.com`；登录界面会预填与其语言匹配的账户，否则用英语账户，再否则用第一个账户，并提供其余账户可选。请在启用演示之前创建好这些账户，并各自配上项目：演示会拒绝所有人的创建操作，包括管理员 |
+| `BASEDB_DEMO_PASSWORD` | — | 配合 `BASEDB_DEMO_ACCOUNTS` 使用，这些账户共用的密码，与账户一同公开 |
+
+如果没有设置 `BASEDB_DEMO_ACCOUNTS`，共享账户就是由 `BASEDB_ADMIN_EMAIL` 和 `BASEDB_ADMIN_PASSWORD` 指定的管理员。演示账户的任何地址都会用公开的密码登录，无论输入了什么；错误的尝试不会把它对所有人锁死。
+
 ## 仅用于开发
 
 | 变量 | 作用 |

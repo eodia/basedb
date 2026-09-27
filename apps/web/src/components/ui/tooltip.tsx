@@ -29,4 +29,32 @@ function TooltipContent({
   )
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+/**
+ * The app's tooltip on one element — `<Hint label={$t('…')}><Button … /></Hint>` — never a
+ * native `title`, which the browser draws in its own style, after its own delay. Without a
+ * label the element comes back as it is. A disabled button raises no pointer events: when the
+ * tooltip must still say why, it hangs on a wrapping `<span>`.
+ */
+function Hint({
+  label,
+  side,
+  align,
+  children,
+}: {
+  readonly label: React.ReactNode
+  readonly side?: React.ComponentProps<typeof TooltipPrimitive.Content>['side']
+  readonly align?: React.ComponentProps<typeof TooltipPrimitive.Content>['align']
+  readonly children: React.ReactElement
+}) {
+  if (label === undefined || label === null || label === false || label === '') return children
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side={side} align={align} className="max-w-xs">
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+export { Hint, Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }

@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
 import type { Field, SavedView, Table, ViewKind } from '@/lib/api/client'
 import { CARD_TEMPLATE_MAX } from '@/lib/card-template'
 import { $t } from '@/lib/i18n'
@@ -228,31 +229,31 @@ export function ViewDialog({
                 const reason = unavailableReason(k, table)
                 const KindIcon = info.icon
                 return (
-                  <button
-                    key={k}
-                    type="button"
-                    aria-pressed={kind === k}
-                    onClick={() => choose(k)}
-                    title={reason ?? info.summary}
-                    className={cn(
-                      'flex flex-col gap-1 rounded-lg border p-3 text-left transition-colors hover:bg-accent/60',
-                      kind === k && 'border-primary bg-primary/5 ring-1 ring-primary',
-                      reason !== null && 'opacity-60',
-                    )}
-                  >
-                    <span className="flex items-center gap-2 text-sm font-medium">
-                      <KindIcon
-                        className={cn(
-                          'size-4',
-                          kind === k ? 'text-primary' : 'text-muted-foreground',
-                        )}
-                      />
-                      {info.label}
-                    </span>
-                    <span className="line-clamp-2 text-xs text-muted-foreground">
-                      {reason ?? info.summary}
-                    </span>
-                  </button>
+                  <Hint key={k} label={reason ?? info.summary}>
+                    <button
+                      type="button"
+                      aria-pressed={kind === k}
+                      onClick={() => choose(k)}
+                      className={cn(
+                        'flex flex-col gap-1 rounded-lg border p-3 text-left transition-colors hover:bg-accent/60',
+                        kind === k && 'border-primary bg-primary/5 ring-1 ring-primary',
+                        reason !== null && 'opacity-60',
+                      )}
+                    >
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        <KindIcon
+                          className={cn(
+                            'size-4',
+                            kind === k ? 'text-primary' : 'text-muted-foreground',
+                          )}
+                        />
+                        {info.label}
+                      </span>
+                      <span className="line-clamp-2 text-xs text-muted-foreground">
+                        {reason ?? info.summary}
+                      </span>
+                    </button>
+                  </Hint>
                 )
               })}
             </fieldset>
@@ -1001,9 +1002,11 @@ function ChecklistRow({
           {field.label}
         </span>
         {locked && (
-          <span title={$t('Champ obligatoire de la table : le formulaire doit le demander')}>
-            <Lock className="size-3.5 text-muted-foreground" />
-          </span>
+          <Hint label={$t('Champ obligatoire de la table : le formulaire doit le demander')}>
+            <span>
+              <Lock className="size-3.5 text-muted-foreground" />
+            </span>
+          </Hint>
         )}
       </div>
       {children}

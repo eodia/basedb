@@ -12,7 +12,7 @@ sé, per tutto il database o per alcuni gruppi —, e chi gestisce il database p
 
 ## Ognuno con i propri permessi
 
-Il **+** della barra delle tab, oppure menu **⋯** del database → **Nuova query SQL**, apre una
+Il **+** della barra delle tab, oppure menu **⋯** del database → **Query SQL**, apre una
 tab SQL: un editor con evidenziazione della sintassi e completamento, **Ctrl+Invio** per eseguire, e il
 risultato nella stessa griglia delle tue tabelle. Ciò che la query può leggere dipende da chi la esegue:
 
@@ -33,7 +33,8 @@ server MCP non ti mostrerebbero.
 **Salva**, nella barra della tab, dispone la query sotto le tabelle del database, nella
 sezione **Query**. Si riapre con un clic; **⋯** → **Salva con nome…** ne crea una
 copia, **Nome e condivisione…** (nella tab o nel suo menu della barra laterale) la rinomina, cambia
-chi la vede o la elimina.
+chi la vede o la elimina — **Elimina** è anche nel suo menu, con un clic destro. Una tab che la
+mostrava conserva il suo testo.
 
 ![Salvare una query: il suo nome, cosa mostra e chi la vede](../../../../assets/screens/requete-enregistrer.png)
 
@@ -84,7 +85,8 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 su ogni tabella e ogni colonna che essa legge; la barra laterale la elenca solo a chi può leggere
 tutto ciò che essa legge. Legge solo il **suo** database: un altro database, o il catalogo di basedb,
 vengono rifiutati fin dalla creazione. Crearla, modificarla o eliminarla richiede il livello **Gestione**
-sul database.
+sul database. **Elimina**, nel suo menu della barra laterale, la rimuove per tutti, script e
+strumenti compresi; le tabelle che legge non vengono toccate.
 
 ### Quando la struttura cambia
 

@@ -312,6 +312,139 @@ describe('saved queries', () => {
   })
 })
 
+const sql = (text: string) => ({ kind: 'sql' as const, sql: text })
+
+describe('questions of one’s own', () => {
+  it('keeps a personal question to its author', async () => {
+    const asAlice = await ctxOf(alice)
+    const mine = await kernel.createQuestion(asAlice, {
+      baseId: rh.baseId,
+      input: { label: 'Mes relances', query: sql('SELECT nom FROM employes') },
+    })
+    expect(mine).toMatchObject({ audience: 'personal', mine: true, editable: true, kind: 'sql' })
+    expect(
+      (await kernel.listQuestions(asAlice, { baseId: rh.baseId })).map((q) => q.label),
+    ).toEqual(['Mes relances'])
+    expect(await kernel.listQuestions(admin, { baseId: rh.baseId })).toEqual([])
+    // Sharing is building the base.
+    expect(
+      await codeOf(
+        kernel.updateQuestion(asAlice, {
+          baseId: rh.baseId,
+          id: mine.id,
+          input: { audience: 'base' },
+        }),
+      ),
+    ).toBe('ADMIN_REQUIRED')
+    expect(
+      await codeOf(
+        kernel.createQuestion(asAlice, {
+          baseId: rh.baseId,
+          input: { label: 'Pour tous', query: sql('SELECT 1'), audience: 'base' },
+        }),
+      ),
+    ).toBe('ADMIN_REQUIRED')
+    await kernel.deleteQuestion(asAlice, { baseId: rh.baseId, id: mine.id })
+    expect(await kernel.listQuestions(asAlice, { baseId: rh.baseId })).toEqual([])
+  })
+
+  it('shares a question with the base, or with groups — the question, not its reach', async () => {
+    const shared = await kernel.createQuestion(admin, {
+      baseId: rh.baseId,
+      input: {
+        label: 'Masse salariale',
+        query: sql('SELECT sum(salaire) FROM employes'),
+        audience: 'base',
+      },
+    })
+    const forPaie = await kernel.createQuestion(admin, {
+      baseId: rh.baseId,
+      input: {
+        label: 'Paie du mois',
+        query: sql('SELECT 1'),
+        audience: 'groups',
+        groupIds: [paie],
+      },
+    })
+    const forLecteurs = await kernel.createQuestion(admin, {
+      baseId: rh.baseId,
+      input: {
+        label: 'Annuaire',
+        query: sql('SELECT nom, poste FROM employes'),
+        audience: 'groups',
+        groupIds: [lecteurs],
+      },
+    })
+    expect(forLecteurs.groups).toEqual([{ id: lecteurs, label: 'Lecteurs' }])
+
+    const asAlice = await ctxOf(alice)
+    const seen = await kernel.listQuestions(asAlice, { baseId: rh.baseId })
+    expect(seen.map((q) => q.id).sort()).toEqual([shared.id, forLecteurs.id].sort())
+    expect(seen.every((q) => !q.editable)).toBe(true)
+    expect(await codeOf(kernel.getQuestion(asAlice, { baseId: rh.baseId, id: forPaie.id }))).toBe(
+      'RESOURCE_NOT_FOUND',
+    )
+    expect(await codeOf(kernel.deleteQuestion(asAlice, { baseId: rh.baseId, id: shared.id }))).toBe(
+      'ADMIN_REQUIRED',
+    )
+
+    // Run by Alice, it reads what Alice reads.
+    expect(
+      await codeOf(kernel.runQuestion(asAlice, { baseId: rh.baseId, question: shared.id })),
+    ).toBe('REQUEST_INVALID')
+
+    // The navigation lists the saved queries, not the questions: those are the dashboards'.
+    const projects = await kernel.listProjects(asAlice)
+    const base = projects.flatMap((p) => p.bases).find((b) => b.id === rh.baseId)
+    const listed = base?.queries.map((q) => q.id) ?? []
+    expect(listed).not.toContain(shared.id)
+    expect(listed).not.toContain(forLecteurs.id)
+
+    expect(await codeOf(kernel.listQuestions(await ctxOf(bob), { baseId: rh.baseId }))).toBe(
+      'RESOURCE_NOT_FOUND',
+    )
+  })
+
+  it('goes on a dashboard when the whole base sees it, and keeps the base while there', async () => {
+    const all = (await kernel.listQuestions(admin, { baseId: rh.baseId })).filter(
+      (q) => q.label === 'Masse salariale' || q.label === 'Annuaire',
+    )
+    const shared = all.find((q) => q.audience === 'base')
+    const grouped = all.find((q) => q.audience === 'groups')
+    const card = (question: string | undefined) => ({
+      id: 'c1',
+      x: 0,
+      y: 0,
+      w: 12,
+      h: 6,
+      kind: 'question',
+      question,
+    })
+    const refused = await failure(
+      kernel.createDashboard(admin, {
+        baseId: rh.baseId,
+        input: { label: 'Paie', cards: [card(grouped?.id)] },
+      }),
+    )
+    expect(refused.code).toBe('REQUEST_INVALID')
+    await kernel.createDashboard(admin, {
+      baseId: rh.baseId,
+      input: { label: 'Paie', cards: [card(shared?.id)] },
+    })
+    const kept = await failure(
+      kernel.updateQuestion(admin, {
+        baseId: rh.baseId,
+        id: shared?.id ?? '',
+        input: { audience: 'personal' },
+      }),
+    )
+    expect(kept).toMatchObject({
+      code: 'REQUEST_INVALID',
+      details: { field: 'audience', reason: 'dans_un_tableau_de_bord', detail: ['Paie'] },
+    })
+  })
+})
+
 describe('SQL views', () => {
   it('creates a real view, read with the reader’s rights', async () => {
     const annuaire = await kernel.createSqlView(admin, {

@@ -73,12 +73,12 @@ kalır.
 
 ## Formüller
 
-Bir formül Fransızca yazılır; alanlar köşeli parantez içinde, argümanlar `;` ile ayrılır:
+Bir formül İngilizce yazılır (Fransızca adlar da çalışır); alanlar köşeli parantez içinde, argümanlar `,` ile ayrılır:
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 Düzenleyici eklenecek alanları ve bir işlevler panelini sunar; bir hata, soruna yol açan alanı
@@ -86,14 +86,14 @@ ya da karakteri belirtir.
 
 | Aile | İşlevler |
 |---|---|
-| Mantık | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` |
-| Sayılar | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` |
-| Metin | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` |
-| Tarihler | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` |
+| Mantık | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
+| Sayılar | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
+| Metin | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
+| Tarihler | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
 | Operatörler | `+ - * /`, metin birleştirmek için `&`, `= <> < <= > >=` |
 
 Bir formül, PostgreSQL'de bir **üretilmiş sütun** olur: `psql` ve araçlarınız onu diğer
-sütunlar gibi okur. Güne bağlı olan (`AUJOURDHUI()`, `MAINTENANT()`) ya da bir aramaya veya
+sütunlar gibi okur. Güne bağlı olan (`TODAY()`, `NOW()`) ya da bir aramaya veya
 toplamaya atıf yapan formül **okuma sırasında hesaplanır**: basedb'de filtrelenir ve sıralanır,
 ama doğrudan SQL'de yoktur.
 

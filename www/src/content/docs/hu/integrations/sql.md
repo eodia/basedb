@@ -22,7 +22,7 @@ megmutatja a leírásokat (`COMMENT ON`).
 
 ## A felületen
 
-A lapsáv **+** gombja, vagy az adatbázis **⋯** menüje → **Új SQL-lekérdezés**: egy szerkesztő
+A lapsáv **+** gombja, vagy az adatbázis **⋯** menüje → **SQL-lekérdezés**: egy szerkesztő
 szintaxiskiemeléssel és kódkiegészítéssel, amelynek eredménye ugyanabban a rácsban jelenik meg,
 mint a táblái.
 

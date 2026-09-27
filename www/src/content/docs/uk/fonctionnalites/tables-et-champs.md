@@ -72,12 +72,12 @@ Foreign-key constraints:
 
 ## Формули
 
-Формула пишеться французькою: поля — у квадратних дужках, аргументи розділяються `;`:
+Формула пишеться англійською (французькі назви теж працюють): поля — у квадратних дужках, аргументи розділяються `,`:
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 Редактор пропонує поля для вставлення та панель функцій; повідомлення про помилку називає поле
@@ -85,15 +85,15 @@ JOURS([Fin]; [Début])
 
 | Група | Функції |
 |---|---|
-| Логіка | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` |
-| Числа | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` |
-| Текст | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` |
-| Дати | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` |
+| Логіка | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
+| Числа | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
+| Текст | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
+| Дати | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
 | Оператори | `+ - * /`, `&` для з’єднання тексту, `= <> < <= > >=` |
 
 Формула стає **згенерованим стовпцем** PostgreSQL: `psql` і ваші інструменти читають її, як і
-будь-який інший стовпець. Формула, що залежить від поточного дня (`AUJOURDHUI()`,
-`MAINTENANT()`) або посилається на підстановку чи зведення, **обчислюється під час читання**:
+будь-який інший стовпець. Формула, що залежить від поточного дня (`TODAY()`,
+`NOW()`) або посилається на підстановку чи зведення, **обчислюється під час читання**:
 її можна фільтрувати й сортувати в basedb, але в прямому SQL її не існує.
 
 Формула не посилається ні на іншу формулу, ні безпосередньо на зв’язок — для цього є

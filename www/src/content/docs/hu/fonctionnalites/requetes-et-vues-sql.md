@@ -13,7 +13,7 @@ eszközei is olvasnak.
 
 ## Mindenki a saját jogosultságaival
 
-A lapsáv **+** gombja, vagy az adatbázis **⋯** menüje → **Új SQL-lekérdezés** megnyit egy
+A lapsáv **+** gombja, vagy az adatbázis **⋯** menüje → **SQL-lekérdezés** megnyit egy
 SQL-lapot: egy szerkesztőt szintaxiskiemeléssel és kódkiegészítéssel, a **Ctrl+Enter**
 billentyűvel a futtatáshoz, és az eredményt ugyanabban a rácsban, mint a táblái. Hogy a
 lekérdezés mit olvashat, az attól függ, ki futtatja:
@@ -36,7 +36,8 @@ az MCP-szerver ne mutatna meg.
 A lap sávjában lévő **Mentés** a lekérdezést az adatbázis táblái alá, a **Lekérdezések** rovatba
 helyezi. Egy kattintással újra megnyitható; a **⋯** → **Mentés másként…** másolatot készít
 róla, a **Név és megosztás…** (a lapon vagy az oldalsávbeli menüjében) átnevezi, módosítja, ki
-látja, vagy törli.
+látja, vagy törli – a **Törlés** jobb kattintással a menüjéből is elérhető. Az őt megjelenítő lap
+megtartja a szövegét.
 
 ![Lekérdezés mentése: a neve, mit mutat, és ki látja](../../../../assets/screens/requete-enregistrer.png)
 
@@ -89,7 +90,8 @@ jogosultságaival olvassa, minden olyan táblán és oszlopon, amelyet a nézet 
 csak annak listázza, aki mindent olvashat abból, amit a nézet olvas. Csak a **saját**
 adatbázisát olvassa: egy másik adatbázist vagy a basedb katalógusát már a létrehozáskor
 elutasítja a rendszer. A létrehozásához, módosításához vagy törléséhez **Kezelés** szint
-szükséges az adatbázison.
+szükséges az adatbázison. A **Törlés**, az oldalsávbeli menüjében, mindenki számára megszünteti
+azt – a szkripteket és az eszközöket is beleértve –; az általa olvasott táblákat nem érinti.
 
 ### Ha a struktúra változik
 

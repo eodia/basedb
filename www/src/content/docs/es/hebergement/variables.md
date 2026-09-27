@@ -83,6 +83,25 @@ Consulta [Cuentas e inicio de sesión](/basedb/es/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | cálculos de campos de IA por hora y por tenant |
 | `BASEDB_AI_WORKER` | `1` | `0`: sin cálculos en segundo plano en este proceso |
 
+## Demo pública
+
+Una instancia abierta a todos, como [demo.basedb.eodia.com](https://demo.basedb.eodia.com):
+la pantalla de inicio de sesión rellena una cuenta compartida, el visitante lee todo y modifica lo
+que ya existe, pero no crea ni elimina nada —base, tabla, fila, archivo, comentario, cuenta,
+token, enlace—, y la IA responde que no forma parte de la demo. La consola SQL solo lee ahí.
+Devolver la base a su estado cada noche sigue siendo responsabilidad tuya.
+
+| Variable | Predeterminado | Función |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: la instancia se convierte en una demo pública |
+| `BASEDB_DEMO_ACCOUNTS` | — | una cuenta por idioma, separadas por comas: `fr=demo@demo.com,en=demo-en@demo.com`; la pantalla de inicio de sesión rellena la de su idioma, si no, la inglesa, si no, la primera, y ofrece las demás. Crea estas cuentas, cada una con su proyecto, antes de activar la demo: rechaza las creaciones a todos, administrador incluido |
+| `BASEDB_DEMO_PASSWORD` | — | con `BASEDB_DEMO_ACCOUNTS`, su contraseña, la misma para todas, publicada junto a ellas |
+
+Sin `BASEDB_DEMO_ACCOUNTS`, la cuenta compartida es el administrador que nombran
+`BASEDB_ADMIN_EMAIL` y `BASEDB_ADMIN_PASSWORD`. Una dirección de la demo inicia sesión con la
+contraseña publicada, se escriba lo que se escriba: los intentos fallidos no la bloquean para
+todo el mundo.
+
 ## Solo para desarrollo
 
 | Variable | Función |

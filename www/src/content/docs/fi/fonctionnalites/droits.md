@@ -12,9 +12,9 @@ mitä luodaan myöhemmin.
 | Taso | Sallii |
 |---|---|
 | **Ei käyttöoikeutta** | ei mitään: resurssi on näkymätön |
-| **Lukuoikeus** | rivien näkemisen ja kommentoimisen, henkilökohtaisten näkymien luomisen, rakenteen ja koontinäyttöjen selaamisen, omien kysymysten esittämisen, SQL:n kirjoittamisen vain luku -tilassa ja henkilökohtaisten kyselyjen tallentamisen |
+| **Lukuoikeus** | rivien näkemisen ja kommentoimisen, henkilökohtaisten näkymien luomisen, rakenteen ja koontinäyttöjen selaamisen, omien kysymysten esittämisen ja tallentamisen, SQL:n kirjoittamisen vain luku -tilassa ja henkilökohtaisten kyselyjen tallentamisen |
 | **Muokkausoikeus** | lisäksi rivien luomisen, muokkaamisen ja poistamisen |
-| **Hallintaoikeus** | lisäksi rakenteen muuttamisen, jaettujen näkymien, koontinäyttöjen ja tallennettujen kysymysten luomisen, koontinäytön jakamisen linkillä, kyselyjen jakamisen, SQL-näkymien, automaatioiden, integraatioiden ja tunnusten luomisen; sen SQL näkee koko tietokannan kirjoitukset mukaan lukien |
+| **Hallintaoikeus** | lisäksi rakenteen muuttamisen, jaettujen näkymien ja koontinäyttöjen luomisen, koontinäytön jakamisen linkillä, kysymysten ja kyselyjen jakamisen, SQL-näkymien, automaatioiden, integraatioiden ja tunnusten luomisen; sen SQL näkee koko tietokannan kirjoitukset mukaan lukien |
 
 Käyttöoikeudet **summautuvat**: henkilö saa korkeimman tason, jonka jokin hänen ryhmistään
 antaa. Kun taulukolle annetaan vähemmän kuin sen tietokannalle, taulukosta tulee
@@ -72,6 +72,11 @@ basedb puhuu **kahtakymmentä kieltä**: ranskaa, englantia, saksaa, espanjaa, i
 turkkia, ukrainaa, japania, yksinkertaistettua kiinaa ja koreaa. Oletuksena käyttöliittymä
 käyttää selaimesi kieltä; **Ulkoasu**-välilehden **Kieli** asettaa toisen. Luvut ja päivämäärät
 noudattavat valittua kieltä.
+
+Myös linkki voi pyytää tiettyä kieltä: `?lang=de` basedb-osoitteen perässä näyttää saksaksi
+kirjautumisnäkymän, lomakkeen, jaetun näkymän tai koontinäytön. Näin sivusto vie esittelyyn sivun
+kielellä. Kirjauduttuasi basedb noudattaa tiliäsi: **Ulkoasu**-välilehdessä valittua kieltä, tai
+muuten selaimesi kieltä.
 
 Teema on selainkohtainen; kieli, päivämäärien järjestys ja viikon ensimmäinen päivä seuraavat
 sinua laitteelta toiselle. Osoitteen vaihtaminen tai palveluntarjoajan linkittäminen vaatii korotetun

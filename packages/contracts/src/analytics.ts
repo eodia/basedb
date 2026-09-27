@@ -616,6 +616,10 @@ export const DASHBOARD_LIMITS = {
   parameters: 16,
   label: 120,
   text: 5000,
+  /** A rich text's HTML, its tags counted. */
+  html: 20_000,
+  /** The values one text cites. */
+  variables: 20,
   height: 60,
 } as const
 
@@ -645,10 +649,117 @@ export interface DashboardCard {
   /** How the card shows its question — the question's own way when absent. */
   readonly visualization?: Visualization
   readonly mappings?: readonly CardMapping[]
-  /** A heading or a text, in Markdown. */
+  /** A heading, or a text: in Markdown, or in HTML when `rich`. */
   readonly text?: string
+  /** A text in HTML — the rich text of chapter 04 §2.2 —, as its editor writes it. */
+  readonly rich?: boolean
+  /** What a text cites, `{{nom}}`, by the name it cites it with. */
+  readonly variables?: readonly TextVariable[]
   /** A page from elsewhere (chapter 18 §2). */
   readonly url?: string
+}
+
+/**
+ * A value a text card cites — `{{nom}}` in its text: what a query gives, the value its
+ * number would show — a saved query of the whole base, by reference; a query kept in the
+ * text, as a card keeps one; or a question card of the dashboard, under its own filters —,
+ * or the value of one of the dashboard's filters, as its control says it.
+ */
+export type TextVariable =
+  | {
+      readonly name: string
+      readonly question: string
+      readonly mappings?: readonly CardMapping[]
+    }
+  | {
+      readonly name: string
+      readonly query: QuestionQuery
+      /** What the query was called, for its pill. */
+      readonly label?: string
+      readonly visualization?: Visualization
+      readonly mappings?: readonly CardMapping[]
+    }
+  | { readonly name: string; readonly card: string }
+  | { readonly name: string; readonly parameter: string }
+
+/** A variable that runs a query of its own, tied to the filters by the text itself. */
+export type TiedVariable = Extract<
+  TextVariable,
+  { readonly question: string } | { readonly query: QuestionQuery }
+>
+
+export const tiesItself = (variable: TextVariable): variable is TiedVariable =>
+  'question' in variable || 'query' in variable
+
+/** The names a text cites, `{{nom}}`, each once, in the order they come. */
+export function citedNames(text: string): string[] {
+  const names = [...text.matchAll(/\{\{\s*([a-z0-9_]+)\s*\}\}/g)].map((m) => m[1] as string)
+  return [...new Set(names)]
+}
+
+/**
+ * What a text runs for a value it cites, as a card: the card it names among `cards`, or
+ * the query it names or keeps — in the text's place, tied as the variable ties it. `null`
+ * for a filter's value, which runs nothing, and for a card that is not there.
+ */
+export function variableCard(
+  card: DashboardCard,
+  variable: TextVariable,
+  cards: readonly DashboardCard[] = [],
+): DashboardCard | null {
+  if ('parameter' in variable) return null
+  if ('card' in variable) {
+    return cards.find((c) => c.id === variable.card && c.kind === 'question') ?? null
+  }
+  return {
+    id: card.id,
+    tab: card.tab,
+    x: card.x,
+    y: card.y,
+    w: card.w,
+    h: card.h,
+    kind: 'question',
+    ...('question' in variable
+      ? { question: variable.question }
+      : {
+          query: variable.query,
+          ...(variable.visualization === undefined
+            ? {}
+            : { visualization: variable.visualization }),
+        }),
+    ...(variable.mappings === undefined ? {} : { mappings: variable.mappings }),
+  }
+}
+
+/**
+ * Every question a dashboard runs, as a card: its question cards, and the queries its
+ * texts run themselves — where a filter finds its values, what a click on a point filters.
+ * A text citing a card runs that card, already there.
+ */
+export function questionCards(cards: readonly DashboardCard[]): DashboardCard[] {
+  return cards.flatMap((card) => {
+    if (card.kind === 'question') return [card]
+    if (card.kind !== 'text') return []
+    return (card.variables ?? []).filter(tiesItself).flatMap((v) => variableCard(card, v) ?? [])
+  })
+}
+
+/**
+ * A text without some of the values it cites — a filter or a card gone: their variables
+ * go, and their citations leave its words with them.
+ */
+export function withoutVariables(
+  card: DashboardCard,
+  gone: (variable: TextVariable) => boolean,
+): DashboardCard {
+  const leaving = new Set((card.variables ?? []).filter(gone).map((v) => v.name))
+  if (leaving.size === 0) return card
+  const variables = (card.variables ?? []).filter((v) => !leaving.has(v.name))
+  const text = (card.text ?? '').replace(/\{\{\s*([a-z0-9_]+)\s*\}\}/g, (whole, name: string) =>
+    leaving.has(name) ? '' : whole,
+  )
+  const { variables: _old, ...rest } = card
+  return { ...rest, text, ...(variables.length === 0 ? {} : { variables }) }
 }
 
 // ── Relative dates ──────────────────────────────────────────────────────────
@@ -891,7 +1002,7 @@ export function cardSize(
   viz?: VisualizationType,
 ): { readonly w: number; readonly h: number } {
   if (kind === 'heading') return { w: DASHBOARD_COLUMNS, h: 2 }
-  if (kind === 'text') return { w: 12, h: 3 }
+  if (kind === 'text') return { w: 12, h: 4 }
   if (kind === 'embed') return { w: 12, h: 8 }
   switch (viz) {
     case 'scalar':

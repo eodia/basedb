@@ -30,9 +30,9 @@ const GLYPH: Record<string, IconName> = {
 };
 // A formula, its functions and its texts coloured.
 const formula = (code: string) =>
-	code.split(/("[^"]*"|\b[A-ZÀ-Ý]{2,}\b(?=\()|\[[^\]]*\])/).map((part) => ({
+	code.split(/("[^"]*"|\b[A-ZÀ-Ý][A-ZÀ-Ý_]+\b(?=\()|\[[^\]]*\])/).map((part) => ({
 		text: part,
-		kind: part.startsWith('"') ? 'str' : part.startsWith('[') ? 'ref' : /^[A-ZÀ-Ý]{2,}$/.test(part) ? 'fn' : '',
+		kind: part.startsWith('"') ? 'str' : part.startsWith('[') ? 'ref' : /^[A-ZÀ-Ý][A-ZÀ-Ý_]+$/.test(part) ? 'fn' : '',
 	}));
 const tables = t.teams.stage.tables;
 ---

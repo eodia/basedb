@@ -13,7 +13,7 @@ leem.
 
 ## Cada um com suas permissões
 
-O **+** da barra de abas, ou o menu **⋯** da base → **Nova consulta SQL**, abre uma
+O **+** da barra de abas, ou o menu **⋯** da base → **Consulta SQL**, abre uma
 aba SQL: um editor com realce de sintaxe e autocompletar, **Ctrl+Enter** para executar, e o
 resultado na mesma grade das suas tabelas. O que a consulta pode ler depende de quem a executa:
 
@@ -34,7 +34,8 @@ servidor MCP não mostrariam para você.
 **Salvar**, na barra da aba, guarda a consulta abaixo das tabelas da base, na
 seção **Consultas**. Ela reabre com um clique; **⋯** → **Salvar como…** cria uma
 cópia, **Nome e compartilhamento…** (na aba ou no menu dela na barra lateral) a renomeia, muda
-quem a vê ou a exclui.
+quem a vê ou a exclui — **Excluir** também está no menu dela, com um clique com o botão direito.
+Uma aba que a mostrava mantém seu texto.
 
 ![Salvar uma consulta: o nome, o que ela mostra e quem a vê](../../../../assets/screens/requete-enregistrer.png)
 
@@ -85,7 +86,8 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 em cada tabela e cada coluna que ela lê; a barra lateral só a lista para quem pode ler tudo
 o que ela lê. Ela só lê a **sua** base: outra base, ou o catálogo do basedb,
 são recusados já na criação. Criá-la, editá-la ou excluí-la exige o nível **Gerenciamento**
-na base.
+na base. **Excluir**, no menu dela na barra lateral, a remove para todo mundo, scripts e
+ferramentas incluídos; as tabelas que ela lê não são afetadas.
 
 ### Quando a estrutura muda
 

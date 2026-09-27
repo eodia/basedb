@@ -81,7 +81,8 @@ rezervată unei sesiuni din interfață: un token citește și scrie rânduri, n
 
 Fiecare bază are pagina sa **Documentație API și MCP**: pentru fiecare tabel, punctele de acces,
 coloanele, exemple în cURL și în JavaScript. Este **filtrată după permisiunile dumneavoastră** —
-doi cititori obțin două versiuni — și există și în OpenAPI 3.1
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+doi cititori obțin două versiuni —, scrisă **în limba ecranului dumneavoastră**, și există și în
+OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Numele, căile și codurile de
+eroare rămân aceleași în toate limbile.
 
 ![Documentația generată a unei baze](../../../../assets/screens/documentation-api.png)

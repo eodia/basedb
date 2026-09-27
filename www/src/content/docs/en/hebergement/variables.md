@@ -84,6 +84,24 @@ See [Accounts and sign-in](/basedb/en/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | AI field computations per hour and per workspace |
 | `BASEDB_AI_WORKER` | `1` | `0`: no background computation in this process |
 
+## Public demo
+
+An instance open to everyone, like [demo.basedb.eodia.com](https://demo.basedb.eodia.com): the
+sign-in screen prefills a shared account, the visitor reads everything and edits what exists,
+but creates or deletes nothing — base, table, row, file, comment, account, token, link —, and
+the AI replies that it is not part of the demo. The SQL console only reads there. Resetting the
+base every night remains your responsibility.
+
+| Variable | Default | Role |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: the instance becomes a public demo |
+| `BASEDB_DEMO_ACCOUNTS` | — | one account per language, separated by commas: `fr=demo@demo.com,en=demo-en@demo.com`; the sign-in screen prefills the one for its language, otherwise English, otherwise the first, and offers the others. Create these accounts, each with its own project, before turning on the demo: it refuses creation to everyone, administrators included |
+| `BASEDB_DEMO_PASSWORD` | — | with `BASEDB_DEMO_ACCOUNTS`, their password, the same for all, published with them |
+
+Without `BASEDB_DEMO_ACCOUNTS`, the shared account is the administrator named by
+`BASEDB_ADMIN_EMAIL` and `BASEDB_ADMIN_PASSWORD`. An address from the demo signs in with the
+published password, whatever is typed: false attempts do not lock it for everyone.
+
 ## Development only
 
 | Variable | Role |

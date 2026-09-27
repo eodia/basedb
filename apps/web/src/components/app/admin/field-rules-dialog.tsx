@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Hint } from '@/components/ui/tooltip'
 import {
   type AdminUser,
   type EffectiveMask,
@@ -168,9 +169,9 @@ export function FieldRulesDialog({
                       <td className="px-3 py-2">
                         <span className="flex min-w-0 items-center gap-2">
                           <FieldIcon kind={field.kind} />
-                          <span className="truncate" title={field.name}>
-                            {field.label}
-                          </span>
+                          <Hint label={field.name}>
+                            <span className="truncate">{field.label}</span>
+                          </Hint>
                         </span>
                       </td>
                       {groups.map((g) => {

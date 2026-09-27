@@ -14,7 +14,18 @@ kortene som er koblet til dem.
 Alt åpnes fra **Instrumentbord**, i blokken for den åpne databasen nederst i
 sidepanelet. Til venstre ligger databasens instrumentbord og lagrede spørsmål, og
 **Utforsk dataene** for å stille et spørsmål uten å lagre noe. Alle som kan lese databasen,
-kan se og utforske dem; å opprette, endre og lagre krever nivået **Administrere**.
+kan se dem, utforske dem og lagre egne spørsmål; å bygge et instrumentbord og dele et
+spørsmål krever nivået **Administrere**.
+
+Et lagret spørsmål er **personlig** – bare du ser det –, for **hele databasen** eller for
+**grupper**. Menyen, med høyreklikk eller **⋯**, åpner det i en fane ved siden av tabellene,
+endrer navnet og delingen, eller sletter det. **+** i fanelinjen tilbyr også **Nytt spørsmål**
+og **Nytt SQL-spørsmål**.
+
+**Lagre**, i toppfeltet til et spørsmål, tar vare på det; et spørsmål du ikke kan endre, tilbyr i
+stedet **Lagre en kopi**, som blir din egen. **⋯** (**Flere handlinger**) tilbyr også **Navn og
+deling…**, **Lagre en kopi…** og **Slett spørsmålet**; en fane som viste det, beholder innholdet
+sitt, som nå er ulagret igjen.
 
 ## Still et spørsmål med musen
 
@@ -109,8 +120,10 @@ som alle andre.
 
 **Rediger** setter instrumentbordet i redigeringsmodus:
 
-- **Spørsmål** plasserer et lagret spørsmål, eller oppretter et som hører til kortet;
-- **Tittel** og **Tekst** legger til en seksjonstittel eller en tekst i Markdown;
+- **Spørsmål** plasserer et lagret spørsmål – et personlig spørsmål kopieres inn dit –, eller
+  oppretter et som hører til kortet;
+- **Tittel** legger til en seksjonstittel, **Tekst** en formatert tekst — overskrifter, lister,
+  lenker — som kan sitere tall (se nedenfor);
 - **Innebygd side** viser en `https://`-adresse i en isolert ramme, som verken får
   økt eller data;
 - **Fane** fordeler kortene på flere sider; et dobbeltklikk gir en fane nytt navn.
@@ -118,6 +131,24 @@ som alle andre.
 Kortene flyttes med håndtaket og endrer størrelse fra hjørnet, på et rutenett med
 24 kolonner. **Lagre** tar vare på alt; **Avbryt** går tilbake til versjonen fra før. En korttittel
 åpner, i lesemodus, spørsmålet sitt for utforsking, instrumentbordets filtre inkludert.
+
+### Tall i teksten
+
+En tekst siterer en verdi med et navn mellom doble krøllparenteser: «Denne måneden er det
+`{{chiffre_affaires}}` i omsetning på `{{commandes}}` bestillinger.» Hvert navn blir en
+pille, som kobles til med ett klikk – eller via **Variabel** i editorens verktøylinje – til:
+
+| Kilde | Hva teksten viser |
+|---|---|
+| **et kort** på instrumentbordet | det kortet viser, under sine egne filtre |
+| **et lagret spørsmål** for hele databasen | verdien dens, og instrumentbordets filtre kobles til den som til et kort |
+| **et spørsmål bevart i teksten** | verdien dens; det er slik man siterer et personlig spørsmål |
+| **et filter** på instrumentbordet | den valgte verdien, slik kommandoen sier den |
+
+Verdien til et spørsmål er den som **Tall** ville vist: dets første mål, på siste rad. Den
+beregnes med leserens tillatelser, og vises alltid som tekst. En tekst siterer høyst 20 verdier;
+et navn skrives med små bokstaver, tall og `_`. Tekster skrevet i Markdown før editoren leses
+som før, og blir rike så snart de skrives om. Copilot skriver derimot sine tekster i Markdown.
 
 ## Filtrene
 

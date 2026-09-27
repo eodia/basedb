@@ -67,6 +67,6 @@ curl -X POST "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportu
 
 ## 生成されるドキュメント
 
-各データベースには、**APIとMCPのドキュメント**ページがあります。テーブルごとに、エンドポイント、列、cURLとJavaScriptの例が載っています。**自分の権限で絞り込まれる**ため、2人の閲覧者はそれぞれ別の版を見ることになります。OpenAPI 3.1版（`/api/v1/<tenant>/meta/bases/<base>/openapi.json`）もあります。
+各データベースには、**APIとMCPのドキュメント**ページがあります。テーブルごとに、エンドポイント、列、cURLとJavaScriptの例が載っています。**自分の権限で絞り込まれる**ため、2人の閲覧者はそれぞれ別の版を見ることになり、**画面の言語で**書かれます。OpenAPI 3.1版（`/api/v1/<tenant>/meta/bases/<base>/openapi.json`）もあります。名前、パス、エラーコードは、どの言語でも変わりません。
 
 ![データベースの生成ドキュメント](../../../../assets/screens/documentation-api.png)

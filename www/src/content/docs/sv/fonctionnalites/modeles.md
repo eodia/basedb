@@ -19,8 +19,22 @@ efter dess etikett och, om det finns AI-fält, ditt godkännande till att de vä
 skickas till instansens AI-leverantör. Utan det godkännandet är de vanliga fält, ifyllda med
 sina exempelvärden.
 
+**Läs in exempeldata**, ikryssad från början, fyller tabellerna med exempelrader så att du kan se
+databasen i praktiken. Avbockad förblir tabellerna tomma, redo för dina egna data — vyer,
+instrumentpaneler och automatiseringar skapas ändå.
+
 Ett tomt projekt erbjuder också **demodatabasen**: en liten byrå med kunder, projekt, uppgifter,
 fakturor och omdömen, som visar alla sidor av basedb.
+
+## På ditt språk
+
+De officiella mallarna läses och skapas **på skärmens språk**: tabeller, fält, val, exempelrader,
+vyer, instrumentpaneler, automatiseringar och AI-instruktioner. Exempelraderna byter värld med
+språket: det franska bageriet ”Boulangerie Martin” i Lyon blir ”Martins bageri” i Göteborg på
+svenska.
+
+En mall som importeras till din instans, eller sparas från en databas, är skriven av någon: den
+läses som den skrevs.
 
 ## Be AI om en mall
 
@@ -110,6 +124,14 @@ publicera om webbplatsen för att ändra galleriet på alla instanser.
 
 Varje mall kontrolleras när webbplatsen byggs, med samma validerare som servern: en ogiltig mall
 får bygget att misslyckas i stället för att nå användarna.
+
+En officiell mall skrivs en gång, på franska. Dess texter på ett annat språk är en ordbok,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+— den franska texten, följd av sin översättning —, som webbplatsen publicerar bredvid katalogen
+(`/basedb/modeles/i18n/<langue>.json`). Instansen sätter in varje text där och följer varje
+etikett där den citeras — formler, filter, vyer, instruktioner —, och läser sedan igenom
+resultatet: en ordbok som skulle förstöra mallen serveras inte, då serveras den franska mallen.
+En text som saknas i ordboken förblir på franska.
 
 Instansen läser adressen `BASEDB_TEMPLATES_URL` – som standard den offentliga webbplatsens. Peka
 den mot en egen katalog, eller sätt den till `off` för att inte läsa någon: instansen visar då

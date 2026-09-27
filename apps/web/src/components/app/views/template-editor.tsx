@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Textarea } from '@/components/ui/textarea'
+import { Hint } from '@/components/ui/tooltip'
 import type { Field } from '@/lib/api/client'
 import { parseTemplate, templateToLabels, templateToNames } from '@/lib/card-template'
 import { $t } from '@/lib/i18n'
@@ -143,13 +144,14 @@ export function TemplateEditor({
               {part.field.label}
             </span>
           ) : part.kind === 'unknown' ? (
-            <span
+            <Hint
               key={`?${part.raw}`}
-              className="rounded bg-destructive/10 px-1.5 py-0.5 text-destructive"
-              title={$t('Aucun champ lisible de la table ne porte ce nom')}
+              label={$t('Aucun champ lisible de la table ne porte ce nom')}
             >
-              {$t('{raw} — inconnu', { raw: part.raw })}
-            </span>
+              <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-destructive">
+                {$t('{raw} — inconnu', { raw: part.raw })}
+              </span>
+            </Hint>
           ) : null,
         )}
         {max !== undefined && (

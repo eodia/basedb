@@ -1,5 +1,6 @@
 'use client'
 
+import { Hint } from '@/components/ui/tooltip'
 import { type Field, type StoredFile, fileHref, filesOf } from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -218,16 +219,17 @@ export function FilesCell({
       </span>
       {busy && <LoaderCircle className="size-3.5 shrink-0 animate-spin text-muted-foreground" />}
       {writable && !busy && (
-        <button
-          type="button"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={drop.browse}
-          aria-label={$t('Ajouter un fichier à {label}', { label: field.label })}
-          title={$t('Ajouter un fichier (ou déposez-le sur la cellule)')}
-          className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover/row:opacity-100"
-        >
-          <Plus className="size-3.5" />
-        </button>
+        <Hint label={$t('Ajouter un fichier (ou déposez-le sur la cellule)')}>
+          <button
+            type="button"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={drop.browse}
+            aria-label={$t('Ajouter un fichier à {label}', { label: field.label })}
+            className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover/row:opacity-100"
+          >
+            <Plus className="size-3.5" />
+          </button>
+        </Hint>
       )}
       {drop.input}
     </span>

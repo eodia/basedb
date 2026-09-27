@@ -3,6 +3,7 @@
 import { Choice as ChoiceField } from '@/components/ui/choice'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { Hint } from '@/components/ui/tooltip'
 import { chartModel, pieSlices } from '@/lib/analytics/charts'
 import {
   type FormatContext,
@@ -92,24 +93,27 @@ export function VizPicker({
         const Icon = VIZ_ICONS[type]
         const fits = vizFits(type, result)
         return (
-          <button
+          <Hint
             key={type}
-            type="button"
-            onClick={() => onChange(type)}
-            className={cn(
-              'flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-xs transition-colors hover:bg-accent',
-              value === type && 'border-primary bg-primary/10 text-primary',
-              !fits && 'opacity-40',
-            )}
-            title={
+            label={
               fits
                 ? VIZ_LABELS[type]
                 : $t('{vizLabels} — ne convient pas à ce résultat', { vizLabels: VIZ_LABELS[type] })
             }
           >
-            <Icon className="size-5" />
-            {VIZ_LABELS[type]}
-          </button>
+            <button
+              type="button"
+              onClick={() => onChange(type)}
+              className={cn(
+                'flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-xs transition-colors hover:bg-accent',
+                value === type && 'border-primary bg-primary/10 text-primary',
+                !fits && 'opacity-40',
+              )}
+            >
+              <Icon className="size-5" />
+              {VIZ_LABELS[type]}
+            </button>
+          </Hint>
         )
       })}
     </div>
@@ -277,34 +281,36 @@ function ColorPicker({
           style={{ backgroundColor: color }}
         />
       ))}
-      <label
-        className="relative size-5 cursor-pointer overflow-hidden rounded-full border"
-        title={$t('Autre couleur')}
-        style={{
-          background:
-            current !== undefined && !palette.includes(current)
-              ? current
-              : 'conic-gradient(#e34948, #eda100, #1baf7a, #2a78d6, #4a3aa7, #e34948)',
-        }}
-      >
-        <input
-          type="color"
-          value={current?.startsWith('#') ? current : '#2a78d6'}
-          onChange={(e) => onChange(e.target.value)}
-          className="absolute inset-0 cursor-pointer opacity-0"
-          aria-label={$t('{label} : autre couleur', { label })}
-        />
-      </label>
-      {value !== undefined && (
-        <button
-          type="button"
-          onClick={() => onChange(undefined)}
-          className="ml-0.5 text-muted-foreground hover:text-foreground"
-          aria-label={$t('{label} : couleur par défaut', { label })}
-          title={$t('Couleur par défaut')}
+      <Hint label={$t('Autre couleur')}>
+        <label
+          className="relative size-5 cursor-pointer overflow-hidden rounded-full border"
+          style={{
+            background:
+              current !== undefined && !palette.includes(current)
+                ? current
+                : 'conic-gradient(#e34948, #eda100, #1baf7a, #2a78d6, #4a3aa7, #e34948)',
+          }}
         >
-          <RotateCcw className="size-3.5" />
-        </button>
+          <input
+            type="color"
+            value={current?.startsWith('#') ? current : '#2a78d6'}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            aria-label={$t('{label} : autre couleur', { label })}
+          />
+        </label>
+      </Hint>
+      {value !== undefined && (
+        <Hint label={$t('Couleur par défaut')}>
+          <button
+            type="button"
+            onClick={() => onChange(undefined)}
+            className="ml-0.5 text-muted-foreground hover:text-foreground"
+            aria-label={$t('{label} : couleur par défaut', { label })}
+          >
+            <RotateCcw className="size-3.5" />
+          </button>
+        </Hint>
       )}
     </fieldset>
   )

@@ -14,17 +14,23 @@ import {
   type ParameterValue,
   type QuestionQuery,
   type ResultColumn,
+  type TextVariable,
   type Visualization,
   type VisualizationType,
   cardConstraints,
   cardSize,
+  citedNames,
   parameterFits,
   parameterFitsVariable,
   parameterHasValue,
   periodExpression,
+  questionCards,
   sameColumnRef,
   sqlVariableNames,
+  tiesItself,
+  withoutVariables,
 } from '@basedb/contracts'
+import { htmlToPlain } from '../rich-text'
 import { type ColumnOption, columnsOf, isTemporal } from './model'
 
 /**
@@ -125,9 +131,69 @@ export function withMapping(
   return mappings.length === 0 ? plain : { ...plain, mappings }
 }
 
+/** The fields the cards already tie a filter to, their texts' questions included. */
+const tiedFields = (cards: readonly DashboardCard[], parameter: string) =>
+  questionCards(cards)
+    .flatMap((c) => c.mappings ?? [])
+    .filter((m) => m.parameter === parameter && 'column' in m.target)
+    .map((m) => (m.target as { column: ColumnRef }).column.field)
+
 /**
- * Ties a filter to every card that can take it: to the column of the same name as the
- * cards already tied, else to the first that fits — a date filter to the first date.
+ * Where a filter is best tied on a question: to the column of the same name as the cards
+ * already tied, else to the first that fits — a date filter to the first date.
+ */
+function guessedTarget(
+  query: QuestionQuery,
+  parameter: DashboardParameter,
+  tied: readonly string[],
+  base: DescribedBase,
+): ParameterTarget | null {
+  // Guessed only among the fields the base defines: « created on » is a column of every
+  // table, and tying every card to it would filter them all by a date nobody chose.
+  const candidates = mappingCandidates(base, parameter.type, query).filter(
+    (c) => !('column' in c.target) || !c.target.column.field.startsWith('_'),
+  )
+  const preferred =
+    candidates.find((c) => 'column' in c.target && tied.includes(c.target.column.field)) ??
+    candidates.find((c) => 'column' in c.target && c.target.column.join === undefined) ??
+    candidates[0]
+  return preferred?.target ?? null
+}
+
+/** The query a text runs itself for a value: the saved one it names, or the one it keeps. */
+export const variableQuery = (
+  variable: TextVariable,
+  questions: ReadonlyMap<string, Question>,
+): QuestionQuery | null =>
+  'question' in variable
+    ? (questions.get(variable.question)?.query ?? null)
+    : 'query' in variable
+      ? variable.query
+      : null
+
+/**
+ * A query a text runs itself, tied to a filter it was not tied to yet — when it can be. A
+ * card cited follows its own ties; a filter's value, nothing.
+ */
+function mappedVariable(
+  variable: TextVariable,
+  parameter: DashboardParameter,
+  tied: readonly string[],
+  base: DescribedBase,
+  questions: ReadonlyMap<string, Question>,
+): TextVariable {
+  if (!tiesItself(variable)) return variable
+  if ((variable.mappings ?? []).some((m) => m.parameter === parameter.id)) return variable
+  const query = variableQuery(variable, questions)
+  const target = query === null ? null : guessedTarget(query, parameter, tied, base)
+  return target === null
+    ? variable
+    : { ...variable, mappings: [...(variable.mappings ?? []), { parameter: parameter.id, target }] }
+}
+
+/**
+ * Ties a filter to every card that can take it — and to every question a text cites: to
+ * the column of the same name as the cards already tied, else to the first that fits.
  */
 export function autoMap(
   cards: readonly DashboardCard[],
@@ -135,11 +201,14 @@ export function autoMap(
   base: DescribedBase,
   questions: ReadonlyMap<string, Question>,
 ): DashboardCard[] {
-  const tied = cards
-    .flatMap((c) => c.mappings ?? [])
-    .filter((m) => m.parameter === parameter.id && 'column' in m.target)
-    .map((m) => (m.target as { column: ColumnRef }).column.field)
+  const tied = tiedFields(cards, parameter.id)
   return cards.map((card) => {
+    if (card.kind === 'text' && card.variables !== undefined) {
+      return {
+        ...card,
+        variables: card.variables.map((v) => mappedVariable(v, parameter, tied, base, questions)),
+      }
+    }
     if (
       card.kind !== 'question' ||
       (card.mappings ?? []).some((m) => m.parameter === parameter.id)
@@ -148,17 +217,81 @@ export function autoMap(
     }
     const question = cardQuestion(card, questions)
     if (question === null) return card
-    // Guessed only among the fields the base defines: « created on » is a column of every
-    // table, and tying every card to it would filter them all by a date nobody chose.
-    const candidates = mappingCandidates(base, parameter.type, question.query).filter(
-      (c) => !('column' in c.target) || !c.target.column.field.startsWith('_'),
-    )
-    const preferred =
-      candidates.find((c) => 'column' in c.target && tied.includes(c.target.column.field)) ??
-      candidates.find((c) => 'column' in c.target && c.target.column.join === undefined) ??
-      candidates[0]
-    return preferred === undefined ? card : withMapping(card, parameter.id, preferred.target)
+    const target = guessedTarget(question.query, parameter, tied, base)
+    return target === null ? card : withMapping(card, parameter.id, target)
   })
+}
+
+/** A question just cited in a text, tied to each filter of the dashboard it can take. */
+export function tiedVariable(
+  variable: TextVariable,
+  cards: readonly DashboardCard[],
+  parameters: readonly DashboardParameter[],
+  base: DescribedBase,
+  questions: ReadonlyMap<string, Question>,
+): TextVariable {
+  return parameters.reduce(
+    (v, parameter) =>
+      mappedVariable(v, parameter, tiedFields(cards, parameter.id), base, questions),
+    variable,
+  )
+}
+
+/** A query a text runs, with a filter tied to `target` — or untied when null. */
+export function withVariableMapping(
+  variable: TextVariable,
+  parameter: string,
+  target: ParameterTarget | null,
+): TextVariable {
+  if (!tiesItself(variable)) return variable
+  const rest = (variable.mappings ?? []).filter((m) => m.parameter !== parameter)
+  const mappings: CardMapping[] = target === null ? rest : [...rest, { parameter, target }]
+  const { mappings: _old, ...plain } = variable
+  return mappings.length === 0 ? plain : { ...plain, mappings }
+}
+
+/**
+ * A card once a filter is gone: untied from it — a text's questions too —, and a text no
+ * longer citing its value: the citation leaves the words with it.
+ */
+export function withoutParameter(card: DashboardCard, parameter: string): DashboardCard {
+  const untied = withMapping(card, parameter, null)
+  if (card.kind !== 'text' || card.variables === undefined) return untied
+  const left = withoutVariables(untied, (v) => 'parameter' in v && v.parameter === parameter)
+  if (left.variables === undefined) return left
+  return { ...left, variables: left.variables.map((v) => withVariableMapping(v, parameter, null)) }
+}
+
+/**
+ * The name a text cites a value by, from its label: `{{chiffre_d_affaires}}` — lower case,
+ * no accent, unique among `taken`.
+ */
+export function variableName(label: string, taken: ReadonlySet<string>): string {
+  const stem =
+    label
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 40)
+      .replace(/_+$/, '') || 'valeur'
+  let name = stem
+  for (let n = 2; taken.has(name); n++) name = `${stem}_${n}`
+  return name
+}
+
+/**
+ * What a text keeps of its variables once rewritten: those it still cites — the ones it
+ * had, else the one `offered` under that name.
+ */
+export function citedVariables(
+  text: string,
+  kept: readonly TextVariable[],
+  offered: ReadonlyMap<string, TextVariable>,
+): TextVariable[] {
+  const known = new Map(kept.map((v) => [v.name, v]))
+  return citedNames(text).flatMap((name) => known.get(name) ?? offered.get(name) ?? [])
 }
 
 /** The size a card starts at, by what it shows — the kernel's copilot places by the same. */
@@ -272,10 +405,12 @@ export function cardsTaking(
   questions: ReadonlyMap<string, Question>,
   base: DescribedBase,
 ): number {
-  return cards.filter((card) => {
-    const question = card.kind === 'question' ? cardQuestion(card, questions) : null
+  const taking = questionCards(cards).filter((card) => {
+    const question = cardQuestion(card, questions)
     return question !== null && columnIn(question.query, filter.table, filter.field, base) !== null
-  }).length
+  })
+  // A text citing two questions that read the column is still one card.
+  return new Set(taking.map((c) => c.id)).size
 }
 
 /** A builder question's filters and a dashboard's, as one query — what « Explorer » opens. */
@@ -350,7 +485,17 @@ export function blocksOf(
       continue
     }
     if (card.kind === 'text') {
-      blocks.push({ kind: 'text', width: width(card.w), title, body: card.text ?? '' })
+      const text = card.text ?? ''
+      // A template's text is Markdown, and cites nothing: a rich one goes as its words.
+      const body = card.rich === true ? htmlToPlain(text) : text
+      blocks.push({ kind: 'text', width: width(card.w), title, body })
+      if ((card.variables ?? []).length > 0) {
+        omitted.push(
+          $t('« {value} » : un modèle ne porte pas les valeurs qu’un texte cite.', {
+            value: title || htmlToPlain(text, 40) || $t('Texte'),
+          }),
+        )
+      }
       continue
     }
     if (card.kind === 'embed') {

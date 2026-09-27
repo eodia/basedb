@@ -22,7 +22,7 @@ as descrições (`COMMENT ON`).
 
 ## Na interface
 
-O **+** da barra de abas, ou o menu **⋯** da base → **Nova consulta SQL**: um editor
+O **+** da barra de abas, ou o menu **⋯** da base → **Consulta SQL**: um editor
 com realce de sintaxe e autocompletar, cujo resultado aparece na mesma grade das suas tabelas.
 
 ![Uma consulta salva e duas visões SQL organizadas entre as tabelas](../../../../assets/screens/requete-sql.png)

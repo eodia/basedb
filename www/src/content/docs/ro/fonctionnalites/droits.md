@@ -12,9 +12,9 @@ creat mai târziu.
 | Nivel | Permite |
 |---|---|
 | **Fără acces** | nimic: resursa este invizibilă |
-| **Citire** | vizualizarea rândurilor, comentarea lor, crearea de vizualizări personale, consultarea structurii și a tablourilor de bord, formularea propriilor întrebări, scrierea de SQL doar în citire și salvarea propriilor interogări personale |
+| **Citire** | vizualizarea rândurilor, comentarea lor, crearea de vizualizări personale, consultarea structurii și a tablourilor de bord, formularea și salvarea propriilor întrebări, scrierea de SQL doar în citire și salvarea propriilor interogări personale |
 | **Editare** | plus crearea, modificarea și ștergerea rândurilor |
-| **Gestionare** | plus modificarea structurii, crearea vizualizărilor partajate, a tablourilor de bord și a întrebărilor salvate, partajarea unui tablou de bord printr-un link, partajarea interogărilor, crearea vizualizărilor SQL, a automatizărilor, a integrărilor și a tokenurilor; SQL-ul său are acces la întreaga bază, inclusiv la scrieri |
+| **Gestionare** | plus modificarea structurii, crearea vizualizărilor partajate și a tablourilor de bord, partajarea unui tablou de bord printr-un link, partajarea întrebărilor și a interogărilor, crearea vizualizărilor SQL, a automatizărilor, a integrărilor și a tokenurilor; SQL-ul său are acces la întreaga bază, inclusiv la scrieri |
 
 Permisiunile **se adună**: o persoană primește cel mai înalt nivel pe care i-l dă unul dintre
 grupurile sale. A da mai puțin unui tabel decât bazei lui îl face „granular”.
@@ -70,6 +70,11 @@ portugheză (Brazilia), neerlandeză, poloneză, cehă, suedeză, daneză, norve
 română, maghiară, turcă, ucraineană, japoneză, chineză simplificată și coreeană. În mod
 implicit, interfața preia limba browserului dumneavoastră; **Limbă**, în **Aspect**, fixează
 alta. Numerele și datele urmează limba aleasă.
+
+Un link poate cere și el o limbă: `?lang=de` la finalul unei adrese de basedb afișează în
+germană ecranul de conectare, un formular, o vizualizare sau un tablou de bord partajate. Așa
+ajunge site-ul la demo în limba paginii. Odată conectat, basedb urmează contul dumneavoastră:
+limba aleasă în **Aspect**, altfel cea a browserului.
 
 Tema rămâne proprie browserului; limba, ordinea datelor și prima zi a săptămânii vă urmează de
 pe un calculator pe altul. Schimbarea adresei sau legarea unui furnizor cer o sesiune

@@ -12,8 +12,18 @@ et **spørgsmål** — en læsning af databasen, bygget med musen eller skrevet 
 
 Alt åbnes fra **Dashboards** i blokken for den åbne database nederst i sidepanelet. Til venstre
 databasens dashboards og gemte spørgsmål og **Udforsk data** for at stille et spørgsmål uden at
-gemme noget. Alle, der kan læse databasen, kan se dem og udforske; at oprette, redigere og gemme
-kræver niveauet **Administrere**.
+gemme noget. Alle, der kan læse databasen, kan se dem, udforske og gemme egne spørgsmål; at bygge
+et dashboard og dele et spørgsmål kræver niveauet **Administrere**.
+
+Et gemt spørgsmål er **personligt** — kun du kan se det —, for **hele databasen** eller for
+**grupper**. Dets menu, med højreklik eller via **⋯**, åbner det i en fane ved siden af
+tabellerne, ændrer dets navn og deling, eller sletter det. **+** i fanelinjen tilbyder også **Nyt
+spørgsmål** og **Nyt SQL-spørgsmål**.
+
+**Gem**, i et spørgsmåls sidehoved, gemmer det; et spørgsmål, du ikke kan redigere, tilbyder i
+stedet **Gem en kopi**, som bliver dit eget. **⋯** (**Flere handlinger**) tilbyder også **Navn og
+deling…**, **Gem en kopi…** og **Slet spørgsmålet**; en fane, der viste det, beholder sit
+indhold, nu ugemt igen.
 
 ## Stil et spørgsmål med musen
 
@@ -107,8 +117,10 @@ andre.
 
 **Rediger** sætter dashboardet i redigeringstilstand:
 
-- **Spørgsmål** placerer et gemt spørgsmål eller opretter et, der hører til kortet;
-- **Titel** og **Tekst** tilføjer en afsnitstitel eller en tekst i Markdown;
+- **Spørgsmål** placerer et gemt spørgsmål — et personligt spørgsmål kopieres da ind —, eller
+  opretter et, der hører til kortet;
+- **Titel** tilføjer en afsnitstitel, **Tekst** en formateret tekst — overskrifter, lister,
+  links — der kan citere tal (se nedenfor);
 - **Indlejret side** viser en `https://`-adresse i en isoleret ramme, som hverken modtager
   session eller data;
 - **Fane** fordeler kortene på flere sider; et dobbeltklik omdøber en fane.
@@ -116,6 +128,25 @@ andre.
 Kortene flyttes med deres håndtag og ændrer størrelse fra deres hjørne på et gitter med 24
 kolonner. **Gem** gemmer det hele; **Annuller** går tilbage til den tidligere version. I
 læsetilstand åbner en korttitel dens spørgsmål til udforskning, dashboardets filtre inklusive.
+
+### Tal i teksten
+
+En tekst citerer en værdi ved et navn i dobbelte krøllede parenteser: »Denne måned
+`{{chiffre_affaires}}` i omsætning på `{{commandes}}` ordrer.« Hvert navn bliver til en pille,
+der kan forbindes med ét klik — eller via **Variabel** i editorens værktøjslinje — til:
+
+| Kilde | Hvad teksten viser |
+|---|---|
+| **et kort** på dashboardet | det, det viser, under sine egne filtre |
+| **et gemt spørgsmål** for hele databasen | dets værdi, og dashboardets filtre forbinder sig med det som med et kort |
+| **et spørgsmål, opbevaret i teksten** | dets værdi; sådan citerer man et personligt spørgsmål |
+| **et filter** på dashboardet | den valgte værdi, som dets kommando siger den |
+
+Værdien af et spørgsmål er den, som dets **Tal** ville vise: dets første mål, på den sidste
+række. Den beregnes med læserens tilladelser og vises altid som tekst. En tekst citerer højst
+20 værdier; et navn skrives med små bogstaver, tal og `_`. Tekster skrevet i Markdown, før
+editoren fandtes, læses som før, og bliver formaterede, så snart de skrives om. Copilot skriver
+derimod sine tekster i Markdown.
 
 ## Filtrene
 

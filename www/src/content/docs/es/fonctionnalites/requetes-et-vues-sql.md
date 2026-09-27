@@ -13,7 +13,7 @@ también leen.
 
 ## Cada uno con sus permisos
 
-El **+** de la barra de pestañas, o el menú **⋯** de la base → **Nueva consulta SQL**, abre una
+El **+** de la barra de pestañas, o el menú **⋯** de la base → **Consulta SQL**, abre una
 pestaña SQL: un editor con resaltado y autocompletado, **Ctrl+Intro** para ejecutar y el
 resultado en la misma cuadrícula que tus tablas. Lo que la consulta puede leer depende de quién la lanza:
 
@@ -34,7 +34,8 @@ servidor MCP no te mostrarían.
 **Guardar**, en la barra de la pestaña, coloca la consulta bajo las tablas de la base, en la
 sección **Consultas**. Se vuelve a abrir con un clic; **⋯** → **Guardar como…** crea una
 copia, y **Nombre y uso compartido…** (en la pestaña o en su menú de la barra lateral) le cambia el nombre,
-cambia quién la ve o la elimina.
+cambia quién la ve o la elimina —**Eliminar** está también en su menú, con un clic derecho. Una
+pestaña que la mostraba conserva su texto.
 
 ![Guardar una consulta: su nombre, lo que muestra y quién la ve](../../../../assets/screens/requete-enregistrer.png)
 
@@ -85,7 +86,8 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 sobre cada tabla y cada columna que lee; la barra lateral solo la muestra a quien puede leer todo
 lo que ella lee. Solo lee **su** base: otra base, o el catálogo de basedb,
 se rechazan desde la creación. Crearla, modificarla o eliminarla requiere el nivel **Gestión**
-sobre la base.
+sobre la base. **Eliminar**, en su menú de la barra lateral, la retira para todos, scripts y
+herramientas incluidos; las tablas que lee no se ven afectadas.
 
 ### Cuando cambia la estructura
 

@@ -5,6 +5,7 @@ import {
   type TemplateIssue,
   type TemplateSummary,
   checkTemplate,
+  formulaDialect,
   isLocale,
   localizeTemplate,
   summarizeTemplate,
@@ -270,7 +271,7 @@ function localized(
   const done = byLocale.get(locale)
   if (done !== undefined && done.of === dictionary) return done.is
   // A dictionary that breaks the template is not served: the French one is.
-  const check = localizeTemplate(template, dictionary)
+  const check = localizeTemplate(template, dictionary, formulaDialect(locale))
   const is = check.ok ? check.template : template
   byLocale.set(locale, { of: dictionary, is })
   return is

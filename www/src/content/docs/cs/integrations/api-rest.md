@@ -81,7 +81,8 @@ v rozhraní: token čte a zapisuje řádky, databázi nemění.
 
 Každá databáze má svou stránku **Dokumentace API a MCP**: pro každou tabulku její koncové body,
 sloupce a příklady v cURL a JavaScriptu. Je **filtrovaná podle vašich oprávnění** – dva
-čtenáři dostanou dvě verze – a existuje také ve formátu OpenAPI 3.1
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+čtenáři dostanou dvě verze –, napsaná **v jazyce vaší obrazovky**, a existuje také ve formátu
+OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Názvy, cesty a chybové kódy
+zůstávají stejné ve všech jazycích.
 
 ![Vygenerovaná dokumentace databáze](../../../../assets/screens/documentation-api.png)

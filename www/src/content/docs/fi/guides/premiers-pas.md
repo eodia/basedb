@@ -36,7 +36,7 @@ Tietokannan **⋯**-valikosta: **Uusi taulukko**. Lisää sitten sen kentät **R
 | Client | Viittaus → Clients |
 | Notes | Pitkä teksti (Markdown) |
 
-Myöhemmin kaava (`JOURS([Échéance]; AUJOURDHUI())`), haku (asiakkaan kaupunki) tai kooste
+Myöhemmin kaava (`DAYS([Échéance], TODAY())`), haku (asiakkaan kaupunki) tai kooste
 (kokonaissumma asiakasta kohden) lisätään samalla tavalla – katso
 [Taulukot ja kentät](/basedb/fi/fonctionnalites/tables-et-champs/).
 
@@ -69,7 +69,7 @@ käyttöoikeuksia. Lisätietoja: [Jaetut lomakkeet](/basedb/fi/fonctionnalites/f
 
 ## 6. Lue SQL:llä
 
-Tietokannan **⋯**-valikko → **Uusi SQL-kysely**: taulukkosi ovat siellä oikeilla nimillään.
+Tietokannan **⋯**-valikko → **SQL-kysely**: taulukkosi ovat siellä oikeilla nimillään.
 
 ```sql
 SELECT nom, statut, montant

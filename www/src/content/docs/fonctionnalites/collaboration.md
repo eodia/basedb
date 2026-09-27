@@ -1,6 +1,6 @@
 ---
 title: Collaboration
-description: Commentaires et mentions, notifications, mises à jour en temps réel et présence.
+description: Commentaires et mentions, notifications, mises à jour en temps réel, présence, et un lien vers chaque écran.
 ---
 
 Plusieurs personnes travaillent sur la même base en même temps : chacune voit les écritures des
@@ -45,6 +45,28 @@ doigts.
 Les visages des personnes qui regardent **la même table** s’affichent en haut de l’écran ; ceux
 qui ont ouvert **la même ligne**, dans l’en-tête de sa fiche. Dans la grille, le pointeur des
 autres apparaît sur la cellule qu’ils survolent.
+
+## Un lien vers chaque écran
+
+L’adresse du navigateur suit ce que vous regardez : une table, une de ses vues, la fiche d’une
+ligne, un tableau de bord, une automatisation, une question, vos paramètres. Collez-la dans un
+message : votre collègue arrive au même endroit, avec ses propres droits. Mettez-la en favori ;
+les boutons précédent et suivant du navigateur ramènent où vous étiez.
+
+| Adresse | Ce qu’elle ouvre |
+|---|---|
+| `/bases/ventes/tables/opportunites` | la table « Opportunités » de la base « Ventes » |
+| `/bases/ventes/tables/opportunites?vue=…` | une de ses vues |
+| `/bases/ventes/tables/opportunites?ligne=…` | la fiche d’une de ses lignes |
+| `/bases/ventes/tableaux-de-bord/…` | un tableau de bord |
+| `/bases/ventes/automatisations/…` | une automatisation |
+| `/parametres/apparence` | vos paramètres |
+
+Une adresse nomme un **endroit**, pas l’état où vous l’avez laissé : filtres, tris et largeurs
+de colonnes restent ceux de chaque navigateur. Une base et une table s’y écrivent par leur nom
+PostgreSQL : renommées, l’ancienne adresse ne mène plus à rien. Une adresse qui ne mène à rien —
+une faute de frappe, un objet supprimé, ou que vous n’avez pas le droit de voir — affiche
+« Cette page n’existe pas ».
 
 ## Annuler
 

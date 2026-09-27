@@ -198,6 +198,24 @@
   }
 }
 
+/* What is asked of the AI glows at its edge, the colours turning — the field of the site's
+   page. An animated angle rather than a rotated square: the band stays whole however wide. */
+@property --ai-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@theme {
+  --animate-ai-turn: ai-turn 5s linear infinite;
+
+  @keyframes ai-turn {
+    to {
+      --ai-angle: 1turn;
+    }
+  }
+}
+
 /* The screens before a session move a lot; asked for less motion, they arrive still. */
 @media (prefers-reduced-motion: reduce) {
   [data-auth-screen] *,
@@ -215,5 +233,17 @@
   .scroll-discret {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
+  }
+
+  .bg-ai-edge {
+    background: conic-gradient(
+      from var(--ai-angle),
+      #34d399,
+      #60a5fa,
+      #a78bfa,
+      #f472b6,
+      #fbbf24,
+      #34d399
+    );
   }
 }

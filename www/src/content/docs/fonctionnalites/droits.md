@@ -12,9 +12,9 @@ dessous, y compris ce qui sera créé plus tard.
 | Niveau | Permet |
 |---|---|
 | **Aucun accès** | rien : la ressource est invisible |
-| **Lecture** | voir les lignes, les commenter, se faire des vues personnelles, consulter la structure et les tableaux de bord, poser ses propres questions, écrire du SQL en lecture seule et enregistrer ses requêtes personnelles |
+| **Lecture** | voir les lignes, les commenter, se faire des vues personnelles, consulter la structure et les tableaux de bord, poser et enregistrer ses propres questions, écrire du SQL en lecture seule et enregistrer ses requêtes personnelles |
 | **Édition** | et créer, modifier, supprimer des lignes |
-| **Gestion** | et changer la structure, créer les vues partagées, les tableaux de bord et les questions enregistrées, partager un tableau de bord par un lien, partager des requêtes, créer des vues SQL, les automatisations, les intégrations et les jetons ; son SQL a toute la base, écritures comprises |
+| **Gestion** | et changer la structure, créer les vues partagées et les tableaux de bord, partager un tableau de bord par un lien, partager des questions et des requêtes, créer des vues SQL, les automatisations, les intégrations et les jetons ; son SQL a toute la base, écritures comprises |
 
 Les droits **s’additionnent** : une personne reçoit le niveau le plus élevé que lui donne l’un de
 ses groupes. Donner moins à une table qu’à sa base la rend « granulaire ».
@@ -70,6 +70,11 @@ basedb parle **vingt langues** : français, anglais, allemand, espagnol, italien
 turc, ukrainien, japonais, chinois simplifié et coréen. Par défaut, l’interface prend la langue
 de votre navigateur ; **Langue**, dans **Apparence**, en fixe une autre. Les nombres et les dates
 suivent la langue choisie.
+
+Un lien peut aussi demander une langue : `?lang=de` au bout d’une adresse de basedb montre en
+allemand l’écran de connexion, un formulaire, une vue ou un tableau de bord partagés. C’est ainsi
+que le site mène à la démo dans la langue de la page. Une fois connecté, basedb suit votre
+compte : la langue choisie dans **Apparence**, sinon celle du navigateur.
 
 Le thème reste propre au navigateur ; la langue, l’ordre des dates et le premier jour de la
 semaine vous suivent d’un poste à l’autre. Changer d’adresse ou lier un fournisseur demande une session

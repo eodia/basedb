@@ -13,7 +13,7 @@ leser.
 
 ## Hver med sine tillatelser
 
-**+** i fanelinjen, eller databasens **⋯**-meny → **Ny SQL-spørring**, åpner en
+**+** i fanelinjen, eller databasens **⋯**-meny → **SQL-spørring**, åpner en
 SQL-fane: en editor med fargekoding og autofullføring, **Ctrl+Enter** for å kjøre, og
 resultatet i det samme rutenettet som tabellene dine. Hva spørringen kan lese, avhenger av hvem som kjører den:
 
@@ -34,7 +34,8 @@ MCP-serveren ikke ville vist deg.
 **Lagre**, i fanens verktøylinje, plasserer spørringen under databasens tabeller, i
 delen **Spørringer**. Den åpnes igjen med ett klikk; **⋯** → **Lagre som…** lager en
 kopi, og **Navn og deling…** (i fanen eller i menyen i sidepanelet) gir den nytt navn, endrer
-hvem som ser den, eller sletter den.
+hvem som ser den, eller sletter den – **Slett** finnes også i menyen dens, ved høyreklikk. En
+fane som viste den, beholder teksten sin.
 
 ![Lagre en spørring: navnet, hva den viser, og hvem som ser den](../../../../assets/screens/requete-enregistrer.png)
 
@@ -85,7 +86,8 @@ SELECT * FROM b_t4z56fq_demo_atelier_lumen.factures_a_encaisser;
 på hver tabell og hver kolonne den leser; sidepanelet viser den bare for dem som kan lese alt
 den leser. Den leser bare **sin egen** database: en annen database, eller basedbs katalog,
 avvises allerede ved opprettelsen. Å opprette, endre eller slette den krever nivået **Administrere**
-på databasen.
+på databasen. **Slett**, i menyen i sidepanelet, fjerner den for alle, skript og verktøy
+inkludert; tabellene den leser, blir ikke berørt.
 
 ### Når strukturen endres
 

@@ -19,8 +19,22 @@ yapay zeka alanları varsa, bu alanların atıf yaptığı değerlerin kurulumun
 sağlayıcısına gönderilmesi için onayınızı ister. Bu onay olmadan bunlar, örnek değerleriyle
 doldurulmuş sıradan alanlardır.
 
+Varsayılan olarak işaretli olan **Örnek verileri yükle**, veritabanını iş başında görmek için
+tabloları örnek satırlarla doldurur. İşaret kaldırıldığında tablolar boş kalır, kendi
+verilerinize hazır — görünümler, panolar ve otomasyonlar yine de oluşturulur.
+
 Boş bir proje ayrıca **demo veritabanını** önerir: küçük bir ajans; müşterileri, projeleri,
 görevleri, faturaları ve değerlendirmeleriyle basedb'nin tüm yönlerini gösterir.
+
+## Kendi dilinizde
+
+Resmî şablonlar **ekranın dilinde** okunur ve oluşturulur: tablolar, alanlar, seçenekler,
+örnek satırlar, görünümler, panolar, otomasyonlar ve yapay zekanın talimatları. Örnek satırlar
+dille birlikte dünya değiştirir: Fransızca'daki Lyon fırını “Boulangerie Martin”, Türkçe'de
+Bursa'daki “Kaya Fırını” olur.
+
+Kurulumunuza içe aktarılan ya da bir veritabanından kaydedilen bir şablon, birinin yazdığı bir
+şablondır: yazıldığı hâliyle okunur.
 
 ## Yapay zekadan isteme
 
@@ -109,6 +123,14 @@ siteyi yeniden yayımlamak, tüm kurulumların galerisini değiştirmeye yeter.
 
 Her şablon, site derlenirken sunucuyla aynı doğrulayıcı tarafından denetlenir: geçersiz bir
 şablon, kullanıcılara ulaşmak yerine derlemeyi başarısız kılar.
+
+Resmî bir şablon bir kez, Fransızca yazılır. Başka bir dildeki metinleri bir sözlüktür,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+— önce Fransızca metin, sonra çevirisi —, sitenin katalogun yanında yayımladığı
+(`/basedb/modeles/i18n/<langue>.json`). Kurulum her metni oradan geçirir ve her etiketi
+anıldığı her yerde izler — formüller, filtreler, görünümler, talimatlar —, ardından sonucu
+yeniden okur: şablonu bozacak bir sözlük sunulmaz, Fransızca şablon sunulur. Sözlükte bulunmayan
+bir metin Fransızca kalır.
 
 Kurulum `BASEDB_TEMPLATES_URL` adresini okur — varsayılan olarak herkese açık sitenin adresi.
 Onu kendi kataloğunuza yönlendirin ya da hiçbir katalog okumamak için `off` yapın: bu durumda

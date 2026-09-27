@@ -22,7 +22,7 @@ beskrivelsene (`COMMENT ON`).
 
 ## I grensesnittet
 
-**+** i fanelinjen, eller databasens **⋯**-meny → **Ny SQL-spørring**: en editor
+**+** i fanelinjen, eller databasens **⋯**-meny → **SQL-spørring**: en editor
 med fargekoding og autofullføring, der resultatet vises i det samme rutenettet som tabellene dine.
 
 ![En lagret spørring, og to SQL-visninger plassert blant tabellene](../../../../assets/screens/requete-sql.png)

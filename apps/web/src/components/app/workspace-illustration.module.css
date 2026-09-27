@@ -6,6 +6,10 @@
   overflow: visible;
 }
 
+.illustration.compact {
+  width: min(100%, 15rem);
+}
+
 /* A single entrance, then still: nothing competes with the workspace controls. */
 @media (prefers-reduced-motion: no-preference) {
   .table,

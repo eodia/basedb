@@ -84,6 +84,25 @@ Lásd: [Fiókok és bejelentkezés](/basedb/hu/hebergement/connexion/).
 | `BASEDB_AI_FIELD_QUOTA` | `300` | MI-mezők számításai óránként és munkaterületenként |
 | `BASEDB_AI_WORKER` | `1` | `0`: ebben a folyamatban nincs háttérszámítás |
 
+## Nyilvános demó
+
+Egy mindenki előtt nyitott példány, mint a [demo.basedb.eodia.com](https://demo.basedb.eodia.com):
+a bejelentkezési képernyő előre kitölt egy közös fiókot, a látogató mindent elolvashat és
+módosíthatja, ami már létezik, de semmit nem hozhat létre és nem törölhet – adatbázist, táblát,
+sort, fájlt, megjegyzést, fiókot, tokent, hivatkozást –, és az MI azt válaszolja, hogy nem
+része a demónak. Az SQL-konzol ott csak olvas. Az adatbázis éjszakánkénti visszaállítása az Ön
+feladata marad.
+
+| Változó | Alapértelmezés | Szerep |
+|---|---|---|
+| `BASEDB_DEMO` | — | `1`: a példány nyilvános demóvá válik |
+| `BASEDB_DEMO_ACCOUNTS` | — | egy fiók nyelvenként, vesszővel elválasztva: `fr=demo@demo.com,en=demo-en@demo.com`; a bejelentkezési képernyő előre kitölti a saját nyelvéhez tartozót, ennek hiányában az angolt, ennek hiányában az elsőt, és felkínálja a többit is. Hozza létre ezeket a fiókokat, mindegyiket a saját projektjével, mielőtt bekapcsolja a demót: az utána mindenkitől megtagadja a létrehozást, az adminisztrátortól is |
+| `BASEDB_DEMO_PASSWORD` | — | a `BASEDB_DEMO_ACCOUNTS` mellett a jelszavuk, mindegyiküknél ugyanaz, velük együtt közzétéve |
+
+A `BASEDB_DEMO_ACCOUNTS` nélkül a közös fiók az az adminisztrátor, akit a `BASEDB_ADMIN_EMAIL` és
+a `BASEDB_ADMIN_PASSWORD` nevez meg. A demó egy címe a közzétett jelszóval jelentkezik be, bármit
+is gépelnek be: a hibás próbálkozások nem zárolják mindenki elől.
+
 ## Csak fejlesztéshez
 
 | Változó | Szerep |

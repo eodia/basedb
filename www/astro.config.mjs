@@ -91,6 +91,7 @@ export default defineConfig({
 					items: [
 						{ slug: 'fonctionnalites/tables-et-champs' },
 						{ slug: 'fonctionnalites/vues' },
+						{ slug: 'fonctionnalites/recherche' },
 						{ slug: 'fonctionnalites/formulaires-partages' },
 						{ slug: 'fonctionnalites/vues-partagees' },
 						{ slug: 'fonctionnalites/collaboration' },

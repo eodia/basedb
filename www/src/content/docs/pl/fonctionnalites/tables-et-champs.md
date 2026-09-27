@@ -72,12 +72,12 @@ wartości. Nie ogranicza on wartości: ocena 7 w skali 5 pozostaje 7.
 
 ## Formuły
 
-Formułę pisze się po francusku: pola w nawiasach kwadratowych, argumenty rozdzielone `;`:
+Formułę pisze się po angielsku (nazwy francuskie też działają): pola w nawiasach kwadratowych, argumenty rozdzielone `,`:
 
 ```text
-ARRONDI([Montant HT] * (1 + [Taux de TVA]); 2)
-SI([Payée]; FAUX; JOURS(AUJOURDHUI(); [Échéance]) > 0)
-JOURS([Fin]; [Début])
+ROUND([Montant HT] * (1 + [Taux de TVA]), 2)
+IF([Payée], FALSE, DAYS(TODAY(), [Échéance]) > 0)
+DAYS([Fin], [Début])
 ```
 
 Edytor podpowiada pola do wstawienia i panel funkcji; błąd wskazuje pole lub znak, którego
@@ -85,14 +85,14 @@ dotyczy.
 
 | Rodzina | Funkcje |
 |---|---|
-| Logika | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` |
-| Liczby | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` |
-| Tekst | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` |
-| Daty | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` |
+| Logika | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
+| Liczby | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
+| Tekst | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
+| Daty | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
 | Operatory | `+ - * /`, `&` do łączenia tekstu, `= <> < <= > >=` |
 
 Formuła staje się **kolumną generowaną** przez PostgreSQL: `psql` i twoje narzędzia czytają ją
-jak każdą inną. Formuła zależna od bieżącego dnia (`AUJOURDHUI()`, `MAINTENANT()`) lub
+jak każdą inną. Formuła zależna od bieżącego dnia (`TODAY()`, `NOW()`) lub
 przytaczająca odnośnik albo agregację jest **obliczana przy odczycie**: można ją filtrować i
 sortować w basedb, ale nie istnieje w bezpośrednim SQL.
 

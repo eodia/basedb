@@ -19,8 +19,22 @@ o rótulo e, se houver campos de IA, o seu consentimento para que os valores que
 sejam enviados ao provedor de IA da instância. Sem esse consentimento, eles são campos
 comuns, preenchidos com seus valores de exemplo.
 
+**Carregar os dados de exemplo**, marcada por padrão, preenche as tabelas com linhas de
+exemplo para ver a base em ação. Desmarcada, as tabelas ficam vazias, prontas para os seus
+próprios dados — visões, painéis e automações são criados do mesmo jeito.
+
 Um projeto vazio também oferece a **base de demonstração**: uma pequena agência, seus clientes,
 projetos, tarefas, faturas e avaliações, que mostra todas as facetas do basedb.
+
+## No seu idioma
+
+Os modelos oficiais são lidos e criados **no idioma da tela**: tabelas, campos, opções, linhas
+de exemplo, visões, painéis, automações e instruções da IA. As linhas de exemplo mudam de mundo
+com o idioma: a “Boulangerie Martin” de Lyon se torna “Padaria Pão Quente” em São Paulo, em
+português do Brasil.
+
+Um modelo importado na sua instância, ou salvo a partir de uma base, foi escrito por alguém: ele
+se lê como foi escrito.
 
 ## Pedir à IA
 
@@ -109,6 +123,15 @@ site basta para mudar a galeria de todas as instâncias.
 
 Cada modelo é verificado na construção do site, pelo mesmo validador do servidor:
 um modelo inválido faz a construção falhar em vez de chegar aos usuários.
+
+Um modelo oficial é escrito uma vez, em francês. Seus textos em outro idioma são um
+dicionário,
+[`packages/templates/i18n/<langue>/<clé>.json`](https://github.com/eodia/basedb/tree/main/packages/templates/i18n)
+— o texto em francês, seguido da sua tradução —, que o site publica ao lado do catálogo
+(`/basedb/modeles/i18n/<langue>.json`). A instância passa cada texto por ele e acompanha cada
+rótulo onde ele é citado — fórmulas, filtros, visões, instruções —, e então relê o resultado: um
+dicionário que quebrasse o modelo não é servido, o modelo em francês é. Um texto ausente do
+dicionário permanece em francês.
 
 A instância lê o endereço `BASEDB_TEMPLATES_URL` — por padrão, o do site público. Aponte-o
 para um catálogo seu, ou defina `off` para não ler nenhum: a instância então serve os

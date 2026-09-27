@@ -81,7 +81,8 @@ interface session: a token reads and writes rows, it does not change the base.
 
 Each base has its **API and MCP documentation** page: for each table, its endpoints, its
 columns, examples in cURL and in JavaScript. It is **filtered by your permissions** — two
-readers get two versions — and also exists as OpenAPI 3.1
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`).
+readers get two versions —, written **in the language of your screen**, and also exists as
+OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Names, paths and error codes
+stay the same in every language.
 
 ![A base’s generated documentation](../../../../assets/screens/documentation-api.png)
