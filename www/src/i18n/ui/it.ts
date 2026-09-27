@@ -32,6 +32,10 @@ export default {
 		about: 'https://eodia.com/about/',
 		contact: 'https://eodia.com/contact/',
 	},
+	demo: {
+		short: 'Demo',
+		cta: 'Prova la demo',
+	},
 	nav: {
 		aria: 'Navigazione principale',
 		home: 'basedb — home',

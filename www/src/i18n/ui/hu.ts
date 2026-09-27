@@ -32,6 +32,10 @@ export default {
 		about: 'https://eodia.com/about/',
 		contact: 'https://eodia.com/contact/',
 	},
+	demo: {
+		short: 'Demó',
+		cta: 'Demó kipróbálása',
+	},
 	nav: {
 		aria: 'Fő navigáció',
 		home: 'basedb – kezdőlap',

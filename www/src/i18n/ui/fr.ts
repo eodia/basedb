@@ -68,6 +68,14 @@ const fr = {
 		contact: 'https://eodia.com/fr/contact/',
 	},
 
+	/** The words that lead to the public demo (`DEMO_URL`, `lib/demo.ts`). */
+	demo: {
+		/** In the bar, beside GitHub. */
+		short: 'Démo',
+		/** A button: the first screen of each home page, the menu on a phone. */
+		cta: 'Essayer la démo',
+	},
+
 	nav: {
 		aria: 'Navigation principale',
 		home: 'basedb — accueil',

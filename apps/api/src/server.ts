@@ -11,6 +11,7 @@ import {
 import { serve } from '@hono/node-server'
 import { providerTransport } from './ai-transport.js'
 import { createApp } from './app.js'
+import { type DemoAccount, demoTransport } from './demo.js'
 
 /**
  * Server startup — chapter 10 §9.2.
@@ -255,6 +256,29 @@ if (aiProvider !== undefined) {
 const port = Number(setting('PORT') ?? 8787)
 
 /**
+ * The public demo — `BASEDB_DEMO=1`, see `demo.ts`. Its shared account is the first
+ * administrator the environment names, with the password it gives: reapplied at every
+ * start, and published for the login form to prefill.
+ */
+let demo: DemoAccount | undefined
+if (setting('BASEDB_DEMO') === '1') {
+  const email = setting('BASEDB_ADMIN_EMAIL')
+  const password = setting('BASEDB_ADMIN_PASSWORD')
+  if (email === undefined || password === undefined) {
+    console.error(
+      'BASEDB_DEMO=1 : le compte de la démo est l’administrateur que nomment BASEDB_ADMIN_EMAIL et BASEDB_ADMIN_PASSWORD, qui manquent.',
+    )
+    process.exit(1)
+  }
+  demo = { email, password }
+  console.log(
+    `Démo publique : ${email}, identifiants publiés ; créations et suppressions refusées, IA factice.`,
+  )
+}
+// The demo's AI calls no provider, the work in the background included.
+const aiTransport = demo === undefined ? providerTransport : demoTransport
+
+/**
  * The catalog — chapter 02, « Amorçage ». `BASEDB_MIGRATE=1` (the image's default) brings
  * it to the version this code ships: a fresh database gets all of it, an installation of
  * an earlier version what it lacks. Otherwise it is only checked, and a catalog that is
@@ -359,12 +383,13 @@ const app = createApp({
   // registered against the client identifier.
   publicUrl: setting('BASEDB_PUBLIC_URL'),
   tenantRef: setting('BASEDB_TENANT'),
+  demo,
 })
 
 // The history drain runs in the serving process (chapter 07 §1.4): without it, writes
 // are captured but never reach the journals. The automations' AI steps call the provider
 // through the same transport as the AI cells (chapter 17 §1.3).
-kernel.startBackground({ aiTransport: providerTransport })
+kernel.startBackground({ aiTransport })
 // The listening connection (chapter 10 §3.1): the drain woken by each write, the live
 // signals relayed to the browsers (chapter 16 §3). Down, it retries on its own.
 void kernel.live.start()
@@ -377,7 +402,7 @@ serve({ fetch: app.fetch, port }, (info) => {
 // answers agents, it does not run background work. `BASEDB_AI_WORKER=0` switches it off —
 // for a second API process sharing the database, where one worker is enough.
 if (setting('BASEDB_AI_WORKER') !== '0') {
-  kernel.startAiWorker(providerTransport, {
+  kernel.startAiWorker(aiTransport, {
     onError: (error) => console.error('Champs IA :', error),
   })
 }

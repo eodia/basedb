@@ -549,13 +549,12 @@ export function Sidebar({
               onTable={(table, intent) => onTable(b.name, table, intent)}
             />
           ))}
-          {project !== null && shown.length === 0 && (
+          {/* An empty project that can take a base says so in the page, with its button. */}
+          {project !== null && shown.length === 0 && (needle !== '' || !canCreateBase) && (
             <p className="px-2 py-1.5 text-xs text-muted-foreground">
               {needle !== ''
                 ? $t('Rien ne correspond.')
-                : canCreateBase
-                  ? $t('Aucune base : créez la première avec « + ».')
-                  : $t('Aucune base visible dans ce projet.')}
+                : $t('Aucune base visible dans ce projet.')}
             </p>
           )}
         </div>

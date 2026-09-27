@@ -14,6 +14,7 @@
 </p>
 
 <p align="center">
+  <a href="https://demo.basedb.eodia.com/"><strong>Essayer la démo</strong></a> ·
   <a href="https://eodia.github.io/basedb/"><strong>Site et documentation</strong></a> ·
   <a href="https://eodia.github.io/basedb/guides/installation/">Installer</a> ·
   <a href="https://eodia.github.io/basedb/guides/premiers-pas/">Premiers pas</a> ·
@@ -99,6 +100,10 @@ est historisé. Vos données restent exploitables sans basedb.
 </table>
 
 ## Démarrer
+
+Pour essayer sans rien installer : **<https://demo.basedb.eodia.com>**. Le compte de démonstration
+est prérempli ; les créations et les suppressions y sont désactivées, l’IA aussi, et la base revient
+chaque nuit à son état initial.
 
 Avec Docker, sur n’importe quel hôte — deux fichiers suffisent :
 

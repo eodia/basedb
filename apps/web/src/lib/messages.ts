@@ -348,6 +348,12 @@ function explain(e: ApiError): string {
       { at },
     )
   }
+  // The public demo: what it refuses, and its AI (apps/api/src/demo.ts).
+  if (e.details.reason === 'demo') {
+    return e.code === 'AI_DISABLED'
+      ? $t('L’IA n’est pas disponible dans la version de démo.')
+      : $t('Cette action n’est pas disponible dans la version de démo.')
+  }
   // Sharing a project or a base (chapter 05 §15.8).
   if (e.code === 'ACTION_FORBIDDEN' && e.details.reason === 'son_propre_acces') {
     return $t('Vous ne pouvez pas modifier votre propre accès.')
@@ -428,6 +434,8 @@ export function messageFor(e: unknown): string {
     // The login refusal carries no code and no trace: the one thing this screen must
     // not do is give a stranger something to tell two attempts apart by.
     if (e.code === 'CREDENTIALS_INVALID') return detail
+    // A limit of the demo, not a fault: nothing to trace.
+    if (e.details.reason === 'demo') return detail
     const trace = e.requestId !== '' ? ` · ${e.requestId.slice(0, 8)}` : ''
     return `${detail} (${e.code}${trace})`
   }

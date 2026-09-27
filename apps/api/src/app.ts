@@ -46,6 +46,7 @@ import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { cors } from 'hono/cors'
 import { streamSSE } from 'hono/streaming'
 import { providerTransport } from './ai-transport.js'
+import { type DemoAccount, demoRefusal, demoTransport } from './demo.js'
 import { RateLimiter } from './rate-limit.js'
 
 /**
@@ -96,6 +97,12 @@ export interface AppOptions {
   readonly publicUrl?: string
   /** Tenant these unauthenticated `/auth` routes belong to, while sessions carry none. */
   readonly tenantRef?: string
+  /**
+   * The public demo's shared account (`BASEDB_DEMO=1`, see `demo.ts`): published on
+   * `/auth/demo` for the login form to prefill, and every write that would create or
+   * delete refused. Absent everywhere else, and then none of this exists.
+   */
+  readonly demo?: DemoAccount
 }
 
 /** Normalized error shape of chapter 08 §6. */
@@ -161,6 +168,18 @@ export function createApp(options: AppOptions) {
     c.header('x-request-id', requestId)
     await next()
   })
+
+  // The public demo lets through reading and editing what exists, and nothing else.
+  const demo = options.demo
+  if (demo !== undefined) {
+    app.use('*', async (c, next) => {
+      const refusal = demoRefusal(c.req.method, c.req.path)
+      if (refusal !== null) throw refusal
+      await next()
+    })
+  }
+  // The demo's AI calls nobody: it says it is not part of the demo.
+  const aiTransport = demo === undefined ? providerTransport : demoTransport
 
   /**
    * ONE single place translating business error → HTTP response.
@@ -282,6 +301,12 @@ export function createApp(options: AppOptions) {
     app.get('/api/v1/dev/account', (c) => c.json({ email }))
   }
 
+  // The demo's shared account, password included: the demo publishes it, and the login
+  // route below signs its address in with it whatever was typed.
+  if (demo !== undefined) {
+    app.get('/auth/demo', (c) => c.json({ data: { email: demo.email, password: demo.password } }))
+  }
+
   /** The code registry, as the API publishes it. Not a catalog projection. */
   app.get('/api/v1/codes', (c) =>
     c.json({
@@ -366,7 +391,12 @@ export function createApp(options: AppOptions) {
     try {
       session = await options.kernel.login({
         email: body.email,
-        password: body.password,
+        // The demo's account opens with its published password, whatever was typed: wrong
+        // attempts would otherwise lock it (§2.4) for every visitor at once.
+        password:
+          demo !== undefined && body.email.trim().toLowerCase() === demo.email.toLowerCase()
+            ? demo.password
+            : body.password,
         ip: address === 'inconnue' ? null : address,
         userAgent: c.req.header('user-agent') ?? null,
       })
@@ -551,7 +581,11 @@ export function createApp(options: AppOptions) {
       .catch(() => ({}) as { password?: string })
     if (typeof body.password !== 'string') throw new BasedbError('CREDENTIALS_INVALID')
 
-    const elevated = await options.kernel.elevate(getCookie(c, SESSION_COOKIE), body.password)
+    // In the demo, the shared account's password, for the same reason as at sign-in.
+    const elevated = await options.kernel.elevate(
+      getCookie(c, SESSION_COOKIE),
+      demo?.password ?? body.password,
+    )
     plantSession(c, elevated.session.sessionToken, elevated.session.csrfToken)
     return c.json({ data: { elevated_until: elevated.elevatedUntil.toISOString() } })
   })
@@ -2341,7 +2375,8 @@ export function createApp(options: AppOptions) {
       baseId: base.baseId,
       sql: body.sql,
       limit: typeof body.limit === 'number' ? body.limit : undefined,
-      ...(body.read_only === true ? { readOnly: true } : {}),
+      // The demo's console reads: a write would be a creation or a deletion by another door.
+      ...(body.read_only === true || demo !== undefined ? { readOnly: true } : {}),
     })
     return c.json({ data: serializeSqlResult(result) })
   })
@@ -2535,7 +2570,7 @@ export function createApp(options: AppOptions) {
     }
     const ctx = await contextFor(c, await bearer(c))
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), body.table)
-    const draft = await options.kernel.draftExpression(ctx, providerTransport, {
+    const draft = await options.kernel.draftExpression(ctx, aiTransport, {
       baseRef: c.req.param('base'),
       tableId: table.tableId,
       request: body.request,
@@ -2583,7 +2618,7 @@ export function createApp(options: AppOptions) {
       typeof body.table === 'string' && body.table !== ''
         ? await options.kernel.resolveTable(ctx, c.req.param('base'), body.table)
         : null
-    const answer = await options.kernel.copilot(ctx, providerTransport, {
+    const answer = await options.kernel.copilot(ctx, aiTransport, {
       baseId: base.baseId,
       tableId: table?.tableId ?? null,
       view: {
@@ -2641,7 +2676,7 @@ export function createApp(options: AppOptions) {
     }
     const ctx = await contextFor(c, await bearer(c))
     const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
-    const answer = await options.kernel.dashboardCopilot(ctx, providerTransport, {
+    const answer = await options.kernel.dashboardCopilot(ctx, aiTransport, {
       baseId: base.baseId,
       dashboardId:
         typeof body.dashboard === 'string' && body.dashboard !== '' ? body.dashboard : null,
@@ -2698,7 +2733,7 @@ export function createApp(options: AppOptions) {
     }
     const ctx = await contextFor(c, await bearer(c))
     const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
-    const answer = await options.kernel.automationCopilot(ctx, providerTransport, {
+    const answer = await options.kernel.automationCopilot(ctx, aiTransport, {
       baseId: base.baseId,
       automationId:
         typeof body.automation === 'string' && body.automation !== '' ? body.automation : null,
@@ -2730,7 +2765,7 @@ export function createApp(options: AppOptions) {
       throw new BasedbError('REQUEST_INVALID', { details: { field: 'project, request' } })
     }
     const ctx = await contextFor(c, await bearer(c))
-    const draft = await options.kernel.draftTemplate(ctx, providerTransport, {
+    const draft = await options.kernel.draftTemplate(ctx, aiTransport, {
       projectId: body.project,
       request: body.request,
       previous: body.previous,
@@ -2758,7 +2793,7 @@ export function createApp(options: AppOptions) {
     }
     const ctx = await contextFor(c, await bearer(c))
     const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
-    const draft = await options.kernel.draftStructure(ctx, providerTransport, {
+    const draft = await options.kernel.draftStructure(ctx, aiTransport, {
       baseId: base.baseId,
       request: body.request,
       language: screenLanguage(c),
@@ -4027,7 +4062,7 @@ export function createApp(options: AppOptions) {
       await options.kernel.requestAiSweep(ctx, field.fieldId)
       return c.json({ data: { scheduled: true } }, 202)
     }
-    const result = await options.kernel.runAiCell(ctx, providerTransport, {
+    const result = await options.kernel.runAiCell(ctx, aiTransport, {
       fieldId: field.fieldId,
       recordId: body.record,
     })

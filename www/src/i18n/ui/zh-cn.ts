@@ -32,6 +32,10 @@ export default {
 		about: 'https://eodia.com/about/',
 		contact: 'https://eodia.com/contact/',
 	},
+	demo: {
+		short: '演示',
+		cta: '试用演示',
+	},
 	nav: {
 		aria: '主导航',
 		home: 'basedb — 首页',

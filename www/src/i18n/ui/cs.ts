@@ -32,6 +32,10 @@ export default {
 		about: 'https://eodia.com/about/',
 		contact: 'https://eodia.com/contact/',
 	},
+	demo: {
+		short: 'Ukázka',
+		cta: 'Vyzkoušet ukázku',
+	},
 	nav: {
 		aria: 'Hlavní navigace',
 		home: 'basedb – úvodní stránka',

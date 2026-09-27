@@ -408,6 +408,45 @@ describe('development account', () => {
   })
 })
 
+describe('public demo', () => {
+  // An address of its own: the rate-limiting bucket of `/auth/*` is shared by every test
+  // that sends none.
+  const from = { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.21' }
+  const demo = () =>
+    createApp({ kernel, demo: { email: 'bootstrap@basedb.local', password: PASSWORD } })
+
+  it('is not published outside the demo', async () => {
+    expect((await app.request('/auth/demo')).status).toBe(404)
+  })
+
+  it('publishes its shared account, and signs it in whatever password is typed', async () => {
+    const target = demo()
+    const published = await target.request('/auth/demo')
+    expect(await published.json()).toEqual({
+      data: { email: 'bootstrap@basedb.local', password: PASSWORD },
+    })
+    // A wrong password would count towards the lockout, which would close the demo to
+    // every visitor at once.
+    const login = await target.request('/auth/password/login', {
+      method: 'POST',
+      headers: from,
+      body: JSON.stringify({ email: 'Bootstrap@basedb.local', password: 'pas-le-bon' }),
+    })
+    expect(login.status).toBe(200)
+  })
+
+  it('reads, and refuses a creation by name', async () => {
+    const target = demo()
+    expect((await target.request(`${V1}/meta/bases`, { headers: auth() })).status).toBe(200)
+    const created = await target.request(`${V1}/admin/bases`, json({ label: 'Refusée' }))
+    expect(created.status).toBe(403)
+    expect(await created.json()).toMatchObject({
+      code: 'ACTION_FORBIDDEN',
+      details: { reason: 'demo' },
+    })
+  })
+})
+
 describe('first administrator, created from the interface', () => {
   // An address of their own: the rate-limiting bucket of `/auth/*` is shared by every
   // test that sends none.

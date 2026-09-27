@@ -32,6 +32,10 @@ export default {
 		about: 'https://eodia.com/about/',
 		contact: 'https://eodia.com/contact/',
 	},
+	demo: {
+		short: '데모',
+		cta: '데모 체험하기',
+	},
 	nav: {
 		aria: '주 메뉴',
 		home: 'basedb — 홈',

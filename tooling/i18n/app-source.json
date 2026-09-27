@@ -689,7 +689,7 @@
     "one": "{count} proposition d’agent en attente",
     "other": "{count} propositions d’agent en attente",
     "where": [
-      "components/app/sidebar.tsx:1008"
+      "components/app/sidebar.tsx:1007"
     ]
   },
   "{count} questions": {
@@ -913,12 +913,12 @@
   },
   "{name} — vue SQL": {
     "where": [
-      "components/app/sidebar.tsx:1080"
+      "components/app/sidebar.tsx:1079"
     ]
   },
   "{name} — vue SQL à corriger": {
     "where": [
-      "components/app/sidebar.tsx:1079"
+      "components/app/sidebar.tsx:1078"
     ]
   },
   "{name} du {values} au {values2}": {
@@ -1166,7 +1166,7 @@
   },
   "à corriger": {
     "where": [
-      "components/app/sidebar.tsx:1084"
+      "components/app/sidebar.tsx:1083"
     ]
   },
   "À côté des étapes": {
@@ -1356,12 +1356,12 @@
   },
   "Actions sur {kind} {label}": {
     "where": [
-      "components/app/sidebar.tsx:1430"
+      "components/app/sidebar.tsx:1429"
     ]
   },
   "Actions sur la base {label}": {
     "where": [
-      "components/app/sidebar.tsx:1030"
+      "components/app/sidebar.tsx:1029"
     ]
   },
   "Actions sur la carte": {
@@ -1376,7 +1376,7 @@
   },
   "Actions sur la table {label}": {
     "where": [
-      "components/app/sidebar.tsx:1295"
+      "components/app/sidebar.tsx:1294"
     ]
   },
   "Actions sur la vue {label}": {
@@ -1426,7 +1426,7 @@
     "where": [
       "app/page.tsx:94",
       "components/app/admin/admin-panel.tsx:54",
-      "components/app/sidebar.tsx:647"
+      "components/app/sidebar.tsx:646"
     ]
   },
   "Administrer les comptes et les droits demande une confirmation, valable cinq minutes.": {
@@ -1514,7 +1514,7 @@
   "Adresse e-mail": {
     "where": [
       "components/account-form.tsx:126",
-      "components/login.tsx:147"
+      "components/login.tsx:168"
     ]
   },
   "adresse e-mail invalide": {
@@ -1529,7 +1529,7 @@
   },
   "Adresse électronique invalide.": {
     "where": [
-      "lib/messages.ts:384"
+      "lib/messages.ts:390"
     ]
   },
   "Adresse https attendue": {
@@ -1627,7 +1627,7 @@
   },
   "Agrandir le panneau": {
     "where": [
-      "components/app/sidebar.tsx:599"
+      "components/app/sidebar.tsx:598"
     ]
   },
   "Aide": {
@@ -1886,7 +1886,7 @@
   },
   "Alias de compatibilité…": {
     "where": [
-      "components/app/sidebar.tsx:839"
+      "components/app/sidebar.tsx:838"
     ]
   },
   "Alimentation": {
@@ -1996,7 +1996,7 @@
   },
   "API et agents": {
     "where": [
-      "components/app/sidebar.tsx:784"
+      "components/app/sidebar.tsx:783"
     ]
   },
   "API REST": {
@@ -2514,11 +2514,6 @@
       "components/app/automations.tsx:206"
     ]
   },
-  "Aucune base : créez la première avec « + ».": {
-    "where": [
-      "components/app/sidebar.tsx:557"
-    ]
-  },
   "Aucune base dans « {label} »": {
     "where": [
       "app/page.tsx:674"
@@ -2536,12 +2531,12 @@
   },
   "Aucune base visible dans ce projet.": {
     "where": [
-      "components/app/sidebar.tsx:558"
+      "components/app/sidebar.tsx:557"
     ]
   },
   "Aucune base.": {
     "where": [
-      "components/app/sidebar.tsx:1237"
+      "components/app/sidebar.tsx:1236"
     ]
   },
   "Aucune carte": {
@@ -2719,7 +2714,7 @@
     "where": [
       "components/app/analytics/notebook.tsx:237",
       "components/app/environments-dialog.tsx:1171",
-      "components/app/sidebar.tsx:1137"
+      "components/app/sidebar.tsx:1136"
     ]
   },
   "Aucune valeur": {
@@ -2837,7 +2832,7 @@
   "Autres actions": {
     "where": [
       "components/app/automations.tsx:508",
-      "components/app/sidebar.tsx:816"
+      "components/app/sidebar.tsx:815"
     ]
   },
   "Autres actions sur la requête": {
@@ -2930,7 +2925,7 @@
   },
   "Base · {label}": {
     "where": [
-      "components/app/sidebar.tsx:570",
+      "components/app/sidebar.tsx:569",
       "components/product-glimpse.tsx:1067"
     ]
   },
@@ -2971,8 +2966,8 @@
   },
   "Bases et tables": {
     "where": [
-      "components/app/sidebar.tsx:1181",
-      "components/app/sidebar.tsx:1197"
+      "components/app/sidebar.tsx:1180",
+      "components/app/sidebar.tsx:1196"
     ]
   },
   "Bases supprimées ({deletedCount})": {
@@ -3072,7 +3067,7 @@
   },
   "C’est votre seul moyen de connexion : il ne peut pas être délié.": {
     "where": [
-      "lib/messages.ts:381"
+      "lib/messages.ts:387"
     ]
   },
   "Cacher la colonne": {
@@ -3249,7 +3244,7 @@
   },
   "Ce compte chez le fournisseur est déjà lié à un autre compte basedb.": {
     "where": [
-      "lib/messages.ts:375"
+      "lib/messages.ts:381"
     ]
   },
   "Ce fichier n’a pas été déposé pour ce champ.": {
@@ -3529,7 +3524,7 @@
   },
   "Cet accès vient du projet : modifiez-le depuis le partage du projet.": {
     "where": [
-      "lib/messages.ts:356"
+      "lib/messages.ts:362"
     ]
   },
   "Cet objet a déjà cinq alias : supprimez-en un avant de le renommer encore.": {
@@ -3552,6 +3547,11 @@
       "lib/messages.ts:52"
     ]
   },
+  "Cette action n’est pas disponible dans la version de démo.": {
+    "where": [
+      "lib/messages.ts:355"
+    ]
+  },
   "Cette action n’est pas permise.": {
     "where": [
       "lib/messages.ts:196"
@@ -3559,7 +3559,7 @@
   },
   "Cette adresse n’est pas acceptée sur cette instance.": {
     "where": [
-      "lib/messages.ts:364"
+      "lib/messages.ts:370"
     ]
   },
   "Cette année": {
@@ -3840,7 +3840,7 @@
   },
   "Changer d’environnement": {
     "where": [
-      "components/app/sidebar.tsx:972"
+      "components/app/sidebar.tsx:971"
     ]
   },
   "Changer de vue": {
@@ -4616,8 +4616,8 @@
   },
   "Comparer les environnements…": {
     "where": [
-      "components/app/sidebar.tsx:823",
-      "components/app/sidebar.tsx:996"
+      "components/app/sidebar.tsx:822",
+      "components/app/sidebar.tsx:995"
     ]
   },
   "Complet": {
@@ -4719,7 +4719,7 @@
   },
   "Connecté": {
     "where": [
-      "components/login.tsx:204"
+      "components/login.tsx:225"
     ]
   },
   "Connecté : {reader}": {
@@ -4771,7 +4771,7 @@
   },
   "Connexion…": {
     "where": [
-      "components/login.tsx:204"
+      "components/login.tsx:225"
     ]
   },
   "Consigne": {
@@ -4862,7 +4862,7 @@
   },
   "Continuer avec {label}": {
     "where": [
-      "components/login.tsx:255"
+      "components/login.tsx:276"
     ]
   },
   "Copié": {
@@ -5157,7 +5157,7 @@
   },
   "Créer la première table": {
     "where": [
-      "components/app/sidebar.tsx:1134"
+      "components/app/sidebar.tsx:1133"
     ]
   },
   "Créer la table": {
@@ -5227,7 +5227,7 @@
   },
   "Créer un compte": {
     "where": [
-      "components/login.tsx:123"
+      "components/login.tsx:144"
     ]
   },
   "Créer un jeton pour l’API REST ou le MCP": {
@@ -5674,7 +5674,7 @@
   "Déplier {label}": {
     "where": [
       "components/app/admin/permissions-tab.tsx:401",
-      "components/app/sidebar.tsx:940"
+      "components/app/sidebar.tsx:939"
     ]
   },
   "Déplier le groupe": {
@@ -5890,7 +5890,7 @@
   },
   "Description trop longue : {maximum} caractères au maximum.": {
     "where": [
-      "lib/messages.ts:420"
+      "lib/messages.ts:426"
     ]
   },
   "Désigner comme colonne d’affichage": {
@@ -6029,8 +6029,8 @@
   "Documentation API et MCP": {
     "where": [
       "app/page.tsx:93",
-      "components/app/sidebar.tsx:633",
-      "components/app/sidebar.tsx:790"
+      "components/app/sidebar.tsx:632",
+      "components/app/sidebar.tsx:789"
     ]
   },
   "Dollar": {
@@ -6568,7 +6568,7 @@
   },
   "Enregistrer comme modèle…": {
     "where": [
-      "components/app/sidebar.tsx:827"
+      "components/app/sidebar.tsx:826"
     ]
   },
   "Enregistrer comme vue": {
@@ -6668,7 +6668,7 @@
   },
   "Environnement de {label} : {label2}": {
     "where": [
-      "components/app/sidebar.tsx:968"
+      "components/app/sidebar.tsx:967"
     ]
   },
   "Environnement source": {
@@ -6684,7 +6684,7 @@
   },
   "Environnements de {label}": {
     "where": [
-      "components/app/sidebar.tsx:980"
+      "components/app/sidebar.tsx:979"
     ]
   },
   "Envoi": {
@@ -6752,12 +6752,17 @@
   },
   "Erreur inattendue.": {
     "where": [
-      "lib/messages.ts:422"
+      "lib/messages.ts:428"
     ]
   },
   "Erreur SQL": {
     "where": [
       "components/app/workspace.tsx:1877"
+    ]
+  },
+  "Essayez basedb": {
+    "where": [
+      "components/login.tsx:121"
     ]
   },
   "Essayez une autre recherche ou ajustez vos filtres pour retrouver vos données.": {
@@ -7110,7 +7115,7 @@
   },
   "Fichier trop lourd : {floor} Mo au maximum.": {
     "where": [
-      "lib/messages.ts:408"
+      "lib/messages.ts:414"
     ]
   },
   "Fichier trop lourd.": {
@@ -7887,8 +7892,8 @@
   },
   "Importer…": {
     "where": [
-      "components/app/sidebar.tsx:1309",
-      "components/app/sidebar.tsx:1341"
+      "components/app/sidebar.tsx:1308",
+      "components/app/sidebar.tsx:1340"
     ]
   },
   "Impossible de retirer {used} : ce choix est encore utilisé.": {
@@ -7981,7 +7986,7 @@
     "where": [
       "app/page.tsx:92",
       "components/app/integrations.tsx:93",
-      "components/app/sidebar.tsx:638"
+      "components/app/sidebar.tsx:637"
     ]
   },
   "Intégré": {
@@ -8150,7 +8155,7 @@
   },
   "Jetons API et MCP…": {
     "where": [
-      "components/app/sidebar.tsx:794"
+      "components/app/sidebar.tsx:793"
     ]
   },
   "Jetons de cette base": {
@@ -8306,8 +8311,8 @@
   },
   "L’API est injoignable.": {
     "where": [
-      "lib/messages.ts:434",
-      "lib/messages.ts:442"
+      "lib/messages.ts:442",
+      "lib/messages.ts:450"
     ]
   },
   "L’API ne répond pas": {
@@ -8372,6 +8377,11 @@
       "lib/templates.ts:566"
     ]
   },
+  "L’IA n’est pas disponible dans la version de démo.": {
+    "where": [
+      "lib/messages.ts:354"
+    ]
+  },
   "la base": {
     "where": [
       "components/app/lifecycle-dialogs.tsx:710"
@@ -8425,7 +8435,7 @@
   },
   "La consigne cite « {variable} », qui n’est pas une colonne lisible de la table.": {
     "where": [
-      "lib/messages.ts:391"
+      "lib/messages.ts:397"
     ]
   },
   "La consigne est vide.": {
@@ -8639,7 +8649,7 @@
   },
   "la requête": {
     "where": [
-      "components/app/sidebar.tsx:1116"
+      "components/app/sidebar.tsx:1115"
     ]
   },
   "La requête a été exécutée, mais elle ne renvoie aucune ligne.": {
@@ -8771,7 +8781,7 @@
   },
   "la vue": {
     "where": [
-      "components/app/sidebar.tsx:1089",
+      "components/app/sidebar.tsx:1088",
       "components/app/views/share-dialog.tsx:90"
     ]
   },
@@ -8916,6 +8926,11 @@
   "Le chiffre d’affaires par mois, ajoute un filtre par client, pourquoi août baisse…": {
     "where": [
       "components/app/analytics/dashboard-copilot.tsx:512"
+    ]
+  },
+  "Le compte de démonstration est prérempli : connectez-vous pour explorer une base d’exemple.": {
+    "where": [
+      "components/login.tsx:124"
     ]
   },
   "Le consentement à l’envoi de données au fournisseur n’a pas été donné.": {
@@ -9302,7 +9317,12 @@
   },
   "Les comptes sont réservés aux adresses {domains}.": {
     "where": [
-      "lib/messages.ts:365"
+      "lib/messages.ts:371"
+    ]
+  },
+  "Les créations et les suppressions sont désactivées, et les données reviennent à leur état initial chaque nuit.": {
+    "where": [
+      "components/login.tsx:132"
     ]
   },
   "Les derniers": {
@@ -9693,7 +9713,7 @@
   },
   "Liste de choix invalide.": {
     "where": [
-      "lib/messages.ts:401"
+      "lib/messages.ts:407"
     ]
   },
   "Liste de contrôle": {
@@ -10121,7 +10141,7 @@
   },
   "Modifier la base…": {
     "where": [
-      "components/app/sidebar.tsx:776"
+      "components/app/sidebar.tsx:775"
     ]
   },
   "Modifier la description pour {subject}": {
@@ -10141,8 +10161,8 @@
   },
   "Modifier la table…": {
     "where": [
-      "components/app/sidebar.tsx:1316",
-      "components/app/sidebar.tsx:1348"
+      "components/app/sidebar.tsx:1315",
+      "components/app/sidebar.tsx:1347"
     ]
   },
   "Modifier la vue SQL": {
@@ -10152,7 +10172,7 @@
   },
   "Modifier la vue…": {
     "where": [
-      "components/app/sidebar.tsx:1092",
+      "components/app/sidebar.tsx:1091",
       "components/app/workspace.tsx:1629",
       "components/app/workspace.tsx:1890"
     ]
@@ -10491,7 +10511,7 @@
   },
   "Nom et partage…": {
     "where": [
-      "components/app/sidebar.tsx:1119",
+      "components/app/sidebar.tsx:1118",
       "components/app/workspace.tsx:1507"
     ]
   },
@@ -10784,7 +10804,7 @@
   "Nouvelle base": {
     "where": [
       "components/app/sidebar.tsx:513",
-      "components/app/sidebar.tsx:1244"
+      "components/app/sidebar.tsx:1243"
     ]
   },
   "Nouvelle base dans {label}": {
@@ -10824,7 +10844,7 @@
   },
   "Nouvelle requête SQL": {
     "where": [
-      "components/app/sidebar.tsx:750",
+      "components/app/sidebar.tsx:749",
       "components/app/tab-bar.tsx:131",
       "components/app/workspace.tsx:1356"
     ]
@@ -10832,7 +10852,7 @@
   "Nouvelle table": {
     "where": [
       "components/app/schema-editor.tsx:231",
-      "components/app/sidebar.tsx:745"
+      "components/app/sidebar.tsx:744"
     ]
   },
   "Nouvelle table « {label} »": {
@@ -10863,7 +10883,7 @@
   },
   "Nouvelle vue SQL…": {
     "where": [
-      "components/app/sidebar.tsx:755"
+      "components/app/sidebar.tsx:754"
     ]
   },
   "Nuage": {
@@ -11019,7 +11039,7 @@
   },
   "ou": {
     "where": [
-      "components/login.tsx:242"
+      "components/login.tsx:263"
     ]
   },
   "Ou des points, par leurs coordonnées :": {
@@ -11079,7 +11099,7 @@
     "where": [
       "components/app/analytics/dashboard-copilot.tsx:642",
       "components/app/field-button.tsx:65",
-      "components/app/sidebar.tsx:1304"
+      "components/app/sidebar.tsx:1303"
     ]
   },
   "Ouvrir « {label} »": {
@@ -11268,7 +11288,7 @@
   "Partager la base…": {
     "where": [
       "components/app/analytics/share-dashboard-dialog.tsx:167",
-      "components/app/sidebar.tsx:772"
+      "components/app/sidebar.tsx:771"
     ]
   },
   "Partager une requête demande de gérer la structure de la base.": {
@@ -11334,7 +11354,7 @@
   },
   "Pas encore de compte ?": {
     "where": [
-      "components/login.tsx:117"
+      "components/login.tsx:138"
     ]
   },
   "passée": {
@@ -11388,7 +11408,7 @@
     "where": [
       "components/app/admin/admin-panel.tsx:32",
       "components/app/admin/permissions-tab.tsx:153",
-      "components/app/sidebar.tsx:655"
+      "components/app/sidebar.tsx:654"
     ]
   },
   "Personne": {
@@ -11466,7 +11486,7 @@
   },
   "Planification invalide — {detail}.": {
     "where": [
-      "lib/messages.ts:396"
+      "lib/messages.ts:402"
     ]
   },
   "Planification invalide.": {
@@ -11734,7 +11754,7 @@
   },
   "Première connexion ?": {
     "where": [
-      "components/login.tsx:129"
+      "components/login.tsx:150"
     ]
   },
   "Première page": {
@@ -11885,12 +11905,12 @@
   },
   "Propositions des agents…": {
     "where": [
-      "components/app/sidebar.tsx:806"
+      "components/app/sidebar.tsx:805"
     ]
   },
   "Propositions en attente sur {label} : {openProposals}": {
     "where": [
-      "components/app/sidebar.tsx:1013"
+      "components/app/sidebar.tsx:1012"
     ]
   },
   "Propre à ce navigateur.": {
@@ -12245,7 +12265,7 @@
   },
   "Réduire le panneau": {
     "where": [
-      "components/app/sidebar.tsx:599"
+      "components/app/sidebar.tsx:598"
     ]
   },
   "Référence de fichier invalide.": {
@@ -12538,7 +12558,7 @@
   "Replier {label}": {
     "where": [
       "components/app/admin/permissions-tab.tsx:401",
-      "components/app/sidebar.tsx:939"
+      "components/app/sidebar.tsx:938"
     ]
   },
   "Replier la liste": {
@@ -12671,17 +12691,17 @@
   },
   "Requête partagée avec des groupes": {
     "where": [
-      "components/app/sidebar.tsx:1113"
+      "components/app/sidebar.tsx:1112"
     ]
   },
   "Requête partagée avec toute la base": {
     "where": [
-      "components/app/sidebar.tsx:1112"
+      "components/app/sidebar.tsx:1111"
     ]
   },
   "Requête personnelle": {
     "where": [
-      "components/app/sidebar.tsx:1110",
+      "components/app/sidebar.tsx:1109",
       "components/app/workspace.tsx:2286"
     ]
   },
@@ -12697,7 +12717,7 @@
   },
   "Requêtes": {
     "where": [
-      "components/app/sidebar.tsx:1099"
+      "components/app/sidebar.tsx:1098"
     ]
   },
   "Réseau": {
@@ -13019,7 +13039,7 @@
   },
   "Rien ne correspond.": {
     "where": [
-      "components/app/sidebar.tsx:555"
+      "components/app/sidebar.tsx:556"
     ]
   },
   "Rire": {
@@ -13130,7 +13150,7 @@
   "Se connecter": {
     "where": [
       "app/invitation/[token]/page.tsx:207",
-      "components/login.tsx:204",
+      "components/login.tsx:225",
       "components/signup.tsx:54"
     ]
   },
@@ -13748,7 +13768,7 @@
   },
   "Supprimer la base…": {
     "where": [
-      "components/app/sidebar.tsx:858"
+      "components/app/sidebar.tsx:857"
     ]
   },
   "Supprimer la ligne": {
@@ -13775,8 +13795,8 @@
   "Supprimer la table": {
     "where": [
       "components/app/schema-editor.tsx:641",
-      "components/app/sidebar.tsx:1324",
-      "components/app/sidebar.tsx:1356"
+      "components/app/sidebar.tsx:1323",
+      "components/app/sidebar.tsx:1355"
     ]
   },
   "Supprimer la table « {label} » ?": {
@@ -14053,7 +14073,7 @@
   },
   "Tables supprimées…": {
     "where": [
-      "components/app/sidebar.tsx:843"
+      "components/app/sidebar.tsx:842"
     ]
   },
   "Tables synchronisées": {
@@ -14622,7 +14642,7 @@
   },
   "Trop de fichiers dans ce champ : {maximum} au maximum.": {
     "where": [
-      "lib/messages.ts:413"
+      "lib/messages.ts:419"
     ]
   },
   "Trop de lignes dans une seule opération : découpez-la en lots.": {
@@ -14712,7 +14732,7 @@
   },
   "Un autre compte de ce fournisseur est déjà lié au vôtre : déliez-le d’abord.": {
     "where": [
-      "lib/messages.ts:378"
+      "lib/messages.ts:384"
     ]
   },
   "Un bouton dans chaque ligne, sans valeur : il ouvre une adresse composée avec la ligne, ou lance une automatisation de la base déclenchée par un bouton.": {
@@ -15344,7 +15364,7 @@
   },
   "Utilisateurs et groupes": {
     "where": [
-      "components/app/sidebar.tsx:651"
+      "components/app/sidebar.tsx:650"
     ]
   },
   "utilisé le {last_used_at}": {
@@ -15622,12 +15642,12 @@
   },
   "Votre administrateur crée votre compte et vous transmet un mot de passe temporaire. Si l’instance a été installée avec une adresse d’administrateur imposée, son mot de passe s’est affiché une seule fois dans les journaux du serveur.": {
     "where": [
-      "components/login.tsx:136"
+      "components/login.tsx:157"
     ]
   },
   "Votre adresse vient de votre fournisseur d’identité : elle ne se change pas ici.": {
     "where": [
-      "lib/messages.ts:372"
+      "lib/messages.ts:378"
     ]
   },
   "Votre compte n’a pas de mot de passe : lier ou délier un fournisseur, qui demande de le confirmer, n’est pas possible ici. Un administrateur peut vous en attribuer un.": {
@@ -15717,7 +15737,7 @@
   },
   "Vous ne pouvez pas désactiver votre propre compte.": {
     "where": [
-      "lib/messages.ts:368"
+      "lib/messages.ts:374"
     ]
   },
   "Vous ne pouvez pas modifier ce champ.": {
@@ -15727,7 +15747,7 @@
   },
   "Vous ne pouvez pas modifier votre propre accès.": {
     "where": [
-      "lib/messages.ts:353"
+      "lib/messages.ts:359"
     ]
   },
   "Vous répondez en tant que": {
@@ -15787,8 +15807,8 @@
   },
   "vue SQL": {
     "where": [
-      "components/app/sidebar.tsx:1086",
-      "components/app/sidebar.tsx:1222"
+      "components/app/sidebar.tsx:1085",
+      "components/app/sidebar.tsx:1221"
     ]
   },
   "Vue SQL": {
@@ -15818,7 +15838,7 @@
   },
   "Webhooks…": {
     "where": [
-      "components/app/sidebar.tsx:800"
+      "components/app/sidebar.tsx:799"
     ]
   },
   "Windows (PowerShell)": {

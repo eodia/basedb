@@ -2124,6 +2124,18 @@ export const api = {
   },
 
   /**
+   * The public demo's shared account, password included — `null` anywhere else, where the
+   * route does not exist.
+   */
+  demoAccount: async (): Promise<{ email: string; password: string } | null> => {
+    try {
+      return await data<{ email: string; password: string }>('/auth/demo')
+    } catch {
+      return null
+    }
+  },
+
+  /**
    * Whether the instance still waits for its first administrator.
    *
    * `false` on any failure: once an administrator exists the route answers `404`, and

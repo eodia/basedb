@@ -58,6 +58,8 @@ export function Login({
   const [signedIn, setSignedIn] = useState(false)
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [signupOpen, setSignupOpen] = useState(false)
+  // The public demo: its shared account, prefilled whole.
+  const [demo, setDemo] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -65,6 +67,13 @@ export function Login({
     // prefilled. Never the password: that one is printed once in the server's output.
     void api.developmentAccount().then((account) => {
       if (alive && account !== null) setEmail(account.email)
+    })
+    // The public demo publishes its account, password included: one click signs in.
+    void api.demoAccount().then((account) => {
+      if (!alive || account === null) return
+      setEmail(account.email)
+      setPassword(account.password)
+      setDemo(true)
     })
     // Back from a sign-in provider that refused: the code travels in the address, and is
     // taken out of it once read — a reload must not show it again.
@@ -109,10 +118,22 @@ export function Login({
 
   return (
     <AuthLayout
-      title={title}
-      description={description}
+      title={demo ? $t('Essayez basedb') : title}
+      description={
+        demo
+          ? $t(
+              'Le compte de démonstration est prérempli : connectez-vous pour explorer une base d’exemple.',
+            )
+          : description
+      }
       footer={
-        (signupOpen || alwaysOfferSignUp) && onSignUp !== undefined ? (
+        demo ? (
+          <p className="max-w-sm leading-relaxed">
+            {$t(
+              'Les créations et les suppressions sont désactivées, et les données reviennent à leur état initial chaque nuit.',
+            )}
+          </p>
+        ) : (signupOpen || alwaysOfferSignUp) && onSignUp !== undefined ? (
           <p>
             {$t('Pas encore de compte ?')}{' '}
             <button
