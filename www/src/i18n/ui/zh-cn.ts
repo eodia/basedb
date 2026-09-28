@@ -627,41 +627,169 @@ export default {
 				label: '多人协作',
 			},
 		},
+		forms: {
+			eyebrow: '表单与问卷',
+			title: '只管提问。',
+			titleAccent: '答案自己归档。',
+			text: '单页表单，或是每屏一题的问卷：分享链接，每一份回答都会自动变成数据表里的一行。填写者看不到表格的其他任何内容。',
+			modes: {
+				label: '问题展示方式',
+				survey: '问卷',
+				form: '表单',
+			},
+			demo: {
+				title: '报价申请',
+				description: '只需三个问题，我们会在 48 小时内与您联系。',
+				count: '3 个问题',
+				start: '开始',
+				next: '下一个',
+				previous: '上一个',
+				submit: '提交申请',
+				org: {
+					label: '机构名称',
+					answer: '画廊咖啡馆',
+				},
+				need: {
+					label: '需求',
+					choose: '选择…',
+					options: ['网站', '视觉形象', '画册'],
+				},
+				budget: {
+					label: '预算',
+					help: '不含税，估算即可。',
+				},
+				thanks: '谢谢！我们会在 48 小时内与您联系。',
+				poweredBy: '由 basedb 提供支持的表单',
+				path: '销售 / 申请',
+				view: '所有申请',
+				columns: {
+					org: '机构名称',
+					need: '需求',
+					budget: '预算',
+					stage: '阶段',
+				},
+				stages: {
+					new: '新',
+					called: '已致电',
+					quote: '已发送报价单',
+				},
+				rows: ['马丁面包坊', '梧桐诊所', '爱心自行车协会', '隆河锻造厂'],
+				open: '已开放',
+				answers: {
+					other: '{n} 份回答',
+				},
+				active: '启用链接',
+			},
+			points: {
+				survey: {
+					title: '一屏一题',
+					text: '问卷会随进度条逐个提出问题，按 Enter 键进入下一题。',
+				},
+				access: {
+					title: '公开或仅限成员',
+					text: '拥有链接的任何人都可以在不注册账号的情况下作答——也可以仅限已登录成员填写，答案会显示他们的姓名。',
+				},
+				closed: {
+					title: '其余内容保持隐藏',
+					text: '作答时看不到数据表的其他内容。链接会在指定日期，或达到一定回答数量后自动关闭。',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: '表单',
+			},
+		},
 		automate: {
 			eyebrow: '自动化',
-			title: '它在工作，',
-			titleAccent: '而您在睡觉。',
-			text: '只需描述一次该发生什么。行发生变化时、每天固定时间，或点击一个按钮时，basedb 就会依次执行各个步骤——每次运行都可以逐步查看。',
+			title: '它在工作。',
+			titleAccent: '趁你睡觉的时候。',
+			text: '当一行数据到达或发生变化时，在固定时间，或点击按钮时——basedb 会依次执行各个步骤：选择正确的分支、询问 AI、通知该通知的人。每一次运行都可以逐步回看。',
 			clock: '03:12',
-			when: '当',
-			trigger: '一份报价变为“已签约”',
+			crumb: '销售 / 自动化',
+			create: '新建自动化',
+			list: [
+				{
+					name: '新申请',
+					when: '行已创建',
+				},
+				{
+					name: '报价单已签署',
+					when: '行已更新',
+				},
+				{
+					name: '周一跟进提醒',
+					when: '每周一 09:00',
+				},
+			],
+			active: '已启用',
+			test: '在一行上测试',
+			save: '保存',
+			when: '何时',
+			trigger: '行已创建',
+			table: '在 申请 中',
 			steps: {
-				find: {
-					kind: '查找一行',
-					text: '报价对应的客户',
-				},
-				ai: {
-					kind: '询问 AI',
-					text: '起草一封感谢信',
-				},
-				create: {
-					kind: '创建一行',
-					text: '发票，存入“发票”表',
+				branch: {
+					kind: '条件',
+					text: '2 个分支',
+					run: '分支“大项目”',
 				},
 				notify: {
 					kind: '通知某人',
-					text: '财务部',
+					text: 'Léa Martin',
+					run: '已通知 1 人',
+				},
+				create: {
+					kind: '创建行',
+					text: '预约，存入“日历”表',
+					run: '已完成',
 				},
 				slack: {
 					kind: '发送到 Slack',
-					text: '发到 #ventes 频道',
+					text: '发到 #销售 频道',
+					run: '已完成',
+				},
+				ai: {
+					kind: '询问 AI',
+					text: '撰写首个回答',
+					run: '{n} 个字符的回答',
+				},
+				update: {
+					kind: '更新行',
+					text: '回答、阶段',
+					run: '已完成',
 				},
 			},
-			answer: '感谢您的信任！我们将从周一开始启动您的项目，发票会通过邮件发送给您。',
-			done: '成功 · 5 个步骤 · 1.2 秒',
-			copilot: {
-				prompt: '当报价被签约时，通知财务部并创建发票。',
-				text: '对 Copilot 说一句话，自动化就搭建好了，您只需要检查一遍。',
+			paths: {
+				big: '大项目',
+				condition: 'budget gt 5000',
+				otherwise: '否则',
+			},
+			answer: '您好，感谢您的咨询！负责跟进您全新视觉形象的 Léa，将于明天上午与您通电话。',
+			addStep: '添加步骤',
+			tabs: {
+				settings: '设置',
+				runs: '运行记录',
+			},
+			runsText: '最近 50 次运行，保留 30 天。选择一次运行，可在流程上查看它经过的路径。',
+			running: '进行中',
+			succeeded: '成功',
+			started: '已创建行 · {when}',
+			now: '刚刚',
+			earlier: ['昨天 18:40', '昨天 11:02'],
+			done: '成功 · 5 个步骤 · 1.3 秒',
+			points: {
+				when: {
+					title: '恰到好处的时机',
+					text: '行的创建或修改、固定时间、按钮点击——再加一个条件，只在真正需要时启动。',
+				},
+				paths: {
+					title: '多条分支',
+					text: '一个条件会打开多条分支，每条分支都有自己的步骤；一个步骤找到的内容，下一步可以直接引用。',
+				},
+				copilot: {
+					title: '一句话描述即可',
+					text: '“新申请进来时，如果预算超过 €5,000，就通知 Léa”：Copilot 会搭建好流程，由你来复核。',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

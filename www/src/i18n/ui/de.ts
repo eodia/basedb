@@ -638,41 +638,170 @@ export default {
 				label: 'Zusammenarbeiten',
 			},
 		},
+		forms: {
+			eyebrow: 'Formulare und Umfragen',
+			title: 'Stellen Sie Ihre Fragen.',
+			titleAccent: 'Die Antworten sortieren sich von selbst.',
+			text: 'Ein einseitiges Formular, oder eine Umfrage, die eine Frage pro Bildschirm stellt: Teilen Sie den Link, und jede Antwort wird zu einer Zeile in Ihrer Tabelle. Wer antwortet, sieht sonst nichts.',
+			modes: {
+				label: 'Fragen anzeigen',
+				survey: 'Umfrage',
+				form: 'Formular',
+			},
+			demo: {
+				title: 'Angebotsanfrage',
+				description: 'Drei Fragen, und wir melden uns innerhalb von 48 Stunden bei Ihnen.',
+				count: '3 Fragen',
+				start: 'Beginnen',
+				next: 'Weiter',
+				previous: 'Zurück',
+				submit: 'Meine Anfrage senden',
+				org: {
+					label: 'Ihre Organisation',
+					answer: 'Café der Künste',
+				},
+				need: {
+					label: 'Ihr Bedarf',
+					choose: 'Auswählen…',
+					options: ['Website', 'Visuelle Identität', 'Katalog'],
+				},
+				budget: {
+					label: 'Ihr Budget',
+					help: 'Netto, auch ungefähr.',
+				},
+				thanks: 'Danke! Wir melden uns innerhalb von 48 Stunden bei Ihnen.',
+				poweredBy: 'Formular bereitgestellt von basedb',
+				path: 'Vertrieb / Anfragen',
+				view: 'Alle Anfragen',
+				columns: {
+					org: 'Organisation',
+					need: 'Bedarf',
+					budget: 'Budget',
+					stage: 'Phase',
+				},
+				stages: {
+					new: 'Neu',
+					called: 'Zurückgerufen',
+					quote: 'Angebot gesendet',
+				},
+				rows: ['Bäckerei Martin', 'Klinik Lindenhof', 'Fahrradwerkstatt Wendepunkt', 'Rheinschmiede'],
+				open: 'Offen',
+				answers: {
+					one: '{n} Antwort',
+					other: '{n} Antworten',
+				},
+				active: 'Aktiver Link',
+			},
+			points: {
+				survey: {
+					title: 'Eine Frage pro Bildschirm',
+					text: 'Die Umfrage stellt sie eine nach der anderen, mit Fortschrittsanzeige; die Eingabetaste führt zur nächsten.',
+				},
+				access: {
+					title: 'Öffentlich oder eingeschränkt',
+					text: 'Jeder mit dem Link antwortet ohne Konto – oder nur angemeldete Mitglieder, und die Antwort trägt ihren Namen.',
+				},
+				closed: {
+					title: 'Der Rest bleibt geschlossen',
+					text: 'Das Antworten zeigt sonst nichts von der Tabelle. Der Link schließt zu einem Datum, oder nach einer Anzahl an Antworten.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'Formulare',
+			},
+		},
 		automate: {
 			eyebrow: 'Automatisierungen',
-			title: 'Es arbeitet,',
+			title: 'Es arbeitet',
 			titleAccent: 'während Sie schlafen.',
-			text: 'Beschreiben Sie einmal, was passieren soll. Wenn sich eine Zeile ändert, jeden Morgen zu einer festen Uhrzeit oder mit einem Klick auf eine Schaltfläche, reiht basedb die Schritte aneinander – und jede Ausführung lässt sich Schritt für Schritt nachlesen.',
+			text: 'Wenn eine Zeile eintrifft oder sich ändert, zu einer festen Uhrzeit oder mit einem Klick auf eine Schaltfläche, reiht basedb die Schritte aneinander: Es wählt den richtigen Zweig, fragt die KI, benachrichtigt, wen es muss. Und jede Ausführung lässt sich Schritt für Schritt nachlesen.',
 			clock: '03:12',
+			crumb: 'Vertrieb / Automatisierungen',
+			create: 'Neue Automatisierung',
+			list: [
+				{
+					name: 'Neue Anfrage',
+					when: 'Eine Zeile wird erstellt',
+				},
+				{
+					name: 'Angebot unterschrieben',
+					when: 'Eine Zeile wird geändert',
+				},
+				{
+					name: 'Montagserinnerungen',
+					when: 'Jeden Montag um 09:00',
+				},
+			],
+			active: 'Aktiv',
+			test: 'An einer Zeile testen',
+			save: 'Speichern',
 			when: 'Wenn',
-			trigger: 'ein Angebot zu „Unterschrieben“ wechselt',
+			trigger: 'Eine Zeile wird erstellt',
+			table: 'In Anfragen',
 			steps: {
-				find: {
-					kind: 'Zeile suchen',
-					text: 'Der Kunde des Angebots',
-				},
-				ai: {
-					kind: 'KI fragen',
-					text: 'Ein Dankeswort verfassen',
-				},
-				create: {
-					kind: 'Zeile erstellen',
-					text: 'Die Rechnung, in Rechnungen',
+				branch: {
+					kind: 'Bedingung',
+					text: '2 Zweige',
+					run: 'Zweig „Großprojekt“',
 				},
 				notify: {
 					kind: 'Jemanden benachrichtigen',
-					text: 'Die Buchhaltung',
+					text: 'Léa Martin',
+					run: '1 Person benachrichtigt',
+				},
+				create: {
+					kind: 'Zeile erstellen',
+					text: 'Ein Termin, in Kalender',
+					run: 'erledigt',
 				},
 				slack: {
 					kind: 'An Slack senden',
 					text: 'Im Kanal #vertrieb',
+					run: 'erledigt',
+				},
+				ai: {
+					kind: 'KI fragen',
+					text: 'Eine erste Antwort verfassen',
+					run: 'Antwort mit {n} Zeichen',
+				},
+				update: {
+					kind: 'Zeile ändern',
+					text: 'Antwort, Phase',
+					run: 'erledigt',
 				},
 			},
-			answer: 'Vielen Dank für Ihr Vertrauen! Wir starten Ihr Projekt ab Montag, Ihre Rechnung folgt per E-Mail.',
-			done: 'Erfolgreich · 5 Schritte · 1,2 s',
-			copilot: {
-				prompt: 'Wenn ein Angebot unterschrieben wird, benachrichtige die Buchhaltung und erstelle die Rechnung.',
-				text: 'Ein Satz an den Copilot, und die Automatisierung steht: Sie müssen sie nur noch prüfen.',
+			paths: {
+				big: 'Großprojekt',
+				condition: 'budget gt 5000',
+				otherwise: 'Sonst',
+			},
+			answer: 'Hallo, und danke für Ihre Anfrage! Léa, die sich um Ihre neue visuelle Identität kümmert, ruft Sie morgen früh an.',
+			addStep: 'Schritt hinzufügen',
+			tabs: {
+				settings: 'Einstellungen',
+				runs: 'Ausführungen',
+			},
+			runsText: 'Die letzten 50, 30 Tage aufbewahrt. Wählen Sie eine aus, um im Ablauf den Weg zu sehen, den sie genommen hat.',
+			running: 'Läuft',
+			succeeded: 'Erfolgreich',
+			started: 'Zeile erstellt · {when}',
+			now: 'gerade eben',
+			earlier: ['gestern um 18:40 Uhr', 'gestern um 11:02 Uhr'],
+			done: 'Erfolgreich · 5 Schritte · 1,3 s',
+			points: {
+				when: {
+					title: 'Im richtigen Moment',
+					text: 'Eine erstellte oder geänderte Zeile, eine feste Uhrzeit, eine Schaltfläche – und eine Bedingung, damit es nur startet, wenn es nötig ist.',
+				},
+				paths: {
+					title: 'Mehrere Zweige',
+					text: 'Eine Bedingung öffnet Zweige, jeder mit eigenen Schritten; was ein Schritt findet, kann der nächste aufgreifen.',
+				},
+				copilot: {
+					title: 'In einem Satz beschrieben',
+					text: '„Wenn eine Anfrage eingeht, benachrichtige Léa, wenn das Budget 5.000 € übersteigt“: Der Copilot baut den Ablauf, Sie prüfen ihn.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

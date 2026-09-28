@@ -638,41 +638,171 @@ export default {
 				label: 'Lucrul împreună',
 			},
 		},
+		forms: {
+			eyebrow: 'Formulare și chestionare',
+			title: 'Puneți-vă întrebările.',
+			titleAccent: 'Răspunsurile se ordonează singure.',
+			text: 'Un formular pe o singură pagină, sau un chestionar care pune o întrebare pe ecran: distribuiți linkul, iar fiecare răspuns devine un rând din tabelul dumneavoastră. Cine răspunde nu vede nimic altceva.',
+			modes: {
+				label: 'Afișați întrebările',
+				survey: 'Chestionar',
+				form: 'Formular',
+			},
+			demo: {
+				title: 'Cerere de ofertă',
+				description: 'Trei întrebări, iar noi vă răspundem în 48 de ore.',
+				count: '3 întrebări',
+				start: 'Începeți',
+				next: 'Următor',
+				previous: 'Anterior',
+				submit: 'Trimiteți cererea',
+				org: {
+					label: 'Organizația dumneavoastră',
+					answer: 'Cafeneaua Artelor',
+				},
+				need: {
+					label: 'Necesitatea dumneavoastră',
+					choose: 'Alegeți…',
+					options: ['Site web', 'Identitate vizuală', 'Catalog'],
+				},
+				budget: {
+					label: 'Bugetul dumneavoastră',
+					help: 'Fără TVA, chiar dacă este aproximativ.',
+				},
+				thanks: 'Mulțumim! Vă răspundem în 48 de ore.',
+				poweredBy: 'Formular realizat cu basedb',
+				path: 'Vânzări / Cereri',
+				view: 'Toate cererile',
+				columns: {
+					org: 'Organizație',
+					need: 'Necesitate',
+					budget: 'Buget',
+					stage: 'Etapă',
+				},
+				stages: {
+					new: 'Nouă',
+					called: 'Recontactată',
+					quote: 'Ofertă trimisă',
+				},
+				rows: ['Brutăria Ionescu', 'Clinica Tei', 'Biciclete Solidare', 'Forjele Argeș'],
+				open: 'Deschis',
+				answers: {
+					one: '{n} răspuns',
+					few: '{n} răspunsuri',
+					other: '{n} de răspunsuri',
+				},
+				active: 'Link activ',
+			},
+			points: {
+				survey: {
+					title: 'O întrebare pe ecran',
+					text: 'Chestionarul le pune pe rând, cu bara sa de progres; Enter trece la următoarea.',
+				},
+				access: {
+					title: 'Public sau rezervat',
+					text: 'Oricine are linkul răspunde fără cont — sau doar membrii conectați, iar răspunsul le poartă numele.',
+				},
+				closed: {
+					title: 'Restul rămâne închis',
+					text: 'Răspunsul nu arată nimic altceva din tabel. Linkul se închide la o dată, sau după un număr de răspunsuri.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'Formularele',
+			},
+		},
 		automate: {
 			eyebrow: 'Automatizări',
 			title: 'Lucrează',
 			titleAccent: 'în timp ce dumneavoastră dormiți.',
-			text: 'Descrieți o singură dată ce trebuie să se întâmple. Când un rând se schimbă, în fiecare dimineață la o oră fixă sau la un clic pe un buton, basedb înlănțuie pașii — și fiecare execuție se recitește, pas cu pas.',
+			text: 'Când un rând sosește sau se modifică, la o oră fixă sau printr-un clic pe un buton, basedb înlănțuie pașii: alege ramura potrivită, întreabă AI, anunță pe cine trebuie. Iar fiecare execuție poate fi recitită, pas cu pas.',
 			clock: '03:12',
+			crumb: 'Vânzări / Automatizări',
+			create: 'Automatizare nouă',
+			list: [
+				{
+					name: 'Cerere nouă',
+					when: 'Un rând este creat',
+				},
+				{
+					name: 'Ofertă semnată',
+					when: 'Un rând este modificat',
+				},
+				{
+					name: 'Recontactări de luni',
+					when: 'În fiecare luni la 09:00',
+				},
+			],
+			active: 'Activă',
+			test: 'Testați pe un rând',
+			save: 'Salvați',
 			when: 'Când',
-			trigger: 'o ofertă trece la „Semnat”',
+			trigger: 'Un rând este creat',
+			table: 'În Cereri',
 			steps: {
-				find: {
-					kind: 'Căutare rând',
-					text: 'Clientul ofertei',
-				},
-				ai: {
-					kind: 'Întrebați AI',
-					text: 'Redactează un mesaj de mulțumire',
-				},
-				create: {
-					kind: 'Creare rând',
-					text: 'Factura, în Facturi',
+				branch: {
+					kind: 'Condiție',
+					text: '2 ramuri',
+					run: 'ramura „Proiect mare”',
 				},
 				notify: {
 					kind: 'Anunțare persoană',
-					text: 'Contabilitatea',
+					text: 'Léa Martin',
+					run: '1 persoană notificată',
+				},
+				create: {
+					kind: 'Creare rând',
+					text: 'O programare, în Agendă',
+					run: 'efectuat',
 				},
 				slack: {
 					kind: 'Trimitere pe Slack',
-					text: 'În canalul #vanzari',
+					text: 'În canalul #vânzări',
+					run: 'efectuat',
+				},
+				ai: {
+					kind: 'Întrebați AI',
+					text: 'Redactarea unui prim răspuns',
+					run: 'răspuns de {n} caractere',
+				},
+				update: {
+					kind: 'Modificare rând',
+					text: 'Răspuns, Etapă',
+					run: 'efectuat',
 				},
 			},
-			answer: 'Vă mulțumim pentru încredere! Vă lansăm proiectul chiar de luni, iar factura vă urmează pe e-mail.',
-			done: 'Reușită · 5 pași · 1,2 s',
-			copilot: {
-				prompt: 'Când o ofertă este semnată, anunță contabilitatea și creează factura.',
-				text: 'O frază către Copilot, și automatizarea este construită: nu mai aveți decât să o recitiți.',
+			paths: {
+				big: 'Proiect mare',
+				condition: 'budget gt 5000',
+				otherwise: 'Altfel',
+			},
+			answer: 'Bună ziua, și mulțumim pentru cererea dumneavoastră! Léa, care se va ocupa de noua dumneavoastră identitate vizuală, vă sună mâine dimineață.',
+			addStep: 'Adăugați un pas',
+			tabs: {
+				settings: 'Opțiuni',
+				runs: 'Execuții',
+			},
+			runsText: 'Ultimele 50, păstrate 30 de zile. Alegeți una pentru a vedea, pe flux, ramura pe care a urmat-o.',
+			running: 'În curs',
+			succeeded: 'Reușită',
+			started: 'rând creat · {when}',
+			now: 'chiar acum',
+			earlier: ['ieri la 18:40', 'ieri la 11:02'],
+			done: 'Reușită · 5 pași · 1,3 s',
+			points: {
+				when: {
+					title: 'La momentul potrivit',
+					text: 'Un rând creat sau modificat, o oră fixă, un buton — și o condiție pentru a porni doar când trebuie.',
+				},
+				paths: {
+					title: 'Mai multe ramuri',
+					text: 'O condiție deschide ramuri, fiecare cu pașii ei; ce găsește un pas, următorul îl poate cita.',
+				},
+				copilot: {
+					title: 'Descrisă într-o frază',
+					text: '„Când sosește o cerere, anunțați-o pe Léa dacă bugetul depășește 5.000 €”: Copilot construiește fluxul, dumneavoastră îl recitiți.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

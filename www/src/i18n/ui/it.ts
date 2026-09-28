@@ -638,41 +638,170 @@ export default {
 				label: 'Lavorare insieme',
 			},
 		},
+		forms: {
+			eyebrow: 'Moduli e questionari',
+			title: 'Fai le tue domande.',
+			titleAccent: 'Le risposte si ordinano da sole.',
+			text: 'Un modulo su una sola pagina, o un questionario che pone una domanda per schermata: condividi il link, e ogni risposta diventa una riga della tua tabella. Chi risponde non vede nient’altro.',
+			modes: {
+				label: 'Mostra le domande',
+				survey: 'Questionario',
+				form: 'Modulo',
+			},
+			demo: {
+				title: 'Richiesta di preventivo',
+				description: 'Tre domande, e ti rispondiamo entro 48 ore.',
+				count: '3 domande',
+				start: 'Inizia',
+				next: 'Avanti',
+				previous: 'Precedente',
+				submit: 'Invia la mia richiesta',
+				org: {
+					label: 'La tua organizzazione',
+					answer: 'Caffè delle Arti',
+				},
+				need: {
+					label: 'La tua esigenza',
+					choose: 'Scegli…',
+					options: ['Sito web', 'Identità visiva', 'Catalogo'],
+				},
+				budget: {
+					label: 'Il tuo budget',
+					help: 'IVA esclusa, anche solo approssimativo.',
+				},
+				thanks: 'Grazie! Ti rispondiamo entro 48 ore.',
+				poweredBy: 'Modulo realizzato con basedb',
+				path: 'Vendite / Richieste',
+				view: 'Tutte le richieste',
+				columns: {
+					org: 'Organizzazione',
+					need: 'Esigenza',
+					budget: 'Budget',
+					stage: 'Fase',
+				},
+				stages: {
+					new: 'Nuova',
+					called: 'Richiamata',
+					quote: 'Preventivo inviato',
+				},
+				rows: ['Panificio Martini', 'Clinica dei Tigli', 'Bici Solidale', 'Fonderie del Po'],
+				open: 'Aperto',
+				answers: {
+					one: '{n} risposta',
+					other: '{n} risposte',
+				},
+				active: 'Link attivo',
+			},
+			points: {
+				survey: {
+					title: 'Una domanda per schermata',
+					text: 'Il questionario le pone una alla volta, con la sua barra di avanzamento; Invio passa alla successiva.',
+				},
+				access: {
+					title: 'Pubblico o riservato',
+					text: 'Chiunque abbia il link risponde senza account — oppure solo i membri connessi, e la risposta porta il loro nome.',
+				},
+				closed: {
+					title: 'Il resto resta chiuso',
+					text: 'Rispondere non mostra nient’altro della tabella. Il link si chiude a una data, o dopo un numero di risposte.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'I moduli',
+			},
+		},
 		automate: {
 			eyebrow: 'Automazioni',
 			title: 'Lavora',
 			titleAccent: 'mentre dormi.',
-			text: 'Descrivi una volta cosa deve succedere. Quando una riga cambia, ogni mattina a un’ora fissa o con un clic su un pulsante, basedb concatena i passaggi — e ogni esecuzione si rilegge, passaggio per passaggio.',
+			text: 'Quando una riga arriva o cambia, a un’ora fissa o con un clic su un pulsante, basedb concatena i passaggi: sceglie il ramo giusto, chiede all’IA, avvisa chi serve. E ogni esecuzione si può rileggere, passaggio dopo passaggio.',
 			clock: '03:12',
+			crumb: 'Vendite / Automazioni',
+			create: 'Nuova automazione',
+			list: [
+				{
+					name: 'Nuova richiesta',
+					when: 'Viene creata una riga',
+				},
+				{
+					name: 'Preventivo firmato',
+					when: 'Viene modificata una riga',
+				},
+				{
+					name: 'Solleciti del lunedì',
+					when: 'Ogni lunedì alle 09:00',
+				},
+			],
+			active: 'Attiva',
+			test: 'Prova su una riga',
+			save: 'Salva',
 			when: 'Quando',
-			trigger: 'un preventivo passa a «Firmato»',
+			trigger: 'Viene creata una riga',
+			table: 'In Richieste',
 			steps: {
-				find: {
-					kind: 'Cerca una riga',
-					text: 'Il cliente del preventivo',
-				},
-				ai: {
-					kind: 'Chiedi all’IA',
-					text: 'Scrivere un messaggio di ringraziamento',
-				},
-				create: {
-					kind: 'Crea una riga',
-					text: 'La fattura, in Fatture',
+				branch: {
+					kind: 'Condizione',
+					text: '2 rami',
+					run: 'ramo «Grande progetto»',
 				},
 				notify: {
 					kind: 'Avvisa qualcuno',
-					text: 'La contabilità',
+					text: 'Léa Martin',
+					run: '1 persona avvisata',
+				},
+				create: {
+					kind: 'Crea una riga',
+					text: 'Un appuntamento, in Agenda',
+					run: 'fatto',
 				},
 				slack: {
 					kind: 'Invia su Slack',
 					text: 'Nel canale #vendite',
+					run: 'fatto',
+				},
+				ai: {
+					kind: 'Chiedi all’IA',
+					text: 'Redigere una prima risposta',
+					run: 'risposta di {n} caratteri',
+				},
+				update: {
+					kind: 'Modifica una riga',
+					text: 'Risposta, Fase',
+					run: 'fatto',
 				},
 			},
-			answer: 'Grazie per la fiducia! Il tuo progetto parte da lunedì, e la fattura ti arriverà per email.',
-			done: 'Riuscita · 5 passaggi · 1,2 s',
-			copilot: {
-				prompt: 'Quando un preventivo è firmato, avvisa la contabilità e crea la fattura.',
-				text: 'Una frase al Copilot, e l’automazione è pronta: non ti resta che rileggerla.',
+			paths: {
+				big: 'Grande progetto',
+				condition: 'budget gt 5000',
+				otherwise: 'Altrimenti',
+			},
+			answer: 'Buongiorno, e grazie per la Sua richiesta! Léa, che seguirà la Sua nuova identità visiva, Le telefona domani mattina.',
+			addStep: 'Aggiungi un passaggio',
+			tabs: {
+				settings: 'Opzioni',
+				runs: 'Esecuzioni',
+			},
+			runsText: 'Le ultime 50, conservate 30 giorni. Scegline una per vedere, sul flusso, il ramo che ha preso.',
+			running: 'In corso',
+			succeeded: 'Riuscita',
+			started: 'riga creata · {when}',
+			now: 'proprio ora',
+			earlier: ['ieri alle 18:40', 'ieri alle 11:02'],
+			done: 'Riuscita · 5 passaggi · 1,3 s',
+			points: {
+				when: {
+					title: 'Al momento giusto',
+					text: 'Una riga creata o modificata, un’ora fissa, un pulsante — e una condizione per partire solo quando serve.',
+				},
+				paths: {
+					title: 'Più rami',
+					text: 'Una condizione apre rami, ciascuno con i suoi passaggi; ciò che un passaggio trova, il successivo può citarlo.',
+				},
+				copilot: {
+					title: 'Descritta in una frase',
+					text: '«Quando arriva una richiesta, avvisa Léa se il budget supera i 5.000 €»: il Copilot costruisce il flusso, tu lo rileggi.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

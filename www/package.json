@@ -9,6 +9,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
+    "og": "node scripts/og-images.mjs",
     "astro": "astro"
   },
   "dependencies": {

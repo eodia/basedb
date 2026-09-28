@@ -627,41 +627,169 @@ export default {
 				label: '함께 작업하기',
 			},
 		},
+		forms: {
+			eyebrow: '양식과 설문',
+			title: '질문만 하세요.',
+			titleAccent: '답은 저절로 정리됩니다.',
+			text: '한 페이지짜리 양식이든, 화면마다 질문 하나씩 던지는 설문이든 — 링크를 공유하면 답변 하나하나가 테이블의 한 행이 됩니다. 응답자에게는 그 외에 아무것도 보이지 않습니다.',
+			modes: {
+				label: '질문 표시 방식',
+				survey: '설문',
+				form: '양식',
+			},
+			demo: {
+				title: '견적 요청',
+				description: '질문 세 가지만 답해 주세요. 48시간 이내에 연락드리겠습니다.',
+				count: '질문 3개',
+				start: '시작',
+				next: '다음',
+				previous: '이전',
+				submit: '요청 보내기',
+				org: {
+					label: '기관명',
+					answer: '아트카페',
+				},
+				need: {
+					label: '요청 사항',
+					choose: '선택…',
+					options: ['웹사이트', '비주얼 아이덴티티', '카탈로그'],
+				},
+				budget: {
+					label: '예산',
+					help: '부가세 제외, 대략적인 금액도 괜찮습니다.',
+				},
+				thanks: '감사합니다! 48시간 이내에 연락드리겠습니다.',
+				poweredBy: 'basedb 기반 양식',
+				path: '영업 / 요청',
+				view: '모든 요청',
+				columns: {
+					org: '기관명',
+					need: '요청 사항',
+					budget: '예산',
+					stage: '단계',
+				},
+				stages: {
+					new: '신규',
+					called: '통화 완료',
+					quote: '견적 발송 완료',
+				},
+				rows: ['마루 베이커리', '보리수 의원', '나눔자전거', '강변 단조'],
+				open: '열림',
+				answers: {
+					other: '응답 {n}건',
+				},
+				active: '링크 활성화',
+			},
+			points: {
+				survey: {
+					title: '한 화면에 질문 하나',
+					text: '설문은 진행률 표시줄과 함께 질문을 하나씩 보여줍니다. Enter 키를 누르면 다음 질문으로 넘어갑니다.',
+				},
+				access: {
+					title: '공개 또는 제한',
+					text: '링크가 있는 사람은 누구나 계정 없이 답변할 수 있습니다 — 로그인한 멤버로만 제한할 수도 있으며, 이 경우 답변에 이름이 함께 기록됩니다.',
+				},
+				closed: {
+					title: '나머지는 공개되지 않습니다',
+					text: '답변자에게는 테이블의 다른 정보가 전혀 표시되지 않습니다. 링크는 지정한 날짜가 되거나 응답 수에 도달하면 닫힙니다.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: '양식',
+			},
+		},
 		automate: {
 			eyebrow: '자동화',
-			title: '자동화가 일합니다',
+			title: '일합니다.',
 			titleAccent: '당신이 잠든 사이에도.',
-			text: '한 번만 설명하면 됩니다. 행이 바뀔 때, 매일 정해진 시각에, 또는 버튼 클릭 한 번으로, basedb가 단계를 이어서 진행합니다 — 그리고 모든 실행은 단계별로 다시 확인할 수 있습니다.',
+			text: '행이 들어오거나 바뀔 때, 정해진 시각에, 혹은 버튼 클릭 한 번으로 — basedb가 단계를 차례로 실행합니다. 올바른 분기를 고르고, AI에게 묻고, 알려야 할 사람에게 알립니다. 모든 실행은 단계별로 다시 볼 수 있습니다.',
 			clock: '03:12',
+			crumb: '영업 / 자동화',
+			create: '새 자동화',
+			list: [
+				{
+					name: '신규 요청',
+					when: '행 생성됨',
+				},
+				{
+					name: '견적 서명 완료',
+					when: '행 수정됨',
+				},
+				{
+					name: '월요일 리마인드',
+					when: '매주 월요일 09:00',
+				},
+			],
+			active: '활성',
+			test: '행으로 테스트',
+			save: '저장',
 			when: '언제',
-			trigger: '견적이 “계약 완료”로 바뀌면',
+			trigger: '행 생성됨',
+			table: '요청에서',
 			steps: {
-				find: {
-					kind: '행 찾기',
-					text: '견적의 고객',
-				},
-				ai: {
-					kind: 'AI에게 질문',
-					text: '감사 메시지 작성',
-				},
-				create: {
-					kind: '행 생성',
-					text: '청구서, “청구서” 테이블에',
+				branch: {
+					kind: '조건',
+					text: '분기 2개',
+					run: '분기 “대형 프로젝트”',
 				},
 				notify: {
 					kind: '알림 보내기',
-					text: '회계팀',
+					text: 'Léa Martin',
+					run: '1명에게 알림',
+				},
+				create: {
+					kind: '행 생성',
+					text: '미팅, “캘린더” 테이블에',
+					run: '완료',
 				},
 				slack: {
 					kind: 'Slack으로 보내기',
 					text: '#영업 채널로',
+					run: '완료',
+				},
+				ai: {
+					kind: 'AI에게 질문',
+					text: '첫 응답 작성',
+					run: '{n}자 응답',
+				},
+				update: {
+					kind: '행 수정',
+					text: '응답, 단계',
+					run: '완료',
 				},
 			},
-			answer: '믿고 맡겨 주셔서 감사합니다! 월요일부터 바로 프로젝트를 시작하며, 청구서는 이메일로 보내드립니다.',
-			done: '성공 · 5단계 · 1.2초',
-			copilot: {
-				prompt: '견적이 “계약 완료”가 되면 회계팀에 알리고 청구서를 만들어 주세요.',
-				text: 'Copilot에게 한 문장만 건네면 자동화가 만들어집니다: 남은 일은 검토뿐입니다.',
+			paths: {
+				big: '대형 프로젝트',
+				condition: 'budget gt 5000',
+				otherwise: '그 외',
+			},
+			answer: '안녕하세요, 문의해 주셔서 감사합니다! 새로운 비주얼 아이덴티티를 담당할 Léa가 내일 오전 중에 전화드리겠습니다.',
+			addStep: '단계 추가',
+			tabs: {
+				settings: '설정',
+				runs: '실행',
+			},
+			runsText: '최근 50개 실행을 30일 동안 보관합니다. 하나를 선택하면 흐름에서 해당 실행이 지나간 경로를 볼 수 있습니다.',
+			running: '진행 중',
+			succeeded: '성공',
+			started: '행 생성됨 · {when}',
+			now: '방금',
+			earlier: ['어제 18:40', '어제 11:02'],
+			done: '성공 · 5단계 · 1.3초',
+			points: {
+				when: {
+					title: '적절한 순간에',
+					text: '행 생성이나 수정, 정해진 시각, 버튼 클릭까지 — 그리고 꼭 필요할 때만 시작하는 조건까지.',
+				},
+				paths: {
+					title: '여러 분기',
+					text: '조건 하나가 여러 분기를 열고, 각 분기에는 저마다의 단계가 있습니다. 한 단계가 찾아낸 내용을 다음 단계에서 그대로 인용할 수 있습니다.',
+				},
+				copilot: {
+					title: '한 문장으로 설명하면',
+					text: '“새 요청이 들어오면 예산이 5,000유로를 넘을 때 Léa에게 알려줘.” Copilot이 흐름을 만들고, 당신이 검토합니다.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

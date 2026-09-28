@@ -638,41 +638,170 @@ export default {
 				label: 'Working together',
 			},
 		},
+		forms: {
+			eyebrow: 'Forms and surveys',
+			title: 'Ask your questions.',
+			titleAccent: 'The answers sort themselves.',
+			text: 'A single-page form, or a survey that asks one question per screen: share the link, and every answer becomes a row in your table. Whoever answers sees nothing else.',
+			modes: {
+				label: 'Show the questions',
+				survey: 'Survey',
+				form: 'Form',
+			},
+			demo: {
+				title: 'Quote request',
+				description: 'Three questions, and we’ll get back to you within 48 hours.',
+				count: '3 questions',
+				start: 'Start',
+				next: 'Next',
+				previous: 'Previous',
+				submit: 'Send my request',
+				org: {
+					label: 'Your organization',
+					answer: 'The Arts Café',
+				},
+				need: {
+					label: 'Your need',
+					choose: 'Choose…',
+					options: ['Site', 'Visual identity', 'Catalog'],
+				},
+				budget: {
+					label: 'Your budget',
+					help: 'Excluding tax, a rough figure is fine.',
+				},
+				thanks: 'Thank you! We’ll get back to you within 48 hours.',
+				poweredBy: 'Form powered by basedb',
+				path: 'Sales / Requests',
+				view: 'All requests',
+				columns: {
+					org: 'Organization',
+					need: 'Need',
+					budget: 'Budget',
+					stage: 'Stage',
+				},
+				stages: {
+					new: 'New',
+					called: 'Called back',
+					quote: 'Quote sent',
+				},
+				rows: ['Martin’s Bakery', 'Lindenwood Clinic', 'Community Cycles', 'Riverside Forge'],
+				open: 'Open',
+				answers: {
+					one: '{n} answer',
+					other: '{n} answers',
+				},
+				active: 'Link active',
+			},
+			points: {
+				survey: {
+					title: 'One question per screen',
+					text: 'The survey asks them one at a time, with its progress bar; Enter moves to the next one.',
+				},
+				access: {
+					title: 'Public or restricted',
+					text: 'Anyone with the link can answer without an account — or only signed-in members, with their name on the answer.',
+				},
+				closed: {
+					title: 'The rest stays closed',
+					text: 'Answering shows nothing else from the table. The link closes on a date, or after a number of answers.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'Forms',
+			},
+		},
 		automate: {
 			eyebrow: 'Automations',
 			title: 'It works',
 			titleAccent: 'while you sleep.',
-			text: 'Describe once what should happen. When a row changes, every morning at a set time, or with the click of a button, basedb runs through the steps — and every run can be reviewed, step by step.',
+			text: 'When a row arrives or changes, at a set time, or with the click of a button, basedb runs through the steps: it picks the right branch, asks AI, notifies whoever needs to know. And every run can be reviewed, step by step.',
 			clock: '03:12',
+			crumb: 'Sales / Automations',
+			create: 'New automation',
+			list: [
+				{
+					name: 'New request',
+					when: 'A row is created',
+				},
+				{
+					name: 'Quote signed',
+					when: 'A row is updated',
+				},
+				{
+					name: 'Monday follow-ups',
+					when: 'Every Monday at 09:00',
+				},
+			],
+			active: 'Active',
+			test: 'Test on a row',
+			save: 'Save',
 			when: 'When',
-			trigger: 'a quote becomes “Signed”',
+			trigger: 'A row is created',
+			table: 'In Requests',
 			steps: {
-				find: {
-					kind: 'Find row',
-					text: 'The quote’s client',
-				},
-				ai: {
-					kind: 'Ask AI',
-					text: 'Draft a thank-you note',
-				},
-				create: {
-					kind: 'Create row',
-					text: 'The invoice, in Invoices',
+				branch: {
+					kind: 'Condition',
+					text: '2 branches',
+					run: 'branch “Big project”',
 				},
 				notify: {
 					kind: 'Notify someone',
-					text: 'Accounting',
+					text: 'Léa Martin',
+					run: '1 person notified',
+				},
+				create: {
+					kind: 'Create row',
+					text: 'An appointment, in Calendar',
+					run: 'done',
 				},
 				slack: {
 					kind: 'Send to Slack',
 					text: 'In the #sales channel',
+					run: 'done',
+				},
+				ai: {
+					kind: 'Ask AI',
+					text: 'Draft a first reply',
+					run: '{n}-character answer',
+				},
+				update: {
+					kind: 'Update row',
+					text: 'Answer, Stage',
+					run: 'done',
 				},
 			},
-			answer: 'Thank you for your trust! We’re starting your project on Monday, and your invoice follows by email.',
-			done: 'Succeeded · 5 steps · 1.2s',
-			copilot: {
-				prompt: 'When a quote is signed, notify accounting and create the invoice.',
-				text: 'One sentence to the Copilot, and the automation is built: all that’s left is to review it.',
+			paths: {
+				big: 'Big project',
+				condition: 'budget gt 5000',
+				otherwise: 'Otherwise',
+			},
+			answer: 'Hello, and thank you for your request! Léa, who’ll be handling your new visual identity, will call you tomorrow morning.',
+			addStep: 'Add a step',
+			tabs: {
+				settings: 'Settings',
+				runs: 'Runs',
+			},
+			runsText: 'The last 50, kept for 30 days. Choose one to see, on the flow, the path it took.',
+			running: 'In progress',
+			succeeded: 'Succeeded',
+			started: 'row created · {when}',
+			now: 'just now',
+			earlier: ['yesterday at 6:40 PM', 'yesterday at 11:02 AM'],
+			done: 'Succeeded · 5 steps · 1.3s',
+			points: {
+				when: {
+					title: 'At the right moment',
+					text: 'A row created or updated, a set time, a button — and a condition so it only runs when it should.',
+				},
+				paths: {
+					title: 'Multiple branches',
+					text: 'A condition opens branches, each with its own steps; what one step finds, the next can reference.',
+				},
+				copilot: {
+					title: 'Described in one sentence',
+					text: '“When a request comes in, notify Léa if the budget is over €5,000”: Copilot builds the flow, you review it.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

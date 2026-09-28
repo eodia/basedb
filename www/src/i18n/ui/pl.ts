@@ -639,41 +639,172 @@ export default {
 				label: 'Praca w zespole',
 			},
 		},
+		forms: {
+			eyebrow: 'Formularze i ankiety',
+			title: 'Zadawaj pytania.',
+			titleAccent: 'Odpowiedzi porządkują się same.',
+			text: 'Formularz na jednej stronie albo ankieta zadająca jedno pytanie na ekran: udostępnij link, a każda odpowiedź stanie się wierszem twojej tabeli. Osoba odpowiadająca nie widzi nic więcej.',
+			modes: {
+				label: 'Pokaż pytania',
+				survey: 'Ankieta',
+				form: 'Formularz',
+			},
+			demo: {
+				title: 'Zapytanie ofertowe',
+				description: 'Trzy pytania, i odezwiemy się w ciągu 48 godzin.',
+				count: '3 pytania',
+				start: 'Rozpocznij',
+				next: 'Następna',
+				previous: 'Poprzednia',
+				submit: 'Wyślij moje zapytanie',
+				org: {
+					label: 'Twoja organizacja',
+					answer: 'Kawiarnia Sztuki',
+				},
+				need: {
+					label: 'Twoja potrzeba',
+					choose: 'Wybierz…',
+					options: ['Strona internetowa', 'Identyfikacja wizualna', 'Katalog'],
+				},
+				budget: {
+					label: 'Twój budżet',
+					help: 'Netto, nawet w przybliżeniu.',
+				},
+				thanks: 'Dziękujemy! Odezwiemy się w ciągu 48 godzin.',
+				poweredBy: 'Formularz obsługiwany przez basedb',
+				path: 'Sprzedaż / Zapytania',
+				view: 'Wszystkie zapytania',
+				columns: {
+					org: 'Organizacja',
+					need: 'Potrzeba',
+					budget: 'Budżet',
+					stage: 'Etap',
+				},
+				stages: {
+					new: 'Nowe',
+					called: 'Oddzwoniono',
+					quote: 'Oferta wysłana',
+				},
+				rows: ['Piekarnia Kowalski', 'Klinika w Lipowie', 'Rower Solidarny', 'Kuźnia nad Wisłą'],
+				open: 'Otwarty',
+				answers: {
+					one: '{n} odpowiedź',
+					few: '{n} odpowiedzi',
+					many: '{n} odpowiedzi',
+					other: '{n} odpowiedzi',
+				},
+				active: 'Link aktywny',
+			},
+			points: {
+				survey: {
+					title: 'Jedno pytanie na ekran',
+					text: 'Ankieta zadaje je jedno po drugim, z paskiem postępu; Enter przechodzi do następnego.',
+				},
+				access: {
+					title: 'Publiczny albo tylko dla zalogowanych',
+					text: 'Każdy, kto ma link, odpowiada bez konta — albo tylko zalogowani członkowie, a odpowiedź nosi ich imię i nazwisko.',
+				},
+				closed: {
+					title: 'Reszta zostaje zamknięta',
+					text: 'Odpowiadanie nie pokazuje niczego innego z tabeli. Link zamyka się w wybranym dniu albo po określonej liczbie odpowiedzi.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'Formularze',
+			},
+		},
 		automate: {
 			eyebrow: 'Automatyzacje',
 			title: 'Pracuje',
 			titleAccent: 'kiedy ty śpisz.',
-			text: 'Opisz raz to, co ma się wydarzyć. Gdy wiersz się zmienia, każdego ranka o ustalonej godzinie albo jednym kliknięciem przycisku, basedb wykonuje kolejne kroki – a każde uruchomienie można odtworzyć krok po kroku.',
+			text: 'Gdy wiersz się pojawia lub zmienia, o stałej godzinie albo jednym kliknięciem przycisku, basedb wykonuje kolejne kroki: wybiera właściwą gałąź, pyta AI, powiadamia kogo trzeba. A każde uruchomienie można prześledzić krok po kroku.',
 			clock: '03:12',
+			crumb: 'Sprzedaż / Automatyzacje',
+			create: 'Nowa automatyzacja',
+			list: [
+				{
+					name: 'Nowe zapytanie',
+					when: 'Wiersz został utworzony',
+				},
+				{
+					name: 'Oferta podpisana',
+					when: 'Wiersz został zmieniony',
+				},
+				{
+					name: 'Przypomnienia w poniedziałek',
+					when: 'W każdy poniedziałek o 09:00',
+				},
+			],
+			active: 'Aktywna',
+			test: 'Testuj na wierszu',
+			save: 'Zapisz',
 			when: 'Kiedy',
-			trigger: 'oferta przechodzi w status „Podpisano”',
+			trigger: 'Wiersz został utworzony',
+			table: 'W tabeli Zapytania',
 			steps: {
-				find: {
-					kind: 'Znajdź wiersz',
-					text: 'Klienta z oferty',
-				},
-				ai: {
-					kind: 'Zapytaj AI',
-					text: 'Napisz podziękowanie',
-				},
-				create: {
-					kind: 'Utwórz wiersz',
-					text: 'Fakturę, w tabeli Faktury',
+				branch: {
+					kind: 'Warunek',
+					text: '2 gałęzie',
+					run: 'gałąź „Duży projekt”',
 				},
 				notify: {
 					kind: 'Powiadom kogoś',
-					text: 'Księgowość',
+					text: 'Léa Martin',
+					run: 'Powiadomiono 1 osobę',
+				},
+				create: {
+					kind: 'Utwórz wiersz',
+					text: 'Spotkanie, w Kalendarzu',
+					run: 'wykonano',
 				},
 				slack: {
 					kind: 'Wyślij na Slack',
-					text: 'Na kanale #sprzedaz',
+					text: 'Na kanale #sprzedaż',
+					run: 'wykonano',
+				},
+				ai: {
+					kind: 'Zapytaj AI',
+					text: 'Zredagować pierwszą odpowiedź',
+					run: 'odpowiedź o długości {n} znaków',
+				},
+				update: {
+					kind: 'Edytuj wiersz',
+					text: 'Odpowiedź, Etap',
+					run: 'wykonano',
 				},
 			},
-			answer: 'Dziękujemy za zaufanie! Zaczynamy pracę nad twoim projektem od poniedziałku, a faktura dotrze mailem.',
-			done: 'Zakończona · 5 kroków · 1,2 s',
-			copilot: {
-				prompt: 'Gdy oferta zostaje podpisana, powiadom księgowość i utwórz fakturę.',
-				text: 'Jedno zdanie do Copilota, i automatyzacja jest gotowa: wystarczy ją przeczytać.',
+			paths: {
+				big: 'Duży projekt',
+				condition: 'budget gt 5000',
+				otherwise: 'W przeciwnym razie',
+			},
+			answer: 'Dzień dobry, i dziękujemy za zapytanie! Léa, która zajmie się Państwa nową identyfikacją wizualną, zadzwoni jutro rano.',
+			addStep: 'Dodaj krok',
+			tabs: {
+				settings: 'Opcje',
+				runs: 'Uruchomienia',
+			},
+			runsText: 'Ostatnie 50, przechowywane przez 30 dni. Wybierz jedno, aby zobaczyć w przepływie, którą gałęzią poszło.',
+			running: 'W toku',
+			succeeded: 'Udane',
+			started: 'utworzono wiersz · {when}',
+			now: 'przed chwilą',
+			earlier: ['wczoraj o 18:40', 'wczoraj o 11:02'],
+			done: 'Udane · 5 kroków · 1,3 s',
+			points: {
+				when: {
+					title: 'We właściwym momencie',
+					text: 'Utworzony lub zmieniony wiersz, stała godzina, przycisk — i warunek, by ruszać tylko wtedy, gdy trzeba.',
+				},
+				paths: {
+					title: 'Kilka gałęzi',
+					text: 'Warunek otwiera gałęzie, każda ze swoimi krokami; to, co znajdzie jeden krok, może przywołać następny.',
+				},
+				copilot: {
+					title: 'Opisana jednym zdaniem',
+					text: '„Kiedy przychodzi zapytanie, powiadom Léa, jeśli budżet przekracza 5 000 €”: Copilot buduje przepływ, a ty go sprawdzasz.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

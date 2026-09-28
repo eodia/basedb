@@ -638,41 +638,170 @@ export default {
 				label: 'Trabalhar em equipe',
 			},
 		},
+		forms: {
+			eyebrow: 'Formulários e questionários',
+			title: 'Faça suas perguntas.',
+			titleAccent: 'As respostas se organizam sozinhas.',
+			text: 'Um formulário em uma única página, ou um questionário que faz uma pergunta por tela: compartilhe o link, e cada resposta vira uma linha da sua tabela. Quem responde não vê mais nada.',
+			modes: {
+				label: 'Mostrar as perguntas',
+				survey: 'Questionário',
+				form: 'Formulário',
+			},
+			demo: {
+				title: 'Solicitação de orçamento',
+				description: 'Três perguntas, e respondemos para você em até 48 h.',
+				count: '3 perguntas',
+				start: 'Começar',
+				next: 'Próximo',
+				previous: 'Anterior',
+				submit: 'Enviar minha solicitação',
+				org: {
+					label: 'Sua organização',
+					answer: 'Café das Artes',
+				},
+				need: {
+					label: 'Sua necessidade',
+					choose: 'Escolher…',
+					options: ['Site', 'Identidade visual', 'Catálogo'],
+				},
+				budget: {
+					label: 'Seu orçamento',
+					help: 'Sem impostos, mesmo que aproximado.',
+				},
+				thanks: 'Obrigado! Respondemos para você em até 48 h.',
+				poweredBy: 'Formulário com tecnologia basedb',
+				path: 'Vendas / Solicitações',
+				view: 'Todas as solicitações',
+				columns: {
+					org: 'Organização',
+					need: 'Necessidade',
+					budget: 'Orçamento',
+					stage: 'Etapa',
+				},
+				stages: {
+					new: 'Nova',
+					called: 'Recontatada',
+					quote: 'Orçamento enviado',
+				},
+				rows: ['Padaria Martins', 'Clínica Bela Vista', 'Bicicletaria Solidária', 'Metalúrgica Rio Verde'],
+				open: 'Aberto',
+				answers: {
+					one: '{n} resposta',
+					other: '{n} respostas',
+				},
+				active: 'Link ativo',
+			},
+			points: {
+				survey: {
+					title: 'Uma pergunta por tela',
+					text: 'O questionário as faz uma a uma, com sua barra de progresso; Enter passa para a próxima.',
+				},
+				access: {
+					title: 'Público ou reservado',
+					text: 'Qualquer pessoa com o link responde sem conta — ou só os membros conectados, e a resposta traz o nome deles.',
+				},
+				closed: {
+					title: 'O resto continua fechado',
+					text: 'Responder não mostra mais nada da tabela. O link se fecha em uma data, ou após um número de respostas.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'Os formulários',
+			},
+		},
 		automate: {
 			eyebrow: 'Automações',
-			title: 'Ele trabalha',
+			title: 'Trabalha',
 			titleAccent: 'enquanto você dorme.',
-			text: 'Descreva uma vez o que deve acontecer. Quando uma linha muda, todo dia em um horário fixo ou com um clique em um botão, o basedb encadeia as etapas — e cada execução pode ser revista, etapa por etapa.',
+			text: 'Quando uma linha chega ou muda, em um horário fixo ou com um clique em um botão, basedb encadeia as etapas: escolhe a ramificação certa, pergunta à IA, avisa quem for preciso. E cada execução pode ser revisada, etapa por etapa.',
 			clock: '03:12',
+			crumb: 'Vendas / Automações',
+			create: 'Nova automação',
+			list: [
+				{
+					name: 'Nova solicitação',
+					when: 'Uma linha é criada',
+				},
+				{
+					name: 'Orçamento assinado',
+					when: 'Uma linha é alterada',
+				},
+				{
+					name: 'Lembretes de segunda-feira',
+					when: 'Toda segunda-feira às 09:00',
+				},
+			],
+			active: 'Ativa',
+			test: 'Testar em uma linha',
+			save: 'Salvar',
 			when: 'Quando',
-			trigger: 'um orçamento passa para “Assinado”',
+			trigger: 'Uma linha é criada',
+			table: 'Em Solicitações',
 			steps: {
-				find: {
-					kind: 'Buscar uma linha',
-					text: 'O cliente do orçamento',
-				},
-				ai: {
-					kind: 'Perguntar à IA',
-					text: 'Redigir uma mensagem de agradecimento',
-				},
-				create: {
-					kind: 'Criar uma linha',
-					text: 'A fatura, em Faturas',
+				branch: {
+					kind: 'Condição',
+					text: '2 ramificações',
+					run: 'ramificação “Grande projeto”',
 				},
 				notify: {
 					kind: 'Avisar alguém',
-					text: 'A contabilidade',
+					text: 'Léa Martin',
+					run: '1 pessoa notificada',
+				},
+				create: {
+					kind: 'Criar uma linha',
+					text: 'Um compromisso, em Agenda',
+					run: 'concluído',
 				},
 				slack: {
 					kind: 'Enviar no Slack',
 					text: 'No canal #vendas',
+					run: 'concluído',
+				},
+				ai: {
+					kind: 'Perguntar à IA',
+					text: 'Redigir uma primeira resposta',
+					run: 'resposta de {n} caracteres',
+				},
+				update: {
+					kind: 'Editar uma linha',
+					text: 'Resposta, Etapa',
+					run: 'concluído',
 				},
 			},
-			answer: 'Obrigado pela confiança! Vamos iniciar seu projeto já na segunda-feira, e sua fatura chega por e-mail.',
-			done: 'Concluída · 5 etapas · 1,2 s',
-			copilot: {
-				prompt: 'Quando um orçamento é assinado, avise a contabilidade e crie a fatura.',
-				text: 'Uma frase para o Copilot, e a automação está construída: você só precisa revisar.',
+			paths: {
+				big: 'Grande projeto',
+				condition: 'budget gt 5000',
+				otherwise: 'Senão',
+			},
+			answer: 'Olá, e obrigado por sua solicitação! Léa, que vai cuidar da sua nova identidade visual, liga para você amanhã de manhã.',
+			addStep: 'Adicionar uma etapa',
+			tabs: {
+				settings: 'Ajustes',
+				runs: 'Execuções',
+			},
+			runsText: 'As 50 últimas, mantidas por 30 dias. Escolha uma para ver, no fluxo, o caminho que ela seguiu.',
+			running: 'Em andamento',
+			succeeded: 'Bem-sucedida',
+			started: 'linha criada · {when}',
+			now: 'agora mesmo',
+			earlier: ['ontem às 18:40', 'ontem às 11:02'],
+			done: 'Bem-sucedida · 5 etapas · 1,3 s',
+			points: {
+				when: {
+					title: 'Na hora certa',
+					text: 'Uma linha criada ou alterada, um horário fixo, um botão — e uma condição para só disparar quando for preciso.',
+				},
+				paths: {
+					title: 'Vários caminhos',
+					text: 'Uma condição abre caminhos, cada um com suas etapas; o que uma etapa encontra, a seguinte pode citar.',
+				},
+				copilot: {
+					title: 'Descrita em uma frase',
+					text: '“Quando uma solicitação chega, avise a Léa se o orçamento ultrapassar 5.000 €”: o Copilot constrói o fluxo, você revisa.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

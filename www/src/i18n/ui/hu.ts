@@ -638,41 +638,170 @@ export default {
 				label: 'Közös munka',
 			},
 		},
+		forms: {
+			eyebrow: 'Űrlapok és kérdőívek',
+			title: 'Tegye fel kérdéseit.',
+			titleAccent: 'A válaszok maguktól rendeződnek.',
+			text: 'Egy egyoldalas űrlap, vagy egy kérdőív, amely képernyőnként egy kérdést tesz fel: ossza meg a linket, és minden válaszból egy sor lesz a táblájában. A válaszadó semmi mást nem lát.',
+			modes: {
+				label: 'Kérdések megjelenítése',
+				survey: 'Kérdőív',
+				form: 'Űrlap',
+			},
+			demo: {
+				title: 'Árajánlatkérés',
+				description: 'Három kérdés, és 48 órán belül jelentkezünk.',
+				count: '3 kérdés',
+				start: 'Kezdés',
+				next: 'Következő',
+				previous: 'Előző',
+				submit: 'Ajánlatkérés elküldése',
+				org: {
+					label: 'Az Ön szervezete',
+					answer: 'Tóth Kávézó',
+				},
+				need: {
+					label: 'Az Ön igénye',
+					choose: 'Kiválasztás…',
+					options: ['Weboldal', 'Arculat', 'Katalógus'],
+				},
+				budget: {
+					label: 'Az Ön költségvetése',
+					help: 'Áfa nélkül, akár hozzávetőlegesen is.',
+				},
+				thanks: 'Köszönjük! 48 órán belül jelentkezünk.',
+				poweredBy: 'Az űrlapot a basedb működteti',
+				path: 'Értékesítés / Megkeresések',
+				view: 'Összes megkeresés',
+				columns: {
+					org: 'Szervezet',
+					need: 'Igény',
+					budget: 'Költségvetés',
+					stage: 'Szakasz',
+				},
+				stages: {
+					new: 'Új',
+					called: 'Visszahívva',
+					quote: 'Árajánlat elküldve',
+				},
+				rows: ['Márton Pékség', 'Hársfa Klinika', 'Közösségi Kerékpár', 'Tisza Vasművek'],
+				open: 'Nyitott',
+				answers: {
+					one: '{n} válasz',
+					other: '{n} válasz',
+				},
+				active: 'Aktív hivatkozás',
+			},
+			points: {
+				survey: {
+					title: 'Kérdésenként egy képernyő',
+					text: 'A kérdőív egyenként teszi fel őket, a folyamatjelzővel; az Enter billentyű továbblép a következőre.',
+				},
+				access: {
+					title: 'Nyilvános vagy zárt',
+					text: 'Bárki válaszolhat a linkkel, fiók nélkül — vagy csak a bejelentkezett tagok, és a válasz az ő nevüket viseli.',
+				},
+				closed: {
+					title: 'A többi zárva marad',
+					text: 'A válaszadás semmi mást nem mutat meg a táblából. A link egy adott dátumkor vagy egy bizonyos számú válasz után zárul.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'Az űrlapok',
+			},
+		},
 		automate: {
 			eyebrow: 'Automatizálások',
 			title: 'Dolgozik',
 			titleAccent: 'amíg Ön alszik.',
-			text: 'Egyszer írja le, mi történjen. Amikor egy sor megváltozik, minden reggel egy megadott időpontban, vagy egy gombkattintásra, a basedb végigviszi a lépéseket — és minden futtatás lépésről lépésre visszanézhető.',
+			text: 'Amikor egy sor érkezik vagy megváltozik, egy megadott időpontban vagy egy gombkattintásra, a basedb végigviszi a lépéseket: kiválasztja a megfelelő ágat, megkérdezi az MI-t, és értesíti, akit kell. Minden futtatás pedig lépésről lépésre visszanézhető.',
 			clock: '03:12',
-			when: 'Amikor',
-			trigger: 'egy árajánlat „Aláírva” állapotba kerül',
+			crumb: 'Értékesítés / Automatizálások',
+			create: 'Új automatizálás',
+			list: [
+				{
+					name: 'Új megkeresés',
+					when: 'Sor létrehozásakor',
+				},
+				{
+					name: 'Árajánlat aláírva',
+					when: 'Sor módosításakor',
+				},
+				{
+					name: 'Hétfői emlékeztetők',
+					when: 'Minden hétfőn 9:00-kor',
+				},
+			],
+			active: 'Aktív',
+			test: 'Tesztelés egy soron',
+			save: 'Mentés',
+			when: 'Mikor',
+			trigger: 'Sor létrehozásakor',
+			table: 'Tábla: Megkeresések',
 			steps: {
-				find: {
-					kind: 'Sor keresése',
-					text: 'Az árajánlat ügyfele',
-				},
-				ai: {
-					kind: 'MI megkérdezése',
-					text: 'Köszönő üzenet megírása',
-				},
-				create: {
-					kind: 'Sor létrehozása',
-					text: 'A számla, a Számlákban',
+				branch: {
+					kind: 'Feltétel',
+					text: '2 ág',
+					run: '„Nagy projekt” ág',
 				},
 				notify: {
 					kind: 'Valaki értesítése',
-					text: 'A könyvelés',
+					text: 'Léa Martin',
+					run: '1 személy értesítve',
+				},
+				create: {
+					kind: 'Sor létrehozása',
+					text: 'Egy találkozó, a Naptárban',
+					run: 'kész',
 				},
 				slack: {
 					kind: 'Küldés Slackre',
 					text: 'A #ertekesites csatornán',
+					run: 'kész',
+				},
+				ai: {
+					kind: 'MI megkérdezése',
+					text: 'Első válasz megírása',
+					run: '{n} karakteres válasz',
+				},
+				update: {
+					kind: 'Sor módosítása',
+					text: 'Válasz, Szakasz',
+					run: 'kész',
 				},
 			},
-			answer: 'Köszönjük a bizalmát! Projektjét már hétfőn elindítjuk, és a számláját hamarosan e-mailben küldjük.',
-			done: 'Sikeres · 5 lépés · 1,2 s',
-			copilot: {
-				prompt: 'Ha egy árajánlatot aláírnak, értesítsd a könyvelést, és hozz létre egy számlát.',
-				text: 'Egy mondat a Copilotnak, és az automatizálás elkészül: már csak át kell néznie.',
+			paths: {
+				big: 'Nagy projekt',
+				condition: 'budget gt 5000',
+				otherwise: 'Egyébként',
+			},
+			answer: 'Jó napot, és köszönjük a megkeresését! Léa, aki az Ön új arculatával foglalkozik majd, holnap reggel felhívja Önt.',
+			addStep: 'Lépés hozzáadása',
+			tabs: {
+				settings: 'Beállítások',
+				runs: 'Futtatások',
+			},
+			runsText: 'Az utolsó 50, 30 napig megőrizve. Válasszon ki egyet, hogy lássa a folyamaton, melyik ágon haladt.',
+			running: 'Folyamatban',
+			succeeded: 'Sikeres',
+			started: 'sor létrehozva · {when}',
+			now: 'az imént',
+			earlier: ['tegnap 18:40-kor', 'tegnap 11:02-kor'],
+			done: 'Sikeres · 5 lépés · 1,3 s',
+			points: {
+				when: {
+					title: 'A megfelelő pillanatban',
+					text: 'Egy létrehozott vagy módosított sor, egy megadott időpont, egy gomb — és egy feltétel, hogy csak akkor induljon, amikor kell.',
+				},
+				paths: {
+					title: 'Több ág',
+					text: 'Egy feltétel ágakat nyit meg, mindegyiknek megvannak a saját lépései; amit egy lépés talál, arra a következő hivatkozhat.',
+				},
+				copilot: {
+					title: 'Egy mondatban leírva',
+					text: '„Amikor egy megkeresés érkezik, értesítsd Léát, ha a költségvetés meghaladja az 5 000 €-t” : a Copilot felépíti a folyamatot, Ön pedig átnézi.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

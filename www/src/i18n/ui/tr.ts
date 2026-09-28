@@ -642,41 +642,170 @@ export default {
 				label: 'Birlikte çalışmak',
 			},
 		},
+		forms: {
+			eyebrow: 'Formlar ve anketler',
+			title: 'Sorularınızı sorun.',
+			titleAccent: 'Yanıtlar kendiliğinden düzenlenir.',
+			text: 'Tek sayfalık bir form, ya da ekran başına bir soru soran bir anket: bağlantıyı paylaşın, her yanıt tablonuzun bir satırı olsun. Yanıtlayan kişi başka hiçbir şey görmez.',
+			modes: {
+				label: 'Soruları göster',
+				survey: 'Anket',
+				form: 'Form',
+			},
+			demo: {
+				title: 'Teklif talebi',
+				description: 'Üç soru, ardından 48 saat içinde size geri döneceğiz.',
+				count: '3 soru',
+				start: 'Başla',
+				next: 'Sonraki',
+				previous: 'Önceki',
+				submit: 'Talebimi gönder',
+				org: {
+					label: 'Kuruluşunuz',
+					answer: 'Sanat Kahvesi',
+				},
+				need: {
+					label: 'İhtiyacınız',
+					choose: 'Seç…',
+					options: ['Web sitesi', 'Görsel kimlik', 'Katalog'],
+				},
+				budget: {
+					label: 'Bütçeniz',
+					help: 'KDV hariç, yaklaşık da olsa.',
+				},
+				thanks: 'Teşekkürler! Size 48 saat içinde geri döneceğiz.',
+				poweredBy: 'basedb ile oluşturulmuş form',
+				path: 'Satış / Talepler',
+				view: 'Tüm talepler',
+				columns: {
+					org: 'Kuruluş',
+					need: 'İhtiyaç',
+					budget: 'Bütçe',
+					stage: 'Aşama',
+				},
+				stages: {
+					new: 'Yeni',
+					called: 'Geri arandı',
+					quote: 'Teklif gönderildi',
+				},
+				rows: ['Yılmaz Fırını', 'Ihlamur Kliniği', 'Dayanışma Bisiklet', 'Anadolu Döküm'],
+				open: 'Açık',
+				answers: {
+					one: '{n} yanıt',
+					other: '{n} yanıt',
+				},
+				active: 'Bağlantı etkin',
+			},
+			points: {
+				survey: {
+					title: 'Ekran başına bir soru',
+					text: 'Anket bunları ilerleme çubuğuyla birer birer sorar; Enter bir sonrakine geçer.',
+				},
+				access: {
+					title: 'Herkese açık ya da sınırlı',
+					text: 'Bağlantıya sahip herkes hesap açmadan yanıtlar — ya da yalnızca oturum açmış üyeler, ve yanıt onların adını taşır.',
+				},
+				closed: {
+					title: 'Gerisi kapalı kalır',
+					text: 'Yanıtlamak tablonun başka hiçbir şeyini göstermez. Bağlantı belirli bir tarihte ya da belirli sayıda yanıttan sonra kapanır.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'Formlar',
+			},
+		},
 		automate: {
 			eyebrow: 'Otomasyonlar',
-			title: 'Siz uyurken',
-			titleAccent: 'çalışır.',
-			text: 'Ne olması gerektiğini bir kez tanımlayın. Bir satır değiştiğinde, her sabah belirli bir saatte ya da bir düğmeye tıklandığında, basedb adımları art arda çalıştırır — ve her çalıştırma adım adım yeniden okunur.',
+			title: 'Çalışır',
+			titleAccent: 'siz uyurken.',
+			text: 'Bir satır geldiğinde ya da değiştiğinde, belirli bir saatte ya da bir düğmeye tıklandığında, basedb adımları art arda çalıştırır: doğru dalı seçer, yapay zekaya sorar, gerekeni bilgilendirir. Ve her çalıştırma adım adım yeniden okunur.',
 			clock: '03:12',
+			crumb: 'Satış / Otomasyonlar',
+			create: 'Yeni otomasyon',
+			list: [
+				{
+					name: 'Yeni talep',
+					when: 'Bir satır oluşturulduğunda',
+				},
+				{
+					name: 'Teklif imzalandı',
+					when: 'Bir satır değiştirildiğinde',
+				},
+				{
+					name: 'Pazartesi hatırlatmaları',
+					when: 'Her pazartesi saat 09:00',
+				},
+			],
+			active: 'Etkin',
+			test: 'Bir satırda test et',
+			save: 'Kaydet',
 			when: 'Ne zaman',
-			trigger: 'bir teklif “İmzalandı” durumuna geçer',
+			trigger: 'Bir satır oluşturulduğunda',
+			table: 'Talepler tablosunda',
 			steps: {
-				find: {
-					kind: 'Satır ara',
-					text: 'Teklifin müşterisi',
-				},
-				ai: {
-					kind: 'Yapay zekaya sor',
-					text: 'Bir teşekkür notu yaz',
-				},
-				create: {
-					kind: 'Satır oluştur',
-					text: 'Fatura, Faturalar tablosunda',
+				branch: {
+					kind: 'Koşul',
+					text: '2 dal',
+					run: '“Büyük proje” dalı',
 				},
 				notify: {
 					kind: 'Birine haber ver',
-					text: 'Muhasebe',
+					text: 'Léa Martin',
+					run: '1 kişi bilgilendirildi',
+				},
+				create: {
+					kind: 'Satır oluştur',
+					text: 'Randevu, Takvim’de',
+					run: 'tamamlandı',
 				},
 				slack: {
 					kind: 'Slack’e gönder',
-					text: '#satış kanalında',
+					text: '#satis kanalına',
+					run: 'tamamlandı',
+				},
+				ai: {
+					kind: 'Yapay zekaya sor',
+					text: 'İlk yanıtı yazmak',
+					run: '{n} karakterlik yanıt',
+				},
+				update: {
+					kind: 'Satırı düzenle',
+					text: 'Yanıt, Aşama',
+					run: 'tamamlandı',
 				},
 			},
-			answer: 'Güveniniz için teşekkürler! Projenizi pazartesiden itibaren başlatıyoruz ve faturanız e-posta ile geliyor.',
-			done: 'Başarılı · 5 adım · 1,2 sn',
-			copilot: {
-				prompt: 'Bir teklif imzalandığında muhasebeye haber ver ve faturayı oluştur.',
-				text: 'Copilot’a bir cümle yeter, otomasyon hazırdır: geriye sadece gözden geçirmek kalır.',
+			paths: {
+				big: 'Büyük proje',
+				condition: 'budget gt 5000',
+				otherwise: 'Aksi halde',
+			},
+			answer: 'Merhaba, talebiniz için teşekkür ederiz! Yeni görsel kimliğinizle ilgilenecek olan Léa, yarın sabah sizi arayacak.',
+			addStep: 'Adım ekle',
+			tabs: {
+				settings: 'Ayarlar',
+				runs: 'Çalıştırmalar',
+			},
+			runsText: 'Son 50 çalıştırma, 30 gün saklanır. Akışta izlediği yolu görmek için birini seçin.',
+			running: 'Devam ediyor',
+			succeeded: 'Başarılı',
+			started: 'satır oluşturuldu · {when}',
+			now: 'az önce',
+			earlier: ['dün, 18:40', 'dün, 11:02'],
+			done: 'Başarılı · 5 adım · 1,3 sn',
+			points: {
+				when: {
+					title: 'Doğru zamanda',
+					text: 'Oluşturulan ya da değiştirilen bir satır, sabit bir saat, bir düğme — ve yalnızca gerektiğinde başlaması için bir koşul.',
+				},
+				paths: {
+					title: 'Birkaç dal',
+					text: 'Bir koşul, her biri kendi adımlarına sahip dallar açar; bir adımın bulduğunu bir sonraki referans alabilir.',
+				},
+				copilot: {
+					title: 'Tek cümleyle tanımlanır',
+					text: '“Bir talep geldiğinde, bütçe 5.000 €’yu aşarsa Léa’ya haber ver”: Copilot akışı oluşturur, siz onu gözden geçirirsiniz.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

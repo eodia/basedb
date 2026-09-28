@@ -638,45 +638,174 @@ export default {
 				label: 'Samen werken',
 			},
 		},
+		forms: {
+			eyebrow: 'Formulieren en enquêtes',
+			title: 'Stel je vragen.',
+			titleAccent: 'De antwoorden sorteren zichzelf.',
+			text: 'Een formulier op één pagina, of een enquête die één vraag per scherm stelt: deel de link, en elk antwoord wordt een rij in je tabel. Wie antwoordt, ziet verder niets.',
+			modes: {
+				label: 'Vragen tonen',
+				survey: 'Enquête',
+				form: 'Formulier',
+			},
+			demo: {
+				title: 'Offerteaanvraag',
+				description: 'Drie vragen, en we nemen binnen 48 uur contact met je op.',
+				count: '3 vragen',
+				start: 'Beginnen',
+				next: 'Volgende',
+				previous: 'Vorige',
+				submit: 'Mijn aanvraag versturen',
+				org: {
+					label: 'Je organisatie',
+					answer: 'Café De Kunst',
+				},
+				need: {
+					label: 'Je behoefte',
+					choose: 'Kiezen…',
+					options: ['Site', 'Visuele identiteit', 'Catalogus'],
+				},
+				budget: {
+					label: 'Je budget',
+					help: 'Exclusief btw, een ruwe schatting volstaat.',
+				},
+				thanks: 'Bedankt! We nemen binnen 48 uur contact met je op.',
+				poweredBy: 'Formulier aangedreven door basedb',
+				path: 'Verkoop / Aanvragen',
+				view: 'Alle aanvragen',
+				columns: {
+					org: 'Organisatie',
+					need: 'Behoefte',
+					budget: 'Budget',
+					stage: 'Fase',
+				},
+				stages: {
+					new: 'Nieuw',
+					called: 'Teruggebeld',
+					quote: 'Offerte verzonden',
+				},
+				rows: ['Bakkerij Martens', 'Kliniek De Linden', 'Fiets voor Iedereen', 'Smederij De Maas'],
+				open: 'Open',
+				answers: {
+					one: '{n} antwoord',
+					other: '{n} antwoorden',
+				},
+				active: 'Link actief',
+			},
+			points: {
+				survey: {
+					title: 'Eén vraag per scherm',
+					text: 'De enquête stelt ze één voor één, met een voortgangsbalk; Enter gaat naar de volgende.',
+				},
+				access: {
+					title: 'Openbaar of beperkt',
+					text: 'Iedereen met de link antwoordt zonder account — of alleen aangemelde leden, en het antwoord draagt hun naam.',
+				},
+				closed: {
+					title: 'De rest blijft gesloten',
+					text: 'Antwoorden toont verder niets van de tabel. De link sluit op een datum, of na een aantal antwoorden.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'Formulieren',
+			},
+		},
 		automate: {
 			eyebrow: 'Automatiseringen',
 			title: 'Het werkt',
 			titleAccent: 'terwijl jij slaapt.',
-			text: 'Beschrijf één keer wat er moet gebeuren. Als een rij verandert, elke ochtend op een vast tijdstip of met één klik op een knop, doorloopt basedb de stappen — en elke uitvoering lees je terug, stap voor stap.',
+			text: 'Wanneer een rij binnenkomt of verandert, op een vast tijdstip of met één klik op een knop, doorloopt basedb de stappen: het kiest de juiste vertakking, raadpleegt de AI, waarschuwt wie nodig is. En elke uitvoering lees je terug, stap voor stap.',
 			clock: '03:12',
+			crumb: 'Verkoop / Automatiseringen',
+			create: 'Nieuwe automatisering',
+			list: [
+				{
+					name: 'Nieuwe aanvraag',
+					when: 'Er wordt een rij gemaakt',
+				},
+				{
+					name: 'Offerte ondertekend',
+					when: 'Er wordt een rij gewijzigd',
+				},
+				{
+					name: 'Herinneringen op maandag',
+					when: 'Elke maandag om 09:00',
+				},
+			],
+			active: 'Actief',
+			test: 'Testen op een rij',
+			save: 'Opslaan',
 			when: 'Wanneer',
-			trigger: 'een offerte naar “Getekend” gaat',
+			trigger: 'Er wordt een rij gemaakt',
+			table: 'In Aanvragen',
 			steps: {
-				find: {
-					kind: 'Rij zoeken',
-					text: 'De klant van de offerte',
-				},
-				ai: {
-					kind: 'AI raadplegen',
-					text: 'Een bedankje opstellen',
-				},
-				create: {
-					kind: 'Rij maken',
-					text: 'De factuur, in Facturen',
+				branch: {
+					kind: 'Voorwaarde',
+					text: '2 vertakkingen',
+					run: 'vertakking “Groot project”',
 				},
 				notify: {
 					kind: 'Iemand op de hoogte brengen',
-					text: 'De boekhouding',
+					text: 'Léa Martin',
+					run: '1 persoon op de hoogte gebracht',
+				},
+				create: {
+					kind: 'Rij maken',
+					text: 'Een afspraak, in Kalender',
+					run: 'klaar',
 				},
 				slack: {
 					kind: 'Versturen naar Slack',
 					text: 'In het kanaal #verkoop',
+					run: 'klaar',
+				},
+				ai: {
+					kind: 'AI raadplegen',
+					text: 'Een eerste antwoord opstellen',
+					run: 'antwoord van {n} tekens',
+				},
+				update: {
+					kind: 'Rij wijzigen',
+					text: 'Antwoord, Fase',
+					run: 'klaar',
 				},
 			},
-			answer: 'Bedankt voor je vertrouwen! We starten je project vanaf maandag, en je factuur volgt per e-mail.',
-			done: 'Geslaagd · 5 stappen · 1,2 s',
-			copilot: {
-				prompt: 'Als een offerte is getekend, breng de boekhouding op de hoogte en maak de factuur.',
-				text: 'Eén zin aan de Copilot, en de automatisering staat er: jij hoeft alleen nog na te lezen.',
+			paths: {
+				big: 'Groot project',
+				condition: 'budget gt 5000',
+				otherwise: 'Anders',
+			},
+			answer: 'Hallo, en bedankt voor je aanvraag! Léa, die je nieuwe visuele identiteit oppakt, belt je morgenochtend.',
+			addStep: 'Stap toevoegen',
+			tabs: {
+				settings: 'Instellingen',
+				runs: 'Uitvoeringen',
+			},
+			runsText: 'De laatste 50, 30 dagen bewaard. Kies er een om in de flow te zien welke vertakking die heeft gevolgd.',
+			running: 'Bezig',
+			succeeded: 'Geslaagd',
+			started: 'rij gemaakt · {when}',
+			now: 'zojuist',
+			earlier: ['gisteren om 18:40', 'gisteren om 11:02'],
+			done: 'Geslaagd · 5 stappen · 1,3 s',
+			points: {
+				when: {
+					title: 'Op het juiste moment',
+					text: 'Een rij die wordt gemaakt of gewijzigd, een vast tijdstip, een knop — en een voorwaarde zodat het alleen start wanneer het moet.',
+				},
+				paths: {
+					title: 'Meerdere vertakkingen',
+					text: 'Een voorwaarde opent vertakkingen, elk met eigen stappen; wat een stap vindt, kan de volgende gebruiken.',
+				},
+				copilot: {
+					title: 'Beschreven in één zin',
+					text: '“Als er een aanvraag binnenkomt, waarschuw Léa als het budget boven € 5.000 komt”: de Copilot bouwt de flow, jij leest hem na.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',
-				label: 'De automatiseringen',
+				label: 'Automatiseringen',
 			},
 		},
 		glance: {

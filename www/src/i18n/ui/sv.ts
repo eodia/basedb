@@ -638,41 +638,170 @@ export default {
 				label: 'Arbeta tillsammans',
 			},
 		},
+		forms: {
+			eyebrow: 'Formulär och enkäter',
+			title: 'Ställ dina frågor.',
+			titleAccent: 'Svaren sorterar sig själva.',
+			text: 'Ett formulär på en enda sida, eller en enkät som ställer en fråga per skärm: dela länken, och varje svar blir en rad i din tabell. Den som svarar ser inget annat.',
+			modes: {
+				label: 'Visa frågorna',
+				survey: 'Enkät',
+				form: 'Formulär',
+			},
+			demo: {
+				title: 'Offertförfrågan',
+				description: 'Tre frågor, sedan återkommer vi inom 48 timmar.',
+				count: '3 frågor',
+				start: 'Börja',
+				next: 'Nästa',
+				previous: 'Föregående',
+				submit: 'Skicka min förfrågan',
+				org: {
+					label: 'Din organisation',
+					answer: 'Konstcaféet',
+				},
+				need: {
+					label: 'Ditt behov',
+					choose: 'Välj…',
+					options: ['Webbplats', 'Visuell identitet', 'Katalog'],
+				},
+				budget: {
+					label: 'Din budget',
+					help: 'Exklusive moms, en ungefärlig siffra räcker.',
+				},
+				thanks: 'Tack! Vi återkommer inom 48 timmar.',
+				poweredBy: 'Formulär drivet av basedb',
+				path: 'Försäljning / Förfrågningar',
+				view: 'Alla förfrågningar',
+				columns: {
+					org: 'Organisation',
+					need: 'Behov',
+					budget: 'Budget',
+					stage: 'Steg',
+				},
+				stages: {
+					new: 'Ny',
+					called: 'Uppringd',
+					quote: 'Offert skickad',
+				},
+				rows: ['Bageri Lindgren', 'Lindkliniken', 'Cykelhjälpen', 'Klarälvens Smide'],
+				open: 'Öppet',
+				answers: {
+					one: '{n} svar',
+					other: '{n} svar',
+				},
+				active: 'Aktiv länk',
+			},
+			points: {
+				survey: {
+					title: 'En fråga per skärm',
+					text: 'Enkäten ställer dem en och en, med sin förloppsindikator; Enter går till nästa.',
+				},
+				access: {
+					title: 'Öppet eller begränsat',
+					text: 'Alla med länken svarar utan konto – eller bara inloggade medlemmar, och svaret bär deras namn.',
+				},
+				closed: {
+					title: 'Resten förblir stängd',
+					text: 'Att svara visar inget annat av tabellen. Länken stängs vid ett datum, eller efter ett antal svar.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'Formulären',
+			},
+		},
 		automate: {
 			eyebrow: 'Automatiseringar',
 			title: 'Den jobbar',
 			titleAccent: 'medan du sover.',
-			text: 'Beskriv en gång vad som ska hända. När en rad ändras, varje morgon vid en bestämd tid eller med ett klick på en knapp, kör basedb igenom stegen – och varje körning går att läsa igenom, steg för steg.',
+			text: 'När en rad kommer in eller ändras, vid en bestämd tid eller med ett klick på en knapp, kör basedb igenom stegen: den väljer rätt gren, frågar AI, aviserar den som behövs. Och varje körning går att läsa igenom, steg för steg.',
 			clock: '03:12',
+			crumb: 'Försäljning / Automatiseringar',
+			create: 'Ny automatisering',
+			list: [
+				{
+					name: 'Ny förfrågan',
+					when: 'En rad skapas',
+				},
+				{
+					name: 'Offert signerad',
+					when: 'En rad ändras',
+				},
+				{
+					name: 'Påminnelser på måndagar',
+					when: 'Varje måndag kl. 09:00',
+				},
+			],
+			active: 'Aktiv',
+			test: 'Testa på en rad',
+			save: 'Spara',
 			when: 'När',
-			trigger: 'en offert blir ”Signerad”',
+			trigger: 'En rad skapas',
+			table: 'I Förfrågningar',
 			steps: {
-				find: {
-					kind: 'Hitta en rad',
-					text: 'Offertens kund',
-				},
-				ai: {
-					kind: 'Fråga AI',
-					text: 'Skriv ett tackmeddelande',
-				},
-				create: {
-					kind: 'Skapa en rad',
-					text: 'Fakturan, i Fakturor',
+				branch: {
+					kind: 'Villkor',
+					text: '2 grenar',
+					run: 'gren ”Stort projekt”',
 				},
 				notify: {
 					kind: 'Avisera någon',
-					text: 'Ekonomiavdelningen',
+					text: 'Léa Martin',
+					run: '1 person aviserad',
+				},
+				create: {
+					kind: 'Skapa en rad',
+					text: 'Ett möte, i Kalender',
+					run: 'klart',
 				},
 				slack: {
 					kind: 'Skicka till Slack',
 					text: 'I kanalen #forsaljning',
+					run: 'klart',
+				},
+				ai: {
+					kind: 'Fråga AI',
+					text: 'Skriv ett första svar',
+					run: 'svar på {n} tecken',
+				},
+				update: {
+					kind: 'Redigera en rad',
+					text: 'Svar, Steg',
+					run: 'klart',
 				},
 			},
-			answer: 'Tack för ditt förtroende! Vi sätter igång ditt projekt redan på måndag, och din faktura kommer med e-post.',
-			done: 'Lyckad · 5 steg · 1,2 s',
-			copilot: {
-				prompt: 'Avisera ekonomi och skapa fakturan när en offert signeras.',
-				text: 'En mening till Copiloten, och automatiseringen är byggd: du behöver bara läsa igenom den.',
+			paths: {
+				big: 'Stort projekt',
+				condition: 'budget gt 5000',
+				otherwise: 'Annars',
+			},
+			answer: 'Hej, och tack för din förfrågan! Léa, som tar hand om din nya visuella identitet, ringer dig imorgon bitti.',
+			addStep: 'Lägg till ett steg',
+			tabs: {
+				settings: 'Inställningar',
+				runs: 'Körningar',
+			},
+			runsText: 'De 50 senaste, sparade i 30 dagar. Välj en för att se vilken gren den tog i flödet.',
+			running: 'Pågår',
+			succeeded: 'Lyckad',
+			started: 'rad skapad · {when}',
+			now: 'just nu',
+			earlier: ['igår kl. 18:40', 'igår kl. 11:02'],
+			done: 'Lyckad · 5 steg · 1,3 s',
+			points: {
+				when: {
+					title: 'Vid rätt tillfälle',
+					text: 'En rad som skapas eller ändras, en bestämd tid, en knapp – och ett villkor så att det bara körs när det behövs.',
+				},
+				paths: {
+					title: 'Flera grenar',
+					text: 'Ett villkor öppnar grenar, var och en med sina egna steg; det som ett steg hittar kan nästa steg referera till.',
+				},
+				copilot: {
+					title: 'Beskriven i en mening',
+					text: '”När en förfrågan kommer in, avisera Léa om budgeten överstiger 5 000 €”: Copiloten bygger flödet, du läser igenom det.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

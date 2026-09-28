@@ -31,6 +31,8 @@ export default defineConfig({
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/eodia/basedb' }],
 			editLink: { baseUrl: 'https://github.com/eodia/basedb/edit/main/www/' },
 			components: { Footer: './src/components/DocsFooter.astro' },
+			// The image a shared link shows, in the page's language.
+			routeMiddleware: './src/starlightRouteData.ts',
 			customCss: ['./src/styles/starlight-custom.css'],
 			defaultLocale: 'root',
 			// French at the root, nineteen languages under their own directory (src/i18n/locales.ts).

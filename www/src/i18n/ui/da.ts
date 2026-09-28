@@ -642,41 +642,170 @@ export default {
 				label: 'Arbejd sammen',
 			},
 		},
+		forms: {
+			eyebrow: 'Formularer og spørgeskemaer',
+			title: 'Stil dine spørgsmål.',
+			titleAccent: 'Svarene sorterer sig selv.',
+			text: 'Et formular på én side, eller et spørgeskema, der stiller ét spørgsmål ad gangen: del linket, og hvert svar bliver en række i din tabel. Den, der svarer, ser ikke andet.',
+			modes: {
+				label: 'Vis spørgsmålene',
+				survey: 'Spørgeskema',
+				form: 'Formular',
+			},
+			demo: {
+				title: 'Tilbudsforespørgsel',
+				description: 'Tre spørgsmål, og vi vender tilbage til dig inden for 48 timer.',
+				count: '3 spørgsmål',
+				start: 'Start',
+				next: 'Næste',
+				previous: 'Forrige',
+				submit: 'Send min forespørgsel',
+				org: {
+					label: 'Din organisation',
+					answer: 'Café Sørensen',
+				},
+				need: {
+					label: 'Dit behov',
+					choose: 'Vælg…',
+					options: ['Hjemmeside', 'Visuel identitet', 'Katalog'],
+				},
+				budget: {
+					label: 'Dit budget',
+					help: 'Uden moms, også som et skøn.',
+				},
+				thanks: 'Tak! Vi vender tilbage til dig inden for 48 timer.',
+				poweredBy: 'Formular drevet af basedb',
+				path: 'Salg / Forespørgsler',
+				view: 'Alle forespørgsler',
+				columns: {
+					org: 'Organisation',
+					need: 'Behov',
+					budget: 'Budget',
+					stage: 'Fase',
+				},
+				stages: {
+					new: 'Ny',
+					called: 'Ringet op',
+					quote: 'Tilbud sendt',
+				},
+				rows: ['Bageriet Holm', 'Lindeklinikken', 'Cykler til Alle', 'Fjordsmedjen'],
+				open: 'Åben',
+				answers: {
+					one: '{n} svar',
+					other: '{n} svar',
+				},
+				active: 'Link aktivt',
+			},
+			points: {
+				survey: {
+					title: 'Ét spørgsmål ad gangen',
+					text: 'Spørgeskemaet stiller dem ét ad gangen med sin fremdriftslinje; Enter går videre til det næste.',
+				},
+				access: {
+					title: 'Offentligt eller forbeholdt',
+					text: 'Alle med linket kan svare uden konto — eller kun tilmeldte medlemmer, og svaret bærer deres navn.',
+				},
+				closed: {
+					title: 'Resten forbliver lukket',
+					text: 'At svare viser ikke andet af tabellen. Linket lukker på en given dato eller efter et antal svar.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'Formularerne',
+			},
+		},
 		automate: {
 			eyebrow: 'Automatiseringer',
 			title: 'Den arbejder',
 			titleAccent: 'mens du sover.',
-			text: 'Beskriv én gang, hvad der skal ske. Når en række ændres, hver morgen på et fast tidspunkt eller med et klik på en knap, kører basedb trinnene igennem — og hver kørsel kan læses igen, trin for trin.',
+			text: 'Når en række ankommer eller ændres, på et fast klokkeslæt eller med et klik på en knap, følger basedb trinnene: den vælger den rigtige gren, spørger AI, og giver besked til dem, der skal vide det. Og hver kørsel kan gennemgås, trin for trin.',
 			clock: '03:12',
-			when: 'Når',
-			trigger: 'et tilbud skifter til »Signeret«',
-			steps: {
-				find: {
-					kind: 'Find en række',
-					text: 'Tilbuddets kunde',
+			crumb: 'Salg / Automatiseringer',
+			create: 'Ny automatisering',
+			list: [
+				{
+					name: 'Ny forespørgsel',
+					when: 'En række oprettes',
 				},
-				ai: {
-					kind: 'Spørg AI',
-					text: 'Skriv en takkebesked',
+				{
+					name: 'Tilbud signeret',
+					when: 'En række ændres',
+				},
+				{
+					name: 'Mandagsopfølgning',
+					when: 'Hver mandag kl. 09.00',
+				},
+			],
+			active: 'Aktiv',
+			test: 'Test på en række',
+			save: 'Gem',
+			when: 'Når',
+			trigger: 'En række oprettes',
+			table: 'I Forespørgsler',
+			steps: {
+				branch: {
+					kind: 'Betingelse',
+					text: '2 grene',
+					run: 'gren »Stort projekt«',
+				},
+				notify: {
+					kind: 'Giv nogen besked',
+					text: 'Léa Martin',
+					run: '1 person underrettet',
 				},
 				create: {
 					kind: 'Opret en række',
-					text: 'Fakturaen, i Fakturaer',
-				},
-				notify: {
-					kind: 'Giv besked',
-					text: 'Bogholderiet',
+					text: 'Et møde, i Kalender',
+					run: 'udført',
 				},
 				slack: {
 					kind: 'Send til Slack',
 					text: 'I kanalen #salg',
+					run: 'udført',
+				},
+				ai: {
+					kind: 'Spørg AI',
+					text: 'Skriv et første svar',
+					run: 'svar på {n} tegn',
+				},
+				update: {
+					kind: 'Rediger en række',
+					text: 'Svar, Fase',
+					run: 'udført',
 				},
 			},
-			answer: 'Tak for din tillid! Vi går i gang med jeres projekt allerede på mandag, og fakturaen følger med på mail.',
-			done: 'Gennemført · 5 trin · 1,2 s',
-			copilot: {
-				prompt: 'Når et tilbud bliver signeret, giv bogholderiet besked og opret fakturaen.',
-				text: 'Én sætning til Copilot, og automatiseringen er bygget: du skal bare læse den igennem.',
+			paths: {
+				big: 'Stort projekt',
+				condition: 'budget gt 5000',
+				otherwise: 'Ellers',
+			},
+			answer: 'Goddag, og tak for din forespørgsel! Léa, som kommer til at stå for din nye visuelle identitet, ringer til dig i morgen tidlig.',
+			addStep: 'Tilføj et trin',
+			tabs: {
+				settings: 'Indstillinger',
+				runs: 'Kørsler',
+			},
+			runsText: 'De seneste 50, gemt i 30 dage. Vælg en for at se, hvilken gren den tog i flowet.',
+			running: 'I gang',
+			succeeded: 'Lykkedes',
+			started: 'række oprettet · {when}',
+			now: 'lige nu',
+			earlier: ['i går kl. 18:40', 'i går kl. 11:02'],
+			done: 'Lykkedes · 5 trin · 1,3 s',
+			points: {
+				when: {
+					title: 'På det rette tidspunkt',
+					text: 'En række der oprettes eller ændres, et fast klokkeslæt, en knap — og en betingelse, så det kun starter, når det skal.',
+				},
+				paths: {
+					title: 'Flere grene',
+					text: 'En betingelse åbner grene, hver med sine trin; det, et trin finder, kan det næste henvise til.',
+				},
+				copilot: {
+					title: 'Beskrevet i én sætning',
+					text: '»Når en forespørgsel kommer ind, giv Léa besked, hvis budgettet overstiger 5.000 €« : Copiloten bygger flowet, du gennemgår det.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

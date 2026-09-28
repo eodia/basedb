@@ -1,0 +1,1172 @@
+---
+/**
+ * The same three questions asked two ways on a phone — the questionnaire, one per screen,
+ * and the form, all on one page — on the page of the link, as basedb draws it. The phone
+ * answers while the section is on screen, in a loop that alternates the two ways; each
+ * answer sent lands as a new row of the table beside it, and the link counts one more.
+ * The switch over the phone picks a way, and the loop then keeps to it. Asked for less
+ * motion, the scene shows the answers given and their row arrived.
+ *
+ * The phone is drawn at 320 × 640, the table at 660 × 500; each is scaled to its column.
+ */
+import { type Locale, i18n } from '../../i18n';
+import Icon from '../landing/Icon.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { t, lang, href, number, plural } = i18n(locale);
+const f = t.teams.forms;
+const d = f.demo;
+const stage = t.teams.stage;
+
+const money = (n: number) =>
+	new Intl.NumberFormat(lang, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+
+type Stage = keyof typeof d.stages;
+const NEED_COLORS = ['#3b82f6', '#a855f7', '#f59e0b'];
+const STAGE_COLORS: Record<Stage, string> = { new: '#22c55e', called: '#0ea5e9', quote: '#f97316' };
+const FACTS: Array<{ need: number; budget: number; stage: Stage }> = [
+	{ need: 0, budget: 3500, stage: 'quote' },
+	{ need: 2, budget: 12000, stage: 'called' },
+	{ need: 1, budget: 2800, stage: 'quote' },
+	{ need: 0, budget: 9500, stage: 'called' },
+];
+const rows = d.rows.map((org, i) => {
+	const fact = FACTS[i] ?? FACTS[0]!;
+	return { org, need: fact.need, budget: money(fact.budget), stage: fact.stage };
+});
+
+/** What the person answers: a name, the second option, a budget. */
+const CHOSEN = 1;
+const answer = { org: d.org.answer, need: d.need.options[CHOSEN] ?? '', budget: money(8000) };
+const ANSWERS = 23;
+const HOST = 'basedb.example.com';
+const LINK = `https://${HOST}/f/t4hhyFEQn9vN6rohy7h8`;
+const QUESTIONS = 3;
+const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
+---
+
+<section class="tm-section mist forms" data-forms>
+	<div class="tm-head tm-rise">
+		<p class="tm-kicker">{f.eyebrow}</p>
+		<h2 class="tm-display">
+			<span>{f.title}</span>
+			<span class="tm-grad">{f.titleAccent}</span>
+		</h2>
+		<p class="tm-lede">{f.text}</p>
+	</div>
+
+	<div class="switch tm-rise" role="group" aria-label={f.modes.label} data-switch>
+		<button type="button" data-mode="survey" aria-pressed="true">{f.modes.survey}</button>
+		<button type="button" data-mode="form" aria-pressed="false">{f.modes.form}</button>
+	</div>
+
+	<div class="scene" data-scene data-mode="survey" aria-hidden="true">
+		<div class="phone-frame" data-phone-frame>
+			<div class="phone">
+				<div class="screen">
+					<div class="status">
+						<b>9:41</b>
+						<span class="island"></span>
+						<span class="signal"><i></i><i></i><i></i><i></i></span>
+					</div>
+					<div class="address"><Icon name="lock" size={11} stroke={2.2} />{HOST}</div>
+
+					<div class="page" data-page>
+						<div class="card survey" data-way="survey">
+							<div class="progress"><i data-progress></i></div>
+							<div class="screens">
+								<div class="sv on" data-screen="welcome">
+									<h3>{d.title}</h3>
+									<p class="desc">{d.description}</p>
+									<p class="small">{d.count}</p>
+									<span><span class="btn lg" data-press>{d.start}<Icon name="arrowRight" size={16} /></span></span>
+								</div>
+								<div class="sv" data-screen="0">
+									<p class="k">{steps[0]}</p>
+									<div class="q">
+										<p class="label big">{d.org.label}<i>*</i></p>
+										<span class="input" data-field><span data-typed={answer.org}></span></span>
+									</div>
+									<div class="nav">
+										<span class="btn" data-press>{d.next}<Icon name="arrowRight" size={15} /></span>
+										<span class="ghost"><Icon name="arrowLeft" size={15} />{d.previous}</span>
+									</div>
+								</div>
+								<div class="sv" data-screen="1">
+									<p class="k">{steps[1]}</p>
+									<div class="q">
+										<p class="label big">{d.need.label}<i>*</i></p>
+										<span class="select" data-field data-select={CHOSEN}>
+											<span data-value data-placeholder={d.need.choose}>{d.need.choose}</span>
+											<Icon name="chevronDown" size={15} />
+											<span class="menu">
+												{d.need.options.map((o, i) => <span class="opt" data-opt={i}>{o}</span>)}
+											</span>
+										</span>
+									</div>
+									<div class="nav">
+										<span class="btn" data-press>{d.next}<Icon name="arrowRight" size={15} /></span>
+										<span class="ghost"><Icon name="arrowLeft" size={15} />{d.previous}</span>
+									</div>
+								</div>
+								<div class="sv" data-screen="2">
+									<p class="k">{steps[2]}</p>
+									<div class="q">
+										<p class="label big">{d.budget.label}</p>
+										<p class="help">{d.budget.help}</p>
+										<span class="input" data-field><span data-typed={answer.budget}></span></span>
+									</div>
+									<div class="nav">
+										<span class="btn" data-press><Icon name="send" size={14} />{d.submit}</span>
+										<span class="ghost"><Icon name="arrowLeft" size={15} />{d.previous}</span>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="card form" data-way="form">
+							<header>
+								<h3>{d.title}</h3>
+								<p class="desc">{d.description}</p>
+							</header>
+							<div class="qs">
+								<div class="q">
+									<p class="label">{d.org.label}<i>*</i></p>
+									<span class="input" data-field><span data-typed={answer.org}></span></span>
+								</div>
+								<div class="q">
+									<p class="label">{d.need.label}<i>*</i></p>
+									<span class="select" data-field data-select={CHOSEN}>
+										<span data-value data-placeholder={d.need.choose}>{d.need.choose}</span>
+										<Icon name="chevronDown" size={15} />
+										<span class="menu">
+											{d.need.options.map((o, i) => <span class="opt" data-opt={i}>{o}</span>)}
+										</span>
+									</span>
+								</div>
+								<div class="q">
+									<p class="label">{d.budget.label}</p>
+									<p class="help">{d.budget.help}</p>
+									<span class="input" data-field><span data-typed={answer.budget}></span></span>
+								</div>
+							</div>
+							<footer>
+								<span class="btn" data-press><Icon name="send" size={14} />{d.submit}</span>
+							</footer>
+						</div>
+
+						<div class="card thanks">
+							<span class="tick"><Icon name="checkCircle" size={40} stroke={1.8} /></span>
+							<p>{d.thanks}</p>
+						</div>
+					</div>
+					<p class="powered">{d.poweredBy}</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="desk-frame" data-desk-frame>
+			<div class="desk">
+				<div class="win">
+					<div class="bar">
+						<span class="dots"><i></i><i></i><i></i></span>
+						<span class="path">{d.path}</span>
+					</div>
+					<div class="tools">
+						<span class="pill"><Icon name="table" size={13} />{d.view}<Icon name="chevronDown" size={13} /></span>
+						<span>{stage.toolbar.filter}</span>
+						<span>{stage.toolbar.sort}</span>
+						<span class="add"><Icon name="plus" size={13} stroke={2.2} />{stage.add}</span>
+					</div>
+					<div class="grid">
+						<div class="row head">
+							<span class="n">#</span>
+							<span>{d.columns.org}</span>
+							<span>{d.columns.need}</span>
+							<span class="num">{d.columns.budget}</span>
+							<span>{d.columns.stage}</span>
+						</div>
+						{
+							rows.map((r, i) => (
+								<div class="row">
+									<span class="n">{number(i + 1)}</span>
+									<span class="org">{r.org}</span>
+									<span>
+										<i class="chip" style={`--c:${NEED_COLORS[r.need]}`}>
+											{d.need.options[r.need]}
+										</i>
+									</span>
+									<span class="num">{r.budget}</span>
+									<span>
+										<i class="chip" style={`--c:${STAGE_COLORS[r.stage]}`}>
+											{d.stages[r.stage]}
+										</i>
+									</span>
+								</div>
+							))
+						}
+						<div class="row fresh" data-fresh>
+							<span class="n">{number(rows.length + 1)}</span>
+							<span class="org">{answer.org}</span>
+							<span>
+								<i class="chip" style={`--c:${NEED_COLORS[CHOSEN]}`}>{answer.need}</i>
+							</span>
+							<span class="num">{answer.budget}</span>
+							<span>
+								<i class="chip" style={`--c:${STAGE_COLORS.new}`}>{d.stages.new}</i>
+							</span>
+						</div>
+						<div class="row add-row"><Icon name="plus" size={13} />{stage.addRow}</div>
+					</div>
+				</div>
+
+				<div class="share">
+					<div class="top">
+						<span class="badge">{d.open}</span>
+						<span class="count" data-count data-next={plural(d.answers, ANSWERS + 1)}>
+							{plural(d.answers, ANSWERS)}
+						</span>
+						<span class="active">{d.active}<i class="toggle"></i></span>
+					</div>
+					<div class="link">
+						<span class="url">{LINK}</span>
+						<span class="ib"><Icon name="copy" size={14} /></span>
+						<span class="ib"><Icon name="external" size={14} /></span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="tm-points">
+		<div class="tm-rise">
+			<span class="ic"><Icon name="form" size={22} /></span>
+			<h3>{f.points.survey.title}</h3>
+			<p>{f.points.survey.text}</p>
+		</div>
+		<div class="tm-rise">
+			<span class="ic"><Icon name="globe" size={22} /></span>
+			<h3>{f.points.access.title}</h3>
+			<p>{f.points.access.text}</p>
+		</div>
+		<div class="tm-rise">
+			<span class="ic"><Icon name="lock" size={22} /></span>
+			<h3>{f.points.closed.title}</h3>
+			<p>{f.points.closed.text}</p>
+		</div>
+	</div>
+	<p class="more tm-rise"><a class="tm-link" href={href(f.link.href)}>{f.link.label}</a></p>
+</section>
+
+<script>
+	import { fit, reducedMotion, whileVisible } from '../../lib/motion';
+
+	type Way = 'survey' | 'form';
+	type Sleep = (ms: number) => Promise<void>;
+
+	const section = document.querySelector<HTMLElement>('[data-forms]');
+	const scene = section?.querySelector<HTMLElement>('[data-scene]');
+	if (section && scene) {
+		fit(scene.querySelector<HTMLElement>('[data-phone-frame]')!, 320);
+		fit(scene.querySelector<HTMLElement>('[data-desk-frame]')!, 660);
+		const buttons = [...section.querySelectorAll<HTMLButtonElement>('[data-switch] button')];
+		const page = scene.querySelector<HTMLElement>('[data-page]')!;
+		const bar = scene.querySelector<HTMLElement>('[data-progress]')!;
+		const fresh = scene.querySelector<HTMLElement>('[data-fresh]')!;
+		const count = scene.querySelector<HTMLElement>('[data-count]')!;
+		const counts = [count.textContent?.trim() ?? '', count.dataset.next ?? ''];
+		const way = (w: Way) => scene.querySelector<HTMLElement>(`[data-way="${w}"]`)!;
+		const screenOf = (name: string) => way('survey').querySelector<HTMLElement>(`[data-screen="${name}"]`)!;
+
+		let current: Way = 'survey';
+		/** Until the reader picks a way, the loop alternates them. */
+		let picked = false;
+
+		const setWay = (w: Way) => {
+			current = w;
+			scene.dataset.mode = w;
+			for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.mode === w));
+		};
+		/** The questionnaire's screen, and its progress: none on the welcome, then one third a question. */
+		const show = (name: string) => {
+			for (const s of way('survey').querySelectorAll<HTMLElement>('[data-screen]')) {
+				s.classList.toggle('on', s.dataset.screen === name);
+			}
+			const step = Number(name);
+			bar.style.width = Number.isNaN(step) ? '0%' : `${(step * 100) / 3}%`;
+		};
+		const blur = () => {
+			for (const el of scene.querySelectorAll<HTMLElement>('.focus')) el.classList.remove('focus');
+		};
+		const fill = (field: HTMLElement) => {
+			const typed = field.querySelector<HTMLElement>('[data-typed]');
+			if (typed) typed.textContent = typed.dataset.typed ?? '';
+			const value = field.querySelector<HTMLElement>('[data-value]');
+			const chosen = field.querySelector<HTMLElement>(`[data-opt="${field.dataset.select}"]`);
+			if (value && chosen) {
+				value.textContent = chosen.textContent;
+				value.classList.add('set');
+			}
+		};
+		const reset = () => {
+			page.classList.remove('sent');
+			blur();
+			for (const el of scene.querySelectorAll<HTMLElement>('.open, .hover, .press')) {
+				el.classList.remove('open', 'hover', 'press');
+			}
+			for (const typed of scene.querySelectorAll<HTMLElement>('[data-typed]')) typed.textContent = '';
+			for (const value of scene.querySelectorAll<HTMLElement>('[data-value]')) {
+				value.textContent = value.dataset.placeholder ?? '';
+				value.classList.remove('set');
+			}
+			show('welcome');
+			fresh.classList.remove('in');
+			count.textContent = counts[0] ?? '';
+			count.classList.remove('pop');
+		};
+
+		const press = async (el: HTMLElement, sleep: Sleep) => {
+			el.classList.add('press');
+			await sleep(200);
+			el.classList.remove('press');
+		};
+		const type = async (field: HTMLElement, sleep: Sleep) => {
+			const typed = field.querySelector<HTMLElement>('[data-typed]')!;
+			const text = typed.dataset.typed ?? '';
+			blur();
+			field.classList.add('focus');
+			await sleep(250);
+			for (let i = 1; i <= text.length; i += 1) {
+				typed.textContent = text.slice(0, i);
+				await sleep(75);
+			}
+		};
+		const choose = async (field: HTMLElement, sleep: Sleep) => {
+			blur();
+			field.classList.add('focus', 'open');
+			await sleep(650);
+			const option = field.querySelector<HTMLElement>(`[data-opt="${field.dataset.select}"]`)!;
+			option.classList.add('hover');
+			await sleep(550);
+			fill(field);
+			field.classList.remove('open');
+			option.classList.remove('hover');
+		};
+
+		const survey = async (sleep: Sleep) => {
+			const next = (name: string) => screenOf(name).querySelector<HTMLElement>('[data-press]')!;
+			const field = (name: string) => screenOf(name).querySelector<HTMLElement>('[data-field]')!;
+			await sleep(1100);
+			await press(next('welcome'), sleep);
+			show('0');
+			await sleep(650);
+			await type(field('0'), sleep);
+			await sleep(450);
+			await press(next('0'), sleep);
+			show('1');
+			await sleep(650);
+			await choose(field('1'), sleep);
+			await sleep(500);
+			await press(next('1'), sleep);
+			show('2');
+			await sleep(650);
+			await type(field('2'), sleep);
+			await sleep(600);
+			await press(next('2'), sleep);
+		};
+		const form = async (sleep: Sleep) => {
+			const fields = [...way('form').querySelectorAll<HTMLElement>('[data-field]')];
+			await sleep(1100);
+			await type(fields[0]!, sleep);
+			await sleep(400);
+			await choose(fields[1]!, sleep);
+			await sleep(400);
+			await type(fields[2]!, sleep);
+			await sleep(600);
+			blur();
+			await press(way('form').querySelector<HTMLElement>('[data-press]')!, sleep);
+		};
+		/** The answer sent: the thanks on the phone, then its row in the table, live. */
+		const arrive = () => {
+			fresh.classList.add('in');
+			count.textContent = counts[1] ?? '';
+			count.classList.add('pop');
+		};
+
+		if (reducedMotion()) {
+			// Still: every answer given, its row arrived; the switch changes the way shown.
+			const still = () => {
+				reset();
+				for (const field of scene.querySelectorAll<HTMLElement>('[data-field]')) fill(field);
+				show('2');
+				arrive();
+			};
+			still();
+			for (const b of buttons) {
+				b.addEventListener('click', () => {
+					setWay(b.dataset.mode === 'form' ? 'form' : 'survey');
+					still();
+				});
+			}
+		} else {
+			reset();
+			const replay = whileVisible(scene, async (sleep) => {
+				for (;;) {
+					reset();
+					await (current === 'survey' ? survey(sleep) : form(sleep));
+					await sleep(350);
+					blur();
+					page.classList.add('sent');
+					await sleep(900);
+					arrive();
+					await sleep(3800);
+					if (!picked) setWay(current === 'survey' ? 'form' : 'survey');
+				}
+			});
+			for (const b of buttons) {
+				b.addEventListener('click', () => {
+					picked = true;
+					setWay(b.dataset.mode === 'form' ? 'form' : 'survey');
+					reset();
+					replay();
+				});
+			}
+		}
+	}
+</script>
+
+<style>
+	/* The switch between the two ways */
+	.switch {
+		display: flex;
+		width: max-content;
+		margin: 56px auto 0;
+		padding: 4px;
+		border-radius: 999px;
+		background: #e6e6eb;
+	}
+	.switch button {
+		padding: 9px 22px;
+		border: 0;
+		border-radius: 999px;
+		font: inherit;
+		font-size: 15px;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		color: var(--tm-slate);
+		background: transparent;
+		cursor: pointer;
+		transition:
+			background-color 0.25s ease,
+			color 0.25s ease,
+			box-shadow 0.25s ease;
+	}
+	.switch button:hover {
+		color: var(--tm-ink);
+	}
+	.switch button[aria-pressed='true'] {
+		color: var(--tm-ink);
+		background: #fff;
+		box-shadow:
+			0 1px 2px rgba(0, 0, 0, 0.08),
+			0 6px 16px -8px rgba(0, 0, 0, 0.2);
+	}
+	.switch button:focus-visible {
+		outline: 2px solid var(--bd-primary);
+		outline-offset: 2px;
+	}
+
+	.scene {
+		--ink: #18181b;
+		--soft: #71717a;
+		--line: #e4e4e7;
+		--tint: #f4f4f5;
+		display: grid;
+		grid-template-columns: 320px minmax(0, 660px);
+		justify-content: center;
+		align-items: center;
+		gap: 72px;
+		max-width: 1100px;
+		margin: 44px auto 0;
+		font-family: var(--bd-font-sans);
+		color: var(--ink);
+	}
+	.scene :global(svg) {
+		flex-shrink: 0;
+	}
+
+	/* The phone */
+	.phone-frame {
+		--k: 1;
+		position: relative;
+		width: 100%;
+		max-width: 320px;
+		height: calc(640px * var(--k));
+	}
+	.phone {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 320px;
+		height: 640px;
+		padding: 11px;
+		border-radius: 50px;
+		background: #111113;
+		box-shadow:
+			inset 0 0 0 1.5px #3a3a3f,
+			0 50px 90px -40px rgba(16, 24, 16, 0.55),
+			0 20px 40px -24px rgba(16, 24, 16, 0.35);
+		transform: scale(var(--k));
+		transform-origin: 0 0;
+	}
+	.screen {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		overflow: hidden;
+		border-radius: 40px;
+		font-size: 13px;
+		background: #f7f7f8;
+	}
+	.status {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		height: 44px;
+		padding: 0 26px 0 30px;
+		font-size: 14px;
+	}
+	.island {
+		width: 92px;
+		height: 27px;
+		border-radius: 20px;
+		background: #111113;
+	}
+	.signal {
+		display: flex;
+		align-items: flex-end;
+		gap: 2px;
+		height: 11px;
+	}
+	.signal i {
+		width: 3px;
+		border-radius: 1px;
+		background: var(--ink);
+	}
+	.signal i:nth-child(1) {
+		height: 4px;
+	}
+	.signal i:nth-child(2) {
+		height: 6px;
+	}
+	.signal i:nth-child(3) {
+		height: 8px;
+	}
+	.signal i:nth-child(4) {
+		height: 11px;
+	}
+	.address {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 5px;
+		height: 30px;
+		margin: 0 14px 10px;
+		border-radius: 10px;
+		font-size: 12px;
+		color: #52525b;
+		background: #e9e9ec;
+	}
+	.page {
+		position: relative;
+		flex: 1;
+		margin: 0 12px;
+	}
+	.powered {
+		margin: 0;
+		padding: 8px 0 20px;
+		font-size: 11px;
+		text-align: center;
+		color: #a1a1aa;
+	}
+
+	/* The page of the link: a card, in one way or the other, then the thanks */
+	.card {
+		position: absolute;
+		inset: 0 0 auto;
+		padding: 18px;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: #fff;
+		box-shadow: 0 1px 2px rgba(16, 24, 16, 0.04);
+		transition:
+			opacity 0.45s ease,
+			visibility 0.45s,
+			transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+	}
+	.scene[data-mode='survey'] .form,
+	.scene[data-mode='form'] .survey,
+	.page.sent .survey,
+	.page.sent .form,
+	.page:not(.sent) .thanks {
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY(10px);
+	}
+	.card h3 {
+		margin: 0;
+		font-size: 19px;
+		font-weight: 600;
+		letter-spacing: -0.015em;
+	}
+	.desc {
+		margin: 6px 0 0;
+		font-size: 13px;
+		line-height: 1.45;
+		color: var(--soft);
+	}
+	.small {
+		margin: 0;
+		font-size: 12.5px;
+		color: var(--soft);
+	}
+	.label {
+		margin: 0;
+		font-size: 13.5px;
+		font-weight: 500;
+	}
+	.label.big {
+		font-size: 17px;
+		letter-spacing: -0.01em;
+	}
+	.label i {
+		margin-left: 2px;
+		font-style: normal;
+		color: #dc2626;
+	}
+	.help {
+		margin: 0;
+		font-size: 12px;
+		color: var(--soft);
+	}
+	.q {
+		display: flex;
+		flex-direction: column;
+		gap: 7px;
+	}
+	.q .help {
+		margin-top: -3px;
+	}
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 34px;
+		padding: 0 14px;
+		border-radius: 8px;
+		font-size: 13.5px;
+		font-weight: 500;
+		white-space: nowrap;
+		color: #fff;
+		background: var(--bd-primary);
+		transition:
+			transform 0.15s ease,
+			filter 0.15s ease;
+	}
+	.btn.lg {
+		height: 40px;
+		padding: 0 18px;
+		font-size: 15px;
+	}
+	.btn.press {
+		filter: brightness(0.88);
+		transform: scale(0.95);
+	}
+	.ghost {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		margin-left: auto;
+		font-size: 13.5px;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	/* A field, as the application's inputs draw it */
+	.input,
+	.select {
+		position: relative;
+		display: flex;
+		align-items: center;
+		height: 36px;
+		padding: 0 12px;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		font-size: 14px;
+		background: #fff;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
+	}
+	.focus {
+		border-color: #a1a1aa;
+		box-shadow: 0 0 0 3px rgba(161, 161, 170, 0.3);
+	}
+	.input.focus [data-typed]::after {
+		content: '';
+		display: inline-block;
+		width: 1.5px;
+		height: 16px;
+		margin-left: 1px;
+		vertical-align: -3px;
+		background: var(--ink);
+		animation: caret 1s steps(1) infinite;
+	}
+	@keyframes caret {
+		50% {
+			opacity: 0;
+		}
+	}
+	.select {
+		justify-content: space-between;
+		padding-right: 10px;
+		color: var(--soft);
+	}
+	.select .set {
+		color: var(--ink);
+	}
+	.menu {
+		position: absolute;
+		top: calc(100% + 4px);
+		left: 0;
+		right: 0;
+		z-index: 3;
+		display: flex;
+		flex-direction: column;
+		padding: 4px;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		color: var(--ink);
+		background: #fff;
+		box-shadow: 0 12px 28px -10px rgba(16, 24, 16, 0.25);
+		opacity: 0;
+		transform: translateY(-4px) scale(0.98);
+		transform-origin: top;
+		transition:
+			opacity 0.18s ease,
+			transform 0.18s ease;
+	}
+	.select.open .menu {
+		opacity: 1;
+		transform: none;
+	}
+	.opt {
+		padding: 7px 8px;
+		border-radius: 5px;
+		transition: background-color 0.15s ease;
+	}
+	.opt.hover {
+		background: var(--tint);
+	}
+
+	/* The questionnaire: a question per screen */
+	.progress {
+		height: 4px;
+		overflow: hidden;
+		border-radius: 999px;
+		background: var(--tint);
+	}
+	.progress i {
+		display: block;
+		width: 0;
+		height: 100%;
+		border-radius: inherit;
+		background: var(--bd-primary);
+		transition: width 0.3s ease;
+	}
+	.screens {
+		position: relative;
+		height: 300px;
+	}
+	.sv {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 18px;
+		opacity: 0;
+		visibility: hidden;
+		transform: translateX(18px);
+		transition:
+			opacity 0.35s ease,
+			visibility 0.35s,
+			transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+	}
+	.sv.on {
+		opacity: 1;
+		visibility: visible;
+		transform: none;
+	}
+	.sv[data-screen='welcome'] {
+		gap: 12px;
+	}
+	.sv[data-screen='welcome'] h3 {
+		font-size: 22px;
+	}
+	.sv[data-screen='welcome'] .desc {
+		margin-top: 0;
+		font-size: 14px;
+	}
+	.sv[data-screen='welcome'] > span {
+		margin-top: 6px;
+	}
+	.k {
+		margin: 0;
+		font-size: 11.5px;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		color: var(--bd-primary);
+	}
+	.nav {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	/* The form: every question on one page */
+	.form header {
+		padding-bottom: 14px;
+		border-bottom: 1px solid var(--line);
+	}
+	.qs {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 16px 0;
+	}
+	.form footer {
+		padding-top: 14px;
+		border-top: 1px solid var(--line);
+	}
+
+	/* Sent */
+	.thanks {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 12px;
+		padding: 44px 22px;
+		text-align: center;
+	}
+	.tick {
+		color: var(--bd-primary);
+	}
+	.page.sent .tick {
+		animation: tick 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 0.15s both;
+	}
+	@keyframes tick {
+		from {
+			transform: scale(0.6);
+			opacity: 0;
+		}
+	}
+	.thanks p {
+		margin: 0;
+		font-size: 15px;
+		line-height: 1.45;
+	}
+
+	/* The table the answers land in */
+	.desk-frame {
+		--k: 1;
+		position: relative;
+		width: 100%;
+		max-width: 660px;
+		height: calc(500px * var(--k));
+	}
+	.desk {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 660px;
+		height: 500px;
+		font-size: 13px;
+		transform: scale(var(--k));
+		transform-origin: 0 0;
+	}
+	.win {
+		position: absolute;
+		inset: 0 0 auto;
+		height: 440px;
+		overflow: hidden;
+		border: 1px solid rgba(16, 24, 16, 0.1);
+		border-radius: 14px;
+		background: #fff;
+		box-shadow: var(--bd-shadow-lg);
+	}
+	.bar {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		height: 34px;
+		padding: 0 14px;
+		border-bottom: 1px solid var(--line);
+		background: var(--tint);
+	}
+	.dots {
+		display: flex;
+		gap: 6px;
+	}
+	.dots i {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background: #ff5f57;
+	}
+	.dots i:nth-child(2) {
+		background: #febc2e;
+	}
+	.dots i:nth-child(3) {
+		background: #28c840;
+	}
+	.path {
+		font-size: 12px;
+		font-weight: 600;
+		color: #52525b;
+	}
+	.tools {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		height: 46px;
+		padding: 0 14px;
+		border-bottom: 1px solid var(--line);
+		font-size: 12.5px;
+		color: #52525b;
+	}
+	.tools .pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 28px;
+		padding: 0 10px;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		font-weight: 600;
+		color: var(--ink);
+	}
+	.tools .add {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		height: 28px;
+		margin-left: auto;
+		padding: 0 11px;
+		border-radius: 7px;
+		font-weight: 600;
+		color: #fff;
+		background: var(--bd-primary);
+	}
+	.row {
+		display: grid;
+		grid-template-columns: 38px 1.35fr 1.15fr 0.8fr 1fr;
+		align-items: center;
+		gap: 10px;
+		height: 42px;
+		padding-right: 14px;
+		overflow: hidden;
+		border-bottom: 1px solid #efeff1;
+		white-space: nowrap;
+	}
+	.row.head {
+		height: 34px;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--soft);
+		background: #fafafa;
+	}
+	.n {
+		font-size: 12px;
+		text-align: center;
+		color: #a1a1aa;
+	}
+	.org {
+		overflow: hidden;
+		font-weight: 500;
+		text-overflow: ellipsis;
+	}
+	.num {
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+	}
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 2px 9px;
+		border-radius: 999px;
+		font-size: 12px;
+		font-style: normal;
+		font-weight: 500;
+		color: color-mix(in srgb, var(--c) 72%, #000);
+		background: color-mix(in srgb, var(--c) 14%, #fff);
+	}
+	.chip::before {
+		content: '';
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--c);
+	}
+	.fresh {
+		height: 0;
+		border-bottom-width: 0;
+		transition: height 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+	}
+	.fresh.in {
+		height: 42px;
+		border-bottom-width: 1px;
+		animation: arrived 2.6s ease;
+	}
+	@keyframes arrived {
+		0%,
+		35% {
+			background: #e6f6e1;
+		}
+		100% {
+			background: transparent;
+		}
+	}
+	.row.add-row {
+		display: flex;
+		gap: 6px;
+		padding-left: 14px;
+		color: #a1a1aa;
+		border-bottom: 0;
+	}
+
+	/* The link, as the share dialog shows it */
+	.share {
+		position: absolute;
+		left: 40px;
+		bottom: 0;
+		width: 440px;
+		padding: 14px 16px;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: #fff;
+		box-shadow: 0 28px 56px -24px rgba(16, 24, 16, 0.4);
+	}
+	.top {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		margin-bottom: 11px;
+	}
+	.badge {
+		padding: 2px 8px;
+		border-radius: 6px;
+		font-size: 12px;
+		font-weight: 600;
+		color: #15803d;
+		background: #dcfce7;
+	}
+	.count {
+		display: inline-block;
+		font-size: 12.5px;
+		color: var(--soft);
+		transform-origin: left;
+	}
+	.count.pop {
+		animation: pop 0.6s cubic-bezier(0.3, 1.6, 0.5, 1);
+	}
+	@keyframes pop {
+		40% {
+			color: var(--bd-primary);
+			transform: scale(1.12);
+		}
+	}
+	.active {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		margin-left: auto;
+		font-size: 12.5px;
+		color: var(--soft);
+	}
+	.toggle {
+		position: relative;
+		width: 30px;
+		height: 17px;
+		border-radius: 999px;
+		background: var(--bd-primary);
+	}
+	.toggle::after {
+		content: '';
+		position: absolute;
+		top: 2px;
+		right: 2px;
+		width: 13px;
+		height: 13px;
+		border-radius: 50%;
+		background: #fff;
+	}
+	.link {
+		display: flex;
+		gap: 6px;
+	}
+	.url {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		height: 32px;
+		padding: 0 10px;
+		overflow: hidden;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		font-size: 12px;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+	.ib {
+		display: grid;
+		place-items: center;
+		width: 32px;
+		height: 32px;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+	}
+
+	.more {
+		margin: 40px 0 0;
+		text-align: center;
+	}
+
+	@media (max-width: 1040px) {
+		.scene {
+			grid-template-columns: minmax(0, 660px);
+			justify-items: center;
+			gap: 48px;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.card,
+		.sv,
+		.fresh,
+		.progress i {
+			transition: none;
+		}
+		.fresh.in,
+		.count.pop,
+		.page.sent .tick {
+			animation: none;
+		}
+	}
+</style>

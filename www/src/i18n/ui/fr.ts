@@ -608,30 +608,125 @@ const fr = {
 			link: { href: '/fonctionnalites/collaboration/', label: 'Travailler à plusieurs' },
 		},
 
-		/** An automation that runs step by step as the reader scrolls — at night. */
+		/**
+		 * The same three questions asked two ways on a phone — the questionnaire, one per
+		 * screen, and the form, all on one page; each answer sent lands as a row of the table
+		 * beside it.
+		 */
+		forms: {
+			eyebrow: 'Formulaires et questionnaires',
+			title: 'Posez vos questions.',
+			titleAccent: 'Les réponses se rangent seules.',
+			text: 'Un formulaire sur une seule page, ou un questionnaire qui pose une question par écran : partagez le lien, et chaque réponse devient une ligne de votre table. Qui répond ne voit rien d’autre.',
+			/** The switch over the phone: the same questions, asked two ways. */
+			modes: { label: 'Montrer les questions', survey: 'Questionnaire', form: 'Formulaire' },
+			/** The page of the link, as basedb draws it, and what the person answers. */
+			demo: {
+				title: 'Demande de devis',
+				description: 'Trois questions, et nous revenons vers vous sous 48 h.',
+				count: '3 questions',
+				start: 'Commencer',
+				next: 'Suivant',
+				previous: 'Précédent',
+				submit: 'Envoyer ma demande',
+				org: { label: 'Votre organisation', answer: 'Café des Arts' },
+				/** A choice; the person picks the second option. */
+				need: { label: 'Votre besoin', choose: 'Choisir…', options: ['Site web', 'Identité visuelle', 'Catalogue'] },
+				budget: { label: 'Votre budget', help: 'Hors taxes, même approximatif.' },
+				thanks: 'Merci ! Nous revenons vers vous sous 48 h.',
+				poweredBy: 'Formulaire propulsé par basedb',
+				/** The table the answers land in, and the requests already there. */
+				path: 'Ventes / Demandes',
+				view: 'Toutes les demandes',
+				columns: { org: 'Organisation', need: 'Besoin', budget: 'Budget', stage: 'Étape' },
+				stages: { new: 'Nouvelle', called: 'Rappelée', quote: 'Devis envoyé' },
+				rows: ['Boulangerie Martin', 'Clinique des Tilleuls', 'Vélo Solidaire', 'Forges du Rhône'],
+				/** The link, as the share dialog shows it. */
+				open: 'Ouvert',
+				answers: forms({ one: '{n} réponse', other: '{n} réponses' }),
+				active: 'Lien actif',
+			},
+			points: {
+				survey: {
+					title: 'Une question par écran',
+					text: 'Le questionnaire les pose une à une, avec sa barre de progression ; Entrée passe à la suivante.',
+				},
+				access: {
+					title: 'Public ou réservé',
+					text: 'Toute personne qui a le lien répond sans compte — ou seulement les membres connectés, et la réponse porte leur nom.',
+				},
+				closed: {
+					title: 'Le reste reste fermé',
+					text: 'Répondre ne montre rien d’autre de la table. Le lien se ferme à une date, ou après un nombre de réponses.',
+				},
+			},
+			link: { href: '/fonctionnalites/formulaires-partages/', label: 'Les formulaires' },
+		},
+
+		/**
+		 * An automation at work in the middle of the night, drawn as its editor draws it: the
+		 * scroll runs it — the condition picks a path and the other fades, each step lights up
+		 * with its time, the AI writes — and the run lands in « Exécutions », step by step.
+		 */
 		automate: {
 			eyebrow: 'Automatisations',
 			title: 'Il travaille',
 			titleAccent: 'pendant que vous dormez.',
-			text: 'Décrivez une fois ce qui doit se passer. Quand une ligne change, chaque matin à heure fixe ou d’un clic sur un bouton, basedb enchaîne les étapes — et chaque exécution se relit, étape par étape.',
+			text: 'Quand une ligne arrive ou change, à heure fixe ou d’un clic sur un bouton, basedb enchaîne les étapes : il choisit le bon chemin, demande à l’IA, prévient qui il faut. Et chaque exécution se relit, étape par étape.',
 			/** The time on the clock over the flow: the middle of the night. */
 			clock: '03:12',
+			/** The editor: where it is, and the automations of the base — the first one is open. */
+			crumb: 'Ventes / Automatisations',
+			create: 'Nouvelle automatisation',
+			list: [
+				{ name: 'Nouvelle demande', when: 'Une ligne est créée' },
+				{ name: 'Devis signé', when: 'Une ligne est modifiée' },
+				{ name: 'Relances du lundi', when: 'Chaque lundi à 09:00' },
+			],
+			active: 'Active',
+			test: 'Tester sur une ligne',
+			save: 'Enregistrer',
+			/** The flow: its trigger, its steps — what each one does, and what it did — its paths. */
 			when: 'Quand',
-			trigger: 'un devis passe à « Signé »',
+			trigger: 'Une ligne est créée',
+			table: 'Dans Demandes',
 			steps: {
-				find: { kind: 'Chercher une ligne', text: 'Le client du devis' },
-				ai: { kind: 'Demander à l’IA', text: 'Rédiger un mot de remerciement' },
-				create: { kind: 'Créer une ligne', text: 'La facture, dans Factures' },
-				notify: { kind: 'Prévenir quelqu’un', text: 'La comptabilité' },
-				slack: { kind: 'Envoyer sur Slack', text: 'Dans le canal #ventes' },
+				branch: { kind: 'Condition', text: '2 chemins', run: 'chemin « Grand projet »' },
+				notify: { kind: 'Prévenir quelqu’un', text: 'Léa Martin', run: '1 personne prévenue' },
+				create: { kind: 'Créer une ligne', text: 'Un rendez-vous, dans Agenda', run: 'fait' },
+				slack: { kind: 'Envoyer sur Slack', text: 'Dans le canal #ventes', run: 'fait' },
+				/** `{n}`: the length of the answer. */
+				ai: { kind: 'Demander à l’IA', text: 'Rédiger une première réponse', run: 'réponse de {n} caractères' },
+				update: { kind: 'Modifier une ligne', text: 'Réponse, Étape', run: 'fait' },
 			},
+			/** The condition's paths; `condition` is written in the filter language. */
+			paths: { big: 'Grand projet', condition: 'budget gt 5000', otherwise: 'Sinon' },
 			/** What the AI step writes. */
-			answer: 'Merci pour votre confiance ! Nous lançons votre projet dès lundi, et votre facture suit par e-mail.',
-			done: 'Réussie · 5 étapes · 1,2 s',
-			/** A sentence to the Copilot, and what it does with it. */
-			copilot: {
-				prompt: 'Quand un devis est signé, préviens la compta et crée la facture.',
-				text: 'Une phrase au Copilot, et l’automatisation est construite : vous n’avez plus qu’à relire.',
+			answer: 'Bonjour, et merci pour votre demande ! Léa, qui suivra votre nouvelle identité visuelle, vous appelle demain matin.',
+			addStep: 'Ajouter une étape',
+			/** The panel beside the flow: the runs. */
+			tabs: { settings: 'Réglages', runs: 'Exécutions' },
+			runsText: 'Les 50 dernières, gardées 30 jours. Choisissez-en une pour voir, sur le flux, le chemin qu’elle a pris.',
+			running: 'En cours',
+			succeeded: 'Réussie',
+			/** Under a run: what started it, and when — `{when}`, `now` or one of `earlier`. */
+			started: 'ligne créée · {when}',
+			now: 'à l’instant',
+			earlier: ['hier à 18:40', 'hier à 11:02'],
+			done: 'Réussie · 5 étapes · 1,3 s',
+			points: {
+				when: {
+					title: 'Au bon moment',
+					text: 'Une ligne créée ou modifiée, une heure fixe, un bouton — et une condition pour ne partir que quand il le faut.',
+				},
+				paths: {
+					title: 'Plusieurs chemins',
+					text: 'Une condition ouvre des chemins, chacun avec ses étapes ; ce qu’une étape trouve, la suivante peut le citer.',
+				},
+				copilot: {
+					title: 'Décrite en une phrase',
+					text: '« Quand une demande arrive, préviens Léa si le budget dépasse 5 000 € » : le Copilot construit le flux, vous le relisez.',
+				},
 			},
 			link: { href: '/fonctionnalites/automatisations/', label: 'Les automatisations' },
 		},

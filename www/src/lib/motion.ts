@@ -13,10 +13,12 @@ export const ease = (t: number): number => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * 
 
 /**
  * Scales a drawing made at `width` pixels to its frame's width, never below `min`: sets
- * `--k` on the frame, and keeps it right when the frame resizes.
+ * `--k` on the frame, and keeps it right when the frame resizes. A drawing that changes
+ * its width with the screen gives it as a function.
  */
-export function fit(frame: HTMLElement, width: number, min = 0.3): void {
-	const apply = () => frame.style.setProperty('--k', String(Math.min(1, Math.max(min, frame.clientWidth / width))));
+export function fit(frame: HTMLElement, width: number | (() => number), min = 0.3): void {
+	const drawn = typeof width === 'number' ? () => width : width;
+	const apply = () => frame.style.setProperty('--k', String(Math.min(1, Math.max(min, frame.clientWidth / drawn()))));
 	apply();
 	new ResizeObserver(apply).observe(frame);
 }
@@ -67,27 +69,34 @@ export function progress(
 /**
  * Runs `play` while `section` is on screen, and stops it when it leaves. `play` receives
  * a `sleep` that never resolves once stopped, so a loop simply goes quiet; it starts
- * again from the beginning when the section comes back.
+ * again from the beginning when the section comes back. The function returned starts it
+ * again from the beginning at once, if the section is on screen.
  */
 export function whileVisible(
 	section: HTMLElement,
 	play: (sleep: (ms: number) => Promise<void>) => Promise<void>,
 	threshold = 0.3,
-): void {
+): () => void {
 	let run = 0;
+	let shown = false;
+	const start = () => {
+		run += 1;
+		if (!shown) return;
+		const mine = run;
+		const sleep = (ms: number) =>
+			new Promise<void>((resolve) => {
+				setTimeout(() => {
+					if (run === mine) resolve();
+				}, ms);
+			});
+		void play(sleep);
+	};
 	new IntersectionObserver(
 		([entry]) => {
-			run += 1;
-			if (entry?.isIntersecting !== true) return;
-			const mine = run;
-			const sleep = (ms: number) =>
-				new Promise<void>((resolve) => {
-					setTimeout(() => {
-						if (run === mine) resolve();
-					}, ms);
-				});
-			void play(sleep);
+			shown = entry?.isIntersecting === true;
+			start();
 		},
 		{ threshold },
 	).observe(section);
+	return start;
 }

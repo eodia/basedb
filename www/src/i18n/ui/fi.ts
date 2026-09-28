@@ -638,41 +638,170 @@ export default {
 				label: 'Yhdessä työskentely',
 			},
 		},
+		forms: {
+			eyebrow: 'Lomakkeet ja kyselyt',
+			title: 'Kysy kysymyksesi.',
+			titleAccent: 'Vastaukset järjestyvät itsestään.',
+			text: 'Yksisivuinen lomake tai kyselylomake, joka esittää yhden kysymyksen kerrallaan: jaa linkki, ja jokaisesta vastauksesta tulee rivi taulukkoosi. Vastaaja ei näe mitään muuta.',
+			modes: {
+				label: 'Näytä kysymykset',
+				survey: 'Kyselylomake',
+				form: 'Lomake',
+			},
+			demo: {
+				title: 'Tarjouspyyntö',
+				description: 'Kolme kysymystä, ja olemme yhteydessä 48 tunnin sisällä.',
+				count: '3 kysymystä',
+				start: 'Aloita',
+				next: 'Seuraava',
+				previous: 'Edellinen',
+				submit: 'Lähetä pyyntöni',
+				org: {
+					label: 'Organisaatiosi',
+					answer: 'Kahvila Virtanen',
+				},
+				need: {
+					label: 'Tarpeesi',
+					choose: 'Valitse…',
+					options: ['Verkkosivusto', 'Visuaalinen ilme', 'Katalogi'],
+				},
+				budget: {
+					label: 'Budjettisi',
+					help: 'Ilman alv:tä, vaikka vain arviolta.',
+				},
+				thanks: 'Kiitos! Olemme yhteydessä 48 tunnin sisällä.',
+				poweredBy: 'Lomakkeen tarjoaa basedb',
+				path: 'Myynti / Pyynnöt',
+				view: 'Kaikki pyynnöt',
+				columns: {
+					org: 'Organisaatio',
+					need: 'Tarve',
+					budget: 'Budjetti',
+					stage: 'Vaihe',
+				},
+				stages: {
+					new: 'Uusi',
+					called: 'Soitettu',
+					quote: 'Tarjous lähetetty',
+				},
+				rows: ['Leipomo Nieminen', 'Lääkäriasema Koivikko', 'Pyörät Kaikille', 'Vuoksen Konepaja'],
+				open: 'Avoin',
+				answers: {
+					one: '{n} vastaus',
+					other: '{n} vastausta',
+				},
+				active: 'Linkki käytössä',
+			},
+			points: {
+				survey: {
+					title: 'Yksi kysymys kerrallaan',
+					text: 'Kyselylomake esittää ne yksi kerrallaan edistymispalkkinsa kanssa; Enter siirtyy seuraavaan.',
+				},
+				access: {
+					title: 'Julkinen tai rajattu',
+					text: 'Kuka tahansa linkin saanut voi vastata ilman tiliä — tai vain kirjautuneet jäsenet, jolloin vastauksessa näkyy heidän nimensä.',
+				},
+				closed: {
+					title: 'Muu pysyy suljettuna',
+					text: 'Vastaaminen ei näytä muuta taulukosta. Linkki sulkeutuu tiettynä päivänä tai tietyn vastausmäärän jälkeen.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'Lomakkeet',
+			},
+		},
 		automate: {
 			eyebrow: 'Automaatiot',
 			title: 'Se tekee töitä',
 			titleAccent: 'kun nukut.',
-			text: 'Kuvaa kerran, mitä pitää tapahtua. Kun rivi muuttuu, joka aamu kiinteään aikaan tai napin painalluksesta, basedb suorittaa vaiheet peräkkäin – ja jokainen suoritus voidaan lukea jälkikäteen, vaihe vaiheelta.',
-			clock: '03.12',
+			text: 'Kun rivi saapuu tai muuttuu, kiinteään aikaan tai napin painalluksesta, basedb käy vaiheet läpi: se valitsee oikean haaran, kysyy tekoälyltä ja ilmoittaa oikeille henkilöille. Jokainen suoritus voidaan lisäksi lukea jälkikäteen, vaihe vaiheelta.',
+			clock: '03:12',
+			crumb: 'Myynti / Automaatiot',
+			create: 'Uusi automaatio',
+			list: [
+				{
+					name: 'Uusi pyyntö',
+					when: 'Rivi luodaan',
+				},
+				{
+					name: 'Tarjous allekirjoitettu',
+					when: 'Riviä muokataan',
+				},
+				{
+					name: 'Maanantain muistutukset',
+					when: 'Joka maanantai klo 9.00',
+				},
+			],
+			active: 'Aktiivinen',
+			test: 'Testaa rivillä',
+			save: 'Tallenna',
 			when: 'Kun',
-			trigger: 'tarjous siirtyy tilaan ”Allekirjoitettu”',
+			trigger: 'Rivi luodaan',
+			table: 'Taulukossa Pyynnöt',
 			steps: {
-				find: {
-					kind: 'Etsi rivi',
-					text: 'Tarjouksen asiakas',
-				},
-				ai: {
-					kind: 'Kysy tekoälyltä',
-					text: 'Kirjoita kiitosviesti',
-				},
-				create: {
-					kind: 'Luo rivi',
-					text: 'Lasku, taulukossa Laskut',
+				branch: {
+					kind: 'Ehto',
+					text: '2 haaraa',
+					run: 'haara ”Iso projekti”',
 				},
 				notify: {
 					kind: 'Ilmoita jollekulle',
-					text: 'Kirjanpito',
+					text: 'Léa Martin',
+					run: 'Ilmoitettu 1 henkilölle',
+				},
+				create: {
+					kind: 'Luo rivi',
+					text: 'Tapaaminen, taulukossa Kalenteri',
+					run: 'valmis',
 				},
 				slack: {
 					kind: 'Lähetä Slackiin',
 					text: 'Kanavaan #myynti',
+					run: 'valmis',
+				},
+				ai: {
+					kind: 'Kysy tekoälyltä',
+					text: 'Kirjoita ensimmäinen vastaus',
+					run: 'vastaus, {n} merkkiä',
+				},
+				update: {
+					kind: 'Muokkaa riviä',
+					text: 'Vastaus, Vaihe',
+					run: 'valmis',
 				},
 			},
-			answer: 'Kiitos luottamuksestanne! Aloitamme projektinne maanantaina, ja laskunne saapuu sähköpostitse.',
-			done: 'Onnistui · 5 vaihetta · 1,2 s',
-			copilot: {
-				prompt: 'Kun tarjous allekirjoitetaan, ilmoita kirjanpitoon ja luo lasku.',
-				text: 'Yksi lause Copilotille, ja automaatio on valmis: vain tarkistaminen jää tehtäväksi.',
+			paths: {
+				big: 'Iso projekti',
+				condition: 'budget gt 5000',
+				otherwise: 'Muuten',
+			},
+			answer: 'Hei, ja kiitos pyynnöstäsi! Léa, joka vastaa uudesta visuaalisesta ilmeestäsi, soittaa sinulle huomenna aamulla.',
+			addStep: 'Lisää vaihe',
+			tabs: {
+				settings: 'Asetukset',
+				runs: 'Suoritukset',
+			},
+			runsText: 'Viimeiset 50, säilytetään 30 päivää. Valitse yksi nähdäksesi kulkukaaviossa, minkä reitin se kulki.',
+			running: 'Käynnissä',
+			succeeded: 'Onnistui',
+			started: 'rivi luotu · {when}',
+			now: 'juuri nyt',
+			earlier: ['eilen klo 18:40', 'eilen klo 11:02'],
+			done: 'Onnistui · 5 vaihetta · 1,3 s',
+			points: {
+				when: {
+					title: 'Oikealla hetkellä',
+					text: 'Luotu tai muokattu rivi, kiinteä kellonaika, painike — ja ehto, joka käynnistää sen vain silloin kun pitää.',
+				},
+				paths: {
+					title: 'Useita haaroja',
+					text: 'Ehto avaa haaroja, joilla kummallakin on omat vaiheensa; sen, minkä yksi vaihe löytää, seuraava voi viitata siihen.',
+				},
+				copilot: {
+					title: 'Kuvattu yhdellä lauseella',
+					text: '”Kun pyyntö saapuu, ilmoita Léalle, jos budjetti ylittää 5 000 €” : Copilot rakentaa kulun, ja sinä tarkistat sen.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

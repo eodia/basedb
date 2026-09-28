@@ -68,6 +68,20 @@ d’un texte HTML) : un lecteur anglais reste en anglais. Les adresses externes
 Une ancre (`#vos-paramètres`) désigne un titre de la documentation française : si la
 traduction de la page change ce titre, remplacez l’ancre par celle du titre traduit.
 
+### L’image d’un lien partagé
+
+Un lien vers le site, collé dans une messagerie ou un réseau, s’affiche avec une image dans
+la langue de la page : `public/og/<code>.jpg` (1200 × 630), qui reprend le titre de
+l’accueil (`teams.hero`), ses trois points forts et le tableau de la fenêtre (`teams.stage`).
+Les pages d’accueil et la documentation la déclarent toutes. Ces images sont faites une
+fois et gardées dans le dépôt : après un changement de ces textes, dans une langue ou en
+français, refaites-les avec Google Chrome installé :
+
+```sh
+npm run og            # les vingt langues
+npm run og -- fr en   # quelques-unes
+```
+
 ## La documentation
 
 Starlight déclare les vingt langues (`astro.config.mjs`). Une page traduite se place sous

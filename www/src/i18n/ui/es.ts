@@ -638,41 +638,170 @@ export default {
 				label: 'Trabajar en equipo',
 			},
 		},
+		forms: {
+			eyebrow: 'Formularios y cuestionarios',
+			title: 'Haz tus preguntas.',
+			titleAccent: 'Las respuestas se ordenan solas.',
+			text: 'Un formulario de una sola página, o un cuestionario que hace una pregunta por pantalla: comparte el enlace, y cada respuesta se convierte en una fila de tu tabla. Quien responde no ve nada más.',
+			modes: {
+				label: 'Mostrar las preguntas',
+				survey: 'Encuesta',
+				form: 'Formulario',
+			},
+			demo: {
+				title: 'Solicitud de presupuesto',
+				description: 'Tres preguntas, y te respondemos en menos de 48 h.',
+				count: '3 preguntas',
+				start: 'Empezar',
+				next: 'Siguiente',
+				previous: 'Anterior',
+				submit: 'Enviar mi solicitud',
+				org: {
+					label: 'Tu organización',
+					answer: 'Café del Arte',
+				},
+				need: {
+					label: 'Tu necesidad',
+					choose: 'Elegir…',
+					options: ['Sitio web', 'Identidad visual', 'Catálogo'],
+				},
+				budget: {
+					label: 'Tu presupuesto',
+					help: 'Sin IVA, aunque sea aproximado.',
+				},
+				thanks: '¡Gracias! Te respondemos en menos de 48 h.',
+				poweredBy: 'Formulario con tecnología de basedb',
+				path: 'Ventas / Solicitudes',
+				view: 'Todas las solicitudes',
+				columns: {
+					org: 'Organización',
+					need: 'Necesidad',
+					budget: 'Presupuesto',
+					stage: 'Etapa',
+				},
+				stages: {
+					new: 'Nueva',
+					called: 'Contactada',
+					quote: 'Presupuesto enviado',
+				},
+				rows: ['Panadería Martin', 'Clínica Los Tilos', 'Bici Solidaria', 'Forjas del Ebro'],
+				open: 'Abierto',
+				answers: {
+					one: '{n} respuesta',
+					other: '{n} respuestas',
+				},
+				active: 'Enlace activo',
+			},
+			points: {
+				survey: {
+					title: 'Una pregunta por pantalla',
+					text: 'El cuestionario las plantea una a una, con su barra de progreso; Intro pasa a la siguiente.',
+				},
+				access: {
+					title: 'Público o reservado',
+					text: 'Cualquiera con el enlace responde sin cuenta — o solo los miembros conectados, y la respuesta lleva su nombre.',
+				},
+				closed: {
+					title: 'El resto queda cerrado',
+					text: 'Responder no muestra nada más de la tabla. El enlace se cierra en una fecha, o tras un número de respuestas.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'Los formularios',
+			},
+		},
 		automate: {
 			eyebrow: 'Automatizaciones',
 			title: 'Trabaja',
 			titleAccent: 'mientras duermes.',
-			text: 'Describe una vez lo que debe pasar. Cuando una fila cambia, cada mañana a una hora fija o con un clic en un botón, basedb encadena los pasos — y cada ejecución se puede repasar, paso a paso.',
+			text: 'Cuando llega o cambia una fila, a una hora fija o con un clic en un botón, basedb encadena los pasos: elige la rama correcta, pregunta a la IA, avisa a quien haga falta. Y cada ejecución se puede repasar, paso a paso.',
 			clock: '03:12',
+			crumb: 'Ventas / Automatizaciones',
+			create: 'Nueva automatización',
+			list: [
+				{
+					name: 'Nueva solicitud',
+					when: 'Se crea una fila',
+				},
+				{
+					name: 'Presupuesto firmado',
+					when: 'Se modifica una fila',
+				},
+				{
+					name: 'Seguimientos del lunes',
+					when: 'Cada lunes a las 09:00',
+				},
+			],
+			active: 'Activa',
+			test: 'Probar con una fila',
+			save: 'Guardar',
 			when: 'Cuando',
-			trigger: 'un presupuesto pasa a «Firmado»',
+			trigger: 'Se crea una fila',
+			table: 'En Solicitudes',
 			steps: {
-				find: {
-					kind: 'Buscar una fila',
-					text: 'El cliente del presupuesto',
-				},
-				ai: {
-					kind: 'Preguntar a la IA',
-					text: 'Redactar una nota de agradecimiento',
-				},
-				create: {
-					kind: 'Crear una fila',
-					text: 'La factura, en Facturas',
+				branch: {
+					kind: 'Condición',
+					text: '2 ramas',
+					run: 'rama «Gran proyecto»',
 				},
 				notify: {
 					kind: 'Avisar a alguien',
-					text: 'Contabilidad',
+					text: 'Léa Martin',
+					run: '1 persona avisada',
+				},
+				create: {
+					kind: 'Crear una fila',
+					text: 'Una cita, en Agenda',
+					run: 'hecho',
 				},
 				slack: {
 					kind: 'Enviar a Slack',
 					text: 'En el canal #ventas',
+					run: 'hecho',
+				},
+				ai: {
+					kind: 'Preguntar a la IA',
+					text: 'Redactar una primera respuesta',
+					run: 'respuesta de {n} caracteres',
+				},
+				update: {
+					kind: 'Modificar una fila',
+					text: 'Respuesta, Etapa',
+					run: 'hecho',
 				},
 			},
-			answer: '¡Gracias por tu confianza! Empezamos tu proyecto el lunes, y tu factura llega por correo.',
-			done: 'Correcta · 5 pasos · 1,2 s',
-			copilot: {
-				prompt: 'Cuando se firme un presupuesto, avisa a contabilidad y crea la factura.',
-				text: 'Una frase al Copilot, y la automatización queda construida: solo tienes que repasarla.',
+			paths: {
+				big: 'Gran proyecto',
+				condition: 'budget gt 5000',
+				otherwise: 'Si no',
+			},
+			answer: '¡Hola, y gracias por su solicitud! Léa, que se encargará de su nueva identidad visual, le llama mañana por la mañana.',
+			addStep: 'Añadir un paso',
+			tabs: {
+				settings: 'Ajustes',
+				runs: 'Ejecuciones',
+			},
+			runsText: 'Las 50 últimas, conservadas 30 días. Elige una para ver en el flujo la rama que tomó.',
+			running: 'En curso',
+			succeeded: 'Correcta',
+			started: 'fila creada · {when}',
+			now: 'ahora mismo',
+			earlier: ['ayer a las 18:40', 'ayer a las 11:02'],
+			done: 'Correcta · 5 pasos · 1,3 s',
+			points: {
+				when: {
+					title: 'En el momento justo',
+					text: 'Una fila creada o modificada, una hora fija, un botón — y una condición para arrancar solo cuando haga falta.',
+				},
+				paths: {
+					title: 'Varias ramas',
+					text: 'Una condición abre ramas, cada una con sus pasos; lo que un paso encuentra, el siguiente puede citarlo.',
+				},
+				copilot: {
+					title: 'Descrita en una frase',
+					text: '«Cuando llega una solicitud, avisa a Léa si el presupuesto supera los 5.000 €»: el Copilot construye el flujo, tú lo repasas.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

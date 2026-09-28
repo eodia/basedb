@@ -638,41 +638,170 @@ export default {
 				label: 'Jobbe sammen',
 			},
 		},
+		forms: {
+			eyebrow: 'Skjemaer og spørreundersøkelser',
+			title: 'Still spørsmålene dine.',
+			titleAccent: 'Svarene sorterer seg selv.',
+			text: 'Et skjema på én side, eller en spørreundersøkelse som stiller ett spørsmål per skjerm: del lenken, og hvert svar blir en rad i tabellen din. Den som svarer, ser ikke noe annet.',
+			modes: {
+				label: 'Vis spørsmålene',
+				survey: 'Spørreundersøkelse',
+				form: 'Skjema',
+			},
+			demo: {
+				title: 'Tilbudsforespørsel',
+				description: 'Tre spørsmål, og vi kommer tilbake til deg innen 48 timer.',
+				count: '3 spørsmål',
+				start: 'Start',
+				next: 'Neste',
+				previous: 'Forrige',
+				submit: 'Send forespørselen min',
+				org: {
+					label: 'Organisasjonen din',
+					answer: 'Kafé Haugen',
+				},
+				need: {
+					label: 'Behovet ditt',
+					choose: 'Velg…',
+					options: ['Nettside', 'Visuell identitet', 'Katalog'],
+				},
+				budget: {
+					label: 'Budsjettet ditt',
+					help: 'Uten mva, gjerne omtrentlig.',
+				},
+				thanks: 'Takk! Vi kommer tilbake til deg innen 48 timer.',
+				poweredBy: 'Skjema levert av basedb',
+				path: 'Salg / Forespørsler',
+				view: 'Alle forespørsler',
+				columns: {
+					org: 'Organisasjon',
+					need: 'Behov',
+					budget: 'Budsjett',
+					stage: 'Trinn',
+				},
+				stages: {
+					new: 'Ny',
+					called: 'Ringt opp',
+					quote: 'Tilbud sendt',
+				},
+				rows: ['Bakeriet Berg', 'Lindetunet klinikk', 'Sykkelhjelpen', 'Fjordsmia'],
+				open: 'Åpen',
+				answers: {
+					one: '{n} svar',
+					other: '{n} svar',
+				},
+				active: 'Aktiv lenke',
+			},
+			points: {
+				survey: {
+					title: 'Ett spørsmål om gangen',
+					text: 'Spørreundersøkelsen stiller dem ett om gangen med sin fremdriftslinje; Enter går videre til det neste.',
+				},
+				access: {
+					title: 'Åpent eller forbeholdt',
+					text: 'Alle med lenken kan svare uten konto — eller bare innloggede medlemmer, og svaret bærer navnet deres.',
+				},
+				closed: {
+					title: 'Resten forblir lukket',
+					text: 'Å svare viser ikke noe annet av tabellen. Lenken lukkes på en gitt dato, eller etter et antall svar.',
+				},
+			},
+			link: {
+				href: '/fonctionnalites/formulaires-partages/',
+				label: 'Skjemaene',
+			},
+		},
 		automate: {
 			eyebrow: 'Automatiseringer',
 			title: 'Den jobber',
 			titleAccent: 'mens du sover.',
-			text: 'Beskriv én gang hva som skal skje. Når en rad endres, hver morgen til fast klokkeslett eller med et klikk på en knapp, kjører basedb trinnene i rekkefølge – og hver kjøring kan leses på nytt, trinn for trinn.',
+			text: 'Når en rad kommer inn eller endres, til fast klokkeslett eller med et klikk på en knapp, følger basedb trinnene: den velger riktig gren, spør KI, og varsler dem som skal ha beskjed. Og hver kjøring kan leses på nytt, trinn for trinn.',
 			clock: '03:12',
+			crumb: 'Salg / Automatiseringer',
+			create: 'Ny automatisering',
+			list: [
+				{
+					name: 'Ny forespørsel',
+					when: 'En rad opprettes',
+				},
+				{
+					name: 'Tilbud signert',
+					when: 'En rad endres',
+				},
+				{
+					name: 'Mandagsoppfølging',
+					when: 'Hver mandag kl. 09.00',
+				},
+			],
+			active: 'Aktiv',
+			test: 'Test på en rad',
+			save: 'Lagre',
 			when: 'Når',
-			trigger: 'et tilbud går til «Signert»',
+			trigger: 'En rad opprettes',
+			table: 'I Forespørsler',
 			steps: {
-				find: {
-					kind: 'Søk etter en rad',
-					text: 'Kunden på tilbudet',
-				},
-				ai: {
-					kind: 'Spør KI',
-					text: 'Skriv en takkemelding',
-				},
-				create: {
-					kind: 'Opprett en rad',
-					text: 'Fakturaen, i Fakturaer',
+				branch: {
+					kind: 'Betingelse',
+					text: '2 grener',
+					run: 'gren «Stort prosjekt»',
 				},
 				notify: {
 					kind: 'Varsle noen',
-					text: 'Regnskap',
+					text: 'Léa Martin',
+					run: '1 person varslet',
+				},
+				create: {
+					kind: 'Opprett en rad',
+					text: 'Et møte, i Kalender',
+					run: 'utført',
 				},
 				slack: {
 					kind: 'Send til Slack',
 					text: 'I kanalen #salg',
+					run: 'utført',
+				},
+				ai: {
+					kind: 'Spør KI',
+					text: 'Skriv et første svar',
+					run: 'svar på {n} tegn',
+				},
+				update: {
+					kind: 'Endre en rad',
+					text: 'Svar, Trinn',
+					run: 'utført',
 				},
 			},
-			answer: 'Takk for tilliten! Vi setter i gang prosjektet ditt fra mandag, og fakturaen kommer på e-post.',
-			done: 'Fullført · 5 trinn · 1,2 s',
-			copilot: {
-				prompt: 'Når et tilbud er signert, varsle regnskap og opprett fakturaen.',
-				text: 'Én setning til Copilot, og automatiseringen er bygget: du trenger bare å lese den gjennom.',
+			paths: {
+				big: 'Stort prosjekt',
+				condition: 'budget gt 5000',
+				otherwise: 'Ellers',
+			},
+			answer: 'Hei, og takk for forespørselen din! Léa, som skal følge opp din nye visuelle identitet, ringer deg i morgen tidlig.',
+			addStep: 'Legg til et trinn',
+			tabs: {
+				settings: 'Oppsett',
+				runs: 'Kjøringer',
+			},
+			runsText: 'De 50 siste, beholdt i 30 dager. Velg en for å se grenen den fulgte i flyten.',
+			running: 'Pågår',
+			succeeded: 'Vellykket',
+			started: 'rad opprettet · {when}',
+			now: 'akkurat nå',
+			earlier: ['i går kl. 18:40', 'i går kl. 11:02'],
+			done: 'Vellykket · 5 trinn · 1,3 s',
+			points: {
+				when: {
+					title: 'På rett tidspunkt',
+					text: 'En rad som opprettes eller endres, et fast klokkeslett, en knapp — og en betingelse, så det bare starter når det skal.',
+				},
+				paths: {
+					title: 'Flere grener',
+					text: 'En betingelse åpner grener, hver med sine trinn; det et trinn finner, kan det neste vise til.',
+				},
+				copilot: {
+					title: 'Beskrevet i én setning',
+					text: '«Når en forespørsel kommer inn, varsle Léa hvis budsjettet overstiger 5 000 €» : Copiloten bygger flyten, du leser den gjennom.',
+				},
 			},
 			link: {
 				href: '/fonctionnalites/automatisations/',

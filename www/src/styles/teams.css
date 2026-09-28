@@ -54,6 +54,8 @@
 	line-height: 1.02;
 	letter-spacing: -0.05em;
 	text-wrap: balance;
+	/* Japanese breaks between phrases, never inside a word. */
+	word-break: auto-phrase;
 }
 .tm-display > span {
 	display: block;
