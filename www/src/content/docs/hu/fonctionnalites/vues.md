@@ -92,9 +92,29 @@ A kanbanban, a galériában és a listában a kártyák és a sorok **kézzel re
 
 ## Űrlap és kérdőív
 
-Bejelöli a kérdéseket, és sorba rendezi őket; mindegyiknek van felirata, súgója, és
-kötelezővé tehető. Az űrlapnak van címe, bemutatkozó szövege, gombfelirata és köszönőüzenete.
-A basedb-ben tölthető ki, vagy [hivatkozással osztható meg](/basedb/hu/fonctionnalites/formulaires-partages/).
+Bejelöli a kérdéseket, és sorba rendezi őket; mindegyiknek van felirata, súgója, egy
+válaszpéldája, és kötelezővé tehető. Az űrlapnak van címe, bemutatkozó szövege, gombfelirata és
+köszönőüzenete. A basedb-ben tölthető ki, vagy [hivatkozással osztható meg](/basedb/hu/fonctionnalites/formulaires-partages/).
+
+Kezdéshez semmit nem kell beállítani: egy új űrlap azt kérdezi, amit egy személy válaszol – nem az
+állapotot, a hozzárendelt személyt vagy a kapcsolatokat, amelyeket a csapat később tölt ki, kivéve
+ha kötelezők –, a táblája színét és egy világos témát visel, és minden üres mező egy hozzáillő
+példát mutat. Minden más bármikor megváltoztatható:
+
+- **Megjelenés**: nyolc téma – Világos, Lágy, Hajnal, Óceán, Erdő, Éjszaka, Papír, Minimalista –, egy
+  kiemelőszín, egy betűtípus, bal oldali vagy középre igazított igazítás;
+- **Feltétel hozzáadása…**: egy kérdés csak akkor jelenik meg, ha egy korábbi válasz ezt
+  megkívánja („A hangulat Negatív”, „Az értékelés legfeljebb 2”). Egy elrejtett kérdés se nem
+  kötelező, se nem kerül elküldésre;
+- **További beállítások**: az üdvözlő és a beküldés gombok, a számozás, a folyamatjelző sáv, az
+  automatikus továbblépés, az üzenet és egy záró gomb („Vissza a webhelyre”), a konfetti.
+
+A **kérdőív** az egész képernyőt kitölti: egy üdvözlés, amely elmondja, mennyi ideig tart, majd
+egyszerre egy kérdés, amely becsúszva jelenik meg. Mindent billentyűzettel is el lehet végezni:
+**Enter** a továbblépéshez, az **A**, **B**, **C**… betűk egy választáshoz, **I** vagy **N** az
+igenhez vagy nemhez, a számok egy értékeléshez – egy egyszeres választás önmagában továbblép a
+következő kérdésre. A beküldést ünneplés kíséri: egy kirajzolódó pipa és az űrlap színeiben
+pattogó konfetti.
 
 ## Nézet megosztása
 

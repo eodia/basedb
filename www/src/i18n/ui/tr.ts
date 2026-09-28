@@ -646,7 +646,7 @@ export default {
 			eyebrow: 'Formlar ve anketler',
 			title: 'Sorularınızı sorun.',
 			titleAccent: 'Yanıtlar kendiliğinden düzenlenir.',
-			text: 'Tek sayfalık bir form, ya da ekran başına bir soru soran bir anket: bağlantıyı paylaşın, her yanıt tablonuzun bir satırı olsun. Yanıtlayan kişi başka hiçbir şey görmez.',
+			text: 'Tek sayfalık bir form ya da ekran başına bir soru soran bir anket, kendi renklerinizle: bağlantıyı paylaşın, her yanıt tablonuzun bir satırı olsun. Yanıtlayan kişi başka hiçbir şey görmez.',
 			modes: {
 				label: 'Soruları göster',
 				survey: 'Anket',
@@ -657,8 +657,8 @@ export default {
 				description: 'Üç soru, ardından 48 saat içinde size geri döneceğiz.',
 				count: '3 soru',
 				start: 'Başla',
-				next: 'Sonraki',
-				previous: 'Önceki',
+				ok: 'Tamam',
+				hint: 'veya Enter',
 				submit: 'Talebimi gönder',
 				org: {
 					label: 'Kuruluşunuz',
@@ -666,13 +666,13 @@ export default {
 				},
 				need: {
 					label: 'İhtiyacınız',
-					choose: 'Seç…',
 					options: ['Web sitesi', 'Görsel kimlik', 'Katalog'],
 				},
 				budget: {
 					label: 'Bütçeniz',
 					help: 'KDV hariç, yaklaşık da olsa.',
 				},
+				sent: 'Gönderildi!',
 				thanks: 'Teşekkürler! Size 48 saat içinde geri döneceğiz.',
 				poweredBy: 'basedb ile oluşturulmuş form',
 				path: 'Satış / Talepler',
@@ -699,7 +699,7 @@ export default {
 			points: {
 				survey: {
 					title: 'Ekran başına bir soru',
-					text: 'Anket bunları ilerleme çubuğuyla birer birer sorar; Enter bir sonrakine geçer.',
+					text: 'Tam ekranda, klavyeyle: devam etmek için Enter, seçmek için A, B, C — tek bir seçim kendiliğinden bir sonrakine geçer, gönderim ise kutlanır.',
 				},
 				access: {
 					title: 'Herkese açık ya da sınırlı',
@@ -1531,6 +1531,17 @@ export default {
 		title: 'basedb’de neler değişti',
 		intro: 'Her değişikliğin ayrıntısı <a href="https://github.com/eodia/basedb/commits/main">deponun geçmişinde</a>. Sırada ne var: <a href="/feuille-de-route/">yol haritası</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Doldurmak isteyeceğiniz formlar',
+				tag: 'Yeni',
+				items: [
+					'<strong>Anket ekranın tamamını kaplar</strong>: birer birer gelen, kayarak beliren sorular, seçimler için büyük kartlar, puan için yıldızlar ve her şey klavyeden — <strong>Enter</strong>, A, B, C… harfleri, E ya da H, rakamlar. Tekli bir seçim kendiliğinden bir sonrakine geçer. <a href="/fonctionnalites/vues/#form-ve-anket">Form ve anket</a>',
+					'<strong>Kendine ait bir görünüş</strong>: Açık’tan Gece’ye, Kağıt üzerinden geçen sekiz tema, bir renk, bir yazı tipi, bir hizalama — paylaşılan bir bağlantının sayfası da bunu taşır.',
+					'<strong>Koşullu sor…</strong>: bir soru, yalnızca önceki bir yanıt bunu gerektiriyorsa sorulur; gizli bir soru ne zorunludur ne de kaydedilir.',
+					'<strong>Başlamak için hiçbir şey ayarlamaya gerek yok</strong>: yeni bir form, bir kişinin ne yanıtladığını sorar, ekibin daha sonra doldurduğu durumu değil; tablosunun rengini taşır ve her alanda bir örnek gösterir. Gönderim de kutlanır, konfetiler dahil.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Fransızca ya da İngilizce formüller',

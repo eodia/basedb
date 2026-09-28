@@ -91,8 +91,28 @@ I kanban, galleri og liste kan kort og rækker **sorteres manuelt** ved at træk
 ## Formular og spørgeskema
 
 Du markerer spørgsmålene og sætter dem i rækkefølge; hvert spørgsmål har en overskrift, en
-hjælpetekst og kan gøres påkrævet. Formularen har sin titel, sin introduktion, teksten på sin
-knap og sin takkebesked. Den udfyldes i basedb eller [deles via et link](/basedb/da/fonctionnalites/formulaires-partages/).
+hjælpetekst, et eksempelsvar og kan gøres påkrævet. Formularen har sin titel, sin
+introduktion, teksten på sin knap og sin takkebesked. Den udfyldes i basedb eller
+[deles via et link](/basedb/da/fonctionnalites/formulaires-partages/).
+
+Der er intet at indstille for at komme i gang: en ny formular spørger om det, en person
+svarer — ikke status, den tildelte person eller relationerne, som teamet udfylder senere,
+medmindre de er påkrævede —, bærer farven fra sin tabel og et lyst tema, og hvert tomt felt
+viser et passende eksempel. Alt andet ændrer du, når du vil:
+
+- **Udseende**: otte temaer — Lyst, Blid, Daggry, Hav, Skov, Nat, Papir, Minimal —,
+  en accentfarve, en skrifttype, en justering til venstre eller centreret;
+- **Spørg kun hvis…**: et spørgsmål stilles kun, hvis et tidligere svar kræver det (»Sentiment
+  er Negativ«, »Bedømmelse er højst 2«). Et skjult spørgsmål er hverken påkrævet eller sendt;
+- **Flere indstillinger**: knapperne til velkomst og afsendelse, nummereringen,
+  fremdriftslinjen, det automatiske skift til næste, beskeden og en slutknap (»Tilbage til
+  sitet«), konfetti.
+
+**Spørgeskemaet** fylder hele skærmen: en velkomst, der siger, hvor lang tid det tager,
+derefter ét spørgsmål ad gangen, som glider ind. Alt kan også gøres med tastaturet: **Enter**
+for at fortsætte, bogstaverne **A**, **B**, **C**… for et valg, **J** eller **N** for ja eller
+nej, tallene for en bedømmelse — et enkelt valg går alene videre til næste spørgsmål.
+Afsendelsen fejres: et flueben, der tegner sig, og konfetti i formularens farver.
 
 ## Del en visning
 

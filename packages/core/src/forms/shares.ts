@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
+import { type FormCondition, isEmptyAnswer, visibleQuestions } from '@basedb/contracts'
 import { writeAudit } from '../audit/journal.js'
 import { seal, unseal } from '../auth/sealing.js'
 import { BasedbError } from '../errors/index.js'
@@ -75,6 +76,31 @@ export interface SharedQuestion {
     readonly icon: string | null
     readonly image: string | null
   }> | null
+  /** An example of an answer, shown in the empty input. */
+  readonly placeholder: string | null
+  /** Asked only when an earlier answer says so. */
+  readonly showIf: FormCondition | null
+  /** How a number or a text reads: a rating in stars, an amount, a phone number. */
+  readonly format: {
+    readonly display: string
+    readonly ratingMax: number | null
+    readonly currency: string | null
+  } | null
+}
+
+/** How a shared form looks and moves: what its author chose, or the defaults. */
+export interface SharedFormDesign {
+  readonly theme: string
+  /** `#rrggbb`: the form's own, else its table's; `null` for neither. */
+  readonly accent: string | null
+  readonly font: string
+  readonly align: string
+  readonly welcomeLabel: string
+  readonly showProgress: boolean
+  readonly showNumbers: boolean
+  readonly autoAdvance: boolean
+  readonly celebrate: boolean
+  readonly endLink: { readonly label: string; readonly url: string } | null
 }
 
 /** A shared form as the person answering it sees it — nothing of the table beyond it. */
@@ -89,6 +115,7 @@ export interface SharedForm {
   /** Who answers, when signed in: « Vous répondez en tant que … ». */
   readonly respondent: string | null
   readonly questions: readonly SharedQuestion[]
+  readonly design: SharedFormDesign
 }
 
 /** What a shared link asks. A relation would read another table; a file, deposit one. */
@@ -146,6 +173,7 @@ interface ShareRow extends Record<string, unknown> {
   readonly group_ids: string[]
   readonly can_embed: boolean
   readonly view_description: string | null
+  readonly table_color: string | null
 }
 
 const SHARE_SELECT = `
@@ -154,7 +182,7 @@ const SHARE_SELECT = `
          s.last_response_at, s.published_by, u.display_name AS publisher_name,
          (u.disabled_at IS NULL AND u.deleted_at IS NULL) AS publisher_live,
          v.kind AS view_kind, v.label AS view_label, v.spec AS view_spec,
-         v.description AS view_description, s.can_embed,
+         v.description AS view_description, s.can_embed, t.color AS table_color,
          v.deleted_at IS NULL AS view_live, (t.is_live AND t.deleted_at IS NULL) AS table_live,
          coalesce((SELECT array_agg(r.role_id::text ORDER BY r.role_id)
                      FROM _basedb.form_share_role r WHERE r.share_id = s.id), '{}') AS group_ids
@@ -185,6 +213,10 @@ interface FieldLine extends Record<string, unknown> {
   readonly description: string | null
   readonly kind: string
   readonly is_required: boolean
+  /** A number's or a short text's reading — `rating`, `currency`, `phone`… */
+  readonly display_format: string | null
+  readonly rating_max: number | null
+  readonly currency_code: string | null
 }
 
 /**
@@ -200,9 +232,13 @@ async function questionsOf(
   readonly omitted: FormSharing['omitted']
 }> {
   const fields = await exec.query<FieldLine>(
-    `SELECT f.id::text, n.name, f.label, f.description, f.kind, f.is_required
+    `SELECT f.id::text, n.name, f.label, f.description, f.kind, f.is_required,
+            coalesce(nc.display_format, tc.display_format) AS display_format,
+            nc.rating_max, nc.currency_code
        FROM _basedb.field f
        JOIN _basedb.physical_name n ON n.id = f.name_id
+       LEFT JOIN _basedb.field_number_config nc ON nc.field_id = f.id
+       LEFT JOIN _basedb.field_text_config tc ON tc.field_id = f.id
       WHERE f.table_id = $1 AND f.is_live AND f.deleted_at IS NULL`,
     [row.table_id],
   )
@@ -253,6 +289,21 @@ async function questionsOf(
       help,
       kind: field.kind,
       required: entry.required === true || field.is_required,
+      placeholder:
+        typeof entry.placeholder === 'string' && entry.placeholder.trim() !== ''
+          ? entry.placeholder
+          : null,
+      showIf: conditionOf(entry.show_if),
+      format:
+        field.display_format === null ||
+        field.display_format === 'plain' ||
+        field.display_format === 'decimal'
+          ? null
+          : {
+              display: field.display_format,
+              ratingMax: field.rating_max,
+              currency: field.currency_code,
+            },
       options:
         field.kind === 'select' || field.kind === 'multi_select'
           ? options
@@ -268,6 +319,41 @@ async function questionsOf(
     })
   }
   return { questions, omitted }
+}
+
+/** A condition as the spec keeps it — the kernel validated it when the view was saved. */
+function conditionOf(raw: unknown): FormCondition | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const { field, op, value } = raw as Record<string, unknown>
+  if (typeof field !== 'string' || typeof op !== 'string') return null
+  return {
+    field,
+    op: op as FormCondition['op'],
+    value:
+      typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+        ? value
+        : null,
+  }
+}
+
+/** The look of a shared form: its spec's choices, the defaults for what it leaves out. */
+function designOf(spec: Readonly<Record<string, unknown>>, tableColor: string | null) {
+  const text = (key: string) => (typeof spec[key] === 'string' ? (spec[key] as string) : '')
+  const flag = (key: string) => spec[key] !== false
+  const accent = text('accent')
+  const endUrl = text('end_link_url')
+  return {
+    theme: text('theme') === '' ? 'clair' : text('theme'),
+    accent: accent !== '' ? accent : tableColor,
+    font: text('font') === '' ? 'auto' : text('font'),
+    align: text('align') === '' ? 'left' : text('align'),
+    welcomeLabel: text('welcome_label'),
+    showProgress: flag('show_progress'),
+    showNumbers: flag('show_numbers'),
+    autoAdvance: flag('auto_advance'),
+    celebrate: flag('celebrate'),
+    endLink: endUrl === '' ? null : { label: text('end_link_label'), url: endUrl },
+  } satisfies SharedFormDesign
 }
 
 /** A form or a survey is answered; every other view is read (chapter 15 §10). */
@@ -784,6 +870,7 @@ export async function openSharedForm(
       access: row.access,
       respondent: respondentName,
       questions,
+      design: designOf(spec, row.table_color),
     }
   })
 }
@@ -832,12 +919,22 @@ export async function submitSharedForm(
       details: { field: unknown, reason: 'question_inconnue' },
     })
   }
-  const lacking = questions.find((q) => q.required && isEmpty(request.values[q.name]))
+  // What the person saw: a question an earlier answer hid is neither required nor written,
+  // whatever was typed into it before it was hidden.
+  const shown = new Set(
+    visibleQuestions(
+      questions.map((q) => ({ field: q.name, show_if: q.showIf })),
+      request.values,
+    ).map((q) => q.field),
+  )
+  const lacking = questions.find(
+    (q) => shown.has(q.name) && q.required && isEmptyAnswer(request.values[q.name]),
+  )
   if (lacking !== undefined) {
     throw new BasedbError('REQUIRED_VALUE_MISSING', { details: { field: lacking.name } })
   }
   const values = Object.fromEntries(
-    Object.entries(request.values).filter(([, value]) => !isEmpty(value)),
+    Object.entries(request.values).filter(([name, value]) => shown.has(name) && !isEmpty(value)),
   )
   if (Object.keys(values).length === 0) {
     throw new BasedbError('REQUIRED_VALUE_MISSING', { details: { reason: 'reponse_vide' } })

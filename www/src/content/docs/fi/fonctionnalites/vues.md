@@ -92,9 +92,28 @@ enintään 5 000; valittu lajittelu ohittaa tämän järjestyksen.
 
 ## Lomake ja kyselylomake
 
-Kysymykset valitaan ja järjestetään; kullakin on otsikko ja ohje, ja sen voi merkitä
-pakolliseksi. Lomakkeella on otsikko, esittely, painikkeen teksti ja kiitosviesti. Sen voi
+Kysymykset valitaan ja järjestetään; kullakin on otsikko, ohje ja esimerkkivastaus, ja sen voi
+merkitä pakolliseksi. Lomakkeella on otsikko, esittely, painikkeen teksti ja kiitosviesti. Sen voi
 täyttää basedb:ssä tai [jakaa linkillä](/basedb/fi/fonctionnalites/formulaires-partages/).
+
+Mitään ei tarvitse säätää aluksi: uusi lomake kysyy sitä, mitä henkilö vastaa – ei tilaa,
+vastuuhenkilöä eikä suhteita, jotka tiimi täyttää myöhemmin, elleivät ne ole pakollisia –, kantaa
+taulukkonsa väriä ja vaaleaa teemaa, ja jokainen tyhjä kenttä näyttää sopivan esimerkin. Kaiken
+muun voi muuttaa milloin haluaa:
+
+- **Ulkoasu**: kahdeksan teemaa – Vaalea, Pehmeä, Aamurusko, Meri, Metsä, Yö, Paperi, Minimalistinen
+  –, korostusväri, kirjasin, vasen tai keskitetty tasaus;
+- **Kysy vain, jos…**: kysymys esitetään vain, jos aiempi vastaus sitä edellyttää (”Tunnelma on
+  Negatiivinen”, ”Arvosana on enintään 2”). Piilotettu kysymys ei ole pakollinen eikä sitä
+  lähetetä;
+- **Lisää asetuksia**: aloitus- ja lähetyspainikkeet, numerot, edistymispalkki, automaattinen
+  siirtyminen seuraavaan, viesti ja lopetuspainike (”Takaisin sivustolle”), konfetti.
+
+**Kyselylomake** täyttää koko näytön: aluksi näkyy, kuinka kauan siihen menee, sitten yksi kysymys
+kerrallaan, joka liukuu näkyviin. Kaiken voi tehdä myös näppäimistöllä: **Enter** jatkaa, kirjaimet
+**A**, **B**, **C**… valitsevat vaihtoehdon, **K** tai **E** vastaa kyllä tai ei, numerot antavat
+arvosanan – yksi valinta siirtää suoraan seuraavaan kysymykseen. Lähettäminen juhlistetaan:
+piirtyvä valintamerkki ja lomakkeen väreissä oleva konfetti.
 
 ## Näkymän jakaminen
 

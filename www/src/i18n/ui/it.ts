@@ -642,7 +642,7 @@ export default {
 			eyebrow: 'Moduli e questionari',
 			title: 'Fai le tue domande.',
 			titleAccent: 'Le risposte si ordinano da sole.',
-			text: 'Un modulo su una sola pagina, o un questionario che pone una domanda per schermata: condividi il link, e ogni risposta diventa una riga della tua tabella. Chi risponde non vede nient’altro.',
+			text: 'Un modulo su una sola pagina, o un questionario che pone una domanda per schermata, con i tuoi colori: condividi il link, e ogni risposta diventa una riga della tua tabella. Chi risponde non vede nient’altro.',
 			modes: {
 				label: 'Mostra le domande',
 				survey: 'Questionario',
@@ -653,8 +653,8 @@ export default {
 				description: 'Tre domande, e ti rispondiamo entro 48 ore.',
 				count: '3 domande',
 				start: 'Inizia',
-				next: 'Avanti',
-				previous: 'Precedente',
+				ok: 'OK',
+				hint: 'o Invio',
 				submit: 'Invia la mia richiesta',
 				org: {
 					label: 'La tua organizzazione',
@@ -662,13 +662,13 @@ export default {
 				},
 				need: {
 					label: 'La tua esigenza',
-					choose: 'Scegli…',
 					options: ['Sito web', 'Identità visiva', 'Catalogo'],
 				},
 				budget: {
 					label: 'Il tuo budget',
 					help: 'IVA esclusa, anche solo approssimativo.',
 				},
+				sent: 'Inviato!',
 				thanks: 'Grazie! Ti rispondiamo entro 48 ore.',
 				poweredBy: 'Modulo realizzato con basedb',
 				path: 'Vendite / Richieste',
@@ -695,7 +695,7 @@ export default {
 			points: {
 				survey: {
 					title: 'Una domanda per schermata',
-					text: 'Il questionario le pone una alla volta, con la sua barra di avanzamento; Invio passa alla successiva.',
+					text: 'A schermo intero, da tastiera: Invio per continuare, A, B, C per scegliere — una scelta unica fa passare da sola alla successiva, e l’invio si festeggia.',
 				},
 				access: {
 					title: 'Pubblico o riservato',
@@ -1536,6 +1536,17 @@ export default {
 		title: 'Cosa è cambiato in basedb',
 		intro: 'Il dettaglio di ogni modifica è nella <a href="https://github.com/eodia/basedb/commits/main">cronologia del repository</a>. Cosa arriverà dopo: la <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Moduli che viene voglia di compilare',
+				tag: 'Novità',
+				items: [
+					'<strong>Il questionario occupa tutto lo schermo</strong>: una domanda alla volta, che arriva scorrendo, grandi schede per le scelte, stelle per una valutazione, e tutto da tastiera — <strong>Invio</strong>, le lettere A, B, C…, S o N, le cifre. Una scelta unica fa passare da sola alla successiva. <a href="/fonctionnalites/vues/#modulo-e-questionario">Modulo e questionario</a>',
+					'<strong>Un aspetto tutto suo</strong>: otto temi, da Chiaro a Notte passando per Carta, un colore, un carattere, un allineamento — anche la pagina di un link condiviso lo indossa.',
+					'<strong>Chiedi solo se…</strong>: una domanda viene posta solo se una risposta precedente lo richiede; una domanda nascosta non è né obbligatoria né salvata.',
+					'<strong>Niente da impostare per iniziare</strong>: un modulo nuovo chiede quello che risponde una persona, non lo stato che il team compila in seguito, porta il colore della sua tabella e mostra un esempio in ogni campo. E l’invio si festeggia, coriandoli compresi.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Formule in francese o in inglese',

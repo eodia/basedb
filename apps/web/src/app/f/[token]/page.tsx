@@ -1,6 +1,6 @@
 'use client'
 
-import { FormFill } from '@/components/app/views/form-view'
+import { FormFill } from '@/components/app/forms/form-fill'
 import { Login } from '@/components/login'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ApiError, type Field, type SharedForm, api } from '@/lib/api/client'
@@ -78,6 +78,7 @@ function refusal(error: unknown): Page {
 
 /** The shared form's questions, as the fields and the spec the form screen reads. */
 function screenOf(form: SharedForm): { fields: Field[]; spec: FormSpec } {
+  const design = form.design
   return {
     fields: form.questions.map((q) => ({
       name: q.name,
@@ -86,6 +87,16 @@ function screenOf(form: SharedForm): { fields: Field[]; spec: FormSpec } {
       kind: q.kind,
       required: q.required,
       ...(q.options === null ? {} : { options: q.options }),
+      // A rating reads in stars, an amount with its currency, a phone number as one.
+      ...(q.format === null
+        ? {}
+        : {
+            format: {
+              display: q.format.display,
+              rating_max: q.format.rating_max,
+              currency: q.format.currency,
+            },
+          }),
     })),
     spec: {
       title: form.title,
@@ -95,10 +106,24 @@ function screenOf(form: SharedForm): { fields: Field[]; spec: FormSpec } {
         required: q.required,
         label: q.label,
         help: q.help ?? '',
+        placeholder: q.placeholder ?? '',
+        show_if: q.show_if,
       })),
       submit_label: form.submit_label,
       success_message: form.success_message,
       allow_another: form.allow_another,
+      theme: design.theme,
+      // The server already chose between the form's accent and its table's.
+      accent: design.accent ?? '',
+      font: design.font,
+      align: design.align,
+      welcome_label: design.welcome_label,
+      show_progress: design.show_progress,
+      show_numbers: design.show_numbers,
+      auto_advance: design.auto_advance,
+      celebrate: design.celebrate,
+      end_link_label: design.end_link?.label ?? '',
+      end_link_url: design.end_link?.url ?? '',
     },
   }
 }
@@ -176,6 +201,7 @@ export default function SharedFormPage() {
             linkOptions={{}}
             onSearchLink={noSearch}
             respondent={page.form.respondent}
+            footer={$t('Formulaire propulsé par basedb')}
             submit={async (values) => {
               try {
                 await api.submitSharedForm(token, values)
@@ -187,9 +213,11 @@ export default function SharedFormPage() {
             }}
           />
         )}
-        <footer className="shrink-0 py-3 text-center text-xs text-muted-foreground">
-          {$t('Formulaire propulsé par basedb')}
-        </footer>
+        {page.kind !== 'ready' && (
+          <footer className="shrink-0 py-3 text-center text-xs text-muted-foreground">
+            {$t('Formulaire propulsé par basedb')}
+          </footer>
+        )}
       </div>
     </TooltipProvider>
   )

@@ -18,6 +18,8 @@ wordt er niets van de tabel getoond. Om rijen te tonen in plaats van ze te ontva
 | **Ingelogde leden** | een lid van de werkruimte — desgewenst van bepaalde groepen | het inloggen, daarna het formulier en “Je antwoordt als …” |
 
 De pagina van de link staat buiten de applicatie: geen zijbalk, geen databasenaam, geen andere rijen.
+Ze draagt het uiterlijk van het formulier — zijn thema, zijn kleur, zijn lettertype —, en stelt
+alleen de vragen die eerdere antwoorden oproepen.
 
 ![Een openbaar formulier](../../../../assets/screens/formulaire-public.png)
 

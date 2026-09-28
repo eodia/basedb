@@ -114,13 +114,24 @@ describe('a new view', () => {
     })
   })
 
-  it('asks every writable field in a form, the required ones required', () => {
+  it('asks what a person answers — not the status the team sets after —, the required ones required', () => {
     const spec = defaultSpec('form', TABLE, { filter: '', sorts: [] })
+    const blank = { label: '', help: '', placeholder: '', show_if: null }
     expect(spec.fields).toEqual([
-      { field: 'nom', required: true, label: '', help: '' },
-      { field: 'statut', required: false, label: '', help: '' },
-      { field: 'debut', required: false, label: '', help: '' },
+      { field: 'nom', required: true, ...blank },
+      { field: 'debut', required: false, ...blank },
     ])
+    // Nothing else to decide: the table's colour, a light theme, confetti at the end.
+    expect(spec).toMatchObject({ theme: 'clair', accent: '', auto_advance: true, celebrate: true })
+  })
+
+  it('keeps a required status: a form that leaves it out could never be sent', () => {
+    const required = {
+      ...TABLE,
+      fields: TABLE.fields.map((f) => (f.name === 'statut' ? { ...f, required: true } : f)),
+    }
+    const spec = defaultSpec('survey', required, { filter: '', sorts: [] })
+    expect((spec.fields as Array<{ field: string }>).map((q) => q.field)).toContain('statut')
   })
 
   it('says why a kind cannot be made', () => {

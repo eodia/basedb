@@ -955,20 +955,18 @@ function BaseNode({
                   className={cn('size-3.5 transition-transform', expanded && 'rotate-90')}
                 />
               </button>
-              <Hint label={base.name}>
-                <button
-                  type="button"
-                  onClick={onSelect}
-                  className="flex h-8 min-w-0 flex-1 items-center gap-2 pr-1 text-left"
-                >
-                  <LookIcon
-                    look={base}
-                    fallback={Database}
-                    className={current ? 'text-foreground' : 'text-muted-foreground'}
-                  />
-                  <span className="truncate">{base.label}</span>
-                </button>
-              </Hint>
+              <button
+                type="button"
+                onClick={onSelect}
+                className="flex h-8 min-w-0 flex-1 items-center gap-2 pr-1 text-left"
+              >
+                <LookIcon
+                  look={base}
+                  fallback={Database}
+                  className={current ? 'text-foreground' : 'text-muted-foreground'}
+                />
+                <span className="truncate">{base.label}</span>
+              </button>
               {/* The environment one works in, and where one changes it (chapter 14). */}
               {family.length > 1 && (
                 <DropdownMenu>
@@ -1091,11 +1089,6 @@ function BaseNode({
               icon={Table2}
               look={v}
               label={v.label}
-              hint={
-                v.broken
-                  ? $t('{name} — vue SQL à corriger', { name: v.name })
-                  : $t('{name} — vue SQL', { name: v.name })
-              }
               mark={
                 v.broken ? (
                   <TriangleAlert className="size-3 text-amber-600" aria-label={$t('à corriger')} />
@@ -1123,13 +1116,6 @@ function BaseNode({
                     key={q.id}
                     icon={FileCode2}
                     label={q.label}
-                    hint={
-                      q.audience === 'personal'
-                        ? $t('Requête personnelle')
-                        : q.audience === 'base'
-                          ? $t('Requête partagée avec toute la base')
-                          : $t('Requête partagée avec des groupes')
-                    }
                     mark={<Audience className="size-3" aria-hidden />}
                     kind={$t('la requête')}
                     active={activeSaved === q.id}
@@ -1302,7 +1288,6 @@ function TableRow({
             icon={Table2}
             look={table}
             label={table.label}
-            hint={table.name}
             active={active}
             onClick={() => onIntent('open')}
           />
@@ -1385,7 +1370,6 @@ function SavedRow({
   icon,
   look,
   label,
-  hint,
   mark,
   kind,
   active,
@@ -1397,7 +1381,6 @@ function SavedRow({
   readonly icon: LucideIcon
   readonly look?: OptionLook
   readonly label: string
-  readonly hint: string
   readonly mark: ReactNode
   /** « la vue », « la requête » — for a screen reader, in the menu's name. */
   readonly kind: string
@@ -1439,7 +1422,6 @@ function SavedRow({
             icon={icon}
             look={look}
             label={label}
-            hint={hint}
             active={active}
             onClick={() => onIntent('open')}
             trailing={
@@ -1473,7 +1455,6 @@ function Item({
   icon: Icon,
   look,
   label,
-  hint,
   active = false,
   disabled = false,
   onClick,
@@ -1483,7 +1464,6 @@ function Item({
   /** A look of its own — a table's —, worn instead of the plain glyph. */
   readonly look?: OptionLook
   readonly label: string
-  readonly hint?: string
   readonly active?: boolean
   readonly disabled?: boolean
   readonly onClick?: () => void
@@ -1515,7 +1495,9 @@ function Item({
     </button>
   )
 
-  if (!compact) return <Hint label={hint}>{button}</Hint>
+  // No tooltip on a row of the tree: its label is on screen, and one would follow the
+  // pointer down the whole list.
+  if (!compact) return button
 
   // The tooltip hangs on a wrapper: a disabled button raises no pointer events, and the icon
   // of a section that is not there yet would otherwise never say what it is.

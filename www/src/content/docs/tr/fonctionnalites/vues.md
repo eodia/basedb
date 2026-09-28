@@ -91,10 +91,28 @@ seçilen bir sıralama bu düzenin önüne geçer.
 
 ## Form ve anket
 
-Soruları işaretler ve sıralarsınız; her sorunun bir başlığı, bir yardım metni vardır ve soru
-zorunlu yapılabilir. Formun bir başlığı, bir tanıtım metni, bir düğme etiketi ve bir teşekkür
-mesajı vardır. Form basedb içinde doldurulur ya da
+Soruları işaretler ve sıralarsınız; her sorunun bir başlığı, bir yardım metni, bir örnek yanıtı
+vardır ve soru zorunlu yapılabilir. Formun bir başlığı, bir tanıtım metni, bir düğme etiketi ve bir
+teşekkür mesajı vardır. Form basedb içinde doldurulur ya da
 [bir bağlantıyla paylaşılır](/basedb/tr/fonctionnalites/formulaires-partages/).
+
+Başlamak için hiçbir şeyi ayarlamaya gerek yoktur: yeni bir form, bir kişinin ne yanıtladığını
+sorar — ekibin daha sonra doldurduğu durumu, atanan kişiyi ya da ilişkileri değil, zorunlu
+olmadıkça —, tablosunun rengini ve açık bir temayı taşır ve her boş alan uygun bir örnek gösterir.
+Geri kalan her şey istediğiniz zaman değiştirilir:
+
+- **Görünüş**: sekiz tema — Açık, Yumuşak, Şafak, Okyanus, Orman, Gece, Kağıt, Minimal —, bir
+  vurgu rengi, bir yazı tipi, sola ya da ortaya hizalama;
+- **Koşullu sor…**: bir soru, yalnızca önceki bir yanıt bunu gerektiriyorsa sorulur
+  (“Duygu Negatif”, “Puan en fazla 2”). Gizli bir soru ne zorunludur ne de gönderilir;
+- **Daha fazla seçenek**: karşılama ve gönderme düğmeleri, numaralar, ilerleme çubuğu, bir sonrakine
+  otomatik geçiş, mesaj ve bir bitiş düğmesi (“Siteye dön”), konfetiler.
+
+**Anket**, ekranın tamamını kaplar: ne kadar süreceğini söyleyen bir karşılama, ardından kayarak
+gelen, birer birer sorular. Her şey klavyeyle de yapılabilir: devam etmek için **Enter**, bir seçim
+için **A**, **B**, **C**… harfleri, evet ya da hayır için **E** ya da **H**, bir puan için
+rakamlar — tekli bir seçim kendiliğinden bir sonraki soruya geçer. Gönderim kutlanır: çizilen bir
+onay işareti ve formun renklerinde konfetiler.
 
 ## Bir görünümü paylaşma
 

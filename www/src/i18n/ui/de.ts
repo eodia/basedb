@@ -642,7 +642,7 @@ export default {
 			eyebrow: 'Formulare und Umfragen',
 			title: 'Stellen Sie Ihre Fragen.',
 			titleAccent: 'Die Antworten sortieren sich von selbst.',
-			text: 'Ein einseitiges Formular, oder eine Umfrage, die eine Frage pro Bildschirm stellt: Teilen Sie den Link, und jede Antwort wird zu einer Zeile in Ihrer Tabelle. Wer antwortet, sieht sonst nichts.',
+			text: 'Ein einseitiges Formular, oder eine Umfrage, die eine Frage pro Bildschirm stellt, in Ihren Farben: Teilen Sie den Link, und jede Antwort wird zu einer Zeile in Ihrer Tabelle. Wer antwortet, sieht sonst nichts.',
 			modes: {
 				label: 'Fragen anzeigen',
 				survey: 'Umfrage',
@@ -653,8 +653,8 @@ export default {
 				description: 'Drei Fragen, und wir melden uns innerhalb von 48 Stunden bei Ihnen.',
 				count: '3 Fragen',
 				start: 'Beginnen',
-				next: 'Weiter',
-				previous: 'Zurück',
+				ok: 'OK',
+				hint: 'oder Eingabetaste',
 				submit: 'Meine Anfrage senden',
 				org: {
 					label: 'Ihre Organisation',
@@ -662,13 +662,13 @@ export default {
 				},
 				need: {
 					label: 'Ihr Bedarf',
-					choose: 'Auswählen…',
 					options: ['Website', 'Visuelle Identität', 'Katalog'],
 				},
 				budget: {
 					label: 'Ihr Budget',
 					help: 'Netto, auch ungefähr.',
 				},
+				sent: 'Gesendet!',
 				thanks: 'Danke! Wir melden uns innerhalb von 48 Stunden bei Ihnen.',
 				poweredBy: 'Formular bereitgestellt von basedb',
 				path: 'Vertrieb / Anfragen',
@@ -695,7 +695,7 @@ export default {
 			points: {
 				survey: {
 					title: 'Eine Frage pro Bildschirm',
-					text: 'Die Umfrage stellt sie eine nach der anderen, mit Fortschrittsanzeige; die Eingabetaste führt zur nächsten.',
+					text: 'Im Vollbild, per Tastatur: Eingabetaste für weiter, A, B, C zum Auswählen — eine Einfachauswahl geht allein zur nächsten Frage über, und das Absenden wird gefeiert.',
 				},
 				access: {
 					title: 'Öffentlich oder eingeschränkt',
@@ -1527,6 +1527,17 @@ export default {
 		title: 'Was sich in basedb geändert hat',
 		intro: 'Jede einzelne Änderung steht im <a href="https://github.com/eodia/basedb/commits/main">Verlauf des Repositorys</a>. Was als Nächstes kommt: die <a href="/feuille-de-route/">Roadmap</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Formulare, die man gerne ausfüllt',
+				tag: 'Neu',
+				items: [
+					'<strong>Die Umfrage füllt den ganzen Bildschirm</strong>: eine Frage nach der anderen, die gleitend erscheint, große Karten für Auswahlmöglichkeiten, Sterne für eine Bewertung, und alles über die Tastatur — <strong>Eingabetaste</strong>, die Buchstaben A, B, C…, J oder N, Ziffern. Eine Einfachauswahl geht allein zur nächsten Frage über. <a href="/fonctionnalites/vues/#formular-und-umfrage">Formular und Umfrage</a>',
+					'<strong>Eine eigene Darstellung</strong>: acht Themen, von Hell bis Nacht über Papier, eine Farbe, eine Schriftart, eine Ausrichtung — die Seite eines freigegebenen Links trägt sie auch.',
+					'<strong>Nur fragen, wenn…</strong>: Eine Frage wird nur gestellt, wenn eine vorherige Antwort es verlangt; eine verborgene Frage ist weder erforderlich, noch wird sie gespeichert.',
+					'<strong>Nichts einzustellen, um zu beginnen</strong>: Ein neues Formular fragt, was eine Person antwortet, nicht den Status, den das Team danach ausfüllt, trägt die Farbe seiner Tabelle und zeigt in jedem Feld ein Beispiel. Und das Absenden wird gefeiert, Konfetti inklusive.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Formeln auf Französisch oder Englisch',

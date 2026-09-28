@@ -642,7 +642,7 @@ export default {
 			eyebrow: 'Formulare și chestionare',
 			title: 'Puneți-vă întrebările.',
 			titleAccent: 'Răspunsurile se ordonează singure.',
-			text: 'Un formular pe o singură pagină, sau un chestionar care pune o întrebare pe ecran: distribuiți linkul, iar fiecare răspuns devine un rând din tabelul dumneavoastră. Cine răspunde nu vede nimic altceva.',
+			text: 'Un formular pe o singură pagină, sau un chestionar care pune o întrebare pe ecran, în culorile dumneavoastră: distribuiți linkul, iar fiecare răspuns devine un rând din tabelul dumneavoastră. Cine răspunde nu vede nimic altceva.',
 			modes: {
 				label: 'Afișați întrebările',
 				survey: 'Chestionar',
@@ -653,8 +653,8 @@ export default {
 				description: 'Trei întrebări, iar noi vă răspundem în 48 de ore.',
 				count: '3 întrebări',
 				start: 'Începeți',
-				next: 'Următor',
-				previous: 'Anterior',
+				ok: 'OK',
+				hint: 'sau Enter',
 				submit: 'Trimiteți cererea',
 				org: {
 					label: 'Organizația dumneavoastră',
@@ -662,13 +662,13 @@ export default {
 				},
 				need: {
 					label: 'Necesitatea dumneavoastră',
-					choose: 'Alegeți…',
 					options: ['Site web', 'Identitate vizuală', 'Catalog'],
 				},
 				budget: {
 					label: 'Bugetul dumneavoastră',
 					help: 'Fără TVA, chiar dacă este aproximativ.',
 				},
+				sent: 'S-a trimis!',
 				thanks: 'Mulțumim! Vă răspundem în 48 de ore.',
 				poweredBy: 'Formular realizat cu basedb',
 				path: 'Vânzări / Cereri',
@@ -696,7 +696,7 @@ export default {
 			points: {
 				survey: {
 					title: 'O întrebare pe ecran',
-					text: 'Chestionarul le pune pe rând, cu bara sa de progres; Enter trece la următoarea.',
+					text: 'Pe tot ecranul, de la tastatură: Enter pentru a continua, A, B, C pentru a alege — o alegere unică trece automat mai departe, iar trimiterea se sărbătorește.',
 				},
 				access: {
 					title: 'Public sau rezervat',
@@ -1528,6 +1528,17 @@ export default {
 		title: 'Ce s-a schimbat în basedb',
 		intro: 'Detaliile fiecărei schimbări se află în <a href="https://github.com/eodia/basedb/commits/main">istoricul depozitului</a>. Ce urmează: <a href="/feuille-de-route/">foaia de parcurs</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Formulare pe care ai chef să le completezi',
+				tag: 'Nou',
+				items: [
+					'<strong>Chestionarul ocupă tot ecranul</strong>: câte o întrebare pe rând, care apare alunecând, carduri mari pentru alegeri, stele pentru o notă, și totul de la tastatură — <strong>Enter</strong>, literele A, B, C…, D sau N, cifrele. O alegere unică trece singură la următoarea. <a href="/fonctionnalites/vues/#formular-și-chestionar">Formular și chestionar</a>',
+					'<strong>O înfățișare a ta</strong>: opt teme, de la Luminoasă la Noapte, trecând prin Hârtie, o culoare, un font, o aliniere — o poartă și pagina unui link partajat.',
+					'<strong>Întrebați doar dacă…</strong>: o întrebare se pune doar dacă un răspuns anterior o cere; o întrebare ascunsă nu este nici obligatorie, nici înregistrată.',
+					'<strong>Nimic de reglat pentru a începe</strong>: un formular nou întreabă ce răspunde o persoană, nu starea pe care o completează echipa ulterior, poartă culoarea tabelului său și arată un exemplu în fiecare câmp. Iar trimiterea se sărbătorește, confetti inclus.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Formule în franceză sau în engleză',

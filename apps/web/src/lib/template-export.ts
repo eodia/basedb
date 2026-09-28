@@ -358,9 +358,31 @@ export async function exportTemplate(
           )
         } else if (k === 'fields' && kind === 'form') {
           spec.fields = (
-            value as Array<{ field: string; required: boolean; label: string; help: string }>
+            value as Array<{
+              field: string
+              required: boolean
+              label: string
+              help: string
+              placeholder?: string
+              show_if?: { field: string; op: string; value: unknown } | null
+            }>
           ).flatMap((q) => {
             const found = label(q.field)
+            // A condition travels by labels: its question's, and the choice it compares with.
+            const read =
+              q.show_if == null ? undefined : table.fields.find((f) => f.name === q.show_if?.field)
+            const showIf =
+              q.show_if == null || read === undefined
+                ? null
+                : {
+                    field: read.label,
+                    op: q.show_if.op,
+                    value:
+                      typeof q.show_if.value === 'string'
+                        ? (read.options?.find((o) => o.value === q.show_if?.value)?.label ??
+                          q.show_if.value)
+                        : q.show_if.value,
+                  }
             return found === undefined
               ? []
               : [
@@ -369,6 +391,8 @@ export async function exportTemplate(
                     required: q.required,
                     ...(q.label ? { label: q.label } : {}),
                     ...(q.help ? { help: q.help } : {}),
+                    ...(q.placeholder ? { placeholder: q.placeholder } : {}),
+                    ...(showIf === null ? {} : { show_if: showIf }),
                   },
                 ]
           })

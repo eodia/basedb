@@ -91,9 +91,30 @@ arrastrándolas, hasta 5000; una ordenación elegida prevalece sobre ese orden.
 
 ## Formulario y encuesta
 
-Se marcan las preguntas y se ordenan; cada una tiene un enunciado, una ayuda y puede hacerse
-obligatoria. El formulario tiene su título, su presentación, la etiqueta de su botón y su mensaje
-de agradecimiento. Se rellena en basedb o se [comparte mediante un enlace](/basedb/es/fonctionnalites/formulaires-partages/).
+Se marcan las preguntas y se ordenan; cada una tiene un enunciado, una ayuda, un ejemplo de
+respuesta, y puede hacerse obligatoria. El formulario tiene su título, su presentación, la
+etiqueta de su botón y su mensaje de agradecimiento. Se rellena en basedb o se
+[comparte mediante un enlace](/basedb/es/fonctionnalites/formulaires-partages/).
+
+No hay nada que configurar para empezar: un formulario nuevo pregunta lo que responde una
+persona —no el estado, la persona asignada ni las relaciones que el equipo rellena después,
+salvo que sean obligatorias—, lleva el color de su tabla y un tema claro, y cada campo vacío
+muestra un ejemplo adecuado. Todo lo demás se cambia cuando se quiere:
+
+- **Apariencia**: ocho temas —Claro, Suave, Amanecer, Océano, Bosque, Noche, Papel, Minimalista—, un
+  color de acento, una fuente, una alineación a la izquierda o centrada;
+- **Preguntar solo si…**: una pregunta solo se hace si una respuesta anterior lo pide
+  («Sentimiento es Negativo», «Valoración es como mucho 2»). Una pregunta oculta no es
+  obligatoria ni se envía;
+- **Más opciones**: los botones de bienvenida y de envío, los números, la barra de progreso, el
+  paso automático a la siguiente, el mensaje y un botón final («Volver al sitio»), el confeti.
+
+La **encuesta** ocupa toda la pantalla: una pantalla de bienvenida que dice cuánto tiempo se
+tarda, y después una pregunta a la vez, que llega deslizándose. Todo se hace también con el
+teclado: **Intro** para continuar, las letras **A**, **B**, **C**… para elegir, **S** o **N**
+para sí o no, los dígitos para una valoración —una elección única pasa sola a la siguiente
+pregunta—. El envío se celebra: una marca de verificación que se dibuja y confeti de los
+colores del formulario.
 
 ## Compartir una vista
 

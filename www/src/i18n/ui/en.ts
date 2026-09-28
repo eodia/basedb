@@ -642,7 +642,7 @@ export default {
 			eyebrow: 'Forms and surveys',
 			title: 'Ask your questions.',
 			titleAccent: 'The answers sort themselves.',
-			text: 'A single-page form, or a survey that asks one question per screen: share the link, and every answer becomes a row in your table. Whoever answers sees nothing else.',
+			text: 'A single-page form, or a survey that asks one question per screen, in your colors: share the link, and every answer becomes a row in your table. Whoever answers sees nothing else.',
 			modes: {
 				label: 'Show the questions',
 				survey: 'Survey',
@@ -653,8 +653,8 @@ export default {
 				description: 'Three questions, and we’ll get back to you within 48 hours.',
 				count: '3 questions',
 				start: 'Start',
-				next: 'Next',
-				previous: 'Previous',
+				ok: 'OK',
+				hint: 'or Enter',
 				submit: 'Send my request',
 				org: {
 					label: 'Your organization',
@@ -662,13 +662,13 @@ export default {
 				},
 				need: {
 					label: 'Your need',
-					choose: 'Choose…',
 					options: ['Site', 'Visual identity', 'Catalog'],
 				},
 				budget: {
 					label: 'Your budget',
 					help: 'Excluding tax, a rough figure is fine.',
 				},
+				sent: 'Sent!',
 				thanks: 'Thank you! We’ll get back to you within 48 hours.',
 				poweredBy: 'Form powered by basedb',
 				path: 'Sales / Requests',
@@ -695,7 +695,7 @@ export default {
 			points: {
 				survey: {
 					title: 'One question per screen',
-					text: 'The survey asks them one at a time, with its progress bar; Enter moves to the next one.',
+					text: 'Full screen, from the keyboard: Enter to continue, A, B, C to choose — a single choice moves on by itself, and sending is celebrated.',
 				},
 				access: {
 					title: 'Public or restricted',
@@ -1527,6 +1527,17 @@ export default {
 		title: 'What changed in basedb',
 		intro: 'The details of every change are in <a href="https://github.com/eodia/basedb/commits/main">the repository history</a>. What comes next: the <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Forms worth filling in',
+				tag: 'New',
+				items: [
+					'<strong>The survey fills the whole screen</strong>: one question at a time, sliding in, big cards for choices, stars for a rating, and everything from the keyboard — <strong>Enter</strong>, the letters A, B, C…, Y or N, digits. A single choice moves on to the next by itself. <a href="/fonctionnalites/vues/#form-and-survey">Form and survey</a>',
+					'<strong>An appearance of its own</strong>: eight themes, from Light to Night by way of Paper, a color, a font, an alignment — a shared link’s page wears it too.',
+					'<strong>Ask only if…</strong>: a question is only asked if an earlier answer calls for it; a hidden question is neither required nor saved.',
+					'<strong>Nothing to set up to start</strong>: a new form asks what a person answers, not the status the team fills in afterwards, wears its table’s color and shows an example in every field. And sending it is celebrated, confetti included.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Formulas in French or English',

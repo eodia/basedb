@@ -88,9 +88,28 @@ V kanbanu, galerii a seznamu lze karty a řádky **řadit ručně** přetažení
 
 ## Formulář a dotazník
 
-Otázky se zaškrtnou a seřadí; každá má název, nápovědu a může být povinná. Formulář má svůj
-nadpis, úvodní text, popisek tlačítka a děkovnou zprávu. Vyplňuje se v basedb, nebo se
-[sdílí odkazem](/basedb/cs/fonctionnalites/formulaires-partages/).
+Otázky se zaškrtnou a seřadí; každá má název, nápovědu, ukázkovou odpověď a může být povinná.
+Formulář má svůj nadpis, úvodní text, popisek tlačítka a děkovnou zprávu. Vyplňuje se v
+basedb, nebo se [sdílí odkazem](/basedb/cs/fonctionnalites/formulaires-partages/).
+
+Na začátek není třeba nic nastavovat: nový formulář se ptá na to, co osoba odpovídá — ne na
+stav, přiřazenou osobu ani vazby, které tým doplní později, pokud nejsou povinné —, nese
+barvu své tabulky a světlý motiv, a každé prázdné pole ukazuje vhodný příklad. Všechno
+ostatní se mění, kdykoli chcete:
+
+- **Vzhled**: osm motivů — Světlý, Jemný, Úsvit, Oceán, Les, Noc, Papír, Minimalistický —,
+  barva zvýraznění, písmo, zarovnání vlevo nebo na střed;
+- **Zeptat se jen když…**: otázka se položí, jen když to vyžaduje dřívější odpověď
+  („Sentiment je Negativní“, „Hodnocení je nejvýše 2“). Skrytá otázka není ani povinná, ani
+  odeslaná;
+- **Další možnosti**: tlačítka uvítání a odeslání, číslování, ukazatel průběhu, automatický
+  přechod dál, zprávu a závěrečné tlačítko („Zpět na web“), konfety.
+
+**Dotazník** zabírá celou obrazovku: uvítání, které řekne, kolik to zabere času, a pak jedna
+otázka po druhé, která přijíždí zboku. Vše funguje i z klávesnice: **Enter** pro pokračování,
+písmena **A**, **B**, **C**… pro výběr, **A** nebo **N** pro ano nebo ne, číslice pro
+hodnocení — jediná volba sama přejde na další otázku. Odeslání se slaví: kreslící se fajfka a
+konfety v barvách formuláře.
 
 ## Sdílení zobrazení
 

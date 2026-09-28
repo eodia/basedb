@@ -18,7 +18,8 @@ ona gösterilmez. Satır almak yerine satır göstermek için bir görünüm
 | **Oturum açmış üyeler** | çalışma alanının bir üyesi — gerekirse belirli gruplardan | giriş ekranı, ardından form ve “… olarak yanıt veriyorsunuz” |
 
 Bağlantının sayfası uygulamanın dışındadır: ne kenar çubuğu, ne veritabanı adı, ne de başka
-satırlar.
+satırlar. Formun görünüşünü taşır — temasını, rengini, yazı tipini — ve yalnızca önceki
+yanıtların gerektirdiği soruları sorar.
 
 ![Herkese açık bir form](../../../../assets/screens/formulaire-public.png)
 

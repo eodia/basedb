@@ -642,7 +642,7 @@ export default {
 			eyebrow: 'Lomakkeet ja kyselyt',
 			title: 'Kysy kysymyksesi.',
 			titleAccent: 'Vastaukset järjestyvät itsestään.',
-			text: 'Yksisivuinen lomake tai kyselylomake, joka esittää yhden kysymyksen kerrallaan: jaa linkki, ja jokaisesta vastauksesta tulee rivi taulukkoosi. Vastaaja ei näe mitään muuta.',
+			text: 'Yksisivuinen lomake tai kyselylomake, joka esittää yhden kysymyksen kerrallaan omissa väreissäsi: jaa linkki, ja jokaisesta vastauksesta tulee rivi taulukkoosi. Vastaaja ei näe mitään muuta.',
 			modes: {
 				label: 'Näytä kysymykset',
 				survey: 'Kyselylomake',
@@ -653,8 +653,8 @@ export default {
 				description: 'Kolme kysymystä, ja olemme yhteydessä 48 tunnin sisällä.',
 				count: '3 kysymystä',
 				start: 'Aloita',
-				next: 'Seuraava',
-				previous: 'Edellinen',
+				ok: 'OK',
+				hint: 'tai Enter',
 				submit: 'Lähetä pyyntöni',
 				org: {
 					label: 'Organisaatiosi',
@@ -662,13 +662,13 @@ export default {
 				},
 				need: {
 					label: 'Tarpeesi',
-					choose: 'Valitse…',
 					options: ['Verkkosivusto', 'Visuaalinen ilme', 'Katalogi'],
 				},
 				budget: {
 					label: 'Budjettisi',
 					help: 'Ilman alv:tä, vaikka vain arviolta.',
 				},
+				sent: 'Lähetetty!',
 				thanks: 'Kiitos! Olemme yhteydessä 48 tunnin sisällä.',
 				poweredBy: 'Lomakkeen tarjoaa basedb',
 				path: 'Myynti / Pyynnöt',
@@ -695,7 +695,7 @@ export default {
 			points: {
 				survey: {
 					title: 'Yksi kysymys kerrallaan',
-					text: 'Kyselylomake esittää ne yksi kerrallaan edistymispalkkinsa kanssa; Enter siirtyy seuraavaan.',
+					text: 'Koko näytöllä, näppäimistöltä: Enter jatkaa, A, B, C valitsee — yksi valinta siirtää suoraan seuraavaan, ja lähettäminen juhlistetaan.',
 				},
 				access: {
 					title: 'Julkinen tai rajattu',
@@ -1527,6 +1527,17 @@ export default {
 		title: 'Mitä basedb:ssä on muuttunut',
 		intro: 'Jokaisen muutoksen yksityiskohdat ovat <a href="https://github.com/eodia/basedb/commits/main">tietovaraston historiassa</a>. Mitä seuraavaksi: <a href="/feuille-de-route/">tiekartta</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Lomakkeita, joita tekee mieli täyttää',
+				tag: 'Uutta',
+				items: [
+					'<strong>Kyselylomake täyttää koko näytön</strong>: yksi kysymys kerrallaan, joka liukuu näkyviin, suuret kortit vaihtoehdoille, tähdet arvosanalle, ja kaikki näppäimistöltä — <strong>Enter</strong>, kirjaimet A, B, C…, K tai E, numerot. Yksi valinta siirtää suoraan seuraavaan. <a href="/fonctionnalites/vues/#lomake-ja-kyselylomake">Lomake ja kyselylomake</a>',
+					'<strong>Oma ulkoasu</strong>: kahdeksan teemaa, Vaaleasta Yöhön Paperin kautta, väri, kirjasin, tasaus — myös jaetun linkin sivu kantaa sitä.',
+					'<strong>Kysy vain, jos…</strong>: kysymys esitetään vain, jos aiempi vastaus sitä edellyttää; piilotettu kysymys ei ole pakollinen eikä sitä tallenneta.',
+					'<strong>Ei mitään säädettävää aluksi</strong>: uusi lomake kysyy sitä, mitä henkilö vastaa, ei tilaa, jonka tiimi täyttää myöhemmin, kantaa taulukkonsa väriä ja näyttää esimerkin jokaisessa kentässä. Ja lähettäminen juhlistetaan, konfetti mukaan lukien.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Kaavat ranskaksi tai englanniksi',

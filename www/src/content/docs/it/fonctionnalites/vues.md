@@ -91,9 +91,30 @@ trascinandole — fino a 5.000; un ordinamento scelto prevale su quest’ordine.
 
 ## Modulo e questionario
 
-Si spuntano le domande e si mettono in ordine; ognuna ha un’etichetta, un testo di aiuto, e può essere resa
-obbligatoria. Il modulo ha il suo titolo, la sua presentazione, l’etichetta del pulsante e il messaggio
-di ringraziamento. Si compila in basedb, oppure si [condivide tramite link](/basedb/it/fonctionnalites/formulaires-partages/).
+Si spuntano le domande e si mettono in ordine; ognuna ha un’etichetta, un testo di aiuto, un
+esempio di risposta, e può essere resa obbligatoria. Il modulo ha il suo titolo, la sua
+presentazione, l’etichetta del pulsante e il messaggio di ringraziamento. Si compila in basedb,
+oppure si [condivide tramite link](/basedb/it/fonctionnalites/formulaires-partages/).
+
+Non c’è nulla da impostare per iniziare: un modulo nuovo chiede quello che risponde una persona
+— non lo stato, la persona assegnata né le relazioni che il team compila in seguito, a meno che
+non siano obbligatorie —, porta il colore della sua tabella e un tema chiaro, e ogni campo vuoto
+mostra un esempio adatto. Tutto il resto si cambia quando si vuole:
+
+- **Aspetto**: otto temi — Chiaro, Morbido, Alba, Oceano, Foresta, Notte, Carta, Minimal —, un
+  colore d’accento, un carattere, un allineamento a sinistra o centrato;
+- **Chiedi solo se…**: una domanda viene posta solo se una risposta precedente lo richiede
+  («Sentimento è Negativo», «Valutazione è al massimo 2»). Una domanda nascosta non è né
+  obbligatoria né inviata;
+- **Altre opzioni**: i pulsanti di benvenuto e di invio, i numeri, la barra di avanzamento, il
+  passaggio automatico alla domanda successiva, il messaggio e un pulsante finale («Torna al
+  sito»), i coriandoli.
+
+Il **questionario** occupa tutto lo schermo: una schermata di benvenuto che dice quanto tempo
+serve, poi una domanda alla volta, che arriva scorrendo. Tutto funziona anche da tastiera:
+**Invio** per continuare, le lettere **A**, **B**, **C**… per una scelta, **S** o **N** per sì o
+no, le cifre per una valutazione — una scelta unica fa passare da sola alla domanda successiva.
+L’invio si festeggia: un segno di spunta che si disegna e coriandoli nei colori del modulo.
 
 ## Condividere una vista
 

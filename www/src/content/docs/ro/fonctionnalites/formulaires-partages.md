@@ -18,7 +18,8 @@ primiți, o vizualizare se partajează [doar în citire](/basedb/ro/fonctionnali
 | **Membri conectați** | un membru al spațiului de lucru — la nevoie, doar din anumite grupuri | conectarea, apoi formularul și „Răspundeți ca …” |
 
 Pagina linkului este în afara aplicației: fără bară laterală, fără numele bazei, fără alte
-rânduri.
+rânduri. Ea poartă aspectul formularului — tema, culoarea, fontul lui — și pune doar întrebările
+pe care răspunsurile anterioare le cer.
 
 ![Un formular public](../../../../assets/screens/formulaire-public.png)
 

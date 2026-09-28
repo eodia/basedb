@@ -18,7 +18,8 @@ wird eine Ansicht [schreibgeschützt](/basedb/de/fonctionnalites/vues-partagees/
 | **Angemeldete Mitglieder** | ein Mitglied des Arbeitsbereichs – bei Bedarf nur bestimmter Gruppen | die Anmeldung, dann das Formular und „Sie antworten als …“ |
 
 Die Seite des Links liegt außerhalb der Anwendung: keine Seitenleiste, kein Datenbankname, keine
-anderen Zeilen.
+anderen Zeilen. Sie trägt die Darstellung des Formulars – sein Thema, seine Farbe, seine
+Schriftart – und fragt nur die Fragen, die frühere Antworten verlangen.
 
 ![Ein öffentliches Formular](../../../../assets/screens/formulaire-public.png)
 

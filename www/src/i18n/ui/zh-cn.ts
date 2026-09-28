@@ -631,7 +631,7 @@ export default {
 			eyebrow: '表单与问卷',
 			title: '只管提问。',
 			titleAccent: '答案自己归档。',
-			text: '单页表单，或是每屏一题的问卷：分享链接，每一份回答都会自动变成数据表里的一行。填写者看不到表格的其他任何内容。',
+			text: '单页表单，或是每屏一题的问卷，配色随心定制：分享链接，每一份回答都会自动变成数据表里的一行。填写者看不到表格的其他任何内容。',
 			modes: {
 				label: '问题展示方式',
 				survey: '问卷',
@@ -642,8 +642,8 @@ export default {
 				description: '只需三个问题，我们会在 48 小时内与您联系。',
 				count: '3 个问题',
 				start: '开始',
-				next: '下一个',
-				previous: '上一个',
+				ok: '确定',
+				hint: '或 Enter',
 				submit: '提交申请',
 				org: {
 					label: '机构名称',
@@ -651,13 +651,13 @@ export default {
 				},
 				need: {
 					label: '需求',
-					choose: '选择…',
 					options: ['网站', '视觉形象', '画册'],
 				},
 				budget: {
 					label: '预算',
 					help: '不含税，估算即可。',
 				},
+				sent: '已发送！',
 				thanks: '谢谢！我们会在 48 小时内与您联系。',
 				poweredBy: '由 basedb 提供支持的表单',
 				path: '销售 / 申请',
@@ -676,6 +676,7 @@ export default {
 				rows: ['马丁面包坊', '梧桐诊所', '爱心自行车协会', '隆河锻造厂'],
 				open: '已开放',
 				answers: {
+					one: '{n} 份回答',
 					other: '{n} 份回答',
 				},
 				active: '启用链接',
@@ -683,7 +684,7 @@ export default {
 			points: {
 				survey: {
 					title: '一屏一题',
-					text: '问卷会随进度条逐个提出问题，按 Enter 键进入下一题。',
+					text: '全屏展示，全程键盘操作：按 Enter 继续，按 A、B、C 选择——单选题选定后自动跳转下一题，提交时还会有庆祝效果。',
 				},
 				access: {
 					title: '公开或仅限成员',
@@ -1515,6 +1516,17 @@ export default {
 		title: 'basedb 的变化',
 		intro: '每项变更的细节见<a href="https://github.com/eodia/basedb/commits/main">仓库的提交历史</a>。接下来要做的：<a href="/feuille-de-route/">路线图</a>。',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: '让人愿意填写的表单',
+				tag: '新功能',
+				items: [
+					'<strong>问卷占据整个屏幕</strong>：每次滑入一个问题，选项是大卡片，评分用星星，并且全部可以用键盘操作——<strong>Enter</strong>、字母 A、B、C……、Y 或 N、数字。单选题会自动跳转到下一题。<a href="/fonctionnalites/vues/#表单与问卷">表单与问卷</a>',
+					'<strong>专属外观</strong>：八种主题，从浅色到夜色，还有纸张，一种颜色、一种字体、一种对齐方式——共享链接的页面也会呈现同样的外观。',
+					'<strong>添加显示条件…</strong>：只有当之前的某个回答需要时，问题才会被提出；被隐藏的问题既不是必填项，也不会被保存。',
+					'<strong>无需任何设置即可开始使用</strong>：新表单只询问填写者要回答的内容，而不是团队随后填写的状态，它会采用所属数据表的颜色，并在每个字段中显示示例。提交时还会有彩带庆祝效果。',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: '公式支持法语或英语',

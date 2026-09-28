@@ -660,7 +660,25 @@ export const VIEW_FIELD_KEYS: Readonly<
   form: {
     one: [],
     many: [],
-    other: ['title', 'description', 'fields', 'submit_label', 'success_message', 'allow_another'],
+    other: [
+      'title',
+      'description',
+      'fields',
+      'submit_label',
+      'success_message',
+      'allow_another',
+      'theme',
+      'accent',
+      'font',
+      'align',
+      'welcome_label',
+      'show_progress',
+      'show_numbers',
+      'auto_advance',
+      'celebrate',
+      'end_link_label',
+      'end_link_url',
+    ],
   },
 }
 
@@ -1661,12 +1679,32 @@ function checkView(
         broken = true
         return []
       }
+      // « Show only if… » names an earlier question by its label, and a choice by its label.
+      const condition = isRecord(entry.show_if) ? entry.show_if : null
+      const read =
+        condition === null
+          ? undefined
+          : field(condition.field, `${path}.spec.fields[${i}].show_if.field`)
+      const showIf =
+        condition === null || read === undefined || typeof condition.op !== 'string'
+          ? null
+          : {
+              field: read.label,
+              op: condition.op,
+              value:
+                typeof condition.value === 'string' &&
+                (read.kind === 'select' || read.kind === 'multi_select')
+                  ? (findOption(read.options, condition.value)?.label ?? condition.value)
+                  : (condition.value ?? null),
+            }
       return [
         {
           field: found.label,
           required: entry.required === true,
           ...(typeof entry.label === 'string' ? { label: entry.label } : {}),
           ...(typeof entry.help === 'string' ? { help: entry.help } : {}),
+          ...(typeof entry.placeholder === 'string' ? { placeholder: entry.placeholder } : {}),
+          ...(showIf === null ? {} : { show_if: showIf }),
         },
       ]
     })

@@ -177,3 +177,19 @@ export {
   matchLocale,
   type Locale,
 } from './locales.js'
+
+export {
+  FORM_ALIGNS,
+  FORM_CONDITION_OPS,
+  FORM_FONTS,
+  FORM_THEMES,
+  conditionHolds,
+  conditionNeedsValue,
+  isEmptyAnswer,
+  visibleQuestions,
+  type FormAlign,
+  type FormCondition,
+  type FormConditionOp,
+  type FormFont,
+  type FormTheme,
+} from './forms.js'

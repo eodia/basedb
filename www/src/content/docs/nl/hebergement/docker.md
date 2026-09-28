@@ -30,7 +30,7 @@ De image draait onder de gebruiker `node`, op Node 22, declareert een healthchec
 |---|---|
 | `latest` | de laatst gepubliceerde versie |
 | `0.3` | de laatste versie 0.3.x |
-| `0.3.1` | precies deze versie |
+| `0.3.2` | precies deze versie |
 
 ## De services
 

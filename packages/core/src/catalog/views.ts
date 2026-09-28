@@ -1,3 +1,11 @@
+import {
+  FORM_ALIGNS,
+  FORM_CONDITION_OPS,
+  FORM_FONTS,
+  FORM_THEMES,
+  type FormCondition,
+  conditionNeedsValue,
+} from '@basedb/contracts'
 import { BasedbError } from '../errors/index.js'
 import { type ActorGrants, decide } from '../rbac/decide.js'
 import { loadTarget } from '../rbac/loader.js'
@@ -161,6 +169,26 @@ class SpecReader {
       refuse('valeur_invalide', key)
     }
     return value as T
+  }
+
+  /** A colour, `#rrggbb` in lower case — or `''`, which leaves the choice to the screen. */
+  color(key: string): string {
+    const value = this.take(key)
+    if (value === undefined || value === null || value === '') return ''
+    if (typeof value !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value)) {
+      refuse('valeur_invalide', key)
+    }
+    return value.toLowerCase()
+  }
+
+  /** An address to follow, `https://` or `http://` — or `''`. */
+  link(key: string): string {
+    const value = this.take(key)
+    if (value === undefined || value === null || value === '') return ''
+    if (typeof value !== 'string' || value.length > 2000 || !/^https?:\/\/\S+$/i.test(value)) {
+      refuse('valeur_invalide', key)
+    }
+    return value
   }
 
   integer(key: string, min: number, max: number, fallback: number): number {
@@ -358,11 +386,22 @@ class SpecReader {
     return names
   }
 
-  /** The questions of a form: which fields, in which order, and how each is asked. */
-  questions(): Array<{ field: string; required: boolean; label: string; help: string }> {
+  /**
+   * The questions of a form: which fields, in which order, and how each is asked — its
+   * words, an example of an answer, and when it is asked at all.
+   */
+  questions(): Array<{
+    field: string
+    required: boolean
+    label: string
+    help: string
+    placeholder: string
+    show_if: FormCondition | null
+  }> {
     const value = this.take('fields')
     if (!Array.isArray(value)) refuse('valeur_invalide', 'fields')
     if (value.length === 0) refuse('formulaire_vide')
+    const earlier = new Set<string>()
     const questions = value.map((entry) => {
       if (typeof entry !== 'object' || entry === null) refuse('valeur_invalide', 'fields')
       const item = new SpecReader(entry as Record<string, unknown>, this.fields)
@@ -375,13 +414,52 @@ class SpecReader {
         required: item.flag('required', false),
         label: item.text('label', MAX_LABEL_CHARS),
         help: item.text('help', 1000),
+        placeholder: item.text('placeholder', MAX_LABEL_CHARS),
+        show_if: item.condition(earlier),
       }
       item.finish()
+      earlier.add(field)
       return question
     })
     const repeated = questions.find((q, i) => questions.findIndex((r) => r.field === q.field) !== i)
     if (repeated !== undefined) refuse('doublon', repeated.field)
     return questions
+  }
+
+  /**
+   * « Show this question only if… »: it reads an EARLIER question — a later one would ask
+   * the person to answer in an order the screen does not follow.
+   */
+  condition(earlier: ReadonlySet<string>): FormCondition | null {
+    const value = this.take('show_if')
+    if (value === undefined || value === null) return null
+    if (typeof value !== 'object' || Array.isArray(value)) refuse('valeur_invalide', 'show_if')
+    const raw = value as Record<string, unknown>
+    const extra = Object.keys(raw).find((key) => !['field', 'op', 'value'].includes(key))
+    if (extra !== undefined) refuse('cle_inconnue', `show_if.${extra}`)
+    const field = raw.field
+    if (typeof field !== 'string' || !earlier.has(field)) refuse('condition_invalide', 'show_if')
+    const op = raw.op
+    if (typeof op !== 'string' || !(FORM_CONDITION_OPS as readonly string[]).includes(op)) {
+      refuse('valeur_invalide', 'show_if.op')
+    }
+    const typed = op as FormCondition['op']
+    const given = raw.value ?? null
+    if (conditionNeedsValue(typed)) {
+      const ok =
+        typeof given === 'boolean' ||
+        (typeof given === 'number' && Number.isFinite(given)) ||
+        (typeof given === 'string' && given.trim() !== '' && [...given].length <= 255)
+      if (!ok) refuse('valeur_invalide', 'show_if.value')
+      if ((typed === 'gte' || typed === 'lte') && typeof given !== 'number') {
+        refuse('valeur_invalide', 'show_if.value')
+      }
+    }
+    return {
+      field,
+      op: typed,
+      value: conditionNeedsValue(typed) ? (given as string | number | boolean) : null,
+    }
   }
 
   finish(): void {
@@ -399,6 +477,17 @@ const FORM_KEYS = [
   'submit_label',
   'success_message',
   'allow_another',
+  'theme',
+  'accent',
+  'font',
+  'align',
+  'welcome_label',
+  'show_progress',
+  'show_numbers',
+  'auto_advance',
+  'celebrate',
+  'end_link_label',
+  'end_link_url',
 ]
 
 /** The keys a spec may carry, per kind. */
@@ -577,6 +666,19 @@ export function normalizeViewSpec(
           submit_label: read.text('submit_label', 60),
           success_message: read.text('success_message', 2000),
           allow_another: read.flag('allow_another', true),
+          // How it looks: every choice has a default that reads well, so a form made in a
+          // click is already a good one (`accent` empty: the table's colour).
+          theme: read.choice('theme', FORM_THEMES, 'clair'),
+          accent: read.color('accent'),
+          font: read.choice('font', FORM_FONTS, 'auto'),
+          align: read.choice('align', FORM_ALIGNS, 'left'),
+          welcome_label: read.text('welcome_label', 60),
+          show_progress: read.flag('show_progress', true),
+          show_numbers: read.flag('show_numbers', true),
+          auto_advance: read.flag('auto_advance', true),
+          celebrate: read.flag('celebrate', true),
+          end_link_label: read.text('end_link_label', 60),
+          end_link_url: read.link('end_link_url'),
         }
     }
   })()
@@ -650,7 +752,15 @@ export function projectViewSpec(
     )
   }
   if (Array.isArray(out.fields)) {
-    out.fields = (out.fields as Array<{ field?: unknown }>).filter((q) => sees(q.field))
+    // A condition that reads a field the reader cannot see goes: it would name it, and
+    // could never be met on their screen.
+    out.fields = (out.fields as Array<{ field?: unknown; show_if?: { field?: unknown } | null }>)
+      .filter((q) => sees(q.field))
+      .map((q) =>
+        q.show_if !== undefined && q.show_if !== null && !sees(q.show_if.field)
+          ? { ...q, show_if: null }
+          : q,
+      )
   }
   if (typeof out.summaries === 'object' && out.summaries !== null) {
     out.summaries = Object.fromEntries(

@@ -18,6 +18,8 @@ hen. Vill du visa rader i stället för att ta emot dem kan en vy delas
 | **Inloggade medlemmar** | en medlem i arbetsytan – vid behov bara i vissa grupper | inloggningen, sedan formuläret och ”Du svarar som …” |
 
 Länkens sida ligger utanför programmet: inget sidofält, inget databasnamn, inga andra rader.
+Den bär formulärets utseende — dess tema, färg, typsnitt —, och ställer bara de frågor som
+tidigare svar kräver.
 
 ![Ett offentligt formulär](../../../../assets/screens/formulaire-public.png)
 

@@ -643,7 +643,7 @@ export default {
 			eyebrow: 'Formularze i ankiety',
 			title: 'Zadawaj pytania.',
 			titleAccent: 'Odpowiedzi porządkują się same.',
-			text: 'Formularz na jednej stronie albo ankieta zadająca jedno pytanie na ekran: udostępnij link, a każda odpowiedź stanie się wierszem twojej tabeli. Osoba odpowiadająca nie widzi nic więcej.',
+			text: 'Formularz na jednej stronie albo ankieta zadająca jedno pytanie na ekran, w twoich kolorach: udostępnij link, a każda odpowiedź stanie się wierszem twojej tabeli. Osoba odpowiadająca nie widzi nic więcej.',
 			modes: {
 				label: 'Pokaż pytania',
 				survey: 'Ankieta',
@@ -654,8 +654,8 @@ export default {
 				description: 'Trzy pytania, i odezwiemy się w ciągu 48 godzin.',
 				count: '3 pytania',
 				start: 'Rozpocznij',
-				next: 'Następna',
-				previous: 'Poprzednia',
+				ok: 'OK',
+				hint: 'lub Enter',
 				submit: 'Wyślij moje zapytanie',
 				org: {
 					label: 'Twoja organizacja',
@@ -663,13 +663,13 @@ export default {
 				},
 				need: {
 					label: 'Twoja potrzeba',
-					choose: 'Wybierz…',
 					options: ['Strona internetowa', 'Identyfikacja wizualna', 'Katalog'],
 				},
 				budget: {
 					label: 'Twój budżet',
 					help: 'Netto, nawet w przybliżeniu.',
 				},
+				sent: 'Wysłano!',
 				thanks: 'Dziękujemy! Odezwiemy się w ciągu 48 godzin.',
 				poweredBy: 'Formularz obsługiwany przez basedb',
 				path: 'Sprzedaż / Zapytania',
@@ -698,7 +698,7 @@ export default {
 			points: {
 				survey: {
 					title: 'Jedno pytanie na ekran',
-					text: 'Ankieta zadaje je jedno po drugim, z paskiem postępu; Enter przechodzi do następnego.',
+					text: 'Na pełnym ekranie, z klawiatury: Enter, aby przejść dalej, A, B, C, aby wybrać — pojedynczy wybór sam przechodzi dalej, a wysłanie się świętuje.',
 				},
 				access: {
 					title: 'Publiczny albo tylko dla zalogowanych',
@@ -1530,6 +1530,17 @@ export default {
 		title: 'Co zmieniło się w basedb',
 		intro: 'Szczegóły każdej zmiany są w <a href="https://github.com/eodia/basedb/commits/main">historii repozytorium</a>. Co dalej: <a href="/feuille-de-route/">plan rozwoju</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Formularze, które chce się wypełniać',
+				tag: 'Nowość',
+				items: [
+					'<strong>Ankieta zajmuje cały ekran</strong>: jedno pytanie naraz, pojawiające się z przesunięciem, duże karty dla wyborów, gwiazdki dla oceny, i wszystko z klawiatury — <strong>Enter</strong>, litery A, B, C…, T lub N, cyfry. Pojedynczy wybór sam przechodzi dalej. <a href="/fonctionnalites/vues/#formularz-i-ankieta">Formularz i ankieta</a>',
+					'<strong>Własny wygląd</strong>: osiem motywów, od Jasnego po Noc, przez Papier, kolor, czcionka, wyrównanie — strona udostępnionego linku też go nosi.',
+					'<strong>Zadaj tylko, jeśli…</strong>: pytanie pojawia się tylko wtedy, gdy wymaga tego wcześniejsza odpowiedź; ukryte pytanie nie jest ani wymagane, ani zapisywane.',
+					'<strong>Nic do ustawienia na początek</strong>: nowy formularz pyta o to, co odpowiada dana osoba, a nie o status, który zespół uzupełnia później, nosi kolor swojej tabeli i pokazuje przykład w każdym polu. A wysłanie się świętuje, razem z konfetti.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Formuły po francusku lub po angielsku',

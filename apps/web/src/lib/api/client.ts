@@ -17,6 +17,10 @@ import type {
   DashboardCopilotAnswer,
   DashboardParameter,
   DashboardTab,
+  FormAlign,
+  FormCondition,
+  FormFont,
+  FormTheme,
   LegacyBlock,
   Locale,
   ParameterValue,
@@ -2055,7 +2059,27 @@ export interface SharedForm {
     readonly kind: string
     readonly required: boolean
     readonly options: readonly FieldOption[] | null
+    readonly placeholder: string | null
+    readonly show_if: FormCondition | null
+    readonly format: {
+      readonly display: string
+      readonly rating_max: number | null
+      readonly currency: string | null
+    } | null
   }>
+  /** How it looks and moves — its author's choices, or the defaults. */
+  readonly design: {
+    readonly theme: FormTheme
+    readonly accent: string | null
+    readonly font: FormFont
+    readonly align: FormAlign
+    readonly welcome_label: string
+    readonly show_progress: boolean
+    readonly show_numbers: boolean
+    readonly auto_advance: boolean
+    readonly celebrate: boolean
+    readonly end_link: { readonly label: string; readonly url: string } | null
+  }
 }
 
 /**

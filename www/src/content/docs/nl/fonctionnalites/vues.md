@@ -91,9 +91,30 @@ te slepen — tot 5 000; een gekozen sortering gaat voor op deze volgorde.
 
 ## Formulier en enquête
 
-Je vinkt de vragen aan en zet ze in volgorde; elke vraag heeft een titel, een hulptekst, en kan
-verplicht worden gemaakt. Het formulier heeft een titel, een introductie, het label van de knop en een
-bedankbericht. Het wordt ingevuld in basedb, of [via een link gedeeld](/basedb/nl/fonctionnalites/formulaires-partages/).
+Je vinkt de vragen aan en zet ze in volgorde; elke vraag heeft een titel, een hulptekst, een
+voorbeeldantwoord, en kan verplicht worden gemaakt. Het formulier heeft een titel, een
+introductie, het label van de knop en een bedankbericht. Het wordt ingevuld in basedb, of
+[via een link gedeeld](/basedb/nl/fonctionnalites/formulaires-partages/).
+
+Er hoeft niets ingesteld te worden om te beginnen: een nieuw formulier vraagt wat iemand
+antwoordt — niet de status, de toegewezen persoon of de relaties die het team later invult,
+tenzij die verplicht zijn —, draagt de kleur van zijn tabel en een licht thema, en elk leeg
+veld toont een passend voorbeeld. Al de rest wijzig je wanneer je wilt:
+
+- **Uiterlijk**: acht thema’s — Licht, Zacht, Dageraad, Oceaan, Bos, Nacht, Papier, Minimalistisch —,
+  een accentkleur, een lettertype, een uitlijning links of gecentreerd;
+- **Alleen vragen als…**: een vraag wordt alleen gesteld als een eerder antwoord daarom vraagt
+  (“Sentiment is Negatief”, “Beoordeling is hoogstens 2”). Een verborgen vraag is niet
+  verplicht en wordt niet verzonden;
+- **Meer opties**: de knoppen voor onthaal en verzending, de nummering, de voortgangsbalk, het
+  automatisch doorgaan, het bericht en een eindknop (“Terug naar de site”), de confetti.
+
+De **enquête** neemt het hele scherm in: een onthaal dat zegt hoeveel tijd het kost, dan één
+vraag tegelijk, die glijdend verschijnt. Alles kan ook met het toetsenbord: **Enter** om
+verder te gaan, de letters **A**, **B**, **C**… voor een keuze, **J** of **N** voor ja of nee,
+de cijfers voor een beoordeling — een enkele keuze gaat vanzelf naar de volgende vraag. Het
+verzenden wordt gevierd: een vinkje dat zich tekent en confetti in de kleuren van het
+formulier.
 
 ## Een weergave delen
 

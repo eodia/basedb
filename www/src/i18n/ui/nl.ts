@@ -642,7 +642,7 @@ export default {
 			eyebrow: 'Formulieren en enquêtes',
 			title: 'Stel je vragen.',
 			titleAccent: 'De antwoorden sorteren zichzelf.',
-			text: 'Een formulier op één pagina, of een enquête die één vraag per scherm stelt: deel de link, en elk antwoord wordt een rij in je tabel. Wie antwoordt, ziet verder niets.',
+			text: 'Een formulier op één pagina, of een enquête die één vraag per scherm stelt, in je eigen kleuren: deel de link, en elk antwoord wordt een rij in je tabel. Wie antwoordt, ziet verder niets.',
 			modes: {
 				label: 'Vragen tonen',
 				survey: 'Enquête',
@@ -653,8 +653,8 @@ export default {
 				description: 'Drie vragen, en we nemen binnen 48 uur contact met je op.',
 				count: '3 vragen',
 				start: 'Beginnen',
-				next: 'Volgende',
-				previous: 'Vorige',
+				ok: 'OK',
+				hint: 'of Enter',
 				submit: 'Mijn aanvraag versturen',
 				org: {
 					label: 'Je organisatie',
@@ -662,13 +662,13 @@ export default {
 				},
 				need: {
 					label: 'Je behoefte',
-					choose: 'Kiezen…',
 					options: ['Site', 'Visuele identiteit', 'Catalogus'],
 				},
 				budget: {
 					label: 'Je budget',
 					help: 'Exclusief btw, een ruwe schatting volstaat.',
 				},
+				sent: 'Verzonden!',
 				thanks: 'Bedankt! We nemen binnen 48 uur contact met je op.',
 				poweredBy: 'Formulier aangedreven door basedb',
 				path: 'Verkoop / Aanvragen',
@@ -695,7 +695,7 @@ export default {
 			points: {
 				survey: {
 					title: 'Eén vraag per scherm',
-					text: 'De enquête stelt ze één voor één, met een voortgangsbalk; Enter gaat naar de volgende.',
+					text: 'Op volledig scherm, met het toetsenbord: Enter om door te gaan, A, B, C om te kiezen — een enkele keuze gaat vanzelf naar de volgende, en het versturen wordt gevierd.',
 				},
 				access: {
 					title: 'Openbaar of beperkt',
@@ -1527,6 +1527,17 @@ export default {
 		title: 'Wat er in basedb is veranderd',
 		intro: 'Elke wijziging in detail staat in <a href="https://github.com/eodia/basedb/commits/main">de geschiedenis van de repository</a>. Wat er hierna komt: de <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Formulieren die je met plezier invult',
+				tag: 'Nieuw',
+				items: [
+					'<strong>De enquête neemt het hele scherm in</strong>: één vraag tegelijk, die glijdend verschijnt, grote kaarten voor de keuzes, sterren voor een beoordeling, en alles met het toetsenbord — <strong>Enter</strong>, de letters A, B, C…, J of N, de cijfers. Een enkele keuze gaat vanzelf naar de volgende. <a href="/fonctionnalites/vues/#formulier-en-enquête">Formulier en enquête</a>',
+					'<strong>Een eigen uiterlijk</strong>: acht thema’s, van Licht tot Nacht via Papier, een kleur, een lettertype, een uitlijning — de pagina van een gedeelde link draagt het ook.',
+					'<strong>Alleen vragen als…</strong>: een vraag wordt alleen gesteld als een eerder antwoord erom vraagt; een verborgen vraag is niet verplicht en wordt niet opgeslagen.',
+					'<strong>Niets in te stellen om te beginnen</strong>: een nieuw formulier vraagt wat iemand antwoordt, niet de status die het team later invult, draagt de kleur van zijn tabel en toont een voorbeeld in elk veld. En het verzenden wordt gevierd, confetti inbegrepen.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Formules in het Frans of het Engels',

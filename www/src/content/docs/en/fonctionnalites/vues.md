@@ -88,9 +88,29 @@ them — up to 5,000; a chosen sort takes precedence over this order.
 
 ## Form and survey
 
-You check the questions and put them in order; each has a title, a help text, and can be made
-required. The form has its own title, its introduction, its button label and its thank-you
-message. It is filled in inside basedb, or [shared through a link](/basedb/en/fonctionnalites/formulaires-partages/).
+You check the questions and put them in order; each has a title, a help text, an example
+answer, and can be made required. The form has its own title, its introduction, its button
+label and its thank-you message. It is filled in inside basedb, or
+[shared through a link](/basedb/en/fonctionnalites/formulaires-partages/).
+
+Nothing needs setting up to start: a new form asks what a person answers — not the status, the
+assigned person or the relations the team fills in afterwards, unless they are required —,
+wears its table’s color and a light theme, and each empty field shows a fitting example.
+Everything else can be changed whenever you like:
+
+- **Appearance**: eight themes — Light, Soft, Dawn, Ocean, Forest, Night, Paper, Minimal —, an
+  accent color, a font, a left or centered alignment;
+- **Ask only if…**: a question is only asked if an earlier answer calls for it ("Sentiment is
+  Negative", "Rating is at most 2"). A hidden question is neither required nor sent;
+- **More options**: the welcome and submit buttons, the numbers, the progress bar, moving
+  automatically to the next question, the end message and an end button ("Back to site"), the
+  confetti.
+
+The **survey** fills the whole screen: a welcome screen that says how long it takes, then one
+question at a time, sliding in. Everything also works from the keyboard: **Enter** to continue,
+the letters **A**, **B**, **C**… for a choice, **Y** or **N** for yes or no, digits for a
+rating — a single choice moves on to the next question by itself. Sending it is celebrated: a
+checkmark draws itself, and confetti in the form’s colors.
 
 ## Sharing a view
 

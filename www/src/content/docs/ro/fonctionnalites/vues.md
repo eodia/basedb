@@ -91,9 +91,28 @@ la 5 000; o sortare aleasă are prioritate față de această ordine.
 
 ## Formular și chestionar
 
-Bifați întrebările și ordonați-le; fiecare are un enunț, un text de ajutor și poate fi făcută
-obligatorie. Formularul are titlul său, prezentarea sa, eticheta butonului și mesajul de
-mulțumire. Se completează în basedb sau se [partajează printr-un link](/basedb/ro/fonctionnalites/formulaires-partages/).
+Bifați întrebările și ordonați-le; fiecare are un enunț, un text de ajutor, un exemplu de răspuns
+și poate fi făcută obligatorie. Formularul are titlul său, prezentarea sa, eticheta butonului și
+mesajul de mulțumire. Se completează în basedb sau se [partajează printr-un link](/basedb/ro/fonctionnalites/formulaires-partages/).
+
+Nu trebuie reglat nimic pentru a începe: un formular nou întreabă ce răspunde o persoană — nu
+starea, persoana desemnată sau relațiile pe care echipa le completează ulterior, cu excepția
+cazului în care sunt obligatorii —, poartă culoarea tabelului său și o temă deschisă la culoare, iar
+fiecare câmp gol arată un exemplu potrivit. Tot restul se schimbă oricând:
+
+- **Aspect**: opt teme — Luminoasă, Blândă, Auroră, Ocean, Pădure, Noapte, Hârtie, Minimalistă —,
+  o culoare de accent, un font, o aliniere la stânga sau centrată;
+- **Întrebați doar dacă…**: o întrebare se pune doar dacă un răspuns anterior o cere („Sentiment
+  este Negativ”, „Notă este cel mult 2”). O întrebare ascunsă nu este nici obligatorie, nici
+  trimisă;
+- **Mai multe opțiuni**: butoanele de bun venit și de trimitere, numerele, bara de progres,
+  trecerea automată la următoarea, mesajul și un buton de final („Înapoi la site”), confetti.
+
+**Chestionarul** ocupă tot ecranul: un mesaj de bun venit care spune cât timp durează, apoi câte o
+întrebare pe rând, care apare alunecând. Totul se poate face și de la tastatură: **Enter** pentru a
+continua, literele **A**, **B**, **C**… pentru o alegere, **D** sau **N** pentru da sau nu, cifrele
+pentru o notă — o alegere unică trece singură la întrebarea următoare. Trimiterea se sărbătorește:
+o bifă care se desenează și confetti în culorile formularului.
 
 ## Partajarea unei vizualizări
 

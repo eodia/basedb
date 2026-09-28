@@ -17,7 +17,9 @@ nie jest jej pokazywane. Aby pokazywać wiersze zamiast je przyjmować, widok mo
 | **Publiczny** | każdy, kto ma link, bez konta | sam formularz |
 | **Zalogowani członkowie** | członek przestrzeni roboczej – w razie potrzeby tylko z określonych grup | logowanie, a potem formularz i „Odpowiadasz jako …” |
 
-Strona linku jest poza aplikacją: bez paska bocznego, nazwy bazy i innych wierszy.
+Strona linku jest poza aplikacją: bez paska bocznego, nazwy bazy i innych wierszy. Ma wygląd
+formularza — jego motyw, kolor, czcionkę —, i zadaje tylko te pytania, których wymagają
+wcześniejsze odpowiedzi.
 
 ![Publiczny formularz](../../../../assets/screens/formulaire-public.png)
 

@@ -642,7 +642,7 @@ export default {
 			eyebrow: 'Skjemaer og spørreundersøkelser',
 			title: 'Still spørsmålene dine.',
 			titleAccent: 'Svarene sorterer seg selv.',
-			text: 'Et skjema på én side, eller en spørreundersøkelse som stiller ett spørsmål per skjerm: del lenken, og hvert svar blir en rad i tabellen din. Den som svarer, ser ikke noe annet.',
+			text: 'Et skjema på én side, eller en spørreundersøkelse som stiller ett spørsmål per skjerm, i dine farger: del lenken, og hvert svar blir en rad i tabellen din. Den som svarer, ser ikke noe annet.',
 			modes: {
 				label: 'Vis spørsmålene',
 				survey: 'Spørreundersøkelse',
@@ -653,8 +653,8 @@ export default {
 				description: 'Tre spørsmål, og vi kommer tilbake til deg innen 48 timer.',
 				count: '3 spørsmål',
 				start: 'Start',
-				next: 'Neste',
-				previous: 'Forrige',
+				ok: 'OK',
+				hint: 'eller Enter',
 				submit: 'Send forespørselen min',
 				org: {
 					label: 'Organisasjonen din',
@@ -662,13 +662,13 @@ export default {
 				},
 				need: {
 					label: 'Behovet ditt',
-					choose: 'Velg…',
 					options: ['Nettside', 'Visuell identitet', 'Katalog'],
 				},
 				budget: {
 					label: 'Budsjettet ditt',
 					help: 'Uten mva, gjerne omtrentlig.',
 				},
+				sent: 'Sendt!',
 				thanks: 'Takk! Vi kommer tilbake til deg innen 48 timer.',
 				poweredBy: 'Skjema levert av basedb',
 				path: 'Salg / Forespørsler',
@@ -695,7 +695,7 @@ export default {
 			points: {
 				survey: {
 					title: 'Ett spørsmål om gangen',
-					text: 'Spørreundersøkelsen stiller dem ett om gangen med sin fremdriftslinje; Enter går videre til det neste.',
+					text: 'I fullskjerm, med tastaturet: Enter for å fortsette, A, B, C for å velge — et enkeltvalg går alene videre, og innsendingen feires.',
 				},
 				access: {
 					title: 'Åpent eller forbeholdt',
@@ -1536,6 +1536,17 @@ export default {
 		title: 'Hva som er endret i basedb',
 		intro: 'Detaljene i hver endring står i <a href="https://github.com/eodia/basedb/commits/main">historikken til depotet</a>. Hva som kommer videre: <a href="/feuille-de-route/">veikartet</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Skjemaer man har lyst til å fylle ut',
+				tag: 'Nytt',
+				items: [
+					'<strong>Spørreundersøkelsen fyller hele skjermen</strong>: ett spørsmål om gangen, som glir inn, store kort for valgene, stjerner for en vurdering, og alt med tastaturet — <strong>Enter</strong>, bokstavene A, B, C…, J eller N, tallene. Et enkeltvalg går alene videre til neste. <a href="/fonctionnalites/vues/#skjema-og-spørreundersøkelse">Skjema og spørreundersøkelse</a>',
+					'<strong>Et utseende for seg selv</strong>: åtte temaer, fra Lyst til Natt, innom Papir, en farge, en skrift, en justering — siden til en delt lenke bærer det også.',
+					'<strong>Spør bare hvis…</strong>: et spørsmål stilles bare hvis et tidligere svar krever det; et skjult spørsmål er verken påkrevd eller lagret.',
+					'<strong>Ingenting å stille inn for å komme i gang</strong>: et nytt skjema spør om det en person svarer, ikke statusen som teamet fyller ut senere, bærer fargen til tabellen sin og viser et eksempel i hvert felt. Og innsendingen feires, konfetti inkludert.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Formler på fransk eller engelsk',

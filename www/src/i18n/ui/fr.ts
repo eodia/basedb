@@ -617,7 +617,7 @@ const fr = {
 			eyebrow: 'Formulaires et questionnaires',
 			title: 'Posez vos questions.',
 			titleAccent: 'Les réponses se rangent seules.',
-			text: 'Un formulaire sur une seule page, ou un questionnaire qui pose une question par écran : partagez le lien, et chaque réponse devient une ligne de votre table. Qui répond ne voit rien d’autre.',
+			text: 'Un formulaire sur une seule page, ou un questionnaire qui pose une question par écran, à vos couleurs : partagez le lien, et chaque réponse devient une ligne de votre table. Qui répond ne voit rien d’autre.',
 			/** The switch over the phone: the same questions, asked two ways. */
 			modes: { label: 'Montrer les questions', survey: 'Questionnaire', form: 'Formulaire' },
 			/** The page of the link, as basedb draws it, and what the person answers. */
@@ -626,13 +626,16 @@ const fr = {
 				description: 'Trois questions, et nous revenons vers vous sous 48 h.',
 				count: '3 questions',
 				start: 'Commencer',
-				next: 'Suivant',
-				previous: 'Précédent',
+				/** The survey's button under a question, and the key that does the same. */
+				ok: 'OK',
+				hint: 'ou Entrée',
 				submit: 'Envoyer ma demande',
 				org: { label: 'Votre organisation', answer: 'Café des Arts' },
 				/** A choice; the person picks the second option. */
-				need: { label: 'Votre besoin', choose: 'Choisir…', options: ['Site web', 'Identité visuelle', 'Catalogue'] },
+				need: { label: 'Votre besoin', options: ['Site web', 'Identité visuelle', 'Catalogue'] },
 				budget: { label: 'Votre budget', help: 'Hors taxes, même approximatif.' },
+				/** The end: its title, then the form's message. */
+				sent: 'C’est envoyé !',
 				thanks: 'Merci ! Nous revenons vers vous sous 48 h.',
 				poweredBy: 'Formulaire propulsé par basedb',
 				/** The table the answers land in, and the requests already there. */
@@ -649,7 +652,7 @@ const fr = {
 			points: {
 				survey: {
 					title: 'Une question par écran',
-					text: 'Le questionnaire les pose une à une, avec sa barre de progression ; Entrée passe à la suivante.',
+					text: 'En plein écran, au clavier : Entrée pour continuer, A, B, C pour choisir — un choix fait passer seul à la suite, et l’envoi se fête.',
 				},
 				access: {
 					title: 'Public ou réservé',
@@ -1421,6 +1424,17 @@ const fr = {
 		intro: 'Le détail de chaque changement est dans <a href="https://github.com/eodia/basedb/commits/main">l’historique du dépôt</a>. Ce qui vient ensuite : la <a href="/feuille-de-route/">feuille de route</a>.',
 		/** Newest first. */
 		entries: {
+			forms: entry({
+				date: '2026-09-29',
+				title: 'Des formulaires qu’on a envie de remplir',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Le questionnaire occupe tout l’écran</strong> : une question à la fois, qui arrive en glissant, de grandes cartes pour les choix, des étoiles pour une note, et tout au clavier — <strong>Entrée</strong>, les lettres A, B, C…, O ou N, les chiffres. Un choix unique fait passer seul à la suite. <a href="/fonctionnalites/vues/#formulaire-et-questionnaire">Formulaire et questionnaire</a>',
+					'<strong>Une apparence à soi</strong> : huit thèmes, de Clair à Nuit en passant par Papier, une couleur, une police, un alignement — la page d’un lien partagé la porte aussi.',
+					'<strong>Poser seulement si…</strong> : une question ne se pose que si une réponse précédente l’appelle ; une question cachée n’est ni exigée ni enregistrée.',
+					'<strong>Rien à régler pour commencer</strong> : un formulaire neuf pose ce qu’une personne répond, pas le statut que l’équipe remplit ensuite, porte la couleur de sa table et montre un exemple dans chaque champ. Et l’envoi se fête, confettis compris.',
+				],
+			}),
 			formulaLanguages: entry({
 				date: '2026-09-28',
 				title: 'Des formules en français ou en anglais',

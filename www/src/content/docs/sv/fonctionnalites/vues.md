@@ -89,9 +89,28 @@ upp till 5 000; en vald sortering har företräde framför den ordningen.
 
 ## Formulär och enkät
 
-Du kryssar i frågorna och ordnar dem; var och en har en rubrik, en hjälptext och kan göras
-obligatorisk. Formuläret har sin titel, sin introduktion, texten på sin knapp och sitt
-tackmeddelande. Det fylls i inne i basedb eller [delas via en länk](/basedb/sv/fonctionnalites/formulaires-partages/).
+Du kryssar i frågorna och ordnar dem; var och en har en rubrik, en hjälptext, ett
+exempelsvar och kan göras obligatorisk. Formuläret har sin titel, sin introduktion, texten på
+sin knapp och sitt tackmeddelande. Det fylls i inne i basedb eller
+[delas via en länk](/basedb/sv/fonctionnalites/formulaires-partages/).
+
+Inget behöver ställas in för att komma igång: ett nytt formulär frågar vad en person svarar —
+inte statusen, den tilldelade personen eller relationerna som teamet fyller i senare, om de
+inte är obligatoriska —, bär färgen från sin tabell och ett ljust tema, och varje tomt fält
+visar ett passande exempel. Allt annat ändrar du när du vill:
+
+- **Utseende**: åtta teman — Ljust, Mjuk, Gryning, Hav, Skog, Natt, Papper, Minimal —, en accentfärg, ett typsnitt, en justering till vänster eller centrerad;
+- **Fråga endast om…**: en fråga ställs bara om ett tidigare svar kräver det (”Sentiment är
+  Negativt”, ”Betyg är högst 2”). En dold fråga är varken obligatorisk eller skickas;
+- **Fler alternativ**: knapparna för välkomnande och skickande, numreringen,
+  förloppsindikatorn, den automatiska övergången till nästa, meddelandet och en slutknapp
+  (”Tillbaka till webbplatsen”), konfetti.
+
+**Enkäten** tar upp hela skärmen: ett välkomnande som säger hur lång tid det tar, sedan en
+fråga i taget, som glider in. Allt går också att göra med tangentbordet: **Enter** för att
+fortsätta, bokstäverna **A**, **B**, **C**… för ett val, **J** eller **N** för ja eller nej,
+siffrorna för ett betyg — ett enda val går vidare till nästa fråga av sig själv. Att skicka
+in firas: en bock som ritas upp och konfetti i formulärets färger.
 
 ## Dela en vy
 

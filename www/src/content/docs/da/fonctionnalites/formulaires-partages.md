@@ -18,7 +18,8 @@ deles [skrivebeskyttet](/basedb/da/fonctionnalites/vues-partagees/).
 | **Indloggede medlemmer** | et medlem af arbejdsområdet — om nødvendigt fra bestemte grupper | login, derefter formularen og »Du svarer som …« |
 
 Linkets side ligger uden for applikationen: intet sidepanel, intet databasenavn, ingen andre
-rækker.
+rækker. Den bærer formularens udseende — dens tema, farve, skrifttype —, og stiller kun de
+spørgsmål, som tidligere svar kalder på.
 
 ![En offentlig formular](../../../../assets/screens/formulaire-public.png)
 

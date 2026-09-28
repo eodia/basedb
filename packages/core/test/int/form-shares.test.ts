@@ -361,3 +361,99 @@ describe('the authority of a share', () => {
     ).toBe('RESOURCE_NOT_FOUND')
   })
 })
+
+describe('a survey that looks its own way and asks only what an answer calls for', () => {
+  it('keeps its look, and refuses a condition on a later question or a colour that is not one', async () => {
+    const create = (spec: Record<string, unknown>) =>
+      kernel.createView(admin, { tableId, label: `Essai ${randomUUID()}`, kind: 'survey', spec })
+    expect(
+      await reasonOf(
+        create({
+          fields: [
+            { field: 'nom', required: true },
+            { field: 'email', show_if: { field: 'niveau', op: 'is', value: 'confirme' } },
+            { field: 'niveau' },
+          ],
+        }),
+      ),
+    ).toBe('condition_invalide')
+    expect(
+      await reasonOf(create({ fields: [{ field: 'nom', required: true }], accent: 'rouge' })),
+    ).toBe('valeur_invalide')
+    expect(
+      await reasonOf(create({ fields: [{ field: 'nom', required: true }], theme: 'fluo' })),
+    ).toBe('valeur_invalide')
+
+    const survey = await create({
+      fields: [{ field: 'nom', required: true }],
+      theme: 'nuit',
+      font: 'serif',
+    })
+    // What it left out reads as the defaults: nothing to decide to make a good one.
+    expect(survey.spec).toMatchObject({
+      theme: 'nuit',
+      accent: '',
+      font: 'serif',
+      align: 'left',
+      show_progress: true,
+      auto_advance: true,
+      celebrate: true,
+      end_link_url: '',
+    })
+  })
+
+  it('does not ask, nor write, a question an earlier answer hid', async () => {
+    const survey = await kernel.createView(admin, {
+      tableId,
+      label: 'Parcours',
+      kind: 'survey',
+      spec: {
+        fields: [
+          { field: 'nom', required: true },
+          { field: 'niveau', required: true },
+          {
+            field: 'email',
+            required: true,
+            placeholder: 'https://votre-site.fr',
+            show_if: { field: 'niveau', op: 'is', value: 'confirme' },
+          },
+        ],
+        theme: 'ocean',
+        celebrate: false,
+        end_link_label: 'Retour au site',
+        end_link_url: 'https://exemple.fr',
+      },
+    })
+    const { share } = await kernel.saveFormSharing(admin, {
+      tableId,
+      viewId: survey.id,
+      ...settings,
+    })
+    const token = share?.token as string
+    const form = await kernel.openSharedForm({ token, respondent: null, requestId: randomUUID() })
+    expect(form.design).toMatchObject({
+      theme: 'ocean',
+      celebrate: false,
+      endLink: { label: 'Retour au site', url: 'https://exemple.fr' },
+    })
+    expect(form.questions.find((q) => q.name === 'email')).toMatchObject({
+      placeholder: 'https://votre-site.fr',
+      showIf: { field: 'niveau', op: 'is', value: 'confirme' },
+    })
+
+    const submit = (values: Record<string, unknown>) =>
+      kernel.submitSharedForm({ token, respondent: null, requestId: randomUUID(), values })
+    // A beginner is not asked for an address: not required — and not written, if typed
+    // before the level was changed.
+    await submit({ nom: 'Léon', niveau: 'debutant', email: 'https://garde.fr' })
+    // A confirmed one is.
+    expect(await codeOf(submit({ nom: 'Maxime', niveau: 'confirme' }))).toBe(
+      'REQUIRED_VALUE_MISSING',
+    )
+    await submit({ nom: 'Maxime', niveau: 'confirme', email: 'https://maxime.fr' })
+
+    const rows = (await kernel.listRecords(admin, { tableId })).rows
+    expect(rows.find((r) => r.nom === 'Léon')).toMatchObject({ niveau: 'debutant', email: null })
+    expect(rows.find((r) => r.nom === 'Maxime')).toMatchObject({ email: 'https://maxime.fr' })
+  })
+})

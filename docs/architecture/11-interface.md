@@ -132,7 +132,7 @@ construit pas.
 | Chronologie | **début** ; fin, regroupement par liste de choix ou lien, titre, couleur ; échelle jour, semaine ou mois ; **dépendances** : une relation de la table vers elle-même (« Dépend de ») | champs dans la barre |
 | Galerie | titre, **image de couverture** (un champ image ou document), recadrée ou entière ; taille des cartes | champs sous le titre |
 | Liste | titre ; regroupement par liste de choix, relation ou personne | champs sur la ligne, après le titre |
-| Formulaire, questionnaire | — | questions cochées et ordonnées ; pour chacune un intitulé, une aide, « réponse obligatoire » ; titre, présentation, libellé du bouton, message après l'envoi, « proposer une nouvelle réponse » |
+| Formulaire, questionnaire | — | questions cochées et ordonnées ; pour chacune un intitulé, une aide, un exemple de réponse, « réponse obligatoire » et « poser seulement si » une réponse précédente ; titre, présentation ; apparence (thème, couleur, police, alignement) ; sous « Plus d'options » : boutons d'accueil et d'envoi, numéros, barre de progression, passage automatique, message et bouton de fin, confettis, « proposer une nouvelle réponse » |
 
 Chaque pivot est prérempli sur le premier champ qui peut le tenir, si bien qu'une table
 qui admet la nature obtient sa vue en un clic ; une nature qu'elle n'admet pas — pas de
@@ -158,7 +158,36 @@ d'autant de jours, sa fin avec elle et son heure conservée ; le bord droit d'un
 change la fin seule. Les lignes sans date sont comptées, et listées dans le calendrier,
 pour qu'on les date. Le formulaire écrit **une** ligne par **un** `POST` à l'envoi, comme
 le panneau de création (§2.5) ; le questionnaire pose les mêmes questions une par écran,
-Entrée pour continuer. Un « + » dans une colonne de kanban ou un jour de calendrier ouvre
+Entrée pour continuer.
+
+**Formulaire et questionnaire, à l'écran.** Les deux portent l'**apparence** de la vue
+(`components/app/forms`) : un des huit thèmes — Clair, Doux, Aurore, Océan, Forêt, Nuit,
+Papier, Minimal —, une couleur d'accent, une police, un alignement. Chaque choix a un
+défaut qui se suffit : l'accent est la couleur de la table, à défaut celle du thème ; la
+police, celle du thème. Le questionnaire occupe tout l'écran : un accueil qui dit la durée
+estimée et le nombre de questions, puis une question par écran qui arrive d'en bas (d'en
+haut quand on revient), un numéro, une barre de progression, les flèches de navigation en
+bas à droite. Chaque réponse se donne aussi au clavier : les lettres A, B, C… pour un
+choix, O et N (les initiales de Oui et Non dans la langue de l'écran) pour une case à
+cocher, les chiffres pour une note ; un choix unique, une case ou une note font passer
+seuls à la question suivante, après un clignement. Un texte long va à la ligne par
+Maj + Entrée. Une adresse e-mail incomplète, un nombre illisible, une adresse web sans
+domaine sont signalés avant de continuer ; `exemple.fr` devient `https://exemple.fr`.
+L'envoi se termine par une célébration — un cercle qui éclôt, une coche tracée, des
+confettis aux couleurs du formulaire, sauf si la vue les retire ou si le système demande
+moins d'animations.
+
+**Poser seulement si.** Une question peut ne se poser que si une question **précédente** a
+reçu une certaine réponse (`show_if` : `est`, `n'est pas`, `contient`, `ne contient pas`,
+`vaut au moins`, `vaut au plus`, `a une réponse`, `est sans réponse`). Une question cachée
+n'est ni exigée ni envoyée, même si l'on y avait répondu avant de changer d'avis ; cacher
+une question cache aussi celles qui dépendaient d'elle.
+
+**Des défauts intelligents.** Une vue formulaire neuve pose ce qu'une personne répond,
+pas ce que l'équipe remplit ensuite : la personne assignée, les relations, un statut ou une
+étape ne sont pas cochés d'office — sauf s'ils sont obligatoires. Chaque champ vide montre
+un exemple adapté à son type. L'éditeur montre d'abord l'essentiel — les mots, l'apparence,
+les questions — et replie le reste sous « Plus d'options ». Un « + » dans une colonne de kanban ou un jour de calendrier ouvre
 une ligne déjà dotée de ce choix ou de cette date.
 
 **Galerie et liste.** La galerie montre une carte par ligne, sa couverture en tête — la

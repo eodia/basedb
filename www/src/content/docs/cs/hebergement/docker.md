@@ -30,7 +30,7 @@ Obraz běží pod uživatelem `node` na Node 22 a deklaruje kontrolu stavu (`/he
 |---|---|
 | `latest` | poslední vydaná verze |
 | `0.3` | poslední verze 0.3.x |
-| `0.3.1` | přesně tato verze |
+| `0.3.2` | přesně tato verze |
 
 ## Služby
 

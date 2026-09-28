@@ -642,7 +642,7 @@ export default {
 			eyebrow: 'Formularios y cuestionarios',
 			title: 'Haz tus preguntas.',
 			titleAccent: 'Las respuestas se ordenan solas.',
-			text: 'Un formulario de una sola página, o un cuestionario que hace una pregunta por pantalla: comparte el enlace, y cada respuesta se convierte en una fila de tu tabla. Quien responde no ve nada más.',
+			text: 'Un formulario de una sola página, o un cuestionario que hace una pregunta por pantalla, con tus colores: comparte el enlace, y cada respuesta se convierte en una fila de tu tabla. Quien responde no ve nada más.',
 			modes: {
 				label: 'Mostrar las preguntas',
 				survey: 'Encuesta',
@@ -653,8 +653,8 @@ export default {
 				description: 'Tres preguntas, y te respondemos en menos de 48 h.',
 				count: '3 preguntas',
 				start: 'Empezar',
-				next: 'Siguiente',
-				previous: 'Anterior',
+				ok: 'OK',
+				hint: 'o Intro',
 				submit: 'Enviar mi solicitud',
 				org: {
 					label: 'Tu organización',
@@ -662,13 +662,13 @@ export default {
 				},
 				need: {
 					label: 'Tu necesidad',
-					choose: 'Elegir…',
 					options: ['Sitio web', 'Identidad visual', 'Catálogo'],
 				},
 				budget: {
 					label: 'Tu presupuesto',
 					help: 'Sin IVA, aunque sea aproximado.',
 				},
+				sent: '¡Enviado!',
 				thanks: '¡Gracias! Te respondemos en menos de 48 h.',
 				poweredBy: 'Formulario con tecnología de basedb',
 				path: 'Ventas / Solicitudes',
@@ -695,7 +695,7 @@ export default {
 			points: {
 				survey: {
 					title: 'Una pregunta por pantalla',
-					text: 'El cuestionario las plantea una a una, con su barra de progreso; Intro pasa a la siguiente.',
+					text: 'A pantalla completa, con el teclado: Intro para continuar, A, B, C para elegir — una elección única pasa sola a la siguiente, y el envío se celebra.',
 				},
 				access: {
 					title: 'Público o reservado',
@@ -1536,6 +1536,17 @@ export default {
 		title: 'Lo que ha cambiado en basedb',
 		intro: 'El detalle de cada cambio está en <a href="https://github.com/eodia/basedb/commits/main">el historial del repositorio</a>. Lo que viene después: la <a href="/feuille-de-route/">hoja de ruta</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Formularios que dan ganas de rellenar',
+				tag: 'Novedad',
+				items: [
+					'<strong>La encuesta ocupa toda la pantalla</strong>: una pregunta a la vez, que llega deslizándose, grandes tarjetas para las opciones, estrellas para una valoración, y todo con el teclado — <strong>Intro</strong>, las letras A, B, C…, S o N, los dígitos. Una elección única pasa sola a la siguiente. <a href="/fonctionnalites/vues/#formulario-y-encuesta">Formulario y encuesta</a>',
+					'<strong>Una apariencia propia</strong>: ocho temas, de Claro a Noche pasando por Papel, un color, una fuente, una alineación — la página de un enlace compartido también la lleva.',
+					'<strong>Preguntar solo si…</strong>: una pregunta solo se hace si una respuesta anterior lo pide; una pregunta oculta no es obligatoria ni se guarda.',
+					'<strong>Nada que configurar para empezar</strong>: un formulario nuevo pregunta lo que responde una persona, no el estado que el equipo rellena después, lleva el color de su tabla y muestra un ejemplo en cada campo. Y el envío se celebra, confeti incluido.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Fórmulas en francés o en inglés',

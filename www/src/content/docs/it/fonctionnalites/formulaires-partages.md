@@ -18,6 +18,8 @@ si condivide [in sola lettura](/basedb/it/fonctionnalites/vues-partagees/).
 | **Membri connessi** | un membro del tenant — se serve, solo di alcuni gruppi | l’accesso, poi il modulo e «Stai rispondendo come …» |
 
 La pagina del link è fuori dall’applicazione: né barra laterale, né nome del database, né altre righe.
+Porta l’aspetto del modulo — il suo tema, il suo colore, il suo carattere —, e pone solo le
+domande che le risposte precedenti richiedono.
 
 ![Un modulo pubblico](../../../../assets/screens/formulaire-public.png)
 

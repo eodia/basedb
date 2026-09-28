@@ -1,7 +1,9 @@
 ---
 /**
  * The same three questions asked two ways on a phone — the questionnaire, one per screen,
- * and the form, all on one page — on the page of the link, as basedb draws it. The phone
+ * and the form, all on one page — on the page of the link, as basedb draws it: numbered
+ * questions on a line, the choices as cards with their keys (A, B, C) that go on by
+ * themselves once taken, « OK » or Entrée, and the end celebrated with confetti. The phone
  * answers while the section is on screen, in a loop that alternates the two ways; each
  * answer sent lands as a new row of the table beside it, and the link counts one more.
  * The switch over the phone picks a way, and the loop then keeps to it. Asked for less
@@ -45,8 +47,22 @@ const answer = { org: d.org.answer, need: d.need.options[CHOSEN] ?? '', budget: 
 const ANSWERS = 23;
 const HOST = 'basedb.example.com';
 const LINK = `https://${HOST}/f/t4hhyFEQn9vN6rohy7h8`;
-const QUESTIONS = 3;
-const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
+/** The keys of the choices, as the survey shows them. */
+const KEYS = ['A', 'B', 'C', 'D', 'E', 'F'];
+/** Confetti from the check: where each piece rises to, how it turns, its colour, its delay. */
+const CONFETTI_COLORS = ['var(--bd-primary)', '#f59e0b', '#3b82f6', '#ec4899', '#a855f7', '#22c55e'];
+const confetti = Array.from({ length: 28 }, (_, i) => {
+	const angle = -Math.PI / 2 + ((i % 14) / 13 - 0.5) * Math.PI * 1.25;
+	const reach = 70 + ((i * 37) % 60);
+	return {
+		x: Math.round(Math.cos(angle) * reach),
+		y: Math.round(Math.sin(angle) * reach),
+		r: (i * 67) % 360,
+		c: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+		d: ((i % 7) * 0.035).toFixed(3),
+		round: i % 4 === 0,
+	};
+});
 ---
 
 <section class="tm-section mist forms" data-forms>
@@ -82,50 +98,51 @@ const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
 								<div class="sv on" data-screen="welcome">
 									<h3>{d.title}</h3>
 									<p class="desc">{d.description}</p>
-									<p class="small">{d.count}</p>
-									<span><span class="btn lg" data-press>{d.start}<Icon name="arrowRight" size={16} /></span></span>
+									<span class="go">
+										<span class="btn lg" data-press>{d.start}<Icon name="arrowRight" size={16} /></span>
+										<span class="hint">{d.hint}<Icon name="cornerDownLeft" size={12} /></span>
+									</span>
+									<p class="small"><Icon name="clock" size={13} />{d.count}</p>
 								</div>
 								<div class="sv" data-screen="0">
-									<p class="k">{steps[0]}</p>
 									<div class="q">
-										<p class="label big">{d.org.label}<i>*</i></p>
-										<span class="input" data-field><span data-typed={answer.org}></span></span>
+										<p class="label big"><span class="k">{number(1)}<Icon name="arrowRight" size={12} stroke={2.4} /></span>{d.org.label}<i>*</i></p>
+										<span class="input line" data-field><span data-typed={answer.org}></span></span>
 									</div>
 									<div class="nav">
-										<span class="btn" data-press>{d.next}<Icon name="arrowRight" size={15} /></span>
-										<span class="ghost"><Icon name="arrowLeft" size={15} />{d.previous}</span>
+										<span class="btn" data-press><Icon name="tick" size={14} stroke={2.6} />{d.ok}</span>
+										<span class="hint">{d.hint}<Icon name="cornerDownLeft" size={12} /></span>
 									</div>
 								</div>
 								<div class="sv" data-screen="1">
-									<p class="k">{steps[1]}</p>
 									<div class="q">
-										<p class="label big">{d.need.label}<i>*</i></p>
-										<span class="select" data-field data-select={CHOSEN}>
-											<span data-value data-placeholder={d.need.choose}>{d.need.choose}</span>
-											<Icon name="chevronDown" size={15} />
-											<span class="menu">
-												{d.need.options.map((o, i) => <span class="opt" data-opt={i}>{o}</span>)}
-											</span>
+										<p class="label big"><span class="k">{number(2)}<Icon name="arrowRight" size={12} stroke={2.4} /></span>{d.need.label}<i>*</i></p>
+										<span class="choices" data-field data-select={CHOSEN}>
+											{
+												d.need.options.map((o, i) => (
+													<span class="choice" data-opt={i}>
+														<b>{KEYS[i]}</b>
+														{o}
+														<Icon name="tick" size={14} stroke={2.6} />
+													</span>
+												))
+											}
 										</span>
-									</div>
-									<div class="nav">
-										<span class="btn" data-press>{d.next}<Icon name="arrowRight" size={15} /></span>
-										<span class="ghost"><Icon name="arrowLeft" size={15} />{d.previous}</span>
 									</div>
 								</div>
 								<div class="sv" data-screen="2">
-									<p class="k">{steps[2]}</p>
 									<div class="q">
-										<p class="label big">{d.budget.label}</p>
+										<p class="label big"><span class="k">{number(3)}<Icon name="arrowRight" size={12} stroke={2.4} /></span>{d.budget.label}</p>
 										<p class="help">{d.budget.help}</p>
-										<span class="input" data-field><span data-typed={answer.budget}></span></span>
+										<span class="input line" data-field><span data-typed={answer.budget}></span></span>
 									</div>
 									<div class="nav">
 										<span class="btn" data-press><Icon name="send" size={14} />{d.submit}</span>
-										<span class="ghost"><Icon name="arrowLeft" size={15} />{d.previous}</span>
+										<span class="hint">{d.hint}<Icon name="cornerDownLeft" size={12} /></span>
 									</div>
 								</div>
 							</div>
+							<span class="arrows"><i><Icon name="chevronUp" size={14} stroke={2.2} /></i><i><Icon name="chevronDown" size={14} stroke={2.2} /></i></span>
 						</div>
 
 						<div class="card form" data-way="form">
@@ -140,12 +157,15 @@ const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
 								</div>
 								<div class="q">
 									<p class="label">{d.need.label}<i>*</i></p>
-									<span class="select" data-field data-select={CHOSEN}>
-										<span data-value data-placeholder={d.need.choose}>{d.need.choose}</span>
-										<Icon name="chevronDown" size={15} />
-										<span class="menu">
-											{d.need.options.map((o, i) => <span class="opt" data-opt={i}>{o}</span>)}
-										</span>
+									<span class="choices small" data-field data-select={CHOSEN}>
+										{
+											d.need.options.map((o, i) => (
+												<span class="choice" data-opt={i}>
+													{o}
+													<Icon name="tick" size={13} stroke={2.6} />
+												</span>
+											))
+										}
 									</span>
 								</div>
 								<div class="q">
@@ -160,7 +180,18 @@ const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
 						</div>
 
 						<div class="card thanks">
-							<span class="tick"><Icon name="checkCircle" size={40} stroke={1.8} /></span>
+							<span class="burst">
+								{
+									confetti.map((c) => (
+										<i
+											class={c.round ? 'round' : undefined}
+											style={`--x:${c.x}px;--y:${c.y}px;--r:${c.r}deg;--c:${c.c};--d:${c.d}s`}
+										/>
+									))
+								}
+							</span>
+							<span class="tick"><Icon name="tick" size={30} stroke={3} /></span>
+							<p class="sent">{d.sent}</p>
 							<p>{d.thanks}</p>
 						</div>
 					</div>
@@ -305,24 +336,15 @@ const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
 		const fill = (field: HTMLElement) => {
 			const typed = field.querySelector<HTMLElement>('[data-typed]');
 			if (typed) typed.textContent = typed.dataset.typed ?? '';
-			const value = field.querySelector<HTMLElement>('[data-value]');
-			const chosen = field.querySelector<HTMLElement>(`[data-opt="${field.dataset.select}"]`);
-			if (value && chosen) {
-				value.textContent = chosen.textContent;
-				value.classList.add('set');
-			}
+			field.querySelector<HTMLElement>(`[data-opt="${field.dataset.select}"]`)?.classList.add('chosen');
 		};
 		const reset = () => {
 			page.classList.remove('sent');
 			blur();
-			for (const el of scene.querySelectorAll<HTMLElement>('.open, .hover, .press')) {
-				el.classList.remove('open', 'hover', 'press');
+			for (const el of scene.querySelectorAll<HTMLElement>('.hover, .press, .chosen, .blink')) {
+				el.classList.remove('hover', 'press', 'chosen', 'blink');
 			}
 			for (const typed of scene.querySelectorAll<HTMLElement>('[data-typed]')) typed.textContent = '';
-			for (const value of scene.querySelectorAll<HTMLElement>('[data-value]')) {
-				value.textContent = value.dataset.placeholder ?? '';
-				value.classList.remove('set');
-			}
 			show('welcome');
 			fresh.classList.remove('in');
 			count.textContent = counts[0] ?? '';
@@ -345,16 +367,17 @@ const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
 				await sleep(75);
 			}
 		};
+		/** A choice taken: the card is pointed at, taken, and blinks once — as the survey does. */
 		const choose = async (field: HTMLElement, sleep: Sleep) => {
 			blur();
-			field.classList.add('focus', 'open');
-			await sleep(650);
+			await sleep(450);
 			const option = field.querySelector<HTMLElement>(`[data-opt="${field.dataset.select}"]`)!;
 			option.classList.add('hover');
-			await sleep(550);
-			fill(field);
-			field.classList.remove('open');
+			await sleep(420);
 			option.classList.remove('hover');
+			option.classList.add('chosen', 'blink');
+			await sleep(450);
+			option.classList.remove('blink');
 		};
 
 		const survey = async (sleep: Sleep) => {
@@ -369,9 +392,9 @@ const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
 			await press(next('0'), sleep);
 			show('1');
 			await sleep(650);
+			// A single choice goes on by itself.
 			await choose(field('1'), sleep);
-			await sleep(500);
-			await press(next('1'), sleep);
+			await sleep(150);
 			show('2');
 			await sleep(650);
 			await type(field('2'), sleep);
@@ -698,8 +721,7 @@ const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
 	}
 
 	/* A field, as the application's inputs draw it */
-	.input,
-	.select {
+	.input {
 		position: relative;
 		display: flex;
 		align-items: center;
@@ -732,46 +754,102 @@ const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
 			opacity: 0;
 		}
 	}
-	.select {
-		justify-content: space-between;
-		padding-right: 10px;
-		color: var(--soft);
+	/* The survey's answer is a line, as large as the question */
+	.input.line {
+		height: 34px;
+		padding: 0 2px;
+		border: 0;
+		border-bottom: 2px solid var(--line);
+		border-radius: 0;
+		font-size: 17px;
+		background: transparent;
 	}
-	.select .set {
-		color: var(--ink);
+	.input.line.focus {
+		border-bottom-color: var(--bd-primary);
+		box-shadow: none;
 	}
-	.menu {
-		position: absolute;
-		top: calc(100% + 4px);
-		left: 0;
-		right: 0;
-		z-index: 3;
+	/* The choices: cards with their keys; taken, the card wears the accent and blinks */
+	.choices {
 		display: flex;
 		flex-direction: column;
-		padding: 4px;
-		border: 1px solid var(--line);
-		border-radius: 8px;
-		color: var(--ink);
-		background: #fff;
-		box-shadow: 0 12px 28px -10px rgba(16, 24, 16, 0.25);
-		opacity: 0;
-		transform: translateY(-4px) scale(0.98);
-		transform-origin: top;
-		transition:
-			opacity 0.18s ease,
-			transform 0.18s ease;
+		gap: 7px;
 	}
-	.select.open .menu {
+	.choice {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		height: 38px;
+		padding: 0 10px;
+		border: 1px solid var(--line);
+		border-radius: 9px;
+		font-size: 14.5px;
+		background: #fff;
+		transition:
+			background-color 0.15s ease,
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+	.choices.small .choice {
+		height: 34px;
+		font-size: 13.5px;
+	}
+	.choice b {
+		display: grid;
+		place-items: center;
+		width: 20px;
+		height: 20px;
+		border: 1px solid color-mix(in srgb, var(--bd-primary) 45%, transparent);
+		border-radius: 5px;
+		font-size: 11px;
+		font-weight: 700;
+		color: var(--bd-primary);
+		background: #fff;
+		transition:
+			background-color 0.15s ease,
+			color 0.15s ease;
+	}
+	.choice svg {
+		margin-left: auto;
+		color: var(--bd-primary);
+		opacity: 0;
+		transform: scale(0.5);
+		transition:
+			opacity 0.2s ease,
+			transform 0.2s ease;
+	}
+	.choice.hover {
+		border-color: color-mix(in srgb, var(--bd-primary) 50%, transparent);
+		background: color-mix(in srgb, var(--bd-primary) 7%, #fff);
+	}
+	.choice.chosen {
+		border-color: var(--bd-primary);
+		background: color-mix(in srgb, var(--bd-primary) 11%, #fff);
+		box-shadow: 0 0 0 1px var(--bd-primary);
+	}
+	.choice.chosen b {
+		color: #fff;
+		background: var(--bd-primary);
+		border-color: var(--bd-primary);
+	}
+	.choice.chosen svg {
 		opacity: 1;
 		transform: none;
 	}
-	.opt {
-		padding: 7px 8px;
-		border-radius: 5px;
-		transition: background-color 0.15s ease;
+	.choice.blink {
+		animation: blink 0.28s steps(2, jump-none) 2;
 	}
-	.opt.hover {
-		background: var(--tint);
+	@keyframes blink {
+		50% {
+			opacity: 0.4;
+		}
+	}
+	.hint {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 11.5px;
+		white-space: nowrap;
+		color: var(--soft);
 	}
 
 	/* The questionnaire: a question per screen */
@@ -802,7 +880,7 @@ const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
 		gap: 18px;
 		opacity: 0;
 		visibility: hidden;
-		transform: translateX(18px);
+		transform: translateY(22px);
 		transition:
 			opacity 0.35s ease,
 			visibility 0.35s,
@@ -823,20 +901,57 @@ const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
 		margin-top: 0;
 		font-size: 14px;
 	}
-	.sv[data-screen='welcome'] > span {
-		margin-top: 6px;
-	}
-	.k {
-		margin: 0;
-		font-size: 11.5px;
-		font-weight: 600;
-		font-variant-numeric: tabular-nums;
-		color: var(--bd-primary);
-	}
-	.nav {
+	.sv[data-screen='welcome'] .go {
 		display: flex;
 		align-items: center;
 		gap: 10px;
+		margin-top: 6px;
+	}
+	.sv[data-screen='welcome'] .small {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+	}
+	.k {
+		display: inline-flex;
+		align-items: center;
+		gap: 2px;
+		margin-right: 7px;
+		font-size: 12.5px;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		vertical-align: 2px;
+		color: var(--bd-primary);
+	}
+	/* The arrows of the survey, in its corner */
+	.arrows {
+		position: absolute;
+		right: 12px;
+		bottom: 12px;
+		display: flex;
+		overflow: hidden;
+		border-radius: 7px;
+		box-shadow: 0 4px 12px -4px rgba(16, 24, 16, 0.35);
+	}
+	.arrows i {
+		display: grid;
+		place-items: center;
+		width: 26px;
+		height: 26px;
+		color: #fff;
+		background: var(--bd-primary);
+	}
+	.arrows i + i {
+		border-left: 1px solid rgba(255, 255, 255, 0.3);
+	}
+	.survey {
+		padding-bottom: 46px;
+	}
+	.nav {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 10px;
 	}
 
 	/* The form: every question on one page */
@@ -855,31 +970,102 @@ const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
 		border-top: 1px solid var(--line);
 	}
 
-	/* Sent */
+	/* Sent: the check blooms in the accent, a ring spreads, confetti rise and fall */
 	.thanks {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 12px;
+		gap: 10px;
 		padding: 44px 22px;
 		text-align: center;
 	}
 	.tick {
-		color: var(--bd-primary);
+		position: relative;
+		display: grid;
+		place-items: center;
+		width: 60px;
+		height: 60px;
+		margin-bottom: 8px;
+		border-radius: 50%;
+		color: #fff;
+		background: var(--bd-primary);
+	}
+	.tick::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 50%;
+		background: var(--bd-primary);
+		opacity: 0;
 	}
 	.page.sent .tick {
-		animation: tick 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 0.15s both;
+		animation: tick 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+	}
+	.page.sent .tick::after {
+		animation: ring 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s both;
 	}
 	@keyframes tick {
 		from {
-			transform: scale(0.6);
+			transform: scale(0.4);
 			opacity: 0;
+		}
+	}
+	@keyframes ring {
+		from {
+			opacity: 0.5;
+			transform: scale(0.8);
+		}
+		to {
+			opacity: 0;
+			transform: scale(2.2);
+		}
+	}
+	.burst {
+		position: absolute;
+		top: 74px;
+		left: 50%;
+		width: 0;
+		height: 0;
+	}
+	.burst i {
+		position: absolute;
+		width: 7px;
+		height: 4px;
+		border-radius: 1px;
+		background: var(--c);
+		opacity: 0;
+	}
+	.burst i.round {
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+	}
+	.page.sent .burst i {
+		animation: confetti 1.9s cubic-bezier(0.15, 0.7, 0.4, 1) calc(0.3s + var(--d)) both;
+	}
+	@keyframes confetti {
+		from {
+			opacity: 1;
+			transform: translate(0, 0) rotate(0deg);
+		}
+		45% {
+			opacity: 1;
+			transform: translate(var(--x), var(--y)) rotate(var(--r));
+		}
+		to {
+			opacity: 0;
+			transform: translate(calc(var(--x) * 1.2), calc(var(--y) + 150px)) rotate(calc(var(--r) + 220deg));
 		}
 	}
 	.thanks p {
 		margin: 0;
 		font-size: 15px;
 		line-height: 1.45;
+	}
+	.thanks .sent {
+		font-size: 20px;
+		font-weight: 600;
+		letter-spacing: -0.015em;
 	}
 
 	/* The table the answers land in */
@@ -1165,8 +1351,13 @@ const steps = [1, 2, 3].map((n) => `${number(n)} / ${number(QUESTIONS)}`);
 		}
 		.fresh.in,
 		.count.pop,
-		.page.sent .tick {
+		.page.sent .tick,
+		.page.sent .tick::after,
+		.choice.blink {
 			animation: none;
+		}
+		.page.sent .burst i {
+			display: none;
 		}
 	}
 </style>

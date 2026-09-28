@@ -18,6 +18,8 @@ se comparte [en solo lectura](/basedb/es/fonctionnalites/vues-partagees/).
 | **Miembros conectados** | un miembro del espacio de trabajo, si hace falta solo de ciertos grupos | el inicio de sesión, y después el formulario y «Respondes como…» |
 
 La página del enlace está fuera de la aplicación: sin barra lateral, sin nombre de base, sin otras filas.
+Lleva la apariencia del formulario —su tema, su color, su fuente— y solo hace las preguntas
+que las respuestas anteriores piden.
 
 ![Un formulario público](../../../../assets/screens/formulaire-public.png)
 

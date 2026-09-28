@@ -642,7 +642,7 @@ export default {
 			eyebrow: 'Formulär och enkäter',
 			title: 'Ställ dina frågor.',
 			titleAccent: 'Svaren sorterar sig själva.',
-			text: 'Ett formulär på en enda sida, eller en enkät som ställer en fråga per skärm: dela länken, och varje svar blir en rad i din tabell. Den som svarar ser inget annat.',
+			text: 'Ett formulär på en enda sida, eller en enkät som ställer en fråga per skärm, i dina färger: dela länken, och varje svar blir en rad i din tabell. Den som svarar ser inget annat.',
 			modes: {
 				label: 'Visa frågorna',
 				survey: 'Enkät',
@@ -653,8 +653,8 @@ export default {
 				description: 'Tre frågor, sedan återkommer vi inom 48 timmar.',
 				count: '3 frågor',
 				start: 'Börja',
-				next: 'Nästa',
-				previous: 'Föregående',
+				ok: 'OK',
+				hint: 'eller Enter',
 				submit: 'Skicka min förfrågan',
 				org: {
 					label: 'Din organisation',
@@ -662,13 +662,13 @@ export default {
 				},
 				need: {
 					label: 'Ditt behov',
-					choose: 'Välj…',
 					options: ['Webbplats', 'Visuell identitet', 'Katalog'],
 				},
 				budget: {
 					label: 'Din budget',
 					help: 'Exklusive moms, en ungefärlig siffra räcker.',
 				},
+				sent: 'Skickat!',
 				thanks: 'Tack! Vi återkommer inom 48 timmar.',
 				poweredBy: 'Formulär drivet av basedb',
 				path: 'Försäljning / Förfrågningar',
@@ -695,7 +695,7 @@ export default {
 			points: {
 				survey: {
 					title: 'En fråga per skärm',
-					text: 'Enkäten ställer dem en och en, med sin förloppsindikator; Enter går till nästa.',
+					text: 'I helskärm, med tangentbordet: Enter för att fortsätta, A, B, C för att välja — ett enda val går vidare av sig själv, och att skicka in firas.',
 				},
 				access: {
 					title: 'Öppet eller begränsat',
@@ -1527,6 +1527,17 @@ export default {
 		title: 'Vad som har ändrats i basedb',
 		intro: 'Detaljerna för varje ändring finns i <a href="https://github.com/eodia/basedb/commits/main">repots historik</a>. Vad som kommer härnäst: <a href="/feuille-de-route/">färdplanen</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Formulär man har lust att fylla i',
+				tag: 'Nytt',
+				items: [
+					'<strong>Enkäten tar upp hela skärmen</strong>: en fråga i taget, som glider in, stora kort för valen, stjärnor för ett betyg, och allt med tangentbordet — <strong>Enter</strong>, bokstäverna A, B, C…, J eller N, siffrorna. Ett enda val går vidare av sig själv. <a href="/fonctionnalites/vues/#formulär-och-enkät">Formulär och enkät</a>',
+					'<strong>Ett eget utseende</strong>: åtta teman, från Ljust till Natt via Papper, en färg, ett typsnitt, en justering — sidan för en delad länk bär det också.',
+					'<strong>Fråga endast om…</strong>: en fråga ställs bara om ett tidigare svar kräver det; en dold fråga är varken obligatorisk eller sparad.',
+					'<strong>Inget att ställa in för att börja</strong>: ett nytt formulär frågar vad en person svarar, inte statusen som teamet fyller i senare, bär färgen från sin tabell och visar ett exempel i varje fält. Och att skicka in firas, konfetti inräknat.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Formler på franska eller engelska',

@@ -18,6 +18,8 @@ mais da tabela é mostrado a ela. Para mostrar linhas em vez de recebê-las, uma
 | **Membros conectados** | um membro do tenant — se necessário, de certos grupos | o login, depois o formulário e “Você está respondendo como …” |
 
 A página do link fica fora do aplicativo: nem barra lateral, nem nome da base, nem outras linhas.
+Ela usa a aparência do formulário — seu tema, sua cor, sua fonte —, e só faz as perguntas que
+as respostas anteriores exigem.
 
 ![Um formulário público](../../../../assets/screens/formulaire-public.png)
 

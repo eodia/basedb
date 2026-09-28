@@ -631,7 +631,7 @@ export default {
 			eyebrow: '양식과 설문',
 			title: '질문만 하세요.',
 			titleAccent: '답은 저절로 정리됩니다.',
-			text: '한 페이지짜리 양식이든, 화면마다 질문 하나씩 던지는 설문이든 — 링크를 공유하면 답변 하나하나가 테이블의 한 행이 됩니다. 응답자에게는 그 외에 아무것도 보이지 않습니다.',
+			text: '한 페이지짜리 양식이든, 화면마다 질문 하나씩 던지는 설문이든, 원하는 색상으로 — 링크를 공유하면 답변 하나하나가 테이블의 한 행이 됩니다. 응답자에게는 그 외에 아무것도 보이지 않습니다.',
 			modes: {
 				label: '질문 표시 방식',
 				survey: '설문',
@@ -642,8 +642,8 @@ export default {
 				description: '질문 세 가지만 답해 주세요. 48시간 이내에 연락드리겠습니다.',
 				count: '질문 3개',
 				start: '시작',
-				next: '다음',
-				previous: '이전',
+				ok: '확인',
+				hint: '또는 Enter',
 				submit: '요청 보내기',
 				org: {
 					label: '기관명',
@@ -651,13 +651,13 @@ export default {
 				},
 				need: {
 					label: '요청 사항',
-					choose: '선택…',
 					options: ['웹사이트', '비주얼 아이덴티티', '카탈로그'],
 				},
 				budget: {
 					label: '예산',
 					help: '부가세 제외, 대략적인 금액도 괜찮습니다.',
 				},
+				sent: '보냈어요!',
 				thanks: '감사합니다! 48시간 이내에 연락드리겠습니다.',
 				poweredBy: 'basedb 기반 양식',
 				path: '영업 / 요청',
@@ -676,6 +676,7 @@ export default {
 				rows: ['마루 베이커리', '보리수 의원', '나눔자전거', '강변 단조'],
 				open: '열림',
 				answers: {
+					one: '응답 {n}건',
 					other: '응답 {n}건',
 				},
 				active: '링크 활성화',
@@ -683,7 +684,7 @@ export default {
 			points: {
 				survey: {
 					title: '한 화면에 질문 하나',
-					text: '설문은 진행률 표시줄과 함께 질문을 하나씩 보여줍니다. Enter 키를 누르면 다음 질문으로 넘어갑니다.',
+					text: '전체 화면에서 키보드만으로: Enter로 다음 질문, A·B·C로 선택 — 하나만 고르면 저절로 다음으로 넘어가고, 제출하면 축하 효과가 펼쳐집니다.',
 				},
 				access: {
 					title: '공개 또는 제한',
@@ -1515,6 +1516,17 @@ export default {
 		title: 'basedb에서 바뀐 내용',
 		intro: '각 변경의 자세한 내용은 <a href="https://github.com/eodia/basedb/commits/main">저장소 기록</a>에 있습니다. 앞으로의 계획은 <a href="/feuille-de-route/">로드맵</a>에서 확인하세요.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: '채우고 싶어지는 양식',
+				tag: '신규',
+				items: [
+					'<strong>설문은 화면 전체를 차지합니다</strong>: 질문이 슬라이드로 하나씩 나타나고, 선택지는 큰 카드로, 평점은 별로 표시되며, 모든 것을 키보드로 할 수 있습니다 — <strong>Enter</strong>, 문자 A, B, C…, Y·N, 숫자. 단일 선택은 선택하는 즉시 다음으로 넘어갑니다. <a href="/fonctionnalites/vues/#양식과-설문">양식과 설문</a>',
+					'<strong>나만의 모양</strong>: 라이트부터 밤까지, 종이를 포함한 여덟 가지 테마, 색상, 글꼴, 정렬 — 공유 링크 페이지에도 똑같이 적용됩니다.',
+					'<strong>표시 조건 추가…</strong>: 이전 답변이 요구할 때만 질문이 표시됩니다. 숨겨진 질문은 필수가 아니며 저장되지도 않습니다.',
+					'<strong>시작할 때 따로 설정할 것은 없습니다</strong>: 새 양식은 나중에 팀이 채워 넣는 상태가 아니라 응답하는 사람이 답할 내용을 묻습니다. 해당 테이블의 색을 띠고, 각 필드마다 예시를 보여 줍니다. 전송하면 색종이 효과로 축하합니다.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: '프랑스어 또는 영어로 쓰는 수식',

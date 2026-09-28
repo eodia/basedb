@@ -18,6 +18,8 @@ deles [skrivebeskyttet](/basedb/nb/fonctionnalites/vues-partagees/).
 | **Innloggede medlemmer** | et medlem av arbeidsområdet – ved behov fra bestemte grupper | innloggingen, deretter skjemaet og «Du svarer som …» |
 
 Lenkesiden ligger utenfor applikasjonen: ingen sidepanel, intet databasenavn, ingen andre rader.
+Den bærer skjemaets utseende – temaet, fargen, skriften –, og spør bare om spørsmålene som de
+tidligere svarene krever.
 
 ![Et offentlig skjema](../../../../assets/screens/formulaire-public.png)
 

@@ -324,13 +324,30 @@ function rewrite(template: Template, words: Words): Record<string, unknown> {
       else if (key === 'group_order' && Array.isArray(value))
         spec[key] = value.map((v) => (typeof v === 'string' ? cited(v) : v))
       else if (
-        ['title', 'description', 'submit_label', 'success_message'].includes(key) &&
+        [
+          'title',
+          'description',
+          'submit_label',
+          'success_message',
+          'welcome_label',
+          'end_link_label',
+        ].includes(key) &&
         typeof value === 'string'
       )
         spec[key] = text(value, 'text', `${at}.spec.${key}`)
       else if (key === 'fields' && view.kind === 'form' && Array.isArray(value))
         spec[key] = value.map(
-          (q: { field: string; required: boolean; label?: string; help?: string }, qi) => ({
+          (
+            q: {
+              field: string
+              required: boolean
+              label?: string
+              help?: string
+              placeholder?: string
+              show_if?: { field: string; op: string; value: unknown }
+            },
+            qi,
+          ) => ({
             field: cited(q.field),
             required: q.required,
             ...(q.label === undefined
@@ -339,6 +356,24 @@ function rewrite(template: Template, words: Words): Record<string, unknown> {
             ...(q.help === undefined
               ? {}
               : { help: text(q.help, 'text', `${at}.spec.fields[${qi}].help`) }),
+            ...(q.placeholder === undefined
+              ? {}
+              : {
+                  placeholder: text(q.placeholder, 'text', `${at}.spec.fields[${qi}].placeholder`),
+                }),
+            // The question a condition reads, and a choice it compares with, by their labels.
+            ...(q.show_if === undefined
+              ? {}
+              : {
+                  show_if: {
+                    ...q.show_if,
+                    field: cited(q.show_if.field),
+                    value:
+                      typeof q.show_if.value === 'string'
+                        ? cited(q.show_if.value)
+                        : q.show_if.value,
+                  },
+                }),
           }),
         )
       else spec[key] = value

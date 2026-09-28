@@ -18,6 +18,8 @@ shown to them. To show rows rather than receive them, a view can be shared
 | **Signed-in members** | a member of the workspace — optionally from certain groups only | the sign-in page, then the form and “You are responding as …” |
 
 The link’s page is outside the application: no sidebar, no base name, no other rows.
+It wears the form’s appearance — its theme, its color, its font —, and only asks the
+questions that earlier answers call for.
 
 ![A public form](../../../../assets/screens/formulaire-public.png)
 

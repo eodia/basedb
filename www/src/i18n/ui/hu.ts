@@ -642,7 +642,7 @@ export default {
 			eyebrow: 'Űrlapok és kérdőívek',
 			title: 'Tegye fel kérdéseit.',
 			titleAccent: 'A válaszok maguktól rendeződnek.',
-			text: 'Egy egyoldalas űrlap, vagy egy kérdőív, amely képernyőnként egy kérdést tesz fel: ossza meg a linket, és minden válaszból egy sor lesz a táblájában. A válaszadó semmi mást nem lát.',
+			text: 'Egy egyoldalas űrlap, vagy egy kérdőív, amely képernyőnként egy kérdést tesz fel, az Ön arculatában: ossza meg a linket, és minden válaszból egy sor lesz a táblájában. A válaszadó semmi mást nem lát.',
 			modes: {
 				label: 'Kérdések megjelenítése',
 				survey: 'Kérdőív',
@@ -653,8 +653,8 @@ export default {
 				description: 'Három kérdés, és 48 órán belül jelentkezünk.',
 				count: '3 kérdés',
 				start: 'Kezdés',
-				next: 'Következő',
-				previous: 'Előző',
+				ok: 'OK',
+				hint: 'vagy Enter',
 				submit: 'Ajánlatkérés elküldése',
 				org: {
 					label: 'Az Ön szervezete',
@@ -662,13 +662,13 @@ export default {
 				},
 				need: {
 					label: 'Az Ön igénye',
-					choose: 'Kiválasztás…',
 					options: ['Weboldal', 'Arculat', 'Katalógus'],
 				},
 				budget: {
 					label: 'Az Ön költségvetése',
 					help: 'Áfa nélkül, akár hozzávetőlegesen is.',
 				},
+				sent: 'Elküldve!',
 				thanks: 'Köszönjük! 48 órán belül jelentkezünk.',
 				poweredBy: 'Az űrlapot a basedb működteti',
 				path: 'Értékesítés / Megkeresések',
@@ -695,7 +695,7 @@ export default {
 			points: {
 				survey: {
 					title: 'Kérdésenként egy képernyő',
-					text: 'A kérdőív egyenként teszi fel őket, a folyamatjelzővel; az Enter billentyű továbblép a következőre.',
+					text: 'Teljes képernyőn, billentyűzetről: Enter a továbblépéshez, A, B, C a választáshoz — az egyetlen választás magától továbblép, a beküldést pedig megünnepeljük.',
 				},
 				access: {
 					title: 'Nyilvános vagy zárt',
@@ -1527,6 +1527,17 @@ export default {
 		title: 'Mi változott a basedb-ben',
 		intro: 'Minden változás részletei <a href="https://github.com/eodia/basedb/commits/main">a tároló előzményeiben</a> találhatók. Ami ezután jön: az <a href="/feuille-de-route/">ütemterv</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Űrlapok, amelyeket öröm kitölteni',
+				tag: 'Új',
+				items: [
+					'<strong>A kérdőív az egész képernyőt kitölti</strong>: egyszerre egy kérdés, amely becsúszva jelenik meg, nagy kártyák a választásokhoz, csillagok az értékeléshez, és minden billentyűzetről — <strong>Enter</strong>, az A, B, C… betűk, I vagy N, a számok. Egy egyszeres választás önmagában továbblép a következőre. <a href="/fonctionnalites/vues/#űrlap-és-kérdőív">Űrlap és kérdőív</a>',
+					'<strong>Saját megjelenés</strong>: nyolc téma, a Világostól az Éjszakáig, a Papíron át, egy szín, egy betűtípus, egy igazítás — a megosztott hivatkozás oldala is ezt viseli.',
+					'<strong>Feltétel hozzáadása…</strong>: egy kérdés csak akkor jelenik meg, ha egy korábbi válasz ezt megkívánja; egy elrejtett kérdés se nem kötelező, se nem kerül mentésre.',
+					'<strong>Kezdéshez nincs mit beállítani</strong>: egy új űrlap azt kérdezi, amit egy személy válaszol, nem azt az állapotot, amelyet a csapat később tölt ki, a táblája színét viseli, és minden mezőben egy példát mutat. A beküldést pedig ünneplés kíséri, konfettivel együtt.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Francia vagy angol nyelvű képletek',

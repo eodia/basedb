@@ -31,7 +31,8 @@ ouvre dépend de l'**accès** :
 
 La page `/f/<jeton>` est **hors de l'application** : pas de barre latérale, pas d'onglets,
 pas de table — le titre, la description, les questions, le bouton d'envoi et le message de
-remerciement de la vue, rien d'autre. Ni le nom de la base, ni celui de la table, ni les
+remerciement de la vue, dans son apparence (thème, accent, police, chapitre 11 §1.4), rien
+d'autre. L'accent qu'elle reçoit est celui de la vue, à défaut la couleur de la table. Ni le nom de la base, ni celui de la table, ni les
 autres lignes ne sont exposés.
 
 Partager, changer l'accès, régénérer le lien ou arrêter le partage demandent
@@ -92,7 +93,10 @@ après coup qu'un champ attendu n'a jamais été demandé. Un formulaire dont il
 aucune question est fermé (`FORM_CLOSED`, raison `sans_question`).
 
 Une question est obligatoire si la vue la marque obligatoire ou si le champ l'est
-(`is_required`). Une réponse entièrement vide est refusée. Les valeurs passent par la même
+(`is_required`) — à condition d'être **posée** : une question dont la condition (`show_if`)
+ne tient pas pour les réponses reçues n'est ni exigée ni écrite, même si une valeur arrive
+pour elle ; le serveur en juge avec la même règle que l'écran (`visibleQuestions`,
+`@basedb/contracts`). Une réponse entièrement vide est refusée. Les valeurs passent par la même
 écriture que n'importe quelle ligne (chapitre 06) : normalisation, validation par type,
 unicité, valeurs par défaut — un formulaire partagé ne contourne aucune contrainte.
 
@@ -180,7 +184,7 @@ formulaire :
 
 | Méthode | Route | Effet |
 |---|---|---|
-| `GET` | `/api/v1/forms/{jeton}` | le formulaire tel que la page l'affiche : `kind`, `title`, `description`, `submit_label`, `success_message`, `allow_another`, `access`, `respondent`, `questions` |
+| `GET` | `/api/v1/forms/{jeton}` | le formulaire tel que la page l'affiche : `kind`, `title`, `description`, `submit_label`, `success_message`, `allow_another`, `access`, `respondent`, `questions` (avec `placeholder`, `show_if`, `format` d'une note ou d'un montant), `design` (`theme`, `accent`, `font`, `align`, `welcome_label`, `show_progress`, `show_numbers`, `auto_advance`, `celebrate`, `end_link`) |
 | `POST` | `/api/v1/forms/{jeton}` | `{ "values": { "<champ>": … } }` → `201 { "received": true }` |
 
 Le jeton du porteur (`Authorization: Bearer`) est **facultatif** sur ces deux routes : il

@@ -91,9 +91,31 @@ arrastando-os — até 5.000; uma ordenação escolhida prevalece sobre essa ord
 
 ## Formulário e questionário
 
-Você marca as perguntas e as ordena; cada uma tem um enunciado, uma ajuda e pode ser tornada
-obrigatória. O formulário tem seu título, sua apresentação, o rótulo do botão e a mensagem
-de agradecimento. Ele é preenchido no basedb ou [compartilhado por um link](/basedb/pt-br/fonctionnalites/formulaires-partages/).
+Você marca as perguntas e as ordena; cada uma tem um enunciado, uma ajuda, um exemplo de
+resposta, e pode ser tornada obrigatória. O formulário tem seu título, sua apresentação, o
+rótulo do botão e a mensagem de agradecimento. Ele é preenchido no basedb ou
+[compartilhado por um link](/basedb/pt-br/fonctionnalites/formulaires-partages/).
+
+Não há nada para configurar para começar: um formulário novo pergunta o que uma pessoa
+responde — não o status, a pessoa atribuída nem as relações que a equipe preenche depois, a
+menos que sejam obrigatórias —, usa a cor da sua tabela e um tema claro, e cada campo vazio
+mostra um exemplo adequado. Tudo o resto muda quando você quiser:
+
+- **Aparência**: oito temas — Claro, Suave, Aurora, Oceano, Floresta, Noite, Papel, Minimalista —,
+  uma cor de destaque, uma fonte, um alinhamento à esquerda ou centralizado;
+- **Perguntar somente se…**: uma pergunta só é feita se uma resposta anterior exigir isso
+  (“Sentimento é Negativo”, “Avaliação é no máximo 2”). Uma pergunta oculta não é obrigatória
+  nem é enviada;
+- **Mais opções**: os botões de boas-vindas e de envio, os números, a barra de progresso, o
+  avanço automático para a próxima, a mensagem e um botão final (“Voltar ao site”), os
+  confetes.
+
+O **questionário** ocupa a tela inteira: uma tela de boas-vindas que diz quanto tempo leva,
+depois uma pergunta de cada vez, que chega deslizando. Tudo também funciona pelo teclado:
+**Enter** para continuar, as letras **A**, **B**, **C**… para uma escolha, **S** ou **N** para
+sim ou não, os números para uma avaliação — uma escolha única passa sozinha para a próxima
+pergunta. O envio é comemorado: uma marca de verificação que se desenha e confetes nas cores
+do formulário.
 
 ## Compartilhar uma visão
 

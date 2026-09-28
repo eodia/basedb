@@ -1,4 +1,16 @@
 import { $t } from '@/lib/i18n'
+// Relative, as `messages.ts` does: the unit tests run without the `@/` alias.
+import {
+  FORM_ALIGNS,
+  FORM_CONDITION_OPS,
+  FORM_FONTS,
+  FORM_THEMES,
+  type FormAlign,
+  type FormCondition,
+  type FormConditionOp,
+  type FormFont,
+  type FormTheme,
+} from '@basedb/contracts'
 import {
   CalendarDays,
   ChartGantt,
@@ -10,7 +22,6 @@ import {
   SquareKanban,
   Table2,
 } from 'lucide-react'
-// Relative, as `messages.ts` does: the unit tests run without the `@/` alias.
 import type { Field, SavedView, Table, ViewKind } from './api/client'
 import { type DateKind, fromStored, isDateKind } from './dates'
 import { weekStart } from './preferences'
@@ -185,6 +196,10 @@ export interface FormQuestion {
   readonly label: string
   /** Under the question; empty falls back to the field's description. */
   readonly help: string
+  /** An example in the empty input; empty: one chosen for the kind of field. */
+  readonly placeholder: string
+  /** Asked only when an earlier answer says so; `null`: always. */
+  readonly show_if: FormCondition | null
 }
 
 export interface FormSpec {
@@ -194,6 +209,23 @@ export interface FormSpec {
   readonly submit_label: string
   readonly success_message: string
   readonly allow_another: boolean
+  /** The look — a background, a type and colours that go together. */
+  readonly theme: FormTheme
+  /** `#rrggbb`; empty: the table's colour, else the theme's. */
+  readonly accent: string
+  readonly font: FormFont
+  readonly align: FormAlign
+  /** The survey's first button; empty: « Commencer ». */
+  readonly welcome_label: string
+  readonly show_progress: boolean
+  readonly show_numbers: boolean
+  /** A single choice, a yes or no, a rating: the next question comes by itself. */
+  readonly auto_advance: boolean
+  /** Confetti when the answer is sent. */
+  readonly celebrate: boolean
+  /** A button on the last screen: back to a site, to a page. */
+  readonly end_link_label: string
+  readonly end_link_url: string
 }
 
 // ── Reading a spec, whatever came over the wire ──────────────────────────────────────
@@ -369,10 +401,16 @@ export function formSpec(raw: Raw): FormSpec {
             required: flag(item, 'required', false),
             label: text(item, 'label'),
             help: text(item, 'help'),
+            placeholder: text(item, 'placeholder'),
+            show_if: conditionOf(item.show_if),
           },
         ]
       })
     : []
+  const choice = <T extends string>(key: string, values: readonly T[], fallback: T): T => {
+    const v = raw[key]
+    return typeof v === 'string' && (values as readonly string[]).includes(v) ? (v as T) : fallback
+  }
   return {
     title: text(raw, 'title'),
     description: text(raw, 'description'),
@@ -380,6 +418,33 @@ export function formSpec(raw: Raw): FormSpec {
     submit_label: text(raw, 'submit_label'),
     success_message: text(raw, 'success_message'),
     allow_another: flag(raw, 'allow_another', true),
+    theme: choice('theme', FORM_THEMES, 'clair'),
+    accent: typeof raw.accent === 'string' && /^#[0-9a-f]{6}$/i.test(raw.accent) ? raw.accent : '',
+    font: choice('font', FORM_FONTS, 'auto'),
+    align: choice('align', FORM_ALIGNS, 'left'),
+    welcome_label: text(raw, 'welcome_label'),
+    show_progress: flag(raw, 'show_progress', true),
+    show_numbers: flag(raw, 'show_numbers', true),
+    auto_advance: flag(raw, 'auto_advance', true),
+    celebrate: flag(raw, 'celebrate', true),
+    end_link_label: text(raw, 'end_link_label'),
+    end_link_url: text(raw, 'end_link_url'),
+  }
+}
+
+/** A condition as a spec holds it — anything else reads as none. */
+function conditionOf(raw: unknown): FormCondition | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const { field, op, value } = raw as Raw
+  if (typeof field !== 'string' || typeof op !== 'string') return null
+  if (!(FORM_CONDITION_OPS as readonly string[]).includes(op)) return null
+  return {
+    field,
+    op: op as FormConditionOp,
+    value:
+      typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+        ? value
+        : null,
   }
 }
 
@@ -416,6 +481,30 @@ export const selfLinkFields = (table: Table, fields: readonly Field[]) =>
  */
 export const askableFields = (fields: readonly Field[]) =>
   fields.filter((f) => f.read_only !== true && f.ai !== true && f.kind !== 'formula')
+
+/**
+ * The questions a new form starts with — a smart default, so nobody has to sort a list
+ * before the first answer: every askable field, but the ones a team fills in AFTER an
+ * answer comes — a person to assign, a relation to another table, a status or a stage —
+ * are left out unless the table requires them. They stay one tick away in the editor.
+ */
+export function defaultQuestions(fields: readonly Field[]): Field[] {
+  const askable = askableFields(fields)
+  const workflow =
+    /^(statut|status|état|etat|estado|stato|stav|stan|tila|durum|статус|стан|状态|ステータス|상태|étape|etape|stage|phase|fase|avancement|priorité|priorite|priority|prioridad|priorità|priorität|prioriteit)$/i
+  const picked = askable.filter(
+    (f) =>
+      f.required === true ||
+      !(
+        f.kind === 'user' ||
+        f.kind === 'link' ||
+        f.kind === 'multi_link' ||
+        f.kind === 'button' ||
+        (f.kind === 'select' && workflow.test(f.label.trim()))
+      ),
+  )
+  return picked.length > 0 ? picked : askable
+}
 
 /**
  * The field that names a row on a card: the one the view chose, else the table's display
@@ -519,17 +608,32 @@ export function defaultSpec(kind: ViewKind, table: Table, current: DataSpec): Ra
       return {
         title: table.label,
         description: '',
-        // Every field a person can fill, the required ones required: a form that leaves
-        // one out could never be sent.
-        fields: askableFields(fields).map((f) => ({
+        // What a person answers — not what the team fills in after (who handles it, how
+        // far along it is) —, the required ones required: a form that leaves one out could
+        // never be sent. Nothing else to decide: every choice below has a good default.
+        fields: defaultQuestions(fields).map((f) => ({
           field: f.name,
           required: f.required === true,
           label: '',
           help: '',
+          placeholder: '',
+          show_if: null,
         })),
         submit_label: '',
         success_message: '',
         allow_another: true,
+        theme: 'clair',
+        // Empty: the table's own colour, so a form already wears its table's.
+        accent: '',
+        font: 'auto',
+        align: 'left',
+        welcome_label: '',
+        show_progress: true,
+        show_numbers: true,
+        auto_advance: true,
+        celebrate: true,
+        end_link_label: '',
+        end_link_url: '',
       }
   }
 }

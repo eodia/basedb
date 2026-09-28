@@ -18,6 +18,8 @@ táblából semmi mást nem lát. Ha sorokat szeretne megmutatni, nem fogadni, e
 | **Bejelentkezett tagok** | a munkaterület egy tagja – szükség esetén csak bizonyos csoportokból | a bejelentkezés, majd az űrlap és a „Válaszadóként: …” felirat |
 
 A hivatkozás oldala az alkalmazáson kívül van: se oldalsáv, se adatbázisnév, se más sorok.
+Az űrlap megjelenését viseli – a témáját, a színét, a betűtípusát –, és csak azokat a kérdéseket
+teszi fel, amelyeket a korábbi válaszok megkívánnak.
 
 ![Egy nyilvános űrlap](../../../../assets/screens/formulaire-public.png)
 

@@ -646,7 +646,7 @@ export default {
 			eyebrow: 'Formularer og spørgeskemaer',
 			title: 'Stil dine spørgsmål.',
 			titleAccent: 'Svarene sorterer sig selv.',
-			text: 'Et formular på én side, eller et spørgeskema, der stiller ét spørgsmål ad gangen: del linket, og hvert svar bliver en række i din tabel. Den, der svarer, ser ikke andet.',
+			text: 'En formular på én side, eller et spørgeskema, der stiller ét spørgsmål ad gangen, i dine farver: del linket, og hvert svar bliver en række i din tabel. Den, der svarer, ser ikke andet.',
 			modes: {
 				label: 'Vis spørgsmålene',
 				survey: 'Spørgeskema',
@@ -657,8 +657,8 @@ export default {
 				description: 'Tre spørgsmål, og vi vender tilbage til dig inden for 48 timer.',
 				count: '3 spørgsmål',
 				start: 'Start',
-				next: 'Næste',
-				previous: 'Forrige',
+				ok: 'OK',
+				hint: 'eller Enter',
 				submit: 'Send min forespørgsel',
 				org: {
 					label: 'Din organisation',
@@ -666,13 +666,13 @@ export default {
 				},
 				need: {
 					label: 'Dit behov',
-					choose: 'Vælg…',
 					options: ['Hjemmeside', 'Visuel identitet', 'Katalog'],
 				},
 				budget: {
 					label: 'Dit budget',
 					help: 'Uden moms, også som et skøn.',
 				},
+				sent: 'Sendt!',
 				thanks: 'Tak! Vi vender tilbage til dig inden for 48 timer.',
 				poweredBy: 'Formular drevet af basedb',
 				path: 'Salg / Forespørgsler',
@@ -699,7 +699,7 @@ export default {
 			points: {
 				survey: {
 					title: 'Ét spørgsmål ad gangen',
-					text: 'Spørgeskemaet stiller dem ét ad gangen med sin fremdriftslinje; Enter går videre til det næste.',
+					text: 'I fuld skærm, med tastaturet: Enter for at fortsætte, A, B, C for at vælge — et enkelt valg går alene videre, og afsendelsen fejres.',
 				},
 				access: {
 					title: 'Offentligt eller forbeholdt',
@@ -1531,6 +1531,17 @@ export default {
 		title: 'Hvad der er ændret i basedb',
 		intro: 'Detaljerne om hver ændring findes i <a href="https://github.com/eodia/basedb/commits/main">repositoriets historik</a>. Det, der kommer bagefter: <a href="/feuille-de-route/">køreplanen</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Formularer, man har lyst til at udfylde',
+				tag: 'Ny',
+				items: [
+					'<strong>Spørgeskemaet fylder hele skærmen</strong>: ét spørgsmål ad gangen, som glider ind, store kort til valgene, stjerner til en bedømmelse, og alt med tastaturet — <strong>Enter</strong>, bogstaverne A, B, C…, J eller N, tallene. Et enkelt valg går alene videre. <a href="/fonctionnalites/vues/#formular-og-spørgeskema">Formular og spørgeskema</a>',
+					'<strong>Et eget udseende</strong>: otte temaer, fra Lyst til Nat via Papir, en farve, en skrifttype, en justering — siden for et delt link bærer det også.',
+					'<strong>Spørg kun hvis…</strong>: et spørgsmål stilles kun, hvis et tidligere svar kalder på det; et skjult spørgsmål er hverken påkrævet eller gemt.',
+					'<strong>Intet at indstille for at komme i gang</strong>: en ny formular spørger om det, en person svarer, ikke status, som teamet udfylder senere, bærer farven fra sin tabel og viser et eksempel i hvert felt. Og afsendelsen fejres, konfetti inklusive.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Formler på fransk eller engelsk',

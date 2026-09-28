@@ -1,6 +1,15 @@
 'use client'
 
 import { FieldIcon } from '@/components/app/field-icon'
+import { placeholderFor } from '@/components/app/forms/answers'
+import {
+  AccentPicker,
+  AlignPicker,
+  ConditionEditor,
+  FontPicker,
+  ThemeGallery,
+  keepConditions,
+} from '@/components/app/forms/settings'
 import { TemplateEditor } from '@/components/app/views/template-editor'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -19,6 +28,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Hint } from '@/components/ui/tooltip'
 import type { Field, SavedView, Table, ViewKind } from '@/lib/api/client'
 import { CARD_TEMPLATE_MAX } from '@/lib/card-template'
+import { formatOf } from '@/lib/format'
 import { $t } from '@/lib/i18n'
 import type { ViewState } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
@@ -58,7 +68,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ArrowDown, ArrowUp, Filter, GripVertical, Lock } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronRight, Filter, GripVertical, Lock } from 'lucide-react'
 import { type ReactNode, useEffect, useId, useMemo, useState } from 'react'
 
 /**
@@ -595,7 +605,13 @@ export function ViewDialog({
               )}
 
               {(kind === 'form' || kind === 'survey') && (
-                <FormSettings kind={kind} fields={fields} spec={spec} setSpec={setSpec} />
+                <FormSettings
+                  kind={kind}
+                  fields={fields}
+                  spec={spec}
+                  setSpec={setSpec}
+                  tableColor={table.color}
+                />
               )}
 
               {KIND_INFO[kind].data && !editing && hasCurrent && (
@@ -1014,44 +1030,70 @@ function ChecklistRow({
   )
 }
 
-/** A form's page and its questions — shared by the form and the survey. */
+/**
+ * A form's page and its questions — shared by the form and the survey. What matters shows
+ * first — the words, the look, the questions —; the rest waits folded under « Plus
+ * d'options », every one of its choices already on a good default.
+ */
 function FormSettings({
   kind,
   fields,
   spec,
   setSpec,
+  tableColor,
 }: {
   readonly kind: 'form' | 'survey'
   readonly fields: readonly Field[]
   readonly spec: Spec
   readonly setSpec: (update: (s: Spec) => Spec) => void
+  readonly tableColor: string | null | undefined
 }) {
   const form = formSpec(spec)
   const askable = askableFields(fields)
   // A field the table requires cannot be left out: the row would be refused.
   const locked = new Set(askable.filter((f) => f.required === true).map((f) => f.name))
   const byName = new Map(form.fields.map((q) => [q.field, q]))
+  const [more, setMore] = useState(false)
 
   const setQuestions = (names: readonly string[]) =>
     setSpec((s) => ({
       ...s,
-      fields: names.map(
-        (n): FormQuestion =>
-          byName.get(n) ?? {
-            field: n,
-            required: askable.find((f) => f.name === n)?.required === true,
-            label: '',
-            help: '',
-          },
+      fields: keepConditions(
+        names.map(
+          (n): FormQuestion =>
+            byName.get(n) ?? {
+              field: n,
+              required: askable.find((f) => f.name === n)?.required === true,
+              label: '',
+              help: '',
+              placeholder: '',
+              show_if: null,
+            },
+        ),
       ),
     }))
   const patchQuestion = (name: string, patch: Partial<FormQuestion>) =>
     setSpec((s) => ({
       ...s,
-      fields: formSpec(s).fields.map((q) => (q.field === name ? { ...q, ...patch } : q)),
+      fields: keepConditions(
+        formSpec(s).fields.map((q) => (q.field === name ? { ...q, ...patch } : q)),
+      ),
     }))
-  const setText = (key: string) => (e: { target: { value: string } }) =>
-    setSpec((s) => ({ ...s, [key]: e.target.value }))
+  const set = (key: string, value: unknown) => setSpec((s) => ({ ...s, [key]: value }))
+  const setText = (key: string) => (e: { target: { value: string } }) => set(key, e.target.value)
+
+  /** The questions before this one, as the condition editor offers them. */
+  const earlierThan = (name: string) => {
+    const at = form.fields.findIndex((q) => q.field === name)
+    return form.fields.slice(0, Math.max(0, at)).flatMap((q) => {
+      const field = askable.find((f) => f.name === q.field)
+      return field === undefined ? [] : [{ question: q, field }]
+    })
+  }
+  /** The kinds whose empty input shows an example. */
+  const typed = (field: Field) =>
+    ['short_text', 'long_text', 'email', 'url', 'number'].includes(field.kind) &&
+    formatOf(field) !== 'rating'
 
   return (
     <>
@@ -1076,6 +1118,27 @@ function FormSettings({
           className="mt-2 text-sm"
           aria-label={$t('Présentation du formulaire')}
         />
+      </Section>
+
+      <Section
+        title={$t('Apparence')}
+        hint={$t(
+          'Un thème, une couleur, une police : tout est déjà réglé, changez ce que vous voulez.',
+        )}
+      >
+        <ThemeGallery look={form} tableColor={tableColor} onChange={(v) => set('theme', v)} />
+        <div className="mt-3 space-y-3">
+          <AccentPicker
+            accent={form.accent}
+            tableColor={tableColor}
+            theme={form.theme}
+            onChange={(v) => set('accent', v)}
+          />
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <FontPicker font={form.font} theme={form.theme} onChange={(v) => set('font', v)} />
+            <AlignPicker align={form.align} onChange={(v) => set('align', v)} />
+          </div>
+        </div>
       </Section>
 
       <Section
@@ -1114,6 +1177,18 @@ function FormSettings({
                   maxLength={1000}
                   aria-label={$t('Aide de la question {label}', { label: field.label })}
                 />
+                {typed(field) && (
+                  <Input
+                    value={q.placeholder}
+                    onChange={(e) => patchQuestion(field.name, { placeholder: e.target.value })}
+                    placeholder={$t('Exemple de réponse : {example}', {
+                      example: placeholderFor(field),
+                    })}
+                    className="h-8 text-xs sm:col-span-2"
+                    maxLength={255}
+                    aria-label={$t('Exemple de réponse pour {label}', { label: field.label })}
+                  />
+                )}
                 <SwitchRow
                   className="text-xs sm:col-span-2"
                   label={$t('Réponse obligatoire')}
@@ -1121,38 +1196,117 @@ function FormSettings({
                   disabled={locked.has(field.name)}
                   onChange={(v) => patchQuestion(field.name, { required: v })}
                 />
+                <div className="sm:col-span-2">
+                  <ConditionEditor
+                    condition={q.show_if}
+                    earlier={earlierThan(field.name)}
+                    onChange={(show_if) => patchQuestion(field.name, { show_if })}
+                  />
+                </div>
               </div>
             )
           }}
         />
       </Section>
 
-      <Section title={$t('Envoi')}>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Input
-            value={form.submit_label}
-            onChange={setText('submit_label')}
-            placeholder={$t('Libellé du bouton : Envoyer')}
-            maxLength={60}
-            aria-label={$t('Libellé du bouton d’envoi')}
-          />
-          <SwitchRow
-            className="text-sm"
-            label={$t('Proposer une nouvelle réponse')}
-            checked={form.allow_another}
-            onChange={(v) => setSpec((s) => ({ ...s, allow_another: v }))}
-          />
-        </div>
-        <Textarea
-          value={form.success_message}
-          onChange={setText('success_message')}
-          placeholder={$t('Message après l’envoi : Merci, votre réponse a été enregistrée.')}
-          rows={2}
-          maxLength={2000}
-          className="text-sm"
-          aria-label={$t('Message après l’envoi')}
-        />
-      </Section>
+      <div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-2 h-8 gap-1.5 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          onClick={() => setMore((m) => !m)}
+          aria-expanded={more}
+        >
+          <ChevronRight className={cn('size-3.5 transition-transform', more && 'rotate-90')} />
+          {$t('Plus d’options')}
+        </Button>
+        {more && (
+          <div className="mt-3 space-y-6">
+            <Section title={$t('Déroulé')}>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {kind === 'survey' && (
+                  <Input
+                    value={form.welcome_label}
+                    onChange={setText('welcome_label')}
+                    placeholder={$t('Bouton d’accueil : Commencer')}
+                    maxLength={60}
+                    aria-label={$t('Libellé du bouton d’accueil')}
+                  />
+                )}
+                <Input
+                  value={form.submit_label}
+                  onChange={setText('submit_label')}
+                  placeholder={$t('Libellé du bouton : Envoyer')}
+                  maxLength={60}
+                  aria-label={$t('Libellé du bouton d’envoi')}
+                />
+              </div>
+              <div className="grid gap-2 text-sm sm:grid-cols-2">
+                <SwitchRow
+                  label={$t('Numéroter les questions')}
+                  checked={form.show_numbers}
+                  onChange={(v) => set('show_numbers', v)}
+                />
+                {kind === 'survey' && (
+                  <>
+                    <SwitchRow
+                      label={$t('Barre de progression')}
+                      checked={form.show_progress}
+                      onChange={(v) => set('show_progress', v)}
+                    />
+                    <SwitchRow
+                      label={$t('Passer seul à la suite après un choix')}
+                      checked={form.auto_advance}
+                      onChange={(v) => set('auto_advance', v)}
+                    />
+                  </>
+                )}
+              </div>
+            </Section>
+
+            <Section title={$t('Écran de fin')}>
+              <Textarea
+                value={form.success_message}
+                onChange={setText('success_message')}
+                placeholder={$t('Message après l’envoi : Merci, votre réponse a été enregistrée.')}
+                rows={2}
+                maxLength={2000}
+                className="text-sm"
+                aria-label={$t('Message après l’envoi')}
+              />
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Input
+                  value={form.end_link_label}
+                  onChange={setText('end_link_label')}
+                  placeholder={$t('Bouton de fin : Continuer')}
+                  maxLength={60}
+                  aria-label={$t('Libellé du bouton de fin')}
+                />
+                <Input
+                  value={form.end_link_url}
+                  onChange={setText('end_link_url')}
+                  placeholder="https://"
+                  inputMode="url"
+                  maxLength={2000}
+                  aria-label={$t('Adresse du bouton de fin')}
+                />
+              </div>
+              <div className="grid gap-2 text-sm sm:grid-cols-2">
+                <SwitchRow
+                  label={$t('Confettis à l’envoi')}
+                  checked={form.celebrate}
+                  onChange={(v) => set('celebrate', v)}
+                />
+                <SwitchRow
+                  label={$t('Proposer une nouvelle réponse')}
+                  checked={form.allow_another}
+                  onChange={(v) => set('allow_another', v)}
+                />
+              </div>
+            </Section>
+          </div>
+        )}
+      </div>
     </>
   )
 }

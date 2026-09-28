@@ -3986,7 +3986,36 @@ export function createApp(options: AppOptions) {
         allow_another: form.allowAnother,
         access: form.access,
         respondent: form.respondent,
-        questions: form.questions,
+        questions: form.questions.map((q) => ({
+          name: q.name,
+          label: q.label,
+          help: q.help,
+          kind: q.kind,
+          required: q.required,
+          options: q.options,
+          placeholder: q.placeholder,
+          show_if: q.showIf,
+          format:
+            q.format === null
+              ? null
+              : {
+                  display: q.format.display,
+                  rating_max: q.format.ratingMax,
+                  currency: q.format.currency,
+                },
+        })),
+        design: {
+          theme: form.design.theme,
+          accent: form.design.accent,
+          font: form.design.font,
+          align: form.design.align,
+          welcome_label: form.design.welcomeLabel,
+          show_progress: form.design.showProgress,
+          show_numbers: form.design.showNumbers,
+          auto_advance: form.design.autoAdvance,
+          celebrate: form.design.celebrate,
+          end_link: form.design.endLink,
+        },
       },
     })
   })

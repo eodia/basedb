@@ -256,15 +256,14 @@
       "components/app/environments-editor.tsx:319"
     ]
   },
+  "« {label} » demande une réponse.": {
+    "where": [
+      "components/app/forms/form-fill.tsx:236"
+    ]
+  },
   "« {label} » enregistrée": {
     "where": [
       "components/app/workspace.tsx:588"
-    ]
-  },
-  "« {label} » est obligatoire.": {
-    "where": [
-      "components/app/views/form-view.tsx:243",
-      "components/app/views/form-view.tsx:361"
     ]
   },
   "« {label} » lancé": {
@@ -274,7 +273,7 @@
   },
   "« {label} » n’a pas pu être rendu obligatoire.": {
     "where": [
-      "lib/templates.ts:680"
+      "lib/templates.ts:703"
     ]
   },
   "« {label} » synchronisée{value}": {
@@ -395,7 +394,7 @@
   },
   "{blocked} Ajoutez-en un depuis l’écran « Structure », puis revenez créer la vue.": {
     "where": [
-      "components/app/views/view-dialog.tsx:264"
+      "components/app/views/view-dialog.tsx:274"
     ]
   },
   "{broken} Corrigez sa définition, puis enregistrez pour la remettre en place.": {
@@ -709,14 +708,14 @@
     "one": "{count} proposition d’agent en attente",
     "other": "{count} propositions d’agent en attente",
     "where": [
-      "components/app/sidebar.tsx:1020"
+      "components/app/sidebar.tsx:1018"
     ]
   },
   "{count} questions": {
     "one": "{count} question",
     "other": "{count} questions",
     "where": [
-      "components/app/views/form-view.tsx:388"
+      "components/app/forms/form-fill.tsx:573"
     ]
   },
   "{count} recalculs par jour": {
@@ -920,9 +919,9 @@
       "components/app/share-access-dialog.tsx:347"
     ]
   },
-  "{lackingCount} questions obligatoires sont sans réponse.": {
+  "{lackingCount} questions demandent une réponse.": {
     "where": [
-      "components/app/views/form-view.tsx:244"
+      "components/app/forms/form-fill.tsx:237"
     ]
   },
   "{live_aliases} alias déjà en place (cinq au plus).": {
@@ -934,16 +933,6 @@
     "where": [
       "components/app/automation-flow.tsx:294",
       "components/product-glimpse.tsx:1001"
-    ]
-  },
-  "{name} — vue SQL": {
-    "where": [
-      "components/app/sidebar.tsx:1097"
-    ]
-  },
-  "{name} — vue SQL à corriger": {
-    "where": [
-      "components/app/sidebar.tsx:1096"
     ]
   },
   "{name} du {values} au {values2}": {
@@ -1101,6 +1090,7 @@
   },
   "{value} sur {max}": {
     "where": [
+      "components/app/forms/inputs.tsx:433",
       "components/app/value-widgets.tsx:74"
     ]
   },
@@ -1142,6 +1132,11 @@
   "← {fnLabels} de…": {
     "where": [
       "components/app/analytics/notebook.tsx:567"
+    ]
+  },
+  "+33 6 12 34 56 78": {
+    "where": [
+      "components/app/forms/answers.ts:63"
     ]
   },
   "= {expression} (calculée à chaque lecture)": {
@@ -1191,7 +1186,7 @@
   },
   "à corriger": {
     "where": [
-      "components/app/sidebar.tsx:1101"
+      "components/app/sidebar.tsx:1094"
     ]
   },
   "À corriger": {
@@ -1221,7 +1216,8 @@
   },
   "À gauche": {
     "where": [
-      "components/app/analytics/viz-settings.tsx:598"
+      "components/app/analytics/viz-settings.tsx:598",
+      "components/app/forms/settings.tsx:189"
     ]
   },
   "À heure fixe": {
@@ -1289,7 +1285,7 @@
   },
   "À quoi sert cette vue ? (facultatif)": {
     "where": [
-      "components/app/views/view-dialog.tsx:287"
+      "components/app/views/view-dialog.tsx:297"
     ]
   },
   "À quoi sert-elle ? (facultatif)": {
@@ -1305,6 +1301,11 @@
   "a supprimé, en chaîne,": {
     "where": [
       "components/app/history.tsx:217"
+    ]
+  },
+  "a une réponse": {
+    "where": [
+      "components/app/forms/settings.tsx:224"
     ]
   },
   "À vous d’explorer.": {
@@ -1359,7 +1360,7 @@
   },
   "Accueil": {
     "where": [
-      "components/app/views/view-dialog.tsx:1058"
+      "components/app/views/view-dialog.tsx:1100"
     ]
   },
   "Actif": {
@@ -1386,12 +1387,12 @@
   },
   "Actions sur {kind} {label}": {
     "where": [
-      "components/app/sidebar.tsx:1455"
+      "components/app/sidebar.tsx:1437"
     ]
   },
   "Actions sur la base {label}": {
     "where": [
-      "components/app/sidebar.tsx:1047"
+      "components/app/sidebar.tsx:1045"
     ]
   },
   "Actions sur la carte": {
@@ -1411,7 +1412,7 @@
   },
   "Actions sur la table {label}": {
     "where": [
-      "components/app/sidebar.tsx:1314"
+      "components/app/sidebar.tsx:1299"
     ]
   },
   "Actions sur la vue {label}": {
@@ -1530,6 +1531,11 @@
   "Adresse du bouton": {
     "where": [
       "components/app/schema-editor.tsx:1432"
+    ]
+  },
+  "Adresse du bouton de fin": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1291"
     ]
   },
   "Adresse du flux d’agenda": {
@@ -1689,12 +1695,12 @@
   },
   "Aide de la question {label}": {
     "where": [
-      "components/app/views/view-dialog.tsx:1115"
+      "components/app/views/view-dialog.tsx:1178"
     ]
   },
   "Aide sous la question": {
     "where": [
-      "components/app/views/view-dialog.tsx:1112"
+      "components/app/views/view-dialog.tsx:1175"
     ]
   },
   "Aire": {
@@ -1923,7 +1929,7 @@
   },
   "Ajoutez au moins une question.": {
     "where": [
-      "components/app/views/view-dialog.tsx:659"
+      "components/app/views/view-dialog.tsx:675"
     ]
   },
   "Ajoutez un filtre depuis la barre ci-dessus : il pilotera les cartes que vous lui reliez.": {
@@ -1949,6 +1955,11 @@
   "Alias de compatibilité…": {
     "where": [
       "components/app/sidebar.tsx:851"
+    ]
+  },
+  "Alignement": {
+    "where": [
+      "components/app/forms/settings.tsx:193"
     ]
   },
   "Alimentation": {
@@ -2216,7 +2227,7 @@
   },
   "Après le titre, dans cet ordre.": {
     "where": [
-      "components/app/views/view-dialog.tsx:565"
+      "components/app/views/view-dialog.tsx:575"
     ]
   },
   "Archivé": {
@@ -2260,6 +2271,11 @@
     "where": [
       "components/app/analytics/share-dashboard-dialog.tsx:423",
       "components/app/views/share-dialog.tsx:651"
+    ]
+  },
+  "Arrondie": {
+    "where": [
+      "components/app/forms/theme.ts:158"
     ]
   },
   "Articles d'aide et questions des clients : l'IA résume, classe et propose une réponse à partir des articles.": {
@@ -2348,7 +2364,7 @@
   "Aucun": {
     "where": [
       "components/app/grid/data-grid.tsx:1109",
-      "components/app/views/view-dialog.tsx:953"
+      "components/app/views/view-dialog.tsx:969"
     ]
   },
   "aucun accès": {
@@ -2392,7 +2408,7 @@
   },
   "Aucun champ de ce type dans la table.": {
     "where": [
-      "components/app/views/view-dialog.tsx:754"
+      "components/app/views/view-dialog.tsx:770"
     ]
   },
   "Aucun champ lisible de la table ne porte ce nom": {
@@ -2402,12 +2418,12 @@
   },
   "Aucun champ ne peut être saisi.": {
     "where": [
-      "lib/views.ts:550"
+      "lib/views.ts:654"
     ]
   },
   "Aucun champ.": {
     "where": [
-      "components/app/views/view-dialog.tsx:911"
+      "components/app/views/view-dialog.tsx:927"
     ]
   },
   "aucun chemin ne convenait": {
@@ -2609,7 +2625,7 @@
   },
   "Aucune base.": {
     "where": [
-      "components/app/sidebar.tsx:1256"
+      "components/app/sidebar.tsx:1242"
     ]
   },
   "Aucune carte": {
@@ -2793,7 +2809,7 @@
     "where": [
       "components/app/analytics/notebook.tsx:238",
       "components/app/environments-dialog.tsx:1174",
-      "components/app/sidebar.tsx:1156"
+      "components/app/sidebar.tsx:1142"
     ]
   },
   "Aucune valeur": {
@@ -2816,6 +2832,11 @@
       "components/app/date-picker.tsx:366",
       "components/app/history.tsx:60",
       "components/app/structure-history.tsx:48"
+    ]
+  },
+  "Aurore": {
+    "where": [
+      "components/app/forms/theme.ts:64"
     ]
   },
   "Aussi ici : {map}": {
@@ -2857,18 +2878,18 @@
   },
   "Automatisation « {label} » : un modèle n’appelle pas l’extérieur, action retirée.": {
     "where": [
-      "lib/template-export.ts:499"
+      "lib/template-export.ts:523"
     ]
   },
   "Automatisation « {label} » : un modèle ne porte pas encore ses conditions, recherches ni étapes qui s’en citent, elle est laissée de côté.": {
     "where": [
-      "lib/template-export.ts:449"
+      "lib/template-export.ts:473"
     ]
   },
   "Automatisation « {label} »…": {
     "where": [
-      "lib/templates.ts:639",
-      "lib/templates.ts:709"
+      "lib/templates.ts:662",
+      "lib/templates.ts:732"
     ]
   },
   "Automatisation « {token_label} »": {
@@ -2918,7 +2939,8 @@
   },
   "Autre couleur": {
     "where": [
-      "components/app/analytics/viz-settings.tsx:284"
+      "components/app/analytics/viz-settings.tsx:284",
+      "components/app/forms/settings.tsx:122"
     ]
   },
   "Autres": {
@@ -2942,6 +2964,11 @@
   "avant le": {
     "where": [
       "lib/analytics/model.ts:200"
+    ]
+  },
+  "Avec empattement": {
+    "where": [
+      "components/app/forms/theme.ts:154"
     ]
   },
   "avec l’éditeur visuel": {
@@ -3000,6 +3027,11 @@
     "where": [
       "components/app/markdown-text.tsx:311",
       "components/app/rich-text-editor.tsx:315"
+    ]
+  },
+  "Barre de progression": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1253"
     ]
   },
   "Barre verticale": {
@@ -3081,8 +3113,8 @@
   },
   "Bases et tables": {
     "where": [
-      "components/app/sidebar.tsx:1200",
-      "components/app/sidebar.tsx:1216"
+      "components/app/sidebar.tsx:1186",
+      "components/app/sidebar.tsx:1202"
     ]
   },
   "Bases supprimées ({deletedCount})": {
@@ -3167,12 +3199,27 @@
   },
   "Bouton « {label} »…": {
     "where": [
-      "lib/templates.ts:648"
+      "lib/templates.ts:671"
+    ]
+  },
+  "Bouton d’accueil : Commencer": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1231"
+    ]
+  },
+  "Bouton de fin : Continuer": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1281"
     ]
   },
   "Bugs et demandes triés par l'IA, suivis par sprint jusqu'à leur résolution, avec un formulaire de signalement.": {
     "where": [
       "packages/templates/catalog/suivi-tickets.json"
+    ]
+  },
+  "C’est envoyé !": {
+    "where": [
+      "components/app/forms/form-fill.tsx:353"
     ]
   },
   "C’est fait": {
@@ -3234,7 +3281,7 @@
   "Calendrier": {
     "where": [
       "lib/option-icons.ts:198",
-      "lib/views.ts:69",
+      "lib/views.ts:80",
       "packages/templates/catalog/calendrier-editorial.json"
     ]
   },
@@ -3282,7 +3329,7 @@
   },
   "Cartes": {
     "where": [
-      "components/app/views/view-dialog.tsx:460"
+      "components/app/views/view-dialog.tsx:470"
     ]
   },
   "Cartes du tableau": {
@@ -3419,7 +3466,7 @@
   },
   "Ce formulaire ne pose plus aucune question que vous puissiez remplir : ses champs ont été supprimés, ou ne vous sont pas ouverts.": {
     "where": [
-      "components/app/views/form-view.tsx:207"
+      "components/app/forms/form-fill.tsx:185"
     ]
   },
   "Ce groupe est fourni par basedb : il ne peut être ni renommé ni supprimé.": {
@@ -3534,7 +3581,7 @@
   },
   "Ce que la personne va remplir, et pourquoi": {
     "where": [
-      "components/app/views/view-dialog.tsx:1071"
+      "components/app/views/view-dialog.tsx:1113"
     ]
   },
   "Ce que le modèle doit écrire pour chaque ligne. Chaque {{colonne}} est remplacée par la valeur de la ligne ; la réponse est écrite dans la cellule, lue dans le type du champ. Quand l’une de ces colonnes change, la cellule est recalculée.": {
@@ -3608,6 +3655,11 @@
       "components/app/settings/appearance-tab.tsx:63"
     ]
   },
+  "Celle du thème": {
+    "where": [
+      "components/app/forms/settings.tsx:149"
+    ]
+  },
   "Celle-ci": {
     "where": [
       "components/app/settings/security-tab.tsx:214"
@@ -3621,6 +3673,11 @@
   "Celui que les autres lisent : dans un champ Personne, un commentaire, une mention, l’historique.": {
     "where": [
       "components/app/settings/profile-tab.tsx:120"
+    ]
+  },
+  "Centré": {
+    "where": [
+      "components/app/forms/settings.tsx:190"
     ]
   },
   "Cercle": {
@@ -3673,9 +3730,19 @@
       "lib/messages.ts:196"
     ]
   },
+  "Cette adresse e-mail ne semble pas complète.": {
+    "where": [
+      "components/app/forms/answers.ts:122"
+    ]
+  },
   "Cette adresse n’est pas acceptée sur cette instance.": {
     "where": [
       "lib/messages.ts:370"
+    ]
+  },
+  "Cette adresse web ne semble pas complète.": {
+    "where": [
+      "components/app/forms/answers.ts:128"
     ]
   },
   "Cette année": {
@@ -3866,7 +3933,7 @@
   },
   "Champ calculé « {label} »…": {
     "where": [
-      "lib/templates.ts:537"
+      "lib/templates.ts:560"
     ]
   },
   "Champ de tri inconnu.": {
@@ -3876,7 +3943,7 @@
   },
   "Champ IA « {label} »…": {
     "where": [
-      "lib/templates.ts:442"
+      "lib/templates.ts:465"
     ]
   },
   "Champ inconnu : « {text} ».": {
@@ -3908,7 +3975,7 @@
   },
   "Champ obligatoire de la table : le formulaire doit le demander": {
     "where": [
-      "components/app/views/view-dialog.tsx:1005"
+      "components/app/views/view-dialog.tsx:1021"
     ]
   },
   "Champ personne à prévenir": {
@@ -3933,7 +4000,7 @@
   },
   "Champs de « {label} »…": {
     "where": [
-      "lib/templates.ts:482"
+      "lib/templates.ts:505"
     ]
   },
   "Champs obligatoires non associés : {fields}.": {
@@ -3945,29 +4012,29 @@
   },
   "Champs pivots": {
     "where": [
-      "components/app/views/view-dialog.tsx:319",
-      "components/app/views/view-dialog.tsx:354",
-      "components/app/views/view-dialog.tsx:398"
+      "components/app/views/view-dialog.tsx:329",
+      "components/app/views/view-dialog.tsx:364",
+      "components/app/views/view-dialog.tsx:408"
     ]
   },
   "Champs sur chaque ligne": {
     "where": [
-      "components/app/views/view-dialog.tsx:560"
+      "components/app/views/view-dialog.tsx:570"
     ]
   },
   "Champs sur les barres": {
     "where": [
-      "components/app/views/view-dialog.tsx:558"
+      "components/app/views/view-dialog.tsx:568"
     ]
   },
   "Champs sur les cartes": {
     "where": [
-      "components/app/views/view-dialog.tsx:561"
+      "components/app/views/view-dialog.tsx:571"
     ]
   },
   "Changer d’environnement": {
     "where": [
-      "components/app/sidebar.tsx:975"
+      "components/app/sidebar.tsx:973"
     ]
   },
   "Changer de vue": {
@@ -4042,7 +4109,7 @@
   },
   "Chaque ligne posée sur sa date, au mois ou à la semaine.": {
     "where": [
-      "lib/views.ts:71"
+      "lib/views.ts:82"
     ]
   },
   "chaque lundi à 7 h": {
@@ -4233,7 +4300,7 @@
     "where": [
       "components/app/automation-steps.tsx:84",
       "components/app/computed-field-form.tsx:315",
-      "components/app/views/view-dialog.tsx:709"
+      "components/app/views/view-dialog.tsx:725"
     ]
   },
   "Choisir un fichier": {
@@ -4313,12 +4380,12 @@
   },
   "Choisissez le champ date.": {
     "where": [
-      "components/app/views/view-dialog.tsx:652"
+      "components/app/views/view-dialog.tsx:668"
     ]
   },
   "Choisissez le champ de début.": {
     "where": [
-      "components/app/views/view-dialog.tsx:654"
+      "components/app/views/view-dialog.tsx:670"
     ]
   },
   "Choisissez le champ pivot de la vue.": {
@@ -4328,7 +4395,7 @@
   },
   "Choisissez le champ qui forme les colonnes.": {
     "where": [
-      "components/app/views/view-dialog.tsx:650"
+      "components/app/views/view-dialog.tsx:666"
     ]
   },
   "Choisissez qui prévenir.": {
@@ -4426,7 +4493,7 @@
   },
   "Chronologie": {
     "where": [
-      "lib/views.ts:75",
+      "lib/views.ts:86",
       "packages/templates/catalog/gestion-projet.json"
     ]
   },
@@ -4464,6 +4531,7 @@
   },
   "Clair": {
     "where": [
+      "components/app/forms/theme.ts:36",
       "components/app/settings/appearance-tab.tsx:32",
       "components/app/user-menu.tsx:136"
     ]
@@ -4620,9 +4688,9 @@
   },
   "Colonne d’affichage de la table": {
     "where": [
-      "components/app/views/view-dialog.tsx:336",
-      "components/app/views/view-dialog.tsx:376",
-      "components/app/views/view-dialog.tsx:427"
+      "components/app/views/view-dialog.tsx:346",
+      "components/app/views/view-dialog.tsx:386",
+      "components/app/views/view-dialog.tsx:437"
     ]
   },
   "Colonne d’affichage, montrée dans les relations": {
@@ -4686,7 +4754,7 @@
   },
   "Colonnes affichées": {
     "where": [
-      "components/app/views/view-dialog.tsx:534"
+      "components/app/views/view-dialog.tsx:544"
     ]
   },
   "Colonnes cachées": {
@@ -4711,7 +4779,7 @@
   },
   "Colonnes selon": {
     "where": [
-      "components/app/views/view-dialog.tsx:321"
+      "components/app/views/view-dialog.tsx:331"
     ]
   },
   "Colonnes séparées par tabulation": {
@@ -4758,7 +4826,7 @@
   },
   "Commencer": {
     "where": [
-      "components/app/views/form-view.tsx:392"
+      "components/app/forms/form-fill.tsx:555"
     ]
   },
   "Commentaire": {
@@ -4798,7 +4866,7 @@
   "Comparer les environnements…": {
     "where": [
       "components/app/sidebar.tsx:835",
-      "components/app/sidebar.tsx:1010"
+      "components/app/sidebar.tsx:1008"
     ]
   },
   "Complet": {
@@ -4849,6 +4917,11 @@
       "packages/templates/catalog/evenements.json"
     ]
   },
+  "Confettis à l’envoi": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1296"
+    ]
+  },
   "Configuration de vue invalide.": {
     "where": [
       "lib/messages.ts:249",
@@ -4868,7 +4941,7 @@
   },
   "Configurer « {label} »": {
     "where": [
-      "components/app/views/view-dialog.tsx:209"
+      "components/app/views/view-dialog.tsx:219"
     ]
   },
   "Configurer…": {
@@ -4941,7 +5014,7 @@
   },
   "Connectez-vous pour répondre à ce formulaire.": {
     "where": [
-      "app/f/[token]/page.tsx:140"
+      "app/f/[token]/page.tsx:165"
     ]
   },
   "Connectez-vous pour retrouver vos bases et vos tables.": {
@@ -4988,7 +5061,7 @@
   },
   "Consignes, en tête du formulaire": {
     "where": [
-      "components/app/views/view-dialog.tsx:1072"
+      "components/app/views/view-dialog.tsx:1114"
     ]
   },
   "console select||mots-clés de recherche": {
@@ -5021,6 +5094,11 @@
       "components/product-glimpse.tsx:139"
     ]
   },
+  "contient": {
+    "where": [
+      "components/app/forms/settings.tsx:220"
+    ]
+  },
   "contient « {String} »": {
     "where": [
       "components/app/analytics/parameters.tsx:71"
@@ -5049,6 +5127,11 @@
   "Contient…": {
     "where": [
       "components/app/analytics/parameters.tsx:196"
+    ]
+  },
+  "Continuer": {
+    "where": [
+      "components/app/forms/form-fill.tsx:363"
     ]
   },
   "Continuer avec {label}": {
@@ -5183,9 +5266,21 @@
       "components/app/analytics/viz-settings.tsx:404"
     ]
   },
+  "Couleur de la table": {
+    "where": [
+      "components/app/forms/settings.tsx:114",
+      "components/app/forms/settings.tsx:117"
+    ]
+  },
   "Couleur des barres": {
     "where": [
       "components/app/analytics/viz-settings.tsx:1285"
+    ]
+  },
+  "Couleur du thème": {
+    "where": [
+      "components/app/forms/settings.tsx:114",
+      "components/app/forms/settings.tsx:117"
     ]
   },
   "Couleur invalide : attendu #rrggbb.": {
@@ -5200,9 +5295,9 @@
   },
   "Couleur selon": {
     "where": [
-      "components/app/views/view-dialog.tsx:379",
-      "components/app/views/view-dialog.tsx:430",
-      "components/app/views/view-dialog.tsx:501"
+      "components/app/views/view-dialog.tsx:389",
+      "components/app/views/view-dialog.tsx:440",
+      "components/app/views/view-dialog.tsx:511"
     ]
   },
   "Couleur, pictogramme ou image": {
@@ -5358,7 +5453,7 @@
   },
   "Créer la première table": {
     "where": [
-      "components/app/sidebar.tsx:1153"
+      "components/app/sidebar.tsx:1139"
     ]
   },
   "Créer la table": {
@@ -5371,7 +5466,7 @@
   "Créer la vue": {
     "where": [
       "components/app/sql/sql-view-dialog.tsx:295",
-      "components/app/views/view-dialog.tsx:637"
+      "components/app/views/view-dialog.tsx:653"
     ]
   },
   "Créer le compte": {
@@ -5615,7 +5710,7 @@
   },
   "Dans cet ordre. Les champs calculés et en lecture seule ne sont pas proposés.": {
     "where": [
-      "components/app/views/view-dialog.tsx:1088"
+      "components/app/views/view-dialog.tsx:1151"
     ]
   },
   "Dans cette table ou une autre": {
@@ -5652,12 +5747,12 @@
     "where": [
       "components/app/analytics/sql-question.tsx:32",
       "components/app/field-icon.tsx:102",
-      "components/app/views/view-dialog.tsx:356"
+      "components/app/views/view-dialog.tsx:366"
     ]
   },
   "Date de fin": {
     "where": [
-      "components/app/views/view-dialog.tsx:364"
+      "components/app/views/view-dialog.tsx:374"
     ]
   },
   "Date et heure": {
@@ -5708,7 +5803,7 @@
   },
   "Début": {
     "where": [
-      "components/app/views/view-dialog.tsx:400"
+      "components/app/views/view-dialog.tsx:410"
     ]
   },
   "début ou fin": {
@@ -5734,7 +5829,7 @@
   },
   "Décochez pour masquer, glissez pour ordonner.": {
     "where": [
-      "components/app/views/view-dialog.tsx:535"
+      "components/app/views/view-dialog.tsx:545"
     ]
   },
   "Décompte": {
@@ -5854,7 +5949,7 @@
   },
   "Dépend de": {
     "where": [
-      "components/app/views/view-dialog.tsx:437"
+      "components/app/views/view-dialog.tsx:447"
     ]
   },
   "Dépendances": {
@@ -5864,7 +5959,7 @@
   },
   "Déplacer {label}": {
     "where": [
-      "components/app/views/view-dialog.tsx:990"
+      "components/app/views/view-dialog.tsx:1006"
     ]
   },
   "Déplacer la colonne {label}": {
@@ -5944,19 +6039,24 @@
       "components/app/webhook-dialog.tsx:298"
     ]
   },
+  "Déroulé": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1225"
+    ]
+  },
   "Des barres entre une date de début et une date de fin.": {
     "where": [
-      "lib/views.ts:77"
+      "lib/views.ts:88"
     ]
   },
   "Des cartes en colonnes, une par choix d’une liste ; on les fait glisser.": {
     "where": [
-      "lib/views.ts:65"
+      "lib/views.ts:76"
     ]
   },
   "Des cartes en mosaïque, une image de couverture en tête.": {
     "where": [
-      "lib/views.ts:83"
+      "lib/views.ts:94"
     ]
   },
   "Des chemins selon ce que dit une ligne": {
@@ -6075,12 +6175,12 @@
   },
   "Description de la vue": {
     "where": [
-      "components/app/views/view-dialog.tsx:291"
+      "components/app/views/view-dialog.tsx:301"
     ]
   },
   "Description des cartes": {
     "where": [
-      "components/app/views/view-dialog.tsx:581"
+      "components/app/views/view-dialog.tsx:591"
     ]
   },
   "Description du tableau de bord": {
@@ -6301,6 +6401,11 @@
       "components/app/analytics/dashboard-view.tsx:942"
     ]
   },
+  "Doux": {
+    "where": [
+      "components/app/forms/theme.ts:50"
+    ]
+  },
   "Drapeau": {
     "where": [
       "lib/option-icons.ts:201"
@@ -6465,7 +6570,7 @@
   "Échelle": {
     "where": [
       "components/app/views/timeline-view.tsx:298",
-      "components/app/views/view-dialog.tsx:447"
+      "components/app/views/view-dialog.tsx:457"
     ]
   },
   "Échelle logarithmique": {
@@ -6493,6 +6598,11 @@
   "Écran": {
     "where": [
       "lib/option-icons.ts:329"
+    ]
+  },
+  "Écran de fin": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1267"
     ]
   },
   "Écrire": {
@@ -6788,7 +6898,7 @@
   },
   "En-tête": {
     "where": [
-      "components/app/views/view-dialog.tsx:1058"
+      "components/app/views/view-dialog.tsx:1100"
     ]
   },
   "Enregistré": {
@@ -6898,7 +7008,7 @@
   },
   "Entière": {
     "where": [
-      "components/app/views/view-dialog.tsx:481"
+      "components/app/views/view-dialog.tsx:491"
     ]
   },
   "Entonnoir": {
@@ -6932,6 +7042,11 @@
       "components/app/command-palette.tsx:2233"
     ]
   },
+  "Entrée pour valider · Maj + Entrée pour aller à la ligne": {
+    "where": [
+      "components/app/forms/form-fill.tsx:760"
+    ]
+  },
   "Entrée pour voir tous les résultats de ce groupe.": {
     "where": [
       "components/app/command-palette.tsx:1723"
@@ -6947,6 +7062,13 @@
       "packages/templates/catalog/crm.json"
     ]
   },
+  "Environ {count} minutes": {
+    "one": "Environ {count} minute",
+    "other": "Environ {count} minutes",
+    "where": [
+      "components/app/forms/form-fill.tsx:567"
+    ]
+  },
   "Environnement cible": {
     "where": [
       "components/app/environments-dialog.tsx:157"
@@ -6954,7 +7076,7 @@
   },
   "Environnement de {label} : {label2}": {
     "where": [
-      "components/app/sidebar.tsx:979"
+      "components/app/sidebar.tsx:977"
     ]
   },
   "Environnement source": {
@@ -6970,12 +7092,7 @@
   },
   "Environnements de {label}": {
     "where": [
-      "components/app/sidebar.tsx:994"
-    ]
-  },
-  "Envoi": {
-    "where": [
-      "components/app/views/view-dialog.tsx:1130"
+      "components/app/sidebar.tsx:992"
     ]
   },
   "Envoi en cours…": {
@@ -7008,7 +7125,7 @@
   },
   "Envoyer une autre réponse": {
     "where": [
-      "components/app/views/form-view.tsx:310"
+      "components/app/forms/form-fill.tsx:370"
     ]
   },
   "Envoyez-le à cette personne : valable 7 jours, pour une seule personne. Elle se connecte, ou crée son compte, en l’ouvrant.": {
@@ -7061,9 +7178,19 @@
       "components/app/table-empty-state.tsx:27"
     ]
   },
+  "est": {
+    "where": [
+      "components/app/forms/settings.tsx:218"
+    ]
+  },
   "est faux": {
     "where": [
       "lib/analytics/model.ts:203"
+    ]
+  },
+  "est sans réponse": {
+    "where": [
+      "components/app/forms/settings.tsx:225"
     ]
   },
   "est vide": {
@@ -7188,6 +7315,16 @@
   "Exemple :": {
     "where": [
       "components/app/options-editor.tsx:267"
+    ]
+  },
+  "Exemple de réponse : {example}": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1184"
+    ]
+  },
+  "Exemple de réponse pour {label}": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1189"
     ]
   },
   "exemple démo essai||mots-clés de recherche": {
@@ -7315,7 +7452,7 @@
   },
   "Facultative : une ligne s’étend alors sur plusieurs jours.": {
     "where": [
-      "components/app/views/view-dialog.tsx:365"
+      "components/app/views/view-dialog.tsx:375"
     ]
   },
   "fait": {
@@ -7490,7 +7627,7 @@
   },
   "Filtre et tri": {
     "where": [
-      "components/app/views/view-dialog.tsx:602"
+      "components/app/views/view-dialog.tsx:618"
     ]
   },
   "Filtre illisible : « champ opérateur valeur », reliés par and, or — eq, ne, gt, gte, lt, lte, contains, in, is_null…": {
@@ -7591,7 +7728,7 @@
   },
   "Fin": {
     "where": [
-      "components/app/views/view-dialog.tsx:407"
+      "components/app/views/view-dialog.tsx:417"
     ]
   },
   "Fines": {
@@ -7665,6 +7802,11 @@
       "components/app/analytics/viz-settings.tsx:1425"
     ]
   },
+  "Forêt": {
+    "where": [
+      "components/app/forms/theme.ts:90"
+    ]
+  },
   "Forges du Rhône": {
     "where": [
       "components/product-glimpse.tsx:106"
@@ -7688,7 +7830,7 @@
   },
   "Formulaire": {
     "where": [
-      "lib/views.ts:93",
+      "lib/views.ts:104",
       "packages/templates/catalog/analyse-avis.json",
       "packages/templates/catalog/base-connaissances.json"
     ]
@@ -7710,7 +7852,8 @@
   },
   "Formulaire propulsé par basedb": {
     "where": [
-      "app/f/[token]/page.tsx:191"
+      "app/f/[token]/page.tsx:204",
+      "app/f/[token]/page.tsx:218"
     ]
   },
   "Formulaire réservé": {
@@ -7758,7 +7901,7 @@
   },
   "Galerie": {
     "where": [
-      "lib/views.ts:81",
+      "lib/views.ts:92",
       "packages/templates/catalog/inventaire.json"
     ]
   },
@@ -7841,7 +7984,7 @@
   },
   "Grandes": {
     "where": [
-      "components/app/views/view-dialog.tsx:496"
+      "components/app/views/view-dialog.tsx:506"
     ]
   },
   "Granulaire": {
@@ -7865,7 +8008,7 @@
   "Grille": {
     "where": [
       "components/app/command-palette.tsx:2355",
-      "lib/views.ts:57"
+      "lib/views.ts:68"
     ]
   },
   "Groupe fourni par basedb": {
@@ -8061,12 +8204,12 @@
   },
   "Il faut un champ « Liste de choix » pour former les colonnes.": {
     "where": [
-      "lib/views.ts:543"
+      "lib/views.ts:647"
     ]
   },
   "Il faut un champ date ou date-heure.": {
     "where": [
-      "lib/views.ts:547"
+      "lib/views.ts:651"
     ]
   },
   "Il manque un opérateur après « {text} ».": {
@@ -8133,13 +8276,13 @@
     "where": [
       "components/app/field-icon.tsx:117",
       "components/app/look-picker.tsx:124",
-      "components/app/views/view-dialog.tsx:477"
+      "components/app/views/view-dialog.tsx:487"
     ]
   },
   "Image de couverture": {
     "where": [
-      "components/app/views/view-dialog.tsx:339",
-      "components/app/views/view-dialog.tsx:469"
+      "components/app/views/view-dialog.tsx:349",
+      "components/app/views/view-dialog.tsx:479"
     ]
   },
   "Image illisible.": {
@@ -8246,8 +8389,8 @@
   },
   "Importer…": {
     "where": [
-      "components/app/sidebar.tsx:1328",
-      "components/app/sidebar.tsx:1357"
+      "components/app/sidebar.tsx:1313",
+      "components/app/sidebar.tsx:1342"
     ]
   },
   "Impossible de retirer {used} : ce choix est encore utilisé.": {
@@ -8370,12 +8513,12 @@
   },
   "Intitulé : {label}": {
     "where": [
-      "components/app/views/view-dialog.tsx:1104"
+      "components/app/views/view-dialog.tsx:1167"
     ]
   },
   "Intitulé de la question {label}": {
     "where": [
-      "components/app/views/view-dialog.tsx:1107"
+      "components/app/views/view-dialog.tsx:1170"
     ]
   },
   "Inventaire et stocks": {
@@ -8647,7 +8790,7 @@
   },
   "Kanban": {
     "where": [
-      "lib/views.ts:63",
+      "lib/views.ts:74",
       "packages/templates/catalog/calendrier-editorial.json",
       "packages/templates/catalog/crm.json"
     ]
@@ -8744,14 +8887,14 @@
     "one": "L’IA n’est pas configurée : {count} champ IA créé comme un champ ordinaire, avec ses valeurs d’exemple.",
     "other": "L’IA n’est pas configurée : {count} champs IA créés comme des champs ordinaires, avec leurs valeurs d’exemple.",
     "where": [
-      "lib/templates.ts:572"
+      "lib/templates.ts:595"
     ]
   },
   "L’IA n’est pas configurée : {count} champs IA créés comme des champs ordinaires.": {
     "one": "L’IA n’est pas configurée : {count} champ IA créé comme un champ ordinaire.",
     "other": "L’IA n’est pas configurée : {count} champs IA créés comme des champs ordinaires.",
     "where": [
-      "lib/templates.ts:577"
+      "lib/templates.ts:600"
     ]
   },
   "L’IA n’est pas disponible dans la version de démo.": {
@@ -9026,7 +9169,7 @@
   },
   "la requête": {
     "where": [
-      "components/app/sidebar.tsx:1134"
+      "components/app/sidebar.tsx:1120"
     ]
   },
   "La requête a été exécutée, mais elle ne renvoie aucune ligne.": {
@@ -9158,7 +9301,7 @@
   },
   "la vue": {
     "where": [
-      "components/app/sidebar.tsx:1106",
+      "components/app/sidebar.tsx:1099",
       "components/app/views/share-dialog.tsx:91"
     ]
   },
@@ -9385,7 +9528,7 @@
   },
   "Le jour où chaque ligne est posée.": {
     "where": [
-      "components/app/views/view-dialog.tsx:357"
+      "components/app/views/view-dialog.tsx:367"
     ]
   },
   "le libellé exact": {
@@ -9416,7 +9559,7 @@
   },
   "Le même, une question par écran, avec une barre de progression.": {
     "where": [
-      "lib/views.ts:101"
+      "lib/views.ts:112"
     ]
   },
   "Le message est vide ou trop long.": {
@@ -9874,7 +10017,7 @@
   },
   "Libellé du bouton : Envoyer": {
     "where": [
-      "components/app/views/view-dialog.tsx:1135"
+      "components/app/views/view-dialog.tsx:1239"
     ]
   },
   "Libellé du bouton : Relancer": {
@@ -9882,9 +10025,19 @@
       "components/app/schema-editor.tsx:1405"
     ]
   },
+  "Libellé du bouton d’accueil": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1233"
+    ]
+  },
   "Libellé du bouton d’envoi": {
     "where": [
-      "components/app/views/view-dialog.tsx:1137"
+      "components/app/views/view-dialog.tsx:1241"
+    ]
+  },
+  "Libellé du bouton de fin": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1283"
     ]
   },
   "Libellé du champ pour la colonne {column}": {
@@ -10051,7 +10204,7 @@
   },
   "Lignes d’exemple de « {label} »…": {
     "where": [
-      "lib/templates.ts:613"
+      "lib/templates.ts:636"
     ]
   },
   "lignes de « {value} » liées par « {relation} »": {
@@ -10061,7 +10214,7 @@
   },
   "Lignes et colonnes, comme un tableur.": {
     "where": [
-      "lib/views.ts:59"
+      "lib/views.ts:70"
     ]
   },
   "Lignes par page": {
@@ -10114,7 +10267,7 @@
   "Liste": {
     "where": [
       "components/app/markdown-text.tsx:312",
-      "lib/views.ts:87",
+      "lib/views.ts:98",
       "packages/templates/catalog/base-connaissances.json"
     ]
   },
@@ -10162,7 +10315,7 @@
   },
   "Livraison prévue le {{Date}} pour {{Client}}.": {
     "where": [
-      "components/app/views/view-dialog.tsx:592"
+      "components/app/views/view-dialog.tsx:602"
     ]
   },
   "Livrée": {
@@ -10189,6 +10342,11 @@
   "Lycée Jean Moulin": {
     "where": [
       "components/product-glimpse.tsx:99"
+    ]
+  },
+  "Machine à écrire": {
+    "where": [
+      "components/app/forms/theme.ts:163"
     ]
   },
   "Maintenant": {
@@ -10252,7 +10410,7 @@
   },
   "Masquer les colonnes vides": {
     "where": [
-      "components/app/views/view-dialog.tsx:346"
+      "components/app/views/view-dialog.tsx:356"
     ]
   },
   "Masquer un champ à un groupe, ou le rendre non modifiable pour lui. Une règle ne donne jamais plus que le niveau du groupe sur la table. Les droits s’additionnent : un champ masqué pour un groupe reste visible à qui appartient aussi à un groupe qui le lit.": {
@@ -10314,7 +10472,7 @@
   },
   "Merci, votre réponse a été enregistrée.": {
     "where": [
-      "components/app/views/form-view.tsx:305"
+      "components/app/forms/form-fill.tsx:357"
     ]
   },
   "Mes vues": {
@@ -10331,12 +10489,12 @@
   },
   "Message après l’envoi": {
     "where": [
-      "components/app/views/view-dialog.tsx:1153"
+      "components/app/views/view-dialog.tsx:1275"
     ]
   },
   "Message après l’envoi : Merci, votre réponse a été enregistrée.": {
     "where": [
-      "components/app/views/view-dialog.tsx:1149"
+      "components/app/views/view-dialog.tsx:1271"
     ]
   },
   "Message d’essai envoyé à « {label} »": {
@@ -10389,6 +10547,11 @@
   "Migrer la structure de « {value} » vers « {value2} »": {
     "where": [
       "components/app/environments-dialog.tsx:485"
+    ]
+  },
+  "Minimal": {
+    "where": [
+      "components/app/forms/theme.ts:132"
     ]
   },
   "Minimum": {
@@ -10589,8 +10752,8 @@
   },
   "Modifier la table…": {
     "where": [
-      "components/app/sidebar.tsx:1335",
-      "components/app/sidebar.tsx:1364"
+      "components/app/sidebar.tsx:1320",
+      "components/app/sidebar.tsx:1349"
     ]
   },
   "Modifier la vue SQL": {
@@ -10600,7 +10763,7 @@
   },
   "Modifier la vue…": {
     "where": [
-      "components/app/sidebar.tsx:1109",
+      "components/app/sidebar.tsx:1102",
       "components/app/workspace.tsx:1687",
       "components/app/workspace.tsx:1962"
     ]
@@ -10649,7 +10812,7 @@
     "where": [
       "components/app/views/calendar-view.tsx:301",
       "components/app/views/timeline-view.tsx:51",
-      "components/app/views/view-dialog.tsx:389"
+      "components/app/views/view-dialog.tsx:399"
     ]
   },
   "mois de l’année": {
@@ -10774,7 +10937,7 @@
   },
   "Moyennes": {
     "where": [
-      "components/app/views/view-dialog.tsx:495"
+      "components/app/views/view-dialog.tsx:505"
     ]
   },
   "Musique": {
@@ -10784,12 +10947,18 @@
   },
   "n’est pas": {
     "where": [
+      "components/app/forms/settings.tsx:219",
       "lib/analytics/model.ts:187"
     ]
   },
   "n’est pas vide": {
     "where": [
       "lib/analytics/model.ts:208"
+    ]
+  },
+  "Navigation entre les questions": {
+    "where": [
+      "components/app/forms/form-fill.tsx:638"
     ]
   },
   "navigation menu gauche||mots-clés de recherche": {
@@ -10804,6 +10973,7 @@
   },
   "ne contient pas": {
     "where": [
+      "components/app/forms/settings.tsx:221",
       "lib/analytics/model.ts:189"
     ]
   },
@@ -10903,7 +11073,7 @@
   },
   "Nom de la vue": {
     "where": [
-      "components/app/views/view-dialog.tsx:281"
+      "components/app/views/view-dialog.tsx:291"
     ]
   },
   "Nom de pictogramme invalide.": {
@@ -10955,7 +11125,7 @@
     "where": [
       "components/app/analytics/question-view.tsx:387",
       "components/app/dashboards.tsx:635",
-      "components/app/sidebar.tsx:1137"
+      "components/app/sidebar.tsx:1123"
     ]
   },
   "Nom et pourcentage": {
@@ -10986,6 +11156,11 @@
   "Nom trop long pour PostgreSQL.": {
     "where": [
       "lib/messages.ts:113"
+    ]
+  },
+  "nom@exemple.fr": {
+    "where": [
+      "components/app/forms/answers.ts:59"
     ]
   },
   "Nom||nom d’une personne": {
@@ -11071,7 +11246,7 @@
     "where": [
       "components/app/analytics/filter-editor.tsx:75",
       "components/app/command-palette.tsx:377",
-      "components/app/grid/cell.tsx:163"
+      "components/app/forms/answers.ts:98"
     ]
   },
   "Non copié": {
@@ -11250,7 +11425,7 @@
     "where": [
       "components/app/command-palette.tsx:1176",
       "components/app/sidebar.tsx:517",
-      "components/app/sidebar.tsx:1263"
+      "components/app/sidebar.tsx:1249"
     ]
   },
   "Nouvelle base dans {label}": {
@@ -11324,7 +11499,7 @@
   },
   "Nouvelle vue de {label}": {
     "where": [
-      "components/app/views/view-dialog.tsx:210"
+      "components/app/views/view-dialog.tsx:220"
     ]
   },
   "Nouvelle vue SQL": {
@@ -11352,6 +11527,11 @@
       "lib/analytics/model.ts:267"
     ]
   },
+  "Nuit": {
+    "where": [
+      "components/app/forms/theme.ts:104"
+    ]
+  },
   "nuit noir foncé||mots-clés de recherche": {
     "where": [
       "components/app/command-palette.tsx:1294"
@@ -11366,6 +11546,11 @@
   "Numéros de ligne": {
     "where": [
       "components/app/analytics/viz-settings.tsx:1323"
+    ]
+  },
+  "Numéroter les questions": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1246"
     ]
   },
   "Objectif": {
@@ -11395,6 +11580,11 @@
       "components/app/lifecycle-dialogs.tsx:309"
     ]
   },
+  "obligatoire": {
+    "where": [
+      "components/app/forms/form-fill.tsx:720"
+    ]
+  },
   "Obligatoire": {
     "where": [
       "components/app/analytics/sql-question.tsx:232",
@@ -11402,8 +11592,14 @@
       "components/app/environments-dialog.tsx:191"
     ]
   },
+  "Océan": {
+    "where": [
+      "components/app/forms/theme.ts:77"
+    ]
+  },
   "OK": {
     "where": [
+      "components/app/forms/form-fill.tsx:621",
       "components/app/rich-text-editor.tsx:499"
     ]
   },
@@ -11531,21 +11727,21 @@
       "components/login.tsx:286"
     ]
   },
+  "ou appuyez sur Entrée": {
+    "where": [
+      "components/app/forms/form-fill.tsx:761"
+    ]
+  },
   "Ou des points, par leurs coordonnées :": {
     "where": [
       "components/app/analytics/viz-settings.tsx:1438"
-    ]
-  },
-  "ou Entrée": {
-    "where": [
-      "components/app/views/form-view.tsx:424"
     ]
   },
   "Oui": {
     "where": [
       "components/app/analytics/filter-editor.tsx:74",
       "components/app/command-palette.tsx:377",
-      "components/app/grid/cell.tsx:162"
+      "components/app/forms/answers.ts:97"
     ]
   },
   "oui ou non": {
@@ -11728,6 +11924,11 @@
       "lib/option-icons.ts:252"
     ]
   },
+  "Papier": {
+    "where": [
+      "components/app/forms/theme.ts:118"
+    ]
+  },
   "par": {
     "where": [
       "components/app/analytics/notebook.tsx:910"
@@ -11805,7 +12006,7 @@
   "Partager": {
     "where": [
       "components/app/analytics/dashboard-view.tsx:496",
-      "components/app/views/form-view.tsx:114"
+      "components/app/views/form-view.tsx:56"
     ]
   },
   "Partager « {label} »": {
@@ -11869,13 +12070,13 @@
   },
   "Pas de dépendances": {
     "where": [
-      "components/app/views/view-dialog.tsx:444"
+      "components/app/views/view-dialog.tsx:454"
     ]
   },
   "Pas de regroupement": {
     "where": [
-      "components/app/views/view-dialog.tsx:420",
-      "components/app/views/view-dialog.tsx:527"
+      "components/app/views/view-dialog.tsx:430",
+      "components/app/views/view-dialog.tsx:537"
     ]
   },
   "Pas encore calculé": {
@@ -11906,6 +12107,11 @@
   "passée : aucune ligne": {
     "where": [
       "lib/automations.ts:988"
+    ]
+  },
+  "Passer seul à la suite après un choix": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1258"
     ]
   },
   "Pause": {
@@ -11998,7 +12204,7 @@
   },
   "Petites": {
     "where": [
-      "components/app/views/view-dialog.tsx:494"
+      "components/app/views/view-dialog.tsx:504"
     ]
   },
   "Pictogramme": {
@@ -12053,6 +12259,11 @@
       "components/app/analytics/question-view.tsx:379"
     ]
   },
+  "Plus d’options": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1221"
+    ]
+  },
   "Plus de {ceiling} lignes sur la période : resserrez le filtre.": {
     "where": [
       "components/app/views/calendar-view.tsx:277",
@@ -12082,6 +12293,11 @@
   "Plusieurs lignes par enregistrement": {
     "where": [
       "components/app/schema-editor.tsx:1643"
+    ]
+  },
+  "Plusieurs réponses possibles": {
+    "where": [
+      "components/app/forms/inputs.tsx:328"
     ]
   },
   "Plusieurs valeurs": {
@@ -12115,6 +12331,11 @@
       "components/app/analytics/viz-settings.tsx:810"
     ]
   },
+  "Police": {
+    "where": [
+      "components/app/forms/settings.tsx:159"
+    ]
+  },
   "Portefeuille": {
     "where": [
       "lib/option-icons.ts:257"
@@ -12128,6 +12349,11 @@
   "Posée sur le flux : relisez-la, puis enregistrez.": {
     "where": [
       "components/app/automation-copilot.tsx:208"
+    ]
+  },
+  "Poser seulement si…": {
+    "where": [
+      "components/app/forms/settings.tsx:284"
     ]
   },
   "Poser sur le flux": {
@@ -12324,7 +12550,7 @@
   },
   "Présentation du formulaire": {
     "where": [
-      "components/app/views/view-dialog.tsx:1077"
+      "components/app/views/view-dialog.tsx:1119"
     ]
   },
   "Presse-papiers": {
@@ -12445,7 +12671,7 @@
   },
   "Proposer une nouvelle réponse": {
     "where": [
-      "components/app/views/view-dialog.tsx:1141"
+      "components/app/views/view-dialog.tsx:1301"
     ]
   },
   "Proposez au moins un choix à l’IA.": {
@@ -12470,7 +12696,7 @@
   },
   "Propositions en attente sur {label} : {openProposals}": {
     "where": [
-      "components/app/sidebar.tsx:1029"
+      "components/app/sidebar.tsx:1027"
     ]
   },
   "Propre à ce navigateur.": {
@@ -12634,6 +12860,11 @@
       "components/app/command-palette.tsx:345"
     ]
   },
+  "Question lue": {
+    "where": [
+      "components/app/forms/settings.tsx:364"
+    ]
+  },
   "Question partagée avec des groupes": {
     "where": [
       "components/app/dashboards.tsx:615"
@@ -12649,16 +12880,26 @@
       "components/app/dashboards.tsx:612"
     ]
   },
+  "Question précédente": {
+    "where": [
+      "components/app/forms/form-fill.tsx:644"
+    ]
+  },
+  "Question suivante": {
+    "where": [
+      "components/app/forms/form-fill.tsx:654"
+    ]
+  },
   "Questionnaire": {
     "where": [
-      "lib/views.ts:99"
+      "lib/views.ts:110"
     ]
   },
   "Questions": {
     "where": [
       "components/app/analytics/dashboard-view.tsx:1321",
       "components/app/dashboards.tsx:372",
-      "components/app/views/view-dialog.tsx:1082"
+      "components/app/views/view-dialog.tsx:1145"
     ]
   },
   "Questions et tableaux de bord": {
@@ -12759,7 +13000,7 @@
   },
   "Recadrée": {
     "where": [
-      "components/app/views/view-dialog.tsx:480"
+      "components/app/views/view-dialog.tsx:490"
     ]
   },
   "Recalcul de toutes les lignes en cours…": {
@@ -13077,8 +13318,8 @@
   },
   "Regrouper par": {
     "where": [
-      "components/app/views/view-dialog.tsx:415",
-      "components/app/views/view-dialog.tsx:520"
+      "components/app/views/view-dialog.tsx:425",
+      "components/app/views/view-dialog.tsx:530"
     ]
   },
   "Réinitialiser le mot de passe ?": {
@@ -13119,7 +13360,7 @@
   },
   "Relation « {label} »…": {
     "where": [
-      "lib/templates.ts:508"
+      "lib/templates.ts:531"
     ]
   },
   "Relation client": {
@@ -13150,7 +13391,7 @@
   },
   "Relations entre les lignes…": {
     "where": [
-      "lib/templates.ts:630"
+      "lib/templates.ts:653"
     ]
   },
   "Relié à {count} cartes.": {
@@ -13272,7 +13513,7 @@
   },
   "Répondez à au moins une question.": {
     "where": [
-      "components/app/views/form-view.tsx:253"
+      "components/app/forms/form-fill.tsx:252"
     ]
   },
   "Répondre ne demande aucun droit sur la table : chaque réponse ajoute une ligne à « {label} », et rien d’autre de la table n’est montré.": {
@@ -13303,7 +13544,7 @@
   },
   "Réponse obligatoire": {
     "where": [
-      "components/app/views/view-dialog.tsx:1119"
+      "components/app/views/view-dialog.tsx:1194"
     ]
   },
   "réponse publique": {
@@ -13339,7 +13580,7 @@
   },
   "Reprendre le filtre et le tri affichés": {
     "where": [
-      "components/app/views/view-dialog.tsx:611"
+      "components/app/views/view-dialog.tsx:627"
     ]
   },
   "Reprendre les choix d’un champ": {
@@ -13382,19 +13623,8 @@
       "components/app/command-palette.tsx:823"
     ]
   },
-  "Requête partagée avec des groupes": {
-    "where": [
-      "components/app/sidebar.tsx:1131"
-    ]
-  },
-  "Requête partagée avec toute la base": {
-    "where": [
-      "components/app/sidebar.tsx:1130"
-    ]
-  },
   "Requête personnelle": {
     "where": [
-      "components/app/sidebar.tsx:1128",
       "components/app/workspace.tsx:2366"
     ]
   },
@@ -13417,7 +13647,7 @@
   },
   "Requêtes": {
     "where": [
-      "components/app/sidebar.tsx:1117"
+      "components/app/sidebar.tsx:1110"
     ]
   },
   "Réseau": {
@@ -13602,6 +13832,11 @@
   "Retirer l’image": {
     "where": [
       "components/app/look-picker.tsx:359"
+    ]
+  },
+  "Retirer la condition": {
+    "where": [
+      "components/app/forms/settings.tsx:381"
     ]
   },
   "Retirer la condition et ses chemins": {
@@ -13830,6 +14065,11 @@
       "lib/analytics/format.ts:48"
     ]
   },
+  "Sans empattement": {
+    "where": [
+      "components/app/forms/theme.ts:149"
+    ]
+  },
   "sans expiration": {
     "where": [
       "components/app/settings/tokens-tab.tsx:159",
@@ -13843,7 +14083,7 @@
   },
   "Sans fin, chaque barre dure un jour.": {
     "where": [
-      "components/app/views/view-dialog.tsx:408"
+      "components/app/views/view-dialog.tsx:418"
     ]
   },
   "Sans titre": {
@@ -13869,14 +14109,14 @@
     "one": "Sans votre accord, {count} champ IA a été créé comme un champ ordinaire, avec ses valeurs d’exemple.",
     "other": "Sans votre accord, {count} champs IA ont été créés comme des champs ordinaires, avec leurs valeurs d’exemple.",
     "where": [
-      "lib/templates.ts:583"
+      "lib/templates.ts:606"
     ]
   },
   "Sans votre accord, {count} champs IA ont été créés comme des champs ordinaires.": {
     "one": "Sans votre accord, {count} champ IA a été créé comme un champ ordinaire.",
     "other": "Sans votre accord, {count} champs IA ont été créés comme des champs ordinaires.",
     "where": [
-      "lib/templates.ts:588"
+      "lib/templates.ts:611"
     ]
   },
   "Santé": {
@@ -14010,7 +14250,7 @@
     "where": [
       "components/app/views/calendar-view.tsx:301",
       "components/app/views/timeline-view.tsx:50",
-      "components/app/views/view-dialog.tsx:390"
+      "components/app/views/view-dialog.tsx:400"
     ]
   },
   "semaine de l’année": {
@@ -14170,7 +14410,8 @@
   },
   "Seulement si": {
     "where": [
-      "components/app/automation-steps.tsx:538"
+      "components/app/automation-steps.tsx:538",
+      "components/app/forms/settings.tsx:355"
     ]
   },
   "Seules les personnes invitées à un projet ou à une base peuvent créer un compte.": {
@@ -14296,7 +14537,7 @@
   },
   "Sous le titre, dans cet ordre.": {
     "where": [
-      "components/app/views/view-dialog.tsx:566"
+      "components/app/views/view-dialog.tsx:576"
     ]
   },
   "Sprints": {
@@ -14590,8 +14831,8 @@
   "Supprimer la table": {
     "where": [
       "components/app/schema-editor.tsx:641",
-      "components/app/sidebar.tsx:1340",
-      "components/app/sidebar.tsx:1369"
+      "components/app/sidebar.tsx:1325",
+      "components/app/sidebar.tsx:1354"
     ]
   },
   "Supprimer la table « {label} » ?": {
@@ -14769,7 +15010,7 @@
   },
   "Table « {label} » ({value}/{tablesCount})…": {
     "where": [
-      "lib/templates.ts:395"
+      "lib/templates.ts:418"
     ]
   },
   "Table « {label} » créée : {value} lignes": {
@@ -14819,7 +15060,7 @@
   },
   "Tableau « {label} » › {reason}": {
     "where": [
-      "lib/template-export.ts:394"
+      "lib/template-export.ts:418"
     ]
   },
   "Tableau croisé": {
@@ -14842,7 +15083,7 @@
   },
   "Tableau de bord « {label} »…": {
     "where": [
-      "lib/templates.ts:698"
+      "lib/templates.ts:721"
     ]
   },
   "Tableau de bord {value}": {
@@ -14940,12 +15181,17 @@
   },
   "Taille des cartes": {
     "where": [
-      "components/app/views/view-dialog.tsx:487"
+      "components/app/views/view-dialog.tsx:497"
     ]
   },
   "Tapez au moins deux lettres pour chercher dans les lignes.": {
     "where": [
       "components/app/command-palette.tsx:1986"
+    ]
+  },
+  "Tapez votre réponse ici…": {
+    "where": [
+      "components/app/forms/answers.ts:67"
     ]
   },
   "Teinte": {
@@ -15062,6 +15308,7 @@
   },
   "Thème": {
     "where": [
+      "components/app/forms/settings.tsx:44",
       "components/app/settings/appearance-tab.tsx:87",
       "components/app/settings/appearance-tab.tsx:89"
     ]
@@ -15128,13 +15375,13 @@
   },
   "Titre des cartes": {
     "where": [
-      "components/app/views/view-dialog.tsx:332",
-      "components/app/views/view-dialog.tsx:462"
+      "components/app/views/view-dialog.tsx:342",
+      "components/app/views/view-dialog.tsx:472"
     ]
   },
   "Titre du formulaire": {
     "where": [
-      "components/app/views/view-dialog.tsx:1064"
+      "components/app/views/view-dialog.tsx:1106"
     ]
   },
   "Total": {
@@ -15228,7 +15475,7 @@
   "Tout": {
     "where": [
       "components/app/command-palette.tsx:159",
-      "components/app/views/view-dialog.tsx:945"
+      "components/app/views/view-dialog.tsx:961"
     ]
   },
   "Tout cocher": {
@@ -15555,7 +15802,7 @@
   },
   "Type de vue": {
     "where": [
-      "components/app/views/view-dialog.tsx:226"
+      "components/app/views/view-dialog.tsx:236"
     ]
   },
   "Type du champ": {
@@ -15745,7 +15992,7 @@
   },
   "Un groupe repliable par choix d’une liste, par ligne liée ou par personne.": {
     "where": [
-      "components/app/views/view-dialog.tsx:521"
+      "components/app/views/view-dialog.tsx:531"
     ]
   },
   "Un groupe réunit des personnes qui doivent avoir les mêmes droits — une équipe, un service, un rôle.": {
@@ -15783,6 +16030,11 @@
       "components/app/template-gallery.tsx:1202"
     ]
   },
+  "Un montant": {
+    "where": [
+      "components/app/forms/answers.ts:65"
+    ]
+  },
   "Un mot de passe temporaire remplacera celui de {display_name}, et ses sessions ouvertes seront fermées. Un nouveau mot de passe lui sera demandé à sa prochaine connexion.": {
     "where": [
       "components/app/admin/users-tab.tsx:288"
@@ -15801,12 +16053,18 @@
   "Un nombre": {
     "where": [
       "components/app/analytics/sql-question.tsx:219",
+      "components/app/forms/answers.ts:65",
       "lib/automations.ts:149"
     ]
   },
   "un nombre arrondi": {
     "where": [
       "components/app/computed-field-form.tsx:36"
+    ]
+  },
+  "Un nombre est attendu ici.": {
+    "where": [
+      "components/app/forms/answers.ts:125"
     ]
   },
   "Un nouveau commentaire arrive dans un fil où vous avez écrit.": {
@@ -15899,6 +16157,11 @@
       "lib/automations.ts:147"
     ]
   },
+  "Un thème, une couleur, une police : tout est déjà réglé, changez ce que vous voulez.": {
+    "where": [
+      "components/app/views/view-dialog.tsx:1125"
+    ]
+  },
   "Un webhook prévient un autre système, dans la seconde, qu’une ligne a été créée, modifiée ou supprimée — y compris en SQL direct —, avec la ligne complète avant et après. Chaque envoi est signé.": {
     "where": [
       "components/app/webhook-dialog.tsx:172"
@@ -15936,7 +16199,7 @@
   },
   "Une bande par choix d’une liste, ou par ligne liée.": {
     "where": [
-      "components/app/views/view-dialog.tsx:416"
+      "components/app/views/view-dialog.tsx:426"
     ]
   },
   "Une base est un schéma PostgreSQL : ses tables y sont de vraies tables, lisibles en SQL.": {
@@ -15951,7 +16214,7 @@
   },
   "Une colonne par choix de la liste ; glisser une carte change sa valeur, glisser l’en-tête d’une colonne la déplace.": {
     "where": [
-      "components/app/views/view-dialog.tsx:322"
+      "components/app/views/view-dialog.tsx:332"
     ]
   },
   "Une condition a au moins un chemin.": {
@@ -16034,7 +16297,7 @@
   },
   "Une ligne par enregistrement, regroupées sous des titres.": {
     "where": [
-      "lib/views.ts:89"
+      "lib/views.ts:100"
     ]
   },
   "Une ligne supprimée se restaure depuis son entrée « a supprimé ».": {
@@ -16089,12 +16352,12 @@
   },
   "Une page de saisie : chaque envoi ajoute une ligne.": {
     "where": [
-      "lib/views.ts:95"
+      "lib/views.ts:106"
     ]
   },
   "Une par écran, dans cet ordre. Les champs calculés et en lecture seule ne sont pas proposés.": {
     "where": [
-      "components/app/views/view-dialog.tsx:1085"
+      "components/app/views/view-dialog.tsx:1148"
     ]
   },
   "une personne": {
@@ -16130,7 +16393,7 @@
   },
   "Une phrase sous le titre de chaque carte ; chaque {{champ}} y est remplacé par la valeur de la ligne.": {
     "where": [
-      "components/app/views/view-dialog.tsx:582"
+      "components/app/views/view-dialog.tsx:592"
     ]
   },
   "une relation": {
@@ -16140,7 +16403,7 @@
   },
   "Une relation de la table vers elle-même : une flèche relie chaque ligne à celles dont elle dépend.": {
     "where": [
-      "components/app/views/view-dialog.tsx:438"
+      "components/app/views/view-dialog.tsx:448"
     ]
   },
   "Une relation désigne une ligne absente de l’environnement cible : synchronisez d’abord la table visée.": {
@@ -16156,6 +16419,11 @@
   "Une relation vers la même table ne peut pas être obligatoire.": {
     "where": [
       "lib/messages.ts:70"
+    ]
+  },
+  "Une réponse est nécessaire ici.": {
+    "where": [
+      "components/app/forms/form-fill.tsx:215"
     ]
   },
   "Une seule ligne liée : une ligne de la cible encore liée ne peut pas être supprimée.": {
@@ -16210,7 +16478,7 @@
   },
   "Une vue est partagée avec tous ceux qui lisent la table. Elle ne change aucune donnée.": {
     "where": [
-      "components/app/views/view-dialog.tsx:217"
+      "components/app/views/view-dialog.tsx:227"
     ]
   },
   "Une vue ne lit que les tables et les vues de sa base{what}.": {
@@ -16220,7 +16488,7 @@
   },
   "Une vue personnelle n’est vue que par vous. Elle ne change aucune donnée.": {
     "where": [
-      "components/app/views/view-dialog.tsx:216"
+      "components/app/views/view-dialog.tsx:226"
     ]
   },
   "Urgent\nNormal\nPlus tard": {
@@ -16374,6 +16642,16 @@
       "lib/analytics/dashboard.ts:103"
     ]
   },
+  "vaut au moins": {
+    "where": [
+      "components/app/forms/settings.tsx:222"
+    ]
+  },
+  "vaut au plus": {
+    "where": [
+      "components/app/forms/settings.tsx:223"
+    ]
+  },
   "Vélo Solidaire": {
     "where": [
       "components/product-glimpse.tsx:120"
@@ -16474,7 +16752,7 @@
   },
   "Visible par vous seul ; les autres ne la voient pas dans leur liste.": {
     "where": [
-      "components/app/views/view-dialog.tsx:306"
+      "components/app/views/view-dialog.tsx:316"
     ]
   },
   "Visualiser": {
@@ -16611,7 +16889,7 @@
   },
   "Vous ne construisez pas cette base : vos vues sont les vôtres, invisibles pour les autres.": {
     "where": [
-      "components/app/views/view-dialog.tsx:309"
+      "components/app/views/view-dialog.tsx:319"
     ]
   },
   "Vous ne pouvez pas accorder à un jeton des droits que vous n’avez pas.": {
@@ -16621,7 +16899,7 @@
   },
   "Vous ne pouvez pas ajouter de lignes à « {label} » : ce formulaire ne vous est pas ouvert.": {
     "where": [
-      "components/app/views/form-view.tsx:123"
+      "components/app/views/form-view.tsx:65"
     ]
   },
   "Vous ne pouvez pas désactiver votre propre compte.": {
@@ -16641,7 +16919,7 @@
   },
   "Vous répondez en tant que": {
     "where": [
-      "components/app/views/form-view.tsx:332"
+      "components/app/forms/form-fill.tsx:770"
     ]
   },
   "Vous seul la voyez.": {
@@ -16661,7 +16939,7 @@
   },
   "Vue « {label} »…": {
     "where": [
-      "lib/templates.ts:689"
+      "lib/templates.ts:712"
     ]
   },
   "Vue de « {table} » · {kind}": {
@@ -16691,7 +16969,7 @@
   },
   "Vue personnelle": {
     "where": [
-      "components/app/views/view-dialog.tsx:303"
+      "components/app/views/view-dialog.tsx:313"
     ]
   },
   "Vue réservée": {
@@ -16701,8 +16979,8 @@
   },
   "vue SQL": {
     "where": [
-      "components/app/sidebar.tsx:1103",
-      "components/app/sidebar.tsx:1241"
+      "components/app/sidebar.tsx:1096",
+      "components/app/sidebar.tsx:1227"
     ]
   },
   "Vue SQL": {

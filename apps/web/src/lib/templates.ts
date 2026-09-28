@@ -146,8 +146,29 @@ export function specFor(view: TemplateView, table: BuiltTable): Record<string, u
       )
     } else if (key === 'fields' && view.kind === 'form') {
       spec.fields = (Array.isArray(value) ? value : []).flatMap(
-        (q: { field: string; required?: boolean; label?: string; help?: string }) => {
+        (q: {
+          field: string
+          required?: boolean
+          label?: string
+          help?: string
+          placeholder?: string
+          show_if?: { field: string; op: string; value: unknown }
+        }) => {
           const found = name(q.field)
+          // A condition names its question by label, and a choice by its label too.
+          const read = q.show_if === undefined ? undefined : fieldOf(table, q.show_if.field)
+          const showIf =
+            q.show_if === undefined || read === undefined
+              ? null
+              : {
+                  field: read.name,
+                  op: q.show_if.op,
+                  value:
+                    typeof q.show_if.value === 'string' &&
+                    (read.kind === 'select' || read.kind === 'multi_select')
+                      ? choiceValue(read, q.show_if.value)
+                      : (q.show_if.value ?? null),
+                }
           return found === undefined
             ? []
             : [
@@ -156,6 +177,8 @@ export function specFor(view: TemplateView, table: BuiltTable): Record<string, u
                   required: q.required === true,
                   label: q.label ?? '',
                   help: q.help ?? '',
+                  ...(q.placeholder === undefined ? {} : { placeholder: q.placeholder }),
+                  ...(showIf === null ? {} : { show_if: showIf }),
                 },
               ]
         },

@@ -18,6 +18,8 @@ taulukosta mitään muuta. Jos haluat näyttää rivejä etkä vastaanottaa niit
 | **Kirjautuneet jäsenet** | työtilan jäsen – tarvittaessa vain tietyistä ryhmistä | kirjautuminen, sitten lomake ja ”Vastaat käyttäjänä …” |
 
 Linkin sivu on sovelluksen ulkopuolella: ei sivupalkkia, tietokannan nimeä eikä muita rivejä.
+Se kantaa lomakkeen ulkoasua – sen teemaa, väriä, kirjasinta –, ja kysyy vain ne kysymykset, joita
+aiemmat vastaukset edellyttävät.
 
 ![Julkinen lomake](../../../../assets/screens/formulaire-public.png)
 

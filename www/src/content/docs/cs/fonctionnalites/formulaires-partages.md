@@ -18,7 +18,8 @@ Chcete-li řádky ukazovat, a ne je přijímat, sdílí se zobrazení
 | **Přihlášení členové** | člen pracovního prostoru – případně jen z některých skupin | přihlášení, pak formulář a „Odpovídáte jako …“ |
 
 Stránka odkazu je mimo aplikaci: žádný postranní panel, žádný název databáze, žádné jiné
-řádky.
+řádky. Nese vzhled formuláře — jeho motiv, barvu, písmo —, a klade jen otázky, které
+vyžadují dřívější odpovědi.
 
 ![Veřejný formulář](../../../../assets/screens/formulaire-public.png)
 

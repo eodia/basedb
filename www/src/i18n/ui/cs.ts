@@ -644,7 +644,7 @@ export default {
 			eyebrow: 'Formuláře a dotazníky',
 			title: 'Pokládejte otázky.',
 			titleAccent: 'Odpovědi se řadí samy.',
-			text: 'Formulář na jedné stránce, nebo dotazník, který klade jednu otázku na obrazovku: sdílejte odkaz, a každá odpověď se stane řádkem vaší tabulky. Kdo odpovídá, nevidí nic jiného.',
+			text: 'Formulář na jedné stránce, nebo dotazník, který klade jednu otázku na obrazovku, ve vašich barvách: sdílejte odkaz, a každá odpověď se stane řádkem vaší tabulky. Kdo odpovídá, nevidí nic jiného.',
 			modes: {
 				label: 'Zobrazit otázky',
 				survey: 'Dotazník',
@@ -655,8 +655,8 @@ export default {
 				description: 'Tři otázky, a ozveme se vám do 48 hodin.',
 				count: '3 otázky',
 				start: 'Začít',
-				next: 'Další',
-				previous: 'Předchozí',
+				ok: 'OK',
+				hint: 'nebo Enter',
 				submit: 'Odeslat mou poptávku',
 				org: {
 					label: 'Vaše organizace',
@@ -664,13 +664,13 @@ export default {
 				},
 				need: {
 					label: 'Vaše potřeba',
-					choose: 'Vybrat…',
 					options: ['Webové stránky', 'Vizuální identita', 'Katalog'],
 				},
 				budget: {
 					label: 'Váš rozpočet',
 					help: 'Bez DPH, i orientačně.',
 				},
+				sent: 'Odesláno!',
 				thanks: 'Děkujeme! Ozveme se vám do 48 hodin.',
 				poweredBy: 'Formulář běží na basedb',
 				path: 'Prodej / Poptávky',
@@ -699,7 +699,7 @@ export default {
 			points: {
 				survey: {
 					title: 'Jedna otázka na obrazovku',
-					text: 'Dotazník je klade jednu po druhé, s ukazatelem průběhu; Enter přejde na další.',
+					text: 'Na celou obrazovku, z klávesnice: Enter pro pokračování, A, B, C pro výběr — jediná volba sama přejde dál, a odeslání se slaví.',
 				},
 				access: {
 					title: 'Veřejný, nebo jen pro přihlášené',
@@ -1531,6 +1531,17 @@ export default {
 		title: 'Co se v basedb změnilo',
 		intro: 'Podrobnosti o každé změně najdete v <a href="https://github.com/eodia/basedb/commits/main">historii repozitáře</a>. Co přijde dál: <a href="/feuille-de-route/">plán vývoje</a>.',
 		entries: {
+			forms: {
+				date: '2026-09-29',
+				title: 'Formuláře, které chcete vyplňovat',
+				tag: 'Novinka',
+				items: [
+					'<strong>Dotazník zabírá celou obrazovku</strong>: jedna otázka za druhou, která přijíždí zboku, velké karty pro výběr, hvězdičky pro hodnocení, a vše z klávesnice — <strong>Enter</strong>, písmena A, B, C…, A nebo N, číslice. Jediná volba sama přejde dál. <a href="/fonctionnalites/vues/#formulář-a-dotazník">Formulář a dotazník</a>',
+					'<strong>Vlastní vzhled</strong>: osm motivů, od Světlého po Noc přes Papír, barva, písmo, zarovnání — stránka sdíleného odkazu ho nese také.',
+					'<strong>Zeptat se jen když…</strong>: otázka se položí, jen když to vyžaduje dřívější odpověď; skrytá otázka není ani povinná, ani uložená.',
+					'<strong>Nic k nastavení na začátek</strong>: nový formulář se ptá na to, co osoba odpovídá, ne na stav, který tým doplní později, nese barvu své tabulky a v každém poli ukazuje příklad. A odeslání se slaví, včetně konfet.',
+				],
+			},
 			formulaLanguages: {
 				date: '2026-09-28',
 				title: 'Vzorce ve francouzštině nebo angličtině',

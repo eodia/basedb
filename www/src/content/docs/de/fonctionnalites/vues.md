@@ -91,9 +91,31 @@ Sie sie ziehen – bis zu 5 000; eine gewählte Sortierung hat Vorrang vor diese
 
 ## Formular und Umfrage
 
-Sie haken die Fragen an und ordnen sie; jede hat eine Beschriftung, einen Hilfetext und kann als
-erforderlich markiert werden. Das Formular hat einen Titel, eine Einleitung, eine Beschriftung für
-seine Schaltfläche und eine Dankesnachricht. Es wird in basedb ausgefüllt oder [per Link freigegeben](/basedb/de/fonctionnalites/formulaires-partages/).
+Sie haken die Fragen an und ordnen sie; jede hat eine Beschriftung, einen Hilfetext, ein
+Antwortbeispiel und kann als erforderlich markiert werden. Das Formular hat einen Titel, eine
+Einleitung, eine Beschriftung für seine Schaltfläche und eine Dankesnachricht. Es wird in basedb
+ausgefüllt oder [per Link freigegeben](/basedb/de/fonctionnalites/formulaires-partages/).
+
+Zu Beginn ist nichts einzustellen: Ein neues Formular fragt, was eine Person antwortet – nicht
+den Status, die zugewiesene Person oder die Verknüpfungen, die das Team danach ausfüllt, außer
+sie sind erforderlich –, trägt die Farbe seiner Tabelle und ein helles Thema, und jedes leere
+Feld zeigt ein passendes Beispiel. Alles andere lässt sich jederzeit ändern:
+
+- **Darstellung**: acht Themen – Hell, Sanft, Morgenröte, Ozean, Wald, Nacht, Papier, Minimal –,
+  eine Akzentfarbe, eine Schriftart, eine linksbündige oder zentrierte Ausrichtung;
+- **Nur fragen, wenn…**: Eine Frage wird nur gestellt, wenn eine vorherige Antwort es
+  verlangt („Stimmung ist Negativ“, „Bewertung ist höchstens 2“). Eine verborgene Frage ist
+  weder erforderlich, noch wird sie gesendet;
+- **Weitere Optionen**: die Start- und Sendeschaltflächen, die Nummerierung, die
+  Fortschrittsleiste, der automatische Übergang zur nächsten Frage, die Nachricht und eine
+  Abschlussschaltfläche („Zurück zur Website“), das Konfetti.
+
+Die **Umfrage** füllt den ganzen Bildschirm: ein Begrüßungsbildschirm, der sagt, wie lange es
+dauert, dann eine Frage nach der anderen, die gleitend erscheint. Alles funktioniert auch über
+die Tastatur: **Eingabetaste** zum Fortfahren, die Buchstaben **A**, **B**, **C** … für eine
+Wahl, **J** oder **N** für Ja oder Nein, Ziffern für eine Bewertung – eine Einfachauswahl geht
+allein zur nächsten Frage über. Das Absenden wird gefeiert: Ein Häkchen zeichnet sich, und
+Konfetti in den Farben des Formulars erscheint.
 
 ## Eine Ansicht freigeben
 

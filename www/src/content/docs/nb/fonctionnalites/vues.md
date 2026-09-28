@@ -91,9 +91,27 @@ dra dem – opptil 5 000; en valgt sortering går foran denne rekkefølgen.
 
 ## Skjema og spørreundersøkelse
 
-Du krysser av for spørsmålene og ordner dem; hvert av dem har en tekst, en hjelpetekst og kan gjøres
-obligatorisk. Skjemaet har sin tittel, sin innledning, teksten på knappen og takkemeldingen
-sin. Det fylles ut i basedb, eller [deles med en lenke](/basedb/nb/fonctionnalites/formulaires-partages/).
+Du krysser av for spørsmålene og ordner dem; hvert av dem har en tekst, en hjelpetekst, et eksempel
+på svar, og kan gjøres obligatorisk. Skjemaet har sin tittel, sin innledning, teksten på knappen og
+takkemeldingen sin. Det fylles ut i basedb, eller [deles med en lenke](/basedb/nb/fonctionnalites/formulaires-partages/).
+
+Ingenting må stilles inn for å komme i gang: et nytt skjema spør om det en person svarer — ikke
+statusen, personen som er tildelt, eller relasjonene som teamet fyller ut senere, med mindre de er
+obligatoriske —, bærer fargen til tabellen sin og et lyst tema, og hvert tomme felt viser et
+tilpasset eksempel. Alt annet kan endres når man vil:
+
+- **Utseende**: åtte temaer – Lyst, Myk, Daggry, Hav, Skog, Natt, Papir, Minimal –, en
+  aksentfarge, en skrift, en venstrejustert eller sentrert justering;
+- **Spør bare hvis…**: et spørsmål stilles bare hvis et tidligere svar krever det («Følelse er
+  Negativ», «Vurdering er høyst 2»). Et skjult spørsmål er verken påkrevd eller sendt inn;
+- **Flere innstillinger**: knappene for velkomst og innsending, numrene, fremdriftslinjen, automatisk
+  overgang til neste, meldingen og en avslutningsknapp («Tilbake til nettstedet»), konfettien.
+
+**Spørreundersøkelsen** fyller hele skjermen: en velkomst som sier hvor lang tid det tar, deretter
+ett spørsmål om gangen, som glir inn. Alt kan også gjøres med tastaturet: **Enter** for å gå
+videre, bokstavene **A**, **B**, **C**… for et valg, **J** eller **N** for ja eller nei, tall for en
+vurdering – et enkeltvalg går alene videre til neste spørsmål. Innsendingen feires: en hake som
+tegnes og konfetti i skjemaets farger.
 
 ## Del en visning
 

@@ -91,9 +91,29 @@ W kanbanie, galerii i liście karty i wiersze **układa się ręcznie**, przeci�
 
 ## Formularz i ankieta
 
-Zaznacza się pytania i ustala ich kolejność; każde ma treść, podpowiedź i może być
-wymagane. Formularz ma swój tytuł, wprowadzenie, etykietę przycisku i komunikat z
-podziękowaniem. Wypełnia się go w basedb albo [udostępnia przez link](/basedb/pl/fonctionnalites/formulaires-partages/).
+Zaznacza się pytania i ustala ich kolejność; każde ma treść, podpowiedź, przykładową
+odpowiedź, i może być wymagane. Formularz ma swój tytuł, wprowadzenie, etykietę przycisku i
+komunikat z podziękowaniem. Wypełnia się go w basedb albo
+[udostępnia przez link](/basedb/pl/fonctionnalites/formulaires-partages/).
+
+Na początek nie trzeba niczego ustawiać: nowy formularz pyta o to, co odpowiada dana osoba —
+nie o status, osobę przypisaną ani relacje, które zespół uzupełnia później, chyba że są
+wymagane —, nosi kolor swojej tabeli i jasny motyw, a każde puste pole pokazuje dopasowany
+przykład. Wszystko inne zmienia się, kiedy się chce:
+
+- **Wygląd**: osiem motywów — Jasny, Łagodny, Świt, Ocean, Las, Noc, Papier, Minimalistyczny —,
+  kolor akcentu, czcionka, wyrównanie do lewej lub wyśrodkowane;
+- **Zadaj tylko, jeśli…**: pytanie pojawia się tylko wtedy, gdy wymaga tego wcześniejsza
+  odpowiedź („Sentyment to Negatywny”, „Ocena wynosi najwyżej 2”). Ukryte pytanie nie jest
+  ani wymagane, ani wysyłane;
+- **Więcej opcji**: przyciski powitania i wysyłki, numerację, pasek postępu, automatyczne
+  przechodzenie dalej, wiadomość i przycisk końcowy („Powrót do strony”), konfetti.
+
+**Ankieta** zajmuje cały ekran: powitanie, które mówi, ile to zajmie czasu, a potem jedno
+pytanie naraz, które pojawia się z przesunięciem. Wszystko działa też z klawiatury: **Enter**,
+aby przejść dalej, litery **A**, **B**, **C**… dla wyboru, **T** lub **N** dla tak lub nie,
+cyfry dla oceny — pojedynczy wybór sam przechodzi do następnego pytania. Wysłanie się
+świętuje: rysujący się znacznik i konfetti w kolorach formularza.
 
 ## Udostępnianie widoku
 

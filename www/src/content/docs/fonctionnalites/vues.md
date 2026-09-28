@@ -91,9 +91,30 @@ glissant — jusqu’à 5 000 ; un tri choisi l’emporte sur cet ordre.
 
 ## Formulaire et questionnaire
 
-On coche les questions et on les ordonne ; chacune a un intitulé, une aide, et peut être rendue
-obligatoire. Le formulaire a son titre, sa présentation, le libellé de son bouton et son message
-de remerciement. Il se remplit dans basedb, ou se [partage par un lien](/basedb/fonctionnalites/formulaires-partages/).
+On coche les questions et on les ordonne ; chacune a un intitulé, une aide, un exemple de
+réponse, et peut être rendue obligatoire. Le formulaire a son titre, sa présentation, le
+libellé de son bouton et son message de remerciement. Il se remplit dans basedb, ou se
+[partage par un lien](/basedb/fonctionnalites/formulaires-partages/).
+
+Rien n’est à régler pour commencer : un formulaire neuf pose ce qu’une personne répond — pas
+le statut, la personne assignée ni les relations que l’équipe remplit ensuite, sauf s’ils sont
+obligatoires —, porte la couleur de sa table et un thème clair, et chaque champ vide montre un
+exemple adapté. Tout le reste se change quand on veut :
+
+- **Apparence** : huit thèmes — Clair, Doux, Aurore, Océan, Forêt, Nuit, Papier, Minimal —,
+  une couleur d’accent, une police, un alignement à gauche ou centré ;
+- **Poser seulement si…** : une question ne se pose que si une réponse précédente le demande
+  (« Sentiment est Négatif », « Note vaut au plus 2 »). Une question cachée n’est ni exigée ni
+  envoyée ;
+- **Plus d’options** : les boutons d’accueil et d’envoi, les numéros, la barre de progression,
+  le passage automatique à la suite, le message et un bouton de fin (« Retour au site »), les
+  confettis.
+
+Le **questionnaire** occupe tout l’écran : un accueil qui dit combien de temps il faut, puis
+une question à la fois, qui arrive en glissant. Tout se fait aussi au clavier : **Entrée** pour
+continuer, les lettres **A**, **B**, **C**… pour un choix, **O** ou **N** pour oui ou non, les
+chiffres pour une note — un choix unique fait passer seul à la question suivante. L’envoi se
+fête : une coche qui se dessine et des confettis aux couleurs du formulaire.
 
 ## Partager une vue
 

@@ -18,6 +18,8 @@ se partage [en lecture seule](/basedb/fonctionnalites/vues-partagees/).
 | **Membres connectés** | un membre du tenant — au besoin de certains groupes | la connexion, puis le formulaire et « Vous répondez en tant que … » |
 
 La page du lien est hors de l’application : ni barre latérale, ni nom de base, ni autres lignes.
+Elle porte l’apparence du formulaire — son thème, sa couleur, sa police —, et ne demande que
+les questions que les réponses précédentes appellent.
 
 ![Un formulaire public](../../../assets/screens/formulaire-public.png)
 
