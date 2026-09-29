@@ -1,0 +1,324 @@
+WEBVTT
+
+1
+00:00:02.443 --> 00:00:03.628
+This is basedb:
+
+2
+00:00:03.628 --> 00:00:09.156
+the collaborative database where
+every table is a real Postgres table.
+
+3
+00:00:11.179 --> 00:00:17.576
+Everything starts in a project. You can
+create an empty base, start from a template,
+
+4
+00:00:17.576 --> 00:00:21.079
+or describe to the AI
+what you want to manage.
+
+5
+00:00:21.983 --> 00:00:28.574
+Let's open the demo: Lumen Studio, a
+small design agency, with its clients,
+
+6
+00:00:28.574 --> 00:00:33.320
+projects, tasks, invoices,
+and its customers' reviews.
+
+7
+00:00:34.225 --> 00:00:41.291
+Fields filled in by artificial intelligence
+are only turned on with your consent.
+
+8
+00:00:41.291 --> 00:00:48.357
+One click, and the base is ready: tables,
+rows, views, dashboard and automations.
+
+9
+00:00:49.958 --> 00:00:58.003
+Each table works like a spreadsheet. But
+every field has a real type: single select,
+
+10
+00:00:58.003 --> 00:01:01.452
+email, link, currency, date, person.
+
+11
+00:01:02.352 --> 00:01:07.415
+Tables are linked together. For
+each client, the number of projects,
+
+12
+00:01:07.415 --> 00:01:13.297
+the revenue and the average rating roll
+up on their own, through the relations.
+
+13
+00:01:14.197 --> 00:01:19.944
+Filter, sort, group, color: each
+view keeps its own settings.
+
+14
+00:01:20.850 --> 00:01:26.098
+In projects, the duration is a
+formula, written in plain English,
+
+15
+00:01:26.098 --> 00:01:28.843
+and calculated by Postgres itself.
+
+16
+00:01:31.842 --> 00:01:37.119
+Each row opens as a record, with
+all its fields, rich text included.
+
+17
+00:01:38.439 --> 00:01:44.656
+The team talks right here: a comment, a
+mention, and Camille is notified at once.
+
+18
+00:01:46.702 --> 00:01:50.594
+Her reply arrives live,
+without reloading the page.
+
+19
+00:01:51.507 --> 00:01:55.896
+The record's history keeps every
+change, with the value before.
+
+20
+00:01:57.324 --> 00:02:02.642
+The same rows can be seen six ways.
+Here are the tasks as a kanban board:
+
+21
+00:02:02.642 --> 00:02:04.900
+drag a card to move it forward.
+
+22
+00:02:07.590 --> 00:02:10.385
+The calendar shows this month's due dates…
+
+23
+00:02:13.817 --> 00:02:18.362
+the timeline, tasks over
+time and their dependencies…
+
+24
+00:02:19.439 --> 00:02:24.794
+and on the client side, a gallery of
+cards, or a list grouped by industry.
+
+25
+00:02:29.556 --> 00:02:33.694
+Reviews come in through a
+survey. It takes the theme,
+
+26
+00:02:33.694 --> 00:02:36.661
+the color and the font of your choice.
+
+27
+00:02:38.162 --> 00:02:42.755
+A question can be asked only when
+an answer calls for it: here,
+
+28
+00:02:42.755 --> 00:02:44.797
+only when the rating is low.
+
+29
+00:02:45.707 --> 00:02:50.252
+A public link is all it takes:
+people answer without an account.
+
+30
+00:02:53.726 --> 00:02:57.891
+Here is what the client sees:
+one question per screen,
+
+31
+00:02:57.891 --> 00:03:00.283
+with the mouse or the keyboard.
+
+32
+00:03:01.195 --> 00:03:07.020
+A low rating brings one more question.
+And when it's sent, confetti.
+
+33
+00:03:09.847 --> 00:03:17.336
+The answer instantly becomes a row in the
+table. And the AI, here Mistral, reads it:
+
+34
+00:03:17.336 --> 00:03:22.151
+it finds the sentiment, the
+topic, and drafts a reply.
+
+35
+00:03:23.056 --> 00:03:27.209
+Since the review is negative,
+an automation alerts the team.
+
+36
+00:03:28.859 --> 00:03:34.463
+A survey can also become a quiz.
+Under each question, its right answer,
+
+37
+00:03:34.463 --> 00:03:36.121
+and what it is worth.
+
+38
+00:03:40.871 --> 00:03:49.335
+Each answer is checked at once, by the
+server: the right answers never leave basedb.
+
+39
+00:03:51.010 --> 00:03:54.746
+A mistake? The right answer
+shows up straight away.
+
+40
+00:03:58.803 --> 00:04:02.956
+At the end, the score fills
+its ring, with the answer key.
+
+41
+00:04:04.361 --> 00:04:09.716
+And it is written to the table: sorted
+by score, the grid becomes a leaderboard.
+
+42
+00:04:11.359 --> 00:04:17.982
+Automations are drawn like a diagram:
+a trigger, such as a row that changes,
+
+43
+00:04:17.982 --> 00:04:20.946
+a set time or a click, then steps.
+
+44
+00:04:21.855 --> 00:04:28.451
+Update or create a row, notify
+someone, call a webhook, post to Slack,
+
+45
+00:04:28.451 --> 00:04:29.770
+or ask the AI.
+
+46
+00:04:30.670 --> 00:04:34.034
+Every run is traced, step by step: here,
+
+47
+00:04:34.034 --> 00:04:38.324
+the task we just completed
+got its completion time.
+
+48
+00:04:39.955 --> 00:04:44.351
+Dashboards bring numbers and
+charts together, always up to date,
+
+49
+00:04:44.351 --> 00:04:47.374
+and computed with each
+person's permissions.
+
+50
+00:04:48.282 --> 00:04:52.748
+Each card is a question, asked
+with the mouse or in SQL,
+
+51
+00:04:52.748 --> 00:04:57.294
+and the dashboard can be
+shared, even on another website.
+
+52
+00:05:00.090 --> 00:05:07.534
+Because under every table, there is a
+real Postgres table, with a readable name.
+
+53
+00:05:07.534 --> 00:05:11.349
+You query it in SQL, right inside basedb.
+
+54
+00:05:12.259 --> 00:05:15.955
+The query can be saved, for
+yourself or for the whole team;
+
+55
+00:05:15.955 --> 00:05:18.711
+everyone runs it with
+their own permissions.
+
+56
+00:05:21.633 --> 00:05:26.620
+And your BI tools, your scripts
+or your agents read the same rows,
+
+57
+00:05:26.620 --> 00:05:28.660
+with no export and no sync.
+
+58
+00:05:30.489 --> 00:05:38.413
+The history of the base keeps every change,
+wherever it comes from: the interface,
+
+59
+00:05:38.413 --> 00:05:44.308
+the API, an agent, or direct
+SQL. And each one can be undone.
+
+60
+00:05:45.217 --> 00:05:50.490
+Permissions are granted by group:
+on a project, a base, a table,
+
+61
+00:05:50.490 --> 00:05:52.714
+and down to a single field.
+
+62
+00:05:54.351 --> 00:05:56.905
+For programs and AI agents,
+
+63
+00:05:56.905 --> 00:06:02.582
+each base has its own REST API
+and MCP server documentation,
+
+64
+00:06:02.582 --> 00:06:05.610
+generated from your permissions.
+
+65
+00:06:06.513 --> 00:06:12.485
+And in the interface, the Copilot answers
+with proposals: a filter, a query,
+
+66
+00:06:12.485 --> 00:06:16.257
+a column. Nothing changes
+without your approval.
+
+67
+00:06:20.635 --> 00:06:25.502
+basedb is free software,
+under the AGPL license,
+
+68
+00:06:25.502 --> 00:06:33.409
+and installs with a single Docker command.
+Your data stays yours: in Postgres.

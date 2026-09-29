@@ -1,285 +1,343 @@
 WEBVTT
 
 1
-00:00:00.733 --> 00:00:01.600
+00:00:02.425 --> 00:00:03.264
 Voici basedb :
 
 2
-00:00:01.600 --> 00:00:06.433
+00:00:03.264 --> 00:00:07.937
 la base de données collaborative où
 chaque table est une vraie table Postgres.
 
 3
-00:00:08.460 --> 00:00:12.663
+00:00:09.950 --> 00:00:14.453
 Tout commence dans un projet. On peut
 créer une base vide, partir d'un modèle,
 
 4
-00:00:12.663 --> 00:00:14.872
+00:00:14.453 --> 00:00:16.820
 ou décrire à l'IA ce que l'on veut gérer.
 
 5
-00:00:15.777 --> 00:00:19.901
+00:00:17.724 --> 00:00:22.011
 Ouvrons la démonstration : Atelier
 Lumen, une petite agence de design,
 
 6
-00:00:19.901 --> 00:00:24.850
+00:00:22.011 --> 00:00:27.154
 avec ses clients, ses projets, ses tâches,
 ses factures, et les avis de ses clients.
 
 7
-00:00:25.752 --> 00:00:27.678
+00:00:28.059 --> 00:00:30.227
 Les champs remplis par l'intelligence
 
 8
-00:00:27.678 --> 00:00:30.176
+00:00:30.227 --> 00:00:33.039
 artificielle ne s'activent
 qu'avec votre accord.
 
 9
-00:00:30.176 --> 00:00:32.935
+00:00:33.039 --> 00:00:36.145
 Un clic, et la base est
 prête : tables, lignes, vues,
 
 10
-00:00:32.935 --> 00:00:34.756
+00:00:36.145 --> 00:00:38.195
 tableau de bord et automatisations.
 
 11
-00:00:36.360 --> 00:00:41.172
+00:00:39.749 --> 00:00:45.568
 Chaque table se manipule comme un tableur.
 Mais chaque champ a un vrai type :
 
 12
-00:00:41.172 --> 00:00:44.546
+00:00:45.568 --> 00:00:49.649
 liste de choix, e-mail, lien,
 monnaie, date, personne…
 
 13
-00:00:45.451 --> 00:00:49.426
+00:00:50.556 --> 00:00:54.930
 Les tables sont reliées entre elles.
 Pour chaque client, le nombre de projets,
 
 14
-00:00:49.426 --> 00:00:52.586
+00:00:54.930 --> 00:00:58.406
 le chiffre d'affaires et la note
 moyenne remontent tout seuls,
 
 15
-00:00:52.586 --> 00:00:53.809
+00:00:58.406 --> 00:00:59.751
 à travers les relations.
 
 16
-00:00:54.720 --> 00:01:00.190
+00:01:00.653 --> 00:01:06.322
 Filtrer, trier, grouper, colorer :
 chaque vue garde ses propres réglages.
 
 17
-00:01:01.104 --> 00:01:04.612
+00:01:07.226 --> 00:01:10.908
 Dans les projets, la durée est
 une formule, écrite en français,
 
 18
-00:01:04.612 --> 00:01:06.504
+00:01:10.908 --> 00:01:12.895
 et calculée par Postgres lui-même.
 
 19
-00:01:10.934 --> 00:01:13.661
+00:01:18.308 --> 00:01:21.364
 Chaque ligne s'ouvre en
 fiche, avec tous ses champs,
 
 20
-00:01:13.661 --> 00:01:15.339
+00:01:21.364 --> 00:01:23.245
 y compris le texte mis en forme.
 
 21
-00:01:16.502 --> 00:01:20.839
+00:01:24.806 --> 00:01:29.586
 On y discute : un commentaire, une
 mention, et Camille est prévenue aussitôt.
 
 22
-00:01:24.130 --> 00:01:26.988
+00:01:33.011 --> 00:01:36.041
 Sa réponse arrive en direct,
 sans recharger la page.
 
 23
-00:01:27.890 --> 00:01:32.439
+00:01:36.945 --> 00:01:41.647
 L'historique de la fiche garde chaque
 modification, avec la valeur d'avant.
 
 24
-00:01:33.849 --> 00:01:37.422
-Les mêmes lignes se regardent de huit
+00:01:43.090 --> 00:01:46.987
+Les mêmes lignes se regardent de six
 façons. Voici les tâches en kanban :
 
 25
-00:01:37.422 --> 00:01:39.450
+00:01:46.987 --> 00:01:49.229
 on glisse une carte pour la faire avancer.
 
 26
-00:01:42.669 --> 00:01:44.747
+00:01:52.975 --> 00:01:55.195
 Le calendrier montre
 les échéances du mois…
 
 27
-00:01:47.798 --> 00:01:51.622
+00:01:59.230 --> 00:02:02.809
 la chronologie, les tâches dans
 le temps et leurs dépendances…
 
 28
-00:01:52.657 --> 00:01:56.770
+00:02:04.779 --> 00:02:08.932
 et côté clients, une galerie de cartes,
 ou une liste groupée par secteur.
 
 29
-00:02:01.958 --> 00:02:06.273
-Les avis arrivent par un formulaire. Un
-lien public suffit : on répond sans compte.
+00:02:14.888 --> 00:02:18.090
+Les avis arrivent par un
+questionnaire. Il prend le thème,
 
 30
-00:02:10.620 --> 00:02:12.010
-Voici ce que voit le client.
+00:02:18.090 --> 00:02:20.243
+la couleur et la police de votre choix.
 
 31
-00:02:21.226 --> 00:02:26.239
+00:02:23.386 --> 00:02:27.056
+Une question peut ne se poser que
+si une réponse l'appelle : ici,
+
+32
+00:02:27.056 --> 00:02:28.976
+seulement quand la note est basse.
+
+33
+00:02:29.877 --> 00:02:32.489
+Un lien public suffit :
+on répond sans compte.
+
+34
+00:02:37.804 --> 00:02:42.741
+Voici ce que voit le client : une question
+par écran, à la souris ou au clavier.
+
+35
+00:02:44.613 --> 00:02:49.890
+Une note basse appelle une question de
+plus. Et à l'envoi, place aux confettis.
+
+36
+00:02:53.930 --> 00:02:59.895
 Sa réponse devient aussitôt une ligne de
 la table. Et l'IA, ici Mistral, la lit :
 
-32
-00:02:26.239 --> 00:02:30.818
+37
+00:02:59.895 --> 00:03:05.346
 elle en tire le sentiment, le thème,
 et rédige une proposition de réponse.
 
-33
-00:02:31.796 --> 00:02:36.662
+38
+00:03:06.251 --> 00:03:10.561
 Comme l'avis est négatif, une
 automatisation prévient l'équipe.
 
-34
-00:02:38.322 --> 00:02:41.510
+39
+00:03:12.227 --> 00:03:17.170
+Un questionnaire peut aussi devenir un quiz.
+Sous chaque question, sa bonne réponse,
+
+40
+00:03:17.170 --> 00:03:18.523
+et ce qu'elle rapporte.
+
+41
+00:03:24.497 --> 00:03:27.431
+Chaque réponse est corrigée
+aussitôt, par le serveur :
+
+42
+00:03:27.431 --> 00:03:29.930
+les bonnes réponses ne
+quittent jamais basedb.
+
+43
+00:03:34.734 --> 00:03:37.529
+Une erreur ? La bonne
+réponse s'affiche aussitôt.
+
+44
+00:03:42.583 --> 00:03:46.005
+À la fin, le score remplit
+son anneau, avec le corrigé.
+
+45
+00:03:48.134 --> 00:03:52.758
+Et il s'écrit dans la table : triée sur
+le score, la grille devient un classement.
+
+46
+00:03:54.420 --> 00:03:58.316
 Les automatisations se dessinent
 comme un schéma : un déclencheur,
 
-35
-00:02:41.510 --> 00:02:44.649
+47
+00:03:58.316 --> 00:04:02.152
 une ligne qui change, une heure
 fixe ou un clic, puis des étapes.
 
-36
-00:02:45.552 --> 00:02:49.410
+48
+00:04:03.059 --> 00:04:07.458
 Modifier ou créer une ligne, prévenir
 quelqu'un, appeler un webhook,
 
-37
-00:02:49.410 --> 00:02:51.509
+49
+00:04:07.458 --> 00:04:09.851
 écrire sur Slack, ou demander à l'IA.
 
-38
-00:02:52.422 --> 00:02:55.287
+50
+00:04:10.755 --> 00:04:14.164
 Chaque exécution est tracée,
 étape par étape : ici,
 
-39
-00:02:55.287 --> 00:02:58.657
+51
+00:04:14.164 --> 00:04:18.174
 la tâche que l'on vient de
 terminer a reçu son heure de fin.
 
-40
-00:03:00.292 --> 00:03:03.362
+52
+00:04:19.786 --> 00:04:23.187
 Les tableaux de bord rassemblent
 chiffres et graphiques, toujours à jour,
 
-41
-00:03:03.362 --> 00:03:04.961
+53
+00:04:23.187 --> 00:04:24.958
 et calculés avec les droits de chacun.
 
-42
-00:03:05.862 --> 00:03:09.265
+54
+00:04:25.861 --> 00:04:29.385
 Chaque carte est une question,
 posée à la souris ou en SQL,
 
-43
-00:03:09.265 --> 00:03:12.091
+55
+00:04:29.385 --> 00:04:32.313
 et le tableau se partage,
 même sur un autre site.
 
-44
-00:03:16.359 --> 00:03:21.180
+56
+00:04:37.450 --> 00:04:42.429
 Car sous chaque table, il y a une
 vraie table Postgres, nommée en clair.
 
-45
-00:03:21.180 --> 00:03:24.327
+57
+00:04:42.429 --> 00:04:45.679
 On l'interroge en SQL,
 directement dans basedb.
 
-46
-00:03:27.308 --> 00:03:30.088
+58
+00:04:49.341 --> 00:04:52.371
 La requête s'enregistre, pour
 soi ou pour toute l'équipe ;
 
-47
-00:03:30.088 --> 00:03:32.052
+59
+00:04:52.371 --> 00:04:54.513
 chacun l'exécute avec ses propres droits.
 
-48
-00:03:35.508 --> 00:03:40.087
+60
+00:04:58.294 --> 00:05:02.677
 Et vos outils de BI, vos scripts ou
 vos agents lisent les mêmes lignes,
 
-49
-00:03:40.087 --> 00:03:42.086
+61
+00:05:02.677 --> 00:05:04.590
 sans export ni synchronisation.
 
-50
-00:03:43.888 --> 00:03:48.916
+62
+00:05:06.418 --> 00:05:12.167
 L'historique de la base garde chaque
 écriture, d'où qu'elle vienne : l'interface,
 
-51
-00:03:48.916 --> 00:03:52.889
+63
+00:05:12.167 --> 00:05:16.710
 l'API, un agent, ou le SQL direct.
 Et chacune peut être annulée.
 
-52
-00:03:54.034 --> 00:03:57.700
+64
+00:05:17.676 --> 00:05:21.666
 Les droits se donnent par groupe :
 sur un projet, une base, une table,
 
-53
-00:03:57.700 --> 00:03:58.643
+65
+00:05:21.666 --> 00:05:22.692
 et jusqu'au champ.
 
-54
-00:04:01.694 --> 00:04:03.719
+66
+00:05:26.196 --> 00:05:28.386
 Pour les programmes et les agents IA,
 
-55
-00:04:03.719 --> 00:04:07.004
+67
+00:05:28.386 --> 00:05:31.937
 chaque base a sa documentation
 d'API REST et de serveur MCP,
 
-56
-00:04:07.004 --> 00:04:08.482
+68
+00:05:31.937 --> 00:05:33.536
 générée d'après vos droits.
 
-57
-00:04:10.253 --> 00:04:14.759
+69
+00:05:35.788 --> 00:05:40.791
 Et dans l'interface, le Copilot répond
 en proposant : un filtre, une requête,
 
-58
-00:04:14.759 --> 00:04:17.451
+70
+00:05:40.791 --> 00:05:43.781
 une colonne. Rien ne
 change sans votre accord.
 
-59
-00:04:23.966 --> 00:04:29.624
+71
+00:05:50.565 --> 00:05:56.478
 basedb est libre, sous licence AGPL, et
 s'installe en une commande avec Docker.
 
-60
-00:04:29.624 --> 00:04:32.990
+72
+00:05:56.478 --> 00:05:59.995
 Vos données restent les
 vôtres : dans Postgres.

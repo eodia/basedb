@@ -1,12 +1,14 @@
 ---
 /**
- * The demonstration film, after the story: four and a half minutes around basedb, in
- * French, with its subtitles and its chapters — a chapter plays the film from where it
- * starts, and lights up while it plays. « Regarder la démo », in the headline, brings the
- * reader here and starts it (`data-play-demo`).
+ * The demonstration film, after the story: six minutes around basedb, with its subtitles
+ * and its chapters — a chapter plays the film from where it starts, and lights up while it
+ * plays. « Regarder la démo », in the headline, brings the reader here and starts it
+ * (`data-play-demo`).
  *
- * The film is `public/video/basedb-demo-fr.mp4`, made in `basedb-video/` (its `out/`
- * folder has the film, its subtitles and its chapters).
+ * The film is shot twice, interface and voice alike: in French for the French page, in
+ * English for every other one — `public/video/basedb-demo-<fr|en>.{mp4,vtt}` and
+ * `basedb-demo-poster-<fr|en>.jpg`, made in `basedb-video/` (`node scripts/web.mjs <langue>`
+ * writes them to its `out/web/` folder). The chapters' times follow the film of the page.
  */
 import { type Locale, i18n } from '../../i18n';
 
@@ -23,6 +25,8 @@ const seconds = (time: string) => {
 	return m * 60 + s;
 };
 const chapters = v.list.map((c) => ({ ...c, at: seconds(c.time) }));
+// The film of the page: French for French, English for every other language.
+const film = locale === 'fr' ? 'fr' : 'en';
 ---
 
 <section class="tm-section mist film" id="demo" data-film>
@@ -33,13 +37,13 @@ const chapters = v.list.map((c) => ({ ...c, at: seconds(c.time) }));
 			<span class="tm-grad">{v.titleAccent}</span>
 		</h2>
 		<p class="tm-lede">{v.text}</p>
-		{locale !== 'fr' && <p class="note">{v.inFrench}</p>}
+		{locale !== 'fr' && locale !== 'en' && <p class="note">{v.inEnglish}</p>}
 	</div>
 
 	<div class="player tm-rise" data-player>
-		<video data-video preload="metadata" playsinline poster={`${base}/video/basedb-demo-poster.jpg`}>
-			<source src={`${base}/video/basedb-demo-fr.mp4`} type="video/mp4" />
-			<track kind="captions" src={`${base}/video/basedb-demo-fr.vtt`} srclang="fr" label={v.captions} default={locale !== 'fr'} />
+		<video data-video preload="metadata" playsinline poster={`${base}/video/basedb-demo-poster-${film}.jpg`}>
+			<source src={`${base}/video/basedb-demo-${film}.mp4`} type="video/mp4" />
+			<track kind="captions" src={`${base}/video/basedb-demo-${film}.vtt`} srclang={film} label={v.captions} default={locale !== film} />
 		</video>
 		<button type="button" class="play" data-play>
 			<span class="cta">
