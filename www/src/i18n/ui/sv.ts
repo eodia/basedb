@@ -565,6 +565,14 @@ export default {
 				filtered: '{n} filtrerade rader',
 			},
 		},
+		teaser: {
+			tabs: { label: 'Välj video', short: 'På 40 sekunder', full: 'Hela rundturen' },
+			titleAccent: 'på 40 sekunder.',
+			text: 'Tabeller, vyer, formulär, automatiseringar och AI: det viktigaste i basedb, till musik.',
+			duration: '40 s',
+			inEnglish: 'Texterna i videon är på engelska.',
+		},
+
 		video: {
 			eyebrow: 'Demon',
 			title: 'Hela basedb,',

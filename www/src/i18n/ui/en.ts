@@ -565,6 +565,14 @@ export default {
 				filtered: '{n} rows filtered',
 			},
 		},
+		teaser: {
+			tabs: { label: 'Choose the film', short: 'In 40 seconds', full: 'The full tour' },
+			titleAccent: 'in 40 seconds.',
+			text: 'Tables, views, forms, automations and AI: the heart of basedb, set to music.',
+			duration: '0:40',
+			inEnglish: 'The film’s text is in English.',
+		},
+
 		video: {
 			eyebrow: 'The demo',
 			title: 'All of basedb,',

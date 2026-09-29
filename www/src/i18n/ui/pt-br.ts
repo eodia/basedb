@@ -565,6 +565,14 @@ export default {
 				filtered: '{n} linhas filtradas',
 			},
 		},
+		teaser: {
+			tabs: { label: 'Escolher o vídeo', short: 'Em 40 segundos', full: 'O tour completo' },
+			titleAccent: 'em 40 segundos.',
+			text: 'Tabelas, visualizações, formulários, automações e IA: o essencial do basedb, com música.',
+			duration: '40 s',
+			inEnglish: 'Os textos do vídeo estão em inglês.',
+		},
+
 		video: {
 			eyebrow: 'A demonstração',
 			title: 'Todo o basedb,',

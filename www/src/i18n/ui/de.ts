@@ -565,6 +565,14 @@ export default {
 				filtered: '{n} gefilterte Zeilen',
 			},
 		},
+		teaser: {
+			tabs: { label: 'Film wählen', short: 'In 40 Sekunden', full: 'Die vollständige Führung' },
+			titleAccent: 'in 40 Sekunden.',
+			text: 'Tabellen, Ansichten, Formulare, Automatisierungen und KI: das Wesentliche von basedb, mit Musik.',
+			duration: '0:40 Min.',
+			inEnglish: 'Die Texte im Film sind auf Englisch.',
+		},
+
 		video: {
 			eyebrow: 'Die Demo',
 			title: 'Ganz basedb,',

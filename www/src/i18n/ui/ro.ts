@@ -565,6 +565,14 @@ export default {
 				filtered: '{n} rânduri filtrate',
 			},
 		},
+		teaser: {
+			tabs: { label: 'Alegeți filmul', short: 'În 40 de secunde', full: 'Turul complet' },
+			titleAccent: 'în 40 de secunde.',
+			text: 'Tabele, vizualizări, formulare, automatizări și IA: esențialul basedb, pe muzică.',
+			duration: '40 s',
+			inEnglish: 'Textele din film sunt în engleză.',
+		},
+
 		video: {
 			eyebrow: 'Demonstrația',
 			title: 'Tot basedb,',

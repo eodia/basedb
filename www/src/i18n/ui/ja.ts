@@ -558,6 +558,14 @@ export default {
 			},
 		},
 
+		teaser: {
+			tabs: { label: '動画を選ぶ', short: '40秒で', full: '完全なツアー' },
+			titleAccent: '40秒で。',
+			text: 'テーブル、ビュー、フォーム、自動化、AI — basedbの要点を音楽とともに。',
+			duration: '40秒',
+			inEnglish: '動画内のテキストは英語です。',
+		},
+
 		video: {
 			eyebrow: 'デモ',
 			title: 'basedbのすべてを、',

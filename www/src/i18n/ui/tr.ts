@@ -569,6 +569,14 @@ export default {
 				filtered: '{n} satır filtrelendi',
 			},
 		},
+		teaser: {
+			tabs: { label: 'Videoyu seçin', short: '40 saniyede', full: 'Tam tur' },
+			titleAccent: '40 saniyede.',
+			text: 'Tablolar, görünümler, formlar, otomasyonlar ve yapay zekâ: basedb’nin özü, müzikle.',
+			duration: '40 sn',
+			inEnglish: 'Videodaki metinler İngilizcedir.',
+		},
+
 		video: {
 			eyebrow: 'Demo',
 			title: 'Tüm basedb,',

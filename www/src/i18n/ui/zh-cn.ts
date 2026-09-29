@@ -561,6 +561,14 @@ export default {
 				filtered: '已筛选 {n} 行',
 			},
 		},
+		teaser: {
+			tabs: { label: '选择视频', short: '40 秒速览', full: '完整导览' },
+			titleAccent: '只需 40 秒。',
+			text: '表格、视图、表单、自动化和 AI：basedb 的精华，配上音乐。',
+			duration: '40 秒',
+			inEnglish: '视频中的文字为英文。',
+		},
+
 		video: {
 			eyebrow: '演示',
 			title: '完整的 basedb，',

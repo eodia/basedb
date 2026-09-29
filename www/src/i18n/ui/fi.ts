@@ -565,6 +565,14 @@ export default {
 				filtered: '{n} riviä suodatettu',
 			},
 		},
+		teaser: {
+			tabs: { label: 'Valitse video', short: '40 sekunnissa', full: 'Koko esittely' },
+			titleAccent: '40 sekunnissa.',
+			text: 'Taulukot, näkymät, lomakkeet, automaatiot ja tekoäly: basedbin olennaisin, musiikin tahdissa.',
+			duration: '40 s',
+			inEnglish: 'Videon tekstit ovat englanniksi.',
+		},
+
 		video: {
 			eyebrow: 'Demo',
 			title: 'Koko basedb,',

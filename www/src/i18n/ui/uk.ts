@@ -565,6 +565,14 @@ export default {
 				filtered: '{n} рядки відфільтровано',
 			},
 		},
+		teaser: {
+			tabs: { label: 'Вибрати відео', short: 'За 40 секунд', full: 'Повний огляд' },
+			titleAccent: 'за 40 секунд.',
+			text: 'Таблиці, подання, форми, автоматизації та ШІ: головне в basedb, під музику.',
+			duration: '40 с',
+			inEnglish: 'Тексти у відео англійською.',
+		},
+
 		video: {
 			eyebrow: 'Демо',
 			title: 'Увесь basedb,',

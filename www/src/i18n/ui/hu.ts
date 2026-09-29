@@ -565,6 +565,14 @@ export default {
 				filtered: '{n} sor szűrve',
 			},
 		},
+		teaser: {
+			tabs: { label: 'Videó kiválasztása', short: '40 másodpercben', full: 'A teljes bemutató' },
+			titleAccent: '40 másodpercben.',
+			text: 'Táblák, nézetek, űrlapok, automatizálások és MI: a basedb lényege, zenével.',
+			duration: '40 mp',
+			inEnglish: 'A videó szövegei angolul vannak.',
+		},
+
 		video: {
 			eyebrow: 'Demó',
 			title: 'A teljes basedb,',

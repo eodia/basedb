@@ -566,6 +566,14 @@ export default {
 			},
 		},
 
+		teaser: {
+			tabs: { label: 'Vybrat video', short: 'Za 40 sekund', full: 'Celá prohlídka' },
+			titleAccent: 'za 40 sekund.',
+			text: 'Tabulky, zobrazení, formuláře, automatizace a AI: to podstatné z basedb, s hudbou.',
+			duration: '40 s',
+			inEnglish: 'Texty ve videu jsou v angličtině.',
+		},
+
 		video: {
 			eyebrow: 'Ukázka',
 			title: 'Celé basedb,',

@@ -566,6 +566,14 @@ export default {
 			},
 		},
 
+		teaser: {
+			tabs: { label: 'Wybierz film', short: 'W 40 sekund', full: 'Pełna prezentacja' },
+			titleAccent: 'w 40 sekund.',
+			text: 'Tabele, widoki, formularze, automatyzacje i AI: to, co najważniejsze w basedb, w rytmie muzyki.',
+			duration: '40 s',
+			inEnglish: 'Napisy w filmie są po angielsku.',
+		},
+
 		video: {
 			eyebrow: 'Demo',
 			title: 'Cały basedb,',

@@ -543,6 +543,19 @@ const fr = {
 		},
 
 		/**
+		 * The short film, first in the demonstration section: forty seconds of titles, the real
+		 * screens and music, no voice. The switch over the player goes from it to the full tour
+		 * (`video`) and back; `duration` is written on its poster.
+		 */
+		teaser: {
+			tabs: { label: 'Choisir le film', short: 'En 40 secondes', full: 'La visite complète' },
+			titleAccent: 'en 40 secondes.',
+			text: 'Tables, vues, formulaires, automatisations et IA : l’essentiel de basedb, en musique.',
+			duration: '40 s',
+			inEnglish: 'Les textes du film sont en anglais.',
+		},
+
+		/**
 		 * The demonstration film, after the story: its chapters are its own (they follow the
 		 * film's timeline — `time`, in minutes and seconds, is where each one starts).
 		 */

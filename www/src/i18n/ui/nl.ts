@@ -565,6 +565,14 @@ export default {
 				filtered: '{n} rijen gefilterd',
 			},
 		},
+		teaser: {
+			tabs: { label: 'Kies de video', short: 'In 40 seconden', full: 'De volledige rondleiding' },
+			titleAccent: 'in 40 seconden.',
+			text: 'Tabellen, weergaven, formulieren, automatiseringen en AI: de kern van basedb, op muziek.',
+			duration: '40 s',
+			inEnglish: 'De teksten in de video zijn in het Engels.',
+		},
+
 		video: {
 			eyebrow: 'De demo',
 			title: 'Heel basedb,',
