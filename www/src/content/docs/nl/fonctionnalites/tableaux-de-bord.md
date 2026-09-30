@@ -9,7 +9,7 @@ komende deadlines. Elke kaart toont er een **vraag** — een leesactie op de dat
 gebouwd met de muis of geschreven in SQL — en **filters** bovenaan de pagina sturen de
 kaarten aan die eraan gekoppeld zijn.
 
-![Het dashboard “Pilotage de l’agence”: trend van de maand, doel, gestapelde omzet, sentiment van de reviews](../../../../assets/screens/tableaux-de-bord.png)
+![Het dashboard “Pilotage de l’agence”: trend van de maand, doel, gestapelde omzet, sentiment van de reviews](../../../../assets/screens/nl/tableaux-de-bord.webp)
 
 Alles opent via **Dashboards**, in het blok van de geopende database onderaan de
 zijbalk. Links staan de dashboards en de opgeslagen vragen van de database, en
@@ -31,7 +31,7 @@ zijn inhoud, weer niet-opgeslagen.
 
 Een vraag bouw je in stappen, onder elkaar:
 
-![De editor van een vraag: de gegevens, de filters, de samenvatting per maand](../../../../assets/screens/question-editeur.png)
+![De editor van een vraag: de gegevens, de filters, de samenvatting per maand](../../../../assets/screens/nl/question-editeur.webp)
 
 | Stap | Wat je er kiest |
 |---|---|
@@ -165,7 +165,7 @@ vult de rest aan. Het kan een **standaardwaarde** hebben — bijvoorbeeld “Dit
 In leesmodus kan een klik op een punt ook een filter instellen: **Filteren op “Lyon”** op een
 kaart waarvan de kolom met steden aan het filter “Ville” is gekoppeld.
 
-![Het tabblad “Activité”: taken per deadline gestapeld per status, trechter van de projecten, geschatte uren in een draaitabel](../../../../assets/screens/tableaux-de-bord-activite.png)
+![Het tabblad “Activité”: taken per deadline gestapeld per status, trechter van de projecten, geschatte uren in een draaitabel](../../../../assets/screens/nl/tableaux-de-bord-activite.webp)
 
 ## De Copilot
 

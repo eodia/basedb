@@ -4,14 +4,28 @@ import { hasDescription } from '@/components/app/description'
 import type { Upload } from '@/components/app/files'
 import type { Row } from '@/components/app/grid/cell'
 import type { SearchLink } from '@/components/app/pickers'
-import { PanelField, emptyDraft, writeValues } from '@/components/app/record-panel'
+import { PanelField, emptyDraft, prefillOf, writeValues } from '@/components/app/record-panel'
 import { Unavailable } from '@/components/app/views/kanban-view'
-import { type Field, type LinkOption, filesOf } from '@/lib/api/client'
-import { $t, $tp } from '@/lib/i18n'
+import {
+  type Field,
+  type LinkOption,
+  type QuizGrade,
+  type QuizOutcome,
+  filesOf,
+} from '@/lib/api/client'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import type { FormQuestion, FormSpec } from '@/lib/views'
-import { type FormCondition, visibleQuestions } from '@basedb/contracts'
+import { type FormQuestion, type FormSpec, isGraded } from '@/lib/views'
+import {
+  type FormCondition,
+  type QuizAnswer,
+  isRightAnswer,
+  quizPassed,
+  quizPercent,
+  scoreQuiz,
+  visibleQuestions,
+} from '@basedb/contracts'
 import {
   ArrowRight,
   Check,
@@ -31,6 +45,7 @@ import {
   minutesFor,
   normalizeUrl,
   placeholderFor,
+  todayAnswer,
   widgetOf,
 } from './answers'
 import { Celebration } from './celebration'
@@ -44,6 +59,15 @@ import {
   RatingAnswer,
   YesNoAnswer,
 } from './inputs'
+import {
+  PointsBadge,
+  Recap,
+  RunningScore,
+  ScoreRing,
+  Verdict,
+  scoreCelebrated,
+  scoreHeadline,
+} from './quiz'
 import { lookStyle } from './theme'
 
 /**
@@ -57,7 +81,15 @@ import { lookStyle } from './theme'
  * both end on a celebration.
  *
  * A question may be asked only when an earlier answer says so (`show_if`); a question
- * hidden is neither required nor sent, whatever was typed into it before.
+ * hidden is neither required nor sent, whatever was typed into it before. A date question
+ * may hold the day before anyone answers it (`prefill`), which the person changes or clears.
+ *
+ * A quiz is a survey whose questions may have a right answer, worth points. Corrected as
+ * it goes (`reveal: each`), each graded answer is checked once given — then locked, green
+ * or red, the score in a corner —; otherwise the verdicts wait for the end. The end is the
+ * score: a ring that fills, the words that go with it, and the recap. In the application
+ * the quiz knows its right answers and scores itself, writing the score into its field;
+ * through a shared link it knows none of them, and asks the server (`grade`, `submit`).
  */
 
 interface Question {
@@ -66,11 +98,23 @@ interface Question {
   readonly help: string | null
   readonly required: boolean
   readonly placeholder: string
+  /** Holds the day before an answer. */
+  readonly today: boolean
   readonly showIf: FormCondition | null
   readonly widget: AnswerWidget
+  /** A quiz's question with a right answer — known here or only to the server. */
+  readonly graded: boolean
+  readonly points: number
+  /** The right answer, when this side knows it: in the application, not through a link. */
+  readonly correct: QuizAnswer | null
 }
 
-function questionsOf(spec: FormSpec, fields: readonly Field[]): Question[] {
+function questionsOf(
+  spec: FormSpec,
+  fields: readonly Field[],
+  quiz: boolean,
+  graded: ReadonlySet<string> | undefined,
+): Question[] {
   return spec.fields.flatMap((q: FormQuestion) => {
     const field = fields.find((f) => f.name === q.field)
     // A field that has become unwritable — made a formula, closed to this reader — has
@@ -88,11 +132,40 @@ function questionsOf(spec: FormSpec, fields: readonly Field[]): Question[] {
               : null,
         required: q.required || field.required === true,
         placeholder: q.placeholder.trim() === '' ? placeholderFor(field) : q.placeholder,
+        today: q.prefill === 'today' && (field.kind === 'date' || field.kind === 'datetime'),
         showIf: q.show_if,
         widget: widgetOf(field),
+        graded: quiz && (graded?.has(field.name) ?? isGraded(q, field)),
+        points: q.points ?? 1,
+        correct: quiz && isGraded(q, field) ? (q.correct ?? null) : null,
       },
     ]
   })
+}
+
+/**
+ * The draft before any answer: empty, but for the questions that hold the day and the
+ * fields' defaults (ch. 04 §1.5) — « the person creating » aside, which the kernel fills
+ * for a signed-in respondent.
+ */
+function firstDraft(questions: readonly Question[]): Row {
+  const row: Record<string, unknown> = emptyDraft(questions.map((q) => q.field))
+  for (const q of questions) {
+    const value = q.today ? todayAnswer(q.field.kind) : prefillOf(q.field, null)
+    if (value !== undefined) row[q.field.name] = value
+  }
+  return row as Row
+}
+
+/** The questions that hold something before an answer: emptied, they are sent empty. */
+function prefilledNames(questions: readonly Question[]): ReadonlySet<string> {
+  const first = firstDraft(questions)
+  return new Set(
+    questions.flatMap((q) => {
+      const value = first[q.field.name]
+      return value === null || value === undefined ? [] : [q.field.name]
+    }),
+  )
 }
 
 /** True when the draft holds nothing for this field. */
@@ -123,8 +196,10 @@ export function FormFill({
   onSent,
   respondent,
   footer,
+  graded,
+  grade,
 }: {
-  readonly kind: 'form' | 'survey'
+  readonly kind: 'form' | 'survey' | 'quiz'
   readonly fields: readonly Field[]
   readonly spec: FormSpec
   readonly viewLabel: string
@@ -133,19 +208,29 @@ export function FormFill({
   readonly linkOptions: Readonly<Record<string, readonly LinkOption[]>>
   readonly onSearchLink: SearchLink
   readonly onUpload?: Upload
-  /** Sends the answer: the values of the questions answered, by field name. */
-  readonly submit: (values: Record<string, unknown>) => Promise<void>
+  /**
+   * Sends the answer: the values of the questions answered, by field name. A shared quiz
+   * resolves to what the server scored; one scored here, to nothing.
+   */
+  readonly submit: (values: Record<string, unknown>) => Promise<QuizOutcome | null | undefined>
   readonly onSent?: () => void
   /** Who answers, when a shared form knows it: « Vous répondez en tant que … ». */
   readonly respondent?: string | null
   /** A line at the foot of the screen — a shared form's « propulsé par ». */
   readonly footer?: ReactNode
+  /** A shared quiz's graded questions: the page knows which, not their answers. */
+  readonly graded?: ReadonlySet<string>
+  /** Grades one answer on the server — a shared quiz corrected as it goes. */
+  readonly grade?: (field: string, value: unknown) => Promise<QuizGrade>
 }) {
-  const questions = useMemo(() => questionsOf(spec, fields), [spec, fields])
-  const writable = useMemo(() => questions.map((q) => q.field), [questions])
+  const quiz = kind === 'quiz'
+  const questions = useMemo(
+    () => questionsOf(spec, fields, quiz, graded),
+    [spec, fields, quiz, graded],
+  )
   const look = useMemo(() => lookStyle(spec, tableColor), [spec, tableColor])
 
-  const [draft, setDraft] = useState<Row>(() => emptyDraft(writable))
+  const [draft, setDraft] = useState<Row>(() => firstDraft(questions))
   // Handlers read the draft through a ref: an answer taken and the next question asked in
   // the same moment must see that answer.
   const latest = useRef(draft)
@@ -156,6 +241,12 @@ export function FormFill({
   const [sent, setSent] = useState(false)
   const [place, setPlace] = useState<Place>({ at: 'welcome' })
   const [direction, setDirection] = useState<'up' | 'down'>('up')
+  // A quiz corrected as it goes: each graded answer's verdict, by field; the score, once sent.
+  const [verdicts, setVerdicts] = useState<Readonly<Record<string, QuizGrade>>>({})
+  const [checking, setChecking] = useState(false)
+  const [outcome, setOutcome] = useState<QuizOutcome | null>(null)
+  const [given, setGiven] = useState<Readonly<Record<string, unknown>>>({})
+  const stepwise = quiz && spec.reveal === 'each'
 
   const shown = (row: Row) =>
     visibleQuestions(
@@ -172,6 +263,25 @@ export function FormFill({
   // timer calls the step with the answer in it.
   const advance = useRef<() => void>(() => undefined)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // A quiz's verdict takes the keyboard to « Continuer »: Enter goes on, whatever had it.
+  const action = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (place.at === 'question' && verdicts[place.name] !== undefined) {
+      action.current?.focus({ preventScroll: true })
+    }
+  }, [verdicts, place])
+  // A choice answered by its letter leaves the keyboard on the page itself: Enter still
+  // goes on, as it does from inside the question.
+  useEffect(() => {
+    if (kind === 'form' || sent) return
+    const listen = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || e.shiftKey || e.isComposing || e.target !== document.body) return
+      e.preventDefault()
+      advance.current()
+    }
+    window.addEventListener('keydown', listen)
+    return () => window.removeEventListener('keydown', listen)
+  }, [kind, sent])
   useEffect(
     () => () => {
       if (timer.current !== null) clearTimeout(timer.current)
@@ -227,7 +337,7 @@ export function FormFill({
     if (Object.keys(found).length > 0) {
       setProblems(found)
       const first = now.find((q) => found[q.field.name] !== undefined)
-      if (kind === 'survey' && first !== undefined) {
+      if (kind !== 'form' && first !== undefined) {
         setDirection('down')
         setPlace({ at: 'question', name: first.field.name })
       } else {
@@ -243,19 +353,24 @@ export function FormFill({
     }
     // Only what was shown is sent; an address typed without its scheme gains it.
     const answered = now.map((q) => q.field)
-    const values = writeValues(answered, latest.current)
+    const values = writeValues(answered, latest.current, prefilledNames(now))
     for (const q of now) {
       const v = values[q.field.name]
       if (q.widget === 'url' && typeof v === 'string') values[q.field.name] = normalizeUrl(v)
     }
-    if (Object.keys(values).length === 0) {
+    if (Object.values(values).every((v) => v === null)) {
       setError($t('Répondez à au moins une question.'))
       return
     }
+    // A quiz that knows its right answers scores itself — the server's rules, the same
+    // count — and writes its score into its field; one shared by a link is scored there.
+    const local = quiz ? scoreHere(now, values) : null
     setBusy(true)
     setError(null)
     try {
-      await submit(values)
+      const scored = await submit(values)
+      setOutcome(scored ?? local)
+      setGiven(values)
       setSent(true)
       onSent?.()
     } catch (e) {
@@ -265,18 +380,53 @@ export function FormFill({
     }
   }
 
+  /** The score of a quiz that knows its answers — and the score written into its field. */
+  const scoreHere = (shownNow: readonly Question[], values: Record<string, unknown>) => {
+    const known = questions.filter((q) => q.correct !== null)
+    if (known.length === 0) return null
+    const scored = scoreQuiz(
+      known.map((q) => ({
+        field: q.field.name,
+        kind: q.field.kind,
+        correct: q.correct,
+        points: q.points,
+      })),
+      values,
+      new Set(shownNow.map((q) => q.field.name)),
+    )
+    const target = fields.find(
+      (f) => f.name === spec.score_field && f.kind === 'number' && f.read_only !== true,
+    )
+    if (target !== undefined) values[target.name] = scored.score
+    return {
+      score: scored.score,
+      max: scored.max,
+      passed: quizPassed(scored.score, scored.max, spec.pass_percent),
+      marks:
+        spec.reveal === 'never'
+          ? []
+          : scored.marks.map((m) => ({
+              ...m,
+              correct: known.find((q) => q.field.name === m.field)?.correct as QuizAnswer,
+            })),
+    } satisfies QuizOutcome
+  }
+
   const restart = () => {
-    const empty = emptyDraft(writable)
+    const empty = firstDraft(questions)
     latest.current = empty
     setDraft(empty)
     setProblems({})
     setError(null)
+    setVerdicts({})
+    setOutcome(null)
     setSent(false)
     setDirection('up')
     setPlace({ at: 'welcome' })
   }
 
   const answer = (q: Question, large: boolean, focus: boolean, onDone?: () => void) => {
+    const verdict = verdicts[q.field.name]
     const common = {
       field: q.field,
       value: draft[q.field.name],
@@ -286,6 +436,9 @@ export function FormFill({
       autoFocus: focus,
       invalid: problems[q.field.name] !== undefined,
       onDone,
+      // Graded, a quiz's answer stays as given, and a choice shows what was right.
+      locked: verdict !== undefined,
+      correct: verdict?.correct ?? null,
     }
     switch (q.widget) {
       case 'text':
@@ -341,6 +494,58 @@ export function FormFill({
   )
 
   // ── The end ────────────────────────────────────────────────────────────────────────
+
+  if (sent && outcome !== null) {
+    const percent = quizPercent(outcome.score, outcome.max)
+    return shell(
+      <div className="min-h-0 flex-1 overflow-y-auto scroll-discret">
+        <Celebration
+          accent={look.accent}
+          confetti={spec.celebrate && scoreCelebrated(outcome)}
+          align="center"
+          emblem={<ScoreRing score={outcome.score} max={outcome.max} />}
+        >
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            {scoreHeadline(percent, outcome.passed)}
+          </h1>
+          <p className="mt-3 text-lg text-(--fm-muted)">
+            {$tp(outcome.max, '{score} sur {count} point', '{score} sur {count} points', {
+              score: outcome.score,
+            })}
+            <span aria-hidden> · </span>
+            {new Intl.NumberFormat(intlLocale(), { style: 'percent' }).format(percent / 100)}
+          </p>
+          {spec.pass_percent !== null && (
+            <p className="mt-1 text-sm text-(--fm-muted)">
+              {$t('Il fallait {percent} % pour réussir.', { percent: spec.pass_percent })}
+            </p>
+          )}
+          {spec.success_message.trim() !== '' && (
+            <p className="mx-auto mt-5 max-w-md whitespace-pre-line text-base text-(--fm-muted)">
+              {spec.success_message}
+            </p>
+          )}
+          <div className="flex flex-col items-center">
+            <Recap outcome={outcome} questions={questions} answers={given} dark={look.dark} />
+          </div>
+          <div className="mt-8 mb-6 flex flex-wrap justify-center gap-3">
+            {spec.end_link_url.trim() !== '' && (
+              <a href={spec.end_link_url} className={accentButton(true)}>
+                {spec.end_link_label.trim() === '' ? $t('Continuer') : spec.end_link_label}
+                <ExternalLink className="size-4" />
+              </a>
+            )}
+            {spec.allow_another && (
+              <button type="button" onClick={restart} className={ghostButton}>
+                <RotateCcw className="size-4" />
+                {$t('Refaire le quiz')}
+              </button>
+            )}
+          </div>
+        </Celebration>
+      </div>,
+    )
+  }
 
   if (sent) {
     return shell(
@@ -446,11 +651,22 @@ export function FormFill({
     setPlace(to)
   }
 
+  /** A graded answer, checked here when the right answer is known, else on the server. */
+  const gradeOne = async (q: Question): Promise<QuizGrade | null> => {
+    const value = writeValues([q.field], latest.current)[q.field.name] ?? null
+    if (q.correct !== null) {
+      const right = isRightAnswer(q.field.kind, q.correct, value)
+      return { right, points: right ? q.points : 0, correct: q.correct }
+    }
+    return grade === undefined ? null : grade(q.field.name, value)
+  }
+
   const next = () => {
     if (timer.current !== null) {
       clearTimeout(timer.current)
       timer.current = null
     }
+    if (checking) return
     if (place.at === 'welcome') {
       const first = shown(latest.current)[0]
       if (first !== undefined) go({ at: 'question', name: first.field.name }, 'up')
@@ -460,6 +676,27 @@ export function FormFill({
     const found = check([current])
     if (Object.keys(found).length > 0) {
       setProblems((p) => ({ ...p, ...found }))
+      return
+    }
+    // A quiz corrected as it goes stops on a graded answer once, to say whether it was
+    // right; a right one goes on by itself when the survey lets choices do so.
+    if (stepwise && current.graded && verdicts[current.field.name] === undefined) {
+      const name = current.field.name
+      setChecking(true)
+      setError(null)
+      void gradeOne(current)
+        .then((verdict) => {
+          if (verdict === null) return
+          setVerdicts((v) => ({ ...v, [name]: verdict }))
+          if (verdict.right && spec.auto_advance) {
+            timer.current = setTimeout(() => {
+              timer.current = null
+              advance.current()
+            }, VERDICT_MS)
+          }
+        })
+        .catch((e: unknown) => setError(messageFor(e)))
+        .finally(() => setChecking(false))
       return
     }
     // Visibility read again: the answer just given may open or close what follows.
@@ -493,9 +730,15 @@ export function FormFill({
 
   const progress =
     current === undefined ? 0 : Math.round(((position + (last ? 0.5 : 0)) / visible.length) * 100)
+  const verdict = current === undefined ? undefined : verdicts[current.field.name]
+  // A graded question waits to be checked: its button says so.
+  const toCheck = stepwise && current?.graded === true && verdict === undefined
+  const running = Object.values(verdicts).reduce((sum, v) => sum + v.points, 0)
+  const worth = visible.filter((q) => q.graded).reduce((sum, q) => sum + q.points, 0)
 
   return shell(
     <>
+      {stepwise && place.at === 'question' && <RunningScore score={running} dark={look.dark} />}
       {spec.show_progress && place.at === 'question' && (
         <div aria-hidden className="absolute inset-x-0 top-0 z-20 h-1 bg-(--fm-accent-soft)">
           <div
@@ -571,7 +814,20 @@ export function FormFill({
                 )}
                 <span aria-hidden>·</span>
                 {$tp(visible.length, '{count} question', '{count} questions')}
+                {quiz && worth > 0 && (
+                  <>
+                    <span aria-hidden>·</span>
+                    {$tp(worth, '{count} point à gagner', '{count} points à gagner')}
+                  </>
+                )}
               </p>
+              {quiz && spec.pass_percent !== null && (
+                <p className="mt-2 text-sm text-(--fm-muted)">
+                  {$t('Il faut {percent} % des points pour réussir.', {
+                    percent: spec.pass_percent,
+                  })}
+                </p>
+              )}
             </div>
           </div>
         ) : (
@@ -585,6 +841,11 @@ export function FormFill({
               key={current.field.name}
               className={direction === 'up' ? 'animate-form-in-up' : 'animate-form-in-down'}
             >
+              {current.graded && (
+                <div className={cn('mb-4', centered && 'flex justify-center')}>
+                  <PointsBadge points={current.points} />
+                </div>
+              )}
               <Heading
                 number={spec.show_numbers ? position + 1 : null}
                 label={current.label}
@@ -599,6 +860,17 @@ export function FormFill({
                   </div>
                 </div>
                 <Problem text={problems[current.field.name]} dark={look.dark} />
+                {verdict !== undefined && (
+                  <div className={cn(centered && 'flex justify-center')}>
+                    <Verdict
+                      right={verdict.right}
+                      points={verdict.points}
+                      correct={verdict.correct}
+                      field={current.field}
+                      dark={look.dark}
+                    />
+                  </div>
+                )}
                 <div
                   className={cn(
                     'mt-8 flex flex-wrap items-center gap-4',
@@ -606,19 +878,30 @@ export function FormFill({
                   )}
                 >
                   <button
+                    ref={action}
                     type="button"
                     onClick={next}
-                    disabled={busy}
+                    disabled={busy || checking}
                     className={accentButton(false)}
                   >
-                    {busy ? (
+                    {busy || checking ? (
                       <Loader2 className="size-4 animate-spin" />
+                    ) : toCheck ? (
+                      <Check className="size-4" />
                     ) : last ? (
                       <Send className="size-4" />
+                    ) : verdict !== undefined ? (
+                      <ArrowRight className="size-4" />
                     ) : (
                       <Check className="size-4" />
                     )}
-                    {last ? submitLabel : $t('OK')}
+                    {toCheck
+                      ? $t('Vérifier')
+                      : last
+                        ? submitLabel
+                        : verdict !== undefined
+                          ? $t('Continuer')
+                          : $t('OK')}
                   </button>
                   <EnterHint shift={current.widget === 'long_text'} />
                 </div>
@@ -663,6 +946,9 @@ export function FormFill({
 }
 
 // ── Pieces ───────────────────────────────────────────────────────────────────────────
+
+/** How long a right answer's verdict shows before the next question comes by itself. */
+const VERDICT_MS = 1300
 
 const accentButton = (large: boolean) =>
   cn(

@@ -1,9 +1,9 @@
 ---
 title: Vyer
-description: Rutnät, kanban, kalender, tidslinje, galleri, lista, formulär och enkät – gemensamma eller personliga.
+description: Rutnät, kanban, kalender, tidslinje, galleri, lista, karta, formulär, enkät och quiz – gemensamma eller personliga.
 ---
 
-En tabell kan visas på **åtta sätt**. En vy kopierar inga data och ger inga fler behörigheter
+En tabell kan visas på **tio sätt**. En vy kopierar inga data och ger inga fler behörigheter
 än tabellen själv.
 
 :::note
@@ -20,14 +20,17 @@ bland dem i sidofältet.
 | **Tidslinje** | staplar mellan två datum, och deras beroenden | ett startdatum |
 | **Galleri** | kort, med en omslagsbild | – |
 | **Lista** | en rad per post, i hopfällbara grupper | – |
+| **Karta** | varje rad placerad på en karta | en adress, eller en latitud och en longitud |
 | **Formulär** | en sida med frågor för att skapa en rad | – |
 | **Enkät** | samma frågor, en per skärm | – |
+| **Quiz** | poängsatta frågor, en per skärm, och poängen i slutet | – |
 
 ## Vyväljaren
 
 Den finns till vänster om ”Filtrera”. ”Alla rader” är tabellens rutnät, som ingen har sparat och
 ingen kan ta bort; sedan kommer de **gemensamma vyerna**, i den ordning som den som bygger
-databasen har valt, och därefter **Mina vyer**.
+databasen har valt, och därefter **Mina vyer**. Längst ned delar **Skapa en vy** in de tio
+sorterna i två familjer: **Se raderna** och **Samla svar** (formulär, enkät, quiz).
 
 - En **gemensam vy** syns för alla. Att skapa, konfigurera, byta namn på, ändra ordning på
   eller ta bort den kräver nivån **Hantera**. Den kan vara **låst**: ett hänglås visar det, och
@@ -37,7 +40,7 @@ databasen har valt, och därefter **Mina vyer**.
   en sparar sina egna sätt att läsa, utan att ändra något för andra. **Duplicera** på en
   gemensam vy ger en personlig kopia.
 
-![Ett galleri med kunder](../../../../assets/screens/galerie.png)
+![Ett galleri med kunder](../../../../assets/screens/sv/galerie.webp)
 
 ## Verktygsfältet
 
@@ -71,9 +74,9 @@ på sidan: ifyllda, tomma, unika värden, summa, medelvärde, minimum, maximum, 
   enkelval eller en relation. Med inställningen **Beror på** – en relation från tabellen till sig
   själv – kopplar en pil varje uppgift till dem den beror på, röd när den går bakåt i tiden.
 
-![En tidslinje med beroenden](../../../../assets/screens/chronologie.png)
+![En tidslinje med beroenden](../../../../assets/screens/sv/chronologie.webp)
 
-![En kalender efter förfallodatum](../../../../assets/screens/calendrier.png)
+![En kalender efter förfallodatum](../../../../assets/screens/sv/calendrier.webp)
 
 ## Galleri och lista
 
@@ -82,10 +85,34 @@ på sidan: ifyllda, tomma, unika värden, summa, medelvärde, minimum, maximum, 
 - **Listan** visar en rad per post, **grupperad** efter ett enkelval, en relation eller en
   person.
 
-![En lista med kunder, grupperad efter bransch](../../../../assets/screens/liste.png)
+![En lista med kunder, grupperad efter bransch](../../../../assets/screens/sv/liste.webp)
 
 I kanban, galleri och lista kan korten och raderna **ordnas för hand** genom att du drar dem –
 upp till 5 000; en vald sortering har företräde framför den ordningen.
+
+## Karta
+
+**Kartan** placerar varje rad på sin plats, utifrån:
+
+- en **adress** – en kort text, gärna i formatet **Adress** (se
+  [Tabeller och fält](/basedb/sv/fonctionnalites/tables-et-champs/)): ”12 rue des Lilas, Lyon”;
+- eller en **latitud** och en **longitud**, två talfält, placerade som de är.
+
+En nål får sin **färg** från ett enkelval, visar radens **titel** vid hovring och öppnar dess
+raddetaljer med ett klick. Kartan följer vyns filter och sortering, upp till 2 000 rader.
+
+En adress **lokaliseras en gång för alla** av instansens geokodningstjänst – OpenStreetMaps som
+standard –, i den takt tjänsten tillåter: på en ny karta dyker nålarna upp allteftersom svaren
+kommer in, ungefär en i sekunden, och sedan direkt nästa gång. En etikett räknar de placerade
+raderna, adresserna som återstår att lokalisera och de som inte gick att lokalisera: en adress
+som inte hittas ska preciseras (stad, postnummer), aldrig hoppas över i tysthet.
+
+:::note[Det som lämnar din server]
+Adressernas text skickas till geokodningstjänsten, och varje läsares webbläsare hämtar
+kartunderlaget direkt från tjänsten för karttiles. Instansens driftansvarig kan välja andra
+tjänster, eller inga alls: se
+[Miljövariabler](/basedb/sv/hebergement/variables/#kartor-och-adresser).
+:::
 
 ## Formulär och enkät
 
@@ -100,6 +127,7 @@ inte är obligatoriska —, bär färgen från sin tabell och ett ljust tema, oc
 visar ett passande exempel. Allt annat ändrar du när du vill:
 
 - **Utseende**: åtta teman — Ljust, Mjuk, Gryning, Hav, Skog, Natt, Papper, Minimal —, en accentfärg, ett typsnitt, en justering till vänster eller centrerad;
+- **Förifyll med dagens datum**: en datumfråga är redan ifylld med dagens datum — och klockslaget, för datum och tid — som personen behåller eller ändrar;
 - **Fråga endast om…**: en fråga ställs bara om ett tidigare svar kräver det (”Sentiment är
   Negativt”, ”Betyg är högst 2”). En dold fråga är varken obligatorisk eller skickas;
 - **Fler alternativ**: knapparna för välkomnande och skickande, numreringen,
@@ -111,6 +139,44 @@ fråga i taget, som glider in. Allt går också att göra med tangentbordet: **E
 fortsätta, bokstäverna **A**, **B**, **C**… för ett val, **J** eller **N** för ja eller nej,
 siffrorna för ett betyg — ett enda val går vidare till nästa fråga av sig själv. Att skicka
 in firas: en bock som ritas upp och konfetti i formulärets färger.
+
+## Quiz
+
+Ett quiz är en enkät som räknar poäng. Under varje fråga anger du dess **rätta svar** och vad det
+ger – **1 poäng** om du inte anger något, upp till 100:
+
+| Fråga | Rätt svar |
+|---|---|
+| enkelval | ett val |
+| flerval | de val som ska kryssas i, alla och bara de |
+| kryssruta | ja eller nej |
+| tal, betyg | ett tal |
+| datum | en dag |
+| kort text, e-post, URL | ett eller flera godkända svar, separerade med `;` – utan hänsyn till versaler eller diakritiska tecken |
+
+En fråga utan rätt svar – ett förnamn, en kommentar – ställs utan att bedömas. Det krävs minst en
+bedömd fråga för att skapa quizet.
+
+Avsnittet **Poängsättning** reglerar resten:
+
+- **Rättning**: **efter varje fråga** – svaret kontrolleras direkt, i grönt, eller i rött med det
+  rätta svaret, och poängen växer högst upp på skärmen –, **i slutet** – poängen, sedan facit –,
+  eller **aldrig** – bara poängen, de rätta svaren förblir hemliga;
+- **Gräns för godkänt**: en procentandel av poängen; slutskärmen säger då ”Godkänt!” eller
+  ”Inte den här gången…”;
+- **Spara poängen i**: ett talfält i tabellen, som tar emot poängen för varje svar. Sortera
+  rutnätet efter det: där är rankningen. Ett fält som heter ”Score”, ”Poäng” eller ”Betyg” väljs
+  automatiskt.
+
+Slutskärmen visar poängen i en ring som fylls, procentandelen, och sedan, utom vid ”aldrig”,
+varje bedömd fråga med det givna svaret och det rätta. En fråga som ett tidigare svar har dolt
+räknas inte med i totalen.
+
+:::note
+I applikationen kan den som får läsa vyn också läsa de rätta svaren. Via en
+[delad länk](/basedb/sv/fonctionnalites/formulaires-partages/#ett-delat-quiz) lämnar de aldrig
+servern: det är den som rättar och räknar.
+:::
 
 ## Dela en vy
 

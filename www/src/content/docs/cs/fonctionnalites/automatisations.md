@@ -1,6 +1,6 @@
 ---
 title: Automatizace
-description: Když se změní řádek, v pevný čas nebo kliknutím – upravit, vytvořit, vyhledat, větvit, zeptat se AI, upozornit, zavolat webhook, napsat do Slacku.
+description: Když se změní řádek, v pevný čas nebo kliknutím – upravit, vytvořit, vyhledat, větvit, zeptat se AI, upozornit, odeslat e-mail, zavolat webhook, napsat do Slacku.
 ---
 
 Automatizace říká **kdy**, **jestli** a **pak**: když úkol přejde do stavu „Fait“, zaznamenat
@@ -12,7 +12,7 @@ to, co předchozí krok našel nebo zapsal.
 Otevírají se přes **Automatizace** v bloku otevřené databáze dole v postranním panelu
 a vyžadují úroveň **Správa**.
 
-![Tok a jedno z jeho spuštění, zobrazené přímo na něm](../../../../assets/screens/automatisations.png)
+![Tok a jedno z jeho spuštění, zobrazené přímo na něm](../../../../assets/screens/cs/automatisations.webp)
 
 ## Tok
 
@@ -48,6 +48,7 @@ Až třicet kroků, v daném pořadí; první, který selže, zastaví ty násle
 | **Vytvořit řádek** | v této tabulce nebo v jiné tabulce databáze |
 | **Vyhledat řádek** | první řádek tabulky, který odpovídá filtru, aby ho následující kroky mohly citovat nebo upravit |
 | **Upozornit někoho** | [oznámení](/basedb/cs/fonctionnalites/collaboration/#oznámení) vybraným osobám nebo osobě z pole Osoba |
+| **Odeslat e-mail** | osobám z týmu, osobě z pole Osoba, na adresu z pole E-mail — klientovi, dodavateli — nebo na napsané adresy; předmět a text citují řádek a předchozí kroky |
 | **Zavolat webhook** | `POST` přes HTTPS na adresu podle vaší volby; jeho odpověď lze pak citovat |
 | **Odeslat do Slacku** | zprávu do [připojeného](/basedb/cs/integrations/synchronisation/#slack) kanálu |
 | **Zeptat se AI** | odpověď [poskytovatele AI](/basedb/cs/fonctionnalites/ia/) na pokyn, který cituje řádek a předchozí kroky – napsat, shrnout, zařadit –, čtenou jako text, číslo, ano či ne, datum nebo volbu ze seznamu |
@@ -137,7 +138,9 @@ jako ostatní.
   toku.
 - Vyhledání vrátí jeden řádek, ten první; zatím chybí „pro každý řádek“ i čekání („tři dny
   poté“).
-- Žádný e-mail, žádný skript.
+- Žádný skript. E-mail odchází jako prostý text, jeden pro každého příjemce — nejvýše dvacet
+  na krok —, přes [odesílací server](/basedb/cs/hebergement/variables/#e-maily) instance;
+  odpověď přijde osobě, která automatizaci naposledy uložila.
 - Podmínka testuje řádek: chcete-li zvolit větev podle odpovědi AI, zapište ji nejprve do
   pole řádku.
 - [Šablona databáze](/basedb/cs/fonctionnalites/modeles/) přenáší jen automatizace bez

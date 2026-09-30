@@ -8,7 +8,7 @@ liczą, ich zmiany z miesiąca na miesiąc, rozkład statusów, najbliższe term
 pokazuje **pytanie** – odczyt z bazy, zbudowany myszą lub napisany w SQL – a **filtry** na
 górze strony sterują kartami, które się z nimi połączy.
 
-![Pulpit „Pilotage de l’agence”: trend miesiąca, cel, przychody w układzie skumulowanym, wydźwięk opinii](../../../../assets/screens/tableaux-de-bord.png)
+![Pulpit „Pilotage de l’agence”: trend miesiąca, cel, przychody w układzie skumulowanym, wydźwięk opinii](../../../../assets/screens/pl/tableaux-de-bord.webp)
 
 Wszystko otwiera się z **Pulpity**, w bloku otwartej bazy na dole paska bocznego. Po lewej
 pulpity i zapisane pytania bazy oraz **Eksploruj dane**, aby zadać pytanie bez zapisywania
@@ -29,7 +29,7 @@ zachowuje swoją zawartość, znów niezapisaną.
 
 Pytanie buduje się krok po kroku, jeden krok pod drugim:
 
-![Edytor pytania: dane, filtry, podsumowanie według miesięcy](../../../../assets/screens/question-editeur.png)
+![Edytor pytania: dane, filtry, podsumowanie według miesięcy](../../../../assets/screens/pl/question-editeur.webp)
 
 | Krok | Co się w nim wybiera |
 |---|---|
@@ -163,7 +163,7 @@ resztę. Może mieć **wartość domyślną** – na przykład „Ten rok”.
 W trybie odczytu kliknięcie punktu może też ustawić filtr: **Filtruj według „Lyon”** na karcie,
 której kolumna miast jest połączona z filtrem „Ville”.
 
-![Zakładka „Activité”: zadania według terminu, skumulowane według statusu, lejek projektów, szacowane godziny w tabeli przestawnej](../../../../assets/screens/tableaux-de-bord-activite.png)
+![Zakładka „Activité”: zadania według terminu, skumulowane według statusu, lejek projektów, szacowane godziny w tabeli przestawnej](../../../../assets/screens/pl/tableaux-de-bord-activite.webp)
 
 ## Copilot
 

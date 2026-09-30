@@ -9,7 +9,7 @@ zichzelf, voor de hele database of voor een paar groepen —, en wie de database
 **SQL-view** van maken: een echte PostgreSQL-view, tussen de tabellen geplaatst, die `psql` en je tools
 ook lezen.
 
-![Een opgeslagen query, geopend vanuit de rubriek “Query’s”; daarboven twee SQL-views tussen de tabellen](../../../../assets/screens/requete-sql.png)
+![Een opgeslagen query, geopend vanuit de rubriek “Query’s”; daarboven twee SQL-views tussen de tabellen](../../../../assets/screens/nl/requete-sql.webp)
 
 ## Ieder met zijn eigen rechten
 
@@ -23,7 +23,7 @@ resultaat in hetzelfde raster als je tabellen. Wat de query mag lezen, hangt af 
   verborgen is, verdwijnt uit `SELECT *` en wordt geweigerd als je het noemt, ook als je de tabel erbij vermeldt;
   een schrijfactie wordt geweigerd. Het resultaat draagt het label **Jouw rechten**.
 
-![Het label “Jouw rechten”: de query ziet alleen de tabellen en velden die voor de persoon open zijn](../../../../assets/screens/sql-vos-droits.png)
+![Het label “Jouw rechten”: de query ziet alleen de tabellen en velden die voor de persoon open zijn](../../../../assets/screens/nl/sql-vos-droits.webp)
 
 Het is niet het scherm dat filtert: PostgreSQL past zelf je rechten toe, kolom voor kolom, op
 een rol die alleen van jou is. Een query kan je dus niets laten zien wat het raster, de API of de
@@ -37,7 +37,7 @@ kopie van, **Naam en delen…** (in het tabblad of in zijn menu in de zijbalk) h
 wie hem ziet, of verwijdert hem — **Verwijderen** staat ook in zijn menu, via een rechtsklik. Een
 tabblad dat hem toonde, behoudt zijn tekst.
 
-![Een query opslaan: de naam, wat hij toont, en wie hem ziet](../../../../assets/screens/requete-enregistrer.png)
+![Een query opslaan: de naam, wat hij toont, en wie hem ziet](../../../../assets/screens/nl/requete-enregistrer.webp)
 
 | Bereik | Wie hem ziet | Wie hem mag aanmaken en wijzigen |
 |---|---|---|
@@ -61,7 +61,7 @@ tabellen**, met zijn kleur en pictogram zoals een tabel, en een klein **oog** re
 dat het een view is. Een klik opent hem in een tabblad: zijn rijen in het raster, **Vernieuwen** om
 ze opnieuw te lezen.
 
-![De view “Factures à encaisser”, geopend vanuit de zijbalk](../../../../assets/screens/vue-sql.png)
+![De view “Factures à encaisser”, geopend vanuit de zijbalk](../../../../assets/screens/nl/vue-sql.webp)
 
 Je maakt hem via het menu **⋯** van de database → **Nieuwe SQL-view…**, of vanuit een SQL-tabblad:
 **⋯** → **SQL-view maken…**, en de query van het tabblad wordt zijn definitie. Het dialoogvenster
@@ -74,7 +74,7 @@ vraagt om:
 - zijn **query**: één enkele `SELECT`, op de tabellen en de andere views van de database. PostgreSQL
   weigert wat het weigert, en de editor wijst de plek aan.
 
-![Het dialoogvenster van een SQL-view: label en uiterlijk, technische naam, query, beschrijving](../../../../assets/screens/vue-sql-dialogue.png)
+![Het dialoogvenster van een SQL-view: label en uiterlijk, technische naam, query, beschrijving](../../../../assets/screens/nl/vue-sql-dialogue.webp)
 
 De view lees je daarna onder zijn naam, vanuit de interface net zo goed als vanuit `psql` of je BI-tool:
 

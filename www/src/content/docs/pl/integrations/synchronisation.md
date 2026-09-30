@@ -6,7 +6,7 @@ description: Powiadamiaj kanał Slacka, łącz kalendarz, utrzymuj tabelę w zgo
 Ekran **Integracje** bazy otwiera się z menu profilu, w lewym dolnym rogu. Wymaga poziomu
 **Zarządzanie** i skupia to, co łączy bazę z resztą twoich narzędzi.
 
-![Ekran Integracje bazy](../../../../assets/screens/integrations.png)
+![Ekran Integracje bazy](../../../../assets/screens/pl/integrations.webp)
 
 ## Slack
 

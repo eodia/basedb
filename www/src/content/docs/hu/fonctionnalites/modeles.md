@@ -12,7 +12,7 @@ azokat, amelyeket a basedb kínál.
 
 **Új adatbázis**, majd **Indulás sablonból, vagy kérje az MI-től**: megnyílik a galéria.
 
-![A sablongaléria az alkalmazásban](../../../../assets/screens/modeles.png)
+![A sablongaléria az alkalmazásban](../../../../assets/screens/hu/modeles.webp)
 
 Minden sablon teljes egészében átnézhető használat előtt – a táblái és azok mezői, a nézetei,
 az automatizálásai és az egyes MI-mezőinek utasításai. Az **Adatbázis létrehozása** bekéri a

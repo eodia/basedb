@@ -94,9 +94,17 @@ la sémantique « secret à usage unique, lié à un acteur et à un objet, expi
 3. `POST /auth/password/reset/confirm` consomme le défi, applique la politique, et
    produit les mêmes effets qu'un changement, révocation globale comprise.
 
-**Le canal est le courriel, par SMTP configuré par l'exploitant.** Pas d'autre en v1 :
+**Le canal est le courriel, par SMTP configuré par l'exploitant (`BASEDB_SMTP_*`, chapitre 16 §2.5).** Pas d'autre en v1 :
 ni SMS, ni question secrète, ni code hors bande. Sans SMTP configuré, l'étape 1 répond
 `202` et rien ne part ; la voie de secours est la commande d'exploitation du §7.
+`GET /auth/password/reset` dit si la réinitialisation est offerte (`404` sans transport) :
+l'écran de connexion ne montre « Mot de passe oublié ? » que si elle l'est.
+
+Le courriel porte un **lien** vers l'interface, `BASEDB_PUBLIC_URL/?reinitialisation=<code>`,
+que l'écran de connexion lit, retire de l'adresse, et qui ouvre le choix du nouveau mot de
+passe. Sans `BASEDB_PUBLIC_URL`, le courriel porte le **code seul**, à saisir dans « Mot de
+passe oublié › J'ai reçu un code ». Jamais un lien bâti depuis l'en-tête `Host` de la
+demande : celui qui la fait choisirait où part le secret (empoisonnement de réinitialisation).
 
 ### 2.4 Verrouillage
 
@@ -577,5 +585,3 @@ d'origine appartiennent à « Modèle de permissions ».
   connexion les comptes provisionnés qui n'ont jamais eu de mot de passe. Faut-il
   refuser le retrait tant que de tels comptes existent, ou leur ouvrir une
   réinitialisation de mot de passe malgré la règle du §2.3 ?
-- Le format du lien de réinitialisation reçu par courriel dépend de l'adresse publique
-  du front, que l'interface et l'exploitation n'ont pas encore figée.

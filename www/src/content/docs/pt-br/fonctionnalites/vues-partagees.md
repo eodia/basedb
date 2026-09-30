@@ -18,13 +18,13 @@ Menu da visão → **Compartilhar…**, depois:
 | **Público** | qualquer pessoa com o link, sem conta |
 | **Membros conectados** | um membro do espaço de trabalho, após o login — se necessário, apenas de certos grupos |
 
-![O compartilhamento de um calendário](../../../../assets/screens/partage-vue.png)
+![O compartilhamento de um calendário](../../../../assets/screens/pt-br/partage-vue.webp)
 
 O interruptor **Link ativo** suspende o link sem perdê-lo. A página abre fora do
 aplicativo: nem barra lateral, nem nome da base, nem nome da tabela — a visão, seus filtros, suas
 colunas e nada mais. Um calendário ou uma linha do tempo é lido ali como uma agenda.
 
-![O mesmo calendário, aberto pelo link](../../../../assets/screens/vue-partagee.png)
+![O mesmo calendário, aberto pelo link](../../../../assets/screens/pt-br/vue-partagee.webp)
 
 ## Em nome de quem se lê
 

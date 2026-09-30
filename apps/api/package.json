@@ -21,6 +21,7 @@
     "hono": "^4.6.14"
   },
   "devDependencies": {
+    "@basedb/sdk": "workspace:*",
     "@testcontainers/postgresql": "^10.16.0",
     "@types/node": "^22.10.2",
     "testcontainers": "^10.16.0",

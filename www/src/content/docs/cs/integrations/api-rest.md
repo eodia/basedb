@@ -33,7 +33,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | čitelný výraz: `statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | sloupce, které se mají vrátit |
-| `limit`, `cursor` | stránkování šifrovaným kurzorem (`next_cursor` v odpovědi) |
+| `limit`, `after` | stránkování šifrovaným kurzorem: `meta.next_cursor` stránky, předaný jako `after`, vrátí následující (`meta.has_next_page`) |
 | `links=display` | vazby s jejich zobrazovanou hodnotou |
 | `count=exact` | celkový počet, omezený na 100 000 |
 | `variables=raw` | dlouhé texty tak, jak jsou napsané, včetně `{{colonne}}`, místo s [hodnotami řádku](/basedb/cs/fonctionnalites/tables-et-champs/#formátovaný-text-a-proměnné) |
@@ -85,4 +85,4 @@ sloupce a příklady v cURL a JavaScriptu. Je **filtrovaná podle vašich opráv
 OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Názvy, cesty a chybové kódy
 zůstávají stejné ve všech jazycích.
 
-![Vygenerovaná dokumentace databáze](../../../../assets/screens/documentation-api.png)
+![Vygenerovaná dokumentace databáze](../../../../assets/screens/cs/documentation-api.webp)

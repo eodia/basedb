@@ -1,4 +1,5 @@
 import type { RequestContext, Surface } from '../tx/context.js'
+import { personalize } from './rows.js'
 
 /**
  * Single enforcement point for permissions — chapter 05 §3.2 and §6.1.
@@ -82,6 +83,12 @@ export interface Target {
    * would be overwritten, or would disagree with what computes it.
    */
   readonly computedFieldIds?: readonly string[]
+  /**
+   * The row rules on the table, by role: each a compiled template (`rows.ts`), `FALSE` for
+   * a rule that no longer compiles — a rule naming a field deleted since shows nothing
+   * rather than everything (§16).
+   */
+  readonly rowRules?: ReadonlyMap<string, string>
 }
 
 /** Snapshot of an actor's grants, computed once by the kernel. */
@@ -107,8 +114,11 @@ export interface Decision {
   readonly writableFields: ReadonlySet<string>
   /** Included in `readableFields` minus `writableFields`. */
   readonly clearableFields: ReadonlySet<string>
-  /** Constantly true in v1 (A20), but ALWAYS emitted by the query builder. */
-  readonly rowPredicate: 'TRUE'
+  /**
+   * The rows the actor reaches, as SQL over the placeholder alias of `rows.ts` — `TRUE`
+   * without a row rule (§16). ALWAYS emitted by the query builder, through `rowWhere`.
+   */
+  readonly rowPredicate: string
   /** Stable code, meant for the log, NEVER for the client. */
   readonly reason: string
 }
@@ -130,7 +140,7 @@ function deny(verdict: Verdict, reason: string): Decision {
     readableFields: EMPTY,
     writableFields: EMPTY,
     clearableFields: EMPTY,
-    rowPredicate: 'TRUE',
+    rowPredicate: 'FALSE',
     reason,
   }
 }
@@ -267,9 +277,42 @@ export function decide(
     readableFields: readable,
     writableFields: writable,
     clearableFields: clearable,
-    rowPredicate: 'TRUE',
+    rowPredicate: rowsOf(ctx, grants, target),
     reason,
   }
+}
+
+/**
+ * The rows of a table the actor reaches (§16): the union of what each role reading it
+ * reaches, a role without a rule reaching every row. Rights stay additive — a group added
+ * to a person never hides a row from them.
+ *
+ * Whoever changes the table's structure sees all of it: the console of a base's managers
+ * reads the whole schema, and a rule that the level « Gestion » ignored there but obeyed
+ * here would protect nothing.
+ */
+function rowsOf(ctx: RequestContext, grants: ActorGrants, target: Target): string {
+  const rules = target.rowRules
+  if (
+    grants.isInstanceAdmin ||
+    target.kind !== 'table' ||
+    rules === undefined ||
+    rules.size === 0
+  ) {
+    return 'TRUE'
+  }
+  const parts: string[] = []
+  for (const role of grants.roles) {
+    const held = reachCapabilities(role, target)
+    if (!held.has('read')) continue
+    if (held.has('manage_schema')) return 'TRUE'
+    const rule = rules.get(role.id)
+    if (rule === undefined) return 'TRUE'
+    if (!parts.includes(rule)) parts.push(rule)
+  }
+  if (parts.length === 0) return 'FALSE'
+  const combined = parts.length === 1 ? parts[0] : parts.map((p) => `(${p})`).join(' OR ')
+  return personalize(combined, ctx.actor.id)
 }
 
 /** What some roles can do, and see, on one target — `null` when they cannot read it. */

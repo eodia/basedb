@@ -1,6 +1,6 @@
 ---
 title: Automações
-description: Quando uma linha muda, em horário fixo ou com um clique — editar, criar, buscar, ramificar, perguntar à IA, notificar, chamar um webhook, escrever no Slack.
+description: Quando uma linha muda, em horário fixo ou com um clique — editar, criar, buscar, ramificar, perguntar à IA, notificar, enviar um e-mail, chamar um webhook, escrever no Slack.
 ---
 
 Uma automação diz **quando**, **se** e **então**: quando uma tarefa passa para “Fait”, registrar
@@ -12,7 +12,7 @@ em uma etapa o que uma etapa anterior encontrou ou escreveu.
 Elas são abertas em **Automações**, no bloco da base aberta, na parte de baixo da barra
 lateral, e exigem o nível **Gerenciamento**.
 
-![Um fluxo e uma de suas execuções, sobreposta a ele](../../../../assets/screens/automatisations.png)
+![Um fluxo e uma de suas execuções, sobreposta a ele](../../../../assets/screens/pt-br/automatisations.webp)
 
 ## O fluxo
 
@@ -49,6 +49,7 @@ Até trinta etapas, em ordem; a primeira que falha interrompe as seguintes.
 | **Criar uma linha** | nesta tabela ou em outra da base |
 | **Buscar uma linha** | a primeira linha de uma tabela que atende a um filtro, para que as etapas seguintes a citem ou a alterem |
 | **Notificar alguém** | uma [notificação](/basedb/pt-br/fonctionnalites/collaboration/#notificações) para pessoas escolhidas, ou para a de um campo Pessoa |
+| **Enviar um e-mail** | para pessoas da equipe, para a de um campo Pessoa, para o endereço de um campo E-mail — um cliente, um fornecedor — ou para endereços escritos; o assunto e o texto citam a linha e as etapas anteriores |
 | **Chamar um webhook** | um `POST` em HTTPS para o endereço que você escolher; a resposta pode ser citada depois |
 | **Enviar para o Slack** | uma mensagem em um canal [conectado](/basedb/pt-br/integrations/synchronisation/#slack) |
 | **Perguntar à IA** | uma resposta do [provedor de IA](/basedb/pt-br/fonctionnalites/ia/) a uma instrução que cita a linha e as etapas anteriores — redigir, resumir, classificar —, lida como um texto, um número, sim ou não, uma data ou uma opção de uma lista |
@@ -139,7 +140,9 @@ podem ser desfeitas como as outras.
   em um único fluxo.
 - Uma busca retorna uma linha, a primeira; ainda não há “para cada linha”, nem
   espera (“três dias depois”).
-- Sem e-mail, sem script.
+- Sem script. Um e-mail parte em texto simples, um por destinatário — vinte no máximo por
+  etapa —, pelo [servidor de envio](/basedb/pt-br/hebergement/variables/#e-mails) da instância;
+  uma resposta chega à pessoa dona da automação.
 - Uma condição testa uma linha: para seguir uma ramificação conforme a resposta da IA, escreva-a
   primeiro em um campo da linha.
 - Um [modelo de base](/basedb/pt-br/fonctionnalites/modeles/) só leva as automações sem

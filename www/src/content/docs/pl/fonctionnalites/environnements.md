@@ -28,7 +28,7 @@ Z menu bazy, w **Więcej działań**, **Porównaj środowiska…** otwiera okno 
 - **Synchronizacja wierszy**: tabela po tabeli, przenoszenie wierszy z jednego środowiska do
   drugiego według identyfikatora.
 
-![Porównanie środowiska produkcyjnego i testowego](../../../../assets/screens/environnements.png)
+![Porównanie środowiska produkcyjnego i testowego](../../../../assets/screens/pl/environnements.webp)
 
 ## Skąd basedb wie, kto co zmienił
 

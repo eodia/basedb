@@ -18,14 +18,14 @@ A nézet menüje → **Megosztás…**, majd:
 | **Nyilvános** | bárki, akinek megvan a hivatkozás, fiók nélkül |
 | **Bejelentkezett tagok** | a munkaterület egy tagja, bejelentkezés után – szükség esetén csak bizonyos csoportokból |
 
-![Egy naptár megosztása](../../../../assets/screens/partage-vue.png)
+![Egy naptár megosztása](../../../../assets/screens/hu/partage-vue.webp)
 
 Az **Aktív hivatkozás** kapcsoló felfüggeszti a hivatkozást anélkül, hogy elveszne. Az oldal az
 alkalmazáson kívül nyílik meg: se oldalsáv, se adatbázisnév, se táblanév – csak a nézet, a
 szűrői, az oszlopai, és semmi más. Egy naptár vagy idővonal itt úgy olvasható, mint egy
 naptáralkalmazás.
 
-![Ugyanaz a naptár a hivatkozásán keresztül megnyitva](../../../../assets/screens/vue-partagee.png)
+![Ugyanaz a naptár a hivatkozásán keresztül megnyitva](../../../../assets/screens/hu/vue-partagee.webp)
 
 ## Kinek a nevében történik az olvasás
 

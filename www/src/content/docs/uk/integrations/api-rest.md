@@ -33,7 +33,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | зрозумілий вираз: `statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | стовпці, які треба повернути |
-| `limit`, `cursor` | пагінація зашифрованим курсором (`next_cursor` у відповіді) |
+| `limit`, `after` | пагінація зашифрованим курсором: `meta.next_cursor` сторінки, переданий як `after`, дає наступну (`meta.has_next_page`) |
 | `links=display` | зв’язки з їхнім значенням відображення |
 | `count=exact` | загальна кількість, не більше 100 000 |
 | `variables=raw` | довгі тексти в тому вигляді, як їх записано, разом із `{{colonne}}`, а не зі [значеннями рядка](/basedb/uk/fonctionnalites/tables-et-champs/#форматований-текст-і-змінні) |
@@ -85,4 +85,4 @@ Ctrl+Z в інтерфейсі, — або відхилено, якщо рядо
 форматі OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Назви, шляхи та коди
 помилок лишаються однаковими в усіх мовах.
 
-![Згенерована документація бази](../../../../assets/screens/documentation-api.png)
+![Згенерована документація бази](../../../../assets/screens/uk/documentation-api.webp)

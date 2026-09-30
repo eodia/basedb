@@ -1,5 +1,6 @@
 'use client'
 
+import { AddressLink } from '@/components/app/address'
 import { AiEmpty } from '@/components/app/ai-pending'
 import { DateInput } from '@/components/app/date-picker'
 import { FieldButton } from '@/components/app/field-button'
@@ -26,6 +27,7 @@ import {
 } from '@/components/app/value-widgets'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Kbd, useModKey } from '@/components/ui/kbd'
 import { Hint } from '@/components/ui/tooltip'
 import { type Field, type LinkOption, filesOf } from '@/lib/api/client'
 import { shownField } from '@/lib/computed'
@@ -225,35 +227,39 @@ export function Cell({
             e.stopPropagation()
             onFollowLink(target, id)
           },
-          title: $t('Ctrl+clic : ouvrir « {value} »', { value: link?.display ?? id.slice(0, 8) }),
         }
       : {}
+    const followed = followable ? (link?.display ?? id.slice(0, 8)) : null
     if (options === undefined) {
       return (
-        <span className="flex w-full items-center px-2" {...intercept}>
-          {link?.id == null ? (
-            <span className="text-muted-foreground">—</span>
-          ) : (
-            <Badge variant="secondary" className="gap-1.5 font-normal">
-              <Link2 className="size-3" />
-              {link.display ?? link.id.slice(0, 8)}
-            </Badge>
-          )}
-        </span>
+        <FollowHint label={followed}>
+          <span className="flex w-full items-center px-2" {...intercept}>
+            {link?.id == null ? (
+              <span className="text-muted-foreground">—</span>
+            ) : (
+              <Badge variant="secondary" className="gap-1.5 font-normal">
+                <Link2 className="size-3" />
+                {link.display ?? link.id.slice(0, 8)}
+              </Badge>
+            )}
+          </span>
+        </FollowHint>
       )
     }
     return (
-      <span className="flex w-full items-center px-1" {...intercept}>
-        <LinkPicker
-          field={field}
-          value={link?.id ?? null}
-          display={link?.display ?? null}
-          options={options}
-          onSearch={onSearchLink}
-          onChange={(next) => void onCommit(next)}
-          appearance="cell"
-        />
-      </span>
+      <FollowHint label={followed}>
+        <span className="flex w-full items-center px-1" {...intercept}>
+          <LinkPicker
+            field={field}
+            value={link?.id ?? null}
+            display={link?.display ?? null}
+            options={options}
+            onSearch={onSearchLink}
+            onChange={(next) => void onCommit(next)}
+            appearance="cell"
+          />
+        </span>
+      </FollowHint>
     )
   }
 
@@ -417,6 +423,18 @@ export function Cell({
       </span>
     )
   }
+  if (format === 'address' && initial !== '') {
+    return (
+      <span
+        className="flex w-full min-w-0 items-center px-2"
+        onDoubleClick={() => {
+          if (isTextual(field)) onStartEdit()
+        }}
+      >
+        <AddressLink value={initial} />
+      </span>
+    )
+  }
   if (format === 'barcode' && initial !== '') {
     return (
       <span
@@ -462,6 +480,36 @@ export function Cell({
     >
       {initial === '' ? '—' : display(initial, field)}
     </button>
+  )
+}
+
+/**
+ * The tooltip of a link cell that leads somewhere: the row it opens, and the gesture that
+ * opens it, drawn as keys. Without a row to open, the cell comes back as it is.
+ */
+function FollowHint({
+  label,
+  children,
+}: {
+  readonly label: string | null
+  readonly children: React.ReactElement
+}) {
+  const mod = useModKey()
+  if (label === null) return children
+  return (
+    <Hint
+      label={
+        <span className="flex items-center gap-2">
+          <span className="min-w-0 truncate">{$t('Ouvrir « {label} »', { label })}</span>
+          <span className="flex shrink-0 items-center gap-0.5">
+            <Kbd inverse>{mod}</Kbd>
+            <Kbd inverse>{$t('clic')}</Kbd>
+          </span>
+        </span>
+      }
+    >
+      {children}
+    </Hint>
   )
 }
 

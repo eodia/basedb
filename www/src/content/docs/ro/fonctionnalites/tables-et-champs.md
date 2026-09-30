@@ -22,7 +22,7 @@ pe care o introduceți („Échéance”) devine un nume fizic lizibil (`echeanc
 | Selecție unică | `text` + `CHECK` | culoare, pictogramă sau imagine pentru fiecare opțiune |
 | Selecție multiplă | `text[]` + `CHECK` | filtrabilă cu operatorii de tablou |
 | E-mail | `text` + `CHECK` | o adresă verificată de baza de date, deschisă cu un clic |
-| Telefon, Cod de bare | `text` | un text scurt și formatul său: link de apel, font monospațiat |
+| Telefon, Cod de bare, Adresă | `text` | un text scurt și formatul său: link de apel, font monospațiat, link către hartă |
 | URL | `text` + `CHECK` | completat la introducere (`exemple.fr` → `https://exemple.fr`) |
 | Persoană | `uuid` | un membru al spațiului de lucru; desemnarea lui îl [anunță](/basedb/ro/fonctionnalites/collaboration/) |
 | Număr automat | `bigint` identitate | numerotează și rândurile deja existente; nimeni nu îl introduce |
@@ -38,7 +38,7 @@ Fiecare tabel are și **coloanele de sistem**: `_id` (UUID v7), `_created_at`,
 inscriptibile prin API. Grila le grupează sub **Informații de sistem**, în meniul coloanelor:
 există în fiecare tabel și sunt utile în puține.
 
-![Grila unui tabel, cu o durată calculată, o căutare și o numărare](../../../../assets/screens/grille.png)
+![Grila unui tabel, cu o durată calculată, o căutare și o numărare](../../../../assets/screens/ro/grille.webp)
 
 ## Constrângeri garantate de baza de date
 
@@ -55,7 +55,7 @@ Foreign-key constraints:
 
 ## Formate de afișare
 
-Monedă, Procent, Durată, Evaluare, Telefon și Cod de bare se aleg ca tipuri, dar sunt
+Monedă, Procent, Durată, Evaluare, Telefon, Cod de bare și Adresă se aleg ca tipuri, dar sunt
 **formate**: coloana rămâne un număr sau un text, doar citirea se schimbă.
 
 | Format | Pe | Se citește și se introduce |
@@ -66,9 +66,27 @@ Monedă, Procent, Durată, Evaluare, Telefon și Cod de bare se aleg ca tipuri, 
 | Evaluare | un număr | de la 1 la 10 stele, setată cu un clic |
 | Telefon | un text scurt | un link de apel |
 | Cod de bare | un text scurt | cu font monospațiat |
+| Adresă | un text scurt | un link către hartă; în fișă, **Găsiți adresa** propune adresele care corespund, scrise integral; vizualizarea [Hartă](/basedb/ro/fonctionnalites/vues/#hartă) o așază |
 
 Un format se poate schimba ulterior (**Afișare**, la editarea câmpului) fără a atinge valorile
 salvate. El nu limitează valoarea: o evaluare de 7 pe o scară de 5 rămâne 7.
+
+## Valori implicite
+
+La modificarea unui câmp, **Valoare implicită** fixează ce primește un rând creat fără el:
+
+| Alegere | Pe | Rândul creat primește |
+|---|---|---|
+| O valoare fixă | majoritatea tipurilor | valoarea aleasă — un statut „Nou”, o prioritate 3 |
+| Data de astăzi | o dată | ziua creării sale, în fusul orar al persoanei |
+| Momentul creării | o dată și oră | ora exactă |
+| Persoana care creează rândul | o persoană | cine l-a creat — „Responsabil: eu” |
+
+Fișa nouă și formularele se deschid precompletate; golirea câmpului îl lasă gol. Valoarea
+implicită se aplică la orice creare — interfață, API, MCP, import, formular partajat,
+automatizare —, inclusiv pe un câmp pe care persoana nu îl poate modifica: aceasta este regula
+tabelului. Rândurile existente nu se schimbă, iar o inserare în SQL direct nu primește niciuna:
+basedb o aplică, nu coloana.
 
 ## Formule
 
@@ -173,7 +191,7 @@ Textul formatat nu poate fi completat de AI: un model scrie text, nu HTML cură�
 Ecranul **Structură** al bazei — în meniul ei **⋯** din bara laterală — listează tabelele și câmpurile lor: adăugare, redenumire, marcare ca obligatoriu, reordonare,
 descriere, desemnarea câmpului de afișare.
 
-![Ecranul Structură al unei baze](../../../../assets/screens/structure.png)
+![Ecranul Structură al unei baze](../../../../assets/screens/ro/structure.webp)
 
 Modificarea structurii cere nivelul **Gestionare**. Fără el, ecranul poate fi consultat și nu
 propune nimic: niciun buton, niciun creion, niciun mâner — caracterul obligatoriu și câmpul de

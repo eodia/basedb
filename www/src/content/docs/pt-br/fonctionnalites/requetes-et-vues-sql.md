@@ -9,7 +9,7 @@ si, para toda a base ou para alguns grupos —, e quem gerencia a base pode tran
 **visão SQL**: uma visão PostgreSQL de verdade, organizada entre as tabelas, que o `psql` e suas ferramentas também
 leem.
 
-![Uma consulta salva, aberta na seção “Consultas”; acima, duas visões SQL organizadas entre as tabelas](../../../../assets/screens/requete-sql.png)
+![Uma consulta salva, aberta na seção “Consultas”; acima, duas visões SQL organizadas entre as tabelas](../../../../assets/screens/pt-br/requete-sql.webp)
 
 ## Cada um com suas permissões
 
@@ -23,7 +23,7 @@ resultado na mesma grade das suas tabelas. O que a consulta pode ler depende de 
   oculto para você desaparece do `SELECT *` e é recusado se você o nomear, mesmo qualificando a tabela;
   uma escrita é recusada. O resultado exibe a etiqueta **Suas permissões**.
 
-![A etiqueta “Suas permissões”: a consulta só vê as tabelas e os campos abertos para a pessoa](../../../../assets/screens/sql-vos-droits.png)
+![A etiqueta “Suas permissões”: a consulta só vê as tabelas e os campos abertos para a pessoa](../../../../assets/screens/pt-br/sql-vos-droits.webp)
 
 Não é a tela que filtra: o próprio PostgreSQL aplica as suas permissões, coluna por coluna, em
 um papel exclusivo seu. Uma consulta, portanto, não pode mostrar nada que a grade, a API ou o
@@ -37,7 +37,7 @@ cópia, **Nome e compartilhamento…** (na aba ou no menu dela na barra lateral)
 quem a vê ou a exclui — **Excluir** também está no menu dela, com um clique com o botão direito.
 Uma aba que a mostrava mantém seu texto.
 
-![Salvar uma consulta: o nome, o que ela mostra e quem a vê](../../../../assets/screens/requete-enregistrer.png)
+![Salvar uma consulta: o nome, o que ela mostra e quem a vê](../../../../assets/screens/pt-br/requete-enregistrer.webp)
 
 | Alcance | Quem a vê | Quem pode criá-la e editá-la |
 |---|---|---|
@@ -61,7 +61,7 @@ tabelas**, com sua cor e seu ícone como uma tabela, e um pequeno **olho** à di
 que é uma visão. Um clique a abre em uma aba: suas linhas na grade, **Atualizar** para
 relê-las.
 
-![A visão “Factures à encaisser”, aberta pela barra lateral](../../../../assets/screens/vue-sql.png)
+![A visão “Factures à encaisser”, aberta pela barra lateral](../../../../assets/screens/pt-br/vue-sql.webp)
 
 Ela é criada pelo menu **⋯** da base → **Nova visão SQL…**, ou a partir de uma aba SQL:
 **⋯** → **Criar visão SQL…**, e a consulta da aba se torna a definição dela. A caixa de diálogo
@@ -74,7 +74,7 @@ pede:
 - a **consulta**: um único `SELECT`, sobre as tabelas e as outras visões da base. O PostgreSQL
   recusa o que ele recusa, e o editor aponta o local.
 
-![A caixa de diálogo de uma visão SQL: rótulo e aparência, nome técnico, consulta, descrição](../../../../assets/screens/vue-sql-dialogue.png)
+![A caixa de diálogo de uma visão SQL: rótulo e aparência, nome técnico, consulta, descrição](../../../../assets/screens/pt-br/vue-sql-dialogue.webp)
 
 A visão é lida depois pelo nome, tanto pela interface quanto pelo `psql` ou pela sua ferramenta de BI:
 

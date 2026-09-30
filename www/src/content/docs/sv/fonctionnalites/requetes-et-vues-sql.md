@@ -9,7 +9,7 @@ för sig själv, för hela databasen eller för några grupper –, och den som 
 göra en **SQL-vy** av den: en riktig PostgreSQL-vy, placerad bland tabellerna, som `psql` och
 dina verktyg också läser.
 
-![En sparad fråga, öppnad från avsnittet ”Frågor”; ovanför, två SQL-vyer placerade bland tabellerna](../../../../assets/screens/requete-sql.png)
+![En sparad fråga, öppnad från avsnittet ”Frågor”; ovanför, två SQL-vyer placerade bland tabellerna](../../../../assets/screens/sv/requete-sql.webp)
 
 ## Var och en med sina behörigheter
 
@@ -23,7 +23,7 @@ samma rutnät som dina tabeller. Vad frågan kan läsa beror på vem som kör de
   dig försvinner ur `SELECT *` och avvisas om du namnger det, även om du anger tabellen; en
   skrivning avvisas. Resultatet har etiketten **Dina behörigheter**.
 
-![Etiketten ”Dina behörigheter”: frågan ser bara de tabeller och fält som är öppna för personen](../../../../assets/screens/sql-vos-droits.png)
+![Etiketten ”Dina behörigheter”: frågan ser bara de tabeller och fält som är öppna för personen](../../../../assets/screens/sv/sql-vos-droits.webp)
 
 Det är inte skärmen som sållar: PostgreSQL själv tillämpar dina behörigheter, kolumn för kolumn,
 på en roll som är din egen. En fråga kan alltså inte visa dig något som rutnätet, API:et eller
@@ -37,7 +37,7 @@ delning…** (i fliken eller i dess meny i sidofältet) byter namn på den, änd
 eller tar bort den — **Ta bort** finns också i dess meny, med ett högerklick. En flik som visade
 den behåller sin text.
 
-![Spara en fråga: dess namn, vad den visar och vem som ser den](../../../../assets/screens/requete-enregistrer.png)
+![Spara en fråga: dess namn, vad den visar och vem som ser den](../../../../assets/screens/sv/requete-enregistrer.webp)
 
 | Omfattning | Vem ser den | Vem kan skapa och ändra den |
 |---|---|---|
@@ -61,7 +61,7 @@ med sin färg och sin ikon precis som en tabell, och ett litet **öga** till hö
 det är en vy. Ett klick öppnar den i en flik: dess rader i rutnätet, och **Uppdatera** för att
 läsa dem igen.
 
-![Vyn ”Factures à encaisser”, öppnad från sidofältet](../../../../assets/screens/vue-sql.png)
+![Vyn ”Factures à encaisser”, öppnad från sidofältet](../../../../assets/screens/sv/vue-sql.webp)
 
 Den skapas via databasens **⋯**-meny → **Ny SQL-vy…**, eller från en SQL-flik: **⋯** →
 **Skapa SQL-vy…**, och flikens fråga blir dess definition. Dialogen frågar efter:
@@ -72,7 +72,7 @@ Den skapas via databasens **⋯**-meny → **Ny SQL-vy…**, eller från en SQL-
 - dess **fråga**: en enda `SELECT`, mot tabellerna och de andra vyerna i databasen. PostgreSQL
   avvisar det som det avvisar, och redigeraren pekar ut stället.
 
-![Dialogen för en SQL-vy: etikett och utseende, tekniskt namn, fråga, beskrivning](../../../../assets/screens/vue-sql-dialogue.png)
+![Dialogen för en SQL-vy: etikett och utseende, tekniskt namn, fråga, beskrivning](../../../../assets/screens/sv/vue-sql-dialogue.webp)
 
 Vyn läses sedan under sitt namn, från gränssnittet lika väl som från `psql` eller ditt BI-verktyg:
 

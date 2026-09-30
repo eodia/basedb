@@ -31,17 +31,39 @@ Un campo nascosto è assente ovunque: dalla griglia, dalle viste, dall’API, da
 dall’SQL scritto nell’interfaccia e dalle viste SQL. Filtrare o ordinare su di esso risponde come per un campo
 che non esiste.
 
+## Fino alla riga
+
+Accanto a **Campi**, **Righe** mostra a un gruppo solo alcune righe di una tabella: quelle
+che un filtro conserva, scritto come quello di una vista. `@me` indica la persona connessa:
+
+- `commercial eq @me` — ogni commerciale vede solo i propri clienti;
+- `region in ["nord", "est"]` — un team vede solo le proprie regioni;
+- `_created_by eq @me` — ognuno vede solo ciò che ha creato.
+
+I permessi si sommano: una persona vede le righe di tutti i suoi gruppi, e un gruppo senza
+regola le vede tutte. Chi gestisce la struttura della tabella — il livello Gestione — vede sempre
+tutto. La schermata indica quante righe vede una determinata persona, e tramite quale gruppo.
+
+Una riga fuori dalla sua regola non esiste per la persona: né nelle viste, nelle dashboard, nella
+ricerca, nell’API, nel MCP o nella cronologia, né per essere modificata, eliminata o collegata.
+Una riga che crea deve far parte delle sue; modificando una riga, può invece farla uscire dal
+proprio perimetro — un’attività affidata a un collega. Le risposte ai
+[moduli condivisi](/basedb/it/fonctionnalites/formulaires-partages/) arrivano sempre.
+
 ## E l’SQL?
 
 Nell’interfaccia, l’SQL segue gli stessi permessi, applicati da PostgreSQL stesso: senza il livello
 Gestione, una query viene eseguita in sola lettura, su un ruolo proprio della persona, dove una tabella
-preclusa non esiste e un campo nascosto viene rifiutato. Una [vista SQL](/basedb/it/fonctionnalites/requetes-et-vues-sql/)
+preclusa non esiste, un campo nascosto viene rifiutato e vengono lette solo le sue righe, che la
+tabella sia nominata da sola o con il suo schema. Una [vista SQL](/basedb/it/fonctionnalites/requetes-et-vues-sql/)
 si legge con i permessi di chi la legge, e condividere una query ne condivide solo il testo.
 
 Un accesso **`psql` diretto** al database, invece, non è governato da basedb: legge tutto, campi
 nascosti compresi. Le restrizioni proteggono le superfici del prodotto — interfaccia, API, MCP —, mai
 da chi dispone di un accesso SQL al database; questi accessi si regolano con dei `GRANT`
-PostgreSQL, impostati da chi amministra l’installazione.
+PostgreSQL, impostati da chi amministra l’installazione. Una tabella che porta una regola di
+righe ha la sicurezza per riga di PostgreSQL attivata: un ruolo creato per uno strumento terzo non
+vi vede alcuna riga, a meno che non abbia l’attributo `BYPASSRLS` o una propria policy.
 
 ## Account e accesso
 

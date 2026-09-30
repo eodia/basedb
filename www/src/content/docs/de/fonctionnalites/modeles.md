@@ -12,7 +12,7 @@ selbst ausfüllt. Die [Vorlagengalerie](/basedb/de/modeles/) zeigt, welche based
 **Neue Datenbank**, dann **Von einer Vorlage ausgehen oder bei der KI anfragen**: Die Galerie
 öffnet sich.
 
-![Die Vorlagengalerie in der Anwendung](../../../../assets/screens/modeles.png)
+![Die Vorlagengalerie in der Anwendung](../../../../assets/screens/de/modeles.webp)
 
 Jede Vorlage lässt sich vor der Verwendung vollständig ansehen – ihre Tabellen und deren Felder,
 ihre Ansichten, ihre Automatisierungen und die Anweisung jedes ihrer KI-Felder. **Datenbank

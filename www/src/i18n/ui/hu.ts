@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb – közös használatú adatbázis, amelyben minden tábla valódi PostgreSQL-tábla',
-			description: 'Rács és nyolc nézet, képletek, megosztott űrlapok és nézetek, megjegyzések, automatizálások, irányítópultok, mezőszintű jogosultságok, teljes előzmények, REST API és MCP-szerver – valódi, beszédes nevű PostgreSQL-táblákon. Saját üzemeltetésű, AGPL-3.0.',
+			description: 'Rács és tíz nézet, képletek, megosztott űrlapok, kvízek és nézetek, megjegyzések, automatizálások, irányítópultok, mezőszintű jogosultságok, teljes előzmények, REST API és MCP-szerver – valódi, beszédes nevű PostgreSQL-táblákon. Saját üzemeltetésű, AGPL-3.0.',
 		},
 		changelog: {
 			title: 'Újdonságok – basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: 'Nyolc nézet',
-								text: 'Rács, kanban, naptár, idővonal, galéria, lista, űrlap, kérdőív.',
+								title: 'Tíz nézet',
+								text: 'Rács, kanban, naptár, idővonal, galéria, lista, térkép, űrlap, kérdőív, kvíz.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb – minden munkája, egy helyen',
-			description: 'Ügyfelek, projektek, készletek, jelentkezések: egy adatbázis, amelyet az egész csapat egyszerre módosít, táblázatban, kanbanon vagy naptárban, irányítópultokkal, automatizálásokkal és MI-vel. Kód nélkül, szabad és ingyenes.',
+			title: 'basedb – közös használatú adatbázis az egész csapatnak',
+			description: 'Minden munkája egy helyen, amelyet az egész csapat egyszerre módosít: táblázatban, kanbanon vagy naptárban, űrlapokkal, irányítópultokkal, automatizálásokkal és MI-vel. Kód nélkül, szabad és ingyenes.',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -891,9 +891,9 @@ export default {
 			text: 'Minden funkció ugyanazokba a táblákba ír, ugyanazokkal a jogosultságokkal, ugyanazokba az előzményekbe.',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: 'módja, hogy lássa az adatait',
-					text: 'Rács, kanban, naptár, idővonal, galéria, lista, űrlap és kérdőív, ugyanazokon a sorokon. Mindenki a saját nézetét választja.',
+					text: 'Rács, kanban, naptár, idővonal, galéria, lista, térkép, űrlap, kérdőív és kvíz, ugyanazokon a sorokon. Mindenki a saját nézetét választja.',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -943,7 +943,7 @@ export default {
 				},
 				import: {
 					title: 'Importálás egy mozdulattal',
-					text: 'Húzzon be egy CSV-fájlt: az oszlopokat és típusokat kitalálja, és létrehozza a táblát.',
+					text: 'Húzzon be egy Excel-munkafüzetet vagy egy CSV-t: az oszlopokat és a típusokat kitalálja, és létrehozza a táblát.',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1036,7 +1036,7 @@ export default {
 				},
 				{
 					q: 'Átvehetjük a táblázatainkat?',
-					a: 'Igen: mentse el a munkalapját CSV formátumban, és húzza be a basedb-be. Az importálás kitalálja minden oszlop típusát, létrehozza a táblát, és soronként megmondja, mit nem tudott átvenni.',
+					a: 'Igen: húzza be a basedb-be az Excel-munkafüzetét, vagy egy CSV-t. Az importálás kitalálja minden oszlop típusát, létrehozza a táblát, és soronként megmondja, mit nem tudott átvenni.',
 				},
 				{
 					q: 'Lehet többen egyszerre dolgozni?',
@@ -1361,9 +1361,9 @@ export default {
 		text: 'Minden funkció ugyanazokba a táblákba ír, ugyanazokkal a jogosultságokkal, ugyanazokba az előzményekbe.',
 		more: 'Bővebben →',
 		views: {
-			title: 'Nyolc nézet ugyanazokra a sorokra',
+			title: 'Tíz nézet ugyanazokra a sorokra',
 			text: 'Közösek az egész csapatnak, vagy személyesek, csak Önnek: mindenki a saját módján olvas, és senki nem másolja az adatokat.',
-			chips: ['Rács', 'Kanban', 'Naptár', 'Idővonal', 'Galéria', 'Lista', 'Űrlap', 'Kérdőív'],
+			chips: ['Rács', 'Kanban', 'Naptár', 'Idővonal', 'Galéria', 'Lista', 'Térkép', 'Űrlap', 'Kérdőív', 'Kvíz'],
 		},
 		forms: {
 			title: 'Megosztott űrlapok',
@@ -1427,7 +1427,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'CSV- és JSON-importálás',
+				title: 'Excel-, CSV- és JSON-importálás',
 				text: 'Húzzon be egy fájlt: az importálás kitalálja a típusokat, létrehozza a táblát vagy kiegészít egy meglévőt, és soronként megmondja, mit utasított el.',
 				href: '/guides/premiers-pas/',
 			},
@@ -1536,6 +1536,66 @@ export default {
 		title: 'Mi változott a basedb-ben',
 		intro: 'Minden változás részletei <a href="https://github.com/eodia/basedb/commits/main">a tároló előzményeiben</a> találhatók. Ami ezután jön: az <a href="/feuille-de-route/">ütemterv</a>.',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: 'A térkép, és címek, amelyek megtalálják a helyüket',
+				tag: 'Új',
+				items: [
+					'<strong>Egy tizedik nézet, a térkép</strong>: minden sor a saját helyén, a címe vagy a szélességi és hosszúsági foka alapján. Egy tű egy státusz színét veszi fel, és egy kattintásra megnyitja a sor részleteit. <a href="/fonctionnalites/vues/#térkép">A térkép</a>',
+					'<strong>Egy címet a rendszer egyszer és mindenkorra behatárol</strong>, az OpenStreetMap szolgáltatásával vagy az Ön által választottal: a tűk a válaszok érkezésével jelennek meg, majd azonnal. Egy nem található cím számításra kerül, sosem kerül csendben félretéve.',
+					'<strong>A Cím formátum</strong> egy rövid szöveghez: egy kattintás megnyitja a térképen, és a sor részleteiben a <strong>Cím keresése</strong> javasolja a megfelelő, teljesen kiírt címeket. <a href="/fonctionnalites/tables-et-champs/#megjelenítési-formátumok">A formátumok</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: 'PDF-ek a soraiból',
+				tag: 'Új',
+				items: [
+					'<strong>Egy árajánlat, egy számla, egy adatlap PDF-ben</strong>, egy sor menüjéből: a nyomtatható adatlap beállítás nélkül, vagy egy sablon — szövegek, amelyek hivatkoznak a mezőkre, a sor mezői, a kapcsolt sorok táblázata az összesítésével, oldaltörések. <a href="/fonctionnalites/documents/">A dokumentumok</a>',
+					'<strong>Mindenki a saját jogosultságaival</strong>: az Ön elől elrejtett mező nem jelenik meg az Ön PDF-jében. A húsz nyelv mindegyikén megírható, a kínaival, a japánnal és a koreaival együtt, és az API ugyanazt a dokumentumot adja vissza.',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: 'Jogosultságok egészen a sorig, alapértelmezett értékek, Excel-importálás',
+				tag: 'Új',
+				items: [
+					'<strong>Mindenkinek a saját sorai</strong>: egy csoport csak egy szűrő sorait látja — „Értékesítő én vagyok”, „Régió Észak” —, a felületen, az API-ban, az MCP-szerverben, csakúgy mint SQL-ben, ahol a PostgreSQL ugyanazt a szabályt érvényesíti. <a href="/fonctionnalites/droits/#egészen-a-sorig">Egészen a sorig</a>',
+					'<strong>Alapértelmezett értékek</strong>: egy rögzített érték, a mai dátum, a létrehozás pillanata vagy a sort létrehozó személy, előre kitöltve a képernyőn és mindenhol máshol alkalmazva. <a href="/fonctionnalites/tables-et-champs/#alapértelmezett-értékek">Alapértelmezett értékek</a>',
+					'<strong>Húzzon be egy Excel-munkafüzetet</strong>: válassza ki a munkalapot, a dátumokat, összegeket és jelölőnégyzeteket úgy veszi át, ahogy vannak, és egy képlet megadja az értékét. <a href="/guides/premiers-pas/">Első lépések</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: 'E-mailek',
+				tag: 'Új',
+				items: [
+					'<strong>Egy „E-mail küldése” lépés</strong> az automatizálásokban: egy tagnak, egy mező személyének, egy ügyfél címére, a sor értékeivel a tárgyban és a szövegben. <a href="/fonctionnalites/automatisations/">Az automatizálások</a>',
+					'<strong>Az e-mail értesítések</strong>, amikor nem olvasta el őket, összegyűjtve, egyenként kiválasztva a beállításaiban; és az <strong>elfelejtett jelszó</strong> egy hivatkozással állítható vissza. <a href="/fonctionnalites/collaboration/#e-mailben">E-mailben</a>',
+					'Elég megadni a példánynak a levelezése kiküldő szerverét. <a href="/hebergement/variables/#e-mailek">A változók</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n és egy TypeScript SDK',
+				tag: 'Új',
+				items: [
+					'<strong>n8n csomópontok</strong>: egy tábla sorainak olvasása és írása egy workflow-ból, és egy indítása minden létrehozott, módosított vagy törölt sornál — lekérdezéssel vagy aláírt webhookkal. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>Egy TypeScript SDK</strong>, a táblái típusaival, amelyeket a példányából generál: egy nem létező tábla vagy mező már a végrehajtás előtt hiba. <a href="/integrations/sdk/">Az SDK</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: 'A kvíz: kérdések, amelyek pontokat számolnak',
+				tag: 'Új',
+				items: [
+					'<strong>Új nézet, a kvíz</strong>: kérdőív, amelynek minden kérdéséhez tartozhat helyes válasz és pontszám — egy választás, több, igen vagy nem, egy szám, egy dátum, vagy elfogadott szövegek, a nagybetűket és az ékezeteket figyelmen kívül hagyva. <a href="/fonctionnalites/vues/#kvíz">A kvíz</a>',
+					'<strong>Javítás, ahogy szeretné</strong>: minden kérdés után — zölden, vagy pirosan a helyes válasszal, a pontszám, amely nő a képernyő tetején —, a végén, vagy soha. A teljesítési küszöb miatt a záróképernyő azt mondja: „Teljesítve!” vagy „Ezúttal nem sikerült…”.',
+					'<strong>A pontszám a végén</strong>, egy megtelő gyűrűben, majd minden kérdés javítása. A tábla egy számmezőjébe íródik: rendezze a rácsot eszerint, ez a ranglista.',
+					'<strong>Hivatkozással megosztva, csalás nélkül</strong>: az oldal egyetlen helyes választ sem kap meg, a szerver javít és számol. <a href="/fonctionnalites/formulaires-partages/#megosztott-kvíz">Megosztott kvíz</a>',
+					'<strong>A Nézet létrehozása</strong>, a nézetválasztó alján, a kilenc fajtát két családra osztja — azokra, amelyek megjelenítik a sorokat, és azokra, amelyek válaszokat gyűjtenek —, mindegyiket a saját színes ikonjával.',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: 'Űrlapok, amelyeket öröm kitölteni',

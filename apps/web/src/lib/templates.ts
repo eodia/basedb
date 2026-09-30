@@ -152,6 +152,7 @@ export function specFor(view: TemplateView, table: BuiltTable): Record<string, u
           label?: string
           help?: string
           placeholder?: string
+          prefill?: string
           show_if?: { field: string; op: string; value: unknown }
         }) => {
           const found = name(q.field)
@@ -178,6 +179,7 @@ export function specFor(view: TemplateView, table: BuiltTable): Record<string, u
                   label: q.label ?? '',
                   help: q.help ?? '',
                   ...(q.placeholder === undefined ? {} : { placeholder: q.placeholder }),
+                  ...(q.prefill === 'today' ? { prefill: 'today' } : {}),
                   ...(showIf === null ? {} : { show_if: showIf }),
                 },
               ]

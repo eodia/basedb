@@ -29,7 +29,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | 読みやすい式：`statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | 返す列 |
-| `limit`、`cursor` | 暗号化されたカーソルによるページング（レスポンスの`next_cursor`） |
+| `limit`、`after` | 暗号化されたカーソルによるページング：あるページの`meta.next_cursor`を`after`に渡すと次のページが得られます（`meta.has_next_page`） |
 | `links=display` | リレーションを表示値付きで返します |
 | `count=exact` | 総件数（上限は100,000） |
 | `variables=raw` | 長文テキストを、[行の値](/basedb/ja/fonctionnalites/tables-et-champs/#リッチテキストと変数)に置き換えず、`{{colonne}}`を含めて書かれたとおりに返します |
@@ -69,4 +69,4 @@ curl -X POST "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportu
 
 各データベースには、**APIとMCPのドキュメント**ページがあります。テーブルごとに、エンドポイント、列、cURLとJavaScriptの例が載っています。**自分の権限で絞り込まれる**ため、2人の閲覧者はそれぞれ別の版を見ることになり、**画面の言語で**書かれます。OpenAPI 3.1版（`/api/v1/<tenant>/meta/bases/<base>/openapi.json`）もあります。名前、パス、エラーコードは、どの言語でも変わりません。
 
-![データベースの生成ドキュメント](../../../../assets/screens/documentation-api.png)
+![データベースの生成ドキュメント](../../../../assets/screens/ja/documentation-api.webp)

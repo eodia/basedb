@@ -3,12 +3,12 @@ title: Formularios compartidos
 description: Compartir un formulario mediante un enlace, público o reservado a los miembros conectados.
 ---
 
-Un formulario o una encuesta se **comparte mediante un enlace** `/f/<jeton>`. La persona que
+Un formulario, una encuesta o un cuestionario se **comparte mediante un enlace** `/f/<jeton>`. La persona que
 responde no necesita **ningún permiso sobre la tabla**: cada respuesta añade una fila, y no se
 le muestra nada más de la tabla. Para mostrar filas en lugar de recibirlas, una vista
 se comparte [en solo lectura](/basedb/es/fonctionnalites/vues-partagees/).
 
-![El diálogo para compartir](../../../../assets/screens/partage-formulaire.png)
+![El diálogo para compartir](../../../../assets/screens/es/partage-formulaire.webp)
 
 ## Quién puede responder
 
@@ -21,7 +21,7 @@ La página del enlace está fuera de la aplicación: sin barra lateral, sin nomb
 Lleva la apariencia del formulario —su tema, su color, su fuente— y solo hace las preguntas
 que las respuestas anteriores piden.
 
-![Un formulario público](../../../../assets/screens/formulaire-public.png)
+![Un formulario público](../../../../assets/screens/es/formulaire-public.webp)
 
 ## En nombre de quién se escribe la respuesta
 
@@ -47,6 +47,21 @@ El diálogo permite ajustar:
 - **Dejar de compartir**: el enlace desaparece y las respuestas se quedan en la tabla.
 
 Un formulario cerrado lo indica en una frase, antes incluso de pedir que se inicie sesión.
+
+## Un cuestionario compartido
+
+La página de un cuestionario no recibe **ninguna respuesta correcta**: solo lo que vale cada
+pregunta. Es el servidor quien corrige.
+
+- Si se corrige **después de cada pregunta**, la página le envía cada respuesta puntuada en el
+  momento en que se da, y así sabe si es correcta, y cuál era la correcta.
+- Al enviarse, el servidor calcula la puntuación **a partir de las respuestas recibidas** y la
+  escribe en el campo elegido para ello, si existe uno y si la persona que publicó el enlace
+  compartido puede escribirlo. La página muestra la puntuación que devuelve, y la corrección
+  salvo que el cuestionario diga «nunca».
+
+Por tanto, una puntuación se lee en la tabla tal como la ha contado el servidor, no tal como la
+habría anunciado una página.
 
 ## Límites
 

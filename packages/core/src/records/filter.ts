@@ -1,6 +1,7 @@
 import { quoteIdentifier } from '@basedb/naming'
 import type { FieldKind } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
+import { rowWhere } from '../rbac/row-alias.js'
 
 /**
  * Filter parsing and translation — chapter 08 §4, chapter 04 §9.
@@ -671,7 +672,7 @@ function linkPath(
   return `EXISTS (SELECT 1
               FROM ${target.relation} AS ${q}
              WHERE ${q}."_id" ${reach}
-               AND ( /*predicat_lignes:${linkName}*/ ${target.rowPredicate} )
+               AND ( /*predicat_lignes:${linkName}*/ ${rowWhere(target.rowPredicate, alias)} )
                AND ${inner})`
 }
 

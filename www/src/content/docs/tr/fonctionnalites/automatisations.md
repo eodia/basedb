@@ -1,6 +1,6 @@
 ---
 title: Otomasyonlar
-description: Bir satır değiştiğinde, belirli bir saatte ya da bir tıklamayla — değiştirmek, oluşturmak, aramak, dallanmak, yapay zekaya sormak, haber vermek, bir webhook çağırmak, Slack'e yazmak.
+description: Bir satır değiştiğinde, belirli bir saatte ya da bir tıklamayla — değiştirmek, oluşturmak, aramak, dallanmak, yapay zekaya sormak, haber vermek, e-posta göndermek, bir webhook çağırmak, Slack'e yazmak.
 ---
 
 Bir otomasyon **ne zaman**, **eğer** ve **o hâlde** sorularını yanıtlar: bir görev “Fait”
@@ -12,7 +12,7 @@ ya da diğerine girmek, bir adımda önceki bir adımın bulduğunu ya da yazdı
 Otomasyonlar, kenar çubuğunun altındaki açık veritabanı bloğunda yer alan **Otomasyonlar**
 bağlantısından açılır ve **Yönetim** düzeyini gerektirir.
 
-![Bir akış ve üzerine yerleştirilmiş çalıştırmalarından biri](../../../../assets/screens/automatisations.png)
+![Bir akış ve üzerine yerleştirilmiş çalıştırmalarından biri](../../../../assets/screens/tr/automatisations.webp)
 
 ## Akış
 
@@ -48,6 +48,7 @@ Sırayla otuz adıma kadar; başarısız olan ilk adım sonrakileri durdurur.
 | **Satır oluştur** | bu tabloda ya da veritabanının başka bir tablosunda |
 | **Satır ara** | bir tablonun bir filtreye uyan ilk satırını bulur; sonraki adımlar ona atıf yapabilsin ya da onu değiştirebilsin diye |
 | **Birine haber ver** | seçilen kişilere ya da bir Kişi alanındaki kişiye bir [bildirim](/basedb/tr/fonctionnalites/collaboration/#bildirimler) gönderir |
+| **E-posta gönder** | ekipten kişilere, bir Kişi alanındakine, bir E-posta alanının adresine — bir müşteri, bir tedarikçi — ya da yazılan adreslere; konu ve metin satıra ve önceki adımlara atıf yapar |
 | **Webhook çağır** | seçtiğiniz adrese HTTPS üzerinden bir `POST`; yanıtına ardından atıf yapılabilir |
 | **Slack'e gönder** | [bağlı](/basedb/tr/integrations/synchronisation/#slack) bir kanala bir mesaj |
 | **Yapay zekaya sor** | [yapay zeka sağlayıcısından](/basedb/tr/fonctionnalites/ia/), satıra ve önceki adımlara atıf yapan bir talimata yanıt — yazmak, özetlemek, sınıflandırmak —; yanıt bir metin, bir sayı, evet ya da hayır, bir tarih ya da bir listeden bir seçim olarak okunur |
@@ -139,7 +140,9 @@ gibi geri alınabilir.
   tek bir akışta yazılır.
 - Bir arama tek bir satır verir, ilkini; henüz “her satır için” ya da bekleme (“üç gün sonra”)
   yok.
-- E-posta yok, betik yok.
+- Betik yok. Bir e-posta düz metin olarak gönderilir, her alıcıya bir tane — adım başına en
+  fazla yirmi —, kurulumun [gönderim sunucusu](/basedb/tr/hebergement/variables/#e-postalar)
+  üzerinden; bir yanıt otomasyonun sahibi olan kişiye gelir.
 - Bir koşul bir satırı test eder: yapay zekanın yanıtına göre bir dal seçmek için yanıtı önce
   satırın bir alanına yazın.
 - Bir [veritabanı şablonu](/basedb/tr/fonctionnalites/modeles/) yalnızca arama, koşul ya da

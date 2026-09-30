@@ -6,7 +6,7 @@ description: Upozornit kanál Slacku, propojit kalendář, udržovat tabulku akt
 Obrazovka **Integrace** databáze se otevírá z nabídky profilu vlevo dole. Vyžaduje úroveň
 **Správa** a sdružuje vše, co propojuje databázi s ostatními vašimi nástroji.
 
-![Obrazovka Integrace databáze](../../../../assets/screens/integrations.png)
+![Obrazovka Integrace databáze](../../../../assets/screens/cs/integrations.webp)
 
 ## Slack
 

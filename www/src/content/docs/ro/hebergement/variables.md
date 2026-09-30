@@ -66,6 +66,46 @@ Consultați [Conturi și conectare](/basedb/ro/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | — | datele de autentificare |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` pentru adresarea după gazdă |
 
+## E-mailuri
+
+Fără server de trimitere, basedb nu trimite niciun e-mail. Cu el sunt trimise notificările
+rămase zece minute necitite (fiecare alege care în **Setări › Notificări**), e-mailurile
+pasului **Trimiteți un e-mail** al automatizărilor, și link-ul unei **parole uitate**.
+Link-urile trimit către `BASEDB_PUBLIC_URL`; fără ea, un e-mail nu are niciunul.
+
+| Variabilă | Implicit | Rol |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | serverul SMTP: cel al mesageriei dumneavoastră sau al unui serviciu de trimitere |
+| `BASEDB_SMTP_PORT` | `587` | `465` pentru o conexiune criptată de la început |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` pe portul 465) | `none` doar pentru un releu pe același calculator: altfel parola ar trece necriptată |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | — | identificatorul contului de trimitere, dacă cere unul |
+| `BASEDB_MAIL_FROM` | — | obligatorie cu `BASEDB_SMTP_HOST`: expeditorul, `basedb <no-reply@exemple.fr>` |
+
+La pornire, jurnalul spune cum stau lucrurile: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` Un e-mail refuzat de server este retrimis 1, 5, 30, 120, apoi
+360 de minute mai târziu.
+
+## Hărți și adrese
+
+Vizualizarea **Hartă** plasează o adresă cu ajutorul unui serviciu de geocodare: cel al
+OpenStreetMap (Nominatim) în mod implicit, interogat o dată pentru fiecare adresă, cel mult o
+cerere pe secundă, fiecare răspuns fiind reținut. Fondul de hartă este format din **tile-uri**
+pe care browserul fiecărui cititor le încarcă direct.
+
+| Variabilă | Implicit | Rol |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | un alt serviciu care vorbește același protocol (propriul dumneavoastră Nominatim); `off`: niciunul, adresele nu ies din instanță, iar numai latitudinea și longitudinea plasează rândurile |
+| `BASEDB_MAP_TILES` | tile-urile OpenStreetMap | un alt server de tile-uri, model `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | mențiunea cerută de acest server, în dreapta jos a hărții |
+
+La pornire, jurnalul spune ce serviciu este folosit: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## Documente PDF
+
+| Variabilă | Implicit | Rol |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | fonturile Noto ale imaginii | un dosar propriu, montat în container, care conține `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic`, și pentru chineză, japoneză și coreeană `NotoSansCJK-Regular.ttc` și `-Bold.ttc` |
+
 ## Șabloane pentru baze
 
 | Variabilă | Implicit | Rol |

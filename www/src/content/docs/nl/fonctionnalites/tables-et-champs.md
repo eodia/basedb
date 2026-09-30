@@ -22,7 +22,7 @@ dat je invoert (“Échéance”) wordt een leesbare fysieke naam (`echeance`) v
 | Enkele keuze | `text` + `CHECK` | kleur, pictogram of afbeelding per optie |
 | Meerkeuze | `text[]` + `CHECK` | filterbaar met de array-operatoren |
 | E-mail | `text` + `CHECK` | een adres dat de database controleert, met één klik te openen |
-| Telefoon, Streepjescode | `text` | een korte tekst en zijn formaat: bellink, vaste breedte |
+| Telefoon, Streepjescode, Adres | `text` | een korte tekst en zijn formaat: bellink, vaste breedte, link naar de kaart |
 | URL | `text` + `CHECK` | aangevuld bij het invoeren (`exemple.fr` → `https://exemple.fr`) |
 | Persoon | `uuid` | een lid van de werkruimte; wie je aanwijst, krijgt een [melding](/basedb/nl/fonctionnalites/collaboration/) |
 | Automatisch nummer | `bigint` identity | nummert ook de rijen die er al zijn; niemand voert het in |
@@ -38,7 +38,7 @@ Elke tabel heeft ook zijn **systeemkolommen**: `_id` (UUID v7), `_created_at`,
 via de API. Het raster zet ze onder **Systeeminformatie**, in het kolommenmenu:
 ze staan op elke tabel, en zijn op weinig tabellen nuttig.
 
-![Het raster van een tabel, met een berekende duur, een opzoekveld en een aantal](../../../../assets/screens/grille.png)
+![Het raster van een tabel, met een berekende duur, een opzoekveld en een aantal](../../../../assets/screens/nl/grille.webp)
 
 ## Constraints die de database bewaakt
 
@@ -55,7 +55,7 @@ Foreign-key constraints:
 
 ## Weergaveformaten
 
-Valuta, Percentage, Duur, Beoordeling, Telefoon en Streepjescode kies je zoals types,
+Valuta, Percentage, Duur, Beoordeling, Telefoon, Streepjescode en Adres kies je zoals types,
 maar het zijn **formaten**: de kolom blijft een getal of een tekst, alleen de weergave verandert.
 
 | Formaat | Op | Wordt gelezen en ingevoerd als |
@@ -66,9 +66,28 @@ maar het zijn **formaten**: de kolom blijft een getal of een tekst, alleen de we
 | Beoordeling | een getal | van 1 tot 10 sterren, met één klik ingesteld |
 | Telefoon | een korte tekst | een bellink |
 | Streepjescode | een korte tekst | met vaste breedte |
+| Adres | een korte tekst | een link naar de kaart; in de rijdetails stelt **Adres zoeken** de bijpassende adressen voor, voluit geschreven; de weergave [Landkaart](/basedb/nl/fonctionnalites/vues/#landkaart) plaatst haar |
 
 Een formaat pas je achteraf aan (**Opmaak**, bij het bewerken van het veld) zonder de
 opgeslagen waarden te raken. Het begrenst de waarde niet: een beoordeling van 7 op een schaal van 5 blijft 7.
+
+## Standaardwaarden
+
+Bij het bewerken van een veld bepaalt **Standaardwaarde** wat een rij krijgt die zonder deze
+waarde wordt aangemaakt:
+
+| Keuze | Op | De aangemaakte rij krijgt |
+|---|---|---|
+| Een vaste waarde | de meeste types | de gekozen waarde — een status “Nouveau”, een prioriteit 3 |
+| De datum van vandaag | een datum | de dag van aanmaak, in de tijdzone van de persoon |
+| Het moment van aanmaak | een datum en tijd | het exacte tijdstip |
+| De persoon die de rij aanmaakt | een persoon | wie haar heeft aangemaakt — “Verantwoordelijke: ik” |
+
+De nieuwe rijdetails en de formulieren openen al ingevuld; het veld leegmaken laat het leeg. De
+standaardwaarde geldt voor elke aanmaak — interface, API, MCP, import, gedeeld formulier,
+automatisering —, ook op een veld dat de persoon niet mag wijzigen: dat is de regel van de
+tabel. Bestaande rijen veranderen niet, en een invoeging via directe SQL krijgt er geen: basedb
+past die toe, niet de kolom.
 
 ## Formules
 
@@ -174,7 +193,7 @@ Opgemaakte tekst kan niet door AI worden ingevuld: een model schrijft tekst, gee
 Het scherm **Structuur** van de database — in het menu **⋯** in de zijbalk — toont de tabellen en hun velden: toevoegen, hernoemen, verplicht maken, herordenen,
 beschrijven, het weergaveveld aanwijzen.
 
-![Het scherm Structuur van een database](../../../../assets/screens/structure.png)
+![Het scherm Structuur van een database](../../../../assets/screens/nl/structure.webp)
 
 De structuur wijzigen vraagt het niveau **Beheren**. Zonder dat niveau kun je het scherm bekijken, maar het biedt
 niets aan: geen knop, geen potlood, geen sleepgreep — verplichte velden en het weergaveveld worden vermeld, niet

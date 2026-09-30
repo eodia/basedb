@@ -9,7 +9,7 @@ tylko dla siebie, dla całej bazy lub dla kilku grup –, a osoba zarządzająca
 niego **widok SQL**: prawdziwy widok PostgreSQL, ułożony wśród tabel, który czytają też `psql` i
 twoje narzędzia.
 
-![Zapisane zapytanie otwarte z sekcji „Zapytania”; powyżej dwa widoki SQL ułożone wśród tabel](../../../../assets/screens/requete-sql.png)
+![Zapisane zapytanie otwarte z sekcji „Zapytania”; powyżej dwa widoki SQL ułożone wśród tabel](../../../../assets/screens/pl/requete-sql.webp)
 
 ## Każdy ze swoimi uprawnieniami
 
@@ -23,7 +23,7 @@ co twoje tabele. To, co zapytanie może czytać, zależy od tego, kto je urucham
   przed tobą znika z `SELECT *` i jest odrzucane, jeśli je nazwiesz, nawet z kwalifikacją
   tabeli; zapis jest odrzucany. Wynik ma plakietkę **Twoje uprawnienia**.
 
-![Plakietka „Twoje uprawnienia”: zapytanie widzi tylko tabele i pola dostępne dla danej osoby](../../../../assets/screens/sql-vos-droits.png)
+![Plakietka „Twoje uprawnienia”: zapytanie widzi tylko tabele i pola dostępne dla danej osoby](../../../../assets/screens/pl/sql-vos-droits.webp)
 
 To nie ekran filtruje: sam PostgreSQL egzekwuje twoje uprawnienia, kolumna po kolumnie, na
 roli właściwej tylko tobie. Zapytanie nie może więc pokazać ci niczego, czego nie pokazałyby ci
@@ -37,7 +37,7 @@ udostępnianie…** (w zakładce lub w menu zapytania na pasku bocznym) zmienia 
 widzi, albo je usuwa — **Usuń** jest też w jego menu, dostępnym kliknięciem prawym przyciskiem.
 Zakładka, która je pokazywała, zachowuje swój tekst.
 
-![Zapisywanie zapytania: jego nazwa, co pokazuje i kto je widzi](../../../../assets/screens/requete-enregistrer.png)
+![Zapisywanie zapytania: jego nazwa, co pokazuje i kto je widzi](../../../../assets/screens/pl/requete-enregistrer.webp)
 
 | Zasięg | Kto je widzi | Kto może je tworzyć i zmieniać |
 |---|---|---|
@@ -61,7 +61,7 @@ nowego.
 z kolorem i ikoną jak tabela, oraz małym **okiem** po prawej, które mówi, że to widok.
 Kliknięcie otwiera go w zakładce: jego wiersze w siatce, **Odśwież**, aby odczytać je ponownie.
 
-![Widok „Factures à encaisser” otwarty z paska bocznego](../../../../assets/screens/vue-sql.png)
+![Widok „Factures à encaisser” otwarty z paska bocznego](../../../../assets/screens/pl/vue-sql.webp)
 
 Tworzy się go z menu **⋯** bazy → **Nowy widok SQL…** albo z zakładki SQL: **⋯** → **Utwórz
 widok SQL…**, a zapytanie z zakładki staje się jego definicją. Okno dialogowe pyta o:
@@ -72,7 +72,7 @@ widok SQL…**, a zapytanie z zakładki staje się jego definicją. Okno dialogo
 - jego **zapytanie**: jeden `SELECT` na tabelach i innych widokach bazy. PostgreSQL odrzuca
   to, co odrzuca, a edytor wskazuje miejsce błędu.
 
-![Okno widoku SQL: etykieta i wygląd, nazwa techniczna, zapytanie, opis](../../../../assets/screens/vue-sql-dialogue.png)
+![Okno widoku SQL: etykieta i wygląd, nazwa techniczna, zapytanie, opis](../../../../assets/screens/pl/vue-sql-dialogue.webp)
 
 Widok czyta się potem pod jego nazwą, zarówno z interfejsu, jak i z `psql` czy twojego
 narzędzia BI:

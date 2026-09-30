@@ -237,15 +237,10 @@ describe('§4 — field mask', () => {
 })
 
 describe('§6.1 — the row predicate is always emitted', () => {
-  it('every decision carries it, refusals included (A20)', () => {
-    const verdicts = [
-      decide(context(), grantsFor(['read']), 'read', target),
-      decide(context(), grantsFor([]), 'read', target),
-      decide(context(), grantsFor(['read']), 'delete', target),
-    ]
-    for (const d of verdicts) {
-      expect(d.rowPredicate).toBe('TRUE')
-    }
+  it('every decision carries it: every row without a rule, none on a refusal (A20, §16)', () => {
+    expect(decide(context(), grantsFor(['read']), 'read', target).rowPredicate).toBe('TRUE')
+    expect(decide(context(), grantsFor([]), 'read', target).rowPredicate).toBe('FALSE')
+    expect(decide(context(), grantsFor(['read']), 'delete', target).rowPredicate).toBe('FALSE')
   })
 })
 

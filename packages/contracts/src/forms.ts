@@ -28,6 +28,16 @@ export const FORM_ALIGNS = ['left', 'center'] as const
 export type FormAlign = (typeof FORM_ALIGNS)[number]
 
 /**
+ * What a question holds before anyone answers it — `today`: a date question the day it is
+ * answered, a date-and-time one the minute. The person changes it or clears it.
+ */
+export const FORM_PREFILLS = ['today'] as const
+export type FormPrefill = (typeof FORM_PREFILLS)[number]
+
+/** The field kinds a question can be prefilled with the day. */
+export const FORM_PREFILL_KINDS: readonly string[] = ['date', 'datetime']
+
+/**
  * How a condition reads an earlier answer. `answered` and `empty` need no value; `is` and
  * `is_not` compare one (a choice, a text, a number, yes or no); `includes` and `excludes`
  * look into a multiple choice; `gte` and `lte` compare numbers — a rating, a quantity.

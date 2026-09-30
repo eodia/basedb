@@ -7,7 +7,7 @@ description: Qué es basedb y qué lo distingue de las hojas de cálculo colabor
 que alojas tú mismo, con una diferencia que lo determina todo: **tus datos viven en tablas
 PostgreSQL reales**, tipadas y con nombres legibles.
 
-![La cuadrícula de una tabla en basedb](../../../../assets/screens/grille.png)
+![La cuadrícula de una tabla en basedb](../../../../assets/screens/es/grille.webp)
 
 ## Una promesa sencilla
 
@@ -39,8 +39,8 @@ registra la escritura.
 - [Tablas y campos](/basedb/es/fonctionnalites/tables-et-champs/) tipados, relaciones que son
   claves foráneas reales (o múltiples), fórmulas calculadas por PostgreSQL, búsquedas y
   acumulados a través de las relaciones.
-- Ocho [vistas](/basedb/es/fonctionnalites/vues/): cuadrícula, kanban, calendario, cronología,
-  galería, lista, formulario y encuesta, colaborativas o personales.
+- Diez [vistas](/basedb/es/fonctionnalites/vues/): cuadrícula, kanban, calendario, cronología,
+  galería, lista, mapa, formulario, encuesta y cuestionario, colaborativas o personales.
 - [Formularios](/basedb/es/fonctionnalites/formulaires-partages/) y
   [vistas](/basedb/es/fonctionnalites/vues-partagees/) compartidos mediante un enlace, y
   calendarios a los que suscribirse desde una agenda.

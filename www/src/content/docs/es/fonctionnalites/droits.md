@@ -31,17 +31,39 @@ Un campo oculto está ausente en todas partes: de la cuadrícula, de las vistas,
 del SQL escrito en la interfaz y de las vistas SQL. Filtrar u ordenar por él responde igual que con un campo
 que no existe.
 
+## Hasta la fila
+
+Junto a **Campos**, **Filas** solo muestra a un grupo ciertas filas de una tabla: las
+que retiene un filtro, escrito como el de una vista. `@me` designa a la persona conectada:
+
+- `commercial eq @me` — cada comercial solo ve a sus clientes;
+- `region in ["nord", "est"]` — un equipo solo ve sus regiones;
+- `_created_by eq @me` — cada persona solo ve lo que ha creado.
+
+Los permisos se suman: una persona ve las filas de todos sus grupos, y un grupo sin
+regla las ve todas. Quien gestiona la estructura de la tabla (el nivel Gestión) siempre ve todo.
+La pantalla dice cuántas filas ve una persona concreta, y por qué grupo.
+
+Una fila fuera de su regla no existe para la persona: ni en las vistas, los paneles,
+la búsqueda, la API, el MCP o el historial, ni para ser modificada, eliminada o vinculada. Una fila
+que crea debe formar parte de las suyas; al modificar una fila, en cambio, puede hacer que
+salga de su ámbito (una tarea encomendada a un compañero). Las respuestas a los
+[formularios compartidos](/basedb/es/fonctionnalites/formulaires-partages/) llegan siempre.
+
 ## ¿Y el SQL?
 
 En la interfaz, el SQL sigue los mismos permisos, aplicados por el propio PostgreSQL: sin el nivel
 Gestión, una consulta se ejecuta en solo lectura, sobre un rol propio de la persona, donde una tabla
-cerrada no existe y un campo oculto se rechaza. Una [vista SQL](/basedb/es/fonctionnalites/requetes-et-vues-sql/)
+cerrada no existe, un campo oculto se rechaza y solo se leen sus filas, tanto si la tabla se nombra
+sola como con su esquema. Una [vista SQL](/basedb/es/fonctionnalites/requetes-et-vues-sql/)
 se lee con los permisos de quien la lee, y compartir una consulta solo comparte su texto.
 
 Un acceso **`psql` directo** a la base de datos, en cambio, no lo gobierna basedb: lo lee todo, campos
 ocultos incluidos. Las restricciones protegen las superficies del producto (interfaz, API, MCP), nunca
 frente a alguien que tenga acceso SQL a la base de datos; esos accesos se regulan con `GRANT`
-de PostgreSQL, que establece el operador de la instancia.
+de PostgreSQL, que establece el operador de la instancia. Una tabla que lleva una regla de filas
+tiene activada la seguridad por filas de PostgreSQL: un rol creado para una herramienta externa no
+ve en ella ninguna fila, salvo que tenga el atributo `BYPASSRLS` o su propia política.
 
 ## Cuentas e inicio de sesión
 

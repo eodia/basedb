@@ -34,7 +34,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | okunabilir bir ifade: `statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | döndürülecek sütunlar |
-| `limit`, `cursor` | şifreli imleçle sayfalama (yanıtta `next_cursor`) |
+| `limit`, `after` | şifreli imleçle sayfalama: bir sayfanın `meta.next_cursor`'ı, `after` olarak geçirildiğinde bir sonrakini verir (`meta.has_next_page`) |
 | `links=display` | ilişkiler, görüntüleme değerleriyle birlikte |
 | `count=exact` | toplam, en fazla 100.000 |
 | `variables=raw` | uzun metinler, [satırın değerleriyle](/basedb/tr/fonctionnalites/tables-et-champs/#zengin-metin-ve-değişkenler) değil, `{{colonne}}` dahil yazıldıkları gibi |
@@ -86,4 +86,4 @@ iki farklı sürüm görür —, **ekranınızın dilinde** yazılır ve OpenAPI
 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Adlar, yollar ve hata kodları tüm
 dillerde aynı kalır.
 
-![Bir veritabanının oluşturulan belgeleri](../../../../assets/screens/documentation-api.png)
+![Bir veritabanının oluşturulan belgeleri](../../../../assets/screens/tr/documentation-api.webp)

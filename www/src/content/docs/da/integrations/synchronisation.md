@@ -6,7 +6,7 @@ description: Giv en Slack-kanal besked, forbind en kalender, hold en tabel opdat
 Skærmen **Integrationer** for en database åbnes fra profilmenuen nederst til venstre. Den kræver
 niveauet **Administrere** og samler det, der forbinder databasen med resten af dine værktøjer.
 
-![Skærmen Integrationer for en database](../../../../assets/screens/integrations.png)
+![Skærmen Integrationer for en database](../../../../assets/screens/da/integrations.webp)
 
 ## Slack
 

@@ -25,7 +25,7 @@ description: psql, BI 도구, 스크립트로 basedb의 테이블을 읽고 씁�
 탭 바의 **+** 버튼이나 데이터베이스 **⋯** 메뉴 → **SQL 쿼리**를 누르면 구문 강조와 자동
 완성을 지원하는 편집기가 열리며, 결과는 테이블과 같은 그리드에 표시됩니다.
 
-![저장된 쿼리, 그리고 테이블 사이에 놓인 SQL 뷰 두 개](../../../../assets/screens/requete-sql.png)
+![저장된 쿼리, 그리고 테이블 사이에 놓인 SQL 뷰 두 개](../../../../assets/screens/ko/requete-sql.webp)
 
 - **각자 자신의 권한으로 읽습니다**. 관리 권한이 있으면 쓰기를 포함해 데이터베이스 전체에
   접근하고, 다른 멤버는 읽기 전용 SQL을 작성하며, 접근할 수 없는 테이블은 존재하지 않고 숨겨진
@@ -52,6 +52,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+이 계정은 데이터베이스의 소유자이므로 모든 것을 읽으며, basedb의 권한은 여기에 적용되지
+않습니다. BI 도구에는 자체 `GRANT`를 가진 별도의 역할을 만드는 것이 좋습니다. 테이블에
+[행 단위 규칙](/basedb/ko/fonctionnalites/droits/#행-단위까지)이 있으면 PostgreSQL이 그
+테이블에 행 단위 보안을 적용합니다: 이런 역할은 `BYPASSRLS` 속성이나 자신만의 정책이 없으면
+그 테이블의 어떤 행도 볼 수 없습니다.
 
 ## SQL로 쓰기
 

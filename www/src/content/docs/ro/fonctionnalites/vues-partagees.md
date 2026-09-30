@@ -18,14 +18,14 @@ Meniul vizualizării → **Partajați…**, apoi:
 | **Public** | oricine are linkul, fără cont |
 | **Membri conectați** | un membru al spațiului de lucru, după conectare — la nevoie, doar din anumite grupuri |
 
-![Partajarea unui calendar](../../../../assets/screens/partage-vue.png)
+![Partajarea unui calendar](../../../../assets/screens/ro/partage-vue.webp)
 
 Comutatorul **Link activ** suspendă linkul fără a-l pierde. Pagina se deschide în afara
 aplicației: fără bară laterală, fără numele bazei, fără numele tabelului — vizualizarea,
 filtrele ei, coloanele ei și nimic altceva. Un calendar sau o cronologie se citește acolo ca o
 agendă.
 
-![Același calendar, deschis prin linkul său](../../../../assets/screens/vue-partagee.png)
+![Același calendar, deschis prin linkul său](../../../../assets/screens/ro/vue-partagee.webp)
 
 ## În numele cui se citește
 

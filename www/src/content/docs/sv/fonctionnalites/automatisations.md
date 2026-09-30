@@ -1,6 +1,6 @@
 ---
 title: Automatiseringar
-description: När en rad ändras, vid en fast tid eller med ett klick – redigera, skapa, hitta, förgrena, fråga AI, avisera, anropa en webhook, skriva i Slack.
+description: När en rad ändras, vid en fast tid eller med ett klick – redigera, skapa, hitta, förgrena, fråga AI, avisera, skicka e-post, anropa en webhook, skriva i Slack.
 ---
 
 En automatisering anger **när**, **om** och **då**: när en uppgift går till ”Fait”, anteckna
@@ -12,7 +12,7 @@ steg det som ett tidigare steg har hittat eller skrivit.
 De öppnas från **Automatiseringar**, i blocket för den öppna databasen längst ned i sidofältet,
 och kräver nivån **Hantera**.
 
-![Ett flöde och en av dess körningar, lagd ovanpå](../../../../assets/screens/automatisations.png)
+![Ett flöde och en av dess körningar, lagd ovanpå](../../../../assets/screens/sv/automatisations.webp)
 
 ## Flödet
 
@@ -50,6 +50,7 @@ Upp till trettio steg, i ordning; det första som misslyckas stoppar de följand
 | **Skapa en rad** | i den här tabellen eller en annan i databasen |
 | **Hitta en rad** | den första raden i en tabell som matchar ett filter, så att de följande stegen kan citera eller ändra den |
 | **Avisera någon** | en [avisering](/basedb/sv/fonctionnalites/collaboration/#aviseringar) till valda personer, eller till personen i ett Person-fält |
+| **Skicka e-post** | till personer i teamet, till personen i ett Person-fält, till adressen i ett E-post-fält – en kund, en leverantör – eller till skrivna adresser; ämnet och texten citerar raden och de tidigare stegen |
 | **Anropa en webhook** | en `POST` över HTTPS till en adress du väljer; svaret kan sedan citeras |
 | **Skicka till Slack** | ett meddelande i en [ansluten](/basedb/sv/integrations/synchronisation/#slack) kanal |
 | **Fråga AI** | ett svar från [AI-leverantören](/basedb/sv/fonctionnalites/ia/) på en instruktion som citerar raden och de tidigare stegen – formulera, sammanfatta, klassificera –, tolkat som en text, ett tal, ja eller nej, ett datum eller ett val i en lista |
@@ -139,7 +140,9 @@ som alla andra.
   flöde.
 - En sökning ger en rad, den första; ännu inget ”för varje rad” och ingen väntan (”tre dagar
   senare”).
-- Ingen e-post, inga skript.
+- Inga skript. Ett e-postmeddelande skickas som ren text, ett per mottagare – högst tjugo per
+  steg –, via instansens [sändningsserver](/basedb/sv/hebergement/variables/#e-post); ett svar
+  går till personen som äger automatiseringen.
 - Ett villkor testar en rad: vill du välja gren utifrån AI:ns svar skriver du det först i ett
   fält på raden.
 - En [databasmall](/basedb/sv/fonctionnalites/modeles/) tar bara med automatiseringar utan

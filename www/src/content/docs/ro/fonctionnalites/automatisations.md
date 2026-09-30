@@ -1,6 +1,6 @@
 ---
 title: Automatizări
-description: Când un rând se schimbă, la oră fixă sau cu un clic — modificați, creați, căutați, ramificați, întrebați AI, anunțați, apelați un webhook, scrieți pe Slack.
+description: Când un rând se schimbă, la oră fixă sau cu un clic — modificați, creați, căutați, ramificați, întrebați AI, anunțați, trimiteți un e-mail, apelați un webhook, scrieți pe Slack.
 ---
 
 O automatizare spune **când**, **dacă** și **atunci**: când o sarcină trece la „Fait”, notați
@@ -12,7 +12,7 @@ de ce conține acesta, reutilizează într-un pas ce a găsit sau a scris un pas
 Automatizările se deschid din **Automatizări**, în blocul bazei deschise din partea de jos a
 barei laterale, și cer nivelul **Gestionare**.
 
-![Un flux și una dintre execuțiile lui, afișată peste el](../../../../assets/screens/automatisations.png)
+![Un flux și una dintre execuțiile lui, afișată peste el](../../../../assets/screens/ro/automatisations.webp)
 
 ## Fluxul
 
@@ -50,6 +50,7 @@ Până la treizeci de pași, în ordine; primul care eșuează îi oprește pe u
 | **Creați un rând** | în acest tabel sau în altul din bază |
 | **Căutați un rând** | primul rând dintr-un tabel care corespunde unui filtru, pentru ca pașii următori să îl citeze sau să îl modifice |
 | **Anunțați pe cineva** | o [notificare](/basedb/ro/fonctionnalites/collaboration/#notificări) către persoane alese sau către persoana dintr-un câmp Persoană |
+| **Trimiteți un e-mail** | către persoane din echipă, către cea dintr-un câmp Persoană, la adresa dintr-un câmp E-mail — un client, un furnizor — sau la adrese scrise; subiectul și textul citează rândul și pașii anteriori |
 | **Apelați un webhook** | un `POST` prin HTTPS către adresa aleasă de dumneavoastră; răspunsul lui poate fi citat apoi |
 | **Trimiteți pe Slack** | un mesaj într-un canal [conectat](/basedb/ro/integrations/synchronisation/#slack) |
 | **Întrebați AI** | un răspuns al [furnizorului de AI](/basedb/ro/fonctionnalites/ia/) la o instrucțiune care citează rândul și pașii anteriori — redactare, rezumat, clasificare —, citit ca text, număr, da sau nu, dată sau opțiune dintr-o listă |
@@ -140,7 +141,9 @@ anulează ca toate celelalte.
   scrie într-un singur flux.
 - O căutare dă un singur rând, primul; încă nu există „pentru fiecare rând”, nici așteptare
   („trei zile mai târziu”).
-- Fără e-mail, fără script.
+- Fără script. Un e-mail este trimis ca text simplu, unul pe destinatar — cel mult douăzeci pe
+  pas —, prin [serverul de trimitere](/basedb/ro/hebergement/variables/#e-mailuri) al instanței;
+  un răspuns ajunge la persoana care deține automatizarea.
 - O condiție testează un rând: pentru a lua o ramură după răspunsul AI, scrieți-l mai întâi
   într-un câmp al rândului.
 - Un [șablon pentru bază](/basedb/ro/fonctionnalites/modeles/) nu preia decât automatizările

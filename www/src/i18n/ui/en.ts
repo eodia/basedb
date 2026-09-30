@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb — the collaborative database where every table is a real PostgreSQL table',
-			description: 'Grids and eight views, formulas, shared forms and views, comments, automations, dashboards, field-level permissions, full history, REST API and MCP server — on real PostgreSQL tables with readable names. Self-hosted, AGPL-3.0.',
+			description: 'Grids and ten views, formulas, shared forms, quizzes and views, comments, automations, dashboards, field-level permissions, full history, REST API and MCP server — on real PostgreSQL tables with readable names. Self-hosted, AGPL-3.0.',
 		},
 		changelog: {
 			title: 'What’s new — basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: 'Eight views',
-								text: 'Grid, kanban, calendar, timeline, gallery, list, form, survey.',
+								title: 'Ten views',
+								text: 'Grid, kanban, calendar, timeline, gallery, list, map, form, survey, quiz.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb — all your work, in one place',
-			description: 'Clients, projects, stock, applications: a base your whole team edits together, as a table, a kanban or a calendar, with dashboards, automations and AI. No code, free and open-source.',
+			title: 'basedb — the collaborative database for your whole team',
+			description: 'All your work in one place, edited by your whole team at the same time: as a table, a kanban or a calendar, with forms, dashboards, automations and AI. No code, free and open-source.',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -891,9 +891,9 @@ export default {
 			text: 'Every feature writes to the same tables, with the same permissions, in the same history.',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: 'ways to see your data',
-					text: 'Grid, kanban, calendar, timeline, gallery, list, form and survey, on the same rows. Everyone picks their own.',
+					text: 'Grid, kanban, calendar, timeline, gallery, list, map, form, survey and quiz, on the same rows. Everyone picks their own.',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -943,7 +943,7 @@ export default {
 				},
 				import: {
 					title: 'Import in one move',
-					text: 'Drop a CSV file: columns and types are guessed, and the table is created.',
+					text: 'Drop an Excel workbook or a CSV file: columns and types are guessed, and the table is created.',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1036,7 +1036,7 @@ export default {
 				},
 				{
 					q: 'Can we bring over our spreadsheets?',
-					a: 'Yes: save your sheet as CSV and drop it into basedb. The import guesses each column’s type, creates the table, and tells you row by row what it couldn’t bring over.',
+					a: 'Yes: drop your Excel workbook, or a CSV file, into basedb. The import guesses each column’s type, creates the table, and tells you row by row what it couldn’t bring over.',
 				},
 				{
 					q: 'Can several of us work at the same time?',
@@ -1361,9 +1361,9 @@ export default {
 		text: 'Every feature writes to the same tables, under the same permissions, into the same history.',
 		more: 'Learn more →',
 		views: {
-			title: 'Eight views of the same rows',
+			title: 'Ten views of the same rows',
 			text: 'Collaborative for the whole team, or personal for you alone: everyone picks their own way of reading, and nobody copies the data.',
-			chips: ['Grid', 'Kanban', 'Calendar', 'Timeline', 'Gallery', 'List', 'Form', 'Survey'],
+			chips: ['Grid', 'Kanban', 'Calendar', 'Timeline', 'Gallery', 'List', 'Map', 'Form', 'Survey', 'Quiz'],
 		},
 		forms: {
 			title: 'Shared forms',
@@ -1427,7 +1427,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'CSV and JSON import',
+				title: 'Excel, CSV and JSON import',
 				text: 'Drop a file: the import guesses the types, creates the table or fills an existing one, and tells you row by row what was rejected.',
 				href: '/guides/premiers-pas/',
 			},
@@ -1536,6 +1536,66 @@ export default {
 		title: 'What changed in basedb',
 		intro: 'The details of every change are in <a href="https://github.com/eodia/basedb/commits/main">the repository history</a>. What comes next: the <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: 'The map, and addresses that can be found',
+				tag: 'New',
+				items: [
+					'<strong>A tenth view, the map</strong>: each row placed at its location, by its address or by its latitude and longitude. A pin takes the color of a status and opens its row details with a click. <a href="/fonctionnalites/vues/#map">The map</a>',
+					'<strong>An address is located once and for all</strong>, by OpenStreetMap’s service or the one you choose: pins arrive as the responses come in, then right away. An address that cannot be found is counted, never dropped silently.',
+					'<strong>The Address format</strong> for a short text: a click opens it on the map, and in the row details, <strong>Find address</strong> offers the matching full addresses. <a href="/fonctionnalites/tables-et-champs/#display-formats">Formats</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: 'PDFs from your rows',
+				tag: 'New',
+				items: [
+					'<strong>A quote, an invoice, a sheet as a PDF</strong>, from a row’s menu: the printable sheet with nothing to set up, or a template — texts that cite fields, the row’s fields, the table of linked rows with its total, page breaks. <a href="/fonctionnalites/documents/">The documents</a>',
+					'<strong>Everyone with their own permissions</strong>: a field hidden from you does not appear in your PDF. All twenty languages are written correctly there, Chinese, Japanese and Korean included, and the API renders the same document.',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: 'Permissions down to the row, default values, Excel import',
+				tag: 'New',
+				items: [
+					'<strong>Everyone their own rows</strong>: a group sees only the rows of a filter — “Salesperson is me”, “Region is North” —, in the interface, the API, the MCP server as in SQL, where PostgreSQL enforces the same rule. <a href="/fonctionnalites/droits/#down-to-the-row">Down to the row</a>',
+					'<strong>Default values</strong>: a fixed value, today’s date, the moment of creation or the person creating the row, prefilled on screen and applied everywhere else. <a href="/fonctionnalites/tables-et-champs/#default-values">Default values</a>',
+					'<strong>Drag in an Excel workbook</strong>: choose the sheet, dates, amounts and checkboxes arrive as they are, and a formula gives its value. <a href="/guides/premiers-pas/">Getting started</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: 'Emails',
+				tag: 'New',
+				items: [
+					'<strong>A “Send an email” step</strong> in automations: to a member, to the person of a field, to a client’s address, with the row’s values in the subject and the text. <a href="/fonctionnalites/automatisations/">Automations</a>',
+					'<strong>Email notifications</strong> when you have not read them, grouped, to choose one by one in your settings; and a <strong>forgotten password</strong> is reset by a link. <a href="/fonctionnalites/collaboration/#by-email">By email</a>',
+					'Just tell the instance your mail’s sending server. <a href="/hebergement/variables/#emails">Variables</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n and a TypeScript SDK',
+				tag: 'New',
+				items: [
+					'<strong>n8n nodes</strong>: read and write a table’s rows from a workflow, and trigger one for every row created, updated or deleted — by polling or by a signed webhook. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>A TypeScript SDK</strong>, with your tables’ types generated from your instance: a table or a field that does not exist is an error before execution even starts. <a href="/integrations/sdk/">The SDK</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: 'The quiz: questions that count points',
+				tag: 'New',
+				items: [
+					'<strong>A new view, the quiz</strong>: a survey whose every question can have its right answer and its points — a choice, several, yes or no, a number, a date, or the accepted texts, ignoring case and accents. <a href="/fonctionnalites/vues/#quiz">The quiz</a>',
+					'<strong>Feedback the way you want it</strong>: after each question — in green, or in red with the right answer, the score growing at the top of the screen —, at the end, or never. A pass threshold makes it say “Passed!” or “Not this time…”.',
+					'<strong>The score at the end</strong>, in a ring that fills up, then the feedback for each question. It is written into a number field of the table: sort the grid on it, and there is the leaderboard.',
+					'<strong>Shared by a link, no cheating</strong>: the page never receives any right answer — the server is the one that checks and counts. <a href="/fonctionnalites/formulaires-partages/#a-shared-quiz">A shared quiz</a>',
+					'<strong>Create a view</strong>, at the bottom of the view selector, sorts the nine kinds into two families — those that show rows, those that collect answers —, each with its own colored icon.',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: 'Forms worth filling in',

@@ -80,6 +80,7 @@ l'automatisation, et `trigger` est réservé.
 | `create_record` | crée une ligne dans une table de la base | la table, les champs et leurs valeurs | la ligne créée |
 | `find_record` | cherche la première ligne qui répond à un filtre | la table ; le filtre (vide : toute ligne) ; l'ordre (`champ` ou `-champ`, par défaut celui de création) | la ligne trouvée — ou aucune |
 | `notify` | notification interne (chapitre 16 §2), nature `automation` | la ligne dont elle parle (§1.4) ; des personnes et/ou un champ « personne » de cette ligne ; un message | — |
+| `email` | un courriel par destinataire, par le serveur d'envoi de l'instance (chapitre 16 §2.5) | la ligne dont il parle (§1.4, facultative) ; des personnes, un champ « personne » et/ou un champ « e-mail » de cette ligne, des adresses écrites — 20 au plus ; l'objet et le message, qui citent ce qui précède (§1.6) | — |
 | `webhook` | `POST` d'un JSON vers une adresse | l'adresse (`https`) ; la ligne envoyée (§1.4) | le code de réponse et la réponse (§1.6) |
 | `slack` | un message dans un canal Slack (chapitre 19 §1) | une connexion de la base, le message | — |
 | `ai` | demande une réponse au fournisseur d'IA (chapitre 12 §1.8) | la consigne, qui cite ce qui précède (§1.6) ; la réponse attendue (`answer`) — texte libre ou court, nombre, oui ou non, date, adresse web, un choix parmi une liste (`options`) ; le consentement (`consent`) | la réponse, lue dans son type |
@@ -105,8 +106,19 @@ plafond horaire des calculs de fond, partagé avec les cellules IA (chapitre 12 
 réponse n'agit sur rien : ce sont les étapes suivantes qui l'écrivent, l'envoient ou la
 citent, par leurs propres chemins et avec les droits du propriétaire.
 
-Il n'y a pas de courriel en v1 : aucun serveur d'envoi n'est configurable en dehors de
-l'authentification (chapitre 13 §2.3).
+Une étape `email` **met en file** un courriel par boîte — une adresse n'en reçoit qu'un,
+quelle que soit la façon dont elle est nommée — dans `_basedb.mail_outbox`, avec son objet
+et son texte déjà rendus ; la boucle d'envoi le remet au relais et le reprend en cas
+d'échec (chapitre 16 §2.4). L'étape réussit donc quand la file a pris le courriel, et dit
+combien ; aucun destinataire — un champ vide, une personne qui ne peut pas lire la ligne —,
+elle est passée (`aucun_destinataire`). Une personne du locataire reçoit à son adresse de
+connexion, si elle peut lire la table de la ligne, comme pour une notification ; une adresse
+écrite ou lue dans un champ « e-mail » reçoit sans condition : c'est l'auteur de
+l'automatisation qui l'a voulue. Le courriel est en texte simple, porte
+`Auto-Submitted: auto-generated`, et sa réponse (`Reply-To`) va au **propriétaire** de
+l'automatisation, pas à l'adresse du relais. Sans serveur d'envoi, l'étape échoue
+(`MAIL_NOT_CONFIGURED`) et l'éditeur le dit dès qu'on la règle ; un modèle de base n'en porte
+pas (chapitre 20), pas plus qu'un webhook ou un message Slack.
 
 ### 1.4 La ligne d'une étape
 

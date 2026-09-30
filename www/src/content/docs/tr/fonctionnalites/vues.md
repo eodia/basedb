@@ -1,9 +1,9 @@
 ---
 title: Görünümler
-description: Izgara, kanban, takvim, zaman çizelgesi, galeri, liste, form ve anket — ortak ya da kişisel.
+description: Izgara, kanban, takvim, zaman çizelgesi, galeri, liste, harita, form, anket ve sınav — ortak ya da kişisel.
 ---
 
-Bir tablo **sekiz farklı şekilde** gösterilir. Bir görünüm hiçbir veriyi kopyalamaz ve tablonun
+Bir tablo **on farklı şekilde** gösterilir. Bir görünüm hiçbir veriyi kopyalamaz ve tablonun
 kendisinin verdiğinden fazla bir izin vermez.
 
 :::note
@@ -20,14 +20,17 @@ arasında yer alan gerçek bir PostgreSQL görünümü.
 | **Zaman çizelgesi** | iki tarih arasındaki çubuklar ve bağımlılıkları | bir başlangıç tarihi |
 | **Galeri** | kapak görselli kartlar | — |
 | **Liste** | kayıt başına bir satır, daraltılabilir gruplar hâlinde | — |
+| **Harita** | her satır haritada kendi yerine yerleştirilir | bir adres, ya da bir enlem ve bir boylam |
 | **Form** | bir satır oluşturmak için bir soru sayfası | — |
 | **Anket** | aynı sorular, ekran başına bir soru | — |
+| **Sınav** | puanlı sorular, ekran başına bir tane, sonunda skor | — |
 
 ## Görünüm seçici
 
 “Filtrele”nin solundadır. “Tüm satırlar”, tablonun kimsenin kaydetmediği ve kimsenin
 silemeyeceği ızgarasıdır; ardından veritabanını kuran kişinin seçtiği sırayla **ortak
-görünümler**, sonra da **Görünümlerim** gelir.
+görünümler**, sonra da **Görünümlerim** gelir. Altta, **Görünüm oluştur**, on türü iki aileye ayırır:
+satırları gösterenler ve yanıt toplayanlar (form, anket, sınav).
 
 - Bir **ortak görünümü** herkes görür. Onu oluşturmak, yapılandırmak, yeniden adlandırmak,
   yeniden sıralamak ya da silmek **Yönetim** düzeyini gerektirir. Görünüm **kilitlenebilir**:
@@ -37,7 +40,7 @@ görünümler**, sonra da **Görünümlerim** gelir.
   herkes kendi okuma biçimlerini, başkaları için hiçbir şeyi değiştirmeden saklar. Bir ortak
   görünümde **Çoğalt**, görünümün kişisel bir kopyasını oluşturur.
 
-![Müşterilerden oluşan bir galeri](../../../../assets/screens/galerie.png)
+![Müşterilerden oluşan bir galeri](../../../../assets/screens/tr/galerie.webp)
 
 ## Araç çubuğu
 
@@ -73,9 +76,9 @@ maksimum, işaretli kutular.
   bir ilişki — bir ok her görevi bağlı olduğu görevlere bağlar; zamanda geriye giden ok kırmızı
   olur.
 
-![Bağımlılıklarıyla bir zaman çizelgesi](../../../../assets/screens/chronologie.png)
+![Bağımlılıklarıyla bir zaman çizelgesi](../../../../assets/screens/tr/chronologie.webp)
 
-![Son tarihe göre bir takvim](../../../../assets/screens/calendrier.png)
+![Son tarihe göre bir takvim](../../../../assets/screens/tr/calendrier.webp)
 
 ## Galeri ve liste
 
@@ -84,10 +87,36 @@ maksimum, işaretli kutular.
 - **Liste**, bir tekli seçime, bir ilişkiye ya da bir kişiye göre **gruplanmış** olarak kayıt
   başına bir satır gösterir.
 
-![Sektöre göre gruplanmış bir müşteri listesi](../../../../assets/screens/liste.png)
+![Sektöre göre gruplanmış bir müşteri listesi](../../../../assets/screens/tr/liste.webp)
 
 Kanban, galeri ve listede kartlar ve satırlar sürüklenerek **elle sıralanır** — 5.000'e kadar;
 seçilen bir sıralama bu düzenin önüne geçer.
+
+## Harita
+
+**Harita**, her satırı şu bilgiye göre kendi yerine yerleştirir:
+
+- bir **adres** — tercihen **Adres** biçimindeki kısa bir metin (bkz.
+  [Tablolar ve alanlar](/basedb/tr/fonctionnalites/tables-et-champs/)): “12 rue des Lilas, Lyon”;
+- ya da bir **enlem** ve bir **boylam**, iki sayı alanı, oldukları gibi yerleştirilir.
+
+Bir iğne bir tekli seçimin **rengini** alır, üzerine gelindiğinde satırın **başlığını**
+gösterir ve tıklandığında satır ayrıntılarını açar. Harita, görünümün filtresini ve sıralamasını
+izler, 2.000 satıra kadar.
+
+Bir adres, kurulumun coğrafi kodlama servisi tarafından — varsayılan olarak OpenStreetMap'inki —
+**bir kez ve kalıcı olarak konumlandırılır**, servisin dayattığı hızda: yeni bir haritada iğneler
+yanıtlar geldikçe belirir, saniyede bir tane kadar, ardından sonraki seferlerde hemen. Bir rozet,
+yerleştirilen satırları, konumlandırılmayı bekleyen adresleri ve konumlandırılamayanları sayar:
+bulunamayan bir adres belirtilmesi gereken bir adrestir (şehir, posta kodu), sessizce bir kenara
+atılmaz.
+
+:::note[Sunucunuzdan çıkan şey]
+Adreslerin metni coğrafi kodlama servisine gider ve her okuyucunun tarayıcısı harita altlığını
+karo sunucusundan yükler. Kurulumu işleten kişi başka servisler seçebilir, ya da hiçbirini
+istemeyebilir: bkz.
+[Ortam değişkenleri](/basedb/tr/hebergement/variables/#haritalar-ve-adresler).
+:::
 
 ## Form ve anket
 
@@ -103,6 +132,8 @@ Geri kalan her şey istediğiniz zaman değiştirilir:
 
 - **Görünüş**: sekiz tema — Açık, Yumuşak, Şafak, Okyanus, Orman, Gece, Kağıt, Minimal —, bir
   vurgu rengi, bir yazı tipi, sola ya da ortaya hizalama;
+- **Bugünün tarihiyle önceden doldur**: bir tarih sorusu bugünün tarihiyle — tarih ve saat
+  sorusunda saatiyle birlikte — dolu gelir; kişi bunu korur ya da değiştirir;
 - **Koşullu sor…**: bir soru, yalnızca önceki bir yanıt bunu gerektiriyorsa sorulur
   (“Duygu Negatif”, “Puan en fazla 2”). Gizli bir soru ne zorunludur ne de gönderilir;
 - **Daha fazla seçenek**: karşılama ve gönderme düğmeleri, numaralar, ilerleme çubuğu, bir sonrakine
@@ -113,6 +144,44 @@ gelen, birer birer sorular. Her şey klavyeyle de yapılabilir: devam etmek içi
 için **A**, **B**, **C**… harfleri, evet ya da hayır için **E** ya da **H**, bir puan için
 rakamlar — tekli bir seçim kendiliğinden bir sonraki soruya geçer. Gönderim kutlanır: çizilen bir
 onay işareti ve formun renklerinde konfetiler.
+
+## Sınav
+
+Bir sınav, puan sayan bir ankettir. Her sorunun altında, **doğru cevabı** ve onun kaç puan
+kazandırdığı belirtilir — hiçbir şey belirtilmezse **1 puan**, 100’e kadar:
+
+| Soru | Doğru cevap |
+|---|---|
+| tekli seçim | bir seçenek |
+| çoklu seçim | işaretlenmesi gereken seçenekler, hepsi ve yalnızca onlar |
+| onay kutusu | evet ya da hayır |
+| sayı, derecelendirme | bir sayı |
+| tarih | bir gün |
+| kısa metin, e-posta, URL | `;` ile ayrılmış bir ya da birden çok kabul edilen yanıt — büyük/küçük harf ve aksan gözetilmeden |
+
+Doğru cevabı olmayan bir soru — bir ad, bir yorum — sorulur ama puanlanmaz. Sınavı oluşturmak
+için en az bir puanlı soru gerekir.
+
+**Puanlama** bölümü geri kalanını ayarlar:
+
+- **Düzeltme**: **her sorudan sonra** — yanıt hemen kontrol edilir, doğruysa yeşil, yanlışsa
+  doğru cevapla birlikte kırmızı, ve skor ekranın üstünde büyür —, **sonunda** — önce skor,
+  ardından düzeltme —, ya da **hiçbir zaman** — yalnızca skor, doğru cevaplar gizli kalır;
+- **Geçme eşiği**: puanların bir yüzdesi; bitiş ekranı o zaman “Başarılı!” ya da “Bu sefer
+  olmadı…” der;
+- **Skorun kaydedileceği yer**: tablonun bir sayı alanı, her yanıtın skorunu alır. Izgarayı buna
+  göre sıralayın: işte sıralama. “Score”, “Points” ya da “Note” adlı bir alan otomatik olarak
+  seçilir.
+
+Bitiş ekranı skoru dolan bir halkada gösterir, ardından yüzdeyi, sonra da, “hiçbir zaman”
+seçilmediyse, verilen yanıtla ve doğru cevapla birlikte her puanlı soruyu. Önceki bir yanıtın
+gizlediği bir soru toplama dahil edilmez.
+
+:::note
+Uygulamada, görünümü okuyabilen kişi doğru cevapları da okuyabilir. [Paylaşılan bir
+bağlantıyla](/basedb/tr/fonctionnalites/formulaires-partages/#paylaşılan-sınav), bunlar
+sunucudan asla çıkmaz: kontrol eden ve sayan odur.
+:::
 
 ## Bir görünümü paylaşma
 

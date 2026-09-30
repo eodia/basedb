@@ -1,0 +1,36 @@
+{
+  "name": "@basedb/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript client for basedb's REST API: typed rows, every page, files, and the types of your tables generated from your instance.",
+  "license": "MIT",
+  "homepage": "https://eodia.github.io/basedb/integrations/sdk/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eodia/basedb.git",
+    "directory": "packages/sdk"
+  },
+  "keywords": ["basedb", "postgresql", "database", "sdk", "rest", "typescript"],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": { "basedb-sdk": "./dist/cli.js" },
+  "files": ["dist", "README.md", "LICENSE"],
+  "engines": { "node": ">=18" },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:unit": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

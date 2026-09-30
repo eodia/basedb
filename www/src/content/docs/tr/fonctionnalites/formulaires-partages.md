@@ -3,12 +3,12 @@ title: Paylaşılan formlar
 description: Bir formu herkese açık ya da oturum açmış üyelere ayrılmış bir bağlantıyla paylaşmak.
 ---
 
-Bir form ya da anket **bir bağlantıyla paylaşılır**: `/f/<jeton>`. Yanıt veren kişinin **tablo
+Bir form, anket ya da sınav **bir bağlantıyla paylaşılır**: `/f/<jeton>`. Yanıt veren kişinin **tablo
 üzerinde hiçbir izne** ihtiyacı yoktur: her yanıt bir satır ekler ve tablodan başka hiçbir şey
 ona gösterilmez. Satır almak yerine satır göstermek için bir görünüm
 [salt okunur olarak](/basedb/tr/fonctionnalites/vues-partagees/) paylaşılır.
 
-![Paylaşım iletişim kutusu](../../../../assets/screens/partage-formulaire.png)
+![Paylaşım iletişim kutusu](../../../../assets/screens/tr/partage-formulaire.webp)
 
 ## Kim yanıt verebilir
 
@@ -21,7 +21,7 @@ Bağlantının sayfası uygulamanın dışındadır: ne kenar çubuğu, ne verit
 satırlar. Formun görünüşünü taşır — temasını, rengini, yazı tipini — ve yalnızca önceki
 yanıtların gerektirdiği soruları sorar.
 
-![Herkese açık bir form](../../../../assets/screens/formulaire-public.png)
+![Herkese açık bir form](../../../../assets/screens/tr/formulaire-public.webp)
 
 ## Yanıt kimin adına yazılır
 
@@ -46,6 +46,19 @@ Geçmiş, kimin yayımladığını değil, kimin yanıt verdiğini söyler:
 - **Paylaşımı durdur**: bağlantı kaybolur, yanıtlar tabloda kalır.
 
 Kapalı bir form, daha giriş istemeden bunu tek bir cümleyle belirtir.
+
+## Paylaşılan sınav
+
+Bir sınavın sayfası **hiçbir doğru cevabı** almaz: yalnızca her sorunun ne kadar değdiğini
+alır. Düzeltmeyi sunucu yapar.
+
+- Düzeltme **her sorudan sonra** yapılıyorsa, sayfa her puanlı yanıtı verildiği anda sunucuya
+  gönderir ve o anda doğru olup olmadığını — ve doğru cevabın ne olduğunu — öğrenir.
+- Gönderimde sunucu skoru **alınan yanıtlara göre** hesaplar ve onun için seçilmiş alana yazar —
+  böyle bir alan varsa ve paylaşımı yayımlayan kişi ona yazabiliyorsa. Sayfa, sunucunun
+  döndürdüğü skoru gösterir, sınav “hiçbir zaman” demediği sürece düzeltmeyi de gösterir.
+
+Yani bir skor, tabloda sunucunun hesapladığı gibi okunur; bir sayfanın açıklayacağı gibi değil.
 
 ## Sınırlar
 

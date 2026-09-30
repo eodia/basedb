@@ -3,6 +3,7 @@ import type { Field, SavedView } from '../../src/lib/api/client'
 import {
   andFilter,
   defaultSpec,
+  formSpec,
   freeLabel,
   gallerySpec,
   isModified,
@@ -116,7 +117,7 @@ describe('a new view', () => {
 
   it('asks what a person answers — not the status the team sets after —, the required ones required', () => {
     const spec = defaultSpec('form', TABLE, { filter: '', sorts: [] })
-    const blank = { label: '', help: '', placeholder: '', show_if: null }
+    const blank = { label: '', help: '', placeholder: '', prefill: null, show_if: null }
     expect(spec.fields).toEqual([
       { field: 'nom', required: true, ...blank },
       { field: 'debut', required: false, ...blank },
@@ -201,5 +202,37 @@ describe('rows ordered by hand', () => {
       cover_fit: 'cover',
     })
     expect(listSpec({ group_by: 'statut' })).toMatchObject({ group_by: 'statut', manual_order: [] })
+  })
+})
+
+describe('a quiz', () => {
+  it('starts with its score going into a field that reads like one, never asked', () => {
+    const table = {
+      ...TABLE,
+      fields: [...TABLE.fields, field('score', 'number', { label: 'Score' })],
+    }
+    const spec = defaultSpec('quiz', table, { filter: '', sorts: [] })
+    expect(spec).toMatchObject({ score_field: 'score', reveal: 'each', pass_percent: null })
+    expect((spec.fields as Array<{ field: string }>).map((q) => q.field)).not.toContain('score')
+  })
+
+  it('reads its grading where the spec has it, and a form’s question without any', () => {
+    const quiz = formSpec({
+      fields: [
+        { field: 'nom' },
+        { field: 'statut', correct: 'fait', points: 3 },
+        { field: 'debut', correct: { not: 'an answer' } },
+      ],
+      reveal: 'never',
+      pass_percent: 70,
+    })
+    expect(quiz.fields).toMatchObject([
+      { field: 'nom' },
+      { field: 'statut', correct: 'fait', points: 3 },
+      { field: 'debut', correct: null, points: 1 },
+    ])
+    expect('correct' in (quiz.fields[0] as object)).toBe(false)
+    expect(quiz).toMatchObject({ reveal: 'never', pass_percent: 70, score_field: null })
+    expect(formSpec({ reveal: 'sometimes' }).reveal).toBe('each')
   })
 })

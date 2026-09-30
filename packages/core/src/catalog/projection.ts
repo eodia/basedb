@@ -5,6 +5,8 @@ import { type FormulaDialect, type Node, renderFormula } from '../formula/langua
 import type { ActorGrants } from '../rbac/decide.js'
 import { type Action, SYSTEM_COLUMNS, type Target, decide } from '../rbac/decide.js'
 import { loadGrants } from '../rbac/loader.js'
+import { compileRowRules } from '../rbac/rows.js'
+import { DEFAULT_STILL_VALID, type FieldDefault } from '../records/defaults.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { type CatalogVersions, catalogCache, grantsCache, readVersions } from './cache.js'
@@ -103,6 +105,8 @@ export interface ProjectedField {
   readonly computed?: ProjectedComputed
   /** A button's label and what it does (chapter 17 §4). */
   readonly button?: ProjectedButton
+  /** What a row created without this field takes (chapter 04 §1.5): screens prefill it. */
+  readonly default?: FieldDefault
 }
 
 /** A button: its label, its colour, and what a click does. */
@@ -296,6 +300,9 @@ export interface FieldRow extends Record<string, unknown> {
   readonly button_action: 'url' | 'automation' | null
   readonly button_url: string | null
   readonly button_automation: string | null
+  /** The field's default (`field_default`), when one is set and still applies. */
+  readonly default_kind: FieldDefault['kind'] | null
+  readonly default_value: unknown
 }
 
 /**
@@ -349,6 +356,8 @@ export interface RawCatalog {
   readonly unique: ReadonlyMap<string, string>
   /** Formula field → the fields its expression reads. */
   readonly formulaSources: ReadonlyMap<string, readonly string[]>
+  /** Table → its row rules, group by group, as written (05 §16). */
+  readonly rowRules?: ReadonlyMap<string, ReadonlyArray<{ roleId: string; filter: string }>>
 }
 
 /**
@@ -417,7 +426,10 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
             rc.target_field_id AS rollup_target_id, rc.aggregate AS rollup_aggregate,
             rc.result_kind AS rollup_result_kind, rc.is_multiple AS rollup_multiple,
             bc.label AS button_label, bc.color AS button_color, bc.action AS button_action,
-            bc.url_template AS button_url, bc.automation_id::text AS button_automation
+            bc.url_template AS button_url, bc.automation_id::text AS button_automation,
+            CASE WHEN fd.field_id IS NOT NULL AND ${DEFAULT_STILL_VALID} THEN fd.kind END
+              AS default_kind,
+            fd.value AS default_value
        FROM _basedb.field f
        JOIN _basedb.physical_name n ON n.id = f.name_id
        LEFT JOIN _basedb.field_text_config tc    ON tc.field_id = f.id
@@ -425,6 +437,7 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
        LEFT JOIN _basedb.field_formula_config fc ON fc.field_id = f.id
        LEFT JOIN _basedb.field_rollup_config rc  ON rc.field_id = f.id
        LEFT JOIN _basedb.field_button_config bc  ON bc.field_id = f.id
+       LEFT JOIN _basedb.field_default fd        ON fd.field_id = f.id
        JOIN _basedb.table_def t     ON t.id = f.table_id
        JOIN _basedb.base b          ON b.id = t.base_id
        JOIN _basedb.tenant te       ON te.id = b.tenant_id
@@ -534,6 +547,23 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
     applications.set(row.table_id, list)
   }
 
+  // Row rules take part in the decision like application membership: a surface reading
+  // rows through this snapshot must reach the ones `/data` reaches (05 §16).
+  const ruleRows = await exec.query<{ table_id: string; role_id: string; filter: string }>(
+    `SELECT rp.table_id::text, rp.role_id::text, rp.filter
+       FROM _basedb.row_permission rp
+       JOIN _basedb.role r    ON r.id = rp.role_id
+       JOIN _basedb.tenant te ON te.id = r.tenant_id
+      WHERE te.ref = $1`,
+    tenant,
+  )
+  const rowRules = new Map<string, Array<{ roleId: string; filter: string }>>()
+  for (const row of ruleRows) {
+    const list = rowRules.get(row.table_id) ?? []
+    list.push({ roleId: row.role_id, filter: row.filter })
+    rowRules.set(row.table_id, list)
+  }
+
   return {
     projects,
     bases,
@@ -545,6 +575,7 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
     applicationRows,
     unique: new Map(uniqueRows.map((r) => [r.field_id, r.name])),
     formulaSources,
+    rowRules,
   }
 }
 
@@ -606,6 +637,18 @@ export function targetFactory(
 ): (table: TableRow) => Target {
   const agentsExcluded = new Set(raw.bases.filter((b) => !b.mcp_enabled).map((b) => b.id))
   const projectOf = new Map(raw.bases.map((b) => [b.id, b.project_id]))
+  const compiled = new Map<string, ReadonlyMap<string, string>>()
+  const rulesOf = (tableId: string, fields: readonly FieldRow[]) => {
+    let rules = compiled.get(tableId)
+    if (rules === undefined) {
+      rules = compileRowRules(
+        raw.rowRules?.get(tableId) ?? [],
+        fields.map((f) => ({ name: f.column, kind: f.kind })),
+      )
+      compiled.set(tableId, rules)
+    }
+    return rules
+  }
   return (table) => {
     const fields = fieldsByTable.get(table.id) ?? []
     return {
@@ -621,6 +664,7 @@ export function targetFactory(
       computedFieldIds: fields
         .filter((f) => COMPUTED_KINDS.has(f.kind) || f.has_ai)
         .map((f) => f.id),
+      rowRules: rulesOf(table.id, fields),
     }
   }
 }
@@ -821,6 +865,14 @@ export function project(
           ...(field.expose_to_agents ? {} : { hiddenFromAgents: true }),
           ...(field.has_ai ? { ai: true } : {}),
           ...formatOf(field),
+          ...(field.default_kind === null
+            ? {}
+            : {
+                default:
+                  field.default_kind === 'value'
+                    ? { kind: 'value', value: field.default_value }
+                    : { kind: field.default_kind },
+              }),
         })
       }
 

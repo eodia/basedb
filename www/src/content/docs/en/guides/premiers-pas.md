@@ -40,10 +40,12 @@ Later, a formula (`DAYS([Échéance], TODAY())`), a lookup (the client’s city)
 (the total amount per client) are added the same way — see
 [Tables and fields](/basedb/en/fonctionnalites/tables-et-champs/).
 
-You can also **import a file** in CSV or JSON: the import guesses the types, lets you correct
-them, creates the table or fills an existing one, and tells you row by row what it rejects.
+You can also **import a file** — an Excel workbook (`.xlsx`), a CSV or a JSON: the import
+guesses the types, lets you correct them, creates the table or fills an existing one, and tells
+you row by row what it rejects. From a workbook with several sheets, you choose the sheet;
+dates, amounts and checkboxes are read as Excel holds them, and a formula gives its value.
 
-![A base’s menu](../../../../assets/screens/menu-base.png)
+![A base’s menu](../../../../assets/screens/en/menu-base.webp)
 
 ## 3. Enter data and filter
 
@@ -58,7 +60,7 @@ immediately — and [recorded in the history](/basedb/en/fonctionnalites/histori
 The view selector, to the left of “Filter”, offers “All rows” and then your views. Create a
 **kanban** grouped by “Statut”: dragging a card from one column to another updates the row.
 
-![A kanban by status](../../../../assets/screens/kanban.png)
+![A kanban by status](../../../../assets/screens/en/kanban.webp)
 
 ## 5. Share a form
 

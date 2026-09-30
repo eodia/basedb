@@ -83,8 +83,8 @@ Au plus 20 mentions par commentaire.
 ### 2.1 Ce qui notifie
 
 Les notifications sont **internes** (`_basedb.notification`) : une cloche dans
-l'interface, un compteur de non-lues. Il n'y a pas de courriel en v1 — le seul canal
-sortant configuré par l'opérateur est celui de l'authentification (chapitre 13 §2.3).
+l'interface, un compteur de non-lues. Une notification restée non lue part aussi par
+courriel quand l'instance a un serveur d'envoi et que la personne le veut (§2.4).
 
 | Nature (`kind`) | Quand | Qui est notifié |
 |---|---|---|
@@ -118,6 +118,54 @@ une notification le demande **avant** d'écrire : une notification refusée n'es
 ne passe pas par le flux, et réaccepter la nature ne fait pas revenir ce qui s'est passé
 entre-temps. Une mention refusée n'est pas pour autant « injoignable » (§1.3) : la
 personne peut lire la ligne, elle a choisi de ne pas en être avertie.
+
+### 2.4 Par courriel
+
+Quand l'exploitant a configuré un serveur d'envoi (`BASEDB_SMTP_HOST`, `BASEDB_MAIL_FROM`,
+§2.5), une notification restée **dix minutes sans être lue** part aussi par courriel — si
+la personne le veut pour cette nature. `app_user.mailed_notifications` (migration 0016)
+liste les natures reçues aussi par courriel, toutes par défaut ; l'écran des paramètres met
+un second interrupteur à côté de chaque nature, grisé quand la nature elle-même est
+refusée : pas de notification, rien à envoyer.
+
+- **Mise en file par un déclencheur** sur `_basedb.notification` (`tg_notification_mail`) :
+  les trois endroits qui en écrivent — commentaires, attribution au drain, automatisations
+  — n'ont rien à savoir du courriel. La ligne de `_basedb.mail_outbox` porte la
+  notification et une date, `not_before`, dix minutes plus tard.
+- **Un seul courriel par personne**, quel que soit leur nombre : la boucle d'envoi prend
+  les lignes dues (sous bail, `FOR UPDATE SKIP LOCKED`, dans une transaction courte : aucune
+  transaction ne reste ouverte pendant que le relais répond), les groupe par personne, et
+  n'envoie que les notifications **encore non lues** d'une nature encore voulue, d'un compte
+  encore actif. Les autres lignes sont **supprimées** sans rien envoyer : le courriel existe
+  pour ce qui a été manqué. Dix au plus sont listées, les autres comptées.
+- **Ce que dit le courriel** : les phrases de la cloche (« Léa Martin vous a mentionné dans
+  Clients »), l'extrait, un lien vers la ligne — `BASEDB_PUBLIC_URL/bases/<base>/tables/
+  <table>?ligne=<id>` —, et d'où se règle ce qu'on reçoit. Dans la langue de la personne ;
+  sans `BASEDB_PUBLIC_URL`, sans lien. En-tête `Auto-Submitted: auto-generated` : pas de
+  réponse d'absence.
+- **Échec** : le relais qui refuse ou ne répond pas fait reprendre l'envoi 1, 5, 30, 120
+  puis 360 minutes plus tard ; après la sixième tentative, ou sur un refus définitif (`5xx`),
+  la ligne passe `failed` avec la raison. Les lignes envoyées ou en échec sont oubliées après
+  30 jours.
+- **Sans transport**, rien ne part : la boucle supprime les lignes de notification à leur
+  échéance.
+
+### 2.5 Le transport
+
+Un client SMTP écrit dans le noyau (`mail/smtp.ts`) — six commandes ne justifient pas une
+dépendance, comme trois verbes de S3 n'en justifiaient pas une (chapitre 04 §9) : `EHLO`,
+`STARTTLS` (RFC 3207), `AUTH PLAIN` ou `LOGIN`, `MAIL FROM`, `RCPT TO`, `DATA`. La ligne est
+chiffrée dès le premier octet sur le port 465, par STARTTLS ailleurs (587 par défaut) ; en
+clair seulement si l'exploitant l'écrit (`BASEDB_SMTP_SECURE=none`), pour un relais sur la
+même machine. Un courriel est composé par `mail/message.ts` : en-têtes RFC 5322, sujet et
+noms en mots encodés RFC 2047, corps UTF-8 en base64 — aucune ligne ne peut commencer par un
+point ni dépasser 76 caractères —, texte et HTML en `multipart/alternative`. Toute valeur
+d'en-tête contenant un saut de ligne est refusée : un sujet qui en porterait un porterait
+aussi un `Bcc:`. Un destinataire par courriel : personne ne voit les autres adresses.
+
+Le même transport sert la réinitialisation du mot de passe et l'avis de changement
+d'adresse (chapitre 13 §2.3, §2.6), et l'étape « Envoyer un courriel » des automatisations
+(chapitre 17 §1.3).
 
 ---
 

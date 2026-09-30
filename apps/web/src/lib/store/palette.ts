@@ -29,3 +29,23 @@ export const usePalette = create<PaletteState>((set, get) => ({
   hide: () => set({ open: false }),
   toggle: () => (get().open ? get().hide() : get().show()),
 }))
+
+/** Marks an element that keeps Ctrl+K for itself — the Markdown editor makes a link with it. */
+export const KEEPS_MOD_K = 'data-keeps-mod-k'
+
+/**
+ * Whether a key pressed on the page is the palette's Ctrl+K (⌘K on a Mac).
+ *
+ * The listener captures: it hears the key before anything under the focus, since a cell
+ * being typed in stops its keys on their way, and the browser would then take Ctrl+K for
+ * its own search. An element that wants the shortcut says so, by `KEEPS_MOD_K`. The K is
+ * read as typed, else by its place on the keyboard: on a Cyrillic or a Korean layout, that
+ * key types another letter.
+ */
+export function isPaletteKey(event: KeyboardEvent): boolean {
+  if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return false
+  const key = event.key.toLowerCase()
+  if (key !== 'k' && (/^[a-z]$/u.test(key) || event.code !== 'KeyK')) return false
+  const target = event.target as Element | null
+  return typeof target?.closest !== 'function' || target.closest(`[${KEEPS_MOD_K}]`) === null
+}

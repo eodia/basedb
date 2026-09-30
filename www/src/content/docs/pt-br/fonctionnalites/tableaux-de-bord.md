@@ -9,7 +9,7 @@ próximos prazos. Cada cartão mostra uma **pergunta** — uma leitura da base,
 construída com o mouse ou escrita em SQL — e **filtros** no topo da página controlam os
 cartões vinculados a eles.
 
-![O painel “Pilotage de l’agence”: tendência do mês, meta, faturamento empilhado, sentimento das avaliações](../../../../assets/screens/tableaux-de-bord.png)
+![O painel “Pilotage de l’agence”: tendência do mês, meta, faturamento empilhado, sentimento das avaliações](../../../../assets/screens/pt-br/tableaux-de-bord.webp)
 
 Tudo abre em **Painéis**, no bloco da base aberta, na parte de baixo da barra
 lateral. À esquerda, os painéis e as perguntas salvas da base, e
@@ -31,7 +31,7 @@ mostrava mantém o conteúdo, agora não salvo.
 
 Uma pergunta é construída em etapas, uma abaixo da outra:
 
-![O editor de uma pergunta: os dados, os filtros, o resumo por mês](../../../../assets/screens/question-editeur.png)
+![O editor de uma pergunta: os dados, os filtros, o resumo por mês](../../../../assets/screens/pt-br/question-editeur.webp)
 
 | Etapa | O que se escolhe nela |
 |---|---|
@@ -165,7 +165,7 @@ completa o resto. Ele pode ter um **valor padrão** — “Este ano”, por exem
 Em modo de leitura, um clique em um ponto também pode definir um filtro: **Filtrar por “Lyon”** em um
 cartão cuja coluna de cidades está vinculada ao filtro “Ville”.
 
-![A aba “Activité”: tarefas por prazo empilhadas por status, funil dos projetos, horas estimadas em tabela dinâmica](../../../../assets/screens/tableaux-de-bord-activite.png)
+![A aba “Activité”: tarefas por prazo empilhadas por status, funil dos projetos, horas estimadas em tabela dinâmica](../../../../assets/screens/pt-br/tableaux-de-bord-activite.webp)
 
 ## O Copilot
 

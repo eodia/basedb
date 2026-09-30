@@ -31,18 +31,41 @@ Un câmp ascuns lipsește peste tot: din grilă, din vizualizări, din API, din 
 din SQL-ul scris în interfață și din vizualizările SQL. Filtrarea sau sortarea după el răspund
 ca pentru un câmp care nu există.
 
+## Până la nivel de rând
+
+Lângă **Câmpuri**, **Rânduri** arată unui grup doar anumite rânduri ale unui tabel: cele
+reținute de un filtru, scris ca cel al unei vizualizări. `@me` desemnează persoana conectată:
+
+- `commercial eq @me` — fiecare agent comercial vede doar clienții săi;
+- `region in ["nord", "est"]` — o echipă vede doar regiunile sale;
+- `_created_by eq @me` — fiecare vede doar ce a creat.
+
+Permisiunile se adună: o persoană vede rândurile tuturor grupurilor sale, iar un grup fără
+regulă le vede pe toate. Cine gestionează structura tabelului — nivelul Gestionare — vede
+întotdeauna tot. Ecranul spune câte rânduri vede o anumită persoană, și prin ce grup.
+
+Un rând din afara regulii sale nu există pentru persoană: nici în vizualizări, în tablourile de
+bord, în căutare, în API, în MCP sau în istoric, nici pentru a fi modificat, șters sau legat. Un
+rând pe care îl creează trebuie să facă parte din ale sale; modificând un rând, îl poate în
+schimb face să iasă din perimetrul său — o sarcină confiată unui coleg. Răspunsurile la
+[formularele partajate](/basedb/ro/fonctionnalites/formulaires-partages/) ajung întotdeauna.
+
 ## Și SQL-ul?
 
 În interfață, SQL-ul urmează aceleași permisiuni, aplicate chiar de PostgreSQL: fără nivelul
 Gestionare, o interogare se execută doar în citire, pe un rol propriu persoanei, unde un tabel
-închis nu există și un câmp ascuns este refuzat. O [vizualizare SQL](/basedb/ro/fonctionnalites/requetes-et-vues-sql/)
+închis nu există, un câmp ascuns este refuzat, iar sunt citite numai rândurile sale, fie că
+tabelul este numit singur sau împreună cu schema lui. O [vizualizare SQL](/basedb/ro/fonctionnalites/requetes-et-vues-sql/)
 se citește cu permisiunile celui care o citește, iar partajarea unei interogări partajează doar
 textul ei.
 
 Un acces **`psql` direct** la baza de date, în schimb, nu este guvernat de basedb: citește tot,
 inclusiv câmpurile ascunse. Restricțiile protejează suprafețele produsului — interfață, API,
 MCP —, niciodată împotriva cuiva care deține un acces SQL la baza de date; aceste accese se
-reglementează prin `GRANT`-uri PostgreSQL, setate de operator.
+reglementează prin `GRANT`-uri PostgreSQL, setate de operator. Un tabel care are o regulă pe
+rânduri are securitatea pe rând a PostgreSQL activată: un rol creat pentru un instrument terț nu
+vede niciun rând din el, cu excepția cazului în care are atributul `BYPASSRLS` sau propria sa
+politică.
 
 ## Conturi și conectare
 

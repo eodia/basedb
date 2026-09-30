@@ -8,7 +8,7 @@ záleží, jejich vývoj měsíc po měsíci, rozložení stavů, nejbližší t
 zobrazuje **otázku** – čtení databáze sestavené myší nebo napsané v SQL – a **filtry** v horní
 části stránky řídí karty, které jsou k nim připojené.
 
-![Řídicí panel „Pilotage de l’agence“: trend měsíce, cíl, skládaný obrat, sentiment recenzí](../../../../assets/screens/tableaux-de-bord.png)
+![Řídicí panel „Pilotage de l’agence“: trend měsíce, cíl, skládaný obrat, sentiment recenzí](../../../../assets/screens/cs/tableaux-de-bord.webp)
 
 Vše se otevírá přes **Řídicí panely** v bloku otevřené databáze dole v postranním panelu.
 Vlevo jsou řídicí panely a uložené otázky databáze a **Prozkoumat data** pro položení otázky
@@ -29,7 +29,7 @@ obsah, znovu neuložený.
 
 Otázka se sestavuje po krocích, jeden pod druhým:
 
-![Editor otázky: data, filtry, souhrn po měsících](../../../../assets/screens/question-editeur.png)
+![Editor otázky: data, filtry, souhrn po měsících](../../../../assets/screens/cs/question-editeur.webp)
 
 | Krok | Co zde volíte |
 |---|---|
@@ -162,7 +162,7 @@ doplní zbytek. Může mít **výchozí hodnotu** – například „Tento rok�
 V režimu čtení může kliknutí na bod také nastavit filtr: **Filtrovat podle „Lyon“** na kartě,
 jejíž sloupec měst je připojen k filtru „Ville“.
 
-![Záložka „Activité“: úkoly podle termínu skládané podle stavu, trychtýř projektů, odhadované hodiny v kontingenční tabulce](../../../../assets/screens/tableaux-de-bord-activite.png)
+![Záložka „Activité“: úkoly podle termínu skládané podle stavu, trychtýř projektů, odhadované hodiny v kontingenční tabulce](../../../../assets/screens/cs/tableaux-de-bord-activite.webp)
 
 ## Copilot
 

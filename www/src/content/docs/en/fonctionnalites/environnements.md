@@ -26,7 +26,7 @@ From the base’s menu, under **More actions**, **Compare environments…** open
 - **Row sync**: table by table, carry rows over from one environment to another, by
   identifier.
 
-![Comparing production and staging](../../../../assets/screens/environnements.png)
+![Comparing production and staging](../../../../assets/screens/en/environnements.webp)
 
 ## How basedb knows who changed what
 

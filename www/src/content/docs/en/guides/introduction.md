@@ -7,7 +7,7 @@ description: What basedb is, and what sets it apart from collaborative spreadshe
 host yourself — with one difference that drives everything else: **your data lives in real
 PostgreSQL tables**, typed and plainly named.
 
-![A table’s grid in basedb](../../../../assets/screens/grille.png)
+![A table’s grid in basedb](../../../../assets/screens/en/grille.webp)
 
 ## A simple promise
 
@@ -38,8 +38,8 @@ the product — and even write to it: the constraints hold, and the history reco
 - Typed [tables and fields](/basedb/en/fonctionnalites/tables-et-champs/), relations that are
   real foreign keys — or multiple ones —, formulas computed by PostgreSQL, lookups and rollups
   across relations.
-- Eight [views](/basedb/en/fonctionnalites/vues/): grid, kanban, calendar, timeline, gallery,
-  list, form, survey — collaborative or personal.
+- Ten [views](/basedb/en/fonctionnalites/vues/): grid, kanban, calendar, timeline, gallery,
+  list, map, form, survey, quiz — collaborative or personal.
 - [Forms](/basedb/en/fonctionnalites/formulaires-partages/) and
   [views](/basedb/en/fonctionnalites/vues-partagees/) shared through a link, and calendars you
   can subscribe to from a calendar app.

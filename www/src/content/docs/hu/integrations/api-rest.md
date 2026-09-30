@@ -34,7 +34,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | olvasható kifejezés: `statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | a visszaadandó oszlopok |
-| `limit`, `cursor` | lapozás titkosított kurzorral (`next_cursor` a válaszban) |
+| `limit`, `after` | lapozás titkosított kurzorral: egy oldal `meta.next_cursor` értékét `after`-ként átadva megkapja a következőt (`meta.has_next_page`) |
 | `links=display` | a kapcsolatok a megjelenítési értékükkel |
 | `count=exact` | a teljes darabszám, legfeljebb 100 000 |
 | `variables=raw` | a hosszú szövegek úgy, ahogy le vannak írva, a `{{colonne}}` hivatkozásokkal együtt, nem pedig [a sor értékeivel](/basedb/hu/fonctionnalites/tables-et-champs/#formázott-szöveg-és-változók) |
@@ -86,4 +86,4 @@ két különböző változatot kap –, **az Ön képernyőjének nyelvén** ír
 formátumban is elérhető (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). A nevek, az
 útvonalak és a hibakódok minden nyelven ugyanazok maradnak.
 
-![Egy adatbázis generált dokumentációja](../../../../assets/screens/documentation-api.png)
+![Egy adatbázis generált dokumentációja](../../../../assets/screens/hu/documentation-api.webp)

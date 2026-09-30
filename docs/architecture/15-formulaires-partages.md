@@ -100,6 +100,17 @@ pour elle ; le serveur en juge avec la même règle que l'écran (`visibleQuesti
 écriture que n'importe quelle ligne (chapitre 06) : normalisation, validation par type,
 unicité, valeurs par défaut — un formulaire partagé ne contourne aucune contrainte.
 
+**Un quiz** (chapitre 11 §1.6) ne livre à la page **aucune bonne réponse** : chaque
+question dit seulement ce qu'elle vaut (`points`, `null` pour une question non notée), et
+le quiz sa façon de corriger (`quiz.reveal`, `quiz.pass_percent`). Le serveur corrige avec
+les règles de `@basedb/contracts` (`isRightAnswer`, `scoreQuiz`) : à l'envoi, il compte le
+score **à partir des réponses reçues** — une question cachée par une condition ne compte
+pas — et l'écrit dans `score_field` quand ce champ est vivant, de type nombre et
+modifiable par le publiant ; sinon, le score est seulement renvoyé. Corrigé après chaque
+question (`reveal: 'each'`), le quiz répond aussi à une réponse à la fois (§7) : la page
+n'apprend une bonne réponse qu'après avoir donné la sienne. Avec `reveal: 'never'`, ni
+cette route ni la réponse de l'envoi ne disent quelles questions étaient justes.
+
 ---
 
 ## 4. Le lien, un secret
@@ -184,8 +195,9 @@ formulaire :
 
 | Méthode | Route | Effet |
 |---|---|---|
-| `GET` | `/api/v1/forms/{jeton}` | le formulaire tel que la page l'affiche : `kind`, `title`, `description`, `submit_label`, `success_message`, `allow_another`, `access`, `respondent`, `questions` (avec `placeholder`, `show_if`, `format` d'une note ou d'un montant), `design` (`theme`, `accent`, `font`, `align`, `welcome_label`, `show_progress`, `show_numbers`, `auto_advance`, `celebrate`, `end_link`) |
-| `POST` | `/api/v1/forms/{jeton}` | `{ "values": { "<champ>": … } }` → `201 { "received": true }` |
+| `GET` | `/api/v1/forms/{jeton}` | le formulaire tel que la page l'affiche : `kind`, `title`, `description`, `submit_label`, `success_message`, `allow_another`, `access`, `respondent`, `questions` (avec `placeholder`, `prefill`, `show_if`, `format` d'une note ou d'un montant), `design` (`theme`, `accent`, `font`, `align`, `welcome_label`, `show_progress`, `show_numbers`, `auto_advance`, `celebrate`, `end_link`) |
+| `POST` | `/api/v1/forms/{jeton}` | `{ "values": { "<champ>": … } }` → `201 { "received": true, "quiz": null }` ; pour un quiz, `quiz` : `score`, `max`, `passed` (`null` sans seuil), `marks` (`field`, `right`, `points`, `of`, `correct` — vide si `reveal` vaut `never`) |
+| `POST` | `/api/v1/forms/{jeton}/check` | un quiz corrigé après chaque question : `{ "field": "<champ>", "value": … }` → `{ "right", "points", "correct" }` ; refusé (`REQUEST_INVALID`) pour une question non notée (`question_non_notee`) ou un quiz corrigé à la fin (`correction_a_la_fin`) |
 
 Le jeton du porteur (`Authorization: Bearer`) est **facultatif** sur ces deux routes : il
 identifie la personne pour un partage `members`, et un jeton invalide vaut absence de
@@ -193,7 +205,7 @@ jeton. La réponse ne renvoie **pas** la ligne créée — ni son identifiant, n
 normalisées : la personne qui répond n'a pas le droit de lire la table.
 
 L'envoi est **limité à 20 réponses par minute par adresse et par lien** (`429
-RATE_LIMIT_EXCEEDED`, avec `Retry-After`). Comme celle du chapitre 13 §6, cette limite est
+RATE_LIMIT_EXCEEDED`, avec `Retry-After`) ; la correction d'une réponse de quiz, à 240. Comme celle du chapitre 13 §6, cette limite est
 tenue en mémoire du processus, donc **approximative** sur plusieurs instances ; elle
 émousse un envoi en rafale, elle ne remplace pas `max_responses`.
 

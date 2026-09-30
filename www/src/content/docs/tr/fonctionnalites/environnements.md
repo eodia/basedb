@@ -28,7 +28,7 @@ kutusu açar:
 - **Satır senkronizasyonu**: tablo tablo, satırları kimliklerine göre bir ortamdan diğerine
   aktarmak.
 
-![Canlı ve test ortamlarını karşılaştırma](../../../../assets/screens/environnements.png)
+![Canlı ve test ortamlarını karşılaştırma](../../../../assets/screens/tr/environnements.webp)
 
 ## basedb kimin neyi değiştirdiğini nasıl bilir
 

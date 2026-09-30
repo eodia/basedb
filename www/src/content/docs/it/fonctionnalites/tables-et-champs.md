@@ -22,7 +22,7 @@ che inserisci («Échéance») diventa un nome fisico leggibile (`echeance`) tra
 | Selezione singola | `text` + `CHECK` | colore, icona o immagine per ogni opzione |
 | Selezione multipla | `text[]` + `CHECK` | filtrabile con gli operatori degli array |
 | Email | `text` + `CHECK` | un indirizzo verificato dal database, apribile con un clic |
-| Telefono, Codice a barre | `text` | un testo breve e il suo formato: link di chiamata, carattere a spaziatura fissa |
+| Telefono, Codice a barre, Indirizzo | `text` | un testo breve e il suo formato: link di chiamata, carattere a spaziatura fissa, link alla mappa |
 | URL | `text` + `CHECK` | completato durante l’inserimento (`exemple.fr` → `https://exemple.fr`) |
 | Persona | `uuid` | un membro dello spazio di lavoro; indicarlo lo [avvisa](/basedb/it/fonctionnalites/collaboration/) |
 | Numerazione automatica | `bigint` identity | numera anche le righe già presenti; nessuno la inserisce |
@@ -38,7 +38,7 @@ Ogni tabella ha anche le sue **colonne di sistema**: `_id` (UUID v7), `_created_
 tramite l’API. La griglia le raccoglie sotto **Informazioni di sistema**, nel menu delle colonne:
 sono presenti in ogni tabella, e utili in poche.
 
-![La griglia di una tabella, con una durata calcolata, una ricerca e un conteggio](../../../../assets/screens/grille.png)
+![La griglia di una tabella, con una durata calcolata, una ricerca e un conteggio](../../../../assets/screens/it/grille.webp)
 
 ## Vincoli garantiti dal database
 
@@ -55,8 +55,8 @@ Foreign-key constraints:
 
 ## Formati di visualizzazione
 
-Valuta, Percentuale, Durata, Valutazione, Telefono e Codice a barre si scelgono come dei tipi,
-ma sono **formati**: la colonna resta un numero o un testo, cambia solo il modo in cui si legge.
+Valuta, Percentuale, Durata, Valutazione, Telefono, Codice a barre e Indirizzo si scelgono come
+dei tipi, ma sono **formati**: la colonna resta un numero o un testo, cambia solo il modo in cui si legge.
 
 | Formato | Su | Si legge e si inserisce |
 |---|---|---|
@@ -66,9 +66,28 @@ ma sono **formati**: la colonna resta un numero o un testo, cambia solo il modo 
 | Valutazione | un numero | da 1 a 10 stelle, impostata con un clic |
 | Telefono | un testo breve | un link di chiamata |
 | Codice a barre | un testo breve | a spaziatura fissa |
+| Indirizzo | un testo breve | un link alla mappa; nei dettagli della riga, **Trova indirizzo** propone gli indirizzi corrispondenti, scritti per intero; la vista [Mappa](/basedb/it/fonctionnalites/vues/#mappa) lo posiziona |
 
 Un formato si può cambiare in seguito (**Visualizzazione**, nella modifica del campo) senza
 toccare i valori salvati. Non limita il valore: una valutazione di 7 su una scala di 5 resta 7.
+
+## Valori predefiniti
+
+Nella modifica di un campo, **Valore predefinito** stabilisce cosa riceve una riga creata senza
+di esso:
+
+| Scelta | Su | La riga creata riceve |
+|---|---|---|
+| Un valore fisso | la maggior parte dei tipi | il valore scelto — uno stato «Nuovo», una priorità 3 |
+| La data di oggi | una data | il giorno della sua creazione, nel fuso orario della persona |
+| Il momento della creazione | una data e ora | l’ora esatta |
+| La persona che crea la riga | una persona | chi l’ha creata — «Responsabile: io» |
+
+I dettagli di una riga nuova e i moduli si aprono già precompilati; svuotare il campo lo lascia
+vuoto. Il valore predefinito vale per ogni creazione — interfaccia, API, MCP, importazione, modulo
+condiviso, automazione —, anche su un campo che la persona non può modificare: è la regola della
+tabella. Le righe esistenti non cambiano, e un inserimento in SQL diretto non ne riceve alcuno: è
+basedb ad applicarlo, non la colonna.
 
 ## Formule
 
@@ -174,7 +193,7 @@ Il testo formattato non può essere compilato dall’IA: un modello scrive testo
 La schermata **Struttura** del database — nel suo menu **⋯** della barra laterale — elenca le tabelle e i loro campi: aggiungere, rinominare, rendere obbligatorio, riordinare,
 descrivere, designare il campo principale.
 
-![La schermata Struttura di un database](../../../../assets/screens/structure.png)
+![La schermata Struttura di un database](../../../../assets/screens/it/structure.webp)
 
 Modificare la struttura richiede il livello **Gestione**. Senza di esso, la schermata si può consultare e non propone
 nulla: né pulsanti, né matite, né maniglie — l’obbligatorietà e il campo principale vengono indicati, non

@@ -31,17 +31,40 @@ Een verborgen veld is overal afwezig: in het raster, de weergaven, de API, de MC
 de SQL die in de interface wordt geschreven en de SQL-views. Filteren of sorteren op zo’n veld reageert zoals bij een veld
 dat niet bestaat.
 
+## Tot op de rij
+
+Naast **Velden** laat **Rijen** een groep maar bepaalde rijen van een tabel zien: die welke een
+filter vasthoudt, geschreven zoals dat van een weergave. `@me` duidt de ingelogde persoon aan:
+
+- `commercial eq @me` — elke verkoper ziet alleen zijn eigen klanten;
+- `region in ["nord", "est"]` — een team ziet alleen zijn eigen regio’s;
+- `_created_by eq @me` — iedereen ziet alleen wat hij zelf heeft aangemaakt.
+
+Rechten tellen op: iemand ziet de rijen van al zijn groepen, en een groep zonder regel ziet ze
+allemaal. Wie de structuur van de tabel beheert — het niveau Beheren — ziet altijd alles. Het
+scherm toont hoeveel rijen een bepaalde persoon ziet, en via welke groep.
+
+Een rij buiten haar regel bestaat niet voor de persoon: niet in de weergaven, de dashboards, de
+zoekfunctie, de API, de MCP-server of de geschiedenis, en ook niet om te worden gewijzigd,
+verwijderd of gekoppeld. Een rij die hij aanmaakt, moet tot de zijne horen; door een rij te
+wijzigen, kan hij haar daarentegen wel uit zijn bereik laten verdwijnen — een taak die aan een
+collega wordt toevertrouwd. Antwoorden op
+[gedeelde formulieren](/basedb/nl/fonctionnalites/formulaires-partages/) komen altijd aan.
+
 ## En SQL?
 
 In de interface volgt SQL dezelfde rechten, toegepast door PostgreSQL zelf: zonder het niveau
 Beheren wordt een query alleen-lezen uitgevoerd, op een rol die alleen van die persoon is, waar een gesloten
-tabel niet bestaat en een verborgen veld wordt geweigerd. Een [SQL-view](/basedb/nl/fonctionnalites/requetes-et-vues-sql/)
+tabel niet bestaat, een verborgen veld wordt geweigerd en alleen haar eigen rijen worden gelezen,
+of de tabel nu alleen genoemd wordt of met haar schema. Een [SQL-view](/basedb/nl/fonctionnalites/requetes-et-vues-sql/)
 wordt gelezen met de rechten van wie hem leest, en een query delen deelt alleen de tekst ervan.
 
 Een **directe `psql`-toegang** tot de database valt daarentegen niet onder basedb: die leest alles, verborgen
 velden inbegrepen. De beperkingen beschermen de oppervlakken van het product — interface, API, MCP —, nooit
 tegen iemand die SQL-toegang tot de database heeft; die toegang regel je met PostgreSQL-`GRANT`s,
-ingesteld door de beheerder van de server.
+ingesteld door de beheerder van de server. Een tabel met een rijregel heeft de rijbeveiliging
+(row-level security) van PostgreSQL geactiveerd: een rol die voor een extern tool is aangemaakt,
+ziet er geen enkele rij, tenzij hij het kenmerk `BYPASSRLS` heeft of zijn eigen policy.
 
 ## Accounts en inloggen
 

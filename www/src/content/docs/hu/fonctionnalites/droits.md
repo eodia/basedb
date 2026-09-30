@@ -33,18 +33,43 @@ Az elrejtett mező mindenhonnan hiányzik: a rácsból, a nézetekből, az API-b
 előzményekből, a felületen írt SQL-ből és az SQL-nézetekből. A rá vonatkozó szűrés vagy
 rendezés úgy viselkedik, mintha a mező nem létezne.
 
+## Egészen a sorig
+
+A **Mezők** mellett a **Sorok** egy csoportnak csak egy tábla bizonyos sorait mutatja: azokat,
+amelyeket egy szűrő megtart, ugyanúgy megírva, mint egy nézeté. A `@me` a bejelentkezett
+személyt jelöli:
+
+- `commercial eq @me` – minden értékesítő csak a saját ügyfeleit látja;
+- `region in ["nord", "est"]` – egy csapat csak a saját régióit látja;
+- `_created_by eq @me` – mindenki csak azt látja, amit létrehozott.
+
+A jogosultságok összeadódnak: egy személy minden csoportjának sorait látja, és egy szabály
+nélküli csoport mindet látja. Aki a tábla struktúráját kezeli – a Kezelés szint –, mindig
+mindent lát. A képernyő megmutatja, hány sort lát egy adott személy, és melyik csoportja révén.
+
+A szabályán kívüli sor nem létezik a személy számára: sem a nézetekben, az irányítópultokban,
+a keresésben, az API-ban, az MCP-ben vagy az előzményekben, sem módosításra, törlésre vagy
+összekapcsolásra. Az általa létrehozott sornak a saját sorai közé kell tartoznia; egy sor
+módosításával viszont kikerülhet a saját köréből – egy kollégának átadott feladat. A
+[megosztott űrlapokra](/basedb/hu/fonctionnalites/formulaires-partages/) adott válaszok mindig
+megérkeznek.
+
 ## És az SQL?
 
 A felületen az SQL ugyanazokat a jogosultságokat követi, amelyeket maga a PostgreSQL
 érvényesít: Kezelés szint nélkül a lekérdezés csak olvasási módban fut, a személyhez tartozó
 saját szerepkörrel, ahol egy hozzáférhetetlen tábla nem létezik, egy elrejtett mező pedig
-elutasításra kerül. Egy [SQL-nézetet](/basedb/hu/fonctionnalites/requetes-et-vues-sql/)
+elutasításra kerül, és csak a saját sorai olvashatók, akár önmagában, akár a sémájával együtt
+van megnevezve a tábla. Egy [SQL-nézetet](/basedb/hu/fonctionnalites/requetes-et-vues-sql/)
 mindenki a saját jogosultságaival olvas, és egy lekérdezés megosztása csak a szövegét osztja meg.
 
 A **közvetlen `psql`-hozzáférést** az adatbázishoz viszont nem a basedb szabályozza: mindent
 olvas, az elrejtett mezőket is. A korlátozások a termék felületeit védik – felület, API, MCP –,
 soha nem azzal szemben, akinek SQL-hozzáférése van az adatbázishoz; ezeket a hozzáféréseket az
-üzemeltető által beállított PostgreSQL-`GRANT`-ok szabályozzák.
+üzemeltető által beállított PostgreSQL-`GRANT`-ok szabályozzák. Az a tábla, amelyen sorszintű
+szabály van, aktiválva van rajta a PostgreSQL sorszintű biztonsága: egy külső eszköznek
+létrehozott szerepkör egyetlen sort sem lát rajta, kivéve ha megvan neki a `BYPASSRLS`
+attribútuma vagy saját politikája.
 
 ## Fiókok és bejelentkezés
 

@@ -6,7 +6,7 @@ description: Avvisare un canale Slack, collegare un calendario, mantenere aggior
 La schermata **Integrazioni** di un database si apre dal menu del profilo, in basso a sinistra.
 Richiede il livello **Gestione** e riunisce ciò che collega il database al resto dei tuoi strumenti.
 
-![La schermata Integrazioni di un database](../../../../assets/screens/integrations.png)
+![La schermata Integrazioni di un database](../../../../assets/screens/it/integrations.webp)
 
 ## Slack
 

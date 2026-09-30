@@ -32,18 +32,40 @@ Piilotettu kenttä puuttuu kaikkialta: ruudukosta, näkymistä, API:sta, MCP:st�
 käyttöliittymässä kirjoitetusta SQL:stä ja SQL-näkymistä. Sen mukaan suodattaminen tai
 lajitteleminen toimii kuin kenttää ei olisi olemassa.
 
+## Rivitasolle asti
+
+**Kenttien** vierellä **Rivit** näyttää ryhmälle vain osan taulukon riveistä: ne, jotka suodatin
+poimii, kirjoitettuna kuten näkymän suodatin. `@me` tarkoittaa kirjautunutta henkilöä:
+
+- `commercial eq @me` – kukin myyjä näkee vain omat asiakkaansa;
+- `region in ["nord", "est"]` – tiimi näkee vain omat alueensa;
+- `_created_by eq @me` – kukin näkee vain luomansa.
+
+Käyttöoikeudet **summautuvat**: henkilö näkee kaikkien ryhmiensä rivit, ja ryhmä, jolla ei ole
+sääntöä, näkee ne kaikki. Se, joka hallinnoi taulukon rakennetta – Hallintaoikeus-taso – näkee
+aina kaiken. Näkymä kertoo, kuinka monta riviä valittu henkilö näkee, ja minkä ryhmän kautta.
+
+Rivi, joka on hänen sääntönsä ulkopuolella, ei ole olemassa hänelle: ei näkymissä,
+koontinäytöissä, haussa, API:ssa, MCP:ssä eikä historiassa, eikä sitä voi muokata, poistaa tai
+linkittää. Hänen luomansa rivin on kuuluttava hänen omiinsa; riviä muokatessaan hän voi sen
+sijaan siirtää sen oman piirinsä ulkopuolelle – kollegalle uskottu tehtävä. Vastaukset
+[jaettuihin lomakkeisiin](/basedb/fi/fonctionnalites/formulaires-partages/) saapuvat aina.
+
 ## Entä SQL?
 
 Käyttöliittymässä SQL noudattaa samoja käyttöoikeuksia, ja niitä soveltaa PostgreSQL itse: ilman
 Hallintaoikeus-tasoa kysely suoritetaan vain luku -tilassa henkilölle omistetulla roolilla, jolle
-suljettua taulukkoa ei ole olemassa ja jolta piilotettu kenttä hylätään.
+suljettua taulukkoa ei ole olemassa, jolta piilotettu kenttä hylätään ja jolta luetaan vain hänen
+rivinsä, nimettiinpä taulukko yksin tai skeemansa kanssa.
 [SQL-näkymää](/basedb/fi/fonctionnalites/requetes-et-vues-sql/) luetaan lukijan
 käyttöoikeuksilla, ja kyselyn jakaminen jakaa vain sen tekstin.
 
 **Suoraa `psql`-yhteyttä** tietokantaan basedb ei sen sijaan hallitse: se lukee kaiken,
 piilotetut kentät mukaan lukien. Rajoitukset suojaavat tuotteen pintoja – käyttöliittymää, API:a,
 MCP:tä –, eivät koskaan henkilöltä, jolla on SQL-yhteys tietokantaan; näitä yhteyksiä hallitaan
-ylläpitäjän asettamilla PostgreSQL:n `GRANT`-käskyillä.
+ylläpitäjän asettamilla PostgreSQL:n `GRANT`-käskyillä. Taulukolla, jolla on rivisääntö, on
+käytössä PostgreSQL:n rivitason suojaus (RLS): kolmannen osapuolen työkalua varten luotu rooli ei
+näe siinä yhtään riviä, paitsi jos sillä on `BYPASSRLS`-määrite tai oma käytäntönsä.
 
 ## Tilit ja kirjautuminen
 

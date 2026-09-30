@@ -18,13 +18,13 @@ Menú de la vista → **Compartir…**, y después:
 | **Público** | cualquiera que tenga el enlace, sin cuenta |
 | **Miembros conectados** | un miembro del espacio de trabajo, tras iniciar sesión; si hace falta, solo de ciertos grupos |
 
-![Compartir un calendario](../../../../assets/screens/partage-vue.png)
+![Compartir un calendario](../../../../assets/screens/es/partage-vue.webp)
 
 El interruptor **Enlace activo** suspende el enlace sin perderlo. La página se abre fuera de
 la aplicación: sin barra lateral, sin nombre de base, sin nombre de tabla; solo la vista, sus filtros, sus
 columnas y nada más. Un calendario o una cronología se lee ahí como una agenda.
 
-![El mismo calendario, abierto mediante su enlace](../../../../assets/screens/vue-partagee.png)
+![El mismo calendario, abierto mediante su enlace](../../../../assets/screens/es/vue-partagee.webp)
 
 ## En nombre de quién se lee
 

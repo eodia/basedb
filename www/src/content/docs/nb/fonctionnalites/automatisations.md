@@ -1,6 +1,6 @@
 ---
 title: Automatiseringer
-description: Når en rad endres, på et fast tidspunkt eller med ett klikk – endre, opprette, finne, forgrene, spørre KI, varsle, kalle en webhook, skrive i Slack.
+description: Når en rad endres, på et fast tidspunkt eller med ett klikk – endre, opprette, finne, forgrene, spørre KI, varsle, sende e-post, kalle en webhook, skrive i Slack.
 ---
 
 En automatisering sier **når**, **hvis** og **så**: når en oppgave går over til «Fait», notere
@@ -12,7 +12,7 @@ i ett trinn det et tidligere trinn har funnet eller skrevet.
 De åpnes fra **Automatiseringer**, i blokken for den åpne databasen nederst i
 sidepanelet, og krever nivået **Administrere**.
 
-![En flyt og en av kjøringene, lagt oppå den](../../../../assets/screens/automatisations.png)
+![En flyt og en av kjøringene, lagt oppå den](../../../../assets/screens/nb/automatisations.webp)
 
 ## Flyten
 
@@ -49,6 +49,7 @@ Opptil tretti trinn, i rekkefølge; det første som mislykkes, stopper de neste.
 | **Opprett en rad** | i denne tabellen eller en annen i databasen |
 | **Finn en rad** | den første raden i en tabell som samsvarer med et filter, slik at de neste trinnene kan referere til eller endre den |
 | **Varsle noen** | et [varsel](/basedb/nb/fonctionnalites/collaboration/#varsler) til utvalgte personer, eller til den i et Person-felt |
+| **Send en e-post** | til personer i teamet, til personen i et Person-felt, til adressen i et E-post-felt – en kunde, en leverandør – eller til adresser du skriver inn; emnet og teksten refererer til raden og de forrige trinnene |
 | **Kall en webhook** | en `POST` over HTTPS til en adresse du velger; svaret kan refereres til etterpå |
 | **Send til Slack** | en melding i en [tilkoblet](/basedb/nb/integrations/synchronisation/#slack) kanal |
 | **Spør KI** | et svar fra [KI-leverandøren](/basedb/nb/fonctionnalites/ia/) på en instruksjon som refererer til raden og de forrige trinnene – skrive, oppsummere, klassifisere –, lest som en tekst, et tall, ja eller nei, en dato eller et valg i en liste |
@@ -139,7 +140,9 @@ kan angres som alle andre.
   i én og samme flyt.
 - Et søk gir én rad, den første; ennå ingen «for hver rad», og ingen
   venting («tre dager etterpå»).
-- Ingen e-post, ingen skript.
+- Ingen skript. En e-post sendes som ren tekst, én per mottaker — høyst tjue per trinn —, via
+  [utsendingsserveren](/basedb/nb/hebergement/variables/#e-poster) til instansen; et svar går til
+  personen som eier automatiseringen.
 - En betingelse tester en rad: for å velge gren ut fra KI-svaret må det først
   skrives i et felt i raden.
 - En [databasemal](/basedb/nb/fonctionnalites/modeles/) tar bare med automatiseringer uten

@@ -29,8 +29,8 @@ ile Görsel alanlarının dosyaları için bir birim, `/data`, tanımlar.
 | Etiket | İçerik |
 |---|---|
 | `latest` | yayımlanan son sürüm |
-| `0.3` | son 0.3.x sürümü |
-| `0.3.2` | tam olarak bu sürüm |
+| `0.4` | son 0.4.x sürümü |
+| `0.4.0` | tam olarak bu sürüm |
 
 ## Servisler
 

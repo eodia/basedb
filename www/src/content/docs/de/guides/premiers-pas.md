@@ -42,11 +42,13 @@ Später kommen eine Formel (`DAYS([Échéance], TODAY())`), ein Nachschlagefeld 
 des Kunden) oder eine Aggregation (der Gesamtbetrag pro Kunde) auf dieselbe Weise hinzu – siehe
 [Tabellen und Felder](/basedb/de/fonctionnalites/tables-et-champs/).
 
-Sie können auch **eine Datei importieren**, CSV oder JSON: Der Import errät die Typen, lässt Sie
-sie korrigieren, legt die Tabelle an oder ergänzt eine bestehende und nennt Zeile für Zeile, was
-er ablehnt.
+Sie können auch **eine Datei importieren** – eine Excel-Arbeitsmappe (`.xlsx`), eine CSV- oder
+eine JSON-Datei: Der Import errät die Typen, lässt Sie sie korrigieren, legt die Tabelle an oder
+ergänzt eine bestehende und nennt Zeile für Zeile, was er ablehnt. Bei einer Arbeitsmappe mit
+mehreren Blättern wählen Sie das Blatt; Daten, Beträge und Kontrollkästchen werden so
+übernommen, wie Excel sie hält, und eine Formel liefert ihren Wert.
 
-![Menü einer Datenbank](../../../../assets/screens/menu-base.png)
+![Menü einer Datenbank](../../../../assets/screens/de/menu-base.webp)
 
 ## 3. Eingeben und filtern
 
@@ -62,7 +64,7 @@ Die Ansichtsauswahl links neben „Filtern“ bietet „Alle Zeilen“ und dann 
 Legen Sie ein **Kanban** an, gruppiert nach „Statut“: Wenn Sie eine Karte von einer Spalte in
 eine andere ziehen, wird die Zeile geändert.
 
-![Ein Kanban nach Status](../../../../assets/screens/kanban.png)
+![Ein Kanban nach Status](../../../../assets/screens/de/kanban.webp)
 
 ## 5. Ein Formular freigeben
 

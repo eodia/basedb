@@ -7,7 +7,7 @@ description: Hva basedb er, og hva som skiller det fra samarbeidsregneark.
 som du hoster selv – med én forskjell som styrer alt det andre: **dataene dine
 bor i ekte PostgreSQL-tabeller**, typet og navngitt i klartekst.
 
-![Rutenettet til en tabell i basedb](../../../../assets/screens/grille.png)
+![Rutenettet til en tabell i basedb](../../../../assets/screens/nb/grille.webp)
 
 ## Et enkelt løfte
 
@@ -39,8 +39,8 @@ registrerer skrivingen.
 - Typede [tabeller og felt](/basedb/nb/fonctionnalites/tables-et-champs/), relasjoner
   som er ekte fremmednøkler – eller multiple –, formler som beregnes av PostgreSQL,
   og oppslag og aggregeringer på tvers av relasjonene.
-- Åtte [visninger](/basedb/nb/fonctionnalites/vues/): rutenett, kanban, kalender, tidslinje,
-  galleri, liste, skjema, spørreundersøkelse – felles eller personlige.
+- Ti [visninger](/basedb/nb/fonctionnalites/vues/): rutenett, kanban, kalender, tidslinje,
+  galleri, liste, kart, skjema, spørreundersøkelse, quiz – felles eller personlige.
 - [Skjemaer](/basedb/nb/fonctionnalites/formulaires-partages/) og
   [visninger](/basedb/nb/fonctionnalites/vues-partagees/) som deles med en lenke, og kalendere
   som kan abonneres på fra en kalenderapp.

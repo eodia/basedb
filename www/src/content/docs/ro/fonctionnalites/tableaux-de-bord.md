@@ -8,7 +8,7 @@ care contează, evoluția lor de la o lună la alta, distribuția unui statut, t
 Fiecare card arată acolo o **întrebare** — o citire a bazei, construită cu mouse-ul sau scrisă
 în SQL — iar **filtrele** din partea de sus a paginii controlează cardurile legate de ele.
 
-![Tabloul de bord „Pilotage de l’agence”: tendința lunii, obiectivul, cifra de afaceri stivuită, sentimentul recenziilor](../../../../assets/screens/tableaux-de-bord.png)
+![Tabloul de bord „Pilotage de l’agence”: tendința lunii, obiectivul, cifra de afaceri stivuită, sentimentul recenziilor](../../../../assets/screens/ro/tableaux-de-bord.webp)
 
 Totul se deschide din **Tablouri de bord**, în blocul bazei deschise din partea de jos a barei
 laterale. În stânga, tablourile de bord și întrebările salvate ale bazei, precum și
@@ -30,7 +30,7 @@ acțiuni**) oferă, de asemenea, **Nume și partajare…**, **Salvați o copie�
 
 O întrebare se construiește în pași, unul sub altul:
 
-![Editorul unei întrebări: datele, filtrele, rezumatul pe lună](../../../../assets/screens/question-editeur.png)
+![Editorul unei întrebări: datele, filtrele, rezumatul pe lună](../../../../assets/screens/ro/question-editeur.webp)
 
 | Pas | Ce alegeți aici |
 |---|---|
@@ -166,7 +166,7 @@ Poate avea o **valoare implicită** — „Anul acesta”, de exemplu.
 În modul de citire, un clic pe un punct poate seta și un filtru: **Filtrați după „Lyon”** pe un
 card a cărui coloană de orașe este legată de filtrul „Ville”.
 
-![Fila „Activité”: sarcini după termen stivuite după statut, pâlnia proiectelor, ore estimate în tabel încrucișat](../../../../assets/screens/tableaux-de-bord-activite.png)
+![Fila „Activité”: sarcini după termen stivuite după statut, pâlnia proiectelor, ore estimate în tabel încrucișat](../../../../assets/screens/ro/tableaux-de-bord-activite.webp)
 
 ## Copilot
 

@@ -109,6 +109,9 @@ async function assertFullMask(
     for (const fieldId of target.fieldIds ?? []) {
       if (!read.readableFields.has(fieldId)) missing.push(fieldId)
     }
+    // A row rule would leave events out, as a hidden field leaves values out: never a
+    // partial feed, whether by columns or by rows (05 §4.4, §16).
+    if (read.rowPredicate !== 'TRUE') missing.push(`rows:${tableId}`)
     const links = await exec.query<{ target_table_id: string }>(
       `SELECT l.target_table_id::text FROM _basedb.field_link_config l
          JOIN _basedb.field f ON f.id = l.field_id

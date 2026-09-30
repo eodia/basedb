@@ -1,6 +1,8 @@
 import { qualify, quoteIdentifier } from '@basedb/naming'
 import type { FieldKind } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
+import { rowWhere } from '../rbac/rows.js'
+import { withMe } from '../rbac/rows.js'
 import type { Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { type FilterableColumn, buildFilter, resolveColumn } from './filter.js'
@@ -162,9 +164,11 @@ export async function aggregateRecords(
 
   const params: unknown[] = []
   // The marker the data pool's statements must all carry (see `buildSelect`).
-  const clauses = [`( /*predicat_lignes:${plan.tableName}*/ ${plan.decision.rowPredicate} )`]
+  const clauses = [
+    `( /*predicat_lignes:${plan.tableName}*/ ${rowWhere(plan.decision.rowPredicate, alias)} )`,
+  ]
   if (request.filter !== undefined && request.filter.trim() !== '') {
-    const filter = buildFilter(request.filter, plan.filterable, {
+    const filter = buildFilter(withMe(request.filter, ctx.actor.id), plan.filterable, {
       alias,
       firstParameter: 1,
       links: plan.links,

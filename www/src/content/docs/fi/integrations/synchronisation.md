@@ -6,7 +6,7 @@ description: Ilmoita Slack-kanavalle, yhdistä kalenteri, pidä taulukko ajan ta
 Tietokannan **Integraatiot**-näkymä avataan vasemman alakulman profiilivalikosta. Se vaatii
 **Hallintaoikeus**-tason ja kokoaa yhteen sen, mikä yhdistää tietokannan muihin työkaluihisi.
 
-![Tietokannan Integraatiot-näkymä](../../../../assets/screens/integrations.png)
+![Tietokannan Integraatiot-näkymä](../../../../assets/screens/fi/integrations.webp)
 
 ## Slack
 

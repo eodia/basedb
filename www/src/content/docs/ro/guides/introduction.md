@@ -7,7 +7,7 @@ description: Ce este basedb și ce îl deosebește de foile de calcul colaborati
 pe care o găzduiți chiar dumneavoastră — cu o diferență care determină tot restul: **datele
 dumneavoastră se află în tabele PostgreSQL reale**, tipizate și cu nume clare.
 
-![Grila unui tabel în basedb](../../../../assets/screens/grille.png)
+![Grila unui tabel în basedb](../../../../assets/screens/ro/grille.webp)
 
 ## O promisiune simplă
 
@@ -39,8 +39,8 @@ istoricul înregistrează scrierea.
 - [Tabele și câmpuri](/basedb/ro/fonctionnalites/tables-et-champs/) tipizate, relații care
   sunt chei străine reale — sau multiple —, formule calculate de PostgreSQL, căutări și
   agregări prin relații.
-- Opt [vizualizări](/basedb/ro/fonctionnalites/vues/): grilă, kanban, calendar, cronologie,
-  galerie, listă, formular, chestionar — colaborative sau personale.
+- Zece [vizualizări](/basedb/ro/fonctionnalites/vues/): grilă, kanban, calendar, cronologie,
+  galerie, listă, hartă, formular, chestionar, quiz — colaborative sau personale.
 - [Formulare](/basedb/ro/fonctionnalites/formulaires-partages/) și
   [vizualizări](/basedb/ro/fonctionnalites/vues-partagees/) partajate printr-un link și
   calendare la care vă puteți abona dintr-o aplicație de calendar.

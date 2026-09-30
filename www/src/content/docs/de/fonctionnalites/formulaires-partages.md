@@ -3,12 +3,12 @@ title: Freigegebene Formulare
 description: Ein Formular per Link freigeben, öffentlich oder nur für angemeldete Mitglieder.
 ---
 
-Ein Formular oder eine Umfrage wird **per Link** `/f/<jeton>` **freigegeben**. Die antwortende
+Ein Formular, eine Umfrage oder ein Quiz wird **per Link** `/f/<jeton>` **freigegeben**. Die antwortende
 Person braucht **keine Berechtigung für die Tabelle**: Jede Antwort fügt eine Zeile hinzu, und
 sonst wird ihr nichts von der Tabelle gezeigt. Um Zeilen zu zeigen, statt welche zu empfangen,
 wird eine Ansicht [schreibgeschützt](/basedb/de/fonctionnalites/vues-partagees/) freigegeben.
 
-![Der Freigabedialog](../../../../assets/screens/partage-formulaire.png)
+![Der Freigabedialog](../../../../assets/screens/de/partage-formulaire.webp)
 
 ## Wer antworten kann
 
@@ -21,7 +21,7 @@ Die Seite des Links liegt außerhalb der Anwendung: keine Seitenleiste, kein Dat
 anderen Zeilen. Sie trägt die Darstellung des Formulars – sein Thema, seine Farbe, seine
 Schriftart – und fragt nur die Fragen, die frühere Antworten verlangen.
 
-![Ein öffentliches Formular](../../../../assets/screens/formulaire-public.png)
+![Ein öffentliches Formular](../../../../assets/screens/de/formulaire-public.webp)
 
 ## In wessen Namen die Antwort geschrieben wird
 
@@ -47,6 +47,21 @@ Der Dialog regelt:
 - **Freigabe beenden**: Der Link verschwindet, die Antworten bleiben in der Tabelle.
 
 Ein geschlossenes Formular sagt das in einem Satz, noch bevor es eine Anmeldung verlangt.
+
+## Ein freigegebenes Quiz
+
+Die Seite eines Quiz erhält **keine einzige richtige Antwort**: nur, was jede Frage wert ist.
+Es ist der Server, der auswertet.
+
+- **Nach jeder Frage** ausgewertet, sendet die Seite ihm jede bewertete Antwort in dem Moment,
+  in dem sie gegeben wird, und erfährt dann, ob sie richtig war – und welche es war.
+- Beim Absenden zählt der Server die Punktzahl **anhand der erhaltenen Antworten** und schreibt
+  sie in das dafür gewählte Feld, sofern es eines gibt und die Person, die die Freigabe
+  veröffentlicht hat, es beschreiben darf. Die Seite zeigt die Punktzahl, die er zurückgibt, und
+  die Auflösung, außer das Quiz sagt „nie“.
+
+Eine Punktzahl liest sich in der Tabelle also so, wie der Server sie gezählt hat, nicht so, wie
+eine Seite sie angekündigt hätte.
 
 ## Grenzen
 

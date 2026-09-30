@@ -7,7 +7,7 @@ basedb sparar **varje skrivning** i historiken, var den än kommer ifrån: grän
 en MCP-agent, ett offentligt formulär – och till och med en SQL-fråga som skrivits för hand i
 `psql`.
 
-![Historiken för en databas](../../../../assets/screens/historique.png)
+![Historiken för en databas](../../../../assets/screens/sv/historique.webp)
 
 ## Hur den registreras
 

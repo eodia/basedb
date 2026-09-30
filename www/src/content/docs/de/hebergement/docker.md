@@ -29,8 +29,8 @@ Das Image läuft unter dem Benutzer `node` auf Node 22, deklariert eine Integrit
 | Tag | Inhalt |
 |---|---|
 | `latest` | die zuletzt veröffentlichte Version |
-| `0.3` | die neueste Version 0.3.x |
-| `0.3.2` | genau diese Version |
+| `0.4` | die neueste Version 0.4.x |
+| `0.4.0` | genau diese Version |
 
 ## Die Dienste
 

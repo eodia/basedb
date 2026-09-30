@@ -12,7 +12,7 @@ Los detalles de una fila tienen una pestaña **Comentarios**, entre «Detalles»
 `@` para **mencionar** a un miembro y Ctrl+Intro para enviar. Cada uno edita o elimina sus
 propios comentarios.
 
-![Una conversación sobre un proyecto](../../../../assets/screens/commentaires.png)
+![Una conversación sobre un proyecto](../../../../assets/screens/es/commentaires.webp)
 
 Poder leer la fila basta para comentarla. Una persona mencionada que no puede leerla
 no recibe aviso, y se informa de ello al autor en lugar de dejarle creer que el mensaje ha llegado.
@@ -30,7 +30,15 @@ La campana, arriba a la derecha, cuenta lo que no se ha leído. Llegan ahí cuat
 Abrir una notificación abre la fila. **Marcar todo como leído** pone el contador a cero; las
 notificaciones se conservan 90 días.
 
-![Una mención recibida](../../../../assets/screens/notifications.png)
+### Por correo electrónico
+
+Cuando la instancia tiene un [servidor de envío](/basedb/es/hebergement/variables/#correos-electrónicos), una
+notificación que lleva **diez minutos sin leerse** también se envía por correo electrónico: un solo correo
+para todas las que esperan, con un enlace a cada fila. Lo que lees a tiempo no
+se envía. En **Configuración › Notificaciones**, cada tipo tiene dos interruptores: en basedb, y
+por correo electrónico.
+
+![Una mención recibida](../../../../assets/screens/es/notifications.webp)
 
 ## Tiempo real
 
@@ -74,6 +82,6 @@ Ctrl+Z deshace tu última escritura: consulta [el historial](/basedb/es/fonction
 
 ## Límites
 
-- Las notificaciones se quedan en basedb: por ahora no se envía ninguna por correo electrónico.
+- Sin correo electrónico si el operador de la instancia no ha configurado un servidor de envío.
 - Si cambian más de cien filas de golpe, la pantalla recarga la página entera en lugar de
   hacerlo fila por fila.

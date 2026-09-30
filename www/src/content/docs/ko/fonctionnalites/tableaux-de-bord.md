@@ -7,7 +7,7 @@ description: 마우스나 SQL로 만드는 질문, 이를 보여 주고 설정�
 분포, 다가오는 마감일 같은 것들입니다. 각 카드는 **질문**, 즉 마우스로 만들거나 SQL로 작성한
 데이터베이스 읽기를 보여 주며, 페이지 위쪽의 **필터**는 연결된 카드를 제어합니다.
 
-![“Pilotage de l’agence” 대시보드: 이달의 추세, 목표, 누적 매출, 후기 감성](../../../../assets/screens/tableaux-de-bord.png)
+![“Pilotage de l’agence” 대시보드: 이달의 추세, 목표, 누적 매출, 후기 감성](../../../../assets/screens/ko/tableaux-de-bord.webp)
 
 모든 것은 사이드바 아래쪽의 열린 데이터베이스 블록에 있는 **대시보드**에서 엽니다. 왼쪽에는
 데이터베이스의 대시보드와 저장된 질문, 그리고 아무것도 저장하지 않고 질문해 볼 수 있는
@@ -28,7 +28,7 @@ description: 마우스나 SQL로 만드는 질문, 이를 보여 주고 설정�
 
 질문은 여러 단계를 위에서 아래로 쌓아 만듭니다.
 
-![질문 편집기: 데이터, 필터, 월별 요약](../../../../assets/screens/question-editeur.png)
+![질문 편집기: 데이터, 필터, 월별 요약](../../../../assets/screens/ko/question-editeur.webp)
 
 | 단계 | 선택하는 것 |
 |---|---|
@@ -159,7 +159,7 @@ SELECT statut, count(*) AS taches
 보기 모드에서는 지점을 클릭해 필터를 설정할 수도 있습니다. 도시 열이 “Ville” 필터에 연결된
 카드에서 **“Lyon” 기준으로 필터**를 누르는 식입니다.
 
-![“Activité” 탭: 상태별로 누적한 마감일별 작업, 프로젝트 깔때기, 피벗 테이블로 본 예상 시간](../../../../assets/screens/tableaux-de-bord-activite.png)
+![“Activité” 탭: 상태별로 누적한 마감일별 작업, 프로젝트 깔때기, 피벗 테이블로 본 예상 시간](../../../../assets/screens/ko/tableaux-de-bord-activite.webp)
 
 ## Copilot
 

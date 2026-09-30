@@ -5,7 +5,7 @@ description: 通知 Slack 频道、关联日历应用，并根据 CSV、日历�
 
 数据库的**集成**界面从左下角的个人资料菜单打开。它需要**可管理**级别，汇集了将数据库与您其他工具连接起来的所有功能。
 
-![数据库的集成界面](../../../../assets/screens/integrations.png)
+![数据库的集成界面](../../../../assets/screens/zh-cn/integrations.webp)
 
 ## Slack
 

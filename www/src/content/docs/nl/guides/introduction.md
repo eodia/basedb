@@ -7,7 +7,7 @@ description: Wat basedb is, en wat het onderscheidt van collaboratieve spreadshe
 die je zelf host — met één verschil dat al het andere bepaalt: **je gegevens leven in echte
 PostgreSQL-tabellen**, getypeerd en met leesbare namen.
 
-![Het raster van een tabel in basedb](../../../../assets/screens/grille.png)
+![Het raster van een tabel in basedb](../../../../assets/screens/nl/grille.webp)
 
 ## Een eenvoudige belofte
 
@@ -39,8 +39,8 @@ geschiedenis legt de schrijfactie vast.
 - Getypeerde [tabellen en velden](/basedb/nl/fonctionnalites/tables-et-champs/), relaties
   die echte foreign keys zijn — of meervoudig —, formules die PostgreSQL berekent,
   opzoekvelden en aggregaties via relaties.
-- Acht [weergaven](/basedb/nl/fonctionnalites/vues/): raster, kanban, kalender, tijdlijn,
-  galerie, lijst, formulier, enquête — gezamenlijk of persoonlijk.
+- Tien [weergaven](/basedb/nl/fonctionnalites/vues/): raster, kanban, kalender, tijdlijn,
+  galerie, lijst, landkaart, formulier, enquête, quiz — gezamenlijk of persoonlijk.
 - [Formulieren](/basedb/nl/fonctionnalites/formulaires-partages/) en
   [weergaven](/basedb/nl/fonctionnalites/vues-partagees/) die via een link worden gedeeld, en kalenders
   waarop je je vanuit een agenda abonneert.

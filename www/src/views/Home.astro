@@ -5,8 +5,6 @@
  * one for teams, `Teams.astro`.
  */
 import { Image } from 'astro:assets';
-import automations from '../assets/screens/automatisations.png';
-import dashboards from '../assets/screens/tableaux-de-bord.png';
 import AgentVisual from '../components/landing/AgentVisual.astro';
 import Bento from '../components/landing/Bento.astro';
 import FAQ from '../components/landing/FAQ.astro';
@@ -20,6 +18,7 @@ import SqlVisual from '../components/landing/SqlVisual.astro';
 import { type Locale, i18n } from '../i18n';
 import type { FeatureText } from '../i18n/types';
 import Landing from '../layouts/Landing.astro';
+import { screen } from '../lib/screens';
 
 interface Props {
 	locale: Locale;
@@ -28,6 +27,8 @@ interface Props {
 const { locale } = Astro.props;
 const { t, href, html } = i18n(locale);
 const f = t.features;
+const automations = screen(locale, 'automatisations');
+const dashboards = screen(locale, 'tableaux-de-bord');
 
 /** A block's texts, its HTML and links in the page's language. */
 const block = (text: FeatureText) => ({

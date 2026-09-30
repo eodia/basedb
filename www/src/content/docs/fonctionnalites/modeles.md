@@ -11,7 +11,7 @@ remplit elle-même. La [galerie des modèles](/basedb/modeles/) montre ceux que 
 
 **Nouvelle base**, puis **Partir d’un modèle, ou le demander à l’IA** : la galerie s’ouvre.
 
-![La galerie des modèles, dans l’application](../../../assets/screens/modeles.png)
+![La galerie des modèles, dans l’application](../../../assets/screens/fr/modeles.webp)
 
 Chaque modèle se lit en entier avant d’être utilisé — ses tables et leurs champs, ses vues,
 ses automatisations, et la consigne de chacun de ses champs IA. **Créer la base** demande

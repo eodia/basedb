@@ -25,7 +25,7 @@ descriptions (`COMMENT ON`).
 The **+** in the tab bar, or the base’s **⋯** menu → **SQL query**: an editor with syntax
 highlighting and completion, whose result is shown in the same grid as your tables.
 
-![A saved query, and two SQL views filed among the tables](../../../../assets/screens/requete-sql.png)
+![A saved query, and two SQL views filed among the tables](../../../../assets/screens/en/requete-sql.webp)
 
 - **Everyone reads there with their own permissions**: the Manage level has the whole base,
   writes included; other members write read-only SQL, where a closed table does not exist and a
@@ -52,6 +52,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+This account is the base’s owner: it reads everything, and basedb’s permissions do not apply to
+it. For a BI tool, create a separate role with its own `GRANT`s instead. If a table carries a
+[row rule](/basedb/en/fonctionnalites/droits/#down-to-the-row), PostgreSQL applies row-level
+security to it: such a role sees no rows there without the `BYPASSRLS` attribute or a policy of
+its own.
 
 ## Writing in SQL
 

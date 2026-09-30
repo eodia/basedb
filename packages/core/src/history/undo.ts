@@ -2,6 +2,7 @@ import { qualify } from '@basedb/naming'
 import { BasedbError } from '../errors/index.js'
 import { decide } from '../rbac/decide.js'
 import { loadGrants, loadTarget } from '../rbac/loader.js'
+import { rowWhere } from '../rbac/rows.js'
 import { currentXact } from '../records/update.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { refuseSynced } from '../sync/guard.js'
@@ -69,7 +70,8 @@ async function deleteCreatedIn(
   if (target === null || decide(ctx, grants, 'read', target).verdict !== 'ALLOWED') {
     throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: header.id } })
   }
-  if (decide(ctx, grants, 'delete', target).verdict !== 'ALLOWED') {
+  const remove = decide(ctx, grants, 'delete', target)
+  if (remove.verdict !== 'ALLOWED') {
     throw new BasedbError('ADMIN_REQUIRED', {
       details: { table: header.table_id, action: 'delete' },
     })
@@ -80,10 +82,12 @@ async function deleteCreatedIn(
   }
   const where = qualify(table.schema, table.table)
   const [current] = await exec.query<{ row: Record<string, unknown> }>(
-    `SELECT pg_catalog.to_jsonb(_t) AS row FROM ${where} _t WHERE "_id" = $1 FOR UPDATE`,
+    `SELECT pg_catalog.to_jsonb(_t) AS row FROM ${where} _t
+      WHERE "_id" = $1 AND ( /*predicat_lignes*/ ${rowWhere(remove.rowPredicate, '_t')} )
+        FOR UPDATE`,
     [header.record_id],
   )
-  // Gone already: there is nothing left to undo.
+  // Gone already — or out of the rows the undoer sees: there is nothing left to undo.
   if (current === undefined) return
 
   const ai = await exec.query<{ field_id: string }>(

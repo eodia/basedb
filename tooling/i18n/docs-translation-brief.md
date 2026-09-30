@@ -40,8 +40,9 @@ whose every table is a real PostgreSQL table — from French into ONE target lan
 
 ## Links
 
-- Images use relative paths: add one `../` because your file is one folder deeper —
-  `](../../../assets/screens/x.png)` becomes `](../../../../assets/screens/x.png)`.
+- Images use relative paths and exist in every language: add one `../` because your file is
+  one folder deeper, and take your folder's picture — `](../../../assets/screens/fr/x.webp)`
+  becomes `](../../../../assets/screens/<dir>/x.webp)`.
 - Internal links are absolute and start with `/basedb/`: insert your folder —
   `](/basedb/fonctionnalites/vues/)` becomes `](/basedb/<dir>/fonctionnalites/vues/)`, and
   `](/basedb/modeles/)` becomes `](/basedb/<dir>/modeles/)` (the landing pages exist in every

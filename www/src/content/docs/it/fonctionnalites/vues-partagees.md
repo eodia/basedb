@@ -18,13 +18,13 @@ Menu della vista → **Condividi…**, poi:
 | **Pubblico** | chiunque abbia il link, senza account |
 | **Membri connessi** | un membro dello spazio di lavoro, dopo l’accesso — se serve, solo di alcuni gruppi |
 
-![La condivisione di un calendario](../../../../assets/screens/partage-vue.png)
+![La condivisione di un calendario](../../../../assets/screens/it/partage-vue.webp)
 
 L’interruttore **Link attivo** sospende il link senza perderlo. La pagina si apre fuori
 dall’applicazione: né barra laterale, né nome del database, né nome della tabella — la vista, i suoi filtri, le sue
 colonne, e nient’altro. Un calendario o una sequenza temporale vi si legge come un’agenda.
 
-![Lo stesso calendario, aperto dal suo link](../../../../assets/screens/vue-partagee.png)
+![Lo stesso calendario, aperto dal suo link](../../../../assets/screens/it/vue-partagee.webp)
 
 ## Per conto di chi si legge
 

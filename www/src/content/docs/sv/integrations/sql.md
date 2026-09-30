@@ -25,7 +25,7 @@ beskrivningarna (`COMMENT ON`).
 **+** i flikfältet, eller databasens **⋯**-meny → **SQL-fråga**: en redigerare med
 syntaxfärgning och komplettering, vars resultat visas i samma rutnät som dina tabeller.
 
-![En sparad fråga, och två SQL-vyer placerade bland tabellerna](../../../../assets/screens/requete-sql.png)
+![En sparad fråga, och två SQL-vyer placerade bland tabellerna](../../../../assets/screens/sv/requete-sql.webp)
 
 - **Var och en läser där med sina behörigheter**: nivån Hantera når hela databasen, skrivningar
   inräknade; övriga medlemmar skriver skrivskyddad SQL, där en stängd tabell inte finns och ett
@@ -52,6 +52,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+Det här kontot är databasens ägare: det läser allt, och basedbs behörigheter gäller inte för
+det. Skapa i stället en egen roll med sina egna `GRANT` för ett BI-verktyg. Om en tabell har en
+[radregel](/basedb/sv/fonctionnalites/droits/#ända-ned-till-raden), tillämpar PostgreSQL
+radsäkerhet på den: en sådan roll ser inga rader i den utan attributet `BYPASSRLS` eller en egen
+policy.
 
 ## Skriva i SQL
 

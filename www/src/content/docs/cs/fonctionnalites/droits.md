@@ -31,17 +31,39 @@ Skryté pole chybí všude: v mřížce, v zobrazeních, v API, v MCP, v histori
 v rozhraní i v pohledech SQL. Filtrování nebo řazení podle něj se chová jako u pole, které
 neexistuje.
 
+## Až na úroveň řádku
+
+Vedle **Pole** ukazuje **Řádky** skupině jen některé řádky tabulky: ty, které zachytí filtr,
+napsaný stejně jako filtr zobrazení. `@me` označuje přihlášenou osobu:
+
+- `commercial eq @me` — každý obchodník vidí jen své klienty;
+- `region in ["nord", "est"]` — tým vidí jen své regiony;
+- `_created_by eq @me` — každý vidí jen to, co vytvořil.
+
+Oprávnění se sčítají: osoba vidí řádky všech svých skupin, a skupina bez pravidla vidí
+všechny. Kdo správuje strukturu tabulky — úroveň Správa — vidí vždy vše. Obrazovka říká,
+kolik řádků vidí daná osoba a díky které skupině.
+
+Řádek mimo své pravidlo pro danou osobu neexistuje: ani ve zobrazeních, v řídicích panelech,
+ve vyhledávání, v API, v MCP ani v historii, ani k úpravě, odstranění nebo propojení. Řádek,
+který vytvoří, musí patřit mezi její řádky; při úpravě řádku ho naopak může vyřadit ze svého
+rozsahu — úkol předaný kolegovi. Odpovědi na
+[sdílené formuláře](/basedb/cs/fonctionnalites/formulaires-partages/) vždy dorazí.
+
 ## A co SQL?
 
 V rozhraní se SQL řídí stejnými oprávněními, která uplatňuje sám PostgreSQL: bez úrovně
 Správa se dotaz provede jen pro čtení, pod rolí vlastní dané osobě, kde uzavřená tabulka
-neexistuje a skryté pole je odmítnuto. [Pohled SQL](/basedb/cs/fonctionnalites/requetes-et-vues-sql/)
+neexistuje, skryté pole je odmítnuto a čtou se jen její řádky, ať je tabulka jmenovaná
+samotná, nebo se svým schématem. [Pohled SQL](/basedb/cs/fonctionnalites/requetes-et-vues-sql/)
 se čte s oprávněními toho, kdo ho čte, a sdílení dotazu sdílí jen jeho text.
 
 **Přímý přístup přes `psql`** k databázi však basedb neřídí: čte vše, včetně skrytých polí.
 Omezení chrání přístupové cesty produktu – rozhraní, API, MCP –, nikdy ne před někým, kdo má
 k databázi přístup přes SQL; takové přístupy se řídí pomocí `GRANT` v PostgreSQL, které
-nastavuje provozovatel.
+nastavuje provozovatel. Tabulka, která nese pravidlo pro řádky, má zapnuté zabezpečení
+PostgreSQL na úrovni řádků: role vytvořená pro nástroj třetí strany v ní nevidí žádný řádek,
+pokud nemá atribut `BYPASSRLS` nebo svou vlastní politiku.
 
 ## Účty a přihlášení
 

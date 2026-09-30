@@ -26,7 +26,7 @@ Sekme çubuğundaki **+** ya da veritabanının **⋯** menüsü → **SQL sorgu
 tablolarınızla aynı ızgarada görüntülenen, sözdizimi renklendirmesi ve otomatik tamamlama sunan
 bir düzenleyici.
 
-![Kayıtlı bir sorgu ve tabloların arasında yer alan iki SQL görünümü](../../../../assets/screens/requete-sql.png)
+![Kayıtlı bir sorgu ve tabloların arasında yer alan iki SQL görünümü](../../../../assets/screens/tr/requete-sql.webp)
 
 - **Herkes orada kendi izinleriyle okur**: Yönetim düzeyi, yazmalar dahil tüm veritabanına
   erişir; diğer üyeler salt okunur SQL yazar; orada kapalı bir tablo yoktur ve gizli bir alan
@@ -54,6 +54,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+Bu hesap veritabanının sahibidir: her şeyi okur ve basedb'nin izinleri ona uygulanmaz. Bir BI
+aracı için, kendi `GRANT` komutlarıyla ayrı bir rol oluşturun. Bir tablo bir
+[satır kuralı](/basedb/tr/fonctionnalites/droits/#satır-düzeyine-kadar) taşıyorsa, PostgreSQL
+orada satır düzeyinde güvenliği uygular: böyle bir rol, `BYPASSRLS` özniteliği ya da kendi
+politikası olmadıkça hiçbir satırı görmez.
 
 ## SQL ile yazma
 

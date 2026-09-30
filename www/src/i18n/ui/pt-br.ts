@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb — o banco de dados colaborativo em que cada tabela é uma tabela PostgreSQL de verdade',
-			description: 'Grades e oito visões, fórmulas, formulários e visões compartilhados, comentários, automações, painéis, permissões até o nível do campo, histórico completo, API REST e servidor MCP — em tabelas PostgreSQL de verdade, com nomes legíveis. Auto-hospedado, AGPL-3.0.',
+			description: 'Grades e dez visões, fórmulas, formulários, quiz e visões compartilhados, comentários, automações, painéis, permissões até o nível do campo, histórico completo, API REST e servidor MCP — em tabelas PostgreSQL de verdade, com nomes legíveis. Auto-hospedado, AGPL-3.0.',
 		},
 		changelog: {
 			title: 'Novidades — basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: 'Oito visões',
-								text: 'Grade, kanban, calendário, linha do tempo, galeria, lista, formulário, questionário.',
+								title: 'Dez visões',
+								text: 'Grade, kanban, calendário, linha do tempo, galeria, lista, mapa, formulário, questionário, quiz.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb — todo o seu trabalho, no mesmo lugar',
-			description: 'Clientes, projetos, estoque, candidaturas: uma base que toda a equipe edita ao mesmo tempo, em tabela, em kanban ou em calendário, com painéis, automações e IA. Sem código, livre e gratuito.',
+			title: 'basedb — o banco de dados colaborativo de toda a equipe',
+			description: 'Todo o seu trabalho no mesmo lugar, editado por toda a equipe ao mesmo tempo: em tabela, em kanban ou em calendário, com formulários, painéis, automações e IA. Sem código, livre e gratuito.',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -891,9 +891,9 @@ export default {
 			text: 'Cada função escreve nas mesmas tabelas, com as mesmas permissões, no mesmo histórico.',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: 'formas de ver seus dados',
-					text: 'Grade, kanban, calendário, linha do tempo, galeria, lista, formulário e questionário, nas mesmas linhas. Cada pessoa escolhe a sua.',
+					text: 'Grade, kanban, calendário, linha do tempo, galeria, lista, mapa, formulário, questionário e quiz, nas mesmas linhas. Cada pessoa escolhe a sua.',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -943,7 +943,7 @@ export default {
 				},
 				import: {
 					title: 'Importar em um gesto',
-					text: 'Arraste um arquivo CSV: colunas e tipos são identificados, a tabela é criada.',
+					text: 'Arraste uma pasta de trabalho Excel ou um CSV: colunas e tipos são identificados, a tabela é criada.',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1036,7 +1036,7 @@ export default {
 				},
 				{
 					q: 'Podemos aproveitar nossas planilhas?',
-					a: 'Sim: salve sua planilha em CSV e arraste-a para o basedb. A importação adivinha o tipo de cada coluna, cria a tabela, e diz linha por linha o que não conseguiu aproveitar.',
+					a: 'Sim: arraste sua pasta de trabalho Excel, ou um CSV, para o basedb. A importação adivinha o tipo de cada coluna, cria a tabela, e diz linha por linha o que não conseguiu aproveitar.',
 				},
 				{
 					q: 'Várias pessoas podem trabalhar juntas, ao mesmo tempo?',
@@ -1361,7 +1361,7 @@ export default {
 		text: 'Cada recurso escreve nas mesmas tabelas, sob as mesmas permissões, no mesmo histórico.',
 		more: 'Saiba mais →',
 		views: {
-			title: 'Oito visões das mesmas linhas',
+			title: 'Dez visões das mesmas linhas',
 			text: 'Colaborativas para toda a equipe, ou pessoais só para você: cada pessoa escolhe sua forma de ler, ninguém copia os dados.',
 			chips: [
 				'Grade',
@@ -1370,8 +1370,10 @@ export default {
 				'Linha do tempo',
 				'Galeria',
 				'Lista',
+				'Mapa',
 				'Formulário',
 				'Questionário',
+				'Quiz',
 			],
 		},
 		forms: {
@@ -1436,7 +1438,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'Importação CSV e JSON',
+				title: 'Importação Excel, CSV e JSON',
 				text: 'Arraste um arquivo: a importação adivinha os tipos, cria a tabela ou completa uma tabela existente, e informa linha por linha o que foi recusado.',
 				href: '/guides/premiers-pas/',
 			},
@@ -1545,6 +1547,66 @@ export default {
 		title: 'O que mudou no basedb',
 		intro: 'Os detalhes de cada mudança estão <a href="https://github.com/eodia/basedb/commits/main">no histórico do repositório</a>. O que vem a seguir: o <a href="/feuille-de-route/">roteiro</a>.',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: 'O mapa, e endereços que se encontram',
+				tag: 'Novo',
+				items: [
+					'<strong>Uma décima visão, o mapa</strong>: cada linha em seu lugar, por seu endereço ou por sua latitude e longitude. Um alfinete assume a cor de um status e abre a ficha com um clique. <a href="/fonctionnalites/vues/#mapa">O mapa</a>',
+					'<strong>Um endereço é localizado de uma vez por todas</strong>, pelo serviço do OpenStreetMap ou pelo que você escolher: os alfinetes aparecem à medida das respostas, e depois imediatamente. Um endereço não encontrado é contado, nunca descartado em silêncio.',
+					'<strong>O formato Endereço</strong> para um texto curto: um clique o abre no mapa, e na ficha, <strong>Localizar endereço</strong> propõe os endereços completos correspondentes. <a href="/fonctionnalites/tables-et-champs/#formatos-de-exibição">Os formatos</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: 'Documentos PDF a partir das suas linhas',
+				tag: 'Novo',
+				items: [
+					'<strong>Um orçamento, uma fatura, uma ficha em PDF</strong>, a partir do menu de uma linha: a ficha para impressão sem configurar nada, ou um modelo — textos que citam os campos, os campos da linha, a tabela das linhas vinculadas com seu total, quebras de página. <a href="/fonctionnalites/documents/">Os documentos</a>',
+					'<strong>Cada um com suas permissões</strong>: um campo oculto para você não aparece no seu PDF. Os vinte idiomas são escritos nele, chinês, japonês e coreano incluídos, e a API retorna o mesmo documento.',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: 'Permissões até a linha, valores padrão, importação do Excel',
+				tag: 'Novo',
+				items: [
+					'<strong>Cada um, suas linhas</strong>: um grupo só vê as linhas de um filtro — “Vendedor” sou eu, “Região” é Norte —, na interface, na API, no servidor MCP como em SQL, onde o PostgreSQL aplica a mesma regra. <a href="/fonctionnalites/droits/#até-a-linha">Até a linha</a>',
+					'<strong>Valores padrão</strong>: um valor fixo, a data de hoje, o momento da criação ou a pessoa que cria a linha, preenchidos na tela e aplicados em todo o resto. <a href="/fonctionnalites/tables-et-champs/#valores-padrão">Valores padrão</a>',
+					'<strong>Arraste uma pasta de trabalho Excel</strong>: escolha a folha, as datas, os valores e as caixas de seleção chegam tal como são, e uma fórmula fornece seu valor. <a href="/guides/premiers-pas/">Primeiros passos</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: 'E-mails',
+				tag: 'Novo',
+				items: [
+					'<strong>Uma etapa “Enviar um e-mail”</strong> nas automações: para um membro, para a pessoa de um campo, para o endereço de um cliente, com os valores da linha no assunto e no texto. <a href="/fonctionnalites/automatisations/">As automações</a>',
+					'<strong>As notificações por e-mail</strong> quando você não as leu, agrupadas, a escolher uma a uma nas suas configurações; e <strong>Senha esquecida</strong> é redefinida por um link. <a href="/fonctionnalites/collaboration/#por-e-mail">Por e-mail</a>',
+					'Basta indicar à instância o servidor de envio do seu e-mail. <a href="/hebergement/variables/#e-mails">As variáveis</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n e um SDK TypeScript',
+				tag: 'Novo',
+				items: [
+					'<strong>Nós para o n8n</strong>: ler e escrever as linhas de uma tabela a partir de um workflow, e disparar um a cada linha criada, alterada ou excluída — por verificação ou por webhook assinado. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>Um SDK TypeScript</strong>, com os tipos das suas tabelas gerados a partir da sua instância: uma tabela ou um campo que não existe é um erro antes mesmo de o programa ser executado. <a href="/integrations/sdk/">O SDK</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: 'O quiz: perguntas que contam pontos',
+				tag: 'Novo',
+				items: [
+					'<strong>Uma nova visão, o quiz</strong>: um questionário em que cada pergunta pode ter sua resposta correta e seus pontos — uma opção, várias, sim ou não, um número, uma data, ou os textos aceitos, sem diferenciar maiúsculas nem acentos. <a href="/fonctionnalites/vues/#quiz">O quiz</a>',
+					'<strong>Corrigido como você quiser</strong>: depois de cada pergunta — em verde, ou em vermelho com a resposta correta, a pontuação que cresce no topo da tela —, no final, ou nunca. Um limite de aprovação faz a tela dizer “Aprovado!” ou “Dessa vez não…”.',
+					'<strong>A pontuação no final</strong>, em um anel que se preenche, e depois a correção de cada pergunta. Ela é escrita em um campo número da tabela: ordene a grade por ele, eis a classificação.',
+					'<strong>Compartilhado por um link, sem trapaça</strong>: a página não recebe nenhuma resposta correta, é o servidor que corrige e que conta. <a href="/fonctionnalites/formulaires-partages/#um-quiz-compartilhado">Um quiz compartilhado</a>',
+					'<strong>Criar uma visão</strong>, na parte de baixo do seletor de visões, organiza os nove tipos em duas famílias — as que mostram as linhas, as que coletam respostas —, cada uma com seu ícone colorido.',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: 'Formulários que dá vontade de preencher',

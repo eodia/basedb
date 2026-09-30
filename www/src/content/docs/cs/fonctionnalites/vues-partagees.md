@@ -18,13 +18,13 @@ Nabídka zobrazení → **Sdílet…**, pak:
 | **Veřejný** | kdokoli, kdo má odkaz, bez účtu |
 | **Přihlášení členové** | člen pracovního prostoru po přihlášení – případně jen z některých skupin |
 
-![Sdílení kalendáře](../../../../assets/screens/partage-vue.png)
+![Sdílení kalendáře](../../../../assets/screens/cs/partage-vue.webp)
 
 Přepínač **Odkaz aktivní** odkaz pozastaví, aniž by se ztratil. Stránka se otevírá mimo
 aplikaci: žádný postranní panel, žádný název databáze ani tabulky – jen zobrazení, jeho
 filtry, jeho sloupce a nic jiného. Kalendář nebo časová osa se v ní čte jako diář.
 
-![Tentýž kalendář otevřený přes svůj odkaz](../../../../assets/screens/vue-partagee.png)
+![Tentýž kalendář otevřený přes svůj odkaz](../../../../assets/screens/cs/vue-partagee.webp)
 
 ## Jménem koho se čte
 

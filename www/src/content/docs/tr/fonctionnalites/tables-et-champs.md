@@ -22,7 +22,7 @@ dönüşür: aksansız, küçük harfli, ayrılmış sözcük içermeyen.
 | Tekli seçim | `text` + `CHECK` | seçenek başına renk, simge ya da görsel |
 | Çoklu seçim | `text[]` + `CHECK` | dizi operatörleriyle filtrelenebilir |
 | E-posta | `text` + `CHECK` | veritabanının doğruladığı, tek tıkla açılan bir adres |
-| Telefon, Barkod | `text` | kısa bir metin ve onun biçimi: arama bağlantısı, sabit genişlikli yazı |
+| Telefon, Barkod, Adres | `text` | kısa bir metin ve onun biçimi: arama bağlantısı, sabit genişlikli yazı, haritaya bağlantı |
 | URL | `text` + `CHECK` | giriş sırasında tamamlanır (`exemple.fr` → `https://exemple.fr`) |
 | Kişi | `uuid` | çalışma alanının bir üyesi; onu atamak kendisine [haber verir](/basedb/tr/fonctionnalites/collaboration/) |
 | Otomatik numara | `bigint` (identity) | zaten var olan satırları da numaralandırır; kimse elle girmez |
@@ -38,7 +38,7 @@ Her tablo ayrıca **sistem sütunlarını** taşır: `_id` (UUID v7), `_created_
 yazılamaz. Izgara bunları sütun menüsünde **Sistem bilgileri** altında toplar: her tabloda
 bulunurlar, ama pek azında işe yararlar.
 
-![Hesaplanan bir süre, bir arama ve bir sayım içeren bir tablonun ızgarası](../../../../assets/screens/grille.png)
+![Hesaplanan bir süre, bir arama ve bir sayım içeren bir tablonun ızgarası](../../../../assets/screens/tr/grille.webp)
 
 ## Veritabanının koruduğu kısıtlamalar
 
@@ -55,8 +55,8 @@ Foreign-key constraints:
 
 ## Görüntüleme biçimleri
 
-Para birimi, Yüzde, Süre, Derecelendirme, Telefon ve Barkod birer tür gibi seçilir, ama aslında
-**biçimdir**: sütun bir sayı ya da metin olarak kalır, yalnızca okunuşu değişir.
+Para birimi, Yüzde, Süre, Derecelendirme, Telefon, Barkod ve Adres birer tür gibi seçilir, ama
+aslında **biçimdir**: sütun bir sayı ya da metin olarak kalır, yalnızca okunuşu değişir.
 
 | Biçim | Neyin üzerinde | Nasıl okunur ve girilir |
 |---|---|---|
@@ -66,10 +66,29 @@ Para birimi, Yüzde, Süre, Derecelendirme, Telefon ve Barkod birer tür gibi se
 | Derecelendirme | bir sayı | 1 ile 10 arası yıldız, tek tıkla ayarlanır |
 | Telefon | kısa bir metin | bir arama bağlantısı |
 | Barkod | kısa bir metin | sabit genişlikli yazıyla |
+| Adres | kısa bir metin | haritaya bir bağlantı; satır ayrıntılarında **Adres bul**, tam yazılmış uygun adresleri önerir; [Harita](/basedb/tr/fonctionnalites/vues/#harita) görünümü onu yerleştirir |
 
 Bir biçim, kayıtlı değerlere dokunmadan sonradan değiştirilebilir (alanın düzenleme ekranında
 **Görüntüleme**). Biçim değeri sınırlamaz: 5'lik bir ölçekte 7 olan derecelendirme 7 olarak
 kalır.
+
+## Varsayılan değerler
+
+Bir alanın düzenlenmesinde, **Varsayılan değer**, onsuz oluşturulan bir satırın ne alacağını
+belirler:
+
+| Seçim | Üzerinde | Oluşturulan satır alır |
+|---|---|---|
+| Sabit bir değer | çoğu tür | seçilen değer — “Yeni” durumu, 3 önceliği |
+| Bugünün tarihi | bir tarih | kişinin saat diliminde, oluşturulduğu gün |
+| Oluşturulma anı | bir tarih ve saat | tam saat |
+| Satırı oluşturan kişi | bir kişi | onu kim oluşturduysa — “Sorumlu: ben” |
+
+Yeni satır ayrıntıları ve formlar önceden doldurulmuş açılır; alanı boşaltmak onu boş bırakır.
+Varsayılan değer her oluşturma için geçerlidir — arayüz, API, MCP, içe aktarma, paylaşılan form,
+otomasyon —, kişinin değiştiremediği bir alanda dahi: bu, tablonun kuralıdır. Var olan satırlar
+değişmez ve doğrudan SQL ile yapılan bir ekleme hiçbirini almaz: bunu uygulayan basedb'dir,
+sütun değil.
 
 ## Formüller
 
@@ -174,7 +193,7 @@ Zengin metin yapay zeka tarafından doldurulamaz: bir model metin yazar, temizle
 Veritabanının **Yapı** ekranı — kenar çubuğundaki **⋯** menüsünde — tabloları ve alanlarını listeler: ekleme, yeniden adlandırma, zorunlu kılma, yeniden sıralama,
 açıklama yazma, görüntülenen alanı belirleme.
 
-![Bir veritabanının Yapı ekranı](../../../../assets/screens/structure.png)
+![Bir veritabanının Yapı ekranı](../../../../assets/screens/tr/structure.webp)
 
 Yapıyı değiştirmek **Yönetim** düzeyini gerektirir. Bu düzey olmadan ekran incelenebilir ama
 hiçbir şey sunmaz: ne düğme, ne kalem, ne tutamaç — zorunluluk ve görüntülenen alan belirtilir,

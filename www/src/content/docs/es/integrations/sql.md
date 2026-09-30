@@ -25,7 +25,7 @@ las descripciones (`COMMENT ON`).
 El **+** de la barra de pestañas, o el menú **⋯** de la base → **Consulta SQL**: un editor
 con resaltado y autocompletado, cuyo resultado se muestra en la misma cuadrícula que tus tablas.
 
-![Una consulta guardada y dos vistas SQL colocadas entre las tablas](../../../../assets/screens/requete-sql.png)
+![Una consulta guardada y dos vistas SQL colocadas entre las tablas](../../../../assets/screens/es/requete-sql.webp)
 
 - **Cada uno lee con sus permisos**: el nivel Gestión abarca toda la base, escrituras incluidas; los
   demás miembros escriben SQL en solo lectura, donde una tabla cerrada no existe y un campo
@@ -52,6 +52,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+Esta cuenta es la propietaria de la base de datos: lo lee todo, y los permisos de basedb no se le
+aplican. Para una herramienta de BI, crea más bien un rol aparte con sus propios `GRANT`. Si una
+tabla lleva una [regla de filas](/basedb/es/fonctionnalites/droits/#hasta-la-fila), PostgreSQL le
+aplica la seguridad por filas: un rol de este tipo no ve en ella ninguna fila sin el atributo
+`BYPASSRLS` o una política propia.
 
 ## Escribir en SQL
 

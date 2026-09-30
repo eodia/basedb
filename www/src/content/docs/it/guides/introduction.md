@@ -7,7 +7,7 @@ description: Che cos’è basedb e cosa lo distingue dai fogli di calcolo collab
 che ospiti tu stesso — con una differenza che determina tutto il resto: **i tuoi dati
 vivono in vere tabelle PostgreSQL**, tipizzate e con nomi leggibili.
 
-![La griglia di una tabella in basedb](../../../../assets/screens/grille.png)
+![La griglia di una tabella in basedb](../../../../assets/screens/it/grille.webp)
 
 ## Una promessa semplice
 
@@ -39,8 +39,8 @@ scrittura.
 - [Tabelle e campi](/basedb/it/fonctionnalites/tables-et-champs/) tipizzati, relazioni che
   sono vere chiavi esterne — anche multiple —, formule calcolate da PostgreSQL, ricerche e
   aggregazioni attraverso le relazioni.
-- Otto [viste](/basedb/it/fonctionnalites/vues/): griglia, kanban, calendario, sequenza
-  temporale, galleria, elenco, modulo, questionario — collaborative o personali.
+- Dieci [viste](/basedb/it/fonctionnalites/vues/): griglia, kanban, calendario, sequenza
+  temporale, galleria, elenco, mappa, modulo, questionario, quiz — collaborative o personali.
 - [Moduli](/basedb/it/fonctionnalites/formulaires-partages/) e
   [viste](/basedb/it/fonctionnalites/vues-partagees/) condivisi tramite link, e calendari a cui
   abbonarsi da un’agenda.

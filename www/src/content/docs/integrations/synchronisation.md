@@ -6,7 +6,7 @@ description: Prévenir un canal Slack, relier un agenda, tenir une table à jour
 L’écran **Intégrations** d’une base s’ouvre depuis le menu du profil, en bas à gauche. Il
 demande le niveau **Gestion** et réunit ce qui relie la base au reste de vos outils.
 
-![L’écran Intégrations d’une base](../../../assets/screens/integrations.png)
+![L’écran Intégrations d’une base](../../../assets/screens/fr/integrations.webp)
 
 ## Slack
 

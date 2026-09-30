@@ -25,7 +25,7 @@ opisy (`COMMENT ON`).
 **+** na pasku zakładek albo menu **⋯** bazy → **Zapytanie SQL**: edytor z kolorowaniem
 składni i podpowiadaniem, którego wynik wyświetla się w tej samej siatce co twoje tabele.
 
-![Zapisane zapytanie i dwa widoki SQL ułożone wśród tabel](../../../../assets/screens/requete-sql.png)
+![Zapisane zapytanie i dwa widoki SQL ułożone wśród tabel](../../../../assets/screens/pl/requete-sql.webp)
 
 - **Każdy czyta tam ze swoimi uprawnieniami**: poziom Zarządzanie ma całą bazę, łącznie z
   zapisami; pozostali członkowie piszą SQL tylko do odczytu, w którym zamknięta tabela nie
@@ -52,6 +52,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+To konto jest właścicielem bazy: czyta wszystko, a uprawnienia basedb go nie obejmują. Dla
+narzędzia BI stwórz raczej odrębną rolę z własnymi `GRANT`. Jeśli tabela ma
+[regułę wierszy](/basedb/pl/fonctionnalites/droits/#aż-do-wiersza), PostgreSQL włącza na niej
+bezpieczeństwo na poziomie wiersza: taka rola nie widzi w niej żadnego wiersza bez atrybutu
+`BYPASSRLS` albo własnej polityki.
 
 ## Zapis w SQL
 

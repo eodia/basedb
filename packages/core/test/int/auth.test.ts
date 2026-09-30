@@ -98,6 +98,9 @@ afterAll(async () => {
   await container?.stop()
 })
 
+/** The code a reset mail carries on a line of its own, when no link is known. */
+const codeIn = (body: string) => body.split('\n\n')[1] ?? ''
+
 describe('§2.5 — no answer distinguishes an account that exists', () => {
   it('answers the same code for a wrong password and an unknown address', async () => {
     const wrong = await codeOf(login(pools, KEY, { email: 'alice@exemple.fr', password: 'faux' }))
@@ -455,10 +458,10 @@ describe('§2.3 — password reset', () => {
     await requestPasswordReset(pools, {
       email: 'oubli@exemple.fr',
       mailer: async (m) => {
-        secret = m.body
+        secret = codeIn(m.body)
       },
     })
-    expect(secret).not.toBe('')
+    expect(secret).toMatch(/^[\w-]{43}$/)
 
     const chosen = 'un mot de passe tout neuf et long'
     await confirmPasswordReset(pools, KEY, { secret, password: chosen })
@@ -470,6 +473,25 @@ describe('§2.3 — password reset', () => {
       'RESET_TOKEN_INVALID',
     )
   }, 120_000)
+
+  it('sends a link to the interface when its address is known — never one from the request', async () => {
+    const target = await makeUser('lien@exemple.fr', 'Lien Test')
+    await setPassword(pools, KEY, { userId: target, password: PASSWORD })
+    let body = ''
+    await requestPasswordReset(pools, {
+      email: 'lien@exemple.fr',
+      publicUrl: 'https://basedb.exemple.fr/',
+      mailer: async (m) => {
+        body = m.body
+      },
+    })
+    const link = /https:\/\/basedb\.exemple\.fr\/\?reinitialisation=([\w-]{43})/.exec(body)
+    expect(link).not.toBeNull()
+    await confirmPasswordReset(pools, KEY, {
+      secret: link?.[1] as string,
+      password: 'encore un mot de passe tout neuf',
+    })
+  })
 
   it('refuses an unknown or expired secret with the same code', async () => {
     for (const secret of ['inconnu', '', 'a'.repeat(43)]) {
@@ -485,7 +507,7 @@ describe('§2.3 — password reset', () => {
 
     const secrets: string[] = []
     const mailer = async (m: { body: string }) => {
-      secrets.push(m.body)
+      secrets.push(codeIn(m.body))
     }
     await requestPasswordReset(pools, { email: 'deuxfois@exemple.fr', mailer })
     await requestPasswordReset(pools, { email: 'deuxfois@exemple.fr', mailer })

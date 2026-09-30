@@ -9,7 +9,7 @@ numele lor real. Fiecare membru al bazei poate scrie o interogare, o poate **sal
 poate face din ea o **vizualizare SQL**: o vizualizare PostgreSQL reală, așezată printre tabele,
 pe care o citesc și `psql` și instrumentele dumneavoastră.
 
-![O interogare salvată, deschisă din rubrica „Interogări”; deasupra, două vizualizări SQL așezate printre tabele](../../../../assets/screens/requete-sql.png)
+![O interogare salvată, deschisă din rubrica „Interogări”; deasupra, două vizualizări SQL așezate printre tabele](../../../../assets/screens/ro/requete-sql.webp)
 
 ## Fiecare cu permisiunile sale
 
@@ -25,7 +25,7 @@ lansează:
   calificând tabelul; o scriere este refuzată. Rezultatul poartă eticheta **Permisiunile
   dumneavoastră**.
 
-![Eticheta „Permisiunile dumneavoastră”: interogarea vede doar tabelele și câmpurile deschise persoanei](../../../../assets/screens/sql-vos-droits.png)
+![Eticheta „Permisiunile dumneavoastră”: interogarea vede doar tabelele și câmpurile deschise persoanei](../../../../assets/screens/ro/sql-vos-droits.webp)
 
 Nu ecranul face selecția: PostgreSQL însuși vă aplică permisiunile, coloană cu coloană, pe un
 rol care vă este propriu. O interogare nu vă poate deci arăta nimic din ce nu v-ar arăta grila,
@@ -39,7 +39,7 @@ sau în meniul ei din bara laterală) o redenumește, schimbă cine o vede sau o
 **Ștergeți** este de asemenea în meniul ei, printr-un clic dreapta. O filă care o arăta își
 păstrează textul.
 
-![Salvarea unei interogări: numele ei, ce arată și cine o vede](../../../../assets/screens/requete-enregistrer.png)
+![Salvarea unei interogări: numele ei, ce arată și cine o vede](../../../../assets/screens/ro/requete-enregistrer.webp)
 
 | Domeniu | Cine o vede | Cine o poate crea și modifica |
 |---|---|---|
@@ -63,7 +63,7 @@ O **vizualizare SQL** este o vizualizare PostgreSQL reală din schema bazei. Î�
 arată că este o vizualizare. Un clic o deschide într-o filă: rândurile ei în grilă,
 **Reîmprospătați** pentru a le reciti.
 
-![Vizualizarea „Factures à encaisser”, deschisă din bara laterală](../../../../assets/screens/vue-sql.png)
+![Vizualizarea „Factures à encaisser”, deschisă din bara laterală](../../../../assets/screens/ro/vue-sql.webp)
 
 Se creează din meniul **⋯** al bazei → **Vizualizare SQL nouă…** sau dintr-o filă SQL:
 **⋯** → **Creați o vizualizare SQL…**, iar interogarea din filă devine definiția ei. Dialogul
@@ -74,7 +74,7 @@ cere:
 - **interogarea**: un singur `SELECT`, pe tabelele și pe celelalte vizualizări ale bazei.
   PostgreSQL refuză ce refuză, iar editorul indică locul.
 
-![Dialogul unei vizualizări SQL: etichetă și aspect, nume tehnic, interogare, descriere](../../../../assets/screens/vue-sql-dialogue.png)
+![Dialogul unei vizualizări SQL: etichetă și aspect, nume tehnic, interogare, descriere](../../../../assets/screens/ro/vue-sql-dialogue.webp)
 
 Vizualizarea se citește apoi sub numele ei, din interfață, ca și din `psql` sau din instrumentul
 dumneavoastră de BI:

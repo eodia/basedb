@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb — 协作式数据库，每张数据表都是真正的 PostgreSQL 数据表',
-			description: '网格与八种视图、公式、共享表单与共享视图、评论、自动化、仪表盘、细化到字段的权限、完整的历史记录、REST API 与 MCP 服务器——全部建立在名称清晰的真正 PostgreSQL 数据表之上。自托管，AGPL-3.0。',
+			description: '网格与十种视图、公式、表单、测验与共享视图、评论、自动化、仪表盘、细化到字段的权限、完整的历史记录、REST API 与 MCP 服务器——全部建立在名称清晰的真正 PostgreSQL 数据表之上。自托管，AGPL-3.0。',
 		},
 		changelog: {
 			title: '更新日志 — basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: '八种视图',
-								text: '网格、看板、日历、时间线、画廊、列表、表单、问卷。',
+								title: '十种视图',
+								text: '网格、看板、日历、时间线、画廊、列表、地图、表单、问卷、测验。',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb — 所有工作，汇聚一处',
-			description: '客户、项目、库存、招聘：一个数据库，整个团队实时共同编辑，可以用表格、看板或日历查看，配有仪表盘、自动化和 AI。无需代码，自由且免费。',
+			title: 'basedb — 全团队的协作式数据库',
+			description: '所有工作汇聚一处，整个团队实时共同编辑：可以用表格、看板或日历查看，配有表单、仪表盘、自动化和 AI。无需代码，自由且免费。',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -880,9 +880,9 @@ export default {
 			text: '每个功能都写入同样的数据表，遵循同样的权限，记入同样的历史记录。',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: '种方式查看您的数据',
-					text: '网格、看板、日历、时间线、画廊、列表、表单和问卷，读取同样的行。每个人选择自己喜欢的方式。',
+					text: '网格、看板、日历、时间线、画廊、列表、地图、表单、问卷和测验，读取同样的行。每个人选择自己喜欢的方式。',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -932,7 +932,7 @@ export default {
 				},
 				import: {
 					title: '一步导入',
-					text: '拖入一个 CSV 文件：类型会自动推断，数据表随即创建。',
+					text: '拖入一个 Excel 工作簿或 CSV 文件：列和类型会自动推断，数据表随即创建。',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1025,7 +1025,7 @@ export default {
 				},
 				{
 					q: '能导入我们原来的表格吗？',
-					a: '可以：把您的表格另存为 CSV，拖进 basedb 就行。导入功能会自动识别每一列的类型，创建数据表，并逐行说明哪些内容没能导入。',
+					a: '可以：把您的 Excel 工作簿，或 CSV 文件，直接拖进 basedb。导入功能会自动识别每一列的类型，创建数据表，并逐行说明哪些内容没能导入。',
 				},
 				{
 					q: '可以多人同时使用吗？',
@@ -1350,9 +1350,9 @@ export default {
 		text: '每项功能都写入同样的数据表，遵循同样的权限，记入同样的历史记录。',
 		more: '了解更多 →',
 		views: {
-			title: '同一批行，八种视图',
+			title: '同一批行，十种视图',
 			text: '协作视图供整个团队使用，个人视图只属于自己：每个人选择自己的查看方式，没有人需要复制数据。',
-			chips: ['网格', '看板', '日历', '时间线', '画廊', '列表', '表单', '问卷'],
+			chips: ['网格', '看板', '日历', '时间线', '画廊', '列表', '地图', '表单', '问卷', '测验'],
 		},
 		forms: {
 			title: '共享表单',
@@ -1416,7 +1416,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'CSV 与 JSON 导入',
+				title: 'Excel、CSV 与 JSON 导入',
 				text: '拖入一个文件：导入功能会推断类型，创建数据表或补充现有数据表，并逐行说明哪些内容被拒绝。',
 				href: '/guides/premiers-pas/',
 			},
@@ -1525,6 +1525,66 @@ export default {
 		title: 'basedb 的变化',
 		intro: '每项变更的细节见<a href="https://github.com/eodia/basedb/commits/main">仓库的提交历史</a>。接下来要做的：<a href="/feuille-de-route/">路线图</a>。',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: '地图，以及找到自己位置的地址',
+				tag: '新功能',
+				items: [
+					'<strong>第十个视图，地图</strong>：根据地址，或纬度和经度，把每一行放在它的位置上。图钉会显示状态对应的颜色，点击即可打开行详情。<a href="/fonctionnalites/vues/#地图">地图</a>',
+					'<strong>地址只需定位一次，之后一直有效</strong>：由 OpenStreetMap 的服务，或您选择的服务完成——图钉会随着结果陆续出现，此后立即显示。找不到的地址会被计入，而不会被悄悄忽略。',
+					'<strong>地址格式</strong>用于短文本：点击即可在地图上打开，在行详情中，<strong>查找地址</strong>会提供匹配的完整地址。<a href="/fonctionnalites/tables-et-champs/#显示格式">格式</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: '从您的行生成的 PDF',
+				tag: '新功能',
+				items: [
+					'<strong>报价单、发票、PDF 详情页</strong>，从行的菜单生成：无需任何设置即可打印的详情页，或一个模板——引用列的文本、行字段、带合计的关联行表格、分页符。<a href="/fonctionnalites/documents/">文档</a>',
+					'<strong>各自持有的权限</strong>：对您隐藏的字段不会出现在您的 PDF 中。basedb 的二十种语言均可书写，包括中文、日语和韩语，API 也会返回同一份文档。',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: '细化到行的权限、默认值、Excel 导入',
+				tag: '新功能',
+				items: [
+					'<strong>各自只看各自的行</strong>：用户组只能看到符合筛选条件的行——"销售是我""地区是北方"——在界面、API、MCP 服务器以及 SQL 中都是如此，PostgreSQL 会应用同一条规则。<a href="/fonctionnalites/droits/#细化到行">细化到行</a>',
+					'<strong>默认值</strong>：固定值、今天的日期、创建时刻，或创建该行的人——会预先填入界面，并在其他任何地方同样生效。<a href="/fonctionnalites/tables-et-champs/#默认值">默认值</a>',
+					'<strong>拖入一个 Excel 工作簿</strong>：选择工作表，日期、金额和复选框会按原样导入，公式则取其计算结果。<a href="/guides/premiers-pas/">快速上手</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: '邮件',
+				tag: '新功能',
+				items: [
+					'<strong>自动化中的"发送邮件"步骤</strong>：发送给团队成员、字段中指定的人、客户的地址，主题和正文可以引用该行的值。<a href="/fonctionnalites/automatisations/">自动化</a>',
+					'<strong>邮件通知</strong>会在未读时合并发送，可以在设置中逐项选择；<strong>忘记密码</strong>也可以通过链接重置。<a href="/fonctionnalites/collaboration/#通过邮件">通过邮件</a>',
+					'只需在实例中填写您邮箱的发送服务器即可。<a href="/hebergement/variables/#邮件">变量</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n 与 TypeScript SDK',
+				tag: '新功能',
+				items: [
+					'<strong>n8n 节点</strong>：从工作流读取和写入数据表的行，并在每次创建、修改或删除一行时启动工作流——通过拉取或带签名的 Webhook。<a href="/integrations/n8n/">n8n</a>',
+					'<strong>TypeScript SDK</strong>，数据表的类型由您的实例生成：不存在的数据表或字段，在执行之前就会报错。<a href="/integrations/sdk/">SDK</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: '测验：会计分的问题',
+				tag: '新功能',
+				items: [
+					'<strong>全新视图——测验</strong>：一种问卷，每道题都可以设置正确答案和分值——单选、多选、是否、数字、日期，或不区分大小写和重音符号的可接受文本。<a href="/fonctionnalites/vues/#测验">测验</a>',
+					'<strong>公布方式随您选择</strong>：每道题之后——正确显示为绿色，错误则显示为红色并给出正确答案，屏幕顶部的分数随之增加——，最后，或从不。设置及格线后，结束页面会显示"及格了！"或"这次未能通过…"。',
+					'<strong>最后显示分数</strong>，用一个逐渐填满的圆环呈现，随后是每道题的答案公布。分数会写入数据表的一个数字字段：按它给网格排序，就是排行榜。',
+					'<strong>通过链接分享，无法作弊</strong>：页面不会收到任何正确答案，评分和计分都由服务器完成。<a href="/fonctionnalites/formulaires-partages/#共享测验">共享测验</a>',
+					'<strong>创建视图</strong>位于视图选择器底部，将九种视图分为两类——查看行和收集回复——每种都配有彩色图标。',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: '让人愿意填写的表单',

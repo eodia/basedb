@@ -46,7 +46,7 @@ docker compose pull
 docker compose up -d
 ```
 
-A `BASEDB_VERSION` egy adott verziót (`0.3.2`) rögzít a legutóbbi (`latest`) helyett.
+A `BASEDB_VERSION` egy adott verziót (`0.4.0`) rögzít a legutóbbi (`latest`) helyett.
 
 Indításkor a basedb **magától frissíti a katalógusát**: sorrendben, mindegyiket a saját
 tranzakciójában alkalmazza azokat a migrációkat, amelyekkel az Ön verziója még nem

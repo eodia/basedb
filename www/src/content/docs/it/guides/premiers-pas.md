@@ -41,11 +41,13 @@ Più avanti, una formula (`DAYS([Échéance], TODAY())`), una ricerca (la città
 o un’aggregazione (l’importo totale per cliente) si aggiungono allo stesso modo — vedi
 [Tabelle e campi](/basedb/it/fonctionnalites/tables-et-champs/).
 
-Puoi anche **importare un file** CSV o JSON: l’importazione riconosce i tipi, ti lascia
-correggerli, crea la tabella o completa una tabella esistente, e indica riga per riga cosa
-rifiuta.
+Puoi anche **importare un file** — una cartella di lavoro Excel (`.xlsx`), un CSV o un JSON:
+l’importazione riconosce i tipi, ti lascia correggerli, crea la tabella o completa una tabella
+esistente, e indica riga per riga cosa rifiuta. Da una cartella di lavoro con più fogli, scegli
+il foglio; le date, gli importi e le caselle di controllo vengono ripresi come li tiene Excel,
+e una formula restituisce il suo valore.
 
-![Menu di un database](../../../../assets/screens/menu-base.png)
+![Menu di un database](../../../../assets/screens/it/menu-base.webp)
 
 ## 3. Inserire e filtrare
 
@@ -61,7 +63,7 @@ Il selettore delle viste, a sinistra di «Filtra», propone «Tutte le righe» e
 Crea un **kanban** raggruppato per «Statut»: trascinare una scheda da una colonna all’altra
 modifica la riga.
 
-![Un kanban per stato](../../../../assets/screens/kanban.png)
+![Un kanban per stato](../../../../assets/screens/it/kanban.webp)
 
 ## 5. Condividere un modulo
 

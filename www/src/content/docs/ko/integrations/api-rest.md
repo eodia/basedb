@@ -33,7 +33,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | 읽기 쉬운 식: `statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | 반환할 열 |
-| `limit`, `cursor` | 암호화된 커서로 페이지 나누기(응답의 `next_cursor`) |
+| `limit`, `after` | 암호화된 커서로 페이지 나누기: 한 페이지의 `meta.next_cursor`를 `after`로 전달하면 다음 페이지가 옵니다(`meta.has_next_page`) |
 | `links=display` | 관계를 표시 값과 함께 반환 |
 | `count=exact` | 전체 개수, 최대 100,000 |
 | `variables=raw` | 긴 텍스트를 [행의 값](/basedb/ko/fonctionnalites/tables-et-champs/#서식-있는-텍스트와-변수)으로 채우지 않고 `{{colonne}}`를 포함해 작성한 그대로 반환 |
@@ -85,4 +85,4 @@ JavaScript 예제를 보여 줍니다. 이 문서는 **내 권한에 따라 필�
 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). 이름, 경로, 오류 코드는 모든 언어에서
 동일하게 유지됩니다.
 
-![데이터베이스의 자동 생성 문서](../../../../assets/screens/documentation-api.png)
+![데이터베이스의 자동 생성 문서](../../../../assets/screens/ko/documentation-api.webp)

@@ -4,6 +4,7 @@ import {
   type DashboardCopilotAnswer,
   ERROR_CODES,
   type QueryResult,
+  type QuizAnswer,
   questionCards,
 } from '@basedb/contracts'
 import {
@@ -30,6 +31,13 @@ import {
   renameGroup,
   setGroupMembership,
 } from './admin/groups.js'
+import {
+  type EffectiveRows,
+  type RowAccess,
+  effectiveRows,
+  rowAccess,
+  setRowRule,
+} from './admin/rows.js'
 import {
   type InvitationPreview,
   type PendingInvitation,
@@ -357,6 +365,14 @@ import {
   proposeMigration,
   reclaimStaleMigrations,
 } from './ddl/migration.js'
+import { type RenderedDocument, renderDocument } from './documents/render.js'
+import {
+  type DocumentTemplate,
+  createDocumentTemplate,
+  deleteDocumentTemplate,
+  listDocumentTemplates,
+  updateDocumentTemplate,
+} from './documents/templates.js'
 import {
   type EnvironmentSummary,
   type Family,
@@ -407,9 +423,11 @@ import {
 } from './forms/shared-view.js'
 import {
   type FormSharing,
+  type QuizOutcome,
   type ShareSettings,
   type SharedForm,
   admitSharedView,
+  checkSharedAnswer,
   deleteFormShare,
   getFormSharing,
   openSharedForm,
@@ -417,6 +435,12 @@ import {
   saveFormSharing,
   submitSharedForm,
 } from './forms/shares.js'
+import {
+  type GeocoderConfig,
+  type Place,
+  geocodeAddresses,
+  searchAddresses,
+} from './geo/geocode.js'
 import { drainHistory, startDrainLoop } from './history/drain.js'
 import {
   type Deletion,
@@ -437,6 +461,7 @@ import {
   listIntegrations,
   testIntegration,
 } from './integrations/slack.js'
+import { deliverMails, purgeMails, startMailLoop } from './mail/outbox.js'
 import {
   type Proposal,
   type ProposedField,
@@ -460,6 +485,7 @@ import {
   createRecord,
   createRecords,
 } from './records/create.js'
+import { type FieldDefault, setFieldDefault } from './records/defaults.js'
 import {
   type InverseLinkBlock,
   type InverseLinks,
@@ -588,6 +614,8 @@ export { DEFAULT_TEMPLATES_URL, resetTemplateCatalog } from './templates/catalog
 export type { TemplateDraft, TemplateDraftRequest } from './templates/draft.js'
 export type { SourceKind } from './sync/sources.js'
 export type { FieldFormat, FieldFormatInput } from './catalog/formats.js'
+export type { DefaultKind, FieldDefault } from './records/defaults.js'
+export { DEFAULTS_BY_KIND } from './records/defaults.js'
 export type { Member } from './catalog/members.js'
 export type { Proposal, ProposedField } from './proposals/index.js'
 export type { TargetPolicy } from './webhooks/target.js'
@@ -646,6 +674,8 @@ export type {
   ShareState,
   SharedForm,
   SharedQuestion,
+  SharedQuiz,
+  QuizOutcome,
 } from './forms/shares.js'
 export type { SharedViewField, SharedViewPage } from './forms/shared-view.js'
 export { MAX_ENVIRONMENT_CHARS } from './environments/family.js'
@@ -786,6 +816,7 @@ export type {
   FieldRule,
 } from './admin/fields.js'
 export type { GroupSummary, SystemGroup } from './admin/groups.js'
+export type { EffectiveRows, RowAccess, RowAccessField, RowAccessGroup } from './admin/rows.js'
 export type { UserSummary } from './admin/users.js'
 export type { ProjectBase, ProjectSummary } from './catalog/projects.js'
 export type { AgentNotice } from './agent/describe.js'
@@ -800,6 +831,12 @@ export type {
 } from './agent/records.js'
 export { AGENT_BOUNDS } from './agent/records.js'
 export { OPERATORS } from './records/filter.js'
+export { parseAddress, smtpMailer } from './mail/transport.js'
+export type { GeocoderConfig, Place } from './geo/geocode.js'
+export type { DocumentTemplate } from './documents/templates.js'
+export type { DocumentSpec, DocumentBlock, RowsSource } from './documents/spec.js'
+export type { RenderedDocument } from './documents/render.js'
+export type { SmtpConfig } from './mail/smtp.js'
 
 /**
  * The write budgets of chapter 09 §6.4, evaluated AFTER THE FACT by the process that
@@ -855,6 +892,16 @@ export interface KernelConfig {
    * that serves as the way back in.
    */
   readonly mailer?: Mailer
+  /**
+   * Where the interface is reached, `BASEDB_PUBLIC_URL`: the links a mail carries point
+   * there. Absent, a mail says what happened without a link.
+   */
+  readonly publicUrl?: string
+  /**
+   * The geocoding service that turns addresses into points (chapter 11 §1.9) — `url: null`
+   * for none: only the points already known are given.
+   */
+  readonly geocoder?: GeocoderConfig
   /**
    * Pool sizing and timeouts, per pool — for an entry point whose surface demands
    * shorter ones than the defaults (the agent surface: 5 s statements, 1 s locks,
@@ -937,6 +984,8 @@ export interface Kernel {
     readonly dateFormat: 'dmy' | 'iso'
     readonly weekStart: 0 | 1
     readonly mutedNotifications: readonly string[]
+    /** The natures also sent by mail when left unread (chapter 16 §2.4). */
+    readonly mailedNotifications: readonly string[]
     /** The language chosen, or `null`: the browser's. */
     readonly locale: string | null
   }>
@@ -1313,6 +1362,18 @@ export interface Kernel {
     ctx: RequestContext,
     request: { tableId: string; userId: string },
   ): Promise<EffectiveMask>
+  /** Below the grid, next to the fields: each group's rule on the rows of one table (05 §16). */
+  rowAccess(ctx: RequestContext, request: { tableId: string }): Promise<RowAccess>
+  /** Keeps a group to the rows a filter retains, or lifts the rule (`null`). */
+  setRowRule(
+    ctx: RequestContext,
+    request: { groupId: string; tableId: string; rule: string | null; sessionId: string },
+  ): Promise<RowAccess>
+  /** How many rows of a table one person sees, and through which group (05 §16). */
+  effectiveRows(
+    ctx: RequestContext,
+    request: { tableId: string; userId: string },
+  ): Promise<EffectiveRows>
   createTable(
     ctx: RequestContext,
     request: {
@@ -1473,6 +1534,14 @@ export interface Kernel {
     request: { fieldId: string; format: FieldFormatInput },
   ): Promise<FieldFormat>
   /**
+   * Sets what a row created without the field takes — a value, today, now, the person
+   * creating (chapter 04 §1.5) — or removes it (`null`). No migration: the kernel applies it.
+   */
+  setFieldDefault(
+    ctx: RequestContext,
+    request: { fieldId: string; default: unknown },
+  ): Promise<FieldDefault | null>
+  /**
    * Replaces a formula's expression — chapter 04 §7.7: a stored one rewrites its column;
    * one that becomes computed at read time loses it.
    */
@@ -1632,13 +1701,21 @@ export interface Kernel {
     respondent: RequestContext | null
     requestId: string
   }): Promise<SharedForm>
-  /** Answers a shared form: one row, on the publisher's authority. */
+  /** Answers a shared form: one row, on the publisher's authority — a quiz, scored. */
   submitSharedForm(request: {
     token: string
     respondent: RequestContext | null
     requestId: string
     values: Readonly<Record<string, unknown>>
-  }): Promise<{ readonly received: true }>
+  }): Promise<{ readonly received: true; readonly quiz: QuizOutcome | null }>
+  /** Grades one answer of a shared quiz that shows its right answers as it goes. */
+  checkSharedAnswer(request: {
+    token: string
+    respondent: RequestContext | null
+    requestId: string
+    field: string
+    value: unknown
+  }): Promise<{ readonly right: boolean; readonly points: number; readonly correct: QuizAnswer }>
   /**
    * Reads a shared data view — chapter 15 §10: its shown fields and a page of its rows, on
    * the publisher's authority. No right on the table is needed.
@@ -1897,6 +1974,23 @@ export interface Kernel {
   }): Promise<OpenedFile>
   /** Where the files go, for the startup log; and the largest deposit, for the adapter. */
   readonly files: { readonly storage: string; readonly maxBytes: number }
+  /** Whether mail can leave: the operator configured a transport (chapter 16 §2.4). */
+  readonly mail: { readonly available: boolean }
+  /** Whether addresses can become points: a geocoding service is configured. */
+  readonly geocoding: { readonly available: boolean }
+  /**
+   * The points of addresses (chapter 11 §1.9): those known at once, a few more asked of the
+   * geocoding service, and how many are left — the caller asks again for those.
+   */
+  geocode(
+    ctx: RequestContext,
+    request: { addresses: readonly unknown[]; language?: string },
+  ): Promise<{ readonly places: Readonly<Record<string, Place | null>>; readonly pending: number }>
+  /** What a text typed in an address field may be: five propositions at most. */
+  searchAddresses(
+    ctx: RequestContext,
+    request: { query: string; language?: string },
+  ): Promise<Place[]>
   /**
    * The history of one row, newest first — chapter 07 §9. `read` on its table; the
    * detail of a field the reader may not read is withheld, and so is a modification of
@@ -1988,6 +2082,8 @@ export interface Kernel {
   dispatchWebhooks(): Promise<number>
   /** Moves what the capture buffered into the journals now; returns the rows moved. */
   drainHistory(): Promise<number>
+  /** One pass of the mail queue, now; returns the mails that left (chapter 16 §2.4). */
+  deliverMails(): Promise<number>
   /**
    * The catalog of base templates (chapter 20): the instance's, the site's, the carried
    * ones — the official ones in `locale`, the reader's language, when it has their texts.
@@ -2137,6 +2233,37 @@ export interface Kernel {
     requestId: string
     parameter: string
   }): Promise<ValueChoice[]>
+  /** The document templates of a table (chapter 21): names to readers, definitions to builders. */
+  listDocumentTemplates(
+    ctx: RequestContext,
+    request: { tableId: string },
+  ): Promise<DocumentTemplate[]>
+  createDocumentTemplate(
+    ctx: RequestContext,
+    request: { tableId: string; label: unknown; spec: unknown },
+  ): Promise<DocumentTemplate>
+  updateDocumentTemplate(
+    ctx: RequestContext,
+    request: { tableId: string; id: string; label?: unknown; spec?: unknown },
+  ): Promise<DocumentTemplate>
+  deleteDocumentTemplate(
+    ctx: RequestContext,
+    request: { tableId: string; id: string },
+  ): Promise<void>
+  /**
+   * A row as a PDF, with a template of its table or — `templateId: null` — as its sheet;
+   * read with the caller's rights (chapter 21 §3).
+   */
+  renderDocument(
+    ctx: RequestContext,
+    request: {
+      tableId: string
+      recordId: string
+      templateId: string | null
+      /** A definition not saved yet, seen before saving — building the table. */
+      draft?: { label: unknown; spec: unknown }
+    },
+  ): Promise<RenderedDocument>
   /** The automations of a base (chapter 17). */
   listAutomations(ctx: RequestContext, request: { baseId: string }): Promise<Automation[]>
   createAutomation(
@@ -2264,6 +2391,7 @@ export function startKernel(config: KernelConfig): Kernel {
   let stopPurge: (() => void) | undefined
   let stopAutomations: (() => void) | undefined
   let stopSync: (() => void) | undefined
+  let stopMail: (() => void) | undefined
   /** The listening connection (chapter 10 §3.1): the drain's wake-up, the live signals. */
   const listener = new Listener(config.connectionString, [DRAIN_CHANNEL, LIVE_CHANNEL], (error) => {
     console.error('connexion d’écoute :', error instanceof Error ? error.message : error)
@@ -2535,7 +2663,12 @@ export function startKernel(config: KernelConfig): Kernel {
     elevate: (token, password) => elevate(pools, instanceKey(), token, password),
     dropElevation: (token) => dropElevation(pools, token),
     requestPasswordReset: (email, acceptLanguage) =>
-      requestPasswordReset(pools, { email, mailer: config.mailer, acceptLanguage }),
+      requestPasswordReset(pools, {
+        email,
+        mailer: config.mailer,
+        acceptLanguage,
+        publicUrl: config.publicUrl ?? null,
+      }),
     confirmPasswordReset: (request) => confirmPasswordReset(pools, instanceKey(), request),
 
     oidcProviders: async (tenantRef) => {
@@ -2689,6 +2822,9 @@ export function startKernel(config: KernelConfig): Kernel {
     fieldAccess: (ctx, request) => fieldAccess(pools, ctx, request),
     setFieldRule: (ctx, request) => setFieldRule(pools, ctx, request),
     effectiveFieldMask: (ctx, request) => effectiveFieldMask(pools, ctx, request),
+    rowAccess: (ctx, request) => rowAccess(pools, ctx, request),
+    setRowRule: (ctx, request) => setRowRule(pools, ctx, request),
+    effectiveRows: (ctx, request) => effectiveRows(pools, ctx, request),
     createTable: (ctx, request) => createTable(pools, ctx, request),
     createLinkField: (ctx, request) => createLinkField(pools, ctx, request),
     addField: (ctx, request) => addField(pools, ctx, request),
@@ -2714,6 +2850,7 @@ export function startKernel(config: KernelConfig): Kernel {
     setFieldLabel: (ctx, request) => setFieldLabel(pools, ctx, request),
     reorderFields: (ctx, request) => reorderFields(pools, ctx, request),
     setFieldFormat: (ctx, request) => setFieldFormat(pools, ctx, request),
+    setFieldDefault: (ctx, request) => setFieldDefault(pools, ctx, request),
     setFormula: (ctx, request) => setFormula(pools, ctx, request),
     listMembers: (ctx) => listMembers(pools, ctx),
     listViews: (ctx, request) => listViews(pools, ctx, request),
@@ -2766,6 +2903,7 @@ export function startKernel(config: KernelConfig): Kernel {
     deleteFormShare: (ctx, request) => deleteFormShare(pools, ctx, request),
     openSharedForm: (request) => openSharedForm(pools, request),
     submitSharedForm: (request) => submitSharedForm(pools, request),
+    checkSharedAnswer: (request) => checkSharedAnswer(pools, request),
     openSharedView: async (request) => {
       const view = await admitSharedView(pools, request)
       const base = await projectBase(pools, view.authority, view.baseId)
@@ -2862,6 +3000,7 @@ export function startKernel(config: KernelConfig): Kernel {
     automationCopilot: (ctx, transport, request) =>
       automationCopilotTurn(pools, ctx, transport, request, {
         targets: webhookTargets,
+        mailAvailable: config.mailer !== undefined,
         readSql: (baseId, sql) =>
           runConsoleSql(pools, ctx, config.encryptionKey, config.connectionString, {
             baseId,
@@ -2922,12 +3061,20 @@ export function startKernel(config: KernelConfig): Kernel {
     uploadFile: (ctx, request) => uploadFile(files, ctx, request),
     openFile: (request) => openFile(files, request, new Date()),
     files: { storage: storage.description, maxBytes: files.maxBytes },
+    mail: { available: config.mailer !== undefined },
+    geocoding: { available: (config.geocoder?.url ?? null) !== null },
+    geocode: (ctx, request) =>
+      geocodeAddresses(pools, ctx, config.geocoder ?? { url: null, userAgent: 'basedb' }, request),
+    searchAddresses: (_ctx, request) =>
+      searchAddresses(config.geocoder ?? { url: null, userAgent: 'basedb' }, request),
     deleteRecord: (ctx, options) => deleteRecord(pools, ctx, options),
     recordHistory: (ctx, request) => recordHistory(pools, ctx, request),
     baseHistory: (ctx, request) => baseHistory(pools, ctx, request),
     revertRevision: (ctx, request) => revertRevision(pools, ctx, request),
     restoreRecord: (ctx, request) => restoreRecord(pools, ctx, request),
     drainHistory: () => drainHistory(pools),
+    deliverMails: () =>
+      deliverMails(pools, { mailer: config.mailer, publicUrl: config.publicUrl ?? null }),
     undoTransaction: (ctx, request) => undoTransaction(pools, ctx, request),
     listTemplates: (ctx, locale) => listTemplates(pools, ctx, templates, locale),
     getTemplate: (ctx, key, locale) => getTemplate(pools, ctx, templates, key, locale),
@@ -3069,6 +3216,11 @@ export function startKernel(config: KernelConfig): Kernel {
       )
       return choicesOf(named, await projectBase(pools, admitted.authority, admitted.baseId))
     },
+    listDocumentTemplates: (ctx, request) => listDocumentTemplates(pools, ctx, request),
+    createDocumentTemplate: (ctx, request) => createDocumentTemplate(pools, ctx, request),
+    updateDocumentTemplate: (ctx, request) => updateDocumentTemplate(pools, ctx, request),
+    deleteDocumentTemplate: (ctx, request) => deleteDocumentTemplate(pools, ctx, request),
+    renderDocument: (ctx, request) => renderDocument(pools, ctx, request),
     listAutomations: (ctx, request) => listAutomations(pools, ctx, request),
     createAutomation: (ctx, request) => createAutomation(pools, ctx, webhookTargets, request),
     updateAutomation: (ctx, request) => updateAutomation(pools, ctx, webhookTargets, request),
@@ -3079,6 +3231,7 @@ export function startKernel(config: KernelConfig): Kernel {
       runAutomations(pools, {
         targets: webhookTargets,
         instanceKey,
+        mailAvailable: config.mailer !== undefined,
         ...(options?.aiTransport === undefined ? {} : { aiTransport: options.aiTransport }),
       }),
     listComments: (ctx, request) => listComments(pools, ctx, request),
@@ -3128,6 +3281,9 @@ export function startKernel(config: KernelConfig): Kernel {
       // Notifications past their retention, presence nobody refreshed: every ten minutes.
       const purge = setInterval(() => {
         purgeCollaboration(pools).catch((error) => console.error('purge :', error))
+        pools
+          .withConnection('catalog', purgeMails)
+          .catch((error) => console.error('purge des courriels :', error))
       }, 600_000)
       stopPurge = () => clearInterval(purge)
       // The synced tables due, every minute (chapter 19 §3.3).
@@ -3140,10 +3296,18 @@ export function startKernel(config: KernelConfig): Kernel {
         {
           targets: webhookTargets,
           instanceKey,
+          mailAvailable: config.mailer !== undefined,
           ...(options?.aiTransport === undefined ? {} : { aiTransport: options.aiTransport }),
         },
         DRAIN_INTERVAL_MS,
         (error) => console.error('automatisations :', error),
+      )
+      // The mail queue (chapter 16 §2.4): notifications left unread, automations' mails.
+      stopMail = startMailLoop(
+        pools,
+        { mailer: config.mailer, publicUrl: config.publicUrl ?? null },
+        5_000,
+        (error) => console.error('envoi des courriels :', error),
       )
       stopDrain = startDrainLoop(pools, DRAIN_INTERVAL_MS, (error) => {
         // A drain that fails stops nothing: the buffers keep the rows, and the next pass
@@ -3166,6 +3330,7 @@ export function startKernel(config: KernelConfig): Kernel {
       stopPurge?.()
       stopAutomations?.()
       stopSync?.()
+      stopMail?.()
       if (drainSoon !== null) clearTimeout(drainSoon)
       await listener.stop()
       await Promise.all(workers.map((w) => w.stop()))

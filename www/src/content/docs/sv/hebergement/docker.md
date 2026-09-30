@@ -29,8 +29,8 @@ Avbildningen körs som användaren `node`, på Node 22, och deklarerar en hälso
 | Tagg | Innehåll |
 |---|---|
 | `latest` | den senaste publicerade versionen |
-| `0.3` | den senaste versionen 0.3.x |
-| `0.3.2` | exakt den versionen |
+| `0.4` | den senaste versionen 0.4.x |
+| `0.4.0` | exakt den versionen |
 
 ## Tjänsterna
 

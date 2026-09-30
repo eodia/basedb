@@ -40,11 +40,13 @@ Később egy képlet (`DAYS([Échéance], TODAY())`), egy kikeresés (az ügyfé
 egy aggregálás (az ügyfelenkénti teljes összeg) ugyanígy adható hozzá – lásd:
 [Táblák és mezők](/basedb/hu/fonctionnalites/tables-et-champs/).
 
-**Importálhat egy fájlt** is CSV vagy JSON formátumban: az importálás kitalálja a típusokat,
-hagyja, hogy kijavítsa őket, létrehozza a táblát vagy kiegészít egy meglévőt, és soronként
-megmondja, mit utasít el.
+**Importálhat egy fájlt** is – egy Excel-munkafüzetet (`.xlsx`), egy CSV-t vagy egy JSON-t: az
+importálás kitalálja a típusokat, hagyja, hogy kijavítsa őket, létrehozza a táblát vagy
+kiegészít egy meglévőt, és soronként megmondja, mit utasít el. Egy több munkalapos
+munkafüzetből kiválasztja a munkalapot; a dátumokat, az összegeket és a jelölőnégyzeteket úgy
+veszi át, ahogyan az Excel tartja őket, és egy képlet megadja az értékét.
 
-![Egy adatbázis menüje](../../../../assets/screens/menu-base.png)
+![Egy adatbázis menüje](../../../../assets/screens/hu/menu-base.webp)
 
 ## 3. Adatbevitel és szűrés
 
@@ -60,7 +62,7 @@ A nézetválasztó a „Szűrés” gombtól balra az „Összes sor” lehetős
 kínálja. Hozzon létre egy „Statut” szerint csoportosított **kanbant**: ha egy kártyát egyik
 oszlopból a másikba húz, a sor módosul.
 
-![Kanban állapot szerint](../../../../assets/screens/kanban.png)
+![Kanban állapot szerint](../../../../assets/screens/hu/kanban.webp)
 
 ## 5. Űrlap megosztása
 

@@ -41,11 +41,13 @@ Plus tard, une formule (`JOURS([Échéance]; AUJOURDHUI())`), une recherche (la 
 ou un cumul (le montant total par client) s’ajoutent de la même façon — voir
 [Tables et champs](/basedb/fonctionnalites/tables-et-champs/).
 
-Vous pouvez aussi **importer un fichier** CSV ou JSON : l’import devine les types, vous laisse
-les corriger, crée la table ou complète une table existante, et dit ligne par ligne ce qu’il
-refuse.
+Vous pouvez aussi **importer un fichier** — un classeur Excel (`.xlsx`), un CSV ou un JSON :
+l’import devine les types, vous laisse les corriger, crée la table ou complète une table
+existante, et dit ligne par ligne ce qu’il refuse. D’un classeur de plusieurs feuilles, vous
+choisissez la feuille ; les dates, les montants et les cases à cocher sont repris tels qu’Excel
+les tient, et une formule donne sa valeur.
 
-![Menu d’une base](../../../assets/screens/menu-base.png)
+![Menu d’une base](../../../assets/screens/fr/menu-base.webp)
 
 ## 3. Saisir et filtrer
 
@@ -61,7 +63,7 @@ Le sélecteur de vues, à gauche de « Filtrer », propose « Toutes les lignes 
 Créez un **kanban** groupé par « Statut » : glisser une carte d’une colonne à l’autre modifie la
 ligne.
 
-![Un kanban par statut](../../../assets/screens/kanban.png)
+![Un kanban par statut](../../../assets/screens/fr/kanban.webp)
 
 ## 5. Partager un formulaire
 

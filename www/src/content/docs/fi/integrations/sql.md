@@ -25,7 +25,7 @@ kuvaukset (`COMMENT ON`).
 Välilehtipalkin **+** tai tietokannan **⋯**-valikko → **SQL-kysely**: editori, jossa on
 korostus ja täydennys ja jonka tulos näkyy samassa ruudukossa kuin taulukkosi.
 
-![Tallennettu kysely ja kaksi SQL-näkymää taulukoiden joukossa](../../../../assets/screens/requete-sql.png)
+![Tallennettu kysely ja kaksi SQL-näkymää taulukoiden joukossa](../../../../assets/screens/fi/requete-sql.webp)
 
 - **Kukin lukee omilla käyttöoikeuksillaan**: Hallintaoikeus-taso näkee koko tietokannan
   kirjoitukset mukaan lukien; muut jäsenet kirjoittavat SQL:ää vain luku -tilassa, jossa suljettua
@@ -53,6 +53,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+Tämä tili on tietokannan omistaja: se lukee kaiken, eikä basedb:n käyttöoikeuksia sovelleta
+siihen. BI-työkalua varten luo mieluummin erillinen rooli omilla `GRANT`-käskyillään. Jos
+taulukolla on [rivisääntö](/basedb/fi/fonctionnalites/droits/#rivitasolle-asti), PostgreSQL
+soveltaa siihen rivitason suojausta: tällainen rooli ei näe siinä yhtään riviä ilman
+`BYPASSRLS`-määritettä tai omaa käytäntöään.
 
 ## Kirjoittaminen SQL:llä
 

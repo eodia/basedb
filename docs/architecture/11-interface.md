@@ -101,9 +101,11 @@ partir d'une position. Ce qui change est ce que l'interface cesse d'offrir :
 
 ### 1.6 Les vues enregistrées
 
-Une table se montre de huit façons, chacune une vue `_basedb.view_def` (chapitre 02) :
-**grille**, **kanban**, **calendrier**, **chronologie**, **galerie**, **liste** — qui
-montrent des lignes — et **formulaire**, **questionnaire** — qui en demandent une. Le sélecteur de vues est le
+Une table se montre de dix façons, chacune une vue `_basedb.view_def` (chapitre 02) :
+**grille**, **kanban**, **calendrier**, **chronologie**, **galerie**, **liste**, **carte**
+— qui montrent des lignes — et **formulaire**, **questionnaire**, **quiz** — qui en demandent une ;
+« Créer une vue », au bas du sélecteur, les range en ces deux familles, chaque sorte une
+tuile à l'icône de sa couleur (`KIND_INFO.tone`). Le sélecteur de vues est le
 premier élément de la barre d'outils, **à gauche de « Filtrer »**. Il ouvre la liste :
 « Toutes les lignes » d'abord — la grille de la table, que personne n'a enregistrée ni ne
 peut supprimer, où tout lecteur retrouve toutes les lignes avec sa surcharge locale —,
@@ -132,11 +134,14 @@ construit pas.
 | Chronologie | **début** ; fin, regroupement par liste de choix ou lien, titre, couleur ; échelle jour, semaine ou mois ; **dépendances** : une relation de la table vers elle-même (« Dépend de ») | champs dans la barre |
 | Galerie | titre, **image de couverture** (un champ image ou document), recadrée ou entière ; taille des cartes | champs sous le titre |
 | Liste | titre ; regroupement par liste de choix, relation ou personne | champs sur la ligne, après le titre |
-| Formulaire, questionnaire | — | questions cochées et ordonnées ; pour chacune un intitulé, une aide, un exemple de réponse, « réponse obligatoire » et « poser seulement si » une réponse précédente ; titre, présentation ; apparence (thème, couleur, police, alignement) ; sous « Plus d'options » : boutons d'accueil et d'envoi, numéros, barre de progression, passage automatique, message et bouton de fin, confettis, « proposer une nouvelle réponse » |
+| Carte | **une adresse** (un texte, au format « Adresse » d'abord), **ou une latitude et une longitude** (deux nombres distincts) ; titre, couleur selon une liste de choix | le titre, en info-bulle de l'épingle ; la fiche s'ouvre au clic |
+| Formulaire, questionnaire | — | questions cochées et ordonnées ; pour chacune un intitulé, une aide, un exemple de réponse, « préremplir avec la date du jour » pour une date, « réponse obligatoire » et « poser seulement si » une réponse précédente ; titre, présentation ; apparence (thème, couleur, police, alignement) ; sous « Plus d'options » : boutons d'accueil et d'envoi, numéros, barre de progression, passage automatique, message et bouton de fin, confettis, « proposer une nouvelle réponse » |
+| Quiz | au moins une **bonne réponse** | ceux du questionnaire, et pour chaque question sa bonne réponse (`correct`) et ses points (`points`, 1 à 100, 1 par défaut) ; **Notation** : corriger après chaque question, à la fin ou jamais (`reveal`), seuil de réussite en pourcentage (`pass_percent`), champ nombre qui reçoit le score (`score_field`) |
 
 Chaque pivot est prérempli sur le premier champ qui peut le tenir, si bien qu'une table
 qui admet la nature obtient sa vue en un clic ; une nature qu'elle n'admet pas — pas de
-liste de choix pour un kanban, pas de date pour un calendrier — dit pourquoi et renvoie à
+liste de choix pour un kanban, pas de date pour un calendrier, ni adresse ni deux
+nombres pour une carte — dit pourquoi et renvoie à
 l'écran « Structure ». Un champ obligatoire de la table est toujours demandé par un
 formulaire, verrouillé : la ligne serait refusée sans lui. Une vue qui montre des lignes
 peut reprendre le filtre et le tri affichés au moment de la créer.
@@ -156,7 +161,8 @@ jusqu'à mille lignes, au-delà desquelles l'écran dit de resserrer le filtre p
 prétendre tout montrer. Glisser une ligne d'un jour à l'autre, ou une barre, la décale
 d'autant de jours, sa fin avec elle et son heure conservée ; le bord droit d'une barre
 change la fin seule. Les lignes sans date sont comptées, et listées dans le calendrier,
-pour qu'on les date. Le formulaire écrit **une** ligne par **un** `POST` à l'envoi, comme
+pour qu'on les date. La carte lit jusqu'à deux mille lignes et place chacune par son
+adresse ou ses coordonnées (§1.9). Le formulaire écrit **une** ligne par **un** `POST` à l'envoi, comme
 le panneau de création (§2.5) ; le questionnaire pose les mêmes questions une par écran,
 Entrée pour continuer.
 
@@ -182,6 +188,29 @@ reçu une certaine réponse (`show_if` : `est`, `n'est pas`, `contient`, `ne con
 `vaut au moins`, `vaut au plus`, `a une réponse`, `est sans réponse`). Une question cachée
 n'est ni exigée ni envoyée, même si l'on y avait répondu avant de changer d'avis ; cacher
 une question cache aussi celles qui dépendaient d'elle.
+
+**La date du jour.** Une question date peut arriver déjà remplie de la date du jour
+(`prefill: 'today'`), une question date et heure de la minute où l'on ouvre le formulaire —
+dans le calendrier de la personne qui répond, pas celui du serveur. Elle la garde, la
+change ou l'efface ; « Envoyer une autre réponse » la remet. L'option ne s'accepte que sur
+un champ date ou date et heure.
+
+**Le quiz.** Un questionnaire dont les questions peuvent avoir une **bonne réponse**, qui
+vaut des points (`@basedb/contracts` : `quiz.ts`, les mêmes règles à l'écran et au
+serveur). La forme de la bonne réponse suit le champ : un choix, les choix d'une liste
+multiple (tous et rien qu'eux), oui ou non, un nombre, un jour, ou les textes acceptés d'un
+texte court, d'une adresse e-mail ou web — comparés sans casse ni accents (`looseText`).
+Un texte long, une relation, un fichier sont posés sans être notés. Corrigé **après chaque
+question** (`reveal: 'each'`), une réponse notée se vérifie à « Vérifier » ou Entrée, puis
+reste figée : les choix montrent la bonne réponse en vert et la mauvaise prise en rouge, un
+bandeau dit la bonne réponse, le score grandit en haut de l'écran ; juste, la suite vient
+seule si la vue le permet. L'écran de fin remplace la coche par un anneau qui se remplit
+jusqu'au score, dit « Réussi ! » ou « Pas cette fois… » quand il y a un seuil, et, sauf
+`reveal: 'never'`, récapitule chaque question notée. Une question qu'une réponse précédente
+a cachée ne compte ni pour ni contre. Dans l'application, la vue connaît ses bonnes
+réponses : l'écran compte le score et l'écrit dans `score_field` avec la ligne ; par un lien
+partagé, c'est le serveur (chapitre 15). Un quiz neuf envoie son score dans un champ nombre
+nommé « Score », « Points » ou « Note » quand la table en a un, et ne le pose pas.
 
 **Des défauts intelligents.** Une vue formulaire neuve pose ce qu'une personne répond,
 pas ce que l'équipe remplit ensuite : la personne assignée, les relations, un statut ou une
@@ -340,6 +369,54 @@ celle qui ne tient plus reste hors de PostgreSQL, « à corriger », sa définit
 (`SQL_VIEW_BROKEN` à la lecture). Une table n'est pas purgée sous une vue qui la lit
 (`DEPENDENT_OBJECT`) ; la purge d'une base emporte ses vues avant ses tables. Les vues ne
 suivent pas encore une base d'un environnement à l'autre, ni dans un modèle.
+
+### 1.9 La carte et le géocodage
+
+**Placer une ligne.** Une carte place chaque ligne par une **adresse** — un texte, que le
+format « Adresse » (chapitre 04 §2.11) désigne d'avance — ou par **deux nombres**, sa
+latitude et sa longitude, lus tels quels : une latitude au-delà de ±90 ou une longitude
+au-delà de ±180 ne placent rien. Le `spec` nomme `address_field`, ou `latitude_field` et
+`longitude_field` : l'un ou l'autre est exigé (`champ_pivot_manquant`), et les deux nombres
+sont deux champs distincts. `title_field` donne l'info-bulle d'une épingle, `color_field`
+— une liste de choix — sa couleur ; un clic ouvre la fiche, dont l'épingle se cerne.
+
+**Le géocodage.** Une adresse devient un point par le service de géocodage de l'instance :
+Nominatim, celui d'OpenStreetMap, par défaut ; `BASEDB_GEOCODER_URL` en nomme un autre qui
+parle le même protocole — un Nominatim qu'on héberge soi-même —, `off` n'en veut aucun. La
+politique d'usage du service public est la règle : une requête par seconde au plus, d'une
+seule file pour toute l'instance ; un `User-Agent` qui nomme l'instance
+(`basedb (+BASEDB_PUBLIC_URL)`) ; chaque réponse gardée dans `_basedb.geocode`, par tenant,
+pour qu'une adresse ne soit demandée qu'une fois — une adresse introuvable aussi, sans quoi
+elle serait redemandée à chaque regard sur la carte. Une panne du service n'est pas retenue :
+l'adresse sera redemandée plus tard. Une adresse se compare espaces réduits, en minuscules.
+
+`POST /api/v1/<tenant>/geo/geocode` `{ addresses }` (cinq cents au plus) rend aussitôt ce
+qui est connu, demande au service cinq adresses nouvelles au plus, et dit combien restent
+(`pending`) ; la carte rappelle tant que ce nombre baisse, si bien que les épingles
+apparaissent au fil des réponses, sans requête qui attende une minute. Sans service, seul
+ce qui est déjà connu est rendu.
+
+**Saisir une adresse.** Dans la fiche, un champ « Adresse » offre « Voir sur la carte »
+(OpenStreetMap, dans un nouvel onglet) et, quand l'instance a un service, « Trouver
+l'adresse » : une recherche **à la demande**, qui propose jusqu'à cinq adresses écrites
+comme on les écrit — numéro et rue, code postal et ville, pays — parmi lesquelles on choisit
+(`GET /api/v1/<tenant>/geo/search?q=`, trois caractères au moins). Jamais au fil de la
+frappe : le service public l'interdit, et une requête par modification suffit.
+
+**À l'écran.** La carte lit les lignes de la vue — son filtre, son tri — jusqu'à deux mille,
+et le dit au-delà. Elle se cadre une fois sur ses épingles ; les rechargements suivants
+gardent le cadre du lecteur. Une pastille compte les lignes placées, les adresses encore à
+situer et les lignes sans position — jamais écartées en silence. Leaflet la dessine sur les
+tuiles que choisit l'exploitant : celles d'OpenStreetMap par défaut, `BASEDB_MAP_TILES` (un
+modèle d'adresse en `{z}/{x}/{y}`) et `BASEDB_MAP_ATTRIBUTION` pour d'autres ; les épingles
+sont des cercles tracés par la carte, sans image à charger. Une carte ne se partage pas par
+un lien public.
+
+**Ce qui sort de l'instance.** Le texte des adresses part vers le service de géocodage, et
+le navigateur de chaque lecteur demande les tuiles au serveur de tuiles, son adresse IP
+avec. Une instance qui ne doit rien laisser sortir met `BASEDB_GEOCODER_URL=off` — seules
+les coordonnées placent alors les lignes, avec les adresses déjà connues — et sert ses
+propres tuiles.
 
 ---
 
@@ -818,7 +895,7 @@ générée et dans les réponses de l'API.
 |---|---|
 | Libellé et description d'une base, d'une table ou d'un champ ; position d'une table ou d'un champ | Création, suppression ou conversion d'une table ou d'un champ |
 | Désignation de la colonne d'affichage | Obligatoire, unique, triable, recherchable |
-| Ordre et libellé des options d'une liste | Valeur d'une option, longueur maximale, bornes, valeur par défaut |
+| Ordre et libellé des options d'une liste ; valeur par défaut d'un champ (chapitre 04 §1.5) | Valeur d'une option, longueur maximale, bornes |
 | `expose_to_agents`, permissions et rôles | Cible ou comportement de suppression d'un lien ; création ou modification d'une formule |
 
 Tout réglage de la colonne de droite ouvre un **récapitulatif avant validation** : objets
@@ -875,14 +952,23 @@ et non à un raccourci qui la contournerait. *Importer* mène à l'assistant ci-
 **L'assistant, en trois étapes** — aucune ne se saute, aucune n'envoie quoi que ce soit avant la
 dernière.
 
-1. **Le fichier.** Déposé ou choisi : CSV, TSV, TXT ou JSON, 20 Mio et 50 000 lignes au plus. Le
+1. **Le fichier.** Déposé ou choisi : classeur Excel (`.xlsx`), CSV, TSV, TXT ou JSON, 20 Mio et
+   50 000 lignes au plus. Le
    séparateur d'un texte est **deviné** — le candidat qui découpe les premières lignes en un même
    nombre de cellules, plus d'une, le plus souvent, les guillemets respectés : compter les virgules
    choisirait `,` pour un export français en `;` dont les décimales s'écrivent `12,5` — et se
    change à la main. Le fichier est lu en UTF-8, puis en Windows-1252 s'il n'en est pas : c'est ce
    qu'un tableur français exporte quand personne n'a rien demandé. Un JSON est une liste
    d'objets (les clés sont les colonnes), une liste de listes, ou l'un des deux sous une clé
-   `data`, `rows`, `records`, `items` ou `results`, ou encore une valeur par ligne. Les cinq
+   `data`, `rows`, `records`, `items` ou `results`, ou encore une valeur par ligne. Un classeur
+   est lu **dans le navigateur, sans bibliothèque** (`lib/xlsx.ts`) : c'est un zip de parties XML,
+   que `DecompressionStream` décompresse ; le classeur nomme ses feuilles, les chaînes partagées
+   portent les textes, et les styles disent quels nombres sont des dates — Excel range une date en
+   nombre de jours, que seul son format distingue d'un montant. Une date y devient `2026-03-05`,
+   une date et heure `2026-03-05T14:30:00`, une durée (`[h]:mm`) un nombre de secondes, une formule
+   sa **valeur calculée** ; un texte `007` reste un texte. Un classeur de plusieurs feuilles en
+   importe une à la fois, au choix ; les feuilles vides ne sont pas proposées. L'ancien format
+   binaire `.xls` n'est pas lu : l'écran demande de l'enregistrer en `.xlsx`. Les cinq
    premières lignes sont montrées, avec « la première ligne est l'en-tête » à cocher.
 2. **La destination.** *Une table existante* — proposée : celle dont le menu ou la barre d'outils
    a été utilisé — ou *une nouvelle table*.
@@ -1152,6 +1238,6 @@ l'écran sur ce qu'il peut montrer, et l'adresse le dit.
 
 1. **Groupement et totaux de colonne** en grille : aucun contrat d'agrégat n'existe dans
    l'API, et un agrégat sur champ masqué est refusé.
-2. **Import de fichier** : traité au §6.7 pour le CSV, le TSV, le TXT et le JSON. Restent ouverts
-   les fichiers Excel et XML, l'import des champs lien (par la colonne d'affichage de leur cible),
+2. **Import de fichier** : traité au §6.7 pour Excel (`.xlsx`), le CSV, le TSV, le TXT et le JSON.
+   Restent ouverts l'ancien `.xls`, le XML, l'import des champs lien (par la colonne d'affichage de leur cible),
    les lots partiels (`atomic: false`) et un import asynchrone au-delà de 50 000 lignes.

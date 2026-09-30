@@ -12,7 +12,7 @@ Rækkedetaljerne for en række har en fane **Kommentarer** mellem »Detaljer« o
 `@` for at **omtale** et medlem, og Ctrl+Enter for at sende. Hver person kan redigere eller
 slette sine egne kommentarer.
 
-![En samtale om et projekt](../../../../assets/screens/commentaires.png)
+![En samtale om et projekt](../../../../assets/screens/da/commentaires.webp)
 
 Det er nok at kunne læse rækken for at kommentere den. En omtalt person, der ikke kan læse den,
 får ingen besked — og forfatteren får det at vide i stedet for at tro, at beskeden er sendt.
@@ -30,7 +30,15 @@ Klokken øverst til højre tæller det ulæste. Fire ting havner der:
 Når du åbner en notifikation, åbnes rækken. **Markér alle som læst** nulstiller tælleren;
 notifikationer gemmes i 90 dage.
 
-![En modtaget omtale](../../../../assets/screens/notifications.png)
+### Via e-mail
+
+Når instansen har en [afsendelsesserver](/basedb/da/hebergement/variables/#e-mails), sendes en
+notifikation, der har været **ti minutter uden at blive læst**, også som e-mail: én samlet
+e-mail for alle de notifikationer, der venter, med et link til hver række. Det, du læser i tide,
+sendes ikke. Under **Indstillinger › Notifikationer** har hver type to kontakter: i basedb, og
+via e-mail.
+
+![En modtaget omtale](../../../../assets/screens/da/notifications.webp)
 
 ## Realtid
 
@@ -74,6 +82,6 @@ Ctrl+Z fortryder din seneste skrivning — se [historikken](/basedb/da/fonctionn
 
 ## Begrænsninger
 
-- Notifikationer bliver i basedb: indtil videre sendes ingen via e-mail.
+- Ingen e-mail uden en afsendelsesserver, konfigureret af den driftsansvarlige.
 - Ændres mere end hundrede rækker på én gang, genindlæser skærmen hele siden i stedet for
   række for række.

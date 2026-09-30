@@ -67,6 +67,45 @@ See [Accounts and sign-in](/basedb/en/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | — | credentials |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` for virtual-hosted-style addressing |
 
+## Emails
+
+Without a mail server, basedb sends no email. With one, out go the notifications left unread
+for ten minutes (everyone chooses which ones in **Settings › Notifications**), the emails of
+automations’ **Send an email** step, and the link for a **forgotten password**. Links point to
+`BASEDB_PUBLIC_URL`; without it, an email carries none.
+
+| Variable | Default | Role |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | the SMTP server: your mail provider’s, or a sending service’s |
+| `BASEDB_SMTP_PORT` | `587` | `465` for an encrypted connection from the start |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` on port 465) | `none` only for a relay on the same machine: otherwise the password would travel in the clear |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | — | the sending account’s credentials, if it requires any |
+| `BASEDB_MAIL_FROM` | — | required with `BASEDB_SMTP_HOST`: the sender, `basedb <no-reply@exemple.fr>` |
+
+At startup, the log states the situation: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` An email the server refuses is retried 1, 5, 30, 120 then
+360 minutes later.
+
+## Maps and addresses
+
+The **Map** view places an address thanks to a geocoding service: OpenStreetMap’s (Nominatim)
+by default, queried once per address, at most one request a second, every response kept. The
+map background is made of **tiles** that each reader’s browser loads directly.
+
+| Variable | Default | Role |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | another service that speaks the same protocol (a Nominatim of your own); `off`: none, addresses do not leave the instance and only the latitude and longitude place rows |
+| `BASEDB_MAP_TILES` | OpenStreetMap’s tiles | another tile server, pattern `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | the credit this server requires, at the bottom right of the map |
+
+At startup, the log states which service is used: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## PDF documents
+
+| Variable | Default | Role |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | the image’s Noto fonts | a folder of your own, mounted in the container, that holds `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic`, and for Chinese, Japanese and Korean `NotoSansCJK-Regular.ttc` and `-Bold.ttc` |
+
 ## Base templates
 
 | Variable | Default | Role |

@@ -22,7 +22,7 @@ que vous saisissez (« Échéance ») devient un nom physique lisible (`echeance
 | Liste de choix | `text` + `CHECK` | couleur, pictogramme ou image par option |
 | Choix multiple | `text[]` + `CHECK` | filtrable avec les opérateurs de tableau |
 | E-mail | `text` + `CHECK` | une adresse vérifiée par la base, ouverte d’un clic |
-| Téléphone, Code-barres | `text` | un texte court et son format : lien d’appel, chasse fixe |
+| Téléphone, Code-barres, Adresse | `text` | un texte court et son format : lien d’appel, chasse fixe, lien vers la carte |
 | Lien URL | `text` + `CHECK` | complété à la saisie (`exemple.fr` → `https://exemple.fr`) |
 | Personne | `uuid` | un membre de l’espace ; le désigner le [prévient](/basedb/fonctionnalites/collaboration/) |
 | Numéro automatique | `bigint` identité | numérote aussi les lignes déjà là ; personne ne le saisit |
@@ -38,7 +38,7 @@ Chaque table porte aussi ses **colonnes système** : `_id` (UUID v7), `_created_
 par l’API. La grille les range sous **Informations système**, dans le menu des colonnes :
 elles sont sur chaque table, et utiles sur peu.
 
-![La grille d’une table, avec une durée calculée, une recherche et un décompte](../../../assets/screens/grille.png)
+![La grille d’une table, avec une durée calculée, une recherche et un décompte](../../../assets/screens/fr/grille.webp)
 
 ## Des contraintes tenues par la base
 
@@ -55,7 +55,7 @@ Foreign-key constraints:
 
 ## Formats d’affichage
 
-Monnaie, Pourcentage, Durée, Note, Téléphone et Code-barres se choisissent comme des types,
+Monnaie, Pourcentage, Durée, Note, Téléphone, Code-barres et Adresse se choisissent comme des types,
 mais ce sont des **formats** : la colonne reste un nombre ou un texte, seule la lecture change.
 
 | Format | Sur | Se lit et se saisit |
@@ -66,9 +66,28 @@ mais ce sont des **formats** : la colonne reste un nombre ou un texte, seule la 
 | Note | un nombre | de 1 à 10 étoiles, réglée d’un clic |
 | Téléphone | un texte court | un lien d’appel |
 | Code-barres | un texte court | en chasse fixe |
+| Adresse | un texte court | un lien vers la carte ; dans la fiche, **Trouver l’adresse** propose les adresses qui correspondent, écrites en entier ; la vue [Carte](/basedb/fonctionnalites/vues/#carte) la place |
 
 Un format se change après coup (**Affichage**, dans la modification du champ) sans toucher aux
 valeurs enregistrées. Il ne borne pas la valeur : une note de 7 sur une échelle de 5 reste 7.
+
+## Valeurs par défaut
+
+Dans la modification d’un champ, **Valeur par défaut** fixe ce que prend une ligne créée sans
+lui :
+
+| Choix | Sur | La ligne créée reçoit |
+|---|---|---|
+| Une valeur fixe | la plupart des types | la valeur choisie — un statut « Nouveau », une priorité 3 |
+| La date du jour | une date | le jour de sa création, dans le fuseau de la personne |
+| L’instant de la création | une date et heure | l’heure exacte |
+| La personne qui crée la ligne | une personne | qui l’a créée — « Responsable : moi » |
+
+La fiche nouvelle et les formulaires s’ouvrent préremplis ; vider le champ le laisse vide. Le
+défaut vaut pour toute création — interface, API, MCP, import, formulaire partagé,
+automatisation —, y compris sur un champ que la personne ne peut pas modifier : c’est la règle
+de la table. Les lignes existantes ne changent pas, et une insertion en SQL direct n’en reçoit
+aucun : basedb l’applique, pas la colonne.
 
 ## Formules
 
@@ -176,7 +195,7 @@ Le texte riche ne peut pas être rempli par l’IA : un modèle écrit du texte,
 L’écran **Structure** de la base — dans son menu **⋯** de la barre latérale — liste les tables et leurs champs : ajouter, renommer, rendre obligatoire, réordonner,
 décrire, désigner la colonne d’affichage.
 
-![L’écran Structure d’une base](../../../assets/screens/structure.png)
+![L’écran Structure d’une base](../../../assets/screens/fr/structure.webp)
 
 Changer la structure demande le niveau **Gestion**. Sans lui, l’écran se consulte et ne propose
 rien : ni bouton, ni crayon, ni poignée — l’obligation et la colonne d’affichage sont dites, pas

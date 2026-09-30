@@ -28,7 +28,7 @@ einen Dialog:
 - **Zeilensynchronisierung**: Tabelle für Tabelle Zeilen von einer Umgebung in eine andere
   übertragen, anhand ihrer Kennung.
 
-![Produktion und Staging vergleichen](../../../../assets/screens/environnements.png)
+![Produktion und Staging vergleichen](../../../../assets/screens/de/environnements.webp)
 
 ## Wie basedb weiß, wer was geändert hat
 

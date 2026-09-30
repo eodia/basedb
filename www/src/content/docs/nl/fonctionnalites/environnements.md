@@ -27,7 +27,7 @@ Vanuit het menu van de database, onder **Meer acties**, opent **Omgevingen verge
 - **Rijen synchroniseren**: tabel voor tabel rijen van de ene omgeving naar
   de andere overzetten, op id.
 
-![Productie en acceptatie vergelijken](../../../../assets/screens/environnements.png)
+![Productie en acceptatie vergelijken](../../../../assets/screens/nl/environnements.webp)
 
 ## Hoe basedb weet wie wat heeft gewijzigd
 

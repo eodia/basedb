@@ -457,3 +457,155 @@ describe('a survey that looks its own way and asks only what an answer calls for
     expect(rows.find((r) => r.nom === 'Maxime')).toMatchObject({ email: 'https://maxime.fr' })
   })
 })
+
+describe('a date question that holds the day before an answer', () => {
+  it('is a date question’s only, and the shared link says so', async () => {
+    const arrival = await kernel.addField(admin, { tableId, label: 'Arrivée', kind: 'date' })
+    const create = (fields: unknown[]) =>
+      kernel.createView(admin, {
+        tableId,
+        label: `Essai ${randomUUID()}`,
+        kind: 'form',
+        spec: { fields },
+      })
+    expect(await reasonOf(create([{ field: 'nom', required: true, prefill: 'today' }]))).toBe(
+      'type_de_champ_incompatible',
+    )
+    expect(
+      await reasonOf(
+        create([
+          { field: 'nom', required: true },
+          { field: arrival.name, prefill: 'demain' },
+        ]),
+      ),
+    ).toBe('valeur_invalide')
+
+    const form = await create([
+      { field: 'nom', required: true },
+      { field: arrival.name, prefill: 'today' },
+    ])
+    expect(form.spec.fields).toMatchObject([
+      { field: 'nom', prefill: null },
+      { field: arrival.name, prefill: 'today' },
+    ])
+    const { share } = await kernel.saveFormSharing(admin, { tableId, viewId: form.id, ...settings })
+    const shared = await kernel.openSharedForm({
+      token: share?.token as string,
+      respondent: null,
+      requestId: randomUUID(),
+    })
+    expect(shared.questions.map((q) => [q.name, q.prefill])).toEqual([
+      ['nom', null],
+      [arrival.name, 'today'],
+    ])
+  })
+})
+
+describe('a quiz shared by a link', () => {
+  it('keeps its right answers on the server, grades each answer, and writes the score', async () => {
+    const score = await kernel.addField(admin, { tableId, label: 'Score', kind: 'number' })
+    const capital = await kernel.addField(admin, {
+      tableId,
+      label: 'Capitale',
+      kind: 'select',
+      options: [
+        { value: 'paris', label: 'Paris' },
+        { value: 'lyon', label: 'Lyon' },
+      ],
+    })
+    const year = await kernel.addField(admin, { tableId, label: 'Année', kind: 'number' })
+    const river = await kernel.addField(admin, { tableId, label: 'Fleuve', kind: 'short_text' })
+    const quiz = await kernel.createView(admin, {
+      tableId,
+      label: 'Quiz de culture',
+      kind: 'quiz',
+      spec: {
+        fields: [
+          { field: 'nom', required: true },
+          { field: capital.name, correct: 'paris', points: 2 },
+          { field: year.name, correct: 1789 },
+          { field: river.name, correct: ['Seine', 'La Seine'] },
+        ],
+        score_field: score.name,
+        reveal: 'each',
+        pass_percent: 50,
+      },
+    })
+    const { share } = await kernel.saveFormSharing(admin, { tableId, viewId: quiz.id, ...settings })
+    const token = share?.token as string
+
+    const form = await kernel.openSharedForm({ token, respondent: null, requestId: randomUUID() })
+    expect(form).toMatchObject({ kind: 'quiz', quiz: { reveal: 'each', passPercent: 50 } })
+    expect(form.questions.map((q) => [q.name, q.points])).toEqual([
+      ['nom', null],
+      [capital.name, 2],
+      [year.name, 1],
+      [river.name, 1],
+    ])
+    // The page is told what a question is worth, never what its right answer is.
+    expect(JSON.stringify(form)).not.toContain('1789')
+    expect(JSON.stringify(form)).not.toContain('Seine')
+
+    const check = (field: string, value: unknown) =>
+      kernel.checkSharedAnswer({ token, respondent: null, requestId: randomUUID(), field, value })
+    expect(await check(capital.name, 'lyon')).toEqual({ right: false, points: 0, correct: 'paris' })
+    expect(await check(river.name, '  la SEINE ')).toMatchObject({ right: true, points: 1 })
+    expect(await reasonOf(check('nom', 'Zoé'))).toBe('question_non_notee')
+
+    const answered = await kernel.submitSharedForm({
+      token,
+      respondent: null,
+      requestId: randomUUID(),
+      values: {
+        nom: 'Quiz Zoé',
+        [capital.name]: 'paris',
+        [year.name]: 1788,
+        [river.name]: 'seine',
+      },
+    })
+    expect(answered.quiz).toMatchObject({ score: 3, max: 4, passed: true })
+    expect(answered.quiz?.marks.map((m) => [m.field, m.right, m.correct])).toEqual([
+      [capital.name, true, 'paris'],
+      [year.name, false, 1789],
+      [river.name, true, ['Seine', 'La Seine']],
+    ])
+    const rows = await kernel.listRecords(admin, { tableId })
+    // A number reads back as its decimal text.
+    expect(Number(rows.rows.find((r) => r.nom === 'Quiz Zoé')?.[score.name])).toBe(3)
+  })
+
+  it('keeps the right answers to itself when its author says never', async () => {
+    const view = await kernel.createView(admin, {
+      tableId,
+      label: 'Examen',
+      kind: 'quiz',
+      spec: {
+        fields: [
+          { field: 'nom', required: true },
+          { field: 'niveau', correct: 'confirme' },
+        ],
+        reveal: 'never',
+      },
+    })
+    const { share } = await kernel.saveFormSharing(admin, { tableId, viewId: view.id, ...settings })
+    const token = share?.token as string
+    expect(
+      await reasonOf(
+        kernel.checkSharedAnswer({
+          token,
+          respondent: null,
+          requestId: randomUUID(),
+          field: 'niveau',
+          value: 'confirme',
+        }),
+      ),
+    ).toBe('correction_a_la_fin')
+    const answered = await kernel.submitSharedForm({
+      token,
+      respondent: null,
+      requestId: randomUUID(),
+      values: { nom: 'Examen Léo', niveau: 'debutant' },
+    })
+    expect(answered.quiz).toEqual({ score: 0, max: 1, passed: null, marks: [] })
+  })
+})

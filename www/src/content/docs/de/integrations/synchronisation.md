@@ -7,7 +7,7 @@ Der Bildschirm **Integrationen** einer Datenbank öffnet sich über das Profilme
 erfordert die Stufe **Verwalten** und bündelt alles, was die Datenbank mit Ihren übrigen Werkzeugen
 verbindet.
 
-![Der Bildschirm Integrationen einer Datenbank](../../../../assets/screens/integrations.png)
+![Der Bildschirm Integrationen einer Datenbank](../../../../assets/screens/de/integrations.webp)
 
 ## Slack
 

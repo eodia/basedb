@@ -9,6 +9,7 @@ import {
   pauseOnSuccess,
   revealAt,
 } from '@/components/auth-layout'
+import { PasswordReset } from '@/components/password-reset'
 import { Button } from '@/components/ui/button'
 import { Choice } from '@/components/ui/choice'
 import { Input } from '@/components/ui/input'
@@ -61,6 +62,10 @@ export function Login({
   const [signupOpen, setSignupOpen] = useState(false)
   // The public demo: its shared account, prefilled whole — the one of the language chosen.
   const [demo, setDemo] = useState<DemoAccount | null>(null)
+  // A forgotten password (chapter 13 §2.3): offered when the instance can send mail.
+  const [resetOffered, setResetOffered] = useState(false)
+  const [reset, setReset] = useState<{ readonly code: string | null } | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -79,6 +84,20 @@ export function Login({
     // Back from a sign-in provider that refused: the code travels in the address, and is
     // taken out of it once read — a reload must not show it again.
     const params = new URLSearchParams(window.location.search)
+    // The link of a reset mail: its code, taken out of the address once read.
+    const code = params.get('reinitialisation')
+    if (code !== null) {
+      setReset({ code })
+      params.delete('reinitialisation')
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${params.size === 0 ? '' : `?${params.toString()}`}`,
+      )
+    }
+    void api.passwordResetOffered().then((offered) => {
+      if (alive) setResetOffered(offered)
+    })
     const refused = params.get('connexion')
     if (refused !== null) {
       setError({ text: reasonFor(new ApiError(refused, 400, '', {})), attempt: 1 })
@@ -116,6 +135,21 @@ export function Login({
   }
 
   const described = error !== null ? 'login-error' : undefined
+
+  if (reset !== null) {
+    return (
+      <PasswordReset
+        initialEmail={email}
+        code={reset.code}
+        onBack={() => setReset(null)}
+        onDone={() => {
+          setReset(null)
+          setPassword('')
+          setNotice($t('Mot de passe changé : connectez-vous avec le nouveau.'))
+        }}
+      />
+    )
+  }
 
   return (
     <AuthLayout
@@ -208,9 +242,24 @@ export function Login({
         </div>
 
         <div className={cn('group grid gap-2', REVEAL)} style={revealAt(1)}>
-          <Label htmlFor="password" className="transition-colors group-focus-within:text-primary">
-            {$t('Mot de passe')}
-          </Label>
+          <div className="flex items-baseline justify-between gap-2">
+            <Label htmlFor="password" className="transition-colors group-focus-within:text-primary">
+              {$t('Mot de passe')}
+            </Label>
+            {resetOffered && demo === null && (
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null)
+                  setNotice(null)
+                  setReset({ code: null })
+                }}
+                className="rounded-sm text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                {$t('Mot de passe oublié ?')}
+              </button>
+            )}
+          </div>
           <PasswordInput
             id="password"
             name="password"
@@ -225,6 +274,12 @@ export function Login({
             className="h-10"
           />
         </div>
+
+        {notice !== null && error === null && (
+          <output className="block rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-foreground">
+            {notice}
+          </output>
+        )}
 
         {error !== null && (
           <FormError key={error.attempt} id="login-error">

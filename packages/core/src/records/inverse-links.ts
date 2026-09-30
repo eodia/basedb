@@ -2,6 +2,7 @@ import { qualify, quoteIdentifier } from '@basedb/naming'
 import { BasedbError } from '../errors/index.js'
 import { decide } from '../rbac/decide.js'
 import { loadGrants, loadTarget } from '../rbac/loader.js'
+import { rowWhere } from '../rbac/rows.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 
@@ -183,7 +184,7 @@ export async function listInverseLinks(
     const rowsQuery = `SELECT ${projection}
   FROM ${relation}
  WHERE ${cites}
-   AND ( /*predicat_lignes:${link.table_name}*/ ${link.rowPredicate} )
+   AND ( /*predicat_lignes:${link.table_name}*/ ${rowWhere(link.rowPredicate, relation)} )
  ORDER BY "_id" DESC
  LIMIT ${INVERSE_BUDGETS.rowsPerBlock};`
 
@@ -193,7 +194,7 @@ export async function listInverseLinks(
   FROM (SELECT 1
           FROM ${relation}
          WHERE ${cites}
-           AND ( /*predicat_lignes:${link.table_name}*/ ${link.rowPredicate} )
+           AND ( /*predicat_lignes:${link.table_name}*/ ${rowWhere(link.rowPredicate, relation)} )
          LIMIT ${INVERSE_BUDGETS.countCap + 1}) t;`
 
     sql.push(rowsQuery, countQuery)

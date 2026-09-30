@@ -1704,6 +1704,10 @@ function checkView(
           ...(typeof entry.label === 'string' ? { label: entry.label } : {}),
           ...(typeof entry.help === 'string' ? { help: entry.help } : {}),
           ...(typeof entry.placeholder === 'string' ? { placeholder: entry.placeholder } : {}),
+          // The day, before any answer: a date question's only.
+          ...(entry.prefill === 'today' && (found.kind === 'date' || found.kind === 'datetime')
+            ? { prefill: 'today' }
+            : {}),
           ...(showIf === null ? {} : { show_if: showIf }),
         },
       ]
@@ -1958,7 +1962,7 @@ function checkAutomation(
   c.list(ra, 'actions', path, TEMPLATE_LIMITS.actions).forEach((rx, xi) => {
     const at = `${path}.actions[${xi}]`
     if (!isRecord(rx)) return
-    if (rx.kind === 'webhook' || rx.kind === 'slack') {
+    if (rx.kind === 'webhook' || rx.kind === 'slack' || rx.kind === 'email') {
       c.say(at, 'un modèle n’appelle pas l’extérieur : action retirée')
       return
     }

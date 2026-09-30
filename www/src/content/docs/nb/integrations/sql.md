@@ -25,7 +25,7 @@ beskrivelsene (`COMMENT ON`).
 **+** i fanelinjen, eller databasens **⋯**-meny → **SQL-spørring**: en editor
 med fargekoding og autofullføring, der resultatet vises i det samme rutenettet som tabellene dine.
 
-![En lagret spørring, og to SQL-visninger plassert blant tabellene](../../../../assets/screens/requete-sql.png)
+![En lagret spørring, og to SQL-visninger plassert blant tabellene](../../../../assets/screens/nb/requete-sql.webp)
 
 - **Alle leser med sine egne tillatelser**: nivået Administrere har hele databasen, skriving inkludert; de
   andre medlemmene skriver skrivebeskyttet SQL, der en stengt tabell ikke finnes og et skjult felt
@@ -52,6 +52,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+Denne kontoen er databasens eier: den leser alt, og basedbs tillatelser gjelder ikke der. For et
+BI-verktøy bør du heller opprette en egen rolle med sine egne `GRANT`. Hvis en tabell har en
+[radregel](/basedb/nb/fonctionnalites/droits/#helt-ned-til-raden), håndhever PostgreSQL
+radsikkerhet der: en slik rolle ser ingen rader uten attributtet `BYPASSRLS` eller en egen
+policy.
 
 ## Skrive i SQL
 

@@ -109,6 +109,8 @@ export function toMeta(base: ProjectedBase): unknown {
               },
             }),
         ...(f.button === undefined ? {} : { button: f.button }),
+        // What a row created without it takes: the screens prefill it (chapter 04 §1.5).
+        ...(f.default === undefined ? {} : { default: f.default }),
         ...(f.link === undefined
           ? {}
           : {

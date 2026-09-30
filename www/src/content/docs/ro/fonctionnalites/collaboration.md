@@ -12,7 +12,7 @@ Detaliile unui rând au o filă **Comentarii**, între „Detalii” și „Isto
 a **menționa** un membru, Ctrl+Enter pentru a trimite. Fiecare își poate edita sau șterge
 propriile comentarii.
 
-![O conversație despre un proiect](../../../../assets/screens/commentaires.png)
+![O conversație despre un proiect](../../../../assets/screens/ro/commentaires.webp)
 
 Este suficient să puteți citi rândul pentru a-l comenta. O persoană menționată care nu îl
 poate citi nu este anunțată — iar autorul este avertizat, în loc să creadă că mesajul a plecat.
@@ -30,7 +30,14 @@ Clopoțelul, din dreapta sus, numără ce nu a fost citit. Acolo sosesc patru lu
 Deschiderea unei notificări deschide rândul. **Marcați totul ca citit** golește contorul;
 notificările sunt păstrate 90 de zile.
 
-![O mențiune primită](../../../../assets/screens/notifications.png)
+### Prin e-mail
+
+Când instanța are un [server de trimitere](/basedb/ro/hebergement/variables/#e-mailuri), o
+notificare rămasă **zece minute necitită** este trimisă și prin e-mail: un singur e-mail pentru
+toate cele care așteaptă, cu un link către fiecare rând. Ceea ce citiți la timp nu este trimis.
+În **Setări › Notificări**, fiecare tip are două întrerupătoare: în basedb, și prin e-mail.
+
+![O mențiune primită](../../../../assets/screens/ro/notifications.webp)
 
 ## Timp real
 
@@ -74,6 +81,6 @@ Ctrl+Z anulează ultima dumneavoastră scriere — consultați [istoricul](/base
 
 ## Limite
 
-- Notificările rămân în basedb: deocamdată niciuna nu este trimisă prin e-mail.
+- Niciun e-mail fără un server de trimitere configurat de operator.
 - Peste o sută de rânduri modificate dintr-odată, ecranul reîncarcă întreaga pagină în loc să
   procedeze rând cu rând.

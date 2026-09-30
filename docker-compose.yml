@@ -68,6 +68,13 @@ services:
       BASEDB_S3_ACCESS_KEY_ID: ${BASEDB_S3_ACCESS_KEY_ID:-}
       BASEDB_S3_SECRET_ACCESS_KEY: ${BASEDB_S3_SECRET_ACCESS_KEY:-}
       BASEDB_S3_FORCE_PATH_STYLE: ${BASEDB_S3_FORCE_PATH_STYLE:-}
+      # Mail: the operator's SMTP relay — notifications left unread, automations, resets.
+      BASEDB_SMTP_HOST: ${BASEDB_SMTP_HOST:-}
+      BASEDB_SMTP_PORT: ${BASEDB_SMTP_PORT:-}
+      BASEDB_SMTP_SECURE: ${BASEDB_SMTP_SECURE:-}
+      BASEDB_SMTP_USER: ${BASEDB_SMTP_USER:-}
+      BASEDB_SMTP_PASSWORD: ${BASEDB_SMTP_PASSWORD:-}
+      BASEDB_MAIL_FROM: ${BASEDB_MAIL_FROM:-}
       # AI: provider, model and key for the instance (a tenant's settings win).
       BASEDB_AI_PROVIDER: ${BASEDB_AI_PROVIDER:-}
       BASEDB_AI_MODEL: ${BASEDB_AI_MODEL:-}

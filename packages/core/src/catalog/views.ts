@@ -2,9 +2,17 @@ import {
   FORM_ALIGNS,
   FORM_CONDITION_OPS,
   FORM_FONTS,
+  FORM_PREFILLS,
+  FORM_PREFILL_KINDS,
   FORM_THEMES,
   type FormCondition,
+  type FormPrefill,
+  QUIZ_KINDS,
+  QUIZ_MAX_POINTS,
+  QUIZ_REVEALS,
+  type QuizAnswer,
   conditionNeedsValue,
+  quizAnswerFits,
 } from '@basedb/contracts'
 import { BasedbError } from '../errors/index.js'
 import { type ActorGrants, decide } from '../rbac/decide.js'
@@ -21,7 +29,7 @@ import { labelKey } from './operations.js'
  * Saved views — `_basedb.view_def`, chapter 02 and chapter 11 §1.4.
  *
  * A view is a PRESENTATION of one table: how its rows are shown — a grid, a kanban, a
- * calendar, a timeline — or how a row is asked for — a form, a survey. It holds no data
+ * calendar, a timeline — or how a row is asked for — a form, a survey, a quiz. It holds no data
  * and no right of its own (chapter 05 §9): reading a view is reading its table, and
  * building one is `manage_schema`, like building the table. Views are shared at the scale
  * of the table; there is no personal view.
@@ -46,6 +54,8 @@ export const VIEW_KINDS = [
   'list',
   'form',
   'survey',
+  'quiz',
+  'map',
 ] as const
 
 export type ViewKind = (typeof VIEW_KINDS)[number]
@@ -104,6 +114,9 @@ const COLOR_STYLES = ['both', 'stripe', 'background'] as const
 type ColorStyle = (typeof COLOR_STYLES)[number]
 
 const DATES = ['date', 'datetime'] as const
+/** What a map places a row by: an address, or a latitude and a longitude (chapter 11 §1.9). */
+const PLACES = ['short_text', 'long_text', 'formula', 'lookup'] as const
+const COORDINATES = ['number', 'formula', 'lookup', 'rollup'] as const
 /** A form writes rows: a computed column has nothing to be typed into. */
 const NOT_ASKABLE = ['formula', 'autonumber', 'lookup', 'rollup', 'count', 'button']
 
@@ -388,15 +401,19 @@ class SpecReader {
 
   /**
    * The questions of a form: which fields, in which order, and how each is asked — its
-   * words, an example of an answer, and when it is asked at all.
+   * words, an example of an answer, what it holds before one, and when it is asked at all.
+   * A quiz's may carry their right answer and what it is worth.
    */
-  questions(): Array<{
+  questions(quiz = false): Array<{
     field: string
     required: boolean
     label: string
     help: string
     placeholder: string
+    prefill: FormPrefill | null
     show_if: FormCondition | null
+    correct?: QuizAnswer | null
+    points?: number
   }> {
     const value = this.take('fields')
     if (!Array.isArray(value)) refuse('valeur_invalide', 'fields')
@@ -415,7 +432,14 @@ class SpecReader {
         label: item.text('label', MAX_LABEL_CHARS),
         help: item.text('help', 1000),
         placeholder: item.text('placeholder', MAX_LABEL_CHARS),
+        prefill: item.prefill(this.fields.get(field) ?? ''),
         show_if: item.condition(earlier),
+        ...(quiz
+          ? {
+              correct: item.correct(this.fields.get(field) ?? ''),
+              points: item.integer('points', 1, QUIZ_MAX_POINTS, 1),
+            }
+          : {}),
       }
       item.finish()
       earlier.add(field)
@@ -424,6 +448,43 @@ class SpecReader {
     const repeated = questions.find((q, i) => questions.findIndex((r) => r.field === q.field) !== i)
     if (repeated !== undefined) refuse('doublon', repeated.field)
     return questions
+  }
+
+  /**
+   * A quiz question's right answer, in the shape its field's kind expects — `null`: the
+   * question is asked, not graded. A choice is not checked against the list: one removed
+   * since is simply never picked, as a condition's value is.
+   */
+  correct(kind: string): QuizAnswer | null {
+    const value = this.take('correct')
+    if (value === undefined || value === null) return null
+    if (!QUIZ_KINDS.includes(kind)) refuse('type_de_champ_incompatible', 'correct')
+    const tidied = Array.isArray(value)
+      ? value.map((v) => (typeof v === 'string' ? v.normalize('NFC').trim() : v))
+      : value
+    if (!quizAnswerFits(kind, tidied)) refuse('valeur_invalide', 'correct')
+    return tidied
+  }
+
+  /** The pass mark of a quiz, in percent — `null`: none. */
+  percent(key: string): number | null {
+    const value = this.take(key)
+    if (value === undefined || value === null) return null
+    if (typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 100) {
+      refuse('valeur_invalide', key)
+    }
+    return value
+  }
+
+  /** What a question holds before an answer: the day, and only in a date question. */
+  prefill(kind: string): FormPrefill | null {
+    const value = this.take('prefill')
+    if (value === undefined || value === null) return null
+    if (typeof value !== 'string' || !(FORM_PREFILLS as readonly string[]).includes(value)) {
+      refuse('valeur_invalide', 'prefill')
+    }
+    if (!FORM_PREFILL_KINDS.includes(kind)) refuse('type_de_champ_incompatible', 'prefill')
+    return value as FormPrefill
   }
 
   /**
@@ -532,6 +593,8 @@ const SPEC_KEYS: Readonly<Record<ViewKind, readonly string[]>> = {
   list: [...DATA_KEYS, 'title_field', 'card_fields', 'group_by', 'manual_order'],
   form: FORM_KEYS,
   survey: FORM_KEYS,
+  quiz: [...FORM_KEYS, 'score_field', 'reveal', 'pass_percent'],
+  map: [...DATA_KEYS, ...CARD_KEYS, 'address_field', 'latitude_field', 'longitude_field'],
 }
 
 /**
@@ -648,6 +711,29 @@ export function normalizeViewSpec(
           card_size: read.choice('card_size', ['small', 'medium', 'large'] as const, 'medium'),
           manual_order: read.rowList('manual_order'),
         }
+      case 'map': {
+        const spec = {
+          filter: read.filter(),
+          sorts: read.sorts(),
+          title_field: read.field('title_field', null, false),
+          card_fields: read.fieldList('card_fields'),
+          color_field: read.field('color_field', ['select'], false),
+          address_field: read.field('address_field', PLACES, false),
+          latitude_field: read.field('latitude_field', COORDINATES, false),
+          longitude_field: read.field('longitude_field', COORDINATES, false),
+        }
+        // A row is placed by its address, or by its two coordinates: one of the two is asked.
+        if (
+          spec.address_field === null &&
+          (spec.latitude_field === null || spec.longitude_field === null)
+        ) {
+          refuse('champ_pivot_manquant', 'address_field')
+        }
+        if (spec.latitude_field !== null && spec.latitude_field === spec.longitude_field) {
+          refuse('doublon', spec.latitude_field)
+        }
+        return spec
+      }
       case 'list':
         return {
           filter: read.filter(),
@@ -657,33 +743,52 @@ export function normalizeViewSpec(
           group_by: read.field('group_by', ['select', 'link', 'user'], false),
           manual_order: read.rowList('manual_order'),
         }
+      case 'quiz': {
+        const questions = read.questions(true)
+        const spec = {
+          ...formSpec(read, questions),
+          // The score may be written into the row: a number the quiz fills, never asks.
+          score_field: read.field('score_field', ['number'], false),
+          reveal: read.choice('reveal', QUIZ_REVEALS, 'each'),
+          pass_percent: read.percent('pass_percent'),
+        }
+        if (spec.score_field !== null && questions.some((q) => q.field === spec.score_field)) {
+          refuse('doublon', spec.score_field)
+        }
+        return spec
+      }
       case 'form':
       case 'survey':
-        return {
-          title: read.text('title', MAX_LABEL_CHARS),
-          description: read.text('description', 4000),
-          fields: read.questions(),
-          submit_label: read.text('submit_label', 60),
-          success_message: read.text('success_message', 2000),
-          allow_another: read.flag('allow_another', true),
-          // How it looks: every choice has a default that reads well, so a form made in a
-          // click is already a good one (`accent` empty: the table's colour).
-          theme: read.choice('theme', FORM_THEMES, 'clair'),
-          accent: read.color('accent'),
-          font: read.choice('font', FORM_FONTS, 'auto'),
-          align: read.choice('align', FORM_ALIGNS, 'left'),
-          welcome_label: read.text('welcome_label', 60),
-          show_progress: read.flag('show_progress', true),
-          show_numbers: read.flag('show_numbers', true),
-          auto_advance: read.flag('auto_advance', true),
-          celebrate: read.flag('celebrate', true),
-          end_link_label: read.text('end_link_label', 60),
-          end_link_url: read.link('end_link_url'),
-        }
+        return formSpec(read, read.questions())
     }
   })()
   read.finish()
   return spec
+}
+
+/** A form's, a survey's, a quiz's page — its questions already read. */
+function formSpec(read: SpecReader, questions: ReturnType<SpecReader['questions']>) {
+  return {
+    title: read.text('title', MAX_LABEL_CHARS),
+    description: read.text('description', 4000),
+    fields: questions,
+    submit_label: read.text('submit_label', 60),
+    success_message: read.text('success_message', 2000),
+    allow_another: read.flag('allow_another', true),
+    // How it looks: every choice has a default that reads well, so a form made in a
+    // click is already a good one (`accent` empty: the table's colour).
+    theme: read.choice('theme', FORM_THEMES, 'clair'),
+    accent: read.color('accent'),
+    font: read.choice('font', FORM_FONTS, 'auto'),
+    align: read.choice('align', FORM_ALIGNS, 'left'),
+    welcome_label: read.text('welcome_label', 60),
+    show_progress: read.flag('show_progress', true),
+    show_numbers: read.flag('show_numbers', true),
+    auto_advance: read.flag('auto_advance', true),
+    celebrate: read.flag('celebrate', true),
+    end_link_label: read.text('end_link_label', 60),
+    end_link_url: read.link('end_link_url'),
+  }
 }
 
 /** The keys of a spec that name ONE field, per kind. */
@@ -696,6 +801,10 @@ const SINGLE_FIELD_KEYS = [
   'start_field',
   'color_field',
   'depends_on',
+  'score_field',
+  'address_field',
+  'latitude_field',
+  'longitude_field',
 ]
 const FIELD_LIST_KEYS = ['hidden', 'pinned', 'column_order', 'card_fields', 'system_columns']
 

@@ -22,7 +22,7 @@ du skriver inn («Échéance») blir et lesbart fysisk navn (`echeance`) gjennom
 | Enkeltvalg | `text` + `CHECK` | farge, ikon eller bilde per alternativ |
 | Flervalg | `text[]` + `CHECK` | kan filtreres med array-operatorene |
 | E-post | `text` + `CHECK` | en adresse som databasen kontrollerer, åpnes med ett klikk |
-| Telefon, Strekkode | `text` | en kort tekst og dens format: ringelenke, fast tegnbredde |
+| Telefon, Strekkode, Adresse | `text` | en kort tekst og dens format: ringelenke, fast tegnbredde, lenke til kartet |
 | URL | `text` + `CHECK` | fullføres ved inntasting (`exemple.fr` → `https://exemple.fr`) |
 | Person | `uuid` | et medlem av arbeidsområdet; å velge noen [varsler vedkommende](/basedb/nb/fonctionnalites/collaboration/) |
 | Autonummer | `bigint` identity | nummererer også radene som finnes fra før; ingen skriver det inn |
@@ -38,7 +38,7 @@ Hver tabell har også sine **systemkolonner**: `_id` (UUID v7), `_created_at`,
 via API-et. Rutenettet samler dem under **Systeminformasjon**, i kolonnemenyen:
 de finnes på hver tabell, og er nyttige på få.
 
-![Rutenettet til en tabell, med en beregnet varighet, et oppslag og et antall](../../../../assets/screens/grille.png)
+![Rutenettet til en tabell, med en beregnet varighet, et oppslag og et antall](../../../../assets/screens/nb/grille.webp)
 
 ## Begrensninger som databasen håndhever
 
@@ -55,7 +55,7 @@ Foreign-key constraints:
 
 ## Visningsformater
 
-Valuta, Prosent, Varighet, Vurdering, Telefon og Strekkode velges som typer,
+Valuta, Prosent, Varighet, Vurdering, Telefon, Strekkode og Adresse velges som typer,
 men de er **formater**: kolonnen forblir et tall eller en tekst, det er bare visningen som endres.
 
 | Format | På | Leses og skrives inn |
@@ -66,9 +66,27 @@ men de er **formater**: kolonnen forblir et tall eller en tekst, det er bare vis
 | Vurdering | et tall | fra 1 til 10 stjerner, settes med ett klikk |
 | Telefon | en kort tekst | en ringelenke |
 | Strekkode | en kort tekst | med fast tegnbredde |
+| Adresse | en kort tekst | en lenke til kartet; i raddetaljene foreslår **Finn adresse** adressene som samsvarer, skrevet i sin helhet; visningen [Kart](/basedb/nb/fonctionnalites/vues/#kart) plasserer den |
 
 Et format kan endres i etterkant (**Visningsformat**, når du redigerer feltet) uten å røre de
 lagrede verdiene. Det begrenser ikke verdien: en vurdering på 7 på en skala til 5 forblir 7.
+
+## Standardverdier
+
+Når du redigerer et felt, fastsetter **Standardverdi** hva en rad som opprettes uten den, får:
+
+| Valg | På | Den opprettede raden får |
+|---|---|---|
+| En fast verdi | de fleste typer | den valgte verdien — en status «Ny», en prioritet 3 |
+| Dagens dato | en dato | dagen den ble opprettet, i personens tidssone |
+| Tidspunktet for opprettelsen | en dato og klokkeslett | det nøyaktige klokkeslettet |
+| Personen som oppretter raden | en person | den som opprettet den — «Ansvarlig: meg» |
+
+Den nye raddetaljen og skjemaene åpnes forhåndsutfylt; å tømme feltet lar det stå tomt.
+Standardverdien gjelder for all opprettelse — grensesnitt, API, MCP, import, delt skjema,
+automatisering —, også på et felt personen ikke kan endre: det er tabellens regel. Eksisterende
+rader endres ikke, og en direkte SQL-innsetting mottar ingen: det er basedb som håndhever den,
+ikke kolonnen.
 
 ## Formler
 
@@ -174,7 +192,7 @@ Formatert tekst kan ikke fylles ut av KI: en modell skriver tekst, ikke renset H
 Databasens **Struktur**-skjerm – i **⋯**-menyen i sidepanelet – viser tabellene og feltene deres: legg til, gi nytt navn, gjør obligatorisk, endre rekkefølge,
 beskriv, angi visningsfeltet.
 
-![Struktur-skjermen for en database](../../../../assets/screens/structure.png)
+![Struktur-skjermen for en database](../../../../assets/screens/nb/structure.webp)
 
 Å endre strukturen krever nivået **Administrere**. Uten det kan skjermen bare leses og tilbyr
 ingenting: ingen knapp, ingen blyant, ingen dra-håndtak – at et felt er obligatorisk og hvilket som er visningsfelt, står oppgitt, men kan ikke

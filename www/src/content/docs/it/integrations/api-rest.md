@@ -33,7 +33,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | un’espressione leggibile: `statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | le colonne da restituire |
-| `limit`, `cursor` | paginazione tramite cursore cifrato (`next_cursor` nella risposta) |
+| `limit`, `after` | paginazione tramite cursore cifrato: `meta.next_cursor` di una pagina, passato come `after`, restituisce quella successiva (`meta.has_next_page`) |
 | `links=display` | le relazioni con il loro valore visualizzato |
 | `count=exact` | il totale, con un tetto di 100.000 |
 | `variables=raw` | i testi lunghi così come sono scritti, `{{colonne}}` compreso, anziché con i [valori della riga](/basedb/it/fonctionnalites/tables-et-champs/#testo-formattato-e-variabili) |
@@ -85,4 +85,4 @@ lettori ne ottengono due versioni —, scritta **nella lingua del tuo schermo**,
 in OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). I nomi, i percorsi e i codici
 di errore restano gli stessi in tutte le lingue.
 
-![La documentazione generata di un database](../../../../assets/screens/documentation-api.png)
+![La documentazione generata di un database](../../../../assets/screens/it/documentation-api.webp)

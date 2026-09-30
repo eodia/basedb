@@ -1,13 +1,16 @@
 'use client'
 
+import { AddressInput } from '@/components/app/address'
 import { AiEmpty } from '@/components/app/ai-pending'
 import { Viewers } from '@/components/app/collab'
 import { CommentThread } from '@/components/app/comments'
 import { DateInput } from '@/components/app/date-picker'
 import { hasDescription } from '@/components/app/description'
+import { DocumentMenu } from '@/components/app/documents/document-menu'
 import { FieldButton } from '@/components/app/field-button'
 import { FieldIcon, shownFormat } from '@/components/app/field-icon'
 import { FilesField, type Upload } from '@/components/app/files'
+import { todayAnswer } from '@/components/app/forms/answers'
 import { type Row, display } from '@/components/app/grid/cell'
 import { HistoryList } from '@/components/app/history'
 import { LongTextView, MarkdownEditor, MarkdownView, UrlLink } from '@/components/app/markdown-text'
@@ -87,6 +90,10 @@ interface Props {
   readonly commentsTick?: number
   /** Who else looks at the table; those with this row open show in the header. */
   readonly viewers?: readonly Viewer[]
+  /** The base's tables — what a document template's table block may list (chapter 21). */
+  readonly tables?: readonly Table[]
+  /** Building the base: the document templates may be edited from the sheet. */
+  readonly builds?: boolean
 }
 
 export function RecordPanel({
@@ -104,6 +111,8 @@ export function RecordPanel({
   self = null,
   commentsTick = 0,
   viewers = [],
+  tables,
+  builds = false,
 }: Props) {
   const title = headline(row, fields)
   const subtitle = secondLine(row, fields)
@@ -124,6 +133,12 @@ export function RecordPanel({
           {$t('Fiche {label}', { label: table.label })}
         </h2>
         <Viewers viewers={viewers} self={self} record={recordId} size="xs" />
+        <DocumentMenu
+          table={table}
+          recordId={recordId}
+          tables={tables ?? [table]}
+          builds={builds}
+        />
         <Button variant="ghost" size="icon-sm" disabled aria-label={$t('Agrandir')}>
           <Maximize2 className="size-4" />
         </Button>
@@ -341,6 +356,7 @@ export function NewRecordPanel({
   onClose,
   onCreate,
   initial,
+  me,
 }: {
   readonly table: Table
   readonly fields: readonly Field[]
@@ -355,11 +371,17 @@ export function NewRecordPanel({
   readonly initial?: Readonly<Record<string, unknown>>
   /** Writes the row; resolves to the refusal to show, or `null` once it is created. */
   readonly onCreate: (values: Record<string, unknown>) => Promise<string | null>
+  /** Who is creating — what a default « the person creating » prefills. */
+  readonly me?: string | null
 }) {
   // A formula, or a field this reader may not write, has nothing to be filled with.
   const writable = fields.filter((f) => f.read_only !== true && f.system !== true)
 
-  const [draft, setDraft] = useState<Row>(() => ({ ...emptyDraft(writable), ...initial }) as Row)
+  // The fields' defaults are shown before anything is typed; a place it was asked from wins.
+  const [prefilled] = useState(() => prefilledDraft(writable, me ?? null))
+  const [draft, setDraft] = useState<Row>(
+    () => ({ ...emptyDraft(writable), ...prefilled, ...initial }) as Row,
+  )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // The click on "Créer" blurs the text being typed, and that blur is what commits it:
@@ -383,8 +405,8 @@ export function NewRecordPanel({
   }
 
   const create = async () => {
-    const values = writeValues(writable, latest.current)
-    if (Object.keys(values).length === 0) {
+    const values = writeValues(writable, latest.current, new Set(Object.keys(prefilled)))
+    if (Object.values(values).every((v) => v === null)) {
       setError($t('Renseignez au moins un champ.'))
       return
     }
@@ -449,14 +471,50 @@ export function emptyDraft(fields: readonly Field[]): Row {
 }
 
 /**
- * The draft in the shape a write takes: a link by its identifier, files by theirs, and
- * nothing for what was left empty — the database's defaults and `NOT NULL` decide those.
+ * What a new row shows for a field before anything is typed: its default (ch. 04 §1.5),
+ * when this screen can say it — « the person creating » needs to know who that is.
+ * `undefined` shows nothing, and the kernel still applies the default to a field not sent.
  */
-export function writeValues(fields: readonly Field[], draft: Row): Record<string, unknown> {
+export function prefillOf(field: Field, me: string | null, now: Date = new Date()): unknown {
+  const d = field.default
+  if (d === undefined) return undefined
+  if (d.kind === 'value') return d.value
+  if (d.kind === 'today') return todayAnswer('date', now)
+  if (d.kind === 'now') return todayAnswer('datetime', now)
+  return me ?? undefined
+}
+
+/** The values a new row starts with, from the defaults of its fields — by field name. */
+export function prefilledDraft(
+  fields: readonly Field[],
+  me: string | null,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const field of fields) {
+    const value = prefillOf(field, me)
+    if (value !== undefined) out[field.name] = value
+  }
+  return out
+}
+
+/**
+ * The draft in the shape a write takes: a link by its identifier, files by theirs, and
+ * nothing for what was left empty — the field's default, the database's `NOT NULL` decide
+ * those. A field that was `prefilled` and has been emptied is sent empty: clearing a
+ * default is a choice, which the kernel would otherwise undo by applying it again.
+ */
+export function writeValues(
+  fields: readonly Field[],
+  draft: Row,
+  prefilled: ReadonlySet<string> = new Set(),
+): Record<string, unknown> {
   const values: Record<string, unknown> = {}
   for (const field of fields) {
     const value = draft[field.name]
-    if (value === null || value === undefined || value === '') continue
+    if (value === null || value === undefined || value === '') {
+      if (prefilled.has(field.name)) values[field.name] = null
+      continue
+    }
     if (field.kind === 'link') {
       const id = (value as { id?: unknown }).id
       if (typeof id === 'string') values[field.name] = id
@@ -713,6 +771,22 @@ export function PanelField({
     // into the value it stands for.
     void onCommit(
       typed === '' ? null : field.kind === 'number' ? parseNumberInput(typed, field) : typed,
+    )
+  }
+
+  // An address: completed as it is typed, found on the map in a click.
+  if (formatOf(field) === 'address') {
+    return (
+      <AddressInput
+        value={typed}
+        onChange={setTyped}
+        onCommit={(next) => {
+          if (next === (typeof value === 'string' ? value : '')) return
+          void onCommit(next === '' ? null : next)
+        }}
+        readOnly={field.read_only === true}
+        label={field.label}
+      />
     )
   }
 

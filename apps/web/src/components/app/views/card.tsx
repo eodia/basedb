@@ -1,5 +1,6 @@
 'use client'
 
+import { AddressLink } from '@/components/app/address'
 import { FieldButton } from '@/components/app/field-button'
 import { FieldIcon } from '@/components/app/field-icon'
 import { type Row, display, rawText } from '@/components/app/grid/cell'
@@ -121,6 +122,7 @@ export function CardValue({ field: given, row }: { readonly field: Field; readon
       return <span className="truncate">{display(String(value), field)}</span>
     case 'short_text':
       if (formatOf(field) === 'barcode') return <BarcodeValue value={String(value)} />
+      if (formatOf(field) === 'address') return <AddressLink value={String(value)} />
       return <span className="truncate">{display(String(value), field)}</span>
     default:
       return <span className="truncate">{display(String(value), field)}</span>

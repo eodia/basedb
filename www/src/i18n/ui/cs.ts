@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb – kolaborativní databáze, v níž je každá tabulka skutečnou tabulkou PostgreSQL',
-			description: 'Mřížky a osm zobrazení, vzorce, sdílené formuláře a zobrazení, komentáře, automatizace, řídicí panely, oprávnění až na úroveň pole, úplná historie, REST API a server MCP – nad skutečnými tabulkami PostgreSQL se srozumitelnými názvy. Na vlastních serverech, AGPL-3.0.',
+			description: 'Mřížky a deset zobrazení, vzorce, sdílené formuláře, kvízy a zobrazení, komentáře, automatizace, řídicí panely, oprávnění až na úroveň pole, úplná historie, REST API a server MCP – nad skutečnými tabulkami PostgreSQL se srozumitelnými názvy. Na vlastních serverech, AGPL-3.0.',
 		},
 		changelog: {
 			title: 'Novinky – basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: 'Osm zobrazení',
-								text: 'Mřížka, kanban, kalendář, časová osa, galerie, seznam, formulář, dotazník.',
+								title: 'Deset zobrazení',
+								text: 'Mřížka, kanban, kalendář, časová osa, galerie, seznam, mapa, formulář, dotazník, kvíz.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb – veškerá vaše práce na jednom místě',
-			description: 'Zákazníci, projekty, sklady, přihlášky: databáze, kterou celý tým upravuje současně, v tabulce, kanbanu nebo kalendáři, s řídicími panely, automatizacemi a AI. Bez kódu, svobodná a zdarma.',
+			title: 'basedb – kolaborativní databáze pro celý tým',
+			description: 'Veškerá vaše práce na jednom místě, kterou celý tým upravuje současně: v tabulce, kanbanu nebo kalendáři, s formuláři, řídicími panely, automatizacemi a AI. Bez kódu, svobodná a zdarma.',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -895,9 +895,9 @@ export default {
 			text: 'Každá funkce zapisuje do stejných tabulek, se stejnými oprávněními, do stejné historie.',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: 'způsobů, jak zobrazit svá data',
-					text: 'Mřížka, kanban, kalendář, časová osa, galerie, seznam, formulář a dotazník, nad stejnými řádky. Každý si vybere tu svou.',
+					text: 'Mřížka, kanban, kalendář, časová osa, galerie, seznam, mapa, formulář, dotazník a kvíz, nad stejnými řádky. Každý si vybere tu svou.',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -947,7 +947,7 @@ export default {
 				},
 				import: {
 					title: 'Import jedním gestem',
-					text: 'Přetáhněte soubor CSV: sloupce a typy se odhadnou, tabulka se vytvoří.',
+					text: 'Přetáhněte sešit Excelu nebo CSV: sloupce a typy se odhadnou, tabulka se vytvoří.',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1040,7 +1040,7 @@ export default {
 				},
 				{
 					q: 'Můžeme převzít naše tabulky?',
-					a: 'Ano: uložte svůj list jako CSV a přetáhněte ho do basedb. Import odhadne typ každého sloupce, vytvoří tabulku a řádek po řádku uvede, co se mu nepodařilo převzít.',
+					a: 'Ano: přetáhněte svůj sešit Excelu, nebo CSV, do basedb. Import odhadne typ každého sloupce, vytvoří tabulku a řádek po řádku uvede, co se mu nepodařilo převzít.',
 				},
 				{
 					q: 'Může na tom pracovat víc lidí najednou?',
@@ -1365,9 +1365,9 @@ export default {
 		text: 'Každá funkce zapisuje do týchž tabulek, pod stejnými oprávněními, do stejné historie.',
 		more: 'Zjistit více →',
 		views: {
-			title: 'Osm zobrazení týchž řádků',
+			title: 'Deset zobrazení týchž řádků',
 			text: 'Společná pro celý tým, nebo osobní jen pro vás: každý si volí svůj způsob čtení a nikdo nekopíruje data.',
-			chips: ['Mřížka', 'Kanban', 'Kalendář', 'Časová osa', 'Galerie', 'Seznam', 'Formulář', 'Dotazník'],
+			chips: ['Mřížka', 'Kanban', 'Kalendář', 'Časová osa', 'Galerie', 'Seznam', 'Mapa', 'Formulář', 'Dotazník', 'Kvíz'],
 		},
 		forms: {
 			title: 'Sdílené formuláře',
@@ -1431,7 +1431,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'Import CSV a JSON',
+				title: 'Import Excel, CSV a JSON',
 				text: 'Přetáhněte soubor: import odhadne typy, vytvoří tabulku nebo doplní existující a řádek po řádku řekne, co bylo odmítnuto.',
 				href: '/guides/premiers-pas/',
 			},
@@ -1540,6 +1540,66 @@ export default {
 		title: 'Co se v basedb změnilo',
 		intro: 'Podrobnosti o každé změně najdete v <a href="https://github.com/eodia/basedb/commits/main">historii repozitáře</a>. Co přijde dál: <a href="/feuille-de-route/">plán vývoje</a>.',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: 'Mapa, a adresy, které se najdou',
+				tag: 'Novinka',
+				items: [
+					'<strong>Desáté zobrazení, mapa</strong>: každý řádek na svém místě, podle jeho adresy nebo podle jeho zeměpisné šířky a délky. Špendlík má barvu podle stavu a kliknutím otevře detail řádku. <a href="/fonctionnalites/vues/#mapa">Mapa</a>',
+					'<strong>Adresa je umístěna jednou provždy</strong>, službou OpenStreetMap nebo tou, kterou zvolíte: špendlíky se objevují postupně, a napříště hned. Adresa, kterou se nepodařilo najít, se počítá, nikdy se mlčky nevyřazuje.',
+					'<strong>Formát Adresa</strong> pro krátký text: kliknutí ho otevře na mapě, a v detailu řádku <strong>Vyhledat adresu</strong> navrhne odpovídající úplné adresy. <a href="/fonctionnalites/tables-et-champs/#formáty-zobrazení">Formáty</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: 'PDF z vašich řádků',
+				tag: 'Novinka',
+				items: [
+					'<strong>Nabídka, faktura, list v PDF</strong>, z nabídky řádku: list k vytištění bez jakéhokoli nastavování, nebo šablona — texty, které citují pole, pole řádku, tabulka propojených řádků s jejich součtem, zalomení stránky. <a href="/fonctionnalites/documents/">Dokumenty</a>',
+					'<strong>Každý se svými oprávněními</strong>: pole skryté pro vás se ve vašem PDF neobjeví. Píše se v něm všech dvacet jazyků, včetně čínštiny, japonštiny a korejštiny, a API vrátí stejný dokument.',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: 'Oprávnění až na úroveň řádku, výchozí hodnoty, import Excelu',
+				tag: 'Novinka',
+				items: [
+					'<strong>Každý své řádky</strong>: skupina vidí jen řádky podle filtru — „Obchodník“ jsem já, „Region“ je Sever —, v rozhraní, v API, na serveru MCP i v SQL, kde stejné pravidlo vynucuje sám PostgreSQL. <a href="/fonctionnalites/droits/#až-na-úroveň-řádku">Až na úroveň řádku</a>',
+					'<strong>Výchozí hodnoty</strong>: pevná hodnota, dnešní datum, okamžik vytvoření nebo osoba, která vytváří řádek, předvyplněné na obrazovce a uplatněné všude jinde. <a href="/fonctionnalites/tables-et-champs/#výchozí-hodnoty">Výchozí hodnoty</a>',
+					'<strong>Přetáhněte sešit Excelu</strong>: zvolte list, data, částky a zaškrtávací pole se přeberou tak, jak jsou, a vzorec dá svou hodnotu. <a href="/guides/premiers-pas/">První kroky</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: 'E-maily',
+				tag: 'Novinka',
+				items: [
+					'<strong>Krok „Odeslat e-mail“</strong> v automatizacích: osobě z týmu, osobě z pole, na adresu klienta, s hodnotami řádku v předmětu i v textu. <a href="/fonctionnalites/automatisations/">Automatizace</a>',
+					'<strong>Notifikace e-mailem</strong>, když je nepřečtete, sloučené do jedné, volitelné jednotlivě v nastavení; a <strong>Zapomenuté heslo</strong> se obnoví odkazem. <a href="/fonctionnalites/collaboration/#e-mailem">E-mailem</a>',
+					'Stačí instanci zadat SMTP server vaší poštovní služby. <a href="/hebergement/variables/#e-maily">Proměnné</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n a SDK TypeScript',
+				tag: 'Novinka',
+				items: [
+					'<strong>Uzly pro n8n</strong>: číst a zapisovat řádky tabulky z workflow, a spustit ho při každém vytvořeném, upraveném nebo odstraněném řádku — podle dotazu nebo podepsaným webhookem. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>SDK TypeScript</strong>, s typy vašich tabulek vygenerovanými z vaší instance: neexistující tabulka nebo pole je chybou ještě dřív, než program běží. <a href="/integrations/sdk/">SDK</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: 'Kvíz: otázky, které počítají body',
+				tag: 'Novinka',
+				items: [
+					'<strong>Nové zobrazení, kvíz</strong>: dotazník, jehož každá otázka může mít svou správnou odpověď a body — jedna volba, více voleb, ano nebo ne, číslo, datum, nebo přijímané texty, bez ohledu na velikost písmen a diakritiku. <a href="/fonctionnalites/vues/#kvíz">Kvíz</a>',
+					'<strong>Opravuje se, jak chcete</strong>: po každé otázce — zeleně, nebo červeně se správnou odpovědí, skóre rostoucí nahoře obrazovky —, na konci, nebo nikdy. Práh úspěšnosti pak řekne „Uspěch!“ nebo „Tentokrát ne…“.',
+					'<strong>Skóre na konci</strong>, ve vyplňujícím se prstenci, a pak správné odpovědi ke každé otázce. Zapisuje se do číselného pole tabulky: seřaďte podle něj mřížku, a máte žebříček.',
+					'<strong>Sdílený odkazem, bez podvádění</strong>: stránka nedostává žádnou správnou odpověď, opravuje a počítá server. <a href="/fonctionnalites/formulaires-partages/#sdílený-kvíz">Sdílený kvíz</a>',
+					'<strong>Vytvořit zobrazení</strong>, dole v přepínači zobrazení, dělí devět druhů do dvou skupin — ty, které zobrazují řádky, ty, které sbírají odpovědi —, každý s barevnou ikonou.',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: 'Formuláře, které chcete vyplňovat',

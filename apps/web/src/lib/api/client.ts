@@ -20,12 +20,15 @@ import type {
   FormAlign,
   FormCondition,
   FormFont,
+  FormPrefill,
   FormTheme,
   LegacyBlock,
   Locale,
   ParameterValue,
   QueryResult,
   QuestionQuery,
+  QuizAnswer,
+  QuizReveal,
   Template,
   TemplateIssue,
   TemplateSummary,
@@ -240,7 +243,9 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (r.status === 204) return undefined as T
 
-  const body = (await r.json()) as Record<string, unknown>
+  // A success with nothing to say — the `202` of a reset asked for — has no body to read.
+  const text = await r.text()
+  const body = (text === '' ? {} : JSON.parse(text)) as Record<string, unknown>
   if (!r.ok) {
     throw new ApiError(
       String(body.code ?? 'INTERNAL_ERROR'),
@@ -420,6 +425,12 @@ export interface Me {
   readonly weekStart: 0 | 1
   /** The natures of notification the person refused (chapter 16 §2.3). */
   readonly mutedNotifications: readonly NotificationKind[]
+  /** The natures also sent by mail when left unread (chapter 16 §2.4). */
+  readonly mailedNotifications: readonly NotificationKind[]
+  /** Whether the instance sends mail at all: its operator configured a relay. */
+  readonly mailAvailable: boolean
+  /** Whether addresses can become points: a geocoding service is configured. */
+  readonly geocodingAvailable: boolean
   /** The language chosen in the settings, or `null`: the browser's (chapter 11 §10). */
   readonly locale: Locale | null
 }
@@ -439,6 +450,9 @@ interface MeBody {
   readonly date_format?: 'dmy' | 'iso'
   readonly week_start?: number
   readonly muted_notifications?: readonly NotificationKind[]
+  readonly mailed_notifications?: readonly NotificationKind[]
+  readonly mail_available?: boolean
+  readonly geocoding_available?: boolean
   readonly locale?: string | null
 }
 
@@ -454,6 +468,9 @@ function meOf(body: MeBody): Me {
     dateFormat: body.date_format === 'iso' ? 'iso' : 'dmy',
     weekStart: body.week_start === 0 ? 0 : 1,
     mutedNotifications: body.muted_notifications ?? [],
+    mailedNotifications: body.mailed_notifications ?? [],
+    mailAvailable: body.mail_available === true,
+    geocodingAvailable: body.geocoding_available === true,
     locale: isLocale(body.locale) ? body.locale : null,
   }
 }
@@ -593,6 +610,34 @@ export interface EffectiveMask {
     readonly readable_via: readonly string[]
     readonly restricted_by: ReadonlyArray<{ readonly group: string; readonly rule: FieldRule }>
   }>
+}
+
+/** Below the grid, beside the fields: each group's rule on the rows of one table (05 §16). */
+export interface RowAccess {
+  readonly table: FieldAccess['table']
+  /** The fields a rule may name, system columns aside. */
+  readonly fields: ReadonlyArray<{
+    readonly name: string
+    readonly label: string
+    readonly kind: string
+    readonly options?: ReadonlyArray<{ readonly value: string; readonly label: string }>
+  }>
+  readonly groups: ReadonlyArray<
+    Group & {
+      readonly level: AccessLevel
+      /** The group's filter as written; `null`: every row. */
+      readonly rule: string | null
+    }
+  >
+}
+
+/** How many rows of a table one person sees, and through which group (05 §16). */
+export interface EffectiveRows {
+  readonly user: { readonly id: string; readonly display_name: string; readonly email: string }
+  readonly reads_table: boolean
+  readonly total: number
+  readonly visible: number
+  readonly via: ReadonlyArray<{ readonly group: string; readonly rule: string | null }>
 }
 
 export interface AccessGraph {
@@ -741,11 +786,23 @@ export interface Field {
   readonly computed?: Computed
   /** A button: its label and what a click does (chapter 17 §4). */
   readonly button?: ButtonConfig
+  /** What a row created without it takes (ch. 04 §1.5): the screens prefill it. */
+  readonly default?: FieldDefault
   /**
    * Set by the screen, never by the API: the field a computed field's value reads as —
    * its result's kind, with the format and choices of what it cites (`lib/computed.ts`).
    */
   readonly valueField?: Field
+}
+
+/**
+ * A field's default (ch. 04 §1.5): a value, today's date, the instant, or the person
+ * creating the row. The kernel applies it to a row created without the field.
+ */
+export interface FieldDefault {
+  readonly kind: 'value' | 'today' | 'now' | 'me'
+  /** For `value`: the value, as a read gives it — a list for a multiple choice. */
+  readonly value?: unknown
 }
 
 /** What a computed field computes — always read-only. */
@@ -894,6 +951,49 @@ export interface CopilotAnswer {
 export interface TableRef {
   readonly base: string
   readonly name: string
+}
+
+/** A point on the map, and what the geocoding service recognised there. */
+export interface Place {
+  readonly lat: number
+  readonly lng: number
+  readonly label: string
+}
+
+/** The rows a table block of a document lists (chapter 21 §1). */
+export type DocumentRowsSource =
+  /** The rows of another table whose link names this row — an invoice's lines. */
+  | { readonly kind: 'incoming'; readonly table: string; readonly field: string }
+  /** The rows a multiple link of this row names. */
+  | { readonly kind: 'outgoing'; readonly field: string }
+
+export type DocumentBlock =
+  | { readonly kind: 'text'; readonly html: string }
+  /** The row's fields, by name; none: every field the reader reads. */
+  | { readonly kind: 'fields'; readonly fields: readonly string[] }
+  | {
+      readonly kind: 'rows'
+      readonly title: string
+      readonly source: DocumentRowsSource
+      readonly columns: readonly string[]
+      readonly totals: readonly string[]
+    }
+  | { readonly kind: 'break' }
+
+export interface DocumentSpec {
+  readonly page: { readonly size: 'A4' | 'LETTER'; readonly orientation: 'portrait' | 'landscape' }
+  readonly locale: Locale
+  readonly footer: string
+  readonly blocks: readonly DocumentBlock[]
+}
+
+/** A document template of a table; its definition only for whoever builds the table. */
+export interface DocumentTemplate {
+  readonly id: string
+  readonly label: string
+  readonly position: number
+  readonly updated_at: string
+  readonly spec?: DocumentSpec
 }
 
 export interface Table extends TableRef, Look {
@@ -1439,7 +1539,7 @@ export interface Member {
   readonly disabled: boolean
 }
 
-/** The six ways a saved view shows a table — or asks for one of its rows. */
+/** The ways a saved view shows a table — or asks for one of its rows. */
 export type ViewKind =
   | 'grid'
   | 'kanban'
@@ -1449,6 +1549,8 @@ export type ViewKind =
   | 'list'
   | 'form'
   | 'survey'
+  | 'quiz'
+  | 'map'
 
 /**
  * A saved view of a table (ch. 11 §1.4), shared by everyone who reads the table.
@@ -1652,6 +1754,17 @@ export type AutomationStep =
       readonly record?: string | null
       readonly users: readonly string[]
       readonly user_field: string | null
+      readonly message: string
+    }
+  | {
+      readonly id?: string
+      readonly kind: 'email'
+      readonly record?: string | null
+      readonly users: readonly string[]
+      readonly user_field: string | null
+      readonly email_field: string | null
+      readonly addresses: readonly string[]
+      readonly subject: string
       readonly message: string
     }
   | {
@@ -2044,7 +2157,7 @@ export interface SharedDashboard {
 
 /** A shared form as the person answering sees it. */
 export interface SharedForm {
-  readonly kind: 'form' | 'survey'
+  readonly kind: 'form' | 'survey' | 'quiz'
   readonly title: string
   readonly description: string
   readonly submit_label: string
@@ -2060,7 +2173,12 @@ export interface SharedForm {
     readonly required: boolean
     readonly options: readonly FieldOption[] | null
     readonly placeholder: string | null
+    readonly prefill: FormPrefill | null
+    /** The field's default, which the page prefills — never « the person creating ». */
+    readonly default?: FieldDefault | null
     readonly show_if: FormCondition | null
+    /** A quiz question's worth when it is graded; its right answer stays on the server. */
+    readonly points: number | null
     readonly format: {
       readonly display: string
       readonly rating_max: number | null
@@ -2080,6 +2198,32 @@ export interface SharedForm {
     readonly celebrate: boolean
     readonly end_link: { readonly label: string; readonly url: string } | null
   }
+  /** A quiz's grading, without its answers; `null` for a form or a survey. */
+  readonly quiz: { readonly reveal: QuizReveal; readonly pass_percent: number | null } | null
+}
+
+/**
+ * What an answer to a quiz earned: its score, whether it passes, and — unless its author
+ * keeps them — each graded question, right or not, with its right answer.
+ */
+export interface QuizOutcome {
+  readonly score: number
+  readonly max: number
+  readonly passed: boolean | null
+  readonly marks: ReadonlyArray<{
+    readonly field: string
+    readonly right: boolean
+    readonly points: number
+    readonly of: number
+    readonly correct: QuizAnswer
+  }>
+}
+
+/** One answer of a quiz, graded as soon as it is given. */
+export interface QuizGrade {
+  readonly right: boolean
+  readonly points: number
+  readonly correct: QuizAnswer
 }
 
 /**
@@ -2227,6 +2371,32 @@ export const api = {
   },
 
   /** Whether anyone may create an account here; `null` when it is closed. */
+  /** Whether a forgotten password can be reset by mail here (chapter 13 §2.3). */
+  passwordResetOffered: async (): Promise<boolean> => {
+    try {
+      await data<{ available: boolean }>('/auth/password/reset')
+      return true
+    } catch {
+      return false
+    }
+  },
+
+  /** Asks for a reset link: the answer is the same whether the account exists or not. */
+  requestPasswordReset: async (email: string): Promise<void> => {
+    await call<undefined>('/auth/password/reset/request', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  },
+
+  /** Sets a new password with the code a reset mail carried; no session is opened. */
+  confirmPasswordReset: async (secret: string, password: string): Promise<void> => {
+    await call<undefined>('/auth/password/reset/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ secret, password }),
+    })
+  },
+
   signupPolicy: async (): Promise<SignupPolicy | null> => {
     try {
       return await data<SignupPolicy>('/auth/signup')
@@ -2311,6 +2481,7 @@ export const api = {
     readonly dateFormat?: 'dmy' | 'iso'
     readonly weekStart?: 0 | 1
     readonly mutedNotifications?: readonly NotificationKind[]
+    readonly mailedNotifications?: readonly NotificationKind[]
     /** A language, or `null` to follow the browser's. */
     readonly locale?: Locale | null
   }): Promise<Me> =>
@@ -2323,6 +2494,7 @@ export const api = {
           date_format: change.dateFormat,
           week_start: change.weekStart,
           muted_notifications: change.mutedNotifications,
+          mailed_notifications: change.mailedNotifications,
           locale: change.locale,
         }),
       }),
@@ -2716,11 +2888,18 @@ export const api = {
     }
   },
 
-  /** Answers a shared form: one row. */
+  /** Answers a shared form: one row — a quiz's, scored by the server. */
   submitSharedForm: (token: string, values: Readonly<Record<string, unknown>>) =>
-    formCall<{ received: true }>(`/api/v1/forms/${encodeURIComponent(token)}`, {
+    formCall<{ received: true; quiz: QuizOutcome | null }>(
+      `/api/v1/forms/${encodeURIComponent(token)}`,
+      { method: 'POST', body: JSON.stringify({ values }) },
+    ),
+
+  /** Grades one answer of a shared quiz that shows its right answers as it goes. */
+  checkSharedAnswer: (token: string, field: string, value: unknown) =>
+    formCall<QuizGrade>(`/api/v1/forms/${encodeURIComponent(token)}/check`, {
       method: 'POST',
-      body: JSON.stringify({ values }),
+      body: JSON.stringify({ field, value }),
     }),
 
   /** The order of the selector, as the list of the views' identifiers. */
@@ -2746,6 +2925,107 @@ export const api = {
     data<{ name: string; format: Field['format'] }>(
       `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}`,
       { method: 'PATCH', body: JSON.stringify({ format }) },
+    ),
+
+  /** The points of addresses: those known, a few more, and how many are left to ask. */
+  geocode: (addresses: readonly string[]) =>
+    data<{
+      readonly places: Readonly<Record<string, Place | null>>
+      readonly pending: number
+    }>(`${v1()}/geo/geocode`, { method: 'POST', body: JSON.stringify({ addresses }) }),
+
+  /** What a text typed in an address field may be: five propositions at most. */
+  searchAddresses: (query: string) =>
+    data<readonly Place[]>(`${v1()}/geo/search?q=${encodeURIComponent(query)}`),
+
+  /** The document templates of a table (chapter 21). */
+  documentTemplates: (table: TableRef) =>
+    data<readonly DocumentTemplate[]>(`${v1()}/data/${table.base}/${table.name}/documents`),
+
+  createDocumentTemplate: (table: TableRef, body: { label: string; spec: DocumentSpec }) =>
+    data<DocumentTemplate>(`${v1()}/admin/bases/${table.base}/tables/${table.name}/documents`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  updateDocumentTemplate: (
+    table: TableRef,
+    id: string,
+    body: { label?: string; spec?: DocumentSpec },
+  ) =>
+    data<DocumentTemplate>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/documents/${id}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    ),
+
+  deleteDocumentTemplate: (table: TableRef, id: string) =>
+    call<undefined>(`${v1()}/admin/bases/${table.base}/tables/${table.name}/documents/${id}`, {
+      method: 'DELETE',
+    }),
+
+  /**
+   * A row as a PDF — with a template, or `fiche`: every field. Read with the reader's rights;
+   * the bytes come back as a blob, for the browser to show or save.
+   */
+  documentPdf: async (table: TableRef, recordId: string, template: string): Promise<Blob> => {
+    const r = await fetch(
+      `${BASE}${v1()}/data/${table.base}/${table.name}/${recordId}/documents/${encodeURIComponent(template)}`,
+      {
+        headers: { authorization: `Bearer ${await accessToken()}`, 'x-basedb-locale': locale() },
+        credentials: 'include',
+        cache: 'no-store',
+      },
+    )
+    if (!r.ok) {
+      const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+      throw new ApiError(
+        String(body.code ?? 'INTERNAL_ERROR'),
+        r.status,
+        String(body.request_id ?? ''),
+      )
+    }
+    return r.blob()
+  },
+
+  /** A definition not saved yet, set on a row: the template editor's preview. */
+  documentPreview: async (
+    table: TableRef,
+    recordId: string,
+    draft: { label: string; spec: DocumentSpec },
+  ): Promise<Blob> => {
+    const r = await fetch(
+      `${BASE}${v1()}/data/${table.base}/${table.name}/${recordId}/documents/preview`,
+      {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${await accessToken()}`,
+          'content-type': 'application/json',
+          'x-basedb-locale': locale(),
+        },
+        body: JSON.stringify(draft),
+        credentials: 'include',
+        cache: 'no-store',
+      },
+    )
+    if (!r.ok) {
+      const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+      throw new ApiError(
+        String(body.code ?? 'INTERNAL_ERROR'),
+        r.status,
+        String(body.request_id ?? ''),
+        typeof body.details === 'object' && body.details !== null
+          ? (body.details as Record<string, unknown>)
+          : {},
+      )
+    }
+    return r.blob()
+  },
+
+  /** Sets or removes (`null`) what a row created without the field takes. */
+  setFieldDefault: (table: TableRef, field: string, value: FieldDefault | null) =>
+    data<{ name: string; default: FieldDefault | null }>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}`,
+      { method: 'PATCH', body: JSON.stringify({ default: value }) },
     ),
 
   /** The people of the tenant — what a `user` field names. */
@@ -3914,5 +4194,22 @@ export const api = {
   effectiveMask: (tableId: string, userId: string) =>
     data<EffectiveMask>(
       `${v1()}/admin/access/tables/${encodeURIComponent(tableId)}/mask?user=${encodeURIComponent(userId)}`,
+    ),
+
+  /** Each group's rule on the rows of one table. */
+  rowAccess: (tableId: string) =>
+    data<RowAccess>(`${v1()}/admin/access/tables/${encodeURIComponent(tableId)}/rows`),
+
+  /** Keeps a group to the rows a filter retains — `null` gives them all back. */
+  setRowRule: (tableId: string, group: string, rule: string | null) =>
+    data<RowAccess>(`${v1()}/admin/access/tables/${encodeURIComponent(tableId)}/rows`, {
+      method: 'PUT',
+      body: JSON.stringify({ group, rule }),
+    }),
+
+  /** How many rows of a table a person sees. */
+  effectiveRows: (tableId: string, userId: string) =>
+    data<EffectiveRows>(
+      `${v1()}/admin/access/tables/${encodeURIComponent(tableId)}/rows/effective?user=${encodeURIComponent(userId)}`,
     ),
 }

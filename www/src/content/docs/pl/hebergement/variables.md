@@ -67,6 +67,46 @@ Zobacz [Konta i logowanie](/basedb/pl/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | – | dane uwierzytelniające |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` dla adresowania przez host |
 
+## E-maile
+
+Bez serwera wysyłki basedb nie wysyła żadnego e-maila. Wraz z nim wysyłane są powiadomienia
+pozostałe dziesięć minut bez przeczytania (każdy wybiera, które, w **Ustawienia ›
+Powiadomienia**), e-maile z kroku automatyzacji **Wyślij e-mail** oraz link do **Nie pamiętam
+hasła**. Linki wskazują na `BASEDB_PUBLIC_URL`; bez niej e-mail nie zawiera linku.
+
+| Zmienna | Domyślnie | Rola |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | – | serwer SMTP: twojej poczty albo usługi wysyłkowej |
+| `BASEDB_SMTP_PORT` | `587` | `465` dla połączenia szyfrowanego od razu |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` na porcie 465) | `none` tylko dla przekaźnika na tej samej maszynie: inaczej hasło przechodziłoby jawnym tekstem |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | – | dane konta wysyłkowego, jeśli go wymaga |
+| `BASEDB_MAIL_FROM` | – | wymagane z `BASEDB_SMTP_HOST`: nadawca, `basedb <no-reply@exemple.fr>` |
+
+Przy starcie log podaje, co jest ustawione: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` E-mail odrzucony przez serwer jest powtarzany po 1, 5, 30, 120
+i 360 minutach.
+
+## Mapy i adresy
+
+Widok **Mapa** umieszcza adres dzięki usłudze geokodowania: domyślnie usłudze OpenStreetMap
+(Nominatim), odpytywanej raz na adres, co najwyżej jedno zapytanie na sekundę, z zachowaniem
+każdej odpowiedzi. Podłoże mapy składa się z **kafelków**, które przeglądarka każdego czytelnika
+wczytuje bezpośrednio.
+
+| Zmienna | Domyślnie | Rola |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | inna usługa mówiąca tym samym protokołem (własny Nominatim); `off`: żadna, adresy nie opuszczają instancji, a wiersze umieszczają wyłącznie szerokość i długość geograficzna |
+| `BASEDB_MAP_TILES` | kafelki OpenStreetMap | inny serwer kafelków, według wzoru `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | informacja, której wymaga ten serwer, w prawym dolnym rogu mapy |
+
+Przy starcie log podaje, która usługa jest używana: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## Dokumenty PDF
+
+| Zmienna | Domyślnie | Rola |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | czcionki Noto z obrazu | własny katalog, zamontowany w kontenerze, zawierający `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic`, a dla chińskiego, japońskiego i koreańskiego `NotoSansCJK-Regular.ttc` i `-Bold.ttc` |
+
 ## Szablony baz
 
 | Zmienna | Domyślnie | Rola |

@@ -18,14 +18,14 @@ Menü der Ansicht → **Freigeben …**, dann:
 | **Öffentlich** | alle, die den Link haben, ohne Konto |
 | **Angemeldete Mitglieder** | ein Mitglied des Arbeitsbereichs, nach der Anmeldung – bei Bedarf nur bestimmter Gruppen |
 
-![Die Freigabe eines Kalenders](../../../../assets/screens/partage-vue.png)
+![Die Freigabe eines Kalenders](../../../../assets/screens/de/partage-vue.webp)
 
 Der Schalter **Link aktiv** setzt den Link aus, ohne ihn zu verlieren. Die Seite öffnet sich
 außerhalb der Anwendung: keine Seitenleiste, kein Datenbankname, kein Tabellenname – die Ansicht,
 ihre Filter, ihre Spalten und sonst nichts. Ein Kalender oder eine Zeitachse liest sich dort wie
 ein Terminkalender.
 
-![Derselbe Kalender, über seinen Link geöffnet](../../../../assets/screens/vue-partagee.png)
+![Derselbe Kalender, über seinen Link geöffnet](../../../../assets/screens/de/vue-partagee.webp)
 
 ## In wessen Namen gelesen wird
 

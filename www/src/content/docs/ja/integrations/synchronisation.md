@@ -5,7 +5,7 @@ description: Slackチャンネルへの通知、カレンダーとの連携、CS
 
 データベースの**連携**画面は、左下のプロフィールメニューから開きます。**管理**レベルが必要で、データベースを他のツールとつなぐ機能がまとまっています。
 
-![データベースの連携画面](../../../../assets/screens/integrations.png)
+![データベースの連携画面](../../../../assets/screens/ja/integrations.webp)
 
 ## Slack
 

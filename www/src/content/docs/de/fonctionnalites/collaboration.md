@@ -12,7 +12,7 @@ Die Zeilendetails haben einen Reiter **Kommentare** zwischen „Details“ und �
 `@`, um ein Mitglied zu **erwähnen**, und Strg+Eingabe zum Senden. Jede Person bearbeitet oder
 löscht ihre eigenen Kommentare.
 
-![Eine Unterhaltung zu einem Projekt](../../../../assets/screens/commentaires.png)
+![Eine Unterhaltung zu einem Projekt](../../../../assets/screens/de/commentaires.webp)
 
 Wer die Zeile lesen darf, darf sie auch kommentieren. Eine erwähnte Person, die sie nicht lesen
 darf, wird nicht benachrichtigt – und die Verfasserin oder der Verfasser erfährt das, statt zu
@@ -31,7 +31,15 @@ Die Glocke oben rechts zählt, was ungelesen ist. Vier Dinge landen dort:
 Wer eine Benachrichtigung öffnet, öffnet die Zeile. **Alle als gelesen markieren** leert den
 Zähler; Benachrichtigungen werden 90 Tage aufbewahrt.
 
-![Eine erhaltene Erwähnung](../../../../assets/screens/notifications.png)
+### Per E-Mail
+
+Hat die Instanz einen [E-Mail-Versand](/basedb/de/hebergement/variables/#e-mails), wird eine
+Benachrichtigung, die **zehn Minuten ungelesen** bleibt, auch per E-Mail versendet: eine einzige
+E-Mail für alle, die warten, mit einem Link zu jeder Zeile. Was Sie rechtzeitig lesen, wird nicht
+versendet. Unter **Einstellungen › Benachrichtigungen** hat jede Art zwei Schalter: in basedb,
+und per E-Mail.
+
+![Eine erhaltene Erwähnung](../../../../assets/screens/de/notifications.webp)
 
 ## Echtzeit
 
@@ -76,6 +84,6 @@ Strg+Z macht Ihren letzten Schreibvorgang rückgängig – siehe [den Verlauf](/
 
 ## Grenzen
 
-- Benachrichtigungen bleiben in basedb: Bisher wird keine per E-Mail versandt.
+- Keine E-Mail ohne vom Betreiber eingerichteten E-Mail-Versand.
 - Ändern sich mehr als hundert Zeilen auf einmal, lädt der Bildschirm die ganze Seite neu statt
   Zeile für Zeile.

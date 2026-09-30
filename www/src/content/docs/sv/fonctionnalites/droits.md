@@ -31,17 +31,39 @@ Ett dolt fält saknas överallt: i rutnätet, vyerna, API:et, MCP, historiken, d
 gränssnittet och SQL-vyerna. Att filtrera eller sortera på det ger samma svar som för ett fält
 som inte finns.
 
+## Ända ned till raden
+
+Bredvid **Fält** visar **Rader** en grupp bara vissa rader i en tabell: de som ett filter
+fångar, skrivet som filtret för en vy. `@me` avser den inloggade personen:
+
+- `commercial eq @me` – varje säljare ser bara sina egna kunder;
+- `region in ["nord", "est"]` – ett team ser bara sina regioner;
+- `_created_by eq @me` – var och en ser bara det hen har skapat.
+
+Behörigheterna läggs ihop: en person ser raderna i alla sina grupper, och en grupp utan regel
+ser dem alla. Den som hanterar tabellens struktur – nivån Hantera – ser alltid allt. Skärmen
+säger hur många rader en viss person ser, och via vilken grupp.
+
+En rad utanför sin regel finns inte för personen: inte i vyerna, instrumentpanelerna, sökningen,
+API:et, MCP eller historiken, och inte för att ändras, tas bort eller länkas. En rad hen skapar
+måste ingå bland hens egna; genom att ändra en rad kan hen däremot flytta den ut ur sitt
+område – en uppgift som lämnas över till en kollega. Svaren på
+[delade formulär](/basedb/sv/fonctionnalites/formulaires-partages/) kommer alltid fram.
+
 ## Och SQL?
 
 I gränssnittet följer SQL samma behörigheter, som tillämpas av PostgreSQL själv: utan nivån
 Hantera körs en fråga skrivskyddat, på en roll som är personens egen, där en stängd tabell inte
-finns och ett dolt fält avvisas. En [SQL-vy](/basedb/sv/fonctionnalites/requetes-et-vues-sql/)
+finns, ett dolt fält avvisas och bara personens egna rader läses, oavsett om tabellen anges
+ensam eller med sitt schema. En [SQL-vy](/basedb/sv/fonctionnalites/requetes-et-vues-sql/)
 läses med behörigheterna hos den som läser den, och att dela en fråga delar bara dess text.
 
 Direkt **`psql`-åtkomst** till databasen styrs däremot inte av basedb: den läser allt, dolda
 fält inräknade. Begränsningarna skyddar produktens ytor – gränssnitt, API, MCP –, aldrig mot
 någon som har SQL-åtkomst till databasen; sådan åtkomst regleras med PostgreSQL-`GRANT`, som
-driftansvarig sätter.
+driftansvarig sätter. En tabell som har en radregel har PostgreSQLs radsäkerhet aktiverad: en
+roll som skapats för ett tredjepartsverktyg ser inga rader i den, om den inte har attributet
+`BYPASSRLS` eller sin egen policy.
 
 ## Konton och inloggning
 

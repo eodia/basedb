@@ -9,7 +9,7 @@ határidőket. Minden kártyája egy **kérdést** mutat – az adatbázis egy e
 SQL-ben megírt olvasását –, az oldal tetején lévő **szűrők** pedig a hozzájuk kapcsolt kártyákat
 vezérlik.
 
-![A „Pilotage de l’agence” irányítópult: a hónap trendje, célkitűzés, halmozott árbevétel, az értékelések hangulata](../../../../assets/screens/tableaux-de-bord.png)
+![A „Pilotage de l’agence” irányítópult: a hónap trendje, célkitűzés, halmozott árbevétel, az értékelések hangulata](../../../../assets/screens/hu/tableaux-de-bord.webp)
 
 Minden az **Irányítópultok** menüpontból nyílik, az oldalsáv alján, a megnyitott adatbázis
 blokkjában. Bal oldalt az adatbázis irányítópultjai és mentett kérdései láthatók, valamint az
@@ -32,7 +32,7 @@ lehetőségeket is kínálja; az őt megjelenítő lap megtartja a tartalmát, i
 
 A kérdés lépésenként, egymás alatt épül fel:
 
-![Egy kérdés szerkesztője: az adatok, a szűrők, a havi összesítés](../../../../assets/screens/question-editeur.png)
+![Egy kérdés szerkesztője: az adatok, a szűrők, a havi összesítés](../../../../assets/screens/hu/question-editeur.webp)
 
 | Lépés | Mit választ itt |
 |---|---|
@@ -169,7 +169,7 @@ kártyával** pedig kiegészíti a többit. Lehet **alapértelmezett értéke** 
 Olvasási módban egy pontra kattintva egy szűrő is beállítható: **Szűrés: „Lyon”** egy olyan
 kártyán, amelynek várososzlopa a „Ville” szűrőhöz van kapcsolva.
 
-![Az „Activité” lap: feladatok határidő szerint, állapot szerint halmozva, a projektek tölcsére, becsült órák kereszttáblában](../../../../assets/screens/tableaux-de-bord-activite.png)
+![Az „Activité” lap: feladatok határidő szerint, állapot szerint halmozva, a projektek tölcsére, becsült órák kereszttáblában](../../../../assets/screens/hu/tableaux-de-bord-activite.webp)
 
 ## A Copilot
 

@@ -6,7 +6,7 @@ description: Notificar um canal do Slack, conectar uma agenda, manter uma tabela
 A tela **Integrações** de uma base é aberta pelo menu do perfil, no canto inferior esquerdo. Ela
 exige o nível **Gerenciamento** e reúne o que conecta a base ao resto das suas ferramentas.
 
-![A tela Integrações de uma base](../../../../assets/screens/integrations.png)
+![A tela Integrações de uma base](../../../../assets/screens/pt-br/integrations.webp)
 
 ## Slack
 

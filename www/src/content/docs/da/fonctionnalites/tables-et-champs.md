@@ -22,7 +22,7 @@ indtaster (»Échéance«), bliver et læsbart fysisk navn (`echeance`) gennem e
 | Enkeltvalg | `text` + `CHECK` | farve, ikon eller billede pr. mulighed |
 | Flervalg | `text[]` + `CHECK` | kan filtreres med array-operatorerne |
 | E-mail | `text` + `CHECK` | en adresse, som databasen kontrollerer, og som åbnes med ét klik |
-| Telefon, Stregkode | `text` | en kort tekst og dens format: opkaldslink, fast tegnbredde |
+| Telefon, Stregkode, Adresse | `text` | en kort tekst og dens format: opkaldslink, fast tegnbredde, link til kortet |
 | URL | `text` + `CHECK` | udfyldes ved indtastning (`exemple.fr` → `https://exemple.fr`) |
 | Person | `uuid` | et medlem af arbejdsområdet; at udpege personen [giver besked](/basedb/da/fonctionnalites/collaboration/) |
 | Autonummer | `bigint` (identity) | nummererer også de eksisterende rækker; ingen indtaster det |
@@ -38,7 +38,7 @@ Hver tabel har også sine **systemkolonner**: `_id` (UUID v7), `_created_at`,
 via API'et. Gitteret samler dem under **Systemoplysninger** i kolonnemenuen: de findes i hver
 tabel, men er kun nyttige i få.
 
-![Gitteret for en tabel med en beregnet varighed, et opslag og et antal](../../../../assets/screens/grille.png)
+![Gitteret for en tabel med en beregnet varighed, et opslag og et antal](../../../../assets/screens/da/grille.webp)
 
 ## Begrænsninger, som databasen håndhæver
 
@@ -55,7 +55,7 @@ Foreign-key constraints:
 
 ## Visningsformater
 
-Valuta, Procent, Varighed, Bedømmelse, Telefon og Stregkode vælges som typer, men de er
+Valuta, Procent, Varighed, Bedømmelse, Telefon, Stregkode og Adresse vælges som typer, men de er
 **formater**: kolonnen forbliver et tal eller en tekst, kun visningen ændres.
 
 | Format | På | Vises og indtastes |
@@ -66,9 +66,28 @@ Valuta, Procent, Varighed, Bedømmelse, Telefon og Stregkode vælges som typer, 
 | Bedømmelse | et tal | fra 1 til 10 stjerner, sættes med ét klik |
 | Telefon | en kort tekst | et opkaldslink |
 | Stregkode | en kort tekst | med fast tegnbredde |
+| Adresse | en kort tekst | et link til kortet; i rækkedetaljerne foreslår **Find adresse** de adresser, der matcher, skrevet fuldt ud; visningen [Landkort](/basedb/da/fonctionnalites/vues/#landkort) placerer den |
 
 Et format kan ændres bagefter (**Visningsformat**, når du redigerer feltet) uden at røre de gemte
 værdier. Det begrænser ikke værdien: en bedømmelse på 7 på en skala til 5 forbliver 7.
+
+## Standardværdier
+
+I redigeringen af et felt fastsætter **Standardværdi**, hvad en række, der oprettes uden at
+udfylde det, får:
+
+| Valg | På | Den oprettede række får |
+|---|---|---|
+| En fast værdi | de fleste typer | den valgte værdi — en status »Ny«, en prioritet 3 |
+| Dagens dato | en dato | den dag, den er oprettet, i personens tidszone |
+| Tidspunktet for oprettelsen | en dato og et klokkeslæt | det nøjagtige klokkeslæt |
+| Personen, der opretter rækken | en person | den, der har oprettet den — »Ansvarlig: mig« |
+
+Rækkedetaljerne for en ny række og formularerne åbnes forudfyldt; tømmer du feltet, forbliver det
+tomt. Standarden gælder for al oprettelse — brugerflade, API, MCP, import, delt formular,
+automatisering —, også på et felt, personen ikke kan redigere: det er tabellens regel.
+Eksisterende rækker ændres ikke, og en indsættelse i direkte SQL får ingen standard: basedb
+anvender den, ikke kolonnen.
 
 ## Formler
 
@@ -174,7 +193,7 @@ Formateret tekst kan ikke udfyldes af AI: en model skriver tekst, ikke renset HT
 Databasens **Struktur**-skærm — i dens **⋯**-menu i sidepanelet — viser tabellerne og deres felter: tilføj, omdøb, gør påkrævet, omarranger,
 beskriv, udpeg visningsfeltet.
 
-![Struktur-skærmen for en database](../../../../assets/screens/structure.png)
+![Struktur-skærmen for en database](../../../../assets/screens/da/structure.webp)
 
 Ændring af strukturen kræver niveauet **Administrere**. Uden det kan skærmen ses, men den
 tilbyder intet: ingen knap, ingen blyant, intet håndtag — om et felt er påkrævet, og hvilket

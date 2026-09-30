@@ -15,12 +15,15 @@ export function Celebration({
   accent,
   confetti,
   align,
+  emblem,
   children,
 }: {
   readonly accent: string
   /** The confetti — the form's author may prefer a quieter end. */
   readonly confetti: boolean
   readonly align: 'left' | 'center'
+  /** What blooms in place of the check — a quiz's score; the confetti start from it. */
+  readonly emblem?: ReactNode
   readonly children: ReactNode
 }) {
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -48,30 +51,40 @@ export function Celebration({
           align === 'center' ? 'items-center text-center' : 'items-start text-left',
         )}
       >
-        <div ref={check} className="relative size-24 shrink-0">
-          <span
-            aria-hidden
-            className="absolute inset-0 animate-form-ring rounded-full bg-(--fm-accent) [animation-delay:0.25s]"
-          />
-          <span
-            aria-hidden
-            className="absolute inset-0 animate-form-ring rounded-full bg-(--fm-accent) [animation-delay:0.55s]"
-          />
-          <svg viewBox="0 0 96 96" aria-hidden="true" className="relative size-24 animate-form-pop">
-            <circle cx="48" cy="48" r="44" fill="var(--fm-accent)" />
-            <path
-              d="M29 49.5 L42 62 L67 35"
-              fill="none"
-              stroke="var(--fm-on-accent)"
-              strokeWidth="7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray="60"
-              strokeDashoffset="60"
-              className="animate-form-draw [animation-delay:0.3s]"
+        {emblem !== undefined ? (
+          <div ref={check} className="relative shrink-0">
+            {emblem}
+          </div>
+        ) : (
+          <div ref={check} className="relative size-24 shrink-0">
+            <span
+              aria-hidden
+              className="absolute inset-0 animate-form-ring rounded-full bg-(--fm-accent) [animation-delay:0.25s]"
             />
-          </svg>
-        </div>
+            <span
+              aria-hidden
+              className="absolute inset-0 animate-form-ring rounded-full bg-(--fm-accent) [animation-delay:0.55s]"
+            />
+            <svg
+              viewBox="0 0 96 96"
+              aria-hidden="true"
+              className="relative size-24 animate-form-pop"
+            >
+              <circle cx="48" cy="48" r="44" fill="var(--fm-accent)" />
+              <path
+                d="M29 49.5 L42 62 L67 35"
+                fill="none"
+                stroke="var(--fm-on-accent)"
+                strokeWidth="7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="60"
+                strokeDashoffset="60"
+                className="animate-form-draw [animation-delay:0.3s]"
+              />
+            </svg>
+          </div>
+        )}
         <div className="mt-8 animate-form-rise [animation-delay:0.45s]">{children}</div>
       </div>
     </div>

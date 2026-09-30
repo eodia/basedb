@@ -16,6 +16,7 @@ import type { Field } from '@/lib/api/client'
 import { templateToLabels, templateToNames } from '@/lib/card-template'
 import { $t } from '@/lib/i18n'
 import { htmlToPlain } from '@/lib/rich-text'
+import { KEEPS_MOD_K } from '@/lib/store/palette'
 import { cn } from '@/lib/utils'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
@@ -32,6 +33,7 @@ import {
   Bold,
   Braces,
   Code,
+  ExternalLink,
   Heading2,
   Italic,
   Link as LinkIcon,
@@ -409,7 +411,11 @@ export function MarkdownEditor({
           theme,
           EditorView.lineWrapping,
           EditorState.readOnly.of(readOnly),
-          EditorView.contentAttributes.of({ 'aria-label': label }),
+          // Ctrl+K makes a link here, where it can be typed — elsewhere it opens the palette.
+          EditorView.contentAttributes.of({
+            'aria-label': label,
+            ...(readOnly ? {} : { [KEEPS_MOD_K]: '' }),
+          }),
           placeholderExtension(placeholder ?? $t('Écrire en Markdown…')),
           keymap.of([...keys, ...historyKeymap, indentWithTab, ...defaultKeymap]),
           EditorView.updateListener.of((update) => {
@@ -722,16 +728,25 @@ export function urlLabel(url: string): string {
 /** A `url` field's value, as a link that opens in a new tab — only for a safe scheme. */
 export function UrlLink({ url, className }: { readonly url: string; readonly className?: string }) {
   if (!SAFE_URL.test(url)) return <span className={className}>{url}</span>
+  // The cell shortens the address; the tooltip gives it whole, where it leads.
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer nofollow"
-      title={url}
-      onClick={(e) => e.stopPropagation()}
-      className={cn('truncate text-primary underline-offset-2 hover:underline', className)}
+    <Hint
+      label={
+        <span className="flex items-start gap-1.5">
+          <ExternalLink className="mt-0.5 size-3 shrink-0" />
+          <span className="break-all">{url}</span>
+        </span>
+      }
     >
-      {urlLabel(url)}
-    </a>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer nofollow"
+        onClick={(e) => e.stopPropagation()}
+        className={cn('truncate text-primary underline-offset-2 hover:underline', className)}
+      >
+        {urlLabel(url)}
+      </a>
+    </Hint>
   )
 }

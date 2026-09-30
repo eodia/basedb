@@ -7,7 +7,7 @@ O **basedb** é um banco de dados colaborativo, no espírito das planilhas colab
 que você mesmo hospeda — com uma diferença que define todo o resto: **seus dados
 vivem em tabelas PostgreSQL de verdade**, tipadas e com nomes legíveis.
 
-![A grade de uma tabela no basedb](../../../../assets/screens/grille.png)
+![A grade de uma tabela no basedb](../../../../assets/screens/pt-br/grille.webp)
 
 ## Uma promessa simples
 
@@ -39,8 +39,8 @@ a escrita.
 - [Tabelas e campos](/basedb/pt-br/fonctionnalites/tables-et-champs/) tipados, relações
   que são chaves estrangeiras de verdade — ou múltiplas —, fórmulas calculadas pelo PostgreSQL,
   pesquisas e agregações através das relações.
-- Oito [visões](/basedb/pt-br/fonctionnalites/vues/): grade, kanban, calendário, linha do tempo,
-  galeria, lista, formulário, questionário — colaborativas ou pessoais.
+- Dez [visões](/basedb/pt-br/fonctionnalites/vues/): grade, kanban, calendário, linha do tempo,
+  galeria, lista, mapa, formulário, questionário, quiz — colaborativas ou pessoais.
 - [Formulários](/basedb/pt-br/fonctionnalites/formulaires-partages/) e
   [visões](/basedb/pt-br/fonctionnalites/vues-partagees/) compartilhados por um link, e calendários
   que podem ser assinados em uma agenda.

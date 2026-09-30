@@ -5,7 +5,7 @@ description: basedb 是什么，以及它与协作式电子表格有何不同。
 
 **basedb** 是一款协作式数据库，秉承协作式电子表格的理念，由您自行托管——但有一点不同，并决定了其余的一切：**您的数据存放在真正的 PostgreSQL 数据表中**，类型明确，名称清晰可读。
 
-![basedb 中一张数据表的网格](../../../../assets/screens/grille.png)
+![basedb 中一张数据表的网格](../../../../assets/screens/zh-cn/grille.webp)
 
 ## 一个简单的承诺
 
@@ -30,7 +30,7 @@ description: basedb 是什么，以及它与协作式电子表格有何不同。
 ## 您会找到什么
 
 - 有类型的[数据表和字段](/basedb/zh-cn/fonctionnalites/tables-et-champs/)，关联就是真正的外键（也可以是多项关联），公式由 PostgreSQL 计算，还有跨关联的查找引用和汇总。
-- 八种[视图](/basedb/zh-cn/fonctionnalites/vues/)：网格、看板、日历、时间线、画廊、列表、表单、问卷——可以是协作视图，也可以是个人视图。
+- 十种[视图](/basedb/zh-cn/fonctionnalites/vues/)：网格、看板、日历、时间线、画廊、列表、地图、表单、问卷、测验——可以是协作视图，也可以是个人视图。
 - 通过链接共享的[表单](/basedb/zh-cn/fonctionnalites/formulaires-partages/)和[视图](/basedb/zh-cn/fonctionnalites/vues-partagees/)，以及可在日历应用中订阅的日历。
 - [协作](/basedb/zh-cn/fonctionnalites/collaboration/)：评论与提及、通知、实时更新。
 - [自动化](/basedb/zh-cn/fonctionnalites/automatisations/)、[仪表盘](/basedb/zh-cn/fonctionnalites/tableaux-de-bord/)及其问题，用鼠标或 SQL 构建。

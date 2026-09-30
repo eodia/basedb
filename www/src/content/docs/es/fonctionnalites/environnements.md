@@ -27,7 +27,7 @@ Desde el menú de la base, en **Más acciones**, **Comparar los entornos…** ab
 - **Sincronización de filas**: tabla por tabla, trasladar filas de un entorno a
   otro, por identificador.
 
-![Comparar la producción y la preproducción](../../../../assets/screens/environnements.png)
+![Comparar la producción y la preproducción](../../../../assets/screens/es/environnements.webp)
 
 ## Cómo sabe basedb quién ha cambiado qué
 

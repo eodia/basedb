@@ -8,7 +8,7 @@ räknas, hur de utvecklas månad för månad, fördelningen av en status, de nä
 förfallodatumen. Varje kort visar en **fråga** – en läsning av databasen, byggd med musen eller
 skriven i SQL – och **filter** högst upp på sidan styr de kort som kopplas till dem.
 
-![Instrumentpanelen ”Pilotage de l’agence”: månadens trend, mål, staplad omsättning, stämningen i omdömena](../../../../assets/screens/tableaux-de-bord.png)
+![Instrumentpanelen ”Pilotage de l’agence”: månadens trend, mål, staplad omsättning, stämningen i omdömena](../../../../assets/screens/sv/tableaux-de-bord.webp)
 
 Allt öppnas från **Instrumentpaneler**, i blocket för den öppna databasen längst ned i
 sidofältet. Till vänster finns databasens instrumentpaneler och sparade frågor, och **Utforska
@@ -30,7 +30,7 @@ innehåll, nu åter osparat.
 
 En fråga byggs i steg, det ena under det andra:
 
-![Redigeraren för en fråga: data, filter, sammanfattning per månad](../../../../assets/screens/question-editeur.png)
+![Redigeraren för en fråga: data, filter, sammanfattning per månad](../../../../assets/screens/sv/question-editeur.webp)
 
 | Steg | Vad du väljer där |
 |---|---|
@@ -163,7 +163,7 @@ kompletterar resten. Det kan ha ett **standardvärde** – ”I år”, till exe
 I läsläge kan ett klick på en punkt också ställa in ett filter: **Filtrera efter ”Lyon”** på ett
 kort vars kolumn med städer är kopplad till filtret ”Ville”.
 
-![Fliken ”Activité”: uppgifter per förfallodatum staplade efter status, projekttratt, uppskattade timmar i en pivottabell](../../../../assets/screens/tableaux-de-bord-activite.png)
+![Fliken ”Activité”: uppgifter per förfallodatum staplade efter status, projekttratt, uppskattade timmar i en pivottabell](../../../../assets/screens/sv/tableaux-de-bord-activite.webp)
 
 ## Copilot
 

@@ -6,7 +6,7 @@ description: Ogni scrittura, da qualunque parte provenga, con i valori precedent
 basedb registra nella cronologia **ogni scrittura**, da qualunque parte provenga: l’interfaccia, l’API, un agente MCP,
 un modulo pubblico — e persino una query SQL scritta a mano in `psql`.
 
-![La cronologia di un database](../../../../assets/screens/historique.png)
+![La cronologia di un database](../../../../assets/screens/it/historique.webp)
 
 ## Come viene catturata
 

@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb — 모든 테이블이 실제 PostgreSQL 테이블인 협업 데이터베이스',
-			description: '그리드와 여덟 가지 보기, 수식, 공유 양식과 공유 보기, 댓글, 자동화, 대시보드, 필드 단위 권한, 빠짐없는 기록, REST API와 MCP 서버 — 모두 알아보기 쉬운 이름의 실제 PostgreSQL 테이블 위에서 동작합니다. 자체 호스팅, AGPL-3.0.',
+			description: '그리드와 열 가지 보기, 수식, 양식, 퀴즈와 공유 보기, 댓글, 자동화, 대시보드, 필드 단위 권한, 빠짐없는 기록, REST API와 MCP 서버 — 모두 알아보기 쉬운 이름의 실제 PostgreSQL 테이블 위에서 동작합니다. 자체 호스팅, AGPL-3.0.',
 		},
 		changelog: {
 			title: '새 소식 — basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: '여덟 가지 보기',
-								text: '그리드, 칸반, 캘린더, 타임라인, 갤러리, 목록, 양식, 설문.',
+								title: '열 가지 보기',
+								text: '그리드, 칸반, 캘린더, 타임라인, 갤러리, 목록, 지도, 양식, 설문, 퀴즈.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb — 모든 업무가 한곳에',
-			description: '고객, 프로젝트, 재고, 지원자: 팀 전체가 표, 칸반, 캘린더로 동시에 수정하는 데이터베이스입니다. 대시보드, 자동화, AI까지 갖췄습니다. 코드 없이, 무료 자유 소프트웨어입니다.',
+			title: 'basedb — 팀 전체를 위한 협업 데이터베이스',
+			description: '모든 업무를 한곳에서, 팀 전체가 동시에 수정합니다. 표, 칸반, 캘린더로 보고, 양식, 대시보드, 자동화, AI까지 갖췄습니다. 코드 없이, 무료 자유 소프트웨어입니다.',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -880,9 +880,9 @@ export default {
 			text: '모든 기능은 같은 테이블에, 같은 권한으로, 같은 기록에 씁니다.',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: '가지 방법으로 보는 데이터',
-					text: '그리드, 칸반, 캘린더, 타임라인, 갤러리, 목록, 양식, 설문, 모두 같은 행 위에서. 각자 자신에게 맞는 것을 고릅니다.',
+					text: '그리드, 칸반, 캘린더, 타임라인, 갤러리, 목록, 지도, 양식, 설문, 퀴즈, 모두 같은 행 위에서. 각자 자신에게 맞는 것을 고릅니다.',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -932,7 +932,7 @@ export default {
 				},
 				import: {
 					title: '한 번에 가져오기',
-					text: 'CSV 파일을 끌어다 놓으세요: 열과 타입을 추측해 테이블이 만들어집니다.',
+					text: 'Excel 워크북이나 CSV 파일을 끌어다 놓으세요: 열과 타입을 추측해 테이블이 만들어집니다.',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1025,7 +1025,7 @@ export default {
 				},
 				{
 					q: '지금 쓰는 스프레드시트를 가져올 수 있나요?',
-					a: '네. 시트를 CSV로 저장해 basedb로 끌어다 놓으세요. 가져오기가 각 열의 타입을 추측하고, 테이블을 만들고, 가져오지 못한 내용을 행마다 알려 줍니다.',
+					a: '네. Excel 워크북이나 CSV 파일을 basedb로 끌어다 놓으세요. 가져오기가 각 열의 타입을 추측하고, 테이블을 만들고, 가져오지 못한 내용을 행마다 알려 줍니다.',
 				},
 				{
 					q: '여러 명이 동시에 작업할 수 있나요?',
@@ -1350,9 +1350,9 @@ export default {
 		text: '모든 기능은 같은 권한 아래 같은 테이블에 쓰고, 같은 기록에 남깁니다.',
 		more: '자세히 보기 →',
 		views: {
-			title: '같은 행을 여덟 가지 보기로',
+			title: '같은 행을 열 가지 보기로',
 			text: '팀 전체를 위한 협업 보기, 나만을 위한 개인 보기: 각자 읽는 방식을 고르고, 데이터는 아무도 복사하지 않습니다.',
-			chips: ['그리드', '칸반', '캘린더', '타임라인', '갤러리', '목록', '양식', '설문'],
+			chips: ['그리드', '칸반', '캘린더', '타임라인', '갤러리', '목록', '지도', '양식', '설문', '퀴즈'],
 		},
 		forms: {
 			title: '공유 양식',
@@ -1416,7 +1416,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'CSV·JSON 가져오기',
+				title: 'Excel·CSV·JSON 가져오기',
 				text: '파일을 끌어다 놓으세요. 가져오기가 타입을 추측하고, 테이블을 만들거나 기존 테이블에 추가하며, 거부된 내용을 행마다 알려 줍니다.',
 				href: '/guides/premiers-pas/',
 			},
@@ -1525,6 +1525,66 @@ export default {
 		title: 'basedb에서 바뀐 내용',
 		intro: '각 변경의 자세한 내용은 <a href="https://github.com/eodia/basedb/commits/main">저장소 기록</a>에 있습니다. 앞으로의 계획은 <a href="/feuille-de-route/">로드맵</a>에서 확인하세요.',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: '지도, 그리고 제자리를 찾는 주소',
+				tag: '신규',
+				items: [
+					'<strong>열 번째 보기, 지도</strong>: 주소로, 또는 위도와 경도로 각 행을 제자리에 놓습니다. 각 지점은 상태의 색을 띠고, 클릭하면 행 세부 정보가 열립니다. <a href="/fonctionnalites/vues/#지도">지도</a>',
+					'<strong>주소는 한 번만 위치가 확인되면 계속 유지됩니다</strong>, OpenStreetMap의 서비스나 직접 선택한 서비스로 — 지점은 응답이 오는 대로 나타나고, 그 다음부터는 즉시 표시됩니다. 찾을 수 없는 주소는 조용히 제외되지 않고 집계됩니다.',
+					'<strong>주소 형식</strong>은 짧은 텍스트에 사용합니다: 클릭하면 지도에서 열리고, 행 세부 정보에서는 <strong>주소 찾기</strong>가 일치하는 전체 주소를 제안합니다. <a href="/fonctionnalites/tables-et-champs/#표시-형식">형식</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: '행에서 만드는 PDF',
+				tag: '신규',
+				items: [
+					'<strong>견적서, 청구서, PDF 문서</strong>를 행 메뉴에서 — 설정 없이 인쇄되는 기본 문서, 또는 템플릿으로 — 열을 인용하는 텍스트, 행의 필드, 합계가 있는 연결된 행 표, 페이지 나누기. <a href="/fonctionnalites/documents/">문서</a>',
+					'<strong>각자 자신의 권한으로</strong>: 나에게 숨겨진 필드는 내 PDF에 나타나지 않습니다. 20개 언어로 작성되며, 중국어·일본어·한국어도 포함됩니다. API도 같은 문서를 반환합니다.',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: '행 단위까지의 권한, 기본값, Excel 가져오기',
+				tag: '신규',
+				items: [
+					'<strong>각자 자신의 행만</strong>: 그룹은 필터에 맞는 행만 봅니다 — "담당자는 나", "지역은 북부" —, 인터페이스, API, MCP 서버, SQL에서도 마찬가지로 PostgreSQL이 같은 규칙을 적용합니다. <a href="/fonctionnalites/droits/#행-단위까지">행 단위까지</a>',
+					'<strong>기본값</strong>: 고정 값, 오늘 날짜, 생성 시점, 또는 행을 생성하는 사람 — 화면에 미리 채워지고 다른 모든 곳에도 똑같이 적용됩니다. <a href="/fonctionnalites/tables-et-champs/#기본값">기본값</a>',
+					'<strong>Excel 워크북을 끌어다 놓으세요</strong>: 시트를 선택하면 날짜, 금액, 확인란이 그대로 들어오고, 수식은 그 결과값이 들어갑니다. <a href="/guides/premiers-pas/">시작하기</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: '이메일',
+				tag: '신규',
+				items: [
+					'<strong>자동화의 "이메일 보내기" 단계</strong>: 팀 구성원에게, 필드에 지정된 사람에게, 고객의 주소로 — 제목과 본문에 행의 값을 인용합니다. <a href="/fonctionnalites/automatisations/">자동화</a>',
+					'<strong>이메일 알림</strong>은 읽지 않은 채로 있으면 모아서 도착하며, 설정에서 하나씩 선택할 수 있습니다. <strong>비밀번호 찾기</strong>는 링크로 재설정합니다. <a href="/fonctionnalites/collaboration/#이메일로">이메일로</a>',
+					'인스턴스에 메일 서비스의 발송 서버만 알려 주면 됩니다. <a href="/hebergement/variables/#이메일">변수</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n와 TypeScript SDK',
+				tag: '신규',
+				items: [
+					'<strong>n8n 노드</strong>: 워크플로에서 테이블의 행을 읽고 쓰며, 행이 생성되거나 수정되거나 삭제될 때마다 워크플로를 실행 — 확인 또는 서명된 웹훅으로. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>TypeScript SDK</strong>, 인스턴스에서 생성한 테이블 타입과 함께: 존재하지 않는 테이블이나 필드는 실행하기도 전에 오류가 됩니다. <a href="/integrations/sdk/">SDK</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: '퀴즈: 점수를 매기는 질문',
+				tag: '신규',
+				items: [
+					'<strong>새로운 보기, 퀴즈</strong>: 질문마다 정답과 배점을 지정할 수 있는 설문입니다 — 하나 선택, 여러 개 선택, 예·아니요, 숫자, 날짜, 또는 대소문자와 발음 구별 부호를 가리지 않는 정답 텍스트. <a href="/fonctionnalites/vues/#퀴즈">퀴즈</a>',
+					'<strong>원하는 방식으로 정답을 공개하세요</strong>: 질문마다 — 초록색으로, 또는 정답과 함께 빨간색으로, 화면 위쪽의 점수가 올라가며 —, 마지막에, 또는 전혀 공개하지 않습니다. 합격선을 정하면 "합격!" 또는 "아쉽게도 불합격…"이 표시됩니다.',
+					'<strong>마지막에 점수를</strong> 채워지는 원형 그래프로 보여 주고, 이어서 질문마다 정답을 공개합니다. 점수는 테이블의 숫자 필드에 기록됩니다: 그리드를 이 필드로 정렬하면 순위표가 됩니다.',
+					'<strong>링크로 공유해도 부정행위는 불가능합니다</strong>: 페이지는 정답을 전혀 받지 않으며, 채점과 집계는 서버가 담당합니다. <a href="/fonctionnalites/formulaires-partages/#공유-퀴즈">공유 퀴즈</a>',
+					'보기 선택기 아래쪽의 <strong>보기 만들기</strong>는 아홉 가지를 두 그룹 — 행을 보여 주는 것과 응답을 받는 것 — 으로 나누고, 각각 색이 있는 아이콘으로 표시합니다.',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: '채우고 싶어지는 양식',

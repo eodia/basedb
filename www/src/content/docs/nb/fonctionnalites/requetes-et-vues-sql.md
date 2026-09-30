@@ -9,7 +9,7 @@ seg selv, for hele databasen eller for noen grupper –, og den som administrere
 **SQL-visning**: en ekte PostgreSQL-visning, plassert blant tabellene, som `psql` og verktøyene dine også
 leser.
 
-![En lagret spørring, åpnet fra delen «Spørringer»; over den to SQL-visninger plassert blant tabellene](../../../../assets/screens/requete-sql.png)
+![En lagret spørring, åpnet fra delen «Spørringer»; over den to SQL-visninger plassert blant tabellene](../../../../assets/screens/nb/requete-sql.webp)
 
 ## Hver med sine tillatelser
 
@@ -23,7 +23,7 @@ resultatet i det samme rutenettet som tabellene dine. Hva spørringen kan lese, 
   skjult for deg, forsvinner fra `SELECT *` og avvises hvis du navngir det, selv om du kvalifiserer tabellen;
   skriving avvises. Resultatet har merket **Dine tillatelser**.
 
-![Merket «Dine tillatelser»: spørringen ser bare tabellene og feltene som er åpne for personen](../../../../assets/screens/sql-vos-droits.png)
+![Merket «Dine tillatelser»: spørringen ser bare tabellene og feltene som er åpne for personen](../../../../assets/screens/nb/sql-vos-droits.webp)
 
 Det er ikke skjermen som sorterer bort: PostgreSQL selv håndhever tillatelsene dine, kolonne for kolonne, med
 en rolle som er din egen. En spørring kan derfor ikke vise deg noe som rutenettet, API-et eller
@@ -37,7 +37,7 @@ kopi, og **Navn og deling…** (i fanen eller i menyen i sidepanelet) gir den ny
 hvem som ser den, eller sletter den – **Slett** finnes også i menyen dens, ved høyreklikk. En
 fane som viste den, beholder teksten sin.
 
-![Lagre en spørring: navnet, hva den viser, og hvem som ser den](../../../../assets/screens/requete-enregistrer.png)
+![Lagre en spørring: navnet, hva den viser, og hvem som ser den](../../../../assets/screens/nb/requete-enregistrer.webp)
 
 | Omfang | Hvem som ser den | Hvem som kan opprette og endre den |
 |---|---|---|
@@ -61,7 +61,7 @@ tabellene**, med farge og ikon som en tabell, og et lite **øye** til høyre som
 at det er en visning. Et klikk åpner den i en fane: radene i rutenettet, **Oppdater** for å
 lese dem på nytt.
 
-![Visningen «Factures à encaisser», åpnet fra sidepanelet](../../../../assets/screens/vue-sql.png)
+![Visningen «Factures à encaisser», åpnet fra sidepanelet](../../../../assets/screens/nb/vue-sql.webp)
 
 Den opprettes via databasens **⋯**-meny → **Ny SQL-visning…**, eller fra en SQL-fane:
 **⋯** → **Opprett SQL-visning…**, og fanens spørring blir definisjonen. Dialogen
@@ -74,7 +74,7 @@ ber om:
 - **spørringen**: én enkelt `SELECT`, mot databasens tabeller og andre visninger. PostgreSQL
   avviser det den avviser, og editoren peker på stedet.
 
-![Dialogen for en SQL-visning: etikett og utseende, teknisk navn, spørring, beskrivelse](../../../../assets/screens/vue-sql-dialogue.png)
+![Dialogen for en SQL-visning: etikett og utseende, teknisk navn, spørring, beskrivelse](../../../../assets/screens/nb/vue-sql-dialogue.webp)
 
 Visningen leses deretter under navnet sitt, fra grensesnittet så vel som fra `psql` eller BI-verktøyet ditt:
 

@@ -3,12 +3,12 @@ title: Delte formularer
 description: Del en formular via et link, offentligt eller forbeholdt indloggede medlemmer.
 ---
 
-En formular eller et spørgeskema **deles via et link** `/f/<jeton>`. Den person, der svarer,
+En formular, et spørgeskema eller en quiz **deles via et link** `/f/<jeton>`. Den person, der svarer,
 behøver **ingen tilladelser til tabellen**: hvert svar tilføjer en række, og intet andet fra
 tabellen vises for personen. Vil du vise rækker i stedet for at modtage dem, kan en visning
 deles [skrivebeskyttet](/basedb/da/fonctionnalites/vues-partagees/).
 
-![Delingsdialogen](../../../../assets/screens/partage-formulaire.png)
+![Delingsdialogen](../../../../assets/screens/da/partage-formulaire.webp)
 
 ## Hvem kan svare
 
@@ -21,7 +21,7 @@ Linkets side ligger uden for applikationen: intet sidepanel, intet databasenavn,
 rækker. Den bærer formularens udseende — dens tema, farve, skrifttype —, og stiller kun de
 spørgsmål, som tidligere svar kalder på.
 
-![En offentlig formular](../../../../assets/screens/formulaire-public.png)
+![En offentlig formular](../../../../assets/screens/da/formulaire-public.webp)
 
 ## På hvis vegne svaret skrives
 
@@ -47,6 +47,20 @@ Dialogen indstiller:
 - **Stop deling**: linket forsvinder, svarene bliver i tabellen.
 
 En lukket formular siger det i én sætning, allerede før den beder om login.
+
+## En delt quiz
+
+Siden for en quiz modtager **ingen rigtige svar**: kun hvad hvert spørgsmål er værd. Det er
+serveren, der retter.
+
+- Rettet **efter hvert spørgsmål** sender siden serveren hvert bedømte svar, i det øjeblik det
+  gives, og får så at vide, om det er rigtigt — og hvilket der var det.
+- Ved afsendelsen tæller serveren scoren **ud fra de modtagne svar** og skriver den i det felt,
+  der er valgt til den, hvis der er et, og hvis den, der har udgivet delingen, kan skrive i det.
+  Siden viser den score, den får tilbage, og rettelsen, medmindre quizzen siger »aldrig«.
+
+En score læses altså i tabellen, sådan som serveren har talt den, ikke sådan som en side ville
+have oplyst den.
 
 ## Begrænsninger
 

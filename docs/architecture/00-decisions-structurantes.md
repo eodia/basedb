@@ -303,11 +303,12 @@ utile complète précisément pour éviter un aller-retour au consommateur, et u
 consommateur qui reçoit une ligne incomplète sans le savoir est pire qu'un
 consommateur désactivé. Le chapitre 08 est réécrit en conséquence.
 
-### A20 — Restriction de lignes : signature figée, implémentation reportée
+### A20 — Restriction de lignes : signature figée, puis remplie
 
-Il n'existe pas de permission au niveau ligne en v1. Mais la signature du décideur
-d'autorisation comporte dès maintenant un prédicat de lignes, dont la valeur est
-constamment vrai, et le constructeur de requêtes l'émet.
+La signature du décideur d'autorisation comporte un prédicat de lignes, que le
+constructeur de requêtes émet dans chaque requête. Il a été constamment vrai jusqu'aux
+règles de lignes (chapitre 05 §16, migration 0014), qui le remplissent sans qu'aucune
+requête ait eu à changer.
 
 Cela fige la surface nécessaire sans rien implémenter, et rend écrivable le test de
 non-régression qui garantit qu'aucune requête ne se construit hors du point
@@ -621,6 +622,7 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `PRIVILEGE_ESCALATION` | Accorder plus que ce qu'on détient ; rôle hors des capacités du créateur ; ajout à un rôle système | 403 | 05 |
 | `RESOURCE_NOT_FOUND` | Ressource inexistante **ou** invisible, sur toute surface, objet de catalogue compris (A23) | 404 | 05 |
 | `ROLE_NOT_DELEGABLE` | Rôle demandé non inclus dans les droits de l'appelant | 403 | 08 |
+| `ROW_OUT_OF_SCOPE` | Ligne créée hors des lignes que l'acteur voit, selon les règles de lignes de ses groupes | 403 | 05 |
 | `TENANT_ISOLATION_VIOLATED` | Requête visant le schéma d'un autre tenant ; incident, réponse générique | 500 | 05 |
 | `VALUE_REJECTED` | Valeur refusée par une contrainte dont tous les champs sont lisibles | 422 | 05 |
 | `WEBHOOK_MASK_INCOMPLETE` | Rôle d'un webhook sans masque de lecture complet sur une table abonnée (A19) | 422 | 05 |
@@ -682,6 +684,8 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `AI_KEY_REJECTED` | Clé refusée par le fournisseur, à la pose ou en exploitation | 422 | 12 |
 | `AI_MODEL_UNKNOWN` | Modèle absent de la table de correspondance du fournisseur résolu | 422 | 12 |
 | `AI_NOT_CONFIGURED` | IA activée sans fournisseur, modèle ou clé résolus | 409 | 12 |
+| `MAIL_NOT_CONFIGURED` | Étape « Envoyer un courriel » sur une instance sans serveur d'envoi (`BASEDB_SMTP_HOST`) | 409 | 17 |
+| `GEOCODER_UNAVAILABLE` | Le service de géocodage de l'instance n'a pas répondu, ou a refusé | 502 | 11 |
 | `AI_PAYLOAD_TOO_LARGE` | Charge utile au-delà des plafonds déclarés | 422 | 12 |
 | `AI_PROVIDER_UNAVAILABLE` | Délai dépassé, `5xx`, `429` amont, erreur réseau, circuit ouvert | 503 | 12 |
 | `AI_QUOTA_EXCEEDED` | Plafond mensuel ou de simultanéité atteint | 429 | 12 |

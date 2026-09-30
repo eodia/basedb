@@ -9,7 +9,7 @@ sebe, pro celou databázi nebo pro několik skupin –, a kdo databázi spravuje
 **pohled SQL**: skutečný pohled PostgreSQL zařazený mezi tabulky, který čtou i `psql` a vaše
 nástroje.
 
-![Uložený dotaz otevřený ze sekce „Dotazy“; nad ním dva pohledy SQL zařazené mezi tabulky](../../../../assets/screens/requete-sql.png)
+![Uložený dotaz otevřený ze sekce „Dotazy“; nad ním dva pohledy SQL zařazené mezi tabulky](../../../../assets/screens/cs/requete-sql.webp)
 
 ## Každý se svými oprávněními
 
@@ -23,7 +23,7 @@ jako vaše tabulky. Co dotaz smí číst, závisí na tom, kdo ho spouští:
   skryté, zmizí ze `SELECT *` a je odmítnuto, pokud ho uvedete, i s kvalifikací tabulky;
   zápis je odmítnut. Výsledek nese štítek **Vaše oprávnění**.
 
-![Štítek „Vaše oprávnění“: dotaz vidí jen tabulky a pole, které má daná osoba otevřené](../../../../assets/screens/sql-vos-droits.png)
+![Štítek „Vaše oprávnění“: dotaz vidí jen tabulky a pole, které má daná osoba otevřené](../../../../assets/screens/cs/sql-vos-droits.webp)
 
 Nefiltruje to obrazovka: vaše oprávnění uplatňuje sám PostgreSQL, sloupec po sloupci, pod
 rolí, která je vám vlastní. Dotaz vám tedy nemůže ukázat nic, co by vám neukázala mřížka, API
@@ -37,7 +37,7 @@ záložce nebo v jeho nabídce v postranním panelu) ho přejmenuje, změní, kd
 odstraní — **Odstranit** je také v jeho nabídce, pravým kliknutím. Záložka, která ho
 zobrazovala, si ponechá svůj text.
 
-![Uložení dotazu: jeho název, co ukazuje a kdo ho vidí](../../../../assets/screens/requete-enregistrer.png)
+![Uložení dotazu: jeho název, co ukazuje a kdo ho vidí](../../../../assets/screens/cs/requete-enregistrer.webp)
 
 | Rozsah | Kdo ho vidí | Kdo ho může vytvořit a upravit |
 |---|---|---|
@@ -61,7 +61,7 @@ tabulkami**, s barvou a ikonou jako tabulka a s malým **okem** vpravo, které �
 o pohled. Kliknutím se otevře na záložce: jeho řádky v mřížce, **Aktualizovat** pro jejich
 opětovné načtení.
 
-![Pohled „Factures à encaisser“ otevřený z postranního panelu](../../../../assets/screens/vue-sql.png)
+![Pohled „Factures à encaisser“ otevřený z postranního panelu](../../../../assets/screens/cs/vue-sql.webp)
 
 Vytváří se přes nabídku **⋯** databáze → **Nový pohled SQL…** nebo ze záložky SQL: **⋯** →
 **Vytvořit pohled SQL…** a dotaz na záložce se stane jeho definicí. Dialog se ptá na:
@@ -72,7 +72,7 @@ Vytváří se přes nabídku **⋯** databáze → **Nový pohled SQL…** nebo 
 - jeho **dotaz**: jediný `SELECT` nad tabulkami a ostatními pohledy databáze. PostgreSQL
   odmítne, co odmítne, a editor ukáže na příslušné místo.
 
-![Dialog pohledu SQL: popisek a vzhled, technický název, dotaz, popis](../../../../assets/screens/vue-sql-dialogue.png)
+![Dialog pohledu SQL: popisek a vzhled, technický název, dotaz, popis](../../../../assets/screens/cs/vue-sql-dialogue.webp)
 
 Pohled se pak čte pod svým názvem, z rozhraní stejně jako z `psql` nebo z vašeho nástroje BI:
 

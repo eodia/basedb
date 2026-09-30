@@ -12,7 +12,7 @@ Egy sor részletei panelen van egy **Megjegyzések** lap a „Részletek” és 
 között. Írjon be egy `@` jelet egy tag **említéséhez**, és nyomja le a Ctrl+Enter billentyűt a
 küldéshez. Mindenki a saját megjegyzéseit szerkesztheti vagy törölheti.
 
-![Beszélgetés egy projektről](../../../../assets/screens/commentaires.png)
+![Beszélgetés egy projektről](../../../../assets/screens/hu/commentaires.webp)
 
 Ha valaki olvashatja a sort, megjegyzést is fűzhet hozzá. Az említett személy, aki nem olvashatja
 a sort, nem kap értesítést – és erről a szerző tájékoztatást kap, ahelyett hogy azt hinné, az
@@ -31,7 +31,15 @@ A jobb felső sarokban lévő csengő számolja az olvasatlanokat. Négy dolog �
 Egy értesítés megnyitása megnyitja a sort. Az **Összes megjelölése olvasottként** lenullázza a
 számlálót; az értesítéseket 90 napig őrzi meg a rendszer.
 
-![Egy beérkezett említés](../../../../assets/screens/notifications.png)
+### E-mailben
+
+Ha a példánynak van [levélküldő szervere](/basedb/hu/hebergement/variables/#e-mailek), egy
+**tíz percig olvasatlanul maradt** értesítés e-mailben is elmegy: egyetlen e-mail az összes
+váró értesítésről, mindegyik sorára mutató hivatkozással. Az, amit időben elolvas, nem megy el.
+A **Beállítások › Értesítések** menüpontban minden fajtának két kapcsolója van: a basedb-ben,
+és e-mailben.
+
+![Egy beérkezett említés](../../../../assets/screens/hu/notifications.webp)
 
 ## Valós idő
 
@@ -74,6 +82,6 @@ A Ctrl+Z visszavonja az utolsó írását – lásd: [Előzmények](/basedb/hu/f
 
 ## Korlátok
 
-- Az értesítések a basedb-ben maradnak: egyelőre egyiket sem küldi el a rendszer e-mailben.
+- Nincs e-mail az üzemeltető által beállított levélküldő szerver nélkül.
 - Ha egyszerre több mint száz sor változik, a képernyő a teljes oldalt tölti újra, nem soronként
   frissít.

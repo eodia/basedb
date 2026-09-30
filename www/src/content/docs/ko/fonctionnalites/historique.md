@@ -6,7 +6,7 @@ description: 출처와 관계없이 모든 쓰기를 이전 값과 함께 남깁
 basedb는 출처와 관계없이 **모든 쓰기**를 기록합니다. 인터페이스, API, MCP 에이전트, 공개
 양식은 물론 `psql`에서 직접 작성한 SQL 쿼리까지 기록합니다.
 
-![데이터베이스의 기록](../../../../assets/screens/historique.png)
+![데이터베이스의 기록](../../../../assets/screens/ko/historique.webp)
 
 ## 기록 방식
 

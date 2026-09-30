@@ -12,7 +12,7 @@ Rivin tiedoissa on **Kommentit**-välilehti ”Tiedot”- ja ”Historia”-väl
 Kirjoita `@` **mainitaksesi** jäsenen ja lähetä Ctrl+Enter-näppäinyhdistelmällä. Kukin voi
 muokata ja poistaa omia kommenttejaan.
 
-![Keskustelu projektista](../../../../assets/screens/commentaires.png)
+![Keskustelu projektista](../../../../assets/screens/fi/commentaires.webp)
 
 Rivin lukuoikeus riittää sen kommentoimiseen. Mainittu henkilö, joka ei voi lukea riviä, ei saa
 ilmoitusta – ja kirjoittajalle kerrotaan siitä, jottei hän luule viestin menneen perille.
@@ -30,7 +30,14 @@ Oikean yläkulman kello laskee lukemattomat. Sinne tulee neljä asiaa:
 Ilmoituksen avaaminen avaa rivin. **Merkitse kaikki luetuiksi** nollaa laskurin; ilmoituksia
 säilytetään 90 päivää.
 
-![Vastaanotettu maininta](../../../../assets/screens/notifications.png)
+### Sähköpostitse
+
+Kun instanssilla on [lähetyspalvelin](/basedb/fi/hebergement/variables/#sähköpostit), kymmenen
+minuuttia lukematta ollut ilmoitus lähtee myös sähköpostitse: yksi sähköposti kaikille
+odottaville, linkillä jokaiseen riviin. Se, mitä luet ajoissa, ei lähde. Kohdassa **Asetukset ›
+Ilmoitukset** kullakin lajilla on kaksi kytkintä: basedb:ssä ja sähköpostitse.
+
+![Vastaanotettu maininta](../../../../assets/screens/fi/notifications.webp)
 
 ## Reaaliaikaisuus
 
@@ -73,6 +80,6 @@ Ctrl+Z kumoaa viimeisimmän kirjoituksesi – katso [historia](/basedb/fi/foncti
 
 ## Rajoitukset
 
-- Ilmoitukset pysyvät basedb:ssä: toistaiseksi mitään ei lähetetä sähköpostilla.
+- Ei sähköpostia, jos ylläpitäjä ei ole määrittänyt lähetyspalvelinta.
 - Jos kerralla muuttuu yli sata riviä, näkymä lataa koko sivun uudelleen rivi kerrallaan
   päivittämisen sijaan.

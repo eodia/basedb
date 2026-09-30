@@ -1,9 +1,10 @@
-import { qualify } from '@basedb/naming'
+import { qualify, quoteIdentifier } from '@basedb/naming'
 import { BasedbError } from '../errors/index.js'
 import { loadHistoryTables } from '../history/catalog.js'
 import { decide } from '../rbac/decide.js'
 import { loadGrants, loadTarget } from '../rbac/loader.js'
 import { requireOnTable } from '../rbac/require.js'
+import { ROW_ALIAS } from '../rbac/rows.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { wantsNotification } from './notifications.js'
@@ -75,11 +76,15 @@ interface Located {
   readonly relation: string
   readonly baseId: string
   readonly tenantUuid: string
+  /** The rows the reader reaches (05 §16), over the placeholder alias. */
+  readonly rows: string
 }
 
 /** The table's relation and owners, once reading it is established. */
 async function locate(exec: Executor, ctx: RequestContext, tableId: string): Promise<Located> {
-  await requireOnTable(exec, ctx, 'read', tableId)
+  const grants = await requireOnTable(exec, ctx, 'read', tableId)
+  const target = await loadTarget(exec, ctx, tableId)
+  const rows = target === null ? 'FALSE' : decide(ctx, grants, 'read', target).rowPredicate
   const table = (await loadHistoryTables(exec, [tableId])).get(tableId)
   const [owner] = await exec.query<{ base_id: string; tenant_id: string }>(
     `SELECT b.id::text AS base_id, b.tenant_id::text
@@ -94,12 +99,13 @@ async function locate(exec: Executor, ctx: RequestContext, tableId: string): Pro
     relation: qualify(table.schema, table.table),
     baseId: owner.base_id,
     tenantUuid: owner.tenant_id,
+    rows,
   }
 }
 
 /**
  * Establishes that the row exists for the reader — a comment of a row one cannot read,
- * or of a deleted row, does not exist either.
+ * of a row their groups' rules keep from them, or of a deleted row, does not exist either.
  */
 async function requireRow(
   pools: Pools,
@@ -123,7 +129,12 @@ async function requireRow(
     pools,
     'data',
     ctx,
-    (exec) => exec.query(`SELECT 1 FROM ${located.relation} WHERE "_id" = $1`, [recordId]),
+    (exec) =>
+      exec.query(
+        `SELECT 1 FROM ${located.relation} AS ${quoteIdentifier(ROW_ALIAS)}
+          WHERE "_id" = $1 AND ( /*predicat_lignes*/ ${located.rows} )`,
+        [recordId],
+      ),
     { readOnly: true },
   )
   if (rows.length === 0) {
@@ -219,6 +230,63 @@ interface Notice {
 }
 
 /**
+ * Among some people, those who read ONE row — the table's rights and their groups' row
+ * rules (05 §16): a notification quotes a comment, and a comment speaks of its row.
+ */
+async function rowReaders(
+  pools: Pools,
+  ctx: RequestContext,
+  where: Located,
+  tableId: string,
+  recordId: string,
+  users: readonly string[],
+): Promise<Set<string>> {
+  const readers = new Set<string>()
+  if (users.length === 0) return readers
+  const predicates = await withTransaction(
+    pools,
+    'catalog',
+    ctx,
+    async (exec) => {
+      const out: Array<{ user: string; rows: string }> = []
+      for (const user of users) {
+        const reader = contextOf(ctx.tenantId, user, ctx.requestId)
+        const target = await loadTarget(exec, reader, tableId)
+        if (target === null) continue
+        try {
+          const decision = decide(reader, await loadGrants(exec, reader), 'read', target)
+          if (decision.verdict === 'ALLOWED') out.push({ user, rows: decision.rowPredicate })
+        } catch {
+          // A disabled account reads nothing.
+        }
+      }
+      return out
+    },
+    { readOnly: true },
+  )
+  if (predicates.length === 0) return readers
+  const [row] = await withTransaction(
+    pools,
+    'data',
+    ctx,
+    (exec) =>
+      exec.query<Record<string, boolean>>(
+        `SELECT ${predicates
+          .map((p, i) => `( /*predicat_lignes*/ ${p.rows} ) AS ${quoteIdentifier(`r${i}`)}`)
+          .join(', ')}
+           FROM ${where.relation} AS ${quoteIdentifier(ROW_ALIAS)}
+          WHERE "_id" = $1`,
+        [recordId],
+      ),
+    { readOnly: true },
+  )
+  predicates.forEach((p, i) => {
+    if (row?.[`r${i}`] === true) readers.add(p.user)
+  })
+  return readers
+}
+
+/**
  * Notifies the people a comment concerns: those it mentions, then those who wrote before
  * in the thread — each once, a mention winning over a reply, never the author, never
  * someone who cannot read the row. Returns the mentioned people left out for that.
@@ -231,6 +299,7 @@ async function notify(
   comment: { readonly id: string; readonly body: string },
   mentioned: readonly string[],
   replyTo: readonly string[],
+  readers: ReadonlySet<string>,
 ): Promise<string[]> {
   const notices: Notice[] = []
   const unreachable: string[] = []
@@ -242,8 +311,7 @@ async function notify(
   for (const notice of candidates) {
     if (seen.has(notice.user)) continue
     seen.add(notice.user)
-    const reader = contextOf(ctx.tenantId, notice.user, ctx.requestId)
-    if (await canReadTable(exec, reader, request.tableId)) notices.push(notice)
+    if (readers.has(notice.user)) notices.push(notice)
     else if (notice.kind === 'mention') unreachable.push(notice.user)
   }
   const excerpt = excerptOf(comment.body)
@@ -282,14 +350,24 @@ export async function addComment(
   const body = checkedBody(request.body)
   const mentioned = mentionsIn(body)
   const where = await requireRow(pools, ctx, request.tableId, request.recordId)
+  const earlier = await withTransaction(
+    pools,
+    'catalog',
+    ctx,
+    (exec) =>
+      exec.query<{ author_id: string }>(
+        `SELECT author_id::text FROM _basedb.record_comment
+          WHERE table_id = $1 AND record_id = $2
+          GROUP BY author_id ORDER BY min(created_at)`,
+        [request.tableId, request.recordId],
+      ),
+    { readOnly: true },
+  )
+  const readers = await rowReaders(pools, ctx, where, request.tableId, request.recordId, [
+    ...new Set([...mentioned, ...earlier.map((r) => r.author_id)]),
+  ])
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
     await checkMentions(exec, ctx, mentioned)
-    const earlier = await exec.query<{ author_id: string }>(
-      `SELECT author_id::text FROM _basedb.record_comment
-        WHERE table_id = $1 AND record_id = $2
-        GROUP BY author_id ORDER BY min(created_at)`,
-      [request.tableId, request.recordId],
-    )
     const [inserted] = await exec.query<{ id: string }>(
       `INSERT INTO _basedb.record_comment
          (tenant_id, base_id, table_id, record_id, author_id, body, mentions)
@@ -315,6 +393,7 @@ export async function addComment(
       { id, body },
       mentioned,
       earlier.map((r) => r.author_id),
+      readers,
     )
     await emitLive(exec, {
       kind: 'comments',
@@ -376,6 +455,8 @@ export async function editComment(
       details: { comment: request.commentId, reason: 'auteur_seul' },
     })
   }
+  const added = mentioned.filter((id) => !found.mentions.includes(id))
+  const readers = await rowReaders(pools, ctx, where, found.table_id, found.record_id, added)
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
     await checkMentions(exec, ctx, mentioned)
     await exec.query(
@@ -385,7 +466,6 @@ export async function editComment(
       [request.commentId, body, mentioned],
       'update',
     )
-    const added = mentioned.filter((id) => !found.mentions.includes(id))
     await notify(
       exec,
       ctx,
@@ -394,6 +474,7 @@ export async function editComment(
       { id: request.commentId, body },
       added,
       [],
+      readers,
     )
     await emitLive(exec, {
       kind: 'comments',

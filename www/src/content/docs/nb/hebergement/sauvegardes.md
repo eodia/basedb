@@ -47,7 +47,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` låser en bestemt versjon (`0.3.2`) i stedet for den nyeste (`latest`).
+`BASEDB_VERSION` låser en bestemt versjon (`0.4.0`) i stedet for den nyeste (`latest`).
 
 Ved oppstart **oppdaterer basedb katalogen sin selv**: den tar i bruk, i rekkefølge og
 hver i sin egen transaksjon, migreringene som versjonen din ikke har ennå, og registrerer dem

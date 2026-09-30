@@ -11,7 +11,7 @@ compila da sola. La [galleria dei modelli](/basedb/it/modeles/) mostra quelli ch
 
 **Nuovo database**, poi **Parti da un modello o chiedilo all’IA**: si apre la galleria.
 
-![La galleria dei modelli, nell’applicazione](../../../../assets/screens/modeles.png)
+![La galleria dei modelli, nell’applicazione](../../../../assets/screens/it/modeles.webp)
 
 Ogni modello si può leggere per intero prima di usarlo — le sue tabelle e i loro campi, le sue viste,
 le sue automazioni e l’istruzione di ciascuno dei suoi campi IA. **Crea database** chiede

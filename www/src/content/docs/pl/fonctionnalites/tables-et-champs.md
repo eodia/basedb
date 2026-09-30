@@ -22,7 +22,7 @@ ciebie etykieta („Échéance”) staje się czytelną nazwą fizyczną (`echea
 | Pojedynczy wybór | `text` + `CHECK` | kolor, ikona lub obraz dla każdej opcji |
 | Wielokrotny wybór | `text[]` + `CHECK` | filtrowalny operatorami tablicowymi |
 | E-mail | `text` + `CHECK` | adres sprawdzany przez bazę, otwierany jednym kliknięciem |
-| Telefon, Kod kreskowy | `text` | krótki tekst i jego format: link do połączenia, czcionka o stałej szerokości |
+| Telefon, Kod kreskowy, Adres | `text` | krótki tekst i jego format: link do połączenia, czcionka o stałej szerokości, link do mapy |
 | URL | `text` + `CHECK` | uzupełniany przy wpisywaniu (`exemple.fr` → `https://exemple.fr`) |
 | Osoba | `uuid` | członek przestrzeni roboczej; wskazanie go [powiadamia](/basedb/pl/fonctionnalites/collaboration/) tę osobę |
 | Autonumer | `bigint` identity | numeruje też już istniejące wiersze; nikt go nie wpisuje |
@@ -38,7 +38,7 @@ Każda tabela ma też swoje **kolumny systemowe**: `_id` (UUID v7), `_created_at
 przez API. Siatka umieszcza je w grupie **Informacje systemowe**, w menu kolumn: są w każdej
 tabeli, a przydają się w nielicznych.
 
-![Siatka tabeli z obliczanym czasem trwania, odnośnikiem i zliczaniem](../../../../assets/screens/grille.png)
+![Siatka tabeli z obliczanym czasem trwania, odnośnikiem i zliczaniem](../../../../assets/screens/pl/grille.webp)
 
 ## Ograniczenia pilnowane przez bazę
 
@@ -55,8 +55,8 @@ Foreign-key constraints:
 
 ## Formaty wyświetlania
 
-Waluta, Procent, Czas trwania, Ocena, Telefon i Kod kreskowy wybiera się jak typy, ale są to
-**formaty**: kolumna pozostaje liczbą lub tekstem, zmienia się tylko sposób odczytu.
+Waluta, Procent, Czas trwania, Ocena, Telefon, Kod kreskowy i Adres wybiera się jak typy, ale są
+to **formaty**: kolumna pozostaje liczbą lub tekstem, zmienia się tylko sposób odczytu.
 
 | Format | Na | Odczyt i wprowadzanie |
 |---|---|---|
@@ -66,9 +66,27 @@ Waluta, Procent, Czas trwania, Ocena, Telefon i Kod kreskowy wybiera się jak ty
 | Ocena | liczbie | od 1 do 10 gwiazdek, ustawiana jednym kliknięciem |
 | Telefon | krótkim tekście | link do połączenia |
 | Kod kreskowy | krótkim tekście | czcionką o stałej szerokości |
+| Adres | krótkim tekście | link do mapy; w szczegółach wiersza **Znajdź adres** proponuje odpowiadające adresy, zapisane w całości; umieszcza go widok [Mapa](/basedb/pl/fonctionnalites/vues/#mapa) |
 
 Format można zmienić później (**Wyświetlanie** w edycji pola), nie ruszając zapisanych
 wartości. Nie ogranicza on wartości: ocena 7 w skali 5 pozostaje 7.
+
+## Wartości domyślne
+
+W edycji pola **Wartość domyślna** ustala, co otrzymuje wiersz utworzony bez niej:
+
+| Wybór | Na | Utworzony wiersz otrzymuje |
+|---|---|---|
+| Ustalona wartość | większości typów | wybraną wartość – status „Nouveau”, priorytet 3 |
+| Dzisiejsza data | dacie | dzień jego utworzenia, w strefie czasowej danej osoby |
+| Moment utworzenia | dacie i godzinie | dokładną godzinę |
+| Osoba, która tworzy wiersz | osobie | kto go utworzył – „Responsable: ja” |
+
+Nowe szczegóły wiersza i formularze otwierają się już wypełnione; wyczyszczenie pola pozostawia
+je puste. Wartość domyślna obowiązuje przy każdym tworzeniu – interfejs, API, MCP, import, formularz
+udostępniony, automatyzacja –, także na polu, którego dana osoba nie może zmieniać:
+to reguła tabeli. Istniejące wiersze się nie zmieniają, a wstawienie przez bezpośredni SQL nie
+otrzymuje żadnej: stosuje ją basedb, nie kolumna.
 
 ## Formuły
 
@@ -175,7 +193,7 @@ Ekran **Struktura** bazy – w jej menu **⋯** na pasku bocznym – wyświetla 
 dodawanie, zmiana nazwy, oznaczanie jako wymagane, zmiana kolejności, opisywanie, wskazywanie
 pola wyświetlanego.
 
-![Ekran Struktura bazy](../../../../assets/screens/structure.png)
+![Ekran Struktura bazy](../../../../assets/screens/pl/structure.webp)
 
 Zmiana struktury wymaga poziomu **Zarządzanie**. Bez niego ekran można przeglądać, ale nic nie
 proponuje: ani przycisku, ani ołówka, ani uchwytu – wymagalność i pole wyświetlane są podane, a

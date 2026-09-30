@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb – die kollaborative Datenbank, in der jede Tabelle eine echte PostgreSQL-Tabelle ist',
-			description: 'Raster und acht Ansichten, Formeln, freigegebene Formulare und Ansichten, Kommentare, Automatisierungen, Dashboards, Berechtigungen bis auf Feldebene, lückenloser Verlauf, REST-API und MCP-Server – auf echten PostgreSQL-Tabellen mit lesbaren Namen. Selbst gehostet, AGPL-3.0.',
+			description: 'Raster und zehn Ansichten, Formeln, freigegebene Formulare, Quiz und Ansichten, Kommentare, Automatisierungen, Dashboards, Berechtigungen bis auf Feldebene, lückenloser Verlauf, REST-API und MCP-Server – auf echten PostgreSQL-Tabellen mit lesbaren Namen. Selbst gehostet, AGPL-3.0.',
 		},
 		changelog: {
 			title: 'Neuigkeiten – basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: 'Acht Ansichten',
-								text: 'Raster, Kanban, Kalender, Zeitachse, Galerie, Liste, Formular, Umfrage.',
+								title: 'Zehn Ansichten',
+								text: 'Raster, Kanban, Kalender, Zeitachse, Galerie, Liste, Landkarte, Formular, Umfrage, Quiz.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb – Ihre ganze Arbeit an einem Ort',
-			description: 'Kunden, Projekte, Lagerbestand, Bewerbungen: eine Datenbank, die das ganze Team gleichzeitig bearbeitet, als Tabelle, Kanban oder Kalender, mit Dashboards, Automatisierungen und KI. Ohne Code, frei und kostenlos.',
+			title: 'basedb – die kollaborative Datenbank für das ganze Team',
+			description: 'Ihre ganze Arbeit an einem Ort, vom ganzen Team gleichzeitig bearbeitet: als Tabelle, Kanban oder Kalender, mit Formularen, Dashboards, Automatisierungen und KI. Ohne Code, frei und kostenlos.',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -891,9 +891,9 @@ export default {
 			text: 'Jede Funktion schreibt in dieselben Tabellen, unter denselben Berechtigungen, in denselben Verlauf.',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: 'Möglichkeiten, Ihre Daten zu sehen',
-					text: 'Raster, Kanban, Kalender, Zeitachse, Galerie, Liste, Formular und Umfrage, auf denselben Zeilen. Jeder wählt seine eigene.',
+					text: 'Raster, Kanban, Kalender, Zeitachse, Galerie, Liste, Landkarte, Formular, Umfrage und Quiz, auf denselben Zeilen. Jeder wählt seine eigene.',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -943,7 +943,7 @@ export default {
 				},
 				import: {
 					title: 'Import mit einer Geste',
-					text: 'Ziehen Sie eine CSV-Datei hinein: Spalten und Typen werden erkannt, die Tabelle wird erstellt.',
+					text: 'Ziehen Sie eine Excel-Arbeitsmappe oder eine CSV-Datei hinein: Spalten und Typen werden erkannt, die Tabelle wird erstellt.',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1036,7 +1036,7 @@ export default {
 				},
 				{
 					q: 'Können wir unsere Tabellenkalkulationen übernehmen?',
-					a: 'Ja: Speichern Sie Ihre Tabelle als CSV und ziehen Sie sie in basedb. Der Import erkennt den Typ jeder Spalte, erstellt die Tabelle und sagt Zeile für Zeile, was er nicht übernehmen konnte.',
+					a: 'Ja: Ziehen Sie Ihre Excel-Arbeitsmappe, oder eine CSV-Datei, in basedb. Der Import erkennt den Typ jeder Spalte, erstellt die Tabelle und sagt Zeile für Zeile, was er nicht übernehmen konnte.',
 				},
 				{
 					q: 'Kann man zu mehreren gleichzeitig arbeiten?',
@@ -1361,9 +1361,20 @@ export default {
 		text: 'Jede Funktion schreibt in dieselben Tabellen, unter denselben Berechtigungen, in denselben Verlauf.',
 		more: 'Mehr erfahren →',
 		views: {
-			title: 'Acht Ansichten auf dieselben Zeilen',
+			title: 'Zehn Ansichten auf dieselben Zeilen',
 			text: 'Kollaborativ für das ganze Team oder persönlich nur für Sie: Jede Person wählt ihre Lesart, niemand kopiert die Daten.',
-			chips: ['Raster', 'Kanban', 'Kalender', 'Zeitachse', 'Galerie', 'Liste', 'Formular', 'Umfrage'],
+			chips: [
+				'Raster',
+				'Kanban',
+				'Kalender',
+				'Zeitachse',
+				'Galerie',
+				'Liste',
+				'Landkarte',
+				'Formular',
+				'Umfrage',
+				'Quiz',
+			],
 		},
 		forms: {
 			title: 'Freigegebene Formulare',
@@ -1427,7 +1438,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'CSV- und JSON-Import',
+				title: 'Excel-, CSV- und JSON-Import',
 				text: 'Ziehen Sie eine Datei hinein: Der Import erkennt die Typen, legt die Tabelle an oder ergänzt eine bestehende und sagt Zeile für Zeile, was abgelehnt wurde.',
 				href: '/guides/premiers-pas/',
 			},
@@ -1536,6 +1547,66 @@ export default {
 		title: 'Was sich in basedb geändert hat',
 		intro: 'Jede einzelne Änderung steht im <a href="https://github.com/eodia/basedb/commits/main">Verlauf des Repositorys</a>. Was als Nächstes kommt: die <a href="/feuille-de-route/">Roadmap</a>.',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: 'Die Landkarte, und Adressen, die sich finden lassen',
+				tag: 'Neu',
+				items: [
+					'<strong>Eine zehnte Ansicht, die Landkarte</strong>: Jede Zeile wird an ihrem Ort platziert, anhand ihrer Adresse oder ihres Breiten- und Längengrads. Eine Nadel übernimmt die Farbe eines Status und öffnet mit einem Klick die Zeilendetails. <a href="/fonctionnalites/vues/#landkarte">Die Landkarte</a>',
+					'<strong>Eine Adresse wird ein für alle Mal verortet</strong>, durch den Dienst von OpenStreetMap oder den, den Sie wählen: Die Nadeln erscheinen im Lauf der Antworten, danach sofort. Eine nicht auffindbare Adresse wird gezählt, nie stillschweigend verworfen.',
+					'<strong>Das Format Adresse</strong> für einen Kurztext: Ein Klick öffnet ihn auf der Landkarte, und in den Zeilendetails schlägt <strong>Adresse suchen</strong> die passenden, ausgeschriebenen Adressen vor. <a href="/fonctionnalites/tables-et-champs/#anzeigeformate">Formate</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: 'PDFs aus Ihren Zeilen',
+				tag: 'Neu',
+				items: [
+					'<strong>Ein Angebot, eine Rechnung, ein Datenblatt als PDF</strong>, aus dem Menü einer Zeile: das druckbare Datenblatt, ohne etwas einzustellen, oder eine Vorlage — Texte, die Felder zitieren, die Felder der Zeile, die Tabelle der verknüpften Zeilen mit ihrer Summe, Seitenumbrüche. <a href="/fonctionnalites/documents/">Die Dokumente</a>',
+					'<strong>Jede Person mit ihren Berechtigungen</strong>: Ein für Sie verborgenes Feld erscheint nicht in Ihrem PDF. Die zwanzig Sprachen schreiben sich dort richtig, Chinesisch, Japanisch und Koreanisch eingeschlossen, und die API liefert dasselbe Dokument.',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: 'Berechtigungen bis zur Zeile, Standardwerte, der Excel-Import',
+				tag: 'Neu',
+				items: [
+					'<strong>Jede Person ihre Zeilen</strong>: Eine Gruppe sieht nur die Zeilen eines Filters — „Vertriebsmitarbeiter ist ich“, „Region ist Nord“ —, in der Oberfläche, der API, dem MCP-Server wie in SQL, wo PostgreSQL dieselbe Regel durchsetzt. <a href="/fonctionnalites/droits/#bis-hinunter-zur-zeile">Bis hinunter zur Zeile</a>',
+					'<strong>Standardwerte</strong>: ein fester Wert, das heutige Datum, der Zeitpunkt der Erstellung oder die Person, die die Zeile erstellt, im Bildschirm vorausgefüllt und überall sonst angewendet. <a href="/fonctionnalites/tables-et-champs/#standardwerte">Standardwerte</a>',
+					'<strong>Ziehen Sie eine Excel-Arbeitsmappe hinein</strong>: Wählen Sie das Blatt, Daten, Beträge und Kontrollkästchen kommen so an, wie sie sind, und eine Formel liefert ihren Wert. <a href="/guides/premiers-pas/">Erste Schritte</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: 'E-Mails',
+				tag: 'Neu',
+				items: [
+					'<strong>Ein Schritt „E-Mail senden“</strong> in den Automatisierungen: an ein Mitglied, an die Person eines Felds, an die Adresse eines Kunden, mit den Werten der Zeile im Betreff und im Text. <a href="/fonctionnalites/automatisations/">Automatisierungen</a>',
+					'<strong>Benachrichtigungen per E-Mail</strong>, wenn Sie sie nicht gelesen haben, gebündelt, einzeln wählbar in Ihren Einstellungen; und <strong>Passwort vergessen</strong> setzt sich über einen Link zurück. <a href="/fonctionnalites/collaboration/#per-e-mail">Per E-Mail</a>',
+					'Es genügt, der Instanz den Versandserver Ihrer Mailbox zu nennen. <a href="/hebergement/variables/#e-mails">Die Variablen</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n und ein TypeScript-SDK',
+				tag: 'Neu',
+				items: [
+					'<strong>n8n-Nodes</strong>: die Zeilen einer Tabelle aus einem Workflow lesen und schreiben, und einen bei jeder angelegten, geänderten oder gelöschten Zeile starten — per Abfrage oder per signiertem Webhook. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>Ein TypeScript-SDK</strong>, mit den aus Ihrer Instanz generierten Typen Ihrer Tabellen: eine Tabelle oder ein Feld, das nicht existiert, ist ein Fehler noch vor der Ausführung. <a href="/integrations/sdk/">Das SDK</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: 'Das Quiz: Fragen, die Punkte zählen',
+				tag: 'Neu',
+				items: [
+					'<strong>Eine neue Ansicht, das Quiz</strong>: eine Umfrage, bei der jede Frage ihre richtige Antwort und ihre Punkte haben kann – eine Auswahl, mehrere, Ja oder Nein, eine Zahl, ein Datum, oder die akzeptierten Texte, ohne Rücksicht auf Groß-/Kleinschreibung oder Akzente. <a href="/fonctionnalites/vues/#quiz">Das Quiz</a>',
+					'<strong>Auflösung, wie Sie möchten</strong>: nach jeder Frage – grün, oder rot mit der richtigen Antwort, während die Punktzahl oben im Bildschirm wächst –, am Ende, oder nie. Eine Bestehensgrenze lässt es „Bestanden!“ oder „Diesmal nicht…“ sagen.',
+					'<strong>Die Punktzahl am Ende</strong>, in einem Ring, der sich füllt, dann die Auflösung jeder Frage. Sie wird in ein Zahlenfeld der Tabelle geschrieben: Sortieren Sie das Raster danach – das ist die Rangliste.',
+					'<strong>Per Link freigegeben, ohne zu schummeln</strong>: Die Seite erhält keine einzige richtige Antwort – der Server ist es, der auswertet und zählt. <a href="/fonctionnalites/formulaires-partages/#ein-freigegebenes-quiz">Ein freigegebenes Quiz</a>',
+					'<strong>Ansicht erstellen</strong>, unten in der Ansichtsauswahl, ordnet die neun Arten in zwei Familien – solche, die die Zeilen zeigen, solche, die Antworten sammeln –, jede mit ihrem eigenen farbigen Symbol.',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: 'Formulare, die man gerne ausfüllt',

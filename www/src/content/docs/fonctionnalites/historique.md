@@ -6,7 +6,7 @@ description: Chaque écriture, d’où qu’elle vienne, avec les valeurs d’av
 basedb historise **chaque écriture**, d’où qu’elle vienne : l’interface, l’API, un agent MCP,
 un formulaire public — et même une requête SQL écrite à la main dans `psql`.
 
-![L’historique d’une base](../../../assets/screens/historique.png)
+![L’historique d’une base](../../../assets/screens/fr/historique.webp)
 
 ## Comment c’est capturé
 

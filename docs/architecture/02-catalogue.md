@@ -557,7 +557,7 @@ CREATE TABLE _basedb.field_permission (
 
 **La portée d'une permission n'est pas polymorphe.** `permission` est la table la plus sensible du catalogue ; un `scope_id uuid` sans clé étrangère autoriserait une permission désignant un objet inexistant, ou une base purgée puis un homonyme recréé. Les quatre colonnes typées portent chacune une vraie clé étrangère `ON DELETE CASCADE` ; `scope_kind` subsiste parce que l'API et l'interface raisonnent dessus, et `ck_permission_scope` garantit qu'il ne peut pas mentir. `UNIQUE NULLS NOT DISTINCT` est indispensable : sans lui, deux permissions identiques de portée `tenant` seraient réputées distinctes et insérables en double.
 
-La sémantique — additivité, absence de règle `deny`, résolution de l'effectif, signature du décideur d'autorisation et prédicat de lignes constamment vrai (A20) — appartient au chapitre 05. Le catalogue ne connaît que les lignes.
+La sémantique — additivité, absence de règle `deny`, résolution de l'effectif, signature du décideur d'autorisation et prédicat de lignes (A20), que remplissent les règles de `row_permission` (05 §16) — appartient au chapitre 05. Le catalogue ne connaît que les lignes.
 
 ---
 
@@ -911,7 +911,7 @@ CREATE INDEX idx_field_by_table
 
 Les cinq contraintes `UNIQUE (id, …)` sont redondantes avec la clé primaire ; elles n'existent que pour servir de cible à des clés étrangères composites. Leur coût est de cinq index sur une table dont les écritures sont rares et les lectures massives : c'est ce qui permet de tenir la moitié du tableau des invariants sans une ligne de code.
 
-**Il n'y a pas de colonne `default_expr`.** Stocker une expression SQL libre pour l'injecter dans du DDL généré serait la seule construction du document garantie par rien d'autre qu'une validation en code. *Hors périmètre v1* ; le jour où les valeurs par défaut entreront, ce sera sous forme de **littéral typé** dans le satellite du type concerné, jamais d'expression.
+**Il n'y a pas de colonne `default_expr`.** Stocker une expression SQL libre pour l'injecter dans du DDL généré serait la seule construction du document garantie par rien d'autre qu'une validation en code. Les valeurs par défaut sont entrées autrement (chapitre 04 §1.5) : `_basedb.field_default` porte un **genre** (`value`, `today`, `now`, `me`) et, pour `value`, une valeur `jsonb` ramenée à sa forme de colonne par les règles d'écriture — jamais une expression, et jamais écrite dans le DDL : c'est le noyau qui l'applique à la création, en paramètre de l'`INSERT`.
 
 **Matérialisation de `is_required`.** Le passage à vrai suit la recette du chapitre 03 : `ADD CONSTRAINT ck_…__not_null CHECK (col IS NOT NULL) NOT VALID`, `VALIDATE CONSTRAINT`, `SET NOT NULL`, puis `DROP CONSTRAINT`. L'échafaudage est une ligne ordinaire de `table_constraint` ; `field.required_state` suit le plan étape par étape. Aucune colonne ne stocke le nom de l'échafaudage : il est au registre, comme tous les autres.
 
@@ -934,7 +934,7 @@ CREATE TABLE _basedb.field_text_config (
     CHECK (sanitizer_profile IN ('none','basic','rich')),
   -- Comment un texte court se lit : tel quel, comme un numero de telephone, comme un code-barres.
   display_format text NOT NULL DEFAULT 'plain'
-    CHECK (display_format IN ('plain','phone','barcode')),
+    CHECK (display_format IN ('plain','phone','barcode','address')),
   CONSTRAINT fk_text_field FOREIGN KEY (field_id, kind)
     REFERENCES _basedb.field (id, kind) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT ck_text_rich      CHECK (NOT is_rich OR kind = 'long_text'),
@@ -1434,7 +1434,7 @@ CREATE TABLE _basedb.view_def (
   name  text COLLATE "C" NOT NULL,
   description text NULL,
   kind  text NOT NULL DEFAULT 'grid'
-    CHECK (kind IN ('grid','kanban','calendar','timeline','gallery','list','form','survey')),
+    CHECK (kind IN ('grid','kanban','calendar','timeline','gallery','list','form','survey','quiz','map')),
   spec  jsonb NOT NULL DEFAULT '{}'::jsonb,   -- filtre, tri, champs affiches, champs pivots
   position integer NOT NULL DEFAULT 0,        -- ordre dans le selecteur de vues de la table
   is_invalid boolean NOT NULL DEFAULT false,  -- un champ reference a disparu (chapitre 06)

@@ -1,6 +1,6 @@
 ---
 title: Automatiseringen
-description: Als een rij verandert, op een vast tijdstip of met één klik — bewerken, aanmaken, zoeken, vertakken, AI raadplegen, een melding sturen, een webhook aanroepen, naar Slack schrijven.
+description: Als een rij verandert, op een vast tijdstip of met één klik — bewerken, aanmaken, zoeken, vertakken, AI raadplegen, een melding sturen, een e-mail versturen, een webhook aanroepen, naar Slack schrijven.
 ---
 
 Een automatisering zegt **wanneer**, **als** en **dan**: als een taak op “Fait” komt, het
@@ -12,7 +12,7 @@ hergebruiken wat een eerdere stap heeft gevonden of geschreven.
 Je opent ze via **Automatiseringen**, in het blok van de geopende database onderaan de
 zijbalk, en ze vragen het niveau **Beheren**.
 
-![Een flow en een van zijn uitvoeringen, erop geplaatst](../../../../assets/screens/automatisations.png)
+![Een flow en een van zijn uitvoeringen, erop geplaatst](../../../../assets/screens/nl/automatisations.webp)
 
 ## De flow
 
@@ -49,6 +49,7 @@ Tot dertig stappen, in volgorde; de eerste die mislukt, stopt de volgende.
 | **Rij aanmaken** | in deze tabel of een andere tabel van de database |
 | **Rij zoeken** | de eerste rij van een tabel die aan een filter voldoet, zodat de volgende stappen haar kunnen citeren of wijzigen |
 | **Iemand een melding sturen** | een [melding](/basedb/nl/fonctionnalites/collaboration/#meldingen) aan gekozen personen, of aan de persoon in een veld Persoon |
+| **Een e-mail versturen** | aan mensen van het team, aan de persoon in een veld Persoon, aan het adres in een veld E-mail — een klant, een leverancier — of aan getypte adressen; het onderwerp en de tekst citeren de rij en de vorige stappen |
 | **Webhook aanroepen** | een `POST` via HTTPS naar het adres van je keuze; het antwoord kun je daarna citeren |
 | **Naar Slack sturen** | een bericht in een [gekoppeld](/basedb/nl/integrations/synchronisation/#slack) kanaal |
 | **AI raadplegen** | een antwoord van de [AI-provider](/basedb/nl/fonctionnalites/ia/) op een instructie die de rij en de vorige stappen citeert — opstellen, samenvatten, indelen —, gelezen als een tekst, een getal, ja of nee, een datum of een keuze uit een lijst |
@@ -139,7 +140,9 @@ maak je ongedaan zoals alle andere.
   in één flow.
 - Een zoekactie levert één rij op, de eerste; nog geen “voor elke rij”, en ook geen
   wachttijd (“drie dagen later”).
-- Geen e-mail, geen scripts.
+- Geen scripts. Een e-mail wordt als platte tekst verstuurd, één per ontvanger — hooguit twintig
+  per stap —, via de [verzendserver](/basedb/nl/hebergement/variables/#e-mails) van de
+  instantie; een antwoord komt terecht bij de eigenaar van de automatisering.
 - Een voorwaarde test een rij: om een vertakking te nemen op basis van het antwoord van de AI, schrijf je dat
   eerst in een veld van de rij.
 - Een [databasesjabloon](/basedb/nl/fonctionnalites/modeles/) neemt alleen automatiseringen mee zonder

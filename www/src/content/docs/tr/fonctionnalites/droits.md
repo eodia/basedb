@@ -31,17 +31,40 @@ Gizli bir alan her yerde yok sayılır: ızgarada, görünümlerde, API'de, MCP'
 arayüzde yazılan SQL'de ve SQL görünümlerinde. Onun üzerinde filtrelemek ya da sıralamak, var
 olmayan bir alan için olduğu gibi yanıt verir.
 
+## Satır düzeyine kadar
+
+**Alanlar**'ın yanında, **Satırlar** bir gruba bir tablonun yalnızca belirli satırlarını
+gösterir: bir görünümünki gibi yazılan bir filtrenin seçtiği satırları. `@me` bağlı kişiyi
+belirtir:
+
+- `commercial eq @me` — her satış temsilcisi yalnızca kendi müşterilerini görür;
+- `region in ["nord", "est"]` — bir ekip yalnızca kendi bölgelerini görür;
+- `_created_by eq @me` — herkes yalnızca kendi oluşturduğunu görür.
+
+İzinler toplanır: bir kişi tüm gruplarının satırlarını görür, kuralı olmayan bir grup ise
+hepsini görür. Tablonun yapısını yöneten — Yönetim düzeyi — her zaman her şeyi görür. Ekran,
+belirli bir kişinin kaç satır gördüğünü ve hangi grup aracılığıyla gördüğünü söyler.
+
+Kuralının dışındaki bir satır o kişi için yok sayılır: ne görünümlerde, panolarda, aramada,
+API'de, MCP'de ya da geçmişte, ne de değiştirilmek, silinmek ya da bağlanmak için. Oluşturduğu
+bir satır kendi payına ait olmalıdır; bir satırı değiştirirken ise onu kendi kapsamının dışına
+çıkarabilir — bir iş arkadaşına devredilen bir görev gibi. [Paylaşılan formların](/basedb/tr/fonctionnalites/formulaires-partages/)
+yanıtları her zaman ulaşır.
+
 ## Peki ya SQL?
 
 Arayüzde SQL aynı izinleri izler ve bu izinleri PostgreSQL'in kendisi uygular: Yönetim düzeyi
 olmadan bir sorgu, kişiye özel bir rol üzerinde salt okunur olarak çalışır; bu rolde kapalı bir
-tablo yoktur ve gizli bir alan reddedilir. Bir [SQL görünümü](/basedb/tr/fonctionnalites/requetes-et-vues-sql/)
+tablo yoktur, gizli bir alan reddedilir ve tablo yalnız ya da şemasıyla adlandırılsa da yalnızca
+kendi satırları okunur. Bir [SQL görünümü](/basedb/tr/fonctionnalites/requetes-et-vues-sql/)
 onu okuyanın izinleriyle okunur ve bir sorguyu paylaşmak yalnızca metnini paylaşır.
 
 Veritabanına **doğrudan `psql`** erişimi ise basedb tarafından yönetilmez: gizli alanlar dahil
 her şeyi okur. Kısıtlamalar ürünün yüzeylerini — arayüz, API, MCP — korur, ama asla veritabanına
 SQL erişimi olan birine karşı korumaz; bu erişimler, kurulumu işleten kişinin tanımladığı
-PostgreSQL `GRANT` komutlarıyla düzenlenir.
+PostgreSQL `GRANT` komutlarıyla düzenlenir. Bir satır kuralı taşıyan bir tabloda PostgreSQL'in
+satır düzeyinde güvenliği etkindir: üçüncü taraf bir araç için oluşturulmuş bir rol, `BYPASSRLS`
+özniteliğine ya da kendi politikasına sahip olmadıkça hiçbir satırı görmez.
 
 ## Hesaplar ve giriş
 

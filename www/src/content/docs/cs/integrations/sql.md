@@ -26,7 +26,7 @@ popisy (`COMMENT ON`).
 zvýrazněním syntaxe a doplňováním, jehož výsledek se zobrazí ve stejné mřížce jako vaše
 tabulky.
 
-![Uložený dotaz a dva pohledy SQL zařazené mezi tabulky](../../../../assets/screens/requete-sql.png)
+![Uložený dotaz a dva pohledy SQL zařazené mezi tabulky](../../../../assets/screens/cs/requete-sql.webp)
 
 - **Každý v něm čte se svými oprávněními**: úroveň Správa má celou databázi včetně zápisů;
   ostatní členové píší SQL jen pro čtení, kde uzavřená tabulka neexistuje a skryté pole
@@ -53,6 +53,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+Tento účet je vlastníkem databáze: čte vše, a oprávnění basedb se na něj nevztahují. Pro
+nástroj BI vytvořte raději samostatnou roli s vlastními příkazy `GRANT`. Pokud tabulka nese
+[pravidlo pro řádky](/basedb/cs/fonctionnalites/droits/#až-na-úroveň-řádku), PostgreSQL na ni
+uplatňuje zabezpečení na úrovni řádků: taková role v ní nevidí žádný řádek bez atributu
+`BYPASSRLS` nebo vlastní politiky.
 
 ## Zápis v SQL
 

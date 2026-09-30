@@ -40,11 +40,12 @@ Senare läggs en formel (`DAYS([Échéance], TODAY())`), ett uppslag (kundens st
 aggregering (totalbeloppet per kund) till på samma sätt – se
 [Tabeller och fält](/basedb/sv/fonctionnalites/tables-et-champs/).
 
-Du kan också **importera en fil** i CSV eller JSON: importen gissar typerna, låter dig rätta
-dem, skapar tabellen eller kompletterar en befintlig tabell och talar om rad för rad vad den
-avvisar.
+Du kan också **importera en fil** – en Excel-arbetsbok (`.xlsx`), en CSV eller en JSON: importen
+gissar typerna, låter dig rätta dem, skapar tabellen eller kompletterar en befintlig tabell och
+talar om rad för rad vad den avvisar. Har arbetsboken flera blad väljer du vilket; datum, belopp
+och kryssrutor tas emot precis som Excel håller dem, och en formel ger sitt värde.
 
-![Menyn för en databas](../../../../assets/screens/menu-base.png)
+![Menyn för en databas](../../../../assets/screens/sv/menu-base.webp)
 
 ## 3. Mata in och filtrera
 
@@ -59,7 +60,7 @@ den senaste.
 Vyväljaren, till vänster om ”Filtrera”, erbjuder ”Alla rader” och sedan dina vyer. Skapa en
 **kanban** grupperad efter ”Statut”: drar du ett kort från en kolumn till en annan ändras raden.
 
-![En kanban per status](../../../../assets/screens/kanban.png)
+![En kanban per status](../../../../assets/screens/sv/kanban.webp)
 
 ## 5. Dela ett formulär
 

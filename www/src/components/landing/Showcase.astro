@@ -1,17 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import { type Locale, fill, i18n } from '../../i18n';
-import automatisations from '../../assets/screens/automatisations.png';
-import chronologie from '../../assets/screens/chronologie.png';
-import commentaires from '../../assets/screens/commentaires.png';
-import galerie from '../../assets/screens/galerie.png';
-import grille from '../../assets/screens/grille.png';
-import historique from '../../assets/screens/historique.png';
-import dashboards from '../../assets/screens/tableaux-de-bord.png';
-import kanban from '../../assets/screens/kanban.png';
-import partage from '../../assets/screens/partage-formulaire.png';
-import sql from '../../assets/screens/requete-sql.png';
-import vueSql from '../../assets/screens/vue-sql.png';
+import { screen } from '../../lib/screens';
 
 interface Props {
 	locale: Locale;
@@ -20,18 +10,20 @@ interface Props {
 const { locale } = Astro.props;
 const { t, lang } = i18n(locale);
 const text = t.showcase.shots;
+// The application in the page's language.
+const shot = (name: string) => screen(locale, name);
 const shots = [
-	{ id: 'grille', image: grille, ...text.grille },
-	{ id: 'kanban', image: kanban, ...text.kanban },
-	{ id: 'galerie', image: galerie, ...text.galerie },
-	{ id: 'chronologie', image: chronologie, ...text.chronologie },
-	{ id: 'tableaux', image: dashboards, ...text.tableaux },
-	{ id: 'automatisations', image: automatisations, ...text.automatisations },
-	{ id: 'commentaires', image: commentaires, ...text.commentaires },
-	{ id: 'formulaire', image: partage, ...text.formulaire },
-	{ id: 'historique', image: historique, ...text.historique },
-	{ id: 'sql', image: sql, ...text.sql },
-	{ id: 'vues-sql', image: vueSql, ...text.vuesSql },
+	{ id: 'grille', image: shot('grille'), ...text.grille },
+	{ id: 'kanban', image: shot('kanban'), ...text.kanban },
+	{ id: 'galerie', image: shot('galerie'), ...text.galerie },
+	{ id: 'chronologie', image: shot('chronologie'), ...text.chronologie },
+	{ id: 'tableaux', image: shot('tableaux-de-bord'), ...text.tableaux },
+	{ id: 'automatisations', image: shot('automatisations'), ...text.automatisations },
+	{ id: 'commentaires', image: shot('commentaires'), ...text.commentaires },
+	{ id: 'formulaire', image: shot('partage-formulaire'), ...text.formulaire },
+	{ id: 'historique', image: shot('historique'), ...text.historique },
+	{ id: 'sql', image: shot('requete-sql'), ...text.sql },
+	{ id: 'vues-sql', image: shot('vue-sql'), ...text.vuesSql },
 ];
 ---
 

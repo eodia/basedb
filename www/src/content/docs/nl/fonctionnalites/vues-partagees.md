@@ -18,13 +18,13 @@ Menu van de weergave → **Delen…**, daarna:
 | **Openbaar** | iedereen met de link, zonder account |
 | **Ingelogde leden** | een lid van de werkruimte, na inloggen — desgewenst alleen van bepaalde groepen |
 
-![Het delen van een kalender](../../../../assets/screens/partage-vue.png)
+![Het delen van een kalender](../../../../assets/screens/nl/partage-vue.webp)
 
 De schakelaar **Link actief** schort de link op zonder hem kwijt te raken. De pagina opent buiten
 de applicatie: geen zijbalk, geen databasenaam, geen tabelnaam — de weergave, haar filters, haar
 kolommen, en verder niets. Een kalender of een tijdlijn lees je er als een agenda.
 
-![Dezelfde kalender, geopend via zijn link](../../../../assets/screens/vue-partagee.png)
+![Dezelfde kalender, geopend via zijn link](../../../../assets/screens/nl/vue-partagee.webp)
 
 ## Namens wie er gelezen wordt
 

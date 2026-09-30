@@ -40,6 +40,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const api = process.env.BASEDB_API || 'http://localhost:8787'
   // The MCP entry point, shown in the configuration an agent's client needs.
   const mcp = process.env.BASEDB_MCP || ''
+  // The map's tiles (chapter 11 §1.9): OpenStreetMap's unless the operator names others.
+  const tiles = {
+    url: process.env.BASEDB_MAP_TILES || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution:
+      process.env.BASEDB_MAP_ATTRIBUTION ||
+      '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  }
   // The reader's language, and its messages — before any script of the application runs.
   const locale = await requestLocale()
   const messages = await messagesOf(locale)
@@ -51,7 +58,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: passing runtime configuration to the client has no other path in Next 15
           dangerouslySetInnerHTML={{
-            __html: `window.__BASEDB_API__=${JSON.stringify(api)};window.__BASEDB_MCP__=${JSON.stringify(mcp)};${i18nScript(locale, messages)}`,
+            __html: `window.__BASEDB_API__=${JSON.stringify(api)};window.__BASEDB_MCP__=${JSON.stringify(mcp)};window.__BASEDB_TILES__=${JSON.stringify(tiles).replace(/</g, '\\u003c')};${i18nScript(locale, messages)}`,
           }}
         />
       </head>

@@ -11,7 +11,7 @@ preenche. A [galeria de modelos](/basedb/pt-br/modeles/) mostra os que o basedb 
 
 **Nova base** e depois **Começar de um modelo ou pedir à IA**: a galeria se abre.
 
-![A galeria de modelos, no aplicativo](../../../../assets/screens/modeles.png)
+![A galeria de modelos, no aplicativo](../../../../assets/screens/pt-br/modeles.webp)
 
 Cada modelo pode ser lido por inteiro antes de ser usado — suas tabelas e seus campos, suas visões,
 suas automações e a instrução de cada um de seus campos de IA. **Criar base** pede

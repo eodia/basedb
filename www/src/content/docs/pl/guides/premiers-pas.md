@@ -40,10 +40,12 @@ Później w ten sam sposób dodasz formułę (`DAYS([Échéance], TODAY())`), od
 klienta) albo agregację (łączna kwota na klienta) – zobacz
 [Tabele i pola](/basedb/pl/fonctionnalites/tables-et-champs/).
 
-Możesz też **zaimportować plik** CSV lub JSON: import odgaduje typy, pozwala je poprawić,
-tworzy tabelę lub uzupełnia istniejącą i podaje, wiersz po wierszu, co odrzuca.
+Możesz też **zaimportować plik** — skoroszyt Excela (`.xlsx`), CSV albo JSON: import odgaduje
+typy, pozwala je poprawić, tworzy tabelę lub uzupełnia istniejącą i podaje, wiersz po wierszu,
+co odrzuca. Ze skoroszytu z kilkoma arkuszami wybierasz arkusz; daty, kwoty i pola wyboru są
+przejmowane tak, jak trzyma je Excel, a formuła podaje swoją wartość.
 
-![Menu bazy](../../../../assets/screens/menu-base.png)
+![Menu bazy](../../../../assets/screens/pl/menu-base.webp)
 
 ## 3. Wprowadzaj dane i filtruj
 
@@ -59,7 +61,7 @@ Selektor widoków, na lewo od „Filtruj”, proponuje „Wszystkie wiersze”, 
 Utwórz **kanban** pogrupowany według „Statut”: przeciągnięcie karty z jednej kolumny do
 drugiej zmienia wiersz.
 
-![Kanban według statusu](../../../../assets/screens/kanban.png)
+![Kanban według statusu](../../../../assets/screens/pl/kanban.webp)
 
 ## 5. Udostępnij formularz
 

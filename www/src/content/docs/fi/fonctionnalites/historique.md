@@ -7,7 +7,7 @@ basedb kirjaa historiaan **jokaisen kirjoituksen**, mistä tahansa se tulee: kä
 API:sta, MCP-agentilta, julkiselta lomakkeelta – ja jopa käsin `psql`:ssä kirjoitetusta
 SQL-kyselystä.
 
-![Tietokannan historia](../../../../assets/screens/historique.png)
+![Tietokannan historia](../../../../assets/screens/fi/historique.webp)
 
 ## Miten se tallennetaan
 

@@ -41,11 +41,13 @@ Mais tarde, uma fórmula (`DAYS([Échéance], TODAY())`), uma pesquisa (a cidade
 ou uma agregação (o valor total por cliente) são adicionadas da mesma forma — veja
 [Tabelas e campos](/basedb/pt-br/fonctionnalites/tables-et-champs/).
 
-Você também pode **importar um arquivo** CSV ou JSON: a importação adivinha os tipos, deixa você
-corrigi-los, cria a tabela ou completa uma tabela existente e informa, linha por linha, o que
-recusa.
+Você também pode **importar um arquivo** — uma pasta de trabalho Excel (`.xlsx`), um CSV ou um
+JSON: a importação adivinha os tipos, deixa você corrigi-los, cria a tabela ou completa uma
+tabela existente e informa, linha por linha, o que recusa. De uma pasta de trabalho com várias
+folhas, você escolhe a folha; as datas, os valores e as caixas de seleção são reproduzidos tal
+como o Excel os mantém, e uma fórmula fornece seu valor.
 
-![Menu de uma base](../../../../assets/screens/menu-base.png)
+![Menu de uma base](../../../../assets/screens/pt-br/menu-base.webp)
 
 ## 3. Inserir e filtrar
 
@@ -61,7 +63,7 @@ O seletor de visões, à esquerda de “Filtrar”, oferece “Todas as linhas�
 Crie um **kanban** agrupado por “Statut”: arrastar um cartão de uma coluna para outra altera a
 linha.
 
-![Um kanban por status](../../../../assets/screens/kanban.png)
+![Um kanban por status](../../../../assets/screens/pt-br/kanban.webp)
 
 ## 5. Compartilhar um formulário
 

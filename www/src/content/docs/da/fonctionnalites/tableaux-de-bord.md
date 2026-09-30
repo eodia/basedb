@@ -8,7 +8,7 @@ deres udvikling måned for måned, fordelingen af en status, de kommende frister
 et **spørgsmål** — en læsning af databasen, bygget med musen eller skrevet i SQL — og **filtre**
 øverst på siden styrer de kort, der er forbundet med dem.
 
-![Dashboardet »Pilotage de l’agence«: månedens tendens, mål, stablet omsætning, stemningen i anmeldelserne](../../../../assets/screens/tableaux-de-bord.png)
+![Dashboardet »Pilotage de l’agence«: månedens tendens, mål, stablet omsætning, stemningen i anmeldelserne](../../../../assets/screens/da/tableaux-de-bord.webp)
 
 Alt åbnes fra **Dashboards** i blokken for den åbne database nederst i sidepanelet. Til venstre
 databasens dashboards og gemte spørgsmål og **Udforsk data** for at stille et spørgsmål uden at
@@ -29,7 +29,7 @@ indhold, nu ugemt igen.
 
 Et spørgsmål bygges i trin, det ene under det andet:
 
-![Editoren for et spørgsmål: data, filtre, opsummering pr. måned](../../../../assets/screens/question-editeur.png)
+![Editoren for et spørgsmål: data, filtre, opsummering pr. måned](../../../../assets/screens/da/question-editeur.webp)
 
 | Trin | Hvad du vælger |
 |---|---|
@@ -162,7 +162,7 @@ kompatible kort** klarer resten. Det kan have en **standardværdi** — for ekse
 I læsetilstand kan et klik på et punkt også indstille et filter: **Filtrer efter »Lyon«** på et
 kort, hvis kolonne med byer er forbundet med filteret »Ville«.
 
-![Fanen »Activité«: opgaver efter frist stablet efter status, projekttragt, estimerede timer i krydstabel](../../../../assets/screens/tableaux-de-bord-activite.png)
+![Fanen »Activité«: opgaver efter frist stablet efter status, projekttragt, estimerede timer i krydstabel](../../../../assets/screens/da/tableaux-de-bord-activite.webp)
 
 ## Copilot
 

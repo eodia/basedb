@@ -66,6 +66,46 @@ Vedi [Account e accesso](/basedb/it/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | — | credenziali |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` per l’indirizzamento basato sull’host |
 
+## Email
+
+Senza un server di invio, basedb non invia alcuna email. Con esso partono le notifiche rimaste
+dieci minuti senza essere lette (ognuno sceglie quali in **Impostazioni › Notifiche**), le email
+del passaggio **Invia un’email** delle automazioni, e il link di una **password dimenticata**.
+I link puntano a `BASEDB_PUBLIC_URL`; senza di essa, un’email non ne porta uno.
+
+| Variabile | Predefinito | Ruolo |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | il server SMTP: quello della tua messaggeria o di un servizio di invio |
+| `BASEDB_SMTP_PORT` | `587` | `465` per una connessione cifrata fin da subito |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` sulla porta 465) | `none` solo per un relay sulla stessa macchina: altrimenti la password passerebbe in chiaro |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | — | l’identificativo dell’account di invio, se ne richiede uno |
+| `BASEDB_MAIL_FROM` | — | obbligatoria con `BASEDB_SMTP_HOST`: il mittente, `basedb <no-reply@exemple.fr>` |
+
+All’avvio, il log dice come stanno le cose: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` Un’email che il server rifiuta viene ripresa dopo 1, 5, 30, 120
+e poi 360 minuti.
+
+## Mappe e indirizzi
+
+La vista **Mappa** posiziona un indirizzo grazie a un servizio di geocodifica: quello di
+OpenStreetMap (Nominatim) per impostazione predefinita, interrogato una volta per indirizzo, al
+massimo una richiesta al secondo, ogni risposta conservata. Il fondo della mappa è fatto di
+**tessere** che il browser di ogni lettore carica direttamente.
+
+| Variabile | Predefinito | Ruolo |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | un altro servizio che parla lo stesso protocollo (un Nominatim tuo); `off`: nessuno, gli indirizzi non lasciano l’istanza e solo la latitudine e la longitudine posizionano le righe |
+| `BASEDB_MAP_TILES` | le tessere di OpenStreetMap | un altro server di tessere, modello `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | la dicitura richiesta da questo server, in basso a destra sulla mappa |
+
+All’avvio, il log dice quale servizio è impiegato: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## Documenti PDF
+
+| Variabile | Predefinito | Ruolo |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | i font Noto dell’immagine | una tua cartella, montata nel container, che contiene `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic`, e per il cinese, il giapponese e il coreano `NotoSansCJK-Regular.ttc` e `-Bold.ttc` |
+
 ## Modelli di database
 
 | Variabile | Predefinito | Ruolo |

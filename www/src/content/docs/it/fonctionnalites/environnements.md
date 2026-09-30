@@ -27,7 +27,7 @@ Dal menu del database, sotto **Altre azioni**, **Confronta ambienti…** apre un
 - **Sincronizzazione delle righe**: tabella per tabella, riportare righe da un ambiente a
   un altro, per identificativo.
 
-![Confrontare la produzione e il collaudo](../../../../assets/screens/environnements.png)
+![Confrontare la produzione e il collaudo](../../../../assets/screens/it/environnements.webp)
 
 ## Come basedb sa chi ha cambiato cosa
 

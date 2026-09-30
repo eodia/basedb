@@ -9,7 +9,7 @@ lui seul, pour toute la base ou pour quelques groupes —, et qui gère la base 
 **vue SQL** : une vraie vue PostgreSQL, rangée parmi les tables, que `psql` et vos outils lisent
 aussi.
 
-![Une requête enregistrée, ouverte depuis la rubrique « Requêtes » ; au-dessus, deux vues SQL rangées parmi les tables](../../../assets/screens/requete-sql.png)
+![Une requête enregistrée, ouverte depuis la rubrique « Requêtes » ; au-dessus, deux vues SQL rangées parmi les tables](../../../assets/screens/fr/requete-sql.webp)
 
 ## Chacun avec ses droits
 
@@ -23,7 +23,7 @@ résultat dans la même grille que vos tables. Ce que la requête peut lire dép
   masqué disparaît de `SELECT *` et est refusé si vous le nommez, même en qualifiant la table ;
   une écriture est refusée. Le résultat porte la pastille **Vos droits**.
 
-![La pastille « Vos droits » : la requête ne voit que les tables et les champs ouverts à la personne](../../../assets/screens/sql-vos-droits.png)
+![La pastille « Vos droits » : la requête ne voit que les tables et les champs ouverts à la personne](../../../assets/screens/fr/sql-vos-droits.webp)
 
 Ce n’est pas l’écran qui trie : PostgreSQL lui-même applique vos droits, colonne par colonne, sur
 un rôle qui vous est propre. Une requête ne peut donc rien vous montrer que la grille, l’API ou le
@@ -37,7 +37,7 @@ copie, **Nom et partage…** (dans l’onglet ou dans son menu de la barre laté
 qui la voit, ou la supprime — **Supprimer** est aussi dans son menu, d’un clic droit. Un onglet
 qui la montrait garde son texte.
 
-![Enregistrer une requête : son nom, ce qu’elle montre, et qui la voit](../../../assets/screens/requete-enregistrer.png)
+![Enregistrer une requête : son nom, ce qu’elle montre, et qui la voit](../../../assets/screens/fr/requete-enregistrer.webp)
 
 | Portée | Qui la voit | Qui peut la créer et la modifier |
 |---|---|---|
@@ -61,7 +61,7 @@ tables**, avec sa couleur et son pictogramme comme une table, et un petit **œil
 que c’est une vue. Un clic l’ouvre dans un onglet : ses lignes dans la grille, **Actualiser** pour
 les relire.
 
-![La vue « Factures à encaisser », ouverte depuis la barre latérale](../../../assets/screens/vue-sql.png)
+![La vue « Factures à encaisser », ouverte depuis la barre latérale](../../../assets/screens/fr/vue-sql.webp)
 
 Elle se crée par le menu **⋯** de la base → **Nouvelle vue SQL…**, ou depuis un onglet SQL :
 **⋯** → **Créer une vue SQL…**, et la requête de l’onglet devient sa définition. Le dialogue
@@ -74,7 +74,7 @@ demande :
 - sa **requête** : un seul `SELECT`, sur les tables et les autres vues de la base. PostgreSQL
   refuse ce qu’il refuse, et l’éditeur pointe l’endroit.
 
-![Le dialogue d’une vue SQL : libellé et apparence, nom technique, requête, description](../../../assets/screens/vue-sql-dialogue.png)
+![Le dialogue d’une vue SQL : libellé et apparence, nom technique, requête, description](../../../assets/screens/fr/vue-sql-dialogue.webp)
 
 La vue se lit ensuite sous son nom, depuis l’interface comme depuis `psql` ou votre outil de BI :
 

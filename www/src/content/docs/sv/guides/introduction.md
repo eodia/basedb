@@ -7,7 +7,7 @@ description: Vad basedb är, och vad som skiljer det från samarbetsinriktade ka
 hostar själv – med en skillnad som styr allt annat: **dina data lever i riktiga
 PostgreSQL-tabeller**, typade och med läsbara namn.
 
-![Rutnätet för en tabell i basedb](../../../../assets/screens/grille.png)
+![Rutnätet för en tabell i basedb](../../../../assets/screens/sv/grille.webp)
 
 ## Ett enkelt löfte
 
@@ -38,8 +38,8 @@ skrivningen.
 - Typade [tabeller och fält](/basedb/sv/fonctionnalites/tables-et-champs/), relationer som är
   riktiga främmande nycklar – eller multipla –, formler som beräknas av PostgreSQL, uppslag och
   aggregeringar genom relationerna.
-- Åtta [vyer](/basedb/sv/fonctionnalites/vues/): rutnät, kanban, kalender, tidslinje, galleri,
-  lista, formulär, enkät – gemensamma eller personliga.
+- Tio [vyer](/basedb/sv/fonctionnalites/vues/): rutnät, kanban, kalender, tidslinje, galleri,
+  lista, karta, formulär, enkät, quiz – gemensamma eller personliga.
 - [Formulär](/basedb/sv/fonctionnalites/formulaires-partages/) och
   [vyer](/basedb/sv/fonctionnalites/vues-partagees/) som delas via en länk, och kalendrar som
   du kan prenumerera på från en kalenderapp.

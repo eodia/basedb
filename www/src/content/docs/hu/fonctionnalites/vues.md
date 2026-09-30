@@ -1,9 +1,9 @@
 ---
 title: Nézetek
-description: Rács, kanban, naptár, idővonal, galéria, lista, űrlap és kérdőív – közös vagy személyes.
+description: Rács, kanban, naptár, idővonal, galéria, lista, térkép, űrlap, kérdőív és kvíz – közös vagy személyes.
 ---
 
-Egy tábla **nyolcféleképpen** jeleníthető meg. A nézet semmilyen adatot nem másol, és semmivel
+Egy tábla **tízféleképpen** jeleníthető meg. A nézet semmilyen adatot nem másol, és semmivel
 sem ad több jogosultságot, mint maga a tábla.
 
 :::note
@@ -20,14 +20,18 @@ táblák között kap helyet.
 | **Idővonal** | sávokat két dátum között, és a függőségeiket | egy kezdő dátumra |
 | **Galéria** | kártyákat borítóképpel | – |
 | **Lista** | rekordonként egy sort, összecsukható csoportokban | – |
+| **Térkép** | minden sort a térképre helyez | egy cím, vagy egy szélességi és hosszúsági fok |
 | **Űrlap** | egy kérdésoldalt egy sor létrehozásához | – |
 | **Kérdőív** | ugyanazokat a kérdéseket, képernyőnként egyet | – |
+| **Kvíz** | pontozott kérdéseket, képernyőnként egyet, és a pontszámot a végén | – |
 
 ## A nézetválasztó
 
 A „Szűrés” gombtól balra található. Az „Összes sor” a tábla rácsa, amelyet senki nem mentett, és
 senki nem is törölhet; ezt követik a **közös nézetek**, abban a sorrendben, amelyet az
-adatbázis felépítője választott, majd a **Saját nézetek**.
+adatbázis felépítője választott, majd a **Saját nézetek**. Alul a **Nézet létrehozása** a tíz
+fajtát két családra osztja: azokra, amelyek **megjelenítik a sorokat**, és azokra, amelyek
+**válaszokat gyűjtenek** (űrlap, kérdőív, kvíz).
 
 - A **közös nézetet** mindenki látja. A létrehozásához, beállításához, átnevezéséhez,
   átrendezéséhez vagy törléséhez **Kezelés** szint szükséges. **Zárolható** is: ezt egy lakat
@@ -37,7 +41,7 @@ adatbázis felépítője választott, majd a **Saját nézetek**.
   elmentheti a saját olvasási módjait anélkül, hogy a többiek számára bármit megváltoztatna. Egy
   közös nézet **duplikálása** személyes másolatot készít belőle.
 
-![Ügyfelek galériája](../../../../assets/screens/galerie.png)
+![Ügyfelek galériája](../../../../assets/screens/hu/galerie.webp)
 
 ## Az eszköztár
 
@@ -74,9 +78,9 @@ oldalra: kitöltött, üres, egyedi értékek, összeg, átlag, minimum, maximum
   kapcsolatával – egy nyíl köti össze az egyes feladatokat azokkal, amelyektől függenek, és
   piros, ha visszafelé mutat az időben.
 
-![Idővonal a függőségeivel](../../../../assets/screens/chronologie.png)
+![Idővonal a függőségeivel](../../../../assets/screens/hu/chronologie.webp)
 
-![Naptár határidő szerint](../../../../assets/screens/calendrier.png)
+![Naptár határidő szerint](../../../../assets/screens/hu/calendrier.webp)
 
 ## Galéria és lista
 
@@ -85,10 +89,36 @@ oldalra: kitöltött, üres, egyedi értékek, összeg, átlag, minimum, maximum
 - A **lista** rekordonként egy sort mutat, egyszeres választás, kapcsolat vagy személy szerint
   **csoportosítva**.
 
-![Ügyfelek listája ágazat szerint csoportosítva](../../../../assets/screens/liste.png)
+![Ügyfelek listája ágazat szerint csoportosítva](../../../../assets/screens/hu/liste.webp)
 
 A kanbanban, a galériában és a listában a kártyák és a sorok **kézzel rendezhetők** áthúzással
 – legfeljebb 5000; a választott rendezés elsőbbséget élvez ezzel a sorrenddel szemben.
+
+## Térkép
+
+A **térkép** minden sort a saját helyére tesz, ez alapján:
+
+- egy **cím** – egy rövid szöveg, lehetőleg **Cím** formátumban (lásd:
+  [Táblák és mezők](/basedb/hu/fonctionnalites/tables-et-champs/)): „12 rue des Lilas, Lyon”;
+- vagy egy **szélességi** és egy **hosszúsági fok**, két számmező, változatlanul elhelyezve.
+
+Egy tű a **színét** egy egyszeres választás mezőtől kapja, rámutatáskor megjeleníti a sor
+**cím**ét, és kattintásra megnyitja a sor részleteit. A térkép követi a nézet szűrőjét és
+rendezését, legfeljebb 2000 sorig.
+
+Egy címet a példány geokódolási szolgáltatása **egyszer és mindenkorra behatárol** –
+alapértelmezés szerint az OpenStreetMapé –, az általa megszabott ütemben: egy új térképen a
+tűk a válaszok érkezésével jelennek meg, körülbelül másodpercenként egy, majd a következő
+alkalmakkor azonnal. Egy jelvény számolja az elhelyezett sorokat, a még behatárolandó címeket
+és azokat, amelyeket nem lehetett behatárolni: egy nem található cím pontosításra vár (város,
+irányítószám), soha nem kerül csendben félretéve.
+
+:::note[Amit a szerver elhagy]
+A címek szövege a geokódolási szolgáltatáshoz megy, és minden olvasó böngészője a térkép
+alapját a csempeszerverről tölti be. A példány üzemeltetője más szolgáltatásokat is
+választhat, vagy egyiket sem akarhatja: lásd:
+[Környezeti változók](/basedb/hu/hebergement/variables/#térképek-és-címek).
+:::
 
 ## Űrlap és kérdőív
 
@@ -103,6 +133,8 @@ példát mutat. Minden más bármikor megváltoztatható:
 
 - **Megjelenés**: nyolc téma – Világos, Lágy, Hajnal, Óceán, Erdő, Éjszaka, Papír, Minimalista –, egy
   kiemelőszín, egy betűtípus, bal oldali vagy középre igazított igazítás;
+- **Előre kitöltés a mai dátummal**: a dátumkérdés már a mai nappal kitöltve érkezik – dátum és
+  idő esetén az időponttal is –, amelyet a kitöltő megtart vagy módosít;
 - **Feltétel hozzáadása…**: egy kérdés csak akkor jelenik meg, ha egy korábbi válasz ezt
   megkívánja („A hangulat Negatív”, „Az értékelés legfeljebb 2”). Egy elrejtett kérdés se nem
   kötelező, se nem kerül elküldésre;
@@ -115,6 +147,44 @@ egyszerre egy kérdés, amely becsúszva jelenik meg. Mindent billentyűzettel i
 igenhez vagy nemhez, a számok egy értékeléshez – egy egyszeres választás önmagában továbblép a
 következő kérdésre. A beküldést ünneplés kíséri: egy kirajzolódó pipa és az űrlap színeiben
 pattogó konfetti.
+
+## Kvíz
+
+A kvíz olyan kérdőív, amely pontokat számol. Minden kérdés alatt megadható a **helyes válasz**,
+és hogy mennyit ér – **1 pont**, ha nincs megadva, legfeljebb 100:
+
+| Kérdés | Helyes válasz |
+|---|---|
+| egyszeres választás | egy választás |
+| többszörös választás | a bejelölendő választások – mind, és csak azok |
+| jelölőnégyzet | igen vagy nem |
+| szám, értékelés | egy szám |
+| dátum | egy nap |
+| rövid szöveg, e-mail, URL | egy vagy több elfogadott válasz, `;`-vel elválasztva – a nagybetűket és az ékezeteket figyelmen kívül hagyva |
+
+A helyes válasz nélküli kérdés – egy keresztnév, egy megjegyzés – pontozás nélkül tehető fel. A
+kvíz létrehozásához legalább egy pontozott kérdés szükséges.
+
+A **Pontozás** szakasz szabályozza a többit:
+
+- **Javítás**: **minden kérdés után** – a válasz azonnal ellenőrződik, zölden, vagy pirosan a
+  helyes válasszal, és a pontszám nő a képernyő tetején –, **a végén** – először a pontszám,
+  majd a javítás –, vagy **soha** – csak a pontszám, a helyes válaszok titokban maradnak;
+- **Teljesítési küszöb**: a pontok százaléka; a záróképernyő ekkor azt mondja: „Teljesítve!”
+  vagy „Ezúttal nem sikerült…”;
+- **Pontszám mentése**: a tábla egy számmezője, amely megkapja minden válasz pontszámát.
+  Rendezze a rácsot eszerint: ez a ranglista. Az automatikusan kiválasztott mező neve „Score”,
+  „Points” vagy „Note”.
+
+A záróképernyő egy megtelő gyűrűben mutatja a pontszámot, a százalékot, majd – a „soha”
+kivételével – minden pontozott kérdést az adott válasszal és a helyes válasszal együtt. Az a
+kérdés, amelyet egy korábbi válasz elrejtett, nem számít bele az összesenbe.
+
+:::note
+Az alkalmazásban, aki a nézetet olvashatja, a helyes válaszokat is olvashatja. Egy [megosztott
+hivatkozáson](/basedb/hu/fonctionnalites/formulaires-partages/#megosztott-kvíz) keresztül azok
+soha nem hagyják el a szervert: a szerver javít és számol.
+:::
 
 ## Nézet megosztása
 

@@ -41,11 +41,13 @@ Senere tilføjes en formel (`DAYS([Échéance], TODAY())`), et opslag (kundens b
 en aggregering (det samlede beløb pr. kunde) på samme måde — se
 [Tabeller og felter](/basedb/da/fonctionnalites/tables-et-champs/).
 
-Du kan også **importere en fil** i CSV eller JSON: importen gætter typerne, lader dig rette
-dem, opretter tabellen eller supplerer en eksisterende tabel og fortæller række for række,
-hvad den afviser.
+Du kan også **importere en fil** — en Excel-arbejdsbog (`.xlsx`), en CSV eller en JSON: importen
+gætter typerne, lader dig rette dem, opretter tabellen eller supplerer en eksisterende tabel og
+fortæller række for række, hvad den afviser. Fra en arbejdsbog med flere ark vælger du arket;
+datoer, beløb og afkrydsningsfelter overtages, som Excel holder dem, og en formel giver sin
+værdi.
 
-![Menuen for en database](../../../../assets/screens/menu-base.png)
+![Menuen for en database](../../../../assets/screens/da/menu-base.webp)
 
 ## 3. Indtast og filtrer
 
@@ -61,7 +63,7 @@ Visningsvælgeren til venstre for »Filtrer« viser »Alle rækker« og derefter
 Opret en **kanban** grupperet efter »Statut«: når du trækker et kort fra én kolonne til en
 anden, ændres rækken.
 
-![En kanban efter status](../../../../assets/screens/kanban.png)
+![En kanban efter status](../../../../assets/screens/da/kanban.webp)
 
 ## 5. Del en formular
 

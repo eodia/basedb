@@ -12,7 +12,7 @@ Os detalhes de uma linha têm uma aba **Comentários**, entre “Detalhes” e �
 `@` para **mencionar** um membro, Ctrl+Enter para enviar. Cada pessoa edita ou exclui os
 próprios comentários.
 
-![Uma conversa sobre um projeto](../../../../assets/screens/commentaires.png)
+![Uma conversa sobre um projeto](../../../../assets/screens/pt-br/commentaires.webp)
 
 Poder ler a linha basta para comentá-la. Uma pessoa mencionada que não pode lê-la
 não é notificada — e o autor é avisado disso em vez de achar que a mensagem foi enviada.
@@ -30,7 +30,15 @@ O sino, no canto superior direito, conta o que não foi lido. Quatro coisas cheg
 Abrir uma notificação abre a linha. **Marcar tudo como lido** zera o contador; as
 notificações são mantidas por 90 dias.
 
-![Uma menção recebida](../../../../assets/screens/notifications.png)
+### Por e-mail
+
+Quando a instância tem um [servidor de envio](/basedb/pt-br/hebergement/variables/#e-mails), uma
+notificação que fica **dez minutos sem ser lida** também é enviada por e-mail: um único e-mail
+para todas as que estão esperando, com um link para cada linha. O que você lê a tempo não é
+enviado. Em **Configurações › Notificações**, cada tipo tem dois interruptores: no basedb, e
+por e-mail.
+
+![Uma menção recebida](../../../../assets/screens/pt-br/notifications.webp)
 
 ## Tempo real
 
@@ -74,6 +82,6 @@ Ctrl+Z desfaz a sua última escrita — veja [o histórico](/basedb/pt-br/foncti
 
 ## Limites
 
-- As notificações ficam no basedb: por enquanto, nenhuma é enviada por e-mail.
+- Nenhum e-mail sem um servidor de envio configurado por quem opera a instância.
 - Acima de cem linhas alteradas de uma vez, a tela recarrega a página inteira em vez de
   atualizar linha por linha.

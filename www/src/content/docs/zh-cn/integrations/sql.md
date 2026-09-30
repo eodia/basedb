@@ -22,7 +22,7 @@ description: 使用 psql、BI 工具或脚本读写 basedb 的数据表。
 
 标签栏中的 **+**，或数据库的 **⋯** 菜单 → **SQL 查询**：一个带语法高亮和自动补全的编辑器，结果显示在与数据表相同的网格中。
 
-![一个已保存的查询，以及两个与数据表并列的 SQL 视图](../../../../assets/screens/requete-sql.png)
+![一个已保存的查询，以及两个与数据表并列的 SQL 视图](../../../../assets/screens/zh-cn/requete-sql.webp)
 
 - **每个人都以自己的权限读取**：可管理级别可访问整个数据库，包括写入；其他成员编写的 SQL 为只读，对其不开放的数据表并不存在，隐藏的字段会消失。
 - 查询可以**保存**在数据表下方——供自己、整个数据库或指定用户组使用——如有需要，还可以变为 **SQL 视图**：一个真正的 PostgreSQL 视图，与数据表并列，并可从 `psql` 读取。
@@ -45,6 +45,8 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+这个账户是数据库的所有者：它能读取一切，basedb 的权限对它不起作用。若要用于 BI 工具，请另外创建一个拥有自己 `GRANT` 的角色。如果某张数据表带有[行规则](/basedb/zh-cn/fonctionnalites/droits/#细化到行)，PostgreSQL 会对其启用行级安全性：这样的角色如果没有 `BYPASSRLS` 属性或专属的策略，就看不到任何行。
 
 ## 用 SQL 写入
 

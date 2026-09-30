@@ -31,17 +31,39 @@ Um campo oculto está ausente em todo lugar: da grade, das visões, da API, do M
 do SQL escrito na interface e das visões SQL. Filtrar ou ordenar por ele responde como para um campo
 que não existe.
 
+## Até a linha
+
+Ao lado de **Campos**, **Linhas** mostra a um grupo apenas certas linhas de uma tabela: as
+que um filtro retém, escrito como o de uma visão. `@me` designa a pessoa conectada:
+
+- `commercial eq @me` — cada vendedor só vê seus clientes;
+- `region in ["nord", "est"]` — uma equipe só vê suas regiões;
+- `_created_by eq @me` — cada um só vê o que criou.
+
+As permissões **se somam**: uma pessoa vê as linhas de todos os seus grupos, e um grupo sem
+regra as vê todas. Quem gerencia a estrutura da tabela — o nível Gerenciamento — sempre vê tudo.
+A tela informa quantas linhas uma determinada pessoa vê, e por qual grupo.
+
+Uma linha fora da sua regra não existe para a pessoa: nem nas visões, nos painéis, na busca, na
+API, no MCP ou no histórico, nem para ser alterada, excluída ou vinculada. Uma linha que ela cria
+deve fazer parte das suas; ao alterar uma linha, ela pode, porém, fazê-la sair do seu perímetro —
+uma tarefa confiada a um colega. As respostas aos
+[formulários compartilhados](/basedb/pt-br/fonctionnalites/formulaires-partages/) sempre chegam.
+
 ## E o SQL?
 
 Na interface, o SQL segue as mesmas permissões, aplicadas pelo próprio PostgreSQL: sem o nível
 Gerenciamento, uma consulta é executada somente para leitura, em um papel exclusivo da pessoa, em que uma tabela
-fechada não existe e um campo oculto é recusado. Uma [visão SQL](/basedb/pt-br/fonctionnalites/requetes-et-vues-sql/)
+fechada não existe, um campo oculto é recusado e apenas suas linhas são lidas, seja a tabela
+nomeada sozinha ou com seu esquema. Uma [visão SQL](/basedb/pt-br/fonctionnalites/requetes-et-vues-sql/)
 é lida com as permissões de quem a lê, e compartilhar uma consulta compartilha apenas o texto dela.
 
 Já um acesso **`psql` direto** ao banco não é controlado pelo basedb: ele lê tudo, inclusive campos
 ocultos. As restrições protegem as superfícies do produto — interface, API, MCP —, nunca
 contra alguém que tenha acesso SQL ao banco; esses acessos são configurados com `GRANT`
-do PostgreSQL, definidos por quem opera a instância.
+do PostgreSQL, definidos por quem opera a instância. Uma tabela que tem uma regra de linhas tem a
+segurança por linha do PostgreSQL ativada: um papel criado para uma ferramenta terceira não vê
+nenhuma linha nela, exceto se tiver o atributo `BYPASSRLS` ou sua própria política.
 
 ## Contas e login
 

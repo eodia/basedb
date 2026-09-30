@@ -9,7 +9,7 @@ taulukoiden alle – vain itselleen, koko tietokannalle tai muutamalle ryhmälle
 hallinnoija voi tehdä siitä **SQL-näkymän**: oikean PostgreSQL-näkymän taulukoiden joukkoon,
 jota myös `psql` ja työkalusi lukevat.
 
-![Tallennettu kysely avattuna ”Kyselyt”-osiosta; yläpuolella kaksi SQL-näkymää taulukoiden joukossa](../../../../assets/screens/requete-sql.png)
+![Tallennettu kysely avattuna ”Kyselyt”-osiosta; yläpuolella kaksi SQL-näkymää taulukoiden joukossa](../../../../assets/screens/fi/requete-sql.webp)
 
 ## Kukin omilla käyttöoikeuksillaan
 
@@ -23,7 +23,7 @@ ruudukossa kuin taulukkosi. Se, mitä kysely voi lukea, riippuu sen suorittajast
   kenttä katoaa `SELECT *` -kyselystä ja hylätään, jos nimeät sen, vaikka taulukko olisi
   mainittu; kirjoitus hylätään. Tuloksessa on **Omat käyttöoikeutesi** -merkki.
 
-![”Omat käyttöoikeutesi” -merkki: kysely näkee vain henkilölle avoimet taulukot ja kentät](../../../../assets/screens/sql-vos-droits.png)
+![”Omat käyttöoikeutesi” -merkki: kysely näkee vain henkilölle avoimet taulukot ja kentät](../../../../assets/screens/fi/sql-vos-droits.webp)
 
 Lajittelua ei tee näkymä: PostgreSQL itse soveltaa käyttöoikeuksiasi sarake sarakkeelta sinulle
 omistetulla roolilla. Kysely ei siis voi näyttää sinulle mitään, mitä ruudukko, API tai
@@ -37,7 +37,7 @@ kopion, ja **Nimi ja jakaminen…** (välilehdessä tai sen sivupalkin valikossa
 uudelleen, muuttaa sitä, kuka sen näkee, tai poistaa sen — **Poista** on myös sen valikossa,
 hiiren oikealla painikkeella. Sitä näyttänyt välilehti säilyttää tekstinsä.
 
-![Kyselyn tallentaminen: sen nimi, mitä se näyttää ja kuka sen näkee](../../../../assets/screens/requete-enregistrer.png)
+![Kyselyn tallentaminen: sen nimi, mitä se näyttää ja kuka sen näkee](../../../../assets/screens/fi/requete-enregistrer.webp)
 
 | Laajuus | Kuka sen näkee | Kuka voi luoda ja muokata sitä |
 |---|---|---|
@@ -61,7 +61,7 @@ joukkoon** omine väreineen ja kuvakkeineen kuten taulukko, ja oikealla oleva pi
 kertoo, että kyseessä on näkymä. Napsautus avaa sen välilehdelle: sen rivit ruudukossa ja
 **Päivitä** niiden lukemiseen uudelleen.
 
-![Näkymä ”Factures à encaisser” sivupalkista avattuna](../../../../assets/screens/vue-sql.png)
+![Näkymä ”Factures à encaisser” sivupalkista avattuna](../../../../assets/screens/fi/vue-sql.webp)
 
 Se luodaan tietokannan **⋯**-valikosta → **Uusi SQL-näkymä…** tai SQL-välilehdeltä: **⋯** →
 **Luo SQL-näkymä…**, jolloin välilehden kyselystä tulee sen määritelmä. Valintaikkuna kysyy:
@@ -72,7 +72,7 @@ Se luodaan tietokannan **⋯**-valikosta → **Uusi SQL-näkymä…** tai SQL-v�
 - sen **kyselyä**: yksi `SELECT` tietokannan taulukoista ja muista näkymistä. PostgreSQL hylkää
   sen, minkä se hylkää, ja editori osoittaa kohdan.
 
-![SQL-näkymän valintaikkuna: nimike ja ulkoasu, tekninen nimi, kysely, kuvaus](../../../../assets/screens/vue-sql-dialogue.png)
+![SQL-näkymän valintaikkuna: nimike ja ulkoasu, tekninen nimi, kysely, kuvaus](../../../../assets/screens/fi/vue-sql-dialogue.webp)
 
 Näkymää luetaan sen jälkeen sen nimellä, niin käyttöliittymästä kuin `psql`:stä tai
 BI-työkalustasi:

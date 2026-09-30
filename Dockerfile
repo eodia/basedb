@@ -49,11 +49,30 @@ COPY --from=build /repo/packages/core/dist packages/core/dist
 COPY --from=build /repo/apps/api/dist apps/api/dist
 COPY --from=build /repo/apps/mcp/dist apps/mcp/dist
 
+# ── The faces of PDF documents (chapter 21 §4) ─────────────────────────────────────────
+# Noto Sans for Latin, Greek and Cyrillic, Noto Sans CJK for Chinese, Japanese and Korean:
+# six files of Debian's packages, not the packages — about 40 MB rather than 130.
+FROM node:${NODE_VERSION}-bookworm-slim AS fonts
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends fonts-noto-core fonts-noto-cjk \
+ && rm -rf /var/lib/apt/lists/*
+
 # ── The image ──────────────────────────────────────────────────────────────────────────
 FROM node:${NODE_VERSION}-bookworm-slim AS basedb
 ENV NODE_ENV=production
 # The router in front of the three processes (docker/image/Caddyfile): a static binary.
 COPY --from=caddy:2-alpine /usr/bin/caddy /usr/local/bin/caddy
+# The faces of PDF documents: BASEDB_PDF_FONTS may name another folder.
+COPY --from=fonts \
+  /usr/share/fonts/truetype/noto/NotoSans-Regular.ttf \
+  /usr/share/fonts/truetype/noto/NotoSans-Bold.ttf \
+  /usr/share/fonts/truetype/noto/NotoSans-Italic.ttf \
+  /usr/share/fonts/truetype/noto/NotoSans-BoldItalic.ttf \
+  /usr/share/fonts/truetype/noto/
+COPY --from=fonts \
+  /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc \
+  /usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc \
+  /usr/share/fonts/opentype/noto/
 # Files of `file` and `image` fields and exports before purge: one volume, /data.
 RUN mkdir -p /data/files /data/exports && chown -R node:node /data
 # The API and the MCP server, with the packages they reference.

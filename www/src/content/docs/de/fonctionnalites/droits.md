@@ -32,18 +32,43 @@ Ein verborgenes Feld fehlt überall: im Raster, in den Ansichten, in der API, im
 SQL, das in der Oberfläche geschrieben wird, und in den SQL-Views. Filtern oder Sortieren danach
 antwortet wie bei einem Feld, das nicht existiert.
 
+## Bis hinunter zur Zeile
+
+Neben **Felder** zeigt **Zeilen** einer Gruppe nur bestimmte Zeilen einer Tabelle: die, die ein
+Filter zurückhält, geschrieben wie der einer Ansicht. `@me` bezeichnet die angemeldete Person:
+
+- `commercial eq @me` — jeder Vertriebsmitarbeiter sieht nur seine Kunden;
+- `region in ["nord", "est"]` — ein Team sieht nur seine Regionen;
+- `_created_by eq @me` — jede Person sieht nur, was sie selbst angelegt hat.
+
+Die Berechtigungen addieren sich: Eine Person sieht die Zeilen aller ihrer Gruppen, und eine
+Gruppe ohne Regel sieht sie alle. Wer die Struktur der Tabelle verwaltet — die Stufe Verwalten —
+sieht immer alles. Der Bildschirm sagt, wie viele Zeilen eine bestimmte Person sieht, und über
+welche Gruppe.
+
+Eine Zeile außerhalb ihrer Regel existiert für die Person nicht: weder in den Ansichten, den
+Dashboards, der Suche, der API, dem MCP oder dem Verlauf, noch um bearbeitet, gelöscht oder
+verknüpft zu werden. Eine Zeile, die sie anlegt, muss zu ihren eigenen gehören; beim Bearbeiten
+einer Zeile kann sie diese hingegen aus ihrem Bereich herausfallen lassen — eine einem Kollegen
+übertragene Aufgabe. Die Antworten auf
+[freigegebene Formulare](/basedb/de/fonctionnalites/formulaires-partages/) kommen immer an.
+
 ## Und SQL?
 
 In der Oberfläche folgt SQL denselben Berechtigungen, von PostgreSQL selbst durchgesetzt: Ohne die
 Stufe Verwalten läuft eine Abfrage schreibgeschützt über eine eigene Rolle der Person, in der eine
-verschlossene Tabelle nicht existiert und ein verborgenes Feld abgelehnt wird. Eine [SQL-View](/basedb/de/fonctionnalites/requetes-et-vues-sql/)
+verschlossene Tabelle nicht existiert, ein verborgenes Feld abgelehnt wird und nur ihre Zeilen
+gelesen werden, ob die Tabelle allein oder mit ihrem Schema genannt wird. Eine [SQL-View](/basedb/de/fonctionnalites/requetes-et-vues-sql/)
 wird mit den Berechtigungen der lesenden Person gelesen, und eine Abfrage freizugeben gibt nur ihren
 Text frei.
 
 Ein **direkter `psql`-Zugriff** auf die Datenbank wird dagegen nicht von basedb gesteuert: Er liest
 alles, verborgene Felder eingeschlossen. Die Einschränkungen schützen die Oberflächen des Produkts –
 Oberfläche, API, MCP –, nie gegenüber jemandem, der SQL-Zugriff auf die Datenbank hat; diese
-Zugriffe werden über PostgreSQL-`GRANT`s geregelt, die der Betreiber setzt.
+Zugriffe werden über PostgreSQL-`GRANT`s geregelt, die der Betreiber setzt. Eine Tabelle, die eine
+Zeilenregel trägt, hat die Sicherheit auf Zeilenebene von PostgreSQL aktiviert: Eine für ein
+Drittwerkzeug angelegte Rolle sieht dort keine Zeile, außer sie hat das Attribut `BYPASSRLS` oder
+eine eigene Policy.
 
 ## Konten und Anmeldung
 

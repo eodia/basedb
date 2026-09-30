@@ -22,7 +22,7 @@ que você digita (“Échéance”) se torna um nome físico legível (`echeance
 | Seleção única | `text` + `CHECK` | cor, ícone ou imagem por opção |
 | Seleção múltipla | `text[]` + `CHECK` | filtrável com os operadores de array |
 | E-mail | `text` + `CHECK` | um endereço verificado pelo banco, aberto com um clique |
-| Telefone, Código de barras | `text` | um texto curto e seu formato: link de chamada, fonte monoespaçada |
+| Telefone, Código de barras, Endereço | `text` | um texto curto e seu formato: link de chamada, fonte monoespaçada, link para o mapa |
 | URL | `text` + `CHECK` | completado na digitação (`exemple.fr` → `https://exemple.fr`) |
 | Pessoa | `uuid` | um membro do espaço de trabalho; designá-lo o [notifica](/basedb/pt-br/fonctionnalites/collaboration/) |
 | Numeração automática | `bigint` de identidade | numera também as linhas já existentes; ninguém o digita |
@@ -38,7 +38,7 @@ Cada tabela também tem suas **colunas de sistema**: `_id` (UUID v7), `_created_
 pela API. A grade as agrupa em **Informações do sistema**, no menu de colunas:
 elas estão em todas as tabelas, e são úteis em poucas.
 
-![A grade de uma tabela, com uma duração calculada, uma pesquisa e uma contagem](../../../../assets/screens/grille.png)
+![A grade de uma tabela, com uma duração calculada, uma pesquisa e uma contagem](../../../../assets/screens/pt-br/grille.webp)
 
 ## Restrições garantidas pelo banco
 
@@ -55,8 +55,8 @@ Foreign-key constraints:
 
 ## Formatos de exibição
 
-Moeda, Porcentagem, Duração, Avaliação, Telefone e Código de barras são escolhidos como tipos,
-mas são **formatos**: a coluna continua sendo um número ou um texto, só a leitura muda.
+Moeda, Porcentagem, Duração, Avaliação, Telefone, Código de barras e Endereço são escolhidos como
+tipos, mas são **formatos**: a coluna continua sendo um número ou um texto, só a leitura muda.
 
 | Formato | Sobre | Como se lê e se digita |
 |---|---|---|
@@ -66,9 +66,27 @@ mas são **formatos**: a coluna continua sendo um número ou um texto, só a lei
 | Avaliação | um número | de 1 a 10 estrelas, definida com um clique |
 | Telefone | um texto curto | um link de chamada |
 | Código de barras | um texto curto | em fonte monoespaçada |
+| Endereço | um texto curto | um link para o mapa; na ficha, **Localizar endereço** sugere os endereços correspondentes, escritos por completo; a visão [Mapa](/basedb/pt-br/fonctionnalites/vues/#mapa) o posiciona |
 
 Um formato pode ser alterado depois (**Exibição**, na edição do campo) sem mexer nos
 valores salvos. Ele não limita o valor: uma avaliação de 7 em uma escala de 5 continua sendo 7.
+
+## Valores padrão
+
+Na edição de um campo, **Valor padrão** define o que uma linha criada sem ele recebe:
+
+| Escolha | Sobre | A linha criada recebe |
+|---|---|---|
+| Um valor fixo | a maioria dos tipos | o valor escolhido — um status “Novo”, uma prioridade 3 |
+| A data de hoje | uma data | o dia da sua criação, no fuso horário da pessoa |
+| O momento da criação | uma data e hora | a hora exata |
+| A pessoa que cria a linha | uma pessoa | quem a criou — “Responsável: eu” |
+
+A ficha nova e os formulários abrem já preenchidos; esvaziar o campo o deixa vazio. O padrão
+vale para toda criação — interface, API, MCP, importação, formulário compartilhado,
+automação —, inclusive em um campo que a pessoa não pode alterar: é a regra da tabela. As linhas
+existentes não mudam, e uma inserção em SQL direto não recebe nenhum: é o basedb que o aplica,
+não a coluna.
 
 ## Fórmulas
 
@@ -174,7 +192,7 @@ O texto formatado não pode ser preenchido pela IA: um modelo escreve texto, nã
 A tela **Estrutura** da base — no menu **⋯** dela na barra lateral — lista as tabelas e seus campos: adicionar, renomear, tornar obrigatório, reordenar,
 descrever, designar o campo de exibição.
 
-![A tela Estrutura de uma base](../../../../assets/screens/structure.png)
+![A tela Estrutura de uma base](../../../../assets/screens/pt-br/structure.webp)
 
 Alterar a estrutura exige o nível **Gerenciamento**. Sem ele, a tela pode ser consultada e não oferece
 nada: nem botão, nem lápis, nem alça — a obrigatoriedade e o campo de exibição são informados, não

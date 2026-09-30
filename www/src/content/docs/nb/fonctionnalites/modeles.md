@@ -11,7 +11,7 @@ selv. [Malgalleriet](/basedb/nb/modeles/) viser dem basedb tilbyr.
 
 **Ny database**, deretter **Start fra en mal, eller be KI om en**: galleriet åpnes.
 
-![Malgalleriet, i applikasjonen](../../../../assets/screens/modeles.png)
+![Malgalleriet, i applikasjonen](../../../../assets/screens/nb/modeles.webp)
 
 Hver mal kan leses i sin helhet før den tas i bruk – tabellene og feltene deres, visningene,
 automatiseringene og instruksjonen for hvert av KI-feltene. **Opprett databasen** ber om

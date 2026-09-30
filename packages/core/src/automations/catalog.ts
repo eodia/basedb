@@ -2,6 +2,7 @@ import { AI_KINDS, type AiKind } from '../ai/answer.js'
 import { resolveProvider } from '../ai/draft.js'
 import { MAX_PROMPT_CHARS } from '../ai/prompt.js'
 import { BasedbError } from '../errors/index.js'
+import { isAddress } from '../mail/message.js'
 import { requireOnBase } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
@@ -66,6 +67,22 @@ export type AutomationStep =
       readonly users: readonly string[]
       /** A person field of that row, whose person is notified too. */
       readonly userField: string | null
+      readonly message: string
+    }
+  | {
+      readonly id: string
+      readonly kind: 'email'
+      /** The row whose fields name recipients, and that the text cites; `null`: none. */
+      readonly record: RowSource | null
+      /** People of the tenant: their sign-in address. */
+      readonly users: readonly string[]
+      /** A person field of that row. */
+      readonly userField: string | null
+      /** An e-mail field of that row. */
+      readonly emailField: string | null
+      /** Addresses written out. */
+      readonly addresses: readonly string[]
+      readonly subject: string
       readonly message: string
     }
   | {
@@ -162,6 +179,8 @@ export const MAX_STEPS = 30
 export const MAX_DEPTH = 3
 export const MAX_PATHS = 5
 export const MAX_NOTIFIED = 20
+/** The recipients an e-mail step names — people and addresses together. */
+export const MAX_MAILED = 20
 /** The choices an AI step may be asked to pick among. */
 export const MAX_AI_OPTIONS = 50
 
@@ -525,6 +544,68 @@ async function checkedStep(
       checkCitations(message, scope, `${at}.message`)
       return { step: { id, kind: 'notify', record: source.ref, users, userField, message } }
     }
+    case 'email': {
+      const source = rowSource(a.record, scope, `${at}.record`, null)
+      const users = Array.isArray(a.users)
+        ? [...new Set(a.users.filter((u): u is string => typeof u === 'string' && UUID.test(u)))]
+        : []
+      const addresses = Array.isArray(a.addresses)
+        ? [
+            ...new Set(
+              a.addresses
+                .filter((x): x is string => typeof x === 'string')
+                .map((x) => x.trim().replace(/^mailto:/i, ''))
+                .filter((x) => x !== ''),
+            ),
+          ]
+        : []
+      const wrong = addresses.find((x) => !isAddress(x))
+      if (wrong !== undefined) throw invalid(`${at}.addresses`, 'adresse_email', wrong)
+      if (users.length + addresses.length > MAX_MAILED)
+        throw invalid(`${at}.users`, 'trop_de_destinataires', MAX_MAILED)
+      const userField =
+        typeof a.user_field === 'string' && a.user_field !== '' ? a.user_field : null
+      if (userField !== null && source.table?.fields.get(userField) !== 'user') {
+        throw invalid(`${at}.user_field`, 'champ_personne_attendu', userField)
+      }
+      const emailField =
+        typeof a.email_field === 'string' && a.email_field !== '' ? a.email_field : null
+      if (emailField !== null && source.table?.fields.get(emailField) !== 'email') {
+        throw invalid(`${at}.email_field`, 'champ_email_attendu', emailField)
+      }
+      if (users.length === 0 && addresses.length === 0 && userField === null && emailField === null)
+        throw invalid(`${at}.users`, 'destinataire_manquant')
+      if (users.length > 0) {
+        const known = await walk.exec.query<{ id: string }>(
+          `SELECT u.id::text FROM _basedb.app_user u JOIN _basedb.tenant t ON t.id = u.tenant_id
+            WHERE t.ref = $1 AND u.id = ANY($2::uuid[]) AND u.deleted_at IS NULL`,
+          [walk.ctx.tenantId, users],
+        )
+        const unknown = users.find((u) => !known.some((k) => k.id === u))
+        if (unknown !== undefined) throw invalid(`${at}.users`, 'personne_inconnue', unknown)
+      }
+      const subject = typeof a.subject === 'string' ? a.subject.trim() : ''
+      if (subject === '' || subject.length > 200 || /[\r\n]/.test(subject))
+        throw invalid(`${at}.subject`, 'objet_invalide')
+      checkCitations(subject, scope, `${at}.subject`)
+      const message = typeof a.message === 'string' ? a.message.trim() : ''
+      if (message === '' || message.length > 5000)
+        throw invalid(`${at}.message`, 'message_invalide')
+      checkCitations(message, scope, `${at}.message`)
+      return {
+        step: {
+          id,
+          kind: 'email',
+          record: source.ref,
+          users,
+          userField,
+          emailField,
+          addresses,
+          subject,
+          message,
+        },
+      }
+    }
     case 'webhook': {
       const source = rowSource(a.record, scope, `${at}.record`, null)
       const url = typeof a.url === 'string' ? a.url.trim() : ''
@@ -701,6 +782,18 @@ export function wireSteps(steps: readonly AutomationStep[]): Record<string, unkn
           record: s.record,
           users: s.users,
           user_field: s.userField,
+          message: s.message,
+        }
+      case 'email':
+        return {
+          id: s.id,
+          kind: s.kind,
+          record: s.record,
+          users: s.users,
+          user_field: s.userField,
+          email_field: s.emailField,
+          addresses: s.addresses,
+          subject: s.subject,
           message: s.message,
         }
       case 'branch':

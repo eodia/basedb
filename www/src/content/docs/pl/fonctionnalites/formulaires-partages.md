@@ -3,12 +3,12 @@ title: Formularze udostępnione
 description: Udostępnij formularz przez link, publicznie lub tylko dla zalogowanych członków.
 ---
 
-Formularz lub ankietę **udostępnia się przez link** `/f/<jeton>`. Osoba odpowiadająca nie
+Formularz, ankietę lub quiz **udostępnia się przez link** `/f/<jeton>`. Osoba odpowiadająca nie
 potrzebuje **żadnych uprawnień do tabeli**: każda odpowiedź dodaje wiersz i nic więcej z tabeli
 nie jest jej pokazywane. Aby pokazywać wiersze zamiast je przyjmować, widok można udostępnić
 [tylko do odczytu](/basedb/pl/fonctionnalites/vues-partagees/).
 
-![Okno udostępniania](../../../../assets/screens/partage-formulaire.png)
+![Okno udostępniania](../../../../assets/screens/pl/partage-formulaire.webp)
 
 ## Kto może odpowiadać
 
@@ -21,7 +21,7 @@ Strona linku jest poza aplikacją: bez paska bocznego, nazwy bazy i innych wiers
 formularza — jego motyw, kolor, czcionkę —, i zadaje tylko te pytania, których wymagają
 wcześniejsze odpowiedzi.
 
-![Publiczny formularz](../../../../assets/screens/formulaire-public.png)
+![Publiczny formularz](../../../../assets/screens/pl/formulaire-public.webp)
 
 ## W czyim imieniu zapisywana jest odpowiedź
 
@@ -47,6 +47,21 @@ Okno dialogowe ustawia:
 - **Zakończ udostępnianie**: link znika, odpowiedzi zostają w tabeli.
 
 Zamknięty formularz informuje o tym jednym zdaniem, zanim jeszcze poprosi o zalogowanie.
+
+## Udostępniony quiz
+
+Strona quizu nie otrzymuje **żadnej poprawnej odpowiedzi**: tylko to, ile warte jest każde
+pytanie. To serwer poprawia.
+
+- Poprawiany **po każdym pytaniu**, strona wysyła mu każdą ocenianą odpowiedź w chwili, gdy
+  zostaje udzielona, i dowiaduje się wtedy, czy jest poprawna — i która odpowiedź była poprawna.
+- Przy wysyłce serwer liczy wynik **na podstawie otrzymanych odpowiedzi** i zapisuje go w polu
+  wybranym dla niego, jeśli takie istnieje i osoba, która opublikowała udostępnienie, może je
+  zapisywać. Strona wyświetla wynik, który on zwraca, oraz poprawne odpowiedzi, chyba że quiz
+  mówi „nigdy”.
+
+Wynik odczytuje się więc z tabeli tak, jak policzył go serwer, a nie tak, jak ogłosiłaby go
+strona.
 
 ## Ograniczenia
 

@@ -25,13 +25,17 @@
     "@basedb/naming": "workspace:*",
     "@basedb/templates": "workspace:*",
     "@node-rs/argon2": "^2.2.1",
+    "fontkit": "^2",
+    "htmlparser2": "^8",
     "jose": "^6.2.12",
+    "pdfkit": "^0.20.2",
     "pg": "^8.13.1",
     "sanitize-html": "^2.17.7"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^10.16.0",
     "@types/node": "^22.10.2",
+    "@types/pdfkit": "^0.17.6",
     "@types/pg": "^8.11.10",
     "@types/sanitize-html": "^2.16.1",
     "testcontainers": "^10.16.0",

@@ -3,12 +3,12 @@ title: Delade formulär
 description: Dela ett formulär via en länk, offentligt eller bara för inloggade medlemmar.
 ---
 
-Ett formulär eller en enkät **delas via en länk** `/f/<jeton>`. Den som svarar behöver **inga
+Ett formulär, en enkät eller ett quiz **delas via en länk** `/f/<jeton>`. Den som svarar behöver **inga
 behörigheter i tabellen**: varje svar lägger till en rad, och inget annat i tabellen visas för
 hen. Vill du visa rader i stället för att ta emot dem kan en vy delas
 [skrivskyddad](/basedb/sv/fonctionnalites/vues-partagees/).
 
-![Delningsdialogen](../../../../assets/screens/partage-formulaire.png)
+![Delningsdialogen](../../../../assets/screens/sv/partage-formulaire.webp)
 
 ## Vem kan svara
 
@@ -21,7 +21,7 @@ Länkens sida ligger utanför programmet: inget sidofält, inget databasnamn, in
 Den bär formulärets utseende — dess tema, färg, typsnitt —, och ställer bara de frågor som
 tidigare svar kräver.
 
-![Ett offentligt formulär](../../../../assets/screens/formulaire-public.png)
+![Ett offentligt formulär](../../../../assets/screens/sv/formulaire-public.webp)
 
 ## I vems namn svaret skrivs
 
@@ -46,6 +46,20 @@ I dialogen ställer du in:
 - **Sluta dela**: länken försvinner, svaren finns kvar i tabellen.
 
 Ett stängt formulär säger det med en mening, redan innan någon inloggning begärs.
+
+## Ett delat quiz
+
+Sidan för ett quiz tar **inte emot något rätt svar**: bara vad varje fråga är värd. Det är
+servern som rättar.
+
+- Vid rättning **efter varje fråga** skickar sidan servern varje bedömt svar i samma ögonblick
+  det ges, och får då veta om det är rätt – och vilket som var det rätta.
+- Vid inskickning räknar servern poängen **utifrån de mottagna svaren** och skriver den i det
+  fält som valts för det, om det finns ett och personen som publicerade delningen får skriva i
+  det. Sidan visar poängen den får tillbaka, och facit, om inte quizet säger ”aldrig”.
+
+En poäng läses alltså av i tabellen så som servern har räknat den, inte så som en sida skulle ha
+meddelat den.
 
 ## Begränsningar
 

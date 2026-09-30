@@ -9,7 +9,7 @@ próximos vencimientos. Cada tarjeta muestra una **pregunta** (una lectura de la
 construida con el ratón o escrita en SQL) y unos **filtros** en la parte superior de la página controlan las
 tarjetas vinculadas a ellos.
 
-![El panel «Pilotage de l’agence»: tendencia del mes, objetivo, facturación apilada, sentimiento de las reseñas](../../../../assets/screens/tableaux-de-bord.png)
+![El panel «Pilotage de l’agence»: tendencia del mes, objetivo, facturación apilada, sentimiento de las reseñas](../../../../assets/screens/es/tableaux-de-bord.webp)
 
 Todo se abre desde **Paneles**, en el bloque de la base abierta en la parte inferior de la barra
 lateral. A la izquierda, los paneles y las preguntas guardadas de la base, y
@@ -31,7 +31,7 @@ pestaña que la mostraba conserva su contenido, que vuelve a quedar sin guardar.
 
 Una pregunta se construye por etapas, una debajo de otra:
 
-![El editor de una pregunta: los datos, los filtros, el resumen por mes](../../../../assets/screens/question-editeur.png)
+![El editor de una pregunta: los datos, los filtros, el resumen por mes](../../../../assets/screens/es/question-editeur.webp)
 
 | Etapa | Lo que se elige |
 |---|---|
@@ -165,7 +165,7 @@ completa el resto. Puede tener un **valor predeterminado**, «Este año», por e
 En modo lectura, un clic en un punto también puede ajustar un filtro: **Filtrar por «Lyon»** en una
 tarjeta cuya columna de ciudades está vinculada al filtro «Ville».
 
-![La pestaña «Activité»: tareas por vencimiento apiladas por estado, embudo de proyectos, horas estimadas en tabla dinámica](../../../../assets/screens/tableaux-de-bord-activite.png)
+![La pestaña «Activité»: tareas por vencimiento apiladas por estado, embudo de proyectos, horas estimadas en tabla dinámica](../../../../assets/screens/es/tableaux-de-bord-activite.webp)
 
 ## El Copilot
 

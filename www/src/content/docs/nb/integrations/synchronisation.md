@@ -6,7 +6,7 @@ description: Varsle en Slack-kanal, koble til en kalender, hold en tabell oppdat
 Skjermen **Integrasjoner** for en database åpnes fra profilmenyen, nederst til venstre. Den
 krever nivået **Administrere** og samler det som kobler databasen til resten av verktøyene dine.
 
-![Integrasjoner-skjermen for en database](../../../../assets/screens/integrations.png)
+![Integrasjoner-skjermen for en database](../../../../assets/screens/nb/integrations.webp)
 
 ## Slack
 

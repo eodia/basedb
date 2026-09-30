@@ -27,7 +27,7 @@ V nabídce databáze v části **Další akce** otevře **Porovnat prostředí�
 - **Synchronizace řádků**: tabulku po tabulce přenést řádky z jednoho prostředí do jiného
   podle identifikátoru.
 
-![Porovnání produkčního a testovacího prostředí](../../../../assets/screens/environnements.png)
+![Porovnání produkčního a testovacího prostředí](../../../../assets/screens/cs/environnements.webp)
 
 ## Jak basedb ví, kdo co změnil
 

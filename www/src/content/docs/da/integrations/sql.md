@@ -25,7 +25,7 @@ beskrivelserne (`COMMENT ON`).
 **+** i fanelinjen eller databasens **⋯**-menu → **SQL-forespørgsel**: en editor med
 syntaksfremhævning og autofuldførelse, hvis resultat vises i samme gitter som dine tabeller.
 
-![En gemt forespørgsel og to SQL-views placeret blandt tabellerne](../../../../assets/screens/requete-sql.png)
+![En gemt forespørgsel og to SQL-views placeret blandt tabellerne](../../../../assets/screens/da/requete-sql.webp)
 
 - **Hver person læser med sine egne tilladelser**: niveauet Administrere har hele databasen,
   skrivninger inklusive; de andre medlemmer skriver skrivebeskyttet SQL, hvor en lukket tabel
@@ -52,6 +52,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+Denne konto er databasens ejer: den læser alt, og basedbs tilladelser gælder ikke for den. Til
+et BI-værktøj bør du i stedet oprette en selvstændig rolle med sine egne `GRANT`. Har en tabel
+en [rækkeregel](/basedb/da/fonctionnalites/droits/#helt-ned-til-rækken), anvender PostgreSQL
+row-level security på den: en sådan rolle ser ingen rækker i den uden attributten `BYPASSRLS`
+eller en politik af sin egen.
 
 ## Skriv i SQL
 

@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb — il database collaborativo in cui ogni tabella è una vera tabella PostgreSQL',
-			description: 'Griglie e otto viste, formule, moduli e viste condivisi, commenti, automazioni, dashboard, permessi fino al singolo campo, cronologia completa, API REST e server MCP — su vere tabelle PostgreSQL, con nomi leggibili. Self-hosted, AGPL-3.0.',
+			description: 'Griglie e dieci viste, formule, moduli, quiz e viste condivisi, commenti, automazioni, dashboard, permessi fino al singolo campo, cronologia completa, API REST e server MCP — su vere tabelle PostgreSQL, con nomi leggibili. Self-hosted, AGPL-3.0.',
 		},
 		changelog: {
 			title: 'Novità — basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: 'Otto viste',
-								text: 'Griglia, kanban, calendario, sequenza temporale, galleria, elenco, modulo, questionario.',
+								title: 'Dieci viste',
+								text: 'Griglia, kanban, calendario, sequenza temporale, galleria, elenco, mappa, modulo, questionario.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb — tutto il tuo lavoro, in un unico posto',
-			description: 'Clienti, progetti, magazzino, candidature: un database che tutto il team modifica insieme, in tabella, in kanban o in calendario, con dashboard, automazioni e l’IA. Senza codice, libero e gratuito.',
+			title: 'basedb — il database collaborativo di tutto il team',
+			description: 'Tutto il tuo lavoro in un unico posto, modificato da tutto il team insieme: in tabella, in kanban o in calendario, con moduli, dashboard, automazioni e l’IA. Senza codice, libero e gratuito.',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -891,9 +891,9 @@ export default {
 			text: 'Ogni funzione scrive nelle stesse tabelle, con gli stessi permessi, nella stessa cronologia.',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: 'modi di vedere i tuoi dati',
-					text: 'Griglia, kanban, calendario, sequenza temporale, galleria, elenco, modulo e questionario, sulle stesse righe. Ognuno sceglie la propria.',
+					text: 'Griglia, kanban, calendario, sequenza temporale, galleria, elenco, mappa, modulo, questionario e quiz, sulle stesse righe. Ognuno sceglie la propria.',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -943,7 +943,7 @@ export default {
 				},
 				import: {
 					title: 'Importazione in un gesto',
-					text: 'Trascina un file CSV: colonne e tipi vengono indovinati, la tabella viene creata.',
+					text: 'Trascina una cartella di lavoro Excel o un CSV: colonne e tipi vengono indovinati, la tabella viene creata.',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1036,7 +1036,7 @@ export default {
 				},
 				{
 					q: 'Possiamo recuperare i nostri fogli di calcolo?',
-					a: 'Sì: salva il tuo foglio in CSV e trascinalo in basedb. L’importazione indovina il tipo di ogni colonna, crea la tabella e indica riga per riga ciò che non è riuscita a recuperare.',
+					a: 'Sì: trascina la tua cartella di lavoro Excel, o un CSV, in basedb. L’importazione indovina il tipo di ogni colonna, crea la tabella e indica riga per riga ciò che non è riuscita a recuperare.',
 				},
 				{
 					q: 'Si può lavorare in più persone contemporaneamente?',
@@ -1361,7 +1361,7 @@ export default {
 		text: 'Ogni funzione scrive nelle stesse tabelle, con gli stessi permessi, nella stessa cronologia.',
 		more: 'Scopri di più →',
 		views: {
-			title: 'Otto viste sulle stesse righe',
+			title: 'Dieci viste sulle stesse righe',
 			text: 'Collaborative per tutto il team, o personali solo per te: ognuno sceglie il proprio modo di leggere, nessuno copia i dati.',
 			chips: [
 				'Griglia',
@@ -1370,8 +1370,10 @@ export default {
 				'Sequenza temporale',
 				'Galleria',
 				'Elenco',
+				'Mappa',
 				'Modulo',
 				'Questionario',
+				'Quiz',
 			],
 		},
 		forms: {
@@ -1436,7 +1438,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'Importazione CSV e JSON',
+				title: 'Importazione Excel, CSV e JSON',
 				text: 'Trascina un file: l’importazione indovina i tipi, crea la tabella o completa una tabella esistente, e indica riga per riga cosa viene rifiutato.',
 				href: '/guides/premiers-pas/',
 			},
@@ -1545,6 +1547,66 @@ export default {
 		title: 'Cosa è cambiato in basedb',
 		intro: 'Il dettaglio di ogni modifica è nella <a href="https://github.com/eodia/basedb/commits/main">cronologia del repository</a>. Cosa arriverà dopo: la <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: 'La mappa, e indirizzi che si trovano',
+				tag: 'Novità',
+				items: [
+					'<strong>Una decima vista, la mappa</strong>: ogni riga posizionata nel suo punto, in base al suo indirizzo o alla sua latitudine e longitudine. Uno spillo prende il colore di uno stato e apre i suoi dettagli della riga con un clic. <a href="/fonctionnalites/vues/#mappa">La mappa</a>',
+					'<strong>Un indirizzo viene localizzato una volta per tutte</strong>, dal servizio di OpenStreetMap o da quello che scegli: gli spilli arrivano man mano che arrivano le risposte, poi subito. Un indirizzo non trovato viene conteggiato, mai scartato in silenzio.',
+					'<strong>Il formato Indirizzo</strong> per un testo breve: un clic lo apre sulla mappa, e nei dettagli della riga, <strong>Trova indirizzo</strong> propone gli indirizzi completi corrispondenti. <a href="/fonctionnalites/tables-et-champs/#formati-di-visualizzazione">Formati</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: 'PDF a partire dalle tue righe',
+				tag: 'Novità',
+				items: [
+					'<strong>Un preventivo, una fattura, una scheda in PDF</strong>, dal menu di una riga: la scheda stampabile senza impostare nulla, o un modello — testi che citano i campi, i campi della riga, la tabella delle righe collegate con il suo totale, interruzioni di pagina. <a href="/fonctionnalites/documents/">I documenti</a>',
+					'<strong>Ognuno con i propri permessi</strong>: un campo nascosto per te non compare nel tuo PDF. Le venti lingue vi si scrivono correttamente, cinese, giapponese e coreano compresi, e l’API restituisce lo stesso documento.',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: 'Permessi fino alla riga, valori predefiniti, l’importazione da Excel',
+				tag: 'Novità',
+				items: [
+					'<strong>Ognuno le proprie righe</strong>: un gruppo vede solo le righe di un filtro — «Commerciale è io», «Regione è Nord» —, nell’interfaccia, nell’API, nel server MCP come in SQL, dove PostgreSQL applica la stessa regola. <a href="/fonctionnalites/droits/#fino-alla-riga">Fino alla riga</a>',
+					'<strong>Valori predefiniti</strong>: un valore fisso, la data di oggi, il momento della creazione o la persona che crea la riga, precompilati sullo schermo e applicati ovunque altrove. <a href="/fonctionnalites/tables-et-champs/#valori-predefiniti">Valori predefiniti</a>',
+					'<strong>Trascina una cartella di lavoro Excel</strong>: scegli il foglio, le date, gli importi e le caselle di controllo arrivano così come sono, e una formula restituisce il suo valore. <a href="/guides/premiers-pas/">Primi passi</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: 'Email',
+				tag: 'Novità',
+				items: [
+					'<strong>Un passaggio «Invia un’email»</strong> nelle automazioni: a un membro, alla persona di un campo, all’indirizzo di un cliente, con i valori della riga nell’oggetto e nel testo. <a href="/fonctionnalites/automatisations/">Le automazioni</a>',
+					'<strong>Le notifiche via email</strong> quando non le hai lette, raggruppate, da scegliere una per una nelle tue impostazioni; e la <strong>password dimenticata</strong> si reimposta tramite un link. <a href="/fonctionnalites/collaboration/#via-email">Via email</a>',
+					'Basta indicare all’istanza il server di invio della tua posta. <a href="/hebergement/variables/#email">Le variabili</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n e un SDK TypeScript',
+				tag: 'Novità',
+				items: [
+					'<strong>Nodi n8n</strong>: leggere e scrivere le righe di una tabella da un workflow, e avviarne uno a ogni riga creata, modificata o eliminata — per rilevazione o per webhook firmato. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>Un SDK TypeScript</strong>, con i tipi delle tue tabelle generati dalla tua istanza: una tabella o un campo che non esiste è un errore ancora prima dell’esecuzione. <a href="/integrations/sdk/">Lo SDK</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: 'Il quiz: domande che contano i punti',
+				tag: 'Novità',
+				items: [
+					'<strong>Una nuova vista, il quiz</strong>: un questionario in cui ogni domanda può avere la sua risposta corretta e i suoi punti — una scelta, più scelte, sì o no, un numero, una data, o i testi accettati, senza distinguere maiuscole né accenti. <a href="/fonctionnalites/vues/#quiz">Il quiz</a>',
+					'<strong>Corretto come preferisci</strong>: dopo ogni domanda — in verde, o in rosso con la risposta corretta, il punteggio che cresce in alto nello schermo —, alla fine, oppure mai. Una soglia di superamento fa dire «Superato!» o «Non questa volta…».',
+					'<strong>Il punteggio alla fine</strong>, in un anello che si riempie, poi la correzione di ogni domanda. Si scrive in un campo numerico della tabella: ordina la griglia su di esso, ecco la classifica.',
+					'<strong>Condiviso tramite un link, senza imbrogli</strong>: la pagina non riceve nessuna risposta corretta, è il server a correggere e a contare. <a href="/fonctionnalites/formulaires-partages/#un-quiz-condiviso">Un quiz condiviso</a>',
+					'<strong>Crea una vista</strong>, in fondo al selettore delle viste, dispone i nove tipi in due famiglie — quelle che mostrano le righe, quelle che raccolgono risposte —, ciascuna con la propria icona a colori.',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: 'Moduli che viene voglia di compilare',

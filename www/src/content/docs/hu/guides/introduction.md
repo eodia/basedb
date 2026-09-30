@@ -7,7 +7,7 @@ A **basedb** közös használatú adatbázis a közös táblázatkezelők szelle
 maga üzemeltet – egy olyan különbséggel, amely minden mást meghatároz: **az adatai valódi
 PostgreSQL-táblákban élnek**, típusosan és beszédes nevekkel.
 
-![Egy tábla rácsa a basedb-ben](../../../../assets/screens/grille.png)
+![Egy tábla rácsa a basedb-ben](../../../../assets/screens/hu/grille.webp)
 
 ## Egyszerű ígéret
 
@@ -39,8 +39,8 @@ megkerülve olvashatja az adatait – sőt írhat is beléjük: a megszorításo
 - Típusos [táblák és mezők](/basedb/hu/fonctionnalites/tables-et-champs/), kapcsolatok,
   amelyek valódi idegen kulcsok – vagy többszörösek –, a PostgreSQL által számított képletek,
   kikeresések és aggregálások a kapcsolatokon keresztül.
-- Nyolc [nézet](/basedb/hu/fonctionnalites/vues/): rács, kanban, naptár, idővonal,
-  galéria, lista, űrlap, kérdőív – közös vagy személyes.
+- Tíz [nézet](/basedb/hu/fonctionnalites/vues/): rács, kanban, naptár, idővonal,
+  galéria, lista, térkép, űrlap, kérdőív, kvíz – közös vagy személyes.
 - Hivatkozással megosztott [űrlapok](/basedb/hu/fonctionnalites/formulaires-partages/) és
   [nézetek](/basedb/hu/fonctionnalites/vues-partagees/), valamint naptárak, amelyekre egy
   naptáralkalmazásból fel lehet iratkozni.

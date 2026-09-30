@@ -6,7 +6,7 @@ description: Avisera en Slack-kanal, koppla en kalender, håll en tabell uppdate
 Skärmen **Integrationer** för en databas öppnas från profilmenyn, längst ned till vänster. Den kräver
 nivån **Hantera** och samlar det som kopplar databasen till resten av dina verktyg.
 
-![Skärmen Integrationer för en databas](../../../../assets/screens/integrations.png)
+![Skärmen Integrationer för en databas](../../../../assets/screens/sv/integrations.webp)
 
 ## Slack
 

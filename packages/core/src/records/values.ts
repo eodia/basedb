@@ -205,7 +205,7 @@ export function shapeEmail(field: string, value: unknown): string | null {
  * it. A disabled account may still be assigned: it names someone who was there. An
  * identifier from elsewhere reads as unknown, like a file of another field.
  */
-async function shapeUser(
+export async function shapeUser(
   exec: Executor,
   name: string,
   field: ShapedField,

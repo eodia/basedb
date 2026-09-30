@@ -78,6 +78,8 @@ async function estimates(
 ): Promise<Map<string, number | null>> {
   const bySchema = new Map<string, string[]>()
   for (const t of tables) {
+    // Under a row rule, the table's size is not the reader's to learn (05 §16).
+    if (t.decisions.read.rowPredicate !== 'TRUE') continue
     const list = bySchema.get(t.row.schema_name) ?? []
     list.push(t.row.table_name)
     bySchema.set(t.row.schema_name, list)
@@ -228,6 +230,13 @@ function describeField(
   if (field.id !== null && view.raw.unique.has(field.id)) out.unique = true
   if (row?.max_length !== null && row?.max_length !== undefined) out.max_length = row.max_length
   if (row?.is_rich === true) out.rich_text = true
+  // What a row created without it takes (04 §1.5): the agent may leave the field out.
+  if (row !== null && row !== undefined && row.default_kind !== null) {
+    out.default =
+      row.default_kind === 'value'
+        ? { kind: 'value', value: row.default_value }
+        : { kind: row.default_kind }
+  }
 
   const options = field.id === null ? undefined : view.raw.options.get(field.id)
   if (options !== undefined) out.options = options.map((o) => ({ value: o.value, label: o.label }))

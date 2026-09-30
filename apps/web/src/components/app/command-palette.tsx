@@ -7,6 +7,7 @@ import { LookIcon } from '@/components/app/option-badge'
 import type { SettingsTab } from '@/components/app/settings/settings-panel'
 import type { BaseIntent, Section, TableIntent } from '@/components/app/sidebar'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Kbd, useModKey } from '@/components/ui/kbd'
 import { type Place, placeOf } from '@/lib/address-bar'
 import {
   type Automation,
@@ -45,7 +46,7 @@ import {
   tokensOf,
   visits,
 } from '@/lib/search'
-import { usePalette } from '@/lib/store/palette'
+import { isPaletteKey, usePalette } from '@/lib/store/palette'
 import { useSidebar } from '@/lib/store/sidebar'
 import { type Tab, useWorkspace } from '@/lib/store/workspace'
 import { type ThemePreference, useTheme } from '@/lib/theme'
@@ -96,16 +97,7 @@ import {
   XCircle,
   Zap,
 } from 'lucide-react'
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react'
+import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 /**
@@ -449,34 +441,6 @@ function snippetOf(
   return undefined
 }
 
-// ── Keys, as this computer names them ────────────────────────────────────────────
-
-const subscribeNothing = () => () => {}
-/** ⌘ on a Mac, Ctrl elsewhere — read on the client only, where the platform is known. */
-function useModKey(): string {
-  return useSyncExternalStore(
-    subscribeNothing,
-    () => (/Mac|iPhone|iPad/u.test(navigator.userAgent) ? '⌘' : 'Ctrl'),
-    () => 'Ctrl',
-  )
-}
-
-function Kbd({
-  children,
-  className,
-}: { readonly children: ReactNode; readonly className?: string }) {
-  return (
-    <kbd
-      className={cn(
-        'pointer-events-none inline-flex h-5 min-w-5 select-none items-center justify-center gap-0.5 rounded border bg-muted px-1 font-mono text-[0.65rem] font-medium text-muted-foreground',
-        className,
-      )}
-    >
-      {children}
-    </kbd>
-  )
-}
-
 // ── The field in the top bar ─────────────────────────────────────────────────────
 
 /**
@@ -550,17 +514,16 @@ export function CommandPalette(props: Props) {
   const hide = usePalette((s) => s.hide)
   const toggle = usePalette((s) => s.toggle)
 
-  // Ctrl+K, anywhere — unless something under the focus took it first: the Markdown
-  // editor makes a link with it.
+  // Ctrl+K, anywhere — even in a cell being typed in, which stops its keys; only the
+  // Markdown editor keeps it, for a link. Held down, it opens once.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || e.altKey || e.shiftKey) return
-      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'k') return
+      if (!isPaletteKey(e)) return
       e.preventDefault()
-      toggle()
+      if (!e.repeat) toggle()
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
   }, [toggle])
 
   return (

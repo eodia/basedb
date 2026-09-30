@@ -7,7 +7,7 @@
 // to it, never rename one." The "Normative chapter" column alone is authoritative on a
 // code's parentage.
 //
-// 234 codes, 8 domains.
+// 237 codes, 8 domains.
 //
 // The `condition` strings are quoted verbatim from the French document, which is
 // authoritative on their wording.
@@ -141,6 +141,7 @@ export type ErrorCode =
   | 'PRIVILEGE_ESCALATION'
   | 'RESOURCE_NOT_FOUND'
   | 'ROLE_NOT_DELEGABLE'
+  | 'ROW_OUT_OF_SCOPE'
   | 'TENANT_ISOLATION_VIOLATED'
   | 'VALUE_REJECTED'
   | 'WEBHOOK_MASK_INCOMPLETE'
@@ -192,6 +193,8 @@ export type ErrorCode =
   | 'AI_KEY_REJECTED'
   | 'AI_MODEL_UNKNOWN'
   | 'AI_NOT_CONFIGURED'
+  | 'MAIL_NOT_CONFIGURED'
+  | 'GEOCODER_UNAVAILABLE'
   | 'AI_PAYLOAD_TOO_LARGE'
   | 'AI_PROVIDER_UNAVAILABLE'
   | 'AI_QUOTA_EXCEEDED'
@@ -1103,6 +1106,14 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     chapter: '08',
     domain: 'permissions_et_non_divulgation',
   }),
+  ROW_OUT_OF_SCOPE: Object.freeze({
+    condition:
+      "Ligne créée hors des lignes que l'acteur voit, selon les règles de lignes de ses groupes",
+    httpStatus: 403,
+    httpStatusNote: null,
+    chapter: '05',
+    domain: 'permissions_et_non_divulgation',
+  }),
   TENANT_ISOLATION_VIOLATED: Object.freeze({
     condition: "Requête visant le schéma d'un autre tenant ; incident, réponse générique",
     httpStatus: 500,
@@ -1462,6 +1473,21 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
     httpStatus: 409,
     httpStatusNote: null,
     chapter: '12',
+    domain: 'api_et_integrations',
+  }),
+  MAIL_NOT_CONFIGURED: Object.freeze({
+    condition:
+      "Étape « Envoyer un courriel » sur une instance sans serveur d'envoi (BASEDB_SMTP_HOST)",
+    httpStatus: 409,
+    httpStatusNote: null,
+    chapter: '17',
+    domain: 'api_et_integrations',
+  }),
+  GEOCODER_UNAVAILABLE: Object.freeze({
+    condition: "Le service de géocodage de l'instance n'a pas répondu, ou a refusé",
+    httpStatus: 502,
+    httpStatusNote: null,
+    chapter: '11',
     domain: 'api_et_integrations',
   }),
   AI_PAYLOAD_TOO_LARGE: Object.freeze({

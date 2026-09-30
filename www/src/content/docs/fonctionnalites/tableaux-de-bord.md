@@ -9,7 +9,7 @@ prochaines échéances. Chaque carte y montre une **question** — une lecture d
 construite à la souris ou écrite en SQL — et des **filtres** en haut de la page pilotent les
 cartes qu’on leur relie.
 
-![Le tableau de bord « Pilotage de l’agence » : tendance du mois, objectif, chiffre d’affaires empilé, sentiment des avis](../../../assets/screens/tableaux-de-bord.png)
+![Le tableau de bord « Pilotage de l’agence » : tendance du mois, objectif, chiffre d’affaires empilé, sentiment des avis](../../../assets/screens/fr/tableaux-de-bord.webp)
 
 Tout s’ouvre depuis **Tableaux de bord**, dans le bloc de la base ouverte en bas de la barre
 latérale. À gauche, les tableaux de bord et les questions enregistrées de la base, et
@@ -31,7 +31,7 @@ question** ; un onglet qui la montrait garde son contenu, redevenu non enregistr
 
 Une question se construit par étapes, l’une sous l’autre :
 
-![L’éditeur d’une question : les données, les filtres, le résumé par mois](../../../assets/screens/question-editeur.png)
+![L’éditeur d’une question : les données, les filtres, le résumé par mois](../../../assets/screens/fr/question-editeur.webp)
 
 | Étape | Ce qu’on y choisit |
 |---|---|
@@ -165,7 +165,7 @@ complète le reste. Il peut avoir une **valeur par défaut** — « Cette année
 En lecture, un clic sur un point peut aussi régler un filtre : **Filtrer par « Lyon »** sur une
 carte dont la colonne des villes est reliée au filtre « Ville ».
 
-![L’onglet « Activité » : tâches par échéance empilées par statut, entonnoir des projets, heures estimées en tableau croisé](../../../assets/screens/tableaux-de-bord-activite.png)
+![L’onglet « Activité » : tâches par échéance empilées par statut, entonnoir des projets, heures estimées en tableau croisé](../../../assets/screens/fr/tableaux-de-bord-activite.webp)
 
 ## Le Copilot
 

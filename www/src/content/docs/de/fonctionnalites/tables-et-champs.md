@@ -22,7 +22,7 @@ lesbaren physischen Namen (`echeance`): ohne Akzente, in Kleinbuchstaben, ohne r
 | Einfachauswahl | `text` + `CHECK` | Farbe, Symbol oder Bild pro Option |
 | Mehrfachauswahl | `text[]` + `CHECK` | filterbar mit den Array-Operatoren |
 | E-Mail | `text` + `CHECK` | eine von der Datenbank geprüfte Adresse, mit einem Klick zu öffnen |
-| Telefon, Barcode | `text` | ein Kurztext und sein Format: Anruflink, Festbreitenschrift |
+| Telefon, Barcode, Adresse | `text` | ein Kurztext und sein Format: Anruflink, Festbreitenschrift, Link zur Landkarte |
 | URL | `text` + `CHECK` | bei der Eingabe ergänzt (`exemple.fr` → `https://exemple.fr`) |
 | Person | `uuid` | ein Mitglied des Arbeitsbereichs; wer eingetragen wird, wird [benachrichtigt](/basedb/de/fonctionnalites/collaboration/) |
 | Autonummer | `bigint` Identity | nummeriert auch die bereits vorhandenen Zeilen; niemand gibt sie ein |
@@ -38,7 +38,7 @@ Jede Tabelle hat außerdem ihre **Systemspalten**: `_id` (UUID v7), `_created_at
 beschreibbar. Das Raster ordnet sie im Spaltenmenü unter **Systeminformationen** ein:
 Sie existieren in jeder Tabelle, nützlich sind sie in wenigen.
 
-![Das Raster einer Tabelle mit einer berechneten Dauer, einem Nachschlagefeld und einer Anzahl](../../../../assets/screens/grille.png)
+![Das Raster einer Tabelle mit einer berechneten Dauer, einem Nachschlagefeld und einer Anzahl](../../../../assets/screens/de/grille.webp)
 
 ## Constraints, die die Datenbank durchsetzt
 
@@ -56,8 +56,8 @@ Foreign-key constraints:
 
 ## Anzeigeformate
 
-Währung, Prozent, Dauer, Bewertung, Telefon und Barcode werden wie Typen ausgewählt, sind aber
-**Formate**: Die Spalte bleibt eine Zahl oder ein Text, nur die Darstellung ändert sich.
+Währung, Prozent, Dauer, Bewertung, Telefon, Barcode und Adresse werden wie Typen ausgewählt, sind
+aber **Formate**: Die Spalte bleibt eine Zahl oder ein Text, nur die Darstellung ändert sich.
 
 | Format | Auf | Wird so gelesen und eingegeben |
 |---|---|---|
@@ -67,10 +67,31 @@ Währung, Prozent, Dauer, Bewertung, Telefon und Barcode werden wie Typen ausgew
 | Bewertung | einer Zahl | 1 bis 10 Sterne, mit einem Klick gesetzt |
 | Telefon | einem Kurztext | ein Anruflink |
 | Barcode | einem Kurztext | in Festbreitenschrift |
+| Adresse | einem Kurztext | ein Link zur Landkarte; in den Zeilendetails schlägt **Adresse
+suchen** die passenden, ausgeschriebenen Adressen vor; die Ansicht
+[Landkarte](/basedb/de/fonctionnalites/vues/#landkarte) platziert sie |
 
 Ein Format lässt sich nachträglich ändern (**Anzeige** beim Bearbeiten des Felds), ohne die
 gespeicherten Werte anzutasten. Es begrenzt den Wert nicht: Eine Bewertung von 7 auf einer
 5er-Skala bleibt 7.
+
+## Standardwerte
+
+Beim Bearbeiten eines Felds legt **Standardwert** fest, was eine ohne ihn angelegte Zeile
+erhält:
+
+| Wahl | Bei | Die angelegte Zeile erhält |
+|---|---|---|
+| Ein fester Wert | den meisten Typen | den gewählten Wert – einen Status „Nouveau“, eine Priorität 3 |
+| Das heutige Datum | einem Datum | den Tag ihrer Anlage, in der Zeitzone der Person |
+| Der Zeitpunkt der Erstellung | einem Datum und einer Uhrzeit | die genaue Uhrzeit |
+| Die Person, die die Zeile erstellt | einer Person | wer sie angelegt hat – „Verantwortlich: ich“ |
+
+Die neuen Zeilendetails und die Formulare öffnen sich bereits ausgefüllt; das Feld zu leeren
+lässt es leer. Der Standardwert gilt für jede Art des Anlegens – Oberfläche, API, MCP, Import,
+freigegebenes Formular, Automatisierung –, auch für ein Feld, das die Person nicht bearbeiten
+darf: Das ist die Regel der Tabelle. Bestehende Zeilen ändern sich nicht, und ein Einfügen in
+direktem SQL erhält keinen: basedb wendet ihn an, nicht die Spalte.
 
 ## Formeln
 
@@ -181,7 +202,7 @@ bereinigtes HTML.
 Der Bildschirm **Struktur** der Datenbank – in ihrem Menü **⋯** in der Seitenleiste – listet die Tabellen und ihre Felder auf: hinzufügen, umbenennen, als erforderlich markieren, umsortieren,
 beschreiben, das Anzeigefeld festlegen.
 
-![Der Bildschirm Struktur einer Datenbank](../../../../assets/screens/structure.png)
+![Der Bildschirm Struktur einer Datenbank](../../../../assets/screens/de/structure.webp)
 
 Die Struktur zu ändern erfordert die Stufe **Verwalten**. Ohne sie lässt sich der Bildschirm
 ansehen, bietet aber nichts an: keine Schaltfläche, kein Stift, kein Ziehgriff – ob ein Feld

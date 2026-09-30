@@ -26,7 +26,7 @@ Din meniul bazei, sub **Alte acțiuni**, **Comparați mediile…** deschide un d
 - **Sincronizarea rândurilor**: tabel cu tabel, transferați rânduri dintr-un mediu în altul,
   după identificator.
 
-![Compararea producției cu testarea](../../../../assets/screens/environnements.png)
+![Compararea producției cu testarea](../../../../assets/screens/ro/environnements.webp)
 
 ## Cum știe basedb cine a schimbat ce
 

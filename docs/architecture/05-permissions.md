@@ -324,7 +324,7 @@ La vue détail liste les lignes qui référencent l'enregistrement courant, déd
 2. **Champ lien masqué pour ce lecteur → aucune section**, même si la table source est visible.
 3. **Lignes** : listées via le point d'application unique comme une liste ordinaire sur la table source, avec son masque de champs et sa colonne d'affichage.
 
-Le compteur affiché est celui des lignes visibles. Jamais de « (+3 masqués) ». En v1 il n'existe pas de permission au niveau ligne (A20) : `predicat_lignes` vaut constamment vrai, et « lignes visibles » égale « toutes les lignes d'une table visible ». Le chemin passe malgré tout par le point d'application unique et par ce prédicat, de sorte que l'arrivée des filtres par ligne ne demandera aucune réécriture.
+Le compteur affiché est celui des lignes visibles. Jamais de « (+3 masqués) ». Sans règle de lignes, « lignes visibles » égale « toutes les lignes d'une table visible » ; avec une règle (§16), c'est le prédicat de la table cible qui les compte.
 
 ### 5.4 Expansion d'un lien
 
@@ -403,12 +403,12 @@ Le point d'application est un composant du **noyau**, situé entre les adaptateu
 | `champs_lisibles` | ensemble de clés de catalogue |
 | `champs_inscriptibles` | ensemble de clés de catalogue |
 | `champs_effacables` | ensemble de clés de catalogue, inclus dans `champs_lisibles` privé de `champs_inscriptibles` |
-| `predicat_lignes` | prédicat SQL appliqué à toute lecture ou écriture de lignes ; **constamment vrai en v1** (A20) |
+| `predicat_lignes` | prédicat SQL appliqué à toute lecture ou écriture de lignes ; vrai sans règle de lignes (§16) |
 | `raison` | code stable, destiné au journal, jamais au client |
 
 Le point d'application ne lit jamais la base pendant une décision : il travaille sur deux caches mémoire (§11). Il ne renvoie pas un booléen, parce qu'une décision « oui, mais sur ces colonnes » ne peut pas être reconstituée ailleurs sans dupliquer la logique. `champs_effacables` existe pour la même raison : sans lui, l'adaptateur REST devrait retester « est-ce un lien à cible illisible et la valeur est-elle nulle ? », c'est-à-dire porter une règle d'autorisation hors du point d'application.
 
-**`predicat_lignes` est non nullable et toujours émis.** Il n'existe pas de permission au niveau ligne en v1 : sa valeur est constamment vrai. Mais le constructeur de requêtes le reçoit et l'émet dans chaque requête, ce qui fige la surface nécessaire sans rien implémenter et rend écrivable le test de non-régression garantissant qu'aucune requête ne se construit hors du point d'application unique.
+**`predicat_lignes` est non nullable et toujours émis.** Il vaut vrai tant qu'aucune règle de lignes (§16) ne restreint l'acteur, faux sur un refus. Le constructeur de requêtes le reçoit et l'émet dans chaque requête : c'est ce qui a permis aux droits par ligne d'arriver sans réécrire une seule requête, et ce qui rend écrivable le test de non-régression garantissant qu'aucune requête ne se construit hors du point d'application unique.
 
 ### 6.2 Ce qui rend le contournement impossible depuis une surface du produit
 
@@ -732,7 +732,7 @@ Un compte se **désactive**, il ne se supprime pas : ses sessions et ses jetons 
 
 ### 15.7 Ce que ce modèle ne fait pas
 
-- Pas de niveau « bloqué » ni de filtrage de lignes par groupe : `predicat_lignes` reste constamment vrai en v1 (§6), et l'union des rôles interdit tout `deny`.
+- Pas de niveau « bloqué » : l'union des rôles interdit tout `deny`. Le filtrage de lignes par groupe existe, sous la grille, en règles de lignes (§16) — qui ne font elles aussi que retrancher.
 - Pas de permissions de champ dans la grille elle-même : la grille s'arrête aux tables, et « Champs », sur chaque ligne de table, ouvre l'écran de §3.3 qui règle `field_permission` groupe par groupe.
 - Pas de délégation par les groupes : un membre de groupe ne peut pas accorder à un autre ce qu'il a ; seul le groupe « Administrateurs » administre les groupes et la grille. Le partage de §15.8 est la seule délégation, bornée à ce que l'on gère.
 
@@ -747,6 +747,105 @@ Qui a **« Gestion »** sur un projet ou une base le partage, sans élévation �
 Ce qui est partagé à une personne va sur son **rôle personnel** (`role.kind = 'person'`, son seul membre, jamais listé parmi les groupes) : le décideur, qui ne connaît que des rôles, n'a rien de plus à savoir. Le partage ne dépasse jamais sa portée : le gestionnaire d'une base partage cette base, pas son projet, et un accès qui vient du projet ne se change que depuis le partage du projet (`ACTION_FORBIDDEN`, raison `herite`). Aucun niveau n'excède « Gestion », que détient qui partage. Au moment d'accepter, l'auteur de l'invitation doit **toujours** gérer la portée : une invitation faite par quelqu'un qui a perdu ce droit ne donne plus rien. On ne partage qu'à qui l'on invite : l'annuaire du tenant n'est pas une liste où choisir des inconnus.
 
 ---
+
+## 16. Droits par ligne
+
+La grille (§15) s'arrête à la table, les règles de champ (§4) à la colonne. Une **règle de
+lignes** va jusqu'à la ligne : un groupe ne voit, d'une table, que les lignes qu'un filtre
+retient — les clients dont il est le commercial, les tickets de sa région. Elle est posée
+par un administrateur, dans l'écran des permissions, à côté de « Champs » : bouton
+**Lignes** sur chaque table.
+
+### 16.1 La règle
+
+Une ligne de `_basedb.row_permission` (migration 0014) : un rôle de groupe, une table, un
+filtre. Le filtre s'écrit dans la langue des filtres de vue (chapitre 08 §4), sur les
+champs **stockés** de la table et ses colonnes système, avec une valeur de plus : `@moi`
+(ou `@me`), **la personne qui regarde**. Exemples : `commercial eq @moi`,
+`region in ["nord", "est"]`, `_created_by eq @moi` (« ce que j'ai créé »).
+
+Sont refusés à l'enregistrement, avec les codes du filtre : un champ calculé à la lecture
+(recherche, cumul, décompte), un chemin à travers un lien (`client.commercial`), une
+syntaxe fausse. Le chemin à travers un lien est écarté à dessein : la table visée a ses
+propres règles, lues à chaque requête avec les droits de la personne, et une règle doit se
+lire d'un coup d'œil. Refusés aussi : une règle sur les Administrateurs
+(`GROUP_SYSTEM_IMMUTABLE`), sur un groupe qui n'atteint pas la table ou qui la gère
+(`PERMISSION_OUT_OF_SCOPE`, voir §16.2). Toute écriture exige une session élevée (§15.6),
+écrit `row_permission.set` au journal et fait avancer `tenant.authz_version`.
+
+### 16.2 Composition
+
+Les droits restent additifs (§3.3) : **une personne voit l'union des lignes que lui
+ouvrent ses groupes**, et un groupe qui lit la table sans règle en ouvre toutes les
+lignes. Ajouter un groupe à quelqu'un ne lui retire jamais une ligne.
+
+Deux exceptions, toutes deux « tout voir » :
+
+- **qui gère la structure de la table** (niveau « Gestion », `manage_schema`) en voit
+  toutes les lignes : la console SQL des gestionnaires lit tout le schéma (§9), et une
+  règle obéie ici mais ignorée là ne protégerait rien. L'écran ne propose donc pas de
+  règle à un groupe « Gestion » ;
+- l'administrateur d'instance et les contextes système (§6.4) : automatisations, calculs
+  de l'IA, synchronisation, émission des webhooks.
+
+### 16.3 Le prédicat
+
+Le décideur reste pur (§6.1) : il ne lit ni le catalogue ni les données. La règle est
+**compilée** à la préparation de la cible (`loadTarget`, et la projection du catalogue
+pour les surfaces qui décident sur un instantané) en un **gabarit** SQL : colonnes
+qualifiées par un alias réservé, `"basedb_row"`, valeurs converties par le filtre puis
+écrites en littéraux, `@moi` remplacé par un identifiant sentinelle. Le décideur combine
+les gabarits des rôles lisant la table (`… OR …`) et met la personne à la place de la
+sentinelle : c'est `predicat_lignes`. Chaque requête le récrit sous son propre alias —
+jamais de colonne nue, qui se lierait à une autre table d'une sous-requête corrélée.
+
+Une règle qui ne compile plus — un champ qu'elle nomme a été supprimé depuis — vaut
+`FALSE` : elle ne montre plus rien plutôt que tout.
+
+### 16.4 Opération par opération
+
+| Opération | Comportement |
+|---|---|
+| Lecture (liste, ligne seule, agrégat, question, recherche) | seules les lignes du prédicat ; le décompte aussi |
+| Lien affiché, relation inverse, recherche, cumul, décompte | calculés sur les lignes de la table cible que la personne voit — le prédicat de la cible, comme sa visibilité (§5) |
+| Modification, suppression | sur une ligne hors du prédicat : `RESOURCE_NOT_FOUND`. Le prédicat est évalué sur la ligne **avant** : une modification peut faire sortir une ligne de ses lignes, comme une tâche confiée à un collègue |
+| Création | la ligne créée doit être dans le prédicat de son auteur, sinon rien n'est écrit : `ROW_OUT_OF_SCOPE`. On ne dépose pas de ligne dans un ensemble qu'on ne voit pas |
+| Écriture d'un lien | la ligne visée doit être visible de l'auteur, sinon `LINK_TARGET_NOT_FOUND` — le code d'une cible inexistante (A23) |
+| Réponse à un formulaire partagé | exemptée du contrôle de création : un formulaire recueille les réponses de tous |
+| Commentaire, mention | sur une ligne visible seulement ; une mention ne notifie que qui voit la ligne, les autres sont signalés « injoignables » |
+| Historique | seules les révisions des lignes que le lecteur voit encore ; une ligne supprimée n'a plus de valeurs contre lesquelles lire la règle, son historique et le journal des suppressions sont tus à qui a une règle |
+| Annuler, restaurer | sur une ligne visible ; une restauration est une création |
+| Agents (MCP) | la même décision ; l'estimation de taille d'une table sous règle est tue |
+| Webhook | refusé sur une table où son rôle a une règle (`WEBHOOK_MASK_INCOMPLETE`) : jamais de flux partiel, ni par colonnes ni par lignes (§4.4) |
+| Vue et tableau de bord partagés | lus avec les droits de qui a publié, sa règle comprise |
+
+### 16.5 Le SQL écrit dans l'interface
+
+C'est la seule surface où PostgreSQL tient une seconde ligne (§9) ; il la tient aussi pour
+les lignes. Une table qui porte au moins une règle a la **sécurité par ligne** de
+PostgreSQL activée (`ENABLE ROW LEVEL SECURITY`), à l'enregistrement de la règle ;
+retirer la dernière la désactive. Le propriétaire — les connexions du produit — la
+traverse. Les deux rôles du SQL écrit dans l'interface, non :
+
+- `basedb_console`, la console des gestionnaires, reçoit une politique qui garde toutes les
+  lignes (`basedb_console_all`) ;
+- le rôle de chaque lecteur, `basedb_reader_<id>`, reçoit **son** prédicat, posé en même
+  temps que ses droits de colonne avant chaque appel. Le nom de la politique porte une
+  empreinte du prédicat : une règle changée est une politique nouvelle.
+
+Une vue SQL de la base étant `security_invoker`, elle est lue avec les politiques du
+lecteur. **Conséquence pour l'exploitant** : un rôle PostgreSQL qu'il a créé lui-même pour
+un outil tiers ne voit plus aucune ligne d'une table sous règle, sauf s'il a l'attribut
+`BYPASSRLS` ou sa propre politique. La documentation du SQL le dit.
+
+### 16.6 Ce que ces règles ne font pas
+
+- Elles ne retirent rien à qui gère la table, ni à un accès SQL direct (§0).
+- Elles ne masquent pas l'identifiant d'une ligne liée invisible : un lien affiche la ligne
+  si la personne la voit, et rien sinon, mais l'identifiant reste celui du catalogue (§5).
+- Les décomptes d'une page raccourcie par la règle ne sont pas maquillés : l'activité sur
+  des lignes invisibles se devine au rythme de l'historique, comme pour les champs masqués
+  (§7.3).
 
 ## État de la mise en œuvre (v1)
 
@@ -793,7 +892,9 @@ l'éditeur de permissions qui les accompagne non plus.
 | Table visible sans aucun champ lisible → `INVISIBLE` | Sinon le constructeur SQL doit émettre zéro colonne ou `*`, et *n* objets vides divulguent l'activité | Repli sur `_id` |
 | Lien dont la cible est illisible : `{"id": null, "display": null, "masked": true}` (A16) | Ferme la fuite d'horodatage de l'UUIDv7 sans créer un second espace d'identifiants absent du catalogue, d'OpenAPI et du MCP | Identifiant natif, retrait de la colonne, ou valeur opaque calculée par HMAC |
 | Quatrième ensemble `champs_effacables` dans la décision | L'exception « NULL autorisé » doit vivre dans la décision, pas dans l'adaptateur REST | Re-tester le cas dans le transport, ou supprimer l'exception |
-| `predicat_lignes` dans la décision, constamment vrai en v1, toujours émis (A20) | Fige la surface sans rien implémenter et rend écrivable le test qui garantit le point d'application unique | Pas de prédicat, ou permission de ligne réelle en v1 |
+| `predicat_lignes` dans la décision, toujours émis (A20), rempli par les règles de lignes (§16) | Les droits par ligne sont arrivés sans réécrire une requête, et le test qui garantit le point d'application unique reste écrivable | Pas de prédicat, ou un filtre ajouté requête par requête |
+| Règles de lignes additives, « Gestion » voit tout, compilées en gabarits hors du décideur (§16) | Ajouter un groupe ne retire jamais une ligne ; la console des gestionnaires lit tout le schéma ; le décideur reste pur | Règle la plus restrictive gagnante ; règle appliquée aussi aux gestionnaires |
+| Sécurité par ligne de PostgreSQL pour le SQL écrit dans l'interface (§16.5) | La seconde ligne que PostgreSQL tient pour les colonnes, tenue aussi pour les lignes, vues SQL comprises | Vues d'ombre filtrées seules, contournables par un nom qualifié |
 | Invariant du constructeur SQL formulé côté données, avec liste close de formes bannies | `to_jsonb(t)` et `RETURNING *` projettent une ligne entière sans écrire `*` | Contrôle syntaxique sur la chaîne `SELECT *` |
 | Séquence normative authentification → décision → réduction au masque → validation → exécution | Un validateur monté en amont transforme toute table invisible en oracle de schéma | Validation à la lisière du transport |
 | Aucun point d'entrée d'export ; l'extraction passe par la pagination par curseur (A21) | Un flux illimité percerait le plafond que toutes les autres règles construisent | Export traité comme un chemin de lecture ordinaire |

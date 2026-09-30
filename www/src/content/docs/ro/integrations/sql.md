@@ -26,7 +26,7 @@ Butonul **+** din bara de file sau meniul **⋯** al bazei → **Interogare SQL*
 cu evidențiere și completare, al cărui rezultat se afișează în aceeași grilă ca tabelele
 dumneavoastră.
 
-![O interogare salvată și două vizualizări SQL așezate printre tabele](../../../../assets/screens/requete-sql.png)
+![O interogare salvată și două vizualizări SQL așezate printre tabele](../../../../assets/screens/ro/requete-sql.webp)
 
 - **Fiecare citește acolo cu permisiunile sale**: nivelul Gestionare are acces la întreaga bază,
   inclusiv la scrieri; ceilalți membri scriu SQL doar în citire, unde un tabel închis nu există
@@ -53,6 +53,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+Acest cont este proprietarul bazei: citește tot, iar permisiunile basedb nu se aplică asupra
+lui. Pentru un instrument de BI, creați mai degrabă un rol separat, cu propriile sale `GRANT`.
+Dacă un tabel are o [regulă pe rânduri](/basedb/ro/fonctionnalites/droits/#până-la-nivel-de-rând),
+PostgreSQL îi aplică securitatea pe rând: un astfel de rol nu vede niciun rând din el fără
+atributul `BYPASSRLS` sau o politică proprie.
 
 ## Scrierea în SQL
 

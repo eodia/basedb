@@ -11,7 +11,7 @@ singur. [Galeria de șabloane](/basedb/ro/modeles/) arată ce propune basedb.
 
 **Bază nouă**, apoi **Porniți de la un șablon sau cereți-l de la AI**: se deschide galeria.
 
-![Galeria de șabloane, în aplicație](../../../../assets/screens/modeles.png)
+![Galeria de șabloane, în aplicație](../../../../assets/screens/ro/modeles.webp)
 
 Fiecare șablon poate fi citit în întregime înainte de a fi folosit — tabelele și câmpurile
 lui, vizualizările, automatizările și instrucțiunea fiecăruia dintre câmpurile lui AI.

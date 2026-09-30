@@ -25,7 +25,7 @@ de beschrijvingen (`COMMENT ON`).
 De **+** in de tabbladbalk, of het menu **⋯** van de database → **SQL-query**: een editor
 met syntaxiskleuring en aanvulling, waarvan het resultaat in hetzelfde raster als je tabellen verschijnt.
 
-![Een opgeslagen query, en twee SQL-views tussen de tabellen](../../../../assets/screens/requete-sql.png)
+![Een opgeslagen query, en twee SQL-views tussen de tabellen](../../../../assets/screens/nl/requete-sql.webp)
 
 - **Iedereen leest er met zijn eigen rechten**: het niveau Beheren heeft de hele database, schrijfacties inbegrepen; de
   andere leden schrijven alleen-lezen SQL, waarin een gesloten tabel niet bestaat en een verborgen veld
@@ -52,6 +52,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+Dit account is de eigenaar van de database: het leest alles, en de rechten van basedb zijn er
+niet op van toepassing. Voor een BI-tool maak je liever een aparte rol aan met eigen `GRANT`s.
+Als een tabel een [rijregel](/basedb/nl/fonctionnalites/droits/#tot-op-de-rij) draagt, past
+PostgreSQL er de rijbeveiliging op toe: zo’n rol ziet er geen enkele rij zonder het kenmerk
+`BYPASSRLS` of een eigen policy.
 
 ## Schrijven in SQL
 

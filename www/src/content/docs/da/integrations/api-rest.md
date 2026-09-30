@@ -34,7 +34,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | et læsbart udtryk: `statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | de kolonner, der skal returneres |
-| `limit`, `cursor` | paginering med krypteret cursor (`next_cursor` i svaret) |
+| `limit`, `after` | paginering med krypteret cursor: `meta.next_cursor` fra en side, givet videre som `after`, giver den næste (`meta.has_next_page`) |
 | `links=display` | relationerne med deres visningsværdi |
 | `count=exact` | totalen, med et loft på 100 000 |
 | `variables=raw` | lange tekster, som de er skrevet, `{{colonne}}` inklusive, i stedet for med [rækkens værdier](/basedb/da/fonctionnalites/tables-et-champs/#formateret-tekst-og-variabler) |
@@ -85,4 +85,4 @@ læsere får to versioner —, skrevet **på din skærms sprog**, og findes ogs�
 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Navnene, stierne og fejlkoderne forbliver
 de samme på alle sprog.
 
-![Den genererede dokumentation for en database](../../../../assets/screens/documentation-api.png)
+![Den genererede dokumentation for en database](../../../../assets/screens/da/documentation-api.webp)

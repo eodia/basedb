@@ -6,7 +6,7 @@ description: Elke schrijfactie, waar ze ook vandaan komt, met de waarden van erv
 basedb legt **elke schrijfactie** vast in de geschiedenis, waar ze ook vandaan komt: de interface, de API, een MCP-agent,
 een openbaar formulier — en zelfs een SQL-query die met de hand in `psql` is geschreven.
 
-![De geschiedenis van een database](../../../../assets/screens/historique.png)
+![De geschiedenis van een database](../../../../assets/screens/nl/historique.webp)
 
 ## Hoe het wordt vastgelegd
 

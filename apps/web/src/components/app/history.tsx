@@ -241,7 +241,7 @@ function Entry({
         <div className="flex flex-wrap items-baseline gap-x-1.5 text-sm">
           <span className="font-medium">{author.name}</span>
           <span className="text-muted-foreground">{verb}</span>
-          <span className="font-medium">« {name} »</span>
+          <span className="font-medium">{$t('« {name} »', { name })}</span>
           {showTable && (
             <span className="text-muted-foreground">
               {$t('dans')} <span className="text-foreground">{revision.table.label}</span>

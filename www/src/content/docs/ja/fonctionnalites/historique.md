@@ -5,7 +5,7 @@ description: どこから来たものでも、すべての書き込みを変更�
 
 basedbは、どこから来たものでも**すべての書き込み**を履歴に記録します。インターフェース、API、MCPエージェント、公開フォーム、さらには`psql`で手書きしたSQLクエリも対象です。
 
-![データベースの履歴](../../../../assets/screens/historique.png)
+![データベースの履歴](../../../../assets/screens/ja/historique.webp)
 
 ## 記録のしくみ
 

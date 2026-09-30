@@ -6,7 +6,7 @@ description: Každý zápis, ať přichází odkudkoli, i s předchozími hodnot
 basedb zaznamenává do historie **každý zápis**, ať přichází odkudkoli: z rozhraní, z API, od
 agenta MCP, z veřejného formuláře – a dokonce i dotaz SQL napsaný ručně v `psql`.
 
-![Historie databáze](../../../../assets/screens/historique.png)
+![Historie databáze](../../../../assets/screens/cs/historique.webp)
 
 ## Jak se zachytává
 

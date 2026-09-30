@@ -9,7 +9,7 @@ Fristen. Jede Karte zeigt eine **Frage** – eine Lesart der Datenbank, per Maus
 SQL geschrieben –, und **Filter** oben auf der Seite steuern die Karten, die mit ihnen verbunden
 sind.
 
-![Das Dashboard „Pilotage de l’agence“: Trend des Monats, Ziel, gestapelter Umsatz, Stimmung der Bewertungen](../../../../assets/screens/tableaux-de-bord.png)
+![Das Dashboard „Pilotage de l’agence“: Trend des Monats, Ziel, gestapelter Umsatz, Stimmung der Bewertungen](../../../../assets/screens/de/tableaux-de-bord.webp)
 
 Alles öffnet sich über **Dashboards** im Block der geöffneten Datenbank unten in der Seitenleiste.
 Links stehen die Dashboards und die gespeicherten Fragen der Datenbank sowie **Daten erkunden**, um
@@ -31,7 +31,7 @@ der sie zeigte, behält ihren Inhalt, der wieder nicht gespeichert ist.
 
 Eine Frage wird in Schritten aufgebaut, einer unter dem anderen:
 
-![Der Editor einer Frage: die Daten, die Filter, die Zusammenfassung nach Monat](../../../../assets/screens/question-editeur.png)
+![Der Editor einer Frage: die Daten, die Filter, die Zusammenfassung nach Monat](../../../../assets/screens/de/question-editeur.webp)
 
 | Schritt | Was Sie dort wählen |
 |---|---|
@@ -166,7 +166,7 @@ ergänzt den Rest. Er kann einen **Standardwert** haben – zum Beispiel „Dies
 Beim Lesen kann ein Klick auf einen Punkt auch einen Filter setzen: **Nach „Lyon“ filtern** auf
 einer Karte, deren Ortsspalte mit dem Filter „Ville“ verbunden ist.
 
-![Der Reiter „Activité“: Aufgaben nach Fälligkeit, gestapelt nach Status, Projekttrichter, geschätzte Stunden als Kreuztabelle](../../../../assets/screens/tableaux-de-bord-activite.png)
+![Der Reiter „Activité“: Aufgaben nach Fälligkeit, gestapelt nach Status, Projekttrichter, geschätzte Stunden als Kreuztabelle](../../../../assets/screens/de/tableaux-de-bord-activite.webp)
 
 ## Der Copilot
 

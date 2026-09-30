@@ -31,18 +31,42 @@ Ukryte pole nie występuje nigdzie: ani w siatce, ani w widokach, API, MCP, hist
 w interfejsie czy widokach SQL. Filtrowanie lub sortowanie po nim daje taką samą odpowiedź jak
 dla pola, które nie istnieje.
 
+## Aż do wiersza
+
+Obok **Pól**, **Wiersze** pokazuje grupie tylko niektóre wiersze tabeli: te, które wybiera
+filtr, zapisany jak filtr widoku. `@me` oznacza osobę zalogowaną:
+
+- `commercial eq @me` — każdy sprzedawca widzi tylko swoich klientów;
+- `region in ["nord", "est"]` — zespół widzi tylko swoje regiony;
+- `_created_by eq @me` — każdy widzi tylko to, co sam utworzył.
+
+Uprawnienia się sumują: osoba widzi wiersze wszystkich swoich grup, a grupa bez reguły widzi
+wszystkie. Kto zarządza strukturą tabeli — poziom Zarządzanie — widzi zawsze wszystko. Ekran
+podaje, ile wierszy widzi dana osoba i przez którą grupę.
+
+Wiersz poza jej regułą nie istnieje dla tej osoby: ani w widokach, pulpitach, wyszukiwaniu,
+API, MCP czy historii, ani do zmiany, usunięcia czy powiązania. Wiersz, który tworzy, musi
+należeć do jej zakresu; zmieniając wiersz, może natomiast sprawić, że wyjdzie on z jej zakresu —
+zadanie powierzone koledze. Odpowiedzi na
+[formularze udostępnione](/basedb/pl/fonctionnalites/formulaires-partages/) docierają zawsze.
+
 ## A SQL?
 
 W interfejsie SQL podlega tym samym uprawnieniom, egzekwowanym przez sam PostgreSQL: bez
 poziomu Zarządzanie zapytanie wykonuje się tylko do odczytu, na roli właściwej danej osobie,
-gdzie zamknięta tabela nie istnieje, a ukryte pole jest odrzucane. [Widok SQL](/basedb/pl/fonctionnalites/requetes-et-vues-sql/)
+gdzie zamknięta tabela nie istnieje, ukryte pole jest odrzucane, a czytane są tylko jej wiersze,
+niezależnie od tego, czy tabela jest nazwana samodzielnie czy ze swoim schematem.
+[Widok SQL](/basedb/pl/fonctionnalites/requetes-et-vues-sql/)
 czyta się z uprawnieniami osoby czytającej, a udostępnienie zapytania udostępnia tylko jego
 tekst.
 
 Natomiast **bezpośredni dostęp przez `psql`** do bazy nie jest kontrolowany przez basedb: czyta
 wszystko, łącznie z ukrytymi polami. Ograniczenia chronią powierzchnie produktu – interfejs,
 API, MCP –, nigdy przed kimś, kto ma dostęp SQL do bazy; takie dostępy reguluje się
-poleceniami `GRANT` PostgreSQL, nadawanymi przez administratora serwera.
+poleceniami `GRANT` PostgreSQL, nadawanymi przez administratora serwera. Tabela, która ma
+regułę wierszy, ma włączone bezpieczeństwo na poziomie wiersza PostgreSQL: rola utworzona dla
+zewnętrznego narzędzia nie widzi w niej żadnego wiersza, jeśli nie ma atrybutu `BYPASSRLS` ani
+własnej polityki.
 
 ## Konta i logowanie
 

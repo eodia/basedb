@@ -6,7 +6,7 @@ description: Bir Slack kanalına haber vermek, bir ajandayı bağlamak, bir tabl
 Bir veritabanının **Entegrasyonlar** ekranı, sol alttaki profil menüsünden açılır. **Yönetim**
 düzeyini gerektirir ve veritabanını diğer araçlarınıza bağlayan her şeyi bir araya getirir.
 
-![Bir veritabanının Entegrasyonlar ekranı](../../../../assets/screens/integrations.png)
+![Bir veritabanının Entegrasyonlar ekranı](../../../../assets/screens/tr/integrations.webp)
 
 ## Slack
 

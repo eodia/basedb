@@ -31,17 +31,39 @@ Un champ masqué est absent partout : de la grille, des vues, de l’API, du MCP
 du SQL écrit dans l’interface et des vues SQL. Filtrer ou trier sur lui répond comme pour un champ
 qui n’existe pas.
 
+## Jusqu’à la ligne
+
+À côté de **Champs**, **Lignes** ne montre à un groupe que certaines lignes d’une table : celles
+que retient un filtre, écrit comme celui d’une vue. `@moi` désigne la personne connectée :
+
+- `commercial eq @moi` — chaque commercial ne voit que ses clients ;
+- `region in ["nord", "est"]` — une équipe ne voit que ses régions ;
+- `_created_by eq @moi` — chacun ne voit que ce qu’il a créé.
+
+Les droits s’additionnent : une personne voit les lignes de tous ses groupes, et un groupe sans
+règle les voit toutes. Qui gère la structure de la table — le niveau Gestion — voit toujours tout.
+L’écran dit combien de lignes voit une personne donnée, et par quel groupe.
+
+Une ligne hors de sa règle n’existe pas pour la personne : ni dans les vues, les tableaux de bord,
+la recherche, l’API, le MCP ou l’historique, ni pour être modifiée, supprimée ou liée. Une ligne
+qu’elle crée doit faire partie des siennes ; en modifiant une ligne, elle peut en revanche la faire
+sortir de son périmètre — une tâche confiée à un collègue. Les réponses aux
+[formulaires partagés](/basedb/fonctionnalites/formulaires-partages/) arrivent toujours.
+
 ## Et le SQL ?
 
 Dans l’interface, le SQL suit les mêmes droits, appliqués par PostgreSQL lui-même : sans le niveau
 Gestion, une requête s’exécute en lecture seule, sur un rôle propre à la personne, où une table
-fermée n’existe pas et un champ masqué est refusé. Une [vue SQL](/basedb/fonctionnalites/requetes-et-vues-sql/)
+fermée n’existe pas, un champ masqué est refusé et seules ses lignes sont lues, que la table soit
+nommée seule ou avec son schéma. Une [vue SQL](/basedb/fonctionnalites/requetes-et-vues-sql/)
 se lit avec les droits de qui la lit, et partager une requête ne partage que son texte.
 
 Un accès **`psql` direct** à la base, lui, n’est pas gouverné par basedb : il lit tout, champs
 masqués compris. Les restrictions protègent les surfaces du produit — interface, API, MCP —, jamais
 contre quelqu’un qui détient un accès SQL à la base ; ces accès se règlent par des `GRANT`
-PostgreSQL, posés par l’exploitant.
+PostgreSQL, posés par l’exploitant. Une table qui porte une règle de lignes a la sécurité par ligne
+de PostgreSQL activée : un rôle créé pour un outil tiers n’y voit aucune ligne, sauf s’il a
+l’attribut `BYPASSRLS` ou sa propre politique.
 
 ## Comptes et connexion
 

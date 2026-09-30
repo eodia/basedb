@@ -29,8 +29,8 @@ De image draait onder de gebruiker `node`, op Node 22, declareert een healthchec
 | Tag | Inhoud |
 |---|---|
 | `latest` | de laatst gepubliceerde versie |
-| `0.3` | de laatste versie 0.3.x |
-| `0.3.2` | precies deze versie |
+| `0.4` | de laatste versie 0.4.x |
+| `0.4.0` | precies deze versie |
 
 ## De services
 

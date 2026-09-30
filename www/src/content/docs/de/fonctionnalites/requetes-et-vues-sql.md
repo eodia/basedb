@@ -9,7 +9,7 @@ echten Namen. Jedes Mitglied der Datenbank kann eine Abfrage schreiben und sie u
 Datenbank verwaltet, kann daraus eine **SQL-View** machen: eine echte PostgreSQL-View zwischen den
 Tabellen, die auch `psql` und Ihre Werkzeuge lesen.
 
-![Eine gespeicherte Abfrage, geöffnet aus der Rubrik „Abfragen“; darüber zwei SQL-Views zwischen den Tabellen](../../../../assets/screens/requete-sql.png)
+![Eine gespeicherte Abfrage, geöffnet aus der Rubrik „Abfragen“; darüber zwei SQL-Views zwischen den Tabellen](../../../../assets/screens/de/requete-sql.webp)
 
 ## Jede Person mit ihren Berechtigungen
 
@@ -25,7 +25,7 @@ davon ab, wer sie startet:
   benennen, selbst mit qualifiziertem Tabellennamen; ein Schreibvorgang wird abgelehnt. Das Ergebnis
   trägt das Kennzeichen **Ihre Berechtigungen**.
 
-![Das Kennzeichen „Ihre Berechtigungen“: Die Abfrage sieht nur die Tabellen und Felder, die der Person offenstehen](../../../../assets/screens/sql-vos-droits.png)
+![Das Kennzeichen „Ihre Berechtigungen“: Die Abfrage sieht nur die Tabellen und Felder, die der Person offenstehen](../../../../assets/screens/de/sql-vos-droits.webp)
 
 Nicht der Bildschirm sortiert aus: PostgreSQL selbst wendet Ihre Berechtigungen an, Spalte für
 Spalte, über eine Rolle, die nur Ihnen gehört. Eine Abfrage kann Ihnen also nichts zeigen, was das
@@ -39,7 +39,7 @@ eine Kopie, **Name und Freigabe …** (im Reiter oder in ihrem Menü in der Seit
 um, ändert, wer sie sieht, oder löscht sie – **Löschen** steht auch in ihrem Menü, per Rechtsklick.
 Ein Reiter, der sie zeigte, behält ihren Text.
 
-![Eine Abfrage speichern: ihr Name, was sie zeigt und wer sie sieht](../../../../assets/screens/requete-enregistrer.png)
+![Eine Abfrage speichern: ihr Name, was sie zeigt und wer sie sieht](../../../../assets/screens/de/requete-enregistrer.webp)
 
 | Reichweite | Wer sie sieht | Wer sie anlegen und bearbeiten kann |
 |---|---|---|
@@ -65,7 +65,7 @@ Tabellen**, mit Farbe und Symbol wie eine Tabelle, und einem kleinen **Auge** re
 dass es eine View ist. Ein Klick öffnet sie in einem Reiter: ihre Zeilen im Raster,
 **Aktualisieren**, um sie neu zu lesen.
 
-![Die View „Factures à encaisser“, aus der Seitenleiste geöffnet](../../../../assets/screens/vue-sql.png)
+![Die View „Factures à encaisser“, aus der Seitenleiste geöffnet](../../../../assets/screens/de/vue-sql.webp)
 
 Sie wird über das Menü **⋯** der Datenbank → **Neue SQL-View …** angelegt oder aus einem
 SQL-Reiter: **⋯** → **SQL-View erstellen …**, und die Abfrage des Reiters wird zu ihrer Definition.
@@ -78,7 +78,7 @@ Der Dialog fragt nach:
 - ihrer **Abfrage**: ein einziges `SELECT` über die Tabellen und die anderen Views der Datenbank.
   PostgreSQL lehnt ab, was es ablehnt, und der Editor zeigt auf die Stelle.
 
-![Der Dialog einer SQL-View: Bezeichnung und Erscheinungsbild, technischer Name, Abfrage, Beschreibung](../../../../assets/screens/vue-sql-dialogue.png)
+![Der Dialog einer SQL-View: Bezeichnung und Erscheinungsbild, technischer Name, Abfrage, Beschreibung](../../../../assets/screens/de/vue-sql-dialogue.webp)
 
 Die View wird dann unter ihrem Namen gelesen, aus der Oberfläche ebenso wie aus `psql` oder Ihrem
 BI-Tool:

@@ -51,6 +51,7 @@ disponibles, aucune dépendance externe hors PostgreSQL.
 | [18](18-interfaces-modeles.md) | Tableaux de bord, questions, extensions et modèles | Questions construites à la souris ou en SQL, lues avec les droits du lecteur ; tableaux de bord en grille, en onglets, sous des filtres ; page intégrée ; modèles de base appliqués par l'interface |
 | [19](19-integrations-synchronisation.md) | Intégrations et tables synchronisées | Slack par webhook entrant, flux iCalendar pour Google Agenda, tables tenues à jour depuis un CSV, un agenda ou une vue partagée |
 | [20](20-modeles.md) | Modèles de base | Un format JSON pour décrire une base entière, publié par le site public, importé par l'instance, proposé par l'IA, exporté d'une base |
+| [21](21-documents.md) | Documents PDF | Une ligne en facture, devis ou fiche : modèles par table, blocs de texte riche, de champs et de lignes liées, lus avec les droits du lecteur, composés en PDF avec des polices embarquées |
 
 ---
 

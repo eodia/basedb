@@ -2,6 +2,7 @@ import { qualify, quoteIdentifier } from '@basedb/naming'
 import { BasedbError } from '../errors/index.js'
 import { type ActorGrants, type Decision, decide } from '../rbac/decide.js'
 import { loadGrants, loadTarget } from '../rbac/loader.js'
+import { ROW_ALIAS, rowWhere } from '../rbac/rows.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { refuseSynced } from '../sync/guard.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
@@ -200,6 +201,23 @@ async function pageOf(
     byRevision.set(d.revision_id, list)
   }
 
+  // The rows a reader under a row rule sees (05 §16): the history of any other is not
+  // theirs to read — nor that of a deleted row, whose values no rule can be read against.
+  const seen = new Map<string, Set<string>>()
+  for (const [tableId, v] of visible) {
+    if (v.read.rowPredicate === 'TRUE') continue
+    const ids = [...new Set(page.filter((h) => h.table_id === tableId).map((h) => h.record_id))]
+    const rows =
+      ids.length === 0 || !v.table.isLive
+        ? []
+        : await exec.query<{ id: string }>(
+            `SELECT "_id"::text AS id FROM ${qualify(v.table.schema, v.table.table)} AS ${quoteIdentifier(ROW_ALIAS)}
+              WHERE "_id" = ANY($1::uuid[]) AND ( /*predicat_lignes*/ ${v.read.rowPredicate} )`,
+            [ids],
+          )
+    seen.set(tableId, new Set(rows.map((r) => r.id)))
+  }
+
   // Which deleted rows exist again — a restoration offered for a present row would fail.
   const present = new Set<string>()
   for (const [tableId, v] of visible) {
@@ -217,6 +235,8 @@ async function pageOf(
   for (const h of page) {
     const v = visible.get(h.table_id)
     if (v === undefined) continue
+    const reached = seen.get(h.table_id)
+    if (reached !== undefined && !reached.has(h.record_id)) continue
     const fields = new Map(v.table.fields.map((f) => [f.id, f]))
     const changes: RevisionChange[] = (byRevision.get(h.id) ?? [])
       .filter((d) => v.read.readableFields.has(d.field_id))
@@ -415,9 +435,13 @@ export async function listDeletions(
     async (exec) => {
       const grants = await loadGrants(exec, ctx)
       const target = await loadTarget(exec, ctx, request.tableId)
-      if (target === null || decide(ctx, grants, 'read', target).verdict !== 'ALLOWED') {
+      const read = target === null ? null : decide(ctx, grants, 'read', target)
+      if (read === null || read.verdict !== 'ALLOWED') {
         throw new BasedbError('RESOURCE_NOT_FOUND', { details: { table: request.tableId } })
       }
+      // A deleted row has no values left to read a row rule against: a reader under one
+      // is told of no deletion rather than of rows they were never shown (05 §16).
+      if (read.rowPredicate !== 'TRUE') return { deletions: [], nextCursor: null }
       const after = decodeCursor(request.cursor)
       const limit = limitOf(request.limit)
       const rows = await exec.query<{
@@ -558,7 +582,9 @@ export async function revertIn(
   const [current] = await exec.query<{ row: Record<string, unknown> }>(
     // `_t`, not `t`: no physical name starts with `_`, so the whole row can never be
     // mistaken for a column called `t`.
-    `SELECT pg_catalog.to_jsonb(_t) AS row FROM ${where} _t WHERE "_id" = $1 FOR UPDATE`,
+    `SELECT pg_catalog.to_jsonb(_t) AS row FROM ${where} _t
+      WHERE "_id" = $1 AND ( /*predicat_lignes*/ ${rowWhere(read.rowPredicate, '_t')} )
+        FOR UPDATE`,
     [header.record_id],
   )
   if (current === undefined) {
@@ -634,7 +660,8 @@ export async function restoreIn(
       details: { field: 'revision', reason: 'seule_une_suppression_se_restaure' },
     })
   }
-  if (decide(ctx, grants, 'create', target).verdict !== 'ALLOWED') {
+  const create = decide(ctx, grants, 'create', target)
+  if (create.verdict !== 'ALLOWED') {
     throw new BasedbError('ADMIN_REQUIRED', {
       details: { table: header.table_id, action: 'create' },
     })
@@ -687,6 +714,15 @@ export async function restoreIn(
       throw new BasedbError('RESTORE_TARGET_MISSING', { details: { record: header.record_id } })
     }
     throw error
+  }
+  // A restoration is a creation: the row must be one its restorer sees (05 §16).
+  if (create.rowPredicate !== 'TRUE') {
+    const [scope] = await exec.query<{ holds: boolean }>(
+      `SELECT ( /*predicat_lignes*/ ${create.rowPredicate} ) AS holds
+         FROM ${where} AS ${quoteIdentifier(ROW_ALIAS)} WHERE "_id" = $1`,
+      [header.record_id],
+    )
+    if (scope?.holds !== true) throw new BasedbError('ROW_OUT_OF_SCOPE')
   }
   return { tableId: header.table_id, recordId: header.record_id }
 }

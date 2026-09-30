@@ -1,9 +1,9 @@
 ---
 title: Visninger
-description: Gitter, kanban, kalender, tidslinje, galleri, liste, formular og spørgeskema — fælles eller personlige.
+description: Gitter, kanban, kalender, tidslinje, galleri, liste, landkort, formular, spørgeskema og quiz — fælles eller personlige.
 ---
 
-En tabel kan vises på **otte måder**. En visning kopierer ingen data og giver ingen flere
+En tabel kan vises på **ti måder**. En visning kopierer ingen data og giver ingen flere
 tilladelser end selve tabellen.
 
 :::note
@@ -20,14 +20,18 @@ placeret blandt dem i sidepanelet.
 | **Tidslinje** | bjælker mellem to datoer og deres afhængigheder | en startdato |
 | **Galleri** | kort med et forsidebillede | — |
 | **Liste** | én linje pr. række, i grupper, der kan foldes sammen | — |
+| **Landkort** | hver række placeret på et kort | en adresse, eller en breddegrad og en længdegrad |
 | **Formular** | en side med spørgsmål til at oprette en række | — |
 | **Spørgeskema** | de samme spørgsmål, ét pr. skærm | — |
+| **Quiz** | bedømte spørgsmål, ét pr. skærm, og scoren til sidst | — |
 
 ## Visningsvælgeren
 
 Den sidder til venstre for »Filtrer«. »Alle rækker« er tabellens gitter, som ingen har gemt, og
 som ingen kan slette; derefter kommer de **fælles visninger** i den rækkefølge, som den, der
-bygger databasen, har valgt, og til sidst **Mine visninger**.
+bygger databasen, har valgt, og til sidst **Mine visninger**. Nederst ordner **Opret en visning**
+de ti slags i to familier: dem, der **ser rækkerne**, og dem, der **samler svar** (formular,
+spørgeskema, quiz).
 
 - En **fælles visning** ses af alle. At oprette, konfigurere, omdøbe, omarrangere eller slette
   den kræver niveauet **Administrere**. Den kan **låses**: en hængelås viser det, og ingen kan
@@ -37,7 +41,7 @@ bygger databasen, har valgt, og til sidst **Mine visninger**.
   hver person gemmer sine egne måder at læse på uden at ændre noget for de andre. **Dupliker**
   laver en personlig kopi af en fælles visning.
 
-![Et galleri med kunder](../../../../assets/screens/galerie.png)
+![Et galleri med kunder](../../../../assets/screens/da/galerie.webp)
 
 ## Værktøjslinjen
 
@@ -72,9 +76,9 @@ siden: udfyldte, tomme, unikke værdier, sum, gennemsnit, minimum, maksimum, afk
   til sig selv — forbinder en pil hver opgave med dem, den afhænger af, rød når den går
   tilbage i tiden.
 
-![En tidslinje med dens afhængigheder](../../../../assets/screens/chronologie.png)
+![En tidslinje med dens afhængigheder](../../../../assets/screens/da/chronologie.webp)
 
-![En kalender efter forfaldsdato](../../../../assets/screens/calendrier.png)
+![En kalender efter forfaldsdato](../../../../assets/screens/da/calendrier.webp)
 
 ## Galleri og liste
 
@@ -83,10 +87,34 @@ siden: udfyldte, tomme, unikke værdier, sum, gennemsnit, minimum, maksimum, afk
 - **Listen** viser én linje pr. række, **grupperet** efter et enkeltvalg, en relation eller en
   person.
 
-![En liste med kunder, grupperet efter branche](../../../../assets/screens/liste.png)
+![En liste med kunder, grupperet efter branche](../../../../assets/screens/da/liste.webp)
 
 I kanban, galleri og liste kan kort og rækker **sorteres manuelt** ved at trække dem — op til
 5 000; en valgt sortering har forrang for denne rækkefølge.
+
+## Landkort
+
+**Landkortet** placerer hver række på sin plads efter:
+
+- en **adresse** — en kort tekst, gerne i formatet **Adresse** (se
+  [Tabeller og felter](/basedb/da/fonctionnalites/tables-et-champs/)): »12 rue des Lilas, Lyon«;
+- eller en **breddegrad** og en **længdegrad**, to talfelter, brugt som de er.
+
+En nål får sin **farve** fra et enkeltvalg, viser rækkens **titel** ved hover og åbner dens
+rækkedetaljer med et klik. Landkortet følger visningens filter og sortering, op til 2 000
+rækker.
+
+En adresse **findes én gang for alle** af instansens geokodningstjeneste — som standard
+OpenStreetMaps —, i det tempo, den tillader: på et nyt kort dukker nålene op i takt med
+svarene, cirka én om sekundet, og derefter med det samme de følgende gange. Et mærke tæller de
+placerede rækker, de adresser, der stadig skal findes, og dem, det ikke kunne lykkes for: en
+adresse, der ikke kan findes, skal præciseres (by, postnummer), aldrig blot fjernet i stilhed.
+
+:::note[Det, der forlader din server]
+Adressernes tekst sendes til geokodningstjenesten, og hver læsers browser henter kortbunden fra
+fliseserveren. Instansens driftsansvarlige kan vælge andre tjenester, eller ingen: se
+[Miljøvariabler](/basedb/da/hebergement/variables/#landkort-og-adresser).
+:::
 
 ## Formular og spørgeskema
 
@@ -102,6 +130,8 @@ viser et passende eksempel. Alt andet ændrer du, når du vil:
 
 - **Udseende**: otte temaer — Lyst, Blid, Daggry, Hav, Skov, Nat, Papir, Minimal —,
   en accentfarve, en skrifttype, en justering til venstre eller centreret;
+- **Udfyld på forhånd med dags dato**: et datospørgsmål er allerede udfyldt med dagen — og
+  klokkeslættet, for dato og tid — som personen beholder eller ændrer;
 - **Spørg kun hvis…**: et spørgsmål stilles kun, hvis et tidligere svar kræver det (»Sentiment
   er Negativ«, »Bedømmelse er højst 2«). Et skjult spørgsmål er hverken påkrævet eller sendt;
 - **Flere indstillinger**: knapperne til velkomst og afsendelse, nummereringen,
@@ -113,6 +143,44 @@ derefter ét spørgsmål ad gangen, som glider ind. Alt kan også gøres med tas
 for at fortsætte, bogstaverne **A**, **B**, **C**… for et valg, **J** eller **N** for ja eller
 nej, tallene for en bedømmelse — et enkelt valg går alene videre til næste spørgsmål.
 Afsendelsen fejres: et flueben, der tegner sig, og konfetti i formularens farver.
+
+## Quiz
+
+En quiz er et spørgeskema, der tæller point. Under hvert spørgsmål angiver du dets **rigtige
+svar** og det, det giver — **1 point**, hvis intet angives, op til 100:
+
+| Spørgsmål | Rigtigt svar |
+|---|---|
+| enkeltvalg | ét valg |
+| flervalg | de valg, der skal afkrydses — alle og kun dem |
+| afkrydsningsfelt | ja eller nej |
+| tal, bedømmelse | et tal |
+| dato | en dag |
+| kort tekst, e-mail, URL | ét eller flere accepterede svar, adskilt med `;` — uden hensyn til store og små bogstaver eller accenter |
+
+Et spørgsmål uden et rigtigt svar — et fornavn, en kommentar — stilles uden at blive bedømt. Der
+skal mindst ét bedømt spørgsmål til for at oprette quizzen.
+
+Afsnittet **Bedømmelse** styrer resten:
+
+- **Rettelse**: **efter hvert spørgsmål** — svaret tjekkes med det samme, i grønt, eller i rødt
+  med det rigtige svar, og scoren vokser øverst på skærmen —, **til sidst** — scoren og derefter
+  rettelsen —, eller **aldrig** — kun scoren, de rigtige svar forbliver hemmelige;
+- **Beståelsesgrænse**: en procentdel af pointene; slutskærmen siger så »Bestået!« eller »Ikke
+  denne gang…«;
+- **Gem scoren i**: et talfelt i tabellen, som modtager scoren for hvert svar. Sortér gitteret
+  efter det: der har du ranglisten. Et felt kaldet »Score«, »Point« eller »Karakter« vælges
+  automatisk.
+
+Slutskærmen viser scoren i en ring, der fyldes, procentdelen og derefter, undtagen ved »aldrig«,
+hvert bedømt spørgsmål med det svar, der blev givet, og det rigtige. Et spørgsmål, som et
+tidligere svar har skjult, tæller ikke med i totalen.
+
+:::note
+I applikationen kan den, der kan læse visningen, også læse de rigtige svar. Via et
+[delt link](/basedb/da/fonctionnalites/formulaires-partages/#en-delt-quiz), forlader de aldrig
+serveren: det er den, der retter og tæller.
+:::
 
 ## Del en visning
 

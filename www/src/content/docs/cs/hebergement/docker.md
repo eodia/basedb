@@ -29,8 +29,8 @@ Obraz běží pod uživatelem `node` na Node 22 a deklaruje kontrolu stavu (`/he
 | Tag | Obsah |
 |---|---|
 | `latest` | poslední vydaná verze |
-| `0.3` | poslední verze 0.3.x |
-| `0.3.2` | přesně tato verze |
+| `0.4` | poslední verze 0.4.x |
+| `0.4.0` | přesně tato verze |
 
 ## Služby
 

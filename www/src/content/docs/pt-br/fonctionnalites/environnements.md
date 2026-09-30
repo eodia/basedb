@@ -27,7 +27,7 @@ No menu da base, em **Outras ações**, **Comparar ambientes…** abre uma caixa
 - **Sincronização de linhas**: tabela por tabela, transferir linhas de um ambiente para
   outro, por identificador.
 
-![Comparar a produção e a homologação](../../../../assets/screens/environnements.png)
+![Comparar a produção e a homologação](../../../../assets/screens/pt-br/environnements.webp)
 
 ## Como o basedb sabe quem mudou o quê
 

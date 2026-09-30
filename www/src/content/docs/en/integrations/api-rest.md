@@ -33,7 +33,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | a readable expression: `statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | the columns to return |
-| `limit`, `cursor` | pagination with an encrypted cursor (`next_cursor` in the response) |
+| `limit`, `after` | pagination with an encrypted cursor: a page’s `meta.next_cursor`, passed as `after`, gives the next one (`meta.has_next_page`) |
 | `links=display` | relations with their display value |
 | `count=exact` | the total, capped at 100,000 |
 | `variables=raw` | long texts as written, `{{colonne}}` included, rather than with the [row’s values](/basedb/en/fonctionnalites/tables-et-champs/#rich-text-and-variables) |
@@ -85,4 +85,4 @@ readers get two versions —, written **in the language of your screen**, and al
 OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Names, paths and error codes
 stay the same in every language.
 
-![A base’s generated documentation](../../../../assets/screens/documentation-api.png)
+![A base’s generated documentation](../../../../assets/screens/en/documentation-api.webp)

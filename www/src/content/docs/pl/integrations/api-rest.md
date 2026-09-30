@@ -33,7 +33,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | czytelne wyrażenie: `statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | kolumny do zwrócenia |
-| `limit`, `cursor` | stronicowanie szyfrowanym kursorem (`next_cursor` w odpowiedzi) |
+| `limit`, `after` | stronicowanie szyfrowanym kursorem: `meta.next_cursor` strony, przekazane jako `after`, daje następną (`meta.has_next_page`) |
 | `links=display` | relacje z ich wartością wyświetlaną |
 | `count=exact` | łączna liczba, z górnym limitem 100 000 |
 | `variables=raw` | długie teksty w postaci zapisanej, łącznie z `{{colonne}}`, zamiast z [wartościami z wiersza](/basedb/pl/fonctionnalites/tables-et-champs/#tekst-sformatowany-i-zmienne) |
@@ -85,4 +85,4 @@ osoby czytające otrzymują dwie wersje –, napisana **w języku twojego ekranu
 w formacie OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Nazwy, ścieżki i
 kody błędów pozostają takie same we wszystkich językach.
 
-![Generowana dokumentacja bazy](../../../../assets/screens/documentation-api.png)
+![Generowana dokumentacja bazy](../../../../assets/screens/pl/documentation-api.webp)

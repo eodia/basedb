@@ -3,6 +3,7 @@ import type { FieldKind } from '../ddl/emit.js'
 import { type FormulaType, type Node, emitFormula } from '../formula/language.js'
 import { type ActorGrants, type Decision, decide } from '../rbac/decide.js'
 import { loadTarget } from '../rbac/loader.js'
+import { rowWhere } from '../rbac/rows.js'
 import type { Executor } from '../runtime/pool.js'
 import type { RequestContext } from '../tx/context.js'
 
@@ -168,7 +169,7 @@ export async function resolveComputed(
     const x = quoteIdentifier(`x${counter}`)
     const u = quoteIdentifier(`u${counter}`)
     const via = quoteIdentifier(row.via_column)
-    const predicate = `( /*predicat_lignes:${other.tableName}*/ ${other.decision.rowPredicate} )`
+    const predicate = `( /*predicat_lignes:${other.tableName}*/ ${rowWhere(other.decision.rowPredicate, `x${counter}`)} )`
     const value = row.target_column === null ? null : `${x}.${quoteIdentifier(row.target_column)}`
 
     /** `FROM … WHERE …` of the rows reached, and the order they come in. */

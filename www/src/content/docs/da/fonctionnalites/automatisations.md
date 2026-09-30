@@ -1,6 +1,6 @@
 ---
 title: Automatiseringer
-description: Når en række ændres, på et fast tidspunkt eller med et klik — rediger, opret, find, forgren, spørg AI, giv besked, kald en webhook, skriv på Slack.
+description: Når en række ændres, på et fast tidspunkt eller med et klik — rediger, opret, find, forgren, spørg AI, giv besked, send en e-mail, kald en webhook, skriv på Slack.
 ---
 
 En automatisering siger **hvornår**, **hvis** og **så**: når en opgave skifter til »Fait«,
@@ -12,7 +12,7 @@ i et trin det, som et tidligere trin har fundet eller skrevet.
 De åbnes fra **Automatiseringer** i blokken for den åbne database nederst i sidepanelet og kræver
 niveauet **Administrere**.
 
-![Et flow og en af dets kørsler, lagt oven på det](../../../../assets/screens/automatisations.png)
+![Et flow og en af dets kørsler, lagt oven på det](../../../../assets/screens/da/automatisations.webp)
 
 ## Flowet
 
@@ -49,6 +49,7 @@ Op til tredive trin i rækkefølge; det første, der mislykkes, stopper de efter
 | **Opret en række** | i denne tabel eller en anden i databasen |
 | **Find en række** | den første række i en tabel, der matcher et filter, så de efterfølgende trin kan citere eller redigere den |
 | **Giv nogen besked** | en [notifikation](/basedb/da/fonctionnalites/collaboration/#notifikationer) til udvalgte personer eller til personen i et Person-felt |
+| **Send en e-mail** | til personer i teamet, til personen i et Person-felt, til adressen i et E-mail-felt — en kunde, en leverandør — eller til skrevne adresser; emnet og teksten citerer rækken og de foregående trin |
 | **Kald en webhook** | en `POST` over HTTPS til en adresse efter eget valg; svaret kan derefter citeres |
 | **Send til Slack** | en besked i en [forbundet](/basedb/da/integrations/synchronisation/#slack) kanal |
 | **Spørg AI** | et svar fra [AI-udbyderen](/basedb/da/fonctionnalites/ia/) på en instruktion, der citerer rækken og de tidligere trin — skriv, opsummér, klassificér —, læst som en tekst, et tal, ja eller nej, en dato eller et valg fra en liste |
@@ -138,7 +139,9 @@ alle andre.
   flow.
 - En søgning giver én række, den første; endnu intet »for hver række« og ingen ventetid
   (»tre dage efter«).
-- Ingen e-mail, ingen scripts.
+- Ingen scripts. En e-mail sendes som almindelig tekst, én pr. modtager — højst tyve pr.
+  trin —, via [instansens afsendelsesserver](/basedb/da/hebergement/variables/#e-mails); et svar
+  går til den person, der ejer automatiseringen.
 - En betingelse tester en række: for at vælge en gren ud fra AI's svar skal svaret først skrives
   i et felt i rækken.
 - En [databaseskabelon](/basedb/da/fonctionnalites/modeles/) medtager kun automatiseringer uden

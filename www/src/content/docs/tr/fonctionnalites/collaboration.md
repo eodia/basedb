@@ -12,7 +12,7 @@ Bir satırın ayrıntılarında, “Ayrıntılar” ile “Geçmiş” arasında
 Bir üyeden **bahsetmek** için `@` yazın, göndermek için Ctrl+Enter'a basın. Herkes kendi
 yorumlarını düzenler ya da siler.
 
-![Bir proje üzerine bir konuşma](../../../../assets/screens/commentaires.png)
+![Bir proje üzerine bir konuşma](../../../../assets/screens/tr/commentaires.webp)
 
 Satırı okuyabilmek, ona yorum yapmak için yeterlidir. Kendisinden bahsedilen ama satırı
 okuyamayan bir kişiye haber verilmez — ve yazar, mesajın gittiğini sanmak yerine bu konuda
@@ -31,7 +31,14 @@ Sağ üstteki zil okunmamış olanları sayar. Oraya dört şey gelir:
 Bir bildirimi açmak satırı açar. **Tümünü okundu olarak işaretle** sayacı sıfırlar; bildirimler
 90 gün saklanır.
 
-![Alınan bir bahsetme](../../../../assets/screens/notifications.png)
+### E-postayla
+
+Kurulumun bir [gönderim sunucusu](/basedb/tr/hebergement/variables/#e-postalar) olduğunda,
+**on dakika okunmadan kalan** bir bildirim e-postayla da gönderilir: bekleyenlerin tümü için
+tek bir e-posta, her satıra giden bir bağlantıyla. Zamanında okuduğunuz gönderilmez. **Ayarlar
+› Bildirimler**'de her tür için iki anahtar vardır: basedb içinde ve e-postayla.
+
+![Alınan bir bahsetme](../../../../assets/screens/tr/notifications.webp)
 
 ## Gerçek zamanlı
 
@@ -75,6 +82,6 @@ Ctrl+Z son yazmanızı geri alır — bkz. [geçmiş](/basedb/tr/fonctionnalites
 
 ## Sınırlar
 
-- Bildirimler basedb içinde kalır: şimdilik hiçbiri e-postayla gönderilmez.
+- İşletmecinin ayarladığı bir gönderim sunucusu yoksa e-posta gönderilmez.
 - Bir kerede yüzden fazla satır değiştiğinde ekran, satır satır güncellemek yerine sayfanın
   tamamını yeniden yükler.

@@ -6,7 +6,7 @@ description: Notify a Slack channel, connect a calendar, keep a table up to date
 A base’s **Integrations** screen opens from the profile menu, at the bottom left. It requires
 the **Manage** level and gathers what connects the base to the rest of your tools.
 
-![A base’s Integrations screen](../../../../assets/screens/integrations.png)
+![A base’s Integrations screen](../../../../assets/screens/en/integrations.webp)
 
 ## Slack
 

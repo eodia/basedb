@@ -11,7 +11,7 @@ in, knows who is looking at what, and discusses a row right where it is.
 A row’s details have a **Comments** tab, between “Details” and “History”. Type `@` to
 **mention** a member, Ctrl+Enter to send. Everyone can edit or delete their own comments.
 
-![A conversation about a project](../../../../assets/screens/commentaires.png)
+![A conversation about a project](../../../../assets/screens/en/commentaires.webp)
 
 Being able to read the row is enough to comment on it. A mentioned person who cannot read it
 is not notified — and the author is told so, rather than believing the message went out.
@@ -29,7 +29,14 @@ The bell, at the top right, counts what is unread. Four things arrive there:
 Opening a notification opens the row. **Mark all as read** clears the counter; notifications
 are kept for 90 days.
 
-![A mention received](../../../../assets/screens/notifications.png)
+### By email
+
+When the instance has a [mail server](/basedb/en/hebergement/variables/#emails), a notification
+left **unread for ten minutes** also goes out by email: a single email for everything still
+waiting, with a link to each row. What you read in time does not go out. In **Settings ›
+Notifications**, each kind has two switches: in basedb, and by email.
+
+![A mention received](../../../../assets/screens/en/notifications.webp)
 
 ## Real time
 
@@ -71,6 +78,6 @@ Ctrl+Z undoes your last write — see [the history](/basedb/en/fonctionnalites/h
 
 ## Limits
 
-- Notifications stay in basedb: none are sent by email for now.
+- No email without a mail server configured by the operator.
 - Beyond a hundred rows changed at once, the screen reloads the whole page rather than row by
   row.

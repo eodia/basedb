@@ -11,7 +11,7 @@ zelf invult. De [sjablonengalerie](/basedb/nl/modeles/) toont de sjablonen die b
 
 **Nieuwe database**, daarna **Starten vanuit een sjabloon, of aan de AI vragen**: de galerie opent.
 
-![De sjablonengalerie, in de applicatie](../../../../assets/screens/modeles.png)
+![De sjablonengalerie, in de applicatie](../../../../assets/screens/nl/modeles.webp)
 
 Elk sjabloon kun je volledig lezen voordat je het gebruikt — de tabellen en hun velden, de weergaven,
 de automatiseringen, en de instructie van elk AI-veld. **Database aanmaken** vraagt

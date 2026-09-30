@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb — baza colaborativă în care fiecare tabel este un tabel PostgreSQL real',
-			description: 'Grile și opt vizualizări, formule, formulare și vizualizări partajate, comentarii, automatizări, tablouri de bord, permisiuni până la nivel de câmp, istoric complet, API REST și server MCP — pe tabele PostgreSQL reale, cu nume clare. Auto-găzduit, AGPL-3.0.',
+			description: 'Grile și zece vizualizări, formule, formulare, quiz și vizualizări partajate, comentarii, automatizări, tablouri de bord, permisiuni până la nivel de câmp, istoric complet, API REST și server MCP — pe tabele PostgreSQL reale, cu nume clare. Auto-găzduit, AGPL-3.0.',
 		},
 		changelog: {
 			title: 'Noutăți — basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: 'Opt vizualizări',
-								text: 'Grilă, kanban, calendar, cronologie, galerie, listă, formular, chestionar.',
+								title: 'Zece vizualizări',
+								text: 'Grilă, kanban, calendar, cronologie, galerie, listă, hartă, formular, chestionar, quiz.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb — toată munca dumneavoastră, într-un singur loc',
-			description: 'Clienți, proiecte, stocuri, candidaturi: o bază pe care toată echipa o modifică în același timp, în tabel, în kanban sau în calendar, cu tablouri de bord, automatizări și AI. Fără cod, liber și gratuit.',
+			title: 'basedb — baza colaborativă a întregii echipe',
+			description: 'Toată munca dumneavoastră într-un singur loc, modificată de toată echipa în același timp: în tabel, în kanban sau în calendar, cu formulare, tablouri de bord, automatizări și AI. Fără cod, liber și gratuit.',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -892,9 +892,9 @@ export default {
 			text: 'Fiecare funcție scrie în aceleași tabele, cu aceleași permisiuni, în același istoric.',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: 'moduri de a vă vedea datele',
-					text: 'Grilă, kanban, calendar, cronologie, galerie, listă, formular și chestionar, pe aceleași rânduri. Fiecare o alege pe a sa.',
+					text: 'Grilă, kanban, calendar, cronologie, galerie, listă, hartă, formular, chestionar și quiz, pe aceleași rânduri. Fiecare o alege pe a sa.',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -944,7 +944,7 @@ export default {
 				},
 				import: {
 					title: 'Import într-un gest',
-					text: 'Trageți un fișier CSV: coloanele și tipurile sunt ghicite, tabelul este creat.',
+					text: 'Trageți un registru de lucru Excel sau un CSV: coloanele și tipurile sunt ghicite, tabelul este creat.',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1037,7 +1037,7 @@ export default {
 				},
 				{
 					q: 'Putem prelua foile noastre de calcul?',
-					a: 'Da: salvați foaia în format CSV și trageți-o în basedb. Importul ghicește tipul fiecărei coloane, creează tabelul și spune, rând cu rând, ce nu a putut prelua.',
+					a: 'Da: trageți registrul dumneavoastră de lucru Excel, sau un CSV, în basedb. Importul ghicește tipul fiecărei coloane, creează tabelul și spune, rând cu rând, ce nu a putut prelua.',
 				},
 				{
 					q: 'Se poate lucra cu mai multe persoane, în același timp?',
@@ -1362,9 +1362,9 @@ export default {
 		text: 'Fiecare funcție scrie în aceleași tabele, cu aceleași permisiuni, în același istoric.',
 		more: 'Aflați mai multe →',
 		views: {
-			title: 'Opt vizualizări ale acelorași rânduri',
+			title: 'Zece vizualizări ale acelorași rânduri',
 			text: 'Colaborative pentru toată echipa sau personale, doar pentru dumneavoastră: fiecare își alege felul de a citi, nimeni nu copiază datele.',
-			chips: ['Grilă', 'Kanban', 'Calendar', 'Cronologie', 'Galerie', 'Listă', 'Formular', 'Chestionar'],
+			chips: ['Grilă', 'Kanban', 'Calendar', 'Cronologie', 'Galerie', 'Listă', 'Hartă', 'Formular', 'Chestionar', 'Quiz'],
 		},
 		forms: {
 			title: 'Formulare partajate',
@@ -1428,7 +1428,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'Import CSV și JSON',
+				title: 'Import Excel, CSV și JSON',
 				text: 'Trageți un fișier: importul ghicește tipurile, creează tabelul sau completează un tabel existent și spune rând cu rând ce a fost refuzat.',
 				href: '/guides/premiers-pas/',
 			},
@@ -1537,6 +1537,66 @@ export default {
 		title: 'Ce s-a schimbat în basedb',
 		intro: 'Detaliile fiecărei schimbări se află în <a href="https://github.com/eodia/basedb/commits/main">istoricul depozitului</a>. Ce urmează: <a href="/feuille-de-route/">foaia de parcurs</a>.',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: 'Harta, și adrese care își găsesc locul',
+				tag: 'Nou',
+				items: [
+					'<strong>O a zecea vizualizare, harta</strong>: fiecare rând așezat la locul lui, după adresa sa sau după latitudinea și longitudinea sa. Un pin ia culoarea unui statut și deschide fișa dintr-un clic. <a href="/fonctionnalites/vues/#hartă">Harta</a>',
+					'<strong>O adresă este localizată o singură dată pentru totdeauna</strong>, de serviciul OpenStreetMap sau de cel pe care îl alegeți: pinii apar pe măsura răspunsurilor, apoi imediat. O adresă negăsită este numărată, niciodată înlăturată în tăcere.',
+					'<strong>Formatul Adresă</strong> pentru un text scurt: un clic îl deschide pe hartă, iar în fișă, <strong>Găsiți adresa</strong> propune adresele complete care corespund. <a href="/fonctionnalites/tables-et-champs/#formate-de-afișare">Formatele</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: 'PDF-uri din rândurile dumneavoastră',
+				tag: 'Nou',
+				items: [
+					'<strong>Un deviz, o factură, o fișă în PDF</strong>, din meniul unui rând: fișa imprimabilă fără nimic de reglat, sau un model — texte care citează câmpurile, câmpurile rândului, tabelul rândurilor legate cu totalul lor, întreruperi de pagină. <a href="/fonctionnalites/documents/">Documentele</a>',
+					'<strong>Fiecare cu permisiunile sale</strong>: un câmp ascuns pentru dumneavoastră nu apare în PDF-ul dumneavoastră. Cele douăzeci de limbi se scriu acolo, chineza, japoneza și coreeana incluse, iar API-ul redă același document.',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: 'Drepturi până la nivel de rând, valori implicite, importul Excel',
+				tag: 'Nou',
+				items: [
+					'<strong>Fiecare cu rândurile sale</strong>: un grup vede doar rândurile unui filtru — „Comercial sunt eu”, „Regiune este Nord” —, în interfață, în API, în serverul MCP ca și în SQL, unde PostgreSQL aplică aceeași regulă. <a href="/fonctionnalites/droits/#până-la-nivel-de-rând">Până la nivel de rând</a>',
+					'<strong>Valori implicite</strong>: o valoare fixă, data de astăzi, momentul creării sau persoana care creează rândul, precompletate pe ecran și aplicate peste tot în altă parte. <a href="/fonctionnalites/tables-et-champs/#valori-implicite">Valori implicite</a>',
+					'<strong>Trageți un registru de lucru Excel</strong>: alegeți foaia, datele, sumele și casetele de selectare sunt reluate ca atare, iar o formulă își dă valoarea. <a href="/guides/premiers-pas/">Primii pași</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: 'E-mailuri',
+				tag: 'Nou',
+				items: [
+					'<strong>Un pas „Trimiteți un e-mail”</strong> în automatizări: unui membru, persoanei dintr-un câmp, adresei unui client, cu valorile rândului în subiect și în text. <a href="/fonctionnalites/automatisations/">Automatizările</a>',
+					'<strong>Notificările prin e-mail</strong> când nu le-ați citit, grupate, de ales una câte una în setările dumneavoastră; iar <strong>parola uitată</strong> se resetează printr-un link. <a href="/fonctionnalites/collaboration/#prin-e-mail">Prin e-mail</a>',
+					'Este suficient să indicați instanței serverul de trimitere al mesageriei dumneavoastră. <a href="/hebergement/variables/#e-mailuri">Variabilele</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n și un SDK TypeScript',
+				tag: 'Nou',
+				items: [
+					'<strong>Noduri n8n</strong>: citiți și scrieți rândurile unui tabel dintr-un flux de lucru, și lansați unul la fiecare rând creat, modificat sau șters — prin verificare sau prin webhook semnat. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>Un SDK TypeScript</strong>, cu tipurile tabelelor dumneavoastră generate din instanța dumneavoastră: un tabel sau un câmp care nu există este o eroare chiar înainte de execuție. <a href="/integrations/sdk/">SDK-ul</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: 'Quizul: întrebări care numără punctele',
+				tag: 'Nou',
+				items: [
+					'<strong>O nouă vizualizare, quizul</strong>: un chestionar în care fiecare întrebare poate avea răspunsul ei corect și punctele ei — o opțiune, mai multe, da sau nu, un număr, o dată, sau textele acceptate, fără a ține cont de majuscule sau de diacritice. <a href="/fonctionnalites/vues/#quiz">Quizul</a>',
+					'<strong>Corectat cum doriți</strong>: după fiecare întrebare — verde, sau roșu cu răspunsul corect, punctajul care crește în partea de sus a ecranului —, la final, sau niciodată. Un prag de promovare face ecranul să spună „Promovat!” sau „Nu de data aceasta…”.',
+					'<strong>Punctajul la final</strong>, într-un inel care se umple, apoi corectarea fiecărei întrebări. Se scrie într-un câmp număr al tabelului: sortați grila după el, iată clasamentul.',
+					'<strong>Partajat printr-un link, fără trișare</strong>: pagina nu primește niciun răspuns corect, serverul este cel care corectează și numără. <a href="/fonctionnalites/formulaires-partages/#un-quiz-partajat">Un quiz partajat</a>',
+					'<strong>Creați o vizualizare</strong>, în partea de jos a selectorului de vizualizări, așază cele nouă tipuri în două familii — cele care arată rândurile, cele care colectează răspunsuri —, fiecare cu iconița ei colorată.',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: 'Formulare pe care ai chef să le completezi',

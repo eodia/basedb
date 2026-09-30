@@ -3,12 +3,12 @@ title: Sdílené formuláře
 description: Sdílení formuláře odkazem, veřejně nebo jen pro přihlášené členy.
 ---
 
-Formulář nebo dotazník se **sdílí odkazem** `/f/<jeton>`. Respondent nepotřebuje **žádná
+Formulář, dotazník nebo kvíz se **sdílí odkazem** `/f/<jeton>`. Respondent nepotřebuje **žádná
 oprávnění k tabulce**: každá odpověď přidá řádek a nic dalšího z tabulky se mu nezobrazí.
 Chcete-li řádky ukazovat, a ne je přijímat, sdílí se zobrazení
 [jen pro čtení](/basedb/cs/fonctionnalites/vues-partagees/).
 
-![Dialog sdílení](../../../../assets/screens/partage-formulaire.png)
+![Dialog sdílení](../../../../assets/screens/cs/partage-formulaire.webp)
 
 ## Kdo může odpovídat
 
@@ -21,7 +21,7 @@ Stránka odkazu je mimo aplikaci: žádný postranní panel, žádný název dat
 řádky. Nese vzhled formuláře — jeho motiv, barvu, písmo —, a klade jen otázky, které
 vyžadují dřívější odpovědi.
 
-![Veřejný formulář](../../../../assets/screens/formulaire-public.png)
+![Veřejný formulář](../../../../assets/screens/cs/formulaire-public.webp)
 
 ## Jménem koho se odpověď zapisuje
 
@@ -47,6 +47,20 @@ Dialog nastavuje:
 - **Ukončit sdílení**: odkaz zmizí, odpovědi v tabulce zůstanou.
 
 Uzavřený formulář to oznámí jedinou větou, ještě než požádá o přihlášení.
+
+## Sdílený kvíz
+
+Stránka kvízu nedostává **žádnou správnou odpověď**: jen to, kolik bodů je která otázka
+hodna. Opravuje server.
+
+- Při opravě **po každé otázce** posílá stránka serveru každou hodnocenou odpověď ve chvíli,
+  kdy je zadána, a hned se dozví, zda je správná — a která odpověď správná byla.
+- Při odeslání server spočítá skóre **z přijatých odpovědí** a zapíše je do pole, které je
+  pro ně zvolené, pokud nějaké existuje a osoba, která sdílení zveřejnila, do něj smí
+  zapisovat. Stránka zobrazí skóre, které jí server vrátí, a správné odpovědi, pokud kvíz
+  neříká „nikdy“.
+
+Skóre se tedy v tabulce čte tak, jak je spočítal server, ne tak, jak by je oznámila stránka.
 
 ## Omezení
 

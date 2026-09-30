@@ -26,7 +26,7 @@ Från databasens meny, under **Fler åtgärder**, öppnar **Jämför miljöer…
 - **Synkronisering av rader**: tabell för tabell, för över rader från en miljö till en annan,
   efter identifierare.
 
-![Jämföra produktion och test](../../../../assets/screens/environnements.png)
+![Jämföra produktion och test](../../../../assets/screens/sv/environnements.webp)
 
 ## Hur basedb vet vem som ändrade vad
 

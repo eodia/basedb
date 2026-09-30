@@ -1,6 +1,7 @@
 'use client'
 
 import { FieldRulesDialog } from '@/components/app/admin/field-rules-dialog'
+import { RowRulesDialog } from '@/components/app/admin/row-rules-dialog'
 import { cancelled, useElevated } from '@/components/app/elevation'
 import {
   Select,
@@ -28,6 +29,7 @@ import {
   Loader2,
   Lock,
   type LucideIcon,
+  Rows3,
   Table2,
   Users,
 } from 'lucide-react'
@@ -88,6 +90,7 @@ export function PermissionsTab({
   const [saving, setSaving] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [fieldsOf, setFieldsOf] = useState<{ id: string; label: string } | null>(null)
+  const [rowsOf, setRowsOf] = useState<{ id: string; label: string } | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -154,7 +157,7 @@ export function PermissionsTab({
         <h1 className="text-lg font-semibold">{$t('Permissions')}</h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
           {$t(
-            'Le niveau accordé à un groupe sur un projet vaut pour toutes ses bases et toutes leurs tables, y compris celles créées plus tard. Les droits s’additionnent : une personne reçoit le niveau le plus élevé que lui donne l’un de ses groupes. Sous une table, « Champs » masque une colonne à un groupe ou la rend non modifiable pour lui.',
+            'Le niveau accordé à un groupe sur un projet vaut pour toutes ses bases et toutes leurs tables, y compris celles créées plus tard. Les droits s’additionnent : une personne reçoit le niveau le plus élevé que lui donne l’un de ses groupes. Sous une table, « Champs » masque une colonne à un groupe ou la rend non modifiable pour lui, et « Lignes » ne lui montre que certaines lignes.',
           )}
         </p>
       </div>
@@ -267,6 +270,7 @@ export function PermissionsTab({
                                     onFields={() =>
                                       setFieldsOf({ id: table.id, label: table.label })
                                     }
+                                    onRows={() => setRowsOf({ id: table.id, label: table.label })}
                                   />
                                 )
                               })}
@@ -292,6 +296,7 @@ export function PermissionsTab({
       )}
 
       <FieldRulesDialog table={fieldsOf} onClose={() => setFieldsOf(null)} />
+      <RowRulesDialog table={rowsOf} onClose={() => setRowsOf(null)} />
     </div>
   )
 }
@@ -369,6 +374,7 @@ function Row({
   saving,
   onLevel,
   onFields,
+  onRows,
 }: {
   readonly depth: 0 | 1 | 2
   readonly icon: LucideIcon
@@ -384,6 +390,8 @@ function Row({
   readonly onLevel: (level: AccessLevel) => void
   /** A table's fields, group by group: offered on table rows only. */
   readonly onFields?: () => void
+  /** A table's rows, group by group: offered on table rows only. */
+  readonly onRows?: () => void
 }) {
   const level: Level = cell?.level ?? 'none'
   const inherited = cell !== undefined && !cell.direct && level !== 'none' && level !== 'granular'
@@ -424,6 +432,17 @@ function Row({
         >
           <Columns3 className="size-3.5" />
           {$t('Champs')}
+        </button>
+      )}
+      {onRows !== undefined && (
+        <button
+          type="button"
+          onClick={onRows}
+          aria-label={$t('Droits des lignes de {label}', { label })}
+          className="flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <Rows3 className="size-3.5" />
+          {$t('Lignes')}
         </button>
       )}
 

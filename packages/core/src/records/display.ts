@@ -2,6 +2,7 @@ import { qualify, quoteIdentifier } from '@basedb/naming'
 import { BasedbError } from '../errors/index.js'
 import { decide } from '../rbac/decide.js'
 import { loadFields, loadGrants, loadTarget } from '../rbac/loader.js'
+import { rowWhere } from '../rbac/rows.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import type { RequestContext } from '../tx/context.js'
 import { EXPAND_BUDGETS, type ExpandRequest } from './expand.js'
@@ -318,7 +319,7 @@ export async function resolveDisplays(
     const query = `SELECT ${parts.join(', ')}
   FROM ${target.relation}
  WHERE "_id" = ANY($1::uuid[])
-   AND ( /*predicat_lignes:${targetTableId}*/ ${target.rowPredicate} );`
+   AND ( /*predicat_lignes:${targetTableId}*/ ${rowWhere(target.rowPredicate, target.relation)} );`
 
     sql.push(query)
 

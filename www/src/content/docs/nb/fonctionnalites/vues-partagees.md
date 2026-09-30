@@ -18,13 +18,13 @@ Visningens meny → **Del…**, og deretter:
 | **Offentlig** | alle som har lenken, uten konto |
 | **Innloggede medlemmer** | et medlem av arbeidsområdet, etter innlogging – ved behov bare fra bestemte grupper |
 
-![Deling av en kalender](../../../../assets/screens/partage-vue.png)
+![Deling av en kalender](../../../../assets/screens/nb/partage-vue.webp)
 
 Bryteren **Aktiv lenke** stanser lenken uten at den går tapt. Siden åpnes utenfor
 applikasjonen: ingen sidepanel, intet databasenavn, intet tabellnavn – visningen, filtrene,
 kolonnene, og ingenting annet. En kalender eller en tidslinje leses der som en kalenderapp.
 
-![Den samme kalenderen, åpnet via lenken](../../../../assets/screens/vue-partagee.png)
+![Den samme kalenderen, åpnet via lenken](../../../../assets/screens/nb/vue-partagee.webp)
 
 ## Hvem det leses på vegne av
 

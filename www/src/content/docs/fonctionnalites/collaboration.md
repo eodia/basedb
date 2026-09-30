@@ -12,7 +12,7 @@ La fiche d’une ligne a un onglet **Commentaires**, entre « Détails » et « 
 `@` pour **mentionner** un membre, Ctrl+Entrée pour envoyer. Chacun modifie ou supprime ses
 propres commentaires.
 
-![Une conversation sur un projet](../../../assets/screens/commentaires.png)
+![Une conversation sur un projet](../../../assets/screens/fr/commentaires.webp)
 
 Pouvoir lire la ligne suffit pour la commenter. Une personne mentionnée qui ne peut pas la lire
 n’est pas prévenue — et l’auteur en est averti plutôt que de croire le message parti.
@@ -30,7 +30,15 @@ La cloche, en haut à droite, compte ce qui n’est pas lu. Quatre choses y arri
 Ouvrir une notification ouvre la ligne. **Tout marquer comme lu** vide le compteur ; les
 notifications sont gardées 90 jours.
 
-![Une mention reçue](../../../assets/screens/notifications.png)
+### Par courriel
+
+Quand l’instance a un [serveur d’envoi](/basedb/hebergement/variables/#courriels), une
+notification restée **dix minutes sans être lue** part aussi par courriel : un seul courriel
+pour toutes celles qui attendent, avec un lien vers chaque ligne. Ce que vous lisez à temps ne
+part pas. Dans **Paramètres › Notifications**, chaque nature a deux interrupteurs : dans basedb, et
+par courriel.
+
+![Une mention reçue](../../../assets/screens/fr/notifications.webp)
 
 ## Temps réel
 
@@ -74,6 +82,6 @@ Ctrl+Z annule votre dernière écriture — voir [l’historique](/basedb/foncti
 
 ## Limites
 
-- Les notifications restent dans basedb : aucune n’est envoyée par courriel pour l’instant.
+- Pas de courriel sans serveur d’envoi configuré par l’exploitant.
 - Au-delà de cent lignes changées d’un coup, l’écran recharge la page entière plutôt que
   ligne par ligne.

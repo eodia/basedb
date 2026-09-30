@@ -1,6 +1,6 @@
 ---
 title: Automatizaciones
-description: Cuando cambia una fila, a una hora fija o con un clic; modificar, crear, buscar, bifurcar, preguntar a la IA, avisar, llamar a un webhook, escribir en Slack.
+description: Cuando cambia una fila, a una hora fija o con un clic; modificar, crear, buscar, bifurcar, preguntar a la IA, avisar, enviar un correo electrónico, llamar a un webhook, escribir en Slack.
 ---
 
 Una automatización dice **cuándo**, **si** y **entonces**: cuando una tarea pasa a «Fait», anotar
@@ -12,7 +12,7 @@ en un paso lo que un paso anterior ha encontrado o escrito.
 Se abren desde **Automatizaciones**, en el bloque de la base abierta en la parte inferior de la barra
 lateral, y requieren el nivel **Gestión**.
 
-![Un flujo y una de sus ejecuciones, superpuesta](../../../../assets/screens/automatisations.png)
+![Un flujo y una de sus ejecuciones, superpuesta](../../../../assets/screens/es/automatisations.webp)
 
 ## El flujo
 
@@ -49,6 +49,7 @@ Hasta treinta pasos, en orden; el primero que falla detiene los siguientes.
 | **Crear una fila** | en esta tabla o en otra de la base |
 | **Buscar una fila** | la primera fila de una tabla que cumple un filtro, para que los pasos siguientes la citen o la modifiquen |
 | **Avisar a alguien** | una [notificación](/basedb/es/fonctionnalites/collaboration/#notificaciones) a personas elegidas, o a la de un campo Persona |
+| **Enviar un correo electrónico** | a personas del equipo, a la de un campo Persona, a la dirección de un campo Correo electrónico (un cliente, un proveedor) o a direcciones escritas; el asunto y el texto citan la fila y los pasos anteriores |
 | **Llamar a un webhook** | un `POST` por HTTPS a la dirección que elijas; su respuesta se puede citar después |
 | **Enviar a Slack** | un mensaje en un canal [conectado](/basedb/es/integrations/synchronisation/#slack) |
 | **Preguntar a la IA** | una respuesta del [proveedor de IA](/basedb/es/fonctionnalites/ia/) a una instrucción que cita la fila y los pasos anteriores (redactar, resumir, clasificar), leída como un texto, un número, sí o no, una fecha o una opción de una lista |
@@ -139,7 +140,9 @@ se deshacen como las demás.
   en un solo flujo.
 - Una búsqueda da una fila, la primera; todavía no hay «para cada fila», ni
   esperas («tres días después»).
-- Sin correo electrónico, sin scripts.
+- Sin scripts. Un correo electrónico se envía en texto simple, uno por destinatario (veinte como
+  máximo por paso), a través del [servidor de envío](/basedb/es/hebergement/variables/#correos-electrónicos)
+  de la instancia; una respuesta llega a la persona propietaria de la automatización.
 - Una condición comprueba una fila: para tomar una rama según la respuesta de la IA, escríbela
   primero en un campo de la fila.
 - Una [plantilla de base](/basedb/es/fonctionnalites/modeles/) solo incluye las automatizaciones sin

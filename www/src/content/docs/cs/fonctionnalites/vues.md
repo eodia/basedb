@@ -1,9 +1,9 @@
 ---
 title: Zobrazení
-description: Mřížka, kanban, kalendář, časová osa, galerie, seznam, formulář a dotazník – společná nebo osobní.
+description: Mřížka, kanban, kalendář, časová osa, galerie, seznam, mapa, formulář, dotazník a kvíz – společná nebo osobní.
 ---
 
-Tabulku lze zobrazit **osmi způsoby**. Zobrazení nekopíruje žádná data a nedává o nic víc
+Tabulku lze zobrazit **deseti způsoby**. Zobrazení nekopíruje žádná data a nedává o nic víc
 oprávnění než samotná tabulka.
 
 :::note
@@ -20,14 +20,18 @@ mezi ně v postranním panelu.
 | **Časová osa** | pruhy mezi dvěma daty a jejich závislosti | počáteční datum |
 | **Galerie** | karty s titulním obrázkem | – |
 | **Seznam** | jeden řádek na záznam, ve sbalitelných skupinách | – |
+| **Mapa** | každý řádek umístěný na mapě | adresa, nebo zeměpisná šířka a délka |
 | **Formulář** | stránku otázek pro vytvoření řádku | – |
 | **Dotazník** | tytéž otázky, jednu na obrazovku | – |
+| **Kvíz** | otázky bodované, jednu na obrazovku, a na konci skóre | – |
 
 ## Přepínač zobrazení
 
 Nachází se vlevo od „Filtrovat“. „Všechny řádky“ je mřížka tabulky, kterou nikdo neuložil
 a nikdo ji nemůže odstranit; následují **společná zobrazení** v pořadí, které zvolil ten, kdo
-databázi buduje, a pak **Moje zobrazení**.
+databázi buduje, a pak **Moje zobrazení**. Dole **Vytvořit zobrazení** dělí deset druhů do dvou
+skupin: ty, které **zobrazují řádky**, a ty, které **sbírají odpovědi** (formulář, dotazník,
+kvíz).
 
 - **Společné zobrazení** vidí všichni. Jeho vytvoření, konfigurace, přejmenování, změna
   pořadí nebo odstranění vyžaduje úroveň **Správa**. Může být **uzamčené**: ukazuje to zámek
@@ -37,7 +41,7 @@ databázi buduje, a pak **Moje zobrazení**.
   vlastní způsoby čtení, aniž by cokoli změnil ostatním. **Duplikovat** společné zobrazení
   vytvoří jeho osobní kopii.
 
-![Galerie klientů](../../../../assets/screens/galerie.png)
+![Galerie klientů](../../../../assets/screens/cs/galerie.webp)
 
 ## Panel nástrojů
 
@@ -70,9 +74,9 @@ vyplněné, prázdné, jedinečné hodnoty, součet, průměr, minimum, maximum,
   výběru nebo vazby. S nastavením **Závisí na** – vazbou tabulky na sebe samu – spojí šipka
   každý úkol s úkoly, na kterých závisí, a je červená, když jde proti času.
 
-![Časová osa se závislostmi](../../../../assets/screens/chronologie.png)
+![Časová osa se závislostmi](../../../../assets/screens/cs/chronologie.webp)
 
-![Kalendář podle termínu](../../../../assets/screens/calendrier.png)
+![Kalendář podle termínu](../../../../assets/screens/cs/calendrier.webp)
 
 ## Galerie a seznam
 
@@ -81,10 +85,34 @@ vyplněné, prázdné, jedinečné hodnoty, součet, průměr, minimum, maximum,
 - **Seznam** ukazuje jeden řádek na záznam, **seskupený** podle jednoduchého výběru, vazby
   nebo osoby.
 
-![Seznam klientů seskupený podle odvětví](../../../../assets/screens/liste.png)
+![Seznam klientů seskupený podle odvětví](../../../../assets/screens/cs/liste.webp)
 
 V kanbanu, galerii a seznamu lze karty a řádky **řadit ručně** přetažením – až 5 000; zvolené
 řazení má před tímto pořadím přednost.
+
+## Mapa
+
+**Mapa** umístí každý řádek na jeho místo podle:
+
+- **adresy** — krátkého textu, nejlépe ve formátu **Adresa** (viz
+  [Tabulky a pole](/basedb/cs/fonctionnalites/tables-et-champs/)): „12 rue des Lilas, Lyon“;
+- nebo **zeměpisné šířky** a **zeměpisné délky**, dvou číselných polí, umístěných tak, jak
+  jsou.
+
+Špendlík má **barvu** podle jednoduchého výběru, ukazuje **název** řádku při najetí myší a
+kliknutím otevře jeho detail řádku. Mapa sleduje filtr a řazení zobrazení, až do 2 000 řádků.
+
+Adresa je **umístěna jednou provždy** geokódovací službou instance — ve výchozím nastavení
+službou OpenStreetMap —, v tempu, které tato služba udává: na nové mapě se špendlíky objevují
+postupně, přibližně jeden za sekundu, a napříště hned. Štítek počítá umístěné řádky, adresy
+ještě k umístění a ty, které se umístit nepodařilo: adresu, kterou se nepodařilo najít, je
+třeba upřesnit (město, poštovní směrovací číslo), nikdy se mlčky nevyřazuje.
+
+:::note[Co odchází z vašeho serveru]
+Text adres odchází ke geokódovací službě a prohlížeč každého čtenáře načítá mapový podklad
+z dlaždicového serveru. Provozovatel instance může zvolit jiné služby, nebo žádnou: viz
+[Proměnné prostředí](/basedb/cs/hebergement/variables/#mapy-a-adresy).
+:::
 
 ## Formulář a dotazník
 
@@ -99,6 +127,8 @@ ostatní se mění, kdykoli chcete:
 
 - **Vzhled**: osm motivů — Světlý, Jemný, Úsvit, Oceán, Les, Noc, Papír, Minimalistický —,
   barva zvýraznění, písmo, zarovnání vlevo nebo na střed;
+- **Předvyplnit dnešním datem**: otázka na datum přijde už vyplněná dnešním dnem — u data a času
+  i časem —, který člověk ponechá nebo změní;
 - **Zeptat se jen když…**: otázka se položí, jen když to vyžaduje dřívější odpověď
   („Sentiment je Negativní“, „Hodnocení je nejvýše 2“). Skrytá otázka není ani povinná, ani
   odeslaná;
@@ -110,6 +140,44 @@ otázka po druhé, která přijíždí zboku. Vše funguje i z klávesnice: **En
 písmena **A**, **B**, **C**… pro výběr, **A** nebo **N** pro ano nebo ne, číslice pro
 hodnocení — jediná volba sama přejde na další otázku. Odeslání se slaví: kreslící se fajfka a
 konfety v barvách formuláře.
+
+## Kvíz
+
+Kvíz je dotazník, který počítá body. Pod každou otázkou se uvádí její **správná odpověď** a
+to, kolik bodů je hodna — **1 bod**, pokud se nic neuvede, až do 100:
+
+| Otázka | Správná odpověď |
+|---|---|
+| seznam možností | jedna volba |
+| vícenásobný výběr | volby, které je třeba zaškrtnout, všechny a jen ony |
+| zaškrtávací políčko | ano nebo ne |
+| číslo, hodnocení | číslo |
+| datum | den |
+| krátký text, e-mail, URL | jedna nebo více přijímaných odpovědí, oddělených `;` — bez ohledu na velikost písmen a diakritiku |
+
+Otázka bez správné odpovědi — jméno, komentář — se klade, ale nehodnotí se. Aby šlo kvíz
+vytvořit, je potřeba aspoň jedna hodnocená otázka.
+
+Sekce **Bodování** určuje zbytek:
+
+- **Oprava**: **po každé otázce** — odpověď se ověří hned, zeleně, nebo červeně se správnou
+  odpovědí, a skóre nahoře obrazovky roste —, **na konci** — nejprve skóre, pak správné
+  odpovědi —, nebo **nikdy** — jen skóre, správné odpovědi zůstávají tajné;
+- **Práh úspěšnosti**: procento bodů; závěrečná obrazovka pak řekne „Uspěch!“ nebo „Tentokrát
+  ne…“;
+- **Ukládat skóre do**: číselného pole tabulky, které dostane skóre z každé odpovědi. Seřaďte
+  podle něj mřížku: to je žebříček. Pole nazvané „Score“, „Points“ nebo „Note“ se zvolí
+  automaticky.
+
+Závěrečná obrazovka ukazuje skóre ve vyplňujícím se prstenci, procenta, a pak, mimo režim
+„nikdy“, každou hodnocenou otázku s danou odpovědí a správnou. Otázka, kterou skryla dřívější
+odpověď, se do součtu nepočítá.
+
+:::note
+V aplikaci si správné odpovědi může přečíst každý, kdo smí zobrazení číst. Přes
+[sdílený odkaz](/basedb/cs/fonctionnalites/formulaires-partages/#sdílený-kvíz) neopustí server
+nikdy: opravuje a počítá je on.
+:::
 
 ## Sdílení zobrazení
 

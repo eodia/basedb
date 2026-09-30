@@ -8,7 +8,7 @@ nome. Ogni membro del database può scrivere una query, **salvarla** sotto le ta
 sé, per tutto il database o per alcuni gruppi —, e chi gestisce il database può farne una
 **vista SQL**: una vera vista PostgreSQL, disposta tra le tabelle, che leggono anche `psql` e i tuoi strumenti.
 
-![Una query salvata, aperta dalla sezione «Query»; sopra, due viste SQL disposte tra le tabelle](../../../../assets/screens/requete-sql.png)
+![Una query salvata, aperta dalla sezione «Query»; sopra, due viste SQL disposte tra le tabelle](../../../../assets/screens/it/requete-sql.webp)
 
 ## Ognuno con i propri permessi
 
@@ -22,7 +22,7 @@ risultato nella stessa griglia delle tue tabelle. Ciò che la query può leggere
   nascosto scompare da `SELECT *` e viene rifiutato se lo nomini, anche qualificando la tabella;
   una scrittura viene rifiutata. Il risultato porta il badge **I tuoi permessi**.
 
-![Il badge «I tuoi permessi»: la query vede solo le tabelle e i campi accessibili alla persona](../../../../assets/screens/sql-vos-droits.png)
+![Il badge «I tuoi permessi»: la query vede solo le tabelle e i campi accessibili alla persona](../../../../assets/screens/it/sql-vos-droits.webp)
 
 Non è lo schermo a filtrare: è PostgreSQL stesso ad applicare i tuoi permessi, colonna per colonna, su
 un ruolo che ti è proprio. Una query non può quindi mostrarti nulla che la griglia, l’API o il
@@ -36,7 +36,7 @@ copia, **Nome e condivisione…** (nella tab o nel suo menu della barra laterale
 chi la vede o la elimina — **Elimina** è anche nel suo menu, con un clic destro. Una tab che la
 mostrava conserva il suo testo.
 
-![Salvare una query: il suo nome, cosa mostra e chi la vede](../../../../assets/screens/requete-enregistrer.png)
+![Salvare una query: il suo nome, cosa mostra e chi la vede](../../../../assets/screens/it/requete-enregistrer.webp)
 
 | Ambito | Chi la vede | Chi può crearla e modificarla |
 |---|---|---|
@@ -60,7 +60,7 @@ tabelle**, con il suo colore e la sua icona come una tabella, e un piccolo **occ
 che è una vista. Un clic la apre in una tab: le sue righe nella griglia, **Aggiorna** per
 rileggerle.
 
-![La vista «Factures à encaisser», aperta dalla barra laterale](../../../../assets/screens/vue-sql.png)
+![La vista «Factures à encaisser», aperta dalla barra laterale](../../../../assets/screens/it/vue-sql.webp)
 
 Si crea dal menu **⋯** del database → **Nuova vista SQL…**, oppure da una tab SQL:
 **⋯** → **Crea vista SQL…**, e la query della tab diventa la sua definizione. La finestra di dialogo
@@ -73,7 +73,7 @@ chiede:
 - la sua **query**: un solo `SELECT`, sulle tabelle e sulle altre viste del database. PostgreSQL
   rifiuta ciò che rifiuta, e l’editor indica il punto esatto.
 
-![La finestra di dialogo di una vista SQL: etichetta e aspetto, nome tecnico, query, descrizione](../../../../assets/screens/vue-sql-dialogue.png)
+![La finestra di dialogo di una vista SQL: etichetta e aspetto, nome tecnico, query, descrizione](../../../../assets/screens/it/vue-sql-dialogue.webp)
 
 La vista si legge poi con il suo nome, dall’interfaccia come da `psql` o dal tuo strumento di BI:
 

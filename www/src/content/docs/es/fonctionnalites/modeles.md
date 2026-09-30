@@ -11,7 +11,7 @@ rellena por sí misma. La [galería de plantillas](/basedb/es/modeles/) muestra 
 
 **Nueva base** y después **Partir de una plantilla o pedírsela a la IA**: se abre la galería.
 
-![La galería de plantillas, en la aplicación](../../../../assets/screens/modeles.png)
+![La galería de plantillas, en la aplicación](../../../../assets/screens/es/modeles.webp)
 
 Cada plantilla se puede leer entera antes de usarla: sus tablas y sus campos, sus vistas,
 sus automatizaciones y la instrucción de cada uno de sus campos de IA. **Crear la base** pide

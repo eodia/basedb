@@ -18,13 +18,13 @@ The view’s menu → **Share…**, then:
 | **Public** | anyone with the link, no account needed |
 | **Signed-in members** | a member of the workspace, after signing in — optionally, from certain groups only |
 
-![Sharing a calendar](../../../../assets/screens/partage-vue.png)
+![Sharing a calendar](../../../../assets/screens/en/partage-vue.webp)
 
 The **Link active** switch suspends the link without losing it. The page opens outside the
 application: no sidebar, no base name, no table name — the view, its filters, its columns, and
 nothing else. A calendar or a timeline reads there like a calendar app.
 
-![The same calendar, opened through its link](../../../../assets/screens/vue-partagee.png)
+![The same calendar, opened through its link](../../../../assets/screens/en/vue-partagee.webp)
 
 ## On whose behalf it is read
 

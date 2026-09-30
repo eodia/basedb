@@ -130,7 +130,7 @@ export function QuestionDialog({
         setError(
           $t(
             'Un tableau de bord s’en sert ({dashboards}) : elle reste à toute la base. Retirez-la d’abord de ses cartes.',
-            { dashboards: placed.map((d) => `« ${String(d)} »`).join(', ') },
+            { dashboards: placed.map((d) => $t('« {name} »', { name: String(d) })).join(', ') },
           ),
         )
       } else {

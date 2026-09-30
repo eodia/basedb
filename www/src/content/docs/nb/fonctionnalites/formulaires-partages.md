@@ -3,12 +3,12 @@ title: Delte skjemaer
 description: Del et skjema med en lenke, offentlig eller forbeholdt innloggede medlemmer.
 ---
 
-Et skjema eller en spørreundersøkelse **deles med en lenke** `/f/<jeton>`. Den som
+Et skjema, en spørreundersøkelse eller en quiz **deles med en lenke** `/f/<jeton>`. Den som
 svarer, trenger **ingen tillatelser til tabellen**: hvert svar legger til en rad, og ingenting
 annet fra tabellen vises for vedkommende. For å vise rader i stedet for å motta dem, kan en visning
 deles [skrivebeskyttet](/basedb/nb/fonctionnalites/vues-partagees/).
 
-![Delingsdialogen](../../../../assets/screens/partage-formulaire.png)
+![Delingsdialogen](../../../../assets/screens/nb/partage-formulaire.webp)
 
 ## Hvem som kan svare
 
@@ -21,7 +21,7 @@ Lenkesiden ligger utenfor applikasjonen: ingen sidepanel, intet databasenavn, in
 Den bærer skjemaets utseende – temaet, fargen, skriften –, og spør bare om spørsmålene som de
 tidligere svarene krever.
 
-![Et offentlig skjema](../../../../assets/screens/formulaire-public.png)
+![Et offentlig skjema](../../../../assets/screens/nb/formulaire-public.webp)
 
 ## Hvem svaret skrives på vegne av
 
@@ -47,6 +47,21 @@ Dialogen styrer:
 - **Slutt å dele**: lenken forsvinner, svarene blir liggende i tabellen.
 
 Et stengt skjema sier det med én setning, før det i det hele tatt ber om innlogging.
+
+## En delt quiz
+
+Siden til en quiz mottar **ingen riktige svar**: bare hva hvert spørsmål er verdt. Det er
+serveren som retter.
+
+- Rettet **etter hvert spørsmål** sender siden serveren hvert vurderte svar, i det øyeblikket det
+  blir gitt, og får da vite om det er riktig — og hvilket som var det.
+- Ved innsending teller serveren poengsummen **ut fra de mottatte svarene** og skriver den i
+  feltet som er valgt for den, hvis det finnes et, og hvis den som har publisert delingen kan
+  skrive i det. Siden viser poengsummen den får tilbake, og rettingen, med mindre quizen sier
+  «aldri».
+
+En poengsum leses altså i tabellen slik serveren har talt den, ikke slik en side ville ha
+oppgitt den.
 
 ## Begrensninger
 

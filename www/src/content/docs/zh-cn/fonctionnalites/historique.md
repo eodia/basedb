@@ -5,7 +5,7 @@ description: 每一次写入，无论来自何处，都附带修改前的值。
 
 basedb 会记录**每一次写入**的历史，无论来自何处：界面、API、MCP 智能体、公开表单——甚至是在 `psql` 中手写的 SQL 查询。
 
-![数据库的历史记录](../../../../assets/screens/historique.png)
+![数据库的历史记录](../../../../assets/screens/zh-cn/historique.webp)
 
 ## 如何捕获
 

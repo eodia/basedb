@@ -6,7 +6,7 @@ description: Anunțați un canal Slack, conectați un calendar, țineți un tabe
 Ecranul **Integrări** al unei baze se deschide din meniul profilului, din stânga jos. Cere
 nivelul **Gestionare** și reunește ce leagă baza de restul instrumentelor dumneavoastră.
 
-![Ecranul Integrări al unei baze](../../../../assets/screens/integrations.png)
+![Ecranul Integrări al unei baze](../../../../assets/screens/ro/integrations.webp)
 
 ## Slack
 

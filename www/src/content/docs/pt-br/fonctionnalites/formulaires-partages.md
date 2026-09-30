@@ -3,12 +3,12 @@ title: Formulários compartilhados
 description: Compartilhar um formulário por um link, público ou reservado aos membros conectados.
 ---
 
-Um formulário ou um questionário é **compartilhado por um link** `/f/<jeton>`. A pessoa que
+Um formulário, um questionário ou um quiz é **compartilhado por um link** `/f/<jeton>`. A pessoa que
 responde não precisa de **nenhuma permissão na tabela**: cada resposta adiciona uma linha, e nada
 mais da tabela é mostrado a ela. Para mostrar linhas em vez de recebê-las, uma visão
 é compartilhada [somente para leitura](/basedb/pt-br/fonctionnalites/vues-partagees/).
 
-![A caixa de diálogo de compartilhamento](../../../../assets/screens/partage-formulaire.png)
+![A caixa de diálogo de compartilhamento](../../../../assets/screens/pt-br/partage-formulaire.webp)
 
 ## Quem pode responder
 
@@ -21,7 +21,7 @@ A página do link fica fora do aplicativo: nem barra lateral, nem nome da base, 
 Ela usa a aparência do formulário — seu tema, sua cor, sua fonte —, e só faz as perguntas que
 as respostas anteriores exigem.
 
-![Um formulário público](../../../../assets/screens/formulaire-public.png)
+![Um formulário público](../../../../assets/screens/pt-br/formulaire-public.webp)
 
 ## Em nome de quem a resposta é escrita
 
@@ -47,6 +47,21 @@ A caixa de diálogo configura:
 - **Parar de compartilhar**: o link desaparece, as respostas ficam na tabela.
 
 Um formulário fechado informa isso em uma frase, antes mesmo de pedir um login.
+
+## Um quiz compartilhado
+
+A página de um quiz não recebe **nenhuma resposta correta**: apenas o que vale cada pergunta.
+É o servidor que corrige.
+
+- Corrigida **depois de cada pergunta**, a página envia a ele cada resposta pontuada no momento
+  em que é dada, e então descobre se ela está certa — e qual era a certa.
+- No envio, o servidor conta a pontuação **a partir das respostas recebidas** e a escreve no
+  campo escolhido para isso, se houver um e a pessoa que publicou o compartilhamento puder
+  escrever nele. A página exibe a pontuação que ele devolve, e a correção, a menos que o quiz
+  diga “nunca”.
+
+Portanto, uma pontuação se lê na tabela como o servidor a contou, não como uma página a teria
+anunciado.
 
 ## Limites
 

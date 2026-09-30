@@ -27,21 +27,26 @@ npm run check     # vérification des types
 | `src/content/docs/` | la documentation (Markdown), une page par fichier ; ses traductions sous `src/content/docs/<langue>/` |
 | `src/pages/modeles/` | la galerie des modèles de base, une page par modèle, et `catalogue.json` que les instances lisent |
 | `../packages/templates/catalog/` | les modèles eux-mêmes, un fichier JSON par modèle — hors de `www/`, partagés avec l’application |
-| `src/assets/screens/` | les captures de l’interface, optimisées en WebP à la construction |
+| `src/assets/screens/<langue>/` | les captures de l’interface, une série par langue (WebP) ; `src/lib/screens.ts` choisit celle de la page |
 | `src/styles/landing.css` | les jetons de couleur et de typographie de l’accueil |
 | `src/styles/starlight-custom.css` | le thème de la documentation |
 | `astro.config.mjs` | l’adresse du site et la barre latérale de la documentation |
 
 ## Les captures
 
-Elles viennent de l’interface réelle, sur la base de démonstration « Démo : Atelier Lumen »
-(le modèle `demo`), à 1440 × 900 et en densité ×2, avec des personnes fictives (Léa Martin,
-Camille Durand). Pour les refaire, démarrez la pile (`docker compose up -d`), ouvrez la base
-de démonstration depuis un projet vide, donnez-lui un peu d’activité — quelques modifications,
-un commentaire avec mention, une écriture en SQL direct, un environnement « Recette » — puis
-remplacez les fichiers de `src/assets/screens/` en gardant leurs noms. Masquez le badge du
-serveur de développement de Next (`nextjs-portal`) s’il est visible, et remplacez l’adresse
-`localhost` des liens de partage par une adresse neutre.
+Elles viennent de l’interface réelle, dans chacune des vingt langues : une instance vierge
+par langue, l’interface réglée dans cette langue, la base de démonstration (le modèle `demo`)
+installée depuis l’écran — donc traduite —, puis la même activité partout : une seconde
+personne aux droits restreints, des modifications, trois commentaires avec mentions, une
+écriture en SQL direct, une automatisation dessinée en graphe et ses exécutions (dont une qui
+passe par l’IA), une question, des requêtes et des vues SQL, des partages, un environnement de
+test. Les personnes sont fictives, avec des noms courants dans la langue (Léa Martin et
+Camille Durand en français). Format : 1440 × 900 en densité ×2, en WebP (qualité 82), dans
+`src/assets/screens/<langue>/` sous les mêmes 28 noms ; les adresses des liens de partage
+sont remplacées par `https://basedb.example.com`.
+
+Une image manquante dans une langue se replie sur la française (`src/lib/screens.ts` pour
+l’accueil ; dans la documentation, chaque page cite l’image de son dossier).
 
 ## Publier
 

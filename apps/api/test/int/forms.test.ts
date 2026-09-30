@@ -156,7 +156,7 @@ describe('a public form', () => {
 
     const sent = await answer(token, { nom: 'Ada', societe: 'Analytique' })
     expect(sent.status).toBe(201)
-    expect(await read(sent)).toEqual({ data: { received: true } })
+    expect(await read(sent)).toEqual({ data: { received: true, quiz: null } })
 
     const unknown = await answer(token, { nom: 'Ada', _created_by: 'x' })
     expect(unknown.status).toBe(400)

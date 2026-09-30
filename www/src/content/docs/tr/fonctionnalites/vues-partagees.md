@@ -19,13 +19,13 @@ Görünümün menüsü → **Paylaş…**, ardından:
 | **Herkese açık** | bağlantıya sahip herkes, hesap gerekmeden |
 | **Oturum açmış üyeler** | çalışma alanının bir üyesi, oturum açtıktan sonra — gerekirse yalnızca belirli gruplardan |
 
-![Bir takvimin paylaşımı](../../../../assets/screens/partage-vue.png)
+![Bir takvimin paylaşımı](../../../../assets/screens/tr/partage-vue.webp)
 
 **Bağlantı etkin** anahtarı bağlantıyı kaybetmeden askıya alır. Sayfa uygulamanın dışında
 açılır: ne kenar çubuğu, ne veritabanı adı, ne tablo adı — görünüm, filtreleri, sütunları ve
 başka hiçbir şey. Bir takvim ya da zaman çizelgesi orada bir ajanda gibi okunur.
 
-![Aynı takvim, bağlantısıyla açılmış hâli](../../../../assets/screens/vue-partagee.png)
+![Aynı takvim, bağlantısıyla açılmış hâli](../../../../assets/screens/tr/vue-partagee.webp)
 
 ## Kimin adına okunur
 

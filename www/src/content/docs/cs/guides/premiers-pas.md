@@ -41,10 +41,12 @@ Později se stejným způsobem přidá vzorec (`DAYS([Échéance], TODAY())`), v
 (město klienta) nebo agregace (celková částka na klienta) – viz
 [Tabulky a pole](/basedb/cs/fonctionnalites/tables-et-champs/).
 
-Můžete také **importovat soubor** CSV nebo JSON: import odhadne typy, nechá vás je opravit,
-vytvoří tabulku nebo doplní existující a řádek po řádku sdělí, co odmítá.
+Můžete také **importovat soubor** — sešit Excelu (`.xlsx`), CSV nebo JSON: import odhadne
+typy, nechá vás je opravit, vytvoří tabulku nebo doplní existující a řádek po řádku sdělí, co
+odmítá. Z vícelistového sešitu zvolíte list; data, částky a zaškrtávací pole se přebírají tak,
+jak je uchovává Excel, a vzorec dá svou hodnotu.
 
-![Nabídka databáze](../../../../assets/screens/menu-base.png)
+![Nabídka databáze](../../../../assets/screens/cs/menu-base.webp)
 
 ## 3. Zadávání a filtrování
 
@@ -60,7 +62,7 @@ Přepínač zobrazení vlevo od „Filtrovat“ nabízí „Všechny řádky“ 
 Vytvořte **kanban** seskupený podle pole „Statut“: přetažením karty z jednoho sloupce do
 druhého se řádek změní.
 
-![Kanban podle stavu](../../../../assets/screens/kanban.png)
+![Kanban podle stavu](../../../../assets/screens/cs/kanban.webp)
 
 ## 5. Sdílení formuláře
 

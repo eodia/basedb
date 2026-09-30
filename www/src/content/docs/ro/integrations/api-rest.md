@@ -33,7 +33,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | o expresie lizibilă: `statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | coloanele de returnat |
-| `limit`, `cursor` | paginare prin cursor criptat (`next_cursor` în răspuns) |
+| `limit`, `after` | paginare prin cursor criptat: `meta.next_cursor` al unei pagini, transmis ca `after`, dă pagina următoare (`meta.has_next_page`) |
 | `links=display` | relațiile cu valoarea lor de afișare |
 | `count=exact` | totalul, plafonat la 100 000 |
 | `variables=raw` | textele lungi așa cum au fost scrise, inclusiv `{{colonne}}`, în loc de [valorile din rând](/basedb/ro/fonctionnalites/tables-et-champs/#text-formatat-și-variabile) |
@@ -85,4 +85,4 @@ doi cititori obțin două versiuni —, scrisă **în limba ecranului dumneavoas
 OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Numele, căile și codurile de
 eroare rămân aceleași în toate limbile.
 
-![Documentația generată a unei baze](../../../../assets/screens/documentation-api.png)
+![Documentația generată a unei baze](../../../../assets/screens/ro/documentation-api.webp)

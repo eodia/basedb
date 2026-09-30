@@ -67,6 +67,45 @@ Se [Konton och inloggning](/basedb/sv/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | – | inloggningsuppgifter |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` för värdbaserad adressering |
 
+## E-post
+
+Utan en sändningsserver skickar basedb ingen e-post. Med den skickas aviseringar som har varit
+olästa i tio minuter (var och en väljer vilka under **Inställningar › Aviseringar**),
+e-postmeddelandena från automatiseringarnas steg **Skicka e-post**, och länken till ett **glömt
+lösenord**. Länkarna pekar mot `BASEDB_PUBLIC_URL`; utan den bär ett e-postmeddelande ingen länk.
+
+| Variabel | Standard | Roll |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | – | SMTP-servern: din egen e-postserver eller en sändningstjänst |
+| `BASEDB_SMTP_PORT` | `587` | `465` för en direkt krypterad anslutning |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` på port 465) | `none` bara för ett relä på samma maskin: annars skulle lösenordet skickas i klartext |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | – | inloggningsuppgifterna för sändningskontot, om det kräver några |
+| `BASEDB_MAIL_FROM` | – | obligatorisk med `BASEDB_SMTP_HOST`: avsändaren, `basedb <no-reply@exemple.fr>` |
+
+Vid start berättar loggen läget: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` Ett e-postmeddelande som servern avvisar görs om efter 1, 5, 30,
+120 och sedan 360 minuter.
+
+## Kartor och adresser
+
+Vyn **Karta** placerar en adress med hjälp av en geokodningstjänst: OpenStreetMaps (Nominatim)
+som standard, tillfrågad en gång per adress, högst en förfrågan i sekunden, varje svar sparat.
+Kartunderlaget består av **tiles** som varje läsares webbläsare hämtar direkt.
+
+| Variabel | Standard | Roll |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | en annan tjänst som talar samma protokoll (en egen Nominatim); `off`: ingen, adresserna lämnar aldrig instansen och bara latitud och longitud placerar raderna |
+| `BASEDB_MAP_TILES` | OpenStreetMaps tiles | en annan tile-server, mall `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | den hänvisning som denna server kräver, längst ned till höger på kartan |
+
+Vid start berättar loggen vilken tjänst som används: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## PDF-dokument
+
+| Variabel | Standard | Roll |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | avbildningens Noto-typsnitt | en egen mapp, monterad i containern, som innehåller `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic`, och för kinesiska, japanska och koreanska `NotoSansCJK-Regular.ttc` och `-Bold.ttc` |
+
 ## Databasmallar
 
 | Variabel | Standard | Roll |

@@ -41,11 +41,13 @@ Mai târziu, o formulă (`DAYS([Échéance], TODAY())`), o căutare (orașul cli
 o agregare (suma totală pe client) se adaugă în același mod — consultați
 [Tabele și câmpuri](/basedb/ro/fonctionnalites/tables-et-champs/).
 
-Puteți și **importa un fișier** CSV sau JSON: importul ghicește tipurile, vă lasă să le
-corectați, creează tabelul sau completează un tabel existent și spune, rând cu rând, ce
-refuză.
+Puteți și **importa un fișier** — un registru de lucru Excel (`.xlsx`), un CSV sau un JSON:
+importul ghicește tipurile, vă lasă să le corectați, creează tabelul sau completează un tabel
+existent și spune, rând cu rând, ce refuză. Dintr-un registru de lucru cu mai multe foi,
+alegeți foaia; datele, sumele și casetele de selectare sunt reluate așa cum le ține Excel, iar o
+formulă își dă valoarea.
 
-![Meniul unei baze](../../../../assets/screens/menu-base.png)
+![Meniul unei baze](../../../../assets/screens/ro/menu-base.webp)
 
 ## 3. Introduceți și filtrați
 
@@ -61,7 +63,7 @@ Selectorul de vizualizări, în stânga butonului „Filtrați”, propune „To
 vizualizările dumneavoastră. Creați un **kanban** grupat după „Statut”: tragerea unui card
 dintr-o coloană în alta modifică rândul.
 
-![Un kanban după statut](../../../../assets/screens/kanban.png)
+![Un kanban după statut](../../../../assets/screens/ro/kanban.webp)
 
 ## 5. Partajați un formular
 

@@ -7,7 +7,7 @@ basedb zeichnet **jeden Schreibvorgang** im Verlauf auf, woher er auch kommt: au
 der API, von einem MCP-Agenten, aus einem öffentlichen Formular – und sogar aus einer SQL-Abfrage,
 die von Hand in `psql` geschrieben wurde.
 
-![Der Verlauf einer Datenbank](../../../../assets/screens/historique.png)
+![Der Verlauf einer Datenbank](../../../../assets/screens/de/historique.webp)
 
 ## Wie er erfasst wird
 

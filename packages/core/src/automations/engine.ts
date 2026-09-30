@@ -11,6 +11,7 @@ import { wantsNotification } from '../collab/notifications.js'
 import { canReadTable, contextOf, emitLive } from '../collab/signals.js'
 import { BasedbError } from '../errors/index.js'
 import { postToSlack, slackUrlOf } from '../integrations/slack.js'
+import { isAddress } from '../mail/message.js'
 import { requireOnBase } from '../rbac/require.js'
 import { createRecord } from '../records/create.js'
 import { listRecords } from '../records/list.js'
@@ -390,6 +391,8 @@ export interface Deps {
   readonly targets: TargetPolicy
   /** Opens a Slack connection's sealed address (chapter 19 §1). */
   readonly instanceKey: () => string
+  /** Whether the operator configured a mail transport: without one, an e-mail step fails. */
+  readonly mailAvailable?: boolean
   /**
    * The AI provider's transport, handed in by the process that runs the worker — the API.
    * Without it, an AI step fails (`AI_NOT_CONFIGURED`) and says why.
@@ -399,6 +402,8 @@ export interface Deps {
 
 /** A run under way: who acts, what it holds so far, what it has done. */
 interface Run extends Citable {
+  /** The run's identifier: what a queued mail is traced to. */
+  readonly runId: string
   readonly pools: Pools
   readonly deps: Deps
   readonly ctx: RequestContext
@@ -470,6 +475,7 @@ async function runOne(
   })
 
   const run: Run = {
+    runId: claimed.id,
     pools,
     deps,
     ctx,
@@ -707,6 +713,92 @@ async function perform(
       const answer = step.answer === 'number' ? Number(read) : read
       run.data.set(step.id, { reponse: answer })
       return { status: 'succeeded', detail: `${[...text].length}` }
+    }
+    case 'email': {
+      // Queued, not sent: the mail loop hands it to the operator's relay, and retries.
+      if (run.deps.mailAvailable !== true) {
+        throw new BasedbError('MAIL_NOT_CONFIGURED', { details: { reason: 'transport_absent' } })
+      }
+      const held = step.record === null ? undefined : run.rows.get(step.record)
+      const row = held?.row ?? null
+      const people = new Set(step.users)
+      if (step.userField !== null && row !== null) {
+        const person = row[step.userField]
+        if (typeof person === 'string' && person !== '') people.add(person)
+      }
+      /** By address, lower-cased: one mail per mailbox, whoever named it. */
+      const recipients = new Map<string, { address: string; user: string | null }>()
+      const add = (address: string, user: string | null) => {
+        const key = address.toLowerCase()
+        // A person of the tenant keeps their account; otherwise the first spelling stays.
+        if (!recipients.has(key) || user !== null) recipients.set(key, { address, user })
+      }
+      for (const address of step.addresses) add(address, null)
+      if (step.emailField !== null && row !== null) {
+        const written = row[step.emailField]
+        if (typeof written === 'string' && isAddress(written.trim())) add(written.trim(), null)
+      }
+      const subject =
+        render(step.subject, run).replace(/\s+/g, ' ').trim().slice(0, 300) || automation.label
+      const body = render(step.message, run).slice(0, 20_000)
+      const queued = await pools.withConnection('catalog', async (exec) => {
+        const [owner] = await exec.query<{ email: string }>(
+          'SELECT email FROM _basedb.app_user WHERE id = $1',
+          [automation.owner.id],
+        )
+        // A person of the tenant, by their sign-in address — if they may read what the mail
+        // is about, as for a notification.
+        if (people.size > 0) {
+          const found = await exec.query<{ id: string; email: string }>(
+            `SELECT id::text, email FROM _basedb.app_user
+              WHERE id = ANY($1::uuid[]) AND disabled_at IS NULL AND deleted_at IS NULL`,
+            [[...people]],
+          )
+          for (const person of found) {
+            if (
+              held !== undefined &&
+              !(await canReadTable(
+                exec,
+                contextOf(ctx.tenantId, person.id, ctx.requestId),
+                held.table,
+              ))
+            )
+              continue
+            add(person.email, person.id)
+          }
+        }
+        await exec.query('BEGIN')
+        try {
+          for (const r of recipients.values()) {
+            // The answer goes to whoever owns the automation, not to the relay's address.
+            await exec.query(
+              `INSERT INTO _basedb.mail_outbox
+                 (tenant_id, origin, automation_id, run_id, user_id, recipient, reply_to,
+                  subject, body_text)
+               SELECT b.tenant_id, 'automation', $1, $2, $3, $4, $5, $6, $7
+                 FROM _basedb.base b WHERE b.id = $8`,
+              [
+                automation.id,
+                run.runId,
+                r.user,
+                r.address,
+                owner?.email ?? null,
+                subject,
+                body,
+                automation.baseId,
+              ],
+              'insert',
+            )
+          }
+          await exec.query('COMMIT')
+        } catch (error) {
+          await exec.query('ROLLBACK').catch(() => undefined)
+          throw error
+        }
+        return recipients.size
+      })
+      if (queued === 0) return { status: 'skipped', detail: 'aucun_destinataire' }
+      return { status: 'succeeded', detail: `${queued}` }
     }
     case 'slack': {
       const url = await pools.withConnection('catalog', (exec) =>

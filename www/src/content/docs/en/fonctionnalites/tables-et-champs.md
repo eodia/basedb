@@ -22,7 +22,7 @@ Every basedb table is a PostgreSQL table; every field, a typed column. The label
 | Single select | `text` + `CHECK` | a color, icon or image per option |
 | Multiple select | `text[]` + `CHECK` | filterable with the array operators |
 | Email | `text` + `CHECK` | an address checked by the database, opened in one click |
-| Phone, Barcode | `text` | a short text and its format: call link, monospace |
+| Phone, Barcode, Address | `text` | a short text and its format: call link, monospace, link to the map |
 | URL | `text` + `CHECK` | completed as you type (`exemple.fr` → `https://exemple.fr`) |
 | Person | `uuid` | a member of the workspace; assigning them [notifies them](/basedb/en/fonctionnalites/collaboration/) |
 | Autonumber | `bigint` identity | also numbers the rows already there; nobody types it |
@@ -38,7 +38,7 @@ Every table also carries its **system columns**: `_id` (UUID v7), `_created_at`,
 the API. The grid files them under **System information**, in the columns menu: they are on
 every table, and useful on few.
 
-![A table’s grid, with a computed duration, a lookup and a count](../../../../assets/screens/grille.png)
+![A table’s grid, with a computed duration, a lookup and a count](../../../../assets/screens/en/grille.webp)
 
 ## Constraints enforced by the database
 
@@ -55,8 +55,8 @@ Foreign-key constraints:
 
 ## Display formats
 
-Currency, Percent, Duration, Rating, Phone and Barcode are chosen like types, but they are
-**formats**: the column stays a number or a text, only the way it reads changes.
+Currency, Percent, Duration, Rating, Phone, Barcode and Address are chosen like types, but they
+are **formats**: the column stays a number or a text, only the way it reads changes.
 
 | Format | On | Reads and is entered as |
 |---|---|---|
@@ -66,9 +66,26 @@ Currency, Percent, Duration, Rating, Phone and Barcode are chosen like types, bu
 | Rating | a number | from 1 to 10 stars, set in one click |
 | Phone | a short text | a call link |
 | Barcode | a short text | in monospace |
+| Address | a short text | a link to the map; in the row details, **Find address** offers matching addresses, written in full; the [Map](/basedb/en/fonctionnalites/vues/#map) view places it |
 
 A format can be changed afterward (**Display**, when editing the field) without touching the
 stored values. It does not bound the value: a rating of 7 on a 5-star scale stays 7.
+
+## Default values
+
+In a field’s editing panel, **Default value** sets what a row created without it receives:
+
+| Choice | On | The created row receives |
+|---|---|---|
+| A fixed value | most types | the chosen value — a status “New”, a priority of 3 |
+| Today’s date | a date | the day it was created, in the person’s time zone |
+| The moment of creation | a date and time | the exact time |
+| The person creating the row | a person | whoever created it — “Owner: me” |
+
+The new row details and forms open prefilled; clearing the field leaves it empty. The default
+applies to every creation — interface, API, MCP, import, shared form, automation — including on
+a field the person cannot edit: it is the table’s rule. Existing rows do not change, and an
+insert in direct SQL receives none of it: basedb applies it, not the column.
 
 ## Formulas
 
@@ -172,7 +189,7 @@ Rich text cannot be filled by AI: a model writes text, not sanitized HTML.
 The base’s **Schema** screen — in its **⋯** menu in the sidebar — lists the tables and their fields: add, rename, make required, reorder,
 describe, designate the display field.
 
-![A base’s Schema screen](../../../../assets/screens/structure.png)
+![A base’s Schema screen](../../../../assets/screens/en/structure.webp)
 
 Changing the schema requires the **Manage** level. Without it, the screen can be viewed and
 offers nothing: no button, no pencil, no handle — whether a field is required and which one is

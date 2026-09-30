@@ -1,5 +1,6 @@
 import type { Field, FieldOption } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
+import type { Sheet } from '@/lib/xlsx'
 
 /**
  * Reading a file into a table of cells, and turning cells into values a field accepts.
@@ -15,11 +16,14 @@ import { $t } from '@/lib/i18n'
  * for the person to change.
  */
 
-/** A cell as read: text from a CSV, anything a JSON value can be, or nothing. */
+/**
+ * A cell as read: text from a CSV, anything a JSON value can be, what an Excel cell holds —
+ * a date there is already ISO text —, or nothing.
+ */
 export type Cell = string | number | boolean | null
 
 export interface ParsedTable {
-  readonly format: 'csv' | 'json'
+  readonly format: 'csv' | 'json' | 'xlsx'
   /** The separator that was used, for a delimited text. */
   readonly delimiter?: string
   readonly columns: readonly string[]
@@ -165,6 +169,11 @@ function fromRows(
   if (rows.length === 0)
     throw new ImportError($t('Le fichier n’a qu’une ligne d’en-tête, aucune donnée.'))
   return { format, delimiter, columns, rows }
+}
+
+/** One sheet of a workbook, its first row the header or not (`xlsx.ts` reads the file). */
+export function parseSheet(sheet: Sheet, options: { hasHeader: boolean }): ParsedTable {
+  return fromRows('xlsx', sheet.rows, options.hasHeader)
 }
 
 export function parseCsvText(

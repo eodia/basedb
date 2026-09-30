@@ -209,12 +209,12 @@ export const OP_LABELS: Readonly<Record<FilterOp, string>> = {
 }
 
 export const UNIT_LABELS: Readonly<Record<TemporalUnit, string>> = {
-  minute: 'minute',
-  hour: 'heure',
-  day: 'jour',
-  week: 'semaine',
-  month: 'mois',
-  quarter: 'trimestre',
+  minute: $t('minute||unité de temps'),
+  hour: $t('heure||unité de temps'),
+  day: $t('jour||unité de temps'),
+  week: $t('semaine||unité de temps'),
+  month: $t('mois||unité de temps'),
+  quarter: $t('trimestre||unité de temps'),
   year: $t('année'),
   hour_of_day: $t('heure du jour'),
   day_of_week: $t('jour de la semaine'),

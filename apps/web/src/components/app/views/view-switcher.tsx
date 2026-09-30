@@ -202,7 +202,8 @@ export function ViewSwitcher({
                       setDeleting(view)
                     }}
                     onShare={
-                      onShare !== undefined && canManage
+                      // A map is not shared: a public page has no geocoding to place its rows.
+                      onShare !== undefined && canManage && view.kind !== 'map'
                         ? () => {
                             setOpen(false)
                             onShare(view)
@@ -250,33 +251,27 @@ export function ViewSwitcher({
           )}
 
           <div className="my-1 border-t" />
-          {
-            <div className="p-1">
-              <p className="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                {canManage ? $t('Créer une vue') : $t('Créer une vue personnelle')}
-              </p>
-              <div className="grid grid-cols-3 gap-1">
-                {VIEW_KINDS.map((kind) => {
-                  const KindIcon = KIND_INFO[kind].icon
-                  return (
-                    <Hint key={kind} label={KIND_INFO[kind].summary}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpen(false)
-                          onCreate(kind)
-                        }}
-                        className="flex flex-col items-center gap-1 rounded-md px-1 py-2 text-[11px] hover:bg-accent"
-                      >
-                        <KindIcon className="size-4 text-muted-foreground" />
-                        {KIND_INFO[kind].label}
-                      </button>
-                    </Hint>
-                  )
-                })}
-              </div>
-            </div>
-          }
+          <div className="px-1 pt-1.5 pb-1">
+            <p className="px-1.5 pb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {canManage ? $t('Créer une vue') : $t('Créer une vue personnelle')}
+            </p>
+            <KindGroup
+              title={$t('Voir les lignes')}
+              kinds={VIEW_KINDS.filter((k) => KIND_INFO[k].data)}
+              onPick={(kind) => {
+                setOpen(false)
+                onCreate(kind)
+              }}
+            />
+            <KindGroup
+              title={$t('Recueillir des réponses')}
+              kinds={VIEW_KINDS.filter((k) => !KIND_INFO[k].data)}
+              onPick={(kind) => {
+                setOpen(false)
+                onCreate(kind)
+              }}
+            />
+          </div>
         </PopoverContent>
       </Popover>
 
@@ -532,5 +527,50 @@ function SortableView({
         />
       )}
     </div>
+  )
+}
+
+/**
+ * One family of views to create: those that show the rows, those that ask for one. Each
+ * kind a tile — its icon in its colour, its name under it —, its sentence on hover.
+ */
+function KindGroup({
+  title,
+  kinds,
+  onPick,
+}: {
+  readonly title: string
+  readonly kinds: readonly ViewKind[]
+  readonly onPick: (kind: ViewKind) => void
+}) {
+  return (
+    <section className="mt-1.5">
+      <h3 className="px-1.5 pb-1 text-xs text-muted-foreground">{title}</h3>
+      <div className="grid grid-cols-3 gap-0.5">
+        {kinds.map((kind) => {
+          const info = KIND_INFO[kind]
+          const KindIcon = info.icon
+          return (
+            <Hint key={kind} label={info.summary}>
+              <button
+                type="button"
+                onClick={() => onPick(kind)}
+                className="group flex flex-col items-center gap-1.5 rounded-lg px-1 pt-2.5 pb-2 text-xs font-medium outline-none transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                <span
+                  className={cn(
+                    'flex size-9 items-center justify-center rounded-[10px] transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:scale-110 group-active:scale-95',
+                    info.tone,
+                  )}
+                >
+                  <KindIcon className="size-[18px]" />
+                </span>
+                {info.label}
+              </button>
+            </Hint>
+          )
+        })}
+      </div>
+    </section>
   )
 }

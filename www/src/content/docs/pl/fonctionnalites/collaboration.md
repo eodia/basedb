@@ -12,7 +12,7 @@ Szczegóły wiersza mają zakładkę **Komentarze**, między „Szczegóły” a
 aby **wspomnieć** członka zespołu, Ctrl+Enter, aby wysłać. Każdy może edytować i usuwać własne
 komentarze.
 
-![Rozmowa o projekcie](../../../../assets/screens/commentaires.png)
+![Rozmowa o projekcie](../../../../assets/screens/pl/commentaires.webp)
 
 Aby skomentować wiersz, wystarczy móc go czytać. Wspomniana osoba, która nie może go czytać,
 nie zostaje powiadomiona – a autor jest o tym informowany, zamiast sądzić, że wiadomość dotarła.
@@ -29,7 +29,14 @@ Dzwonek w prawym górnym rogu liczy to, co nieprzeczytane. Trafiają tam cztery 
 Otwarcie powiadomienia otwiera wiersz. **Oznacz wszystkie jako przeczytane** zeruje licznik;
 powiadomienia są przechowywane przez 90 dni.
 
-![Otrzymana wzmianka](../../../../assets/screens/notifications.png)
+### E-mailem
+
+Gdy instancja ma [serwer wysyłki](/basedb/pl/hebergement/variables/#e-maile), powiadomienie
+pozostałe **dziesięć minut bez przeczytania** trafia też e-mailem: jeden e-mail na wszystkie
+czekające, z linkiem do każdego wiersza. To, co przeczytasz na czas, nie zostanie wysłane. W
+**Ustawienia › Powiadomienia** każdy rodzaj ma dwa przełączniki: w basedb i e-mailem.
+
+![Otrzymana wzmianka](../../../../assets/screens/pl/notifications.webp)
 
 ## Czas rzeczywisty
 
@@ -73,6 +80,6 @@ Ctrl+Z cofa twój ostatni zapis – zobacz [historię](/basedb/pl/fonctionnalite
 
 ## Ograniczenia
 
-- Powiadomienia pozostają w basedb: na razie żadne nie jest wysyłane e-mailem.
+- Żaden e-mail nie wychodzi, jeśli administrator serwera nie skonfigurował serwera wysyłki.
 - Przy ponad stu wierszach zmienionych naraz ekran przeładowuje całą stronę zamiast
   aktualizować wiersz po wierszu.

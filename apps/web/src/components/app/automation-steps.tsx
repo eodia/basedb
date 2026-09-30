@@ -762,6 +762,18 @@ export function StepSettings({
         </div>
       )
     }
+    case 'email':
+      return (
+        <EmailSettings
+          step={step}
+          draft={draft}
+          base={base}
+          members={members}
+          rows={rows}
+          groups={groups}
+          onChange={onChange}
+        />
+      )
     case 'webhook':
       return (
         <div className="space-y-5">
@@ -945,6 +957,145 @@ function OutputHint({ step }: { readonly step: DraftStep }) {
 }
 
 /** « Envoyer sur Slack » : a connection of the base, and a message composed from what came before. */
+/**
+ * A mail, by the instance's relay (chapter 17 §1.3): to people of the team, the person or
+ * the address a row names, addresses written out. An answer goes to whoever owns the
+ * automation. Said up front when the instance cannot send mail: the step would fail.
+ */
+function EmailSettings({
+  step,
+  draft,
+  base,
+  members,
+  rows,
+  groups,
+  onChange,
+}: {
+  readonly step: Extract<DraftStep, { kind: 'email' }>
+  readonly draft: Draft
+  readonly base: DescribedBase
+  readonly members: readonly Member[]
+  readonly rows: readonly RowChoice[]
+  readonly groups: readonly CiteGroup[]
+  readonly onChange: (next: DraftStep) => void
+}) {
+  const [available, setAvailable] = useState<boolean | null>(null)
+  useEffect(() => {
+    let live = true
+    api
+      .resume()
+      .then((me) => live && setAvailable(me?.mailAvailable === true))
+      .catch(() => live && setAvailable(null))
+    return () => {
+      live = false
+    }
+  }, [])
+  const people = members.filter((m) => !m.disabled)
+  const table = step.record === '' ? null : rowTableOf(draft, step.record)
+  const fields = table === null ? [] : fieldsOfTable(base, table)
+  return (
+    <div className="space-y-5">
+      {available === false && (
+        <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+          {$t(
+            'Cette instance n’envoie pas de courriels : aucun serveur d’envoi n’y est configuré. L’étape échouera tant que l’exploitant n’en aura pas réglé un.',
+          )}
+        </p>
+      )}
+      {rows.length > 0 && (
+        <RowSelect
+          choices={rows}
+          value={step.record}
+          onChange={(record) => onChange({ ...step, record, userField: '', emailField: '' })}
+          label={$t('À propos de la ligne')}
+          none={$t('Aucune ligne')}
+        />
+      )}
+      <Section title={$t('À qui')}>
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+          {people.map((m) => (
+            <label
+              key={m.id}
+              htmlFor={`email-${step.id}-${m.id}`}
+              className="flex items-center gap-1.5 text-sm"
+            >
+              <Checkbox
+                id={`email-${step.id}-${m.id}`}
+                checked={step.users.includes(m.id)}
+                onCheckedChange={(v) =>
+                  onChange({
+                    ...step,
+                    users:
+                      v === true ? [...step.users, m.id] : step.users.filter((u) => u !== m.id),
+                  })
+                }
+              />
+              {m.display_name || m.email}
+            </label>
+          ))}
+        </div>
+        {table !== null && (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1">
+              <span className="text-xs text-muted-foreground">{$t('la personne du champ')}</span>
+              <FieldSelect
+                fields={fields.filter((f) => f.kind === 'user')}
+                value={step.userField}
+                onChange={(userField) => onChange({ ...step, userField })}
+                placeholder={$t('Aucun champ')}
+                label={$t('Champ personne destinataire')}
+              />
+            </div>
+            <div className="space-y-1">
+              <span className="text-xs text-muted-foreground">{$t('l’adresse du champ')}</span>
+              <FieldSelect
+                fields={fields.filter((f) => f.kind === 'email')}
+                value={step.emailField}
+                onChange={(emailField) => onChange({ ...step, emailField })}
+                placeholder={$t('Aucun champ')}
+                label={$t('Champ e-mail destinataire')}
+              />
+            </div>
+          </div>
+        )}
+        <div className="space-y-1">
+          <span className="text-xs text-muted-foreground">{$t('et ces adresses')}</span>
+          <Input
+            value={step.addresses}
+            onChange={(e) => onChange({ ...step, addresses: e.target.value })}
+            placeholder="compta@exemple.fr, direction@exemple.fr"
+            aria-label={$t('Adresses destinataires')}
+            className="h-8 text-sm"
+          />
+        </div>
+      </Section>
+      <Section title={$t('Objet')}>
+        <CitingText
+          value={step.subject}
+          onChange={(subject) => onChange({ ...step, subject })}
+          groups={groups}
+          label={$t('Objet du courriel')}
+          placeholder="Commande {{numero}} expédiée"
+        />
+      </Section>
+      <Section title={$t('Message')}>
+        <MessageInput
+          value={step.message}
+          onChange={(message) => onChange({ ...step, message })}
+          groups={groups}
+          label={$t('Texte du courriel')}
+          placeholder="Bonjour {{contact}}, votre commande est partie ce matin."
+        />
+      </Section>
+      <p className="text-xs text-muted-foreground">
+        {$t(
+          'En texte simple, un courriel par destinataire — personne ne voit les autres adresses. Une réponse arrive à la personne qui possède l’automatisation. 20 destinataires au plus.',
+        )}
+      </p>
+    </div>
+  )
+}
+
 function SlackSettings({
   base,
   step,

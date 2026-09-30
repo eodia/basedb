@@ -194,6 +194,29 @@ describe('normalizeViewSpec', () => {
     ).toMatchObject({ reason: 'type_de_champ_incompatible' })
   })
 
+  it('places a map on an address, or on a latitude and a longitude — one of the two', () => {
+    const map = new Map([...FIELDS, ['lat', 'number'], ['lng', 'number']])
+    expect(normalizeViewSpec('map', { address_field: 'notes' }, map)).toMatchObject({
+      address_field: 'notes',
+      latitude_field: null,
+      longitude_field: null,
+    })
+    expect(
+      normalizeViewSpec('map', { latitude_field: 'lat', longitude_field: 'lng' }, map),
+    ).toMatchObject({ address_field: null, latitude_field: 'lat', longitude_field: 'lng' })
+    expect(reason(() => normalizeViewSpec('map', { latitude_field: 'lat' }, map))).toMatchObject({
+      reason: 'champ_pivot_manquant',
+    })
+    expect(
+      reason(() =>
+        normalizeViewSpec('map', { latitude_field: 'lat', longitude_field: 'lat' }, map),
+      ),
+    ).toMatchObject({ reason: 'doublon' })
+    expect(reason(() => normalizeViewSpec('map', { address_field: 'debut' }, map))).toMatchObject({
+      reason: 'type_de_champ_incompatible',
+    })
+  })
+
   it('groups a timeline by a list of choices or a link, and nothing else', () => {
     expect(
       normalizeViewSpec('timeline', { start_field: 'debut', group_by: 'client' }, FIELDS),
@@ -372,5 +395,74 @@ describe('gallery, list, dependencies, manual order', () => {
     expect(
       reason(() => normalizeViewSpec('list', { manual_order: ['pas-un-id'] }, FIELDS)),
     ).toMatchObject({ reason: 'valeur_invalide' })
+  })
+})
+
+describe('quiz', () => {
+  const QUIZ = new Map([...FIELDS, ['score', 'number'], ['annee', 'number'], ['vrai', 'boolean']])
+
+  it('keeps each question’s right answer and points, and the way it grades', () => {
+    const spec = normalizeViewSpec(
+      'quiz',
+      {
+        fields: [
+          { field: 'nom' },
+          { field: 'statut', correct: 'fait', points: 2 },
+          { field: 'annee', correct: 1789 },
+          { field: 'notes' },
+        ],
+        score_field: 'score',
+        reveal: 'end',
+        pass_percent: 60,
+      },
+      QUIZ,
+    )
+    expect(spec).toMatchObject({
+      fields: [
+        { field: 'nom', correct: null, points: 1 },
+        { field: 'statut', correct: 'fait', points: 2 },
+        { field: 'annee', correct: 1789, points: 1 },
+        { field: 'notes', correct: null },
+      ],
+      score_field: 'score',
+      reveal: 'end',
+      pass_percent: 60,
+    })
+    // A form knows nothing of right answers.
+    expect(
+      reason(() =>
+        normalizeViewSpec('form', { fields: [{ field: 'nom', correct: ['x'] }] }, FIELDS),
+      ),
+    ).toMatchObject({ reason: 'cle_inconnue', detail: 'correct' })
+  })
+
+  it('refuses a right answer of the wrong shape, or on a field that has none', () => {
+    const ask = (question: Record<string, unknown>, extra: Record<string, unknown> = {}) =>
+      reason(() => normalizeViewSpec('quiz', { fields: [question], ...extra }, QUIZ))
+    expect(ask({ field: 'annee', correct: '1789' })).toMatchObject({ reason: 'valeur_invalide' })
+    expect(ask({ field: 'nom', correct: 'Paris' })).toMatchObject({ reason: 'valeur_invalide' })
+    expect(ask({ field: 'notes', correct: ['libre'] })).toMatchObject({
+      reason: 'type_de_champ_incompatible',
+    })
+    expect(ask({ field: 'vrai', correct: true, points: 0 })).toMatchObject({
+      reason: 'valeur_invalide',
+    })
+    expect(ask({ field: 'nom' }, { reveal: 'sometimes' })).toMatchObject({
+      reason: 'valeur_invalide',
+    })
+    expect(ask({ field: 'nom' }, { score_field: 'nom' })).toMatchObject({
+      reason: 'type_de_champ_incompatible',
+    })
+    // The score is written, never asked.
+    expect(ask({ field: 'score' }, { score_field: 'score' })).toMatchObject({ reason: 'doublon' })
+  })
+
+  it('hides the score field from whoever cannot see it', () => {
+    const spec = normalizeViewSpec(
+      'quiz',
+      { fields: [{ field: 'nom' }], score_field: 'score' },
+      QUIZ,
+    )
+    expect(projectViewSpec(spec, new Map([['nom', 'short_text']])).spec.score_field).toBe(null)
   })
 })

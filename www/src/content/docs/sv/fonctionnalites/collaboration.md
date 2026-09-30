@@ -12,7 +12,7 @@ En rads raddetaljer har en flik **Kommentarer**, mellan ”Detaljer” och ”Hi
 att **nämna** en medlem och Ctrl+Enter för att skicka. Var och en kan redigera eller ta bort sina
 egna kommentarer.
 
-![En konversation om ett projekt](../../../../assets/screens/commentaires.png)
+![En konversation om ett projekt](../../../../assets/screens/sv/commentaires.webp)
 
 Det räcker att kunna läsa raden för att kommentera den. En person som nämns men inte kan läsa
 raden får ingen avisering – och författaren får veta det i stället för att tro att meddelandet
@@ -31,7 +31,14 @@ Klockan uppe till höger räknar det som är oläst. Fyra saker hamnar där:
 Öppnar du en avisering öppnas raden. **Markera alla som lästa** nollställer räknaren;
 aviseringarna sparas i 90 dagar.
 
-![Ett mottaget omnämnande](../../../../assets/screens/notifications.png)
+### Via e-post
+
+Om instansen har en [sändningsserver](/basedb/sv/hebergement/variables/#e-post), skickas en
+avisering som har varit **oläst i tio minuter** också som e-post: ett enda e-postmeddelande för
+alla som väntar, med en länk till varje rad. Det du hinner läsa i tid skickas inte. Under
+**Inställningar › Aviseringar** har varje typ två reglage: i basedb, och som e-post.
+
+![Ett mottaget omnämnande](../../../../assets/screens/sv/notifications.webp)
 
 ## Realtid
 
@@ -74,6 +81,6 @@ Ctrl+Z ångrar din senaste skrivning – se [historiken](/basedb/sv/fonctionnali
 
 ## Begränsningar
 
-- Aviseringarna stannar i basedb: inga skickas med e-post för närvarande.
+- Inget e-postmeddelande skickas utan en sändningsserver konfigurerad av driftansvarig.
 - När fler än hundra rader ändras på en gång laddar skärmen om hela sidan i stället för rad
   för rad.

@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb – yhteiskäyttöinen tietokanta, jonka jokainen taulukko on oikea PostgreSQL-taulukko',
-			description: 'Ruudukot ja kahdeksan näkymää, kaavat, jaetut lomakkeet ja näkymät, kommentit, automaatiot, koontinäytöt, kenttätason käyttöoikeudet, täydellinen historia, REST API ja MCP-palvelin – oikeissa, selkeästi nimetyissä PostgreSQL-taulukoissa. Itse ylläpidetty, AGPL-3.0.',
+			description: 'Ruudukot ja kymmenen näkymää, kaavat, jaetut lomakkeet, tietovisat ja näkymät, kommentit, automaatiot, koontinäytöt, kenttätason käyttöoikeudet, täydellinen historia, REST API ja MCP-palvelin – oikeissa, selkeästi nimetyissä PostgreSQL-taulukoissa. Itse ylläpidetty, AGPL-3.0.',
 		},
 		changelog: {
 			title: 'Uutuudet – basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: 'Kahdeksan näkymää',
-								text: 'Ruudukko, kanban, kalenteri, aikajana, galleria, luettelo, lomake, kyselylomake.',
+								title: 'Kymmenen näkymää',
+								text: 'Ruudukko, kanban, kalenteri, aikajana, galleria, luettelo, kartta, lomake, kyselylomake, tietovisa.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb – kaikki työsi, samassa paikassa',
-			description: 'Asiakkaat, projektit, varastot, hakemukset: tietokanta, jota koko tiimi muokkaa yhtä aikaa taulukkona, kanbanina tai kalenterina, koontinäyttöineen, automaatioineen ja tekoälyllä. Ei koodia, vapaa ja ilmainen.',
+			title: 'basedb – koko tiimin yhteiskäyttöinen tietokanta',
+			description: 'Kaikki työsi samassa paikassa, ja koko tiimi muokkaa sitä yhtä aikaa: taulukkona, kanbanina tai kalenterina, lomakkeineen, koontinäyttöineen, automaatioineen ja tekoälyllä. Ei koodia, vapaa ja ilmainen.',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -891,9 +891,9 @@ export default {
 			text: 'Jokainen toiminto kirjoittaa samoihin taulukkoihin, samoilla käyttöoikeuksilla, samaan historiaan.',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: 'tapaa nähdä tietosi',
-					text: 'Ruudukko, kanban, kalenteri, aikajana, galleria, luettelo, lomake ja kyselylomake, samoilla riveillä. Kukin valitsee omansa.',
+					text: 'Ruudukko, kanban, kalenteri, aikajana, galleria, luettelo, kartta, lomake, kyselylomake ja tietovisa, samoilla riveillä. Kukin valitsee omansa.',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -943,7 +943,7 @@ export default {
 				},
 				import: {
 					title: 'Tuonti yhdellä liikkeellä',
-					text: 'Vedä CSV-tiedosto sisään: sarakkeet ja tyypit arvataan, taulukko luodaan.',
+					text: 'Vedä Excel-työkirja tai CSV-tiedosto sisään: sarakkeet ja tyypit arvataan, taulukko luodaan.',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1036,7 +1036,7 @@ export default {
 				},
 				{
 					q: 'Voiko vanhat taulukkolaskentatiedostot tuoda mukaan?',
-					a: 'Kyllä: tallenna taulukko CSV-muotoon ja vedä se basedb:hen. Tuonti arvaa kunkin sarakkeen tyypin, luo taulukon ja kertoo rivi riviltä, mitä se ei pystynyt tuomaan.',
+					a: 'Kyllä: vedä Excel-työkirjasi, tai CSV-tiedosto, basedb:hen. Tuonti arvaa kunkin sarakkeen tyypin, luo taulukon ja kertoo rivi riviltä, mitä se ei pystynyt tuomaan.',
 				},
 				{
 					q: 'Voiko useampi työskennellä yhtä aikaa?',
@@ -1361,9 +1361,20 @@ export default {
 		text: 'Jokainen toiminto kirjoittaa samoihin taulukoihin, samoilla käyttöoikeuksilla, samaan historiaan.',
 		more: 'Lue lisää →',
 		views: {
-			title: 'Kahdeksan näkymää samoihin riveihin',
+			title: 'Kymmenen näkymää samoihin riveihin',
 			text: 'Yhteisiä koko tiimille tai henkilökohtaisia vain itselle: kukin valitsee oman tapansa lukea, eikä kukaan kopioi tietoja.',
-			chips: ['Ruudukko', 'Kanban', 'Kalenteri', 'Aikajana', 'Galleria', 'Luettelo', 'Lomake', 'Kyselylomake'],
+			chips: [
+				'Ruudukko',
+				'Kanban',
+				'Kalenteri',
+				'Aikajana',
+				'Galleria',
+				'Luettelo',
+				'Kartta',
+				'Lomake',
+				'Kyselylomake',
+				'Tietovisa',
+			],
 		},
 		forms: {
 			title: 'Jaetut lomakkeet',
@@ -1427,7 +1438,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'CSV- ja JSON-tuonti',
+				title: 'Excel-, CSV- ja JSON-tuonti',
 				text: 'Pudota tiedosto: tuonti päättelee tyypit, luo taulukon tai täydentää olemassa olevaa ja kertoo rivi riviltä, mitä hylättiin.',
 				href: '/guides/premiers-pas/',
 			},
@@ -1536,6 +1547,66 @@ export default {
 		title: 'Mitä basedb:ssä on muuttunut',
 		intro: 'Jokaisen muutoksen yksityiskohdat ovat <a href="https://github.com/eodia/basedb/commits/main">tietovaraston historiassa</a>. Mitä seuraavaksi: <a href="/feuille-de-route/">tiekartta</a>.',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: 'Kartta, ja osoitteet jotka löytävät paikkansa',
+				tag: 'Uutta',
+				items: [
+					'<strong>Kymmenes näkymä, kartta</strong>: jokainen rivi sijoitetaan omalle paikalleen, osoitteen tai leveys- ja pituusasteen perusteella. Neula saa värinsä tilasta ja avaa rivin tiedot yhdellä napsautuksella. <a href="/fonctionnalites/vues/#kartta">Kartta</a>',
+					'<strong>Osoite paikannetaan kerran ja pysyvästi</strong>, OpenStreetMapin palvelun tai valitsemasi palvelun avulla: neulat ilmestyvät vastausten mukaan, ja sen jälkeen heti. Löytymätön osoite lasketaan, ei koskaan hiljaa hylätä.',
+					'<strong>Osoite-muoto</strong> lyhyelle tekstille: napsautus avaa sen kartalla, ja rivin tiedoissa <strong>Hae osoite</strong> ehdottaa täsmääviä, kokonaan kirjoitettuja osoitteita. <a href="/fonctionnalites/tables-et-champs/#näyttömuodot">Muodot</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: 'PDF:t riveistäsi',
+				tag: 'Uutta',
+				items: [
+					'<strong>Tarjous, lasku, kortti PDF-muodossa</strong>, rivin valikosta: tulostettava kortti säätämättä mitään, tai malli — tekstit, jotka viittaavat kenttiin, rivin kentät, linkitettyjen rivien taulukko loppusummineen, sivunvaihdot. <a href="/fonctionnalites/documents/">Asiakirjat</a>',
+					'<strong>Kukin omilla käyttöoikeuksillaan</strong>: sinulta piilotettu kenttä ei näy PDF:ssäsi. Kaikki kaksikymmentä kieltä kirjoitetaan siihen, kiina, japani ja korea mukaan lukien, ja API antaa saman asiakirjan.',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: 'Käyttöoikeuksia rivitasolle asti, oletusarvot, Excel-tuonti',
+				tag: 'Uutta',
+				items: [
+					'<strong>Kukin omat rivinsä</strong>: ryhmä näkee vain suodattimen rivit — ”Myyjä on minä”, ”Alue on Pohjoinen” —, käyttöliittymässä, API:ssa, MCP-palvelimessa yhtä lailla kuin SQL:ssä, jossa PostgreSQL soveltaa samaa sääntöä. <a href="/fonctionnalites/droits/#rivitasolle-asti">Rivitasolle asti</a>',
+					'<strong>Oletusarvot</strong>: kiinteä arvo, tämän päivän päivämäärä, luontihetki tai rivin luova henkilö, valmiiksi täytettynä näytöllä ja käytössä kaikkialla muualla. <a href="/fonctionnalites/tables-et-champs/#oletusarvot">Oletusarvot</a>',
+					'<strong>Vedä Excel-työkirja sisään</strong>: valitse välilehti, päivämäärät, summat ja valintaruudut tuodaan sellaisenaan, ja kaava tuo sen lasketun arvon. <a href="/guides/premiers-pas/">Ensimmäiset askeleet</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: 'Sähköpostit',
+				tag: 'Uutta',
+				items: [
+					'<strong>Vaihe ”Lähetä sähköposti”</strong> automaatioissa: jäsenelle, kentän henkilölle, asiakkaan osoitteeseen, rivin arvoilla aiheessa ja tekstissä. <a href="/fonctionnalites/automatisations/">Automaatiot</a>',
+					'<strong>Sähköposti-ilmoitukset</strong>, kun et ole lukenut niitä, koottuina, valittavina yksitellen asetuksissasi; ja <strong>unohtunut salasana</strong> nollataan linkillä. <a href="/fonctionnalites/collaboration/#sähköpostitse">Sähköpostitse</a>',
+					'Riittää, kun ilmoitat sähköpostisi lähetyspalvelimen instanssille. <a href="/hebergement/variables/#sähköpostit">Muuttujat</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n ja TypeScript-SDK',
+				tag: 'Uutta',
+				items: [
+					'<strong>n8n-solmuja</strong>: taulukon rivien lukeminen ja kirjoittaminen työnkulusta, ja yhden käynnistäminen joka kerta, kun rivi luodaan, sitä muokataan tai se poistetaan — tarkistuksella tai allekirjoitetulla webhookilla. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>TypeScript-SDK</strong>, taulukoidesi tyypeillä, jotka on luotu instanssistasi: taulukko tai kenttä, jota ei ole olemassa, on virhe jo ennen suoritusta. <a href="/integrations/sdk/">SDK</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: 'Tietovisa: kysymykset, jotka laskevat pisteet',
+				tag: 'Uutta',
+				items: [
+					'<strong>Uusi näkymä, tietovisa</strong>: kyselylomake, jonka jokaisella kysymyksellä voi olla oikea vastaus ja pisteet — yksi valinta, useampi, kyllä tai ei, luku, päivämäärä, tai hyväksytyt tekstit, välittämättä isoista kirjaimista tai aksenteista. <a href="/fonctionnalites/vues/#tietovisa">Tietovisa</a>',
+					'<strong>Korjaus juuri niin kuin haluat</strong>: jokaisen kysymyksen jälkeen — vihreällä, tai punaisella oikean vastauksen kanssa, pistemäärä, joka kasvaa näytön yläreunassa —, lopussa, tai ei koskaan. Läpäisyraja saa lopetusnäytön sanomaan ”Läpäisty!” tai ”Ei tällä kertaa…”.',
+					'<strong>Pistemäärä lopussa</strong>, täyttyvässä renkaassa, sitten jokaisen kysymyksen palaute. Se kirjoitetaan taulukon lukukenttään: lajittele ruudukko sen mukaan, siinä on tulostaulukko.',
+					'<strong>Jaettu linkillä, ilman huijausmahdollisuutta</strong>: sivu ei saa yhtään oikeaa vastausta, palvelin korjaa ja laskee pisteet. <a href="/fonctionnalites/formulaires-partages/#jaettu-tietovisa">Jaettu tietovisa</a>',
+					'<strong>Luo näkymä</strong>, näkymävalitsimen alaosassa, jakaa yhdeksän lajia kahteen ryhmään — niihin, jotka näyttävät rivit, niihin, jotka keräävät vastauksia —, kullakin oma värikäs kuvake.',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: 'Lomakkeita, joita tekee mieli täyttää',

@@ -706,7 +706,7 @@ La requête joint enfin `_basedb.capture_gap` sur `(base_id, table_id)` et l'int
 
 ### 9.2 Permissions
 
-Les lectures d'historique passent par le point d'application unique du chapitre 05, avec le même prédicat de lignes constamment vrai que les lectures de données (A20). Trois règles propres :
+Les lectures d'historique passent par le point d'application unique du chapitre 05, avec le même prédicat de lignes que les lectures de données (A20) : sous une règle de lignes (05 §16), seules les révisions des lignes que le lecteur voit encore sont montrées. Trois règles propres :
 
 1. **Lire l'historique d'un enregistrement exige `read` sur sa table.** Aucune action distincte n'est introduite : un utilisateur qui peut lire la ligne peut savoir qui l'a modifiée, l'information étant déjà dans `_updated_by`, lisible de droit (A18).
 2. **Le détail par champ est filtré.** Les lignes de `record_revision_field` dont le `field_id` est masqué pour le rôle du lecteur ne sont pas retournées — c'est le paramètre `$6` ci-dessus. Un champ en lecture seule est visible dans l'historique ; un champ en écriture aussi.

@@ -6,7 +6,7 @@ description: Fiecare scriere, oricare i-ar fi originea, cu valorile de dinainte.
 basedb înregistrează în istoric **fiecare scriere**, oricare i-ar fi originea: interfața,
 API-ul, un agent MCP, un formular public — și chiar o interogare SQL scrisă de mână în `psql`.
 
-![Istoricul unei baze](../../../../assets/screens/historique.png)
+![Istoricul unei baze](../../../../assets/screens/ro/historique.webp)
 
 ## Cum este captat
 

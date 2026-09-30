@@ -2,11 +2,13 @@ import { qualify, quoteIdentifier } from '@basedb/naming'
 import { loadAiDependents, staleAiAssignments } from '../ai/field.js'
 import { isFileKind } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
-import { type Action, SYSTEM_COLUMNS, decide } from '../rbac/decide.js'
+import { type Action, type ActorGrants, SYSTEM_COLUMNS, decide } from '../rbac/decide.js'
 import { loadFields, loadGrants, loadTarget } from '../rbac/loader.js'
+import { ROW_ALIAS } from '../rbac/rows.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { refuseSynced } from '../sync/guard.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
+import { assertLinkScope, linkScopeChecks } from './link-scope.js'
 import { type ShapedField, shapeValues, shapedFields } from './values.js'
 
 /**
@@ -46,6 +48,15 @@ interface RowContext {
   readonly readableNames: ReadonlySet<string>
   readonly shaped: ReadonlyMap<string, ShapedField>
   readonly fileColumns: readonly string[]
+  /**
+   * The rows the actor reaches, over the target aliased `"basedb_row"` (05 §16): a row
+   * outside them is not found. Evaluated on the row as it was — a row may leave the
+   * actor's rows by the change they make, as a task handed to a colleague does.
+   */
+  readonly rows: string
+  readonly grants: ActorGrants
+  /** The table's link fields, physical name → field id. */
+  readonly links: ReadonlyMap<string, string>
 }
 
 async function prepare(
@@ -97,6 +108,13 @@ async function prepare(
     fileColumns: [...fields]
       .filter(([id, f]) => decision.readableFields.has(id) && isFileKind(f.kind))
       .map(([, f]) => f.name),
+    rows: decision.rowPredicate,
+    grants,
+    links: new Map(
+      [...fields]
+        .filter(([, f]) => f.kind === 'link' || f.kind === 'multi_link')
+        .map(([id, f]) => [f.name, id]),
+    ),
   }
 }
 
@@ -151,11 +169,14 @@ export async function updateRecord(
 
       params.push(options.recordId)
       const returning = [...SYSTEM_COLUMNS, ...c.readable].map((x) => quoteIdentifier(x)).join(', ')
+      const links = await linkScopeChecks(exec, ctx, c.grants, c.links, values)
 
       return {
-        sql: `UPDATE ${c.relation}
+        links,
+        sql: `UPDATE ${c.relation} AS ${quoteIdentifier(ROW_ALIAS)}
    SET ${assignments.join(',\n       ')}
  WHERE "_id" = $${params.length}
+   AND ( /*predicat_lignes*/ ${c.rows} )
 RETURNING ${returning};`,
         params,
         fileColumns: c.fileColumns,
@@ -165,10 +186,13 @@ RETURNING ${returning};`,
   )
 
   // With the actor, so that the history names who changed the row (chapter 07 §2.1).
-  const { rows, xact } = await withTransaction(pools, 'data', ctx, async (exec) => ({
-    rows: await exec.query(plan.sql, plan.params, 'update'),
-    xact: await currentXact(exec),
-  }))
+  const { rows, xact } = await withTransaction(pools, 'data', ctx, async (exec) => {
+    await assertLinkScope(exec, plan.links)
+    return {
+      rows: await exec.query(plan.sql, plan.params, 'update'),
+      xact: await currentXact(exec),
+    }
+  })
 
   const row = rows[0]
   // A missing row and an invisible row return the same code: the caller does not learn
@@ -198,7 +222,9 @@ export async function deleteRecord(
     async (exec) => {
       const c = await prepare(exec, ctx, options.tableId, 'delete')
       return {
-        sql: `DELETE FROM ${c.relation} WHERE "_id" = $1 RETURNING "_id";`,
+        sql: `DELETE FROM ${c.relation} AS ${quoteIdentifier(ROW_ALIAS)}
+ WHERE "_id" = $1 AND ( /*predicat_lignes*/ ${c.rows} )
+RETURNING "_id";`,
         params: [options.recordId],
       }
     },

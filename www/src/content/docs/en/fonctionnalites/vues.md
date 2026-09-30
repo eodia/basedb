@@ -1,9 +1,9 @@
 ---
 title: Views
-description: Grid, kanban, calendar, timeline, gallery, list, form and survey — collaborative or personal.
+description: Grid, kanban, calendar, timeline, gallery, list, map, form, survey and quiz — collaborative or personal.
 ---
 
-A table can be shown in **eight ways**. A view copies no data, and grants no more permission
+A table can be shown in **ten ways**. A view copies no data, and grants no more permission
 than the table itself.
 
 :::note
@@ -20,14 +20,17 @@ among them in the sidebar.
 | **Timeline** | bars between two dates, and their dependencies | a start date |
 | **Gallery** | cards, with a cover image | — |
 | **List** | one line per row, in collapsible groups | — |
+| **Map** | each row placed at its location | an address, or a latitude and longitude |
 | **Form** | a page of questions to create a row | — |
 | **Survey** | the same questions, one per screen | — |
+| **Quiz** | scored questions, one per screen, and the score at the end | — |
 
 ## The view selector
 
 It sits to the left of “Filter”. “All rows” is the table’s grid, which nobody saved and nobody
 can delete; then come the **collaborative views**, in the order chosen by whoever builds the
-base, and then **My views**.
+base, and then **My views**. At the bottom, **Create a view** sorts the ten kinds into two
+families: those that **show rows** and those that **collect answers** (form, survey, quiz).
 
 - A **collaborative view** is seen by everyone. Creating, configuring, renaming, reordering or
   deleting one requires the **Manage** level. It can be **locked**: a padlock says so, and
@@ -37,7 +40,7 @@ base, and then **My views**.
   their own ways of reading, without changing anything for the others. **Duplicate** on a
   collaborative view makes a personal copy of it.
 
-![A gallery of clients](../../../../assets/screens/galerie.png)
+![A gallery of clients](../../../../assets/screens/en/galerie.webp)
 
 ## The toolbar
 
@@ -71,9 +74,9 @@ filled, empty, unique values, sum, average, minimum, maximum, checked boxes.
   or a relation. With the **Depends on** setting — a relation from the table to itself — an
   arrow links each task to the ones it depends on, in red when it goes back in time.
 
-![A timeline with its dependencies](../../../../assets/screens/chronologie.png)
+![A timeline with its dependencies](../../../../assets/screens/en/chronologie.webp)
 
-![A calendar by due date](../../../../assets/screens/calendrier.png)
+![A calendar by due date](../../../../assets/screens/en/calendrier.webp)
 
 ## Gallery and list
 
@@ -81,10 +84,34 @@ filled, empty, unique values, sum, average, minimum, maximum, checked boxes.
   large cards), a color by single select.
 - The **list** shows one line per row, **grouped** by a single select, a relation or a person.
 
-![A list of clients, grouped by sector](../../../../assets/screens/liste.png)
+![A list of clients, grouped by sector](../../../../assets/screens/en/liste.webp)
 
 In the kanban, the gallery and the list, cards and rows can be **ordered by hand** by dragging
 them — up to 5,000; a chosen sort takes precedence over this order.
+
+## Map
+
+The **map** places each row at its location, based on:
+
+- an **address** — a short text, preferably in the **Address** format (see
+  [Tables and fields](/basedb/en/fonctionnalites/tables-et-champs/)): “12 rue des Lilas, Lyon”;
+- or a **latitude** and a **longitude**, two number fields, placed as they are.
+
+A pin takes the **color** of a single select, shows the row’s **title** on hover, and opens its
+row details on click. The map follows the view’s filter and sort, up to 2,000 rows.
+
+An address is **located once and for all** by the instance’s geocoding service —
+OpenStreetMap’s by default —, at the pace it imposes: on a fresh map, pins appear as the
+responses come in, about one a second, then right away the following times. A badge counts the
+rows placed, the addresses still to be located and the ones that could not be: an address that
+cannot be found is to be made more precise (city, postal code), never dropped silently.
+
+:::note[What leaves your server]
+The text of addresses goes to the geocoding service, and each reader’s browser loads the map
+background from the tile server. The instance’s operator can choose other services, or want
+none: see
+[Environment variables](/basedb/en/hebergement/variables/#maps-and-addresses).
+:::
 
 ## Form and survey
 
@@ -100,6 +127,8 @@ Everything else can be changed whenever you like:
 
 - **Appearance**: eight themes — Light, Soft, Dawn, Ocean, Forest, Night, Paper, Minimal —, an
   accent color, a font, a left or centered alignment;
+- **Prefill with today’s date**: a date question arrives already holding the day — and the time,
+  for a date and time — which the person keeps or changes;
 - **Ask only if…**: a question is only asked if an earlier answer calls for it ("Sentiment is
   Negative", "Rating is at most 2"). A hidden question is neither required nor sent;
 - **More options**: the welcome and submit buttons, the numbers, the progress bar, moving
@@ -111,6 +140,44 @@ question at a time, sliding in. Everything also works from the keyboard: **Enter
 the letters **A**, **B**, **C**… for a choice, **Y** or **N** for yes or no, digits for a
 rating — a single choice moves on to the next question by itself. Sending it is celebrated: a
 checkmark draws itself, and confetti in the form’s colors.
+
+## Quiz
+
+A quiz is a survey that counts points. Under each question, you give its **right answer** and
+what it is worth — **1 point** if you say nothing, up to 100:
+
+| Question | Right answer |
+|---|---|
+| single select | one choice |
+| multiple select | the choices to check, all of them and only them |
+| checkbox | yes or no |
+| number, rating | a number |
+| date | a day |
+| short text, email, URL | one or more accepted answers, separated by `;` — ignoring case and accents |
+
+A question with no right answer — a first name, a comment — is asked without being scored. At
+least one scored question is required to create the quiz.
+
+The **Grading** section sets the rest:
+
+- **Feedback**: **after each question** — the answer is checked at once, in green, or in red
+  with the right answer, and the score grows at the top of the screen —, **at the end** — the
+  score, then the feedback —, or **never** — the score alone, the right answers stay secret;
+- **Pass threshold**: a percentage of the points; the end screen then says “Passed!” or “Not
+  this time…”;
+- **Save the score in**: a number field of the table, which receives the score of each response.
+  Sort the grid on it: that is the leaderboard. A field named “Score”, “Points” or “Result” is
+  chosen by default.
+
+The end screen shows the score in a ring that fills up, the percentage, then, unless “never”,
+each scored question with the answer given and the right one. A question hidden by an earlier
+answer does not count toward the total.
+
+:::note
+In the application, whoever can read the view can read its right answers. Through a
+[shared link](/basedb/en/fonctionnalites/formulaires-partages/#a-shared-quiz), they never leave
+the server: it is the one that checks and counts.
+:::
 
 ## Sharing a view
 

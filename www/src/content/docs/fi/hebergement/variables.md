@@ -67,6 +67,47 @@ Katso [Tilit ja kirjautuminen](/basedb/fi/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | – | tunnistetiedot |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` isäntänimeen perustuvaa osoitteistusta varten |
 
+## Sähköpostit
+
+Ilman lähetyspalvelinta basedb ei lähetä yhtään sähköpostia. Sen kautta lähtevät kymmenen
+minuuttia lukematta olleet ilmoitukset (kukin valitsee mitkä kohdassa **Asetukset ›
+Ilmoitukset**), automaatioiden **Lähetä sähköposti** -vaiheen sähköpostit ja **unohtuneen
+salasanan** linkki. Linkit osoittavat `BASEDB_PUBLIC_URL`-osoitteeseen; ilman sitä sähköposti
+ei sisällä linkkiä.
+
+| Muuttuja | Oletus | Tehtävä |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | – | SMTP-palvelin: sähköpostipalvelusi tai lähetyspalvelun |
+| `BASEDB_SMTP_PORT` | `587` | `465` suoraan salatulle yhteydelle |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` portissa 465) | `none` vain samalla koneella olevalle välitykselle: muuten salasana kulkisi selkokielisenä |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | – | lähettävän tilin tunnus, jos se vaatii sellaisen |
+| `BASEDB_MAIL_FROM` | – | pakollinen `BASEDB_SMTP_HOST`-muuttujan kanssa: lähettäjä, `basedb <no-reply@exemple.fr>` |
+
+Käynnistyksessä loki kertoo tilanteen: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` Sähköposti, jonka palvelin hylkää, yritetään uudelleen 1, 5, 30,
+120 ja sitten 360 minuutin kuluttua.
+
+## Kartat ja osoitteet
+
+**Kartta**-näkymä paikantaa osoitteen geokoodauspalvelun avulla: oletuksena OpenStreetMapin
+(Nominatim), jota kysytään kerran osoitetta kohden, enintään yksi pyyntö sekunnissa, ja
+jokainen vastaus säilytetään. Karttapohja koostuu **laatoista**, jotka jokaisen lukijan selain
+lataa suoraan.
+
+| Muuttuja | Oletus | Tehtävä |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | toinen samaa protokollaa puhuva palvelu (oma Nominatim); `off`: ei mitään, osoitteet eivät poistu instanssista ja vain leveys- ja pituusaste sijoittavat rivit |
+| `BASEDB_MAP_TILES` | OpenStreetMapin laatat | toinen laattapalvelin, malli `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | maininta, jota tämä palvelin vaatii, kartan oikeassa alakulmassa |
+
+Käynnistyksessä loki kertoo, mitä palvelua käytetään: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## PDF-asiakirjat
+
+| Muuttuja | Oletus | Tehtävä |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | kuvan Noto-fontit | oma kansiosi, liitetty konttiin, joka sisältää `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic`, ja kiinaa, japania ja koreaa varten `NotoSansCJK-Regular.ttc` ja `-Bold.ttc` |
+
 ## Tietokantamallit
 
 | Muuttuja | Oletus | Tehtävä |

@@ -18,13 +18,13 @@ Visningens menu → **Del…**, og derefter:
 | **Offentlig** | alle med linket, uden konto |
 | **Indloggede medlemmer** | et medlem af arbejdsområdet efter login — om nødvendigt kun fra bestemte grupper |
 
-![Deling af en kalender](../../../../assets/screens/partage-vue.png)
+![Deling af en kalender](../../../../assets/screens/da/partage-vue.webp)
 
 Kontakten **Link aktivt** sætter linket på pause uden at miste det. Siden åbner uden for
 applikationen: intet sidepanel, intet databasenavn, intet tabelnavn — visningen, dens filtre,
 dens kolonner og intet andet. En kalender eller en tidslinje læses der som en kalender.
 
-![Den samme kalender, åbnet via sit link](../../../../assets/screens/vue-partagee.png)
+![Den samme kalender, åbnet via sit link](../../../../assets/screens/da/vue-partagee.webp)
 
 ## På hvis vegne der læses
 

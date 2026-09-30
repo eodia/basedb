@@ -9,7 +9,7 @@ neste fristene. Hvert kort viser et **spørsmål** – en lesing av databasen,
 bygget med musen eller skrevet i SQL – og **filtre** øverst på siden styrer
 kortene som er koblet til dem.
 
-![Instrumentbordet «Pilotage de l’agence»: månedens trend, mål, stablet omsetning, stemning i tilbakemeldingene](../../../../assets/screens/tableaux-de-bord.png)
+![Instrumentbordet «Pilotage de l’agence»: månedens trend, mål, stablet omsetning, stemning i tilbakemeldingene](../../../../assets/screens/nb/tableaux-de-bord.webp)
 
 Alt åpnes fra **Instrumentbord**, i blokken for den åpne databasen nederst i
 sidepanelet. Til venstre ligger databasens instrumentbord og lagrede spørsmål, og
@@ -31,7 +31,7 @@ sitt, som nå er ulagret igjen.
 
 Et spørsmål bygges i trinn, det ene under det andre:
 
-![Editoren for et spørsmål: dataene, filtrene, sammendraget per måned](../../../../assets/screens/question-editeur.png)
+![Editoren for et spørsmål: dataene, filtrene, sammendraget per måned](../../../../assets/screens/nb/question-editeur.webp)
 
 | Trinn | Hva du velger der |
 |---|---|
@@ -164,7 +164,7 @@ fyller ut resten. Det kan ha en **standardverdi** – «I år», for eksempel.
 I lesemodus kan et klikk på et punkt også justere et filter: **Filtrer etter «Lyon»** på et
 kort der kolonnen med byer er koblet til filteret «Ville».
 
-![Fanen «Activité»: oppgaver etter frist stablet etter status, prosjekttrakt, estimerte timer i krysstabell](../../../../assets/screens/tableaux-de-bord-activite.png)
+![Fanen «Activité»: oppgaver etter frist stablet etter status, prosjekttrakt, estimerte timer i krysstabell](../../../../assets/screens/nb/tableaux-de-bord-activite.webp)
 
 ## Copilot
 

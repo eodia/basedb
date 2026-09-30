@@ -157,6 +157,7 @@ const STEP_LABELS: Readonly<Record<string, string>> = {
   create_record: 'Créer une ligne',
   find_record: 'Chercher une ligne',
   notify: 'Prévenir quelqu’un',
+  email: 'Envoyer un courriel',
   webhook: 'Appeler un webhook',
   slack: 'Envoyer sur Slack',
   ai: 'Demander à l’IA',
@@ -175,7 +176,12 @@ export async function automationCopilotTurn(
   ctx: RequestContext,
   transport: ProviderTransport,
   request: AutomationCopilotRequest,
-  deps: { readonly targets: TargetPolicy; readonly readSql: ReadSql },
+  deps: {
+    readonly targets: TargetPolicy
+    readonly readSql: ReadSql
+    /** Whether the instance can send mail: without it, no e-mail step is proposed. */
+    readonly mailAvailable?: boolean
+  },
 ): Promise<AutomationCopilotAnswer> {
   const conversation = trimConversation(request.messages)
   if (conversation.length === 0 || conversation[conversation.length - 1]?.role !== 'user') {
@@ -315,6 +321,7 @@ export async function automationCopilotTurn(
     runs: runs.map(runForModel),
     people: people.map((p) => ({ ref: p.ref, name: p.name })),
     slack_channels: channels.map((c) => ({ ref: c.ref, label: c.label })),
+    mail: deps.mailAvailable === true,
     data_access: { records: consent, sql: catalog.sqlAllowed },
     conversation,
   }
@@ -449,6 +456,8 @@ export async function automationCopilotTurn(
       case 'notify':
       case 'slack':
         return `${label} : ${quoted(String(s.message ?? ''))}`
+      case 'email':
+        return `${label} : ${quoted(String(s.subject ?? ''))}`
       case 'ai':
         return `${label} : ${quoted(String(s.prompt ?? ''))}`
       case 'branch':
@@ -582,7 +591,7 @@ CE QUE TU REÇOIS (la charge utile) :
   — "tables" : les tables, leurs colonnes ("name" à employer, "label", "kind", "options" = [{"value","label"}] pour une liste, "target" pour un lien, "writable": false pour une colonne qu'on ne peut pas écrire). Chaque table a aussi _id, _created_at, _updated_at ;
   — "automation" : l'automatisation à l'écran telle que l'éditeur la montre (enregistrée ou non), ou null ; "automations" : toutes celles de la base ;
   — "runs" : ses dernières exécutions, étape par étape — statut, chemin pris, code d'erreur ; jamais les valeurs ;
-  — "people" : les personnes à prévenir, par "ref" (p1, p2…) ; "slack_channels" : les canaux Slack connectés, par "ref" (s1…) ;
+  — "people" : les personnes à prévenir, par "ref" (p1, p2…) ; "slack_channels" : les canaux Slack connectés, par "ref" (s1…) ; "mail" : true si l'instance envoie des courriels ;
   — "data_access", "observations", "rounds_left" : voir LECTURES ; "conversation" : l'échange, le dernier message est la demande ; "rejected", parfois : voir CORRECTION.
 
 UNE AUTOMATISATION (une action) :
@@ -598,6 +607,7 @@ LES ÉTAPES ("steps"), dans l'ordre :
   { "kind": "create_record", "table": "<name>", "values": { … } } ;
   { "kind": "find_record", "table": "<name>", "filter": "<filtre, vide : n'importe quelle ligne>", "sort": "<colonne>" ou "-<colonne>" } — la PREMIÈRE ligne qui répond ; rien trouvé : les étapes qui la modifient sont passées ;
   { "kind": "notify", "record": "trigger" | "<id>", "users": ["p1"], "user_field": "<colonne personne de cette ligne>", "message": "…" } — une notification dans basedb, qui ouvre la ligne ;
+  { "kind": "email", "record": "trigger" | "<id>" | null, "users": ["p1"], "user_field": "<colonne personne de cette ligne>", "email_field": "<colonne e-mail de cette ligne>", "addresses": ["<adresse écrite>"], "subject": "…", "message": "…" } — un courriel en texte simple, par le serveur d'envoi de l'instance ; au moins un destinataire, 20 au plus ; une réponse va à la personne qui possède l'automatisation ;
   { "kind": "webhook", "record": "trigger" | "<id>" | null, "url": "https://…" } ;
   { "kind": "slack", "integration": "s1", "message": "…" } ;
   { "kind": "ai", "prompt": "<consigne citant ce qui précède>", "answer": "long_text" | "short_text" | "number" | "boolean" | "date" | "url" | "select", "options": ["<choix>", …] } — une réponse de l'IA, qui n'agit sur rien : les étapes suivantes la citent ;
@@ -619,7 +629,8 @@ RÈGLES :
   — pour changer l'automatisation à l'écran : "target": "current", avec la définition COMPLÈTE après le changement ; pour une autre : "target": "new" ;
   — à heure fixe il n'y a pas de ligne déclencheuse : pas de "condition", ni de "record": "trigger" ; commence par find_record ;
   — n'écris que dans des colonnes qui ne sont pas "writable": false ; une liste par la "value" ou le "label" d'un de ses choix ;
-  — personnes et canaux par leur "ref", jamais inventés ; sans canal Slack, pas d'étape slack ;
+  — personnes et canaux par leur "ref", jamais inventés ; sans canal Slack, pas d'étape slack ; sans "mail", pas d'étape email ;
+  — prévenir quelqu'un DE L'ÉQUIPE : notify ; écrire à l'extérieur (un client, un fournisseur, une adresse d'une colonne e-mail) : email ;
   — une condition ne teste qu'une ligne : pour bifurquer sur la réponse d'une étape ai, l'écrire d'abord dans une colonne de la ligne, puis tester la ligne ;
   — expliquer une automatisation ou une exécution (« pourquoi a-t-elle échoué ? ») : réponds à partir de "automation" et "runs", sans action, sauf si une réparation est demandée ou évidente — propose-la alors ;
   — tu PROPOSES, la personne applique : ne dis jamais qu'une automatisation est créée ou modifiée — dis « je propose », « voici » ;

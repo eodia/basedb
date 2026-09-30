@@ -33,7 +33,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | une expression lisible : `statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | les colonnes à renvoyer |
-| `limit`, `cursor` | pagination par curseur chiffré (`next_cursor` dans la réponse) |
+| `limit`, `after` | pagination par curseur chiffré : `meta.next_cursor` d’une page, passé en `after`, donne la suivante (`meta.has_next_page`) |
 | `links=display` | les relations avec leur valeur d’affichage |
 | `count=exact` | le total, plafonné à 100 000 |
 | `variables=raw` | les textes longs tels qu’écrits, `{{colonne}}` compris, plutôt qu’avec les [valeurs de la ligne](/basedb/fonctionnalites/tables-et-champs/#texte-riche-et-variables) |
@@ -85,4 +85,4 @@ lecteurs en obtiennent deux versions —, écrite **dans la langue de votre écr
 en OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Les noms, les chemins et les
 codes d’erreur restent les mêmes dans toutes les langues.
 
-![La documentation générée d’une base](../../../assets/screens/documentation-api.png)
+![La documentation générée d’une base](../../../assets/screens/fr/documentation-api.webp)

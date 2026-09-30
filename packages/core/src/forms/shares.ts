@@ -1,5 +1,20 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { type FormCondition, isEmptyAnswer, visibleQuestions } from '@basedb/contracts'
+import {
+  FORM_PREFILL_KINDS,
+  type FormCondition,
+  type FormPrefill,
+  QUIZ_MAX_POINTS,
+  QUIZ_REVEALS,
+  type QuizAnswer,
+  type QuizQuestion,
+  type QuizReveal,
+  isEmptyAnswer,
+  isRightAnswer,
+  quizAnswerFits,
+  quizPassed,
+  scoreQuiz,
+  visibleQuestions,
+} from '@basedb/contracts'
 import { writeAudit } from '../audit/journal.js'
 import { seal, unseal } from '../auth/sealing.js'
 import { BasedbError } from '../errors/index.js'
@@ -7,13 +22,14 @@ import { decide } from '../rbac/decide.js'
 import { loadGrants, loadTarget } from '../rbac/loader.js'
 import { requireOnTable } from '../rbac/require.js'
 import { createRecordFor } from '../records/create.js'
+import { DEFAULT_STILL_VALID, type FieldDefault } from '../records/defaults.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, sealContext, withTransaction } from '../tx/context.js'
 
 /**
  * Shared forms — chapter 15.
  *
- * A form or a survey (a view, chapter 11 §1.6) asks for a row; SHARING it lets someone
+ * A form, a survey or a quiz (a view, chapter 11 §1.6) asks for a row; SHARING it lets someone
  * answer who holds no right on the table: anyone with the link when it is PUBLIC, any
  * signed-in member of the tenant — or of chosen groups — when it is for MEMBERS.
  *
@@ -78,8 +94,17 @@ export interface SharedQuestion {
   }> | null
   /** An example of an answer, shown in the empty input. */
   readonly placeholder: string | null
+  /** What the question holds before an answer: `today`, in a date question. */
+  readonly prefill: FormPrefill | null
+  /**
+   * The field's default (04 §1.5), which the page prefills — but « the person creating »,
+   * which the kernel fills itself for a signed-in respondent and leaves empty otherwise.
+   */
+  readonly default: FieldDefault | null
   /** Asked only when an earlier answer says so. */
   readonly showIf: FormCondition | null
+  /** A quiz question's worth, when it is graded. Its right answer never leaves the server. */
+  readonly points: number | null
   /** How a number or a text reads: a rating in stars, an amount, a phone number. */
   readonly format: {
     readonly display: string
@@ -103,9 +128,33 @@ export interface SharedFormDesign {
   readonly endLink: { readonly label: string; readonly url: string } | null
 }
 
+/** How a shared quiz grades: when it shows the right answers, and its pass mark. */
+export interface SharedQuiz {
+  readonly reveal: QuizReveal
+  readonly passPercent: number | null
+}
+
+/**
+ * What an answer to a quiz earned: its score and, unless its author keeps them for
+ * themselves (`never`), which questions were right and what their right answer was.
+ */
+export interface QuizOutcome {
+  readonly score: number
+  readonly max: number
+  /** `null`: the quiz sets no pass mark. */
+  readonly passed: boolean | null
+  readonly marks: ReadonlyArray<{
+    readonly field: string
+    readonly right: boolean
+    readonly points: number
+    readonly of: number
+    readonly correct: QuizAnswer
+  }>
+}
+
 /** A shared form as the person answering it sees it — nothing of the table beyond it. */
 export interface SharedForm {
-  readonly kind: 'form' | 'survey'
+  readonly kind: 'form' | 'survey' | 'quiz'
   readonly title: string
   readonly description: string
   readonly submitLabel: string
@@ -116,6 +165,8 @@ export interface SharedForm {
   readonly respondent: string | null
   readonly questions: readonly SharedQuestion[]
   readonly design: SharedFormDesign
+  /** A quiz's grading, without its answers; `null` for a form or a survey. */
+  readonly quiz: SharedQuiz | null
 }
 
 /** What a shared link asks. A relation would read another table; a file, deposit one. */
@@ -217,6 +268,8 @@ interface FieldLine extends Record<string, unknown> {
   readonly display_format: string | null
   readonly rating_max: number | null
   readonly currency_code: string | null
+  readonly default_kind: FieldDefault['kind'] | null
+  readonly default_value: unknown
 }
 
 /**
@@ -234,11 +287,15 @@ async function questionsOf(
   const fields = await exec.query<FieldLine>(
     `SELECT f.id::text, n.name, f.label, f.description, f.kind, f.is_required,
             coalesce(nc.display_format, tc.display_format) AS display_format,
-            nc.rating_max, nc.currency_code
+            nc.rating_max, nc.currency_code,
+            CASE WHEN fd.field_id IS NOT NULL AND ${DEFAULT_STILL_VALID} THEN fd.kind END
+              AS default_kind,
+            fd.value AS default_value
        FROM _basedb.field f
        JOIN _basedb.physical_name n ON n.id = f.name_id
        LEFT JOIN _basedb.field_number_config nc ON nc.field_id = f.id
        LEFT JOIN _basedb.field_text_config tc ON tc.field_id = f.id
+       LEFT JOIN _basedb.field_default fd ON fd.field_id = f.id
       WHERE f.table_id = $1 AND f.is_live AND f.deleted_at IS NULL`,
     [row.table_id],
   )
@@ -293,7 +350,16 @@ async function questionsOf(
         typeof entry.placeholder === 'string' && entry.placeholder.trim() !== ''
           ? entry.placeholder
           : null,
+      prefill:
+        entry.prefill === 'today' && FORM_PREFILL_KINDS.includes(field.kind) ? 'today' : null,
+      default:
+        field.default_kind === null || field.default_kind === 'me'
+          ? null
+          : field.default_kind === 'value'
+            ? { kind: 'value', value: field.default_value }
+            : { kind: field.default_kind },
       showIf: conditionOf(entry.show_if),
+      points: quizAnswerFits(field.kind, entry.correct) ? pointsOf(entry.points) : null,
       format:
         field.display_format === null ||
         field.display_format === 'plain' ||
@@ -319,6 +385,62 @@ async function questionsOf(
     })
   }
   return { questions, omitted }
+}
+
+/** A quiz question's points, as the spec keeps them: one unless its author says more. */
+const pointsOf = (raw: unknown): number =>
+  typeof raw === 'number' && Number.isInteger(raw) && raw >= 1 && raw <= QUIZ_MAX_POINTS ? raw : 1
+
+/** A quiz's grading of the questions a link asks — the right answers, kept on this side. */
+function gradingOf(
+  spec: Readonly<Record<string, unknown>>,
+  questions: readonly SharedQuestion[],
+): QuizQuestion[] {
+  const entries = Array.isArray(spec.fields) ? (spec.fields as Array<Record<string, unknown>>) : []
+  return questions.map((q) => {
+    const correct = entries.find((e) => e.field === q.name)?.correct
+    return {
+      field: q.name,
+      kind: q.kind,
+      correct: quizAnswerFits(q.kind, correct) ? correct : null,
+      points: q.points ?? 1,
+    }
+  })
+}
+
+/** How a quiz grades, as its spec keeps it. */
+function quizOf(spec: Readonly<Record<string, unknown>>): SharedQuiz {
+  const reveal = (QUIZ_REVEALS as readonly unknown[]).includes(spec.reveal)
+    ? (spec.reveal as QuizReveal)
+    : 'each'
+  const pass = spec.pass_percent
+  return {
+    reveal,
+    passPercent:
+      typeof pass === 'number' && Number.isInteger(pass) && pass >= 1 && pass <= 100 ? pass : null,
+  }
+}
+
+/**
+ * The field a quiz writes its score into: a live number the publisher may write — else
+ * none, and the score is only shown.
+ */
+async function scoreFieldOf(
+  exec: Executor,
+  row: ShareRow,
+  writable: ReadonlySet<string>,
+): Promise<string | null> {
+  const name = row.view_spec.score_field
+  if (typeof name !== 'string' || name === '') return null
+  const [field] = await exec.query<{ id: string }>(
+    `SELECT f.id::text
+       FROM _basedb.field f
+       JOIN _basedb.physical_name n ON n.id = f.name_id
+      WHERE f.table_id = $1 AND n.name = $2 AND f.kind = 'number'
+        AND f.is_live AND f.deleted_at IS NULL`,
+    [row.table_id, name],
+  )
+  return field !== undefined && writable.has(field.id) ? name : null
 }
 
 /** A condition as the spec keeps it — the kernel validated it when the view was saved. */
@@ -356,8 +478,8 @@ function designOf(spec: Readonly<Record<string, unknown>>, tableColor: string | 
   } satisfies SharedFormDesign
 }
 
-/** A form or a survey is answered; every other view is read (chapter 15 §10). */
-export const isAnswered = (kind: string) => kind === 'form' || kind === 'survey'
+/** A form, a survey or a quiz is answered; every other view is read (chapter 15 §10). */
+export const isAnswered = (kind: string) => kind === 'form' || kind === 'survey' || kind === 'quiz'
 
 /**
  * May the publisher still do what the share does here — create rows for a form, read them
@@ -861,7 +983,7 @@ export async function openSharedForm(
     const spec = row.view_spec
     const text = (key: string) => (typeof spec[key] === 'string' ? (spec[key] as string) : '')
     return {
-      kind: row.view_kind === 'survey' ? 'survey' : 'form',
+      kind: row.view_kind === 'survey' || row.view_kind === 'quiz' ? row.view_kind : 'form',
       title: text('title').trim() === '' ? row.view_label : text('title'),
       description: text('description'),
       submitLabel: text('submit_label'),
@@ -871,6 +993,7 @@ export async function openSharedForm(
       respondent: respondentName,
       questions,
       design: designOf(spec, row.table_color),
+      quiz: row.view_kind === 'quiz' ? quizOf(spec) : null,
     }
   })
 }
@@ -887,6 +1010,10 @@ const isEmpty = (value: unknown) =>
  *
  * A place is taken among `max_responses` BEFORE the row is written, and given back if the
  * row is refused: two answers arriving together cannot both take the last place.
+ *
+ * A quiz is scored HERE, from the answers received — the page never holds the right
+ * answers of a public quiz — and its score goes into the row when the quiz names a field
+ * for it that the publisher may write.
  */
 export async function submitSharedForm(
   pools: Pools,
@@ -896,7 +1023,7 @@ export async function submitSharedForm(
     readonly requestId: string
     readonly values: Readonly<Record<string, unknown>>
   },
-): Promise<{ readonly received: true }> {
+): Promise<{ readonly received: true; readonly quiz: QuizOutcome | null }> {
   if (
     typeof request.values !== 'object' ||
     request.values === null ||
@@ -908,9 +1035,11 @@ export async function submitSharedForm(
   const admitted = await pools.withConnection('catalog', async (exec) => {
     const found = await admit(exec, request.token, request.respondent, request.requestId, now)
     const { questions } = await questionsOf(exec, found.row, found.writable)
-    return { ...found, questions }
+    const scoreField =
+      found.row.view_kind === 'quiz' ? await scoreFieldOf(exec, found.row, found.writable) : null
+    return { ...found, questions, scoreField }
   })
-  const { row, questions } = admitted
+  const { row, questions, scoreField } = admitted
 
   const asked = new Set(questions.map((q) => q.name))
   const unknown = Object.keys(request.values).find((name) => !asked.has(name))
@@ -938,6 +1067,14 @@ export async function submitSharedForm(
   )
   if (Object.keys(values).length === 0) {
     throw new BasedbError('REQUIRED_VALUE_MISSING', { details: { reason: 'reponse_vide' } })
+  }
+
+  const graded =
+    row.view_kind === 'quiz' ? scoreQuiz(gradingOf(row.view_spec, questions), values, shown) : null
+  const written = new Set(asked)
+  if (graded !== null && scoreField !== null) {
+    values[scoreField] = graded.score
+    written.add(scoreField)
   }
 
   const authority = authorityOf(row, request.requestId)
@@ -970,7 +1107,7 @@ export async function submitSharedForm(
     await createRecordFor(pools, authority, writer, {
       tableId: row.table_id,
       values,
-      fields: asked,
+      fields: written,
     })
   } catch (error) {
     await withTransaction(pools, 'catalog', authority, (exec) =>
@@ -983,5 +1120,64 @@ export async function submitSharedForm(
     ).catch(() => undefined)
     throw error
   }
-  return { received: true }
+  return { received: true, quiz: graded === null ? null : outcomeOf(row, questions, graded) }
+}
+
+/** What a quiz's page is told once answered: the score, and what its author lets it see. */
+function outcomeOf(
+  row: ShareRow,
+  questions: readonly SharedQuestion[],
+  graded: ReturnType<typeof scoreQuiz>,
+): QuizOutcome {
+  const { reveal, passPercent } = quizOf(row.view_spec)
+  const grading = gradingOf(row.view_spec, questions)
+  return {
+    score: graded.score,
+    max: graded.max,
+    passed: quizPassed(graded.score, graded.max, passPercent),
+    marks:
+      reveal === 'never'
+        ? []
+        : graded.marks.flatMap((mark) => {
+            const correct = grading.find((g) => g.field === mark.field)?.correct
+            return correct === undefined || correct === null ? [] : [{ ...mark, correct }]
+          }),
+  }
+}
+
+/**
+ * Grades ONE answer of a shared quiz that shows its right answers as it goes (`each`):
+ * the page asks after each question, and learns that answer only once it is given.
+ */
+export async function checkSharedAnswer(
+  pools: Pools,
+  request: {
+    readonly token: string
+    readonly respondent: RequestContext | null
+    readonly requestId: string
+    readonly field: string
+    readonly value: unknown
+  },
+): Promise<{ readonly right: boolean; readonly points: number; readonly correct: QuizAnswer }> {
+  return pools.withConnection('catalog', async (exec) => {
+    const { row, writable } = await admit(
+      exec,
+      request.token,
+      request.respondent,
+      request.requestId,
+      new Date(),
+    )
+    if (row.view_kind !== 'quiz' || quizOf(row.view_spec).reveal !== 'each') {
+      throw new BasedbError('REQUEST_INVALID', { details: { reason: 'correction_a_la_fin' } })
+    }
+    const { questions } = await questionsOf(exec, row, writable)
+    const question = gradingOf(row.view_spec, questions).find((q) => q.field === request.field)
+    if (question === undefined || question.correct === null) {
+      throw new BasedbError('REQUEST_INVALID', {
+        details: { field: request.field, reason: 'question_non_notee' },
+      })
+    }
+    const right = isRightAnswer(question.kind, question.correct, request.value)
+    return { right, points: right ? question.points : 0, correct: question.correct }
+  })
 }

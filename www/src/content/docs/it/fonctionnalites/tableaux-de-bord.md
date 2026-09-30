@@ -9,7 +9,7 @@ prossime scadenze. Ogni scheda mostra una **domanda** — una lettura del databa
 costruita con il mouse o scritta in SQL — e dei **filtri** in cima alla pagina controllano le
 schede a cui sono collegati.
 
-![La dashboard «Pilotage de l’agence»: tendenza del mese, obiettivo, fatturato in pila, sentiment delle recensioni](../../../../assets/screens/tableaux-de-bord.png)
+![La dashboard «Pilotage de l’agence»: tendenza del mese, obiettivo, fatturato in pila, sentiment delle recensioni](../../../../assets/screens/it/tableaux-de-bord.webp)
 
 Tutto si apre da **Dashboard**, nel riquadro del database aperto in fondo alla barra
 laterale. A sinistra, le dashboard e le domande salvate del database, e
@@ -31,7 +31,7 @@ conserva il suo contenuto, tornato non salvato.
 
 Una domanda si costruisce per passaggi, uno sotto l’altro:
 
-![L’editor di una domanda: i dati, i filtri, il riepilogo per mese](../../../../assets/screens/question-editeur.png)
+![L’editor di una domanda: i dati, i filtri, il riepilogo per mese](../../../../assets/screens/it/question-editeur.webp)
 
 | Passaggio | Cosa vi si sceglie |
 |---|---|
@@ -165,7 +165,7 @@ completa il resto. Può avere un **valore predefinito** — «Quest’anno», pe
 In lettura, un clic su un punto può anche impostare un filtro: **Filtra per «Lyon»** su una
 scheda la cui colonna delle città è collegata al filtro «Ville».
 
-![La tab «Activité»: attività per scadenza in pila per stato, imbuto dei progetti, ore stimate in tabella pivot](../../../../assets/screens/tableaux-de-bord-activite.png)
+![La tab «Activité»: attività per scadenza in pila per stato, imbuto dei progetti, ore stimate in tabella pivot](../../../../assets/screens/it/tableaux-de-bord-activite.webp)
 
 ## Il Copilot
 

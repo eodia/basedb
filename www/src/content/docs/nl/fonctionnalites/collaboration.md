@@ -12,7 +12,7 @@ De rijdetails van een rij hebben een tabblad **Opmerkingen**, tussen “Details�
 `@` om een lid te **vermelden**, Ctrl+Enter om te verzenden. Iedereen kan zijn eigen
 opmerkingen bewerken of verwijderen.
 
-![Een gesprek over een project](../../../../assets/screens/commentaires.png)
+![Een gesprek over een project](../../../../assets/screens/nl/commentaires.webp)
 
 Wie de rij mag lezen, mag er ook een opmerking bij plaatsen. Een vermelde persoon die haar niet mag lezen,
 krijgt geen melding — en de auteur wordt daarvan op de hoogte gebracht in plaats van te denken dat het bericht is verstuurd.
@@ -30,7 +30,15 @@ De bel, rechtsboven, telt wat nog niet gelezen is. Er komen vier soorten dingen 
 Een melding openen opent de rij. **Alles als gelezen markeren** zet de teller op nul; de
 meldingen worden 90 dagen bewaard.
 
-![Een ontvangen vermelding](../../../../assets/screens/notifications.png)
+### Per e-mail
+
+Als de instantie een [verzendserver](/basedb/nl/hebergement/variables/#e-mails) heeft, wordt een
+melding die **tien minuten ongelezen is gebleven** ook per e-mail verstuurd: één enkele e-mail
+voor alle meldingen die wachten, met een link naar elke rij. Wat je op tijd leest, wordt niet
+verstuurd. Bij **Instellingen › Meldingen** heeft elke soort twee schakelaars: in basedb, en
+per e-mail.
+
+![Een ontvangen vermelding](../../../../assets/screens/nl/notifications.webp)
 
 ## Realtime
 
@@ -74,6 +82,6 @@ Ctrl+Z maakt je laatste schrijfactie ongedaan — zie [de geschiedenis](/basedb/
 
 ## Beperkingen
 
-- Meldingen blijven in basedb: er wordt voorlopig geen enkele per e-mail verstuurd.
+- Geen e-mail zonder een verzendserver die de serverbeheerder heeft ingesteld.
 - Bij meer dan honderd rijen die in één keer wijzigen, herlaadt het scherm de hele pagina in plaats van
   rij voor rij.

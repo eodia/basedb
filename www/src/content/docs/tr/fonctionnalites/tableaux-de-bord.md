@@ -8,7 +8,7 @@ bunların aydan aya değişimi, bir durumun dağılımı, yaklaşan son tarihler
 **soru** gösterir — veritabanının fareyle oluşturulmuş ya da SQL ile yazılmış bir okuması — ve
 sayfanın üstündeki **filtreler** kendilerine bağlanan kartları yönetir.
 
-![“Pilotage de l’agence” panosu: ayın eğilimi, hedef, yığılmış ciro, değerlendirmelerin duygu durumu](../../../../assets/screens/tableaux-de-bord.png)
+![“Pilotage de l’agence” panosu: ayın eğilimi, hedef, yığılmış ciro, değerlendirmelerin duygu durumu](../../../../assets/screens/tr/tableaux-de-bord.webp)
 
 Her şey, kenar çubuğunun altındaki açık veritabanı bloğunda yer alan **Panolar** bağlantısından
 açılır. Solda veritabanının panoları ve kayıtlı soruları ile hiçbir şey kaydetmeden soru sormak
@@ -30,7 +30,7 @@ sekme, yeniden kaydedilmemiş hâliyle içeriğini korur.
 
 Bir soru, alt alta adımlarla oluşturulur:
 
-![Bir sorunun düzenleyicisi: veriler, filtreler, aylık özet](../../../../assets/screens/question-editeur.png)
+![Bir sorunun düzenleyicisi: veriler, filtreler, aylık özet](../../../../assets/screens/tr/question-editeur.webp)
 
 | Adım | Orada ne seçilir |
 |---|---|
@@ -165,7 +165,7 @@ gerisini tamamlar. Filtrenin bir **varsayılan değeri** olabilir — örneğin 
 Okuma modunda bir noktaya tıklamak da bir filtreyi ayarlayabilir: şehirler sütunu “Ville”
 filtresine bağlı bir kartta **“Lyon” ile filtrele**.
 
-![“Activité” sekmesi: duruma göre yığılmış, son tarihe göre görevler, projelerin hunisi, pivot tabloda tahmini saatler](../../../../assets/screens/tableaux-de-bord-activite.png)
+![“Activité” sekmesi: duruma göre yığılmış, son tarihe göre görevler, projelerin hunisi, pivot tabloda tahmini saatler](../../../../assets/screens/tr/tableaux-de-bord-activite.webp)
 
 ## Copilot
 

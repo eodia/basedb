@@ -1597,7 +1597,7 @@ function QuestionCard(props: CardProps) {
         const text = valueText(column, value, { base, members })
         if (parameter.type === 'category' && value !== null && value !== undefined) {
           out.push({
-            label: `${parameter.label} : « ${text} »`,
+            label: $t('{parameter} : « {value} »', { parameter: parameter.label, value: text }),
             apply: () => props.onValues((v) => ({ ...v, [parameter.id]: [String(value)] })),
           })
           covered.add(column)

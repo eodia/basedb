@@ -26,7 +26,7 @@ Das **+** der Reiterleiste oder das Menü **⋯** der Datenbank → **SQL-Abfrag
 Syntaxhervorhebung und Autovervollständigung, dessen Ergebnis im selben Raster erscheint wie Ihre
 Tabellen.
 
-![Eine gespeicherte Abfrage und zwei SQL-Views zwischen den Tabellen](../../../../assets/screens/requete-sql.png)
+![Eine gespeicherte Abfrage und zwei SQL-Views zwischen den Tabellen](../../../../assets/screens/de/requete-sql.webp)
 
 - **Jede Person liest dort mit ihren Berechtigungen**: Die Stufe Verwalten hat die ganze Datenbank,
   Schreibvorgänge eingeschlossen; die anderen Mitglieder schreiben schreibgeschütztes SQL, in dem
@@ -53,6 +53,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+Dieses Konto ist der Eigentümer der Datenbank: Es liest alles, und die Berechtigungen von basedb
+greifen dort nicht. Legen Sie für ein BI-Tool lieber eine eigene Rolle mit eigenen `GRANT`s an.
+Trägt eine Tabelle eine [Zeilenregel](/basedb/de/fonctionnalites/droits/#bis-hinunter-zur-zeile),
+wendet PostgreSQL dort die Sicherheit auf Zeilenebene an: Eine solche Rolle sieht dort keine
+Zeile ohne das Attribut `BYPASSRLS` oder eine eigene Policy.
 
 ## In SQL schreiben
 

@@ -12,7 +12,7 @@ I dettagli della riga hanno una tab **Commenti**, tra «Dettagli» e «Cronologi
 `@` per **menzionare** un membro, Ctrl+Invio per inviare. Ognuno modifica o elimina i
 propri commenti.
 
-![Una conversazione su un progetto](../../../../assets/screens/commentaires.png)
+![Una conversazione su un progetto](../../../../assets/screens/it/commentaires.webp)
 
 Poter leggere la riga basta per commentarla. Una persona menzionata che non può leggerla
 non viene avvisata — e l’autore ne viene informato invece di credere che il messaggio sia partito.
@@ -30,7 +30,14 @@ La campanella, in alto a destra, conta ciò che non è stato letto. Vi arrivano 
 Aprire una notifica apre la riga. **Segna tutto come letto** azzera il contatore; le
 notifiche vengono conservate 90 giorni.
 
-![Una menzione ricevuta](../../../../assets/screens/notifications.png)
+### Via email
+
+Quando l’istanza ha un [server di invio](/basedb/it/hebergement/variables/#email), una
+notifica rimasta **dieci minuti senza essere letta** parte anche via email: un’unica email
+per tutte quelle in attesa, con un link a ogni riga. Ciò che leggi in tempo non parte. In
+**Impostazioni › Notifiche**, ogni tipo ha due interruttori: in basedb, e via email.
+
+![Una menzione ricevuta](../../../../assets/screens/it/notifications.webp)
 
 ## Tempo reale
 
@@ -74,6 +81,6 @@ Ctrl+Z annulla la tua ultima scrittura — vedi [la cronologia](/basedb/it/fonct
 
 ## Limiti
 
-- Le notifiche restano in basedb: per ora nessuna viene inviata via email.
+- Nessuna email senza un server di invio configurato da chi amministra l’installazione.
 - Oltre cento righe modificate in una volta, lo schermo ricarica l’intera pagina invece di
   aggiornarla riga per riga.

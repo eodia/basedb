@@ -67,6 +67,47 @@ Lásd: [Fiókok és bejelentkezés](/basedb/hu/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | – | hitelesítő adatok |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` a gazdanév alapú címzéshez |
 
+## E-mailek
+
+Levélküldő szerver nélkül a basedb egyetlen e-mailt sem küld el. Vele együtt megy ki a tíz
+percig olvasatlanul maradt értesítés (mindenki maga választja meg, melyiket, a **Beállítások ›
+Értesítések** menüpontban), az automatizálások **E-mail küldése** lépésének e-mailjei, és egy
+**elfelejtett jelszó** hivatkozása. A hivatkozások a `BASEDB_PUBLIC_URL`-re mutatnak; ennek
+hiányában egy e-mail nem hordoz ilyet.
+
+| Változó | Alapértelmezés | Szerep |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | az SMTP-szerver: az Öné, vagy egy kiküldő szolgáltatásé |
+| `BASEDB_SMTP_PORT` | `587` | `465` az azonnal titkosított kapcsolathoz |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` a 465-ös porton) | `none` csak ugyanazon a gépen futó továbbító esetén: különben a jelszó nyílt szövegben menne |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | — | a kiküldő fiók azonosítója, ha kér ilyet |
+| `BASEDB_MAIL_FROM` | — | kötelező a `BASEDB_SMTP_HOST` mellett: a feladó, `basedb <no-reply@exemple.fr>` |
+
+Induláskor a napló jelzi, mi a helyzet: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` Egy e-mailt, amelyet a szerver visszautasít, a rendszer 1, 5,
+30, 120, majd 360 perc múlva újra megkísérel elküldeni.
+
+## Térképek és címek
+
+A **Térkép** nézet egy geokódolási szolgáltatás segítségével helyezi el a címet:
+alapértelmezés szerint az OpenStreetMapét (Nominatim), amelyet a rendszer címenként egyszer
+keres meg, legfeljebb másodpercenként egy kéréssel, és minden választ megőriz. A térkép alapja
+**csempékből** áll, amelyeket minden olvasó böngészője közvetlenül tölt be.
+
+| Változó | Alapértelmezés | Szerep |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | egy másik, ugyanazt a protokollt beszélő szolgáltatás (egy saját Nominatim); `off`: semelyik, a címek nem hagyják el a példányt, és csak a szélességi és hosszúsági fok helyezi el a sorokat |
+| `BASEDB_MAP_TILES` | az OpenStreetMap csempéi | egy másik csempeszerver, `https://…/{z}/{x}/{y}.png` mintával |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | a felirat, amelyet ez a szerver kér, a térkép jobb alsó sarkában |
+
+Induláskor a napló jelzi, melyik szolgáltatást használja: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## PDF-dokumentumok
+
+| Változó | Alapértelmezés | Szerep |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | a lemezkép Noto betűtípusai | egy saját mappa, a konténerbe csatolva, amely tartalmazza a `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic` fájlokat, kínaihoz, japánhoz és koreaihoz pedig a `NotoSansCJK-Regular.ttc` és `-Bold.ttc` fájlokat |
+
 ## Adatbázissablonok
 
 | Változó | Alapértelmezés | Szerep |

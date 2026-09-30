@@ -66,6 +66,45 @@ Se [Kontoer og innlogging](/basedb/nb/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | – | påloggingsinformasjon |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` for vertsbasert adressering |
 
+## E-poster
+
+Uten en utsendingsserver sender basedb ingen e-post. Med den sendes varsler som har stått
+uleste i ti minutter (hver enkelt velger hvilke, under **Innstillinger › Varsler**), e-postene
+fra automatiseringstrinnet **Send en e-post**, og lenken til et **glemt passord**. Lenkene peker
+til `BASEDB_PUBLIC_URL`; uten den bærer en e-post ingen lenke.
+
+| Variabel | Standard | Rolle |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | – | SMTP-serveren: den til e-postleverandøren din eller en utsendingstjeneste |
+| `BASEDB_SMTP_PORT` | `587` | `465` for en kryptert forbindelse fra starten |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` på port 465) | `none` bare for en relé på samme maskin: ellers ville passordet gått i klartekst |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | – | brukernavnet til utsendingskontoen, hvis den krever et |
+| `BASEDB_MAIL_FROM` | – | obligatorisk med `BASEDB_SMTP_HOST`: avsenderen, `basedb <no-reply@exemple.fr>` |
+
+Ved oppstart forteller loggen hvordan det står: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` En e-post som serveren avviser, prøves på nytt etter 1, 5, 30,
+120 og deretter 360 minutter.
+
+## Kart og adresser
+
+Visningen **Kart** plasserer en adresse med en geokodingstjeneste: som standard OpenStreetMap
+(Nominatim), spurt én gang per adresse, høyst én forespørsel i sekundet, og hvert svar lagres.
+Kartbunnen er laget av **fliser** som nettleseren til hver leser laster direkte.
+
+| Variabel | Standard | Rolle |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | en annen tjeneste som snakker samme protokoll (en egen Nominatim); `off`: ingen, adressene forlater ikke instansen, og bare breddegraden og lengdegraden plasserer radene |
+| `BASEDB_MAP_TILES` | flisene til OpenStreetMap | en annen flistjener, mønster `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | henvisningen denne tjeneren krever, nederst til høyre på kartet |
+
+Ved oppstart forteller loggen hvilken tjeneste som brukes: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## PDF-dokumenter
+
+| Variabel | Standard | Rolle |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | Noto-skriftene i imaget | en egen mappe, montert i containeren, som har `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic`, og for kinesisk, japansk og koreansk `NotoSansCJK-Regular.ttc` og `-Bold.ttc` |
+
 ## Databasemaler
 
 | Variabel | Standard | Rolle |

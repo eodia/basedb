@@ -3,12 +3,12 @@ title: Gedeelde formulieren
 description: Een formulier delen via een link, openbaar of alleen voor ingelogde leden.
 ---
 
-Een formulier of een enquête wordt **via een link gedeeld**: `/f/<jeton>`. Wie
+Een formulier, een enquête of een quiz wordt **via een link gedeeld**: `/f/<jeton>`. Wie
 antwoordt, heeft **geen enkel recht op de tabel** nodig: elk antwoord voegt een rij toe, en verder
 wordt er niets van de tabel getoond. Om rijen te tonen in plaats van ze te ontvangen, deel je een weergave
 [alleen-lezen](/basedb/nl/fonctionnalites/vues-partagees/).
 
-![Het dialoogvenster voor delen](../../../../assets/screens/partage-formulaire.png)
+![Het dialoogvenster voor delen](../../../../assets/screens/nl/partage-formulaire.webp)
 
 ## Wie kan antwoorden
 
@@ -21,7 +21,7 @@ De pagina van de link staat buiten de applicatie: geen zijbalk, geen databasenaa
 Ze draagt het uiterlijk van het formulier — zijn thema, zijn kleur, zijn lettertype —, en stelt
 alleen de vragen die eerdere antwoorden oproepen.
 
-![Een openbaar formulier](../../../../assets/screens/formulaire-public.png)
+![Een openbaar formulier](../../../../assets/screens/nl/formulaire-public.webp)
 
 ## Namens wie het antwoord wordt geschreven
 
@@ -47,6 +47,21 @@ Het dialoogvenster regelt:
 - **Delen stoppen**: de link verdwijnt, de antwoorden blijven in de tabel.
 
 Een gesloten formulier meldt dat in één zin, nog voordat er om inloggen wordt gevraagd.
+
+## Een gedeelde quiz
+
+De pagina van een quiz ontvangt **geen enkel juist antwoord**: alleen wat elke vraag waard is.
+De server kijkt na.
+
+- Bij nakijken **na elke vraag** stuurt de pagina de server elk beoordeeld antwoord op het moment
+  dat het wordt gegeven, en verneemt dan of het juist is — en wat het juiste antwoord was.
+- Bij het verzenden telt de server de score **op basis van de ontvangen antwoorden** en schrijft
+  die naar het daarvoor gekozen veld, als dat er is en de persoon die het delen heeft
+  gepubliceerd erin mag schrijven. De pagina toont de score die hij teruggeeft, en het
+  antwoordmodel, tenzij de quiz “nooit” zegt.
+
+Een score wordt dus in de tabel gelezen zoals de server die heeft geteld, niet zoals een pagina
+die zou hebben aangekondigd.
 
 ## Beperkingen
 

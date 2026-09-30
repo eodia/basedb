@@ -66,6 +66,46 @@ Voir [Comptes et connexion](/basedb/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | — | identifiants |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` pour l’adressage par hôte |
 
+## Courriels
+
+Sans serveur d’envoi, basedb n’envoie aucun courriel. Avec lui partent les notifications restées
+dix minutes sans être lues (chacun choisit lesquelles dans **Paramètres › Notifications**), les
+courriels de l’étape **Envoyer un courriel** des automatisations, et le lien d’un **mot de passe
+oublié**. Les liens pointent vers `BASEDB_PUBLIC_URL` ; sans elle, un courriel n’en porte pas.
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | le serveur SMTP : celui de votre messagerie ou d’un service d’envoi |
+| `BASEDB_SMTP_PORT` | `587` | `465` pour une connexion chiffrée d’emblée |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` sur le port 465) | `none` seulement pour un relais sur la même machine : sinon le mot de passe passerait en clair |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | — | l’identifiant du compte d’envoi, s’il en demande un |
+| `BASEDB_MAIL_FROM` | — | obligatoire avec `BASEDB_SMTP_HOST` : l’expéditeur, `basedb <no-reply@exemple.fr>` |
+
+Au démarrage, le journal dit ce qu’il en est : `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` Un courriel que le serveur refuse est repris 1, 5, 30, 120 puis
+360 minutes plus tard.
+
+## Cartes et adresses
+
+La vue **Carte** place une adresse grâce à un service de géocodage : celui d’OpenStreetMap
+(Nominatim) par défaut, interrogé une fois par adresse, une requête par seconde au plus, chaque
+réponse gardée. Le fond de carte est fait de **tuiles** que le navigateur de chaque lecteur
+charge directement.
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | un autre service qui parle le même protocole (un Nominatim à vous) ; `off` : aucun, les adresses ne quittent pas l’instance et seules la latitude et la longitude placent les lignes |
+| `BASEDB_MAP_TILES` | les tuiles d’OpenStreetMap | un autre serveur de tuiles, modèle `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | la mention que ce serveur demande, en bas à droite de la carte |
+
+Au démarrage, le journal dit quel service est employé : `Géocodage : https://nominatim.openstreetmap.org.`
+
+## Documents PDF
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | les polices Noto de l’image | un dossier à vous, monté dans le conteneur, qui tient `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic`, et pour le chinois, le japonais et le coréen `NotoSansCJK-Regular.ttc` et `-Bold.ttc` |
+
 ## Modèles de base
 
 | Variable | Défaut | Rôle |

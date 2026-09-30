@@ -233,6 +233,8 @@ function sortExpression(view: AgentView, table: AgentTable, sort: readonly strin
 
 /** An estimate of the table's size, for a count past the exact bound (§5.1). */
 async function estimate(pools: Pools, table: AgentTable): Promise<number | null> {
+  // Under a row rule, the table's size is not the reader's to learn (05 §16).
+  if (table.decisions.read.rowPredicate !== 'TRUE') return null
   const rows = await pools.withConnection('data', (exec) =>
     exec.query<{ n: string }>(
       `SELECT c.reltuples::bigint AS n

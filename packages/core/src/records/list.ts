@@ -3,6 +3,8 @@ import { isFileKind } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { type Decision, SYSTEM_COLUMNS, decide } from '../rbac/decide.js'
 import { loadFields, loadGrants, loadTarget } from '../rbac/loader.js'
+import { rowWhere } from '../rbac/rows.js'
+import { withMe } from '../rbac/rows.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, actorKey, withTransaction } from '../tx/context.js'
 import { COMPUTED_ALIAS, type ComputedColumn, lateralJoin, resolveComputed } from './computed.js'
@@ -583,10 +585,12 @@ export function buildSelect(
   // test looks for in every statement sent to the `data` pool, and a statement lacking
   // it fails the suite. The interpolated name is a physical name validated against
   // alphabet B, so it cannot close the comment.
-  const clauses = [`( /*predicat_lignes:${plan.tableName}*/ ${plan.decision.rowPredicate} )`]
+  const clauses = [
+    `( /*predicat_lignes:${plan.tableName}*/ ${rowWhere(plan.decision.rowPredicate, ALIAS)} )`,
+  ]
 
   if (options.filter !== undefined && options.filter.trim() !== '') {
-    const filter = buildFilter(options.filter, plan.filterable, {
+    const filter = buildFilter(withMe(options.filter, binding.actorId), plan.filterable, {
       alias: ALIAS,
       firstParameter: params.length + 1,
       links: plan.links,

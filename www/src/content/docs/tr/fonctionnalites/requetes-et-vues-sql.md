@@ -9,7 +9,7 @@ yalnızca kendisi için, tüm veritabanı için ya da birkaç grup için —; ve
 de ondan bir **SQL görünümü** yapabilir: tabloların arasında yer alan, `psql`'in ve
 araçlarınızın da okuduğu gerçek bir PostgreSQL görünümü.
 
-![“Sorgular” bölümünden açılmış kayıtlı bir sorgu; üstte, tabloların arasında yer alan iki SQL görünümü](../../../../assets/screens/requete-sql.png)
+![“Sorgular” bölümünden açılmış kayıtlı bir sorgu; üstte, tabloların arasında yer alan iki SQL görünümü](../../../../assets/screens/tr/requete-sql.webp)
 
 ## Herkes kendi izinleriyle
 
@@ -24,7 +24,7 @@ kimin çalıştırdığına bağlıdır:
   sonucundan kaybolur ve tabloyu nitelendirseniz bile adını verirseniz reddedilir; bir yazma
   reddedilir. Sonuç **İzinleriniz** rozetini taşır.
 
-![“İzinleriniz” rozeti: sorgu yalnızca kişiye açık tabloları ve alanları görür](../../../../assets/screens/sql-vos-droits.png)
+![“İzinleriniz” rozeti: sorgu yalnızca kişiye açık tabloları ve alanları görür](../../../../assets/screens/tr/sql-vos-droits.webp)
 
 Ayıklamayı yapan ekran değildir: izinlerinizi, size özel bir rol üzerinde, sütun sütun
 PostgreSQL'in kendisi uygular. Bu yüzden bir sorgu size ızgaranın, API'nin ya da MCP
@@ -38,7 +38,7 @@ oluşturur, **Ad ve paylaşım…** (sekmede ya da kenar çubuğundaki menüsün
 adlandırır, kimin göreceğini değiştirir ya da siler — **Sil** de, sağ tıklamayla açılan
 menüsünde yer alır. Onu gösteren bir sekme, metnini korur.
 
-![Bir sorguyu kaydetme: adı, ne gösterdiği ve kimin gördüğü](../../../../assets/screens/requete-enregistrer.png)
+![Bir sorguyu kaydetme: adı, ne gösterdiği ve kimin gördüğü](../../../../assets/screens/tr/requete-enregistrer.webp)
 
 | Kapsam | Kim görür | Kim oluşturabilir ve değiştirebilir |
 |---|---|---|
@@ -63,7 +63,7 @@ gibi rengi ve simgesiyle **tabloların arasında** yer alır; sağındaki küç�
 görünüm olduğunu belirtir. Bir tıklama onu bir sekmede açar: satırları ızgarada, onları yeniden
 okumak için **Yenile**.
 
-![Kenar çubuğundan açılmış “Factures à encaisser” görünümü](../../../../assets/screens/vue-sql.png)
+![Kenar çubuğundan açılmış “Factures à encaisser” görünümü](../../../../assets/screens/tr/vue-sql.webp)
 
 Görünüm, veritabanının **⋯** menüsü → **Yeni SQL görünümü…** ile ya da bir SQL sekmesinden
 oluşturulur: **⋯** → **SQL görünümü oluştur…**; sekmenin sorgusu görünümün tanımı olur.
@@ -74,7 +74,7 @@ oluşturulur: **⋯** → **SQL görünümü oluştur…**; sekmenin sorgusu gö
 - **sorgusu**: veritabanının tabloları ve diğer görünümleri üzerinde tek bir `SELECT`.
   PostgreSQL reddettiğini reddeder ve düzenleyici hatanın yerini gösterir.
 
-![Bir SQL görünümünün iletişim kutusu: etiket ve görünüş, teknik ad, sorgu, açıklama](../../../../assets/screens/vue-sql-dialogue.png)
+![Bir SQL görünümünün iletişim kutusu: etiket ve görünüş, teknik ad, sorgu, açıklama](../../../../assets/screens/tr/vue-sql-dialogue.webp)
 
 Görünüm daha sonra adıyla, arayüzden olduğu gibi `psql`'den ya da BI aracınızdan da okunur:
 

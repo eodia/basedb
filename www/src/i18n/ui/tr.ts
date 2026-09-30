@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb — her tablosu gerçek bir PostgreSQL tablosu olan ortak veritabanı',
-			description: 'Izgaralar ve sekiz görünüm, formüller, paylaşılan formlar ve görünümler, yorumlar, otomasyonlar, panolar, alan düzeyinde izinler, eksiksiz geçmiş, REST API ve MCP sunucusu — açıkça adlandırılmış gerçek PostgreSQL tablolarında. Kendi sunucunuzda barındırılır, AGPL-3.0.',
+			description: 'Izgaralar ve on görünüm, formüller, paylaşılan formlar, sınavlar ve görünümler, yorumlar, otomasyonlar, panolar, alan düzeyinde izinler, eksiksiz geçmiş, REST API ve MCP sunucusu — açıkça adlandırılmış gerçek PostgreSQL tablolarında. Kendi sunucunuzda barındırılır, AGPL-3.0.',
 		},
 		changelog: {
 			title: 'Yenilikler — basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: 'Sekiz görünüm',
-								text: 'Izgara, kanban, takvim, zaman çizelgesi, galeri, liste, form, anket.',
+								title: 'On görünüm',
+								text: 'Izgara, kanban, takvim, zaman çizelgesi, galeri, liste, harita, form, anket, sınav.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb — tüm işiniz, aynı yerde',
-			description: 'Müşteriler, projeler, stoklar, başvurular: tüm ekibin aynı anda düzenlediği bir veritabanı, tablo, kanban ya da takvim olarak, panolar, otomasyonlar ve yapay zekayla. Kod yazmadan, özgür ve ücretsiz.',
+			title: 'basedb — tüm ekibin ortak veritabanı',
+			description: 'Tüm işiniz aynı yerde, tüm ekip tarafından aynı anda düzenlenir: tablo, kanban ya da takvim olarak; formlar, panolar, otomasyonlar ve yapay zekayla. Kod yazmadan, özgür ve ücretsiz.',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -895,9 +895,9 @@ export default {
 			text: 'Her işlev aynı tablolara, aynı izinlerle, aynı geçmişe yazar.',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: 'veri görüntüleme yöntemi',
-					text: 'Aynı satırlar üzerinde ızgara, kanban, takvim, zaman çizelgesi, galeri, liste, form ve anket. Herkes kendi görünümünü seçer.',
+					text: 'Aynı satırlar üzerinde ızgara, kanban, takvim, zaman çizelgesi, galeri, liste, harita, form, anket ve sınav. Herkes kendi görünümünü seçer.',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -947,7 +947,7 @@ export default {
 				},
 				import: {
 					title: 'Tek hareketle içe aktarma',
-					text: 'Bir CSV dosyasını sürükleyin: sütunlar ve türler tahmin edilir, tablo oluşturulur.',
+					text: 'Bir Excel çalışma kitabı ya da bir CSV dosyasını sürükleyin: sütunlar ve türler tahmin edilir, tablo oluşturulur.',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1040,7 +1040,7 @@ export default {
 				},
 				{
 					q: 'Mevcut e-tablolarımızı aktarabilir miyiz?',
-					a: 'Evet: sayfanızı CSV olarak kaydedin ve basedb’ye sürükleyin. İçe aktarma her sütunun türünü tahmin eder, tabloyu oluşturur ve neyi aktaramadığını satır satır belirtir.',
+					a: 'Evet: Excel çalışma kitabınızı ya da bir CSV’yi basedb’ye sürükleyin. İçe aktarma her sütunun türünü tahmin eder, tabloyu oluşturur ve neyi aktaramadığını satır satır belirtir.',
 				},
 				{
 					q: 'Aynı anda birden fazla kişi çalışabilir mi?',
@@ -1365,9 +1365,20 @@ export default {
 		text: 'Her işlev aynı tablolara, aynı izinler altında, aynı geçmişe yazar.',
 		more: 'Daha fazla bilgi →',
 		views: {
-			title: 'Aynı satırlar üzerinde sekiz görünüm',
+			title: 'Aynı satırlar üzerinde on görünüm',
 			text: 'Tüm ekip için ortak ya da yalnızca kendiniz için kişisel: herkes kendi okuma biçimini seçer, kimse verileri kopyalamaz.',
-			chips: ['Izgara', 'Kanban', 'Takvim', 'Zaman çizelgesi', 'Galeri', 'Liste', 'Form', 'Anket'],
+			chips: [
+				'Izgara',
+				'Kanban',
+				'Takvim',
+				'Zaman çizelgesi',
+				'Galeri',
+				'Liste',
+				'Harita',
+				'Form',
+				'Anket',
+				'Sınav',
+			],
 		},
 		forms: {
 			title: 'Paylaşılan formlar',
@@ -1431,7 +1442,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'CSV ve JSON içe aktarma',
+				title: 'Excel, CSV ve JSON içe aktarma',
 				text: 'Bir dosya sürükleyin: içe aktarma türleri tahmin eder, tabloyu oluşturur ya da var olan bir tabloyu tamamlar ve neyin reddedildiğini satır satır söyler.',
 				href: '/guides/premiers-pas/',
 			},
@@ -1540,6 +1551,66 @@ export default {
 		title: 'basedb’de neler değişti',
 		intro: 'Her değişikliğin ayrıntısı <a href="https://github.com/eodia/basedb/commits/main">deponun geçmişinde</a>. Sırada ne var: <a href="/feuille-de-route/">yol haritası</a>.',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: 'Harita ve yerini bulan adresler',
+				tag: 'Yeni',
+				items: [
+					'<strong>Onuncu bir görünüm: harita</strong>: her satır kendi yerine, adresine ya da enlem ve boylamına göre yerleştirilir. Bir iğne bir durumun rengini alır ve tek tıkla satır ayrıntılarını açar. <a href="/fonctionnalites/vues/#harita">Harita</a>',
+					'<strong>Bir adres bir kez ve kalıcı olarak konumlandırılır</strong>, OpenStreetMap servisi ya da seçtiğiniz servis tarafından: iğneler yanıtlar geldikçe belirir, ardından hemen. Bulunamayan bir adres sayılır, asla sessizce bir kenara atılmaz.',
+					'<strong>Kısa bir metin için Adres biçimi</strong>: bir tıklama onu haritada açar, ve satır ayrıntılarında <strong>Adres bul</strong> uyan tam adresleri önerir. <a href="/fonctionnalites/tables-et-champs/#görüntüleme-biçimleri">Biçimler</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: 'Satırlarınızdan PDF’ler',
+				tag: 'Yeni',
+				items: [
+					'<strong>Bir teklif, bir fatura, PDF olarak bir fiş</strong>, bir satırın menüsünden: hiçbir şey ayarlamadan yazdırılabilir fiş, ya da bir şablon — alanlara atıfta bulunan metinler, satırın alanları, toplamıyla bağlı satırlar tablosu, sayfa sonları. <a href="/fonctionnalites/documents/">Belgeler</a>',
+					'<strong>Herkes kendi izniyle</strong>: sizin için gizli bir alan PDF’inizde görünmez. Yirmi dilin tümü orada yazılır, Çince, Japonca ve Korece dahil, ve API aynı belgeyi verir.',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: 'Satır düzeyine kadar izinler, varsayılan değerler, Excel içe aktarma',
+				tag: 'Yeni',
+				items: [
+					'<strong>Herkesin kendi satırları</strong>: bir grup yalnızca bir filtrenin satırlarını görür — “Satış temsilcisi benim”, “Bölge Kuzey’dir” —, arayüzde, API’de, MCP sunucusunda, SQL’de olduğu gibi, PostgreSQL’in aynı kuralı uyguladığı yerde. <a href="/fonctionnalites/droits/#satır-düzeyine-kadar">Satır düzeyine kadar</a>',
+					'<strong>Varsayılan değerler</strong>: sabit bir değer, bugünün tarihi, oluşturulma anı ya da satırı oluşturan kişi, ekranda önceden doldurulmuş ve başka her yerde uygulanmış. <a href="/fonctionnalites/tables-et-champs/#varsayılan-değerler">Varsayılan değerler</a>',
+					'<strong>Bir Excel çalışma kitabı sürükleyin</strong>: sayfayı seçin, tarihler, tutarlar ve onay kutuları oldukları gibi alınır, ve bir formül kendi değerini verir. <a href="/guides/premiers-pas/">İlk adımlar</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: 'E-postalar',
+				tag: 'Yeni',
+				items: [
+					'<strong>Otomasyonlarda bir “E-posta gönder” adımı</strong>: bir üyeye, bir alanın kişisine, bir müşterinin adresine, konuda ve metinde satırın değerleriyle. <a href="/fonctionnalites/automatisations/">Otomasyonlar</a>',
+					'<strong>E-posta bildirimleri</strong>, onları okumadığınızda, gruplanmış, ayarlarınızda teker teker seçilebilir; ve <strong>şifremi unuttum</strong> bir bağlantıyla sıfırlanır. <a href="/fonctionnalites/collaboration/#e-postayla">E-postayla</a>',
+					'Kurulumun e-posta gönderim sunucusunu belirtmek yeterlidir. <a href="/hebergement/variables/#e-postalar">Değişkenler</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n ve bir TypeScript SDK',
+				tag: 'Yeni',
+				items: [
+					'<strong>n8n düğümleri</strong>: bir iş akışından bir tablonun satırlarını okumak ve yazmak, ve oluşturulan, değiştirilen ya da silinen her satırda birini başlatmak — kontrol yoluyla ya da imzalı bir webhook’la. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>Bir TypeScript SDK</strong>, kurulumunuzdan üretilen tablolarınızın türleriyle: var olmayan bir tablo ya da alan, çalıştırmadan önce bile bir hatadır. <a href="/integrations/sdk/">SDK</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: 'Sınav: puanları sayan sorular',
+				tag: 'Yeni',
+				items: [
+					'<strong>Yeni bir görünüm: sınav</strong>: her sorunun kendi doğru cevabına ve puanına sahip olabildiği bir anket — bir seçenek, birden çok, evet ya da hayır, bir sayı, bir tarih ya da kabul edilen metinler, büyük/küçük harf ve aksan gözetilmeden. <a href="/fonctionnalites/vues/#sınav">Sınav</a>',
+					'<strong>İstediğiniz gibi düzeltme</strong>: her sorudan sonra — doğruysa yeşil, yanlışsa doğru cevapla birlikte kırmızı, skor ekranın üstünde büyür —, sonunda ya da hiçbir zaman. Bir geçme eşiği “Başarılı!” ya da “Bu sefer olmadı…” dedirtir.',
+					'<strong>Sonunda skor</strong>, dolan bir halka içinde, ardından her sorunun düzeltmesi. Tablonun bir sayı alanına yazılır: ızgarayı buna göre sıralayın, işte sıralama.',
+					'<strong>Bir bağlantıyla paylaşılır, hile yapılamaz</strong>: sayfa hiçbir doğru cevap almaz, kontrol eden ve sayan sunucudur. <a href="/fonctionnalites/formulaires-partages/#paylaşılan-sınav">Paylaşılan sınav</a>',
+					'<strong>Görünüm oluştur</strong>, görünüm seçicinin altında, dokuz türü iki aileye ayırır — satırları gösterenler, yanıt toplayanlar —, her biri kendi renkli simgesiyle.',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: 'Doldurmak isteyeceğiniz formlar',

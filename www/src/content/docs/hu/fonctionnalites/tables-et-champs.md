@@ -22,7 +22,7 @@ címkéből („Échéance”) egy stabil **slugosítás** olvasható fizikai ne
 | Egyszeres választás | `text` + `CHECK` | lehetőségenként szín, ikon vagy kép |
 | Többszörös választás | `text[]` + `CHECK` | a tömboperátorokkal szűrhető |
 | E-mail | `text` + `CHECK` | az adatbázis által ellenőrzött cím, egy kattintással megnyitható |
-| Telefon, Vonalkód | `text` | egy rövid szöveg és a formátuma: hívási hivatkozás, fix szélességű betű |
+| Telefon, Vonalkód, Cím | `text` | egy rövid szöveg és a formátuma: hívási hivatkozás, fix szélességű betű, hivatkozás a térképre |
 | URL | `text` + `CHECK` | bevitelkor kiegészül (`exemple.fr` → `https://exemple.fr`) |
 | Személy | `uuid` | a munkaterület egy tagja; ha kijelöli, [értesítést kap](/basedb/hu/fonctionnalites/collaboration/) |
 | Automatikus szám | `bigint` identity | a már meglévő sorokat is megszámozza; senki nem adja meg kézzel |
@@ -38,7 +38,7 @@ Minden táblának vannak **rendszeroszlopai** is: `_id` (UUID v7), `_created_at`
 keresztül soha nem írhatók. A rács ezeket a **Rendszerinformációk** csoportba sorolja az
 oszlopok menüjében: minden táblán megvannak, de kevésnél hasznosak.
 
-![Egy tábla rácsa számított időtartammal, kikereséssel és darabszámmal](../../../../assets/screens/grille.png)
+![Egy tábla rácsa számított időtartammal, kikereséssel és darabszámmal](../../../../assets/screens/hu/grille.webp)
 
 ## Az adatbázis által érvényesített megszorítások
 
@@ -56,7 +56,7 @@ Foreign-key constraints:
 
 ## Megjelenítési formátumok
 
-A Pénznem, a Százalék, az Időtartam, az Értékelés, a Telefon és a Vonalkód típusként
+A Pénznem, a Százalék, az Időtartam, az Értékelés, a Telefon, a Vonalkód és a Cím típusként
 választható ki, de valójában **formátumok**: az oszlop szám vagy szöveg marad, csak a
 megjelenítés változik.
 
@@ -68,9 +68,28 @@ megjelenítés változik.
 | Értékelés | egy számra | 1–10 csillag, egy kattintással beállítva |
 | Telefon | egy rövid szövegre | hívási hivatkozás |
 | Vonalkód | egy rövid szövegre | fix szélességű betűvel |
+| Cím | egy rövid szövegre | hivatkozás a térképre; a sor részletei panelen a **Cím keresése** javasolja a megfelelő, teljesen kiírt címeket; a [Térkép](/basedb/hu/fonctionnalites/vues/#térkép) nézet helyezi el |
 
 A formátum utólag is módosítható (**Megjelenítés**, a mező szerkesztésében) a tárolt értékek
 érintése nélkül. Nem korlátozza az értéket: egy 5-ös skálán megadott 7-es értékelés 7 marad.
+
+## Alapértelmezett értékek
+
+A mező szerkesztésében az **Alapértelmezett érték** rögzíti, mit kap egy nélküle létrehozott
+sor:
+
+| Választás | Mire | A létrehozott sor ezt kapja |
+|---|---|---|
+| Rögzített érték | a legtöbb típusra | a kiválasztott értéket – egy „Új” státuszt, egy 3-as prioritást |
+| A mai dátum | egy dátumra | a létrehozás napját, a személy időzónájában |
+| A létrehozás pillanata | egy dátum és idő mezőre | a pontos időpontot |
+| A sort létrehozó személy | egy személy mezőre | azt, aki létrehozta – „Felelős: én” |
+
+Az új sor részletei panel és az űrlapok előre kitöltve nyílnak meg; a mező kiürítése üresen
+hagyja. Az alapértelmezés minden létrehozásra érvényes – felület, API, MCP, importálás,
+megosztott űrlap, automatizálás –, még egy olyan mezőn is, amelyet a személy nem
+módosíthat: ez a tábla szabálya. A meglévő sorok nem változnak, és egy közvetlen
+SQL-beszúrás nem kap semmit belőle: a basedb alkalmazza, nem az oszlop.
 
 ## Képletek
 
@@ -178,7 +197,7 @@ A formázott szöveget az MI nem töltheti ki: a modell szöveget ír, nem megti
 Az adatbázis **Struktúra** képernyője – az oldalsávban lévő **⋯** menüjében – felsorolja a táblákat és a mezőiket: hozzáadás, átnevezés, kötelezővé tétel, átrendezés,
 leírás, a megjelenítési mező kijelölése.
 
-![Egy adatbázis Struktúra képernyője](../../../../assets/screens/structure.png)
+![Egy adatbázis Struktúra képernyője](../../../../assets/screens/hu/structure.webp)
 
 A struktúra módosításához **Kezelés** szintű jogosultság szükséges. Enélkül a képernyő
 megtekinthető, de semmit nem kínál fel: se gombot, se ceruzát, se fogantyút – a kötelező

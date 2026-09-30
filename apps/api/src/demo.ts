@@ -64,10 +64,11 @@ const ALLOWED: ReadonlyArray<readonly [string, RegExp]> = (
     ['POST', `${T}/history/undo`],
     ['POST', `${T}/history/${SEGMENT}/revert`],
     // Reading that goes by POST: a question, SQL — read only, see the route —, a shared
-    // dashboard's card, the next runs of a schedule.
+    // dashboard's card, a quiz's answer graded, the next runs of a schedule.
     ['POST', `${T}/query/${SEGMENT}`],
     ['POST', `${T}/sql/${SEGMENT}`],
     ['POST', `/api/v1/dashboards/${SEGMENT}/cards/${SEGMENT}`],
+    ['POST', `/api/v1/forms/${SEGMENT}/check`],
     ['POST', `${T}/ai/schedule/preview`],
     // What the other visitors see of one: presence, the pointer; one's notifications read.
     ['POST', `${T}/presence`],

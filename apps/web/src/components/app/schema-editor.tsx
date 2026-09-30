@@ -22,6 +22,12 @@ import {
   rollupReady,
 } from '@/components/app/computed-field-form'
 import {
+  DefaultValueEditor,
+  acceptsDefault,
+  defaultReady,
+  sameDefault,
+} from '@/components/app/default-value'
+import {
   AddDescription,
   DescriptionEditor,
   DescriptionField,
@@ -69,6 +75,7 @@ import {
   type AiFieldStatus,
   type DescribedBase,
   type Field,
+  type FieldDefault,
   type FieldOptionInput,
   type Table,
   api,
@@ -728,7 +735,13 @@ function FieldRow({
           described && (
             <div className="mt-1">
               <DescriptionText
-                text={field.description}
+                text={
+                  // The server describes its system columns in French: fixed sentences,
+                  // translated like the interface's own (as the grid does).
+                  field.system === true && typeof field.description === 'string'
+                    ? $t(field.description)
+                    : field.description
+                }
                 subject={subject}
                 onEdit={editable ? edit.begin : undefined}
                 disabled={busy}
@@ -933,6 +946,8 @@ function EditFieldDialog({
   const [aiOn, setAiOn] = useState(false)
   const [format, setFormat] = useState<FormatInput | null>(null)
   const [expression, setExpression] = useState('')
+  // What a row created without the field takes (ch. 04 §1.5).
+  const [byDefault, setByDefault] = useState<FieldDefault | null>(null)
 
   const isAi = aiOn
   const columns = useMemo(() => citable(table, field?.name), [table, field])
@@ -952,6 +967,7 @@ function EditFieldDialog({
     setAiOn(field.ai === true)
     setFormat(formatInputOf(field))
     setExpression(field.computed?.expression ?? '')
+    setByDefault(field.default ?? null)
     if (field.ai !== true) return
     let current = true
     api
@@ -990,17 +1006,22 @@ function EditFieldDialog({
     field?.kind === 'formula' &&
     expression.trim() !== '' &&
     expression.trim() !== (field.computed?.expression ?? '')
+  const takesDefault = field !== null && acceptsDefault(field) && !aiOn
+  const defaultChanged =
+    takesDefault && field !== null && !sameDefault(byDefault, field.default ?? null)
   const ready =
     field !== null &&
     label.trim() !== '' &&
     (!isSelect || next.length > 0) &&
     (!aiChanged || (ai !== null && aiReady(ai, columns))) &&
+    (!defaultChanged || defaultReady(byDefault)) &&
     (labelChanged ||
       optionsChanged ||
       aiChanged ||
       aiRemoved ||
       formatChanged ||
       formulaChanged ||
+      defaultChanged ||
       physical.asked) &&
     physical.ready &&
     !busy
@@ -1034,6 +1055,11 @@ function EditFieldDialog({
       }
       if (optionsChanged) {
         await api.setFieldOptions(table, field.name, next)
+        await onSaved()
+      }
+      // After the choices: a default may name one just added.
+      if (defaultChanged) {
+        await api.setFieldDefault(table, field.name, byDefault)
         await onSaved()
       }
       if (formatChanged && format !== null) {
@@ -1151,6 +1177,29 @@ function EditFieldDialog({
 
           {formats.length > 0 && format !== null && (
             <FormatDetails value={format} onChange={setFormat} disabled={busy} />
+          )}
+
+          {takesDefault && field !== null && (
+            <DefaultValueEditor
+              field={{
+                ...field,
+                // The choices as they are being edited: a default may pick a new one.
+                ...(isSelect
+                  ? {
+                      options: next.map((o) => ({
+                        value: o.value,
+                        label: o.label ?? o.value,
+                        color: o.color ?? null,
+                        icon: o.icon ?? null,
+                        image: o.image ?? null,
+                      })),
+                    }
+                  : {}),
+              }}
+              value={byDefault}
+              onChange={setByDefault}
+              disabled={busy}
+            />
           )}
 
           {field !== null && acceptsAi(field.kind) && field.unsafe_html !== true && (

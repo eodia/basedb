@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb — de collaboratieve database waarin elke tabel een echte PostgreSQL-tabel is',
-			description: 'Rasters en acht weergaven, formules, gedeelde formulieren en weergaven, opmerkingen, automatiseringen, dashboards, rechten tot op het veld, volledige geschiedenis, REST-API en MCP-server — op echte PostgreSQL-tabellen met leesbare namen. Zelf gehost, AGPL-3.0.',
+			description: 'Rasters en tien weergaven, formules, gedeelde formulieren, quiz en weergaven, opmerkingen, automatiseringen, dashboards, rechten tot op het veld, volledige geschiedenis, REST-API en MCP-server — op echte PostgreSQL-tabellen met leesbare namen. Zelf gehost, AGPL-3.0.',
 		},
 		changelog: {
 			title: 'Wat is er nieuw — basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: 'Acht weergaven',
-								text: 'Raster, kanban, kalender, tijdlijn, galerie, lijst, formulier, enquête.',
+								title: 'Tien weergaven',
+								text: 'Raster, kanban, kalender, tijdlijn, galerie, lijst, landkaart, formulier, enquête, quiz.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb — al je werk, op één plek',
-			description: 'Klanten, projecten, voorraad, sollicitaties: een database die je hele team samen bijhoudt, in raster, kanban of kalender, met dashboards, automatiseringen en AI. Zonder code, vrij en gratis.',
+			title: 'basedb — de collaboratieve database voor je hele team',
+			description: 'Al je werk op één plek, door je hele team tegelijk bijgewerkt: in raster, kanban of kalender, met formulieren, dashboards, automatiseringen en AI. Zonder code, vrij en gratis.',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -891,9 +891,9 @@ export default {
 			text: 'Elke functie schrijft in dezelfde tabellen, met dezelfde rechten, in dezelfde geschiedenis.',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: 'manieren om je gegevens te bekijken',
-					text: 'Raster, kanban, kalender, tijdlijn, galerie, lijst, formulier en enquête, op dezelfde rijen. Ieder kiest de zijne.',
+					text: 'Raster, kanban, kalender, tijdlijn, galerie, lijst, landkaart, formulier, enquête en quiz, op dezelfde rijen. Ieder kiest de zijne.',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -943,7 +943,7 @@ export default {
 				},
 				import: {
 					title: 'Import in één sleep',
-					text: 'Sleep een CSV-bestand erin: de kolommen en types worden geraden, de tabel wordt aangemaakt.',
+					text: 'Sleep een Excel-werkmap of een CSV erin: de kolommen en types worden geraden, de tabel wordt aangemaakt.',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1036,7 +1036,7 @@ export default {
 				},
 				{
 					q: 'Kunnen we onze spreadsheets overnemen?',
-					a: 'Ja: sla je blad op als CSV en sleep het in basedb. De import raadt het type van elke kolom, maakt de tabel aan, en zegt rij per rij wat hij niet heeft kunnen overnemen.',
+					a: 'Ja: sleep je Excel-werkmap, of een CSV, in basedb. De import raadt het type van elke kolom, maakt de tabel aan, en zegt rij per rij wat hij niet heeft kunnen overnemen.',
 				},
 				{
 					q: 'Kunnen we met meerdere mensen tegelijk werken?',
@@ -1361,9 +1361,9 @@ export default {
 		text: 'Elke functie schrijft in dezelfde tabellen, onder dezelfde rechten, in dezelfde geschiedenis.',
 		more: 'Lees meer →',
 		views: {
-			title: 'Acht weergaven op dezelfde rijen',
+			title: 'Tien weergaven op dezelfde rijen',
 			text: 'Gezamenlijk voor het hele team, of persoonlijk voor jou alleen: ieder kiest zijn eigen manier van lezen, niemand kopieert de gegevens.',
-			chips: ['Raster', 'Kanban', 'Kalender', 'Tijdlijn', 'Galerie', 'Lijst', 'Formulier', 'Enquête'],
+			chips: ['Raster', 'Kanban', 'Kalender', 'Tijdlijn', 'Galerie', 'Lijst', 'Landkaart', 'Formulier', 'Enquête', 'Quiz'],
 		},
 		forms: {
 			title: 'Gedeelde formulieren',
@@ -1427,7 +1427,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'CSV- en JSON-import',
+				title: 'Excel-, CSV- en JSON-import',
 				text: 'Sleep een bestand erin: de import raadt de types, maakt de tabel aan of vult een bestaande tabel aan, en meldt rij voor rij wat er is geweigerd.',
 				href: '/guides/premiers-pas/',
 			},
@@ -1536,6 +1536,66 @@ export default {
 		title: 'Wat er in basedb is veranderd',
 		intro: 'Elke wijziging in detail staat in <a href="https://github.com/eodia/basedb/commits/main">de geschiedenis van de repository</a>. Wat er hierna komt: de <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: 'De landkaart, en adressen die zich laten vinden',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Een tiende weergave, de landkaart</strong>: elke rij geplaatst op haar plek, aan de hand van haar adres of haar breedte- en lengtegraad. Een pin krijgt de kleur van een status en opent bij een klik haar rijdetails. <a href="/fonctionnalites/vues/#landkaart">De landkaart</a>',
+					'<strong>Een adres wordt eenmalig gelokaliseerd</strong>, door de dienst van OpenStreetMap of de dienst die je kiest: de pins verschijnen naarmate de antwoorden binnenkomen, en daarna meteen. Een onvindbaar adres wordt geteld, nooit stilzwijgend genegeerd.',
+					'<strong>Het formaat Adres</strong> voor een korte tekst: een klik opent het op de landkaart, en in de rijdetails stelt <strong>Adres zoeken</strong> de bijpassende volledige adressen voor. <a href="/fonctionnalites/tables-et-champs/#weergaveformaten">Formaten</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: 'PDF’s vanuit je rijen',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Een offerte, een factuur, een fiche als PDF</strong>, vanuit het menu van een rij: de afdrukbare fiche zonder iets in te stellen, of een sjabloon — teksten die velden aanhalen, de velden van de rij, de tabel met gekoppelde rijen met haar totaal, pagina-einden. <a href="/fonctionnalites/documents/">De documenten</a>',
+					'<strong>Iedereen met zijn eigen rechten</strong>: een veld dat voor jou verborgen is, verschijnt niet in jouw PDF. De twintig talen worden er correct in geschreven, Chinees, Japans en Koreaans inbegrepen, en de API levert hetzelfde document.',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: 'Rechten tot op de rij, standaardwaarden, de Excel-import',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Iedereen zijn eigen rijen</strong>: een groep ziet alleen de rijen van een filter — “Verkoper is ik”, “Regio is Noord” —, in de interface, de API, de MCP-server zoals in SQL, waar PostgreSQL dezelfde regel toepast. <a href="/fonctionnalites/droits/#tot-op-de-rij">Tot op de rij</a>',
+					'<strong>Standaardwaarden</strong>: een vaste waarde, de datum van vandaag, het moment van aanmaak of de persoon die de rij aanmaakt, vooraf ingevuld op het scherm en overal elders toegepast. <a href="/fonctionnalites/tables-et-champs/#standaardwaarden">Standaardwaarden</a>',
+					'<strong>Sleep een Excel-werkmap erin</strong>: kies het werkblad, datums, bedragen en selectievakjes komen aan zoals ze zijn, en een formule levert haar waarde. <a href="/guides/premiers-pas/">Eerste stappen</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: 'E-mails',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Een stap “Een e-mail versturen”</strong> in de automatiseringen: aan een lid, aan de persoon van een veld, aan het adres van een klant, met de waarden van de rij in het onderwerp en de tekst. <a href="/fonctionnalites/automatisations/">Automatiseringen</a>',
+					'<strong>E-mailmeldingen</strong> wanneer je ze niet hebt gelezen, gebundeld, één voor één te kiezen in je instellingen; en een <strong>wachtwoord vergeten</strong> wordt via een link opnieuw ingesteld. <a href="/fonctionnalites/collaboration/#per-e-mail">Per e-mail</a>',
+					'Het volstaat om de instantie de verzendserver van je mail door te geven. <a href="/hebergement/variables/#e-mails">De variabelen</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n en een TypeScript-SDK',
+				tag: 'Nieuw',
+				items: [
+					'<strong>n8n-nodes</strong>: de rijen van een tabel lezen en schrijven vanuit een workflow, en er een starten bij elke aangemaakte, gewijzigde of verwijderde rij — via peiling of via een ondertekende webhook. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>Een TypeScript-SDK</strong>, met de types van je tabellen gegenereerd vanuit je instantie: een tabel of een veld dat niet bestaat is een fout nog vóór de uitvoering. <a href="/integrations/sdk/">De SDK</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: 'De quiz: vragen die de punten tellen',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Een nieuwe weergave, de quiz</strong>: een enquête waarin elke vraag zijn juiste antwoord en zijn punten kan hebben — een keuze, meerdere, ja of nee, een getal, een datum, of de geaccepteerde teksten, zonder rekening te houden met hoofdletters of accenten. <a href="/fonctionnalites/vues/#quiz">De quiz</a>',
+					'<strong>Nagekeken zoals je wilt</strong>: na elke vraag — groen, of rood met het juiste antwoord, de score die boven aan het scherm groeit —, aan het einde, of nooit. Een slagingsgrens laat “Geslaagd!” of “Deze keer niet…” zeggen.',
+					'<strong>De score aan het einde</strong>, in een ring die zich vult, dan het antwoordmodel van elke vraag. Hij wordt geschreven in een getalveld van de tabel: sorteer het raster erop, dat is de ranglijst.',
+					'<strong>Gedeeld via een link, zonder te kunnen spieken</strong>: de pagina ontvangt geen enkel juist antwoord, de server kijkt na en telt. <a href="/fonctionnalites/formulaires-partages/#een-gedeelde-quiz">Een gedeelde quiz</a>',
+					'<strong>Weergave maken</strong>, onderaan de weergavekiezer, verdeelt de negen soorten in twee families — die de rijen laten zien, die antwoorden verzamelen —, elk met een eigen gekleurd icoon.',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: 'Formulieren die je met plezier invult',

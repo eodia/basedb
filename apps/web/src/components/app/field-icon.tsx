@@ -16,6 +16,7 @@ import {
   ListOrdered,
   Lock,
   Mail,
+  MapPin,
   MousePointerClick,
   Paperclip,
   Percent,
@@ -71,6 +72,7 @@ const FORMAT_ICONS = {
   duration: Timer,
   rating: Star,
   phone: Phone,
+  address: MapPin,
   barcode: ScanBarcode,
   /** Not a display format: the rich variant of a long text, drawn apart where it is chosen. */
   html: Pilcrow,
@@ -126,6 +128,7 @@ export const FORMAT_LABELS: Readonly<Record<string, string>> = {
   duration: $t('Durée'),
   rating: $t('Note'),
   phone: $t('Téléphone'),
+  address: $t('Adresse||postale'),
   barcode: $t('Code-barres'),
   html: $t('Texte riche'),
 }

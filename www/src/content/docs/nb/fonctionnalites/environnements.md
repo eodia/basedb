@@ -27,7 +27,7 @@ Fra databasens meny, under **Flere handlinger**, åpner **Sammenlign miljøer…
 - **Synkronisering av rader**: tabell for tabell, overfør rader fra ett miljø til
   et annet, etter identifikator.
 
-![Sammenlign produksjon og test](../../../../assets/screens/environnements.png)
+![Sammenlign produksjon og test](../../../../assets/screens/nb/environnements.webp)
 
 ## Hvordan basedb vet hvem som endret hva
 

@@ -11,7 +11,7 @@ esimerkkirivit, näkymät, koontinäytön, automaatiot ja kentät, jotka tekoäl
 
 **Uusi tietokanta** ja sitten **Aloita mallista tai pyydä sitä tekoälyltä**: galleria avautuu.
 
-![Mallien galleria sovelluksessa](../../../../assets/screens/modeles.png)
+![Mallien galleria sovelluksessa](../../../../assets/screens/fi/modeles.webp)
 
 Jokaisen mallin voi lukea kokonaan ennen käyttöä – sen taulukot ja niiden kentät, näkymät,
 automaatiot ja jokaisen tekoälykentän kehotteen. **Luo tietokanta** kysyy tietokannan nimikettä

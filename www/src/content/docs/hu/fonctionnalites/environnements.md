@@ -30,7 +30,7 @@ egy párbeszédablakot nyit meg:
 - **Sorok szinkronizálása**: táblánként sorok átvitele egyik környezetből a másikba, azonosító
   alapján.
 
-![Az éles és a teszt környezet összehasonlítása](../../../../assets/screens/environnements.png)
+![Az éles és a teszt környezet összehasonlítása](../../../../assets/screens/hu/environnements.webp)
 
 ## Honnan tudja a basedb, ki mit változtatott
 

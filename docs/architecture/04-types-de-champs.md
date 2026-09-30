@@ -74,7 +74,7 @@ ALTER TABLE "b_t4z56fq_crm"."factures" VALIDATE CONSTRAINT "ck_factures__referen
 
 La poser sur les seuls champs obligatoires laisserait l'invariant faux là où il sert le plus : sur un champ facultatif, une écriture SQL directe — la promesse centrale du produit — insérerait `''`, le filtre `is_null` raterait la ligne, le tri la placerait avant toutes les autres, et `''` cohabiterait avec `NULL` pour dire la même chose. *Alternative rejetée* : distinguer la chaîne vide de l'absence, sémantiquement plus riche mais indéfendable dans une grille où l'utilisateur efface une cellule.
 
-**Tout champ est créé nullable.** L'obligation est toujours une étape distincte, y compris à la création d'un champ sur une table peuplée : `ADD COLUMN … NOT NULL` sans valeur par défaut échouerait, et la v1 n'a pas de valeur par défaut (§1.5). La recette est celle du chapitre 02, en quatre étapes suivies par `field.required_state` :
+**Tout champ est créé nullable.** L'obligation est toujours une étape distincte, y compris à la création d'un champ sur une table peuplée : `ADD COLUMN … NOT NULL` sans valeur par défaut échouerait, et aucune clause `DEFAULT` n'est posée sur une colonne de champ (§1.5). La recette est celle du chapitre 02, en quatre étapes suivies par `field.required_state` :
 
 1. pré-contrôle `SELECT "_id" FROM … WHERE "c" IS NULL LIMIT 50` ; si non vide, refus `REQUIRED_NULL_VALUES` avec l'échantillon et la proposition d'une valeur de remplissage — aucun verrou lourd n'a encore été pris ;
 2. remplissage éventuel par `UPDATE … SET "c" = <littéral> WHERE "c" IS NULL`, soumis aux règles de volume du §1.10 ;
@@ -98,9 +98,58 @@ L'étape 3 est la raison pour laquelle cette règle vit ici et non dans la sous-
 
 La longueur se mesure ensuite en **caractères** (`length`), l'utilisateur ne raisonnant pas en octets. Un dépassement est refusé par `TEXT_TOO_LONG`, avec la longueur reçue et la longueur maximale.
 
-### 1.5 Valeur par défaut : hors périmètre v1
+### 1.5 Valeur par défaut : appliquée par le noyau, jamais par la colonne
 
-Aucune colonne du catalogue ne stocke de valeur par défaut, et aucune clause `DEFAULT` n'est émise sur une colonne de champ : le chapitre 02 écarte explicitement toute colonne d'expression par défaut de la v1. Un `DEFAULT` ne se paramètre pas dans le protocole PostgreSQL, sa valeur est concaténée dans le DDL ; l'introduire exigerait un littéral typé par satellite de type, et une automatisation — un défaut « date du jour » — pour qu'il soit utile. Les valeurs de confort proposées à la saisie sont une **pré-remplissage d'interface** (chapitre 11), pas une propriété de la colonne.
+Un champ peut porter une **valeur par défaut**, que prend toute ligne créée sans lui. Quatre
+genres, selon le type :
+
+| Genre | Types | La ligne créée reçoit |
+|---|---|---|
+| `value` | texte court et long, nombre, booléen, date, date et heure, liste, choix multiple, URL, e-mail, personne | la valeur fixée |
+| `today` | date | la date du jour, **dans le fuseau de la personne qui crée** (`app_user.timezone`) |
+| `now` | date et heure | l'instant de la requête |
+| `me` | personne | la personne qui crée la ligne — celle que nomme `_created_by` |
+
+Stockage : `_basedb.field_default` (migration 0015), une ligne par champ, `kind` et `value`
+(`jsonb`, non nul si et seulement si `kind = 'value'`). La valeur est enregistrée **sous sa
+forme de colonne**, ramenée par les mêmes règles qu'une écriture — une adresse complétée de
+son schéma, un e-mail débarrassé de `mailto:`, un choix multiple dédoublonné, un texte riche
+assaini, une personne vérifiée dans le locataire — et refusée si elle ne tiendrait pas dans
+la colonne (`VALUE_INVALID`, `VALUE_OUT_OF_RANGE`, un choix absent de la liste) : l'appliquer
+est une copie. Se règle par `PATCH …/fields/{champ}` avec `default` (`null` le retire), au
+niveau « Gestion » ; sans migration. La projection la publie (`default: {kind, value?}`) et
+l'interface **préremplit** la fiche nouvelle et les formulaires ; un agent la lit dans
+`describe_table`.
+
+**Le noyau l'applique, à la création seulement.** Toute création passe par
+`records/create.ts` — interface, API, lot, import, MCP, formulaire partagé, automatisation —
+et chacune reçoit, pour chaque champ **que l'écriture ne nomme pas**, la valeur de son
+défaut. Trois règles :
+
+- un champ nommé avec `null` est un choix, « pas de valeur », et reste vide. L'interface
+  envoie donc `null` pour un champ prérempli que la personne a vidé : sinon le noyau
+  rétablirait ce qu'elle vient d'effacer ;
+- le défaut remplit le champ **quel que soit le masque d'écriture de l'auteur** : comme
+  `_created_by`, c'est la règle de la table, posée par qui la construit, pas une écriture de
+  l'auteur. Un champ en lecture seule pour un groupe reçoit son défaut ; il n'est pas renvoyé
+  à qui ne peut pas le lire ;
+- une réponse à un formulaire public n'a pas d'auteur : `me` y reste vide, et `today` se lit
+  dans le fuseau de la personne qui a publié le formulaire.
+- une écriture qui ne nomme aucun champ reste refusée (`REQUIRED_VALUE_MISSING`) : les
+  défauts ne sont pas une valeur fournie, et un corps dont les valeurs sont mal placées ne
+  doit pas revenir en ligne faite de défauts.
+
+Un défaut qui nomme un choix retiré depuis est **ignoré**, pas appliqué : chaque création
+échouerait sur le `CHECK` de la colonne. Rétablir le choix le rétablit. Un champ calculé par
+l'IA n'en a pas : sa valeur est celle du modèle.
+
+**Aucune clause `DEFAULT` n'est émise sur une colonne de champ.** « La personne qui crée » et
+« aujourd'hui, dans son fuseau » n'existent pas pour PostgreSQL ; un `DEFAULT` ne se
+paramètre pas dans le protocole, sa valeur serait concaténée dans le DDL ; et une valeur
+fixée dans la colonne changerait à chaque réglage par une migration. Conséquence assumée :
+**une insertion SQL directe ne reçoit aucun défaut**, comme elle ne reçoit pas de
+`_created_by` renseigné par le noyau. Les lignes existantes ne changent pas quand un défaut
+est posé ou modifié.
 
 Les seules clauses `DEFAULT` du produit sont celles des colonnes système, fixées par le chapitre 02 dans « Le schéma colocalisé `_basedb_local` », qui donne l'en-tête systématique de toute table de données générée.
 
@@ -406,7 +455,7 @@ Index btree `("c", "_id")` si `is_sortable`. Piège énoncé par l'interface : `
 
 ### 2.4 `boolean` — `boolean`
 
-Trois états possibles en base : `true`, `false`, `NULL`. Le moteur **propose** l'obligation à la création d'un champ booléen, ce qui donne une case à cocher sans ambiguïté ; l'utilisateur peut la refuser pour obtenir un tri-état « oui / non / non renseigné ». L'obligation étant une étape distincte (§1.3) et la v1 n'ayant pas de valeur par défaut (§1.5), une insertion SQL directe omettant la colonne d'un champ booléen obligatoire échoue en `23502` — comportement attendu d'une colonne obligatoire.
+Trois états possibles en base : `true`, `false`, `NULL`. Le moteur **propose** l'obligation à la création d'un champ booléen, ce qui donne une case à cocher sans ambiguïté ; l'utilisateur peut la refuser pour obtenir un tri-état « oui / non / non renseigné ». L'obligation étant une étape distincte (§1.3) et la valeur par défaut étant appliquée par le noyau, pas par la colonne (§1.5), une insertion SQL directe omettant la colonne d'un champ booléen obligatoire échoue en `23502` — comportement attendu d'une colonne obligatoire.
 
 JSON : `true`, `false`, `null`. **Aucune coercition** : `"true"`, `1`, `0`, `"oui"` sont refusés avec `VALUE_INVALID`. Un rappel de type à un intégrateur vaut mieux qu'une donnée fausse.
 
@@ -521,6 +570,7 @@ Un **format** change la lecture d'une valeur, jamais sa colonne (chapitre 02, «
 | `short_text` | `plain` (défaut) | le texte |
 | `short_text` | `phone` | un numéro, ouvert en `tel:` |
 | `short_text` | `barcode` | un code, en chasse fixe, copiable |
+| `short_text` | `address` | une adresse postale, un clic l'ouvre sur OpenStreetMap ; la fiche la cherche à la demande auprès du service de géocodage, et la vue « Carte » la place (chapitre 11 §1.9) |
 
 Un format ne contraint pas la valeur : une note de 7 sur 5 reste écrite telle quelle, et l'écran la plafonne à l'affichage. Qui veut une borne la pose sur la colonne (`min_value`, `max_value`).
 

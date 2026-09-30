@@ -26,7 +26,7 @@ Tietokannan valikosta kohdasta **Muut toiminnot** **Vertaa ympäristöjä…** a
 - **Rivien synkronointi**: taulukko kerrallaan rivien siirtäminen ympäristöstä toiseen tunnisteen
   perusteella.
 
-![Tuotannon ja testin vertailu](../../../../assets/screens/environnements.png)
+![Tuotannon ja testin vertailu](../../../../assets/screens/fi/environnements.webp)
 
 ## Miten basedb tietää, kuka muutti mitä
 

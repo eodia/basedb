@@ -22,7 +22,7 @@ který zadáte („Échéance“), se stabilní **slugifikací** změní na čit
 | Jednoduchý výběr | `text` + `CHECK` | barva, ikona nebo obrázek pro každou možnost |
 | Vícenásobný výběr | `text[]` + `CHECK` | filtrovatelný operátory pro pole hodnot |
 | E-mail | `text` + `CHECK` | adresa ověřená databází, otevíraná jedním kliknutím |
-| Telefon, Čárový kód | `text` | krátký text a jeho formát: odkaz pro volání, neproporcionální písmo |
+| Telefon, Čárový kód, Adresa | `text` | krátký text a jeho formát: odkaz pro volání, neproporcionální písmo, odkaz na mapu |
 | URL | `text` + `CHECK` | doplňuje se při zadávání (`exemple.fr` → `https://exemple.fr`) |
 | Osoba | `uuid` | člen pracovního prostoru; jeho označení ho [upozorní](/basedb/cs/fonctionnalites/collaboration/) |
 | Automatické číslo | `bigint` identity | očísluje i již existující řádky; nikdo ho nezadává |
@@ -38,7 +38,7 @@ Každá tabulka má také své **systémové sloupce**: `_id` (UUID v7), `_creat
 zapisovat. Mřížka je řadí pod **Systémové informace** v nabídce sloupců: jsou v každé
 tabulce, ale užitečné jen v málokteré.
 
-![Mřížka tabulky s vypočtenou dobou trvání, vyhledáváním a počtem](../../../../assets/screens/grille.png)
+![Mřížka tabulky s vypočtenou dobou trvání, vyhledáváním a počtem](../../../../assets/screens/cs/grille.webp)
 
 ## Omezení hlídaná databází
 
@@ -55,8 +55,8 @@ Foreign-key constraints:
 
 ## Formáty zobrazení
 
-Měna, Procento, Doba trvání, Hodnocení, Telefon a Čárový kód se vybírají jako typy, ale jsou
-to **formáty**: sloupec zůstává číslem nebo textem, mění se jen způsob čtení.
+Měna, Procento, Doba trvání, Hodnocení, Telefon, Čárový kód a Adresa se vybírají jako typy,
+ale jsou to **formáty**: sloupec zůstává číslem nebo textem, mění se jen způsob čtení.
 
 | Formát | Pro | Čte se a zadává jako |
 |---|---|---|
@@ -66,9 +66,26 @@ to **formáty**: sloupec zůstává číslem nebo textem, mění se jen způsob 
 | Hodnocení | číslo | 1 až 10 hvězdiček, nastavuje se kliknutím |
 | Telefon | krátký text | odkaz pro volání |
 | Čárový kód | krátký text | neproporcionálním písmem |
+| Adresa | krátký text | odkaz na mapu; v detailu řádku nabídne **Vyhledat adresu** odpovídající adresy, napsané celé; umístí ji zobrazení [Mapa](/basedb/cs/fonctionnalites/vues/#mapa) |
 
 Formát lze změnit i dodatečně (**Formát zobrazení** v úpravě pole), aniž by se změnily uložené
 hodnoty. Hodnotu neomezuje: hodnocení 7 na pětibodové stupnici zůstane 7.
+
+## Výchozí hodnoty
+
+V úpravě pole určuje **Výchozí hodnota**, co dostane řádek vytvořený bez ní:
+
+| Volba | Pro | Vytvořený řádek dostane |
+|---|---|---|
+| Pevná hodnota | většinu typů | zvolenou hodnotu — stav „Nouveau“, priorita 3 |
+| Dnešní datum | datum | den svého vytvoření, v časovém pásmu dané osoby |
+| Okamžik vytvoření | datum a čas | přesný čas |
+| Osoba, která vytváří řádek | osoba | ta, která ho vytvořila — „Responsable : moi“ |
+
+Nový detail řádku a formuláře se otevírají předvyplněné; vyprázdnění pole ho ponechá prázdné.
+Výchozí hodnota platí pro každé vytvoření — rozhraní, API, MCP, import, sdílený formulář,
+automatizaci —, včetně pole, které osoba nemůže upravovat: jde o pravidlo tabulky. Existující
+řádky se nemění, a vložení přímo v SQL žádnou nedostane: uplatňuje ji basedb, ne sloupec.
 
 ## Vzorce
 
@@ -173,7 +190,7 @@ Formátovaný text nemůže vyplňovat AI: model píše text, nikoli sanitizovan
 Obrazovka **Struktura** databáze – v její nabídce **⋯** v postranním panelu – vypisuje tabulky a jejich pole: přidat, přejmenovat, nastavit jako povinné, změnit pořadí,
 popsat, určit zobrazované pole.
 
-![Obrazovka Struktura databáze](../../../../assets/screens/structure.png)
+![Obrazovka Struktura databáze](../../../../assets/screens/cs/structure.webp)
 
 Změna struktury vyžaduje úroveň **Správa**. Bez ní lze obrazovku jen prohlížet a nic
 nenabízí: žádné tlačítko, žádnou tužku, žádný úchyt – povinnost a zobrazované pole jsou

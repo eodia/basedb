@@ -1136,11 +1136,84 @@ Les écritures et les opérations de schéma produisent une entrée d'audit ; le
 
 ## 12. Compatibilité n8n
 
-n8n fonctionne sans nœud spécifique, et chaque propriété nécessaire est vraie par construction dans ce qui précède : authentification `Authorization: Bearer` du nœud HTTP Request ; `application/json` en requête et en réponse, sans multipart ni forme propriétaire ; codes HTTP fidèles, `Retry-After` respecté sur `429` et `5xx` ; pagination par `meta.next_cursor` et `meta.has_more`, atteignables par `{{$response.body.meta.next_cursor}}` ; filtres et tri écrits dans un champ texte (§4) ; webhooks reçus tels quels par le nœud Webhook, la signature se vérifiant dans un nœud Code ; corps de webhook de forme constante, `events[]` même à un seul élément, donc aucune branche conditionnelle ; `Idempotency-Key` contre les réexécutions de workflow ; reprise après panne par `filter=_updated_at gte …` et `/deleted?since=` (§6.5), avec `links=id` recommandé pour ces passes ; découverte par `GET /meta/bases`.
+**Un paquet de nœuds, `n8n-nodes-basedb`** (`packages/n8n-nodes-basedb`, MIT, publié à part de
+l'image). Il ne contourne rien de ce qui précède : il appelle la même API, avec un jeton
+d'intégration (§11), et n'a donc jamais plus de droits que lui — pas de suppression, aucune
+route `/admin`.
 
-Deux points à connaître de l'intégrateur : les nombres arrivent en chaînes décimales (§7.2), donc un nœud Code qui fait de l'arithmétique convertit explicitement — c'est le prix de ne jamais perdre silencieusement de la précision ; et aucun CORS n'est requis, n8n appelant côté serveur.
+| Nœud | Ce qu'il fait | Sur quoi il repose |
+|---|---|---|
+| **basedb** | lignes : `create`, `upsert`, `get`, `getAll`, `update` ; commentaires : `create` ; utilisable comme outil d'un agent n8n | `/meta/bases` pour les listes de bases et de tables, `/meta/bases/{base}` pour les champs à écrire (hors système, lecture seule, calculés, fichiers), `/meta/users` pour un champ Personne ; `/data` (§3), pages suivies par `meta.next_cursor` passé en `after` |
+| **basedb Trigger** | relève périodique des lignes créées, ou créées ou modifiées | `filter=_created_at gte …` ou `_updated_at gte …`, trié par la même colonne puis `_id` |
+| **basedb Webhook Trigger** | réception des webhooks (§10) | signature `v1` vérifiée sur les octets bruts, tolérance de cinq minutes (§10.5), `401` sinon |
+
+Trois décisions :
+
+- **La relève retient l'instant de basedb, jamais l'horloge de n8n.** Un écart de quelques
+  secondes entre les deux machines perdrait ou doublerait des lignes. `_created_at` et
+  `_updated_at` sont sérialisés à la milliseconde alors que la colonne tient la microseconde :
+  la relève redemande donc à partir de l'instant de la dernière ligne émise (`gte`, pas `gt`)
+  et écarte les lignes déjà émises à cet instant, retenues par `_id@instant` — une ligne
+  modifiée depuis a un autre instant, donc un autre événement. La première relève n'émet rien :
+  elle note le dernier instant de la table.
+- **`upsert` ne modifie jamais plusieurs lignes.** Les champs de correspondance forment un
+  filtre `eq` (ou `is_null`) ; plus d'une ligne trouvée arrête le nœud plutôt que de modifier
+  la première ou toutes.
+- **Un refus garde son code.** Le nœud rend `basedb refused the request: <CODE>`, une phrase qui
+  dit ce que le code signifie d'ordinaire, `details` et `request_id` : le code du registre
+  (chapitre 00, annexe) est ce qu'un auteur de workflow cherche dans la documentation.
+
+**Sans le nœud**, n8n fonctionne aussi, et chaque propriété nécessaire est vraie par
+construction dans ce qui précède : authentification `Authorization: Bearer` du nœud HTTP
+Request ; `application/json` en requête et en réponse, sans multipart ni forme propriétaire ;
+codes HTTP fidèles, `Retry-After` respecté sur `429` et `5xx` ; pagination par
+`meta.next_cursor` et `meta.has_next_page`, le curseur repassé en `after`
+(`{{$response.body.meta.next_cursor}}`) ; filtres et tri écrits dans un champ texte (§4) ;
+webhooks reçus tels quels par le nœud Webhook, la signature se vérifiant dans un nœud Code ;
+corps de webhook de forme constante, `events[]` même à un seul élément, donc aucune branche
+conditionnelle ; reprise après panne par `filter=_updated_at gte …` et `/deleted?since=`
+(§6.5), avec `links=id` recommandé pour ces passes ; découverte par `GET /meta/bases`.
+
+Deux points à connaître de l'intégrateur : les nombres arrivent en chaînes décimales (§7.2),
+donc un nœud Code qui fait de l'arithmétique convertit explicitement — c'est le prix de ne
+jamais perdre silencieusement de la précision, et l'option « Numbers as Numbers » du nœud le
+fait pour lui ; et aucun CORS n'est requis, n8n appelant côté serveur.
 
 ---
+
+## 12 bis. Le SDK TypeScript
+
+**`@basedb/sdk`** (`packages/sdk`, MIT, publié à part de l'image) : un client de cette API,
+sans dépendance — le `fetch` standard, qu'un programme peut remplacer (un mandataire, un
+test : les tests d'intégration de l'API lui passent `app.request`, si bien que chaque appel
+traverse toute la pile HTTP).
+
+**Les types viennent de l'instance.** `basedb-sdk types` lit `/meta/bases` et
+`/meta/bases/{base}` avec le jeton, et écrit pour chaque table trois formes : la ligne lue
+(§7.2 — nombres en chaînes décimales, relations `{id, display}`, fichiers avec leur `url`
+signée), la ligne créée (les champs obligatoires sans valeur par défaut exigés, rien de calculé),
+la ligne modifiée (tout facultatif). Une liste de choix devient l'union de ses valeurs. Le
+programme déclare `new Basedb<Schema>(…)` : une table, un champ ou une valeur qui n'existe pas
+est une erreur de compilation. *Alternative rejetée* : faire générer les types par un outil
+OpenAPI générique à partir de `openapi.json` (§9). La projection est la même, `enum` et
+`readOnly` compris ; mais un tel outil rend les types des routes, pas une carte des bases et des
+tables qu'un client indexe (`db.base(…).table(…)`), et ajoute une chaîne d'outils à chaque
+projet.
+
+Quatre décisions :
+
+- **`filter` est un gabarit étiqueté.** Chaque valeur insérée devient un littéral de la
+  grammaire (§4.1) — texte entre guillemets échappé, nombre, booléen, `Date` en instant ISO,
+  liste entre crochets — : un texte saisi par un utilisateur reste une valeur. Pas de
+  constructeur de filtre en objets : la grammaire textuelle est la forme de référence, et un
+  second langage pour la même chose serait à tenir à jour.
+- **La transaction d'une écriture reste à côté de sa ligne**, dans une `WeakMap` : `create` et
+  `update` rendent la ligne telle quelle, et `db.undo(ligne)` retrouve l'en-tête
+  `x-basedb-transaction` qui l'accompagnait.
+- **Seul `429` est réessayé**, après le `Retry-After` : basedb l'a refusé avant tout travail.
+  Une `5xx` sur une écriture pourrait suivre un `COMMIT` ; la rejouer créerait un doublon.
+- **Un refus garde son code** : `BasedbError` porte `code`, `status`, `details`, `requestId` ;
+  une réponse qui n'est pas de basedb (un mandataire, une page HTML) devient `HTTP_<statut>`.
 
 ## 13. Débit, coût et concurrence
 

@@ -40,10 +40,12 @@ Myöhemmin kaava (`DAYS([Échéance], TODAY())`), haku (asiakkaan kaupunki) tai 
 (kokonaissumma asiakasta kohden) lisätään samalla tavalla – katso
 [Taulukot ja kentät](/basedb/fi/fonctionnalites/tables-et-champs/).
 
-Voit myös **tuoda tiedoston** CSV- tai JSON-muodossa: tuonti arvaa tyypit, antaa sinun korjata
-ne, luo taulukon tai täydentää olemassa olevaa ja kertoo rivi riviltä, mitä se hylkää.
+Voit myös **tuoda tiedoston** – Excel-työkirjan (`.xlsx`), CSV- tai JSON-tiedoston: tuonti
+arvaa tyypit, antaa sinun korjata ne, luo taulukon tai täydentää olemassa olevaa ja kertoo rivi
+riviltä, mitä se hylkää. Usean välilehden työkirjasta valitset välilehden; päivämäärät, summat
+ja valintaruudut tuodaan sellaisina kuin Excel ne pitää, ja kaava tuo sen lasketun arvon.
 
-![Tietokannan valikko](../../../../assets/screens/menu-base.png)
+![Tietokannan valikko](../../../../assets/screens/fi/menu-base.webp)
 
 ## 3. Syötä ja suodata
 
@@ -59,7 +61,7 @@ Näkymävalitsin ”Suodata”-painikkeen vasemmalla puolella tarjoaa ”Kaikki 
 näkymäsi. Luo ”Statut”-kentän mukaan ryhmitelty **kanban**: kortin vetäminen sarakkeesta
 toiseen muuttaa riviä.
 
-![Kanban tilan mukaan](../../../../assets/screens/kanban.png)
+![Kanban tilan mukaan](../../../../assets/screens/fi/kanban.webp)
 
 ## 5. Jaa lomake
 

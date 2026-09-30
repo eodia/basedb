@@ -11,7 +11,7 @@ views, a dashboard, automations, and fields that the AI fills in by itself. The
 
 **New base**, then **Start from a template, or ask the AI**: the gallery opens.
 
-![The template gallery, in the application](../../../../assets/screens/modeles.png)
+![The template gallery, in the application](../../../../assets/screens/en/modeles.webp)
 
 Each template can be read in full before it is used — its tables and their fields, its views,
 its automations, and the prompt of each of its AI fields. **Create base** asks for its label

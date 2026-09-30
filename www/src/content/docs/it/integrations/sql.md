@@ -25,7 +25,7 @@ le descrizioni (`COMMENT ON`).
 Il **+** della barra delle tab, oppure menu **⋯** del database → **Query SQL**: un editor
 con evidenziazione della sintassi e completamento, il cui risultato compare nella stessa griglia delle tue tabelle.
 
-![Una query salvata, e due viste SQL disposte tra le tabelle](../../../../assets/screens/requete-sql.png)
+![Una query salvata, e due viste SQL disposte tra le tabelle](../../../../assets/screens/it/requete-sql.webp)
 
 - **Ognuno vi legge con i propri permessi**: il livello Gestione ha tutto il database, scritture comprese; gli
   altri membri scrivono SQL in sola lettura, dove una tabella preclusa non esiste e un campo
@@ -52,6 +52,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+Questo account è il proprietario del database: legge tutto, e i permessi di basedb non gli si
+applicano. Per uno strumento di BI, crea invece un ruolo separato con i suoi propri `GRANT`. Se
+una tabella porta una [regola di righe](/basedb/it/fonctionnalites/droits/#fino-alla-riga),
+PostgreSQL vi applica la sicurezza per riga: un ruolo di questo tipo non vede alcuna riga senza
+l’attributo `BYPASSRLS` o una propria policy.
 
 ## Scrivere in SQL
 

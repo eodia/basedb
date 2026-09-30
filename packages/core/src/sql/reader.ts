@@ -20,6 +20,7 @@ import {
   resolveTypes,
   uniqueKey,
 } from './console.js'
+import { readerPolicies } from './row-security.js'
 
 /**
  * SQL for everyone who reads a base — read only, and with their own rights.
@@ -70,6 +71,8 @@ export interface Reach {
   readonly schema: string
   /** Readable table → its readable columns: the system ones and the readable fields'. */
   readonly tables: ReadonlyMap<string, ReadonlySet<string>>
+  /** Readable table → the rows the person reaches, as the decider wrote them (05 §16). */
+  readonly rows: ReadonlyMap<string, string>
 }
 
 /**
@@ -90,9 +93,11 @@ export async function readerReach(
   const fieldsByTable = fieldsByTableOf(raw)
   const targetOf = targetFactory(ctx, raw, fieldsByTable)
   const tables = new Map<string, ReadonlySet<string>>()
+  const rows = new Map<string, string>()
   for (const table of raw.tables.filter((t) => t.base_id === baseId)) {
     const decision = decide(ctx, grants, 'read', targetOf(table))
     if (decision.verdict !== 'ALLOWED') continue
+    rows.set(table.table_name, decision.rowPredicate)
     const columns = new Set<string>(SYSTEM_COLUMNS)
     for (const field of fieldsByTable.get(table.id) ?? []) {
       if (decision.readableFields.has(field.id)) columns.add(field.column)
@@ -106,7 +111,7 @@ export async function readerReach(
   ) {
     throw new BasedbError('RESOURCE_NOT_FOUND', { details: { base: baseId } })
   }
-  return { schema: base.schema_name, tables }
+  return { schema: base.schema_name, tables, rows }
 }
 
 /** A table to shadow: its name, and the readable columns it really has. */
@@ -185,6 +190,10 @@ async function provision(
     }
 
     for (const statement of await grantsToWrite(exec, role, reach, byTable)) {
+      await exec.query(statement, [], 'ddl')
+    }
+    // The rows, after the columns: PostgreSQL's row security holds the person's rules.
+    for (const statement of await readerPolicies(exec, role, reach.schema, reach.rows)) {
       await exec.query(statement, [], 'ddl')
     }
 

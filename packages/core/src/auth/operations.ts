@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { BasedbError } from '../errors/index.js'
 import type { Executor, Pools } from '../runtime/pool.js'
-import { mailTexts } from './mail-texts.js'
+import { mailLocale, mailTexts, resetTexts } from './mail-texts.js'
 import { checkPasswordPolicy, dummyVerify, hashPassword, verifyPassword } from './password.js'
 import {
   ELEVATION_MS,
@@ -435,6 +435,8 @@ export async function whoAmI(
   readonly weekStart: 0 | 1
   /** The natures of notification the person refused (chapter 16 §2.3). */
   readonly mutedNotifications: readonly string[]
+  /** The natures also sent by mail when left unread (chapter 16 §2.4). */
+  readonly mailedNotifications: readonly string[]
   /** The language chosen, or `null`: the browser's (chapter 11 §10). */
   readonly locale: string | null
 }> {
@@ -449,6 +451,7 @@ export async function whoAmI(
       date_format: 'dmy' | 'iso'
       week_start: number
       muted_notifications: string[]
+      mailed_notifications: string[]
       locale: string | null
     }>(
       `SELECT u.email, u.display_name, u.is_instance_admin, u.must_change_password,
@@ -458,7 +461,8 @@ export async function whoAmI(
                          AND r.is_system AND r.deleted_at IS NULL) AS in_admins,
               EXISTS (SELECT 1 FROM _basedb.auth_identity i
                        WHERE i.user_id = u.id AND i.provider = 'password') AS has_password,
-              u.date_format, u.week_start, u.muted_notifications, u.locale
+              u.date_format, u.week_start, u.muted_notifications, u.mailed_notifications,
+              u.locale
          FROM _basedb.app_user u WHERE u.id = $1`,
       [authenticated.userId],
     ),
@@ -479,6 +483,7 @@ export async function whoAmI(
     dateFormat: user.date_format,
     weekStart: user.week_start === 0 ? 0 : 1,
     mutedNotifications: user.muted_notifications,
+    mailedNotifications: user.mailed_notifications,
     locale: user.locale,
   }
 }
@@ -601,7 +606,14 @@ const RESET_TTL_MS = 30 * 60 * 1000
 export interface MailMessage {
   readonly to: string
   readonly subject: string
+  /** The plain text — the whole message for every client. */
   readonly body: string
+  /** The same, laid out, for the clients that show HTML. */
+  readonly html?: string
+  /** Where an answer goes: the person behind an automation, not the relay's address. */
+  readonly replyTo?: string
+  /** Written by a machine (RFC 3834 `Auto-Submitted`): no out-of-office reply to it. */
+  readonly automatic?: boolean
 }
 
 export type Mailer = (message: MailMessage) => Promise<void>
@@ -625,6 +637,8 @@ export async function requestPasswordReset(
     readonly mailer?: Mailer
     /** The requester's `Accept-Language`: the mail's language when the account has none. */
     readonly acceptLanguage?: string | null
+    /** `BASEDB_PUBLIC_URL`: the mail carries a link there; without it, the code alone. */
+    readonly publicUrl?: string | null
   },
 ): Promise<void> {
   const now = request.now ?? new Date()
@@ -667,11 +681,18 @@ export async function requestPasswordReset(
 
   // Delivery failures are swallowed: the caller already has their `202`, and telling
   // them apart from a refusal would answer the question the `202` exists to hide.
+  const locale = mailLocale(secret.locale, request.acceptLanguage)
+  const texts = resetTexts(locale)
+  const root = request.publicUrl?.replace(/\/+$/, '') ?? null
   await request
     .mailer({
       to: secret.email,
       subject: mailTexts(secret.locale, request.acceptLanguage).resetSubject,
-      body: secret.value,
+      body:
+        root === null
+          ? texts.withCode(secret.value)
+          : texts.withLink(`${root}/?reinitialisation=${encodeURIComponent(secret.value)}`),
+      automatic: true,
     })
     .catch(() => undefined)
 }

@@ -9,7 +9,7 @@ tabellerne — for sig selv, for hele databasen eller for nogle grupper —, og 
 databasen, kan gøre den til et **SQL-view**: et rigtigt PostgreSQL-view, placeret blandt
 tabellerne, som `psql` og dine værktøjer også kan læse.
 
-![En gemt forespørgsel, åbnet fra afsnittet »Forespørgsler«; ovenover to SQL-views placeret blandt tabellerne](../../../../assets/screens/requete-sql.png)
+![En gemt forespørgsel, åbnet fra afsnittet »Forespørgsler«; ovenover to SQL-views placeret blandt tabellerne](../../../../assets/screens/da/requete-sql.webp)
 
 ## Hver med sine tilladelser
 
@@ -23,7 +23,7 @@ samme gitter som dine tabeller. Hvad forespørgslen kan læse, afhænger af, hve
   skjult for dig, forsvinder fra `SELECT *` og afvises, hvis du nævner det, selv hvis du angiver
   tabellen; en skrivning afvises. Resultatet har mærket **Dine tilladelser**.
 
-![Mærket »Dine tilladelser«: forespørgslen ser kun de tabeller og felter, der er åbne for personen](../../../../assets/screens/sql-vos-droits.png)
+![Mærket »Dine tilladelser«: forespørgslen ser kun de tabeller og felter, der er åbne for personen](../../../../assets/screens/da/sql-vos-droits.webp)
 
 Det er ikke skærmen, der sorterer fra: PostgreSQL håndhæver selv dine tilladelser, kolonne for
 kolonne, på en rolle, der er din egen. En forespørgsel kan altså ikke vise dig noget, som gitteret,
@@ -37,7 +37,7 @@ API'et eller MCP-serveren ikke ville vise dig.
 se den, eller sletter den — **Slet** findes også i dens menu, ved et højreklik. En fane, der
 viste den, beholder dens tekst.
 
-![Gem en forespørgsel: dens navn, hvad den viser, og hvem der kan se den](../../../../assets/screens/requete-enregistrer.png)
+![Gem en forespørgsel: dens navn, hvad den viser, og hvem der kan se den](../../../../assets/screens/da/requete-enregistrer.webp)
 
 | Omfang | Hvem kan se den | Hvem kan oprette og redigere den |
 |---|---|---|
@@ -62,7 +62,7 @@ tabellerne** med sin farve og sit ikon ligesom en tabel og et lille **øje** til
 at det er et view. Et klik åbner det i en fane: dets rækker i gitteret og **Opdater** for at
 læse dem igen.
 
-![Viewet »Factures à encaisser«, åbnet fra sidepanelet](../../../../assets/screens/vue-sql.png)
+![Viewet »Factures à encaisser«, åbnet fra sidepanelet](../../../../assets/screens/da/vue-sql.webp)
 
 Det oprettes via databasens **⋯**-menu → **Nyt SQL-view…** eller fra en SQL-fane:
 **⋯** → **Opret SQL-view…**, og fanens forespørgsel bliver dets definition. Dialogen beder om:
@@ -73,7 +73,7 @@ Det oprettes via databasens **⋯**-menu → **Nyt SQL-view…** eller fra en SQ
 - dets **forespørgsel**: én enkelt `SELECT` på databasens tabeller og andre views. PostgreSQL
   afviser det, den afviser, og editoren peger på stedet.
 
-![Dialogen for et SQL-view: etiket og udseende, teknisk navn, forespørgsel, beskrivelse](../../../../assets/screens/vue-sql-dialogue.png)
+![Dialogen for et SQL-view: etiket og udseende, teknisk navn, forespørgsel, beskrivelse](../../../../assets/screens/da/vue-sql-dialogue.webp)
 
 Viewet læses derefter under sit navn, fra brugerfladen såvel som fra `psql` eller dit
 BI-værktøj:

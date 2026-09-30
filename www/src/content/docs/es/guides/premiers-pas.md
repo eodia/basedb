@@ -41,11 +41,13 @@ Más adelante, una fórmula (`DAYS([Échéance], TODAY())`), una búsqueda (la c
 o un acumulado (el importe total por cliente) se añaden de la misma forma; consulta
 [Tablas y campos](/basedb/es/fonctionnalites/tables-et-champs/).
 
-También puedes **importar un archivo** CSV o JSON: la importación deduce los tipos, te deja
-corregirlos, crea la tabla o completa una tabla existente, e indica fila por fila lo que
-rechaza.
+También puedes **importar un archivo**: un libro de Excel (`.xlsx`), un CSV o un JSON: la
+importación deduce los tipos, te deja corregirlos, crea la tabla o completa una tabla
+existente, e indica fila por fila lo que rechaza. De un libro con varias hojas, eliges la
+hoja; las fechas, los importes y las casillas de verificación se toman tal como los guarda
+Excel, y una fórmula da su valor.
 
-![Menú de una base](../../../../assets/screens/menu-base.png)
+![Menú de una base](../../../../assets/screens/es/menu-base.webp)
 
 ## 3. Introducir datos y filtrar
 
@@ -61,7 +63,7 @@ El selector de vistas, a la izquierda de «Filtrar», ofrece «Todas las filas»
 Crea un **kanban** agrupado por «Statut»: arrastrar una tarjeta de una columna a otra modifica la
 fila.
 
-![Un kanban por estado](../../../../assets/screens/kanban.png)
+![Un kanban por estado](../../../../assets/screens/es/kanban.webp)
 
 ## 5. Compartir un formulario
 

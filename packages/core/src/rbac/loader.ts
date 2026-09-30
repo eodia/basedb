@@ -12,6 +12,7 @@ import {
   TENANT_SCOPE,
   type Target,
 } from './decide.js'
+import { compileRowRules } from './rows.js'
 
 /**
  * Loading grants from the catalog — chapter 05 §3.2, steps 5 and 6.
@@ -269,6 +270,16 @@ export async function loadTarget(
 
   void ctx
 
+  // The row rules of the table, compiled against its fields as they are now (05 §16).
+  const ruleRows = await exec.query<{ role_id: string; filter: string }>(
+    'SELECT role_id::text, filter FROM _basedb.row_permission WHERE table_id = $1',
+    [tableId],
+  )
+  const rowRules = compileRowRules(
+    ruleRows.map((r) => ({ roleId: r.role_id, filter: r.filter })),
+    fields,
+  )
+
   return {
     kind: 'table',
     id: table.id,
@@ -281,6 +292,7 @@ export async function loadTarget(
     agentsExcluded: !table.mcp_enabled,
     // A formula by its kind; a field computed by the AI by its option.
     computedFieldIds: fields.filter((f) => COMPUTED_KINDS.has(f.kind) || f.has_ai).map((f) => f.id),
+    rowRules,
   }
 }
 

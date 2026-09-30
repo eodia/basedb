@@ -29,8 +29,8 @@ L’image tourne sous l’utilisateur `node`, sur Node 22, déclare une vérific
 | Étiquette | Contenu |
 |---|---|
 | `latest` | la dernière version publiée |
-| `0.3` | la dernière version 0.3.x |
-| `0.3.2` | exactement cette version |
+| `0.4` | la dernière version 0.4.x |
+| `0.4.0` | exactement cette version |
 
 ## Les services
 

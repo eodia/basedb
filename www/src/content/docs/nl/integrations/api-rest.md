@@ -33,7 +33,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | een leesbare expressie: `statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | de kolommen die moeten worden teruggegeven |
-| `limit`, `cursor` | paginering met een versleutelde cursor (`next_cursor` in het antwoord) |
+| `limit`, `after` | paginering met een versleutelde cursor: `meta.next_cursor` van een pagina, doorgegeven als `after`, geeft de volgende (`meta.has_next_page`) |
 | `links=display` | de relaties met hun weergavewaarde |
 | `count=exact` | het totaal, begrensd op 100 000 |
 | `variables=raw` | lange teksten zoals ze geschreven zijn, `{{colonne}}` inbegrepen, in plaats van met de [waarden van de rij](/basedb/nl/fonctionnalites/tables-et-champs/#opgemaakte-tekst-en-variabelen) |
@@ -85,4 +85,4 @@ lezers krijgen twee versies —, geschreven **in de taal van je scherm**, en bes
 OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). De namen, de paden en de
 foutcodes blijven in elke taal hetzelfde.
 
-![De gegenereerde documentatie van een database](../../../../assets/screens/documentation-api.png)
+![De gegenereerde documentatie van een database](../../../../assets/screens/nl/documentation-api.webp)

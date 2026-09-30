@@ -22,7 +22,7 @@ skriver in (”Échéance”) blir ett läsbart fysiskt namn (`echeance`) genom 
 | Enkelval | `text` + `CHECK` | färg, ikon eller bild per alternativ |
 | Flerval | `text[]` + `CHECK` | kan filtreras med array-operatorerna |
 | E-post | `text` + `CHECK` | en adress som databasen kontrollerar, öppnas med ett klick |
-| Telefon, Streckkod | `text` | en kort text och dess format: samtalslänk, fast teckenbredd |
+| Telefon, Streckkod, Adress | `text` | en kort text och dess format: samtalslänk, fast teckenbredd, länk till kartan |
 | URL | `text` + `CHECK` | kompletteras när du skriver (`exemple.fr` → `https://exemple.fr`) |
 | Person | `uuid` | en medlem i arbetsytan; den som anges får en [avisering](/basedb/sv/fonctionnalites/collaboration/) |
 | Autonummer | `bigint` (identity) | numrerar även rader som redan finns; ingen skriver in det |
@@ -38,7 +38,7 @@ Varje tabell har också sina **systemkolumner**: `_id` (UUID v7), `_created_at`,
 skrivas via API:et. Rutnätet samlar dem under **Systeminformation** i kolumnmenyn: de finns i
 varje tabell men är användbara i få.
 
-![Rutnätet för en tabell, med en beräknad varaktighet, ett uppslag och ett antal](../../../../assets/screens/grille.png)
+![Rutnätet för en tabell, med en beräknad varaktighet, ett uppslag och ett antal](../../../../assets/screens/sv/grille.webp)
 
 ## Villkor som databasen upprätthåller
 
@@ -55,7 +55,7 @@ Foreign-key constraints:
 
 ## Visningsformat
 
-Valuta, Procent, Varaktighet, Betyg, Telefon och Streckkod väljs som typer, men de är
+Valuta, Procent, Varaktighet, Betyg, Telefon, Streckkod och Adress väljs som typer, men de är
 **format**: kolumnen förblir ett tal eller en text, det är bara visningen som ändras.
 
 | Format | För | Visas och skrivs in som |
@@ -66,9 +66,27 @@ Valuta, Procent, Varaktighet, Betyg, Telefon och Streckkod väljs som typer, men
 | Betyg | ett tal | 1 till 10 stjärnor, ställs in med ett klick |
 | Telefon | en kort text | en samtalslänk |
 | Streckkod | en kort text | med fast teckenbredd |
+| Adress | en kort text | en länk till kartan; i raddetaljerna föreslår **Hitta adress** de adresser som matchar, skrivna i sin helhet; vyn [Karta](/basedb/sv/fonctionnalites/vues/#karta) placerar den |
 
 Ett format kan ändras i efterhand (**Visning**, när du redigerar fältet) utan att de sparade
 värdena påverkas. Det begränsar inte värdet: betyget 7 på en skala till 5 förblir 7.
+
+## Standardvärden
+
+Under redigeringen av ett fält bestämmer **Standardvärde** vad en rad som skapas utan att
+fylla i det får:
+
+| Val | För | Den skapade raden får |
+|---|---|---|
+| Ett fast värde | de flesta typer | det valda värdet – en status ”Ny”, en prioritet 3 |
+| Dagens datum | ett datum | dagen den skapades, i personens tidszon |
+| Tidpunkten för skapandet | ett datum och tid | exakt klockslag |
+| Personen som skapar raden | en person | den som skapade den – ”Ansvarig: jag” |
+
+Nya raddetaljer och formulären öppnas förifyllda; tömmer du fältet blir det tomt. Standardvärdet
+gäller för varje skapande – gränssnitt, API, MCP, import, delat formulär, automatisering – även
+för ett fält som personen inte får ändra: det är tabellens regel. Befintliga rader ändras inte,
+och en infogning med direkt SQL får inget: basedb tillämpar det, inte kolumnen.
 
 ## Formler
 
@@ -173,7 +191,7 @@ Formaterad text kan inte fyllas i av AI: en modell skriver text, inte sanerad HT
 Databasens **Struktur**-skärm – i dess **⋯**-meny i sidofältet – listar tabellerna och deras
 fält: lägg till, byt namn, gör obligatoriskt, ändra ordning, beskriv, ange visningsfältet.
 
-![Struktur-skärmen för en databas](../../../../assets/screens/structure.png)
+![Struktur-skärmen för en databas](../../../../assets/screens/sv/structure.webp)
 
 Att ändra strukturen kräver nivån **Hantera**. Utan den kan skärmen bara visas och erbjuder
 ingenting: ingen knapp, ingen penna, inget handtag – att ett fält är obligatoriskt och vilket

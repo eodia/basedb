@@ -7,7 +7,7 @@ description: basedb nedir ve onu işbirlikçi elektronik tablolardan ayıran ned
 ortak bir veritabanıdır — geri kalan her şeyi belirleyen bir farkla: **verileriniz, tipli ve
 açıkça adlandırılmış gerçek PostgreSQL tablolarında yaşar**.
 
-![basedb'de bir tablonun ızgarası](../../../../assets/screens/grille.png)
+![basedb'de bir tablonun ızgarası](../../../../assets/screens/tr/grille.webp)
 
 ## Basit bir vaat
 
@@ -38,8 +38,8 @@ yazmayı kaydeder.
 - Tipli [tablolar ve alanlar](/basedb/tr/fonctionnalites/tables-et-champs/), gerçek yabancı
   anahtar olan — ya da çoklu olan — ilişkiler, PostgreSQL tarafından hesaplanan formüller,
   ilişkiler üzerinden aramalar ve toplamalar.
-- Sekiz [görünüm](/basedb/tr/fonctionnalites/vues/): ızgara, kanban, takvim, zaman çizelgesi,
-  galeri, liste, form, anket — ortak ya da kişisel.
+- On [görünüm](/basedb/tr/fonctionnalites/vues/): ızgara, kanban, takvim, zaman çizelgesi,
+  galeri, liste, harita, form, anket, sınav — ortak ya da kişisel.
 - Bir bağlantıyla paylaşılan [formlar](/basedb/tr/fonctionnalites/formulaires-partages/) ve
   [görünümler](/basedb/tr/fonctionnalites/vues-partagees/), bir ajandadan abone olunabilen
   takvimler.

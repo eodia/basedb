@@ -7,7 +7,7 @@ Egy adatbázis **Integrációk** képernyője a bal alsó sarokban lévő profil
 **Kezelés** szintet igényel, és egy helyre gyűjti mindazt, ami az adatbázist a többi
 eszközéhez köti.
 
-![Egy adatbázis Integrációk képernyője](../../../../assets/screens/integrations.png)
+![Egy adatbázis Integrációk képernyője](../../../../assets/screens/hu/integrations.webp)
 
 ## Slack
 

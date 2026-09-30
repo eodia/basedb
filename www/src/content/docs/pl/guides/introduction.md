@@ -7,7 +7,7 @@ description: Czym jest basedb i co odróżnia go od arkuszy kalkulacyjnych do pr
 którą hostujesz samodzielnie – z jedną różnicą, od której zależy cała reszta: **twoje dane
 żyją w prawdziwych tabelach PostgreSQL**, typowanych i nazwanych czytelnie.
 
-![Siatka tabeli w basedb](../../../../assets/screens/grille.png)
+![Siatka tabeli w basedb](../../../../assets/screens/pl/grille.webp)
 
 ## Prosta obietnica
 
@@ -39,8 +39,8 @@ zapis.
 - Typowane [tabele i pola](/basedb/pl/fonctionnalites/tables-et-champs/), relacje, które są
   prawdziwymi kluczami obcymi – także wielokrotne –, formuły obliczane przez PostgreSQL,
   odnośniki i agregacje przez relacje.
-- Osiem [widoków](/basedb/pl/fonctionnalites/vues/): siatka, kanban, kalendarz, oś czasu,
-  galeria, lista, formularz, ankieta – wspólne lub osobiste.
+- Dziesięć [widoków](/basedb/pl/fonctionnalites/vues/): siatka, kanban, kalendarz, oś czasu,
+  galeria, lista, mapa, formularz, ankieta, quiz – wspólne lub osobiste.
 - [Formularze](/basedb/pl/fonctionnalites/formulaires-partages/) i
   [widoki](/basedb/pl/fonctionnalites/vues-partagees/) udostępniane przez link oraz kalendarze,
   które można subskrybować w aplikacji kalendarza.

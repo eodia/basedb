@@ -93,7 +93,8 @@ Dans une page traduite :
 
 - les liens internes prennent la langue : `/basedb/en/fonctionnalites/vues/` au lieu de
   `/basedb/fonctionnalites/vues/` ;
-- les images, un dossier plus bas : `../../../../assets/screens/grille.png` ;
+- les images, un dossier plus bas et dans la langue : `../../../../assets/screens/en/grille.webp`
+  (la page française lit `../../../assets/screens/fr/grille.webp`) ;
 - le titre de la page (`title`) est celui de la barre latérale ; les groupes de la barre
   sont traduits dans `astro.config.mjs` (`translations`).
 

@@ -4,7 +4,8 @@ import type { Field } from '@/lib/api/client'
 import { editText, parseNumberInput } from '@/lib/format'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { Check, Star } from 'lucide-react'
+import type { QuizAnswer } from '@basedb/contracts'
+import { Check, Star, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { type AnswerWidget, choiceKey, normalizeUrl, yesNoKeys } from './answers'
 
@@ -14,6 +15,10 @@ import { type AnswerWidget, choiceKey, normalizeUrl, yesNoKeys } from './answers
  * one-page form. A choice, a yes or no, a rating take a key as well as a click; taken,
  * they blink once and — in a survey that lets them — call `onDone`, and the next question
  * comes by itself.
+ *
+ * In a quiz that corrects as it goes, a question once graded is LOCKED — its answer stays
+ * as given — and a choice shows what was right: the right option in green, a wrong one
+ * taken in red.
  */
 
 interface Common {
@@ -27,6 +32,21 @@ interface Common {
   readonly invalid?: boolean
   /** A single answer was taken — the survey may go on by itself. */
   readonly onDone?: () => void
+  /** A quiz's graded answer: nothing changes it any more. */
+  readonly locked?: boolean
+  /** A quiz's right answer, once revealed: the choices show it. */
+  readonly correct?: QuizAnswer | null
+}
+
+/** How a choice reads once a quiz reveals its right answer. */
+type Mark = 'right' | 'wrong' | 'missed' | null
+
+/** The mark of one option: taken or not, right or not. */
+function markOf(correct: QuizAnswer | null | undefined, value: string, taken: boolean): Mark {
+  if (correct === undefined || correct === null) return null
+  const right = Array.isArray(correct) ? correct.includes(value) : correct === value
+  if (right) return taken ? 'right' : 'missed'
+  return taken ? 'wrong' : null
 }
 
 /** A key pressed on the page, not typed into a field — and without a modifier. */
@@ -84,6 +104,7 @@ export function LineAnswer({
   placeholder,
   autoFocus,
   invalid,
+  locked,
 }: Common & { readonly widget: 'text' | 'email' | 'url' | 'phone' | 'number' }) {
   const [typed, setTyped] = useState(() =>
     value === null || value === undefined
@@ -104,6 +125,7 @@ export function LineAnswer({
       aria-label={field.label}
       placeholder={placeholder}
       autoComplete={widget === 'email' ? 'email' : widget === 'phone' ? 'tel' : 'off'}
+      readOnly={locked}
       onChange={(e) => {
         const next = e.target.value
         setTyped(next)
@@ -164,7 +186,7 @@ export function LongAnswer({
 }
 
 /** A date, or a date and an hour — the device's own picker, in the theme's light or dark. */
-export function DateAnswer({ field, value, onChange, large, autoFocus, invalid }: Common) {
+export function DateAnswer({ field, value, onChange, large, autoFocus, invalid, locked }: Common) {
   const withTime = field.kind === 'datetime'
   const shown =
     typeof value !== 'string' || value === ''
@@ -180,7 +202,9 @@ export function DateAnswer({ field, value, onChange, large, autoFocus, invalid }
       autoFocus={autoFocus}
       aria-invalid={invalid}
       aria-label={field.label}
+      readOnly={locked}
       onChange={(e) => {
+        if (locked) return
         const v = e.target.value
         if (v === '') onChange(null)
         else onChange(withTime ? new Date(v).toISOString() : v)
@@ -209,6 +233,8 @@ function OptionCard({
   large,
   role,
   onClick,
+  mark = null,
+  locked = false,
 }: {
   readonly keyLabel: string | null
   readonly label: string
@@ -218,19 +244,35 @@ function OptionCard({
   readonly large: boolean
   readonly role: 'radio' | 'checkbox'
   readonly onClick: () => void
+  /** A quiz's verdict on this option, once revealed. */
+  readonly mark?: Mark
+  readonly locked?: boolean
 }) {
   return (
     <button
       type="button"
       role={role}
       aria-checked={on}
-      onClick={onClick}
+      aria-disabled={locked || undefined}
+      onClick={locked ? undefined : onClick}
       className={cn(
-        'group flex w-full items-center gap-3 rounded-(--fm-radius) border px-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-150 active:scale-[0.99]',
+        'group flex w-full items-center gap-3 rounded-(--fm-radius) border px-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-150',
+        !locked && 'active:scale-[0.99]',
         large ? 'py-3 text-lg' : 'py-2.5 text-base',
-        on
-          ? 'border-(--fm-accent) bg-(--fm-accent-soft) shadow-[0_0_0_1px_var(--fm-accent)]'
-          : 'border-(--fm-border) bg-(--fm-field) hover:border-(--fm-accent-line) hover:bg-(--fm-accent-soft)',
+        mark === 'right'
+          ? 'border-emerald-500 bg-emerald-500/15 shadow-[0_0_0_1px_var(--color-emerald-500)]'
+          : mark === 'wrong'
+            ? 'animate-shake border-red-500 bg-red-500/12 shadow-[0_0_0_1px_var(--color-red-500)]'
+            : mark === 'missed'
+              ? 'border-dashed border-emerald-500 bg-emerald-500/8'
+              : on
+                ? 'border-(--fm-accent) bg-(--fm-accent-soft) shadow-[0_0_0_1px_var(--fm-accent)]'
+                : cn(
+                    'border-(--fm-border) bg-(--fm-field)',
+                    locked
+                      ? 'opacity-60'
+                      : 'hover:border-(--fm-accent-line) hover:bg-(--fm-accent-soft)',
+                  ),
         blink && 'animate-form-blink',
       )}
     >
@@ -254,13 +296,24 @@ function OptionCard({
         />
       )}
       <span className="min-w-0 flex-1 break-words">{label}</span>
-      <Check
-        aria-hidden
-        className={cn(
-          'size-5 shrink-0 text-(--fm-accent) transition-[opacity,scale] duration-200',
-          on ? 'scale-100 opacity-100' : 'scale-50 opacity-0',
-        )}
-      />
+      {mark === 'missed' && (
+        <span className="shrink-0 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+          {$t('Bonne réponse')}
+        </span>
+      )}
+      {mark === 'wrong' ? (
+        <X aria-hidden className="size-5 shrink-0 animate-form-pop text-red-500" />
+      ) : (
+        <Check
+          aria-hidden
+          className={cn(
+            'size-5 shrink-0 transition-[opacity,scale] duration-200',
+            mark === 'right' || mark === 'missed' ? 'text-emerald-500' : 'text-(--fm-accent)',
+            on || mark === 'missed' ? 'scale-100 opacity-100' : 'scale-50 opacity-0',
+            mark === 'right' && 'animate-form-pop',
+          )}
+        />
+      )}
     </button>
   )
 }
@@ -269,11 +322,12 @@ function OptionCard({
 export const ADVANCE_MS = 420
 
 /** One choice among the field's options. */
-export function ChoiceAnswer({ field, value, onChange, large, onDone }: Common) {
+export function ChoiceAnswer({ field, value, onChange, large, onDone, locked, correct }: Common) {
   const options = field.options ?? []
   const current = typeof value === 'string' ? value : null
   const [blink, setBlink] = useState<string | null>(null)
   const take = (v: string) => {
+    if (locked) return
     // On a one-page form a second click leaves the question unanswered; a survey keeps it.
     const next = !large && current === v ? null : v
     onChange(next)
@@ -282,7 +336,7 @@ export function ChoiceAnswer({ field, value, onChange, large, onDone }: Common) 
     setTimeout(() => setBlink(null), ADVANCE_MS)
     onDone?.()
   }
-  useKeys(large, (key) => {
+  useKeys(large && locked !== true, (key) => {
     const i = key.length === 1 ? key.charCodeAt(0) - 65 : -1
     const option = i >= 0 ? options[i] : undefined
     if (option === undefined) return false
@@ -302,6 +356,8 @@ export function ChoiceAnswer({ field, value, onChange, large, onDone }: Common) 
           blink={blink === o.value}
           large={large}
           onClick={() => take(o.value)}
+          mark={markOf(correct, o.value, current === o.value)}
+          locked={locked}
         />
       ))}
     </div>
@@ -309,14 +365,15 @@ export function ChoiceAnswer({ field, value, onChange, large, onDone }: Common) 
 }
 
 /** Several choices among the field's options. */
-export function ChoicesAnswer({ field, value, onChange, large }: Common) {
+export function ChoicesAnswer({ field, value, onChange, large, locked, correct }: Common) {
   const options = field.options ?? []
   const chosen = Array.isArray(value) ? (value as string[]) : []
   const toggle = (v: string) => {
+    if (locked) return
     const next = chosen.includes(v) ? chosen.filter((c) => c !== v) : [...chosen, v]
     onChange(next.length === 0 ? null : next)
   }
-  useKeys(large, (key) => {
+  useKeys(large && locked !== true, (key) => {
     const i = key.length === 1 ? key.charCodeAt(0) - 65 : -1
     const option = i >= 0 ? options[i] : undefined
     if (option === undefined) return false
@@ -343,6 +400,8 @@ export function ChoicesAnswer({ field, value, onChange, large }: Common) {
             blink={false}
             large={large}
             onClick={() => toggle(o.value)}
+            mark={markOf(correct, o.value, chosen.includes(o.value))}
+            locked={locked}
           />
         ))}
       </div>
@@ -351,10 +410,13 @@ export function ChoicesAnswer({ field, value, onChange, large }: Common) {
 }
 
 /** Yes or no: two cards, a key each — the letters of the words in the reader's language. */
-export function YesNoAnswer({ field, value, onChange, large, onDone }: Common) {
+export function YesNoAnswer({ field, value, onChange, large, onDone, locked, correct }: Common) {
   const keys = yesNoKeys()
   const [blink, setBlink] = useState<boolean | null>(null)
+  // A right answer of yes or no, read as the choices read theirs.
+  const truth = typeof correct === 'boolean' ? String(correct) : null
   const take = (v: boolean) => {
+    if (locked) return
     const next = !large && value === v ? null : v
     onChange(next)
     if (next === null) return
@@ -362,7 +424,7 @@ export function YesNoAnswer({ field, value, onChange, large, onDone }: Common) {
     setTimeout(() => setBlink(null), ADVANCE_MS)
     onDone?.()
   }
-  useKeys(large, (key) => {
+  useKeys(large && locked !== true, (key) => {
     if (key === keys.yes) take(true)
     else if (key === keys.no) take(false)
     else return false
@@ -378,6 +440,8 @@ export function YesNoAnswer({ field, value, onChange, large, onDone }: Common) {
         blink={blink === true}
         large={large}
         onClick={() => take(true)}
+        mark={markOf(truth, 'true', value === true)}
+        locked={locked}
       />
       <OptionCard
         role="radio"
@@ -387,18 +451,21 @@ export function YesNoAnswer({ field, value, onChange, large, onDone }: Common) {
         blink={blink === false}
         large={large}
         onClick={() => take(false)}
+        mark={markOf(truth, 'false', value === false)}
+        locked={locked}
       />
     </div>
   )
 }
 
 /** A rating: stars from one to the field's maximum, the digits as keys. */
-export function RatingAnswer({ field, value, onChange, large, onDone }: Common) {
+export function RatingAnswer({ field, value, onChange, large, onDone, locked }: Common) {
   const max = field.format?.rating_max ?? 5
   const current = typeof value === 'number' ? Math.round(value) : 0
   const [hover, setHover] = useState(0)
   const [pulse, setPulse] = useState(0)
   const take = (n: number) => {
+    if (locked) return
     const next = !large && current === n ? null : n
     onChange(next)
     if (next === null) return
@@ -406,7 +473,7 @@ export function RatingAnswer({ field, value, onChange, large, onDone }: Common) 
     setTimeout(() => setPulse(0), ADVANCE_MS)
     onDone?.()
   }
-  useKeys(large, (key) => {
+  useKeys(large && locked !== true, (key) => {
     const n = key === '0' ? 10 : Number(key)
     if (!Number.isInteger(n) || n < 1 || n > max) return false
     take(n)

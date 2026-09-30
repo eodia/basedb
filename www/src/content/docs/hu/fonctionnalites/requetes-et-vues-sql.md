@@ -9,7 +9,7 @@ adatbázisnak vagy néhány csoportnak –, aki pedig kezeli az adatbázist, **S
 belőle: egy valódi PostgreSQL-nézetet a táblák között elhelyezve, amelyet a `psql` és az Ön
 eszközei is olvasnak.
 
-![Egy mentett lekérdezés a „Lekérdezések” rovatból megnyitva; fölötte két SQL-nézet a táblák között](../../../../assets/screens/requete-sql.png)
+![Egy mentett lekérdezés a „Lekérdezések” rovatból megnyitva; fölötte két SQL-nézet a táblák között](../../../../assets/screens/hu/requete-sql.webp)
 
 ## Mindenki a saját jogosultságaival
 
@@ -25,7 +25,7 @@ lekérdezés mit olvashat, az attól függ, ki futtatja:
   tábla megadásával is; az írás elutasításra kerül. Az eredményen **Az Ön jogosultságai**
   címke látható.
 
-![„Az Ön jogosultságai” címke: a lekérdezés csak a személy számára hozzáférhető táblákat és mezőket látja](../../../../assets/screens/sql-vos-droits.png)
+![„Az Ön jogosultságai” címke: a lekérdezés csak a személy számára hozzáférhető táblákat és mezőket látja](../../../../assets/screens/hu/sql-vos-droits.webp)
 
 Nem a képernyő válogat: maga a PostgreSQL alkalmazza a jogosultságait, oszlopról oszlopra, egy
 Önhöz tartozó szerepkörön. Egy lekérdezés tehát semmi olyat nem mutathat, amit a rács, az API vagy
@@ -39,7 +39,7 @@ róla, a **Név és megosztás…** (a lapon vagy az oldalsávbeli menüjében) 
 látja, vagy törli – a **Törlés** jobb kattintással a menüjéből is elérhető. Az őt megjelenítő lap
 megtartja a szövegét.
 
-![Lekérdezés mentése: a neve, mit mutat, és ki látja](../../../../assets/screens/requete-enregistrer.png)
+![Lekérdezés mentése: a neve, mit mutat, és ki látja](../../../../assets/screens/hu/requete-enregistrer.webp)
 
 | Hatókör | Ki látja | Ki hozhatja létre és módosíthatja |
 |---|---|---|
@@ -64,7 +64,7 @@ kap helyet, egy táblához hasonlóan saját színnel és ikonnal, és jobb olda
 amely jelzi, hogy nézetről van szó. Egy kattintással megnyílik egy lapon: a sorai a rácsban, a
 **Frissítés** gombbal újraolvashatók.
 
-![A „Factures à encaisser” nézet az oldalsávból megnyitva](../../../../assets/screens/vue-sql.png)
+![A „Factures à encaisser” nézet az oldalsávból megnyitva](../../../../assets/screens/hu/vue-sql.webp)
 
 Az adatbázis **⋯** menüje → **Új SQL-nézet…** menüponttal hozható létre, vagy egy SQL-lapról:
 **⋯** → **SQL-nézet létrehozása…**, és a lap lekérdezése lesz a definíciója. A
@@ -77,7 +77,7 @@ párbeszédablak a következőket kéri:
 - a **lekérdezését**: egyetlen `SELECT` az adatbázis tábláin és más nézetein. Amit a PostgreSQL
   elutasít, azt elutasítja, és a szerkesztő megmutatja a hely.
 
-![Egy SQL-nézet párbeszédablaka: címke és megjelenés, technikai név, lekérdezés, leírás](../../../../assets/screens/vue-sql-dialogue.png)
+![Egy SQL-nézet párbeszédablaka: címke és megjelenés, technikai név, lekérdezés, leírás](../../../../assets/screens/hu/vue-sql-dialogue.webp)
 
 A nézet ezután a nevén olvasható, a felületről ugyanúgy, mint a `psql`-ből vagy a BI-eszközéből:
 

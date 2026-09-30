@@ -65,6 +65,40 @@ description: basedbが読み込むすべての変数と、そのデフォルト�
 | `BASEDB_S3_ACCESS_KEY_ID`、`BASEDB_S3_SECRET_ACCESS_KEY` | — | 認証情報 |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0`でホスト形式のアドレス指定 |
 
+## メール
+
+送信サーバーがなければ、basedbはメールを送信しません。設定すると、**10分間未読のままの**通知（**設定 › 通知**で各自が選べます）、オートメーションの**メールを送信**ステップのメール、そして**パスワードをお忘れの方**のリンクが送られます。リンクは`BASEDB_PUBLIC_URL`を指します。設定されていない場合、メールにリンクは入りません。
+
+| 変数 | デフォルト | 役割 |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | SMTPサーバー：メールサービスや送信サービスのもの |
+| `BASEDB_SMTP_PORT` | `587` | 最初から暗号化された接続には`465` |
+| `BASEDB_SMTP_SECURE` | `starttls`（ポート465では`tls`） | 同じマシン上のリレー専用の場合のみ`none`：それ以外ではパスワードが平文で送られてしまいます |
+| `BASEDB_SMTP_USER`、`BASEDB_SMTP_PASSWORD` | — | 送信アカウントの識別情報（必要な場合） |
+| `BASEDB_MAIL_FROM` | — | `BASEDB_SMTP_HOST`とともに必須：送信者、`basedb <no-reply@exemple.fr>` |
+
+起動時、ログにその状況が示されます：`Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` サーバーが拒否したメールは、1分後、5分後、30分後、120分後、
+360分後に再送されます。
+
+## 地図と住所
+
+**地図**ビューは、ジオコーディングサービスによって住所の位置を決めます：デフォルトではOpenStreetMap（Nominatim）で、住所1件につき1回、最大で1秒に1件のリクエストを送り、応答はすべて保存されます。地図の背景は**ベースマップ**でできており、各閲覧者のブラウザーが直接読み込みます。
+
+| 変数 | デフォルト | 役割 |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | 同じプロトコルを話す別のサービス（自前のNominatim）。`off`：何も使わず、住所はインスタンスの外に出ず、緯度と経度だけで行を配置します |
+| `BASEDB_MAP_TILES` | OpenStreetMapのタイル | 別のタイルサーバー、書式は`https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | そのサーバーが求める表示、地図右下に示されます |
+
+起動時、ログにどのサービスが使われているかが示されます：`Géocodage : https://nominatim.openstreetmap.org.`
+
+## PDFドキュメント
+
+| 変数 | デフォルト | 役割 |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | イメージ内のNotoフォント | コンテナにマウントする独自のフォルダー。`NotoSans-Regular.ttf`、`-Bold`、`-Italic`、`-BoldItalic`、そして中国語・日本語・韓国語用の`NotoSansCJK-Regular.ttc`と`-Bold.ttc`を置きます |
+
 ## データベーステンプレート
 
 | 変数 | デフォルト | 役割 |

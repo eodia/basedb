@@ -66,6 +66,47 @@ Consulta [Cuentas e inicio de sesión](/basedb/es/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | — | credenciales |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` para el direccionamiento por host |
 
+## Correos electrónicos
+
+Sin servidor de envío, basedb no envía ningún correo electrónico. Con él se envían las
+notificaciones que llevan diez minutos sin leerse (cada persona elige cuáles en
+**Configuración › Notificaciones**), los correos del paso **Enviar un correo electrónico** de las
+automatizaciones, y el enlace de una **contraseña olvidada**. Los enlaces apuntan a
+`BASEDB_PUBLIC_URL`; sin ella, un correo no lleva ninguno.
+
+| Variable | Predeterminado | Función |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | el servidor SMTP: el de tu correo o el de un servicio de envío |
+| `BASEDB_SMTP_PORT` | `587` | `465` para una conexión cifrada desde el principio |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` en el puerto 465) | `none` solo para un relé en la misma máquina: de lo contrario la contraseña iría en claro |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | — | el identificador de la cuenta de envío, si lo pide |
+| `BASEDB_MAIL_FROM` | — | obligatoria con `BASEDB_SMTP_HOST`: el remitente, `basedb <no-reply@exemple.fr>` |
+
+Al arrancar, el registro dice cómo está configurado: `Courriels : SMTP smtp.exemple.fr:587
+(starttls), expéditeur no-reply@exemple.fr.` Un correo que el servidor rechaza se reintenta 1, 5,
+30, 120 y luego 360 minutos después.
+
+## Mapas y direcciones
+
+La vista **Mapa** sitúa una dirección gracias a un servicio de geocodificación: el de
+OpenStreetMap (Nominatim) de forma predeterminada, consultado una vez por dirección, una
+solicitud por segundo como máximo, cada respuesta conservada. El fondo del mapa está hecho de
+**teselas** que el navegador de cada lector carga directamente.
+
+| Variable | Predeterminado | Función |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | otro servicio que hable el mismo protocolo (un Nominatim propio); `off`: ninguno, las direcciones no salen de la instancia y solo la latitud y la longitud sitúan las filas |
+| `BASEDB_MAP_TILES` | las teselas de OpenStreetMap | otro servidor de teselas, con el modelo `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | la mención que exige este servidor, abajo a la derecha del mapa |
+
+Al arrancar, el registro dice qué servicio se está usando: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## Documentos PDF
+
+| Variable | Predeterminado | Función |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | las fuentes Noto de la imagen | una carpeta propia, montada en el contenedor, que contiene `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic`, y para el chino, el japonés y el coreano, `NotoSansCJK-Regular.ttc` y `-Bold.ttc` |
+
 ## Plantillas de base
 
 | Variable | Predeterminado | Función |

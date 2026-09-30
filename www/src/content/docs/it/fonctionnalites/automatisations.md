@@ -1,6 +1,6 @@
 ---
 title: Automazioni
-description: Quando una riga cambia, a orario fisso o con un clic — modificare, creare, cercare, diramare, chiedere all’IA, avvisare, chiamare un webhook, scrivere su Slack.
+description: Quando una riga cambia, a orario fisso o con un clic — modificare, creare, cercare, diramare, chiedere all’IA, avvisare, inviare un’email, chiamare un webhook, scrivere su Slack.
 ---
 
 Un’automazione dice **quando**, **se** e **allora**: quando un’attività passa a «Fait», annotare
@@ -12,7 +12,7 @@ in un passaggio ciò che un passaggio precedente ha trovato o scritto.
 Si aprono da **Automazioni**, nel riquadro del database aperto in fondo alla barra
 laterale, e richiedono il livello **Gestione**.
 
-![Un flusso e una delle sue esecuzioni, sovrapposta](../../../../assets/screens/automatisations.png)
+![Un flusso e una delle sue esecuzioni, sovrapposta](../../../../assets/screens/it/automatisations.webp)
 
 ## Il flusso
 
@@ -49,6 +49,7 @@ Fino a trenta passaggi, in ordine; il primo che fallisce ferma i successivi.
 | **Crea una riga** | in questa tabella o in un’altra del database |
 | **Cerca una riga** | la prima riga di una tabella che soddisfa un filtro, perché i passaggi successivi la citino o la modifichino |
 | **Avvisa qualcuno** | una [notifica](/basedb/it/fonctionnalites/collaboration/#notifiche) a persone scelte, o a quella di un campo Persona |
+| **Invia un’email** | a persone del team, a quella di un campo Persona, all’indirizzo di un campo E-mail — un cliente, un fornitore — o a indirizzi scritti; l’oggetto e il testo citano la riga e i passaggi precedenti |
 | **Chiama un webhook** | un `POST` in HTTPS verso l’indirizzo che preferisci; la sua risposta si può poi citare |
 | **Invia su Slack** | un messaggio in un canale [collegato](/basedb/it/integrations/synchronisation/#slack) |
 | **Chiedi all’IA** | una risposta del [fornitore di IA](/basedb/it/fonctionnalites/ia/) a un’istruzione che cita la riga e i passaggi precedenti — redigere, riassumere, classificare —, letta come testo, numero, sì o no, data o scelta in un elenco |
@@ -139,7 +140,9 @@ si annullano come le altre.
   in un unico flusso.
 - Una ricerca restituisce una riga, la prima; non c’è ancora un «per ogni riga», né
   un’attesa («tre giorni dopo»).
-- Niente email, niente script.
+- Niente script. Un’email parte come testo semplice, una per destinatario — venti al massimo
+  per passaggio —, tramite il [server di invio](/basedb/it/hebergement/variables/#email)
+  dell’istanza; una risposta arriva alla persona che possiede l’automazione.
 - Una condizione verifica una riga: per prendere un ramo in base alla risposta dell’IA, scrivila
   prima in un campo della riga.
 - Un [modello di database](/basedb/it/fonctionnalites/modeles/) include solo le automazioni senza

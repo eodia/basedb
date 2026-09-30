@@ -7,7 +7,7 @@ basedb logger **hver skrivning** i historikken, uanset hvor den kommer fra: brug
 API'et, en MCP-agent, en offentlig formular — og endda en SQL-forespørgsel, der er skrevet i
 hånden i `psql`.
 
-![Historikken for en database](../../../../assets/screens/historique.png)
+![Historikken for en database](../../../../assets/screens/da/historique.webp)
 
 ## Sådan registreres det
 

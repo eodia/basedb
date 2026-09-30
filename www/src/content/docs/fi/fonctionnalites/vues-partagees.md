@@ -18,13 +18,13 @@ Näkymän valikko → **Jaa…**, sitten:
 | **Julkinen** | kuka tahansa, jolla on linkki, ilman tiliä |
 | **Kirjautuneet jäsenet** | työtilan jäsen kirjauduttuaan – tarvittaessa vain tietyistä ryhmistä |
 
-![Kalenterin jakaminen](../../../../assets/screens/partage-vue.png)
+![Kalenterin jakaminen](../../../../assets/screens/fi/partage-vue.webp)
 
 **Linkki käytössä** -kytkin keskeyttää linkin menettämättä sitä. Sivu avautuu sovelluksen
 ulkopuolella: ei sivupalkkia, tietokannan nimeä eikä taulukon nimeä – näkymä, sen suodattimet,
 sen sarakkeet eikä mitään muuta. Kalenteria tai aikajanaa luetaan siellä kuin kalenteria.
 
-![Sama kalenteri linkin kautta avattuna](../../../../assets/screens/vue-partagee.png)
+![Sama kalenteri linkin kautta avattuna](../../../../assets/screens/fi/vue-partagee.webp)
 
 ## Kenen nimissä luetaan
 

@@ -1,0 +1,344 @@
+{
+  "id": "01a0f1e5-97fd-7204-a6a1-9863632cabb9",
+  "name": "b_t4z56fq_ventes_sdk",
+  "label": "Ventes SDK",
+  "description": null,
+  "actions": ["read", "create", "update"],
+  "tables": [
+    {
+      "id": "01a0f1e5-9834-78f1-b51b-999fb891f6e6",
+      "name": "clients",
+      "label": "Clients",
+      "description": null,
+      "actions": ["read", "create", "update"],
+      "fields": [
+        {
+          "name": "_id",
+          "label": "_id",
+          "description": "Identifiant unique de la ligne (UUID v7), attribué par le serveur à l’insertion. C’est la valeur à fournir dans un champ lien pour désigner cette ligne.",
+          "kind": "system",
+          "required": false,
+          "read_only": true,
+          "system": true
+        },
+        {
+          "name": "_created_at",
+          "label": "_created_at",
+          "description": "Date et heure UTC de création de la ligne.",
+          "kind": "system",
+          "required": false,
+          "read_only": true,
+          "system": true
+        },
+        {
+          "name": "_updated_at",
+          "label": "_updated_at",
+          "description": "Date et heure UTC de la dernière modification de la ligne.",
+          "kind": "system",
+          "required": false,
+          "read_only": true,
+          "system": true
+        },
+        {
+          "name": "_created_by",
+          "label": "_created_by",
+          "description": "Identifiant de l’utilisateur qui a créé la ligne.",
+          "kind": "system",
+          "required": false,
+          "read_only": true,
+          "system": true
+        },
+        {
+          "name": "_updated_by",
+          "label": "_updated_by",
+          "description": "Identifiant de l’utilisateur qui a modifié la ligne en dernier.",
+          "kind": "system",
+          "required": false,
+          "read_only": true,
+          "system": true
+        },
+        {
+          "name": "nom",
+          "label": "Nom",
+          "description": null,
+          "kind": "short_text",
+          "required": true,
+          "read_only": false,
+          "system": false
+        },
+        {
+          "name": "nombre_d_opportunites",
+          "label": "Nombre d’opportunités",
+          "description": null,
+          "kind": "count",
+          "required": false,
+          "read_only": true,
+          "system": false,
+          "computed": {
+            "result_kind": "number",
+            "stored": false,
+            "multiple": false,
+            "via": {
+              "field": "clients_id",
+              "table": "opportunites",
+              "direction": "incoming",
+              "reached": "opportunites"
+            },
+            "target": null,
+            "aggregate": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "01a0f1e5-9887-7896-8167-dfae5b2649d9",
+      "name": "opportunites",
+      "label": "Opportunités",
+      "description": null,
+      "actions": ["read", "create", "update"],
+      "fields": [
+        {
+          "name": "_id",
+          "label": "_id",
+          "description": "Identifiant unique de la ligne (UUID v7), attribué par le serveur à l’insertion. C’est la valeur à fournir dans un champ lien pour désigner cette ligne.",
+          "kind": "system",
+          "required": false,
+          "read_only": true,
+          "system": true
+        },
+        {
+          "name": "_created_at",
+          "label": "_created_at",
+          "description": "Date et heure UTC de création de la ligne.",
+          "kind": "system",
+          "required": false,
+          "read_only": true,
+          "system": true
+        },
+        {
+          "name": "_updated_at",
+          "label": "_updated_at",
+          "description": "Date et heure UTC de la dernière modification de la ligne.",
+          "kind": "system",
+          "required": false,
+          "read_only": true,
+          "system": true
+        },
+        {
+          "name": "_created_by",
+          "label": "_created_by",
+          "description": "Identifiant de l’utilisateur qui a créé la ligne.",
+          "kind": "system",
+          "required": false,
+          "read_only": true,
+          "system": true
+        },
+        {
+          "name": "_updated_by",
+          "label": "_updated_by",
+          "description": "Identifiant de l’utilisateur qui a modifié la ligne en dernier.",
+          "kind": "system",
+          "required": false,
+          "read_only": true,
+          "system": true
+        },
+        {
+          "name": "titre",
+          "label": "Titre",
+          "description": null,
+          "kind": "short_text",
+          "required": true,
+          "read_only": false,
+          "system": false
+        },
+        {
+          "name": "description",
+          "label": "Description",
+          "description": null,
+          "kind": "long_text",
+          "required": false,
+          "read_only": false,
+          "system": false
+        },
+        {
+          "name": "montant",
+          "label": "Montant",
+          "description": null,
+          "kind": "number",
+          "required": false,
+          "read_only": false,
+          "system": false,
+          "format": {
+            "display": "currency",
+            "currency": "EUR",
+            "rating_max": null
+          }
+        },
+        {
+          "name": "signee",
+          "label": "Signée",
+          "description": null,
+          "kind": "boolean",
+          "required": false,
+          "read_only": false,
+          "system": false
+        },
+        {
+          "name": "echeance",
+          "label": "Échéance",
+          "description": null,
+          "kind": "date",
+          "required": false,
+          "read_only": false,
+          "system": false
+        },
+        {
+          "name": "rappel",
+          "label": "Rappel",
+          "description": null,
+          "kind": "datetime",
+          "required": false,
+          "read_only": false,
+          "system": false
+        },
+        {
+          "name": "statut",
+          "label": "Statut",
+          "description": null,
+          "kind": "select",
+          "required": false,
+          "read_only": false,
+          "system": false,
+          "options": [
+            {
+              "value": "nouveau",
+              "label": "Nouveau"
+            },
+            {
+              "value": "gagne",
+              "label": "Gagné"
+            },
+            {
+              "value": "perdu",
+              "label": "Perdu"
+            }
+          ]
+        },
+        {
+          "name": "etiquettes",
+          "label": "Étiquettes",
+          "description": null,
+          "kind": "multi_select",
+          "required": false,
+          "read_only": false,
+          "system": false,
+          "options": [
+            {
+              "value": "urgent",
+              "label": "Urgent"
+            },
+            {
+              "value": "export",
+              "label": "Export"
+            }
+          ]
+        },
+        {
+          "name": "contact",
+          "label": "Contact",
+          "description": null,
+          "kind": "email",
+          "required": false,
+          "read_only": false,
+          "system": false
+        },
+        {
+          "name": "site",
+          "label": "Site",
+          "description": null,
+          "kind": "url",
+          "required": false,
+          "read_only": false,
+          "system": false
+        },
+        {
+          "name": "responsable",
+          "label": "Responsable",
+          "description": null,
+          "kind": "user",
+          "required": false,
+          "read_only": false,
+          "system": false
+        },
+        {
+          "name": "numero",
+          "label": "Numéro",
+          "description": null,
+          "kind": "autonumber",
+          "required": false,
+          "read_only": true,
+          "system": false
+        },
+        {
+          "name": "piece",
+          "label": "Pièce",
+          "description": null,
+          "kind": "file",
+          "required": false,
+          "read_only": false,
+          "system": false
+        },
+        {
+          "name": "double",
+          "label": "Double",
+          "description": null,
+          "kind": "formula",
+          "required": false,
+          "read_only": true,
+          "system": false,
+          "computed": {
+            "result_kind": "number",
+            "stored": true,
+            "multiple": false,
+            "expression": "[Montant] * 2",
+            "timezone": null
+          }
+        },
+        {
+          "name": "clients_id",
+          "label": "Client",
+          "description": null,
+          "kind": "link",
+          "required": false,
+          "read_only": false,
+          "system": false,
+          "link": {
+            "on_delete": "restrict",
+            "required": false,
+            "expandable": true,
+            "masked": false,
+            "target": "clients",
+            "target_display_field": null
+          }
+        },
+        {
+          "name": "clients_ids",
+          "label": "Partenaires",
+          "description": null,
+          "kind": "multi_link",
+          "required": false,
+          "read_only": false,
+          "system": false,
+          "link": {
+            "on_delete": "set_null",
+            "required": false,
+            "expandable": false,
+            "masked": false,
+            "target": "clients",
+            "target_display_field": null
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -66,6 +66,47 @@ Siehe [Konten und Anmeldung](/basedb/de/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | – | Zugangsdaten |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` für die Adressierung über den Hostnamen |
 
+## E-Mails
+
+Ohne E-Mail-Versand verschickt basedb keine E-Mail. Mit ihm gehen die Benachrichtigungen
+hinaus, die zehn Minuten lang ungelesen geblieben sind (jede Person wählt in
+**Einstellungen › Benachrichtigungen**, welche), die E-Mails des Automatisierungsschritts
+**E-Mail senden**, und der Link für **Passwort vergessen**. Die Links zeigen auf
+`BASEDB_PUBLIC_URL`; ohne sie trägt eine E-Mail keinen.
+
+| Variable | Standard | Rolle |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | der SMTP-Server: der Ihres Mail-Anbieters oder eines Versanddienstes |
+| `BASEDB_SMTP_PORT` | `587` | `465` für eine von Anfang an verschlüsselte Verbindung |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` bei Port 465) | `none` nur für ein Relais auf derselben Maschine: sonst ginge das Passwort im Klartext |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | — | die Kennung des Versandkontos, falls es eine verlangt |
+| `BASEDB_MAIL_FROM` | — | mit `BASEDB_SMTP_HOST` erforderlich: der Absender, `basedb <no-reply@exemple.fr>` |
+
+Beim Start sagt das Log, wie es steht: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` Eine vom Server abgelehnte E-Mail wird 1, 5, 30, 120 und dann
+360 Minuten später erneut versucht.
+
+## Landkarten und Adressen
+
+Die Ansicht **Landkarte** platziert eine Adresse mithilfe eines Geokodierungsdienstes:
+standardmäßig dem von OpenStreetMap (Nominatim), einmal pro Adresse abgefragt, höchstens eine
+Anfrage pro Sekunde, jede Antwort aufbewahrt. Die Kartengrundlage besteht aus **Kacheln**, die
+der Browser jeder lesenden Person direkt lädt.
+
+| Variable | Standard | Rolle |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | ein anderer Dienst, der dasselbe Protokoll spricht (ein eigener Nominatim); `off`: keiner, die Adressen verlassen die Instanz nicht, und nur Breiten- und Längengrad platzieren die Zeilen |
+| `BASEDB_MAP_TILES` | die Kacheln von OpenStreetMap | ein anderer Kachel-Server, Muster `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | der Hinweis, den dieser Server verlangt, unten rechts auf der Karte |
+
+Beim Start sagt das Log, welcher Dienst verwendet wird: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## PDF-Dokumente
+
+| Variable | Standard | Rolle |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | die Noto-Schriften des Images | ein eigener, in den Container eingebundener Ordner, der `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic` enthält, und für Chinesisch, Japanisch und Koreanisch `NotoSansCJK-Regular.ttc` und `-Bold.ttc` |
+
 ## Datenbankvorlagen
 
 | Variable | Standard | Rolle |

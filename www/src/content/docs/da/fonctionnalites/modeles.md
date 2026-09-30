@@ -11,7 +11,7 @@ eksempelrækker, visninger, et dashboard, automatiseringer og felter, som AI sel
 
 **Ny database** og derefter **Start fra en skabelon, eller bed AI om en**: galleriet åbnes.
 
-![Skabelongalleriet i applikationen](../../../../assets/screens/modeles.png)
+![Skabelongalleriet i applikationen](../../../../assets/screens/da/modeles.webp)
 
 Hver skabelon kan læses i sin helhed, før den bruges — dens tabeller og deres felter, dens
 visninger, dens automatiseringer og instruktionen for hvert af dens AI-felter. **Opret

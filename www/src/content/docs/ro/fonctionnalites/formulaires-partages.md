@@ -3,12 +3,12 @@ title: Formulare partajate
 description: Partajați un formular printr-un link, public sau rezervat membrilor conectați.
 ---
 
-Un formular sau un chestionar se **partajează printr-un link** `/f/<jeton>`. Persoana care
+Un formular, un chestionar sau un quiz se **partajează printr-un link** `/f/<jeton>`. Persoana care
 răspunde nu are nevoie de **nicio permisiune asupra tabelului**: fiecare răspuns adaugă un
 rând și nimic altceva din tabel nu îi este arătat. Pentru a arăta rânduri în loc să le
 primiți, o vizualizare se partajează [doar în citire](/basedb/ro/fonctionnalites/vues-partagees/).
 
-![Dialogul de partajare](../../../../assets/screens/partage-formulaire.png)
+![Dialogul de partajare](../../../../assets/screens/ro/partage-formulaire.webp)
 
 ## Cine poate răspunde
 
@@ -21,7 +21,7 @@ Pagina linkului este în afara aplicației: fără bară laterală, fără numel
 rânduri. Ea poartă aspectul formularului — tema, culoarea, fontul lui — și pune doar întrebările
 pe care răspunsurile anterioare le cer.
 
-![Un formular public](../../../../assets/screens/formulaire-public.png)
+![Un formular public](../../../../assets/screens/ro/formulaire-public.webp)
 
 ## În numele cui este scris răspunsul
 
@@ -47,6 +47,21 @@ Dialogul setează:
 - **Opriți partajarea**: linkul dispare, răspunsurile rămân în tabel.
 
 Un formular închis spune acest lucru într-o frază, chiar înainte de a cere conectarea.
+
+## Un quiz partajat
+
+Pagina unui quiz nu primește **niciun răspuns corect**: doar cât valorează fiecare întrebare.
+Serverul este cel care corectează.
+
+- Corectată **după fiecare întrebare**, pagina îi trimite fiecare răspuns notat în momentul în
+  care este dat, și află atunci dacă este corect — și care era cel corect.
+- La trimitere, serverul numără punctajul **pe baza răspunsurilor primite** și îl scrie în
+  câmpul ales pentru el, dacă există unul și dacă persoana care a publicat partajarea îl poate
+  scrie. Pagina afișează punctajul pe care acesta îl returnează, și corectarea, cu excepția
+  cazului în care quizul spune „niciodată”.
+
+Un punctaj se citește deci în tabel așa cum l-a numărat serverul, nu așa cum l-ar fi anunțat o
+pagină.
 
 ## Limite
 

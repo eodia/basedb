@@ -7,7 +7,7 @@ description: Co je basedb a čím se liší od kolaborativních tabulkových pro
 si hostujete sami – s jedním rozdílem, který určuje všechno ostatní: **vaše data žijí ve
 skutečných tabulkách PostgreSQL**, typovaných a srozumitelně pojmenovaných.
 
-![Mřížka tabulky v basedb](../../../../assets/screens/grille.png)
+![Mřížka tabulky v basedb](../../../../assets/screens/cs/grille.webp)
 
 ## Jednoduchý slib
 
@@ -39,8 +39,8 @@ zaznamená.
 - Typované [tabulky a pole](/basedb/cs/fonctionnalites/tables-et-champs/), vazby, které jsou
   skutečnými cizími klíči – i vícenásobné –, vzorce počítané PostgreSQL, vyhledávání
   a agregace přes vazby.
-- Osm [zobrazení](/basedb/cs/fonctionnalites/vues/): mřížka, kanban, kalendář, časová osa,
-  galerie, seznam, formulář, dotazník – společná nebo osobní.
+- Deset [zobrazení](/basedb/cs/fonctionnalites/vues/): mřížka, kanban, kalendář, časová osa,
+  galerie, seznam, mapa, formulář, dotazník, kvíz – společná nebo osobní.
 - [Formuláře](/basedb/cs/fonctionnalites/formulaires-partages/) a
   [zobrazení](/basedb/cs/fonctionnalites/vues-partagees/) sdílená odkazem a kalendáře, které
   lze odebírat v kalendářové aplikaci.

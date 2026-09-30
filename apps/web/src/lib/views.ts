@@ -9,7 +9,12 @@ import {
   type FormCondition,
   type FormConditionOp,
   type FormFont,
+  type FormPrefill,
   type FormTheme,
+  QUIZ_REVEALS,
+  type QuizAnswer,
+  type QuizReveal,
+  quizAnswerFits,
 } from '@basedb/contracts'
 import {
   CalendarDays,
@@ -18,9 +23,11 @@ import {
   LayoutGrid,
   List,
   type LucideIcon,
+  MapIcon,
   MessageSquareText,
   SquareKanban,
   Table2,
+  Trophy,
 } from 'lucide-react'
 import type { Field, SavedView, Table, ViewKind } from './api/client'
 import { type DateKind, fromStored, isDateKind } from './dates'
@@ -50,6 +57,8 @@ export interface KindInfo {
   readonly summary: string
   /** Shows rows (and takes the filter and the sort), rather than asking for one. */
   readonly data: boolean
+  /** Its colour, on its icon where views are chosen: the text, and a tint behind. */
+  readonly tone: string
 }
 
 export const VIEW_KINDS: readonly ViewKind[] = [
@@ -59,9 +68,15 @@ export const VIEW_KINDS: readonly ViewKind[] = [
   'timeline',
   'gallery',
   'list',
+  'map',
   'form',
   'survey',
+  'quiz',
 ]
+
+/** The kinds that ask for a row rather than show rows: a form, a survey, a quiz. */
+export const isAnswerKind = (kind: ViewKind): kind is 'form' | 'survey' | 'quiz' =>
+  kind === 'form' || kind === 'survey' || kind === 'quiz'
 
 export const KIND_INFO: Readonly<Record<ViewKind, KindInfo>> = {
   grid: {
@@ -69,48 +84,70 @@ export const KIND_INFO: Readonly<Record<ViewKind, KindInfo>> = {
     icon: Table2,
     summary: $t('Lignes et colonnes, comme un tableur.'),
     data: true,
+    tone: 'text-sky-600 bg-sky-500/12 dark:text-sky-300',
   },
   kanban: {
     label: $t('Kanban'),
     icon: SquareKanban,
     summary: $t('Des cartes en colonnes, une par choix d’une liste ; on les fait glisser.'),
     data: true,
+    tone: 'text-violet-600 bg-violet-500/12 dark:text-violet-300',
   },
   calendar: {
     label: $t('Calendrier'),
     icon: CalendarDays,
     summary: $t('Chaque ligne posée sur sa date, au mois ou à la semaine.'),
     data: true,
+    tone: 'text-rose-600 bg-rose-500/12 dark:text-rose-300',
   },
   timeline: {
     label: $t('Chronologie'),
     icon: ChartGantt,
     summary: $t('Des barres entre une date de début et une date de fin.'),
     data: true,
+    tone: 'text-amber-600 bg-amber-500/15 dark:text-amber-300',
   },
   gallery: {
     label: $t('Galerie'),
     icon: LayoutGrid,
     summary: $t('Des cartes en mosaïque, une image de couverture en tête.'),
     data: true,
+    tone: 'text-emerald-600 bg-emerald-500/12 dark:text-emerald-300',
   },
   list: {
     label: $t('Liste'),
     icon: List,
     summary: $t('Une ligne par enregistrement, regroupées sous des titres.'),
     data: true,
+    tone: 'text-slate-600 bg-slate-500/12 dark:text-slate-300',
+  },
+  map: {
+    label: $t('Carte'),
+    icon: MapIcon,
+    summary: $t('Chaque ligne posée sur une carte, par son adresse ou ses coordonnées.'),
+    data: true,
+    tone: 'text-lime-700 bg-lime-500/15 dark:text-lime-300',
   },
   form: {
     label: $t('Formulaire'),
     icon: ClipboardList,
     summary: $t('Une page de saisie : chaque envoi ajoute une ligne.'),
     data: false,
+    tone: 'text-teal-600 bg-teal-500/12 dark:text-teal-300',
   },
   survey: {
     label: $t('Questionnaire'),
     icon: MessageSquareText,
     summary: $t('Le même, une question par écran, avec une barre de progression.'),
     data: false,
+    tone: 'text-indigo-600 bg-indigo-500/12 dark:text-indigo-300',
+  },
+  quiz: {
+    label: $t('Quiz'),
+    icon: Trophy,
+    summary: $t('Des questions notées, une par écran : le score s’affiche à la fin.'),
+    data: false,
+    tone: 'text-orange-600 bg-orange-500/12 dark:text-orange-300',
   },
 }
 
@@ -184,6 +221,14 @@ export interface GallerySpec extends DataSpec, CardSpec {
   readonly manual_order: readonly string[]
 }
 
+/** A map: rows placed by an address, or by a latitude and a longitude (chapter 11 §1.9). */
+export interface MapSpec extends DataSpec, CardSpec {
+  readonly address_field: string | null
+  readonly latitude_field: string | null
+  readonly longitude_field: string | null
+  readonly color_field: string | null
+}
+
 export interface ListSpec extends DataSpec, CardSpec {
   readonly group_by: string | null
   readonly manual_order: readonly string[]
@@ -198,8 +243,14 @@ export interface FormQuestion {
   readonly help: string
   /** An example in the empty input; empty: one chosen for the kind of field. */
   readonly placeholder: string
+  /** `today`: a date question holds the day before anyone answers it; `null`: empty. */
+  readonly prefill: FormPrefill | null
   /** Asked only when an earlier answer says so; `null`: always. */
   readonly show_if: FormCondition | null
+  /** A quiz's alone: the right answer, `null` for a question asked but not graded. */
+  readonly correct?: QuizAnswer | null
+  /** A quiz's alone: what the right answer is worth — one point unless said otherwise. */
+  readonly points?: number
 }
 
 export interface FormSpec {
@@ -226,6 +277,12 @@ export interface FormSpec {
   /** A button on the last screen: back to a site, to a page. */
   readonly end_link_label: string
   readonly end_link_url: string
+  /** A quiz's: the number field its score is written into, if any. */
+  readonly score_field: string | null
+  /** A quiz's: when the right answers show — after each question, at the end, never. */
+  readonly reveal: QuizReveal
+  /** A quiz's: the percentage that passes; `null`: no pass mark. */
+  readonly pass_percent: number | null
 }
 
 // ── Reading a spec, whatever came over the wire ──────────────────────────────────────
@@ -351,6 +408,15 @@ export const gallerySpec = (raw: Raw): GallerySpec => ({
   manual_order: names(raw, 'manual_order'),
 })
 
+export const mapSpec = (raw: Raw): MapSpec => ({
+  ...dataOf(raw),
+  ...cardOf(raw),
+  address_field: name(raw, 'address_field'),
+  latitude_field: name(raw, 'latitude_field'),
+  longitude_field: name(raw, 'longitude_field'),
+  color_field: name(raw, 'color_field'),
+})
+
 export const listSpec = (raw: Raw): ListSpec => ({
   ...dataOf(raw),
   ...cardOf(raw),
@@ -402,7 +468,19 @@ export function formSpec(raw: Raw): FormSpec {
             label: text(item, 'label'),
             help: text(item, 'help'),
             placeholder: text(item, 'placeholder'),
+            prefill: item.prefill === 'today' ? ('today' as const) : null,
             show_if: conditionOf(item.show_if),
+            // A quiz's grading, kept only where the spec has it: a form's question has none,
+            // and a key it does not know would be refused.
+            ...('correct' in item || 'points' in item
+              ? {
+                  correct: correctOf(item.correct),
+                  points:
+                    typeof item.points === 'number' && Number.isInteger(item.points)
+                      ? item.points
+                      : 1,
+                }
+              : {}),
           },
         ]
       })
@@ -429,8 +507,27 @@ export function formSpec(raw: Raw): FormSpec {
     celebrate: flag(raw, 'celebrate', true),
     end_link_label: text(raw, 'end_link_label'),
     end_link_url: text(raw, 'end_link_url'),
+    score_field: name(raw, 'score_field'),
+    reveal: choice('reveal', QUIZ_REVEALS, 'each'),
+    pass_percent:
+      typeof raw.pass_percent === 'number' && raw.pass_percent >= 1 && raw.pass_percent <= 100
+        ? raw.pass_percent
+        : null,
   }
 }
+
+/** A right answer as a spec holds it: a text, a number, yes or no, or a list of texts. */
+function correctOf(raw: unknown): QuizAnswer | null {
+  if (typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'boolean') return raw
+  if (Array.isArray(raw) && raw.every((v) => typeof v === 'string')) return raw as string[]
+  return null
+}
+
+/** Whether a quiz question grades its answer: a right answer, of its field's shape. */
+export const isGraded = (question: FormQuestion, field: Field) =>
+  question.correct !== undefined &&
+  question.correct !== null &&
+  quizAnswerFits(field.kind, question.correct)
 
 /** A condition as a spec holds it — anything else reads as none. */
 function conditionOf(raw: unknown): FormCondition | null {
@@ -463,6 +560,13 @@ export const selectFields = (fields: readonly Field[]) => fields.filter((f) => f
 export const dateFields = (fields: readonly Field[]) => fields.filter((f) => isDateKind(f.kind))
 export const pictureFields = (fields: readonly Field[]) =>
   fields.filter((f) => f.kind === 'image' || f.kind === 'file')
+/** What a map can read an address from: a text — the « Adresse » format first. */
+export const addressFields = (fields: readonly Field[]) =>
+  [...fields.filter((f) => f.kind === 'short_text' || f.kind === 'long_text')].sort(
+    (a, b) => Number(b.format?.display === 'address') - Number(a.format?.display === 'address'),
+  )
+/** What a map can read a coordinate from. */
+export const numberFields = (fields: readonly Field[]) => fields.filter((f) => f.kind === 'number')
 /** What a timeline can stack its rows by. */
 export const groupFields = (fields: readonly Field[]) =>
   fields.filter((f) => f.kind === 'select' || f.kind === 'link')
@@ -603,6 +707,46 @@ export function defaultSpec(kind: ViewKind, table: Table, current: DataSpec): Ra
         manual_order: [],
       }
     }
+    case 'map': {
+      // An address field if there is one; otherwise the numbers named like coordinates.
+      const address = fields.find((f) => f.kind === 'short_text' && f.format?.display === 'address')
+      const numbers = numberFields(fields)
+      const named = (words: readonly string[]) =>
+        numbers.find((f) => words.some((w) => f.label.trim().toLocaleLowerCase().startsWith(w)))
+          ?.name ?? null
+      const latitude = address === undefined ? named(['lat']) : null
+      const longitude = address === undefined ? named(['lon', 'lng']) : null
+      return {
+        ...data,
+        address_field:
+          address?.name ??
+          (latitude === null || longitude === null
+            ? (addressFields(fields)[0]?.name ?? null)
+            : null),
+        latitude_field: latitude,
+        longitude_field: longitude,
+        title_field: title?.name ?? null,
+        card_fields: others.filter((n) => n !== address?.name),
+        color_field: selectFields(fields)[0]?.name ?? null,
+      }
+    }
+    case 'quiz': {
+      // The score goes into a number field that reads like one, when the table has it.
+      const score = fields.find(
+        (f) =>
+          f.kind === 'number' &&
+          f.read_only !== true &&
+          SCORE_NAMES.has(f.label.trim().toLocaleLowerCase()),
+      )
+      const survey = defaultSpec('survey', table, current)
+      return {
+        ...survey,
+        fields: (survey.fields as FormQuestion[]).filter((q) => q.field !== score?.name),
+        score_field: score?.name ?? null,
+        reveal: 'each',
+        pass_percent: null,
+      }
+    }
     case 'form':
     case 'survey':
       return {
@@ -617,6 +761,7 @@ export function defaultSpec(kind: ViewKind, table: Table, current: DataSpec): Ra
           label: '',
           help: '',
           placeholder: '',
+          prefill: null,
           show_if: null,
         })),
         submit_label: '',
@@ -638,6 +783,86 @@ export function defaultSpec(kind: ViewKind, table: Table, current: DataSpec): Ra
   }
 }
 
+/**
+ * What a table calls the number a quiz's score goes into, in the twenty languages: a new
+ * quiz sends its score there by itself (the documentation of each language names some).
+ */
+const SCORE_NAMES: ReadonlySet<string> = new Set([
+  'score',
+  'scores',
+  'point',
+  'points',
+  'note',
+  'résultat',
+  'resultat',
+  'result',
+  'results',
+  'grade',
+  'mark',
+  'marks',
+  'punkte',
+  'punktzahl',
+  'ergebnis',
+  'punten',
+  'resultaat',
+  'beoordeling',
+  'cijfer',
+  'poäng',
+  'betyg',
+  'karakter',
+  'poeng',
+  'poengsum',
+  'pisteet',
+  'tulos',
+  'arvosana',
+  'puntuación',
+  'puntuacion',
+  'puntos',
+  'nota',
+  'resultado',
+  'punteggio',
+  'punti',
+  'voto',
+  'risultato',
+  'pontuação',
+  'pontuacao',
+  'pontos',
+  'punctaj',
+  'puncte',
+  'notă',
+  'rezultat',
+  'wynik',
+  'punkty',
+  'ocena',
+  'skóre',
+  'body',
+  'výsledek',
+  'známka',
+  'pontszám',
+  'pontok',
+  'pont',
+  'eredmény',
+  'бали',
+  'бал',
+  'результат',
+  'оцінка',
+  'рахунок',
+  'puan',
+  'skor',
+  'sonuç',
+  'スコア',
+  '得点',
+  '点数',
+  'ポイント',
+  '分数',
+  '得分',
+  '积分',
+  '成绩',
+  '점수',
+  '득점',
+  '포인트',
+])
+
 /** Why a kind cannot be made on this table, or `null` when it can. */
 export function unavailableReason(kind: ViewKind, table: Table): string | null {
   const fields = businessFields(table)
@@ -649,8 +874,13 @@ export function unavailableReason(kind: ViewKind, table: Table): string | null {
     case 'calendar':
     case 'timeline':
       return dateFields(fields).length === 0 ? $t('Il faut un champ date ou date-heure.') : null
+    case 'map':
+      return addressFields(fields).length === 0 && numberFields(fields).length < 2
+        ? $t('Il faut une adresse, ou deux nombres : latitude et longitude.')
+        : null
     case 'form':
     case 'survey':
+    case 'quiz':
       return askableFields(fields).length === 0 ? $t('Aucun champ ne peut être saisi.') : null
     default:
       return null

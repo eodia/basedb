@@ -31,17 +31,39 @@ Et skjult felt er fraværende overalt: i rutenettet, visningene, API-et, MCP, hi
 SQL skrevet i grensesnittet og SQL-visningene. Å filtrere eller sortere på det gir samme svar som for et felt
 som ikke finnes.
 
+## Helt ned til raden
+
+Ved siden av **Felt** viser **Rader** en gruppe bare visse rader i en tabell: dem et filter
+fanger opp, skrevet som filteret i en visning. `@me` betegner den innloggede personen:
+
+- `commercial eq @me` — hver selger ser bare sine egne kunder;
+- `region in ["nord", "est"]` — et team ser bare sine egne regioner;
+- `_created_by eq @me` — alle ser bare det de selv har opprettet.
+
+Rettighetene legges sammen: en person ser radene til alle sine grupper, og en gruppe uten regel
+ser dem alle. Den som administrerer tabellens struktur — nivået Administrere — ser alltid alt.
+Skjermen viser hvor mange rader en gitt person ser, og gjennom hvilken gruppe.
+
+En rad utenfor sin regel finnes ikke for personen: ikke i visningene, instrumentbordene, søket,
+API-et, MCP-en eller historikken, og heller ikke til å endres, slettes eller kobles til. En rad
+personen oppretter, må være blant sine egne; ved å endre en rad kan vedkommende derimot føre den
+ut av sitt område — en oppgave overlatt til en kollega. Svarene på
+[delte skjemaer](/basedb/nb/fonctionnalites/formulaires-partages/) kommer alltid inn.
+
 ## Og SQL?
 
 I grensesnittet følger SQL de samme tillatelsene, håndhevet av PostgreSQL selv: uten nivået
 Administrere kjøres en spørring skrivebeskyttet, med en rolle som hører til personen, der en stengt
-tabell ikke finnes og et skjult felt avvises. En [SQL-visning](/basedb/nb/fonctionnalites/requetes-et-vues-sql/)
+tabell ikke finnes, et skjult felt avvises og bare radene sine leses, uansett om tabellen navngis
+alene eller med skjemaet sitt. En [SQL-visning](/basedb/nb/fonctionnalites/requetes-et-vues-sql/)
 leses med tillatelsene til den som leser den, og å dele en spørring deler bare teksten.
 
 Direkte **`psql`-tilgang** til databasen styres derimot ikke av basedb: den leser alt, skjulte
 felt inkludert. Begrensningene beskytter produktets flater – grensesnitt, API, MCP –, aldri
 mot noen som har SQL-tilgang til databasen; slik tilgang styres med PostgreSQL-`GRANT`,
-satt av driftsansvarlig.
+satt av driftsansvarlig. En tabell som har en radregel, har PostgreSQLs radsikkerhet aktivert: en
+rolle opprettet for et tredjepartsverktøy ser ingen rader der, med mindre den har attributtet
+`BYPASSRLS` eller sin egen policy.
 
 ## Kontoer og innlogging
 

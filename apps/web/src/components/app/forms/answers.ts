@@ -68,6 +68,20 @@ export function placeholderFor(field: Field): string {
   }
 }
 
+/**
+ * The day a question prefilled with it holds: `2026-09-29` in the reader's own calendar for
+ * a date, the minute for a date and time.
+ */
+export function todayAnswer(kind: string, now: Date = new Date()): string {
+  if (kind === 'datetime') {
+    const minute = new Date(now)
+    minute.setSeconds(0, 0)
+    return minute.toISOString()
+  }
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
 /** Seconds a person takes, by sort of answer — to say how long a survey is before it starts. */
 const SECONDS: Readonly<Record<AnswerWidget, number>> = {
   text: 9,

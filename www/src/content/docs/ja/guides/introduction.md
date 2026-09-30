@@ -5,7 +5,7 @@ description: basedbとは何か、そして共同編集型スプレッドシー�
 
 **basedb**は、共同編集型スプレッドシートの発想を受け継いだ、セルフホスト型の共同データベースです。そして、ほかのすべてを決定づける違いがひとつあります。**データは本物のPostgreSQLテーブルに、型付きで、わかりやすい名前のまま保存されます**。
 
-![basedbのテーブルのグリッド](../../../../assets/screens/grille.png)
+![basedbのテーブルのグリッド](../../../../assets/screens/ja/grille.webp)
 
 ## シンプルな約束
 
@@ -30,7 +30,7 @@ description: basedbとは何か、そして共同編集型スプレッドシー�
 ## basedbでできること
 
 - 型付きの[テーブルとフィールド](/basedb/ja/fonctionnalites/tables-et-champs/)、本物の外部キーであるリレーション（複数リレーションも可）、PostgreSQLが計算する数式、リレーションをたどるルックアップとロールアップ。
-- 8種類の[ビュー](/basedb/ja/fonctionnalites/vues/)：グリッド、カンバン、カレンダー、タイムライン、ギャラリー、リスト、フォーム、アンケート。コラボレーションビューにも個人ビューにもできます。
+- 10種類の[ビュー](/basedb/ja/fonctionnalites/vues/)：グリッド、カンバン、カレンダー、タイムライン、ギャラリー、リスト、地図、フォーム、アンケート、クイズ。コラボレーションビューにも個人ビューにもできます。
 - リンクで共有する[フォーム](/basedb/ja/fonctionnalites/formulaires-partages/)と[ビュー](/basedb/ja/fonctionnalites/vues-partagees/)、そしてカレンダーアプリから購読できるカレンダー。
 - [コラボレーション](/basedb/ja/fonctionnalites/collaboration/)：コメントとメンション、通知、リアルタイム更新。
 - [オートメーション](/basedb/ja/fonctionnalites/automatisations/)と[ダッシュボード](/basedb/ja/fonctionnalites/tableaux-de-bord/)、そしてその質問。マウス操作でもSQLでも作れます。

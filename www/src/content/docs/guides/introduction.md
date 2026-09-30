@@ -7,7 +7,7 @@ description: Ce qu’est basedb, et ce qui le distingue des tableurs collaborati
 que vous hébergez vous-même — avec une différence qui commande tout le reste : **vos données
 vivent dans de vraies tables PostgreSQL**, typées et nommées en clair.
 
-![La grille d’une table dans basedb](../../../assets/screens/grille.png)
+![La grille d’une table dans basedb](../../../assets/screens/fr/grille.webp)
 
 ## Une promesse simple
 
@@ -39,8 +39,8 @@ l’écriture.
 - Des [tables et des champs](/basedb/fonctionnalites/tables-et-champs/) typés, des relations
   qui sont de vraies clés étrangères — ou multiples —, des formules calculées par PostgreSQL,
   des recherches et des cumuls à travers les relations.
-- Huit [vues](/basedb/fonctionnalites/vues/) : grille, kanban, calendrier, chronologie,
-  galerie, liste, formulaire, questionnaire — collaboratives ou personnelles.
+- Dix [vues](/basedb/fonctionnalites/vues/) : grille, kanban, calendrier, chronologie,
+  galerie, liste, carte, formulaire, questionnaire, quiz — collaboratives ou personnelles.
 - Des [formulaires](/basedb/fonctionnalites/formulaires-partages/) et des
   [vues](/basedb/fonctionnalites/vues-partagees/) partagés par un lien, et des calendriers qui
   s’abonnent depuis un agenda.

@@ -40,11 +40,13 @@ Daha sonra bir formül (`DAYS([Échéance], TODAY())`), bir arama (müşterinin 
 bir toplama (müşteri başına toplam tutar) aynı şekilde eklenir — bkz.
 [Tablolar ve alanlar](/basedb/tr/fonctionnalites/tables-et-champs/).
 
-Bir CSV veya JSON **dosyasını içe de aktarabilirsiniz**: içe aktarma türleri tahmin eder,
-bunları düzeltmenize izin verir, tabloyu oluşturur ya da var olan bir tabloyu tamamlar ve neyi
-reddettiğini satır satır bildirir.
+Bir **dosyayı da içe aktarabilirsiniz** — bir Excel çalışma kitabı (`.xlsx`), bir CSV ya da bir
+JSON: içe aktarma türleri tahmin eder, bunları düzeltmenize izin verir, tabloyu oluşturur ya da
+var olan bir tabloyu tamamlar ve neyi reddettiğini satır satır bildirir. Birden çok sayfalı bir
+çalışma kitabından sayfayı siz seçersiniz; tarihler, tutarlar ve onay kutuları Excel'in tuttuğu
+hâliyle alınır ve bir formül kendi değerini verir.
 
-![Bir veritabanının menüsü](../../../../assets/screens/menu-base.png)
+![Bir veritabanının menüsü](../../../../assets/screens/tr/menu-base.webp)
 
 ## 3. Veri girin ve filtreleyin
 
@@ -60,7 +62,7 @@ değişiklik anında kaydedilir — ve [geçmişe işlenir](/basedb/tr/fonctionn
 “Statut”a göre gruplanmış bir **kanban** oluşturun: bir kartı bir sütundan diğerine sürüklemek
 satırı değiştirir.
 
-![Duruma göre bir kanban](../../../../assets/screens/kanban.png)
+![Duruma göre bir kanban](../../../../assets/screens/tr/kanban.webp)
 
 ## 5. Bir form paylaşın
 

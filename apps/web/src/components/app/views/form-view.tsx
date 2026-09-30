@@ -11,7 +11,7 @@ import type { FormSpec } from '@/lib/views'
 import { Share2 } from 'lucide-react'
 
 /**
- * The form and the survey — a row asked for, rather than shown (ch. 11 §1.4). The screen
+ * The form, the survey and the quiz — a row asked for, rather than shown (ch. 11 §1.4). The screen
  * itself is `FormFill` (components/app/forms), the same in the application and through a
  * shared link; here it writes with the reader's own rights.
  *
@@ -35,7 +35,7 @@ export function FormView({
   onCreated,
   onShare,
 }: {
-  readonly kind: 'form' | 'survey'
+  readonly kind: 'form' | 'survey' | 'quiz'
   readonly table: Table
   readonly fields: readonly Field[]
   readonly spec: FormSpec
@@ -83,7 +83,9 @@ export function FormView({
         onSearchLink={onSearchLink}
         onUpload={onUpload}
         submit={async (values) => {
+          // A quiz in the application scores itself: the screen already knows its answers.
           await api.createRecord(table, values)
+          return null
         }}
         onSent={onCreated}
       />

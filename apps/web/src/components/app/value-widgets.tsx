@@ -2,6 +2,7 @@
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
+import { Hint } from '@/components/ui/tooltip'
 import type { Field } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 import { memberName, useMembers } from '@/lib/members'
@@ -163,19 +164,27 @@ export function ContactLink({
   // A phone number keeps its digits and its leading `+`: spaces and dots are for reading.
   const href = kind === 'email' ? `mailto:${value}` : `tel:${value.replace(/[^\d+]/g, '')}`
   return (
-    <a
-      href={href}
-      onMouseDown={(e) => e.stopPropagation()}
-      onClick={(e) => e.stopPropagation()}
-      className={cn(
-        'inline-flex min-w-0 items-center gap-1 text-primary hover:underline',
-        className,
-      )}
-      title={value}
+    <Hint
+      label={
+        <span className="flex items-start gap-1.5">
+          <Icon className="mt-0.5 size-3 shrink-0" />
+          <span className="break-all">{value}</span>
+        </span>
+      }
     >
-      <Icon className="size-3 shrink-0" />
-      <span className="truncate">{value}</span>
-    </a>
+      <a
+        href={href}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          'inline-flex min-w-0 items-center gap-1 text-primary hover:underline',
+          className,
+        )}
+      >
+        <Icon className="size-3 shrink-0" />
+        <span className="truncate">{value}</span>
+      </a>
+    </Hint>
   )
 }
 

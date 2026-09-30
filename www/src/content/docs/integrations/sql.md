@@ -25,7 +25,7 @@ les descriptions (`COMMENT ON`).
 Le **+** de la barre d’onglets, ou menu **⋯** de la base → **Requête SQL** : un éditeur
 avec coloration et complétion, dont le résultat s’affiche dans la même grille que vos tables.
 
-![Une requête enregistrée, et deux vues SQL rangées parmi les tables](../../../assets/screens/requete-sql.png)
+![Une requête enregistrée, et deux vues SQL rangées parmi les tables](../../../assets/screens/fr/requete-sql.webp)
 
 - **Chacun y lit avec ses droits** : le niveau Gestion a toute la base, écritures comprises ; les
   autres membres écrivent du SQL en lecture seule, où une table fermée n’existe pas et un champ
@@ -52,6 +52,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+Ce compte est le propriétaire de la base : il lit tout, et les droits de basedb ne s’y appliquent
+pas. Pour un outil de BI, créez plutôt un rôle à part avec ses propres `GRANT`. Si une table porte
+une [règle de lignes](/basedb/fonctionnalites/droits/#jusquà-la-ligne), PostgreSQL y applique la
+sécurité par ligne : un tel rôle n’y voit aucune ligne sans l’attribut `BYPASSRLS` ou une
+politique à lui.
 
 ## Écrire en SQL
 

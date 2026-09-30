@@ -30,6 +30,7 @@ import {
 import { qualify, quoteIdentifier } from '@basedb/naming'
 import { BasedbError } from '../errors/index.js'
 import { SYSTEM_COLUMNS } from '../rbac/decide.js'
+import { rowWhere } from '../rbac/rows.js'
 import {
   type FilterableColumn,
   buildFilter,
@@ -409,7 +410,7 @@ function subQuery(plan: Plan): string {
     .join(', ')
   return `(SELECT ${projection}
      FROM ${qualify(plan.schemaName, plan.tableName)} AS "t"${planLateral(plan, 't')}
-    WHERE ( /*predicat_lignes:${plan.tableName}*/ ${plan.decision.rowPredicate} ))`
+    WHERE ( /*predicat_lignes:${plan.tableName}*/ ${rowWhere(plan.decision.rowPredicate, 't')} ))`
 }
 
 interface Resolved {
@@ -1116,7 +1117,7 @@ async function withLinkLabels(
         `SELECT "l"."_id"::text AS id, "l".${quoteIdentifier(display.name)}::text AS label
            FROM ${target.relation} AS "l"
           WHERE "l"."_id" = ANY($1::uuid[])
-            AND ( /*predicat_lignes:${column.source?.field}*/ ${target.rowPredicate} )`,
+            AND ( /*predicat_lignes:${column.source?.field}*/ ${rowWhere(target.rowPredicate, 'l')} )`,
         [[...ids]],
       ),
     )

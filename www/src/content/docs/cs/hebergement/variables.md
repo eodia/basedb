@@ -66,6 +66,46 @@ Viz [Účty a přihlášení](/basedb/cs/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | – | přístupové údaje |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` pro adresování podle hostitele |
 
+## E-maily
+
+Bez odesílacího serveru basedb neodešle žádný e-mail. S ním odcházejí oznámení, která zůstala
+deset minut nepřečtená (každý si zvolí, která, v **Nastavení › Oznámení**), e-maily z kroku
+automatizací **Odeslat e-mail** a odkaz na **zapomenuté heslo**. Odkazy směřují na
+`BASEDB_PUBLIC_URL`; bez ní e-mail žádný odkaz nenese.
+
+| Proměnná | Výchozí | Role |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | server SMTP: vaší poštovní služby nebo odesílací služby |
+| `BASEDB_SMTP_PORT` | `587` | `465` pro rovnou šifrované připojení |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` na portu 465) | `none` jen pro relay na stejném stroji: jinak by heslo šlo nešifrovaně |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | — | identifikátor odesílacího účtu, pokud nějaký vyžaduje |
+| `BASEDB_MAIL_FROM` | — | povinné s `BASEDB_SMTP_HOST`: odesílatel, `basedb <no-reply@exemple.fr>` |
+
+Při spuštění o tom protokol informuje: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` E-mail, který server odmítne, se opakuje po 1, 5, 30, 120 a
+pak 360 minutách.
+
+## Mapy a adresy
+
+Zobrazení **Mapa** umísťuje adresu díky geokódovací službě: ve výchozím nastavení službě
+OpenStreetMap (Nominatim), dotazované jednou na adresu, nejvýše jeden dotaz za sekundu, každá
+odpověď se uchovává. Mapový podklad je tvořen **dlaždicemi**, které prohlížeč každého čtenáře
+načítá přímo.
+
+| Proměnná | Výchozí | Role |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | jiná služba mluvící stejným protokolem (váš vlastní Nominatim); `off`: žádná, adresy neopustí instanci a řádky umísťuje jen zeměpisná šířka a délka |
+| `BASEDB_MAP_TILES` | dlaždice OpenStreetMap | jiný dlaždicový server, vzor `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | údaj, který tento server vyžaduje, vpravo dole na mapě |
+
+Při spuštění protokol říká, která služba se používá: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## Dokumenty PDF
+
+| Proměnná | Výchozí | Role |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | písma Noto z obrazu | vlastní složka, připojená do kontejneru, která obsahuje `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic`, a pro čínštinu, japonštinu a korejštinu `NotoSansCJK-Regular.ttc` a `-Bold.ttc` |
+
 ## Šablony databází
 
 | Proměnná | Výchozí | Role |

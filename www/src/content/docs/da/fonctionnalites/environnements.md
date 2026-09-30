@@ -26,7 +26,7 @@ Fra databasens menu under **Flere handlinger** åbner **Sammenlign miljøer…**
 - **Synkronisering af rækker**: tabel for tabel overføres rækker fra ét miljø til et andet ud
   fra deres id.
 
-![Sammenligning af produktion og test](../../../../assets/screens/environnements.png)
+![Sammenligning af produktion og test](../../../../assets/screens/da/environnements.webp)
 
 ## Sådan ved basedb, hvem der har ændret hvad
 

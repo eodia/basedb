@@ -28,6 +28,8 @@ export interface ProfileChange {
   readonly dateFormat?: unknown
   readonly weekStart?: unknown
   readonly mutedNotifications?: unknown
+  /** The natures also sent by mail when left unread (chapter 16 §2.4). */
+  readonly mailedNotifications?: unknown
   /** A language of `LOCALES`, or `null`: the browser's (chapter 11 §10). */
   readonly locale?: unknown
 }
@@ -60,10 +62,10 @@ function checkLocale(value: unknown): Locale | null {
 }
 
 /** A set of natures, each one known — an unknown one is refused, not dropped. */
-function checkMuted(value: unknown): NotificationKind[] {
+function checkKinds(value: unknown, field: string): NotificationKind[] {
   const known = new Set<string>(NOTIFICATION_KINDS)
   if (!Array.isArray(value) || value.some((k) => typeof k !== 'string' || !known.has(k))) {
-    throw new BasedbError('REQUEST_INVALID', { details: { field: 'muted_notifications' } })
+    throw new BasedbError('REQUEST_INVALID', { details: { field } })
   }
   return NOTIFICATION_KINDS.filter((k) => value.includes(k))
 }
@@ -82,7 +84,13 @@ export async function updateProfile(
   const dateFormat = change.dateFormat === undefined ? null : checkDateFormat(change.dateFormat)
   const weekStart = change.weekStart === undefined ? null : checkWeekStart(change.weekStart)
   const muted =
-    change.mutedNotifications === undefined ? null : checkMuted(change.mutedNotifications)
+    change.mutedNotifications === undefined
+      ? null
+      : checkKinds(change.mutedNotifications, 'muted_notifications')
+  const mailed =
+    change.mailedNotifications === undefined
+      ? null
+      : checkKinds(change.mailedNotifications, 'mailed_notifications')
   // `null` is a value here — back to the browser's language —, so « given » is its own flag.
   const localeGiven = change.locale !== undefined
   const locale = localeGiven ? checkLocale(change.locale) : null
@@ -91,10 +99,14 @@ export async function updateProfile(
     dateFormat === null &&
     weekStart === null &&
     muted === null &&
+    mailed === null &&
     !localeGiven
   ) {
     throw new BasedbError('REQUEST_INVALID', {
-      details: { field: 'display_name, date_format, week_start, muted_notifications, locale' },
+      details: {
+        field:
+          'display_name, date_format, week_start, muted_notifications, mailed_notifications, locale',
+      },
     })
   }
 
@@ -106,10 +118,21 @@ export async function updateProfile(
               week_start = coalesce($5::smallint, u.week_start),
               muted_notifications = coalesce($6::text[], u.muted_notifications),
               locale = CASE WHEN $7 THEN $8::text ELSE u.locale END,
+              mailed_notifications = coalesce($9::text[], u.mailed_notifications),
               updated_at = clock_timestamp(), updated_by = u.id
          FROM _basedb.tenant t
         WHERE u.id = $1 AND t.id = u.tenant_id AND t.ref = $2`,
-      [ctx.actor.id, ctx.tenantId, displayName, dateFormat, weekStart, muted, localeGiven, locale],
+      [
+        ctx.actor.id,
+        ctx.tenantId,
+        displayName,
+        dateFormat,
+        weekStart,
+        muted,
+        localeGiven,
+        locale,
+        mailed,
+      ],
       'update',
     )
   })

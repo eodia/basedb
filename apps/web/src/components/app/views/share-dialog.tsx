@@ -73,7 +73,7 @@ function toLocalInput(iso: string | null): string {
 }
 
 /** Whether a view is answered through its link — a form — rather than read. */
-export const answered = (kind: ViewKind) => kind === 'form' || kind === 'survey'
+export const answered = (kind: ViewKind) => kind === 'form' || kind === 'survey' || kind === 'quiz'
 
 export function shareUrl(token: string, kind: ViewKind = 'form'): string {
   return `${window.location.origin}/${answered(kind) ? 'f' : 'v'}/${token}`

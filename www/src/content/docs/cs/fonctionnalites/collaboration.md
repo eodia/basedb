@@ -12,7 +12,7 @@ Detail řádku má záložku **Komentáře** mezi „Podrobnosti“ a „Histori
 **zmínili** člena, a Ctrl+Enter pro odeslání. Každý může upravovat nebo odstraňovat své
 vlastní komentáře.
 
-![Konverzace o projektu](../../../../assets/screens/commentaires.png)
+![Konverzace o projektu](../../../../assets/screens/cs/commentaires.webp)
 
 Ke komentování řádku stačí oprávnění ho číst. Zmíněná osoba, která ho číst nemůže, upozorněna
 není – a autor je o tom informován, místo aby se domníval, že zpráva odešla.
@@ -29,7 +29,14 @@ Zvonek vpravo nahoře počítá nepřečtené. Přicházejí do něj čtyři vě
 Otevřením oznámení se otevře řádek. **Označit vše jako přečtené** vynuluje počítadlo;
 oznámení se uchovávají 90 dní.
 
-![Přijatá zmínka](../../../../assets/screens/notifications.png)
+### E-mailem
+
+Když má instance [odesílací server](/basedb/cs/hebergement/variables/#e-maily), oznámení,
+které zůstane **deset minut nepřečtené**, odejde také e-mailem: jeden e-mail pro všechna,
+která čekají, s odkazem na každý řádek. Co si přečtete včas, neodejde. V **Nastavení ›
+Oznámení** má každý druh dva přepínače: v basedb a e-mailem.
+
+![Přijatá zmínka](../../../../assets/screens/cs/notifications.webp)
 
 ## Reálný čas
 
@@ -72,6 +79,6 @@ Ctrl+Z vrátí váš poslední zápis – viz [historie](/basedb/cs/fonctionnali
 
 ## Omezení
 
-- Oznámení zůstávají v basedb: zatím se žádné neposílá e-mailem.
+- Žádný e-mail bez odesílacího serveru nastaveného provozovatelem.
 - Při více než stu řádcích změněných najednou obrazovka znovu načte celou stránku, nikoli
   řádek po řádku.

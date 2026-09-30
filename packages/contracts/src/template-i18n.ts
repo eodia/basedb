@@ -344,6 +344,7 @@ function rewrite(template: Template, words: Words): Record<string, unknown> {
               label?: string
               help?: string
               placeholder?: string
+              prefill?: string
               show_if?: { field: string; op: string; value: unknown }
             },
             qi,
@@ -361,6 +362,7 @@ function rewrite(template: Template, words: Words): Record<string, unknown> {
               : {
                   placeholder: text(q.placeholder, 'text', `${at}.spec.fields[${qi}].placeholder`),
                 }),
+            ...(q.prefill === undefined ? {} : { prefill: q.prefill }),
             // The question a condition reads, and a choice it compares with, by their labels.
             ...(q.show_if === undefined
               ? {}

@@ -66,6 +66,47 @@ Bkz. [Hesaplar ve giriş](/basedb/tr/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | — | kimlik bilgileri |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | ana makine tabanlı adresleme için `0` |
 
+## E-postalar
+
+Bir gönderim sunucusu olmadan basedb hiçbir e-posta göndermez. Onunla birlikte, on dakika
+okunmadan kalan bildirimler (herkes hangilerini istediğini **Ayarlar › Bildirimler**'de seçer),
+otomasyonların **E-posta gönder** adımının e-postaları ve bir **şifremi unuttum** bağlantısı
+gider. Bağlantılar `BASEDB_PUBLIC_URL`'e işaret eder; o tanımlı değilse bir e-posta bağlantı
+taşımaz.
+
+| Değişken | Varsayılan | Rol |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | SMTP sunucusu: e-posta sağlayıcınızınki ya da bir gönderim servisininki |
+| `BASEDB_SMTP_PORT` | `587` | baştan şifreli bir bağlantı için `465` |
+| `BASEDB_SMTP_SECURE` | `starttls` (465 portunda `tls`) | yalnızca aynı makinedeki bir aktarım için `none`: aksi hâlde şifre açık metin olarak geçer |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | — | gönderim hesabının kimliği, isteniyorsa |
+| `BASEDB_MAIL_FROM` | — | `BASEDB_SMTP_HOST` ile zorunlu: gönderen, `basedb <no-reply@exemple.fr>` |
+
+Başlatıldığında günlük durumu bildirir: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` Sunucunun geri çevirdiği bir e-posta 1, 5, 30, 120 ve ardından
+360 dakika sonra yeniden denenir.
+
+## Haritalar ve adresler
+
+**Harita** görünümü bir adresi bir coğrafi kodlama servisi sayesinde yerleştirir: varsayılan
+olarak OpenStreetMap'inki (Nominatim), adres başına bir kez sorgulanır, en fazla saniyede bir
+istek, her yanıt saklanır. Harita altlığı, her okuyucunun tarayıcısının doğrudan yüklediği
+**karolardan** oluşur.
+
+| Değişken | Varsayılan | Rol |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | aynı protokolü konuşan başka bir servis (kendi Nominatim'iniz); `off`: hiçbiri, adresler kurulumdan çıkmaz ve satırları yalnızca enlem ve boylam yerleştirir |
+| `BASEDB_MAP_TILES` | OpenStreetMap'in karoları | başka bir karo sunucusu, `https://…/{z}/{x}/{y}.png` modeli |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | bu sunucunun istediği ibare, haritanın sağ altında |
+
+Başlatıldığında günlük hangi servisin kullanıldığını bildirir: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## PDF belgeleri
+
+| Değişken | Varsayılan | Rol |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | imajın Noto yazı tipleri | konteynerde bağlanan kendi klasörünüz; `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic` dosyalarını, Çince, Japonca ve Korece için de `NotoSansCJK-Regular.ttc` ve `-Bold.ttc` dosyalarını tutar |
+
 ## Veritabanı şablonları
 
 | Değişken | Varsayılan | Rol |

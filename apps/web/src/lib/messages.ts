@@ -66,6 +66,9 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   ADMIN_REQUIRED: $t('Action réservée à l’administration.'),
   LINK_TARGET_NOT_FOUND: $t('La ligne liée n’existe pas, ou n’est pas visible.'),
   ROW_REFERENCED: $t('Cette ligne est encore référencée par une autre table.'),
+  ROW_OUT_OF_SCOPE: $t(
+    'Cette ligne ne ferait pas partie des lignes que vous voyez : elle n’a pas été créée.',
+  ),
   LINK_CROSS_DATABASE: $t('Une relation ne peut pas viser une table d’une autre base.'),
   LINK_SELF_REQUIRED: $t('Une relation vers la même table ne peut pas être obligatoire.'),
   LINK_SET_NULL_ON_REQUIRED: $t(
@@ -141,6 +144,12 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   AI_DISABLED: $t('L’IA n’est pas activée sur cette instance.'),
   AI_CONSENT_REQUIRED: $t('Le consentement à l’envoi de données au fournisseur n’a pas été donné.'),
   AI_NOT_CONFIGURED: $t('Aucun fournisseur d’IA n’est configuré, ou sa clé est absente.'),
+  MAIL_NOT_CONFIGURED: $t(
+    'Cette instance n’envoie pas de courriels : aucun serveur d’envoi n’y est configuré.',
+  ),
+  RESET_TOKEN_INVALID: $t(
+    'Ce lien ne vaut plus : il a déjà servi, ou ses 30 minutes sont passées. Demandez-en un nouveau.',
+  ),
   AI_QUOTA_EXCEEDED: $t('Plafond d’appels à l’IA atteint.'),
   AI_PROVIDER_UNAVAILABLE: $t('Le fournisseur d’IA ne répond pas. Réessayez dans un instant.'),
   AI_RESPONSE_UNUSABLE: $t('Réponse de l’IA inutilisable. Reformulez la demande.'),

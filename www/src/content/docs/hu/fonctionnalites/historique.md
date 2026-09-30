@@ -7,7 +7,7 @@ A basedb **minden írást** rögzít az előzményekben, bárhonnan érkezzen is
 API-ból, egy MCP-ügynöktől, egy nyilvános űrlapból – sőt egy `psql`-ben kézzel írt
 SQL-lekérdezésből is.
 
-![Egy adatbázis előzményei](../../../../assets/screens/historique.png)
+![Egy adatbázis előzményei](../../../../assets/screens/hu/historique.webp)
 
 ## Hogyan történik a rögzítés
 

@@ -40,7 +40,7 @@ const fr = {
 		home: {
 			title: 'basedb — la base collaborative dont chaque table est une vraie table PostgreSQL',
 			description:
-				'Grilles et huit vues, formules, formulaires et vues partagés, commentaires, automatisations, tableaux de bord, droits au champ près, historique complet, API REST et serveur MCP — sur de vraies tables PostgreSQL, nommées en clair. Auto-hébergé, AGPL-3.0.',
+				'Grilles et dix vues, formules, formulaires, quiz et vues partagés, commentaires, automatisations, tableaux de bord, droits au champ près, historique complet, API REST et serveur MCP — sur de vraies tables PostgreSQL, nommées en clair. Auto-hébergé, AGPL-3.0.',
 		},
 		changelog: {
 			title: 'Nouveautés — basedb',
@@ -109,8 +109,8 @@ const fr = {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: 'Huit vues',
-								text: 'Grille, kanban, calendrier, chronologie, galerie, liste, formulaire, questionnaire.',
+								title: 'Dix vues',
+								text: 'Grille, kanban, calendrier, chronologie, galerie, liste, carte, formulaire, questionnaire, quiz.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -410,9 +410,9 @@ const fr = {
 	 */
 	teams: {
 		meta: {
-			title: 'basedb — tout votre travail, au même endroit',
+			title: 'basedb — la base collaborative de toute l’équipe',
 			description:
-				'Clients, projets, stocks, candidatures : une base que toute l’équipe modifie en même temps, en tableau, en kanban ou en calendrier, avec des tableaux de bord, des automatisations et l’IA. Sans code, libre et gratuit.',
+				'Tout votre travail au même endroit, modifié par toute l’équipe en même temps : en tableau, en kanban ou en calendrier, avec des formulaires, des tableaux de bord, des automatisations et l’IA. Sans code, libre et gratuit.',
 		},
 
 		/** The first screen: the headline, over the window the scroll then opens. */
@@ -817,9 +817,9 @@ const fr = {
 			text: 'Chaque fonction écrit dans les mêmes tables, avec les mêmes droits, dans le même historique.',
 			tiles: {
 				views: tile({
-					stat: '8',
+					stat: '10',
 					title: 'façons de voir vos données',
-					text: 'Grille, kanban, calendrier, chronologie, galerie, liste, formulaire et questionnaire, sur les mêmes lignes. Chacun choisit la sienne.',
+					text: 'Grille, kanban, calendrier, chronologie, galerie, liste, carte, formulaire, questionnaire et quiz, sur les mêmes lignes. Chacun choisit la sienne.',
 					href: '/fonctionnalites/vues/',
 				}),
 				history: tile({
@@ -869,7 +869,7 @@ const fr = {
 				}),
 				import: tile({
 					title: 'Import en un geste',
-					text: 'Glissez un fichier CSV : colonnes et types sont devinés, la table est créée.',
+					text: 'Glissez un classeur Excel ou un CSV : colonnes et types sont devinés, la table est créée.',
 					href: '/guides/premiers-pas/',
 				}),
 				agenda: tile({
@@ -966,7 +966,7 @@ const fr = {
 				},
 				{
 					q: 'Peut-on reprendre nos tableurs ?',
-					a: 'Oui : enregistrez votre feuille en CSV et glissez-la dans basedb. L’import devine le type de chaque colonne, crée la table, et dit ligne par ligne ce qu’il n’a pas pu reprendre.',
+					a: 'Oui : glissez votre classeur Excel, ou un CSV, dans basedb. L’import devine le type de chaque colonne, crée la table, et dit ligne par ligne ce qu’il n’a pas pu reprendre.',
 				},
 				{
 					q: 'Peut-on travailler à plusieurs en même temps ?',
@@ -1260,9 +1260,20 @@ const fr = {
 		text: 'Chaque fonction écrit dans les mêmes tables, sous les mêmes droits, dans le même historique.',
 		more: 'En savoir plus →',
 		views: {
-			title: 'Huit vues sur les mêmes lignes',
+			title: 'Dix vues sur les mêmes lignes',
 			text: 'Collaboratives pour toute l’équipe, ou personnelles pour soi seul : chacun choisit sa façon de lire, personne ne copie les données.',
-			chips: ['Grille', 'Kanban', 'Calendrier', 'Chronologie', 'Galerie', 'Liste', 'Formulaire', 'Questionnaire'],
+			chips: [
+				'Grille',
+				'Kanban',
+				'Calendrier',
+				'Chronologie',
+				'Galerie',
+				'Liste',
+				'Carte',
+				'Formulaire',
+				'Questionnaire',
+				'Quiz',
+			],
 		},
 		forms: {
 			title: 'Formulaires partagés',
@@ -1321,7 +1332,7 @@ const fr = {
 				href: '/fonctionnalites/fichiers/',
 			}),
 			import: card({
-				title: 'Import CSV et JSON',
+				title: 'Import Excel, CSV et JSON',
 				text: 'Glissez un fichier : l’import devine les types, crée la table ou complète une table existante, et dit ligne par ligne ce qui est refusé.',
 				href: '/guides/premiers-pas/',
 			}),
@@ -1438,6 +1449,66 @@ const fr = {
 		intro: 'Le détail de chaque changement est dans <a href="https://github.com/eodia/basedb/commits/main">l’historique du dépôt</a>. Ce qui vient ensuite : la <a href="/feuille-de-route/">feuille de route</a>.',
 		/** Newest first. */
 		entries: {
+			maps: entry({
+				date: '2026-09-30',
+				title: 'La carte, et des adresses qui se retrouvent',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Une dixième vue, la carte</strong> : chaque ligne posée à son endroit, par son adresse ou par sa latitude et sa longitude. Une épingle prend la couleur d’un statut et ouvre la fiche d’un clic. <a href="/fonctionnalites/vues/#carte">La carte</a>',
+					'<strong>Une adresse est située une fois pour toutes</strong>, par le service d’OpenStreetMap ou celui que vous choisissez : les épingles arrivent au fil des réponses, puis tout de suite. Une adresse introuvable est comptée, jamais écartée en silence.',
+					'<strong>Le format Adresse</strong> pour un texte court : un clic l’ouvre sur la carte, et dans la fiche, <strong>Trouver l’adresse</strong> propose les adresses complètes qui correspondent. <a href="/fonctionnalites/tables-et-champs/#formats-daffichage">Les formats</a>',
+				],
+			}),
+			documents: entry({
+				date: '2026-09-30',
+				title: 'Des PDF à partir de vos lignes',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Un devis, une facture, une fiche en PDF</strong>, depuis le menu d’une ligne : la fiche imprimable sans rien régler, ou un modèle — des textes qui citent les champs, les champs de la ligne, le tableau des lignes liées avec son total, des sauts de page. <a href="/fonctionnalites/documents/">Les documents</a>',
+					'<strong>Chacun avec ses droits</strong> : un champ masqué pour vous n’apparaît pas dans votre PDF. Les vingt langues s’y écrivent, chinois, japonais et coréen compris, et l’API rend le même document.',
+				],
+			}),
+			rows: entry({
+				date: '2026-09-30',
+				title: 'Des droits jusqu’à la ligne, des valeurs par défaut, l’import Excel',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Chacun ses lignes</strong> : un groupe ne voit que les lignes d’un filtre — « Commercial est moi », « Région est Nord » —, dans l’interface, l’API, le serveur MCP comme en SQL, où PostgreSQL applique la même règle. <a href="/fonctionnalites/droits/#jusquà-la-ligne">Jusqu’à la ligne</a>',
+					'<strong>Des valeurs par défaut</strong> : une valeur fixe, la date du jour, l’instant de la création ou la personne qui crée la ligne, préremplies à l’écran et appliquées partout ailleurs. <a href="/fonctionnalites/tables-et-champs/#valeurs-par-défaut">Valeurs par défaut</a>',
+					'<strong>Glissez un classeur Excel</strong> : choisissez la feuille, les dates, montants et cases à cocher arrivent comme tels, et une formule apporte sa valeur. <a href="/guides/premiers-pas/">Premiers pas</a>',
+				],
+			}),
+			mail: entry({
+				date: '2026-09-30',
+				title: 'Des courriels',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Une étape « Envoyer un courriel »</strong> dans les automatisations : à un membre, à la personne d’un champ, à l’adresse d’un client, avec les valeurs de la ligne dans le sujet et le texte. <a href="/fonctionnalites/automatisations/">Les automatisations</a>',
+					'<strong>Les notifications par courriel</strong> quand vous ne les avez pas lues, regroupées, à choisir une à une dans vos paramètres ; et le <strong>mot de passe oublié</strong> se réinitialise par un lien. <a href="/fonctionnalites/collaboration/#par-courriel">Par courriel</a>',
+					'Il suffit d’indiquer le serveur d’envoi de votre messagerie à l’instance. <a href="/hebergement/variables/#courriels">Les variables</a>',
+				],
+			}),
+			integrations: entry({
+				date: '2026-09-30',
+				title: 'n8n et un SDK TypeScript',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Des nœuds n8n</strong> : lire et écrire les lignes d’une table depuis un workflow, et en lancer un à chaque ligne créée, modifiée ou supprimée — par relève ou par webhook signé. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>Un SDK TypeScript</strong>, avec les types de vos tables générés depuis votre instance : une table ou un champ qui n’existe pas est une erreur avant même l’exécution. <a href="/integrations/sdk/">Le SDK</a>',
+				],
+			}),
+			quiz: entry({
+				date: '2026-09-29',
+				title: 'Le quiz : des questions qui comptent les points',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Une nouvelle vue, le quiz</strong> : un questionnaire dont chaque question peut avoir sa bonne réponse et ses points — un choix, plusieurs, oui ou non, un nombre, une date, ou les textes acceptés, sans tenir compte des majuscules ni des accents. <a href="/fonctionnalites/vues/#quiz">Le quiz</a>',
+					'<strong>Corrigé comme vous voulez</strong> : après chaque question — en vert, ou en rouge avec la bonne réponse, le score qui grandit en haut de l’écran —, à la fin, ou jamais. Un seuil de réussite fait dire « Réussi ! » ou « Pas cette fois… ».',
+					'<strong>Le score à la fin</strong>, dans un anneau qui se remplit, puis le corrigé de chaque question. Il s’écrit dans un champ nombre de la table : triez la grille dessus, voilà le classement.',
+					'<strong>Partagé par un lien, sans tricher</strong> : la page ne reçoit aucune bonne réponse, c’est le serveur qui corrige et qui compte. <a href="/fonctionnalites/formulaires-partages/#un-quiz-partagé">Un quiz partagé</a>',
+					'<strong>Créer une vue</strong>, au bas du sélecteur de vues, range les neuf sortes en deux familles — celles qui montrent les lignes, celles qui recueillent des réponses —, chacune avec son icône en couleur.',
+				],
+			}),
 			forms: entry({
 				date: '2026-09-29',
 				title: 'Des formulaires qu’on a envie de remplir',

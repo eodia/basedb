@@ -31,6 +31,7 @@ import { FormView } from '@/components/app/views/form-view'
 import { GalleryView } from '@/components/app/views/gallery-view'
 import { KanbanView, Unavailable } from '@/components/app/views/kanban-view'
 import { ListView } from '@/components/app/views/list-view'
+import { MapView } from '@/components/app/views/map-view'
 import { ShareFormDialog } from '@/components/app/views/share-dialog'
 import { SortMenu } from '@/components/app/views/sort-menu'
 import { TimelineView } from '@/components/app/views/timeline-view'
@@ -96,6 +97,7 @@ import {
   isModified,
   kanbanSpec,
   listSpec,
+  mapSpec,
   specFromState,
   timelineSpec,
   viewStateOf,
@@ -2056,11 +2058,28 @@ export function Workspace({
                         onReorder={canEditView ? saveManualOrder : undefined}
                         onError={setError}
                       />
+                    ) : activeView.kind === 'map' ? (
+                      <MapView
+                        key={activeView.id}
+                        table={table}
+                        fields={businessFields}
+                        spec={mapSpec(activeView.spec)}
+                        filter={effectiveFilter}
+                        sort={sortParameter(view.sorts)}
+                        reloadKey={dataTick + reloadTick}
+                        openedId={opened?._id ?? null}
+                        onOpen={(row) => void openRecord(row)}
+                        onError={setError}
+                      />
                     ) : (
                       <FormView
                         // A reconfigured form starts a fresh draft: its questions changed.
                         key={`${activeView.id}:${activeView.updated_at}`}
-                        kind={activeView.kind === 'survey' ? 'survey' : 'form'}
+                        kind={
+                          activeView.kind === 'survey' || activeView.kind === 'quiz'
+                            ? activeView.kind
+                            : 'form'
+                        }
                         table={table}
                         fields={businessFields}
                         spec={formSpec(activeView.spec)}
@@ -2217,6 +2236,7 @@ export function Workspace({
                 onUpload={upload}
                 onClose={() => setDrafting(false)}
                 onCreate={createFromPanel}
+                me={self}
               />
             )}
 
@@ -2242,6 +2262,8 @@ export function Workspace({
                 self={self}
                 commentsTick={commentsTick}
                 viewers={live.viewers}
+                tables={tables}
+                builds={manages}
               />
             )}
 

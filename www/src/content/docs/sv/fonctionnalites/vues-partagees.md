@@ -18,13 +18,13 @@ Vyns meny → **Dela…**, och sedan:
 | **Offentlig** | alla som har länken, utan konto |
 | **Inloggade medlemmar** | en medlem i arbetsytan, efter inloggning – vid behov bara i vissa grupper |
 
-![Delning av en kalender](../../../../assets/screens/partage-vue.png)
+![Delning av en kalender](../../../../assets/screens/sv/partage-vue.webp)
 
 Reglaget **Aktiv länk** pausar länken utan att den går förlorad. Sidan öppnas utanför
 programmet: inget sidofält, inget databasnamn, inget tabellnamn – vyn, dess filter, dess
 kolumner och inget annat. En kalender eller en tidslinje läses där som en vanlig kalender.
 
-![Samma kalender, öppnad via sin länk](../../../../assets/screens/vue-partagee.png)
+![Samma kalender, öppnad via sin länk](../../../../assets/screens/sv/vue-partagee.webp)
 
 ## I vems namn man läser
 

@@ -1,6 +1,6 @@
 ---
 title: Automaatiot
-description: Kun rivi muuttuu, tiettyyn aikaan tai napsautuksella – muokkaa, luo, etsi, haaraudu, kysy tekoälyltä, ilmoita, kutsu webhookia, kirjoita Slackiin.
+description: Kun rivi muuttuu, tiettyyn aikaan tai napsautuksella – muokkaa, luo, etsi, haaraudu, kysy tekoälyltä, ilmoita, lähetä sähköposti, kutsu webhookia, kirjoita Slackiin.
 ---
 
 Automaatio kertoo **milloin**, **jos** ja **sitten**: kun tehtävä siirtyy tilaan ”Fait”, kirjaa
@@ -12,7 +12,7 @@ uudelleen sitä, minkä aiempi vaihe löysi tai kirjoitti.
 Ne avataan kohdasta **Automaatiot** sivupalkin alaosan avoimen tietokannan lohkosta, ja ne
 vaativat **Hallintaoikeus**-tason.
 
-![Työnkulku ja yksi sen suorituksista sen päällä](../../../../assets/screens/automatisations.png)
+![Työnkulku ja yksi sen suorituksista sen päällä](../../../../assets/screens/fi/automatisations.webp)
 
 ## Työnkulku
 
@@ -50,6 +50,7 @@ seuraavat.
 | **Luo rivi** | tähän tai johonkin toiseen tietokannan taulukkoon |
 | **Etsi rivi** | taulukon ensimmäinen suodattimeen täsmäävä rivi, jotta seuraavat vaiheet voivat viitata siihen tai muokata sitä |
 | **Ilmoita jollekulle** | [ilmoitus](/basedb/fi/fonctionnalites/collaboration/#ilmoitukset) valituille henkilöille tai Henkilö-kentän henkilölle |
+| **Lähetä sähköposti** | tiimin henkilöille, Henkilö-kentän henkilölle, E-mail-kentän osoitteeseen – asiakkaalle, toimittajalle – tai kirjoitettuihin osoitteisiin; aihe ja teksti viittaavat riviin ja aiempiin vaiheisiin |
 | **Kutsu webhookia** | HTTPS-`POST` valitsemaasi osoitteeseen; sen vastaukseen voi sitten viitata |
 | **Lähetä Slackiin** | viesti [yhdistettyyn](/basedb/fi/integrations/synchronisation/#slack) kanavaan |
 | **Kysy tekoälyltä** | [tekoälypalveluntarjoajan](/basedb/fi/fonctionnalites/ia/) vastaus kehotteeseen, joka viittaa riviin ja aiempiin vaiheisiin – kirjoita, tiivistä, luokittele –, luettuna tekstinä, lukuna, kyllä tai ei -vastauksena, päivämääränä tai luettelon valintana |
@@ -140,7 +141,9 @@ kirjoitukset voi kumota kuten muutkin.
   kirjoitetaan yhteen työnkulkuun.
 - Haku antaa yhden rivin, ensimmäisen; ”jokaiselle riville” -toimintoa tai odotusta (”kolme
   päivää myöhemmin”) ei vielä ole.
-- Ei sähköpostia eikä skriptejä.
+- Ei skriptejä. Sähköposti lähtee tekstimuodossa, yksi kullekin vastaanottajalle – enintään
+  kaksikymmentä vaihetta kohden –, instanssin [lähetyspalvelimen](/basedb/fi/hebergement/variables/#sähköpostit)
+  kautta; vastaus saapuu automaation omistavalle henkilölle.
 - Ehto testaa riviä: jos haluat valita haaran tekoälyn vastauksen mukaan, kirjoita vastaus ensin
   rivin kenttään.
 - [Tietokantamalli](/basedb/fi/fonctionnalites/modeles/) ottaa mukaan vain automaatiot, joissa

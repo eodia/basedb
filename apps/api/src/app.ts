@@ -17,6 +17,7 @@ import {
   type Comment,
   type Dashboard,
   type DashboardSharing,
+  type DocumentTemplate,
   type FormSharing,
   type Integration,
   type Kernel,
@@ -498,6 +499,11 @@ export function createApp(options: AppOptions) {
     date_format: me.dateFormat,
     week_start: me.weekStart,
     muted_notifications: me.mutedNotifications,
+    mailed_notifications: me.mailedNotifications,
+    // Whether a mail can leave at all: without a transport, the choice above says nothing.
+    mail_available: options.kernel.mail.available,
+    // Whether an address can become a point: the map and the address input need it.
+    geocoding_available: options.kernel.geocoding.available,
     locale: me.locale,
   })
 
@@ -521,6 +527,7 @@ export function createApp(options: AppOptions) {
       date_format?: unknown
       week_start?: unknown
       muted_notifications?: unknown
+      mailed_notifications?: unknown
       locale?: unknown
     }
     const body = await c.req.json<Body>().catch(() => ({}) as Body)
@@ -530,6 +537,7 @@ export function createApp(options: AppOptions) {
       dateFormat: body.date_format,
       weekStart: body.week_start,
       mutedNotifications: body.muted_notifications,
+      mailedNotifications: body.mailed_notifications,
       // `null` is a choice — the browser's language —, an absent key none.
       locale: body.locale,
     })
@@ -603,6 +611,13 @@ export function createApp(options: AppOptions) {
   app.delete('/auth/elevation', async (c) => {
     await options.kernel.dropElevation(getCookie(c, SESSION_COOKIE))
     return c.body(null, 204)
+  })
+
+  // Whether a forgotten password can be reset here: only with a mail transport. Without
+  // one, `404`, and the sign-in screen offers nothing (chapter 13 §2.3).
+  app.get('/auth/password/reset', (c) => {
+    if (!options.kernel.mail.available) throw new BasedbError('RESOURCE_NOT_FOUND')
+    return c.json({ data: { available: true } })
   })
 
   // `202` ALWAYS, and immediately, without waiting for delivery. An unknown, disabled,
@@ -972,6 +987,82 @@ export function createApp(options: AppOptions) {
         groups: result.groups,
         groups_capped: result.groupsCapped,
       },
+    })
+  })
+
+  // Addresses as points (chapter 11 §1.9): what is known at once, a few more asked of the
+  // service, how many are left — the map asks again for those.
+  app.post('/api/v1/:tenantRef/geo/geocode', async (c) => {
+    const body = await c.req.json<{ addresses?: unknown }>()
+    if (!Array.isArray(body.addresses)) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'addresses' } })
+    }
+    const ctx = await dataContext(c)
+    const found = await options.kernel.geocode(ctx, {
+      addresses: body.addresses,
+      language: c.req.header('x-basedb-locale') ?? 'fr',
+    })
+    return c.json({ data: found })
+  })
+
+  // What a text typed in an address field may be.
+  app.get('/api/v1/:tenantRef/geo/search', async (c) => {
+    const ctx = await dataContext(c)
+    const places = await options.kernel.searchAddresses(ctx, {
+      query: c.req.query('q') ?? '',
+      language: c.req.header('x-basedb-locale') ?? 'fr',
+    })
+    return c.json({ data: places })
+  })
+
+  // The document templates of a table (chapter 21): their names, to print a row with one;
+  // their definitions too, to whoever builds the table. Declared before `/:id`.
+  app.get('/api/v1/:tenantRef/data/:base/:table/documents', async (c) => {
+    const ctx = await dataContext(c)
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const templates = await options.kernel.listDocumentTemplates(ctx, { tableId: table.tableId })
+    return c.json({ data: templates.map(documentTemplateJson) })
+  })
+
+  // A row as a PDF: with a template, or `fiche` — every field the caller reads.
+  app.get('/api/v1/:tenantRef/data/:base/:table/:id/documents/:template', async (c) => {
+    const ctx = await dataContext(c)
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const template = c.req.param('template').replace(/\.pdf$/, '')
+    const document = await options.kernel.renderDocument(ctx, {
+      tableId: table.tableId,
+      recordId: c.req.param('id'),
+      templateId: template === 'fiche' ? null : template,
+    })
+    return c.body(new Uint8Array(document.bytes), 200, {
+      'content-type': 'application/pdf',
+      'content-length': String(document.bytes.length),
+      'content-disposition': disposition(
+        c.req.query('download') === '1' ? 'attachment' : 'inline',
+        document.filename,
+      ),
+      'cache-control': 'private, no-store',
+      'x-content-type-options': 'nosniff',
+    })
+  })
+
+  // A definition not saved yet, set on a row — what the template editor shows beside it.
+  app.post('/api/v1/:tenantRef/data/:base/:table/:id/documents/preview', async (c) => {
+    const body = await c.req.json<{ label?: unknown; spec?: unknown }>()
+    const ctx = await dataContext(c)
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const document = await options.kernel.renderDocument(ctx, {
+      tableId: table.tableId,
+      recordId: c.req.param('id'),
+      templateId: null,
+      draft: { label: body.label, spec: body.spec },
+    })
+    return c.body(new Uint8Array(document.bytes), 200, {
+      'content-type': 'application/pdf',
+      'content-length': String(document.bytes.length),
+      'content-disposition': disposition('inline', document.filename),
+      'cache-control': 'private, no-store',
+      'x-content-type-options': 'nosniff',
     })
   })
 
@@ -2380,6 +2471,51 @@ export function createApp(options: AppOptions) {
     })
   })
 
+  // Row rules (05 §16), beside the field rules: each group's filter on one table.
+  const serializeRowAccess = (access: Awaited<ReturnType<typeof options.kernel.rowAccess>>) => ({
+    table: access.table,
+    fields: access.fields,
+    groups: access.groups.map((g) => ({ ...serializeGroup(g), level: g.level, rule: g.rule })),
+  })
+
+  app.get('/api/v1/:tenantRef/admin/access/tables/:table/rows', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const access = await options.kernel.rowAccess(ctx, { tableId: c.req.param('table') })
+    return c.json({ data: serializeRowAccess(access) })
+  })
+
+  app.put('/api/v1/:tenantRef/admin/access/tables/:table/rows', async (c) => {
+    const body = await c.req.json<{ group?: unknown; rule?: unknown }>()
+    if (typeof body.group !== 'string' || (body.rule !== null && typeof body.rule !== 'string')) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'group, rule' } })
+    }
+    const { ctx, sessionId } = await administering(c)
+    const access = await options.kernel.setRowRule(ctx, {
+      groupId: body.group,
+      tableId: c.req.param('table'),
+      rule: body.rule as string | null,
+      sessionId,
+    })
+    return c.json({ data: serializeRowAccess(access) })
+  })
+
+  app.get('/api/v1/:tenantRef/admin/access/tables/:table/rows/effective', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const seen = await options.kernel.effectiveRows(ctx, {
+      tableId: c.req.param('table'),
+      userId: c.req.query('user') ?? '',
+    })
+    return c.json({
+      data: {
+        user: { id: seen.user.id, display_name: seen.user.displayName, email: seen.user.email },
+        reads_table: seen.readsTable,
+        total: seen.total,
+        visible: seen.visible,
+        via: seen.via,
+      },
+    })
+  })
+
   // ---------------------------------------------------------------------------------
   // /ai — the two draft usages of chapter 12 §1.2, and no third one.
   //
@@ -3559,15 +3695,17 @@ export function createApp(options: AppOptions) {
       description?: string | null
       format?: unknown
       formula?: { expression?: unknown; timezone?: unknown }
+      default?: unknown
     }>()
     if (
       body.label === undefined &&
       body.description === undefined &&
       body.format === undefined &&
-      body.formula === undefined
+      body.formula === undefined &&
+      body.default === undefined
     ) {
       throw new BasedbError('REQUEST_INVALID', {
-        details: { field: 'label, description, format, formula' },
+        details: { field: 'label, description, format, formula, default' },
       })
     }
     const formula = formulaOf(body.formula)
@@ -3589,6 +3727,7 @@ export function createApp(options: AppOptions) {
       description?: string | null
       format?: unknown
       formula?: { stored: boolean }
+      default?: unknown
     } = {}
     if (body.label !== undefined) {
       written.label = (
@@ -3618,6 +3757,13 @@ export function createApp(options: AppOptions) {
         rating_max: format.ratingMax,
       }
     }
+    // What a row created without it takes (chapter 04 §1.5): no column changes either.
+    if (body.default !== undefined) {
+      written.default = await options.kernel.setFieldDefault(ctx, {
+        fieldId: field.fieldId,
+        default: body.default,
+      })
+    }
     // A formula's expression: a stored one rewrites its column (chapter 04 §7.7).
     let sql: readonly string[] = []
     if (formula !== undefined) {
@@ -3635,6 +3781,42 @@ export function createApp(options: AppOptions) {
       sql = done.sql
     }
     return c.json({ data: { name: field.name, ...written }, meta: { sql } })
+  })
+
+  // Document templates (chapter 21): building the table.
+  app.post('/api/v1/:tenantRef/admin/bases/:base/tables/:table/documents', async (c) => {
+    const body = await c.req.json<{ label?: unknown; spec?: unknown }>()
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const created = await options.kernel.createDocumentTemplate(ctx, {
+      tableId: table.tableId,
+      label: body.label,
+      spec: body.spec,
+    })
+    return c.json({ data: documentTemplateJson(created) }, 201)
+  })
+
+  app.patch('/api/v1/:tenantRef/admin/bases/:base/tables/:table/documents/:id', async (c) => {
+    const body = await c.req.json<{ label?: unknown; spec?: unknown }>()
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const updated = await options.kernel.updateDocumentTemplate(ctx, {
+      tableId: table.tableId,
+      id: c.req.param('id'),
+      ...(body.label === undefined ? {} : { label: body.label }),
+      ...(body.spec === undefined ? {} : { spec: body.spec }),
+    })
+    return c.json({ data: documentTemplateJson(updated) })
+  })
+
+  app.delete('/api/v1/:tenantRef/admin/bases/:base/tables/:table/documents/:id', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    await options.kernel.deleteDocumentTemplate(ctx, {
+      tableId: table.tableId,
+      id: c.req.param('id'),
+    })
+    return c.body(null, 204)
   })
 
   // The choices of a `select`, replaced AS A WHOLE (chapter 04 §3): the list is what a
@@ -3838,6 +4020,8 @@ export function createApp(options: AppOptions) {
 
   /** Answers to shared forms, per address: a public form is an open door. */
   const answers = new RateLimiter(20, 60_000)
+  /** Grades of a quiz answer by answer: a long quiz answered briskly stays well under it. */
+  const checks = new RateLimiter(240, 60_000)
   /** Reads of shared views, per address and link (chapter 15 §10). */
   const viewReads = new RateLimiter(120, 60_000)
 
@@ -3994,7 +4178,10 @@ export function createApp(options: AppOptions) {
           required: q.required,
           options: q.options,
           placeholder: q.placeholder,
+          prefill: q.prefill,
+          default: q.default,
           show_if: q.showIf,
+          points: q.points,
           format:
             q.format === null
               ? null
@@ -4016,6 +4203,10 @@ export function createApp(options: AppOptions) {
           celebrate: form.design.celebrate,
           end_link: form.design.endLink,
         },
+        quiz:
+          form.quiz === null
+            ? null
+            : { reveal: form.quiz.reveal, pass_percent: form.quiz.passPercent },
       },
     })
   })
@@ -4029,13 +4220,54 @@ export function createApp(options: AppOptions) {
       })
     }
     const body = await c.req.json<{ values?: unknown }>()
-    await options.kernel.submitSharedForm({
+    const result = await options.kernel.submitSharedForm({
       token: c.req.param('token'),
       respondent: await respondentOf(c),
       requestId: c.get('requestId'),
       values: (body.values ?? {}) as Record<string, unknown>,
     })
-    return c.json({ data: { received: true } }, 201)
+    // A quiz says what the answer earned — and the right answers, if its author shows them.
+    return c.json(
+      {
+        data: {
+          received: true,
+          quiz:
+            result.quiz === null
+              ? null
+              : {
+                  score: result.quiz.score,
+                  max: result.quiz.max,
+                  passed: result.quiz.passed,
+                  marks: result.quiz.marks,
+                },
+        },
+      },
+      201,
+    )
+  })
+
+  // A quiz that shows its right answers as it goes grades one answer at a time: the page
+  // learns an answer only once it is given. A question per screen: a generous budget.
+  app.post('/api/v1/forms/:token/check', async (c) => {
+    const verdict = checks.check(`${addressOf(c)}:${c.req.param('token')}`, Date.now())
+    if (!verdict.allowed) {
+      c.header('retry-after', String(verdict.retryAfter))
+      throw new BasedbError('RATE_LIMIT_EXCEEDED', {
+        details: { retry_after: verdict.retryAfter },
+      })
+    }
+    const body = await c.req.json<{ field?: unknown; value?: unknown }>()
+    if (typeof body.field !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'field' } })
+    }
+    const grade = await options.kernel.checkSharedAnswer({
+      token: c.req.param('token'),
+      respondent: await respondentOf(c),
+      requestId: c.get('requestId'),
+      field: body.field,
+      value: body.value ?? null,
+    })
+    return c.json({ data: grade })
   })
 
   app.put('/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field/options', async (c) => {
@@ -4580,6 +4812,17 @@ function lookOf(
     out[key] = value
   }
   return out
+}
+
+/** A document template as the API writes it: snake case, its definition when given. */
+function documentTemplateJson(t: DocumentTemplate) {
+  return {
+    id: t.id,
+    label: t.label,
+    position: t.position,
+    updated_at: t.updatedAt,
+    ...(t.spec === null ? {} : { spec: t.spec }),
+  }
 }
 
 /**

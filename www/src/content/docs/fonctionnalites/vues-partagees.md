@@ -18,13 +18,13 @@ Menu de la vue → **Partager…**, puis :
 | **Public** | quiconque a le lien, sans compte |
 | **Membres connectés** | un membre de l’espace, après connexion — au besoin, de certains groupes seulement |
 
-![Le partage d’un calendrier](../../../assets/screens/partage-vue.png)
+![Le partage d’un calendrier](../../../assets/screens/fr/partage-vue.webp)
 
 L’interrupteur **Lien actif** suspend le lien sans le perdre. La page s’ouvre hors de
 l’application : ni barre latérale, ni nom de base, ni nom de table — la vue, ses filtres, ses
 colonnes, et rien d’autre. Un calendrier ou une chronologie s’y lit comme un agenda.
 
-![Le même calendrier, ouvert par son lien](../../../assets/screens/vue-partagee.png)
+![Le même calendrier, ouvert par son lien](../../../assets/screens/fr/vue-partagee.webp)
 
 ## Au nom de qui on lit
 

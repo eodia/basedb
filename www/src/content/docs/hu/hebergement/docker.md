@@ -29,8 +29,8 @@ A lemezkép a `node` felhasználóval fut, Node 22-n, deklarál egy állapot-ell
 | Címke | Tartalom |
 |---|---|
 | `latest` | a legutóbb kiadott verzió |
-| `0.3` | a legutóbbi 0.3.x verzió |
-| `0.3.2` | pontosan ez a verzió |
+| `0.4` | a legutóbbi 0.4.x verzió |
+| `0.4.0` | pontosan ez a verzió |
 
 ## A szolgáltatások
 

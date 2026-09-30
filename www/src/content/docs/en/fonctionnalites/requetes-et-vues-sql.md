@@ -9,7 +9,7 @@ themselves only, for the whole base or for a few groups —, and whoever manages
 it into an **SQL view**: a real PostgreSQL view, filed among the tables, which `psql` and your
 tools read too.
 
-![A saved query, opened from the “Queries” section; above it, two SQL views filed among the tables](../../../../assets/screens/requete-sql.png)
+![A saved query, opened from the “Queries” section; above it, two SQL views filed among the tables](../../../../assets/screens/en/requete-sql.webp)
 
 ## Everyone with their own permissions
 
@@ -23,7 +23,7 @@ same grid as your tables. What the query can read depends on who runs it:
   disappears from `SELECT *` and is refused if you name it, even when qualifying the table; a
   write is refused. The result carries the **Your permissions** badge.
 
-![The “Your permissions” badge: the query only sees the tables and fields open to the person](../../../../assets/screens/sql-vos-droits.png)
+![The “Your permissions” badge: the query only sees the tables and fields open to the person](../../../../assets/screens/en/sql-vos-droits.webp)
 
 It is not the screen that filters: PostgreSQL itself applies your permissions, column by column,
 through a role of your own. A query therefore cannot show you anything that the grid, the API
@@ -36,7 +36,7 @@ section. It reopens in one click; **⋯** → **Save as…** makes a copy of it,
 sharing…** (in the tab or in its sidebar menu) renames it, changes who sees it, or deletes it —
 **Delete** is also in its menu, with a right click. A tab that was showing it keeps its text.
 
-![Saving a query: its name, what it shows, and who sees it](../../../../assets/screens/requete-enregistrer.png)
+![Saving a query: its name, what it shows, and who sees it](../../../../assets/screens/en/requete-enregistrer.webp)
 
 | Scope | Who sees it | Who can create and edit it |
 |---|---|---|
@@ -59,7 +59,7 @@ An **SQL view** is a real PostgreSQL view in the base’s schema. It takes its p
 tables**, with its color and icon like a table, and a small **eye** on the right that says it
 is a view. A click opens it in a tab: its rows in the grid, **Refresh** to read them again.
 
-![The “Factures à encaisser” view, opened from the sidebar](../../../../assets/screens/vue-sql.png)
+![The “Factures à encaisser” view, opened from the sidebar](../../../../assets/screens/en/vue-sql.webp)
 
 It is created from the base’s **⋯** menu → **New SQL view…**, or from an SQL tab: **⋯** →
 **Create SQL view…**, and the tab’s query becomes its definition. The dialog asks for:
@@ -70,7 +70,7 @@ It is created from the base’s **⋯** menu → **New SQL view…**, or from an
 - its **query**: a single `SELECT`, on the tables and other views of the base. PostgreSQL
   refuses what it refuses, and the editor points to the spot.
 
-![An SQL view’s dialog: label and appearance, technical name, query, description](../../../../assets/screens/vue-sql-dialogue.png)
+![An SQL view’s dialog: label and appearance, technical name, query, description](../../../../assets/screens/en/vue-sql-dialogue.webp)
 
 The view is then read under its name, from the interface as well as from `psql` or your BI
 tool:

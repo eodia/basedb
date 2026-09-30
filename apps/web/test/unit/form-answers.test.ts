@@ -4,6 +4,7 @@ import {
   choiceKey,
   minutesFor,
   normalizeUrl,
+  todayAnswer,
   widgetOf,
 } from '../../src/components/app/forms/answers'
 import { accentOf, onAccent } from '../../src/components/app/forms/theme'
@@ -41,6 +42,13 @@ describe('the answers of a form', () => {
     expect(choiceKey(0)).toBe('A')
     expect(choiceKey(25)).toBe('Z')
     expect(choiceKey(26)).toBeNull()
+  })
+
+  it('holds the day in the reader’s own calendar, and a date and time to the minute', () => {
+    // Late in the evening: the day is the reader's, whatever it already is in UTC.
+    const late = new Date(2026, 0, 5, 23, 47, 31, 500)
+    expect(todayAnswer('date', late)).toBe('2026-01-05')
+    expect(todayAnswer('datetime', late)).toBe(new Date(2026, 0, 5, 23, 47).toISOString())
   })
 })
 

@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb – databasen för samarbete där varje tabell är en riktig PostgreSQL-tabell',
-			description: 'Rutnät och åtta vyer, formler, delade formulär och vyer, kommentarer, automatiseringar, instrumentpaneler, behörigheter ända ned till fältet, fullständig historik, REST-API och MCP-server – på riktiga PostgreSQL-tabeller med läsbara namn. Självhostad, AGPL-3.0.',
+			description: 'Rutnät och tio vyer, formler, delade formulär, quiz och vyer, kommentarer, automatiseringar, instrumentpaneler, behörigheter ända ned till fältet, fullständig historik, REST-API och MCP-server – på riktiga PostgreSQL-tabeller med läsbara namn. Självhostad, AGPL-3.0.',
 		},
 		changelog: {
 			title: 'Nyheter – basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: 'Åtta vyer',
-								text: 'Rutnät, kanban, kalender, tidslinje, galleri, lista, formulär, enkät.',
+								title: 'Tio vyer',
+								text: 'Rutnät, kanban, kalender, tidslinje, galleri, lista, karta, formulär, enkät, quiz.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb – allt ditt arbete på ett och samma ställe',
-			description: 'Kunder, projekt, lager, ansökningar: en databas som hela teamet redigerar samtidigt, i tabell, kanban eller kalender, med instrumentpaneler, automatiseringar och AI. Utan kod, fri och gratis.',
+			title: 'basedb – samarbetsdatabasen för hela teamet',
+			description: 'Allt ditt arbete på ett och samma ställe, redigerat av hela teamet samtidigt: i tabell, kanban eller kalender, med formulär, instrumentpaneler, automatiseringar och AI. Utan kod, fri och gratis.',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -891,9 +891,9 @@ export default {
 			text: 'Varje funktion skriver i samma tabeller, med samma behörigheter, i samma historik.',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: 'sätt att se dina data',
-					text: 'Rutnät, kanban, kalender, tidslinje, galleri, lista, formulär och enkät, på samma rader. Var och en väljer sitt.',
+					text: 'Rutnät, kanban, kalender, tidslinje, galleri, lista, karta, formulär, enkät och quiz, på samma rader. Var och en väljer sitt.',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -943,7 +943,7 @@ export default {
 				},
 				import: {
 					title: 'Import i ett drag',
-					text: 'Släpp en CSV-fil: kolumner och typer gissas fram, tabellen skapas.',
+					text: 'Släpp en Excel-arbetsbok eller en CSV-fil: kolumner och typer gissas fram, tabellen skapas.',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1036,7 +1036,7 @@ export default {
 				},
 				{
 					q: 'Kan vi återanvända våra kalkylark?',
-					a: 'Ja: spara ditt blad som CSV och släpp det i basedb. Importen gissar typen för varje kolumn, skapar tabellen, och talar om rad för rad vad som inte kunde tas med.',
+					a: 'Ja: släpp din Excel-arbetsbok, eller en CSV, i basedb. Importen gissar typen för varje kolumn, skapar tabellen, och talar om rad för rad vad den inte kunde ta med.',
 				},
 				{
 					q: 'Kan flera arbeta samtidigt?',
@@ -1361,9 +1361,9 @@ export default {
 		text: 'Varje funktion skriver i samma tabeller, under samma behörigheter, i samma historik.',
 		more: 'Läs mer →',
 		views: {
-			title: 'Åtta vyer på samma rader',
+			title: 'Tio vyer på samma rader',
 			text: 'Gemensamma för hela teamet, eller personliga för dig själv: var och en väljer sitt sätt att läsa, och ingen kopierar data.',
-			chips: ['Rutnät', 'Kanban', 'Kalender', 'Tidslinje', 'Galleri', 'Lista', 'Formulär', 'Enkät'],
+			chips: ['Rutnät', 'Kanban', 'Kalender', 'Tidslinje', 'Galleri', 'Lista', 'Karta', 'Formulär', 'Enkät', 'Quiz'],
 		},
 		forms: {
 			title: 'Delade formulär',
@@ -1427,7 +1427,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'Import av CSV och JSON',
+				title: 'Import av Excel, CSV och JSON',
 				text: 'Släpp en fil: importen gissar typerna, skapar tabellen eller fyller på en befintlig, och säger rad för rad vad som avvisas.',
 				href: '/guides/premiers-pas/',
 			},
@@ -1536,6 +1536,66 @@ export default {
 		title: 'Vad som har ändrats i basedb',
 		intro: 'Detaljerna för varje ändring finns i <a href="https://github.com/eodia/basedb/commits/main">repots historik</a>. Vad som kommer härnäst: <a href="/feuille-de-route/">färdplanen</a>.',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: 'Kartan, och adresser som hittas',
+				tag: 'Nytt',
+				items: [
+					'<strong>En tionde vy, kartan</strong>: varje rad placerad på sin plats, efter sin adress eller sin latitud och longitud. En nål får sin färg från en status och öppnar raddetaljerna med ett klick. <a href="/fonctionnalites/vues/#karta">Kartan</a>',
+					'<strong>En adress lokaliseras en gång för alla</strong>, av OpenStreetMaps tjänst eller den du väljer: nålarna dyker upp allteftersom svaren kommer in, och sedan direkt. En adress som inte hittas räknas med, aldrig hoppas över i tysthet.',
+					'<strong>Formatet Adress</strong> för en kort text: ett klick öppnar den på kartan, och i raddetaljerna föreslår <strong>Hitta adress</strong> de fullständiga adresser som matchar. <a href="/fonctionnalites/tables-et-champs/#visningsformat">Formaten</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: 'PDF-filer från dina rader',
+				tag: 'Nytt',
+				items: [
+					'<strong>En offert, en faktura, en sida i PDF</strong>, från en rads meny: raddetaljerna för utskrift utan att ställa in något, eller en mall — texter som citerar fälten, radens fält, tabellen med länkade rader och dess totalsumma, sidbrytningar. <a href="/fonctionnalites/documents/">Dokumenten</a>',
+					'<strong>Var och en med sina behörigheter</strong>: ett fält som är dolt för dig finns inte i din PDF. Alla tjugo språken skrivs där, kinesiska, japanska och koreanska inräknade, och API:et returnerar samma dokument.',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: 'Behörigheter ända ned till raden, standardvärden, Excel-import',
+				tag: 'Nytt',
+				items: [
+					'<strong>Var sina rader</strong>: en grupp ser bara raderna för ett filter — ”Säljare” är jag, ”Region” är Norr —, i gränssnittet, i API:et, i MCP-servern liksom i SQL, där PostgreSQL tillämpar samma regel. <a href="/fonctionnalites/droits/#ända-ned-till-raden">Ända ned till raden</a>',
+					'<strong>Standardvärden</strong>: ett fast värde, dagens datum, tidpunkten för skapandet eller personen som skapar raden, förifyllda på skärmen och tillämpade överallt annars. <a href="/fonctionnalites/tables-et-champs/#standardvärden">Standardvärden</a>',
+					'<strong>Dra in en Excel-arbetsbok</strong>: välj bladet, datum, belopp och kryssrutor kommer som de är, och en formel ger sitt värde. <a href="/guides/premiers-pas/">Kom igång</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: 'E-post',
+				tag: 'Nytt',
+				items: [
+					'<strong>Ett steg ”Skicka e-post”</strong> i automatiseringarna: till en medlem, till personen i ett fält, till en kunds adress, med radens värden i ämnet och texten. <a href="/fonctionnalites/automatisations/">Automatiseringarna</a>',
+					'<strong>Aviseringar via e-post</strong> när du inte har läst dem, samlade i en, att välja en och en i dina inställningar; och <strong>Glömt lösenord</strong> återställs med en länk. <a href="/fonctionnalites/collaboration/#via-e-post">Via e-post</a>',
+					'Det räcker att ange sändningsservern för din e-post åt instansen. <a href="/hebergement/variables/#e-post">Variablerna</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n och en TypeScript-SDK',
+				tag: 'Nytt',
+				items: [
+					'<strong>Noder för n8n</strong>: läsa och skriva en tabells rader från ett arbetsflöde, och starta ett för varje rad som skapas, ändras eller tas bort — genom avläsning eller signerad webhook. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>En TypeScript-SDK</strong>, med typer för dina tabeller genererade från din instans: en tabell eller ett fält som inte finns är ett fel, redan innan programmet körs. <a href="/integrations/sdk/">SDK:n</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: 'Quiz: frågor som räknar poäng',
+				tag: 'Nytt',
+				items: [
+					'<strong>En ny vy, quizet</strong>: en enkät där varje fråga kan ha sitt rätta svar och sina poäng – ett val, flera, ja eller nej, ett tal, ett datum, eller de godkända texterna, utan hänsyn till versaler eller diakritiska tecken. <a href="/fonctionnalites/vues/#quiz">Quizet</a>',
+					'<strong>Rättat som du vill</strong>: efter varje fråga – i grönt, eller i rött med det rätta svaret, poängen som växer högst upp på skärmen –, i slutet, eller aldrig. En gräns för godkänt gör att det står ”Godkänt!” eller ”Inte den här gången…”.',
+					'<strong>Poängen i slutet</strong>, i en ring som fylls, sedan facit för varje fråga. Den skrivs i ett talfält i tabellen: sortera rutnätet efter det, där är rankningen.',
+					'<strong>Delat via en länk, utan att kunna fuska</strong>: sidan tar inte emot något rätt svar, det är servern som rättar och räknar. <a href="/fonctionnalites/formulaires-partages/#ett-delat-quiz">Ett delat quiz</a>',
+					'<strong>Skapa en vy</strong>, längst ned i vyväljaren, delar in de nio sorterna i två familjer – de som visar raderna, de som samlar svar –, var och en med sin egen färgade ikon.',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: 'Formulär man har lust att fylla i',

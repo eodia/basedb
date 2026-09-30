@@ -11,7 +11,7 @@ description: Začít ze šablony, vyžádat si ji od AI, napsat vlastní v JSON 
 
 **Nová databáze**, pak **Začít ze šablony, nebo si ji vyžádat od AI**: otevře se galerie.
 
-![Galerie šablon v aplikaci](../../../../assets/screens/modeles.png)
+![Galerie šablon v aplikaci](../../../../assets/screens/cs/modeles.webp)
 
 Každou šablonu si před použitím můžete přečíst celou – její tabulky a jejich pole, její
 zobrazení, automatizace a pokyn každého jejího pole AI. **Vytvořit databázi** se zeptá na

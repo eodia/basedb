@@ -1,6 +1,6 @@
 ---
 title: Automatisations
-description: Quand une ligne change, à heure fixe ou d’un clic — modifier, créer, chercher, bifurquer, demander à l’IA, prévenir, appeler un webhook, écrire sur Slack.
+description: Quand une ligne change, à heure fixe ou d’un clic — modifier, créer, chercher, bifurquer, demander à l’IA, prévenir, envoyer un courriel, appeler un webhook, écrire sur Slack.
 ---
 
 Une automatisation dit **quand**, **si** et **alors** : quand une tâche passe à « Fait », noter
@@ -12,7 +12,7 @@ dans une étape ce qu’une étape précédente a trouvé ou écrit.
 Elles s’ouvrent depuis **Automatisations**, dans le bloc de la base ouverte en bas de la barre
 latérale, et demandent le niveau **Gestion**.
 
-![Un flux et l’une de ses exécutions, posée dessus](../../../assets/screens/automatisations.png)
+![Un flux et l’une de ses exécutions, posée dessus](../../../assets/screens/fr/automatisations.webp)
 
 ## Le flux
 
@@ -49,6 +49,7 @@ Jusqu’à trente étapes, dans l’ordre ; la première qui échoue arrête les
 | **Créer une ligne** | dans cette table ou une autre de la base |
 | **Chercher une ligne** | la première ligne d’une table qui répond à un filtre, pour que les étapes suivantes la citent ou la modifient |
 | **Prévenir quelqu’un** | une [notification](/basedb/fonctionnalites/collaboration/#notifications) à des personnes choisies, ou à celle d’un champ Personne |
+| **Envoyer un courriel** | à des personnes de l’équipe, à celle d’un champ Personne, à l’adresse d’un champ E-mail — un client, un fournisseur — ou à des adresses écrites ; l’objet et le texte citent la ligne et les étapes précédentes |
 | **Appeler un webhook** | un `POST` en HTTPS vers l’adresse de votre choix ; sa réponse se cite ensuite |
 | **Envoyer sur Slack** | un message dans un canal [connecté](/basedb/integrations/synchronisation/#slack) |
 | **Demander à l’IA** | une réponse du [fournisseur d’IA](/basedb/fonctionnalites/ia/) à une consigne qui cite la ligne et les étapes précédentes — rédiger, résumer, classer —, lue comme un texte, un nombre, oui ou non, une date ou un choix dans une liste |
@@ -139,7 +140,9 @@ s’annulent comme les autres.
   dans un seul flux.
 - Une recherche donne une ligne, la première ; pas encore de « pour chaque ligne », ni
   d’attente (« trois jours après »).
-- Pas de courriel, pas de script.
+- Pas de script. Un courriel part en texte simple, un par destinataire — vingt au plus par
+  étape —, par le [serveur d’envoi](/basedb/hebergement/variables/#courriels) de l’instance ;
+  une réponse arrive à la personne qui possède l’automatisation.
 - Une condition teste une ligne : pour prendre un chemin selon la réponse de l’IA, l’écrire
   d’abord dans un champ de la ligne.
 - Un [modèle de base](/basedb/fonctionnalites/modeles/) n’emporte que les automatisations sans

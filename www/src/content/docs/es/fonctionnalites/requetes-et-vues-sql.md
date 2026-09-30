@@ -9,7 +9,7 @@ sí, para toda la base o para algunos grupos), y quien gestiona la base puede co
 **vista SQL**: una vista PostgreSQL real, colocada entre las tablas, que `psql` y tus herramientas
 también leen.
 
-![Una consulta guardada, abierta desde la sección «Consultas»; encima, dos vistas SQL colocadas entre las tablas](../../../../assets/screens/requete-sql.png)
+![Una consulta guardada, abierta desde la sección «Consultas»; encima, dos vistas SQL colocadas entre las tablas](../../../../assets/screens/es/requete-sql.webp)
 
 ## Cada uno con sus permisos
 
@@ -23,7 +23,7 @@ resultado en la misma cuadrícula que tus tablas. Lo que la consulta puede leer 
   oculto desaparece de `SELECT *` y se rechaza si lo nombras, incluso calificando la tabla;
   una escritura se rechaza. El resultado lleva la insignia **Tus permisos**.
 
-![La insignia «Tus permisos»: la consulta solo ve las tablas y los campos abiertos a la persona](../../../../assets/screens/sql-vos-droits.png)
+![La insignia «Tus permisos»: la consulta solo ve las tablas y los campos abiertos a la persona](../../../../assets/screens/es/sql-vos-droits.webp)
 
 No es la pantalla la que filtra: el propio PostgreSQL aplica tus permisos, columna por columna, sobre
 un rol que es solo tuyo. Por tanto, una consulta no puede mostrarte nada que la cuadrícula, la API o el
@@ -37,7 +37,7 @@ copia, y **Nombre y uso compartido…** (en la pestaña o en su menú de la barr
 cambia quién la ve o la elimina —**Eliminar** está también en su menú, con un clic derecho. Una
 pestaña que la mostraba conserva su texto.
 
-![Guardar una consulta: su nombre, lo que muestra y quién la ve](../../../../assets/screens/requete-enregistrer.png)
+![Guardar una consulta: su nombre, lo que muestra y quién la ve](../../../../assets/screens/es/requete-enregistrer.webp)
 
 | Alcance | Quién la ve | Quién puede crearla y modificarla |
 |---|---|---|
@@ -61,7 +61,7 @@ tablas**, con su color y su icono como una tabla, y un pequeño **ojo** a la der
 que es una vista. Un clic la abre en una pestaña: sus filas en la cuadrícula, y **Actualizar** para
 volver a leerlas.
 
-![La vista «Factures à encaisser», abierta desde la barra lateral](../../../../assets/screens/vue-sql.png)
+![La vista «Factures à encaisser», abierta desde la barra lateral](../../../../assets/screens/es/vue-sql.webp)
 
 Se crea desde el menú **⋯** de la base → **Nueva vista SQL…**, o desde una pestaña SQL:
 **⋯** → **Crear una vista SQL…**, y la consulta de la pestaña se convierte en su definición. El diálogo
@@ -74,7 +74,7 @@ pide:
 - su **consulta**: un solo `SELECT`, sobre las tablas y las demás vistas de la base. PostgreSQL
   rechaza lo que no admite, y el editor señala el lugar.
 
-![El diálogo de una vista SQL: etiqueta y apariencia, nombre técnico, consulta, descripción](../../../../assets/screens/vue-sql-dialogue.png)
+![El diálogo de una vista SQL: etiqueta y apariencia, nombre técnico, consulta, descripción](../../../../assets/screens/es/vue-sql-dialogue.webp)
 
 Después, la vista se lee con su nombre, tanto desde la interfaz como desde `psql` o tu herramienta de BI:
 

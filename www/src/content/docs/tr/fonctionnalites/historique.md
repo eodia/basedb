@@ -6,7 +6,7 @@ description: Nereden gelirse gelsin her yazma, önceki değerleriyle birlikte.
 basedb, nereden gelirse gelsin **her yazmayı** geçmişe kaydeder: arayüz, API, bir MCP ajanı,
 herkese açık bir form — hatta `psql`'de elle yazılmış bir SQL sorgusu bile.
 
-![Bir veritabanının geçmişi](../../../../assets/screens/historique.png)
+![Bir veritabanının geçmişi](../../../../assets/screens/tr/historique.webp)
 
 ## Nasıl kaydedilir
 

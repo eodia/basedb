@@ -22,7 +22,7 @@ Kirjoittamastasi nimikkeestä (”Échéance”) tulee luettava fyysinen nimi (`
 | Yksi valinta | `text` + `CHECK` | väri, kuvake tai kuva vaihtoehtoa kohden |
 | Monivalinta | `text[]` + `CHECK` | suodatettavissa taulukko-operaattoreilla |
 | Sähköposti | `text` + `CHECK` | tietokannan tarkistama osoite, avautuu yhdellä napsautuksella |
-| Puhelin, Viivakoodi | `text` | lyhyt teksti ja sen muoto: soittolinkki, tasalevyinen fontti |
+| Puhelin, Viivakoodi, Osoite | `text` | lyhyt teksti ja sen muoto: soittolinkki, tasalevyinen fontti, linkki karttaan |
 | URL | `text` + `CHECK` | täydennetään syötettäessä (`exemple.fr` → `https://exemple.fr`) |
 | Henkilö | `uuid` | työtilan jäsen; hänen valitsemisensa [ilmoittaa hänelle](/basedb/fi/fonctionnalites/collaboration/) |
 | Automaattinen numero | `bigint`, identiteettisarake | numeroi myös jo olemassa olevat rivit; kukaan ei syötä sitä |
@@ -38,7 +38,7 @@ Jokaisella taulukolla on myös **järjestelmäsarakkeet**: `_id` (UUID v7), `_cr
 kirjoittaa niihin. Ruudukko sijoittaa ne sarakevalikossa **Järjestelmätiedot**-ryhmään: ne ovat
 jokaisessa taulukossa, mutta hyödyllisiä harvassa.
 
-![Taulukon ruudukko, jossa on laskettu kesto, haku ja määrä](../../../../assets/screens/grille.png)
+![Taulukon ruudukko, jossa on laskettu kesto, haku ja määrä](../../../../assets/screens/fi/grille.webp)
 
 ## Tietokannan valvomat rajoitteet
 
@@ -55,8 +55,8 @@ Foreign-key constraints:
 
 ## Näyttömuodot
 
-Valuutta, Prosentti, Kesto, Arvio, Puhelin ja Viivakoodi valitaan kuin tyypit, mutta ne ovat
-**muotoja**: sarake pysyy lukuna tai tekstinä, vain esitystapa muuttuu.
+Valuutta, Prosentti, Kesto, Arvio, Puhelin, Viivakoodi ja Osoite valitaan kuin tyypit, mutta ne
+ovat **muotoja**: sarake pysyy lukuna tai tekstinä, vain esitystapa muuttuu.
 
 | Muoto | Kohde | Luetaan ja syötetään |
 |---|---|---|
@@ -66,9 +66,28 @@ Valuutta, Prosentti, Kesto, Arvio, Puhelin ja Viivakoodi valitaan kuin tyypit, m
 | Arvio | luku | 1–10 tähteä, asetetaan yhdellä napsautuksella |
 | Puhelin | lyhyt teksti | soittolinkki |
 | Viivakoodi | lyhyt teksti | tasalevyisellä fontilla |
+| Osoite | lyhyt teksti | linkki karttaan; rivin tiedoissa **Hae osoite** ehdottaa täsmääviä osoitteita kokonaan kirjoitettuina; [Kartta](/basedb/fi/fonctionnalites/vues/#kartta)-näkymä sijoittaa sen |
 
 Muotoa voi vaihtaa jälkikäteen (**Näyttö**, kentän muokkauksessa) koskematta tallennettuihin
 arvoihin. Se ei rajaa arvoa: arvio 7 viisiportaisella asteikolla pysyy 7:nä.
+
+## Oletusarvot
+
+Kentän muokkauksessa **Oletusarvo** määrittää, minkä arvon saa rivi, joka luodaan täyttämättä
+sitä:
+
+| Valinta | Millä tyypillä | Luotu rivi saa |
+|---|---|---|
+| Kiinteä arvo | useimmilla tyypeillä | valitun arvon – tilan ”Uusi”, prioriteetin 3 |
+| Tämän päivän päivämäärä | päivämäärä | luontipäivän, henkilön aikavyöhykkeellä |
+| Luomishetki | päivämäärä ja aika | tarkan kellonajan |
+| Rivin luoja | henkilö | rivin luoneen henkilön – ”Vastuuhenkilö: minä” |
+
+Uusi rivin tiedot -näkymä ja lomakkeet avautuvat valmiiksi täytettyinä; kentän tyhjentäminen
+jättää sen tyhjäksi. Oletusarvo pätee joka luontiin – käyttöliittymä, API, MCP, tuonti, jaettu
+lomake, automaatio –, myös kentässä, jota henkilö ei voi muokata: se on taulukon sääntö.
+Olemassa olevat rivit eivät muutu, eikä suora SQL-lisäys saa mitään oletusarvoa: basedb
+soveltaa sitä, ei sarake.
 
 ## Kaavat
 
@@ -173,7 +192,7 @@ Tekoäly ei voi täyttää muotoiltua tekstiä: malli kirjoittaa tekstiä, ei pu
 Tietokannan **Rakenne**-näkymä – sivupalkin **⋯**-valikossa – luettelee taulukot ja niiden kentät: lisää, nimeä uudelleen, tee pakolliseksi, järjestä,
 kuvaile, määritä näyttökenttä.
 
-![Tietokannan Rakenne-näkymä](../../../../assets/screens/structure.png)
+![Tietokannan Rakenne-näkymä](../../../../assets/screens/fi/structure.webp)
 
 Rakenteen muuttaminen vaatii **Hallintaoikeus**-tason. Ilman sitä näkymää voi selata, mutta se
 ei tarjoa mitään: ei painiketta, kynää eikä vetokahvaa – pakollisuus ja näyttökenttä kerrotaan,

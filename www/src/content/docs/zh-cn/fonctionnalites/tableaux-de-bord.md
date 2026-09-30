@@ -5,7 +5,7 @@ description: 用鼠标或 SQL 提出的问题，十五种展示与设置方式�
 
 **仪表盘**将团队每天关注的内容汇集在一个页面上：关键数字、逐月变化、某个状态的分布、即将到来的截止日期。其中每张卡片展示一个**问题**——对数据库的一次读取，用鼠标构建或用 SQL 编写——页面顶部的**筛选**控制与之关联的卡片。
 
-![“Pilotage de l’agence”仪表盘：本月趋势、目标、堆叠显示的营业额、评价情绪](../../../../assets/screens/tableaux-de-bord.png)
+![“Pilotage de l’agence”仪表盘：本月趋势、目标、堆叠显示的营业额、评价情绪](../../../../assets/screens/zh-cn/tableaux-de-bord.webp)
 
 一切都从侧边栏底部当前数据库区块中的**仪表盘**入口打开。左侧列出该数据库的仪表盘和已保存的问题，以及**探索数据**，可在不保存任何内容的情况下提出问题。数据库的所有读者都可以查看、探索，并保存自己的问题；搭建仪表盘和共享问题则需要**可管理**级别。
 
@@ -17,7 +17,7 @@ description: 用鼠标或 SQL 提出的问题，十五种展示与设置方式�
 
 问题按步骤自上而下构建：
 
-![问题编辑器：数据、筛选条件、按月统计](../../../../assets/screens/question-editeur.png)
+![问题编辑器：数据、筛选条件、按月统计](../../../../assets/screens/zh-cn/question-editeur.webp)
 
 | 步骤 | 选择内容 |
 |---|---|
@@ -115,7 +115,7 @@ SELECT statut, count(*) AS taches
 
 在查看模式下，点击数据点也可以设置筛选：在城市列已关联到“Ville”筛选的卡片上，选择**按“Lyon”筛选**。
 
-![“Activité”标签页：按截止日期、按状态堆叠的任务，项目漏斗，以交叉表显示的预估工时](../../../../assets/screens/tableaux-de-bord-activite.png)
+![“Activité”标签页：按截止日期、按状态堆叠的任务，项目漏斗，以交叉表显示的预估工时](../../../../assets/screens/zh-cn/tableaux-de-bord-activite.webp)
 
 ## Copilot
 

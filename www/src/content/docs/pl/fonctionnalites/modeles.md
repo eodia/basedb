@@ -11,7 +11,7 @@ wiersze, widoki, pulpit, automatyzacje oraz pola, które AI wypełnia sama.
 
 **Nowa baza**, a potem **Zacznij od szablonu lub poproś o niego AI**: otwiera się galeria.
 
-![Galeria szablonów w aplikacji](../../../../assets/screens/modeles.png)
+![Galeria szablonów w aplikacji](../../../../assets/screens/pl/modeles.webp)
 
 Każdy szablon można przeczytać w całości przed użyciem – jego tabele i ich pola, widoki,
 automatyzacje i polecenie każdego z jego pól AI. **Utwórz bazę** prosi o jej etykietę oraz,

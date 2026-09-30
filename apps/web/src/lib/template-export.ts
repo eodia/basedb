@@ -364,6 +364,7 @@ export async function exportTemplate(
               label: string
               help: string
               placeholder?: string
+              prefill?: string | null
               show_if?: { field: string; op: string; value: unknown } | null
             }>
           ).flatMap((q) => {
@@ -392,6 +393,7 @@ export async function exportTemplate(
                     ...(q.label ? { label: q.label } : {}),
                     ...(q.help ? { help: q.help } : {}),
                     ...(q.placeholder ? { placeholder: q.placeholder } : {}),
+                    ...(q.prefill === 'today' ? { prefill: 'today' } : {}),
                     ...(showIf === null ? {} : { show_if: showIf }),
                   },
                 ]

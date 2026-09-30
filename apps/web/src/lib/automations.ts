@@ -32,6 +32,21 @@ export interface ValueRow {
 /** The triggering row, as a step's `record` names it. */
 export const TRIGGER_ROW = 'trigger'
 
+/** An e-mail address as the server checks one: one `@`, no space, no bracket. */
+const ADDRESS = /^[^\s@<>()",;:\\[\]]+@[^\s@<>()",;:\\[\]]+\.[^\s@<>()",;:\\[\]]+$/
+
+/** The addresses an e-mail step names, as typed: split on commas, semicolons, spaces. */
+export function addressesOf(text: string): string[] {
+  return [
+    ...new Set(
+      text
+        .split(/[\s,;]+/)
+        .map((a) => a.trim().replace(/^mailto:/i, ''))
+        .filter((a) => a !== ''),
+    ),
+  ]
+}
+
 export type DraftStep =
   | {
       readonly id: string
@@ -62,6 +77,19 @@ export type DraftStep =
       readonly record: string
       readonly users: readonly string[]
       readonly userField: string
+      readonly message: string
+    }
+  | {
+      readonly id: string
+      readonly kind: 'email'
+      /** `trigger`, a step, or empty: no row. */
+      readonly record: string
+      readonly users: readonly string[]
+      readonly userField: string
+      readonly emailField: string
+      /** Addresses written out, as typed — split and checked on saving. */
+      readonly addresses: string
+      readonly subject: string
       readonly message: string
     }
   | { readonly id: string; readonly kind: 'webhook'; readonly record: string; readonly url: string }
@@ -122,6 +150,7 @@ export const STEP_LABELS: Readonly<Record<StepKind, string>> = {
   create_record: $t('Créer une ligne'),
   find_record: $t('Chercher une ligne'),
   notify: $t('Prévenir quelqu’un'),
+  email: $t('Envoyer un courriel'),
   webhook: $t('Appeler un webhook'),
   slack: $t('Envoyer sur Slack'),
   ai: $t('Demander à l’IA'),
@@ -133,6 +162,7 @@ export const STEP_HINTS: Readonly<Record<StepKind, string>> = {
   create_record: $t('Dans cette table ou une autre'),
   find_record: $t('La première ligne qui répond à un filtre'),
   notify: $t('Une notification dans basedb'),
+  email: $t('À l’équipe ou à l’extérieur, par le serveur d’envoi'),
   webhook: $t('Un POST en HTTPS'),
   slack: $t('Un message dans un canal connecté'),
   ai: $t('Rédiger, résumer, classer — une réponse pour les étapes suivantes'),
@@ -155,7 +185,7 @@ export const AI_ANSWERS: ReadonlyArray<{
 
 /** The actions first — most automations need no more; then what makes a flow. */
 export const STEP_MENU: readonly (readonly StepKind[])[] = [
-  ['update_record', 'create_record', 'notify', 'slack', 'webhook'],
+  ['update_record', 'create_record', 'notify', 'email', 'slack', 'webhook'],
   ['find_record', 'ai', 'branch'],
 ]
 
@@ -570,6 +600,18 @@ export function draftOf(automation: Automation, base: DescribedBase): Draft {
             userField: a.user_field ?? '',
             message: a.message,
           }
+        case 'email':
+          return {
+            id: idOf(a.id),
+            kind: a.kind,
+            record: a.record ?? '',
+            users: a.users,
+            userField: a.user_field ?? '',
+            emailField: a.email_field ?? '',
+            addresses: a.addresses.join(', '),
+            subject: a.subject,
+            message: a.message,
+          }
         case 'webhook':
           return {
             id: idOf(a.id),
@@ -657,6 +699,18 @@ function stepInput(a: DraftStep): AutomationStep {
         user_field: a.userField === '' ? null : a.userField,
         message: a.message,
       }
+    case 'email':
+      return {
+        id: a.id,
+        kind: a.kind,
+        record: a.record === '' ? null : a.record,
+        users: a.users,
+        user_field: a.userField === '' ? null : a.userField,
+        email_field: a.emailField === '' ? null : a.emailField,
+        addresses: addressesOf(a.addresses),
+        subject: a.subject.trim(),
+        message: a.message,
+      }
     case 'webhook':
       return {
         id: a.id,
@@ -726,6 +780,18 @@ export function newStep(kind: StepKind, draft: Draft, base: DescribedBase, id: s
       return { id, kind, table: base.tables[0]?.name ?? '', filter: '', sort: '' }
     case 'notify':
       return { id, kind, record: row, users: [], userField: '', message: '' }
+    case 'email':
+      return {
+        id,
+        kind,
+        record: row,
+        users: [],
+        userField: '',
+        emailField: '',
+        addresses: '',
+        subject: '',
+        message: '',
+      }
     case 'webhook':
       return { id, kind, record: row, url: 'https://' }
     case 'slack':
@@ -800,6 +866,20 @@ export function stepSummary(
         people.push($t('le champ {userField}', { userField: step.userField }))
       return people.length === 0 ? $t('Personne à prévenir') : people.join(', ')
     }
+    case 'email': {
+      const to = [
+        ...step.users.map((u) => personOf(members, u)),
+        ...(step.userField === ''
+          ? []
+          : [$t('le champ {userField}', { userField: step.userField })]),
+        ...(step.emailField === ''
+          ? []
+          : [$t('le champ {userField}', { userField: step.emailField })]),
+        ...addressesOf(step.addresses),
+      ]
+      const subject = step.subject.trim() === '' ? $t('Sans objet') : step.subject.trim()
+      return to.length === 0 ? $t('Aucun destinataire') : `${subject} → ${to.join(', ')}`
+    }
     case 'webhook':
       try {
         return new URL(step.url).host || step.url
@@ -835,6 +915,8 @@ export function referencesOf(step: DraftStep): string[] {
       return citedSteps(step.filter)
     case 'notify':
       return [...row(step.record), ...citedSteps(step.message)]
+    case 'email':
+      return [...row(step.record), ...citedSteps(step.subject), ...citedSteps(step.message)]
     case 'webhook':
       return row(step.record)
     case 'slack':
@@ -873,6 +955,20 @@ export function stepProblem(step: DraftStep, draft: Draft): string | null {
       if (step.users.length === 0 && step.userField === '') return $t('Personne à prévenir')
       if (step.message.trim() === '') return $t('Message vide')
       return step.record === '' ? $t('Aucune ligne : la notification ne partira pas') : null
+    case 'email': {
+      const written = addressesOf(step.addresses)
+      const wrong = written.find((a) => !ADDRESS.test(a))
+      if (wrong !== undefined) return $t('Adresse invalide : {wrong}', { wrong })
+      if (
+        step.users.length === 0 &&
+        step.userField === '' &&
+        step.emailField === '' &&
+        written.length === 0
+      )
+        return $t('Aucun destinataire')
+      if (step.subject.trim() === '') return $t('Objet vide')
+      return step.message.trim() === '' ? $t('Message vide') : null
+    }
     case 'webhook':
       return /^https:\/\/[^/]+/.test(step.url.trim()) ? null : $t('Adresse https attendue')
     case 'slack':
@@ -985,7 +1081,11 @@ export function runStepSentence(record: RunStepRecord): string {
       : $t('échec : {replace}', { replace: sentence.replace(/\.$/, '') })
   }
   if (record.status === 'skipped')
-    return record.detail === 'aucune_ligne' ? $t('passée : aucune ligne') : $t('passée')
+    return record.detail === 'aucune_ligne'
+      ? $t('passée : aucune ligne')
+      : record.detail === 'aucun_destinataire'
+        ? $t('passée : aucun destinataire')
+        : $t('passée')
   if (record.kind === 'find_record')
     return record.detail === 'aucune' ? $t('aucune ligne trouvée') : $t('ligne trouvée')
   if (record.kind === 'branch')
@@ -1001,6 +1101,12 @@ export function runStepSentence(record: RunStepRecord): string {
       Number(record.detail ?? 0),
       '{count} personne prévenue',
       '{count} personnes prévenues',
+    )
+  if (record.kind === 'email')
+    return $tp(
+      Number(record.detail ?? 0),
+      '{count} courriel en partance',
+      '{count} courriels en partance',
     )
   return $t('fait')
 }
@@ -1037,6 +1143,11 @@ const REFUSALS: Readonly<Record<string, (detail: string) => string>> = {
   personne_inconnue: () => $t('Une personne à prévenir n’a plus de compte.'),
   trop_de_personnes: (d) => $t('{d} personnes au plus.', { d }),
   champ_personne_attendu: () => $t('Le champ à prévenir doit être un champ Personne.'),
+  champ_email_attendu: () => $t('Le champ d’adresse doit être un champ E-mail.'),
+  adresse_email: (d) => $t('« {d} » n’est pas une adresse e-mail.', { d }),
+  trop_de_destinataires: (d) => $t('{d} destinataires au plus.', { d }),
+  destinataire_manquant: () => $t('Choisissez au moins un destinataire.'),
+  objet_invalide: () => $t('L’objet est vide, trop long, ou sur plusieurs lignes.'),
   message_invalide: () => $t('Le message est vide ou trop long.'),
   connexion_inconnue: () => $t('Ce canal Slack n’est plus connecté.'),
   texte_trop_long: () => $t('Un filtre est trop long : 4 000 caractères au plus.'),

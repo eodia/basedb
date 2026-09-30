@@ -1,0 +1,43 @@
+{
+  "name": "n8n-nodes-basedb",
+  "version": "0.1.0",
+  "description": "n8n nodes for basedb: read and write the rows of your tables, and start a workflow when a row is created or changed.",
+  "license": "MIT",
+  "homepage": "https://eodia.github.io/basedb/integrations/n8n/",
+  "keywords": ["n8n-community-node-package", "n8n", "basedb", "postgresql", "database"],
+  "author": {
+    "name": "Eodia"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eodia/basedb.git"
+  },
+  "main": "index.js",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-icons.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:unit": "vitest run"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/BasedbApi.credentials.js",
+      "dist/credentials/BasedbWebhookApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Basedb/Basedb.node.js",
+      "dist/nodes/BasedbTrigger/BasedbTrigger.node.js",
+      "dist/nodes/BasedbWebhookTrigger/BasedbWebhookTrigger.node.js"
+    ]
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "n8n-workflow": "2.41.1",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

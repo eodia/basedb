@@ -10,7 +10,7 @@ import type { Field } from './api/client'
  */
 
 export type NumberFormat = 'decimal' | 'integer' | 'percent' | 'currency' | 'duration' | 'rating'
-export type TextFormat = 'plain' | 'phone' | 'barcode'
+export type TextFormat = 'plain' | 'phone' | 'barcode' | 'address'
 
 export interface FormatInput {
   readonly display: string
@@ -214,6 +214,12 @@ export const PRESETS: readonly Preset[] = [
     format: { display: 'phone' },
     label: $t('Téléphone'),
   },
+  {
+    value: 'short_text:address',
+    kind: 'short_text',
+    format: { display: 'address' },
+    label: $t('Adresse||postale'),
+  },
   { value: 'url', kind: 'url', label: $t('Lien URL') },
   {
     value: 'short_text:barcode',
@@ -249,6 +255,7 @@ export function formatsFor(kind: string): ReadonlyArray<readonly [string, string
     return [
       ['plain', $t('Texte')],
       ['phone', $t('Téléphone')],
+      ['address', $t('Adresse||postale')],
       ['barcode', $t('Code-barres')],
     ]
   }

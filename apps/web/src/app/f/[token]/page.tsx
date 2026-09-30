@@ -87,6 +87,8 @@ function screenOf(form: SharedForm): { fields: Field[]; spec: FormSpec } {
       kind: q.kind,
       required: q.required,
       ...(q.options === null ? {} : { options: q.options }),
+      // What the question holds before an answer: the field's default (04 §1.5).
+      ...(q.default === null || q.default === undefined ? {} : { default: q.default }),
       // A rating reads in stars, an amount with its currency, a phone number as one.
       ...(q.format === null
         ? {}
@@ -107,7 +109,10 @@ function screenOf(form: SharedForm): { fields: Field[]; spec: FormSpec } {
         label: q.label,
         help: q.help ?? '',
         placeholder: q.placeholder ?? '',
+        prefill: q.prefill,
         show_if: q.show_if,
+        // A quiz's points travel; its right answers stay on the server.
+        ...(q.points === null ? {} : { points: q.points }),
       })),
       submit_label: form.submit_label,
       success_message: form.success_message,
@@ -124,6 +129,10 @@ function screenOf(form: SharedForm): { fields: Field[]; spec: FormSpec } {
       celebrate: design.celebrate,
       end_link_label: design.end_link?.label ?? '',
       end_link_url: design.end_link?.url ?? '',
+      // The score is written by the server: the page has no field to write it into.
+      score_field: null,
+      reveal: form.quiz?.reveal ?? 'each',
+      pass_percent: form.quiz?.pass_percent ?? null,
     },
   }
 }
@@ -157,6 +166,11 @@ export default function SharedFormPage() {
 
   const form = page.kind === 'ready' ? page.form : null
   const screen = useMemo(() => (form === null ? null : screenOf(form)), [form])
+  // A quiz's graded questions: the page knows which, and asks the server whether an answer is right.
+  const graded = useMemo(
+    () => new Set(form?.questions.filter((q) => q.points !== null).map((q) => q.name) ?? []),
+    [form],
+  )
 
   if (page.kind === 'login') {
     return (
@@ -202,9 +216,12 @@ export default function SharedFormPage() {
             onSearchLink={noSearch}
             respondent={page.form.respondent}
             footer={$t('Formulaire propulsé par basedb')}
+            graded={graded}
+            grade={(field, value) => api.checkSharedAnswer(token, field, value)}
             submit={async (values) => {
               try {
-                await api.submitSharedForm(token, values)
+                const answered = await api.submitSharedForm(token, values)
+                return answered.quiz
               } catch (e) {
                 // Closed while it was being filled: the page says so, not a line under a button.
                 if (e instanceof ApiError && e.code === 'FORM_CLOSED') setPage(refusal(e))

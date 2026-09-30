@@ -31,17 +31,39 @@ Et skjult felt er fraværende overalt: i gitteret, visningerne, API'et, MCP, his
 der skrives i brugerfladen, og SQL-views. Filtrering eller sortering på det svarer som for et
 felt, der ikke findes.
 
+## Helt ned til rækken
+
+Ved siden af **Felter** viser **Rækker** kun en gruppe visse rækker i en tabel: dem, et filter
+udpeger, skrevet som filtret i en visning. `@me` betegner den person, der er logget ind:
+
+- `commercial eq @me` — hver sælger ser kun sine egne kunder;
+- `region in ["nord", "est"]` — et team ser kun sine egne regioner;
+- `_created_by eq @me` — hver person ser kun det, personen selv har oprettet.
+
+Tilladelser lægges sammen: en person ser rækkerne fra alle sine grupper, og en gruppe uden regel
+ser dem alle. Den, der administrerer tabellens struktur — niveauet Administrere — ser altid alt.
+Skærmen viser, hvor mange rækker en given person ser, og gennem hvilken gruppe.
+
+En række uden for sin regel findes ikke for personen: hverken i visningerne, dashboardene,
+søgningen, API'et, MCP eller historikken, og heller ikke til at blive redigeret, slettet eller
+forbundet. En række, personen opretter, skal være blandt personens egne; ved at redigere en
+række kan personen derimod flytte den ud af sit område — en opgave overdraget til en kollega.
+Svar på [delte formularer](/basedb/da/fonctionnalites/formulaires-partages/) kommer altid ind.
+
 ## Og SQL?
 
 I brugerfladen følger SQL de samme tilladelser, håndhævet af PostgreSQL selv: uden niveauet
 Administrere køres en forespørgsel skrivebeskyttet på en rolle, der er personens egen, hvor en
-lukket tabel ikke findes, og et skjult felt afvises. Et [SQL-view](/basedb/da/fonctionnalites/requetes-et-vues-sql/)
+lukket tabel ikke findes, et skjult felt afvises, og kun dens rækker læses, uanset om tabellen
+navngives alene eller sammen med sit skema. Et [SQL-view](/basedb/da/fonctionnalites/requetes-et-vues-sql/)
 læses med læserens tilladelser, og at dele en forespørgsel deler kun dens tekst.
 
 En **direkte `psql`-adgang** til databasen styres derimod ikke af basedb: den læser alt, skjulte
 felter inklusive. Begrænsningerne beskytter produktets flader — brugerflade, API, MCP —, aldrig
 mod nogen, der har SQL-adgang til databasen; den slags adgang styres med PostgreSQL-`GRANT`,
-som den driftsansvarlige sætter op.
+som den driftsansvarlige sætter op. En tabel, der har en rækkeregel, har PostgreSQLs row-level
+security aktiveret: en rolle, der er oprettet til et tredjepartsværktøj, ser ingen rækker i den,
+med mindre den har attributten `BYPASSRLS` eller sin egen politik.
 
 ## Konti og login
 

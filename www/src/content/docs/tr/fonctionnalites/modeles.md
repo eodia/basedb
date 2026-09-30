@@ -11,7 +11,7 @@ satırlar, görünümler, bir pano, otomasyonlar ve yapay zekanın kendisinin do
 
 **Yeni veritabanı**, ardından **Bir şablondan başla ya da yapay zekadan iste**: galeri açılır.
 
-![Uygulamadaki şablon galerisi](../../../../assets/screens/modeles.png)
+![Uygulamadaki şablon galerisi](../../../../assets/screens/tr/modeles.webp)
 
 Her şablon, kullanılmadan önce baştan sona okunabilir — tabloları ve alanları, görünümleri,
 otomasyonları ve her yapay zeka alanının talimatı. **Veritabanını oluştur** bir etiket ister ve,

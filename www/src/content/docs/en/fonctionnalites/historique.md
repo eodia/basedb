@@ -6,7 +6,7 @@ description: Every write, wherever it comes from, with the previous values.
 basedb records **every write** in its history, wherever it comes from: the interface, the API,
 an MCP agent, a public form — and even an SQL query typed by hand in `psql`.
 
-![A base’s history](../../../../assets/screens/historique.png)
+![A base’s history](../../../../assets/screens/en/historique.webp)
 
 ## How it is captured
 

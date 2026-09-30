@@ -9,7 +9,7 @@ export default {
 	meta: {
 		home: {
 			title: 'basedb — la base colaborativa en la que cada tabla es una tabla PostgreSQL real',
-			description: 'Cuadrículas y ocho vistas, fórmulas, formularios y vistas compartidos, comentarios, automatizaciones, paneles, permisos a nivel de campo, historial completo, API REST y servidor MCP — sobre tablas PostgreSQL reales, con nombres legibles. Autoalojado, AGPL-3.0.',
+			description: 'Cuadrículas y diez vistas, fórmulas, formularios, cuestionarios y vistas compartidos, comentarios, automatizaciones, paneles, permisos a nivel de campo, historial completo, API REST y servidor MCP — sobre tablas PostgreSQL reales, con nombres legibles. Autoalojado, AGPL-3.0.',
 		},
 		changelog: {
 			title: 'Novedades — basedb',
@@ -76,8 +76,8 @@ export default {
 							},
 							views: {
 								href: '/fonctionnalites/vues/',
-								title: 'Ocho vistas',
-								text: 'Cuadrícula, kanban, calendario, cronología, galería, lista, formulario, encuesta.',
+								title: 'Diez vistas',
+								text: 'Cuadrícula, kanban, calendario, cronología, galería, lista, mapa, formulario, encuesta, cuestionario.',
 							},
 							forms: {
 								href: '/fonctionnalites/formulaires-partages/',
@@ -444,8 +444,8 @@ export default {
 	},
 	teams: {
 		meta: {
-			title: 'basedb — todo tu trabajo, en un solo lugar',
-			description: 'Clientes, proyectos, existencias, candidaturas: una base que todo el equipo modifica a la vez, en tabla, en kanban o en calendario, con paneles, automatizaciones e IA. Sin código, libre y gratuito.',
+			title: 'basedb — la base colaborativa de todo el equipo',
+			description: 'Todo tu trabajo en un solo lugar, modificado por todo el equipo a la vez: en tabla, en kanban o en calendario, con formularios, paneles, automatizaciones e IA. Sin código, libre y gratuito.',
 		},
 		hero: {
 			eyebrow: 'basedb',
@@ -891,9 +891,9 @@ export default {
 			text: 'Cada función escribe en las mismas tablas, con los mismos permisos, en el mismo historial.',
 			tiles: {
 				views: {
-					stat: '8',
+					stat: '10',
 					title: 'formas de ver tus datos',
-					text: 'Cuadrícula, kanban, calendario, cronología, galería, lista, formulario y encuesta, sobre las mismas filas. Cada uno elige la suya.',
+					text: 'Cuadrícula, kanban, calendario, cronología, galería, lista, mapa, formulario, encuesta y cuestionario, sobre las mismas filas. Cada uno elige la suya.',
 					href: '/fonctionnalites/vues/',
 				},
 				history: {
@@ -943,7 +943,7 @@ export default {
 				},
 				import: {
 					title: 'Importar en un gesto',
-					text: 'Arrastra un archivo CSV: columnas y tipos se adivinan, la tabla se crea.',
+					text: 'Arrastra un libro de Excel o un CSV: columnas y tipos se adivinan, la tabla se crea.',
 					href: '/guides/premiers-pas/',
 				},
 				agenda: {
@@ -1036,7 +1036,7 @@ export default {
 				},
 				{
 					q: '¿Se pueden recuperar nuestras hojas de cálculo?',
-					a: 'Sí: guarda tu hoja en CSV y arrástrala a basedb. La importación adivina el tipo de cada columna, crea la tabla, y dice fila por fila lo que no ha podido importar.',
+					a: 'Sí: arrastra tu libro de Excel, o un CSV, a basedb. La importación adivina el tipo de cada columna, crea la tabla, y dice fila por fila lo que no ha podido importar.',
 				},
 				{
 					q: '¿Se puede trabajar varias personas a la vez?',
@@ -1361,7 +1361,7 @@ export default {
 		text: 'Cada función escribe en las mismas tablas, con los mismos permisos, en el mismo historial.',
 		more: 'Más información →',
 		views: {
-			title: 'Ocho vistas de las mismas filas',
+			title: 'Diez vistas de las mismas filas',
 			text: 'Colaborativas para todo el equipo, o personales solo para ti: cada uno elige su forma de leer, y nadie copia los datos.',
 			chips: [
 				'Cuadrícula',
@@ -1370,8 +1370,10 @@ export default {
 				'Cronología',
 				'Galería',
 				'Lista',
+				'Mapa',
 				'Formulario',
 				'Encuesta',
+				'Cuestionario',
 			],
 		},
 		forms: {
@@ -1436,7 +1438,7 @@ export default {
 				href: '/fonctionnalites/fichiers/',
 			},
 			import: {
-				title: 'Importación CSV y JSON',
+				title: 'Importación Excel, CSV y JSON',
 				text: 'Arrastra un archivo: la importación deduce los tipos, crea la tabla o completa una existente, e indica fila por fila lo que se ha rechazado.',
 				href: '/guides/premiers-pas/',
 			},
@@ -1545,6 +1547,66 @@ export default {
 		title: 'Lo que ha cambiado en basedb',
 		intro: 'El detalle de cada cambio está en <a href="https://github.com/eodia/basedb/commits/main">el historial del repositorio</a>. Lo que viene después: la <a href="/feuille-de-route/">hoja de ruta</a>.',
 		entries: {
+			maps: {
+				date: '2026-09-30',
+				title: 'El mapa, y direcciones que se encuentran',
+				tag: 'Novedad',
+				items: [
+					'<strong>Una décima vista, el mapa</strong>: cada fila colocada en su lugar, por su dirección o por su latitud y su longitud. Un marcador toma el color de un estado y abre sus detalles de la fila con un clic. <a href="/fonctionnalites/vues/#mapa">El mapa</a>',
+					'<strong>Una dirección se sitúa de una vez por todas</strong>, mediante el servicio de OpenStreetMap o el que elijas: los marcadores aparecen a medida que llegan las respuestas, y luego de inmediato. Una dirección no encontrada se cuenta, nunca se descarta en silencio.',
+					'<strong>El formato Dirección</strong> para un texto corto: un clic lo abre en el mapa, y en los detalles de la fila, <strong>Buscar dirección</strong> propone las direcciones completas que coinciden. <a href="/fonctionnalites/tables-et-champs/#formatos-de-visualización">Formatos</a>',
+				],
+			},
+			documents: {
+				date: '2026-09-30',
+				title: 'PDF a partir de tus filas',
+				tag: 'Novedad',
+				items: [
+					'<strong>Un presupuesto, una factura, una ficha en PDF</strong>, desde el menú de una fila: la ficha imprimible sin configurar nada, o una plantilla — textos que citan los campos, los campos de la fila, la tabla de filas vinculadas con su total, saltos de página. <a href="/fonctionnalites/documents/">Los documentos</a>',
+					'<strong>Cada uno con sus permisos</strong>: un campo oculto para ti no aparece en tu PDF. Los veinte idiomas se escriben ahí correctamente, chino, japonés y coreano incluidos, y la API entrega el mismo documento.',
+				],
+			},
+			rows: {
+				date: '2026-09-30',
+				title: 'Permisos hasta la fila, valores predeterminados, la importación de Excel',
+				tag: 'Novedad',
+				items: [
+					'<strong>Cada uno sus filas</strong>: un grupo solo ve las filas de un filtro —«Comercial es yo», «Región es Norte»—, en la interfaz, la API, el servidor MCP como en SQL, donde PostgreSQL aplica la misma regla. <a href="/fonctionnalites/droits/#hasta-la-fila">Hasta la fila</a>',
+					'<strong>Valores predeterminados</strong>: un valor fijo, la fecha de hoy, el momento de la creación o la persona que crea la fila, rellenados de antemano en la pantalla y aplicados en todos los demás sitios. <a href="/fonctionnalites/tables-et-champs/#valores-predeterminados">Valores predeterminados</a>',
+					'<strong>Arrastra un libro de Excel</strong>: elige la hoja, las fechas, importes y casillas de verificación llegan tal cual, y una fórmula aporta su valor. <a href="/guides/premiers-pas/">Primeros pasos</a>',
+				],
+			},
+			mail: {
+				date: '2026-09-30',
+				title: 'Correos electrónicos',
+				tag: 'Novedad',
+				items: [
+					'<strong>Un paso «Enviar un correo electrónico»</strong> en las automatizaciones: a un miembro, a la persona de un campo, a la dirección de un cliente, con los valores de la fila en el asunto y el texto. <a href="/fonctionnalites/automatisations/">Las automatizaciones</a>',
+					'<strong>Las notificaciones por correo electrónico</strong> cuando no las has leído, agrupadas, para elegir una a una en tu configuración; y la <strong>contraseña olvidada</strong> se restablece mediante un enlace. <a href="/fonctionnalites/collaboration/#por-correo-electrónico">Por correo electrónico</a>',
+					'Basta con indicarle a la instancia el servidor de envío de tu correo. <a href="/hebergement/variables/#correos-electrónicos">Las variables</a>',
+				],
+			},
+			integrations: {
+				date: '2026-09-30',
+				title: 'n8n y un SDK de TypeScript',
+				tag: 'Novedad',
+				items: [
+					'<strong>Nodos de n8n</strong>: leer y escribir las filas de una tabla desde un workflow, y lanzar uno cada vez que se crea, modifica o elimina una fila — por consulta o por un webhook firmado. <a href="/integrations/n8n/">n8n</a>',
+					'<strong>Un SDK de TypeScript</strong>, con los tipos de tus tablas generados desde tu instancia: una tabla o un campo que no existe es un error incluso antes de la ejecución. <a href="/integrations/sdk/">El SDK</a>',
+				],
+			},
+			quiz: {
+				date: '2026-09-29',
+				title: 'El cuestionario: preguntas que cuentan puntos',
+				tag: 'Novedad',
+				items: [
+					'<strong>Una nueva vista, el cuestionario</strong>: una encuesta en la que cada pregunta puede tener su respuesta correcta y sus puntos —una opción, varias, sí o no, un número, una fecha, o los textos aceptados, sin distinguir mayúsculas ni acentos. <a href="/fonctionnalites/vues/#cuestionario">El cuestionario</a>',
+					'<strong>Corregido como quieras</strong>: después de cada pregunta —en verde, o en rojo con la respuesta correcta, la puntuación que crece en la parte superior de la pantalla—, al final, o nunca. Un umbral de aprobación hace decir «¡Aprobado!» o «Esta vez no…».',
+					'<strong>La puntuación al final</strong>, en un anillo que se va llenando, y después la corrección de cada pregunta. Se escribe en un campo numérico de la tabla: ordena la cuadrícula por él, ahí está la clasificación.',
+					'<strong>Compartido por un enlace, sin trampa</strong>: la página no recibe ninguna respuesta correcta, es el servidor quien corrige y quien cuenta. <a href="/fonctionnalites/formulaires-partages/#un-cuestionario-compartido">Un cuestionario compartido</a>',
+					'<strong>Crear una vista</strong>, al final del selector de vistas, organiza los nueve tipos en dos familias —las que muestran las filas, las que recopilan respuestas—, cada una con su icono en color.',
+				],
+			},
 			forms: {
 				date: '2026-09-29',
 				title: 'Formularios que dan ganas de rellenar',

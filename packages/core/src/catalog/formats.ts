@@ -21,7 +21,7 @@ export const NUMBER_FORMATS = [
   'duration',
   'rating',
 ] as const
-export const TEXT_FORMATS = ['plain', 'phone', 'barcode'] as const
+export const TEXT_FORMATS = ['plain', 'phone', 'barcode', 'address'] as const
 
 export type NumberFormat = (typeof NUMBER_FORMATS)[number]
 export type TextFormat = (typeof TEXT_FORMATS)[number]

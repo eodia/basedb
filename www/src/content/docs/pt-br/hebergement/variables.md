@@ -66,6 +66,46 @@ Veja [Contas e login](/basedb/pt-br/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | — | credenciais |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` para o endereçamento por host |
 
+## E-mails
+
+Sem servidor de envio, o basedb não envia nenhum e-mail. Com ele, partem as notificações que
+ficam dez minutos sem serem lidas (cada um escolhe quais em **Configurações › Notificações**), os
+e-mails da etapa **Enviar um e-mail** das automações, e o link de uma **senha esquecida**. Os
+links apontam para `BASEDB_PUBLIC_URL`; sem ela, um e-mail não leva nenhum.
+
+| Variável | Padrão | Função |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | o servidor SMTP: o do seu provedor de e-mail ou de um serviço de envio |
+| `BASEDB_SMTP_PORT` | `587` | `465` para uma conexão já criptografada |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` na porta 465) | `none` somente para um retransmissor na mesma máquina: caso contrário, a senha passaria em texto claro |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | — | o identificador da conta de envio, se ela exigir um |
+| `BASEDB_MAIL_FROM` | — | obrigatória com `BASEDB_SMTP_HOST`: o remetente, `basedb <no-reply@exemple.fr>` |
+
+Ao iniciar, o registro informa a situação: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` Um e-mail que o servidor recusa é retentado 1, 5, 30, 120 e depois
+360 minutos depois.
+
+## Mapas e endereços
+
+A visão **Mapa** posiciona um endereço graças a um serviço de geocodificação: o do OpenStreetMap
+(Nominatim) por padrão, consultado uma vez por endereço, no máximo uma solicitação por segundo,
+cada resposta guardada. O mapa de fundo é feito de **blocos** (tiles) que o navegador de cada
+leitor carrega diretamente.
+
+| Variável | Padrão | Função |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | outro serviço que fala o mesmo protocolo (um Nominatim seu); `off`: nenhum, os endereços não saem da instância e só a latitude e a longitude posicionam as linhas |
+| `BASEDB_MAP_TILES` | os blocos do OpenStreetMap | outro servidor de blocos, modelo `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | a menção que esse servidor exige, no canto inferior direito do mapa |
+
+Ao iniciar, o registro informa qual serviço é usado: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## Documentos PDF
+
+| Variável | Padrão | Função |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | as fontes Noto da imagem | uma pasta sua, montada no contêiner, que contém `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic`, e para o chinês, o japonês e o coreano `NotoSansCJK-Regular.ttc` e `-Bold.ttc` |
+
 ## Modelos de base
 
 | Variável | Padrão | Função |

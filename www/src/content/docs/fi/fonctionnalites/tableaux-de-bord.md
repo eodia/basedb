@@ -8,7 +8,7 @@ niiden kehityksen kuukaudesta toiseen, tilan jakauman ja lähimmät eräpäivät
 näyttää **kysymyksen** – tietokannan lukemisen, joka on rakennettu hiirellä tai kirjoitettu
 SQL:llä – ja sivun yläosan **suodattimet** ohjaavat niihin yhdistettyjä kortteja.
 
-![Koontinäyttö ”Pilotage de l’agence”: kuukauden trendi, tavoite, pinottu liikevaihto, arvioiden sävy](../../../../assets/screens/tableaux-de-bord.png)
+![Koontinäyttö ”Pilotage de l’agence”: kuukauden trendi, tavoite, pinottu liikevaihto, arvioiden sävy](../../../../assets/screens/fi/tableaux-de-bord.webp)
 
 Kaikki avataan kohdasta **Koontinäytöt** sivupalkin alaosan avoimen tietokannan lohkosta.
 Vasemmalla ovat tietokannan koontinäytöt ja tallennetut kysymykset sekä **Tutki tietoja**, jolla
@@ -30,7 +30,7 @@ sisältönsä, josta tulee jälleen tallentamaton.
 
 Kysymys rakennetaan vaiheittain, vaihe toisensa alle:
 
-![Kysymyseditori: tiedot, suodattimet, yhteenveto kuukausittain](../../../../assets/screens/question-editeur.png)
+![Kysymyseditori: tiedot, suodattimet, yhteenveto kuukausittain](../../../../assets/screens/fi/question-editeur.webp)
 
 | Vaihe | Mitä siinä valitaan |
 |---|---|
@@ -166,7 +166,7 @@ täydentää loput. Sillä voi olla **oletusarvo** – esimerkiksi ”Tämä vuo
 Lukutilassa pisteen napsauttaminen voi myös asettaa suodattimen: **Suodata: ”Lyon”** kortilla,
 jonka kaupunkisarake on yhdistetty ”Ville”-suodattimeen.
 
-![”Activité”-välilehti: tehtävät eräpäivän mukaan tilan mukaan pinottuina, projektien suppilo, arvioidut tunnit ristiintaulukkona](../../../../assets/screens/tableaux-de-bord-activite.png)
+![”Activité”-välilehti: tehtävät eräpäivän mukaan tilan mukaan pinottuina, projektien suppilo, arvioidut tunnit ristiintaulukkona](../../../../assets/screens/fi/tableaux-de-bord-activite.webp)
 
 ## Copilot
 

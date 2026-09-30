@@ -7,6 +7,8 @@ import {
   OIDC_PRESETS,
   type OidcProvider,
   endpointFromEnv,
+  parseAddress,
+  smtpMailer,
   startKernel,
 } from '@basedb/core'
 import { serve } from '@hono/node-server'
@@ -39,20 +41,78 @@ if (connectionString === undefined) {
 }
 
 /**
- * Delivery, when the operator has configured one.
+ * Delivery, when the operator has configured one — chapter 16 §2.4.
+ *
+ * `BASEDB_SMTP_HOST` set: the operator's relay, `BASEDB_MAIL_FROM` the sender every mail
+ * carries. The port is 587 by default, secured by STARTTLS; 465 is TLS from the first
+ * byte; `BASEDB_SMTP_SECURE=none` sends in clear, for a relay on the same host only.
  *
  * `BASEDB_DEV_MAIL=1` prints the message instead of sending it — a development
  * affordance, OFF by default and named as such, because a reset link written to a log
  * file is a reset link anyone holding that file can use. With neither, nothing leaves
  * and the way back in is the operational command of chapter 13 §7.
  */
-const mailer =
-  setting('BASEDB_DEV_MAIL') === '1'
-    ? async (message: { to: string; subject: string; body: string }) => {
+function mailTransport() {
+  const host = setting('BASEDB_SMTP_HOST')
+  if (host !== undefined) {
+    const from = parseAddress(setting('BASEDB_MAIL_FROM') ?? '')
+    if (from === null) {
+      console.error(
+        'BASEDB_SMTP_HOST is set, but BASEDB_MAIL_FROM is not an address (basedb <no-reply@exemple.fr>).',
+      )
+      process.exit(1)
+    }
+    const port = Number(setting('BASEDB_SMTP_PORT') ?? '587')
+    const secure = setting('BASEDB_SMTP_SECURE') ?? (port === 465 ? 'tls' : 'starttls')
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      console.error('BASEDB_SMTP_PORT is not a port.')
+      process.exit(1)
+    }
+    if (secure !== 'tls' && secure !== 'starttls' && secure !== 'none') {
+      console.error('BASEDB_SMTP_SECURE is tls, starttls or none.')
+      process.exit(1)
+    }
+    return {
+      mailer: smtpMailer(
+        {
+          host,
+          port,
+          secure,
+          user: setting('BASEDB_SMTP_USER') ?? null,
+          password: setting('BASEDB_SMTP_PASSWORD') ?? null,
+          heloName:
+            setting('BASEDB_SMTP_HELO') ?? from.address.slice(from.address.indexOf('@') + 1),
+        },
+        from,
+      ),
+      said: `Courriels : SMTP ${host}:${port} (${secure}), expéditeur ${from.address}.`,
+    }
+  }
+  if (setting('BASEDB_DEV_MAIL') === '1') {
+    return {
+      mailer: async (message: { to: string; subject: string; body: string }) => {
         console.log(`[courriel · développement] ${message.to} — ${message.subject}`)
         console.log(`[courriel · développement] ${message.body}`)
-      }
-    : undefined
+      },
+      said: 'Courriels : affichés dans le journal (BASEDB_DEV_MAIL=1), jamais envoyés.',
+    }
+  }
+  return { mailer: undefined, said: 'Courriels : aucun envoi (BASEDB_SMTP_HOST non défini).' }
+}
+
+const { mailer, said: mailSaid } = mailTransport()
+
+/**
+ * The geocoding service — chapter 11 §1.9: Nominatim, OpenStreetMap's, unless
+ * `BASEDB_GEOCODER_URL` names another speaking its protocol, or `off`. Its policy asks a
+ * `User-Agent` that names the application and where it runs.
+ */
+const geocoderSetting = setting('BASEDB_GEOCODER_URL')
+const geocoder = {
+  url:
+    geocoderSetting === 'off' ? null : (geocoderSetting ?? 'https://nominatim.openstreetmap.org'),
+  userAgent: `basedb (+${setting('BASEDB_PUBLIC_URL') ?? 'https://basedb.eodia.com'})`,
+}
 
 /**
  * Where the files of `file` and `image` fields go.
@@ -212,12 +272,20 @@ const kernel = startKernel({
   connectionString,
   encryptionKey: setting('BASEDB_ENCRYPTION_KEY'),
   mailer,
+  publicUrl: setting('BASEDB_PUBLIC_URL'),
+  geocoder,
   files: {
     storage: fileStorage(),
     maxBytes: Number.isFinite(maxFileMb) && maxFileMb > 0 ? maxFileMb * 1024 * 1024 : undefined,
   },
 })
 console.log(`Fichiers : ${kernel.files.storage}.`)
+console.log(mailSaid)
+console.log(
+  geocoder.url === null
+    ? 'Géocodage : aucun (BASEDB_GEOCODER_URL=off).'
+    : `Géocodage : ${geocoder.url}.`,
+)
 console.log(`Exports avant purge : ${exportDir}.`)
 console.log(
   templatesUrl === null

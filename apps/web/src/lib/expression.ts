@@ -128,7 +128,8 @@ export function tokenize(input: string): Token[] {
       }
     }
 
-    const word = /^[_a-zA-Z][\w.:+-]*/.exec(rest)
+    // `@moi`, the person looking, is a value like `true` (chapter 05 §16).
+    const word = /^[_a-zA-Z@][\w.:+-]*/.exec(rest)
     if (word !== null) {
       tokens.push({ kind: 'unknown', from: i, to: i + word[0].length, text: word[0] })
       i += word[0].length
@@ -261,8 +262,7 @@ export function check(input: string, fields: readonly Field[]): Problem[] {
       const operator = token.text.toLowerCase()
       if (lastField === null) continue
       const allowed = lastField.operators
-      if (allowed === undefined) continue
-      if (!allowed.includes(operator)) {
+      if (allowed !== undefined && !allowed.includes(operator)) {
         problems.push({
           from: token.from,
           to: token.to,

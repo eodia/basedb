@@ -6,7 +6,7 @@ description: Een Slack-kanaal een melding sturen, een agenda koppelen, een tabel
 Het scherm **Integraties** van een database open je via het profielmenu, linksonder. Het
 vraagt het niveau **Beheren** en brengt samen wat de database met de rest van je tools verbindt.
 
-![Het scherm Integraties van een database](../../../../assets/screens/integrations.png)
+![Het scherm Integraties van een database](../../../../assets/screens/nl/integrations.webp)
 
 ## Slack
 

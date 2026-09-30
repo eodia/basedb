@@ -70,5 +70,47 @@
     "name": "0012_portee_des_questions.sql",
     "sha256": "1522de92b197f343b9fbdebaff7c7ccc9285f9613879cfa907fb49ed1b550cbf",
     "release": "0.3.1"
+  },
+  {
+    "version": 13,
+    "name": "0013_vue_quiz.sql",
+    "sha256": "b51762f64019ec7dea9b2a852a27c82608346022897499d6b2715fbc1c04bbac",
+    "release": "0.4.0"
+  },
+  {
+    "version": 14,
+    "name": "0014_droits_par_ligne.sql",
+    "sha256": "804706324430a12aee3370943735816dba461ff994162ab1ffbe9ad5c1763921",
+    "release": "0.4.0"
+  },
+  {
+    "version": 15,
+    "name": "0015_valeurs_par_defaut.sql",
+    "sha256": "61c9020c25d906b7b02b290fd98023f6c24e8641d28179aee43da32d09a63acb",
+    "release": "0.4.0"
+  },
+  {
+    "version": 16,
+    "name": "0016_courriels.sql",
+    "sha256": "de28799f2eca8d6a8c8bdf1e661a022ce7288b044e0b0d6b6693b75a105aba1a",
+    "release": "0.4.0"
+  },
+  {
+    "version": 17,
+    "name": "0017_modeles_de_document.sql",
+    "sha256": "9ac7ae2738c08a925d7d181e7e2f0c5f42050ec0c341e46335dd8632f580623e",
+    "release": "0.4.0"
+  },
+  {
+    "version": 18,
+    "name": "0018_adresses_et_cartes.sql",
+    "sha256": "94fac972c5a18c45b2f983212a7771c73e1b7b2d8d4d5b7df63d4bea312755bc",
+    "release": "0.4.0"
+  },
+  {
+    "version": 19,
+    "name": "0019_index_des_cles_etrangeres.sql",
+    "sha256": "78cdcd1c6999061436658e226a3bd103887887898ce2c2173e46e0809151692f",
+    "release": "0.4.0"
   }
 ]

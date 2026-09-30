@@ -29,7 +29,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | 一个易读的表达式：`statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | 要返回的列 |
-| `limit`、`cursor` | 使用加密游标分页（响应中的 `next_cursor`） |
+| `limit`、`after` | 使用加密游标分页：把某一页的 `meta.next_cursor` 传给 `after`，即可得到下一页（`meta.has_next_page`） |
 | `links=display` | 返回关联及其显示值 |
 | `count=exact` | 返回总数，上限为 100000 |
 | `variables=raw` | 按原样返回长文本，包括 `{{colonne}}`，而不是代入[该行的值](/basedb/zh-cn/fonctionnalites/tables-et-champs/#富文本与变量) |
@@ -69,4 +69,4 @@ curl -X POST "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportu
 
 每个数据库都有自己的 **API 与 MCP 文档**页面：针对每张数据表，列出其端点、列，以及 cURL 和 JavaScript 示例。该文档**按您的权限过滤**——两位读者会得到两个不同的版本——并以**您屏幕所使用的语言**编写，同时还提供 OpenAPI 3.1 格式（`/api/v1/<tenant>/meta/bases/<base>/openapi.json`）。名称、路径和错误代码在所有语言中保持不变。
 
-![数据库的自动生成文档](../../../../assets/screens/documentation-api.png)
+![数据库的自动生成文档](../../../../assets/screens/zh-cn/documentation-api.webp)

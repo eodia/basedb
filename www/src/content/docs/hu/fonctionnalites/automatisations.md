@@ -1,6 +1,6 @@
 ---
 title: Automatizálások
-description: Amikor egy sor megváltozik, ütemezetten vagy egy kattintásra – módosítás, létrehozás, keresés, elágazás, az MI megkérdezése, értesítés, webhook hívása, üzenet a Slackre.
+description: Amikor egy sor megváltozik, ütemezetten vagy egy kattintásra – módosítás, létrehozás, keresés, elágazás, az MI megkérdezése, értesítés, e-mail küldése, webhook hívása, üzenet a Slackre.
 ---
 
 Az automatizálás egy **mikor**, egy **ha** és egy **akkor** részből áll: amikor egy feladat „Fait”
@@ -13,7 +13,7 @@ talált vagy írt.
 Az **Automatizálások** menüpontból nyithatók meg, az oldalsáv alján, a megnyitott adatbázis
 blokkjában, és **Kezelés** szintű jogosultságot igényelnek.
 
-![Egy folyamat és az egyik futtatása, ráhelyezve](../../../../assets/screens/automatisations.png)
+![Egy folyamat és az egyik futtatása, ráhelyezve](../../../../assets/screens/hu/automatisations.webp)
 
 ## A folyamat
 
@@ -52,6 +52,7 @@ Legfeljebb harminc lépés, sorrendben; az első sikertelen lépés leállítja 
 | **Sor létrehozása** | ebben a táblában vagy az adatbázis egy másik táblájában |
 | **Sor keresése** | egy tábla első olyan sora, amely megfelel egy szűrőnek, hogy a következő lépések hivatkozhassanak rá vagy módosíthassák |
 | **Valaki értesítése** | [értesítés](/basedb/hu/fonctionnalites/collaboration/#értesítések) kiválasztott személyeknek, vagy egy Személy mezőben szereplő személynek |
+| **E-mail küldése** | a csapat egy tagjának, egy Személy mezőben szereplő személynek, egy E-mail mezőben szereplő címre – egy ügyfélnek, egy beszállítónak – vagy beírt címekre; a tárgy és a szöveg a sorra és a korábbi lépésekre hivatkozik |
 | **Webhook hívása** | HTTPS-en küldött `POST` egy tetszőleges címre; a válaszára ezután hivatkozni lehet |
 | **Küldés Slackre** | üzenet egy [csatlakoztatott](/basedb/hu/integrations/synchronisation/#slack) csatornába |
 | **MI megkérdezése** | az [MI-szolgáltató](/basedb/hu/fonctionnalites/ia/) válasza egy utasításra, amely a sorra és a korábbi lépésekre hivatkozik – megfogalmazás, összefoglalás, besorolás –, szövegként, számként, igen/nem értékként, dátumként vagy egy lista egyik elemeként értelmezve |
@@ -146,7 +147,9 @@ többi.
   azt egyetlen folyamatba kell írni.
 - A keresés egy sort ad, az elsőt; „minden sorra” és várakozás („három nappal később”)
   egyelőre nincs.
-- Nincs e-mail és nincs szkript.
+- Nincs szkript. Egy e-mail egyszerű szövegben megy ki, címzettenként egy – lépésenként
+  legfeljebb húsz –, a példány [levélküldő szerverén](/basedb/hu/hebergement/variables/#e-mailek)
+  keresztül; a válasz az automatizálás tulajdonosához érkezik.
 - A feltétel egy sort vizsgál: ha az MI válasza szerint szeretne ágat választani, először írja
   a választ a sor egy mezőjébe.
 - Az [adatbázissablon](/basedb/hu/fonctionnalites/modeles/) csak azokat az automatizálásokat

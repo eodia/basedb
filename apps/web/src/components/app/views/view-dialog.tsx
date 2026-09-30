@@ -2,6 +2,7 @@
 
 import { FieldIcon } from '@/components/app/field-icon'
 import { placeholderFor } from '@/components/app/forms/answers'
+import { AnswerKeyEditor, GradingSettings } from '@/components/app/forms/quiz-settings'
 import {
   AccentPicker,
   AlignPicker,
@@ -37,6 +38,7 @@ import {
   type FormQuestion,
   KIND_INFO,
   VIEW_KINDS,
+  addressFields,
   askableFields,
   businessFields,
   dateFields,
@@ -45,7 +47,9 @@ import {
   freeLabel,
   gridSpecOf,
   groupFields,
+  isGraded,
   listGroupFields,
+  numberFields,
   pictureFields,
   selectFields,
   selfLinkFields,
@@ -251,12 +255,14 @@ export function ViewDialog({
                       )}
                     >
                       <span className="flex items-center gap-2 text-sm font-medium">
-                        <KindIcon
+                        <span
                           className={cn(
-                            'size-4',
-                            kind === k ? 'text-primary' : 'text-muted-foreground',
+                            'flex size-6 shrink-0 items-center justify-center rounded-md',
+                            info.tone,
                           )}
-                        />
+                        >
+                          <KindIcon className="size-3.5" />
+                        </span>
                         {info.label}
                       </span>
                       <span className="line-clamp-2 text-xs text-muted-foreground">
@@ -356,6 +362,56 @@ export function ViewDialog({
                     label={$t('Masquer les colonnes vides')}
                     checked={spec.hide_empty === true}
                     onChange={(v) => set('hide_empty', v)}
+                  />
+                </Section>
+              )}
+
+              {kind === 'map' && (
+                <Section
+                  title={$t('Champs pivots')}
+                  hint={$t(
+                    'Une adresse est située une fois pour toutes par le service de géocodage de l’instance ; deux nombres se placent tels quels.',
+                  )}
+                >
+                  <Pivot
+                    label={$t('Adresse||postale')}
+                    hint={$t('Un texte : « 12 rue des Lilas, Lyon ».')}
+                    fields={addressFields(fields)}
+                    value={get('address_field')}
+                    onChange={(v) => set('address_field', v)}
+                    placeholder={$t('Aucune : latitude et longitude')}
+                  />
+                  {get('address_field') === null && (
+                    <>
+                      <Pivot
+                        label={$t('Latitude')}
+                        fields={numberFields(fields)}
+                        value={get('latitude_field')}
+                        onChange={(v) => set('latitude_field', v)}
+                      />
+                      <Pivot
+                        label={$t('Longitude')}
+                        fields={numberFields(fields).filter(
+                          (f) => f.name !== get('latitude_field'),
+                        )}
+                        value={get('longitude_field')}
+                        onChange={(v) => set('longitude_field', v)}
+                      />
+                    </>
+                  )}
+                  <Pivot
+                    label={$t('Titre')}
+                    fields={fields}
+                    value={get('title_field')}
+                    onChange={(v) => set('title_field', v)}
+                    placeholder={$t('Colonne d’affichage de la table')}
+                  />
+                  <Pivot
+                    label={$t('Couleur selon')}
+                    fields={selectFields(fields)}
+                    value={get('color_field')}
+                    onChange={(v) => set('color_field', v)}
+                    placeholder={$t('Aucune')}
                   />
                 </Section>
               )}
@@ -604,7 +660,7 @@ export function ViewDialog({
                 </Section>
               )}
 
-              {(kind === 'form' || kind === 'survey') && (
+              {(kind === 'form' || kind === 'survey' || kind === 'quiz') && (
                 <FormSettings
                   kind={kind}
                   fields={fields}
@@ -668,11 +724,25 @@ function missingPivot(kind: ViewKind, spec: Spec): string | null {
       return has('date_field') ? null : $t('Choisissez le champ date.')
     case 'timeline':
       return has('start_field') ? null : $t('Choisissez le champ de début.')
+    case 'map':
+      return has('address_field') || (has('latitude_field') && has('longitude_field'))
+        ? null
+        : $t('Choisissez une adresse, ou une latitude et une longitude.')
     case 'form':
     case 'survey':
       return Array.isArray(spec.fields) && spec.fields.length > 0
         ? null
         : $t('Ajoutez au moins une question.')
+    case 'quiz': {
+      if (!Array.isArray(spec.fields) || spec.fields.length === 0) {
+        return $t('Ajoutez au moins une question.')
+      }
+      // A quiz without a single right answer would be a survey.
+      const graded = (spec.fields as Array<{ correct?: unknown }>).some(
+        (q) => q.correct !== undefined && q.correct !== null,
+      )
+      return graded ? null : $t('Donnez la bonne réponse d’au moins une question.')
+    }
     default:
       return null
   }
@@ -1031,9 +1101,10 @@ function ChecklistRow({
 }
 
 /**
- * A form's page and its questions — shared by the form and the survey. What matters shows
- * first — the words, the look, the questions —; the rest waits folded under « Plus
- * d'options », every one of its choices already on a good default.
+ * A form's page and its questions — shared by the form, the survey and the quiz. What
+ * matters shows first — the words, the look, the questions (a quiz's with their right
+ * answers), its grading —; the rest waits folded under « Plus d'options », every one of
+ * its choices already on a good default.
  */
 function FormSettings({
   kind,
@@ -1042,7 +1113,7 @@ function FormSettings({
   setSpec,
   tableColor,
 }: {
-  readonly kind: 'form' | 'survey'
+  readonly kind: 'form' | 'survey' | 'quiz'
   readonly fields: readonly Field[]
   readonly spec: Spec
   readonly setSpec: (update: (s: Spec) => Spec) => void
@@ -1054,6 +1125,9 @@ function FormSettings({
   const locked = new Set(askable.filter((f) => f.required === true).map((f) => f.name))
   const byName = new Map(form.fields.map((q) => [q.field, q]))
   const [more, setMore] = useState(false)
+  const quiz = kind === 'quiz'
+  // One question per screen: the survey's, and the quiz's.
+  const paged = kind !== 'form'
 
   const setQuestions = (names: readonly string[]) =>
     setSpec((s) => ({
@@ -1067,7 +1141,9 @@ function FormSettings({
               label: '',
               help: '',
               placeholder: '',
+              prefill: null,
               show_if: null,
+              ...(quiz ? { correct: null, points: 1 } : {}),
             },
         ),
       ),
@@ -1090,6 +1166,20 @@ function FormSettings({
       return field === undefined ? [] : [{ question: q, field }]
     })
   }
+  /** A quiz's grading: its graded questions, the points they add up to, where the score may go. */
+  const gradedQuestions = form.fields.filter((q) => {
+    const field = askable.find((f) => f.name === q.field)
+    return field !== undefined && isGraded(q, field)
+  })
+  const total = gradedQuestions.reduce((sum, q) => sum + (q.points ?? 1), 0)
+  const scoreFields = fields.filter(
+    (f) =>
+      f.kind === 'number' &&
+      f.read_only !== true &&
+      f.ai !== true &&
+      !form.fields.some((q) => q.field === f.name),
+  )
+
   /** The kinds whose empty input shows an example. */
   const typed = (field: Field) =>
     ['short_text', 'long_text', 'email', 'url', 'number'].includes(field.kind) &&
@@ -1097,7 +1187,7 @@ function FormSettings({
 
   return (
     <>
-      <Section title={kind === 'survey' ? $t('Accueil') : $t('En-tête')}>
+      <Section title={paged ? $t('Accueil') : $t('En-tête')}>
         <Input
           value={form.title}
           onChange={setText('title')}
@@ -1109,9 +1199,11 @@ function FormSettings({
           value={form.description}
           onChange={setText('description')}
           placeholder={
-            kind === 'survey'
-              ? $t('Ce que la personne va remplir, et pourquoi')
-              : $t('Consignes, en tête du formulaire')
+            quiz
+              ? $t('Le thème du quiz, et ce qu’on y gagne')
+              : kind === 'survey'
+                ? $t('Ce que la personne va remplir, et pourquoi')
+                : $t('Consignes, en tête du formulaire')
           }
           rows={3}
           maxLength={4000}
@@ -1144,11 +1236,15 @@ function FormSettings({
       <Section
         title={$t('Questions')}
         hint={
-          kind === 'survey'
+          quiz
             ? $t(
-                'Une par écran, dans cet ordre. Les champs calculés et en lecture seule ne sont pas proposés.',
+                'Une par écran, dans cet ordre. Donnez sous chacune sa bonne réponse et ce qu’elle rapporte ; sans bonne réponse, la question est posée sans être notée.',
               )
-            : $t('Dans cet ordre. Les champs calculés et en lecture seule ne sont pas proposés.')
+            : kind === 'survey'
+              ? $t(
+                  'Une par écran, dans cet ordre. Les champs calculés et en lecture seule ne sont pas proposés.',
+                )
+              : $t('Dans cet ordre. Les champs calculés et en lecture seule ne sont pas proposés.')
         }
       >
         <FieldChecklist
@@ -1189,6 +1285,18 @@ function FormSettings({
                     aria-label={$t('Exemple de réponse pour {label}', { label: field.label })}
                   />
                 )}
+                {(field.kind === 'date' || field.kind === 'datetime') && (
+                  <SwitchRow
+                    className="text-xs sm:col-span-2"
+                    label={
+                      field.kind === 'datetime'
+                        ? $t('Préremplir avec la date et l’heure du moment')
+                        : $t('Préremplir avec la date du jour')
+                    }
+                    checked={q.prefill === 'today'}
+                    onChange={(v) => patchQuestion(field.name, { prefill: v ? 'today' : null })}
+                  />
+                )}
                 <SwitchRow
                   className="text-xs sm:col-span-2"
                   label={$t('Réponse obligatoire')}
@@ -1196,6 +1304,15 @@ function FormSettings({
                   disabled={locked.has(field.name)}
                   onChange={(v) => patchQuestion(field.name, { required: v })}
                 />
+                {quiz && (
+                  <div className="sm:col-span-2">
+                    <AnswerKeyEditor
+                      field={field}
+                      question={q}
+                      onChange={(patch) => patchQuestion(field.name, patch)}
+                    />
+                  </div>
+                )}
                 <div className="sm:col-span-2">
                   <ConditionEditor
                     condition={q.show_if}
@@ -1208,6 +1325,20 @@ function FormSettings({
           }}
         />
       </Section>
+
+      {quiz && (
+        <Section title={$t('Notation')}>
+          <GradingSettings
+            reveal={form.reveal}
+            passPercent={form.pass_percent}
+            scoreField={form.score_field}
+            numberFields={scoreFields}
+            graded={gradedQuestions.length}
+            total={total}
+            onChange={(key, value) => set(key, value)}
+          />
+        </Section>
+      )}
 
       <div>
         <Button
@@ -1224,7 +1355,7 @@ function FormSettings({
           <div className="mt-3 space-y-6">
             <Section title={$t('Déroulé')}>
               <div className="grid gap-2 sm:grid-cols-2">
-                {kind === 'survey' && (
+                {paged && (
                   <Input
                     value={form.welcome_label}
                     onChange={setText('welcome_label')}
@@ -1247,7 +1378,7 @@ function FormSettings({
                   checked={form.show_numbers}
                   onChange={(v) => set('show_numbers', v)}
                 />
-                {kind === 'survey' && (
+                {paged && (
                   <>
                     <SwitchRow
                       label={$t('Barre de progression')}
@@ -1298,7 +1429,9 @@ function FormSettings({
                   onChange={(v) => set('celebrate', v)}
                 />
                 <SwitchRow
-                  label={$t('Proposer une nouvelle réponse')}
+                  label={
+                    quiz ? $t('Proposer de refaire le quiz') : $t('Proposer une nouvelle réponse')
+                  }
                   checked={form.allow_another}
                   onChange={(v) => set('allow_another', v)}
                 />

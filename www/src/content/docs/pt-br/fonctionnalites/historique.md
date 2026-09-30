@@ -6,7 +6,7 @@ description: Cada escrita, venha de onde vier, com os valores anteriores.
 O basedb registra no histórico **cada escrita**, venha de onde vier: a interface, a API, um agente MCP,
 um formulário público — e até uma consulta SQL escrita à mão no `psql`.
 
-![O histórico de uma base](../../../../assets/screens/historique.png)
+![O histórico de uma base](../../../../assets/screens/pt-br/historique.webp)
 
 ## Como é capturado
 

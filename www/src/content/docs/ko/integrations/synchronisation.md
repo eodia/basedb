@@ -6,7 +6,7 @@ description: Slack 채널에 알리고, 일정 앱과 연결하고, CSV, 일정 
 데이터베이스의 **연동** 화면은 왼쪽 아래 프로필 메뉴에서 엽니다. **관리** 권한이 필요하며,
 데이터베이스를 다른 도구와 연결하는 기능이 모두 모여 있습니다.
 
-![데이터베이스의 연동 화면](../../../../assets/screens/integrations.png)
+![데이터베이스의 연동 화면](../../../../assets/screens/ko/integrations.webp)
 
 ## Slack
 

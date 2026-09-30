@@ -8,7 +8,7 @@ how they change month after month, the breakdown of a status, the upcoming deadl
 on it shows a **question** — a reading of the base, built with the mouse or written in SQL —
 and **filters** at the top of the page drive the cards linked to them.
 
-![The “Pilotage de l’agence” dashboard: the month’s trend, a target, stacked revenue, review sentiment](../../../../assets/screens/tableaux-de-bord.png)
+![The “Pilotage de l’agence” dashboard: the month’s trend, a target, stacked revenue, review sentiment](../../../../assets/screens/en/tableaux-de-bord.webp)
 
 Everything opens from **Dashboards**, in the block of the open base at the bottom of the
 sidebar. On the left, the base’s dashboards and saved questions, and **Explore data** to ask a
@@ -29,7 +29,7 @@ unsaved again.
 
 A question is built in steps, one below the other:
 
-![The question editor: the data, the filters, the summary by month](../../../../assets/screens/question-editeur.png)
+![The question editor: the data, the filters, the summary by month](../../../../assets/screens/en/question-editeur.webp)
 
 | Step | What you choose there |
 |---|---|
@@ -162,7 +162,7 @@ value** — “This year”, for example.
 When reading, a click on a point can also set a filter: **Filter by “Lyon”** on a card whose
 city column is linked to the “Ville” filter.
 
-![The “Activité” tab: tasks by due date stacked by status, a project funnel, estimated hours in a pivot table](../../../../assets/screens/tableaux-de-bord-activite.png)
+![The “Activité” tab: tasks by due date stacked by status, a project funnel, estimated hours in a pivot table](../../../../assets/screens/en/tableaux-de-bord-activite.webp)
 
 ## Copilot
 

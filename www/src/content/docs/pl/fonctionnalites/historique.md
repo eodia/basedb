@@ -6,7 +6,7 @@ description: Każdy zapis, skądkolwiek pochodzi, z wcześniejszymi wartościami
 basedb zapisuje w historii **każdy zapis**, skądkolwiek pochodzi: z interfejsu, API, agenta
 MCP, publicznego formularza – a nawet z zapytania SQL napisanego ręcznie w `psql`.
 
-![Historia bazy](../../../../assets/screens/historique.png)
+![Historia bazy](../../../../assets/screens/pl/historique.webp)
 
 ## Jak to jest rejestrowane
 

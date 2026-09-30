@@ -7,7 +7,7 @@ description: Was basedb ist und was es von kollaborativen Tabellenkalkulationen 
 die Sie selbst hosten – mit einem Unterschied, der alles Weitere bestimmt: **Ihre Daten
 liegen in echten PostgreSQL-Tabellen**, typisiert und mit lesbaren Namen.
 
-![Das Raster einer Tabelle in basedb](../../../../assets/screens/grille.png)
+![Das Raster einer Tabelle in basedb](../../../../assets/screens/de/grille.webp)
 
 ## Ein einfaches Versprechen
 
@@ -39,8 +39,8 @@ zeichnet den Schreibvorgang auf.
 - Typisierte [Tabellen und Felder](/basedb/de/fonctionnalites/tables-et-champs/), Verknüpfungen,
   die echte Fremdschlüssel sind – auch mehrfache –, von PostgreSQL berechnete Formeln,
   Nachschlagefelder und Aggregationen über Verknüpfungen hinweg.
-- Acht [Ansichten](/basedb/de/fonctionnalites/vues/): Raster, Kanban, Kalender, Zeitachse,
-  Galerie, Liste, Formular, Umfrage – kollaborativ oder persönlich.
+- Zehn [Ansichten](/basedb/de/fonctionnalites/vues/): Raster, Kanban, Kalender, Zeitachse,
+  Galerie, Liste, Landkarte, Formular, Umfrage, Quiz – kollaborativ oder persönlich.
 - [Formulare](/basedb/de/fonctionnalites/formulaires-partages/) und
   [Ansichten](/basedb/de/fonctionnalites/vues-partagees/), die per Link freigegeben werden, und
   Kalender, die sich aus einer Kalender-App abonnieren lassen.

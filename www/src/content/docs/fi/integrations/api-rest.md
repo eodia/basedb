@@ -34,7 +34,7 @@ curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?li
 | `filter` | luettava lauseke: `statut eq "gagne" and montant gte 10000` |
 | `sort` | `-montant,nom` |
 | `fields` | palautettavat sarakkeet |
-| `limit`, `cursor` | sivutus salatulla kursorilla (`next_cursor` vastauksessa) |
+| `limit`, `after` | sivutus salatulla kursorilla: sivun `meta.next_cursor`, välitettynä `after`-parametrina, antaa seuraavan (`meta.has_next_page`) |
 | `links=display` | viittaukset näyttöarvoineen |
 | `count=exact` | kokonaismäärä, enintään 100 000 |
 | `variables=raw` | pitkät tekstit sellaisinaan kirjoitettuina, `{{colonne}}` mukaan lukien, eikä [rivin arvoilla](/basedb/fi/fonctionnalites/tables-et-champs/#muotoiltu-teksti-ja-muuttujat) |
@@ -87,4 +87,4 @@ kielellä**, ja se on saatavilla myös OpenAPI 3.1 -muodossa
 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Nimet, polut ja virhekoodit pysyvät samoina
 kaikilla kielillä.
 
-![Tietokannan luotu dokumentaatio](../../../../assets/screens/documentation-api.png)
+![Tietokannan luotu dokumentaatio](../../../../assets/screens/fi/documentation-api.webp)

@@ -12,7 +12,7 @@ Raddetaljene har en fane **Kommentarer**, mellom «Detaljer» og «Historikk». 
 `@` for å **omtale** et medlem, Ctrl+Enter for å sende. Alle kan endre eller slette sine
 egne kommentarer.
 
-![En samtale om et prosjekt](../../../../assets/screens/commentaires.png)
+![En samtale om et prosjekt](../../../../assets/screens/nb/commentaires.webp)
 
 Å kunne lese raden er nok til å kommentere den. En omtalt person som ikke kan lese den,
 blir ikke varslet – og forfatteren får beskjed om det i stedet for å tro at meldingen er sendt.
@@ -30,7 +30,14 @@ Bjellen, øverst til høyre, teller det som er ulest. Fire ting havner der:
 Å åpne et varsel åpner raden. **Merk alle som lest** nullstiller telleren; varslene
 tas vare på i 90 dager.
 
-![En mottatt omtale](../../../../assets/screens/notifications.png)
+### På e-post
+
+Når instansen har en [utsendingsserver](/basedb/nb/hebergement/variables/#e-poster), sendes et
+varsel som har stått **ti minutter uleste** også som e-post: én e-post for alle som venter, med
+en lenke til hver rad. Det du leser i tide, blir ikke sendt. Under **Innstillinger › Varsler**
+har hver type to brytere: i basedb, og på e-post.
+
+![En mottatt omtale](../../../../assets/screens/nb/notifications.webp)
 
 ## Sanntid
 
@@ -74,6 +81,6 @@ Ctrl+Z angrer din siste skriving – se [historikken](/basedb/nb/fonctionnalites
 
 ## Begrensninger
 
-- Varslene blir i basedb: ingen sendes på e-post foreløpig.
+- Ingen e-post uten en utsendingsserver satt opp av driftsansvarlig.
 - Når mer enn hundre rader endres på én gang, laster skjermen inn hele siden på nytt i stedet for
   rad for rad.

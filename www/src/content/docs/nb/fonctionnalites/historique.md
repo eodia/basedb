@@ -6,7 +6,7 @@ description: All skriving, uansett hvor den kommer fra, med verdiene fra før.
 basedb fører historikk over **all skriving**, uansett hvor den kommer fra: grensesnittet, API-et, en MCP-agent,
 et offentlig skjema – og til og med en SQL-spørring skrevet for hånd i `psql`.
 
-![Historikken til en database](../../../../assets/screens/historique.png)
+![Historikken til en database](../../../../assets/screens/nb/historique.webp)
 
 ## Hvordan det fanges opp
 

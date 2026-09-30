@@ -30,17 +30,39 @@ A hidden field is absent everywhere: from the grid, views, the API, MCP, the his
 written in the interface and SQL views. Filtering or sorting on it responds as for a field that
 does not exist.
 
+## Down to the row
+
+Next to **Fields**, **Rows** shows a group only certain rows of a table: the ones a filter
+keeps, written like a view’s. `@me` designates the signed-in person:
+
+- `commercial eq @me` — each salesperson sees only their own clients;
+- `region in ["nord", "est"]` — a team sees only its regions;
+- `_created_by eq @me` — everyone sees only what they created.
+
+Permissions add up: a person sees the rows of all their groups, and a group with no rule sees
+them all. Whoever manages the table’s schema — the Manage level — always sees everything. The
+screen says how many rows a given person sees, and through which group.
+
+A row outside its rule does not exist for the person: not in views, dashboards, search, the
+API, MCP or the history, nor to be updated, deleted or linked. A row they create must be part of
+their own; updating a row, however, can make it leave their scope — a task handed off to a
+colleague. Responses to [shared forms](/basedb/en/fonctionnalites/formulaires-partages/) always
+arrive.
+
 ## What about SQL?
 
 In the interface, SQL follows the same permissions, applied by PostgreSQL itself: without the
 Manage level, a query runs read-only, through a role of the person’s own, where a closed table
-does not exist and a hidden field is refused. An [SQL view](/basedb/en/fonctionnalites/requetes-et-vues-sql/)
+does not exist, a hidden field is refused, and only its rows are read, whether the table is
+named alone or with its schema. An [SQL view](/basedb/en/fonctionnalites/requetes-et-vues-sql/)
 is read with the permissions of whoever reads it, and sharing a query only shares its text.
 
 **Direct `psql` access** to the database, however, is not governed by basedb: it reads
 everything, hidden fields included. Restrictions protect the product’s surfaces — interface,
 API, MCP —, never against someone who holds SQL access to the database; such access is managed
-with PostgreSQL `GRANT`s, set by the operator.
+with PostgreSQL `GRANT`s, set by the operator. A table that carries a row rule has PostgreSQL’s
+row-level security turned on: a role created for a third-party tool sees no rows there, unless
+it has the `BYPASSRLS` attribute or a policy of its own.
 
 ## Accounts and sign-in
 

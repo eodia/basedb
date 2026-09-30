@@ -1,6 +1,6 @@
 ---
 title: Automations
-description: When a row changes, at a set time or at the click of a button — update, create, find, branch, ask AI, notify, call a webhook, post to Slack.
+description: When a row changes, at a set time or at the click of a button — update, create, find, branch, ask AI, notify, send an email, call a webhook, post to Slack.
 ---
 
 An automation says **when**, **if** and **then**: when a task moves to “Fait”, record the
@@ -12,7 +12,7 @@ one step what an earlier step found or wrote.
 They open from **Automations**, in the block of the open base at the bottom of the sidebar,
 and require the **Manage** level.
 
-![A flow, with one of its runs laid over it](../../../../assets/screens/automatisations.png)
+![A flow, with one of its runs laid over it](../../../../assets/screens/en/automatisations.webp)
 
 ## The flow
 
@@ -48,6 +48,7 @@ Up to thirty steps, in order; the first one that fails stops the following ones.
 | **Create row** | in this table or another one of the base |
 | **Find row** | the first row of a table that matches a filter, so that the following steps can cite or update it |
 | **Notify someone** | a [notification](/basedb/en/fonctionnalites/collaboration/#notifications) to chosen people, or to the one in a Person field |
+| **Send an email** | to people on the team, to the one in a Person field, to the address in an Email field — a client, a supplier — or to written addresses; the subject and text cite the row and the previous steps |
 | **Call webhook** | an HTTPS `POST` to the address of your choice; its response can then be cited |
 | **Send to Slack** | a message in a [connected](/basedb/en/integrations/synchronisation/#slack) channel |
 | **Ask AI** | an answer from the [AI provider](/basedb/en/fonctionnalites/ia/) to a prompt that cites the row and the previous steps — draft, summarize, classify —, read as a text, a number, yes or no, a date or a choice from a list |
@@ -135,7 +136,9 @@ bypassing it, and a search only finds what they can read. The history shows it a
   in a single flow.
 - A search returns one row, the first; no “for each row” yet, nor waiting (“three days
   later”).
-- No email, no scripts.
+- No scripts. An email goes out as plain text, one per recipient — twenty at most per step —,
+  through the instance’s [mail server](/basedb/en/hebergement/variables/#emails); a reply
+  reaches the person who owns the automation.
 - A condition tests a row: to take a branch based on the AI’s answer, first write it into a
   field of the row.
 - A [base template](/basedb/en/fonctionnalites/modeles/) only carries automations without

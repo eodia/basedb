@@ -41,11 +41,13 @@ Later voeg je op dezelfde manier een formule (`DAYS([Échéance], TODAY())`), ee
 (de stad van de klant) of een aggregatie (het totaalbedrag per klant) toe — zie
 [Tabellen en velden](/basedb/nl/fonctionnalites/tables-et-champs/).
 
-Je kunt ook **een bestand importeren**, CSV of JSON: de import raadt de types, laat je
-ze corrigeren, maakt de tabel aan of vult een bestaande tabel aan, en meldt per rij wat hij
-weigert.
+Je kunt ook **een bestand importeren** — een Excel-werkmap (`.xlsx`), een CSV of een JSON: de
+import raadt de types, laat je ze corrigeren, maakt de tabel aan of vult een bestaande tabel
+aan, en meldt per rij wat hij weigert. Van een werkmap met meerdere werkbladen kies je het
+werkblad; datums, bedragen en selectievakjes worden overgenomen zoals Excel ze bewaart, en een
+formule levert haar waarde op.
 
-![Menu van een database](../../../../assets/screens/menu-base.png)
+![Menu van een database](../../../../assets/screens/nl/menu-base.webp)
 
 ## 3. Invoeren en filteren
 
@@ -61,7 +63,7 @@ De weergavekiezer, links van “Filteren”, biedt “Alle rijen” en daarna je
 Maak een **kanban** gegroepeerd op “Statut”: een kaart van de ene kolom naar de andere slepen wijzigt de
 rij.
 
-![Een kanban per status](../../../../assets/screens/kanban.png)
+![Een kanban per status](../../../../assets/screens/nl/kanban.webp)
 
 ## 5. Een formulier delen
 

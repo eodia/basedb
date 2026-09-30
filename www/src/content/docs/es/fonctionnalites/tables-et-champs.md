@@ -22,7 +22,7 @@ que introduces («Échéance») se convierte en un nombre físico legible (`eche
 | Selección única | `text` + `CHECK` | color, icono o imagen por opción |
 | Selección múltiple | `text[]` + `CHECK` | filtrable con los operadores de array |
 | Correo electrónico | `text` + `CHECK` | una dirección validada por la base de datos, que se abre con un clic |
-| Teléfono, Código de barras | `text` | un texto corto y su formato: enlace de llamada, fuente monoespaciada |
+| Teléfono, Código de barras, Dirección | `text` | un texto corto y su formato: enlace de llamada, fuente monoespaciada, enlace al mapa |
 | URL | `text` + `CHECK` | se completa al escribir (`exemple.fr` → `https://exemple.fr`) |
 | Persona | `uuid` | un miembro del espacio de trabajo; asignarlo le [avisa](/basedb/es/fonctionnalites/collaboration/) |
 | Número automático | `bigint` de identidad | numera también las filas ya existentes; nadie lo introduce |
@@ -38,7 +38,7 @@ Cada tabla tiene además sus **columnas del sistema**: `_id` (UUID v7), `_create
 desde la API. La cuadrícula las agrupa en **Información del sistema**, en el menú de las columnas:
 están en todas las tablas y son útiles en pocas.
 
-![La cuadrícula de una tabla, con una duración calculada, una búsqueda y un recuento](../../../../assets/screens/grille.png)
+![La cuadrícula de una tabla, con una duración calculada, una búsqueda y un recuento](../../../../assets/screens/es/grille.webp)
 
 ## Restricciones garantizadas por la base de datos
 
@@ -56,8 +56,8 @@ Foreign-key constraints:
 
 ## Formatos de visualización
 
-Moneda, Porcentaje, Duración, Valoración, Teléfono y Código de barras se eligen como tipos,
-pero son **formatos**: la columna sigue siendo un número o un texto; solo cambia la forma de leerla.
+Moneda, Porcentaje, Duración, Valoración, Teléfono, Código de barras y Dirección se eligen como
+tipos, pero son **formatos**: la columna sigue siendo un número o un texto; solo cambia la forma de leerla.
 
 | Formato | Sobre | Se lee y se introduce |
 |---|---|---|
@@ -67,9 +67,27 @@ pero son **formatos**: la columna sigue siendo un número o un texto; solo cambi
 | Valoración | un número | de 1 a 10 estrellas, se ajusta con un clic |
 | Teléfono | un texto corto | un enlace de llamada |
 | Código de barras | un texto corto | en fuente monoespaciada |
+| Dirección | un texto corto | un enlace al mapa; en los detalles, **Buscar dirección** propone las direcciones que coinciden, escritas por completo; la vista [Mapa](/basedb/es/fonctionnalites/vues/#mapa) la sitúa |
 
 Un formato se puede cambiar después (**Visualización**, al editar el campo) sin tocar los
 valores guardados. No limita el valor: una valoración de 7 en una escala de 5 sigue siendo 7.
+
+## Valores predeterminados
+
+Al modificar un campo, **Valor predeterminado** fija lo que recibe una fila creada sin él:
+
+| Opción | Sobre | La fila creada recibe |
+|---|---|---|
+| Un valor fijo | la mayoría de los tipos | el valor elegido: un estado «Nuevo», una prioridad 3 |
+| La fecha de hoy | una fecha | el día de su creación, en la zona horaria de la persona |
+| El momento de la creación | una fecha y hora | la hora exacta |
+| La persona que crea la fila | una persona | quien la ha creado: «Responsable: yo» |
+
+Los detalles nuevos y los formularios se abren ya rellenados; vaciar el campo lo deja vacío. El
+valor predeterminado se aplica a toda creación (interfaz, API, MCP, importación, formulario
+compartido, automatización), incluso en un campo que la persona no puede modificar: es la regla
+de la tabla. Las filas existentes no cambian, y una inserción en SQL directo no recibe
+ninguno: lo aplica basedb, no la columna.
 
 ## Fórmulas
 
@@ -175,7 +193,7 @@ El texto enriquecido no puede rellenarlo la IA: un modelo escribe texto, no HTML
 La pantalla **Estructura** de la base, en su menú **⋯** de la barra lateral, lista las tablas y sus campos: añadir, cambiar el nombre, hacer obligatorio, reordenar,
 describir, designar el campo principal.
 
-![La pantalla Estructura de una base](../../../../assets/screens/structure.png)
+![La pantalla Estructura de una base](../../../../assets/screens/es/structure.webp)
 
 Cambiar la estructura requiere el nivel **Gestión**. Sin él, la pantalla se puede consultar y no ofrece
 nada: ni botón, ni lápiz, ni tirador; la obligatoriedad y el campo principal se indican, pero no

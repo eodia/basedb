@@ -27,7 +27,7 @@ Depuis le menu de la base, sous **Autres actions**, **Comparer les environnement
 - **Synchronisation des lignes** : table par table, reporter des lignes d’un environnement vers
   un autre, par identifiant.
 
-![Comparer la production et la recette](../../../assets/screens/environnements.png)
+![Comparer la production et la recette](../../../assets/screens/fr/environnements.webp)
 
 ## Comment basedb sait qui a changé quoi
 

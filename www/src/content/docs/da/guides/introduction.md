@@ -7,7 +7,7 @@ description: Hvad basedb er, og hvad der adskiller det fra kollaborative regnear
 hoster — med én forskel, der bestemmer alt det andet: **dine data lever i rigtige
 PostgreSQL-tabeller**, med typer og med læsbare navne.
 
-![Gitteret for en tabel i basedb](../../../../assets/screens/grille.png)
+![Gitteret for en tabel i basedb](../../../../assets/screens/da/grille.webp)
 
 ## Et enkelt løfte
 
@@ -39,8 +39,8 @@ skrivningen.
 - [Tabeller og felter](/basedb/da/fonctionnalites/tables-et-champs/) med typer, relationer, der
   er rigtige fremmednøgler — eller multiple —, formler beregnet af PostgreSQL, opslag og
   aggregeringer på tværs af relationer.
-- Otte [visninger](/basedb/da/fonctionnalites/vues/): gitter, kanban, kalender, tidslinje,
-  galleri, liste, formular, spørgeskema — fælles eller personlige.
+- Ti [visninger](/basedb/da/fonctionnalites/vues/): gitter, kanban, kalender, tidslinje,
+  galleri, liste, landkort, formular, spørgeskema, quiz — fælles eller personlige.
 - [Formularer](/basedb/da/fonctionnalites/formulaires-partages/) og
   [visninger](/basedb/da/fonctionnalites/vues-partagees/), der deles via et link, og kalendere,
   som du kan abonnere på fra en kalenderapp.

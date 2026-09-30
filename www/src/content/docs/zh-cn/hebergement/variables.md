@@ -65,6 +65,39 @@ description: basedb 读取的所有变量及其默认值。
 | `BASEDB_S3_ACCESS_KEY_ID`、`BASEDB_S3_SECRET_ACCESS_KEY` | — | 凭据 |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | 设为 `0` 则使用基于主机名的寻址 |
 
+## 邮件
+
+没有发送服务器时，basedb 不会发送任何邮件。有了它，以下内容才会发出：保持**十分钟未读**的通知（每个人在**设置 › 通知**中选择要接收哪些），自动化中**发送邮件**步骤发出的邮件，以及**忘记密码**的链接。链接指向 `BASEDB_PUBLIC_URL`；没有设置它时，邮件中就不会带链接。
+
+| 变量 | 默认值 | 作用 |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | SMTP 服务器：您邮箱服务商的，或某个发送服务的 |
+| `BASEDB_SMTP_PORT` | `587` | 使用 `465` 可直接建立加密连接 |
+| `BASEDB_SMTP_SECURE` | `starttls`（端口 465 时为 `tls`） | 只有同一台机器上的中继才使用 `none`：否则密码会以明文传输 |
+| `BASEDB_SMTP_USER`、`BASEDB_SMTP_PASSWORD` | — | 发送账户的凭据，如果它需要的话 |
+| `BASEDB_MAIL_FROM` | — | 使用 `BASEDB_SMTP_HOST` 时必填：发件人地址，如 `basedb <no-reply@exemple.fr>` |
+
+启动时，日志会说明具体情况：`Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` 服务器拒绝的邮件会在 1、5、30、120，然后 360 分钟后重试。
+
+## 地图和地址
+
+**地图**视图借助地理编码服务来定位地址：默认使用 OpenStreetMap（Nominatim）的服务，每个地址查询一次，最多每秒一次请求，每个结果都会被缓存。底图由每位读者的浏览器直接从**切片**服务器加载。
+
+| 变量 | 默认值 | 作用 |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | 另一个使用相同协议的服务（您自己的 Nominatim）；`off`：不使用任何服务，地址不会离开实例，只用纬度和经度来定位行 |
+| `BASEDB_MAP_TILES` | OpenStreetMap 的切片 | 另一个切片服务器，格式为 `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | 该服务器要求显示的署名，位于地图右下角 |
+
+启动时，日志会说明使用的是哪个服务：`Géocodage : https://nominatim.openstreetmap.org.`
+
+## PDF 文档
+
+| 变量 | 默认值 | 作用 |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | 镜像自带的 Noto 字体 | 挂载到容器中的您自己的文件夹，其中包含 `NotoSans-Regular.ttf`、`-Bold`、`-Italic`、`-BoldItalic`，以及供中文、日文和韩文使用的 `NotoSansCJK-Regular.ttc` 和 `-Bold.ttc` |
+
 ## 数据库模板
 
 | 变量 | 默认值 | 作用 |

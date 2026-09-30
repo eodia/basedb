@@ -1,9 +1,9 @@
 ---
 title: Näkymät
-description: Ruudukko, kanban, kalenteri, aikajana, galleria, luettelo, lomake ja kyselylomake – yhteisiä tai henkilökohtaisia.
+description: Ruudukko, kanban, kalenteri, aikajana, galleria, luettelo, kartta, lomake, kyselylomake ja tietovisa – yhteisiä tai henkilökohtaisia.
 ---
 
-Taulukon voi näyttää **kahdeksalla tavalla**. Näkymä ei kopioi tietoja eikä anna enempää
+Taulukon voi näyttää **kymmenellä tavalla**. Näkymä ei kopioi tietoja eikä anna enempää
 käyttöoikeuksia kuin taulukko itse.
 
 :::note
@@ -20,14 +20,18 @@ sijoitetaan niiden joukkoon sivupalkissa.
 | **Aikajana** | palkit kahden päivämäärän välillä ja niiden riippuvuudet | alkupäivämäärän |
 | **Galleria** | kortit kansikuvineen | – |
 | **Luettelo** | yksi rivi tietuetta kohden, kutistettavissa ryhmissä | – |
+| **Kartta** | jokainen rivi sijoitettuna kartalle | osoite, tai leveys- ja pituusaste |
 | **Lomake** | kysymyssivu rivin luomiseen | – |
 | **Kyselylomake** | samat kysymykset, yksi kerrallaan | – |
+| **Tietovisa** | pisteytettyjä kysymyksiä, yksi kerrallaan, ja pistemäärä lopussa | – |
 
 ## Näkymävalitsin
 
 Se on ”Suodata”-painikkeen vasemmalla puolella. ”Kaikki rivit” on taulukon ruudukko, jota
 kukaan ei ole tallentanut eikä voi poistaa; sen jälkeen tulevat **yhteiset näkymät** tietokannan
-rakentajan valitsemassa järjestyksessä ja sitten **Omat näkymät**.
+rakentajan valitsemassa järjestyksessä ja sitten **Omat näkymät**. Alaosassa **Luo näkymä** jakaa
+kymmenen lajia kahteen ryhmään: niihin, jotka **näyttävät rivit**, ja niihin, jotka **keräävät
+vastauksia** (lomake, kyselylomake, tietovisa).
 
 - **Yhteinen näkymä** näkyy kaikille. Sen luominen, määrittäminen, uudelleennimeäminen,
   järjestäminen tai poistaminen vaatii **Hallintaoikeus**-tason. Sen voi **lukita**: lukon kuva
@@ -37,7 +41,7 @@ rakentajan valitsemassa järjestyksessä ja sitten **Omat näkymät**.
   kukin tallentaa omat lukutapansa muuttamatta mitään muille. Yhteisen näkymän **monistaminen**
   tekee siitä henkilökohtaisen kopion.
 
-![Asiakasgalleria](../../../../assets/screens/galerie.png)
+![Asiakasgalleria](../../../../assets/screens/fi/galerie.webp)
 
 ## Työkalupalkki
 
@@ -74,9 +78,9 @@ valitut ruudut.
   nuoli yhdistää jokaisen tehtävän niihin, joista se riippuu, ja on punainen, kun se kulkee
   ajassa taaksepäin.
 
-![Aikajana riippuvuuksineen](../../../../assets/screens/chronologie.png)
+![Aikajana riippuvuuksineen](../../../../assets/screens/fi/chronologie.webp)
 
-![Kalenteri eräpäivän mukaan](../../../../assets/screens/calendrier.png)
+![Kalenteri eräpäivän mukaan](../../../../assets/screens/fi/calendrier.webp)
 
 ## Galleria ja luettelo
 
@@ -85,10 +89,35 @@ valitut ruudut.
 - **Luettelo** näyttää yhden rivin tietuetta kohden **ryhmiteltynä** yksi valinta -kentän,
   viittauksen tai henkilön mukaan.
 
-![Asiakasluettelo toimialoittain ryhmiteltynä](../../../../assets/screens/liste.png)
+![Asiakasluettelo toimialoittain ryhmiteltynä](../../../../assets/screens/fi/liste.webp)
 
 Kanbanissa, galleriassa ja luettelossa kortit ja rivit voi **järjestää käsin** vetämällä –
 enintään 5 000; valittu lajittelu ohittaa tämän järjestyksen.
+
+## Kartta
+
+**Kartta** sijoittaa jokaisen rivin sen paikalle seuraavien perusteella:
+
+- **osoite** – lyhyt teksti, mieluiten **Osoite**-muodossa (katso
+  [Taulukot ja kentät](/basedb/fi/fonctionnalites/tables-et-champs/)): ”12 rue des Lilas, Lyon”;
+- tai **leveysaste** ja **pituusaste**, kaksi lukukenttää, sellaisenaan sijoitettuina.
+
+Neula saa **värinsä** yksi valinta -kentästä, näyttää rivin **otsikon** hiiren ollessa päällä ja
+avaa rivin tiedot napsauttamalla. Kartta noudattaa näkymän suodatinta ja lajittelua, enintään
+2 000 riviä.
+
+Osoite **paikannetaan kerran ja pysyvästi** instanssin geokoodauspalvelun avulla – oletuksena
+OpenStreetMapin – sen määräämällä tahdilla: uudella kartalla neulat ilmestyvät vastausten
+mukaan, noin yksi sekunnissa, ja sen jälkeen heti. Merkki laskee sijoitetut rivit, vielä
+paikannettavat osoitteet ja ne, joita ei voitu paikantaa: löytymätön osoite on tarkennettava
+(kaupunki, postinumero), ei koskaan hiljaa hylättävä.
+
+:::note[Mitä palvelimeltasi lähtee]
+Osoitteiden teksti lähtee geokoodauspalveluun, ja jokaisen lukijan selain lataa karttapohjan
+laattapalvelimelta. Instanssin ylläpitäjä voi valita toiset palvelut, tai olla käyttämättä
+niitä lainkaan: katso
+[Ympäristömuuttujat](/basedb/fi/hebergement/variables/#kartat-ja-osoitteet).
+:::
 
 ## Lomake ja kyselylomake
 
@@ -103,6 +132,9 @@ muun voi muuttaa milloin haluaa:
 
 - **Ulkoasu**: kahdeksan teemaa – Vaalea, Pehmeä, Aamurusko, Meri, Metsä, Yö, Paperi, Minimalistinen
   –, korostusväri, kirjasin, vasen tai keskitetty tasaus;
+- **Täytä valmiiksi tämän päivän päivämäärällä**: päivämääräkysymys on valmiiksi täytetty tällä
+  päivällä – päivämäärä ja aika -kysymyksessä myös kellonajalla –, jonka vastaaja pitää tai
+  vaihtaa;
 - **Kysy vain, jos…**: kysymys esitetään vain, jos aiempi vastaus sitä edellyttää (”Tunnelma on
   Negatiivinen”, ”Arvosana on enintään 2”). Piilotettu kysymys ei ole pakollinen eikä sitä
   lähetetä;
@@ -114,6 +146,45 @@ kerrallaan, joka liukuu näkyviin. Kaiken voi tehdä myös näppäimistöllä: *
 **A**, **B**, **C**… valitsevat vaihtoehdon, **K** tai **E** vastaa kyllä tai ei, numerot antavat
 arvosanan – yksi valinta siirtää suoraan seuraavaan kysymykseen. Lähettäminen juhlistetaan:
 piirtyvä valintamerkki ja lomakkeen väreissä oleva konfetti.
+
+## Tietovisa
+
+Tietovisa on kyselylomake, joka laskee pisteet. Jokaisen kysymyksen alla ilmoitetaan sen **oikea
+vastaus** ja mitä se tuottaa – **1 piste**, jos mitään ei sanota, enintään 100:
+
+| Kysymys | Oikea vastaus |
+|---|---|
+| yksi valinta | yksi vaihtoehto |
+| monivalinta | valinnat, jotka pitää valita – kaikki ne ja vain ne |
+| valintaruutu | kyllä tai ei |
+| luku, arvio | luku |
+| päivämäärä | päivä |
+| lyhyt teksti, sähköposti, URL | yksi tai useampi hyväksytty vastaus, `;`-merkillä erotettuina – välittämättä isoista kirjaimista tai aksenteista |
+
+Kysymys ilman oikeaa vastausta – etunimi, kommentti – esitetään ilman pisteytystä. Tietovisan
+luomiseen tarvitaan vähintään yksi pisteytetty kysymys.
+
+**Pisteytys**-osio määrittää loput:
+
+- **Palaute**: **jokaisen kysymyksen jälkeen** – vastaus tarkistetaan heti, vihreällä tai
+  punaisella oikean vastauksen kanssa, ja pistemäärä kasvaa näytön yläreunassa –, **lopussa** –
+  ensin pistemäärä, sitten palaute –, tai **ei koskaan** – pelkkä pistemäärä, oikeat vastaukset
+  pysyvät salassa;
+- **Läpäisyraja**: prosenttiosuus pisteistä; lopetusnäyttö sanoo silloin ”Läpäisty!” tai ”Ei
+  tällä kertaa…”;
+- **Tallenna pisteet kenttään**: taulukon lukukenttä, joka saa jokaisen vastauksen pistemäärän.
+  Lajittele ruudukko sen mukaan: siinä on tulostaulukko. Kenttä, jonka nimi on ”Score”,
+  ”Points” tai ”Note”, valitaan oletuksena.
+
+Lopetusnäyttö näyttää pistemäärän täyttyvässä renkaassa, prosenttiosuuden ja sitten, paitsi
+kohdassa ”ei koskaan”, jokaisen pisteytetyn kysymyksen annetun vastauksen ja oikean vastauksen.
+Kysymys, jonka aiempi vastaus on piilottanut, ei lasketa kokonaissummaan.
+
+:::note
+Sovelluksessa se, joka voi lukea näkymän, voi lukea myös sen oikeat vastaukset. [Jaetun
+linkin](/basedb/fi/fonctionnalites/formulaires-partages/#jaettu-tietovisa) kautta ne eivät
+koskaan poistu palvelimelta: se korjaa ja laskee pisteet.
+:::
 
 ## Näkymän jakaminen
 

@@ -33,10 +33,12 @@ import {
   isImportable,
   labelFromFileName,
   matchColumns,
+  parseSheet,
   parseText,
 } from '@/lib/import'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
+import { type Sheet, WorkbookError, isWorkbookName, readWorkbook } from '@/lib/xlsx'
 import { AlertTriangle, ArrowLeft, Check, FileText, Loader2, Upload } from 'lucide-react'
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -127,7 +129,14 @@ async function readText(file: File): Promise<string> {
 
 export function ImportDialog({ open, base, initial, onClose, onImported }: Props) {
   const [step, setStep] = useState<Step>('file')
-  const [file, setFile] = useState<{ name: string; size: number; text: string } | null>(null)
+  // A workbook is read once, into its sheets; a text file is kept as its text.
+  const [file, setFile] = useState<{
+    name: string
+    size: number
+    text: string
+    sheets?: readonly Sheet[]
+  } | null>(null)
+  const [sheet, setSheet] = useState(0)
   const [readError, setReadError] = useState<string | null>(null)
   const [hasHeader, setHasHeader] = useState(true)
   const [delimiter, setDelimiter] = useState<string | null>(null)
@@ -158,6 +167,7 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
     const { initial: aim, tables, builds: canBuild } = aimed.current
     setStep('file')
     setFile(null)
+    setSheet(0)
     setReadError(null)
     setHasHeader(true)
     setDelimiter(null)
@@ -181,10 +191,14 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
   const parsed = useMemo<{ table: ParsedTable | null; error: string | null }>(() => {
     if (file === null) return { table: null, error: null }
     try {
-      const table = parseText(file.name, file.text, {
-        hasHeader,
-        delimiter: delimiter ?? undefined,
-      })
+      const chosen = file.sheets?.[sheet]
+      const table =
+        chosen !== undefined
+          ? parseSheet(chosen, { hasHeader })
+          : parseText(file.name, file.text, {
+              hasHeader,
+              delimiter: delimiter ?? undefined,
+            })
       if (table.rows.length > MAX_ROWS) {
         return {
           table: null,
@@ -198,7 +212,7 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
     } catch (e) {
       return { table: null, error: e instanceof ImportError ? e.message : $t('Fichier illisible.') }
     }
-  }, [file, hasHeader, delimiter])
+  }, [file, sheet, hasHeader, delimiter])
 
   const table = parsed.table
 
@@ -213,11 +227,36 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
       )
       return
     }
+    // The old binary format of Excel is not read — said by name, with the way out.
+    if (/\.xls$/i.test(picked.name)) {
+      setReadError(
+        $t(
+          'Un classeur .xls ne se lit pas ici : enregistrez-le au format .xlsx, puis importez-le.',
+        ),
+      )
+      return
+    }
     try {
-      setFile({ name: picked.name, size: picked.size, text: await readText(picked) })
+      if (isWorkbookName(picked.name)) {
+        const sheets = await readWorkbook(new Uint8Array(await picked.arrayBuffer()))
+        if (sheets.length === 0) {
+          setReadError($t('Le classeur est vide.'))
+          return
+        }
+        setFile({ name: picked.name, size: picked.size, text: '', sheets })
+      } else {
+        setFile({ name: picked.name, size: picked.size, text: await readText(picked) })
+      }
+      setSheet(0)
       setDelimiter(null)
-    } catch {
-      setReadError($t('Ce fichier ne peut pas être lu.'))
+    } catch (e) {
+      setReadError(
+        e instanceof WorkbookError
+          ? $t(
+              'Ce classeur ne peut pas être lu. Ouvrez-le dans votre tableur et enregistrez-le de nouveau au format .xlsx.',
+            )
+          : $t('Ce fichier ne peut pas être lu.'),
+      )
     }
   }
 
@@ -449,12 +488,15 @@ export function ImportDialog({ open, base, initial, onClose, onImported }: Props
             error={readError ?? parsed.error}
             hasHeader={hasHeader}
             delimiter={delimiter ?? table?.delimiter ?? ','}
+            sheets={file?.sheets?.map((s) => s.name) ?? []}
+            sheet={sheet}
             dragging={dragging}
             input={input}
             onPick={(f) => void pick(f)}
             onDragging={setDragging}
             onHasHeader={setHasHeader}
             onDelimiter={setDelimiter}
+            onSheet={setSheet}
           />
         )}
 
@@ -584,24 +626,31 @@ function FileStep({
   error,
   hasHeader,
   delimiter,
+  sheets,
+  sheet,
   dragging,
   input,
   onPick,
   onDragging,
   onHasHeader,
   onDelimiter,
+  onSheet,
 }: {
   readonly file: { name: string; size: number } | null
   readonly table: ParsedTable | null
   readonly error: string | null
   readonly hasHeader: boolean
   readonly delimiter: string
+  /** The names of a workbook's sheets that hold something; empty for a text file. */
+  readonly sheets: readonly string[]
+  readonly sheet: number
   readonly dragging: boolean
   readonly input: RefObject<HTMLInputElement | null>
   readonly onPick: (file: File | undefined) => void
   readonly onDragging: (dragging: boolean) => void
   readonly onHasHeader: (value: boolean) => void
   readonly onDelimiter: (value: string) => void
+  readonly onSheet: (index: number) => void
 }) {
   return (
     <div className="space-y-4">
@@ -626,12 +675,12 @@ function FileStep({
           {$t('Déposez un fichier ici, ou cliquez pour le choisir')}
         </span>
         <span className="text-xs text-muted-foreground">
-          {$t('CSV, TSV, TXT ou JSON — 20 Mo et 50 000 lignes au plus')}
+          {$t('Excel, CSV, TSV, TXT ou JSON — 20 Mo et 50 000 lignes au plus')}
         </span>
         <input
           ref={input}
           type="file"
-          accept=".csv,.tsv,.txt,.json,.ndjson,.jsonl,text/csv,text/plain,application/json"
+          accept=".xlsx,.xlsm,.xls,.csv,.tsv,.txt,.json,.ndjson,.jsonl,text/csv,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           className="sr-only"
           aria-label={$t('Choisir un fichier')}
           onChange={(e) => {
@@ -672,6 +721,21 @@ function FileStep({
               />
               <label htmlFor="import-header">{$t('La première ligne est l’en-tête')}</label>
             </div>
+
+            {/* A workbook of several sheets: one is imported at a time. */}
+            {sheets.length > 1 && (
+              <div className="flex items-center gap-2">
+                <label htmlFor="import-sheet">{$t('Feuille||classeur')}</label>
+                <Choice
+                  id="import-sheet"
+                  value={String(sheet)}
+                  onValueChange={(v) => onSheet(Number(v))}
+                  options={sheets.map((name, i) => ({ value: String(i), label: name }))}
+                  aria-label={$t('Feuille||classeur')}
+                  className="w-48"
+                />
+              </div>
+            )}
 
             {table.format === 'csv' && (
               <div className="flex items-center gap-2">

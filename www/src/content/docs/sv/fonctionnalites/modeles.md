@@ -11,7 +11,7 @@ exempelrader, vyer, en instrumentpanel, automatiseringar och fält som AI fyller
 
 **Ny databas**, sedan **Utgå från en mall eller be AI om en**: galleriet öppnas.
 
-![Mallgalleriet, i programmet](../../../../assets/screens/modeles.png)
+![Mallgalleriet, i programmet](../../../../assets/screens/sv/modeles.webp)
 
 Varje mall kan läsas i sin helhet innan den används – tabellerna och deras fält, vyerna,
 automatiseringarna och instruktionen för vart och ett av AI-fälten. **Skapa databasen** frågar

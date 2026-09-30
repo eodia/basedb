@@ -67,6 +67,45 @@ description: basedb가 읽는 모든 변수와 그 기본값.
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | — | 자격 증명 |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | 호스트 방식 주소 지정에는 `0` |
 
+## 이메일
+
+발송 서버가 없으면 basedb는 이메일을 전혀 보내지 않습니다. 발송 서버가 있으면 10분 동안
+읽지 않은 알림(각자 **설정 › 알림**에서 어떤 알림을 받을지 선택), 자동화의 **이메일 보내기**
+단계가 보내는 이메일, 그리고 **비밀번호 찾기** 링크가 이메일로 발송됩니다. 링크는
+`BASEDB_PUBLIC_URL`을 가리키며, 이 값이 없으면 이메일에 링크가 들어가지 않습니다.
+
+| 변수 | 기본값 | 역할 |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | SMTP 서버: 사용 중인 메일 서비스나 발송 대행 서비스의 서버 |
+| `BASEDB_SMTP_PORT` | `587` | 처음부터 암호화된 연결을 쓰려면 `465` |
+| `BASEDB_SMTP_SECURE` | `starttls`(465번 포트에서는 `tls`) | 같은 서버의 릴레이에만 `none`을 씁니다: 그렇지 않으면 비밀번호가 평문으로 전송됩니다 |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | — | 발송 계정에 인증이 필요한 경우 그 계정 정보 |
+| `BASEDB_MAIL_FROM` | — | `BASEDB_SMTP_HOST`를 쓰면 필수: 보낸 사람 주소, 예를 들어 `basedb <no-reply@exemple.fr>` |
+
+시작할 때 로그에 상태가 표시됩니다: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` 서버가 거부한 이메일은 1분, 5분, 30분, 120분, 마지막으로
+360분 뒤에 다시 시도됩니다.
+
+## 지도와 주소
+
+**지도** 보기는 지오코딩 서비스를 이용해 주소를 위치로 바꿉니다. 기본값은 OpenStreetMap
+(Nominatim)이며, 주소당 한 번, 초당 최대 한 번 요청하고, 응답은 모두 저장해 둡니다. 지도
+배경은 각 사용자의 브라우저가 직접 불러오는 **타일**로 이루어집니다.
+
+| 변수 | 기본값 | 역할 |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | 같은 프로토콜을 쓰는 다른 서비스(자체 운영하는 Nominatim); `off`: 아무 서비스도 쓰지 않으며, 주소는 인스턴스 밖으로 나가지 않고 위도와 경도만으로 행이 배치됩니다 |
+| `BASEDB_MAP_TILES` | OpenStreetMap의 타일 | 다른 타일 서버, `https://…/{z}/{x}/{y}.png` 형식 |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | 그 서버가 요구하는 출처 표시, 지도 오른쪽 아래에 표시 |
+
+시작할 때 로그에 어떤 서비스가 쓰이는지 표시됩니다: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## PDF 문서
+
+| 변수 | 기본값 | 역할 |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | 이미지에 포함된 Noto 글꼴 | 컨테이너에 마운트한 자체 폴더로, `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic`를, 중국어·일본어·한국어를 위해서는 `NotoSansCJK-Regular.ttc`와 `-Bold.ttc`를 담습니다 |
+
 ## 데이터베이스 템플릿
 
 | 변수 | 기본값 | 역할 |

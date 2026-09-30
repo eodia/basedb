@@ -106,6 +106,7 @@ export default defineConfig({
 						{ slug: 'fonctionnalites/ia' },
 						{ slug: 'fonctionnalites/modeles' },
 						{ slug: 'fonctionnalites/fichiers' },
+						{ slug: 'fonctionnalites/documents' },
 					],
 				},
 				{
@@ -133,8 +134,10 @@ export default defineConfig({
 					},
 					items: [
 						{ slug: 'integrations/api-rest' },
+						{ slug: 'integrations/sdk' },
 						{ slug: 'integrations/mcp' },
 						{ slug: 'integrations/webhooks' },
+						{ slug: 'integrations/n8n' },
 						{ slug: 'integrations/synchronisation' },
 						{ slug: 'integrations/sql' },
 					],

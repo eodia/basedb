@@ -66,6 +66,47 @@ Zie [Accounts en inloggen](/basedb/nl/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | — | inloggegevens |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` voor adressering per host |
 
+## E-mails
+
+Zonder verzendserver verstuurt basedb geen enkele e-mail. Daarmee gaan de meldingen die tien
+minuten ongelezen zijn gebleven (iedereen kiest welke, bij **Instellingen › Meldingen**), de
+e-mails van de stap **Een e-mail versturen** van de automatiseringen, en de link van een
+**wachtwoord vergeten**. De links verwijzen naar `BASEDB_PUBLIC_URL`; zonder die variabele
+draagt een e-mail er geen.
+
+| Variabele | Standaard | Rol |
+|---|---|---|
+| `BASEDB_SMTP_HOST` | — | de SMTP-server: die van je mailprovider of van een verzenddienst |
+| `BASEDB_SMTP_PORT` | `587` | `465` voor een van meet af aan versleutelde verbinding |
+| `BASEDB_SMTP_SECURE` | `starttls` (`tls` op poort 465) | `none` alleen voor een relay op dezelfde machine: anders zou het wachtwoord onversleuteld worden verstuurd |
+| `BASEDB_SMTP_USER`, `BASEDB_SMTP_PASSWORD` | — | de gebruikersnaam van het verzendaccount, als dat er een vraagt |
+| `BASEDB_MAIL_FROM` | — | verplicht bij `BASEDB_SMTP_HOST`: de afzender, `basedb <no-reply@exemple.fr>` |
+
+Bij het opstarten meldt het logboek de status: `Courriels : SMTP smtp.exemple.fr:587 (starttls),
+expéditeur no-reply@exemple.fr.` Een e-mail die de server weigert, wordt na 1, 5, 30, 120 en dan
+360 minuten opnieuw geprobeerd.
+
+## Landkaarten en adressen
+
+De weergave **Landkaart** plaatst een adres met behulp van een geocodeerservice: standaard die
+van OpenStreetMap (Nominatim), één keer per adres bevraagd, hooguit één aanvraag per seconde,
+elk antwoord bewaard. De achtergrondkaart bestaat uit **tegels** die de browser van elke lezer
+rechtstreeks laadt.
+
+| Variabele | Standaard | Rol |
+|---|---|---|
+| `BASEDB_GEOCODER_URL` | `https://nominatim.openstreetmap.org` | een andere dienst die hetzelfde protocol spreekt (een eigen Nominatim); `off`: geen enkele, de adressen verlaten de instantie niet en alleen de breedtegraad en de lengtegraad plaatsen de rijen |
+| `BASEDB_MAP_TILES` | de tegels van OpenStreetMap | een andere tegelserver, model `https://…/{z}/{x}/{y}.png` |
+| `BASEDB_MAP_ATTRIBUTION` | `© OpenStreetMap` | de vermelding die deze server vraagt, rechtsonder op de landkaart |
+
+Bij het opstarten meldt het logboek welke dienst wordt gebruikt: `Géocodage : https://nominatim.openstreetmap.org.`
+
+## PDF-documenten
+
+| Variabele | Standaard | Rol |
+|---|---|---|
+| `BASEDB_PDF_FONTS` | de Noto-lettertypen van de image | een eigen map, gekoppeld in de container, met `NotoSans-Regular.ttf`, `-Bold`, `-Italic`, `-BoldItalic`, en voor Chinees, Japans en Koreaans `NotoSansCJK-Regular.ttc` en `-Bold.ttc` |
+
 ## Databasesjablonen
 
 | Variabele | Standaard | Rol |

@@ -1,6 +1,6 @@
 ---
 title: Automatyzacje
-description: Gdy wiersz się zmienia, o stałej porze lub jednym kliknięciem – edytuj, utwórz, znajdź, rozgałęź, zapytaj AI, powiadom, wywołaj webhook, napisz na Slacku.
+description: Gdy wiersz się zmienia, o stałej porze lub jednym kliknięciem – edytuj, utwórz, znajdź, rozgałęź, zapytaj AI, powiadom, wyślij e-mail, wywołaj webhook, napisz na Slacku.
 ---
 
 Automatyzacja mówi **kiedy**, **jeśli** i **wtedy**: gdy zadanie przechodzi do stanu „Fait”,
@@ -13,7 +13,7 @@ znalazł lub zapisał.
 Otwiera się je z **Automatyzacje**, w bloku otwartej bazy na dole paska bocznego; wymagają
 poziomu **Zarządzanie**.
 
-![Przepływ i jedno z jego uruchomień, nałożone na niego](../../../../assets/screens/automatisations.png)
+![Przepływ i jedno z jego uruchomień, nałożone na niego](../../../../assets/screens/pl/automatisations.webp)
 
 ## Przepływ
 
@@ -51,6 +51,7 @@ Do trzydziestu kroków, po kolei; pierwszy, który się nie powiedzie, zatrzymuj
 | **Utwórz wiersz** | w tej lub innej tabeli bazy |
 | **Znajdź wiersz** | pierwszy wiersz tabeli spełniający filtr, aby kolejne kroki mogły go przytoczyć lub zmienić |
 | **Powiadom kogoś** | [powiadomienie](/basedb/pl/fonctionnalites/collaboration/#powiadomienia) do wybranych osób lub do osoby z pola Osoba |
+| **Wyślij e-mail** | do osób z zespołu, do osoby z pola Osoba, na adres z pola E-mail – klienta, dostawcy – albo na wpisane adresy; temat i treść przytaczają wiersz i poprzednie kroki |
 | **Wywołaj webhook** | `POST` przez HTTPS na wybrany adres; jego odpowiedź można potem przytoczyć |
 | **Wyślij na Slack** | wiadomość na [połączony](/basedb/pl/integrations/synchronisation/#slack) kanał |
 | **Zapytaj AI** | odpowiedź [dostawcy AI](/basedb/pl/fonctionnalites/ia/) na polecenie, które przytacza wiersz i poprzednie kroki – napisz, streść, sklasyfikuj –, odczytaną jako tekst, liczba, tak lub nie, data albo wybór z listy |
@@ -139,7 +140,9 @@ a jej zapisy można cofać jak wszystkie inne.
   zapisuje się w jednym przepływie.
 - Wyszukiwanie zwraca jeden wiersz, pierwszy; nie ma jeszcze „dla każdego wiersza” ani
   oczekiwania („trzy dni później”).
-- Bez e-maili, bez skryptów.
+- Bez skryptów. E-mail wychodzi jako zwykły tekst, jeden na odbiorcę – co najwyżej dwadzieścia
+  na krok –, przez [serwer wysyłki](/basedb/pl/hebergement/variables/#e-maile) instancji;
+  odpowiedź trafia do osoby, która ostatnio zapisała automatyzację.
 - Warunek sprawdza wiersz: aby wybrać gałąź w zależności od odpowiedzi AI, najpierw zapisz ją
   w polu wiersza.
 - [Szablon bazy](/basedb/pl/fonctionnalites/modeles/) zabiera tylko automatyzacje bez

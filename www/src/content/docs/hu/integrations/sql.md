@@ -26,7 +26,7 @@ A lapsáv **+** gombja, vagy az adatbázis **⋯** menüje → **SQL-lekérdezé
 szintaxiskiemeléssel és kódkiegészítéssel, amelynek eredménye ugyanabban a rácsban jelenik meg,
 mint a táblái.
 
-![Egy mentett lekérdezés, és két SQL-nézet a táblák között](../../../../assets/screens/requete-sql.png)
+![Egy mentett lekérdezés, és két SQL-nézet a táblák között](../../../../assets/screens/hu/requete-sql.webp)
 
 - **Itt mindenki a saját jogosultságaival olvas**: a Kezelés szint a teljes adatbázishoz
   hozzáfér, az írást is beleértve; a többi tag csak olvasási SQL-t ír, ahol egy hozzáférhetetlen
@@ -53,6 +53,12 @@ FROM opportunites o
 JOIN clients c ON c._id = o.clients_id
 WHERE o.statut = 'gagne';
 ```
+
+Ez a fiók az adatbázis tulajdonosa: mindent olvas, és a basedb jogosultságai nem érvényesek rá.
+BI-eszközhöz inkább hozzon létre egy külön szerepkört, saját `GRANT`-okkal. Ha egy tábla
+[sorszintű szabályt](/basedb/hu/fonctionnalites/droits/#egészen-a-sorig) hordoz, a PostgreSQL
+érvényesíti rajta a sorszintű biztonságot: egy ilyen szerepkör egyetlen sort sem lát a
+`BYPASSRLS` attribútum vagy egy saját politika nélkül.
 
 ## Írás SQL-ben
 

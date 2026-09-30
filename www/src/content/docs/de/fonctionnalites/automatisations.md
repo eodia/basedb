@@ -1,6 +1,6 @@
 ---
 title: Automatisierungen
-description: Wenn sich eine Zeile ändert, zu fester Uhrzeit oder per Klick – bearbeiten, anlegen, suchen, verzweigen, die KI fragen, benachrichtigen, einen Webhook aufrufen, in Slack schreiben.
+description: Wenn sich eine Zeile ändert, zu fester Uhrzeit oder per Klick – bearbeiten, anlegen, suchen, verzweigen, die KI fragen, benachrichtigen, eine E-Mail senden, einen Webhook aufrufen, in Slack schreiben.
 ---
 
 Eine Automatisierung sagt **wann**, **falls** und **dann**: Wenn eine Aufgabe auf „Fait“ wechselt,
@@ -13,7 +13,7 @@ oder geschrieben hat.
 Sie öffnen sich über **Automatisierungen** im Block der geöffneten Datenbank unten in der
 Seitenleiste und erfordern die Stufe **Verwalten**.
 
-![Ein Ablauf und eine seiner Ausführungen, darübergelegt](../../../../assets/screens/automatisations.png)
+![Ein Ablauf und eine seiner Ausführungen, darübergelegt](../../../../assets/screens/de/automatisations.webp)
 
 ## Der Ablauf
 
@@ -52,6 +52,7 @@ Bis zu dreißig Schritte, der Reihe nach; der erste, der fehlschlägt, stoppt di
 | **Zeile anlegen** | in dieser Tabelle oder einer anderen der Datenbank |
 | **Zeile suchen** | die erste Zeile einer Tabelle, die einem Filter entspricht, damit die folgenden Schritte sie zitieren oder bearbeiten |
 | **Jemanden benachrichtigen** | eine [Benachrichtigung](/basedb/de/fonctionnalites/collaboration/#benachrichtigungen) an ausgewählte Personen oder an die Person aus einem Feld Person |
+| **E-Mail senden** | an Personen des Teams, an die aus einem Feld Person, an die Adresse aus einem Feld E-Mail – einen Kunden, einen Lieferanten – oder an eingegebene Adressen; Betreff und Text zitieren die Zeile und die vorherigen Schritte |
 | **Webhook aufrufen** | ein `POST` über HTTPS an die Adresse Ihrer Wahl; seine Antwort lässt sich anschließend zitieren |
 | **An Slack senden** | eine Nachricht in einen [verbundenen](/basedb/de/integrations/synchronisation/#slack) Kanal |
 | **KI fragen** | eine Antwort des [KI-Anbieters](/basedb/de/fonctionnalites/ia/) auf eine Anweisung, die die Zeile und die vorherigen Schritte zitiert – verfassen, zusammenfassen, einordnen –, gelesen als Text, Zahl, Ja oder Nein, Datum oder Auswahl aus einer Liste |
@@ -145,7 +146,9 @@ und ihre Schreibvorgänge lassen sich wie alle anderen rückgängig machen.
   in einen einzigen Ablauf.
 - Eine Suche liefert eine Zeile, die erste; noch kein „für jede Zeile“ und kein Warten („drei
   Tage danach“).
-- Keine E-Mail, kein Skript.
+- Kein Skript. Eine E-Mail geht als reiner Text hinaus, eine pro Empfänger – höchstens zwanzig
+  pro Schritt –, über den [E-Mail-Versand](/basedb/de/hebergement/variables/#e-mails) der
+  Instanz; eine Antwort erreicht die Person, der die Automatisierung gehört.
 - Eine Bedingung prüft eine Zeile: Um je nach KI-Antwort einen Zweig zu nehmen, schreiben Sie
   diese zuerst in ein Feld der Zeile.
 - Eine [Datenbankvorlage](/basedb/de/fonctionnalites/modeles/) übernimmt nur Automatisierungen

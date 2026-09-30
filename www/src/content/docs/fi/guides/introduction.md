@@ -7,7 +7,7 @@ description: Mikä basedb on ja mikä erottaa sen yhteiskäyttöisistä taulukko
 ja ylläpidät sen itse – yhdellä erolla, joka määrää kaiken muun: **tietosi ovat oikeissa
 PostgreSQL-taulukoissa**, tyypitettyinä ja selkeästi nimettyinä.
 
-![Taulukon ruudukko basedb:ssä](../../../../assets/screens/grille.png)
+![Taulukon ruudukko basedb:ssä](../../../../assets/screens/fi/grille.webp)
 
 ## Yksinkertainen lupaus
 
@@ -38,8 +38,8 @@ kautta – ja jopa kirjoittaa niihin: rajoitteet pitävät, ja historia tallenta
 - Tyypitettyjä [taulukoita ja kenttiä](/basedb/fi/fonctionnalites/tables-et-champs/), viittauksia,
   jotka ovat oikeita vierasavaimia – tai moniviittauksia –, PostgreSQL:n laskemia kaavoja sekä
   hakuja ja koosteita viittausten yli.
-- Kahdeksan [näkymää](/basedb/fi/fonctionnalites/vues/): ruudukko, kanban, kalenteri, aikajana,
-  galleria, luettelo, lomake, kyselylomake – yhteisiä tai henkilökohtaisia.
+- Kymmenen [näkymää](/basedb/fi/fonctionnalites/vues/): ruudukko, kanban, kalenteri, aikajana,
+  galleria, luettelo, kartta, lomake, kyselylomake, tietovisa – yhteisiä tai henkilökohtaisia.
 - Linkillä jaettuja [lomakkeita](/basedb/fi/fonctionnalites/formulaires-partages/) ja
   [näkymiä](/basedb/fi/fonctionnalites/vues-partagees/) sekä kalentereita, jotka voi tilata
   kalenterisovellukseen.

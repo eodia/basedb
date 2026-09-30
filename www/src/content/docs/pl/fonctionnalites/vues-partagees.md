@@ -19,13 +19,13 @@ Menu widoku → **Udostępnij…**, a potem:
 | **Publiczny** | każdy, kto ma link, bez konta |
 | **Zalogowani członkowie** | członek przestrzeni roboczej, po zalogowaniu – w razie potrzeby tylko z określonych grup |
 
-![Udostępnianie kalendarza](../../../../assets/screens/partage-vue.png)
+![Udostępnianie kalendarza](../../../../assets/screens/pl/partage-vue.webp)
 
 Przełącznik **Link aktywny** zawiesza link bez jego utraty. Strona otwiera się poza
 aplikacją: bez paska bocznego, nazwy bazy i nazwy tabeli – widok, jego filtry, jego kolumny i
 nic więcej. Kalendarz lub oś czasu czyta się tam jak terminarz.
 
-![Ten sam kalendarz otwarty przez link](../../../../assets/screens/vue-partagee.png)
+![Ten sam kalendarz otwarty przez link](../../../../assets/screens/pl/vue-partagee.webp)
 
 ## W czyim imieniu następuje odczyt
 

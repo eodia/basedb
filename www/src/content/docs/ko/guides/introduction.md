@@ -7,7 +7,7 @@ description: basedb가 무엇인지, 그리고 협업 스프레드시트와 무�
 그리고 나머지 모든 것을 좌우하는 차이가 하나 있습니다. **데이터가 실제 PostgreSQL 테이블에
 저장되며**, 타입이 지정되고 알아보기 쉬운 이름이 붙습니다.
 
-![basedb의 테이블 그리드](../../../../assets/screens/grille.png)
+![basedb의 테이블 그리드](../../../../assets/screens/ko/grille.webp)
 
 ## 단순한 약속
 
@@ -35,8 +35,8 @@ description: basedb가 무엇인지, 그리고 협업 스프레드시트와 무�
 
 - 타입이 있는 [테이블과 필드](/basedb/ko/fonctionnalites/tables-et-champs/), 실제 외래 키인
   관계(다중 관계 포함), PostgreSQL이 계산하는 수식, 관계를 거치는 조회와 롤업.
-- 여덟 가지 [보기](/basedb/ko/fonctionnalites/vues/): 그리드, 칸반, 캘린더, 타임라인,
-  갤러리, 목록, 양식, 설문. 협업 보기로도, 개인 보기로도 만들 수 있습니다.
+- 열 가지 [보기](/basedb/ko/fonctionnalites/vues/): 그리드, 칸반, 캘린더, 타임라인,
+  갤러리, 목록, 지도, 양식, 설문, 퀴즈. 협업 보기로도, 개인 보기로도 만들 수 있습니다.
 - 링크로 공유하는 [양식](/basedb/ko/fonctionnalites/formulaires-partages/)과
   [보기](/basedb/ko/fonctionnalites/vues-partagees/), 그리고 일정 앱에서 구독할 수 있는
   캘린더.

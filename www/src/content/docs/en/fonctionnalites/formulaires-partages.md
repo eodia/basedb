@@ -3,12 +3,12 @@ title: Shared forms
 description: Share a form through a link, public or restricted to signed-in members.
 ---
 
-A form or a survey is **shared through a link** `/f/<jeton>`. The person who responds needs
+A form, a survey or a quiz is **shared through a link** `/f/<jeton>`. The person who responds needs
 **no permission on the table**: each response adds a row, and nothing else from the table is
 shown to them. To show rows rather than receive them, a view can be shared
 [read-only](/basedb/en/fonctionnalites/vues-partagees/).
 
-![The sharing dialog](../../../../assets/screens/partage-formulaire.png)
+![The sharing dialog](../../../../assets/screens/en/partage-formulaire.webp)
 
 ## Who can respond
 
@@ -21,7 +21,7 @@ The link’s page is outside the application: no sidebar, no base name, no other
 It wears the form’s appearance — its theme, its color, its font —, and only asks the
 questions that earlier answers call for.
 
-![A public form](../../../../assets/screens/formulaire-public.png)
+![A public form](../../../../assets/screens/en/formulaire-public.webp)
 
 ## On whose behalf the response is written
 
@@ -47,6 +47,20 @@ The dialog sets:
 - **Stop sharing**: the link disappears, the responses stay in the table.
 
 A closed form says so in one sentence, before even asking anyone to sign in.
+
+## A shared quiz
+
+The page of a quiz receives **no right answer**: only what each question is worth. It is the
+server that checks it.
+
+- Graded **after each question**, the page sends each scored answer the moment it is given, and
+  learns right then whether it is right — and which one was.
+- On submission, the server counts the score **from the answers received** and writes it into
+  the field chosen for it, if there is one and the person who published the share can write to
+  it. The page shows the score it sends back, and the feedback unless the quiz says “never”.
+
+A score is therefore read in the table the way the server counted it, not the way a page might
+have announced it.
 
 ## Limits
 
