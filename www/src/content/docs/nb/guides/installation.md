@@ -73,7 +73,7 @@ Ta vare på den genererte nøkkelen: se boksen nedenfor.
 
 :::caution[Instansnøkkelen]
 `BASEDB_ENCRYPTION_KEY` signerer øktene og krypterer de lagrede hemmelighetene (KI-nøkler,
-webhook-hemmeligheter, skjemalenker). Hvis du endrer den, logges alle ut, og disse
+webhook-hemmeligheter, automatiseringenes hemmelige headere, skjemalenker). Hvis du endrer den, logges alle ut, og disse
 hemmelighetene blir uleselige. Generer den én gang, og ta sikkerhetskopi av den sammen med databasen.
 :::
 

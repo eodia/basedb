@@ -73,7 +73,7 @@ Bewaar de gegenereerde sleutel: zie het kader hieronder.
 
 :::caution[De instantiesleutel]
 `BASEDB_ENCRYPTION_KEY` ondertekent de sessies en versleutelt de opgeslagen geheimen (AI-sleutels,
-webhookgeheimen, formulierlinks). Wijzig je hem, dan wordt iedereen uitgelogd en worden die
+webhookgeheimen, geheime headers van automatiseringen, formulierlinks). Wijzig je hem, dan wordt iedereen uitgelogd en worden die
 geheimen onleesbaar. Genereer hem één keer en maak er samen met de database een back-up van.
 :::
 

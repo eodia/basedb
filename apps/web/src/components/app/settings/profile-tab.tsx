@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Hint } from '@/components/ui/tooltip'
 import { type Identities, type Me, api } from '@/lib/api/client'
+import { withBase } from '@/lib/base-path'
 import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
@@ -271,7 +272,7 @@ function IdentitiesSection() {
     setError(null)
     try {
       const { url } = await elevated(() =>
-        api.oidcLinkStart(slug, `/?parametres=profil&lien=${encodeURIComponent(slug)}`),
+        api.oidcLinkStart(slug, withBase(`/?parametres=profil&lien=${encodeURIComponent(slug)}`)),
       )
       // The page is left for the provider's; `busy` stays on until it goes.
       window.location.assign(url)

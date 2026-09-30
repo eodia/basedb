@@ -22,6 +22,7 @@ import {
   type Table,
   api,
 } from '@/lib/api/client'
+import { withoutBase } from '@/lib/base-path'
 import { displayStored, isDateKind } from '@/lib/dates'
 import { quoteLiteral } from '@/lib/expression'
 import { formatNumber } from '@/lib/format'
@@ -1476,7 +1477,7 @@ function Palette({
       return null
     }
     if (url.origin !== window.location.origin) return null
-    const place = placeOf(url.pathname, url.search, me.tenant)
+    const place = placeOf(withoutBase(url.pathname), url.search, me.tenant)
     if (place === null) return null
     return {
       key: 'link',

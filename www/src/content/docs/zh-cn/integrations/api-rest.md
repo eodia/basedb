@@ -60,10 +60,48 @@ curl -X POST "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportu
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | 数据库的仪表盘 |
 | `GET /api/v1/<tenant>/meta/users` | 工作区成员，用于人员字段 |
 | `GET /api/v1/<tenant>/meta/templates` | 模板库中的数据库模板 |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | 实时跟踪一张数据表：得到的是信号，随后通过上面的路由重新读取（参见[Webhook](/basedb/zh-cn/integrations/webhooks/#不用-webhook跟踪一张数据表)） |
 
 [共享视图](/basedb/zh-cn/fonctionnalites/vues-partagees/)无需账户即可读取：`GET /api/v1/views/<jeton>` 和 `…/rows` 返回 JSON，`…/calendar.ics` 返回 iCalendar。
 
 构建类操作——创建自动化、仪表盘、集成——仍仅限于界面会话：令牌只能读写行，不能修改数据库本身。
+
+## 从模板创建数据库
+
+正在安装的应用只需**一次调用**即可创建自己的数据库：服务器会应用该模板——数据表、字段、关联、
+示例行、视图、仪表盘、自动化——如果某一步失败，则不会留下任何数据库。
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` 是模板库中某个模板的键，或是符合[模板格式](/basedb/zh-cn/fonctionnalites/modeles/)的
+完整模板。带上请求头 `Accept: application/x-ndjson`，响应就会逐行返回：每一步一行 `{"step": …}`，
+最后是创建好的数据库。此调用需要一个能创建数据库的人的访问令牌（`POST /auth/session/access`，
+登录之后）：集成令牌只能打开已有的数据库。
+
+## 验证令牌
+
+basedb 的令牌无法在 basedb 之外验证。收到令牌的应用——例如从 basedb 打开的工具，带着该人的
+令牌——会用自己的集成令牌去查询这个令牌的有效性（内省，RFC 7662）：
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+任何失效的令牌——未知、已过期、已撤销、会话已关闭、属于其他工作区——都会返回
+`{"active": false}`，且不会说明原因。响应是实时读取的：一旦登出，立刻就能看到。对于集成令牌，
+响应还会说明它打开的数据库（`base`）、访问权限（`read` 或 `write`）以及它涉及的使用面。
 
 ## 自动生成的文档
 

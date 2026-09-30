@@ -51,6 +51,7 @@ Bkz. [Hesaplar ve giriş](/basedb/tr/hebergement/connexion/).
 | `BASEDB_PORT` | `3000` | 127.0.0.1 üzerinde yayımlanan port: arayüz, `/api` ve `/mcp` |
 | `BASEDB_VERSION` | `latest` | `eodia/basedb` imajının etiketi |
 | `BASEDB_PUBLIC_URL` | — | OIDC dönüşü için basedb'nin herkese açık adresi |
+| `BASEDB_BASE_PATH` | `BASEDB_PUBLIC_URL`'in yolu | basedb'nin bir ağ geçidinin arkasında sunulduğu yol, `https://passerelle.example.com/basedb/` için `/basedb`; bkz. [Docker Compose](/basedb/tr/hebergement/docker/#bir-ağ-geçidinin-arkasında-bir-yol-altında) |
 | `BASEDB_DOMAIN` | — | Caddy proxy'sinin HTTPS ile sunduğu alan adı |
 | `BASEDB_ORIGINS` | — | sayfaları API'yi tarayıcıdan çağıran diğer siteler, virgülle ayrılmış; aynı adresten sunulan basedb arayüzü için gerekmez |
 | `BASEDB_API`, `BASEDB_MCP` | `/`, `/mcp` | tarayıcıdan görüldüğü hâliyle API ve MCP; yalnızca geliştirme ortamı (`pnpm start`) için ayarlanır |
@@ -123,6 +124,17 @@ Başlatıldığında günlük hangi servisin kullanıldığını bildirir: `Géo
 | `BASEDB_AI_QUOTA` | `120` | saat ve çalışma alanı başına etkileşimli çağrılar |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | saat ve çalışma alanı başına yapay zeka alanı hesaplamaları |
 | `BASEDB_AI_WORKER` | `1` | `0`: bu süreçte arka plan hesaplaması yapılmaz |
+
+## İç ağa giden webhook'lar
+
+| Değişken | Varsayılan | Rol |
+|---|---|---|
+| `BASEDB_WEBHOOK_ALLOW` | — | iç sunucularınız, virgülle ayrılmış: bir ad (`chat.intra.example.com`), bir alan adı ve alt alan adları (`*.intra.example.com`), bir adres ya da bir aralık (`10.12.0.0/16`) |
+
+Webhook'lar, otomasyonların HTTP istekleri ve senkronize tablolar yalnızca herkese açık HTTPS
+adreslerine gider. Listedeki bir hedef, adresi, portu ve şeması ne olursa olsun — HTTP dahil —
+ayrıca kabul edilir. Okunamayan bir girdi başlatmayı engeller. Bkz.
+[Webhook'lar](/basedb/tr/integrations/webhooks/#hedefler).
 
 ## Herkese açık demo
 

@@ -10,6 +10,7 @@
  * psql — and never by an identifier the user would have to look up.
  */
 
+import { withBase } from '@/lib/base-path'
 import { $t, locale } from '@/lib/i18n'
 import type {
   Constraint,
@@ -30,7 +31,9 @@ import type {
   QuizAnswer,
   QuizReveal,
   Template,
+  TemplateApplyReport,
   TemplateIssue,
+  TemplateStep,
   TemplateSummary,
   Visualization,
 } from '@basedb/contracts'
@@ -1722,6 +1725,22 @@ export interface AutomationSchedule {
   readonly timezone: string
 }
 
+export type AutomationHttpMethod = 'POST' | 'PUT' | 'PATCH' | 'GET' | 'DELETE'
+
+/** How a webhook's own body is written: JSON, `clé=valeur` pairs, plain text. */
+export type AutomationBodyFormat = 'json' | 'form' | 'text'
+
+/**
+ * A header of a webhook step. A secret one comes back with its name alone — `value: null`,
+ * and the host it was given for; sent back so, it is kept as saved.
+ */
+export interface AutomationHeader {
+  readonly name: string
+  readonly value: string | null
+  readonly secret?: boolean
+  readonly host?: string
+}
+
 /**
  * A step of an automation's flow (chapter 17 §1.3). `record` names the row it acts on:
  * `trigger`, or a step before it that found, created or modified one. The identifiers,
@@ -1771,7 +1790,25 @@ export type AutomationStep =
       readonly id?: string
       readonly kind: 'webhook'
       readonly record?: string | null
+      /** May cite, after its host. */
       readonly url: string
+      readonly method?: AutomationHttpMethod
+      readonly headers?: readonly AutomationHeader[]
+      /** Composed, citing what came before; `null`: the automation's own JSON. */
+      readonly body?: string | null
+      readonly format?: AutomationBodyFormat
+    }
+  | {
+      readonly id?: string
+      readonly kind: 'for_each'
+      /** The table's identifier. */
+      readonly table: string
+      readonly filter: string
+      readonly sort: string | null
+      /** The rows gone through at most; 50 when absent. */
+      readonly limit?: number
+      /** Run once per row, which they cite by the loop's identifier. */
+      readonly steps: readonly AutomationStep[]
     }
   | {
       readonly id?: string
@@ -1892,9 +1929,15 @@ export interface AutomationRun {
     readonly status: string
     /** The path a branch took; `null`: none held. */
     readonly path?: string | null
+    /** In a loop, every path a branch took. */
+    readonly taken?: readonly string[]
     readonly detail?: string
     readonly error_code?: string
     readonly ms?: number
+    /** In a loop, the turns a step ran. */
+    readonly times?: number
+    /** A loop left rows beyond its limit. */
+    readonly more?: boolean
   }>
   readonly queued_at: string
   readonly started_at: string | null
@@ -2445,7 +2488,7 @@ export const api = {
    * provider, and a redirect followed by `fetch` would land the provider's login page
    * inside a response body nobody can see.
    */
-  oidcStartUrl: (slug: string, returnTo = '/') =>
+  oidcStartUrl: (slug: string, returnTo = withBase('/')) =>
     `${BASE}/auth/oidc/${encodeURIComponent(slug)}/start?return_to=${encodeURIComponent(returnTo)}`,
 
   /**
@@ -2674,6 +2717,86 @@ export const api = {
       `${v1()}/admin/bases`,
       { method: 'POST', body: JSON.stringify({ label, description, project }) },
     ),
+
+  /**
+   * A base built from a template by the server, in one operation — chapter 20 §4: the
+   * whole base, or none. The server tells each step as it starts, one JSON object a line,
+   * then the base or the refusal as the last line.
+   */
+  createBaseFromTemplate: async (
+    request: {
+      readonly template: Template
+      readonly label: string
+      readonly description?: string
+      readonly project: string
+      readonly rows: boolean
+      readonly aiConsent: boolean
+    },
+    onStep: (step: TemplateStep) => void,
+  ): Promise<{ id: string; name: string; label: string; report: TemplateApplyReport }> => {
+    const r = await fetch(`${BASE}${v1()}/admin/bases`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${await accessToken()}`,
+        'content-type': 'application/json',
+        accept: 'application/x-ndjson',
+        'x-basedb-locale': locale(),
+      },
+      body: JSON.stringify({
+        template: request.template,
+        label: request.label,
+        ...(request.description === undefined ? {} : { description: request.description }),
+        project: request.project,
+        rows: request.rows,
+        ai_consent: request.aiConsent,
+      }),
+      credentials: 'include',
+      cache: 'no-store',
+    })
+    const refusal = (body: Record<string, unknown>, status: number) =>
+      new ApiError(
+        String(body.code ?? 'INTERNAL_ERROR'),
+        status,
+        String(body.request_id ?? ''),
+        typeof body.details === 'object' && body.details !== null
+          ? (body.details as Record<string, unknown>)
+          : {},
+      )
+    if (!r.ok || r.body === null) {
+      throw refusal((await r.json().catch(() => ({}))) as Record<string, unknown>, r.status)
+    }
+    const reader = r.body.pipeThrough(new TextDecoderStream()).getReader()
+    let pending = ''
+    for (;;) {
+      const { done, value } = await reader.read()
+      pending += value ?? ''
+      const lines = pending.split('\n')
+      pending = done ? '' : (lines.pop() ?? '')
+      for (const line of lines) {
+        if (line.trim() === '') continue
+        const message = JSON.parse(line) as {
+          step?: TemplateStep
+          error?: Record<string, unknown>
+          data?: { id: string; name: string; label: string }
+          meta?: { template: { ai_degraded: number; sampled: boolean; not_required: string[] } }
+        }
+        if (message.step !== undefined) onStep(message.step)
+        else if (message.error !== undefined) throw refusal(message.error, 422)
+        else if (message.data !== undefined) {
+          const report = message.meta?.template
+          return {
+            ...message.data,
+            report: {
+              aiDegraded: report?.ai_degraded ?? 0,
+              sampled: report?.sampled ?? false,
+              notRequired: report?.not_required ?? [],
+            },
+          }
+        }
+      }
+      if (done) throw new ApiError('INTERNAL_ERROR', r.status, '')
+    }
+  },
 
   createTable: (
     base: string,
@@ -3856,7 +3979,7 @@ export const api = {
    * the API: the same for every instance, and no data of anyone's.
    */
   geo: async (region: string): Promise<unknown> => {
-    const response = await fetch(`/geo/${encodeURIComponent(region)}.json`)
+    const response = await fetch(withBase(`/geo/${encodeURIComponent(region)}.json`))
     if (!response.ok) throw new ApiError('GEO_UNAVAILABLE', response.status, '')
     return response.json()
   },

@@ -70,12 +70,55 @@ Con el mismo token:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | los paneles de una base |
 | `GET /api/v1/<tenant>/meta/users` | los miembros del espacio de trabajo, para un campo Persona |
 | `GET /api/v1/<tenant>/meta/templates` | las plantillas de base de la galería |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | seguir una tabla en tiempo real: señales, que luego se vuelven a leer con las rutas anteriores (consulta [Webhooks](/basedb/es/integrations/webhooks/#sin-webhook-seguir-una-tabla)) |
 
 Las [vistas compartidas](/basedb/es/fonctionnalites/vues-partagees/) se leen sin cuenta:
 `GET /api/v1/views/<jeton>` y `…/rows` en JSON, `…/calendar.ics` en iCalendar.
 
 Construir (crear una automatización, un panel, una integración) sigue reservado a
 una sesión de la interfaz: un token lee y escribe filas, no cambia la base.
+
+## Crear una base a partir de una plantilla
+
+Una aplicación que se instala crea su base en **una sola llamada**: el servidor aplica la
+plantilla —tablas, campos, relaciones, filas de ejemplo, vistas, paneles, automatizaciones— y,
+si un paso falla, no deja ninguna base sin terminar.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` es la clave de una plantilla de la galería, o una plantilla completa en el
+[formato de las plantillas](/basedb/es/fonctionnalites/modeles/). Con la cabecera
+`Accept: application/x-ndjson`, la respuesta llega línea a línea: una línea `{"step": …}` por
+paso, y luego la base creada. Esta llamada requiere el token de acceso de una persona que pueda
+crear una base (`POST /auth/session/access`, tras iniciar sesión): un token de integración solo
+abre una base existente.
+
+## Verificar un token
+
+Los tokens de basedb no se pueden verificar fuera de basedb. Una aplicación que recibe uno —una
+herramienta abierta desde basedb con el token de la persona, por ejemplo— pregunta qué vale
+(introspección, RFC 7662), con su propio token de integración:
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Cualquier token que no sea válido —desconocido, caducado, revocado, sesión cerrada, otro espacio
+de trabajo— responde `{"active": false}`, sin decir por qué. La respuesta se lee en vivo: una
+desconexión se nota al instante. Para un token de integración, la respuesta también indica la
+base que abre (`base`), su acceso (`read` o `write`) y sus superficies.
 
 ## La documentación generada
 

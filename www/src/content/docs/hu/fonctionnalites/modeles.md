@@ -148,5 +148,5 @@ Bármely adatbázisból sablon is lehet: **Mentés sablonként** az adatbázis m
 **További műveletek** alatt. A táblái, mezői, MI-utasításai, kapcsolatai, megosztott nézetei,
 irányítópultjai és automatizálásai – és ha szeretné, táblánként legfeljebb 50 sor – JSON-ként
 letölthetők, készen arra, hogy a hivatalos vagy a példány saját katalógusába kerüljenek. Az az
-automatizálás, amely sort keres, ágakat használ vagy egy korábbi lépésre hivatkozik, egyelőre
-kimarad, és a képernyő ezt jelzi.
+automatizálás, amely sort keres, sorokat jár be, ágakat használ vagy egy korábbi lépésre
+hivatkozik, egyelőre kimarad, és a képernyő ezt jelzi.

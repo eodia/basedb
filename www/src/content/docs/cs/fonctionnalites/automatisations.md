@@ -1,13 +1,14 @@
 ---
 title: Automatizace
-description: Když se změní řádek, v pevný čas nebo kliknutím – upravit, vytvořit, vyhledat, větvit, zeptat se AI, upozornit, odeslat e-mail, zavolat webhook, napsat do Slacku.
+description: Když se změní řádek, v pevný čas nebo kliknutím – upravit, vytvořit, vyhledat, opakovat pro každý řádek, větvit, zeptat se AI, upozornit, odeslat e-mail, zavolat službu, napsat do Slacku.
 ---
 
 Automatizace říká **kdy**, **jestli** a **pak**: když úkol přejde do stavu „Fait“, zaznamenat
 čas; když přijde negativní recenze, upozornit odpovědnou osobu a napsat do Slacku; každé
 pondělí v 9:00 vytvořit řádek týmové porady. A když jedna akce nestačí, sleduje **tok**:
-vyhledat řádek, vydat se jednou či druhou větví podle toho, co obsahuje, znovu použít v kroku
-to, co předchozí krok našel nebo zapsal.
+vyhledat řádek, vydat se jednou či druhou větví podle toho, co obsahuje, opakovat kroky na
+každém řádku, který odpovídá filtru, znovu použít v kroku to, co předchozí krok našel nebo
+zapsal.
 
 Otevírají se přes **Automatizace** v bloku otevřené databáze dole v postranním panelu
 a vyžadují úroveň **Správa**.
@@ -49,14 +50,57 @@ Až třicet kroků, v daném pořadí; první, který selže, zastaví ty násle
 | **Vyhledat řádek** | první řádek tabulky, který odpovídá filtru, aby ho následující kroky mohly citovat nebo upravit |
 | **Upozornit někoho** | [oznámení](/basedb/cs/fonctionnalites/collaboration/#oznámení) vybraným osobám nebo osobě z pole Osoba |
 | **Odeslat e-mail** | osobám z týmu, osobě z pole Osoba, na adresu z pole E-mail — klientovi, dodavateli — nebo na napsané adresy; předmět a text citují řádek a předchozí kroky |
-| **Zavolat webhook** | `POST` přes HTTPS na adresu podle vaší volby; jeho odpověď lze pak citovat |
+| **Zavolat webhook** | HTTPS požadavek na službu – metoda, adresa, hlavičky a tělo podle vaší volby ([podrobnosti](#zavolat-službu)); jeho odpověď lze pak citovat |
 | **Odeslat do Slacku** | zprávu do [připojeného](/basedb/cs/integrations/synchronisation/#slack) kanálu |
 | **Zeptat se AI** | odpověď [poskytovatele AI](/basedb/cs/fonctionnalites/ia/) na pokyn, který cituje řádek a předchozí kroky – napsat, shrnout, zařadit –, čtenou jako text, číslo, ano či ne, datum nebo volbu ze seznamu |
 | **Podmínka** | několik větví: použije se první, jejíž podmínka je splněna, a „Jinak“, když není splněna žádná; větve se pak opět spojí |
+| **Pro každý řádek** | kroky, které obsahuje, jednou pro každý řádek tabulky, který odpovídá filtru ([podrobnosti](#pro-každý-řádek)) |
 
 Vyhledání, které nic nenajde, tok nezastaví: kroky, které měly upravit nalezený řádek, se
 přeskočí. Chcete-li v takovém případě udělat něco jiného, otestujte to podmínkou – větev
 s prázdným filtrem se použije, jakmile vyhledání něco našlo.
+
+## Pro každý řádek
+
+Krok **Pro každý řádek** čte řádky tabulky, které odpovídají jeho filtru – prázdný: všechny –,
+ve zvoleném pořadí, až do svého limitu (50 ve výchozím nastavení, nejvýše 200), a pak jednou
+pro každý z nich provede kroky umístěné ve svém rámečku. „Každé pondělí upomenout neuhrazené
+faktury“ se zapíše takto: **V pevný čas**, pak **Pro každý řádek** faktur
+`payee eq false and relancee eq false`, a ve smyčce e-mail kontaktu faktury a krok **Upravit
+řádek**, který zaškrtne „Relancée“.
+
+Ve smyčce pojmenovává identifikátor kroku **řádek aktuálního průchodu**: `{{e1.client}}` ho
+cituje, a **Upravit řádek** ho nabízí mezi řádky k úpravě. Po smyčce `{{e1.nombre}}` udává,
+kolik řádků prošla – například pro souhrn na Slacku. Filtr může citovat to, co mu předchází:
+spuštěná zaplacenou fakturou, `facture eq {{_id}}` prochází jejími řádky podrobností.
+
+Nad rámec limitu čekají zbývající řádky na příští spuštění, které to oznámí: řádky, které jsou
+už zpracované, vyřaďte z filtru – zaškrtávací políčko „relancée“, datum –, aby se postupně
+zpracovaly všechny při dalších spuštěních. Smyčka neobsahuje jinou smyčku a spuštění se
+zastaví po dvou minutách.
+
+## Zavolat službu
+
+Krok **Zavolat webhook** ve výchozím nastavení odešle metodou `POST` data automatizace:
+vybraný řádek a to, co našly nebo zapsaly předchozí kroky. Aby bylo možné mluvit se službou
+tak, jak to očekává, nastavuje se:
+
+- **metoda**: `POST`, `PUT`, `PATCH`, `GET` nebo `DELETE` – tyto poslední dvě bez těla;
+- **adresa**, která může za svým hostitelem citovat – `https://api.exemple.fr/clients/{{e2.numero}}`;
+  každá hodnota je v ní zakódována;
+- **hlavičky**, jejichž hodnota může citovat: `Idempotency-Key: {{_id}}`;
+- **tělo**: data automatizace, **JSON k sestavení**, **formulář** (dvojice `klíč=hodnota` na
+  řádek) nebo **text**. V JSON je citace v uvozovkách textem, mimo uvozovky hodnotou – číslo,
+  ano nebo ne, seznam:
+
+```json
+{ "facture": "{{e1.numero}}", "montant": {{e1.montant}}, "payee": {{e1.payee}} }
+```
+
+Klíč API nebo token se vkládá do **tajné** hlavičky (zámek): zašifrovaný klíčem instance se už
+nikdy nezobrazí – ani na obrazovce, ani přes API, ani Copilotovi – a odchází jen k hostiteli,
+pro kterého jste ho zadali. Změna hostitele adresy vyžaduje ho zadat znovu; **Nahradit** zapíše
+nový.
 
 ## Zeptat se AI
 
@@ -88,6 +132,8 @@ textu:
   krok má svůj identifikátor na své kartě;
 - `{{e3.statut}}`, `{{e3.reponse.numero}}`: co odpověděl webhook `e3`;
 - `{{e4.reponse}}`: odpověď kroku AI `e4`;
+- `{{e5.client}}` ve smyčce `e5`, řádek aktuálního průchodu; `{{e5.nombre}}` po ní, počet
+  řádků, kterými prošla;
 - `{{_maintenant}}`: okamžik spuštění.
 
 Hodnota tvořená jedinou citací předá samotnou hodnotu: vazbu, osobu, volbu – tak se
@@ -122,7 +168,7 @@ Zaškrtávací políčko **Povolit čtení dat** umožní Copilotovi v rámci ko
 **Spuštění** uchovává posledních 50 po dobu 30 dnů: čekající, probíhající, úspěšná,
 přeskočená s důvodem, neúspěšná s kódem. Výběrem jednoho ho zobrazíte na toku – použitá větev
 je vyznačena, každý provedený krok uvádí, co udělal a jak dlouho to trvalo, zbytek je
-ztlumený.
+ztlumený. Ve smyčce každý krok navíc uvádí, kolikrát proběhl.
 
 ## Jménem koho jedná
 
@@ -136,14 +182,16 @@ jako ostatní.
 
 - Co automatizace zapíše, nespustí žádnou jinou: co má následovat po sobě, patří do jediného
   toku.
-- Vyhledání vrátí jeden řádek, ten první; zatím chybí „pro každý řádek“ i čekání („tři dny
-  poté“).
+- Vyhledání vrátí jeden řádek, ten první; smyčka jich za jedno spuštění projde nejvýše 200,
+  a první krok, který selže, ji zastaví. Žádné čekání („tři dny poté“).
 - Žádný skript. E-mail odchází jako prostý text, jeden pro každého příjemce — nejvýše dvacet
   na krok —, přes [odesílací server](/basedb/cs/hebergement/variables/#e-maily) instance;
   odpověď přijde osobě, která automatizaci naposledy uložila.
 - Podmínka testuje řádek: chcete-li zvolit větev podle odpovědi AI, zapište ji nejprve do
   pole řádku.
 - [Šablona databáze](/basedb/cs/fonctionnalites/modeles/) přenáší jen automatizace bez
-  vyhledání, podmínky a kroku AI.
+  vyhledání, smyčky, podmínky a kroku AI, a nikdy webhook.
+- Webhook nesleduje přesměrování a čeká nejvýše 10 sekund; odpověď jiná než 2xx způsobí selhání
+  kroku.
 - 100 spuštění za hodinu na automatizaci; zmeškaný hodinový termín se dožene jen jednou.
 - Prodleva mezi zápisem a akcí je v řádu sekund.

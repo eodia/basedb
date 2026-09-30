@@ -29,8 +29,8 @@ L’immagine gira con l’utente `node`, su Node 22, dichiara un controllo di in
 | Tag | Contenuto |
 |---|---|
 | `latest` | l’ultima versione pubblicata |
-| `0.4` | l’ultima versione 0.4.x |
-| `0.4.0` | esattamente questa versione |
+| `0.5` | l’ultima versione 0.5.x |
+| `0.5.0` | esattamente questa versione |
 
 ## I servizi
 
@@ -52,6 +52,24 @@ docker compose down                 # ferma (i volumi restano)
 
 Da un clone del repository, `docker compose up -d --build` costruisce l’immagine dal codice
 invece di scaricarla.
+
+## Dietro un gateway, sotto un percorso
+
+Quando basedb è pubblicato sotto un percorso — `https://passerelle.example.com/basedb/` invece che
+alla radice di un dominio —, indica questo percorso:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# oppure, senza indirizzo pubblico:
+BASEDB_BASE_PATH=/basedb
+```
+
+Tutto passa allora sotto `/basedb`: l’interfaccia, `/basedb/api`, `/basedb/mcp`, i link di
+condivisione e quelli delle email. Il gateway può **mantenere il percorso** trasmettendo la
+richiesta, oppure **rimuoverlo**: basedb accetta entrambi. `BASEDB_BASE_PATH=/` forza la radice.
+
+L’immagine è la stessa per tutti gli indirizzi: il percorso viene scritto nell’interfaccia
+all’avvio del container, e cambiare percorso richiede solo un riavvio.
 
 ## Cambiare le porte
 

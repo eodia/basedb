@@ -147,5 +147,5 @@ Mistä tahansa tietokannasta voi myös tehdä mallin: **Tallenna malliksi** tiet
 kohdassa **Muut toiminnot**. Sen taulukot, kentät, tekoälykehotteet, viittaukset, jaetut näkymät, koontinäytöt ja
 automaatiot – ja halutessasi enintään 50 riviä taulukkoa kohden – ladataan JSON-muodossa
 valmiina liitettäviksi viralliseen katalogiin tai instanssin katalogiin. Automaatio, joka etsii
-rivin, valitsee haaroja tai viittaa aiempaan vaiheeseen, jää toistaiseksi pois, ja näkymä
-kertoo sen.
+rivin, käy läpi rivejä, valitsee haaroja tai viittaa aiempaan vaiheeseen, jää toistaiseksi
+pois, ja näkymä kertoo sen.

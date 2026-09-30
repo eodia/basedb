@@ -51,6 +51,7 @@ Siehe [Konten und Anmeldung](/basedb/de/hebergement/connexion/).
 | `BASEDB_PORT` | `3000` | auf 127.0.0.1 veröffentlichter Port: die Oberfläche, `/api` und `/mcp` |
 | `BASEDB_VERSION` | `latest` | das Tag des Images `eodia/basedb` |
 | `BASEDB_PUBLIC_URL` | – | öffentliche Adresse von basedb, für die OIDC-Rückleitung |
+| `BASEDB_BASE_PATH` | der Pfad von `BASEDB_PUBLIC_URL` | der Pfad, unter dem basedb hinter einem Gateway bereitgestellt wird, `/basedb` für `https://passerelle.example.com/basedb/`; siehe [Docker Compose](/basedb/de/hebergement/docker/#hinter-einem-gateway-unter-einem-pfad) |
 | `BASEDB_DOMAIN` | – | die Domain, die der Caddy-Proxy über HTTPS bereitstellt |
 | `BASEDB_ORIGINS` | – | andere Websites, deren Seiten die API aus dem Browser aufrufen, durch Kommas getrennt; für die Oberfläche von basedb, die unter derselben Adresse läuft, nicht nötig |
 | `BASEDB_API`, `BASEDB_MCP` | `/`, `/mcp` | API und MCP aus Sicht des Browsers; nur für den Entwicklungs-Stack (`pnpm start`) einzustellen |
@@ -123,6 +124,17 @@ Beim Start sagt das Log, welcher Dienst verwendet wird: `Géocodage : https://no
 | `BASEDB_AI_QUOTA` | `120` | interaktive Aufrufe pro Stunde und pro Arbeitsbereich |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | Berechnungen von KI-Feldern pro Stunde und pro Arbeitsbereich |
 | `BASEDB_AI_WORKER` | `1` | `0`: keine Hintergrundberechnung in diesem Prozess |
+
+## Webhooks ins interne Netzwerk
+
+| Variable | Standard | Rolle |
+|---|---|---|
+| `BASEDB_WEBHOOK_ALLOW` | – | Ihre internen Server, durch Kommas getrennt: ein Name (`chat.intra.example.com`), eine Domain und ihre Subdomains (`*.intra.example.com`), eine Adresse oder ein Bereich (`10.12.0.0/16`) |
+
+Webhooks, HTTP-Anfragen von Automatisierungen und synchronisierte Tabellen gehen nur an
+öffentliche HTTPS-Adressen. Ein Ziel aus der Liste wird zusätzlich akzeptiert, unabhängig von
+seiner Adresse, seinem Port und seinem Schema – HTTP eingeschlossen. Ein unlesbarer Eintrag
+verhindert den Start. Siehe [Webhooks](/basedb/de/integrations/webhooks/#ziele).
 
 ## Öffentliche Demo
 

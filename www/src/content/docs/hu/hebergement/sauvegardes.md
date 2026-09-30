@@ -34,8 +34,9 @@ S3-tároló esetén kövesse a szolgáltatója mentési szabályzatát (verziók
 ## A példány kulcsa
 
 A `BASEDB_ENCRYPTION_KEY` titkosítja az adatbázisban tárolt titkokat (MI-kulcsok,
-webhooktitkok, űrlaphivatkozások). **Az adatbázis kulcs nélküli mentése nem állítja vissza
-ezeket a titkokat.** Őrizze a titokkezelőjében, a mentések mellett.
+webhooktitkok, az automatizálások titkos fejlécei, űrlaphivatkozások). **Az adatbázis kulcs
+nélküli mentése nem állítja vissza ezeket a titkokat.** Őrizze a titokkezelőjében, a mentések
+mellett.
 
 ## Frissítés
 
@@ -46,7 +47,7 @@ docker compose pull
 docker compose up -d
 ```
 
-A `BASEDB_VERSION` egy adott verziót (`0.4.0`) rögzít a legutóbbi (`latest`) helyett.
+A `BASEDB_VERSION` egy adott verziót (`0.5.0`) rögzít a legutóbbi (`latest`) helyett.
 
 Indításkor a basedb **magától frissíti a katalógusát**: sorrendben, mindegyiket a saját
 tranzakciójában alkalmazza azokat a migrációkat, amelyekkel az Ön verziója még nem

@@ -52,6 +52,7 @@ Lásd: [Fiókok és bejelentkezés](/basedb/hu/hebergement/connexion/).
 | `BASEDB_PORT` | `3000` | a 127.0.0.1 címen közzétett port: a felület, a `/api` és a `/mcp` |
 | `BASEDB_VERSION` | `latest` | az `eodia/basedb` lemezkép címkéje |
 | `BASEDB_PUBLIC_URL` | – | a basedb nyilvános címe, az OIDC-visszatéréshez |
+| `BASEDB_BASE_PATH` | a `BASEDB_PUBLIC_URL` elérési útja | az elérési út, amely alatt a basedb egy átjáró mögött üzemel, `/basedb` a `https://passerelle.example.com/basedb/` esetén; lásd: [Docker Compose](/basedb/hu/hebergement/docker/#egy-átjáró-mögött-egy-elérési-út-alatt) |
 | `BASEDB_DOMAIN` | – | a Caddy proxy által HTTPS-en kiszolgált domain |
 | `BASEDB_ORIGINS` | – | más webhelyek, amelyeknek oldalai a böngészőből hívják az API-t, vesszővel elválasztva; a basedb felületéhez szükségtelen, mivel az ugyanazon a címen fut |
 | `BASEDB_API`, `BASEDB_MCP` | `/`, `/mcp` | az API és az MCP a böngésző felől nézve; csak a fejlesztői környezethez (`pnpm start`) kell beállítani |
@@ -124,6 +125,17 @@ Induláskor a napló jelzi, melyik szolgáltatást használja: `Géocodage : htt
 | `BASEDB_AI_QUOTA` | `120` | interaktív hívások óránként és munkaterületenként |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | MI-mezők számításai óránként és munkaterületenként |
 | `BASEDB_AI_WORKER` | `1` | `0`: ebben a folyamatban nincs háttérszámítás |
+
+## Webhookok a belső hálózat felé
+
+| Változó | Alapértelmezés | Szerep |
+|---|---|---|
+| `BASEDB_WEBHOOK_ALLOW` | — | az Ön belső szerverei, vesszővel elválasztva: egy név (`chat.intra.example.com`), egy domain és annak aldomainjei (`*.intra.example.com`), egy cím vagy egy tartomány (`10.12.0.0/16`) |
+
+A webhookok, az automatizálások HTTP-kérései és a szinkronizált táblák csak nyilvános
+HTTPS-címekre indulnak. A listán szereplő cél ezen felül elfogadott, bármi legyen is a címe, a
+portja és a sémája — a HTTP-t is beleértve. Egy olvashatatlan bejegyzés megakadályozza az
+indulást. Lásd: [Webhookok](/basedb/hu/integrations/webhooks/#célcímek).
 
 ## Nyilvános demó
 

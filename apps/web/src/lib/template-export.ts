@@ -46,7 +46,13 @@ const SKIPPED_KINDS = new Set(['system', 'file', 'image'])
 function isSequence(steps: readonly AutomationStep[]): boolean {
   const citesStep = (text: string) => /\{\{\s*[A-Za-z0-9_]+\./.test(text)
   return steps.every((step) => {
-    if (step.kind === 'branch' || step.kind === 'find_record' || step.kind === 'ai') return false
+    if (
+      step.kind === 'branch' ||
+      step.kind === 'find_record' ||
+      step.kind === 'for_each' ||
+      step.kind === 'ai'
+    )
+      return false
     if ('record' in step && step.record !== undefined && step.record !== null) {
       if (step.record !== 'trigger') return false
     }

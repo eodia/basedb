@@ -299,17 +299,34 @@ vues, ses tableaux de bord, ses automatisations, le nombre de lignes d'exemple, 
 champ calculé par l'IA avec sa consigne. La personne choisit le libellé de la base et, si
 le modèle a des champs IA, coche ou non le consentement du chapitre 12 §1.5.
 
-L'interface applique ensuite, dans l'ordre : la base ; chaque table avec son premier
+**Le serveur applique le modèle, en une opération** : `POST /admin/bases` avec
+`template` — la clé d'un modèle du catalogue, ou le modèle entier, validé comme un import
+(§2) avant que rien ne soit créé. Dans l'ordre : la base ; chaque table avec son premier
 champ ; les champs simples ; les relations ; les champs calculés (formules, recherches,
 cumuls, décomptes) ; les champs IA ; les colonnes d'affichage ; les lignes, table par
 table, les relations résolues par leurs clés ; les automatisations de bouton puis les
-boutons ; les vues ; les tableaux de bord ; les autres automatisations. Chaque étape est
-dite à l'écran.
+boutons ; les vues ; les tableaux de bord ; les autres automatisations. Chaque étape passe
+par les mêmes opérations du noyau que la route qui la ferait seule, sous les droits de
+l'appelant : un modèle ne fait rien que la personne ne pourrait faire.
+
+Avec `Accept: application/x-ndjson`, la réponse arrive ligne à ligne : une ligne
+`{"step": …}` par étape — c'est ce que l'écran dit — puis la réponse, ou l'erreur. Sans
+lui, une seule réponse `201` à la fin : `data` (identifiant, nom, libellé de la base) et
+`meta.template` — le nombre de champs IA créés sans l'IA, si des lignes d'exemple ont été
+écrites, les champs laissés facultatifs. Un programme — l'installation d'une application
+qui crée sa base — n'a donc qu'un appel à faire, avec le jeton d'accès d'une personne
+autorisée à créer une base : un jeton d'intégration n'ouvre qu'une base existante.
+
+**Tout ou rien.** Une étape qui échoue arrête la suite, et la base commencée est
+supprimée — elle rejoint la corbeille comme toute base supprimée, et son libellé redevient
+libre. L'erreur est celle de l'étape, avec dans `details.template` l'étape en cause, le nom
+de la base et `discarded: true` une fois la suppression faite. Ce n'est pas une
+transaction unique — une base se construit en plusieurs migrations de son schéma —, mais
+personne ne voit plus de base à moitié construite.
 
 Un champ IA est créé **sans l'IA**, comme un champ ordinaire de son type, quand la
-personne n'a pas consenti ou que l'IA n'est pas configurée ; ses valeurs d'exemple sont
-alors écrites, et l'écran le dit. Une étape qui échoue arrête la suite : la base existe,
-incomplète, et l'écran dit jusqu'où elle a été construite.
+personne n'a pas consenti (`ai_consent`) ou que l'IA n'est pas configurée ; ses valeurs
+d'exemple sont alors écrites, et l'écran le dit.
 
 ---
 
@@ -361,6 +378,7 @@ automatisation.
 | `POST` | `/admin/templates` | importer un modèle dans l'instance, ou remplacer celui de même clé | administrateur de l'instance | session seule |
 | `DELETE` | `/admin/templates/{key}` | retirer un modèle de l'instance | administrateur de l'instance | session seule |
 | `POST` | `/admin/templates/draft` | une proposition de l'IA : `{project, request, previous?}` | `manage_schema` sur le projet | session seule |
+| `POST` | `/admin/bases` | avec `template` (clé ou modèle entier), `label?`, `description?`, `project?`, `rows?`, `ai_consent?`, `language?` : une base construite du modèle, tout ou rien (§4) ; les étapes en NDJSON si demandé | `manage_schema` sur le projet | session seule |
 
 ---
 
@@ -370,8 +388,10 @@ automatisation.
   validation, partagée, et un modèle écrit à la main ou par l'IA se lit de la même façon.
 - **Le site public publie, les instances lisent** : modifier la galerie de toutes les
   instances ne demande ni nouvelle version, ni redéploiement.
-- **Appliqué par l'interface** : un modèle, d'où qu'il vienne, ne fait rien que la personne
-  ne pourrait faire, et ne contient rien qui ouvre une porte (§1.3).
+- **Appliqué par le serveur, sous les droits de l'appelant** : un modèle, d'où qu'il
+  vienne, ne fait rien que la personne ne pourrait faire, et ne contient rien qui ouvre une
+  porte (§1.3) ; et un programme l'applique en un appel, sans rejouer l'enchaînement de
+  l'interface ni laisser une base à moitié construite.
 - **Réparer la proposition de l'IA plutôt que la refuser** : un modèle aux trois quarts
   juste vaut mieux qu'un refus, à condition de dire ce qui a été retiré.
 - **Un modèle officiel, un texte français, des dictionnaires** (§3.4) plutôt qu'une copie

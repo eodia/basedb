@@ -147,5 +147,5 @@ Alla databaser kan också bli en mall: **Spara som mall** i databasens meny, und
 åtgärder**. Dess tabeller, fält, AI-instruktioner, relationer, delade vyer, instrumentpaneler och
 automatiseringar – och, om du vill, upp till 50 rader per tabell – laddas ned som JSON, redo att
 läggas till i den officiella katalogen eller i instansens. En automatisering som hittar en rad,
-tar olika grenar eller citerar ett tidigare steg lämnas utanför tills vidare, och skärmen säger
-det.
+går igenom rader, tar olika grenar eller citerar ett tidigare steg lämnas utanför tills vidare,
+och skärmen säger det.

@@ -50,6 +50,7 @@ description: basedbが読み込むすべての変数と、そのデフォルト�
 | `BASEDB_PORT` | `3000` | 127.0.0.1上で公開するポート：インターフェース、`/api`、`/mcp` |
 | `BASEDB_VERSION` | `latest` | `eodia/basedb`イメージのタグ |
 | `BASEDB_PUBLIC_URL` | — | basedbの公開アドレス（OIDCのリダイレクト用） |
+| `BASEDB_BASE_PATH` | `BASEDB_PUBLIC_URL`のパス | ゲートウェイの配下でbasedbが提供されるパス。`https://passerelle.example.com/basedb/`の場合は`/basedb`。[Docker Compose](/basedb/ja/hebergement/docker/#ゲートウェイの配下パスの下で)を参照 |
 | `BASEDB_DOMAIN` | — | CaddyプロキシがHTTPSで提供するドメイン |
 | `BASEDB_ORIGINS` | — | ブラウザーからAPIを呼び出すページを持つ他のサイト（カンマ区切り）。同じアドレスで提供されるbasedbのインターフェースには不要です |
 | `BASEDB_API`、`BASEDB_MCP` | `/`、`/mcp` | ブラウザーから見たAPIとMCP。開発スタック（`pnpm start`）の場合にのみ設定します |
@@ -115,6 +116,14 @@ expéditeur no-reply@exemple.fr.` サーバーが拒否したメールは、1分
 | `BASEDB_AI_QUOTA` | `120` | テナントごとの1時間あたりの対話的な呼び出し回数 |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | テナントごとの1時間あたりのAIフィールドの計算回数 |
 | `BASEDB_AI_WORKER` | `1` | `0`：このプロセスではバックグラウンド計算を行いません |
+
+## 社内ネットワークへのWebhook
+
+| 変数 | デフォルト | 役割 |
+|---|---|---|
+| `BASEDB_WEBHOOK_ALLOW` | — | 社内サーバー（カンマ区切り）：ホスト名（`chat.intra.example.com`）、ドメインとそのサブドメイン（`*.intra.example.com`）、アドレスまたは範囲（`10.12.0.0/16`） |
+
+Webhook、オートメーションのHTTPリクエスト、同期テーブルは、公開されたHTTPSアドレスにしか送信されません。これに加えて、一覧にあるターゲットは、アドレス、ポート、スキーム——HTTPも含め——を問わず受け付けられます。読み取れないエントリーがあると起動できません。[Webhook](/basedb/ja/integrations/webhooks/#送信先)をご覧ください。
 
 ## 公開デモ
 

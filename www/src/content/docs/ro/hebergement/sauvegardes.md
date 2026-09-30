@@ -36,9 +36,9 @@ Cu o stocare S3, urmați politica de copii de rezervă a furnizorului dumneavoas
 ## Cheia instanței
 
 `BASEDB_ENCRYPTION_KEY` criptează secretele salvate în baza de date (chei AI, secrete de
-webhook-uri, linkuri de formulare). **O copie de rezervă a bazei de date fără cheia ei nu
-restaurează aceste secrete.** Păstrați-o în managerul dumneavoastră de secrete, alături de
-copiile de rezervă.
+webhook-uri, anteturi secrete ale automatizărilor, linkuri de formulare). **O copie de rezervă
+a bazei de date fără cheia ei nu restaurează aceste secrete.** Păstrați-o în managerul
+dumneavoastră de secrete, alături de copiile de rezervă.
 
 ## Actualizarea
 
@@ -49,7 +49,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` fixează o versiune precisă (`0.4.0`) în locul celei mai recente (`latest`).
+`BASEDB_VERSION` fixează o versiune precisă (`0.5.0`) în locul celei mai recente (`latest`).
 
 La pornire, basedb **își actualizează singur catalogul**: aplică, în ordine și fiecare în
 tranzacția ei, migrările pe care versiunea dumneavoastră nu le are încă și le înscrie în

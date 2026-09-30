@@ -35,7 +35,7 @@ Replikation).
 ## Der Instanzschlüssel
 
 `BASEDB_ENCRYPTION_KEY` verschlüsselt die in der Datenbank gespeicherten Geheimnisse (KI-Schlüssel,
-Webhook-Geheimnisse, Formular-Links). **Ein Backup der Datenbank ohne ihren Schlüssel stellt diese
+Webhook-Geheimnisse, geheime Header von Automatisierungen, Formular-Links). **Ein Backup der Datenbank ohne ihren Schlüssel stellt diese
 Geheimnisse nicht wieder her.** Bewahren Sie ihn in Ihrem Secret-Manager auf, neben den Backups.
 
 ## Aktualisieren
@@ -47,7 +47,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` legt eine bestimmte Version fest (`0.4.0`) statt der neuesten (`latest`).
+`BASEDB_VERSION` legt eine bestimmte Version fest (`0.5.0`) statt der neuesten (`latest`).
 
 Beim Start **aktualisiert basedb seinen Katalog selbst**: Es wendet der Reihe nach, jede in ihrer
 eigenen Transaktion, die Migrationen an, die Ihrer Version noch fehlen, und trägt sie in

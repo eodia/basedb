@@ -35,7 +35,7 @@ réplication).
 ## La clé d’instance
 
 `BASEDB_ENCRYPTION_KEY` chiffre les secrets enregistrés dans la base (clés d’IA, secrets de
-webhooks, liens de formulaires). **Une sauvegarde de la base sans sa clé ne restaure pas ces
+webhooks, en-têtes secrets des automatisations, liens de formulaires). **Une sauvegarde de la base sans sa clé ne restaure pas ces
 secrets.** Conservez-la dans votre gestionnaire de secrets, à côté des sauvegardes.
 
 ## Mettre à jour
@@ -47,7 +47,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` fixe une version précise (`0.4.0`) plutôt que la dernière (`latest`).
+`BASEDB_VERSION` fixe une version précise (`0.5.0`) plutôt que la dernière (`latest`).
 
 Au démarrage, basedb **met son catalogue à jour de lui-même** : il applique, dans l’ordre et
 chacune dans sa transaction, les migrations que votre version n’a pas encore, et les inscrit

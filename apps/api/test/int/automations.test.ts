@@ -486,6 +486,105 @@ describe('a flow', () => {
   })
 })
 
+describe('a loop', () => {
+  it('runs its steps once per row found, up to its limit, and says how many', async () => {
+    for (const nom of ['Boucle C', 'Boucle A', 'Boucle B']) {
+      await call(TASKS(), 'POST', { values: { nom, statut: 'a_faire' } })
+    }
+    await settle()
+    const automation = await data<{ id: string; actions: Array<Record<string, unknown>> }>(
+      await call(AUTOMATIONS(), 'POST', {
+        label: 'Relances',
+        trigger: { kind: 'schedule', schedule: { every: 'day', at: '07:00' } },
+        actions: [
+          {
+            kind: 'for_each',
+            table: 'taches',
+            filter: 'nom starts_with "Boucle" and statut eq "a_faire"',
+            sort: 'nom',
+            limit: 2,
+            steps: [
+              { kind: 'update_record', record: 'e1', values: { note: 'relancée : {{e1.nom}}' } },
+              {
+                kind: 'branch',
+                paths: [
+                  {
+                    when: { record: 'e1', condition: 'nom eq "Boucle A"' },
+                    steps: [
+                      { kind: 'create_record', table: 'journal', values: { entree: 'A vue' } },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          { kind: 'create_record', table: 'journal', values: { entree: '{{e1.nombre}} relances' } },
+        ],
+      }),
+    )
+    expect(automation.actions[0]).toMatchObject({
+      id: 'e1',
+      kind: 'for_each',
+      limit: 2,
+      steps: [{ id: 'e2' }, { id: 'e3', paths: [{ id: 'c1', steps: [{ id: 'e4' }] }] }],
+    })
+    await client.query(
+      `UPDATE _basedb.automation SET next_run_at = now() - interval '1 minute' WHERE id = $1`,
+      [automation.id],
+    )
+    await settle()
+
+    // The first two by name; the third is left for the next run.
+    const tasks = await data<Array<{ nom: string; note: string | null }>>(
+      await call(`${TASKS()}?filter=${encodeURIComponent('nom starts_with "Boucle"')}&sort=nom`),
+    )
+    expect(tasks.map((t) => [t.nom, t.note])).toEqual([
+      ['Boucle A', 'relancée : Boucle A'],
+      ['Boucle B', 'relancée : Boucle B'],
+      ['Boucle C', null],
+    ])
+    const journal = await data<Array<{ entree: string }>>(await call(`${V1}/data/${base}/journal`))
+    expect(journal.map((j) => j.entree)).toEqual(expect.arrayContaining(['A vue', '2 relances']))
+
+    // Each step of the loop kept once, with its turns.
+    const [run] = await runsOf(automation.id)
+    expect(run?.status).toBe('succeeded')
+    expect(
+      run?.steps.map((s) => {
+        const t = s as typeof s & { times?: number; more?: boolean; taken?: string[] }
+        return [s.step, s.status, s.detail, t.times, t.more ?? t.taken]
+      }),
+    ).toEqual([
+      ['e1', 'succeeded', '2', undefined, true],
+      ['e2', 'succeeded', 'note', 2, undefined],
+      ['e3', 'succeeded', 'Chemin 1', 2, ['c1']],
+      ['e4', 'succeeded', expect.any(String), 1, undefined],
+      ['e5', 'succeeded', expect.any(String), undefined, undefined],
+    ])
+  })
+
+  it('is refused inside another, or cited as a row after it', async () => {
+    const refusal = async (actions: unknown[]) =>
+      (
+        await call(AUTOMATIONS(), 'POST', {
+          label: 'Refusée',
+          trigger: { kind: 'record_created', table: 'taches' },
+          actions,
+        })
+      ).json()
+    const loop = (steps: unknown[]) => ({ kind: 'for_each', table: 'journal', steps })
+    expect(await refusal([loop([loop([])])])).toMatchObject({
+      details: { reason: 'boucle_dans_boucle' },
+    })
+    expect(
+      await refusal([loop([]), { kind: 'update_record', record: 'e1', values: { entree: 'x' } }]),
+    ).toMatchObject({ details: { reason: 'etape_sans_ligne', detail: 'e1' } })
+    expect(await refusal([{ ...loop([]), limit: 500 }])).toMatchObject({
+      details: { reason: 'limite_invalide' },
+    })
+  })
+})
+
 describe('an AI step', () => {
   let automation = ''
   const asked: Array<{ instruction: string; format: unknown }> = []

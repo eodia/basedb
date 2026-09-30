@@ -29,8 +29,8 @@ A lemezkép a `node` felhasználóval fut, Node 22-n, deklarál egy állapot-ell
 | Címke | Tartalom |
 |---|---|
 | `latest` | a legutóbb kiadott verzió |
-| `0.4` | a legutóbbi 0.4.x verzió |
-| `0.4.0` | pontosan ez a verzió |
+| `0.5` | a legutóbbi 0.5.x verzió |
+| `0.5.0` | pontosan ez a verzió |
 
 ## A szolgáltatások
 
@@ -52,6 +52,25 @@ docker compose down                 # leállítás (a kötetek megmaradnak)
 
 A tároló egy klónjából a `docker compose up -d --build` a forráskódból építi fel a lemezképet
 ahelyett, hogy letöltené.
+
+## Egy átjáró mögött, egy elérési út alatt
+
+Amikor a basedb egy elérési út alatt jelenik meg — `https://passerelle.example.com/basedb/`,
+nem pedig egy domain gyökerén —, adja meg ezt az elérési utat:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# vagy, nyilvános cím nélkül:
+BASEDB_BASE_PATH=/basedb
+```
+
+Ettől kezdve minden a `/basedb` alatt megy: a felület, a `/basedb/api`, a `/basedb/mcp`, a
+megosztási hivatkozások és az e-mailekben szereplők. Az átjáró **megtarthatja az elérési
+utat**, továbbítva a kérést, vagy **eltávolíthatja**: a basedb mindkettőt elfogadja. A
+`BASEDB_BASE_PATH=/` a gyökeret kényszeríti ki.
+
+A lemezkép ugyanaz minden cím esetén: az elérési út a konténer indításakor íródik be a
+felületbe, és az elérési út módosítása csak egy újraindítást igényel.
 
 ## A portok módosítása
 

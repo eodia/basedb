@@ -146,5 +146,5 @@ Enhver database kan også bli en mal: **Lagre som mal** i databasens meny,
 under **Flere handlinger**. Tabellene, feltene, KI-instruksjonene, relasjonene, de delte visningene, instrumentbordene og
 automatiseringene – og, om du vil, opptil 50 rader per tabell – lastes ned i
 JSON, klare til å bli med i den offisielle katalogen eller instansens. En automatisering som
-finner en rad, tar grener eller refererer til et tidligere trinn, holdes utenfor foreløpig,
-og skjermen sier ifra om det.
+finner en rad, gjennomgår rader, tar grener eller refererer til et tidligere trinn, holdes
+utenfor foreløpig, og skjermen sier ifra om det.

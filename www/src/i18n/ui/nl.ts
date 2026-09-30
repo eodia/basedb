@@ -1536,6 +1536,28 @@ export default {
 		title: 'Wat er in basedb is veranderd',
 		intro: 'Elke wijziging in detail staat in <a href="https://github.com/eodia/basedb/commits/main">de geschiedenis van de repository</a>. Wat er hierna komt: de <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'Voor toepassingen die op basedb bouwen',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Een database met één aanroep aangemaakt vanuit een sjabloon</strong>: de server past het hele sjabloon toe — tabellen, relaties, rijen, weergaven, automatiseringen — of niets als een stap mislukt. De galerij gebruikt dit, een toepassing die zich ook installeert. <a href="/integrations/api-rest/#een-database-aanmaken-vanuit-een-sjabloon">Een database aanmaken vanuit een sjabloon</a>',
+					'<strong>Een token controleren</strong>: een toepassing waaraan het token van iemand wordt doorgegeven, vraagt basedb of het nog geldig is, en voor wie — zijn account, zijn groepen. <a href="/integrations/api-rest/#een-token-controleren">Een token controleren</a>',
+					'<strong>Je interne servers</strong>: webhooks en automatiseringen bereiken degenen die je opgeeft in <code>BASEDB_WEBHOOK_ALLOW</code>, HTTP inbegrepen; een programma kan ook een tabel in realtime volgen met een integratietoken. <a href="/integrations/webhooks/#zonder-webhook-een-tabel-volgen">Een tabel volgen</a>',
+					'<strong>Onder een pad, achter een gateway</strong>: basedb wordt gepubliceerd op een adres zoals <code>https://passerelle.example.com/basedb/</code>, of de gateway het pad nu behoudt of verwijdert. <a href="/hebergement/docker/#achter-een-gateway-onder-een-pad">Achter een gateway</a>',
+					'<strong>Één webhook, alle tabellen tegelijk</strong>: een gebeurtenis aan- of uitvinken voor alle tabellen, of alle gebeurtenissen van één tabel, met één klik.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automatiseringen die je rijen doorlopen en met API’s praten',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Voor elke rij</strong>: een stap die zijn eigen stappen herhaalt op elke rij van een tabel die aan een filter voldoet — elke maandag alle onbetaalde facturen aanmanen, niet alleen de eerste. <a href="/fonctionnalites/automatisations/#voor-elke-rij">Voor elke rij</a>',
+					'<strong>Een webhook die met elke API praat</strong>: de methode, een adres dat de rij citeert, headers, een body in JSON, als formulier of als tekst, samengesteld met de waarden van de rij. <a href="/fonctionnalites/automatisations/#een-dienst-aanroepen">Een dienst aanroepen</a>',
+					'<strong>Een API-sleutel blijft geheim</strong>: versleuteld wordt hij nooit meer getoond — niet op het scherm, niet door de API, niet aan Copilot — en gaat alleen naar de host waarvoor je hem hebt opgegeven.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'De landkaart, en adressen die zich laten vinden',
@@ -1888,8 +1910,8 @@ export default {
 						text: 'SQL-views meekopiëren met de structuur bij het aanmaken of vergelijken van omgevingen, en in databasesjablonen.',
 					},
 					loops: {
-						title: 'Lussen en wachttijden in automatiseringen',
-						text: 'Stappen herhalen voor elke gevonden rij, wachten vóór de volgende (“drie dagen later”), en flows meenemen in databasesjablonen.',
+						title: 'Wachttijden in automatiseringen',
+						text: 'Wachten vóór de volgende stap (“drie dagen later”), en flows – voorwaarden, zoekacties, lussen – meenemen in databasesjablonen.',
 					},
 					textFormulas: {
 						title: 'Formules op tekst',

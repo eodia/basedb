@@ -389,6 +389,8 @@ Lues et validées **une fois au démarrage**. Une variable manquante ou malform�
 | `BASEDB_ENCRYPTION_KEY` | oui | Clé d'instance (A25) : 32 octets en base64, préfixés d'un numéro de version. Protège les secrets stockés et les curseurs opaques |
 | `BASEDB_SESSION_SECRET` | oui | Signature des cookies de session (chapitre 13) |
 | `BASEDB_PUBLIC_URL` | oui | URL publique ; redirections OIDC, liens des webhooks, domaine du cookie |
+| `BASEDB_BASE_PATH` | non | Chemin sous lequel basedb est servi derrière une passerelle (`/basedb` pour `https://passerelle.exemple.fr/basedb/`) ; à défaut, le chemin de `BASEDB_PUBLIC_URL`. L'interface est construite une fois avec un marqueur à sa place, que l'image remplace au démarrage ; son routeur accepte les requêtes avec le chemin (passerelle qui le garde) ou sans (passerelle qui le retire) |
+| `BASEDB_WEBHOOK_ALLOW` | non | Serveurs internes que webhooks, automatisations et tables synchronisées peuvent joindre malgré le filtre d'adresses : noms, domaines `*.`, adresses, plages (chapitre 08 §10.8) |
 | `BASEDB_ROLE` | non | `migrate` \| `serve` \| `both` ; **défaut `serve`** (§9.2) |
 | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_TENANT_LABEL` | au premier démarrage | Amorçage |
 | `LOG_LEVEL`, `NODE_ENV`, `PORT`, `TZ=UTC` | — | |

@@ -73,7 +73,7 @@ Guarda la clave generada: consulta el recuadro de abajo.
 
 :::caution[La clave de instancia]
 `BASEDB_ENCRYPTION_KEY` firma las sesiones y cifra los secretos guardados (claves de IA,
-secretos de webhooks, enlaces de formularios). Cambiarla desconecta a todo el mundo y deja
+secretos de webhooks, encabezados secretos de las automatizaciones, enlaces de formularios). Cambiarla desconecta a todo el mundo y deja
 ilegibles esos secretos. Genérala una sola vez y guárdala junto con la copia de seguridad de la
 base de datos.
 :::

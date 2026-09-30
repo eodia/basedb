@@ -73,7 +73,7 @@ Gardez la clé générée : voir l’encadré ci-dessous.
 
 :::caution[La clé d’instance]
 `BASEDB_ENCRYPTION_KEY` signe les sessions et chiffre les secrets enregistrés (clés d’IA,
-secrets de webhooks, liens de formulaires). La changer déconnecte tout le monde et rend ces
+secrets de webhooks, en-têtes secrets des automatisations, liens de formulaires). La changer déconnecte tout le monde et rend ces
 secrets illisibles. Générez-la une fois, sauvegardez-la avec la base.
 :::
 

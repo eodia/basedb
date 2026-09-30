@@ -5,6 +5,7 @@ import {
   GAP_Y,
   STEP_SIZE,
   TRIGGER_NODE,
+  frameOf,
   layoutFlow,
   mergeOf,
 } from '../../src/lib/automation-layout'
@@ -17,18 +18,25 @@ import {
   draftOfDefinition,
   emptyDraft,
   filterIssue,
+  findStep,
+  inLoop,
   inputOf,
   insertStep,
+  jsonBodyIssue,
+  loopsAround,
   moveStep,
   newStep,
+  referencesOf,
   removeStep,
   rowChoices,
   runSentence,
+  runStepSentence,
   runStepsById,
   stepProblem,
   stepsAtSlot,
   stepsBefore,
   withoutCitations,
+  withoutJsonCitations,
 } from '../../src/lib/automations'
 
 /**
@@ -230,7 +238,10 @@ describe('the automation editor', () => {
 
 describe('editing the flow', () => {
   const draft = draftOf(flow, base)
-  const step = (id: string): DraftStep => ({ id, kind: 'webhook', record: '', url: 'https://x' })
+  const step = (id: string): DraftStep => ({
+    ...newStep('webhook', draft, base, id),
+    url: 'https://x',
+  })
 
   it('inserts, moves and removes a step in its own sequence, a path’s included', () => {
     const inPath = insertStep(draft.steps, 'c2', 0, step('e9'))
@@ -419,6 +430,251 @@ describe('the flow on the canvas', () => {
       ['c1', { path: 'c1', index: 0 }],
       ['c2', { path: 'c2', index: 0 }],
     ])
+  })
+})
+
+describe('a webhook composed', () => {
+  const webhook: Automation = {
+    ...automation,
+    actions: [
+      {
+        id: 'e1',
+        kind: 'webhook',
+        record: 'trigger',
+        url: 'https://api.exemple.fr/clients/{{nom}}',
+        method: 'PUT',
+        headers: [
+          { name: 'Authorization', value: null, secret: true, host: 'api.exemple.fr' },
+          { name: 'X-Trace', value: '{{_id}}', secret: false },
+        ],
+        body: '{"nom": "{{nom}}"}',
+        format: 'json',
+      },
+    ],
+  }
+
+  it('keeps a secret it never saw, and sends back what was typed', () => {
+    const draft = draftOf(webhook, base)
+    expect(draft.steps[0]).toMatchObject({
+      method: 'PUT',
+      body: 'json',
+      template: '{"nom": "{{nom}}"}',
+      headers: [
+        { name: 'Authorization', value: '', secret: true, kept: true, host: 'api.exemple.fr' },
+        { name: 'X-Trace', value: '{{_id}}', secret: false, kept: false },
+      ],
+    })
+    // Sent back as read: the kept secret without a value, the host left to the kernel.
+    expect(inputOf(draft).actions?.[0]).toEqual({
+      id: 'e1',
+      kind: 'webhook',
+      record: 'trigger',
+      url: 'https://api.exemple.fr/clients/{{nom}}',
+      method: 'PUT',
+      headers: [
+        { name: 'Authorization', value: null, secret: true },
+        { name: 'X-Trace', value: '{{_id}}', secret: false },
+      ],
+      body: '{"nom": "{{nom}}"}',
+      format: 'json',
+    })
+    // A GET sends no body; a blank header row does not travel.
+    const get = {
+      ...draft,
+      steps: [
+        {
+          ...(draft.steps[0] as Extract<DraftStep, { kind: 'webhook' }>),
+          method: 'GET' as const,
+          headers: [{ name: '', value: '', secret: true, kept: false, host: '' }],
+        },
+      ],
+    }
+    expect(inputOf(get).actions?.[0]).toMatchObject({ method: 'GET', headers: [], body: null })
+  })
+
+  it('says what stops it before the API does', () => {
+    const draft = draftOf(webhook, base)
+    const step = draft.steps[0] as Extract<DraftStep, { kind: 'webhook' }>
+    expect(stepProblem(step, draft)).toBeNull()
+    expect(stepProblem({ ...step, url: 'https://{{nom}}.exemple.fr/' }, draft)).toMatch(/hôte/)
+    // Another host: the secret kept for the first one must be given again.
+    expect(stepProblem({ ...step, url: 'https://autre.exemple.fr/x' }, draft)).toMatch(
+      /Authorization/,
+    )
+    expect(stepProblem({ ...step, template: '{"nom": {{nom}' }, draft)).toMatch(/JSON/)
+    const unsaid = { name: 'X-Cle', value: '', secret: true, kept: false, host: '' }
+    expect(stepProblem({ ...step, headers: [unsaid] }, draft)).toMatch(/X-Cle/)
+  })
+
+  it('reads a citation in a JSON body as the run will put it', () => {
+    expect(withoutJsonCitations('{"a": "x {{nom}}", "b": {{montant}}}')).toBe(
+      '{"a": "x x", "b": 0}',
+    )
+    expect(jsonBodyIssue('{"a": "{{nom}}", "b": {{e2.reponse}}}')).toBeNull()
+    expect(jsonBodyIssue('{a: 1}')).toMatch(/JSON invalide/)
+  })
+
+  it('is cited by its answer, and cites what it sends', () => {
+    const draft = draftOf(webhook, base)
+    expect(referencesOf(draft.steps[0] as DraftStep)).toEqual([])
+    const cites = {
+      ...(draft.steps[0] as Extract<DraftStep, { kind: 'webhook' }>),
+      url: 'https://api.exemple.fr/{{e7.numero}}',
+      template: '{"x": {{e8.total}}}',
+    }
+    expect(referencesOf(cites)).toEqual(['e7', 'e8'])
+  })
+})
+
+describe('a loop', () => {
+  /** Every morning, for each task to do: note it, and when urgent, write to the journal. */
+  const loop: Automation = {
+    ...automation,
+    trigger: {
+      kind: 'schedule',
+      table: null,
+      fields: [],
+      schedule: { every: 'day', at: '08:00', weekday: 1, timezone: 'Europe/Paris' },
+    },
+    condition: null,
+    actions: [
+      {
+        id: 'e1',
+        kind: 'for_each',
+        table: 't1',
+        filter: 'statut eq "a_faire"',
+        sort: '-nom',
+        limit: 20,
+        steps: [
+          { id: 'e2', kind: 'update_record', record: 'e1', values: { nom: '{{e1.nom}} !' } },
+          {
+            id: 'e3',
+            kind: 'branch',
+            paths: [
+              {
+                id: 'c1',
+                label: 'Urgente',
+                when: { record: 'e1', condition: 'statut eq "urgent"' },
+                steps: [
+                  {
+                    id: 'e4',
+                    kind: 'create_record',
+                    table: 't2',
+                    values: { entree: '{{e1.nom}}' },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      { id: 'e5', kind: 'create_record', table: 't2', values: { entree: '{{e1.nombre}}' } },
+    ],
+  }
+  const draft = draftOf(loop, base)
+
+  it('keeps its table, filter, order, limit and steps, both ways', () => {
+    expect(draft.steps[0]).toMatchObject({
+      id: 'e1',
+      kind: 'for_each',
+      table: 'taches',
+      filter: 'statut eq "a_faire"',
+      sort: '-nom',
+      limit: 20,
+    })
+    expect(inputOf(draft).actions).toEqual(
+      loop.actions.map((s) =>
+        s.kind === 'for_each'
+          ? { ...s, table: 'taches', steps: expect.any(Array) }
+          : { ...s, table: 'journal' },
+      ),
+    )
+    expect((inputOf(draft).actions?.[0] as { steps: unknown[] }).steps[1]).toMatchObject({
+      kind: 'branch',
+      paths: [{ id: 'c1', steps: [{ id: 'e4', table: 'journal' }] }],
+    })
+  })
+
+  it('edits its own sequence, and holds what is inserted there', () => {
+    const inside = insertStep(draft.steps, 'e1', 0, newStep('notify', draft, base, 'e9'))
+    const loopStep = inside[0] as Extract<DraftStep, { kind: 'for_each' }>
+    expect(loopStep.steps.map((s) => s.id)).toEqual(['e9', 'e2', 'e3'])
+    expect(moveStep(inside, 'e9', 1)[0]).toMatchObject({
+      steps: [{ id: 'e2' }, { id: 'e9' }, { id: 'e3' }],
+    })
+    expect(removeStep(inside, 'e9')).toEqual(draft.steps)
+    expect(inLoop(draft.steps, 'e1')).toBe(true)
+    expect(inLoop(draft.steps, 'c1')).toBe(true)
+    expect(inLoop(draft.steps, null)).toBe(false)
+  })
+
+  it('gives its steps the row of the turn, and what follows how many rows it went through', () => {
+    // Inside, the loop is passed on every way — and it is around them.
+    expect(stepsBefore(draft.steps, 'e4')?.map((s) => s.id)).toEqual(['e1', 'e2'])
+    expect(loopsAround(draft.steps, 'e4')).toEqual(['e1'])
+    expect(loopsAround(draft.steps, 'e5')).toEqual([])
+    const inside = stepsBefore(draft.steps, 'e2') ?? []
+    expect(rowChoices(draft, base, inside, ['e1']).map((c) => [c.value, c.table])).toEqual([
+      ['e1', 'taches'],
+    ])
+    expect(citeGroups(draft, base, inside, ['e1'])[0]?.items.map((i) => i.token)).toEqual([
+      '{{e1.nom}}',
+      '{{e1.statut}}',
+      '{{e1._id}}',
+    ])
+    // After it: no row to act on, how many it went through to cite.
+    const after = stepsBefore(draft.steps, 'e5') ?? []
+    expect(after.map((s) => s.id)).toEqual(['e1'])
+    expect(rowChoices(draft, base, after, [])).toEqual([])
+    expect(citeGroups(draft, base, after, [])[0]?.items).toEqual([
+      { label: 'Nombre de lignes parcourues', token: '{{e1.nombre}}' },
+    ])
+    expect(stepsAtSlot(draft.steps, 'e1', 1).map((s) => s.id)).toEqual(['e1', 'e2'])
+  })
+
+  it('says what stops it, and how a run went through it', () => {
+    const own = draft.steps[0] as Extract<DraftStep, { kind: 'for_each' }>
+    expect(stepProblem(own, draft)).toBeNull()
+    expect(stepProblem({ ...own, limit: 500 }, draft)).toMatch(/200/)
+    const nested = insertStep(draft.steps, 'e1', 0, newStep('for_each', draft, base, 'e9'))
+    expect(stepProblem(findStep(nested, 'e9') as DraftStep, { ...draft, steps: nested })).toMatch(
+      /boucle/,
+    )
+    expect(
+      runStepSentence({
+        step: 'e1',
+        kind: 'for_each',
+        status: 'succeeded',
+        detail: '20',
+        more: true,
+      }),
+    ).toBe('20 lignes parcourues — limite atteinte')
+    expect(
+      runStepSentence({ step: 'e2', kind: 'update_record', status: 'succeeded', times: 3 }),
+    ).toBe('fait · 3 fois')
+  })
+
+  it('draws its steps in a frame, from its card down to where a turn ends', () => {
+    const { nodes, edges } = layoutFlow(draft)
+    const at = (id: string) => nodes.find((n) => n.id === id)
+    const frame = at(frameOf('e1'))
+    const card = at('e1')
+    const end = at(mergeOf('e1'))
+    // The frame is laid before the card, so that the card lies over it.
+    expect(nodes.findIndex((n) => n.id === frameOf('e1'))).toBeLessThan(
+      nodes.findIndex((n) => n.id === 'e1'),
+    )
+    expect(frame?.y).toBe((card?.y ?? 0) + STEP_SIZE.h / 2)
+    expect((frame?.y ?? 0) + (frame?.h ?? 0)).toBeGreaterThan(end?.y ?? 0)
+    expect((frame?.x ?? 0) + (frame?.w ?? 0) / 2).toBe(0)
+    expect(edges.find((e) => e.source === 'e1')).toMatchObject({
+      target: 'e2',
+      insert: { path: 'e1', index: 0 },
+    })
+    expect(edges.find((e) => e.target === mergeOf('e1'))?.insert).toEqual({ path: 'e1', index: 2 })
+    // After the loop, the flow goes on from where a turn ends.
+    expect(edges.find((e) => e.target === 'e5')?.source).toBe(mergeOf('e1'))
+    expect(at('e5')?.y).toBeGreaterThan((frame?.y ?? 0) + (frame?.h ?? 0))
   })
 })
 

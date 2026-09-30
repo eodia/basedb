@@ -70,12 +70,55 @@ Med det samme tokenet:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | instrumentbordene i en database |
 | `GET /api/v1/<tenant>/meta/users` | medlemmene av arbeidsområdet, for et Person-felt |
 | `GET /api/v1/<tenant>/meta/templates` | databasemalene i galleriet |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | følge en tabell i sanntid: signaler, som deretter leses på nytt av rutene over (se [Webhooks](/basedb/nb/integrations/webhooks/#uten-webhook-følge-en-tabell)) |
 
 [Delte visninger](/basedb/nb/fonctionnalites/vues-partagees/) kan leses uten konto:
 `GET /api/v1/views/<jeton>` og `…/rows` i JSON, `…/calendar.ics` i iCalendar.
 
 Å bygge – opprette en automatisering, et instrumentbord, en integrasjon – er fortsatt forbeholdt
 en økt i grensesnittet: et token leser og skriver rader, det endrer ikke databasen.
+
+## Opprette en database fra en mal
+
+En applikasjon som installerer seg, oppretter databasen sin med **ett kall**: serveren tar i
+bruk malen – tabeller, felt, relasjoner, eksempelrader, visninger, instrumentbord,
+automatiseringer – og hvis et trinn mislykkes, lar den ingen database bli værende.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` er nøkkelen til en mal i galleriet, eller en hel mal i
+[malformatet](/basedb/nb/fonctionnalites/modeles/). Med headeren
+`Accept: application/x-ndjson` kommer svaret linje for linje: én linje `{"step": …}` per trinn,
+så den opprettede databasen. Dette kallet krever tilgangstokenet til en person som kan opprette
+en database (`POST /auth/session/access`, etter innlogging): et integrasjonstoken åpner bare en
+eksisterende database.
+
+## Verifisere et token
+
+Tokenene til basedb kan ikke verifiseres utenfor basedb. En applikasjon som får ett – et
+verktøy åpnet fra basedb med tokenet til personen, for eksempel – spør hva det er verdt
+(introspeksjon, RFC 7662), med sitt eget integrasjonstoken:
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Et token som ikke er gyldig – ukjent, utløpt, tilbakekalt, avsluttet økt, annet arbeidsområde –
+svarer `{"active": false}`, uten å si hvorfor. Svaret leses i sanntid: en utlogging vises
+umiddelbart. For et integrasjonstoken forteller svaret også hvilken database det åpner (`base`),
+tilgangen dets (`read` eller `write`) og flatene dets.
 
 ## Den genererte dokumentasjonen
 

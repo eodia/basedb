@@ -147,5 +147,5 @@ Qualquer base também pode se tornar um modelo: **Salvar como modelo** no menu d
 base, em **Outras ações**. Suas tabelas, campos, instruções de IA, relações, visões compartilhadas, painéis e
 automações — e, se você quiser, até 50 linhas por tabela — são baixados em
 JSON, prontos para entrar no catálogo oficial ou no da instância. Uma automação que
-busca uma linha, segue ramificações ou cita uma etapa anterior fica de fora por
-enquanto, e a tela informa isso.
+busca uma linha, percorre linhas, segue ramificações ou cita uma etapa anterior fica
+de fora por enquanto, e a tela informa isso.

@@ -8,6 +8,7 @@ import {
   type OidcProvider,
   endpointFromEnv,
   parseAddress,
+  parseTrusted,
   smtpMailer,
   startKernel,
 } from '@basedb/core'
@@ -33,6 +34,26 @@ function setting(name: string): string | undefined {
   const value = process.env[name]
   return value === undefined || value.trim() === '' ? undefined : value
 }
+
+/**
+ * The path basedb is served under, behind a gateway at `https://gateway.exemple.fr/basedb/`:
+ * `BASEDB_BASE_PATH`, else the path of `BASEDB_PUBLIC_URL` — `/basedb`, or empty at the root.
+ */
+function basePathOf(): string {
+  // Empty counts as unset, as everywhere in the compose file; `/` says the root.
+  let raw = setting('BASEDB_BASE_PATH')
+  if (raw === undefined) {
+    const publicUrl = setting('BASEDB_PUBLIC_URL')
+    try {
+      raw = publicUrl === undefined ? '' : new URL(publicUrl).pathname
+    } catch {
+      raw = ''
+    }
+  }
+  const trimmed = raw.trim().replace(/[/]+$/, '')
+  return trimmed === '' ? '' : trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+}
+const basePath = basePathOf()
 
 const connectionString = setting('DATABASE_URL')
 if (connectionString === undefined) {
@@ -159,6 +180,18 @@ const maxFileMb = Number(setting('BASEDB_FILES_MAX_MB') ?? '')
 // relaxes that for a consumer on this machine — development only, and said at startup.
 const webhookDev = setting('BASEDB_WEBHOOK_DEV') === '1'
 
+// The servers of the operator's own network a webhook, an automation or a synced table may
+// reach all the same — names, `*.` domains, addresses, ranges (chapter 08 §10.8).
+function webhookAllow(): readonly string[] {
+  try {
+    return parseTrusted(setting('BASEDB_WEBHOOK_ALLOW') ?? '')
+  } catch (error) {
+    console.error(`BASEDB_WEBHOOK_ALLOW : ${(error as Error).message}.`)
+    process.exit(1)
+  }
+}
+const webhookTrusted = webhookAllow()
+
 // Where a purge writes its export first (chapter 06 §5.2): on this host, never on the
 // database server. `BASEDB_EXPORT_DIR`, by default `.basedb/exports` beside the files.
 const exportDir =
@@ -266,7 +299,7 @@ function oidcProviders(): OidcProvider[] {
 
 const kernel = startKernel({
   oidcProviders: oidcProviders(),
-  webhookTargets: { allowHttp: webhookDev, allowPrivate: webhookDev },
+  webhookTargets: { allowHttp: webhookDev, allowPrivate: webhookDev, trusted: webhookTrusted },
   exportDir,
   templatesUrl,
   connectionString,
@@ -281,6 +314,8 @@ const kernel = startKernel({
 })
 console.log(`Fichiers : ${kernel.files.storage}.`)
 console.log(mailSaid)
+if (basePath !== '')
+  console.log(`Chemin : servi sous ${basePath}/ (BASEDB_BASE_PATH ou chemin de BASEDB_PUBLIC_URL).`)
 console.log(
   geocoder.url === null
     ? 'Géocodage : aucun (BASEDB_GEOCODER_URL=off).'
@@ -295,6 +330,11 @@ console.log(
 if (webhookDev) {
   console.log(
     'Webhooks : mode développement — HTTP et adresses locales acceptés (BASEDB_WEBHOOK_DEV=1).',
+  )
+}
+if (webhookTrusted.length > 0) {
+  console.log(
+    `Webhooks : serveurs internes acceptés — ${webhookTrusted.join(', ')} (BASEDB_WEBHOOK_ALLOW).`,
   )
 }
 // The environment's AI provider, read once here: a mistyped name, address or header object
@@ -484,6 +524,7 @@ const app = createApp({
   // provider compares this return address character for character with the one
   // registered against the client identifier.
   publicUrl: setting('BASEDB_PUBLIC_URL'),
+  basePath,
   tenantRef: setting('BASEDB_TENANT'),
   demo,
 })

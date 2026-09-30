@@ -70,12 +70,55 @@ Cu același token:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | tablourile de bord ale unei baze |
 | `GET /api/v1/<tenant>/meta/users` | membrii spațiului de lucru, pentru un câmp Persoană |
 | `GET /api/v1/<tenant>/meta/templates` | șabloanele pentru baze din galerie |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | urmărirea unui tabel în timp real: semnale, recitite apoi prin rutele de mai sus (consultați [Webhook-uri](/basedb/ro/integrations/webhooks/#fără-webhook-urmărirea-unui-tabel)) |
 
 [Vizualizările partajate](/basedb/ro/fonctionnalites/vues-partagees/) se citesc fără cont:
 `GET /api/v1/views/<jeton>` și `…/rows` în JSON, `…/calendar.ics` în iCalendar.
 
 Construirea — crearea unei automatizări, a unui tablou de bord, a unei integrări — rămâne
 rezervată unei sesiuni din interfață: un token citește și scrie rânduri, nu schimbă baza.
+
+## Crearea unei baze dintr-un model
+
+O aplicație care se instalează își creează baza într-**un singur apel**: serverul aplică
+modelul — tabele, câmpuri, relații, rânduri de exemplu, vizualizări, tablouri de bord,
+automatizări — și, dacă o etapă eșuează, nu lasă nicio bază în urmă.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` este cheia unui model din galerie, sau un model întreg în
+[formatul modelelor](/basedb/ro/fonctionnalites/modeles/). Cu antetul
+`Accept: application/x-ndjson`, răspunsul ajunge linie cu linie: câte o linie `{"step": …}` pe
+etapă, apoi baza creată. Acest apel cere token-ul de acces al unei persoane care poate crea o
+bază (`POST /auth/session/access`, după conectare): un token de integrare deschide doar o bază
+existentă.
+
+## Verificarea unui token
+
+Token-urile basedb nu se verifică în afara basedb. O aplicație care primește unul — un
+instrument deschis din basedb cu token-ul persoanei, de exemplu — cere ce valorează
+(introspecție, RFC 7662), cu propriul ei token de integrare:
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Orice token care nu este valid — necunoscut, expirat, revocat, sesiune închisă, alt spațiu de
+lucru — răspunde `{"active": false}`, fără să spună de ce. Răspunsul este citit în direct: o
+deconectare se vede imediat. Pentru un token de integrare, răspunsul indică și baza pe care o
+deschide (`base`), accesul lui (`read` sau `write`) și suprafețele lui.
 
 ## Documentația generată
 

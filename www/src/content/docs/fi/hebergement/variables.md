@@ -52,6 +52,7 @@ Katso [Tilit ja kirjautuminen](/basedb/fi/hebergement/connexion/).
 | `BASEDB_PORT` | `3000` | osoitteeseen 127.0.0.1 julkaistu portti: käyttöliittymä, `/api` ja `/mcp` |
 | `BASEDB_VERSION` | `latest` | `eodia/basedb`-kuvan tunniste |
 | `BASEDB_PUBLIC_URL` | – | basedb:n julkinen osoite OIDC-paluuta varten |
+| `BASEDB_BASE_PATH` | `BASEDB_PUBLIC_URL`:n polku | polku, jonka alla basedb tarjoillaan yhdyskäytävän takana, `/basedb` osoitteelle `https://passerelle.example.com/basedb/`; katso [Docker Compose](/basedb/fi/hebergement/docker/#yhdyskäytävän-takana-polun-alla) |
 | `BASEDB_DOMAIN` | – | verkkotunnus, jota Caddy-välityspalvelin tarjoilee HTTPS:llä |
 | `BASEDB_ORIGINS` | – | muut sivustot, joiden sivut kutsuvat API:a selaimesta, pilkuilla erotettuina; tarpeeton basedb:n käyttöliittymälle, joka tarjoillaan samasta osoitteesta |
 | `BASEDB_API`, `BASEDB_MCP` | `/`, `/mcp` | API ja MCP selaimesta katsottuna; aseta vain kehitysympäristöä varten (`pnpm start`) |
@@ -124,6 +125,17 @@ Käynnistyksessä loki kertoo, mitä palvelua käytetään: `Géocodage : https:
 | `BASEDB_AI_QUOTA` | `120` | vuorovaikutteiset kutsut tuntia ja työtilaa kohden |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | tekoälykenttien laskennat tuntia ja työtilaa kohden |
 | `BASEDB_AI_WORKER` | `1` | `0`: ei taustalaskentaa tässä prosessissa |
+
+## Webhookit sisäverkkoon
+
+| Muuttuja | Oletus | Tehtävä |
+|---|---|---|
+| `BASEDB_WEBHOOK_ALLOW` | — | omat sisäiset palvelimesi, pilkuilla erotettuina: nimi (`chat.intra.example.com`), verkkotunnus ja sen alitunnukset (`*.intra.example.com`), osoite tai osoitealue (`10.12.0.0/16`) |
+
+Webhookit, automaatioiden HTTP-pyynnöt ja synkronoidut taulukot lähtevät vain julkisiin
+HTTPS-osoitteisiin. Luettelossa oleva kohde hyväksytään niiden lisäksi, olipa sen osoite, portti
+ja skeema mikä tahansa — HTTP mukaan lukien. Lukukelvoton merkintä estää käynnistyksen. Katso
+[Webhookit](/basedb/fi/integrations/webhooks/#kohteet).
 
 ## Julkinen esittely
 

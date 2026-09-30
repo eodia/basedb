@@ -1,7 +1,9 @@
 import type {
   Automation,
   AutomationAiAnswer,
+  AutomationBodyFormat,
   AutomationDefinition,
+  AutomationHttpMethod,
   AutomationInput,
   AutomationPath,
   AutomationRun,
@@ -46,6 +48,36 @@ export function addressesOf(text: string): string[] {
     ),
   ]
 }
+
+/** A header of a webhook step, as the editor shows it. */
+export interface DraftHeader {
+  readonly name: string
+  /** Typed; empty for a secret kept as saved. */
+  readonly value: string
+  readonly secret: boolean
+  /** A secret saved before, never shown: kept unless a new value is typed. */
+  readonly kept: boolean
+  /** The host a kept secret was given for: another asks for it again. */
+  readonly host: string
+}
+
+/** What a webhook sends: the automation's own JSON, or a body composed in a format. */
+export type DraftBody = 'standard' | AutomationBodyFormat
+
+export const HTTP_METHODS: readonly AutomationHttpMethod[] = [
+  'POST',
+  'PUT',
+  'PATCH',
+  'GET',
+  'DELETE',
+]
+
+/** A GET or a DELETE sends no body. */
+export const hasBody = (method: AutomationHttpMethod) => method !== 'GET' && method !== 'DELETE'
+
+/** The rows a loop goes through, at most and when none is said — as the kernel counts them. */
+export const MAX_LOOP_ROWS = 200
+export const DEFAULT_LOOP_ROWS = 50
 
 export type DraftStep =
   | {
@@ -92,7 +124,28 @@ export type DraftStep =
       readonly subject: string
       readonly message: string
     }
-  | { readonly id: string; readonly kind: 'webhook'; readonly record: string; readonly url: string }
+  | {
+      readonly id: string
+      readonly kind: 'webhook'
+      /** The row the automation's own JSON sends: `trigger`, a step, or empty: none. */
+      readonly record: string
+      readonly url: string
+      readonly method: AutomationHttpMethod
+      readonly headers: readonly DraftHeader[]
+      readonly body: DraftBody
+      /** The body composed, as typed; kept aside while the automation's JSON is sent. */
+      readonly template: string
+    }
+  | {
+      readonly id: string
+      readonly kind: 'for_each'
+      readonly table: string
+      readonly filter: string
+      /** `champ`, `-champ`, or empty. */
+      readonly sort: string
+      readonly limit: number
+      readonly steps: readonly DraftStep[]
+    }
   | {
       readonly id: string
       readonly kind: 'slack'
@@ -155,6 +208,7 @@ export const STEP_LABELS: Readonly<Record<StepKind, string>> = {
   slack: $t('Envoyer sur Slack'),
   ai: $t('Demander à l’IA'),
   branch: $t('Condition'),
+  for_each: $t('Pour chaque ligne'),
 }
 
 export const STEP_HINTS: Readonly<Record<StepKind, string>> = {
@@ -163,10 +217,11 @@ export const STEP_HINTS: Readonly<Record<StepKind, string>> = {
   find_record: $t('La première ligne qui répond à un filtre'),
   notify: $t('Une notification dans basedb'),
   email: $t('À l’équipe ou à l’extérieur, par le serveur d’envoi'),
-  webhook: $t('Un POST en HTTPS'),
+  webhook: $t('Une requête HTTPS vers un service : méthode, en-têtes, corps'),
   slack: $t('Un message dans un canal connecté'),
   ai: $t('Rédiger, résumer, classer — une réponse pour les étapes suivantes'),
   branch: $t('Des chemins selon ce que dit une ligne'),
+  for_each: $t('Répéter des étapes sur chaque ligne qui répond à un filtre'),
 }
 
 /** What an AI step's answer is read into, as the editor names it. */
@@ -186,7 +241,7 @@ export const AI_ANSWERS: ReadonlyArray<{
 /** The actions first — most automations need no more; then what makes a flow. */
 export const STEP_MENU: readonly (readonly StepKind[])[] = [
   ['update_record', 'create_record', 'notify', 'email', 'slack', 'webhook'],
-  ['find_record', 'ai', 'branch'],
+  ['find_record', 'for_each', 'ai', 'branch'],
 ]
 
 const DEFAULT_SCHEDULE: AutomationSchedule = {
@@ -223,7 +278,11 @@ export function emptyDraft(base: DescribedBase): Draft {
 /** Every step, depth first, in the order the flow is read. */
 export function allSteps(steps: readonly DraftStep[]): DraftStep[] {
   return steps.flatMap((s) =>
-    s.kind === 'branch' ? [s, ...s.paths.flatMap((p) => allSteps(p.steps))] : [s],
+    s.kind === 'branch'
+      ? [s, ...s.paths.flatMap((p) => allSteps(p.steps))]
+      : s.kind === 'for_each'
+        ? [s, ...allSteps(s.steps)]
+        : [s],
   )
 }
 
@@ -262,7 +321,10 @@ export function freshId(
   return `${prefix}${n}`
 }
 
-/** The flow with one sequence — the root (`null`) or a path's — rewritten. */
+/**
+ * The flow with one sequence rewritten: the root (`null`), a path's, or a loop's — a
+ * sequence is named by the path or the loop that holds it.
+ */
 export function editSequence(
   steps: readonly DraftStep[],
   path: string | null,
@@ -279,7 +341,9 @@ export function editSequence(
               : { ...p, steps: editSequence(p.steps, path, edit) },
           ),
         }
-      : s,
+      : s.kind === 'for_each'
+        ? { ...s, steps: s.id === path ? edit(s.steps) : editSequence(s.steps, path, edit) }
+        : s,
   )
 }
 
@@ -301,6 +365,10 @@ export function locate(
   const index = steps.findIndex((s) => s.id === id)
   if (index >= 0) return { path, index, length: steps.length }
   for (const s of steps) {
+    if (s.kind === 'for_each') {
+      const found = locate(s.steps, id, s.id)
+      if (found !== null) return found
+    }
     if (s.kind !== 'branch') continue
     for (const p of s.paths) {
       const found = locate(p.steps, id, p.id)
@@ -349,7 +417,9 @@ export function replacePath(
             p.id === id ? edit(p) : { ...p, steps: replacePath(p.steps, id, edit) },
           ),
         }
-      : s,
+      : s.kind === 'for_each'
+        ? { ...s, steps: replacePath(s.steps, id, edit) }
+        : s,
   )
 }
 
@@ -357,8 +427,9 @@ export function replacePath(
 
 /**
  * The steps passed on every way to a step or a path (chapter 17 §1.4): those before it
- * in its sequence, and before each branch that holds it. A path's own condition sees what
- * came before its branch. What a path holds is not seen after the branch.
+ * in its sequence, and before each branch or loop that holds it — a loop then gives the
+ * row of the turn. A path's own condition sees what came before its branch. What a path
+ * or a loop holds is not seen after it; a loop passed gives how many rows it went through.
  */
 export function stepsBefore(steps: readonly DraftStep[], id: string): DraftStep[] | null {
   const walk = (sequence: readonly DraftStep[], seen: readonly DraftStep[]): DraftStep[] | null => {
@@ -371,6 +442,10 @@ export function stepsBefore(steps: readonly DraftStep[], id: string): DraftStep[
           const inner = walk(path.steps, passed)
           if (inner !== null) return inner
         }
+      } else if (step.kind === 'for_each') {
+        const inner = walk(step.steps, [...passed, step])
+        if (inner !== null) return inner
+        passed.push(step)
       } else {
         passed.push(step)
       }
@@ -380,15 +455,58 @@ export function stepsBefore(steps: readonly DraftStep[], id: string): DraftStep[
   return walk(steps, [])
 }
 
+/** The loops that hold a step, a path or a sequence — itself not counted. */
+export function loopsAround(steps: readonly DraftStep[], id: string): string[] {
+  const walk = (sequence: readonly DraftStep[], around: readonly string[]): string[] | null => {
+    for (const step of sequence) {
+      if (step.id === id) return [...around]
+      if (step.kind === 'branch') {
+        for (const path of step.paths) {
+          if (path.id === id) return [...around]
+          const inner = walk(path.steps, around)
+          if (inner !== null) return inner
+        }
+      } else if (step.kind === 'for_each') {
+        const inner = walk(step.steps, [...around, step.id])
+        if (inner !== null) return inner
+      }
+    }
+    return null
+  }
+  return walk(steps, []) ?? []
+}
+
+/** Whether a sequence — the root, a path's, a loop's — is run once per row of a loop. */
+export function inLoop(steps: readonly DraftStep[], sequence: string | null): boolean {
+  if (sequence === null) return false
+  return findStep(steps, sequence)?.kind === 'for_each' || loopsAround(steps, sequence).length > 0
+}
+
+/** A sequence's steps: the root's, a path's, a loop's. */
+function sequenceOf(steps: readonly DraftStep[], path: string | null): readonly DraftStep[] {
+  if (path === null) return steps
+  const loop = findStep(steps, path)
+  if (loop?.kind === 'for_each') return loop.steps
+  return findPath(steps, path)?.path.steps ?? []
+}
+
 /** The steps before a place where a step is about to be inserted. */
 export function stepsAtSlot(
   steps: readonly DraftStep[],
   path: string | null,
   index: number,
 ): DraftStep[] {
-  const before = path === null ? [] : (stepsBefore(steps, path) ?? [])
-  const sequence = path === null ? steps : (findPath(steps, path)?.path.steps ?? [])
-  return [...before, ...sequence.slice(0, index).filter((s) => s.kind !== 'branch')]
+  const loop = path === null ? null : findStep(steps, path)
+  const before =
+    path === null
+      ? []
+      : [...(stepsBefore(steps, path) ?? []), ...(loop?.kind === 'for_each' ? [loop] : [])]
+  return [
+    ...before,
+    ...sequenceOf(steps, path)
+      .slice(0, index)
+      .filter((s) => s.kind !== 'branch'),
+  ]
 }
 
 /** The table a step's row belongs to, by name; `null` when it gives no row. */
@@ -396,7 +514,8 @@ export function rowTableOf(draft: Draft, id: string): string | null {
   if (id === TRIGGER_ROW) return draft.trigger.kind === 'schedule' ? null : draft.trigger.table
   const step = findStep(draft.steps, id)
   if (step === null) return null
-  if (step.kind === 'find_record' || step.kind === 'create_record') return step.table
+  if (step.kind === 'find_record' || step.kind === 'create_record' || step.kind === 'for_each')
+    return step.table
   if (step.kind === 'update_record') return rowTableOf(draft, step.record)
   return null
 }
@@ -409,11 +528,15 @@ export interface RowChoice {
   readonly table: string
 }
 
-/** The rows a step may act on at a point: the triggering one, then those steps gave. */
+/**
+ * The rows a step may act on at a point: the triggering one, then those steps gave — the
+ * row of the turn of each loop `around` it; a loop passed gives none.
+ */
 export function rowChoices(
   draft: Draft,
   base: DescribedBase,
   before: readonly DraftStep[],
+  around: readonly string[] = [],
 ): RowChoice[] {
   const labelOf = (name: string) => base.tables.find((t) => t.name === name)?.label ?? name
   const out: RowChoice[] = []
@@ -425,9 +548,14 @@ export function rowChoices(
     })
   }
   for (const step of before) {
+    if (step.kind === 'for_each' && !around.includes(step.id)) continue
     const table = rowTableOf(draft, step.id)
     if (table === null || table === '') continue
-    out.push({ value: step.id, label: `${stepCaption(step)} (${labelOf(table)})`, table })
+    const label =
+      step.kind === 'for_each'
+        ? $t('{step} · la ligne du tour ({table})', { step: step.id, table: labelOf(table) })
+        : `${stepCaption(step)} (${labelOf(table)})`
+    out.push({ value: step.id, label, table })
   }
   return out
 }
@@ -440,11 +568,15 @@ export interface CiteGroup {
   readonly items: ReadonlyArray<{ readonly label: string; readonly token: string }>
 }
 
-/** What a text may cite at a point: the triggering row, then each step before it. */
+/**
+ * What a text may cite at a point: the triggering row, then each step before it — the row
+ * of the turn of a loop `around` it, how many rows a loop passed went through.
+ */
 export function citeGroups(
   draft: Draft,
   base: DescribedBase,
   before: readonly DraftStep[],
+  around: readonly string[] = [],
 ): CiteGroup[] {
   const fieldsOf = (name: string | null) =>
     (base.tables.find((t) => t.name === name)?.fields ?? []).filter(
@@ -461,6 +593,13 @@ export function citeGroups(
     })
   }
   for (const step of before) {
+    if (step.kind === 'for_each' && !around.includes(step.id)) {
+      groups.push({
+        label: stepCaption(step),
+        items: [{ label: $t('Nombre de lignes parcourues'), token: `{{${step.id}.nombre}}` }],
+      })
+      continue
+    }
     if (step.kind === 'ai') {
       groups.push({
         label: stepCaption(step),
@@ -554,6 +693,76 @@ export function filterIssue(text: string, fields: readonly Field[]): string | nu
     : null
 }
 
+// ── Webhooks ────────────────────────────────────────────────────────────────
+
+/** The host an address names, as typed — `''` when it names none. */
+export function hostOf(url: string): string {
+  return /^[a-z][a-z0-9+.-]*:\/\/([^/?#]*)/i.exec(url.trim())?.[1]?.toLowerCase() ?? ''
+}
+
+/**
+ * A JSON body with each citation stood in for as the run will put it — text inside a
+ * string, a value outside — so that what was typed around them can be parsed.
+ */
+export function withoutJsonCitations(text: string): string {
+  let out = ''
+  let quoted = false
+  let i = 0
+  while (i < text.length) {
+    const m = text[i] === '{' ? CITATION_AT.exec(text.slice(i)) : null
+    if (m !== null) {
+      out += quoted ? 'x' : '0'
+      i += m[0].length
+      continue
+    }
+    const c = text[i] as string
+    if (quoted && c === '\\') {
+      out += text.slice(i, i + 2)
+      i += 2
+      continue
+    }
+    if (c === '"') quoted = !quoted
+    out += c
+    i++
+  }
+  return out
+}
+
+/** What is wrong with a JSON body as typed, or `null`: a courtesy, the kernel stays the judge. */
+export function jsonBodyIssue(text: string): string | null {
+  if (text.trim() === '') return null
+  try {
+    JSON.parse(withoutJsonCitations(text))
+    return null
+  } catch {
+    return $t(
+      'JSON invalide : des guillemets doubles autour des clés et des textes, une virgule entre deux valeurs.',
+    )
+  }
+}
+
+/** What stops a webhook step from being saved, said before the API does. */
+function webhookProblem(step: Extract<DraftStep, { kind: 'webhook' }>): string | null {
+  const host = hostOf(step.url)
+  if (!/^https:\/\//i.test(step.url.trim()) || host === '') return $t('Adresse https attendue')
+  if (host.includes('{')) return $t('L’hôte de l’adresse s’écrit en toutes lettres, sans citation.')
+  for (const h of step.headers) {
+    if (h.name.trim() === '') {
+      if (h.value !== '' || h.kept) return $t('Un en-tête n’a pas de nom')
+      continue
+    }
+    if (h.secret && !h.kept && h.value.trim() === '')
+      return $t('Donnez la valeur secrète de « {name} »', { name: h.name.trim() })
+    if (h.kept && h.host !== '' && h.host !== host)
+      return $t('L’adresse a changé d’hôte : redonnez la valeur de « {name} »', {
+        name: h.name.trim(),
+      })
+  }
+  if (!hasBody(step.method) || step.body === 'standard') return null
+  if (step.template.trim() === '') return $t('Corps vide')
+  return step.body === 'json' ? jsonBodyIssue(step.template) : null
+}
+
 // ── From the API, and back ──────────────────────────────────────────────────
 
 const rowsOf = (values: Readonly<Record<string, unknown>>): ValueRow[] =>
@@ -618,6 +827,26 @@ export function draftOf(automation: Automation, base: DescribedBase): Draft {
             kind: a.kind,
             record: a.record === undefined ? (hasRow ? TRIGGER_ROW : '') : (a.record ?? ''),
             url: a.url,
+            method: a.method ?? 'POST',
+            headers: (a.headers ?? []).map((h) => ({
+              name: h.name,
+              value: h.value ?? '',
+              secret: h.secret === true,
+              kept: h.secret === true && h.value === null,
+              host: h.host ?? '',
+            })),
+            body: a.body === null || a.body === undefined ? 'standard' : (a.format ?? 'json'),
+            template: a.body ?? '',
+          }
+        case 'for_each':
+          return {
+            id: idOf(a.id),
+            kind: a.kind,
+            table: nameOf(a.table),
+            filter: a.filter,
+            sort: a.sort ?? '',
+            limit: a.limit ?? DEFAULT_LOOP_ROWS,
+            steps: stepsOf(a.steps),
           }
         case 'slack':
           return { id: idOf(a.id), kind: a.kind, integration: a.integration, message: a.message }
@@ -711,12 +940,35 @@ function stepInput(a: DraftStep): AutomationStep {
         subject: a.subject.trim(),
         message: a.message,
       }
-    case 'webhook':
+    case 'webhook': {
+      const composed = hasBody(a.method) && a.body !== 'standard'
       return {
         id: a.id,
         kind: a.kind,
         record: a.record === '' ? null : a.record,
         url: a.url.trim(),
+        method: a.method,
+        // A row left blank is dropped; a secret kept goes back without its value.
+        headers: a.headers
+          .filter((h) => h.name.trim() !== '' || h.value !== '' || h.kept)
+          .map((h) =>
+            h.secret
+              ? { name: h.name.trim(), value: h.kept ? null : h.value, secret: true }
+              : { name: h.name.trim(), value: h.value, secret: false },
+          ),
+        body: composed ? a.template.trim() : null,
+        format: a.body === 'standard' ? 'json' : a.body,
+      }
+    }
+    case 'for_each':
+      return {
+        id: a.id,
+        kind: a.kind,
+        table: a.table,
+        filter: a.filter.trim(),
+        sort: a.sort === '' ? null : a.sort,
+        limit: a.limit,
+        steps: a.steps.map(stepInput),
       }
     case 'slack':
       return { id: a.id, kind: a.kind, integration: a.integration, message: a.message }
@@ -793,7 +1045,26 @@ export function newStep(kind: StepKind, draft: Draft, base: DescribedBase, id: s
         message: '',
       }
     case 'webhook':
-      return { id, kind, record: row, url: 'https://' }
+      return {
+        id,
+        kind,
+        record: row,
+        url: 'https://',
+        method: 'POST',
+        headers: [],
+        body: 'standard',
+        template: '',
+      }
+    case 'for_each':
+      return {
+        id,
+        kind,
+        table: base.tables[0]?.name ?? '',
+        filter: '',
+        sort: '',
+        limit: DEFAULT_LOOP_ROWS,
+        steps: [],
+      }
     case 'slack':
       return { id, kind, integration: '', message: '' }
     case 'ai':
@@ -856,6 +1127,7 @@ export function stepSummary(
           : '',
       })
     case 'find_record':
+    case 'for_each':
       return $t('Dans {table}{value}', {
         table: tableLabel(step.table),
         value: step.filter.trim() === '' ? '' : ` · ${step.filter.trim()}`,
@@ -881,11 +1153,7 @@ export function stepSummary(
       return to.length === 0 ? $t('Aucun destinataire') : `${subject} → ${to.join(', ')}`
     }
     case 'webhook':
-      try {
-        return new URL(step.url).host || step.url
-      } catch {
-        return step.url
-      }
+      return `${step.method} ${hostOf(step.url) || step.url}`
     case 'slack':
       return step.message.trim() === '' ? $t('Aucun message') : step.message
     case 'ai':
@@ -912,13 +1180,19 @@ export function referencesOf(step: DraftStep): string[] {
     case 'create_record':
       return valueTexts(step.values)
     case 'find_record':
+    case 'for_each':
       return citedSteps(step.filter)
     case 'notify':
       return [...row(step.record), ...citedSteps(step.message)]
     case 'email':
       return [...row(step.record), ...citedSteps(step.subject), ...citedSteps(step.message)]
     case 'webhook':
-      return row(step.record)
+      return [
+        ...(step.body === 'standard' && hasBody(step.method) ? row(step.record) : []),
+        ...citedSteps(step.url),
+        ...step.headers.flatMap((h) => (h.secret ? [] : citedSteps(h.value))),
+        ...(step.body !== 'standard' && hasBody(step.method) ? citedSteps(step.template) : []),
+      ]
     case 'slack':
       return citedSteps(step.message)
     case 'ai':
@@ -951,6 +1225,12 @@ export function stepProblem(step: DraftStep, draft: Draft): string | null {
       return step.values.some((v) => v.field !== '') ? null : $t('Aucun champ à écrire')
     case 'find_record':
       return step.table === '' ? $t('Choisissez une table') : null
+    case 'for_each':
+      if (step.table === '') return $t('Choisissez une table')
+      if (loopsAround(draft.steps, step.id).length > 0) return $t('Pas de boucle dans une boucle')
+      return Number.isInteger(step.limit) && step.limit >= 1 && step.limit <= MAX_LOOP_ROWS
+        ? null
+        : $t('De 1 à {max} lignes', { max: MAX_LOOP_ROWS })
     case 'notify':
       if (step.users.length === 0 && step.userField === '') return $t('Personne à prévenir')
       if (step.message.trim() === '') return $t('Message vide')
@@ -970,7 +1250,7 @@ export function stepProblem(step: DraftStep, draft: Draft): string | null {
       return step.message.trim() === '' ? $t('Message vide') : null
     }
     case 'webhook':
-      return /^https:\/\/[^/]+/.test(step.url.trim()) ? null : $t('Adresse https attendue')
+      return webhookProblem(step)
     case 'slack':
       if (step.integration === '') return $t('Choisissez un canal')
       return step.message.trim() === '' ? $t('Message vide') : null
@@ -1080,14 +1360,32 @@ export function runStepSentence(record: RunStepRecord): string {
       ? $t('échec ({code})', { code })
       : $t('échec : {replace}', { replace: sentence.replace(/\.$/, '') })
   }
+  // A step inside a loop says how many turns it ran.
+  const sentence = stepSentence(record)
+  return record.times === undefined || record.times < 2
+    ? sentence
+    : `${sentence} · ${$tp(record.times, '{count} fois', '{count} fois')}`
+}
+
+function stepSentence(record: RunStepRecord): string {
   if (record.status === 'skipped')
     return record.detail === 'aucune_ligne'
       ? $t('passée : aucune ligne')
       : record.detail === 'aucun_destinataire'
         ? $t('passée : aucun destinataire')
         : $t('passée')
+  if (record.kind === 'for_each') {
+    const turns = $tp(
+      Number(record.detail ?? 0),
+      '{count} ligne parcourue',
+      '{count} lignes parcourues',
+    )
+    return record.more === true ? $t('{turns} — limite atteinte', { turns }) : turns
+  }
   if (record.kind === 'find_record')
     return record.detail === 'aucune' ? $t('aucune ligne trouvée') : $t('ligne trouvée')
+  if (record.kind === 'branch' && (record.taken?.length ?? 0) > 1)
+    return $tp(record.taken?.length ?? 0, '{count} chemin pris', '{count} chemins pris')
   if (record.kind === 'branch')
     return record.path === null
       ? $t('aucun chemin ne convenait')
@@ -1108,6 +1406,8 @@ export function runStepSentence(record: RunStepRecord): string {
       '{count} courriel en partance',
       '{count} courriels en partance',
     )
+  if (record.kind === 'webhook' && record.detail !== undefined)
+    return $t('réponse {detail}', { detail: record.detail })
   return $t('fait')
 }
 
@@ -1160,6 +1460,33 @@ const REFUSALS: Readonly<Record<string, (detail: string) => string>> = {
   trop_de_choix: (d) => $t('{d} choix au plus, de 255 caractères chacun.', { d }),
   consentement_requis: () =>
     $t('Donnez votre accord à l’envoi au fournisseur d’IA de ce que la consigne cite.'),
+  cible_refusee: () =>
+    $t('Cette adresse n’est pas joignable depuis le serveur, ou pointe vers un réseau privé.'),
+  https_requis: () => $t('Une adresse en https est attendue.'),
+  hote_cite: () => $t('L’hôte de l’adresse s’écrit en toutes lettres, sans citation.'),
+  methode_inconnue: (d) => $t('Méthode HTTP inconnue : « {d} ».', { d }),
+  format_inconnu: (d) => $t('Format de corps inconnu : « {d} ».', { d }),
+  trop_d_entetes: (d) => $t('{d} en-têtes au plus.', { d }),
+  entete_invalide: (d) => $t('Nom d’en-tête invalide : « {d} ».', { d }),
+  entete_interdit: (d) => $t('L’en-tête « {d} » est fixé par HTTP lui-même.', { d }),
+  entete_en_double: (d) => $t('L’en-tête « {d} » est donné deux fois.', { d }),
+  valeur_d_entete_invalide: (d) =>
+    $t('La valeur de l’en-tête « {d} » est trop longue, ou sur plusieurs lignes.', { d }),
+  secret_manquant: (d) => $t('Donnez la valeur secrète de l’en-tête « {d} ».', { d }),
+  secret_a_redonner: (d) =>
+    $t(
+      'L’adresse a changé d’hôte : redonnez la valeur secrète de l’en-tête « {d} », qui ne part pas ailleurs.',
+      { d },
+    ),
+  secret_impossible: () =>
+    $t('Cette instance n’a pas de clé de chiffrement : elle ne peut garder aucun secret.'),
+  corps_vide: () => $t('Le corps de la requête est vide.'),
+  corps_trop_long: (d) => $t('Corps trop long : {d} caractères au plus.', { d }),
+  corps_json_invalide: () => $t('Le corps n’est pas un JSON valide.'),
+  corps_formulaire_invalide: () => $t('Chaque ligne du formulaire s’écrit clé=valeur.'),
+  corps_sans_objet: (d) => $t('Une requête {method} n’envoie pas de corps.', { method: d }),
+  boucle_dans_boucle: () => $t('Une boucle ne peut pas en contenir une autre.'),
+  limite_invalide: (d) => $t('Une boucle parcourt de 1 à {d} lignes.', { d }),
 }
 
 /** A refusal of the API as the editor says it, and the step it is about when it names one. */

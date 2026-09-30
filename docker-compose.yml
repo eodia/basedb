@@ -60,6 +60,10 @@ services:
       # The public address, for the return of an OIDC sign-in and the links basedb gives.
       BASEDB_PUBLIC_URL: ${BASEDB_PUBLIC_URL:-}
       BASEDB_ORIGINS: ${BASEDB_ORIGINS:-}
+      # Served under a path, behind a gateway: /basedb for https://gateway.example.com/basedb/.
+      BASEDB_BASE_PATH: ${BASEDB_BASE_PATH:-}
+      # The servers of your own network webhooks and automations may reach, HTTP included.
+      BASEDB_WEBHOOK_ALLOW: ${BASEDB_WEBHOOK_ALLOW:-}
       # Files of `file` and `image` fields: the /data volume, or an S3-compatible store.
       BASEDB_FILES_MAX_MB: ${BASEDB_FILES_MAX_MB:-}
       BASEDB_S3_BUCKET: ${BASEDB_S3_BUCKET:-}

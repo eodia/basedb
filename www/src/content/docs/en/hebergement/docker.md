@@ -29,8 +29,8 @@ volume, `/data`, for the files of File and Image fields.
 | Tag | Content |
 |---|---|
 | `latest` | the latest published version |
-| `0.4` | the latest 0.4.x version |
-| `0.4.0` | exactly this version |
+| `0.5` | the latest 0.5.x version |
+| `0.5.0` | exactly this version |
 
 ## The services
 
@@ -52,6 +52,24 @@ docker compose down                 # stop (the volumes stay)
 
 From a clone of the repository, `docker compose up -d --build` builds the image from the code
 rather than pulling it.
+
+## Behind a gateway, under a path
+
+When basedb is published under a path — `https://passerelle.example.com/basedb/` rather than
+at the root of a domain —, set this path:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# or, with no public address:
+BASEDB_BASE_PATH=/basedb
+```
+
+Everything then goes under `/basedb`: the interface, `/basedb/api`, `/basedb/mcp`, sharing
+links and the ones in emails. The gateway can **keep the path** by forwarding the request as
+is, or **strip it**: basedb accepts either. `BASEDB_BASE_PATH=/` forces the root.
+
+The image is the same for every address: the path is written into the interface when the
+container starts, and changing the path only takes a restart.
 
 ## Changing the ports
 

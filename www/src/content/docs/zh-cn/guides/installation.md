@@ -60,7 +60,7 @@ docker run -d --name basedb -p 3000:3000 -v basedb-files:/data \
 请保存生成的密钥：参见下方提示框。
 
 :::caution[实例密钥]
-`BASEDB_ENCRYPTION_KEY` 用于签名会话，并加密已保存的机密信息（AI 密钥、Webhook 密钥、表单链接）。更改它会让所有人退出登录，并使这些机密信息无法读取。请只生成一次，并与数据库一起备份。
+`BASEDB_ENCRYPTION_KEY` 用于签名会话，并加密已保存的机密信息（AI 密钥、Webhook 密钥、自动化保密标头、表单链接）。更改它会让所有人退出登录，并使这些机密信息无法读取。请只生成一次，并与数据库一起备份。
 :::
 
 ## 开发

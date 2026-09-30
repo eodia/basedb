@@ -29,8 +29,8 @@ Imaget kjører som brukeren `node`, på Node 22, deklarerer en helsesjekk
 | Tagg | Innhold |
 |---|---|
 | `latest` | den siste publiserte versjonen |
-| `0.4` | den siste 0.4.x-versjonen |
-| `0.4.0` | nøyaktig denne versjonen |
+| `0.5` | den siste 0.5.x-versjonen |
+| `0.5.0` | nøyaktig denne versjonen |
 
 ## Tjenestene
 
@@ -52,6 +52,24 @@ docker compose down                 # stopp (volumene blir værende)
 
 Fra en klone av depotet bygger `docker compose up -d --build` imaget fra koden
 i stedet for å laste det ned.
+
+## Bak en gateway, under en sti
+
+Når basedb publiseres under en sti — `https://passerelle.example.com/basedb/` i stedet for ved
+roten av et domene —, angi denne stien:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# eller, uten offentlig adresse:
+BASEDB_BASE_PATH=/basedb
+```
+
+Alt går da under `/basedb`: grensesnittet, `/basedb/api`, `/basedb/mcp`, delingslenkene og
+lenkene i e-postene. Gatewayen kan **beholde stien** ved å videresende forespørselen, eller
+**fjerne den**: basedb godtar begge. `BASEDB_BASE_PATH=/` tvinger frem roten.
+
+Imaget er det samme for alle adressene: stien skrives inn i grensesnittet når containeren
+starter, og å endre stien krever bare en omstart.
 
 ## Endre portene
 

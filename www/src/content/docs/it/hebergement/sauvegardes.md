@@ -35,7 +35,7 @@ replica).
 ## La chiave dell’istanza
 
 `BASEDB_ENCRYPTION_KEY` cifra i segreti salvati nel database (chiavi IA, segreti dei
-webhook, link dei moduli). **Un backup del database senza la sua chiave non ripristina questi
+webhook, intestazioni segrete delle automazioni, link dei moduli). **Un backup del database senza la sua chiave non ripristina questi
 segreti.** Conservala nel tuo gestore di segreti, accanto ai backup.
 
 ## Aggiornare
@@ -47,7 +47,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` fissa una versione precisa (`0.4.0`) anziché l’ultima (`latest`).
+`BASEDB_VERSION` fissa una versione precisa (`0.5.0`) anziché l’ultima (`latest`).
 
 All’avvio, basedb **aggiorna da solo il suo catalogo**: applica, in ordine e
 ciascuna nella propria transazione, le migrazioni che la tua versione non ha ancora, e le registra

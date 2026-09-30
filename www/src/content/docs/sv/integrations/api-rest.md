@@ -69,12 +69,55 @@ Med samma token:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | instrumentpanelerna i en databas |
 | `GET /api/v1/<tenant>/meta/users` | medlemmarna i arbetsytan, för ett Person-fält |
 | `GET /api/v1/<tenant>/meta/templates` | databasmallarna i galleriet |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | följa en tabell i realtid: signaler, som sedan läses igen via rutterna ovan (se [Webhooks](/basedb/sv/integrations/webhooks/#utan-webhook-följa-en-tabell)) |
 
 [Delade vyer](/basedb/sv/fonctionnalites/vues-partagees/) kan läsas utan konto:
 `GET /api/v1/views/<jeton>` och `…/rows` i JSON, `…/calendar.ics` i iCalendar.
 
 Att bygga – skapa en automatisering, en instrumentpanel, en integration – är förbehållet en
 session i gränssnittet: en token läser och skriver rader, den ändrar inte databasen.
+
+## Skapa en databas från en mall
+
+Ett program som installeras skapar sin databas i **ett anrop**: servern tillämpar mallen –
+tabeller, fält, relationer, exempelrader, vyer, instrumentpaneler, automatiseringar – och om
+ett steg misslyckas lämnas ingen databas kvar.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` är nyckeln för en mall i galleriet, eller en hel mall i
+[mallformatet](/basedb/sv/fonctionnalites/modeles/). Med sidhuvudet
+`Accept: application/x-ndjson` kommer svaret rad för rad: en rad `{"step": …}` per steg, sedan
+den skapade databasen. Det här anropet kräver åtkomsttoken för en person som kan skapa en
+databas (`POST /auth/session/access`, efter inloggning): en integrationstoken öppnar bara en
+befintlig databas.
+
+## Kontrollera en token
+
+basedbs tokens kan inte kontrolleras utanför basedb. Ett program som tar emot en – ett verktyg
+som öppnas från basedb med personens token, till exempel – frågar vad den är värd
+(introspektion, RFC 7662), med sin egen integrationstoken:
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+En token som inte är giltig – okänd, utgången, återkallad, avslutad session, annan arbetsyta –
+svarar `{"active": false}`, utan att säga varför. Svaret läses direkt: en utloggning syns
+omedelbart. För en integrationstoken anger svaret också databasen den öppnar (`base`), dess
+åtkomst (`read` eller `write`) och dess ytor.
 
 ## Den genererade dokumentationen
 

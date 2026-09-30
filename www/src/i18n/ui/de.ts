@@ -1547,6 +1547,28 @@ export default {
 		title: 'Was sich in basedb geändert hat',
 		intro: 'Jede einzelne Änderung steht im <a href="https://github.com/eodia/basedb/commits/main">Verlauf des Repositorys</a>. Was als Nächstes kommt: die <a href="/feuille-de-route/">Roadmap</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'Für Anwendungen, die auf basedb aufbauen',
+				tag: 'Neu',
+				items: [
+					'<strong>Eine mit einem Aufruf aus einer Vorlage erstellte Datenbank</strong>: der Server wendet die gesamte Vorlage an – Tabellen, Beziehungen, Zeilen, Ansichten, Automatisierungen – oder nichts, wenn ein Schritt fehlschlägt. Die Galerie nutzt dies, eine Anwendung, die sich ebenfalls installiert. <a href="/integrations/api-rest/#eine-datenbank-aus-einer-vorlage-anlegen">Eine Datenbank aus einer Vorlage anlegen</a>',
+					'<strong>Ein Token prüfen</strong>: eine Anwendung, der der Token einer Person übergeben wird, fragt basedb, ob er noch gültig ist, und für wen – welches Konto, welche Gruppen. <a href="/integrations/api-rest/#ein-token-prüfen">Ein Token prüfen</a>',
+					'<strong>Ihre internen Server</strong>: Webhooks und Automatisierungen erreichen die in <code>BASEDB_WEBHOOK_ALLOW</code> genannten Ziele, auch per HTTP; ein Programm kann außerdem eine Tabelle in Echtzeit mit einem Integrations-Token verfolgen. <a href="/integrations/webhooks/#ohne-webhook-eine-tabelle-verfolgen">Eine Tabelle verfolgen</a>',
+					'<strong>Unter einem Pfad, hinter einem Gateway</strong>: basedb wird unter einer Adresse wie <code>https://passerelle.example.com/basedb/</code> veröffentlicht, ob das Gateway den Pfad beibehält oder entfernt. <a href="/hebergement/docker/#hinter-einem-gateway-unter-einem-pfad">Hinter einem Gateway</a>',
+					'<strong>Ein Webhook, alle Tabellen auf einmal</strong>: ein Ereignis für alle Tabellen an- oder abwählen, oder alle Ereignisse einer Tabelle, mit einem Klick.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automatisierungen, die Ihre Zeilen durchlaufen und mit APIs sprechen',
+				tag: 'Neu',
+				items: [
+					'<strong>Für jede Zeile</strong>: ein Schritt, der seine eigenen Schritte für jede Zeile einer Tabelle wiederholt, die einem Filter entspricht – jeden Montag alle unbezahlten Rechnungen mahnen, nicht nur die erste. <a href="/fonctionnalites/automatisations/#für-jede-zeile">Für jede Zeile</a>',
+					'<strong>Ein Webhook, der mit jeder API spricht</strong>: die Methode, eine Adresse, die die Zeile zitiert, Header, ein Text als JSON, als Formular oder als Text, zusammengesetzt mit den Werten der Zeile. <a href="/fonctionnalites/automatisations/#einen-dienst-aufrufen">Einen Dienst aufrufen</a>',
+					'<strong>Ein API-Schlüssel bleibt geheim</strong>: verschlüsselt wird er nie wieder angezeigt – weder auf dem Bildschirm, noch über die API, noch beim Copilot – und geht nur an den Host, für den Sie ihn angegeben haben.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'Die Landkarte, und Adressen, die sich finden lassen',
@@ -1899,8 +1921,8 @@ export default {
 						text: 'SQL-Views mit der Struktur übernehmen, wenn Umgebungen angelegt oder verglichen werden, und in Datenbankvorlagen.',
 					},
 					loops: {
-						title: 'Schleifen und Wartezeiten in Automatisierungen',
-						text: 'Schritte für jede gefundene Zeile wiederholen, vor dem nächsten warten („drei Tage danach“) und Abläufe in Datenbankvorlagen mitnehmen.',
+						title: 'Wartezeiten in Automatisierungen',
+						text: 'Vor dem nächsten Schritt warten („drei Tage danach“) und Abläufe – Bedingungen, Suchen, Schleifen – in Datenbankvorlagen mitnehmen.',
 					},
 					textFormulas: {
 						title: 'Formeln für Text',

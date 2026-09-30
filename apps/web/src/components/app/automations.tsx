@@ -37,6 +37,7 @@ import {
   findPath,
   findStep,
   freshId,
+  inLoop,
   inputOf,
   insertStep,
   locate,
@@ -748,7 +749,9 @@ function Inspector({
               <Trash2 className="size-4" />
               {step.kind === 'branch'
                 ? $t('Retirer la condition et ses chemins')
-                : $t('Retirer l’étape')}
+                : step.kind === 'for_each'
+                  ? $t('Retirer la boucle et ses étapes')
+                  : $t('Retirer l’étape')}
             </Button>
           </>
         }
@@ -761,6 +764,18 @@ function Inspector({
           onChange={(next) => onSteps((s) => replaceStep(s, step.id, next))}
           onSelect={onSelect}
         />
+        {step.kind === 'for_each' && (
+          <StepMenu
+            onPick={(kind) => onInsert({ path: step.id, index: step.steps.length }, kind)}
+            align="start"
+            looped
+          >
+            <Button variant="outline" size="sm" className="mt-6 w-full gap-1.5">
+              <Plus className="size-4" />
+              {$t('Ajouter une étape dans la boucle')}
+            </Button>
+          </StepMenu>
+        )}
       </Pane>
     )
   }
@@ -810,6 +825,7 @@ function Inspector({
         <StepMenu
           onPick={(kind) => onInsert({ path: path.id, index: path.steps.length }, kind)}
           align="start"
+          looped={inLoop(draft.steps, path.id)}
         >
           <Button variant="outline" size="sm" className="mt-6 w-full gap-1.5">
             <Plus className="size-4" />

@@ -51,6 +51,7 @@ Se [Konti og login](/basedb/da/hebergement/connexion/).
 | `BASEDB_PORT` | `3000` | port udgivet på 127.0.0.1: brugerfladen, `/api` og `/mcp` |
 | `BASEDB_VERSION` | `latest` | tagget for imaget `eodia/basedb` |
 | `BASEDB_PUBLIC_URL` | — | basedbs offentlige adresse, til OIDC-returadressen |
+| `BASEDB_BASE_PATH` | stien for `BASEDB_PUBLIC_URL` | den sti, som basedb serveres under bag en gateway, `/basedb` for `https://passerelle.example.com/basedb/`; se [Docker Compose](/basedb/da/hebergement/docker/#bag-en-gateway-under-en-sti) |
 | `BASEDB_DOMAIN` | — | det domæne, som Caddy-proxyen serverer over HTTPS |
 | `BASEDB_ORIGINS` | — | andre websteder, hvis sider kalder API'et fra browseren, adskilt af kommaer; unødvendig for basedbs brugerflade, som serveres på samme adresse |
 | `BASEDB_API`, `BASEDB_MCP` | `/`, `/mcp` | API'et og MCP set fra browseren; skal kun indstilles til udviklingsmiljøet (`pnpm start`) |
@@ -121,6 +122,17 @@ Ved start fortæller loggen, hvilken tjeneste der bruges: `Géocodage : https://
 | `BASEDB_AI_QUOTA` | `120` | interaktive kald pr. time og pr. arbejdsområde |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | beregninger af AI-felter pr. time og pr. arbejdsområde |
 | `BASEDB_AI_WORKER` | `1` | `0`: ingen baggrundsberegning i denne proces |
+
+## Webhooks til det interne netværk
+
+| Variabel | Standard | Rolle |
+|---|---|---|
+| `BASEDB_WEBHOOK_ALLOW` | — | dine interne servere, adskilt af kommaer: et værtsnavn (`chat.intra.example.com`), et domæne og dets underdomæner (`*.intra.example.com`), en adresse eller et interval (`10.12.0.0/16`) |
+
+Webhooks, automatiseringernes HTTP-forespørgsler og synkroniserede tabeller sendes kun til
+offentlige HTTPS-adresser. Et mål fra listen accepteres desuden, uanset dets adresse, port og
+skema — HTTP inklusive. En ulæselig indtastning forhindrer start. Se
+[Webhooks](/basedb/da/integrations/webhooks/#mål).
 
 ## Offentlig demo
 

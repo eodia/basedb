@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Hint } from '@/components/ui/tooltip'
 import {
   type Automation,
+  type AutomationHttpMethod,
   type AutomationTriggerKind,
   type DescribedBase,
   type Field,
@@ -27,8 +28,12 @@ import {
   AI_ANSWERS,
   type CiteGroup,
   type Draft,
+  type DraftBody,
+  type DraftHeader,
   type DraftPath,
   type DraftStep,
+  HTTP_METHODS,
+  MAX_LOOP_ROWS,
   type RowChoice,
   TRIGGER_LABELS,
   TRIGGER_ROW,
@@ -36,6 +41,9 @@ import {
   citeGroups,
   filterIssue,
   freshId,
+  hasBody,
+  jsonBodyIssue,
+  loopsAround,
   pathProblem,
   pathSummary,
   rowChoices,
@@ -43,9 +51,9 @@ import {
   stepsBefore,
   writableFields,
 } from '@/lib/automations'
-import { $t, intlLocale, weekdayNames } from '@/lib/i18n'
+import { $t, $tp, intlLocale, weekdayNames } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { ArrowDown, ArrowUp, Braces, Plus, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Braces, Lock, LockOpen, Plus, Trash2, X } from 'lucide-react'
 import { type ChangeEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 
 /**
@@ -147,6 +155,7 @@ function CitingText({
   label,
   placeholder,
   multiline = false,
+  rows = 3,
   invalid = false,
   className,
 }: {
@@ -156,6 +165,8 @@ function CitingText({
   readonly label: string
   readonly placeholder?: string
   readonly multiline?: boolean
+  /** The lines a multiline text shows. */
+  readonly rows?: number
   readonly invalid?: boolean
   readonly className?: string
 }) {
@@ -188,7 +199,7 @@ function CitingText({
       {multiline ? (
         <Textarea
           {...props}
-          rows={3}
+          rows={rows}
           className={cn('min-h-0 flex-1 resize-none text-sm', className)}
         />
       ) : (
@@ -527,7 +538,7 @@ export function TriggerSettings({
         {schedule && (
           <p className="text-xs text-muted-foreground">
             {$t(
-              'Une horloge n’a pas de ligne : pour agir sur une ligne, commencez par « Chercher une ligne ».',
+              'Une horloge n’a pas de ligne : pour agir sur des lignes, commencez par « Chercher une ligne » ou « Pour chaque ligne ».',
             )}
           </p>
         )}
@@ -591,8 +602,9 @@ export function StepSettings({
   readonly onSelect: (id: string) => void
 }) {
   const before = stepsBefore(draft.steps, step.id) ?? []
-  const groups = citeGroups(draft, base, before)
-  const rows = rowChoices(draft, base, before)
+  const around = loopsAround(draft.steps, step.id)
+  const groups = citeGroups(draft, base, before, around)
+  const rows = rowChoices(draft, base, before, around)
 
   switch (step.kind) {
     case 'update_record': {
@@ -775,33 +787,9 @@ export function StepSettings({
         />
       )
     case 'webhook':
-      return (
-        <div className="space-y-5">
-          <Section title={$t('Adresse')}>
-            <Input
-              value={step.url}
-              onChange={(e) => onChange({ ...step, url: e.target.value })}
-              aria-label={$t('Adresse du webhook')}
-              className="h-8 font-mono text-sm"
-            />
-          </Section>
-          <RowSelect
-            choices={rows}
-            value={step.record}
-            onChange={(record) => onChange({ ...step, record })}
-            label={$t('La ligne envoyée')}
-            none={$t('Aucune ligne')}
-          />
-          <p className="text-xs text-muted-foreground">
-            {$t('Un')} <code>POST</code>{' '}
-            {$t(
-              'JSON : l’automatisation, le déclencheur, la ligne, et ce que les étapes précédentes ont trouvé ou écrit. Adresse',
-            )}{' '}
-            <code>https</code> {$t('publique seulement ; 10 secondes au plus.')}
-          </p>
-          <OutputHint step={step} />
-        </div>
-      )
+      return <WebhookSettings step={step} rows={rows} groups={groups} onChange={onChange} />
+    case 'for_each':
+      return <LoopSettings step={step} base={base} groups={groups} onChange={onChange} />
     case 'slack':
       return <SlackSettings base={base} step={step} groups={groups} onChange={onChange} />
     case 'ai':
@@ -919,6 +907,362 @@ function AiSettings({
   )
 }
 
+/** What a composed body looks like, by format. */
+const BODY_PLACEHOLDERS: Readonly<Record<Exclude<DraftBody, 'standard'>, string>> = {
+  json: '{\n  "titre": "{{nom}}",\n  "montant": {{montant}}\n}',
+  form: 'titre={{nom}}\nmontant={{montant}}',
+  text: '{{nom}} : {{montant}}',
+}
+
+/**
+ * « Appeler un webhook » : a request to a service — chapter 17 §1.3. Its method; its
+ * address, which may cite after its host; its headers, a secret one sealed and never shown
+ * again; and what it sends: the automation's own JSON, or a body composed in JSON, as a
+ * form, or as text, citing what came before.
+ */
+function WebhookSettings({
+  step,
+  rows,
+  groups,
+  onChange,
+}: {
+  readonly step: Extract<DraftStep, { kind: 'webhook' }>
+  readonly rows: readonly RowChoice[]
+  readonly groups: readonly CiteGroup[]
+  readonly onChange: (next: DraftStep) => void
+}) {
+  const setHeader = (index: number, patch: Partial<DraftHeader>) =>
+    onChange({
+      ...step,
+      headers: step.headers.map((h, i) => (i === index ? { ...h, ...patch } : h)),
+    })
+  const issue = step.body === 'json' ? jsonBodyIssue(step.template) : null
+  const BODY_HINTS: Readonly<Record<Exclude<DraftBody, 'standard'>, string>> = {
+    json: $t(
+      'Entre guillemets, une citation est du texte ; hors guillemets, une valeur : un nombre, oui ou non, une liste.',
+    ),
+    form: $t('Une paire clé=valeur par ligne, envoyée encodée comme un formulaire web.'),
+    text: $t('Envoyé tel quel, chaque citation remplacée par sa valeur.'),
+  }
+  return (
+    <div className="space-y-5">
+      <Section title={$t('Adresse')}>
+        <div className="flex items-center gap-1.5">
+          <Choice
+            value={step.method}
+            onValueChange={(v) => onChange({ ...step, method: v as AutomationHttpMethod })}
+            options={HTTP_METHODS.map((m) => ({ value: m, label: m }))}
+            aria-label={$t('Méthode HTTP')}
+            className="w-28 shrink-0 font-mono"
+          />
+          <div className="min-w-0 flex-1">
+            <CitingText
+              value={step.url}
+              onChange={(url) => onChange({ ...step, url })}
+              groups={groups}
+              label={$t('Adresse du webhook')}
+              placeholder="https://api.exemple.fr/clients/{{e2.numero}}"
+              className="font-mono text-sm"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {$t(
+            'L’adresse peut citer après son hôte, chaque valeur encodée. Adresse https publique seulement ; 10 secondes au plus ; une réponse autre que 2xx fait échouer l’étape.',
+          )}
+        </p>
+      </Section>
+      <Section
+        title={$t('En-têtes')}
+        hint={$t(
+          'Une clé d’API, un jeton : laissez-le secret. Chiffré, il n’est plus jamais affiché, et ne part que vers l’hôte pour lequel vous l’avez donné.',
+        )}
+      >
+        {step.headers.map((header, index) => (
+          <HeaderRow
+            // biome-ignore lint/suspicious/noArrayIndexKey: headers have no identity of their own
+            key={index}
+            header={header}
+            index={index}
+            groups={groups}
+            onChange={(patch) => setHeader(index, patch)}
+            onRemove={() =>
+              onChange({ ...step, headers: step.headers.filter((_, i) => i !== index) })
+            }
+          />
+        ))}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1 px-2 text-xs"
+          disabled={step.headers.length >= 20}
+          onClick={() =>
+            onChange({
+              ...step,
+              headers: [
+                ...step.headers,
+                { name: '', value: '', secret: true, kept: false, host: '' },
+              ],
+            })
+          }
+        >
+          <Plus className="size-3.5" />
+          {$t('En-tête||en-tête HTTP')}
+        </Button>
+      </Section>
+      {hasBody(step.method) ? (
+        <Section title={$t('Corps')}>
+          <Choice
+            value={step.body}
+            onValueChange={(v) => onChange({ ...step, body: v as DraftBody })}
+            options={[
+              { value: 'standard', label: $t('Les données de l’automatisation, en JSON') },
+              { value: 'json', label: $t('Un JSON à composer') },
+              { value: 'form', label: $t('Un formulaire, clé=valeur') },
+              { value: 'text', label: $t('Un texte') },
+            ]}
+            aria-label={$t('Corps de la requête')}
+          />
+          {step.body === 'standard' ? (
+            <>
+              <RowSelect
+                choices={rows}
+                value={step.record}
+                onChange={(record) => onChange({ ...step, record })}
+                label={$t('La ligne envoyée')}
+                none={$t('Aucune ligne')}
+              />
+              <p className="text-xs text-muted-foreground">
+                {$t(
+                  'L’automatisation, le déclencheur, la ligne, et ce que les étapes précédentes ont trouvé ou écrit.',
+                )}
+              </p>
+            </>
+          ) : (
+            <div className="space-y-1">
+              <CitingText
+                value={step.template}
+                onChange={(template) => onChange({ ...step, template })}
+                groups={groups}
+                label={$t('Corps de la requête')}
+                placeholder={BODY_PLACEHOLDERS[step.body]}
+                multiline
+                rows={6}
+                invalid={issue !== null}
+                className="font-mono text-[13px] leading-relaxed"
+              />
+              {issue !== null && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">{issue}</p>
+              )}
+              <p className="text-xs text-muted-foreground">{BODY_HINTS[step.body]}</p>
+            </div>
+          )}
+        </Section>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          {$t('Une requête {method} n’envoie pas de corps.', { method: step.method })}
+        </p>
+      )}
+      <OutputHint step={step} />
+    </div>
+  )
+}
+
+/**
+ * A header: its name, and its value — typed, citing what came before, or secret: typed
+ * once, then shown only as kept, to be replaced rather than read.
+ */
+function HeaderRow({
+  header,
+  index,
+  groups,
+  onChange,
+  onRemove,
+}: {
+  readonly header: DraftHeader
+  readonly index: number
+  readonly groups: readonly CiteGroup[]
+  readonly onChange: (patch: Partial<DraftHeader>) => void
+  readonly onRemove: () => void
+}) {
+  const n = index + 1
+  return (
+    <div className="space-y-1 rounded-md border p-2">
+      <div className="flex items-center gap-1.5">
+        <Input
+          value={header.name}
+          onChange={(e) => onChange({ name: e.target.value })}
+          placeholder="Authorization"
+          aria-label={$t('Nom de l’en-tête {n}', { n })}
+          className="h-8 flex-1 font-mono text-sm"
+        />
+        <Hint
+          label={
+            header.secret
+              ? $t('Secret : chiffré, jamais réaffiché')
+              : $t('En clair : visible, peut citer une valeur')
+          }
+        >
+          <Button
+            variant={header.secret ? 'secondary' : 'ghost'}
+            size="icon-sm"
+            aria-pressed={header.secret}
+            aria-label={$t('Valeur secrète de l’en-tête {n}', { n })}
+            onClick={() =>
+              onChange(
+                header.secret
+                  ? { secret: false, kept: false, value: header.kept ? '' : header.value }
+                  : { secret: true },
+              )
+            }
+          >
+            {header.secret ? <Lock className="size-3.5" /> : <LockOpen className="size-3.5" />}
+          </Button>
+        </Hint>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onRemove}
+          aria-label={$t('Retirer l’en-tête {n}', { n })}
+        >
+          <X className="size-3.5" />
+        </Button>
+      </div>
+      {header.kept ? (
+        <div className="flex items-center gap-1.5">
+          <span className="flex h-8 min-w-0 flex-1 items-center truncate rounded-md border border-dashed px-2.5 text-xs text-muted-foreground">
+            {header.host === ''
+              ? $t('Secret enregistré')
+              : $t('Secret enregistré, pour {host}', { host: header.host })}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8"
+            onClick={() => onChange({ kept: false, value: '' })}
+          >
+            {$t('Remplacer')}
+          </Button>
+        </div>
+      ) : header.secret ? (
+        <Input
+          type="password"
+          autoComplete="off"
+          value={header.value}
+          onChange={(e) => onChange({ value: e.target.value })}
+          placeholder={$t('Valeur secrète')}
+          aria-label={$t('Valeur de l’en-tête {n}', { n })}
+          className="h-8 font-mono text-sm"
+        />
+      ) : (
+        <CitingText
+          value={header.value}
+          onChange={(value) => onChange({ value })}
+          groups={groups}
+          label={$t('Valeur de l’en-tête {n}', { n })}
+          placeholder={$t('Valeur, ou {{champ}}')}
+          className="font-mono text-sm"
+        />
+      )}
+    </div>
+  )
+}
+
+/**
+ * « Pour chaque ligne » : the rows of a table that answer a filter — which may cite what
+ * came before —, in an order, up to a limit; the steps inside run once for each, and cite
+ * the row of the turn by the loop's identifier.
+ */
+function LoopSettings({
+  step,
+  base,
+  groups,
+  onChange,
+}: {
+  readonly step: Extract<DraftStep, { kind: 'for_each' }>
+  readonly base: DescribedBase
+  readonly groups: readonly CiteGroup[]
+  readonly onChange: (next: DraftStep) => void
+}) {
+  const fields = fieldsOfTable(base, step.table)
+  const descending = step.sort.startsWith('-')
+  const sortField = step.sort.replace(/^-/, '')
+  return (
+    <div className="space-y-5">
+      <TableSelect
+        base={base}
+        value={step.table}
+        onChange={(table) => onChange({ ...step, table, filter: '', sort: '' })}
+        label={$t('Table à parcourir')}
+      />
+      <Section
+        title={$t('Les lignes qui')}
+        hint={$t('Dans le langage des filtres ; vide : toutes les lignes.')}
+      >
+        <FilterInput
+          value={step.filter}
+          onChange={(filter) => onChange({ ...step, filter })}
+          fields={filterFieldsOf(base, step.table)}
+          groups={groups}
+          label={$t('Filtre de la boucle')}
+          placeholder="payee eq false and relancee eq false"
+        />
+      </Section>
+      <Section title={$t('Dans l’ordre de')}>
+        <div className="flex gap-1.5">
+          <FieldSelect
+            fields={fields.filter((f) => f.kind !== 'button')}
+            value={sortField}
+            onChange={(name) =>
+              onChange({ ...step, sort: name === '' ? '' : `${descending ? '-' : ''}${name}` })
+            }
+            placeholder={$t('Ordre de création')}
+            label={$t('Trier par')}
+            className="flex-1"
+          />
+          <Choice
+            value={descending ? 'desc' : 'asc'}
+            onValueChange={(v) =>
+              sortField !== '' &&
+              onChange({ ...step, sort: `${v === 'desc' ? '-' : ''}${sortField}` })
+            }
+            options={[
+              { value: 'asc', label: $t('croissant') },
+              { value: 'desc', label: $t('décroissant') },
+            ]}
+            aria-label={$t('Sens du tri')}
+            className="w-32"
+            disabled={sortField === ''}
+          />
+        </div>
+      </Section>
+      <Section
+        title={$t('Au plus')}
+        hint={$t(
+          'De 1 à {max} lignes par exécution. Pour traiter les suivantes à la prochaine, faites sortir du filtre celles qui sont traitées — une case « relancée », une date.',
+          { max: MAX_LOOP_ROWS },
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            min={1}
+            max={MAX_LOOP_ROWS}
+            value={Number.isFinite(step.limit) ? step.limit : ''}
+            onChange={(e) => onChange({ ...step, limit: e.target.valueAsNumber })}
+            aria-label={$t('Nombre de lignes au plus')}
+            className="h-8 w-24"
+          />
+          <span className="text-sm text-muted-foreground">
+            {$tp(Number.isFinite(step.limit) ? step.limit : 0, 'ligne', 'lignes')}
+          </span>
+        </div>
+      </Section>
+      <OutputHint step={step} />
+    </div>
+  )
+}
+
 function CitationHint() {
   return (
     <p className="text-xs text-muted-foreground">
@@ -944,15 +1288,20 @@ function OutputHint({ step }: { readonly step: DraftStep }) {
             id: step.id,
             id2: step.id,
           })
-        : step.kind === 'find_record'
+        : step.kind === 'for_each'
           ? $t(
-              'Les étapes suivantes citent la ligne trouvée — {{{id}.champ}} — ou la modifient. Rien trouvé : celles qui la modifient sont passées ; une condition peut le tester.',
-              { id: step.id },
-            )
-          : $t(
-              'Les étapes suivantes citent la ligne créée — {{{id}.champ}}, {{{id2}._id}} — ou la modifient.',
+              'Les étapes de la boucle citent la ligne du tour — {{{id}.champ}} — ou la modifient. Après la boucle, {{{id2}.nombre}} dit combien de lignes elle a parcourues. Une étape qui échoue arrête l’exécution.',
               { id: step.id, id2: step.id },
             )
+          : step.kind === 'find_record'
+            ? $t(
+                'Les étapes suivantes citent la ligne trouvée — {{{id}.champ}} — ou la modifient. Rien trouvé : celles qui la modifient sont passées ; une condition peut le tester.',
+                { id: step.id },
+              )
+            : $t(
+                'Les étapes suivantes citent la ligne créée — {{{id}.champ}}, {{{id2}._id}} — ou la modifient.',
+                { id: step.id, id2: step.id },
+              )
   return <p className="rounded-md bg-muted/60 px-2.5 py-2 text-xs text-muted-foreground">{text}</p>
 }
 
@@ -1302,7 +1651,8 @@ export function PathSettings({
   readonly onChange: (next: DraftPath) => void
 }) {
   const before = stepsBefore(draft.steps, path.id) ?? []
-  const rows = rowChoices(draft, base, before)
+  const around = loopsAround(draft.steps, path.id)
+  const rows = rowChoices(draft, base, before, around)
   const table = path.record === '' ? null : rowTableOf(draft, path.record)
   return (
     <div className="space-y-5">
@@ -1337,7 +1687,7 @@ export function PathSettings({
               value={path.condition}
               onChange={(condition) => onChange({ ...path, condition })}
               fields={filterFieldsOf(base, table)}
-              groups={citeGroups(draft, base, before)}
+              groups={citeGroups(draft, base, before, around)}
               label={$t('Condition du chemin')}
               placeholder={$t('statut eq "fait"')}
             />

@@ -1,14 +1,14 @@
 ---
 title: Automatizálások
-description: Amikor egy sor megváltozik, ütemezetten vagy egy kattintásra – módosítás, létrehozás, keresés, elágazás, az MI megkérdezése, értesítés, e-mail küldése, webhook hívása, üzenet a Slackre.
+description: Amikor egy sor megváltozik, ütemezetten vagy egy kattintásra – módosítás, létrehozás, keresés, ismétlés minden soron, elágazás, az MI megkérdezése, értesítés, e-mail küldése, szolgáltatás hívása, üzenet a Slackre.
 ---
 
 Az automatizálás egy **mikor**, egy **ha** és egy **akkor** részből áll: amikor egy feladat „Fait”
 állapotba kerül, rögzíti az időpontot; amikor negatív értékelés érkezik, értesíti a felelőst,
 és ír a Slackre; minden hétfőn 9 órakor létrehozza a csapatmegbeszélés sorát. Ha pedig egy
 művelet nem elég, egy **folyamatot** követ: megkeres egy sort, az alapján, amit a sor tartalmaz,
-egyik vagy másik ágon halad tovább, és egy lépésben újra felhasználja, amit egy korábbi lépés
-talált vagy írt.
+egyik vagy másik ágon halad tovább, lépéseket ismétel egy szűrőnek megfelelő minden egyes során,
+és egy lépésben újra felhasználja, amit egy korábbi lépés talált vagy írt.
 
 Az **Automatizálások** menüpontból nyithatók meg, az oldalsáv alján, a megnyitott adatbázis
 blokkjában, és **Kezelés** szintű jogosultságot igényelnek.
@@ -53,14 +53,59 @@ Legfeljebb harminc lépés, sorrendben; az első sikertelen lépés leállítja 
 | **Sor keresése** | egy tábla első olyan sora, amely megfelel egy szűrőnek, hogy a következő lépések hivatkozhassanak rá vagy módosíthassák |
 | **Valaki értesítése** | [értesítés](/basedb/hu/fonctionnalites/collaboration/#értesítések) kiválasztott személyeknek, vagy egy Személy mezőben szereplő személynek |
 | **E-mail küldése** | a csapat egy tagjának, egy Személy mezőben szereplő személynek, egy E-mail mezőben szereplő címre – egy ügyfélnek, egy beszállítónak – vagy beírt címekre; a tárgy és a szöveg a sorra és a korábbi lépésekre hivatkozik |
-| **Webhook hívása** | HTTPS-en küldött `POST` egy tetszőleges címre; a válaszára ezután hivatkozni lehet |
+| **Webhook hívása** | HTTPS-kérés egy szolgáltatás felé – metódus, cím, fejlécek és törzs az Ön kezében ([részletek](#szolgáltatás-hívása)); a válaszára ezután hivatkozni lehet |
 | **Küldés Slackre** | üzenet egy [csatlakoztatott](/basedb/hu/integrations/synchronisation/#slack) csatornába |
 | **MI megkérdezése** | az [MI-szolgáltató](/basedb/hu/fonctionnalites/ia/) válasza egy utasításra, amely a sorra és a korábbi lépésekre hivatkozik – megfogalmazás, összefoglalás, besorolás –, szövegként, számként, igen/nem értékként, dátumként vagy egy lista egyik elemeként értelmezve |
 | **Feltétel** | több ág: az első, amelynek feltétele teljesül, kerül sorra, az „Egyébként” ág pedig akkor, ha egyiké sem; az ágak ezután újra összefutnak |
+| **Minden sorra** | a benne található lépéseket egyszer végrehajtja egy tábla minden olyan sorára, amely megfelel egy szűrőnek ([részletek](#minden-sorra)) |
 
 Az eredmény nélküli keresés nem állítja le a folyamatot: azok a lépések, amelyeknek a talált
 sort kellett volna módosítaniuk, kimaradnak. Ha ilyenkor valami mást szeretne tenni, egy
 feltétel ellenőrzi ezt – az üres szűrőjű ág akkor kerül sorra, ha a keresés talált valamit.
+
+## Minden sorra
+
+A **Minden sorra** lépés beolvassa egy tábla azon sorait, amelyek megfelelnek a szűrőjének –
+üres szűrő esetén az összeset –, a választott sorrendben, a korlátjáig (alapértelmezés szerint
+50, legfeljebb 200), majd a keretében elhelyezett lépéseket egyszer végrehajtja mindegyikre. A
+„Minden hétfőn küldjön emlékeztetőt a kifizetetlen számlákról” így írható meg: **Ütemezetten**,
+majd **Minden sorra** a `payee eq false and relancee eq false` szűrőjű számlákon, a ciklusban
+pedig egy e-mail a számla kapcsolattartójának és egy **Sor módosítása** lépés, amely bejelöli a
+„Relancée” mezőt.
+
+A ciklusban a lépés azonosítója a **kör sorát** nevezi meg: a `{{e1.client}}` erre hivatkozik,
+és a **Sor módosítása** lépés ezt ajánlja fel a módosítható sorok között. A ciklus után az
+`{{e1.nombre}}` megmondja, hány sort járt be – például egy Slack-összefoglalóhoz. A szűrő
+hivatkozhat arra, ami előtte történt: egy kifizetett számla által kiváltva, a
+`facture eq {{_id}}` a hozzá tartozó tételsorokat járja be.
+
+A korláton túli sorok a következő futtatásra várnak, amely ezt jelzi is: a feldolgozottakat –
+egy „relancée” jelölőnégyzettel, egy dátummal – vegye ki a szűrőből, hogy a futtatások során
+mindegyiket feldolgozza a rendszer. Egy ciklus nem tartalmaz másik ciklust, és egy futtatás két
+perc után megáll.
+
+## Szolgáltatás hívása
+
+A **Webhook hívása** lépés alapértelmezés szerint `POST`-tal küldi el az automatizálás
+adatait: a kiválasztott sort és amit a korábbi lépések találtak vagy írtak. Ahhoz, hogy egy
+szolgáltatással úgy beszéljen, ahogyan az elvárja, beállítható:
+
+- a **metódus**: `POST`, `PUT`, `PATCH`, `GET` vagy `DELETE` – ez utóbbi kettő törzs nélkül;
+- a **cím**, amely a hosztja után hivatkozhat – `https://api.exemple.fr/clients/{{e2.numero}}`;
+  minden érték kódolva kerül bele;
+- **fejlécek**, amelyek értéke szintén hivatkozhat: `Idempotency-Key: {{_id}}`;
+- a **törzs**: az automatizálás adatai, egy **Összeállítandó JSON**, egy **Űrlap**
+  (soronként egy `kulcs=érték` pár) vagy egy **Szöveg**. Egy JSON-ban az idézőjelek közötti
+  hivatkozás szöveg, az idézőjeleken kívüli pedig érték – szám, igen vagy nem, lista:
+
+```json
+{ "facture": "{{e1.numero}}", "montant": {{e1.montant}}, "payee": {{e1.payee}} }
+```
+
+Egy API-kulcsot vagy egy tokent egy **titkos** fejlécbe kell tenni (a lakat): a példány
+kulcsával titkosítva, ez soha többé nem jelenik meg – sem a képernyőn, sem az API-ban, sem a
+Copilotnak –, és csak arra a hosztra kerül, amelyhez megadta. A cím hosztjának
+megváltoztatása esetén újra meg kell adni; a **Csere** egy újat kér be.
 
 ## MI megkérdezése
 
@@ -93,6 +138,7 @@ szövegek melletti **{ }** gombbal:
   minden lépés kártyáján ott az azonosítója;
 - `{{e3.statut}}`, `{{e3.reponse.numero}}`: amit az `e3` webhook válaszolt;
 - `{{e4.reponse}}`: az `e4` MI-lépés válasza;
+- `{{e5.client}}` az `e5` ciklusban a kör sora; `{{e5.nombre}}` utána a bejárt sorok száma;
 - `{{_maintenant}}`: a futtatás időpontja.
 
 Az egyetlen hivatkozásból álló érték magát az értéket adja át: egy kapcsolatot, egy személyt,
@@ -130,7 +176,8 @@ A **Tesztelés egy soron** a mentett automatizálást egy kiválasztott soron fu
 A **Futtatások** lap az utolsó 50-et őrzi meg, 30 napig: függőben, folyamatban, sikeres,
 kihagyva az okával, sikertelen a kódjával. Ha kiválaszt egyet, a rendszer ráhelyezi a
 folyamatra – a bejárt ág ki van rajzolva, minden végrehajtott lépés megmutatja, mit csinált és
-mennyi idő alatt, a többi elhalványul.
+mennyi idő alatt, a többi elhalványul. Egy ciklusban minden lépés azt is megmutatja, hányszor
+futott le.
 
 ## Kinek a nevében cselekszik
 
@@ -145,15 +192,18 @@ többi.
 
 - Amit egy automatizálás ír, az nem indít el másikat: aminek egymás után kell következnie,
   azt egyetlen folyamatba kell írni.
-- A keresés egy sort ad, az elsőt; „minden sorra” és várakozás („három nappal később”)
-  egyelőre nincs.
+- A keresés egy sort ad, az elsőt; egy ciklus végrehajtásonként legfeljebb 200-at jár be, és
+  az első sikertelen lépés leállítja. Várakozás („három nappal később”) nincs.
 - Nincs szkript. Egy e-mail egyszerű szövegben megy ki, címzettenként egy – lépésenként
   legfeljebb húsz –, a példány [levélküldő szerverén](/basedb/hu/hebergement/variables/#e-mailek)
   keresztül; a válasz az automatizálás tulajdonosához érkezik.
 - A feltétel egy sort vizsgál: ha az MI válasza szerint szeretne ágat választani, először írja
   a választ a sor egy mezőjébe.
 - Az [adatbázissablon](/basedb/hu/fonctionnalites/modeles/) csak azokat az automatizálásokat
-  viszi magával, amelyekben nincs keresés, feltétel vagy MI-lépés.
+  viszi magával, amelyekben nincs keresés, ciklus, feltétel vagy MI-lépés – webhookot pedig
+  sosem.
+- Egy webhook nem követ átirányítást, és legfeljebb 10 másodpercet vár; a 2xx-től eltérő
+  válasz a lépés sikertelenségét okozza.
 - Automatizálásonként óránként 100 futtatás; egy kimaradt óránkénti időpontot csak egyszer
   pótol a rendszer.
 - Az írás és a művelet közötti késleltetés másodperces nagyságrendű.

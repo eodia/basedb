@@ -29,8 +29,8 @@ taltion `/data` Tiedosto- ja Kuva-kenttien tiedostoille.
 | Tunniste | Sisältö |
 |---|---|
 | `latest` | viimeisin julkaistu versio |
-| `0.4` | viimeisin 0.4.x-versio |
-| `0.4.0` | täsmälleen tämä versio |
+| `0.5` | viimeisin 0.5.x-versio |
+| `0.5.0` | täsmälleen tämä versio |
 
 ## Palvelut
 
@@ -52,6 +52,24 @@ docker compose down                 # pysäytä (taltiot säilyvät)
 
 Tietovaraston kloonista `docker compose up -d --build` rakentaa kuvan lähdekoodista sen sijaan,
 että lataisi sen.
+
+## Yhdyskäytävän takana, polun alla
+
+Kun basedb julkaistaan polun alla — `https://passerelle.example.com/basedb/` verkkotunnuksen
+juuren sijaan —, ilmoita tämä polku:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# tai, ilman julkista osoitetta:
+BASEDB_BASE_PATH=/basedb
+```
+
+Kaikki kulkee tämän jälkeen polun `/basedb` alla: käyttöliittymä, `/basedb/api`, `/basedb/mcp`,
+jaon linkit ja sähköpostien linkit. Yhdyskäytävä voi **säilyttää polun** välittäessään pyynnön
+tai **poistaa sen**: basedb hyväksyy molemmat. `BASEDB_BASE_PATH=/` pakottaa juureen.
+
+Kuva on sama kaikille osoitteille: polku kirjoitetaan käyttöliittymään kontin käynnistyessä, ja
+polun vaihtaminen vaatii vain uudelleenkäynnistyksen.
 
 ## Porttien vaihtaminen
 

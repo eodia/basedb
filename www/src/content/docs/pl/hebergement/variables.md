@@ -52,6 +52,7 @@ Zobacz [Konta i logowanie](/basedb/pl/hebergement/connexion/).
 | `BASEDB_PORT` | `3000` | port opublikowany na 127.0.0.1: interfejs, `/api` i `/mcp` |
 | `BASEDB_VERSION` | `latest` | tag obrazu `eodia/basedb` |
 | `BASEDB_PUBLIC_URL` | – | publiczny adres basedb, dla powrotu z OIDC |
+| `BASEDB_BASE_PATH` | ścieżka z `BASEDB_PUBLIC_URL` | ścieżka, pod którą basedb jest serwowany za bramą, `/basedb` dla `https://passerelle.example.com/basedb/`; zobacz [Docker Compose](/basedb/pl/hebergement/docker/#za-bramą-pod-ścieżką) |
 | `BASEDB_DOMAIN` | – | domena serwowana przez HTTPS przez proxy Caddy |
 | `BASEDB_ORIGINS` | – | inne witryny, których strony wywołują API z przeglądarki, rozdzielone przecinkami; zbędne dla interfejsu basedb, serwowanego pod tym samym adresem |
 | `BASEDB_API`, `BASEDB_MCP` | `/`, `/mcp` | API i MCP widziane z przeglądarki; do ustawiania tylko dla stosu deweloperskiego (`pnpm start`) |
@@ -123,6 +124,17 @@ Przy starcie log podaje, która usługa jest używana: `Géocodage : https://nom
 | `BASEDB_AI_QUOTA` | `120` | wywołania interaktywne na godzinę i na tenanta |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | obliczenia pól AI na godzinę i na tenanta |
 | `BASEDB_AI_WORKER` | `1` | `0`: brak obliczeń w tle w tym procesie |
+
+## Webhooki do sieci wewnętrznej
+
+| Zmienna | Domyślnie | Rola |
+|---|---|---|
+| `BASEDB_WEBHOOK_ALLOW` | – | twoje serwery wewnętrzne, rozdzielone przecinkami: nazwa (`chat.intra.example.com`), domena i jej subdomeny (`*.intra.example.com`), adres lub zakres (`10.12.0.0/16`) |
+
+Webhooki, żądania HTTP automatyzacji i tabele synchronizowane wychodzą tylko na publiczne
+adresy HTTPS. Cel z listy jest przyjmowany dodatkowo, niezależnie od jego adresu, portu i
+schematu – HTTP włącznie. Nieczytelny wpis blokuje start. Zobacz
+[Webhooki](/basedb/pl/integrations/webhooks/#adresy-docelowe).
 
 ## Publiczne demo
 

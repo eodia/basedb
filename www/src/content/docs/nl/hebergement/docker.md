@@ -29,8 +29,8 @@ De image draait onder de gebruiker `node`, op Node 22, declareert een healthchec
 | Tag | Inhoud |
 |---|---|
 | `latest` | de laatst gepubliceerde versie |
-| `0.4` | de laatste versie 0.4.x |
-| `0.4.0` | precies deze versie |
+| `0.5` | de laatste versie 0.5.x |
+| `0.5.0` | precies deze versie |
 
 ## De services
 
@@ -52,6 +52,24 @@ docker compose down                 # stoppen (de volumes blijven)
 
 Vanuit een kloon van de repository bouwt `docker compose up -d --build` de image vanaf de code
 in plaats van hem te downloaden.
+
+## Achter een gateway, onder een pad
+
+Wanneer basedb onder een pad wordt gepubliceerd — `https://passerelle.example.com/basedb/` in
+plaats van op de root van een domein — geef je dat pad op:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# of, zonder openbaar adres:
+BASEDB_BASE_PATH=/basedb
+```
+
+Alles loopt dan onder `/basedb`: de interface, `/basedb/api`, `/basedb/mcp`, de deellinks en die
+van de e-mails. De gateway kan **het pad behouden** door het verzoek ongewijzigd door te sturen,
+of het **verwijderen**: basedb accepteert beide. `BASEDB_BASE_PATH=/` dwingt de root af.
+
+De image is voor elk adres dezelfde: het pad wordt bij het starten van de container in de
+interface geschreven, en een ander pad kiezen vraagt alleen een herstart.
 
 ## De poorten wijzigen
 

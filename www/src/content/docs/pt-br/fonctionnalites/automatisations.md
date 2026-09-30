@@ -1,13 +1,14 @@
 ---
 title: Automações
-description: Quando uma linha muda, em horário fixo ou com um clique — editar, criar, buscar, ramificar, perguntar à IA, notificar, enviar um e-mail, chamar um webhook, escrever no Slack.
+description: Quando uma linha muda, em horário fixo ou com um clique — editar, criar, buscar, repetir em cada linha, ramificar, perguntar à IA, notificar, enviar um e-mail, chamar um serviço, escrever no Slack.
 ---
 
 Uma automação diz **quando**, **se** e **então**: quando uma tarefa passa para “Fait”, registrar
 a hora; quando chega uma avaliação negativa, notificar a responsável e escrever no Slack; toda
 segunda-feira às 9h, criar a linha da reunião de equipe. E quando uma ação não basta, ela segue um
-**fluxo**: buscar uma linha, seguir uma ramificação ou outra conforme o que ela diz, reutilizar
-em uma etapa o que uma etapa anterior encontrou ou escreveu.
+**fluxo**: buscar uma linha, seguir uma ramificação ou outra conforme o que ela diz, repetir
+etapas em cada linha que atende a um filtro, reutilizar em uma etapa o que uma etapa anterior
+encontrou ou escreveu.
 
 Elas são abertas em **Automações**, no bloco da base aberta, na parte de baixo da barra
 lateral, e exigem o nível **Gerenciamento**.
@@ -50,14 +51,58 @@ Até trinta etapas, em ordem; a primeira que falha interrompe as seguintes.
 | **Buscar uma linha** | a primeira linha de uma tabela que atende a um filtro, para que as etapas seguintes a citem ou a alterem |
 | **Notificar alguém** | uma [notificação](/basedb/pt-br/fonctionnalites/collaboration/#notificações) para pessoas escolhidas, ou para a de um campo Pessoa |
 | **Enviar um e-mail** | para pessoas da equipe, para a de um campo Pessoa, para o endereço de um campo E-mail — um cliente, um fornecedor — ou para endereços escritos; o assunto e o texto citam a linha e as etapas anteriores |
-| **Chamar um webhook** | um `POST` em HTTPS para o endereço que você escolher; a resposta pode ser citada depois |
+| **Chamar um webhook** | uma requisição HTTPS a um serviço — método, endereço, cabeçalhos e corpo à sua escolha ([detalhes](#chamar-um-serviço)); a resposta pode ser citada depois |
 | **Enviar para o Slack** | uma mensagem em um canal [conectado](/basedb/pt-br/integrations/synchronisation/#slack) |
 | **Perguntar à IA** | uma resposta do [provedor de IA](/basedb/pt-br/fonctionnalites/ia/) a uma instrução que cita a linha e as etapas anteriores — redigir, resumir, classificar —, lida como um texto, um número, sim ou não, uma data ou uma opção de uma lista |
 | **Condição** | várias ramificações: a primeira cuja condição é atendida é seguida, “Senão” quando nenhuma é; as ramificações se juntam depois |
+| **Para cada linha** | as etapas que ela contém, uma vez para cada linha de uma tabela que atende a um filtro ([detalhes](#para-cada-linha)) |
 
 Uma busca que não encontra nada não interrompe o fluxo: as etapas que deveriam alterar a linha
 dela são puladas. Para fazer outra coisa nesse caso, uma condição testa isso — uma ramificação
 cujo filtro está vazio é seguida assim que a busca encontra algo.
+
+## Para cada linha
+
+A etapa **Para cada linha** lê as linhas de uma tabela que atendem ao seu filtro — vazio:
+todas —, na ordem escolhida, até o seu limite (50 por padrão, no máximo 200), e depois executa
+uma vez para cada uma as etapas colocadas dentro dela. “Toda segunda-feira, cobrar as faturas
+em aberto” se escreve assim: **Em horário fixo**, depois **Para cada linha** das faturas
+`payee eq false and relancee eq false`, e dentro do laço um e-mail para o contato da fatura
+e **Editar uma linha** que marca “Relancée”.
+
+Dentro do laço, o identificador da etapa nomeia a **linha da vez**: `{{e1.client}}` a cita,
+e **Editar uma linha** a propõe entre as linhas a alterar. Depois do laço,
+`{{e1.nombre}}` informa quantas linhas ela percorreu — para um resumo no Slack, por
+exemplo. O filtro pode citar o que vem antes: disparada por uma fatura paga,
+`facture eq {{_id}}` percorre as suas linhas de detalhe.
+
+Além do limite, as linhas restantes aguardam a próxima execução, que informa isso:
+tire do filtro as que já foram tratadas — uma caixa “relancée”, uma data — para
+tratá-las todas ao longo das execuções. Um laço não contém outro laço, e uma
+execução para depois de dois minutos.
+
+## Chamar um serviço
+
+Por padrão, a etapa **Chamar um webhook** envia, em `POST`, os dados da automação:
+a linha escolhida e o que as etapas anteriores encontraram ou escreveram. Para falar com um
+serviço da forma que ele espera, você configura:
+
+- o **método**: `POST`, `PUT`, `PATCH`, `GET` ou `DELETE` — estes dois últimos sem corpo;
+- o **endereço**, que pode citar depois do seu host — `https://api.exemple.fr/clients/{{e2.numero}}`;
+  cada valor é codificado nele;
+- **cabeçalhos**, cujo valor pode citar: `Idempotency-Key: {{_id}}`;
+- o **corpo**: os dados da automação, um **JSON a compor**, um **formulário**
+  (um par `chave=valor` por linha) ou um **texto**. Em um JSON, uma citação entre
+  aspas é texto, e fora de aspas é um valor — um número, sim ou não, uma lista:
+
+```json
+{ "facture": "{{e1.numero}}", "montant": {{e1.montant}}, "payee": {{e1.payee}} }
+```
+
+Uma chave de API ou um token vai em um cabeçalho **secreto** (o cadeado): criptografado pela chave
+da instância, ele nunca mais é exibido — nem na tela, nem pela API, nem para o Copilot — e só é
+enviado ao host para o qual você o forneceu. Mudar o host do endereço exige informá-lo de
+novo; **Substituir** permite digitar um novo.
 
 ## Perguntar à IA
 
@@ -89,6 +134,8 @@ de cada texto:
   etapa mostra seu identificador no cartão;
 - `{{e3.statut}}`, `{{e3.reponse.numero}}`: o que o webhook `e3` respondeu;
 - `{{e4.reponse}}`: a resposta da etapa de IA `e4`;
+- `{{e5.client}}` no laço `e5`, a linha da vez; `{{e5.nombre}}` depois dele, o número
+  de linhas percorridas;
 - `{{_maintenant}}`: o instante da execução.
 
 Um valor formado por uma única citação passa o próprio valor: uma relação, uma pessoa, uma
@@ -124,7 +171,7 @@ e os canais do Slack são enviados sob marcadores (`p1`, `s1`), nunca pelo ident
 verdade. A aba **Execuções** guarda as 50 últimas, por 30 dias: pendente, em andamento, bem-sucedida,
 descartada com o motivo, com falha e o código. Escolher uma a sobrepõe ao fluxo — a ramificação
 seguida é destacada, cada etapa executada diz o que fez e em quanto tempo, o resto fica
-esmaecido.
+esmaecido. Em um laço, cada etapa também informa quantas vezes ela rodou.
 
 ## Em nome de quem ela age
 
@@ -138,15 +185,17 @@ podem ser desfeitas como as outras.
 
 - O que uma automação escreve não dispara nenhuma outra: o que precisa ser encadeado é escrito
   em um único fluxo.
-- Uma busca retorna uma linha, a primeira; ainda não há “para cada linha”, nem
-  espera (“três dias depois”).
+- Uma busca retorna uma linha, a primeira; um laço percorre no máximo 200 por
+  execução, e a primeira etapa que falha o interrompe. Sem espera (“três dias depois”).
 - Sem script. Um e-mail parte em texto simples, um por destinatário — vinte no máximo por
   etapa —, pelo [servidor de envio](/basedb/pt-br/hebergement/variables/#e-mails) da instância;
   uma resposta chega à pessoa dona da automação.
 - Uma condição testa uma linha: para seguir uma ramificação conforme a resposta da IA, escreva-a
   primeiro em um campo da linha.
 - Um [modelo de base](/basedb/pt-br/fonctionnalites/modeles/) só leva as automações sem
-  busca, condição nem etapa de IA.
+  busca, laço, condição nem etapa de IA, e nunca um webhook.
+- Um webhook não segue redirecionamentos e aguarda no máximo 10 segundos; uma resposta
+  diferente de 2xx faz a etapa falhar.
 - 100 execuções por hora e por automação; um horário agendado perdido só é recuperado
   uma vez.
 - O intervalo entre a escrita e a ação é da ordem de um segundo.

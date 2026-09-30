@@ -1,5 +1,6 @@
 'use client'
 
+import { withBase, withoutBase } from '@/lib/base-path'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
@@ -39,15 +40,16 @@ export function useAddressBar(address: string | null, follow: () => Promise<void
     const next = wanted.current
     if (next === null || traversing.current !== 0) return
     // Already what the address says — a reload, a bookmark: the entry is the screen's.
-    if (next === `${window.location.pathname}${window.location.search}`) {
+    if (next === `${withoutBase(window.location.pathname)}${window.location.search}`) {
       written.current = true
       return
     }
     const push = gesture.current && written.current
     gesture.current = false
     written.current = true
-    if (push) window.history.pushState(null, '', next)
-    else window.history.replaceState(null, '', next)
+    // The browser's address carries the path basedb is served under; the screen's does not.
+    if (push) window.history.pushState(null, '', withBase(next))
+    else window.history.replaceState(null, '', withBase(next))
   }, [])
 
   useEffect(() => {

@@ -12,11 +12,15 @@ import { Hint } from '@/components/ui/tooltip'
 import type { AutomationRun, DescribedBase, Member } from '@/lib/api/client'
 import {
   END_NODE,
+  FRAME_BOTTOM,
   type FlowEdge,
   type FlowNode,
   GAP_Y,
+  MERGE_SIZE,
+  STEP_SIZE,
   type Slot,
   TRIGGER_NODE,
+  frameOf,
   layoutFlow,
   mergeOf,
 } from '@/lib/automation-layout'
@@ -32,6 +36,7 @@ import {
   TRIGGER_LABELS,
   allSteps,
   findPath,
+  inLoop,
   pathSummary,
   runStepSentence,
   runStepsById,
@@ -73,6 +78,7 @@ import {
   MousePointerClick,
   PencilLine,
   Plus,
+  Repeat,
   Search,
   Sparkles,
   Split,
@@ -102,6 +108,7 @@ export const STEP_ICONS: Readonly<Record<StepKind, LucideIcon>> = {
   slack: MessageSquareText,
   ai: Sparkles,
   branch: Split,
+  for_each: Repeat,
 }
 
 /** Actions in one tone, a search in another, the AI in its own, what shapes the flow in a fourth. */
@@ -116,6 +123,7 @@ const STEP_TONES: Readonly<Record<StepKind, string>> = {
   // The colour of the AI across the product — an AI field's switch, the copilot.
   ai: 'bg-violet-500/12 text-violet-700 dark:text-violet-300',
   branch: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+  for_each: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
 }
 
 // ── What the canvas asks of the editor ──────────────────────────────────────
@@ -123,19 +131,30 @@ const STEP_TONES: Readonly<Record<StepKind, string>> = {
 interface FlowActions {
   readonly select: (id: string) => void
   readonly insert: (slot: Slot, kind: StepKind) => void
+  /** Whether a slot lies in a loop, where no other loop may go. */
+  readonly looped: (slot: Slot) => boolean
 }
 
-const Actions = createContext<FlowActions>({ select: () => undefined, insert: () => undefined })
+const Actions = createContext<FlowActions>({
+  select: () => undefined,
+  insert: () => undefined,
+  looped: () => false,
+})
 
-/** The menu of the steps one may add: the actions first, then what shapes a flow. */
+/**
+ * The menu of the steps one may add: the actions first, then what shapes a flow — but no
+ * loop inside a loop.
+ */
 export function StepMenu({
   onPick,
   children,
   align = 'center',
+  looped = false,
 }: {
   readonly onPick: (kind: StepKind) => void
   readonly children: ReactNode
   readonly align?: 'start' | 'center' | 'end'
+  readonly looped?: boolean
 }) {
   return (
     <DropdownMenu>
@@ -144,29 +163,33 @@ export function StepMenu({
         {STEP_MENU.map((group, g) => (
           <div key={group.join()}>
             {g > 0 && <DropdownMenuSeparator />}
-            {group.map((kind) => {
-              const Icon = STEP_ICONS[kind]
-              return (
-                <DropdownMenuItem
-                  key={kind}
-                  onSelect={() => onPick(kind)}
-                  className="items-start gap-2.5 py-2"
-                >
-                  <span
-                    className={cn(
-                      'mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md',
-                      STEP_TONES[kind],
-                    )}
+            {group
+              .filter((kind) => !(looped && kind === 'for_each'))
+              .map((kind) => {
+                const Icon = STEP_ICONS[kind]
+                return (
+                  <DropdownMenuItem
+                    key={kind}
+                    onSelect={() => onPick(kind)}
+                    className="items-start gap-2.5 py-2"
                   >
-                    <Icon className="size-3.5" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm">{STEP_LABELS[kind]}</span>
-                    <span className="block text-xs text-muted-foreground">{STEP_HINTS[kind]}</span>
-                  </span>
-                </DropdownMenuItem>
-              )
-            })}
+                    <span
+                      className={cn(
+                        'mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md',
+                        STEP_TONES[kind],
+                      )}
+                    >
+                      <Icon className="size-3.5" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm">{STEP_LABELS[kind]}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {STEP_HINTS[kind]}
+                      </span>
+                    </span>
+                  </DropdownMenuItem>
+                )
+              })}
           </div>
         ))}
       </DropdownMenuContent>
@@ -176,8 +199,12 @@ export function StepMenu({
 
 /** The same menu on the canvas, inserting where it was opened. */
 function AddStepMenu({ slot, children }: { readonly slot: Slot; readonly children: ReactNode }) {
-  const { insert } = useContext(Actions)
-  return <StepMenu onPick={(kind) => insert(slot, kind)}>{children}</StepMenu>
+  const { insert, looped } = useContext(Actions)
+  return (
+    <StepMenu onPick={(kind) => insert(slot, kind)} looped={looped(slot)}>
+      {children}
+    </StepMenu>
+  )
 }
 
 // ── Nodes ───────────────────────────────────────────────────────────────────
@@ -212,7 +239,7 @@ interface PathData extends CardData {
 type TriggerNode = Node<TriggerData, 'trigger'>
 type StepNode = Node<StepData, 'step'>
 type PathNode = Node<PathData, 'path'>
-type BareNode = Node<CardData & { readonly append?: number }, 'merge' | 'end'>
+type BareNode = Node<CardData & { readonly append?: number }, 'merge' | 'end' | 'frame'>
 
 /** The edges of a card: in on top, out below — drawn by the edges, not by the card. */
 function Ports() {
@@ -388,6 +415,57 @@ function MergeDot({ data }: NodeProps<BareNode>) {
   )
 }
 
+/**
+ * A loop's frame, under its steps: a dashed outline, and the arrow that goes from the end
+ * of a turn back up to the loop's card — drawn here, in the frame's own coordinates, whose
+ * top is the card's middle.
+ */
+function LoopFrame({ data }: NodeProps<BareNode>) {
+  const { width: w, height: h } = data
+  const right = w - 14
+  const r = 8
+  const fromX = w / 2 + MERGE_SIZE / 2 + 2
+  const fromY = h - FRAME_BOTTOM - MERGE_SIZE / 2
+  const toX = w / 2 + STEP_SIZE.w / 2 + 3
+  const boxTop = STEP_SIZE.h / 2 + 12
+  return (
+    <div
+      style={{ width: w, height: h }}
+      className={cn('pointer-events-none relative', data.dimmed && 'opacity-40')}
+    >
+      <svg width={w} height={h} className="absolute inset-0 overflow-visible" aria-hidden="true">
+        <rect
+          x={0.5}
+          y={boxTop}
+          width={w - 1}
+          height={h - boxTop - 0.5}
+          rx={14}
+          className="fill-amber-500/[0.04] stroke-amber-500/40"
+          strokeDasharray="5 4"
+        />
+        <path
+          d={`M ${fromX} ${fromY} H ${right - r} Q ${right} ${fromY} ${right} ${fromY - r} V ${r} Q ${right} 0 ${right - r} 0 H ${toX}`}
+          className="fill-none stroke-amber-500/70"
+          strokeWidth={1.5}
+        />
+        <path
+          d={`M ${toX + 6} -4 L ${toX} 0 L ${toX + 6} 4`}
+          className="fill-none stroke-amber-500/70"
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span
+        className="absolute flex size-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-amber-500/40 bg-card text-amber-700 dark:text-amber-300"
+        style={{ left: right, top: (fromY + boxTop) / 2 }}
+      >
+        <Repeat className="size-3" />
+      </span>
+    </div>
+  )
+}
+
 function EndButton({ data }: NodeProps<BareNode>) {
   return (
     <div style={{ width: data.width, height: data.height }} className="flex justify-center">
@@ -415,6 +493,7 @@ const NODE_TYPES = {
   path: PathChip,
   merge: MergeDot,
   end: EndButton,
+  frame: LoopFrame,
 }
 
 // ── Edges ───────────────────────────────────────────────────────────────────
@@ -565,9 +644,16 @@ function Canvas({
     const steps = runStepsById(run, draft.steps)
     const reached = new Set<string>([TRIGGER_NODE, ...steps.keys()])
     for (const [id, record] of steps) {
+      if (record.kind === 'for_each') {
+        reached.add(mergeOf(id))
+        reached.add(frameOf(id))
+        continue
+      }
       if (record.kind !== 'branch') continue
       reached.add(mergeOf(id))
       if (typeof record.path === 'string') reached.add(record.path)
+      // In a loop, every path a turn took.
+      for (const path of record.taken ?? []) reached.add(path)
     }
     if (run.status === 'succeeded') reached.add(END_NODE)
     return { steps, reached }
@@ -619,6 +705,10 @@ function Canvas({
             data: { ...card, path, taken: overlay?.reached.has(n.id) ?? false } satisfies PathData,
           }
         }
+        case 'frame':
+          // A loop's frame is drawn, not reached: neither clicked (automation-flow.css) nor
+          // tabbed to.
+          return { ...common, type: n.kind, focusable: false, data: card }
         default:
           // The button at the end adds after the last step of the first level.
           return { ...common, type: n.kind, data: { ...card, append: draft.steps.length } }
@@ -663,7 +753,14 @@ function Canvas({
     return () => clearTimeout(timer)
   }, [focus, layout, flow])
 
-  const actions = useMemo(() => ({ select: onSelect, insert: onInsert }), [onSelect, onInsert])
+  const actions = useMemo(
+    () => ({
+      select: onSelect,
+      insert: onInsert,
+      looped: (slot: Slot) => inLoop(draft.steps, slot.path),
+    }),
+    [onSelect, onInsert, draft.steps],
+  )
 
   return (
     <Actions.Provider value={actions}>

@@ -32,7 +32,7 @@ docker run --rm -v basedb_files:/data -v "$PWD":/backup alpine \
 
 ## 实例密钥
 
-`BASEDB_ENCRYPTION_KEY` 用于加密数据库中保存的机密信息（AI 密钥、Webhook 密钥、表单链接）。**没有密钥的数据库备份无法恢复这些机密信息。** 请将密钥保存在您的机密管理工具中，与备份放在一起。
+`BASEDB_ENCRYPTION_KEY` 用于加密数据库中保存的机密信息（AI 密钥、Webhook 密钥、自动化保密标头、表单链接）。**没有密钥的数据库备份无法恢复这些机密信息。** 请将密钥保存在您的机密管理工具中，与备份放在一起。
 
 ## 更新
 
@@ -43,7 +43,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` 可以固定一个具体版本（`0.4.0`），而不是使用最新版本（`latest`）。
+`BASEDB_VERSION` 可以固定一个具体版本（`0.5.0`），而不是使用最新版本（`latest`）。
 
 启动时，basedb 会**自动更新其目录（catalog）**：它会按顺序应用您的版本尚未包含的迁移，每个迁移都在各自的事务中执行，并记录在 `_basedb.catalog_migration` 中。您的数据保持不变。日志会显示这一过程：
 

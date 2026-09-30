@@ -29,8 +29,8 @@ wolumen `/data` na pliki z pól Plik i Obraz.
 | Tag | Zawartość |
 |---|---|
 | `latest` | najnowsza opublikowana wersja |
-| `0.4` | najnowsza wersja 0.4.x |
-| `0.4.0` | dokładnie ta wersja |
+| `0.5` | najnowsza wersja 0.5.x |
+| `0.5.0` | dokładnie ta wersja |
 
 ## Usługi
 
@@ -52,6 +52,24 @@ docker compose down                 # zatrzymaj (wolumeny zostają)
 
 W sklonowanym repozytorium `docker compose up -d --build` buduje obraz z kodu, zamiast go
 pobierać.
+
+## Za bramą, pod ścieżką
+
+Gdy basedb jest publikowany pod ścieżką – `https://passerelle.example.com/basedb/`, a nie w
+katalogu głównym domeny –, wskaż tę ścieżkę:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# albo, bez publicznego adresu:
+BASEDB_BASE_PATH=/basedb
+```
+
+Wszystko przechodzi wtedy pod `/basedb`: interfejs, `/basedb/api`, `/basedb/mcp`, linki
+udostępniania i te z e-maili. Brama może **zachować ścieżkę**, przekazując żądanie dalej, albo
+ją **usunąć**: basedb akceptuje obie możliwości. `BASEDB_BASE_PATH=/` wymusza katalog główny.
+
+Obraz jest taki sam dla każdego adresu: ścieżka jest zapisywana w interfejsie przy starcie
+kontenera, a zmiana ścieżki wymaga tylko ponownego uruchomienia.
 
 ## Zmiana portów
 

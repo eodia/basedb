@@ -70,12 +70,55 @@ Z tym samym tokenem:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | pulpity bazy |
 | `GET /api/v1/<tenant>/meta/users` | członkowie przestrzeni roboczej, dla pola Osoba |
 | `GET /api/v1/<tenant>/meta/templates` | szablony baz z galerii |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | śledzenie tabeli w czasie rzeczywistym: sygnały, odczytywane potem przez powyższe ścieżki (zobacz [Webhooki](/basedb/pl/integrations/webhooks/#bez-webhooka-śledzenie-tabeli)) |
 
 [Widoki udostępnione](/basedb/pl/fonctionnalites/vues-partagees/) czyta się bez konta:
 `GET /api/v1/views/<jeton>` i `…/rows` w JSON, `…/calendar.ics` w iCalendar.
 
 Budowanie – tworzenie automatyzacji, pulpitu, integracji – pozostaje zarezerwowane dla sesji
 interfejsu: token czyta i zapisuje wiersze, nie zmienia bazy.
+
+## Tworzenie bazy z szablonu
+
+Aplikacja, która się instaluje, tworzy swoją bazę **jednym wywołaniem**: serwer stosuje szablon
+– tabele, pola, relacje, przykładowe wiersze, widoki, pulpity, automatyzacje – i, jeśli
+któryś krok się nie powiedzie, nie zostawia po sobie żadnej bazy.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` to klucz szablonu z galerii albo cały szablon w
+[formacie szablonów](/basedb/pl/fonctionnalites/modeles/). Z nagłówkiem
+`Accept: application/x-ndjson` odpowiedź przychodzi linia po linii: jedna linia `{"step": …}` na
+każdy krok, a potem utworzona baza. To wywołanie wymaga tokenu dostępu osoby, która może
+utworzyć bazę (`POST /auth/session/access`, po zalogowaniu): token integracji otwiera tylko
+istniejącą bazę.
+
+## Sprawdzanie tokenu
+
+Tokenów basedb nie sprawdza się poza basedb. Aplikacja, która go otrzymuje – na przykład
+narzędzie otwarte z basedb z tokenem danej osoby – pyta, ile on jest wart (introspekcja,
+RFC 7662), własnym tokenem integracji:
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Każdy token, który nie jest nic wart – nieznany, wygasły, unieważniony, zamknięta sesja, inna
+przestrzeń robocza – odpowiada `{"active": false}`, bez podania przyczyny. Odpowiedź jest
+czytana na żywo: wylogowanie widać natychmiast. Dla tokenu integracji odpowiedź podaje też
+bazę, którą otwiera (`base`), jego dostęp (`read` lub `write`) oraz jego powierzchnie.
 
 ## Generowana dokumentacja
 

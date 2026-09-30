@@ -147,4 +147,4 @@ Enhver database kan også blive til en skabelon: **Gem som skabelon** i database
 **Flere handlinger**. Dens tabeller, felter, AI-instruktioner, relationer, delte visninger, dashboards og
 automatiseringer — og, hvis du vil, op til 50 rækker pr. tabel — downloades som JSON, klar til
 at komme med i det officielle katalog eller i instansens. En automatisering, der finder en
-række, tager grene eller citerer et tidligere trin, udelades indtil videre, og skærmen siger det.
+række, gennemgår rækker, tager grene eller citerer et tidligere trin, udelades indtil videre, og skærmen siger det.

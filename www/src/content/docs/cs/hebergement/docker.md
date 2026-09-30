@@ -29,8 +29,8 @@ Obraz běží pod uživatelem `node` na Node 22 a deklaruje kontrolu stavu (`/he
 | Tag | Obsah |
 |---|---|
 | `latest` | poslední vydaná verze |
-| `0.4` | poslední verze 0.4.x |
-| `0.4.0` | přesně tato verze |
+| `0.5` | poslední verze 0.5.x |
+| `0.5.0` | přesně tato verze |
 
 ## Služby
 
@@ -52,6 +52,24 @@ docker compose down                 # zastavit (svazky zůstanou)
 
 Z klonu repozitáře `docker compose up -d --build` sestaví obraz ze zdrojového kódu, místo aby
 ho stáhl.
+
+## Za branou, pod cestou
+
+Když je basedb publikováno pod cestou — `https://passerelle.example.com/basedb/` a ne v kořeni
+domény —, uveďte tuto cestu:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# nebo bez veřejné adresy:
+BASEDB_BASE_PATH=/basedb
+```
+
+Vše pak jde pod `/basedb`: rozhraní, `/basedb/api`, `/basedb/mcp`, odkazy ke sdílení
+i odkazy z e-mailů. Brána může cestu **zachovat** a požadavek předat dál, nebo ji
+**odstranit** – basedb zvládá obojí. `BASEDB_BASE_PATH=/` vynutí kořen.
+
+Obraz je stejný pro všechny adresy: cesta se zapisuje do rozhraní při startu kontejneru
+a změna cesty vyžaduje jen restart.
 
 ## Změna portů
 

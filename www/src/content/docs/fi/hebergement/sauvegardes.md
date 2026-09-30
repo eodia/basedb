@@ -35,8 +35,8 @@ S3-tallennusta käytettäessä noudata palveluntarjoajasi varmuuskopiointikäyt�
 ## Instanssin avain
 
 `BASEDB_ENCRYPTION_KEY` salaa tietokantaan tallennetut salaisuudet (tekoälyavaimet, webhookien
-salaisuudet, lomakelinkit). **Tietokannan varmuuskopio ilman sen avainta ei palauta näitä
-salaisuuksia.** Säilytä avain salaisuuksien hallintatyökalussasi varmuuskopioiden rinnalla.
+salaisuudet, automaatioiden salaiset otsakkeet, lomakelinkit). **Tietokannan varmuuskopio ilman
+sen avainta ei palauta näitä salaisuuksia.** Säilytä avain salaisuuksien hallintatyökalussasi varmuuskopioiden rinnalla.
 
 ## Päivittäminen
 
@@ -47,7 +47,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` kiinnittää tietyn version (`0.4.0`) viimeisimmän (`latest`) sijaan.
+`BASEDB_VERSION` kiinnittää tietyn version (`0.5.0`) viimeisimmän (`latest`) sijaan.
 
 Käynnistyksessä basedb **päivittää katalogiaan itse**: se soveltaa järjestyksessä ja kunkin
 omassa transaktiossaan migraatiot, joita versiossasi ei vielä ole, ja kirjaa ne tauluun

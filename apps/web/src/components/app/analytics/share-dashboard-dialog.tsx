@@ -23,6 +23,7 @@ import {
   type ShareAccess,
   api,
 } from '@/lib/api/client'
+import { linkTo } from '@/lib/base-path'
 import { $t, groupName } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
@@ -46,7 +47,7 @@ const STATE: Readonly<Record<DashboardShareState, { label: string; tone: string 
   authority: { label: $t('Suspendu'), tone: 'bg-rose-500/15 text-rose-800 dark:text-rose-300' },
 }
 
-export const dashboardUrl = (token: string) => `${window.location.origin}/d/${token}`
+export const dashboardUrl = (token: string) => linkTo(`/d/${token}`)
 
 export function ShareDashboardDialog({
   base,

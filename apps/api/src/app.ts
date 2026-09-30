@@ -8,6 +8,7 @@ import {
 import {
   type AiFieldInput,
   type AiFieldStatus,
+  type AppliedTemplate,
   type Automation,
   type AutomationRun,
   BasedbError,
@@ -45,7 +46,7 @@ import { type Context, Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { cors } from 'hono/cors'
-import { streamSSE } from 'hono/streaming'
+import { stream, streamSSE } from 'hono/streaming'
 import { providerTransport } from './ai-transport.js'
 import {
   type DemoConfig,
@@ -102,6 +103,12 @@ export interface AppOptions {
    * `Host` header a caller controls.
    */
   readonly publicUrl?: string
+  /**
+   * The path basedb is served under — `/basedb` behind a gateway at
+   * `https://gateway.exemple.fr/basedb/`, empty (the default) at the root of its address.
+   * Where the browser is sent back to after a sign-in: the interface lives under it.
+   */
+  readonly basePath?: string
   /** Tenant these unauthenticated `/auth` routes belong to, while sessions carry none. */
   readonly tenantRef?: string
   /**
@@ -450,6 +457,33 @@ export function createApp(options: AppOptions) {
     })
   })
 
+  // Token introspection, RFC 7662 (chapter 13 §11): another application asks whether a
+  // token it was handed is good, and whose it is. It proves who IT is with an integration
+  // token of the same workspace; the body carries the token asked about — a form, as the
+  // RFC writes it, or JSON. The answer is the RFC's bare object, never cached.
+  app.post('/auth/introspect', async (c) => {
+    const header = c.req.header('authorization')
+    const caller = header?.toLowerCase().startsWith('bearer ') ? header.slice(7).trim() : undefined
+    const type = c.req.header('content-type') ?? ''
+    let token: unknown
+    if (type.includes('application/json')) {
+      const body = await c.req.json<{ token?: unknown }>().catch(() => ({}) as { token?: unknown })
+      token = body.token
+    } else {
+      const body = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>)
+      token = body.token
+    }
+    const address = addressOf(c)
+    const answer = await options.kernel.introspectToken({
+      caller,
+      token: typeof token === 'string' ? token : undefined,
+      requestId: c.get('requestId'),
+      ip: address === 'inconnue' ? null : address,
+    })
+    c.header('cache-control', 'no-store')
+    return c.json(answer)
+  })
+
   app.delete('/auth/session', async (c) => {
     await options.kernel.logout(getCookie(c, SESSION_COOKIE))
     deleteCookie(c, SESSION_COOKIE, { path: '/', secure: true })
@@ -651,10 +685,12 @@ export function createApp(options: AppOptions) {
 
   /** The tenant these pre-session routes speak for. */
   const authTenant = () => options.tenantRef ?? 't4z56fq'
+  /** `/basedb`, or empty: no trailing slash, whatever the operator wrote. */
+  const basePath = (options.basePath ?? '').trim().replace(/[/]+$/, '')
 
   /** Where the provider sends the browser back. Registered, hence never inferred. */
   const redirectUri = (c: Context<{ Variables: Variables }, string>, slug: string) => {
-    const base = options.publicUrl ?? new URL(c.req.url).origin
+    const base = options.publicUrl ?? `${new URL(c.req.url).origin}${basePath}`
     return `${base.replace(/\/$/, '')}/auth/oidc/${slug}/callback`
   }
 
@@ -683,7 +719,8 @@ export function createApp(options: AppOptions) {
       tenantRef: authTenant(),
       slug,
       redirectUri: redirectUri(c, slug),
-      returnTo: c.req.query('return_to'),
+      // The interface's home, under the path basedb is served under, when none is named.
+      returnTo: c.req.query('return_to') ?? `${basePath}/`,
     })
     plantExchange(c, started.exchangeCookie)
     return c.redirect(started.authorizeUrl, 302)
@@ -713,7 +750,7 @@ export function createApp(options: AppOptions) {
       deleteCookie(c, OIDC_COOKIE, { path: '/', secure: true })
       const reason = error.details?.reason
       const suffix = typeof reason === 'string' ? `&raison=${encodeURIComponent(reason)}` : ''
-      return c.redirect(`/?connexion=${encodeURIComponent(error.code)}${suffix}`, 302)
+      return c.redirect(`${basePath}/?connexion=${encodeURIComponent(error.code)}${suffix}`, 302)
     }
 
     // The exchange is over: its cookie has nothing left to carry. A link opens no
@@ -875,9 +912,20 @@ export function createApp(options: AppOptions) {
     // not from the bytes.
     if (served.notModified) return c.body(null, 304)
     // OpenAPI is a contract, served whole; the other three keep the envelope.
-    return kind === 'openapi'
-      ? c.json(served.body as Record<string, unknown>)
-      : c.json({ data: served.body })
+    if (kind !== 'openapi') return c.json({ data: served.body })
+    const contract = served.body as { servers?: Array<{ url: string }> }
+    // Served under a path, the server the contract names is under it too.
+    return c.json(
+      basePath === ''
+        ? contract
+        : {
+            ...contract,
+            servers: contract.servers?.map((server) => ({
+              ...server,
+              url: `${basePath}${server.url}`,
+            })),
+          },
+    )
   }
 
   // A base appears if and only if the caller holds `read` on at least one of its
@@ -1891,9 +1939,15 @@ export function createApp(options: AppOptions) {
    * The live stream — chapter 16 §3.2: signals, never values. The table is decided once,
    * at the opening; the browser then reads again what a signal names, by the ordinary
    * routes, under its own rights.
+   *
+   * A program may follow a table too, with an integration token issued for `rest`: a
+   * server inside a network, which no webhook can reach, opens the stream from where it
+   * is. It is no viewer — no presence — and its token is checked again at every ping: a
+   * token revoked closes its streams within the ping.
    */
   app.get('/api/v1/:tenantRef/events', async (c) => {
-    const ctx = await contextFor(c, await bearer(c))
+    const ctx = await dataContext(c)
+    const program = ctx.actor.kind === 'token'
     const baseRef = c.req.query('base')
     const tableRef = c.req.query('table')
     let tableId: string | null = null
@@ -1905,11 +1959,13 @@ export function createApp(options: AppOptions) {
       tableId = table.tableId
     }
     const actor = ctx.actor.id
-    const open = streams.get(actor) ?? 0
+    // A token counts its own streams, not its creator's.
+    const holder = ctx.actor.kind === 'token' ? `token:${ctx.actor.tokenId}` : actor
+    const open = streams.get(holder) ?? 0
     if (open >= STREAMS_PER_ACTOR) {
       throw new BasedbError('RATE_LIMIT_EXCEEDED', { details: { streams: STREAMS_PER_ACTOR } })
     }
-    streams.set(actor, open + 1)
+    streams.set(holder, open + 1)
     await options.kernel.live.start()
     const session = crypto.randomUUID()
     const record = c.req.query('record') ?? null
@@ -1929,7 +1985,7 @@ export function createApp(options: AppOptions) {
       }
       const unsubscribe = options.kernel.live.subscribe((signal) => {
         if (signal.kind === 'notifications') {
-          if (signal.user === actor) void send('notifications', {})
+          if (!program && signal.user === actor) void send('notifications', {})
           return
         }
         if (tableId === null || signal.table !== tableId) return
@@ -1962,26 +2018,35 @@ export function createApp(options: AppOptions) {
         }
       })
       await send('ready', { session })
-      if (tableId !== null) {
+      const present = tableId !== null && !program
+      if (present && tableId !== null) {
         await options.kernel
           .enterPresence(ctx, { session, tableId, recordId: record })
           .catch(() => undefined)
       }
+      let close = () => {}
+      const secret = c.req.header('authorization')?.slice(7).trim() ?? ''
       const ping = setInterval(() => {
         void send('ping', {})
-        if (tableId !== null) void options.kernel.refreshPresence([session]).catch(() => undefined)
+        if (present) void options.kernel.refreshPresence([session]).catch(() => undefined)
+        if (program) {
+          void options.kernel
+            .openTokenContext({ secret, surface: 'rest', requestId: c.get('requestId') })
+            .catch(() => close())
+        }
       }, STREAM_PING_MS)
       await new Promise<void>((resolve) => {
         const end = setTimeout(resolve, STREAM_LIFETIME_MS)
-        stream.onAbort(() => {
+        close = () => {
           clearTimeout(end)
           resolve()
-        })
+        }
+        stream.onAbort(close)
       })
       clearInterval(ping)
       unsubscribe()
-      streams.set(actor, Math.max(0, (streams.get(actor) ?? 1) - 1))
-      if (tableId !== null) await options.kernel.leavePresence(session).catch(() => undefined)
+      streams.set(holder, Math.max(0, (streams.get(holder) ?? 1) - 1))
+      if (present) await options.kernel.leavePresence(session).catch(() => undefined)
     })
   })
 
@@ -2059,12 +2124,100 @@ export function createApp(options: AppOptions) {
   // move under whatever path the chapter that specifies them chooses.
   // ---------------------------------------------------------------------------------
 
+  /**
+   * A base built from a template, in one operation (chapter 20 §4): the whole base, or none.
+   * The answer is the base, and what was built otherwise than the template said. A client
+   * that asks for `application/x-ndjson` receives each step as it starts, one JSON object a
+   * line, then the base — or the refusal — as the last line: the interface shows the build
+   * as it goes.
+   */
+  const baseFromTemplate = async (
+    c: Context<{ Variables: Variables }, string>,
+    body: {
+      label?: unknown
+      description?: unknown
+      project?: unknown
+      template?: unknown
+      rows?: unknown
+      ai_consent?: unknown
+      language?: unknown
+    },
+  ) => {
+    for (const key of ['rows', 'ai_consent'] as const) {
+      if (body[key] !== undefined && typeof body[key] !== 'boolean') {
+        throw new BasedbError('REQUEST_INVALID', { details: { field: key } })
+      }
+    }
+    for (const key of ['label', 'language', 'project'] as const) {
+      if (body[key] !== undefined && body[key] !== null && typeof body[key] !== 'string') {
+        throw new BasedbError('REQUEST_INVALID', { details: { field: key } })
+      }
+    }
+    const ctx = await contextFor(c, await bearer(c))
+    const request = {
+      template: body.template,
+      ...(typeof body.label === 'string' ? { label: body.label } : {}),
+      ...(body.description === undefined
+        ? {}
+        : { description: typeof body.description === 'string' ? body.description : null }),
+      ...(typeof body.project === 'string' && body.project !== ''
+        ? { projectId: body.project }
+        : {}),
+      rows: body.rows !== false,
+      aiConsent: body.ai_consent === true,
+      ...(typeof body.language === 'string' ? { locale: body.language } : {}),
+    }
+    const answer = (applied: AppliedTemplate) => ({
+      data: { id: applied.baseId, name: applied.name, label: applied.label },
+      meta: {
+        template: {
+          ai_degraded: applied.report.aiDegraded,
+          sampled: applied.report.sampled,
+          not_required: applied.report.notRequired,
+        },
+      },
+    })
+
+    if (!(c.req.header('accept') ?? '').includes('application/x-ndjson')) {
+      return c.json(answer(await options.kernel.applyTemplate(ctx, request)), 201)
+    }
+    const requestId = c.get('requestId') ?? 'unknown'
+    c.header('content-type', 'application/x-ndjson; charset=utf-8')
+    return stream(c, async (out) => {
+      const line = (value: unknown) =>
+        out.write(`${JSON.stringify(value)}
+`)
+      try {
+        const applied = await options.kernel.applyTemplate(ctx, {
+          ...request,
+          onStep: (step) => void line({ step }),
+        })
+        await line(answer(applied))
+      } catch (error) {
+        // The status line is already sent: the refusal travels as the last line, in the
+        // same shape as every error of the API.
+        await line({
+          error:
+            error instanceof BasedbError && error.class !== 'incident'
+              ? { code: error.code, details: error.details, request_id: requestId }
+              : { code: 'INTERNAL_ERROR', request_id: requestId },
+        })
+      }
+    })
+  }
+
   app.post('/api/v1/:tenantRef/admin/bases', async (c) => {
     const body = await c.req.json<{
       label?: string
       description?: string | null
       project?: string
+      /** A template of the catalog by its key, or a template itself (chapter 20 §4). */
+      template?: unknown
+      rows?: unknown
+      ai_consent?: unknown
+      language?: unknown
     }>()
+    if (body.template !== undefined) return baseFromTemplate(c, body)
     if (typeof body.label !== 'string' || body.label.trim() === '') {
       throw new BasedbError('LABEL_EMPTY')
     }

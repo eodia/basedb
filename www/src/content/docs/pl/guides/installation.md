@@ -73,8 +73,9 @@ Zachowaj wygenerowany klucz: zobacz ramkę poniżej.
 
 :::caution[Klucz instancji]
 `BASEDB_ENCRYPTION_KEY` podpisuje sesje i szyfruje zapisane sekrety (klucze AI, sekrety
-webhooków, linki formularzy). Jego zmiana wylogowuje wszystkich i czyni te sekrety
-nieczytelnymi. Wygeneruj go raz i przechowuj w kopii zapasowej razem z bazą.
+webhooków, sekretne nagłówki automatyzacji, linki formularzy). Jego zmiana wylogowuje
+wszystkich i czyni te sekrety nieczytelnymi. Wygeneruj go raz i przechowuj w kopii zapasowej
+razem z bazą.
 :::
 
 ## Dla deweloperów

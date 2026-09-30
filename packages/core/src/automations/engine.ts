@@ -6,6 +6,7 @@ import {
   resolveProvider,
 } from '../ai/draft.js'
 import { EMPTY_VALUE, MAX_VALUE_CHARS } from '../ai/prompt.js'
+import { unseal } from '../auth/sealing.js'
 import { type ProjectedField, projectBase } from '../catalog/projection.js'
 import { wantsNotification } from '../collab/notifications.js'
 import { canReadTable, contextOf, emitLive } from '../collab/signals.js'
@@ -17,16 +18,28 @@ import { createRecord } from '../records/create.js'
 import { listRecords } from '../records/list.js'
 import { updateRecord } from '../records/update.js'
 import type { Executor, Pools } from '../runtime/pool.js'
-import { type RequestContext, sealContext, withTransaction } from '../tx/context.js'
+import {
+  type RequestContext,
+  deadlineExceeded,
+  sealContext,
+  withTransaction,
+} from '../tx/context.js'
 import { type TargetPolicy, checkTarget } from '../webhooks/target.js'
 import {
   type Automation,
   type AutomationStep,
   type BranchPath,
   CITATION,
+  CITATION_AT,
   TRIGGER_ROW,
+  WEBHOOK_SECRET,
+  type WebhookHeader,
+  composeJson,
+  formPairs,
+  hasBody,
   loadAutomation,
   nextRunOf,
+  stepsOf,
 } from './catalog.js'
 
 /**
@@ -39,6 +52,11 @@ import {
 export const RUNS_PER_HOUR = 100
 const BATCH = 10
 const WEBHOOK_TIMEOUT_MS = 10_000
+/**
+ * What one run may take, loops included: the worker runs one at a time, and a loop of
+ * slow webhooks must not hold every other automation of the instance back.
+ */
+export const RUN_BUDGET_MS = 120_000
 /** What a webhook's answer may weigh, for the steps after it to cite. */
 const ANSWER_BYTES = 65_536
 
@@ -161,17 +179,26 @@ interface Claimed extends Record<string, unknown> {
   readonly record_id: string | null
 }
 
-/** What a run keeps of each step it passed: enough to follow it on the flow (§2.1). */
+/**
+ * What a run keeps of each step it passed: enough to follow it on the flow (§2.1). A step
+ * inside a loop is kept once, for all its turns: how many, and how they went.
+ */
 interface RunStep {
   readonly step: string
   readonly kind: AutomationStep['kind']
   readonly status: 'succeeded' | 'failed' | 'skipped'
   /** The path a branch took; `null`: none held. */
   readonly path?: string | null
+  /** In a loop, every path a branch took, turn after turn. */
+  readonly taken?: readonly string[]
   readonly detail?: string
   readonly error_code?: string
-  /** How long it took, in milliseconds. */
+  /** How long it took, in milliseconds — all its turns, in a loop. */
   readonly ms: number
+  /** In a loop, the turns it ran. */
+  readonly times?: number
+  /** A loop left rows beyond its limit. */
+  readonly more?: boolean
 }
 
 /** The automation's actor: its owner's rights, its own name in the history. */
@@ -183,7 +210,7 @@ function actorOf(tenantRef: string, automation: Automation): RequestContext {
     tenantId: tenantRef,
     surface: 'rest',
     timestamp: now,
-    deadline: new Date(now.getTime() + 60_000),
+    deadline: new Date(now.getTime() + RUN_BUDGET_MS),
     permissions: { version: '1', rowPredicate: 'TRUE' },
   })
 }
@@ -233,6 +260,34 @@ function textOf(
     return value.map((v) => (typeof v === 'object' ? JSON.stringify(v) : String(v))).join(', ')
   if (typeof value === 'object') return JSON.stringify(value)
   return String(value)
+}
+
+/** The kinds a row gives as a text of digits, that a JSON body carries as a number. */
+const NUMERIC_KINDS = new Set(['number', 'autonumber', 'count'])
+
+/**
+ * A value as a JSON body carries it outside a string: a number, a yes-or-no, nothing, as
+ * such; a relation, a choice, a person as a person reads them, several as a list; what a
+ * webhook or the AI answered as it came.
+ */
+function jsonOf(
+  value: unknown,
+  field: ProjectedField | undefined,
+  people: ReadonlyMap<string, string>,
+): unknown {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'number' || typeof value === 'boolean') return value
+  if (field === undefined) return value
+  if (typeof value === 'string' && NUMERIC_KINDS.has(field.kind)) {
+    const n = Number(value)
+    return Number.isFinite(n) ? n : value
+  }
+  if (field.kind === 'multi_link' || field.kind === 'multi_select') {
+    const single = { ...field, kind: field.kind === 'multi_link' ? 'link' : 'select' }
+    return (Array.isArray(value) ? value : [value]).map((v) => textOf(v, single, people))
+  }
+  if (typeof value === 'object' && !['link', 'select', 'user'].includes(field.kind)) return value
+  return textOf(value, field, people)
 }
 
 function fromRow(held: Held | undefined, name: string): { value: unknown; field?: ProjectedField } {
@@ -291,8 +346,6 @@ export function renderPrompt(template: string, scope: Citable): string {
   })
 }
 
-const CITATION_AT = /^\{\{\s*([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)\s*\}\}/
-
 /** A value as a filter compares it: a relation by its row, a choice by its key. */
 function scalarOf(value: unknown): unknown {
   if (Array.isArray(value)) return value.length === 0 ? null : scalarOf(value[0])
@@ -335,6 +388,45 @@ export function renderFilter(template: string, scope: Citable): string {
     i++
   }
   return out
+}
+
+/**
+ * A JSON body with its citations replaced (chapter 17 §1.6): inside a string, by the value
+ * as a message reads it, escaped so that it cannot close the string; outside, by a JSON
+ * value — a number, a yes-or-no, a list —: what a row holds never becomes the body's words.
+ */
+export function renderJson(template: string, scope: Citable): string {
+  return composeJson(template, (path, quoted) => {
+    const { value, field } = resolve(path.split('.'), scope)
+    return quoted
+      ? JSON.stringify(textOf(value, field, scope.people)).slice(1, -1)
+      : JSON.stringify(jsonOf(value, field, scope.people))
+  })
+}
+
+/** A form body: each `clé=valeur` rendered, then encoded as a web form sends it. */
+export function renderForm(template: string, scope: Citable): string {
+  const form = new URLSearchParams()
+  for (const [key, value] of formPairs(template))
+    form.append(render(key, scope).trim(), render(value, scope))
+  return form.toString()
+}
+
+/**
+ * An address with what it cites, each value encoded: it adds to a path, never to the host.
+ * A value that makes a whole segment `.` or `..` — which an address resolves, encoded or
+ * not — would climb the path instead: the step fails rather than call another resource.
+ */
+export function renderUrl(template: string, scope: Citable): string {
+  const url = template.replace(CITATION, (_, path: string) => {
+    const { value, field } = resolve(path.split('.'), scope)
+    return encodeURIComponent(textOf(value, field, scope.people))
+  })
+  const path = url.replace(/^[a-z][a-z0-9+.-]*:\/\/[^/?#]*/i, '').split(/[?#]/)[0] ?? ''
+  if (path.split('/').some((segment) => /^(\.|%2e){1,2}$/i.test(segment))) {
+    throw new BasedbError('AUTOMATION_WEBHOOK_FAILED', { details: { reason: 'adresse_invalide' } })
+  }
+  return url
 }
 
 /** The kinds a citation reaches as text; any other takes the value itself. */
@@ -509,48 +601,166 @@ async function runOne(
     : { status: 'failed', reason: null, errorCode: failed, steps: run.log }
 }
 
+/** A step that failed, as the run keeps it: its code, and the reason the kernel gave. */
+function failure(step: AutomationStep, error: unknown, started: number): RunStep {
+  const code = error instanceof BasedbError ? error.code : 'INTERNAL_ERROR'
+  const detail =
+    error instanceof BasedbError && typeof error.details.reason === 'string'
+      ? error.details.reason
+      : undefined
+  return {
+    step: step.id,
+    kind: step.kind,
+    status: 'failed',
+    error_code: code,
+    ...(detail ? { detail } : {}),
+    ms: Date.now() - started,
+  }
+}
+
+const RANK = { skipped: 0, succeeded: 1, failed: 2 } as const
+
 /**
- * Runs steps in order, a branch down the path it takes; the first step that fails stops
- * the whole run — what came before stays done — and its code is returned.
+ * Keeps what a step did. Inside a loop, a step kept on an earlier turn is kept once: its
+ * turns counted, its time added up, the worst of how they went and what that one said —
+ * the people notified, the mails queued, summed.
  */
-async function runSteps(run: Run, steps: readonly AutomationStep[]): Promise<string | null> {
+function logStep(run: Run, entry: RunStep, repeat: boolean): void {
+  const index = repeat ? run.log.findIndex((e) => e.step === entry.step) : -1
+  const before = run.log[index]
+  const path = entry.path === undefined || entry.path === null ? [] : [entry.path]
+  if (before === undefined) {
+    run.log.push(
+      repeat ? { ...entry, times: 1, ...(entry.kind === 'branch' ? { taken: path } : {}) } : entry,
+    )
+    return
+  }
+  const worse = RANK[entry.status] >= RANK[before.status]
+  const counted =
+    (entry.kind === 'notify' || entry.kind === 'email') &&
+    entry.status === 'succeeded' &&
+    before.status === 'succeeded'
+  run.log[index] = {
+    ...(worse ? entry : before),
+    ...(counted ? { detail: String(Number(before.detail ?? 0) + Number(entry.detail ?? 0)) } : {}),
+    // A branch says the last path a turn took, not that the last turn took none.
+    ...(entry.kind === 'branch' && (entry.path ?? null) === null && (before.path ?? null) !== null
+      ? { path: before.path, detail: before.detail }
+      : {}),
+    ...(entry.kind === 'branch' ? { taken: [...new Set([...(before.taken ?? []), ...path])] } : {}),
+    ms: before.ms + entry.ms,
+    times: (before.times ?? 1) + 1,
+  }
+}
+
+/**
+ * Runs steps in order, a branch down the path it takes, a loop once per row; the first
+ * step that fails stops the whole run — what came before stays done — and its code is
+ * returned. `repeat`: these steps are a loop's, run again at each turn.
+ */
+async function runSteps(
+  run: Run,
+  steps: readonly AutomationStep[],
+  repeat = false,
+): Promise<string | null> {
   for (const step of steps) {
     const started = Date.now()
+    if (step.kind === 'for_each') {
+      const failed = await runLoop(run, step)
+      if (failed !== null) return failed
+      continue
+    }
     try {
       if (step.kind === 'branch') {
         const taken = await pathOf(run, step.paths)
-        run.log.push({
-          step: step.id,
-          kind: step.kind,
-          status: 'succeeded',
-          path: taken?.id ?? null,
-          detail: taken?.label ?? 'aucun_chemin',
-          ms: Date.now() - started,
-        })
-        const failed = taken === null ? null : await runSteps(run, taken.steps)
+        logStep(
+          run,
+          {
+            step: step.id,
+            kind: step.kind,
+            status: 'succeeded',
+            path: taken?.id ?? null,
+            detail: taken?.label ?? 'aucun_chemin',
+            ms: Date.now() - started,
+          },
+          repeat,
+        )
+        const failed = taken === null ? null : await runSteps(run, taken.steps, repeat)
         if (failed !== null) return failed
         continue
       }
       const done = await perform(run, step)
-      run.log.push({ step: step.id, kind: step.kind, ...done, ms: Date.now() - started })
+      logStep(run, { step: step.id, kind: step.kind, ...done, ms: Date.now() - started }, repeat)
     } catch (error) {
-      const code = error instanceof BasedbError ? error.code : 'INTERNAL_ERROR'
-      const detail =
-        error instanceof BasedbError && typeof error.details.reason === 'string'
-          ? error.details.reason
-          : undefined
-      run.log.push({
-        step: step.id,
-        kind: step.kind,
-        status: 'failed',
-        error_code: code,
-        ...(detail ? { detail } : {}),
-        ms: Date.now() - started,
-      })
-      return code
+      const failed = failure(step, error, started)
+      logStep(run, failed, repeat)
+      return failed.error_code ?? 'INTERNAL_ERROR'
     }
   }
   return null
+}
+
+/**
+ * A loop (chapter 17 §1.3): the rows its filter finds, in its order, up to its limit —
+ * read once, with the owner's rights —, its steps run once for each, citing the row of the
+ * turn by the loop's identifier. The first failure stops the run, as anywhere; so does a
+ * run that has used up its time. After it, the loop gives how many rows it went through.
+ */
+async function runLoop(
+  run: Run,
+  step: Extract<AutomationStep, { kind: 'for_each' }>,
+): Promise<string | null> {
+  const started = Date.now()
+  // Kept first, so that the run reads in the order of the flow; told how it went at the end.
+  const at = run.log.push({ step: step.id, kind: step.kind, status: 'succeeded', ms: 0 }) - 1
+  let page: Awaited<ReturnType<typeof listRecords>>
+  try {
+    page = await listRecords(run.pools, run.ctx, {
+      tableId: step.table,
+      ...(step.filter === '' ? {} : { filter: renderFilter(step.filter, run) }),
+      ...(step.sort === null ? {} : { sort: step.sort }),
+      limit: step.limit,
+    })
+  } catch (error) {
+    run.log[at] = failure(step, error, started)
+    return run.log[at]?.error_code ?? 'INTERNAL_ERROR'
+  }
+  const inner = stepsOf(step.steps).map((s) => s.id)
+  const forget = () => {
+    for (const id of inner) {
+      run.rows.delete(id)
+      run.data.delete(id)
+    }
+  }
+  let turns = 0
+  let failed: string | null = null
+  let outOfTime = false
+  for (const row of page.rows) {
+    if (deadlineExceeded(run.ctx, new Date())) {
+      outOfTime = true
+      failed = 'DEADLINE_EXCEEDED'
+      break
+    }
+    // Each turn starts clean: nothing a turn before found is cited by mistake.
+    forget()
+    hold(run, step.id, step.table, row)
+    failed = await runSteps(run, step.steps, true)
+    if (failed !== null) break
+    turns++
+  }
+  forget()
+  run.rows.delete(step.id)
+  run.data.set(step.id, { nombre: turns })
+  run.log[at] = {
+    step: step.id,
+    kind: step.kind,
+    status: outOfTime ? 'failed' : 'succeeded',
+    ...(outOfTime ? { error_code: 'DEADLINE_EXCEEDED' } : {}),
+    detail: String(turns),
+    ...(page.hasNextPage ? { more: true } : {}),
+    ms: Date.now() - started,
+  }
+  return failed
 }
 
 /** The first path whose row exists and satisfies its filter; otherwise, the last. */
@@ -596,9 +806,75 @@ async function answerOf(response: Response): Promise<unknown> {
   }
 }
 
+/**
+ * A secret header, opened for the host it was given for. Sealed for another base, another
+ * host — its address changed around it — or not opening at all: the step fails, and the
+ * secret is sent nowhere.
+ */
+function openSecret(
+  run: Run,
+  header: Extract<WebhookHeader, { sealed: string }>,
+  url: URL,
+): string {
+  const opened = unseal(run.deps.instanceKey(), WEBHOOK_SECRET, header.sealed)
+  let secret: { base?: unknown; host?: unknown; value?: unknown } | null = null
+  try {
+    secret = opened === null ? null : JSON.parse(opened)
+  } catch {
+    secret = null
+  }
+  if (secret === null || secret.base !== run.automation.baseId || typeof secret.value !== 'string')
+    throw new BasedbError('AUTOMATION_WEBHOOK_FAILED', { details: { reason: 'secret_illisible' } })
+  if (secret.host !== url.host.toLowerCase())
+    throw new BasedbError('AUTOMATION_WEBHOOK_FAILED', { details: { reason: 'secret_autre_hote' } })
+  return secret.value
+}
+
+/** What a webhook step sends, and as what: its own body composed, or the automation's JSON. */
+function bodyOf(
+  run: Run,
+  step: Extract<AutomationStep, { kind: 'webhook' }>,
+): { readonly text: string; readonly type: string } {
+  if (step.body === null) {
+    const held = step.record === null ? undefined : run.rows.get(step.record)
+    // What the steps before found or wrote travels too, by their identifiers.
+    const steps = Object.fromEntries([
+      ...[...run.rows].filter(([k]) => k !== TRIGGER_ROW).map(([k, h]) => [k, h.row]),
+      ...run.data,
+    ])
+    return {
+      text: JSON.stringify({
+        automation: { id: run.automation.id, label: run.automation.label },
+        trigger: run.automation.trigger.kind,
+        record: held?.row ?? null,
+        steps,
+        at: new Date().toISOString(),
+      }),
+      type: 'application/json',
+    }
+  }
+  switch (step.format) {
+    case 'json': {
+      const text = renderJson(step.body, run)
+      try {
+        JSON.parse(text)
+      } catch {
+        throw new BasedbError('AUTOMATION_WEBHOOK_FAILED', {
+          details: { reason: 'corps_json_invalide' },
+        })
+      }
+      return { text, type: 'application/json' }
+    }
+    case 'form':
+      return { text: renderForm(step.body, run), type: 'application/x-www-form-urlencoded' }
+    case 'text':
+      return { text: render(step.body, run), type: 'text/plain; charset=utf-8' }
+  }
+}
+
 async function perform(
   run: Run,
-  step: Exclude<AutomationStep, { kind: 'branch' }>,
+  step: Exclude<AutomationStep, { kind: 'branch' | 'for_each' }>,
 ): Promise<{ status: 'succeeded' | 'skipped'; detail?: string }> {
   const { pools, ctx, automation } = run
   switch (step.kind) {
@@ -814,30 +1090,32 @@ async function perform(
       return { status: 'succeeded', detail: `${status}` }
     }
     case 'webhook': {
-      const url = await checkTarget(step.url, run.deps.targets)
-      const held = step.record === null ? undefined : run.rows.get(step.record)
-      // What the steps before found or wrote travels too, by their identifiers.
-      const steps = Object.fromEntries([
-        ...[...run.rows].filter(([k]) => k !== TRIGGER_ROW).map(([k, h]) => [k, h.row]),
-        ...run.data,
-      ])
-      const body = JSON.stringify({
-        automation: { id: automation.id, label: automation.label },
-        trigger: automation.trigger.kind,
-        record: held?.row ?? null,
-        steps,
-        at: new Date().toISOString(),
-      })
+      // The address with what it cites, each value encoded — and its host checked again, as
+      // at every run: a name that resolved publicly yesterday may point inside today.
+      const url = await checkTarget(renderUrl(step.url, run), run.deps.targets)
+      const headers: Record<string, string> = {
+        'user-agent': 'basedb-automation/1',
+        'x-basedb-automation': automation.id,
+      }
+      let body: string | undefined
+      if (hasBody(step.method)) {
+        const composed = bodyOf(run, step)
+        body = composed.text
+        headers['content-type'] = composed.type
+      }
+      // The step's own headers last: a Content-Type it names is the one sent.
+      for (const header of step.headers) {
+        headers[header.name.toLowerCase()] =
+          'sealed' in header
+            ? openSecret(run, header, url)
+            : render(header.value, run).replace(/[\r\n]+/g, ' ')
+      }
       let response: Response
       try {
         response = await fetch(url, {
-          method: 'POST',
-          body,
-          headers: {
-            'content-type': 'application/json',
-            'user-agent': 'basedb-automation/1',
-            'x-basedb-automation': automation.id,
-          },
+          method: step.method,
+          ...(body === undefined ? {} : { body }),
+          headers,
           redirect: 'manual',
           signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
         })

@@ -71,12 +71,55 @@ Aynı token ile:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | bir veritabanının panoları |
 | `GET /api/v1/<tenant>/meta/users` | bir Kişi alanı için çalışma alanının üyeleri |
 | `GET /api/v1/<tenant>/meta/templates` | galerideki veritabanı şablonları |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | bir tabloyu gerçek zamanlı takip etmek: yukarıdaki yollarla yeniden okunan sinyaller (bkz. [Webhook'lar](/basedb/tr/integrations/webhooks/#webhook-olmadan-bir-tabloyu-takip-etmek)) |
 
 [Paylaşılan görünümler](/basedb/tr/fonctionnalites/vues-partagees/) hesap olmadan okunur:
 JSON olarak `GET /api/v1/views/<jeton>` ve `…/rows`, iCalendar olarak `…/calendar.ics`.
 
 İnşa etmek — bir otomasyon, bir pano, bir entegrasyon oluşturmak — arayüzde açılmış bir
 oturuma ayrılmıştır: bir token satırları okur ve yazar, veritabanını değiştirmez.
+
+## Bir şablondan veritabanı oluşturmak
+
+Kurulan bir uygulama veritabanını **tek bir çağrıyla** oluşturur: sunucu şablonu uygular —
+tablolar, alanlar, ilişkiler, örnek satırlar, görünümler, panolar, otomasyonlar — ve bir adım
+başarısız olursa arkasında hiçbir veritabanı bırakmaz.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template`, galerideki bir şablonun anahtarıdır ya da
+[şablon biçimindeki](/basedb/tr/fonctionnalites/modeles/) eksiksiz bir şablondur.
+`Accept: application/x-ndjson` başlığıyla yanıt satır satır gelir: her adım için bir
+`{"step": …}` satırı, ardından oluşturulan veritabanı. Bu çağrı, veritabanı oluşturabilen bir
+kişinin erişim token'ını gerektirir (`POST /auth/session/access`, giriş yaptıktan sonra): bir
+entegrasyon token'ı yalnızca var olan bir veritabanını açar.
+
+## Bir token'ı doğrulamak
+
+basedb'nin token'ları basedb dışında doğrulanamaz. Bir token alan uygulama — örneğin, basedb'den
+kişinin token'ıyla açılan bir araç — kendi entegrasyon token'ıyla onun ne değerde olduğunu sorar
+(introspection, RFC 7662):
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Değeri olmayan her token — bilinmeyen, süresi dolmuş, iptal edilmiş, oturumu kapanmış, başka bir
+çalışma alanına ait — nedenini söylemeden `{"active": false}` yanıtını verir. Yanıt canlı olarak
+okunur: bir çıkış hemen görülür. Bir entegrasyon token'ı için yanıt, açtığı veritabanını
+(`base`), erişimini (`read` ya da `write`) ve yüzeylerini de söyler.
 
 ## Oluşturulan belgeler
 

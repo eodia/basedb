@@ -42,3 +42,30 @@ geçmişten yola çıkar.
 
 Webhook'lar yalnızca **herkese açık HTTPS** adreslerine gönderilir. Geliştirme sırasında
 `BASEDB_WEBHOOK_DEV=1`, HTTP'yi ve yerel adresleri kabul eder.
+
+**Ağınızdaki bir sunucu** için kurulumu işleten kişi onu `BASEDB_WEBHOOK_ALLOW` içinde adlandırır
+— bir ad, bir alan adı (`*.intra.example.com`), bir adres ya da bir aralık (`10.12.0.0/16`):
+
+```bash
+BASEDB_WEBHOOK_ALLOW=chat.intra.example.com,10.12.0.0/16
+```
+
+Bu hedefler, adresleri, portları ve şemaları ne olursa olsun — HTTP dahil — kabul edilir. Liste,
+otomasyonların HTTP istekleri ve senkronize tabloların kaynakları için de geçerlidir; ortamda
+ayarlanır, arayüzden asla ayarlanmaz.
+
+## Webhook olmadan: bir tabloyu takip etmek
+
+Erişilemeyen bir sunucu basedb'ye **bağlanabilir** de ve veritabanının bir entegrasyon token'ıyla
+gerçek zamanlı akış üzerinden bir tabloyu takip edebilir:
+
+```bash
+curl -N "https://basedb.example.com/api/v1/t4z56fq/events?base=b_t4z56fq_ventes&table=opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN"
+```
+
+Akış (`text/event-stream`) **sinyaller** taşır — oluşturulan, değiştirilen ya da silinen
+satırların kimlikleriyle birlikte `records` olayı —, asla değerleri taşımaz: program bu satırları
+daha sonra [REST API](/basedb/tr/integrations/api-rest/) ile yeniden okur. İptal edilen bir
+token akışını 20 saniye içinde kapatır. Nadiren okunan bir tablo için, değişen satırları zaman
+zaman yeniden okumak yeterlidir: `filter=_updated_at gt "2026-09-30T08:00:00Z"`.

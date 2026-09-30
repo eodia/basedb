@@ -29,8 +29,8 @@ L’image tourne sous l’utilisateur `node`, sur Node 22, déclare une vérific
 | Étiquette | Contenu |
 |---|---|
 | `latest` | la dernière version publiée |
-| `0.4` | la dernière version 0.4.x |
-| `0.4.0` | exactement cette version |
+| `0.5` | la dernière version 0.5.x |
+| `0.5.0` | exactement cette version |
 
 ## Les services
 
@@ -52,6 +52,24 @@ docker compose down                 # arrêter (les volumes restent)
 
 Depuis un clone du dépôt, `docker compose up -d --build` construit l’image à partir du code
 plutôt que de la télécharger.
+
+## Derrière une passerelle, sous un chemin
+
+Quand basedb est publié sous un chemin — `https://passerelle.example.com/basedb/` plutôt qu’à
+la racine d’un domaine —, indiquez ce chemin :
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# ou, sans adresse publique :
+BASEDB_BASE_PATH=/basedb
+```
+
+Tout passe alors sous `/basedb` : l’interface, `/basedb/api`, `/basedb/mcp`, les liens de
+partage et ceux des courriels. La passerelle peut **garder le chemin** en transmettant la
+requête ou le **retirer** : basedb accepte les deux. `BASEDB_BASE_PATH=/` force la racine.
+
+L’image est la même pour toutes les adresses : le chemin est écrit dans l’interface au
+démarrage du conteneur, et changer de chemin ne demande qu’un redémarrage.
 
 ## Changer les ports
 

@@ -35,7 +35,7 @@ replikering).
 ## Instansnøkkelen
 
 `BASEDB_ENCRYPTION_KEY` krypterer hemmelighetene som er lagret i databasen (KI-nøkler,
-webhook-hemmeligheter, skjemalenker). **En sikkerhetskopi av databasen uten nøkkelen gjenoppretter ikke disse
+webhook-hemmeligheter, automatiseringenes hemmelige headere, skjemalenker). **En sikkerhetskopi av databasen uten nøkkelen gjenoppretter ikke disse
 hemmelighetene.** Oppbevar den i hemmelighetsbehandleren din, ved siden av sikkerhetskopiene.
 
 ## Oppdater
@@ -47,7 +47,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` låser en bestemt versjon (`0.4.0`) i stedet for den nyeste (`latest`).
+`BASEDB_VERSION` låser en bestemt versjon (`0.5.0`) i stedet for den nyeste (`latest`).
 
 Ved oppstart **oppdaterer basedb katalogen sin selv**: den tar i bruk, i rekkefølge og
 hver i sin egen transaksjon, migreringene som versjonen din ikke har ennå, og registrerer dem

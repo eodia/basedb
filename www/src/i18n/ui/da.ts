@@ -1540,6 +1540,28 @@ export default {
 		title: 'Hvad der er ændret i basedb',
 		intro: 'Detaljerne om hver ændring findes i <a href="https://github.com/eodia/basedb/commits/main">repositoriets historik</a>. Det, der kommer bagefter: <a href="/feuille-de-route/">køreplanen</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'Til applikationer, der bygger på basedb',
+				tag: 'Ny',
+				items: [
+					'<strong>En database oprettet fra en skabelon med ét kald</strong>: serveren anvender hele skabelonen — tabeller, relationer, rækker, visninger, automatiseringer — eller intet, hvis et trin mislykkes. Galleriet bruger den, en applikation der også installerer sig selv. <a href="/integrations/api-rest/#opret-en-database-fra-en-skabelon">Opret en database fra en skabelon</a>',
+					'<strong>Kontroller et token</strong>: en applikation, der får en persons token, spørger basedb, om det stadig er gyldigt, og for hvem — vedkommendes konto, vedkommendes grupper. <a href="/integrations/api-rest/#kontroller-et-token">Kontroller et token</a>',
+					'<strong>Dine interne servere</strong>: webhooks og automatiseringer kontakter dem, du angiver i <code>BASEDB_WEBHOOK_ALLOW</code>, HTTP inklusive; et program kan også følge en tabel i realtid med et integrationstoken. <a href="/integrations/webhooks/#uden-webhook-følg-en-tabel">Følg en tabel</a>',
+					'<strong>Under en sti, bag en gateway</strong>: basedb udgives på en adresse som <code>https://passerelle.example.com/basedb/</code>, uanset om gatewayen bevarer stien eller fjerner den. <a href="/hebergement/docker/#bag-en-gateway-under-en-sti">Bag en gateway</a>',
+					'<strong>Én webhook, alle tabeller på én gang</strong>: markér eller fjern markeringen for en hændelse for alle tabeller, eller for alle hændelser i en tabel, med ét klik.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automatiseringer, der gennemgår dine rækker og taler med API’er',
+				tag: 'Ny',
+				items: [
+					'<strong>For hver række</strong>: et trin, der gentager sine egne trin for hver række i en tabel, der matcher et filter — hver mandag, ryk for alle ubetalte fakturaer, ikke kun den første. <a href="/fonctionnalites/automatisations/#for-hver-række">For hver række</a>',
+					'<strong>En webhook, der taler med enhver API</strong>: metoden, en adresse, der citerer rækken, headere, en brødtekst i JSON, i en formular eller som tekst, sammensat med rækkens værdier. <a href="/fonctionnalites/automatisations/#kald-en-tjeneste">Kald en tjeneste</a>',
+					'<strong>En API-nøgle forbliver hemmelig</strong>: krypteret bliver den aldrig vist igen — hverken på skærmen, via API’et eller til Copilot — og den sendes kun til den vært, du har givet den til.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'Landkortet, og adresser der bliver fundet',
@@ -1892,8 +1914,8 @@ export default {
 						text: 'Kopiér SQL-views med strukturen, når der oprettes eller sammenlignes miljøer, og i databaseskabeloner.',
 					},
 					loops: {
-						title: 'Løkker og ventetid i automatiseringer',
-						text: 'Gentag trin for hver fundet række, vent før det næste (»tre dage efter«), og tag flows med i databaseskabeloner.',
+						title: 'Ventetid i automatiseringer',
+						text: 'Vent før næste trin (»tre dage efter«), og tag flows — betingelser, søgninger, løkker — med i databaseskabeloner.',
 					},
 					textFormulas: {
 						title: 'Formler på tekst',

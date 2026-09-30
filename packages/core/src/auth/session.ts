@@ -265,6 +265,8 @@ export interface AccessClaim {
   readonly payload: string
 }
 
+const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 /**
  * Decodes an access token WITHOUT trusting it.
  *
@@ -284,6 +286,8 @@ export function decodeAccessToken(token: string): AccessClaim | null {
   const parts = decoded.split('.')
   if (parts.length !== 3) return null
   const [sessionId, expires, signature] = parts
+  // A session is named by a UUID: anything else would reach the catalog as a query error.
+  if (!SESSION_ID.test(sessionId ?? '')) return null
   const at = Number(expires)
   if (!Number.isFinite(at)) return null
   return { sessionId, expiresAt: new Date(at), signature, payload: `${sessionId}.${expires}` }

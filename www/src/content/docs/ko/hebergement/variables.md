@@ -52,6 +52,7 @@ description: basedb가 읽는 모든 변수와 그 기본값.
 | `BASEDB_PORT` | `3000` | 127.0.0.1에 공개되는 포트: 인터페이스, `/api`, `/mcp` |
 | `BASEDB_VERSION` | `latest` | `eodia/basedb` 이미지의 태그 |
 | `BASEDB_PUBLIC_URL` | — | OIDC 리디렉션에 쓰이는 basedb의 공개 주소 |
+| `BASEDB_BASE_PATH` | `BASEDB_PUBLIC_URL`의 경로 | 게이트웨이 뒤에서 basedb가 제공되는 경로. `https://passerelle.example.com/basedb/`라면 `/basedb`; [Docker Compose](/basedb/ko/hebergement/docker/#게이트웨이-뒤-하위-경로에서) 참고 |
 | `BASEDB_DOMAIN` | — | Caddy 프록시가 HTTPS로 제공하는 도메인 |
 | `BASEDB_ORIGINS` | — | 페이지가 브라우저에서 API를 호출하는 다른 사이트, 쉼표로 구분. 같은 주소로 제공되는 basedb 인터페이스에는 필요 없음 |
 | `BASEDB_API`, `BASEDB_MCP` | `/`, `/mcp` | 브라우저에서 본 API와 MCP 주소. 개발 스택(`pnpm start`)에서만 설정 |
@@ -122,6 +123,16 @@ expéditeur no-reply@exemple.fr.` 서버가 거부한 이메일은 1분, 5분, 3
 | `BASEDB_AI_QUOTA` | `120` | 워크스페이스별 시간당 대화형 호출 수 |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | 워크스페이스별 시간당 AI 필드 계산 수 |
 | `BASEDB_AI_WORKER` | `1` | `0`: 이 프로세스에서 백그라운드 계산을 하지 않음 |
+
+## 내부 네트워크로의 웹훅
+
+| 변수 | 기본값 | 역할 |
+|---|---|---|
+| `BASEDB_WEBHOOK_ALLOW` | — | 쉼표로 구분한 내부 서버 목록: 이름(`chat.intra.example.com`), 도메인과 그 하위 도메인(`*.intra.example.com`), 주소 또는 범위(`10.12.0.0/16`) |
+
+웹훅, 자동화의 HTTP 요청, 동기화된 테이블은 공개 HTTPS 주소로만 나갑니다. 목록에 있는 대상은 주소,
+포트, 스킴에 관계없이 — HTTP를 포함해 — 추가로 허용됩니다. 읽을 수 없는 항목이 있으면 시작이
+차단됩니다. [웹훅](/basedb/ko/integrations/webhooks/#대상) 참고.
 
 ## 공개 데모
 

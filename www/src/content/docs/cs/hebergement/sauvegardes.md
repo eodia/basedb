@@ -34,8 +34,8 @@ S úložištěm S3 se řiďte zásadami zálohování svého poskytovatele (verz
 ## Klíč instance
 
 `BASEDB_ENCRYPTION_KEY` šifruje tajemství uložená v databázi (klíče AI, tajemství webhooků,
-odkazy formulářů). **Záloha databáze bez jejího klíče tato tajemství neobnoví.** Uchovávejte
-ho ve svém správci tajemství vedle záloh.
+tajné hlavičky automatizací, odkazy formulářů). **Záloha databáze bez jejího klíče tato
+tajemství neobnoví.** Uchovávejte ho ve svém správci tajemství vedle záloh.
 
 ## Aktualizace
 
@@ -46,7 +46,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` nastaví konkrétní verzi (`0.4.0`) místo nejnovější (`latest`).
+`BASEDB_VERSION` nastaví konkrétní verzi (`0.5.0`) místo nejnovější (`latest`).
 
 Při spuštění basedb **sám aktualizuje svůj katalog**: postupně, každou ve vlastní transakci,
 použije migrace, které vaše verze ještě nemá, a zapíše je do `_basedb.catalog_migration`.

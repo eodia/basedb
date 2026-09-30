@@ -1523,6 +1523,28 @@ export default {
 		title: 'basedbの変更点',
 		intro: '変更の詳細は<a href="https://github.com/eodia/basedb/commits/main">リポジトリの履歴</a>にあります。今後の予定は<a href="/feuille-de-route/">ロードマップ</a>をご覧ください。',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'basedbを基盤にするアプリケーションのために',
+				tag: '新機能',
+				items: [
+					'<strong>1回の呼び出しでテンプレートから作るデータベース</strong>：サーバーがテンプレート全体——テーブル、リレーション、行、ビュー、オートメーション——を適用します。どこかのステップが失敗すれば、何も適用されません。ギャラリーもこの仕組みを使っています——これもインストールされるアプリケーションです。<a href="/integrations/api-rest/#テンプレートからのデータベース作成">テンプレートからのデータベース作成</a>',
+					'<strong>トークンの検証</strong>：誰かのトークンを渡されたアプリケーションが、それがまだ有効か、誰のものか——そのアカウント、そのグループ——をbasedbに問い合わせます。<a href="/integrations/api-rest/#トークンの検証">トークンの検証</a>',
+					'<strong>社内のサーバーへ</strong>：Webhookやオートメーションが届くのは、HTTPも含めて<code>BASEDB_WEBHOOK_ALLOW</code>に挙げた宛先だけです。プログラムは、連携トークンを使ってテーブルをリアルタイムに追跡することもできます。<a href="/integrations/webhooks/#webhookなしテーブルを追跡する">テーブルを追跡する</a>',
+					'<strong>ゲートウェイの配下、パスの下で</strong>：basedbは<code>https://passerelle.example.com/basedb/</code>のようなアドレスで公開できます。ゲートウェイがそのパスを残すか外すかは問いません。<a href="/hebergement/docker/#ゲートウェイの配下パスの下で">ゲートウェイの配下</a>',
+					'<strong>1つのWebhookで全テーブルを一括設定</strong>：ワンクリックで、あるイベントを全テーブルに対してオン・オフしたり、あるテーブルの全イベントをオン・オフしたりできます。',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: '行を巡回し、APIと話すオートメーション',
+				tag: '新機能',
+				items: [
+					'<strong>行ごとに</strong>：フィルターに一致するテーブルの各行についてステップを繰り返す機能です——毎週月曜、未払いの請求書をすべて督促できます。最初の1件だけではありません。<a href="/fonctionnalites/automatisations/#行ごとに">行ごとに</a>',
+					'<strong>どんなAPIとも話せるWebhook</strong>：メソッド、行を引用するアドレス、ヘッダー、そして行の値で組み立てるJSON・フォーム・テキストの本文。<a href="/fonctionnalites/automatisations/#サービスを呼び出す">サービスを呼び出す</a>',
+					'<strong>APIキーは秘密のまま</strong>：暗号化され、画面にも、APIにも、Copilotにも二度と表示されず、渡した相手のホストにしか送られません。',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: '地図、そして居場所が見つかる住所',
@@ -1873,8 +1895,8 @@ export default {
 						text: '環境の作成や比較の際に、スキーマとともにSQLビューもコピー。データベーステンプレートにも含めます。',
 					},
 					loops: {
-						title: 'オートメーションのループと待機',
-						text: '見つかった各行に対してステップを繰り返し、次のステップの前に待機し（「3日後」）、フローをデータベーステンプレートに含めます。',
+						title: 'オートメーションの待機',
+						text: '次のステップの前に待機し（「3日後」）、フロー（条件、検索、ループ）をデータベーステンプレートに含めます。',
 					},
 					textFormulas: {
 						title: 'テキストの数式',

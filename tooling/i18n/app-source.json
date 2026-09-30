@@ -21,12 +21,12 @@
   },
   " · dernière connexion le {last_used_at}": {
     "where": [
-      "components/app/settings/profile-tab.tsx:332"
+      "components/app/settings/profile-tab.tsx:333"
     ]
   },
   " · dernière le {format}": {
     "where": [
-      "components/app/views/share-dialog.tsx:355"
+      "components/app/views/share-dialog.tsx:356"
     ]
   },
   " · échéance le {format}": {
@@ -36,7 +36,7 @@
   },
   " · ligne de {record}": {
     "where": [
-      "lib/automations.ts:847"
+      "lib/automations.ts:1118"
     ]
   },
   " · ligne plus accessible": {
@@ -61,7 +61,7 @@
   },
   " · si ": {
     "where": [
-      "components/app/automation-flow.tsx:269"
+      "components/app/automation-flow.tsx:296"
     ]
   },
   " · texte modifié, non enregistré": {
@@ -111,12 +111,12 @@
   },
   " ne peut plus ajouter de lignes à cette table : le formulaire est suspendu.": {
     "where": [
-      "components/app/views/share-dialog.tsx:452"
+      "components/app/views/share-dialog.tsx:453"
     ]
   },
   " ne peut plus lire cette table : la vue partagée est suspendue.": {
     "where": [
-      "components/app/views/share-dialog.tsx:451"
+      "components/app/views/share-dialog.tsx:452"
     ]
   },
   " Un champ n’a pas d’alias possible : ce renommage est sans filet.": {
@@ -164,8 +164,8 @@
   },
   ", qui a enregistré ce partage en dernier.": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:397",
-      "components/app/views/share-dialog.tsx:625"
+      "components/app/analytics/share-dashboard-dialog.tsx:398",
+      "components/app/views/share-dialog.tsx:626"
     ]
   },
   ", sur les tables et les vues de cette base.": {
@@ -232,28 +232,28 @@
   },
   "« {d} » n’est pas une adresse e-mail.": {
     "where": [
-      "lib/automations.ts:1147"
+      "lib/automations.ts:1447"
     ]
   },
   "« {label} » › « {label2} » : consigne IA illisible, champ exporté sans l’IA.": {
     "where": [
-      "lib/template-export.ts:276"
+      "lib/template-export.ts:282"
     ]
   },
   "« {label} » › « {label2} » : la table visée n’est pas dans la base.": {
     "where": [
-      "lib/template-export.ts:216"
+      "lib/template-export.ts:222"
     ]
   },
   "« {label} » › « {label2} » : un modèle ne porte pas de fichier.": {
     "where": [
-      "lib/template-export.ts:204"
+      "lib/template-export.ts:210"
     ]
   },
   "« {label} » ajouté au catalogue de l’instance": {
     "where": [
       "components/app/template-export-dialog.tsx:94",
-      "components/app/template-gallery.tsx:1184"
+      "components/app/template-gallery.tsx:1182"
     ]
   },
   "« {label} » créé — {report}.": {
@@ -288,7 +288,7 @@
   },
   "« {label} » n’a pas pu être rendu obligatoire.": {
     "where": [
-      "lib/templates.ts:705"
+      "lib/templates.ts:77"
     ]
   },
   "« {label} » synchronisée{value}": {
@@ -340,7 +340,7 @@
   },
   "« Sinon » ne peut être que le dernier chemin.": {
     "where": [
-      "lib/automations.ts:1134"
+      "lib/automations.ts:1434"
     ]
   },
   "« Vider à la suppression » est incompatible avec une relation obligatoire.": {
@@ -406,7 +406,7 @@
   },
   "{attempts} tentatives": {
     "where": [
-      "components/app/webhook-dialog.tsx:442"
+      "components/app/webhook-dialog.tsx:487"
     ]
   },
   "{blocked} Ajoutez-en un depuis l’écran « Structure », puis revenez créer la vue.": {
@@ -454,14 +454,14 @@
     "one": "{count} autre résultat",
     "other": "{count} autres résultats",
     "where": [
-      "components/app/command-palette.tsx:1681"
+      "components/app/command-palette.tsx:1682"
     ]
   },
   "{count} blocs": {
     "one": "{count} bloc",
     "other": "{count} blocs",
     "where": [
-      "components/app/template-gallery.tsx:808"
+      "components/app/template-gallery.tsx:809"
     ]
   },
   "{count} cachées": {
@@ -503,7 +503,14 @@
     "one": "{count} chemin",
     "other": "{count} chemins",
     "where": [
-      "lib/automations.ts:896"
+      "lib/automations.ts:1164"
+    ]
+  },
+  "{count} chemins pris": {
+    "one": "{count} chemin pris",
+    "other": "{count} chemins pris",
+    "where": [
+      "lib/automations.ts:1388"
     ]
   },
   "{count} colonnes": {
@@ -511,7 +518,7 @@
     "other": "{count} colonnes",
     "where": [
       "components/app/analytics/notebook.tsx:1090",
-      "components/app/command-palette.tsx:2237",
+      "components/app/command-palette.tsx:2238",
       "components/app/import-dialog.tsx:712"
     ]
   },
@@ -547,7 +554,7 @@
     "one": "{count} courriel en partance",
     "other": "{count} courriels en partance",
     "where": [
-      "lib/automations.ts:1106"
+      "lib/automations.ts:1404"
     ]
   },
   "{count} dernières années": {
@@ -589,7 +596,7 @@
     "one": "{count} élément retiré de la proposition, qui ne tenait pas",
     "other": "{count} éléments retirés de la proposition, qui ne tenaient pas",
     "where": [
-      "components/app/template-gallery.tsx:661"
+      "components/app/template-gallery.tsx:662"
     ]
   },
   "{count} étapes appliquées": {
@@ -612,6 +619,13 @@
     "where": [
       "components/app/views/card.tsx:106",
       "lib/analytics/format.ts:179"
+    ]
+  },
+  "{count} fois": {
+    "one": "{count} fois",
+    "other": "{count} fois",
+    "where": [
+      "lib/automations.ts:1367"
     ]
   },
   "{count} ignorées": {
@@ -679,6 +693,13 @@
       "components/app/copilot-panel.tsx:264"
     ]
   },
+  "{count} lignes parcourues": {
+    "one": "{count} ligne parcourue",
+    "other": "{count} lignes parcourues",
+    "where": [
+      "lib/automations.ts:1378"
+    ]
+  },
   "{count} lignes pour {table}": {
     "one": "{count} ligne pour {table}",
     "other": "{count} lignes pour {table}",
@@ -739,7 +760,7 @@
     "one": "{count} personne prévenue",
     "other": "{count} personnes prévenues",
     "where": [
-      "lib/automations.ts:1100"
+      "lib/automations.ts:1398"
     ]
   },
   "{count} points": {
@@ -810,7 +831,7 @@
     "one": "{count} réponse",
     "other": "{count} réponses",
     "where": [
-      "components/app/views/share-dialog.tsx:352"
+      "components/app/views/share-dialog.tsx:353"
     ]
   },
   "{count} sans position": {
@@ -832,8 +853,8 @@
     "other": "{count} tables",
     "where": [
       "components/app/environments-editor.tsx:152",
-      "components/app/template-gallery.tsx:133",
-      "components/app/template-gallery.tsx:681"
+      "components/app/template-gallery.tsx:134",
+      "components/app/template-gallery.tsx:682"
     ]
   },
   "{count} tables diffèrent.": {
@@ -854,38 +875,43 @@
     "one": "{count} vue",
     "other": "{count} vues",
     "where": [
-      "components/app/template-gallery.tsx:135",
-      "components/app/template-gallery.tsx:773"
+      "components/app/template-gallery.tsx:136",
+      "components/app/template-gallery.tsx:774"
     ]
   },
   "{d} chemins au plus par condition.": {
     "where": [
-      "lib/automations.ts:1136"
+      "lib/automations.ts:1436"
     ]
   },
   "{d} choix au plus, de 255 caractères chacun.": {
     "where": [
-      "lib/automations.ts:1160"
+      "lib/automations.ts:1460"
     ]
   },
   "{d} conditions imbriquées au plus.": {
     "where": [
-      "lib/automations.ts:1137"
+      "lib/automations.ts:1437"
     ]
   },
   "{d} destinataires au plus.": {
     "where": [
-      "lib/automations.ts:1148"
+      "lib/automations.ts:1448"
+    ]
+  },
+  "{d} en-têtes au plus.": {
+    "where": [
+      "lib/automations.ts:1469"
     ]
   },
   "{d} étapes au plus.": {
     "where": [
-      "lib/automations.ts:1139"
+      "lib/automations.ts:1439"
     ]
   },
   "{d} personnes au plus.": {
     "where": [
-      "lib/automations.ts:1144"
+      "lib/automations.ts:1444"
     ]
   },
   "{deadCount} jetons révoqués, suspendus ou expirés": {
@@ -953,7 +979,7 @@
   },
   "{invited_by} vous invite dans {where}, {level}.": {
     "where": [
-      "app/invitation/[token]/page.tsx:53"
+      "app/invitation/[token]/page.tsx:54"
     ]
   },
   "{label} : autre couleur": {
@@ -993,7 +1019,12 @@
   },
   "{label} dans {label2}": {
     "where": [
-      "components/app/webhook-dialog.tsx:352"
+      "components/app/webhook-dialog.tsx:397"
+    ]
+  },
+  "{label} dans toutes les tables": {
+    "where": [
+      "components/app/webhook-dialog.tsx:368"
     ]
   },
   "{label} liées par « {label2} »": {
@@ -1033,7 +1064,7 @@
   },
   "{ms} ms": {
     "where": [
-      "components/app/automation-flow.tsx:297",
+      "components/app/automation-flow.tsx:324",
       "components/product-glimpse.tsx:1001"
     ]
   },
@@ -1076,12 +1107,12 @@
   },
   "{preview} Connectez-vous pour la rejoindre.": {
     "where": [
-      "app/invitation/[token]/page.tsx:183"
+      "app/invitation/[token]/page.tsx:184"
     ]
   },
   "{preview} Créez votre compte pour la rejoindre.": {
     "where": [
-      "app/invitation/[token]/page.tsx:196"
+      "app/invitation/[token]/page.tsx:197"
     ]
   },
   "{raw} — inconnu": {
@@ -1096,7 +1127,7 @@
   },
   "{record} a trouvé une ligne": {
     "where": [
-      "lib/automations.ts:1015"
+      "lib/automations.ts:1295"
     ]
   },
   "{recordsCount} lignes pour {table}": {
@@ -1131,6 +1162,11 @@
       "components/app/forms/form-fill.tsx:512"
     ]
   },
+  "{step} · la ligne du tour ({table})": {
+    "where": [
+      "lib/automations.ts:556"
+    ]
+  },
   "{table} — liées par « {field} »": {
     "where": [
       "components/app/documents/templates-dialog.tsx:103"
@@ -1144,6 +1180,11 @@
   "{total} sans date": {
     "where": [
       "components/app/views/calendar-view.tsx:518"
+    ]
+  },
+  "{turns} — limite atteinte": {
+    "where": [
+      "lib/automations.ts:1383"
     ]
   },
   "{undated} sans date": {
@@ -1173,7 +1214,7 @@
   },
   "{value} avec les droits de": {
     "where": [
-      "components/app/views/share-dialog.tsx:619"
+      "components/app/views/share-dialog.tsx:620"
     ]
   },
   "{value} de « {value2} » — {path}": {
@@ -1194,7 +1235,7 @@
   },
   "{value} ne voit plus cette base : le tableau de bord partagé est suspendu. Enregistrez pour en devenir la personne qui publie.": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:289"
+      "components/app/analytics/share-dashboard-dialog.tsx:290"
     ]
   },
   "{value} par {value2}": {
@@ -1225,7 +1266,7 @@
   },
   "{value}{value2} Enregistrez pour en devenir la personne qui publie.": {
     "where": [
-      "components/app/views/share-dialog.tsx:448"
+      "components/app/views/share-dialog.tsx:449"
     ]
   },
   "{vizLabels} — ne convient pas à ce résultat": {
@@ -1325,7 +1366,7 @@
   },
   "À corriger": {
     "where": [
-      "components/app/command-palette.tsx:772"
+      "components/app/command-palette.tsx:773"
     ]
   },
   "À côté des étapes": {
@@ -1356,12 +1397,12 @@
   },
   "À heure fixe": {
     "where": [
-      "lib/automations.ts:144"
+      "lib/automations.ts:197"
     ]
   },
   "À l’équipe ou à l’extérieur, par le serveur d’envoi": {
     "where": [
-      "lib/automations.ts:165"
+      "lib/automations.ts:219"
     ]
   },
   "À l’extérieur": {
@@ -1392,7 +1433,7 @@
   },
   "À la minute": {
     "where": [
-      "components/app/automation-steps.tsx:499"
+      "components/app/automation-steps.tsx:510"
     ]
   },
   "a modifié": {
@@ -1402,13 +1443,13 @@
   },
   "À propos de la ligne": {
     "where": [
-      "components/app/automation-steps.tsx:712",
-      "components/app/automation-steps.tsx:1010"
+      "components/app/automation-steps.tsx:724",
+      "components/app/automation-steps.tsx:1359"
     ]
   },
   "À qui": {
     "where": [
-      "components/app/automation-steps.tsx:1014"
+      "components/app/automation-steps.tsx:1363"
     ]
   },
   "À quoi sert ce jeton ?": {
@@ -1440,7 +1481,7 @@
   },
   "À quoi sert-elle ? (facultatif)": {
     "where": [
-      "components/app/automation-steps.tsx:558"
+      "components/app/automation-steps.tsx:569"
     ]
   },
   "a supprimé": {
@@ -1465,7 +1506,7 @@
   },
   "Abandonnée": {
     "where": [
-      "components/app/webhook-dialog.tsx:47"
+      "components/app/webhook-dialog.tsx:48"
     ]
   },
   "Abréger (1,2 k)": {
@@ -1495,7 +1536,7 @@
   },
   "Accès partiel": {
     "where": [
-      "components/app/share-access-dialog.tsx:53"
+      "components/app/share-access-dialog.tsx:54"
     ]
   },
   "Accord": {
@@ -1505,7 +1546,7 @@
   },
   "Accord à donner pour l’envoi au fournisseur": {
     "where": [
-      "lib/automations.ts:981"
+      "lib/automations.ts:1261"
     ]
   },
   "Accueil": {
@@ -1515,9 +1556,9 @@
   },
   "Actif": {
     "where": [
-      "components/app/command-palette.tsx:969",
-      "components/app/command-palette.tsx:1268",
-      "components/app/webhook-dialog.tsx:216"
+      "components/app/command-palette.tsx:970",
+      "components/app/command-palette.tsx:1269",
+      "components/app/webhook-dialog.tsx:232"
     ]
   },
   "Action réservée à l’administration.": {
@@ -1577,13 +1618,13 @@
   },
   "Active": {
     "where": [
-      "components/app/automations.tsx:523",
+      "components/app/automations.tsx:524",
       "components/product-glimpse.tsx:863"
     ]
   },
   "Activer {label}": {
     "where": [
-      "components/app/automations.tsx:292"
+      "components/app/automations.tsx:293"
     ]
   },
   "Actualiser": {
@@ -1610,14 +1651,14 @@
   },
   "Administration": {
     "where": [
-      "app/page.tsx:103",
+      "app/page.tsx:104",
       "components/app/admin/admin-panel.tsx:68",
-      "components/app/command-palette.tsx:1331"
+      "components/app/command-palette.tsx:1332"
     ]
   },
   "Administration : {tab}": {
     "where": [
-      "components/app/command-palette.tsx:1341"
+      "components/app/command-palette.tsx:1342"
     ]
   },
   "Administrer les comptes et les droits demande une confirmation, valable cinq minutes.": {
@@ -1627,35 +1668,35 @@
   },
   "Adresse": {
     "where": [
-      "components/app/automation-steps.tsx:780",
-      "components/app/command-palette.tsx:175"
+      "components/app/automation-steps.tsx:949",
+      "components/app/command-palette.tsx:176"
     ]
   },
   "Adresse (HTTPS)": {
     "where": [
-      "components/app/webhook-dialog.tsx:321"
+      "components/app/webhook-dialog.tsx:337"
     ]
   },
   "Adresse changée : connectez-vous désormais avec {email}.": {
     "where": [
-      "components/app/settings/profile-tab.tsx:232"
+      "components/app/settings/profile-tab.tsx:233"
     ]
   },
   "Adresse de connexion": {
     "where": [
-      "components/app/settings/profile-tab.tsx:170",
-      "components/app/settings/profile-tab.tsx:201",
-      "components/app/settings/profile-tab.tsx:220"
+      "components/app/settings/profile-tab.tsx:171",
+      "components/app/settings/profile-tab.tsx:202",
+      "components/app/settings/profile-tab.tsx:221"
     ]
   },
   "Adresse de l’API de la vue": {
     "where": [
-      "components/app/views/share-dialog.tsx:569"
+      "components/app/views/share-dialog.tsx:570"
     ]
   },
   "Adresse de l’API de la vue, pour la synchroniser dans une autre base :": {
     "where": [
-      "components/app/views/share-dialog.tsx:567"
+      "components/app/views/share-dialog.tsx:568"
     ]
   },
   "Adresse de l’image": {
@@ -1690,7 +1731,7 @@
   },
   "Adresse du flux d’agenda": {
     "where": [
-      "components/app/views/share-dialog.tsx:559"
+      "components/app/views/share-dialog.tsx:560"
     ]
   },
   "Adresse du lien": {
@@ -1700,7 +1741,7 @@
   },
   "Adresse du webhook": {
     "where": [
-      "components/app/automation-steps.tsx:784"
+      "components/app/automation-steps.tsx:963"
     ]
   },
   "Adresse du webhook entrant": {
@@ -1711,7 +1752,7 @@
   "Adresse e-mail": {
     "where": [
       "components/account-form.tsx:126",
-      "components/login.tsx:225",
+      "components/login.tsx:226",
       "components/password-reset.tsx:134"
     ]
   },
@@ -1732,7 +1773,7 @@
   },
   "Adresse https attendue": {
     "where": [
-      "lib/automations.ts:973"
+      "lib/automations.ts:747"
     ]
   },
   "adresse inconnue": {
@@ -1742,7 +1783,7 @@
   },
   "Adresse invalide : {wrong}": {
     "where": [
-      "lib/automations.ts:961"
+      "lib/automations.ts:1241"
     ]
   },
   "Adresse trop longue.": {
@@ -1752,7 +1793,7 @@
   },
   "adresse url partager||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1300"
+      "components/app/command-palette.tsx:1301"
     ]
   },
   "adresse web invalide": {
@@ -1769,7 +1810,7 @@
   },
   "Adresses destinataires": {
     "where": [
-      "components/app/automation-steps.tsx:1067"
+      "components/app/automation-steps.tsx:1416"
     ]
   },
   "Adresses proposées": {
@@ -1817,17 +1858,17 @@
   },
   "Affiner": {
     "where": [
-      "components/app/template-gallery.tsx:883"
+      "components/app/template-gallery.tsx:884"
     ]
   },
   "Affiner : « ajoute une table des fournisseurs », « moins de colonnes », « des exemples pour un restaurant »…": {
     "where": [
-      "components/app/template-gallery.tsx:868"
+      "components/app/template-gallery.tsx:869"
     ]
   },
   "Affiner la proposition": {
     "where": [
-      "components/app/template-gallery.tsx:871"
+      "components/app/template-gallery.tsx:872"
     ]
   },
   "Agence Lumen": {
@@ -1842,7 +1883,7 @@
   },
   "Agit avec les droits de {name}, qui l’a enregistrée en dernier. L’enregistrer vous en rend propriétaire.": {
     "where": [
-      "components/app/automation-steps.tsx:565"
+      "components/app/automation-steps.tsx:576"
     ]
   },
   "Agrandir": {
@@ -1857,13 +1898,13 @@
   },
   "Agrandir le panneau latéral": {
     "where": [
-      "components/app/command-palette.tsx:1273"
+      "components/app/command-palette.tsx:1274"
     ]
   },
   "Aide": {
     "where": [
       "components/app/ai-field.tsx:688",
-      "components/app/command-palette.tsx:1302"
+      "components/app/command-palette.tsx:1303"
     ]
   },
   "Aide de la question {label}": {
@@ -1888,7 +1929,7 @@
   },
   "Ajouté au catalogue de l’instance": {
     "where": [
-      "components/app/template-gallery.tsx:1115"
+      "components/app/template-gallery.tsx:1113"
     ]
   },
   "Ajoute les chiffres clés qui manquent en haut": {
@@ -1941,7 +1982,7 @@
   },
   "Ajouter au catalogue de l’instance": {
     "where": [
-      "components/app/template-gallery.tsx:1123"
+      "components/app/template-gallery.tsx:1121"
     ]
   },
   "Ajouter au tableau": {
@@ -1957,12 +1998,12 @@
   },
   "ajouter créer base||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1140"
+      "components/app/command-palette.tsx:1141"
     ]
   },
   "ajouter créer table||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1127"
+      "components/app/command-palette.tsx:1128"
     ]
   },
   "Ajouter des fichiers": {
@@ -2053,19 +2094,24 @@
   },
   "Ajouter une étape": {
     "where": [
-      "components/app/automation-flow.tsx:405",
-      "components/app/automations.tsx:696"
+      "components/app/automation-flow.tsx:483",
+      "components/app/automations.tsx:697"
     ]
   },
   "Ajouter une étape à ce chemin": {
     "where": [
-      "components/app/automations.tsx:816"
+      "components/app/automations.tsx:832"
+    ]
+  },
+  "Ajouter une étape dans la boucle": {
+    "where": [
+      "components/app/automations.tsx:775"
     ]
   },
   "Ajouter une étape ici": {
     "where": [
-      "components/app/automation-flow.tsx:481",
-      "components/app/automation-flow.tsx:486"
+      "components/app/automation-flow.tsx:560",
+      "components/app/automation-flow.tsx:565"
     ]
   },
   "Ajouter une ligne à cette date": {
@@ -2092,12 +2138,12 @@
   },
   "Ajouter, modifier, supprimer des lignes": {
     "where": [
-      "components/app/share-access-dialog.tsx:44"
+      "components/app/share-access-dialog.tsx:45"
     ]
   },
   "Ajoutez au moins une étape.": {
     "where": [
-      "lib/automations.ts:1138"
+      "lib/automations.ts:1438"
     ]
   },
   "Ajoutez au moins une question.": {
@@ -2148,12 +2194,12 @@
   },
   "Aller à": {
     "where": [
-      "components/app/command-palette.tsx:1032"
+      "components/app/command-palette.tsx:1033"
     ]
   },
   "Aller à basedb": {
     "where": [
-      "app/invitation/[token]/page.tsx:122"
+      "app/invitation/[token]/page.tsx:123"
     ]
   },
   "allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox": {
@@ -2233,7 +2279,7 @@
   },
   "Annuler : {label}": {
     "where": [
-      "components/app/command-palette.tsx:1197"
+      "components/app/command-palette.tsx:1198"
     ]
   },
   "Annuler l’invitation de {email}": {
@@ -2243,7 +2289,7 @@
   },
   "Annuler la dernière écriture": {
     "where": [
-      "components/app/command-palette.tsx:2323"
+      "components/app/command-palette.tsx:2324"
     ]
   },
   "Annuler la sélection": {
@@ -2298,7 +2344,7 @@
   },
   "Apparence": {
     "where": [
-      "components/app/command-palette.tsx:1312",
+      "components/app/command-palette.tsx:1313",
       "components/app/settings/appearance-tab.tsx:57",
       "components/app/settings/settings-panel.tsx:32"
     ]
@@ -2335,7 +2381,7 @@
   },
   "Appeler un webhook": {
     "where": [
-      "lib/automations.ts:154"
+      "lib/automations.ts:207"
     ]
   },
   "appliquée": {
@@ -2431,8 +2477,8 @@
   },
   "arrêté": {
     "where": [
-      "components/app/webhook-dialog.tsx:53",
-      "components/app/webhook-dialog.tsx:219"
+      "components/app/webhook-dialog.tsx:54",
+      "components/app/webhook-dialog.tsx:235"
     ]
   },
   "Arrêté": {
@@ -2442,29 +2488,29 @@
   },
   "arrêté : un champ lui est devenu invisible": {
     "where": [
-      "components/app/webhook-dialog.tsx:52"
+      "components/app/webhook-dialog.tsx:53"
     ]
   },
   "arrêté après des échecs répétés": {
     "where": [
-      "components/app/webhook-dialog.tsx:51"
+      "components/app/webhook-dialog.tsx:52"
     ]
   },
   "Arrêter": {
     "where": [
       "components/app/integrations.tsx:461",
-      "components/app/webhook-dialog.tsx:250"
+      "components/app/webhook-dialog.tsx:266"
     ]
   },
   "Arrêter {label}": {
     "where": [
-      "components/app/webhook-dialog.tsx:256"
+      "components/app/webhook-dialog.tsx:272"
     ]
   },
   "Arrêter le partage": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:423",
-      "components/app/views/share-dialog.tsx:651"
+      "components/app/analytics/share-dashboard-dialog.tsx:424",
+      "components/app/views/share-dialog.tsx:652"
     ]
   },
   "Arrondie": {
@@ -2547,7 +2593,8 @@
   },
   "Au plus": {
     "where": [
-      "components/app/analytics/parameters.tsx:52"
+      "components/app/analytics/parameters.tsx:52",
+      "components/app/automation-steps.tsx:1240"
     ]
   },
   "Au plus un recalcul toutes les 15 minutes.": {
@@ -2563,14 +2610,14 @@
   },
   "aucun accès": {
     "where": [
-      "app/invitation/[token]/page.tsx:30"
+      "app/invitation/[token]/page.tsx:31"
     ]
   },
   "Aucun accès": {
     "where": [
       "components/app/admin/permissions-tab.tsx:55",
       "components/app/admin/permissions-tab.tsx:70",
-      "components/app/share-access-dialog.tsx:49"
+      "components/app/share-access-dialog.tsx:50"
     ]
   },
   "Aucun alias sur cette base.": {
@@ -2590,20 +2637,20 @@
   },
   "Aucun canal Slack n’est connecté à cette base : connectez-en un dans « Intégrations ».": {
     "where": [
-      "components/app/automation-steps.tsx:1124"
+      "components/app/automation-steps.tsx:1473"
     ]
   },
   "Aucun champ": {
     "where": [
-      "components/app/automation-steps.tsx:747",
-      "components/app/automation-steps.tsx:1045",
-      "components/app/automation-steps.tsx:1055"
+      "components/app/automation-steps.tsx:759",
+      "components/app/automation-steps.tsx:1394",
+      "components/app/automation-steps.tsx:1404"
     ]
   },
   "Aucun champ à écrire": {
     "where": [
-      "lib/automations.ts:948",
-      "lib/automations.ts:951"
+      "lib/automations.ts:1222",
+      "lib/automations.ts:1225"
     ]
   },
   "Aucun champ de ce type dans la table.": {
@@ -2628,7 +2675,7 @@
   },
   "aucun chemin ne convenait": {
     "where": [
-      "lib/automations.ts:1093"
+      "lib/automations.ts:1391"
     ]
   },
   "aucun choix": {
@@ -2638,7 +2685,7 @@
   },
   "Aucun choix proposé": {
     "where": [
-      "lib/automations.ts:980"
+      "lib/automations.ts:1260"
     ]
   },
   "Aucun choix. Ajoutez-en un, ou collez une liste JSON plus bas.": {
@@ -2653,17 +2700,17 @@
   },
   "Aucun coché : tout membre connecté lit la vue.": {
     "where": [
-      "components/app/views/share-dialog.tsx:471"
+      "components/app/views/share-dialog.tsx:472"
     ]
   },
   "Aucun coché : tout membre connecté lit le tableau de bord.": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:313"
+      "components/app/analytics/share-dashboard-dialog.tsx:314"
     ]
   },
   "Aucun coché : tout membre connecté répond.": {
     "where": [
-      "components/app/views/share-dialog.tsx:472"
+      "components/app/views/share-dialog.tsx:473"
     ]
   },
   "Aucun commentaire. Posez une question, tapez @ pour prévenir quelqu’un.": {
@@ -2678,8 +2725,8 @@
   },
   "Aucun destinataire": {
     "where": [
-      "lib/automations.ts:881",
-      "lib/automations.ts:968"
+      "lib/automations.ts:1153",
+      "lib/automations.ts:1248"
     ]
   },
   "Aucun enregistrement trouvé": {
@@ -2695,7 +2742,7 @@
   },
   "Aucun fournisseur d’identité n’est configuré sur cette instance : vous vous connectez par mot de passe.": {
     "where": [
-      "components/app/settings/profile-tab.tsx:307"
+      "components/app/settings/profile-tab.tsx:308"
     ]
   },
   "Aucun groupe dans cette organisation.": {
@@ -2732,12 +2779,12 @@
   },
   "Aucun message": {
     "where": [
-      "lib/automations.ts:890"
+      "lib/automations.ts:1158"
     ]
   },
   "Aucun modèle ne correspond. Décrivez votre besoin à l’IA, en haut.": {
     "where": [
-      "components/app/template-gallery.tsx:464"
+      "components/app/template-gallery.tsx:465"
     ]
   },
   "Aucun pictogramme.": {
@@ -2747,7 +2794,7 @@
   },
   "Aucun projet": {
     "where": [
-      "app/page.tsx:896",
+      "app/page.tsx:901",
       "components/app/project-menu.tsx:115",
       "components/app/project-menu.tsx:153"
     ]
@@ -2795,7 +2842,7 @@
   },
   "Aucun webhook pour l’instant.": {
     "where": [
-      "components/app/webhook-dialog.tsx:204"
+      "components/app/webhook-dialog.tsx:220"
     ]
   },
   "Aucune": {
@@ -2829,12 +2876,12 @@
   },
   "Aucune automatisation. Faites faire à la base ce que vous refaites à la main.": {
     "where": [
-      "components/app/automations.tsx:249"
+      "components/app/automations.tsx:250"
     ]
   },
   "Aucune base dans « {label} »": {
     "where": [
-      "app/page.tsx:909"
+      "app/page.tsx:914"
     ]
   },
   "Aucune base dans ce projet.": {
@@ -2844,7 +2891,7 @@
   },
   "Aucune base visible": {
     "where": [
-      "app/page.tsx:924"
+      "app/page.tsx:929"
     ]
   },
   "Aucune base visible dans ce projet.": {
@@ -2890,7 +2937,7 @@
   },
   "Aucune consigne": {
     "where": [
-      "lib/automations.ts:893"
+      "lib/automations.ts:1161"
     ]
   },
   "Aucune couleur": {
@@ -2915,14 +2962,14 @@
   },
   "Aucune ligne": {
     "where": [
-      "components/app/automation-steps.tsx:793",
-      "components/app/automation-steps.tsx:1011",
+      "components/app/automation-steps.tsx:1033",
+      "components/app/automation-steps.tsx:1360",
       "components/app/grid/pagination-bar.tsx:118"
     ]
   },
   "Aucune ligne : la notification ne partira pas": {
     "where": [
-      "lib/automations.ts:957"
+      "lib/automations.ts:1237"
     ]
   },
   "Aucune ligne à afficher.": {
@@ -2932,7 +2979,7 @@
   },
   "Aucune ligne à modifier": {
     "where": [
-      "lib/automations.ts:947"
+      "lib/automations.ts:1221"
     ]
   },
   "Aucune ligne à montrer.": {
@@ -2944,7 +2991,7 @@
   },
   "aucune ligne à tester": {
     "where": [
-      "lib/automations.ts:994"
+      "lib/automations.ts:1274"
     ]
   },
   "Aucune ligne importée.": {
@@ -2969,7 +3016,7 @@
   },
   "aucune ligne trouvée": {
     "where": [
-      "lib/automations.ts:1090"
+      "lib/automations.ts:1386"
     ]
   },
   "Aucune ligne.": {
@@ -3016,8 +3063,8 @@
   },
   "Aucune table": {
     "where": [
-      "app/page.tsx:943",
-      "app/page.tsx:951"
+      "app/page.tsx:948",
+      "app/page.tsx:956"
     ]
   },
   "Aucune table dans ces environnements.": {
@@ -3027,7 +3074,7 @@
   },
   "Aucune table de cette base ne vous est ouverte.": {
     "where": [
-      "app/page.tsx:952"
+      "app/page.tsx:957"
     ]
   },
   "Aucune table supprimée.": {
@@ -3098,7 +3145,7 @@
   },
   "automatique appareil||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1262"
+      "components/app/command-palette.tsx:1263"
     ]
   },
   "Automatisation": {
@@ -3108,23 +3155,22 @@
   },
   "Automatisation · {base}": {
     "where": [
-      "components/app/command-palette.tsx:904"
+      "components/app/command-palette.tsx:905"
     ]
   },
   "Automatisation « {label} » : un modèle n’appelle pas l’extérieur, action retirée.": {
     "where": [
-      "lib/template-export.ts:525"
+      "lib/template-export.ts:531"
     ]
   },
   "Automatisation « {label} » : un modèle ne porte pas encore ses conditions, recherches ni étapes qui s’en citent, elle est laissée de côté.": {
     "where": [
-      "lib/template-export.ts:475"
+      "lib/template-export.ts:481"
     ]
   },
   "Automatisation « {label} »…": {
     "where": [
-      "lib/templates.ts:664",
-      "lib/templates.ts:734"
+      "lib/templates.ts:35"
     ]
   },
   "Automatisation « {token_label} »": {
@@ -3139,25 +3185,25 @@
   },
   "automatisation||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:338"
+      "components/app/command-palette.tsx:339"
     ]
   },
   "Automatisations": {
     "where": [
-      "app/page.tsx:100",
+      "app/page.tsx:101",
       "components/app/automation-copilot.tsx:252",
-      "components/app/automations.tsx:229"
+      "components/app/automations.tsx:230"
     ]
   },
   "Automatisations de « {base} »": {
     "where": [
-      "components/app/command-palette.tsx:1078"
+      "components/app/command-palette.tsx:1079"
     ]
   },
   "Autoriser l’intégration à un autre site": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:354",
-      "components/app/views/share-dialog.tsx:514"
+      "components/app/analytics/share-dashboard-dialog.tsx:355",
+      "components/app/views/share-dialog.tsx:515"
     ]
   },
   "Autoriser la lecture des données": {
@@ -3169,7 +3215,7 @@
   },
   "Autre": {
     "where": [
-      "lib/automations.ts:492"
+      "lib/automations.ts:631"
     ]
   },
   "Autre couleur": {
@@ -3180,14 +3226,14 @@
   },
   "Autres": {
     "where": [
-      "components/app/template-gallery.tsx:246",
-      "components/app/template-gallery.tsx:262",
-      "components/app/template-gallery.tsx:541"
+      "components/app/template-gallery.tsx:247",
+      "components/app/template-gallery.tsx:263",
+      "components/app/template-gallery.tsx:542"
     ]
   },
   "Autres actions": {
     "where": [
-      "components/app/automations.tsx:551",
+      "components/app/automations.tsx:552",
       "components/app/sidebar.tsx:828"
     ]
   },
@@ -3297,12 +3343,12 @@
   },
   "Base · {project}": {
     "where": [
-      "components/app/command-palette.tsx:709"
+      "components/app/command-palette.tsx:710"
     ]
   },
   "Base « {label} » créée": {
     "where": [
-      "components/app/template-gallery.tsx:949"
+      "components/app/template-gallery.tsx:954"
     ]
   },
   "Base de connaissances": {
@@ -3312,8 +3358,8 @@
   },
   "Base de démonstration": {
     "where": [
-      "app/page.tsx:916",
-      "components/app/command-palette.tsx:1145"
+      "app/page.tsx:921",
+      "components/app/command-palette.tsx:1146"
     ]
   },
   "Base de données": {
@@ -3328,22 +3374,22 @@
   },
   "Base…": {
     "where": [
-      "components/app/template-gallery.tsx:935"
+      "components/app/template-gallery.tsx:934"
     ]
   },
   "base||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:330"
+      "components/app/command-palette.tsx:331"
     ]
   },
   "basedb": {
     "where": [
-      "components/brand.tsx:50"
+      "components/brand.tsx:51"
     ]
   },
   "Bases et projets": {
     "where": [
-      "components/app/command-palette.tsx:185"
+      "components/app/command-palette.tsx:186"
     ]
   },
   "Bases et tables": {
@@ -3454,7 +3500,7 @@
   },
   "Bouton « {label} »…": {
     "where": [
-      "lib/templates.ts:673"
+      "lib/templates.ts:37"
     ]
   },
   "Bouton d’accueil : Commencer": {
@@ -3484,7 +3530,7 @@
   },
   "C’est fait": {
     "where": [
-      "app/invitation/[token]/page.tsx:159"
+      "app/invitation/[token]/page.tsx:160"
     ]
   },
   "C’est votre seul moyen de connexion : il ne peut pas être délié.": {
@@ -3562,7 +3608,7 @@
   },
   "Canal Slack": {
     "where": [
-      "components/app/automation-steps.tsx:1137"
+      "components/app/automation-steps.tsx:1486"
     ]
   },
   "Carré": {
@@ -3614,12 +3660,12 @@
   },
   "Catalogue du site": {
     "where": [
-      "components/app/template-gallery.tsx:80"
+      "components/app/template-gallery.tsx:81"
     ]
   },
   "Catalogue du site public à jour.": {
     "where": [
-      "components/app/template-gallery.tsx:428"
+      "components/app/template-gallery.tsx:429"
     ]
   },
   "Catégorie": {
@@ -3630,13 +3676,13 @@
   },
   "Catégories": {
     "where": [
-      "components/app/template-gallery.tsx:374",
-      "components/app/template-gallery.tsx:409"
+      "components/app/template-gallery.tsx:375",
+      "components/app/template-gallery.tsx:410"
     ]
   },
   "Ce canal Slack n’est plus connecté.": {
     "where": [
-      "lib/automations.ts:1152"
+      "lib/automations.ts:1452"
     ]
   },
   "Ce champ est calculé : il ne s’écrit pas.": {
@@ -3787,13 +3833,13 @@
   },
   "Ce n’est pas du JSON valide.": {
     "where": [
-      "components/app/template-gallery.tsx:1178",
+      "components/app/template-gallery.tsx:1176",
       "lib/options.ts:152"
     ]
   },
   "Ce n’est pas vous ? Changer de compte": {
     "where": [
-      "app/invitation/[token]/page.tsx:172"
+      "app/invitation/[token]/page.tsx:173"
     ]
   },
   "Ce nom a déjà servi : un nom n’est jamais réattribué, même après suppression.": {
@@ -3835,7 +3881,7 @@
   },
   "Ce projet ne contient aucune base qui vous soit ouverte.": {
     "where": [
-      "app/page.tsx:925"
+      "app/page.tsx:930"
     ]
   },
   "Ce qu’elle montre": {
@@ -3856,7 +3902,7 @@
   },
   "Ce que l’IA calcule": {
     "where": [
-      "components/app/template-gallery.tsx:750"
+      "components/app/template-gallery.tsx:751"
     ]
   },
   "Ce que la personne va remplir, et pourquoi": {
@@ -3871,7 +3917,7 @@
   },
   "Ce que les autres voient de vous, et les moyens de vous connecter.": {
     "where": [
-      "components/app/settings/profile-tab.tsx:46"
+      "components/app/settings/profile-tab.tsx:47"
     ]
   },
   "Ce que reçoit « Tous les utilisateurs », chaque compte l’a, quels que soient ses autres groupes. Pour réserver un accès, accordez-le plutôt à un groupe dédié.": {
@@ -3933,7 +3979,7 @@
   },
   "Celle avec laquelle vous vous connectez, et où arrive un lien de réinitialisation du mot de passe. La changer demande votre mot de passe ; l’ancienne adresse en est prévenue.": {
     "where": [
-      "components/app/settings/profile-tab.tsx:202"
+      "components/app/settings/profile-tab.tsx:203"
     ]
   },
   "Celle de l’interface, des nombres et des dates. Elle vous suit d’un poste à l’autre.": {
@@ -3958,7 +4004,7 @@
   },
   "Celui que les autres lisent : dans un champ Personne, un commentaire, une mention, l’historique.": {
     "where": [
-      "components/app/settings/profile-tab.tsx:120"
+      "components/app/settings/profile-tab.tsx:121"
     ]
   },
   "Centré": {
@@ -4026,6 +4072,11 @@
       "lib/messages.ts:379"
     ]
   },
+  "Cette adresse n’est pas joignable depuis le serveur, ou pointe vers un réseau privé.": {
+    "where": [
+      "lib/automations.ts:1464"
+    ]
+  },
   "Cette adresse web ne semble pas complète.": {
     "where": [
       "components/app/forms/answers.ts:146"
@@ -4065,7 +4116,12 @@
   },
   "Cette étape n’a pas de ligne sur laquelle agir : à heure fixe, cherchez-en une d’abord.": {
     "where": [
-      "lib/automations.ts:1127"
+      "lib/automations.ts:1427"
+    ]
+  },
+  "Cette instance n’a pas de clé de chiffrement : elle ne peut garder aucun secret.": {
+    "where": [
+      "lib/automations.ts:1482"
     ]
   },
   "Cette instance n’a pas encore d’administrateur. Ce compte gérera les bases, les personnes et leurs droits ; vous inviterez les autres ensuite.": {
@@ -4080,12 +4136,12 @@
   },
   "Cette instance n’envoie pas de courriels : aucun serveur d’envoi n’y est configuré. L’étape échouera tant que l’exploitant n’en aura pas réglé un.": {
     "where": [
-      "components/app/automation-steps.tsx:1000"
+      "components/app/automation-steps.tsx:1349"
     ]
   },
   "Cette invitation n’est plus valable": {
     "where": [
-      "app/invitation/[token]/page.tsx:115"
+      "app/invitation/[token]/page.tsx:116"
     ]
   },
   "Cette ligne est encore référencée par une autre table.": {
@@ -4095,7 +4151,7 @@
   },
   "Cette ligne est vide.": {
     "where": [
-      "components/app/command-palette.tsx:2218"
+      "components/app/command-palette.tsx:2219"
     ]
   },
   "Cette ligne existe de nouveau : il n’y a rien à restaurer.": {
@@ -4115,8 +4171,8 @@
   },
   "Cette page n’existe pas": {
     "where": [
-      "app/page.tsx:219",
-      "app/page.tsx:1061"
+      "app/page.tsx:220",
+      "app/page.tsx:1066"
     ]
   },
   "Cette planification ne tombe jamais : aucune date ne la satisfait.": {
@@ -4223,18 +4279,18 @@
   "Champ": {
     "where": [
       "components/app/admin/field-rules-dialog.tsx:155",
-      "components/app/automation-steps.tsx:360",
+      "components/app/automation-steps.tsx:371",
       "components/app/schema-editor.tsx:255"
     ]
   },
   "Champ {value}": {
     "where": [
-      "components/app/automation-steps.tsx:332"
+      "components/app/automation-steps.tsx:343"
     ]
   },
   "Champ calculé « {label} »…": {
     "where": [
-      "lib/templates.ts:562"
+      "lib/templates.ts:29"
     ]
   },
   "Champ de tri inconnu.": {
@@ -4249,12 +4305,12 @@
   },
   "Champ e-mail destinataire": {
     "where": [
-      "components/app/automation-steps.tsx:1056"
+      "components/app/automation-steps.tsx:1405"
     ]
   },
   "Champ IA « {label} »…": {
     "where": [
-      "lib/templates.ts:467"
+      "lib/templates.ts:25"
     ]
   },
   "Champ inconnu : « {text} ».": {
@@ -4291,12 +4347,12 @@
   },
   "Champ personne à prévenir": {
     "where": [
-      "components/app/automation-steps.tsx:748"
+      "components/app/automation-steps.tsx:760"
     ]
   },
   "Champ personne destinataire": {
     "where": [
-      "components/app/automation-steps.tsx:1046"
+      "components/app/automation-steps.tsx:1395"
     ]
   },
   "Champ pour la colonne {column}": {
@@ -4316,7 +4372,7 @@
   },
   "Champs de « {label} »…": {
     "where": [
-      "lib/templates.ts:507"
+      "lib/templates.ts:23"
     ]
   },
   "Champs de la ligne": {
@@ -4366,7 +4422,7 @@
   },
   "Changer l’adresse": {
     "where": [
-      "components/app/settings/profile-tab.tsx:227"
+      "components/app/settings/profile-tab.tsx:228"
     ]
   },
   "Changer le mot de passe": {
@@ -4381,7 +4437,7 @@
   },
   "Chaque citation est remplacée par sa valeur au moment d’agir ; une valeur vide se lit « (vide) ».": {
     "where": [
-      "components/app/automation-steps.tsx:840"
+      "components/app/automation-steps.tsx:828"
     ]
   },
   "Chaque compte fait partie de ce groupe. Ce qui lui est accordé, tout le monde l’a : il ne reçoit donc rien par défaut.": {
@@ -4416,12 +4472,17 @@
   },
   "Chaque jour": {
     "where": [
-      "components/app/automation-steps.tsx:479"
+      "components/app/automation-steps.tsx:490"
     ]
   },
   "Chaque jour à {at}": {
     "where": [
-      "components/app/automation-flow.tsx:521"
+      "components/app/automation-flow.tsx:600"
+    ]
+  },
+  "Chaque ligne du formulaire s’écrit clé=valeur.": {
+    "where": [
+      "lib/automations.ts:1486"
     ]
   },
   "Chaque ligne est calculée dès qu’elle existe, puis de nouveau dès qu’une colonne citée change.": {
@@ -4478,7 +4539,7 @@
   "Chaque semaine": {
     "where": [
       "components/app/ai-field.tsx:382",
-      "components/app/automation-steps.tsx:480"
+      "components/app/automation-steps.tsx:491"
     ]
   },
   "Chaque valeur": {
@@ -4512,24 +4573,24 @@
   },
   "Chemin": {
     "where": [
-      "components/app/automation-flow.tsx:368",
-      "components/app/automation-steps.tsx:1273",
-      "components/app/automations.tsx:774"
+      "components/app/automation-flow.tsx:395",
+      "components/app/automation-steps.tsx:1622",
+      "components/app/automations.tsx:789"
     ]
   },
   "chemin « {detail} »": {
     "where": [
-      "lib/automations.ts:1094"
+      "lib/automations.ts:1392"
     ]
   },
   "Chemin « Sinon »": {
     "where": [
-      "components/app/automations.tsx:774"
+      "components/app/automations.tsx:789"
     ]
   },
   "Chemin {value}": {
     "where": [
-      "components/app/automation-steps.tsx:1179"
+      "components/app/automation-steps.tsx:1528"
     ]
   },
   "chemin vers {target}": {
@@ -4539,7 +4600,7 @@
   },
   "Chemins": {
     "where": [
-      "components/app/automation-steps.tsx:1203"
+      "components/app/automation-steps.tsx:1552"
     ]
   },
   "Chercher": {
@@ -4549,13 +4610,13 @@
   },
   "Chercher dans la table ou la base choisie": {
     "where": [
-      "components/app/command-palette.tsx:2300"
+      "components/app/command-palette.tsx:2301"
     ]
   },
   "chercher dedans": {
     "where": [
-      "components/app/command-palette.tsx:1977",
-      "components/app/command-palette.tsx:2169"
+      "components/app/command-palette.tsx:1978",
+      "components/app/command-palette.tsx:2170"
     ]
   },
   "Chercher un pictogramme": {
@@ -4577,7 +4638,7 @@
   "Chercher une ligne": {
     "where": [
       "components/product-glimpse.tsx:249",
-      "lib/automations.ts:151"
+      "lib/automations.ts:204"
     ]
   },
   "Chercher une page…": {
@@ -4625,12 +4686,12 @@
   },
   "Choisir un canal": {
     "where": [
-      "components/app/automation-steps.tsx:1136"
+      "components/app/automation-steps.tsx:1485"
     ]
   },
   "Choisir un champ": {
     "where": [
-      "components/app/automation-steps.tsx:84",
+      "components/app/automation-steps.tsx:92",
       "components/app/computed-field-form.tsx:315",
       "components/app/views/view-dialog.tsx:795"
     ]
@@ -4663,7 +4724,7 @@
   },
   "Choisir une ligne": {
     "where": [
-      "components/app/automation-steps.tsx:268"
+      "components/app/automation-steps.tsx:279"
     ]
   },
   "Choisir une personne…": {
@@ -4681,7 +4742,7 @@
     "where": [
       "components/app/analytics/notebook.tsx:375",
       "components/app/analytics/notebook.tsx:752",
-      "components/app/automation-steps.tsx:132"
+      "components/app/automation-steps.tsx:140"
     ]
   },
   "Choisir…": {
@@ -4697,12 +4758,12 @@
   },
   "Choisissez au moins un champ à écrire.": {
     "where": [
-      "lib/automations.ts:1141"
+      "lib/automations.ts:1441"
     ]
   },
   "Choisissez au moins un destinataire.": {
     "where": [
-      "lib/automations.ts:1149"
+      "lib/automations.ts:1449"
     ]
   },
   "Choisissez deux environnements différents.": {
@@ -4713,7 +4774,7 @@
   },
   "Choisissez la réponse attendue de l’étape IA.": {
     "where": [
-      "lib/automations.ts:1158"
+      "lib/automations.ts:1458"
     ]
   },
   "Choisissez le champ date.": {
@@ -4743,7 +4804,7 @@
   },
   "Choisissez qui prévenir.": {
     "where": [
-      "lib/automations.ts:1142"
+      "lib/automations.ts:1442"
     ]
   },
   "Choisissez sur chaque carte la colonne qu’il filtre.": {
@@ -4753,12 +4814,12 @@
   },
   "Choisissez un canal": {
     "where": [
-      "lib/automations.ts:975"
+      "lib/automations.ts:1255"
     ]
   },
   "Choisissez un déclencheur.": {
     "where": [
-      "lib/automations.ts:1119"
+      "lib/automations.ts:1419"
     ]
   },
   "Choisissez un mot de passe différent.": {
@@ -4768,7 +4829,7 @@
   },
   "Choisissez un projet": {
     "where": [
-      "app/page.tsx:933"
+      "app/page.tsx:938"
     ]
   },
   "Choisissez une adresse, ou une latitude et une longitude.": {
@@ -4778,12 +4839,12 @@
   },
   "Choisissez une automatisation, ou créez-en une.": {
     "where": [
-      "components/app/automations.tsx:303"
+      "components/app/automations.tsx:304"
     ]
   },
   "Choisissez une base": {
     "where": [
-      "app/page.tsx:961"
+      "app/page.tsx:966"
     ]
   },
   "Choisissez une colonne de regroupement": {
@@ -4793,13 +4854,14 @@
   },
   "Choisissez une étape sur le flux pour la régler.": {
     "where": [
-      "components/app/automations.tsx:825"
+      "components/app/automations.tsx:841"
     ]
   },
   "Choisissez une table": {
     "where": [
-      "lib/automations.ts:950",
-      "lib/automations.ts:953"
+      "lib/automations.ts:1224",
+      "lib/automations.ts:1227",
+      "lib/automations.ts:1229"
     ]
   },
   "Choisissez une table ou ouvrez une requête SQL.": {
@@ -4836,7 +4898,7 @@
   },
   "Choix proposés, un par ligne": {
     "where": [
-      "components/app/automation-steps.tsx:874"
+      "components/app/automation-steps.tsx:862"
     ]
   },
   "Chronologie": {
@@ -4863,18 +4925,18 @@
   },
   "Cite {missing}, qui n’a pas forcément eu lieu avant": {
     "where": [
-      "lib/automations.ts:938"
+      "lib/automations.ts:1212"
     ]
   },
   "Cite {missing}, qui n’existe plus": {
     "where": [
-      "lib/automations.ts:937"
+      "lib/automations.ts:1211"
     ]
   },
   "Citer une valeur": {
     "where": [
-      "components/app/automation-steps.tsx:198",
-      "components/app/automation-steps.tsx:203"
+      "components/app/automation-steps.tsx:209",
+      "components/app/automation-steps.tsx:214"
     ]
   },
   "Clair": {
@@ -4897,13 +4959,13 @@
   },
   "clic": {
     "where": [
-      "components/app/command-palette.tsx:2322",
+      "components/app/command-palette.tsx:2323",
       "components/app/grid/cell.tsx:506"
     ]
   },
   "Clic molette": {
     "where": [
-      "components/app/command-palette.tsx:2314"
+      "components/app/command-palette.tsx:2315"
     ]
   },
   "Clients": {
@@ -4972,23 +5034,23 @@
   },
   "Code à coller dans la page qui intègre la vue :": {
     "where": [
-      "components/app/views/share-dialog.tsx:521"
+      "components/app/views/share-dialog.tsx:522"
     ]
   },
   "Code à coller dans la page qui intègre le tableau de bord :": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:361"
+      "components/app/analytics/share-dashboard-dialog.tsx:362"
     ]
   },
   "Code d’intégration": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:369",
-      "components/app/views/share-dialog.tsx:529"
+      "components/app/analytics/share-dashboard-dialog.tsx:370",
+      "components/app/views/share-dialog.tsx:530"
     ]
   },
   "Code de réponse": {
     "where": [
-      "lib/automations.ts:475"
+      "lib/automations.ts:614"
     ]
   },
   "Code reçu par courriel": {
@@ -5037,7 +5099,7 @@
   },
   "colonne champ||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:335"
+      "components/app/command-palette.tsx:336"
     ]
   },
   "Colonne d’affichage de la table": {
@@ -5061,7 +5123,7 @@
   },
   "Colonne de « {table} » · {base}": {
     "where": [
-      "components/app/command-palette.tsx:822"
+      "components/app/command-palette.tsx:823"
     ]
   },
   "Colonne de l’axe": {
@@ -5103,7 +5165,7 @@
     "where": [
       "components/app/analytics/viz-settings.tsx:1186",
       "components/app/analytics/viz-settings.tsx:1344",
-      "components/app/command-palette.tsx:184"
+      "components/app/command-palette.tsx:185"
     ]
   },
   "Colonnes affichées": {
@@ -5163,13 +5225,13 @@
   },
   "combien quel quelle quels quelles qui quoi comment pourquoi où quand est-ce montre montre-moi affiche liste trouve donne calcule compare résume||mots qui commencent une question, séparés par des espaces": {
     "where": [
-      "components/app/command-palette.tsx:1433"
+      "components/app/command-palette.tsx:1434"
     ]
   },
   "Commandes": {
     "where": [
-      "components/app/command-palette.tsx:154",
-      "components/app/command-palette.tsx:186"
+      "components/app/command-palette.tsx:155",
+      "components/app/command-palette.tsx:187"
     ]
   },
   "Commandes du mois": {
@@ -5235,24 +5297,24 @@
   },
   "Complet": {
     "where": [
-      "components/app/views/share-dialog.tsx:63"
+      "components/app/views/share-dialog.tsx:64"
     ]
   },
   "Compte": {
     "where": [
-      "components/app/command-palette.tsx:1349"
+      "components/app/command-palette.tsx:1350"
     ]
   },
   "Compte créé": {
     "where": [
-      "app/invitation/[token]/page.tsx:214",
+      "app/invitation/[token]/page.tsx:215",
       "components/bootstrap.tsx:26",
       "components/signup.tsx:61"
     ]
   },
   "Compte lié : vous pouvez désormais vous connecter avec lui.": {
     "where": [
-      "app/page.tsx:418"
+      "app/page.tsx:419"
     ]
   },
   "Compter": {
@@ -5262,18 +5324,18 @@
   },
   "Comptes liés": {
     "where": [
-      "components/app/settings/profile-tab.tsx:302"
+      "components/app/settings/profile-tab.tsx:303"
     ]
   },
   "Condition": {
     "where": [
-      "components/app/automation-steps.tsx:548",
-      "lib/automations.ts:157"
+      "components/app/automation-steps.tsx:559",
+      "lib/automations.ts:210"
     ]
   },
   "Condition du chemin": {
     "where": [
-      "components/app/automation-steps.tsx:1341"
+      "components/app/automation-steps.tsx:1691"
     ]
   },
   "Conférences, ateliers et webinaires : les inscriptions, les places restantes, et les retours des participants lus par l'IA.": {
@@ -5347,7 +5409,7 @@
   },
   "Connecté": {
     "where": [
-      "components/login.tsx:303"
+      "components/login.tsx:304"
     ]
   },
   "Connecté : {reader}": {
@@ -5388,7 +5450,7 @@
   },
   "Connectez-vous pour retrouver vos bases et vos tables.": {
     "where": [
-      "components/login.tsx:37"
+      "components/login.tsx:38"
     ]
   },
   "Connexion nécessaire": {
@@ -5399,23 +5461,23 @@
   },
   "Connexion…": {
     "where": [
-      "components/login.tsx:303"
+      "components/login.tsx:304"
     ]
   },
   "Consigne": {
     "where": [
       "components/app/ai-field.tsx:316",
-      "components/app/automation-steps.tsx:839"
+      "components/app/automation-steps.tsx:827"
     ]
   },
   "Consigne de l’IA": {
     "where": [
-      "components/app/automation-steps.tsx:848"
+      "components/app/automation-steps.tsx:836"
     ]
   },
   "Consigne trop longue : {d} caractères au plus.": {
     "where": [
-      "lib/automations.ts:1157"
+      "lib/automations.ts:1457"
     ]
   },
   "Consigne trop longue : 8 000 caractères au maximum.": {
@@ -5425,7 +5487,7 @@
   },
   "Consigne vide": {
     "where": [
-      "lib/automations.ts:978"
+      "lib/automations.ts:1258"
     ]
   },
   "Consignes, en tête du formulaire": {
@@ -5435,7 +5497,7 @@
   },
   "console select||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1111"
+      "components/app/command-palette.tsx:1112"
     ]
   },
   "Console SQL": {
@@ -5507,7 +5569,7 @@
   },
   "Continuer avec {label}": {
     "where": [
-      "components/login.tsx:354"
+      "components/login.tsx:355"
     ]
   },
   "Copié": {
@@ -5547,8 +5609,8 @@
   "Copier le code": {
     "where": [
       "components/api-reference/code-block.tsx:89",
-      "components/app/analytics/share-dashboard-dialog.tsx:372",
-      "components/app/analytics/share-dashboard-dialog.tsx:377"
+      "components/app/analytics/share-dashboard-dialog.tsx:373",
+      "components/app/analytics/share-dashboard-dialog.tsx:378"
     ]
   },
   "Copier le JSON": {
@@ -5558,9 +5620,9 @@
   },
   "Copier le lien": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:222",
-      "components/app/analytics/share-dashboard-dialog.tsx:228",
-      "components/app/views/share-dialog.tsx:380"
+      "components/app/analytics/share-dashboard-dialog.tsx:223",
+      "components/app/analytics/share-dashboard-dialog.tsx:229",
+      "components/app/views/share-dialog.tsx:381"
     ]
   },
   "Copier le lien d’invitation": {
@@ -5570,7 +5632,7 @@
   },
   "Copier le lien de cette page": {
     "where": [
-      "components/app/command-palette.tsx:1291"
+      "components/app/command-palette.tsx:1292"
     ]
   },
   "Copier le lien pour {email}": {
@@ -5580,7 +5642,7 @@
   },
   "Copier les cellules choisies": {
     "where": [
-      "components/app/command-palette.tsx:2321"
+      "components/app/command-palette.tsx:2322"
     ]
   },
   "Copiez le jeton « {label} » maintenant : il ne sera plus jamais affiché. Placez-le dans la variable d’environnement": {
@@ -5590,19 +5652,40 @@
   },
   "Copiez le secret de « {label} » maintenant : il ne sera plus jamais affiché. Il sert au système destinataire à vérifier que chaque envoi vient bien d’ici.": {
     "where": [
-      "components/app/webhook-dialog.tsx:181"
+      "components/app/webhook-dialog.tsx:197"
     ]
   },
   "Copilot": {
     "where": [
       "components/app/analytics/dashboard-copilot.tsx:326",
       "components/app/automation-copilot.tsx:250",
-      "components/app/command-palette.tsx:155"
+      "components/app/command-palette.tsx:156"
     ]
   },
   "Corbeille supprimé": {
     "where": [
       "lib/option-icons.ts:239"
+    ]
+  },
+  "Corps": {
+    "where": [
+      "components/app/automation-steps.tsx:1014"
+    ]
+  },
+  "Corps de la requête": {
+    "where": [
+      "components/app/automation-steps.tsx:1024",
+      "components/app/automation-steps.tsx:1047"
+    ]
+  },
+  "Corps trop long : {d} caractères au plus.": {
+    "where": [
+      "lib/automations.ts:1484"
+    ]
+  },
+  "Corps vide": {
+    "where": [
+      "lib/automations.ts:762"
     ]
   },
   "Corriger": {
@@ -5763,7 +5846,7 @@
   },
   "création": {
     "where": [
-      "components/app/webhook-dialog.tsx:434"
+      "components/app/webhook-dialog.tsx:479"
     ]
   },
   "création d’une ligne": {
@@ -5783,14 +5866,14 @@
   },
   "Création…": {
     "where": [
-      "app/page.tsx:1359",
+      "app/page.tsx:1364",
       "components/account-form.tsx:240",
       "components/app/base-menu.tsx:465"
     ]
   },
   "Création||écriture qui déclenche un webhook": {
     "where": [
-      "components/app/webhook-dialog.tsx:37"
+      "components/app/webhook-dialog.tsx:38"
     ]
   },
   "Créé le": {
@@ -5828,8 +5911,8 @@
   },
   "Créer": {
     "where": [
-      "components/app/automations.tsx:546",
-      "components/app/command-palette.tsx:1033",
+      "components/app/automations.tsx:547",
+      "components/app/command-palette.tsx:1034",
       "components/app/record-panel.tsx:458"
     ]
   },
@@ -5875,8 +5958,8 @@
   },
   "Créer le lien": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:434",
-      "components/app/views/share-dialog.tsx:662"
+      "components/app/analytics/share-dashboard-dialog.tsx:435",
+      "components/app/views/share-dialog.tsx:663"
     ]
   },
   "Créer le projet": {
@@ -5891,7 +5974,7 @@
   },
   "Créer le webhook": {
     "where": [
-      "components/app/webhook-dialog.tsx:386"
+      "components/app/webhook-dialog.tsx:431"
     ]
   },
   "Créer mon compte": {
@@ -5901,7 +5984,7 @@
   },
   "Créer mon compte et rejoindre": {
     "where": [
-      "app/invitation/[token]/page.tsx:213"
+      "app/invitation/[token]/page.tsx:214"
     ]
   },
   "Créer un alias de compatibilité sous l’ancien nom": {
@@ -5911,7 +5994,7 @@
   },
   "Créer un compte": {
     "where": [
-      "components/login.tsx:179"
+      "components/login.tsx:180"
     ]
   },
   "Créer un jeton pour l’API REST ou le MCP": {
@@ -5921,7 +6004,7 @@
   },
   "Créer un projet": {
     "where": [
-      "app/page.tsx:901"
+      "app/page.tsx:906"
     ]
   },
   "Créer un tableau de bord": {
@@ -5931,18 +6014,18 @@
   },
   "Créer une base": {
     "where": [
-      "app/page.tsx:914"
+      "app/page.tsx:919"
     ]
   },
   "Créer une ligne": {
     "where": [
       "components/product-glimpse.tsx:269",
-      "lib/automations.ts:150"
+      "lib/automations.ts:203"
     ]
   },
   "Créer une table": {
     "where": [
-      "app/page.tsx:945"
+      "app/page.tsx:950"
     ]
   },
   "Créer une vue": {
@@ -5967,7 +6050,7 @@
   },
   "Créez la première table de « {label} ».": {
     "where": [
-      "app/page.tsx:944"
+      "app/page.tsx:949"
     ]
   },
   "Créez le compte administrateur": {
@@ -5977,7 +6060,7 @@
   },
   "Créez une base vide, partez d’un modèle ou demandez-la à l’IA — ou ouvrez la démonstration, qui montre tout basedb.": {
     "where": [
-      "app/page.tsx:911"
+      "app/page.tsx:916"
     ]
   },
   "Créez votre compte": {
@@ -5996,6 +6079,11 @@
       "packages/templates/catalog/crm.json"
     ]
   },
+  "croissant": {
+    "where": [
+      "components/app/automation-steps.tsx:1230"
+    ]
+  },
   "Croix": {
     "where": [
       "lib/option-icons.ts:192"
@@ -6010,7 +6098,7 @@
   },
   "csv excel fichier charger||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1173"
+      "components/app/command-palette.tsx:1174"
     ]
   },
   "Ctrl+C": {
@@ -6072,18 +6160,18 @@
   },
   "dans {label}": {
     "where": [
-      "components/app/automation-steps.tsx:130"
+      "components/app/automation-steps.tsx:138"
     ]
   },
   "Dans {table}": {
     "where": [
-      "components/app/automation-flow.tsx:524"
+      "components/app/automation-flow.tsx:603"
     ]
   },
   "Dans {table}{value}": {
     "where": [
-      "lib/automations.ts:852",
-      "lib/automations.ts:859"
+      "lib/automations.ts:1123",
+      "lib/automations.ts:1131"
     ]
   },
   "Dans basedb": {
@@ -6098,12 +6186,17 @@
   },
   "Dans cette table ou une autre": {
     "where": [
-      "lib/automations.ts:162"
+      "lib/automations.ts:216"
     ]
   },
   "Dans Google Agenda : Paramètres de l’agenda → « Adresse secrète au format iCal ».": {
     "where": [
       "components/app/integrations.tsx:64"
+    ]
+  },
+  "Dans l’ordre de": {
+    "where": [
+      "components/app/automation-steps.tsx:1211"
     ]
   },
   "Dans le canal #ventes": {
@@ -6113,12 +6206,17 @@
   },
   "Dans le langage des filtres ; vide : n’importe quelle ligne.": {
     "where": [
-      "components/app/automation-steps.tsx:655"
+      "components/app/automation-steps.tsx:667"
+    ]
+  },
+  "Dans le langage des filtres ; vide : toutes les lignes.": {
+    "where": [
+      "components/app/automation-steps.tsx:1200"
     ]
   },
   "Dans le langage des filtres. Vide : le chemin est pris dès que la ligne existe — après « Chercher une ligne », quand elle a trouvé.": {
     "where": [
-      "components/app/automation-steps.tsx:1332"
+      "components/app/automation-steps.tsx:1682"
     ]
   },
   "Dans les calendriers, le sélecteur de date et la frise chronologique.": {
@@ -6174,9 +6272,19 @@
       "components/app/analytics/filter-editor.tsx:464"
     ]
   },
+  "De 1 à {max} lignes": {
+    "where": [
+      "lib/automations.ts:1233"
+    ]
+  },
+  "De 1 à {max} lignes par exécution. Pour traiter les suivantes à la prochaine, faites sortir du filtre celles qui sont traitées — une case « relancée », une date.": {
+    "where": [
+      "components/app/automation-steps.tsx:1241"
+    ]
+  },
   "De l’instance": {
     "where": [
-      "components/app/template-gallery.tsx:405"
+      "components/app/template-gallery.tsx:406"
     ]
   },
   "de…": {
@@ -6206,8 +6314,8 @@
   },
   "Déclencheur": {
     "where": [
-      "components/app/automation-steps.tsx:430",
-      "components/app/automations.tsx:688"
+      "components/app/automation-steps.tsx:441",
+      "components/app/automations.tsx:689"
     ]
   },
   "Décochez pour masquer, glissez pour ordonner.": {
@@ -6223,7 +6331,7 @@
   },
   "Décrire le besoin à l’IA": {
     "where": [
-      "components/app/template-gallery.tsx:346"
+      "components/app/template-gallery.tsx:347"
     ]
   },
   "Décrivez ce que la base doit faire d’elle-même, demandez une étape, une condition, ou pourquoi une exécution a échoué.": {
@@ -6233,12 +6341,13 @@
   },
   "Décrivez ce que vous voulez gérer : « les réclamations de mes clients, avec une analyse du ton »": {
     "where": [
-      "components/app/template-gallery.tsx:343"
+      "components/app/template-gallery.tsx:344"
     ]
   },
   "décroissant": {
     "where": [
-      "components/app/automation-steps.tsx:686"
+      "components/app/automation-steps.tsx:698",
+      "components/app/automation-steps.tsx:1231"
     ]
   },
   "défaut": {
@@ -6248,13 +6357,13 @@
   },
   "Déjà un compte ?": {
     "where": [
-      "app/invitation/[token]/page.tsx:201",
+      "app/invitation/[token]/page.tsx:202",
       "components/signup.tsx:48"
     ]
   },
   "Délier": {
     "where": [
-      "components/app/settings/profile-tab.tsx:357"
+      "components/app/settings/profile-tab.tsx:358"
     ]
   },
   "Demain": {
@@ -6269,7 +6378,7 @@
   },
   "Demande de confirmer un mot de passe, et votre compte n’en a pas.": {
     "where": [
-      "components/app/settings/profile-tab.tsx:345"
+      "components/app/settings/profile-tab.tsx:346"
     ]
   },
   "Demandé pour créer ou révoquer un jeton : ouvrir une porte vers l’extérieur exige une preuve récente.": {
@@ -6280,12 +6389,12 @@
   "Demander à l’IA": {
     "where": [
       "components/product-glimpse.tsx:259",
-      "lib/automations.ts:156"
+      "lib/automations.ts:209"
     ]
   },
   "Demander au Copilot : « {question} »": {
     "where": [
-      "components/app/command-palette.tsx:1449"
+      "components/app/command-palette.tsx:1450"
     ]
   },
   "Demander un nouveau lien": {
@@ -6378,7 +6487,7 @@
   },
   "Dépliez une base dans le panneau de gauche, puis ouvrez l’une de ses tables.": {
     "where": [
-      "app/page.tsx:962"
+      "app/page.tsx:967"
     ]
   },
   "Déposez un fichier ici, ou cliquez pour le choisir": {
@@ -6398,7 +6507,7 @@
   },
   "Dernier envoi : {value}{value2} — {format}": {
     "where": [
-      "components/app/webhook-dialog.tsx:238"
+      "components/app/webhook-dialog.tsx:254"
     ]
   },
   "Dernier incident{value} : {last_error}": {
@@ -6424,7 +6533,7 @@
   },
   "Derniers envois": {
     "where": [
-      "components/app/webhook-dialog.tsx:298"
+      "components/app/webhook-dialog.tsx:314"
     ]
   },
   "Déroulé": {
@@ -6449,7 +6558,7 @@
   },
   "Des chemins selon ce que dit une ligne": {
     "where": [
-      "lib/automations.ts:169"
+      "lib/automations.ts:223"
     ]
   },
   "Des données ont été écrites depuis l’export : refaites l’export avant de purger.": {
@@ -6499,7 +6608,7 @@
   },
   "Des valeurs sont invalides.": {
     "where": [
-      "lib/automations.ts:1140"
+      "lib/automations.ts:1440"
     ]
   },
   "Des valeurs sont refusées par l’environnement cible (choix absent, champ obligatoire…) : reportez d’abord la structure.": {
@@ -6510,13 +6619,13 @@
   "Désactivé": {
     "where": [
       "components/app/admin/users-tab.tsx:184",
-      "components/app/analytics/share-dashboard-dialog.tsx:45",
-      "components/app/views/share-dialog.tsx:61"
+      "components/app/analytics/share-dashboard-dialog.tsx:46",
+      "components/app/views/share-dialog.tsx:62"
     ]
   },
   "Désactiver {label}": {
     "where": [
-      "components/app/automations.tsx:291"
+      "components/app/automations.tsx:292"
     ]
   },
   "Désactiver ce compte ?": {
@@ -6542,18 +6651,18 @@
   },
   "Descendre l’étape": {
     "where": [
-      "components/app/automations.tsx:727",
-      "components/app/automations.tsx:733"
+      "components/app/automations.tsx:728",
+      "components/app/automations.tsx:734"
     ]
   },
   "Descendre le chemin {label}": {
     "where": [
-      "components/app/automation-steps.tsx:1243"
+      "components/app/automation-steps.tsx:1592"
     ]
   },
   "Description": {
     "where": [
-      "components/app/automation-steps.tsx:554",
+      "components/app/automation-steps.tsx:565",
       "components/app/description.tsx:83"
     ]
   },
@@ -6564,7 +6673,7 @@
   },
   "Description de l’automatisation": {
     "where": [
-      "components/app/automation-steps.tsx:559"
+      "components/app/automation-steps.tsx:570"
     ]
   },
   "Description de la vue": {
@@ -6634,7 +6743,7 @@
   },
   "Deux étapes portent l’identifiant « {d} ».": {
     "where": [
-      "lib/automations.ts:1155"
+      "lib/automations.ts:1455"
     ]
   },
   "Deux nombres pour les axes ; un troisième, s’il y est, donne la taille des points.": {
@@ -6738,14 +6847,14 @@
   },
   "Documentation API et MCP": {
     "where": [
-      "app/page.tsx:102",
+      "app/page.tsx:103",
       "components/app/sidebar.tsx:636",
       "components/app/sidebar.tsx:802"
     ]
   },
   "Documentation API et MCP de « {base} »": {
     "where": [
-      "components/app/command-palette.tsx:1101"
+      "components/app/command-palette.tsx:1102"
     ]
   },
   "Dollar": {
@@ -6776,14 +6885,24 @@
       "components/app/views/view-dialog.tsx:744"
     ]
   },
+  "Donnez la valeur secrète de « {name} »": {
+    "where": [
+      "lib/automations.ts:755"
+    ]
+  },
+  "Donnez la valeur secrète de l’en-tête « {d} ».": {
+    "where": [
+      "lib/automations.ts:1475"
+    ]
+  },
   "Donnez un nom à l’automatisation.": {
     "where": [
-      "lib/automations.ts:1118"
+      "lib/automations.ts:1418"
     ]
   },
   "Donnez votre accord à l’envoi au fournisseur d’IA de ce que la consigne cite.": {
     "where": [
-      "lib/automations.ts:1162"
+      "lib/automations.ts:1462"
     ]
   },
   "Dossier": {
@@ -6833,7 +6952,7 @@
   },
   "droits accès membres invitations||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1345"
+      "components/app/command-palette.tsx:1346"
     ]
   },
   "Droits des champs de {label}": {
@@ -6928,12 +7047,12 @@
   },
   "Écartée : {value}": {
     "where": [
-      "lib/automations.ts:1040"
+      "lib/automations.ts:1320"
     ]
   },
   "Échap": {
     "where": [
-      "components/app/command-palette.tsx:1875"
+      "components/app/command-palette.tsx:1876"
     ]
   },
   "échéance": {
@@ -6954,7 +7073,7 @@
   "Échec": {
     "where": [
       "components/app/proposal-dialog.tsx:48",
-      "components/app/webhook-dialog.tsx:46"
+      "components/app/webhook-dialog.tsx:47"
     ]
   },
   "Échec — réessayer": {
@@ -6964,12 +7083,12 @@
   },
   "échec : {replace}": {
     "where": [
-      "lib/automations.ts:1081"
+      "lib/automations.ts:1361"
     ]
   },
   "échec ({code})": {
     "where": [
-      "lib/automations.ts:1080"
+      "lib/automations.ts:1360"
     ]
   },
   "Échec ({value})": {
@@ -6997,7 +7116,7 @@
   },
   "Échouée{value}": {
     "where": [
-      "lib/automations.ts:1044"
+      "lib/automations.ts:1324"
     ]
   },
   "Éclair rapide": {
@@ -7017,14 +7136,14 @@
   },
   "Écrire": {
     "where": [
-      "components/app/automation-steps.tsx:608",
-      "components/app/automation-steps.tsx:629",
+      "components/app/automation-steps.tsx:620",
+      "components/app/automation-steps.tsx:641",
       "components/app/markdown-text.tsx:528"
     ]
   },
   "Écrire des valeurs dans la ligne, ou dans celle d’une étape": {
     "where": [
-      "lib/automations.ts:161"
+      "lib/automations.ts:215"
     ]
   },
   "Écrire en Markdown…": {
@@ -7065,7 +7184,7 @@
   },
   "Écrivez la consigne de l’étape IA.": {
     "where": [
-      "lib/automations.ts:1156"
+      "lib/automations.ts:1456"
     ]
   },
   "Écrivez une requête, puis Ctrl+Entrée.": {
@@ -7080,7 +7199,7 @@
   },
   "Écrivez votre question : le Copilot y répond avec vos données.": {
     "where": [
-      "components/app/command-palette.tsx:1951"
+      "components/app/command-palette.tsx:1952"
     ]
   },
   "Éditeur": {
@@ -7160,7 +7279,7 @@
   },
   "Elle a expiré, a déjà servi ou a été annulée. Demandez un nouveau lien à la personne qui vous a invité.": {
     "where": [
-      "app/invitation/[token]/page.tsx:117"
+      "app/invitation/[token]/page.tsx:118"
     ]
   },
   "Elle disparaît de la base pour tout le monde, scripts et outils compris. Les tables qu’elle lit ne sont pas touchées.": {
@@ -7250,7 +7369,7 @@
     "where": [
       "components/app/proposal-dialog.tsx:37",
       "components/app/proposal-dialog.tsx:346",
-      "components/app/webhook-dialog.tsx:43"
+      "components/app/webhook-dialog.tsx:44"
     ]
   },
   "En bas": {
@@ -7258,10 +7377,15 @@
       "components/app/analytics/viz-settings.tsx:597"
     ]
   },
+  "En clair : visible, peut citer une valeur": {
+    "where": [
+      "components/app/automation-steps.tsx:1103"
+    ]
+  },
   "En cours": {
     "where": [
       "components/app/proposal-dialog.tsx:40",
-      "components/app/webhook-dialog.tsx:44",
+      "components/app/webhook-dialog.tsx:45",
       "components/product-glimpse.tsx:881"
     ]
   },
@@ -7272,7 +7396,7 @@
   },
   "en gestion": {
     "where": [
-      "app/invitation/[token]/page.tsx:33"
+      "app/invitation/[token]/page.tsx:34"
     ]
   },
   "En haut": {
@@ -7282,7 +7406,7 @@
   },
   "en lecture": {
     "where": [
-      "app/invitation/[token]/page.tsx:31"
+      "app/invitation/[token]/page.tsx:32"
     ]
   },
   "en lecture seule": {
@@ -7292,12 +7416,12 @@
   },
   "en modification": {
     "where": [
-      "app/invitation/[token]/page.tsx:32"
+      "app/invitation/[token]/page.tsx:33"
     ]
   },
   "En pause": {
     "where": [
-      "components/app/command-palette.tsx:911",
+      "components/app/command-palette.tsx:912",
       "lib/option-icons.ts:185"
     ]
   },
@@ -7313,7 +7437,7 @@
   },
   "En texte simple, un courriel par destinataire — personne ne voit les autres adresses. Une réponse arrive à la personne qui possède l’automatisation. 20 destinataires au plus.": {
     "where": [
-      "components/app/automation-steps.tsx:1091"
+      "components/app/automation-steps.tsx:1440"
     ]
   },
   "En-tête": {
@@ -7321,10 +7445,20 @@
       "components/app/views/view-dialog.tsx:1190"
     ]
   },
+  "En-tête||en-tête HTTP": {
+    "where": [
+      "components/app/automation-steps.tsx:1010"
+    ]
+  },
+  "En-têtes": {
+    "where": [
+      "components/app/automation-steps.tsx:976"
+    ]
+  },
   "Enregistré": {
     "where": [
       "components/app/admin/signup-settings.tsx:107",
-      "components/app/settings/profile-tab.tsx:146"
+      "components/app/settings/profile-tab.tsx:147"
     ]
   },
   "Enregistrement": {
@@ -7427,7 +7561,7 @@
   },
   "Enregistrez d’abord : l’essai exécute ce qui est enregistré": {
     "where": [
-      "components/app/automations.tsx:886"
+      "components/app/automations.tsx:902"
     ]
   },
   "Entier": {
@@ -7457,19 +7591,24 @@
       "components/app/expression-editor.tsx:297"
     ]
   },
+  "Entre guillemets, une citation est du texte ; hors guillemets, une valeur : un nombre, oui ou non, une liste.": {
+    "where": [
+      "components/app/automation-steps.tsx:941"
+    ]
+  },
   "Entrée pour l’ouvrir, Tab pour chercher dedans.": {
     "where": [
-      "components/app/command-palette.tsx:2194"
+      "components/app/command-palette.tsx:2195"
     ]
   },
   "Entrée pour l’ouvrir.": {
     "where": [
-      "components/app/command-palette.tsx:2197"
+      "components/app/command-palette.tsx:2198"
     ]
   },
   "Entrée pour lancer la commande.": {
     "where": [
-      "components/app/command-palette.tsx:2196"
+      "components/app/command-palette.tsx:2197"
     ]
   },
   "Entrée pour valider · Maj + Entrée pour aller à la ligne": {
@@ -7479,7 +7618,7 @@
   },
   "Entrée pour voir tous les résultats de ce groupe.": {
     "where": [
-      "components/app/command-palette.tsx:1686"
+      "components/app/command-palette.tsx:1687"
     ]
   },
   "Entreprise": {
@@ -7535,6 +7674,11 @@
       "lib/option-icons.ts:236"
     ]
   },
+  "Envoyé tel quel, chaque citation remplacée par sa valeur.": {
+    "where": [
+      "components/app/automation-steps.tsx:945"
+    ]
+  },
   "Envoyer": {
     "where": [
       "components/app/analytics/dashboard-copilot.tsx:524",
@@ -7545,17 +7689,17 @@
   "Envoyer sur Slack": {
     "where": [
       "components/product-glimpse.tsx:279",
-      "lib/automations.ts:155"
+      "lib/automations.ts:208"
     ]
   },
   "Envoyer un commentaire, enregistrer une description": {
     "where": [
-      "components/app/command-palette.tsx:2330"
+      "components/app/command-palette.tsx:2331"
     ]
   },
   "Envoyer un courriel": {
     "where": [
-      "lib/automations.ts:153"
+      "lib/automations.ts:206"
     ]
   },
   "Envoyer une autre réponse": {
@@ -7605,7 +7749,7 @@
   },
   "Essayez basedb": {
     "where": [
-      "components/login.tsx:156"
+      "components/login.tsx:157"
     ]
   },
   "Essayez une autre recherche ou ajustez vos filtres pour retrouver vos données.": {
@@ -7651,7 +7795,7 @@
   },
   "et ces adresses": {
     "where": [
-      "components/app/automation-steps.tsx:1062"
+      "components/app/automation-steps.tsx:1411"
     ]
   },
   "Et changer la structure, créer des jetons": {
@@ -7661,12 +7805,12 @@
   },
   "Et changer la structure, partager": {
     "where": [
-      "components/app/share-access-dialog.tsx:45"
+      "components/app/share-access-dialog.tsx:46"
     ]
   },
   "et la personne du champ": {
     "where": [
-      "components/app/automation-steps.tsx:741"
+      "components/app/automation-steps.tsx:753"
     ]
   },
   "Étapes": {
@@ -7754,7 +7898,7 @@
   },
   "Exécutions": {
     "where": [
-      "components/app/automations.tsx:631"
+      "components/app/automations.tsx:632"
     ]
   },
   "Exemple :": {
@@ -7774,7 +7918,7 @@
   },
   "exemple démo essai||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1146"
+      "components/app/command-palette.tsx:1147"
     ]
   },
   "exemple.fr, autre.fr — vide : toutes les adresses": {
@@ -7887,7 +8031,7 @@
   },
   "Facultatif — évalué sur la ligne au moment d’agir. Non rempli : l’exécution est écartée, et le dit.": {
     "where": [
-      "components/app/automation-steps.tsx:539"
+      "components/app/automation-steps.tsx:550"
     ]
   },
   "Facultatif. Production est l’environnement par défaut ; les autres en reçoivent une copie de la structure.": {
@@ -7904,7 +8048,7 @@
     "where": [
       "components/product-glimpse.tsx:271",
       "components/product-glimpse.tsx:281",
-      "lib/automations.ts:1111"
+      "lib/automations.ts:1411"
     ]
   },
   "Fanion": {
@@ -7914,14 +8058,14 @@
   },
   "Fermé": {
     "where": [
-      "components/app/views/share-dialog.tsx:62"
+      "components/app/views/share-dialog.tsx:63"
     ]
   },
   "Fermer": {
     "where": [
-      "app/page.tsx:1251",
+      "app/page.tsx:1256",
       "components/app/analytics/dashboard-view.tsx:839",
-      "components/app/analytics/share-dashboard-dialog.tsx:430"
+      "components/app/analytics/share-dashboard-dialog.tsx:431"
     ]
   },
   "Fermer {label}": {
@@ -7941,13 +8085,13 @@
   },
   "Fermer l’onglet": {
     "where": [
-      "components/app/command-palette.tsx:1221",
-      "components/app/command-palette.tsx:2311"
+      "components/app/command-palette.tsx:1222",
+      "components/app/command-palette.tsx:2312"
     ]
   },
   "Fermer le": {
     "where": [
-      "components/app/views/share-dialog.tsx:578"
+      "components/app/views/share-dialog.tsx:579"
     ]
   },
   "Fermer le copilot": {
@@ -7959,12 +8103,12 @@
   },
   "Fermer le Copilot": {
     "where": [
-      "components/app/command-palette.tsx:1282"
+      "components/app/command-palette.tsx:1283"
     ]
   },
   "Fermer le message": {
     "where": [
-      "components/app/automations.tsx:577"
+      "components/app/automations.tsx:578"
     ]
   },
   "Fermer les autres": {
@@ -7974,7 +8118,7 @@
   },
   "Fermer les autres onglets": {
     "where": [
-      "components/app/command-palette.tsx:1246"
+      "components/app/command-palette.tsx:1247"
     ]
   },
   "Fermer les réglages du filtre": {
@@ -7984,12 +8128,12 @@
   },
   "Fermer tous les onglets": {
     "where": [
-      "components/app/command-palette.tsx:1251"
+      "components/app/command-palette.tsx:1252"
     ]
   },
   "Fermer un onglet": {
     "where": [
-      "components/app/command-palette.tsx:2314"
+      "components/app/command-palette.tsx:2315"
     ]
   },
   "Feuille": {
@@ -8071,9 +8215,14 @@
       "components/app/analytics/sql-question.tsx:33"
     ]
   },
+  "Filtre de la boucle": {
+    "where": [
+      "components/app/automation-steps.tsx:1207"
+    ]
+  },
   "Filtre de la recherche": {
     "where": [
-      "components/app/automation-steps.tsx:662"
+      "components/app/automation-steps.tsx:674"
     ]
   },
   "Filtre de la règle {value}": {
@@ -8088,7 +8237,7 @@
   },
   "Filtre illisible : « champ opérateur valeur », reliés par and, or — eq, ne, gt, gte, lt, lte, contains, in, is_null…": {
     "where": [
-      "lib/automations.ts:551"
+      "lib/automations.ts:690"
     ]
   },
   "Filtre illisible : cette règle ne colorera rien.": {
@@ -8230,7 +8379,7 @@
   },
   "Flux iCalendar, pour s’abonner à la vue depuis Google Agenda (« Autres agendas » → « À partir de l’URL »), Outlook ou Calendrier :": {
     "where": [
-      "components/app/views/share-dialog.tsx:555"
+      "components/app/views/share-dialog.tsx:556"
     ]
   },
   "Fonction": {
@@ -8271,6 +8420,11 @@
   "Format d’affichage": {
     "where": [
       "components/app/schema-editor.tsx:1168"
+    ]
+  },
+  "Format de corps inconnu : « {d} ».": {
+    "where": [
+      "lib/automations.ts:1468"
     ]
   },
   "Format de page": {
@@ -8336,22 +8490,22 @@
   "Fréquence": {
     "where": [
       "components/app/ai-field.tsx:484",
-      "components/app/automation-steps.tsx:482"
+      "components/app/automation-steps.tsx:493"
     ]
   },
   "Fuseau": {
     "where": [
-      "components/app/automation-steps.tsx:510"
+      "components/app/automation-steps.tsx:521"
     ]
   },
   "Fuseau horaire": {
     "where": [
-      "components/app/automation-steps.tsx:514"
+      "components/app/automation-steps.tsx:525"
     ]
   },
   "Fuseau horaire inconnu.": {
     "where": [
-      "lib/automations.ts:1123",
+      "lib/automations.ts:1423",
       "lib/messages.ts:247"
     ]
   },
@@ -8456,19 +8610,19 @@
   },
   "graphiques statistiques indicateurs||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1071"
+      "components/app/command-palette.tsx:1072"
     ]
   },
   "Gras": {
     "where": [
-      "components/app/command-palette.tsx:2331",
+      "components/app/command-palette.tsx:2332",
       "components/app/markdown-text.tsx:311",
       "components/app/rich-text-editor.tsx:297"
     ]
   },
   "Grille": {
     "where": [
-      "components/app/command-palette.tsx:2318",
+      "components/app/command-palette.tsx:2319",
       "lib/views.ts:83"
     ]
   },
@@ -8514,7 +8668,7 @@
   },
   "header : X-Basedb-Signature, « t=1758204180,v1=… » ; body : le corps BRUT reçu.": {
     "where": [
-      "components/app/webhook-dialog.tsx:67"
+      "components/app/webhook-dialog.tsx:68"
     ]
   },
   "hérité": {
@@ -8525,7 +8679,7 @@
   "Heure": {
     "where": [
       "components/app/ai-field.tsx:571",
-      "components/app/automation-steps.tsx:505",
+      "components/app/automation-steps.tsx:516",
       "components/app/date-picker.tsx:349"
     ]
   },
@@ -8536,7 +8690,7 @@
   },
   "Heure invalide.": {
     "where": [
-      "lib/automations.ts:1122"
+      "lib/automations.ts:1422"
     ]
   },
   "heure||unité de temps": {
@@ -8546,7 +8700,7 @@
   },
   "Heureux de vous retrouver": {
     "where": [
-      "components/login.tsx:36"
+      "components/login.tsx:37"
     ]
   },
   "Hier": {
@@ -8564,14 +8718,14 @@
   },
   "Historique": {
     "where": [
-      "app/page.tsx:98",
+      "app/page.tsx:99",
       "components/app/history.tsx:443",
       "components/app/history.tsx:456"
     ]
   },
   "Historique de « {base} »": {
     "where": [
-      "components/app/command-palette.tsx:1055"
+      "components/app/command-palette.tsx:1056"
     ]
   },
   "hooks.slack.com {hint}": {
@@ -8591,7 +8745,7 @@
   },
   "HTTP {response_code}": {
     "where": [
-      "components/app/webhook-dialog.tsx:440"
+      "components/app/webhook-dialog.tsx:485"
     ]
   },
   "IA": {
@@ -8603,7 +8757,7 @@
   },
   "ia assistant intelligence artificielle||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1286"
+      "components/app/command-palette.tsx:1287"
     ]
   },
   "Idée": {
@@ -8614,13 +8768,13 @@
   "Identifiant": {
     "where": [
       "lib/analytics/model.ts:62",
-      "lib/automations.ts:459",
-      "lib/automations.ts:487"
+      "lib/automations.ts:591",
+      "lib/automations.ts:626"
     ]
   },
   "Identifiant d’étape invalide : « {d} ».": {
     "where": [
-      "lib/automations.ts:1154"
+      "lib/automations.ts:1454"
     ]
   },
   "Identifiant de l’utilisateur qui a créé la ligne.": {
@@ -8715,7 +8869,7 @@
   },
   "Il répond sur « {base} », et propose filtres, requêtes et modifications": {
     "where": [
-      "components/app/command-palette.tsx:1450"
+      "components/app/command-palette.tsx:1451"
     ]
   },
   "Il y a {days} j": {
@@ -8750,7 +8904,7 @@
   },
   "Illimité": {
     "where": [
-      "components/app/views/share-dialog.tsx:595"
+      "components/app/views/share-dialog.tsx:596"
     ]
   },
   "Image": {
@@ -8823,7 +8977,7 @@
   },
   "Importer": {
     "where": [
-      "components/app/template-gallery.tsx:1241"
+      "components/app/template-gallery.tsx:1239"
     ]
   },
   "Importer {count} lignes": {
@@ -8835,7 +8989,7 @@
   },
   "Importer dans « {table} »": {
     "where": [
-      "components/app/command-palette.tsx:1169"
+      "components/app/command-palette.tsx:1170"
     ]
   },
   "Importer la colonne {column}": {
@@ -8860,12 +9014,12 @@
   },
   "Importer un JSON": {
     "where": [
-      "components/app/template-gallery.tsx:307"
+      "components/app/template-gallery.tsx:308"
     ]
   },
   "Importer un modèle": {
     "where": [
-      "components/app/template-gallery.tsx:1200"
+      "components/app/template-gallery.tsx:1198"
     ]
   },
   "Importer…": {
@@ -8951,7 +9105,7 @@
   },
   "Instance": {
     "where": [
-      "components/app/template-gallery.tsx:556"
+      "components/app/template-gallery.tsx:557"
     ]
   },
   "Intégration non autorisée": {
@@ -8962,19 +9116,19 @@
   },
   "Intégrations": {
     "where": [
-      "app/page.tsx:101",
+      "app/page.tsx:102",
       "components/app/integrations.tsx:94",
       "components/app/sidebar.tsx:641"
     ]
   },
   "Intégrations de « {base} »": {
     "where": [
-      "components/app/command-palette.tsx:1089"
+      "components/app/command-palette.tsx:1090"
     ]
   },
   "Intégré": {
     "where": [
-      "components/app/template-gallery.tsx:81"
+      "components/app/template-gallery.tsx:82"
     ]
   },
   "Interdit": {
@@ -9039,12 +9193,12 @@
   },
   "Inviter à la base « {label} »": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:159"
+      "components/app/analytics/share-dashboard-dialog.tsx:160"
     ]
   },
   "Invitez des personnes à la base, ou donnez un lien vers ce seul tableau de bord.": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:149"
+      "components/app/analytics/share-dashboard-dialog.tsx:150"
     ]
   },
   "Invitez des personnes dans ce projet : elles accèdent à toutes ses bases.": {
@@ -9059,14 +9213,14 @@
   },
   "Italique": {
     "where": [
-      "components/app/command-palette.tsx:2332",
+      "components/app/command-palette.tsx:2333",
       "components/app/markdown-text.tsx:312",
       "components/app/rich-text-editor.tsx:303"
     ]
   },
   "J’accepte qu’à chaque exécution, ce que cite cette consigne soit envoyé au fournisseur d’IA configuré sur cette instance.": {
     "where": [
-      "components/app/automation-steps.tsx:907"
+      "components/app/automation-steps.tsx:895"
     ]
   },
   "J’accepte que les valeurs citées par la colonne IA soient envoyées au fournisseur, ligne par ligne.": {
@@ -9129,7 +9283,7 @@
   "Jetons": {
     "where": [
       "components/api-reference/api-docs.tsx:476",
-      "components/app/command-palette.tsx:1314",
+      "components/app/command-palette.tsx:1315",
       "components/app/settings/settings-panel.tsx:34"
     ]
   },
@@ -9187,7 +9341,7 @@
   "Jour": {
     "where": [
       "components/app/analytics/filter-editor.tsx:484",
-      "components/app/automation-steps.tsx:492",
+      "components/app/automation-steps.tsx:503",
       "components/app/views/timeline-view.tsx:49"
     ]
   },
@@ -9214,7 +9368,7 @@
   },
   "jour lumineux blanc||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1256"
+      "components/app/command-palette.tsx:1257"
     ]
   },
   "jour, mois, année": {
@@ -9229,7 +9383,7 @@
   },
   "journal modifications versions||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1060"
+      "components/app/command-palette.tsx:1061"
     ]
   },
   "jours": {
@@ -9260,14 +9414,14 @@
       "components/app/grid/selection-bar.tsx:100"
     ]
   },
-  "JSON : l’automatisation, le déclencheur, la ligne, et ce que les étapes précédentes ont trouvé ou écrit. Adresse": {
-    "where": [
-      "components/app/automation-steps.tsx:797"
-    ]
-  },
   "JSON du modèle": {
     "where": [
-      "components/app/template-gallery.tsx:1211"
+      "components/app/template-gallery.tsx:1209"
+    ]
+  },
+  "JSON invalide : des guillemets doubles autour des clés et des textes, une virgule entre deux valeurs.": {
+    "where": [
+      "lib/automations.ts:738"
     ]
   },
   "Jusqu’au {to}": {
@@ -9287,9 +9441,19 @@
       "packages/templates/catalog/crm.json"
     ]
   },
+  "L’adresse a changé d’hôte : redonnez la valeur de « {name} »": {
+    "where": [
+      "lib/automations.ts:757"
+    ]
+  },
+  "L’adresse a changé d’hôte : redonnez la valeur secrète de l’en-tête « {d} », qui ne part pas ailleurs.": {
+    "where": [
+      "lib/automations.ts:1477"
+    ]
+  },
   "l’adresse du champ": {
     "where": [
-      "components/app/automation-steps.tsx:1050"
+      "components/app/automation-steps.tsx:1399"
     ]
   },
   "L’adresse du webhook entrant vaut autorisation : elle est scellée, et ne sera plus jamais affichée en entier.": {
@@ -9297,10 +9461,15 @@
       "components/app/integrations.tsx:283"
     ]
   },
+  "L’adresse peut citer après son hôte, chaque valeur encodée. Adresse https publique seulement ; 10 secondes au plus ; une réponse autre que 2xx fait échouer l’étape.": {
+    "where": [
+      "components/app/automation-steps.tsx:970"
+    ]
+  },
   "L’ancien lien cessera de fonctionner immédiatement, pour tous ceux qui l’ont reçu.": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:258",
-      "components/app/views/share-dialog.tsx:416"
+      "components/app/analytics/share-dashboard-dialog.tsx:259",
+      "components/app/views/share-dialog.tsx:417"
     ]
   },
   "L’année dernière": {
@@ -9327,7 +9496,7 @@
   },
   "L’API ne répond pas": {
     "where": [
-      "app/page.tsx:842"
+      "app/page.tsx:847"
     ]
   },
   "L’API, le MCP et l’interface suivent d’eux-mêmes ; ce qui casse, c’est ce qui écrit l’ancien nom à la main — un script, un rapport, un modèle dbt —, et ces connexions ne sont pas observables depuis basedb.{value}": {
@@ -9337,12 +9506,27 @@
   },
   "l’automatisation a été supprimée": {
     "where": [
-      "lib/automations.ts:1025"
+      "lib/automations.ts:1305"
     ]
   },
   "l’automatisation était désactivée": {
     "where": [
-      "lib/automations.ts:1024"
+      "lib/automations.ts:1304"
+    ]
+  },
+  "L’automatisation, le déclencheur, la ligne, et ce que les étapes précédentes ont trouvé ou écrit.": {
+    "where": [
+      "components/app/automation-steps.tsx:1036"
+    ]
+  },
+  "L’en-tête « {d} » est donné deux fois.": {
+    "where": [
+      "lib/automations.ts:1472"
+    ]
+  },
+  "L’en-tête « {d} » est fixé par HTTP lui-même.": {
+    "where": [
+      "lib/automations.ts:1471"
     ]
   },
   "L’environnement par défaut": {
@@ -9357,12 +9541,12 @@
   },
   "L’étape {d} n’existe pas, ou n’a pas forcément eu lieu avant celle-ci : elle vient après, ou dans un autre chemin.": {
     "where": [
-      "lib/automations.ts:1129"
+      "lib/automations.ts:1429"
     ]
   },
   "L’étape {d} ne donne pas de ligne.": {
     "where": [
-      "lib/automations.ts:1133"
+      "lib/automations.ts:1433"
     ]
   },
   "L’export préalable à la purge n’a pas pu être écrit ou relu.": {
@@ -9375,6 +9559,12 @@
       "lib/messages.ts:108"
     ]
   },
+  "L’hôte de l’adresse s’écrit en toutes lettres, sans citation.": {
+    "where": [
+      "lib/automations.ts:748",
+      "lib/automations.ts:1466"
+    ]
+  },
   "L’IA n’est pas activée sur cette instance.": {
     "where": [
       "lib/messages.ts:144"
@@ -9384,14 +9574,14 @@
     "one": "L’IA n’est pas configurée : {count} champ IA créé comme un champ ordinaire, avec ses valeurs d’exemple.",
     "other": "L’IA n’est pas configurée : {count} champs IA créés comme des champs ordinaires, avec leurs valeurs d’exemple.",
     "where": [
-      "lib/templates.ts:597"
+      "lib/templates.ts:53"
     ]
   },
   "L’IA n’est pas configurée : {count} champs IA créés comme des champs ordinaires.": {
     "one": "L’IA n’est pas configurée : {count} champ IA créé comme un champ ordinaire.",
     "other": "L’IA n’est pas configurée : {count} champs IA créés comme des champs ordinaires.",
     "where": [
-      "lib/templates.ts:602"
+      "lib/templates.ts:58"
     ]
   },
   "L’IA n’est pas disponible dans la version de démo.": {
@@ -9406,7 +9596,7 @@
   },
   "L’objet est vide, trop long, ou sur plusieurs lignes.": {
     "where": [
-      "lib/automations.ts:1150"
+      "lib/automations.ts:1450"
     ]
   },
   "la base": {
@@ -9416,7 +9606,7 @@
   },
   "la base « {label} » du projet « {project} »": {
     "where": [
-      "app/invitation/[token]/page.tsx:49"
+      "app/invitation/[token]/page.tsx:50"
     ]
   },
   "La base de démonstration. Atelier Lumen est une agence de design fictive. Sa base montre les relations entre tables, les recherches et cumuls (chiffre d'affaires par client, note moyenne), les formules (montant TTC, retard), trois champs calculés par l'IA sur les avis clients (sentiment, thème, réponse suggérée), chaque sorte de vue — grille, kanban, calendrier, chronologie avec dépendances, galerie, liste, formulaire —, un tableau de bord et deux automatisations.": {
@@ -9424,14 +9614,14 @@
       "packages/templates/catalog/demo.json"
     ]
   },
-  "La base est créée, mais incomplète : {e}": {
-    "where": [
-      "components/app/template-gallery.tsx:957"
-    ]
-  },
   "La base est créée, mais pas tous ses environnements : {e}": {
     "where": [
       "components/app/base-menu.tsx:381"
+    ]
+  },
+  "La base n’a pas été créée : {e}": {
+    "where": [
+      "components/app/template-gallery.tsx:959"
     ]
   },
   "La bonne réponse : {answer}": {
@@ -9457,7 +9647,7 @@
   },
   "la condition n’était pas remplie": {
     "where": [
-      "lib/automations.ts:1022"
+      "lib/automations.ts:1302"
     ]
   },
   "La connexion a expiré ou a été interrompue : recommencez.": {
@@ -9487,7 +9677,7 @@
   },
   "La décrire au Copilot": {
     "where": [
-      "components/app/automations.tsx:312"
+      "components/app/automations.tsx:313"
     ]
   },
   "la fiche": {
@@ -9533,22 +9723,22 @@
   },
   "La ligne à modifier": {
     "where": [
-      "components/app/automation-steps.tsx:606"
+      "components/app/automation-steps.tsx:618"
     ]
   },
   "La ligne déclencheuse": {
     "where": [
-      "lib/automations.ts:456"
+      "lib/automations.ts:588"
     ]
   },
   "La ligne déclencheuse ({table})": {
     "where": [
-      "lib/automations.ts:423"
+      "lib/automations.ts:546"
     ]
   },
   "La ligne envoyée": {
     "where": [
-      "components/app/automation-steps.tsx:792"
+      "components/app/automation-steps.tsx:1032"
     ]
   },
   "La ligne liée n’existe pas, ou n’est pas visible.": {
@@ -9558,17 +9748,17 @@
   },
   "la ligne n’existe plus": {
     "where": [
-      "lib/automations.ts:1023"
+      "lib/automations.ts:1303"
     ]
   },
   "La ligne qui": {
     "where": [
-      "components/app/automation-steps.tsx:654"
+      "components/app/automation-steps.tsx:666"
     ]
   },
   "La ligne testée": {
     "where": [
-      "components/app/automation-steps.tsx:1328"
+      "components/app/automation-steps.tsx:1678"
     ]
   },
   "La liste des valeurs, une par ligne liée, dans leur ordre.": {
@@ -9614,7 +9804,7 @@
   },
   "la personne du champ": {
     "where": [
-      "components/app/automation-steps.tsx:1040"
+      "components/app/automation-steps.tsx:1389"
     ]
   },
   "La personne pour qui l’agent agit, ou son jeton, n’a plus le droit de faire cette modification.": {
@@ -9639,24 +9829,24 @@
   },
   "la personne qui l’a publié": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:395",
-      "components/app/views/share-dialog.tsx:623"
+      "components/app/analytics/share-dashboard-dialog.tsx:396",
+      "components/app/views/share-dialog.tsx:624"
     ]
   },
   "La personne qui l’a publié": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:291",
-      "components/app/views/share-dialog.tsx:449"
+      "components/app/analytics/share-dashboard-dialog.tsx:292",
+      "components/app/views/share-dialog.tsx:450"
     ]
   },
   "La personne se connecte d’abord ; sa réponse porte son nom.": {
     "where": [
-      "components/app/views/share-dialog.tsx:121"
+      "components/app/views/share-dialog.tsx:122"
     ]
   },
   "La personne se connecte d’abord pour lire {subject}.": {
     "where": [
-      "components/app/views/share-dialog.tsx:120"
+      "components/app/views/share-dialog.tsx:121"
     ]
   },
   "La plus grande d’abord": {
@@ -9671,7 +9861,7 @@
   },
   "La première ligne qui répond à un filtre": {
     "where": [
-      "lib/automations.ts:163"
+      "lib/automations.ts:217"
     ]
   },
   "La production est la base elle-même : elle se supprime avec la base, pas seule.": {
@@ -9773,7 +9963,7 @@
   },
   "La table « {d} » n’existe pas, ou plus.": {
     "where": [
-      "lib/automations.ts:1120"
+      "lib/automations.ts:1420"
     ]
   },
   "la table {label}": {
@@ -9788,7 +9978,7 @@
   },
   "La table est vide.": {
     "where": [
-      "components/app/automations.tsx:952"
+      "components/app/automations.tsx:968"
     ]
   },
   "La table n’a pas de liste de choix.": {
@@ -9809,6 +9999,11 @@
   "La valeur « {value} » apparaît deux fois.": {
     "where": [
       "lib/options.ts:227"
+    ]
+  },
+  "La valeur de l’en-tête « {d} » est trop longue, ou sur plusieurs lignes.": {
+    "where": [
+      "lib/automations.ts:1474"
     ]
   },
   "La valeur du champ sur la ligne liée.": {
@@ -9834,7 +10029,7 @@
   "la vue": {
     "where": [
       "components/app/sidebar.tsx:1099",
-      "components/app/views/share-dialog.tsx:91"
+      "components/app/views/share-dialog.tsx:92"
     ]
   },
   "La vue cite un champ inconnu : il a peut-être été supprimé.": {
@@ -9870,8 +10065,8 @@
   },
   "Langue de la démo": {
     "where": [
-      "components/login.tsx:204",
-      "components/login.tsx:206"
+      "components/login.tsx:205",
+      "components/login.tsx:207"
     ]
   },
   "Langue des valeurs": {
@@ -9909,7 +10104,7 @@
   },
   "le {day}": {
     "where": [
-      "components/app/automation-steps.tsx:490"
+      "components/app/automation-steps.tsx:501"
     ]
   },
   "le {format}": {
@@ -9919,7 +10114,7 @@
   },
   "Le {value} à {at}": {
     "where": [
-      "components/app/automation-flow.tsx:520"
+      "components/app/automation-flow.tsx:599"
     ]
   },
   "Le {value} de chaque mois à {hour}": {
@@ -9939,7 +10134,7 @@
   },
   "Le champ « {d} » n’existe pas, ou plus.": {
     "where": [
-      "lib/automations.ts:1121"
+      "lib/automations.ts:1421"
     ]
   },
   "le champ {label}": {
@@ -9949,19 +10144,19 @@
   },
   "le champ {userField}": {
     "where": [
-      "lib/automations.ts:866",
-      "lib/automations.ts:874",
-      "lib/automations.ts:877"
+      "lib/automations.ts:1138",
+      "lib/automations.ts:1146",
+      "lib/automations.ts:1149"
     ]
   },
   "Le champ à prévenir doit être un champ Personne.": {
     "where": [
-      "lib/automations.ts:1145"
+      "lib/automations.ts:1445"
     ]
   },
   "Le champ d’adresse doit être un champ E-mail.": {
     "where": [
-      "lib/automations.ts:1146"
+      "lib/automations.ts:1446"
     ]
   },
   "Le champ date de ce calendrier n’existe plus, ou ne vous est pas ouvert.": {
@@ -10011,7 +10206,7 @@
   },
   "Le compte de démonstration est prérempli : connectez-vous pour explorer une base d’exemple.": {
     "where": [
-      "components/login.tsx:159"
+      "components/login.tsx:160"
     ]
   },
   "Le consentement à l’envoi de données au fournisseur n’a pas été donné.": {
@@ -10033,7 +10228,17 @@
   },
   "Le Copilot s’ouvre à droite et reçoit la question. Il lit la structure de la base, pas ses lignes, sauf si vous l’y autorisez ; il propose, et rien ne change avant que vous appliquiez une proposition.": {
     "where": [
-      "components/app/command-palette.tsx:1460"
+      "components/app/command-palette.tsx:1461"
+    ]
+  },
+  "Le corps de la requête est vide.": {
+    "where": [
+      "lib/automations.ts:1483"
+    ]
+  },
+  "Le corps n’est pas un JSON valide.": {
+    "where": [
+      "lib/automations.ts:1485"
     ]
   },
   "Le délai de trente jours est écoulé.": {
@@ -10063,7 +10268,7 @@
   },
   "Le flux de l’automatisation": {
     "where": [
-      "components/app/automation-flow.tsx:688"
+      "components/app/automation-flow.tsx:785"
     ]
   },
   "Le fournisseur d’IA ne répond pas. Réessayez dans un instant.": {
@@ -10109,7 +10314,7 @@
   },
   "Le lien n’a pas pu être copié.": {
     "where": [
-      "components/app/command-palette.tsx:1297"
+      "components/app/command-palette.tsx:1298"
     ]
   },
   "Le même, une question par écran, avec une barre de progression.": {
@@ -10119,17 +10324,17 @@
   },
   "Le message est vide ou trop long.": {
     "where": [
-      "lib/automations.ts:1151"
+      "lib/automations.ts:1451"
     ]
   },
   "Le modèle en est averti ; une réponse qui n’en contient pas fait échouer l’étape.": {
     "where": [
-      "components/app/automation-steps.tsx:863"
+      "components/app/automation-steps.tsx:851"
     ]
   },
   "Le modèle en JSON": {
     "where": [
-      "components/app/template-gallery.tsx:1080"
+      "components/app/template-gallery.tsx:1078"
     ]
   },
   "Le mois dernier": {
@@ -10185,7 +10390,7 @@
   },
   "Le premier chemin dont la condition est remplie est pris, et lui seul ; « Sinon » quand aucun ne l’est. Les chemins se rejoignent ensuite, et le flux continue.": {
     "where": [
-      "components/app/automation-steps.tsx:1199"
+      "components/app/automation-steps.tsx:1548"
     ]
   },
   "Le presse-papiers n’est pas accessible ici.": {
@@ -10195,7 +10400,7 @@
   },
   "le projet « {label} »": {
     "where": [
-      "app/invitation/[token]/page.tsx:48"
+      "app/invitation/[token]/page.tsx:49"
     ]
   },
   "Le projet est vide. Les droits accordés dessus disparaissent avec lui.": {
@@ -10225,12 +10430,12 @@
   },
   "Le site public ne répond pas : modèles intégrés.": {
     "where": [
-      "components/app/template-gallery.tsx:429"
+      "components/app/template-gallery.tsx:430"
     ]
   },
   "le tableau de bord": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:305"
+      "components/app/analytics/share-dashboard-dialog.tsx:306"
     ]
   },
   "Le thème du quiz, et ce qu’on y gagne": {
@@ -10403,7 +10608,7 @@
   },
   "Les 50 dernières, gardées 30 jours. Choisissez-en une pour voir, sur le flux, le chemin qu’elle a pris.": {
     "where": [
-      "components/app/automations.tsx:993"
+      "components/app/automations.tsx:1009"
     ]
   },
   "Les administrateurs ont tous les droits sur tous les projets, et administrent les comptes et les permissions.": {
@@ -10423,7 +10628,7 @@
   },
   "Les cartes se lisent avec les droits de": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:393"
+      "components/app/analytics/share-dashboard-dialog.tsx:394"
     ]
   },
   "Les comptes sont réservés aux adresses {domains}.": {
@@ -10433,7 +10638,7 @@
   },
   "Les créations et les suppressions sont désactivées, et les données reviennent à leur état initial chaque nuit.": {
     "where": [
-      "components/login.tsx:167"
+      "components/login.tsx:168"
     ]
   },
   "Les derniers": {
@@ -10453,6 +10658,11 @@
       "components/app/settings/security-tab.tsx:119"
     ]
   },
+  "Les données de l’automatisation, en JSON": {
+    "where": [
+      "components/app/automation-steps.tsx:1019"
+    ]
+  },
   "Les droits de ce groupe se règlent dans l’onglet Permissions.": {
     "where": [
       "components/app/admin/groups-tab.tsx:181"
@@ -10468,24 +10678,29 @@
       "components/app/environments-dialog.tsx:1179"
     ]
   },
+  "Les étapes de la boucle citent la ligne du tour — {{{id}.champ}} — ou la modifient. Après la boucle, {{{id2}.nombre}} dit combien de lignes elle a parcourues. Une étape qui échoue arrête l’exécution.": {
+    "where": [
+      "components/app/automation-steps.tsx:1292"
+    ]
+  },
   "Les étapes suivantes citent la ligne créée — {{{id}.champ}}, {{{id2}._id}} — ou la modifient.": {
     "where": [
-      "components/app/automation-steps.tsx:952"
+      "components/app/automation-steps.tsx:1301"
     ]
   },
   "Les étapes suivantes citent la ligne trouvée — {{{id}.champ}} — ou la modifient. Rien trouvé : celles qui la modifient sont passées ; une condition peut le tester.": {
     "where": [
-      "components/app/automation-steps.tsx:948"
+      "components/app/automation-steps.tsx:1297"
     ]
   },
   "Les étapes suivantes citent sa réponse : {{{id}.statut}}, {{{id2}.reponse.clé}}.": {
     "where": [
-      "components/app/automation-steps.tsx:943"
+      "components/app/automation-steps.tsx:1287"
     ]
   },
   "Les étapes suivantes citent sa réponse, {{{id}.reponse}} : dans un message, dans une valeur à écrire — un nombre, oui ou non, une date, un choix passent tels quels dans un champ du même type.": {
     "where": [
-      "components/app/automation-steps.tsx:938"
+      "components/app/automation-steps.tsx:1282"
     ]
   },
   "Les groupes se règlent dans l’administration.": {
@@ -10513,9 +10728,14 @@
       "lib/import.ts:241"
     ]
   },
+  "Les lignes qui": {
+    "where": [
+      "components/app/automation-steps.tsx:1199"
+    ]
+  },
   "Les lignes se lisent": {
     "where": [
-      "components/app/views/share-dialog.tsx:620"
+      "components/app/views/share-dialog.tsx:621"
     ]
   },
   "Les lignes se reconnaissent à leur": {
@@ -10530,17 +10750,17 @@
   },
   "Les personnes invitées ouvrent le tableau de bord dans basedb, et chaque carte lit avec leurs propres droits.": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:162"
+      "components/app/analytics/share-dashboard-dialog.tsx:163"
     ]
   },
   "Les réponses s’écrivent": {
     "where": [
-      "components/app/views/share-dialog.tsx:620"
+      "components/app/views/share-dialog.tsx:621"
     ]
   },
   "Les résultats ouverts souvent et récemment remontent en tête.": {
     "where": [
-      "components/app/command-palette.tsx:2360"
+      "components/app/command-palette.tsx:2361"
     ]
   },
   "Les tables restent vides, prêtes pour vos propres données.": {
@@ -10643,7 +10863,7 @@
   },
   "Lié le {linked_at}{value}": {
     "where": [
-      "components/app/settings/profile-tab.tsx:327"
+      "components/app/settings/profile-tab.tsx:328"
     ]
   },
   "Lien": {
@@ -10655,13 +10875,13 @@
   },
   "Lien actif": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:202",
-      "components/app/views/share-dialog.tsx:360"
+      "components/app/analytics/share-dashboard-dialog.tsx:203",
+      "components/app/views/share-dialog.tsx:361"
     ]
   },
   "Lien copié": {
     "where": [
-      "components/app/command-palette.tsx:1296"
+      "components/app/command-palette.tsx:1297"
     ]
   },
   "Lien d’invitation": {
@@ -10676,18 +10896,18 @@
   },
   "Lien de la vue": {
     "where": [
-      "components/app/views/share-dialog.tsx:377"
+      "components/app/views/share-dialog.tsx:378"
     ]
   },
   "Lien du formulaire": {
     "where": [
-      "components/app/views/share-dialog.tsx:377"
+      "components/app/views/share-dialog.tsx:378"
     ]
   },
   "Lien du tableau de bord": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:179",
-      "components/app/analytics/share-dashboard-dialog.tsx:219"
+      "components/app/analytics/share-dashboard-dialog.tsx:180",
+      "components/app/analytics/share-dashboard-dialog.tsx:220"
     ]
   },
   "Lien introuvable": {
@@ -10709,12 +10929,12 @@
   },
   "Lien, dans l’éditeur de texte": {
     "where": [
-      "components/app/command-palette.tsx:2333"
+      "components/app/command-palette.tsx:2334"
     ]
   },
   "Lier": {
     "where": [
-      "components/app/settings/profile-tab.tsx:357"
+      "components/app/settings/profile-tab.tsx:358"
     ]
   },
   "Lieu adresse": {
@@ -10724,7 +10944,7 @@
   },
   "Ligne {id}": {
     "where": [
-      "components/app/command-palette.tsx:397"
+      "components/app/command-palette.tsx:398"
     ]
   },
   "Ligne {row} du fichier : ": {
@@ -10739,7 +10959,7 @@
   },
   "ligne créée": {
     "where": [
-      "lib/automations.ts:1049"
+      "lib/automations.ts:1329"
     ]
   },
   "ligne liée (nom non conservé)": {
@@ -10749,7 +10969,7 @@
   },
   "ligne modifiée": {
     "where": [
-      "lib/automations.ts:1050"
+      "lib/automations.ts:1330"
     ]
   },
   "ligne sans libellé": {
@@ -10760,13 +10980,14 @@
   "ligne trouvée": {
     "where": [
       "components/product-glimpse.tsx:251",
-      "lib/automations.ts:1090"
+      "lib/automations.ts:1386"
     ]
   },
   "lignes": {
     "one": "ligne",
     "other": "lignes",
     "where": [
+      "components/app/automation-steps.tsx:1257",
       "components/product-glimpse.tsx:1358"
     ]
   },
@@ -10774,7 +10995,7 @@
     "where": [
       "components/app/admin/permissions-tab.tsx:445",
       "components/app/analytics/viz-settings.tsx:1342",
-      "components/app/command-palette.tsx:153"
+      "components/app/command-palette.tsx:154"
     ]
   },
   "Lignes — {label}": {
@@ -10790,7 +11011,7 @@
   },
   "Lignes d’exemple de « {label} »…": {
     "where": [
-      "lib/templates.ts:638"
+      "lib/templates.ts:31"
     ]
   },
   "lignes de « {value} » liées par « {relation} »": {
@@ -10837,17 +11058,17 @@
   },
   "Lire ne demande aucun droit sur la base : le lien montre les cartes et les filtres du tableau, sans exploration ni accès aux lignes.": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:181"
+      "components/app/analytics/share-dashboard-dialog.tsx:182"
     ]
   },
   "Lire ne demande aucun droit sur la table : le lien montre les lignes et les champs de la vue, avec son filtre et son tri, sans rien permettre d’y changer.": {
     "where": [
-      "components/app/views/share-dialog.tsx:317"
+      "components/app/views/share-dialog.tsx:318"
     ]
   },
   "Lire un fichier": {
     "where": [
-      "components/app/template-gallery.tsx:1219"
+      "components/app/template-gallery.tsx:1217"
     ]
   },
   "Lissé": {
@@ -10911,7 +11132,7 @@
   },
   "Livrée": {
     "where": [
-      "components/app/webhook-dialog.tsx:45"
+      "components/app/webhook-dialog.tsx:46"
     ]
   },
   "Longitude": {
@@ -10944,7 +11165,7 @@
   "Maintenant": {
     "where": [
       "components/app/date-picker.tsx:366",
-      "lib/automations.ts:493"
+      "lib/automations.ts:632"
     ]
   },
   "Maison": {
@@ -11049,12 +11270,12 @@
   },
   "Meilleur résultat": {
     "where": [
-      "components/app/command-palette.tsx:176"
+      "components/app/command-palette.tsx:177"
     ]
   },
   "Membres connectés": {
     "where": [
-      "components/app/views/share-dialog.tsx:118"
+      "components/app/views/share-dialog.tsx:119"
     ]
   },
   "Mentions": {
@@ -11074,9 +11295,9 @@
   },
   "Message": {
     "where": [
-      "components/app/automation-steps.tsx:753",
-      "components/app/automation-steps.tsx:758",
-      "components/app/automation-steps.tsx:1081"
+      "components/app/automation-steps.tsx:765",
+      "components/app/automation-steps.tsx:770",
+      "components/app/automation-steps.tsx:1430"
     ]
   },
   "Message après l’envoi": {
@@ -11096,14 +11317,14 @@
   },
   "Message Slack": {
     "where": [
-      "components/app/automation-steps.tsx:1144"
+      "components/app/automation-steps.tsx:1493"
     ]
   },
   "Message vide": {
     "where": [
-      "lib/automations.ts:956",
-      "lib/automations.ts:970",
-      "lib/automations.ts:976"
+      "lib/automations.ts:1236",
+      "lib/automations.ts:1250",
+      "lib/automations.ts:1256"
     ]
   },
   "Mesure": {
@@ -11115,6 +11336,16 @@
   "Mesures": {
     "where": [
       "components/app/analytics/viz-settings.tsx:664"
+    ]
+  },
+  "Méthode HTTP": {
+    "where": [
+      "components/app/automation-steps.tsx:955"
+    ]
+  },
+  "Méthode HTTP inconnue : « {d} ».": {
+    "where": [
+      "lib/automations.ts:1467"
     ]
   },
   "Mettre à jour le filtre": {
@@ -11186,12 +11417,12 @@
   },
   "Modèle {label}": {
     "where": [
-      "components/app/template-gallery.tsx:534"
+      "components/app/template-gallery.tsx:535"
     ]
   },
   "Modèle de l’instance": {
     "where": [
-      "components/app/template-gallery.tsx:79"
+      "components/app/template-gallery.tsx:80"
     ]
   },
   "Modèles de document — {label}": {
@@ -11206,7 +11437,7 @@
   },
   "modèles galerie gabarit||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1143"
+      "components/app/command-palette.tsx:1144"
     ]
   },
   "Modifiable": {
@@ -11217,13 +11448,13 @@
   },
   "modification": {
     "where": [
-      "components/app/webhook-dialog.tsx:436"
+      "components/app/webhook-dialog.tsx:481"
     ]
   },
   "Modification": {
     "where": [
-      "components/app/share-access-dialog.tsx:44",
-      "components/app/share-access-dialog.tsx:51"
+      "components/app/share-access-dialog.tsx:45",
+      "components/app/share-access-dialog.tsx:52"
     ]
   },
   "modification d’une ligne": {
@@ -11248,7 +11479,7 @@
   },
   "Modification||écriture qui déclenche un webhook": {
     "where": [
-      "components/app/webhook-dialog.tsx:38"
+      "components/app/webhook-dialog.tsx:39"
     ]
   },
   "Modifications annulées.": {
@@ -11263,7 +11494,7 @@
   },
   "Modifications non enregistrées": {
     "where": [
-      "components/app/automations.tsx:528"
+      "components/app/automations.tsx:529"
     ]
   },
   "Modifié aujourd’hui à {time}": {
@@ -11355,7 +11586,7 @@
   },
   "Modifier la table « {table} »": {
     "where": [
-      "components/app/command-palette.tsx:1179"
+      "components/app/command-palette.tsx:1180"
     ]
   },
   "Modifier la table…": {
@@ -11398,7 +11629,7 @@
   },
   "Modifier une ligne": {
     "where": [
-      "lib/automations.ts:149"
+      "lib/automations.ts:202"
     ]
   },
   "Modifier…": {
@@ -11468,13 +11699,13 @@
   },
   "Monter l’étape": {
     "where": [
-      "components/app/automations.tsx:716",
-      "components/app/automations.tsx:722"
+      "components/app/automations.tsx:717",
+      "components/app/automations.tsx:723"
     ]
   },
   "Monter le chemin {label}": {
     "where": [
-      "components/app/automation-steps.tsx:1234"
+      "components/app/automation-steps.tsx:1583"
     ]
   },
   "Montre-moi les lignes modifiées cette semaine": {
@@ -11494,13 +11725,13 @@
   },
   "Montrer la liste": {
     "where": [
-      "components/app/automations.tsx:212",
+      "components/app/automations.tsx:213",
       "components/app/dashboards.tsx:308"
     ]
   },
   "Montrer la liste des automatisations": {
     "where": [
-      "components/app/automations.tsx:219"
+      "components/app/automations.tsx:220"
     ]
   },
   "Montrer la liste des tableaux et des questions": {
@@ -11527,7 +11758,7 @@
   },
   "Mot de passe changé : connectez-vous avec le nouveau.": {
     "where": [
-      "components/login.tsx:148"
+      "components/login.tsx:149"
     ]
   },
   "Mot de passe oublié": {
@@ -11537,7 +11768,7 @@
   },
   "Mot de passe oublié ?": {
     "where": [
-      "components/login.tsx:259"
+      "components/login.tsx:260"
     ]
   },
   "Mot de passe refusé : au moins 8 caractères, et sans reprendre votre adresse ni votre nom.": {
@@ -11592,7 +11823,7 @@
   },
   "navigation menu gauche||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1277"
+      "components/app/command-palette.tsx:1278"
     ]
   },
   "ne contient aucun de": {
@@ -11623,12 +11854,12 @@
   },
   "Ne plus chercher dans « {label} »": {
     "where": [
-      "components/app/command-palette.tsx:1846"
+      "components/app/command-palette.tsx:1847"
     ]
   },
   "Ne plus montrer cette exécution": {
     "where": [
-      "components/app/automations.tsx:605"
+      "components/app/automations.tsx:606"
     ]
   },
   "Neutre": {
@@ -11661,8 +11892,13 @@
   "Nom affiché": {
     "where": [
       "components/app/admin/users-tab.tsx:445",
-      "components/app/settings/profile-tab.tsx:119",
-      "components/app/settings/profile-tab.tsx:134"
+      "components/app/settings/profile-tab.tsx:120",
+      "components/app/settings/profile-tab.tsx:135"
+    ]
+  },
+  "Nom d’en-tête invalide : « {d} ».": {
+    "where": [
+      "lib/automations.ts:1470"
     ]
   },
   "Nom de « {name} »": {
@@ -11672,7 +11908,12 @@
   },
   "Nom de l’automatisation": {
     "where": [
-      "components/app/automations.tsx:513"
+      "components/app/automations.tsx:514"
+    ]
+  },
+  "Nom de l’en-tête {n}": {
+    "where": [
+      "components/app/automation-steps.tsx:1096"
     ]
   },
   "Nom de l’environnement {environment}": {
@@ -11717,7 +11958,7 @@
   },
   "Nom du chemin": {
     "where": [
-      "components/app/automation-steps.tsx:1313"
+      "components/app/automation-steps.tsx:1663"
     ]
   },
   "Nom du filtre": {
@@ -11839,7 +12080,13 @@
   },
   "Nombre de lignes au plus": {
     "where": [
-      "components/app/analytics/notebook.tsx:1050"
+      "components/app/analytics/notebook.tsx:1050",
+      "components/app/automation-steps.tsx:1253"
+    ]
+  },
+  "Nombre de lignes parcourues": {
+    "where": [
+      "lib/automations.ts:599"
     ]
   },
   "Nombre de parts avant « Autres »": {
@@ -11859,7 +12106,7 @@
   },
   "Nombre maximal de réponses": {
     "where": [
-      "components/app/views/share-dialog.tsx:589"
+      "components/app/views/share-dialog.tsx:590"
     ]
   },
   "Nombres": {
@@ -11880,7 +12127,7 @@
   "Non": {
     "where": [
       "components/app/analytics/filter-editor.tsx:75",
-      "components/app/command-palette.tsx:369",
+      "components/app/command-palette.tsx:370",
       "components/app/forms/answers.ts:116"
     ]
   },
@@ -11891,7 +12138,7 @@
   },
   "Non lié": {
     "where": [
-      "components/app/settings/profile-tab.tsx:326"
+      "components/app/settings/profile-tab.tsx:327"
     ]
   },
   "Non lue": {
@@ -11950,7 +12197,7 @@
     "where": [
       "components/app/collab.tsx:156",
       "components/app/collab.tsx:169",
-      "components/app/command-palette.tsx:1313"
+      "components/app/command-palette.tsx:1314"
     ]
   },
   "Notifications, {unread} non lues": {
@@ -12004,7 +12251,7 @@
   },
   "Nouveau projet": {
     "where": [
-      "components/app/command-palette.tsx:1149",
+      "components/app/command-palette.tsx:1150",
       "components/app/project-menu.tsx:205",
       "components/app/project-menu.tsx:413"
     ]
@@ -12027,7 +12274,7 @@
   },
   "Nouveau webhook": {
     "where": [
-      "components/app/webhook-dialog.tsx:308"
+      "components/app/webhook-dialog.tsx:324"
     ]
   },
   "Nouvel environnement": {
@@ -12037,7 +12284,7 @@
   },
   "nouvel essai {format}": {
     "where": [
-      "components/app/webhook-dialog.tsx:445"
+      "components/app/webhook-dialog.tsx:490"
     ]
   },
   "Nouvel onglet": {
@@ -12059,8 +12306,8 @@
   },
   "Nouvelle automatisation": {
     "where": [
-      "components/app/automations.tsx:238",
-      "lib/automations.ts:212"
+      "components/app/automations.tsx:239",
+      "lib/automations.ts:267"
     ]
   },
   "Nouvelle automatisation « {label} »": {
@@ -12070,7 +12317,7 @@
   },
   "Nouvelle base": {
     "where": [
-      "components/app/command-palette.tsx:1139",
+      "components/app/command-palette.tsx:1140",
       "components/app/sidebar.tsx:517",
       "components/app/sidebar.tsx:1249"
     ]
@@ -12101,19 +12348,19 @@
     "where": [
       "components/app/analytics/dashboard-view.tsx:1801",
       "components/app/analytics/question-view.tsx:250",
-      "components/app/command-palette.tsx:1114"
+      "components/app/command-palette.tsx:1115"
     ]
   },
   "Nouvelle question SQL": {
     "where": [
       "components/app/analytics/dashboard-view.tsx:1812",
       "components/app/analytics/question-view.tsx:249",
-      "components/app/command-palette.tsx:1117"
+      "components/app/command-palette.tsx:1118"
     ]
   },
   "Nouvelle requête SQL": {
     "where": [
-      "components/app/command-palette.tsx:1110",
+      "components/app/command-palette.tsx:1111",
       "components/app/workspace.tsx:1388"
     ]
   },
@@ -12130,7 +12377,7 @@
   },
   "Nouvelle table dans « {base} »": {
     "where": [
-      "components/app/command-palette.tsx:1123"
+      "components/app/command-palette.tsx:1124"
     ]
   },
   "Nouvelle table dans {label}": {
@@ -12156,7 +12403,7 @@
   },
   "Nouvelle vue SQL dans « {base} »": {
     "where": [
-      "components/app/command-palette.tsx:1131"
+      "components/app/command-palette.tsx:1132"
     ]
   },
   "Nouvelle vue SQL…": {
@@ -12181,7 +12428,7 @@
   },
   "nuit noir foncé||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1257"
+      "components/app/command-palette.tsx:1258"
     ]
   },
   "Nulle part — le score est seulement affiché": {
@@ -12229,17 +12476,17 @@
   },
   "Objet": {
     "where": [
-      "components/app/automation-steps.tsx:1072"
+      "components/app/automation-steps.tsx:1421"
     ]
   },
   "Objet du courriel": {
     "where": [
-      "components/app/automation-steps.tsx:1077"
+      "components/app/automation-steps.tsx:1426"
     ]
   },
   "Objet vide": {
     "where": [
-      "lib/automations.ts:969"
+      "lib/automations.ts:1249"
     ]
   },
   "Objets créés hors de basedb qui en dépendent (ils suivent le renommage) :": {
@@ -12272,7 +12519,7 @@
   },
   "On clique sur un bouton": {
     "where": [
-      "lib/automations.ts:145"
+      "lib/automations.ts:198"
     ]
   },
   "Onglet": {
@@ -12282,7 +12529,7 @@
   },
   "Onglet · {base}": {
     "where": [
-      "components/app/command-palette.tsx:966"
+      "components/app/command-palette.tsx:967"
     ]
   },
   "Onglet {value}": {
@@ -12302,20 +12549,20 @@
   },
   "Onglet précédent": {
     "where": [
-      "components/app/command-palette.tsx:1238",
-      "components/app/command-palette.tsx:2313"
+      "components/app/command-palette.tsx:1239",
+      "components/app/command-palette.tsx:2314"
     ]
   },
   "Onglet suivant": {
     "where": [
-      "components/app/command-palette.tsx:1230",
-      "components/app/command-palette.tsx:2312"
+      "components/app/command-palette.tsx:1231",
+      "components/app/command-palette.tsx:2313"
     ]
   },
   "Onglets": {
     "where": [
-      "components/app/command-palette.tsx:1217",
-      "components/app/command-palette.tsx:2309"
+      "components/app/command-palette.tsx:1218",
+      "components/app/command-palette.tsx:2310"
     ]
   },
   "Onglets du tableau de bord": {
@@ -12326,7 +12573,7 @@
   },
   "Onglets ouverts": {
     "where": [
-      "components/app/command-palette.tsx:179"
+      "components/app/command-palette.tsx:180"
     ]
   },
   "Opérateur": {
@@ -12371,7 +12618,8 @@
   },
   "Ordre de création": {
     "where": [
-      "components/app/automation-steps.tsx:674"
+      "components/app/automation-steps.tsx:686",
+      "components/app/automation-steps.tsx:1219"
     ]
   },
   "Ordre des catégories": {
@@ -12396,7 +12644,7 @@
   },
   "ou": {
     "where": [
-      "components/login.tsx:341"
+      "components/login.tsx:342"
     ]
   },
   "ou appuyez sur Entrée": {
@@ -12412,7 +12660,7 @@
   "Oui": {
     "where": [
       "components/app/analytics/filter-editor.tsx:74",
-      "components/app/command-palette.tsx:369",
+      "components/app/command-palette.tsx:370",
       "components/app/forms/answers.ts:115"
     ]
   },
@@ -12423,14 +12671,14 @@
   },
   "Oui ou non": {
     "where": [
-      "lib/automations.ts:180"
+      "lib/automations.ts:235"
     ]
   },
   "Ouvert": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:44",
-      "components/app/command-palette.tsx:747",
-      "components/app/views/share-dialog.tsx:60"
+      "components/app/analytics/share-dashboard-dialog.tsx:45",
+      "components/app/command-palette.tsx:748",
+      "components/app/views/share-dialog.tsx:61"
     ]
   },
   "Ouverte dans l’éditeur : relisez-la, puis créez-la.": {
@@ -12455,7 +12703,7 @@
   },
   "ouvrir": {
     "where": [
-      "components/app/command-palette.tsx:1972"
+      "components/app/command-palette.tsx:1973"
     ]
   },
   "Ouvrir": {
@@ -12474,7 +12722,7 @@
   },
   "Ouvrir ce lien": {
     "where": [
-      "components/app/command-palette.tsx:1484"
+      "components/app/command-palette.tsx:1485"
     ]
   },
   "Ouvrir dans l’éditeur": {
@@ -12495,11 +12743,6 @@
   "Ouvrir en PDF": {
     "where": [
       "components/app/documents/document-menu.tsx:85"
-    ]
-  },
-  "Ouvrir la base incomplète": {
-    "where": [
-      "components/app/template-gallery.tsx:1071"
     ]
   },
   "Ouvrir la création de comptes": {
@@ -12523,8 +12766,8 @@
   },
   "Ouvrir la vue": {
     "where": [
-      "components/app/views/share-dialog.tsx:395",
-      "components/app/views/share-dialog.tsx:401"
+      "components/app/views/share-dialog.tsx:396",
+      "components/app/views/share-dialog.tsx:402"
     ]
   },
   "Ouvrir le calendrier": {
@@ -12535,13 +12778,13 @@
   },
   "Ouvrir le Copilot": {
     "where": [
-      "components/app/command-palette.tsx:1282"
+      "components/app/command-palette.tsx:1283"
     ]
   },
   "Ouvrir le formulaire": {
     "where": [
-      "components/app/views/share-dialog.tsx:395",
-      "components/app/views/share-dialog.tsx:401"
+      "components/app/views/share-dialog.tsx:396",
+      "components/app/views/share-dialog.tsx:402"
     ]
   },
   "Ouvrir le lien": {
@@ -12551,18 +12794,18 @@
   },
   "Ouvrir le résultat": {
     "where": [
-      "components/app/command-palette.tsx:2299"
+      "components/app/command-palette.tsx:2300"
     ]
   },
   "Ouvrir le tableau de bord partagé": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:237",
-      "components/app/analytics/share-dashboard-dialog.tsx:243"
+      "components/app/analytics/share-dashboard-dialog.tsx:238",
+      "components/app/analytics/share-dashboard-dialog.tsx:244"
     ]
   },
   "Ouvrir ou fermer la recherche": {
     "where": [
-      "components/app/command-palette.tsx:2297"
+      "components/app/command-palette.tsx:2298"
     ]
   },
   "Ouvrir une adresse": {
@@ -12641,24 +12884,24 @@
   },
   "Paramètres": {
     "where": [
-      "app/page.tsx:104",
-      "components/app/command-palette.tsx:1308",
+      "app/page.tsx:105",
+      "components/app/command-palette.tsx:1309",
       "components/app/settings/settings-panel.tsx:73"
     ]
   },
   "Paramètres : {tab}": {
     "where": [
-      "components/app/command-palette.tsx:1320"
+      "components/app/command-palette.tsx:1321"
     ]
   },
   "parcourir": {
     "where": [
-      "components/app/command-palette.tsx:1968"
+      "components/app/command-palette.tsx:1969"
     ]
   },
   "Parcourir les résultats": {
     "where": [
-      "components/app/command-palette.tsx:2298"
+      "components/app/command-palette.tsx:2299"
     ]
   },
   "Parenthèse fermante en trop.": {
@@ -12694,9 +12937,9 @@
   },
   "Partager « {label} »": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:147",
+      "components/app/analytics/share-dashboard-dialog.tsx:148",
       "components/app/share-access-dialog.tsx:171",
-      "components/app/views/share-dialog.tsx:313"
+      "components/app/views/share-dialog.tsx:314"
     ]
   },
   "Partager « {label} »…": {
@@ -12706,7 +12949,7 @@
   },
   "Partager la base…": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:168",
+      "components/app/analytics/share-dashboard-dialog.tsx:169",
       "components/app/sidebar.tsx:784"
     ]
   },
@@ -12732,8 +12975,8 @@
   },
   "Partir d’un modèle": {
     "where": [
-      "components/app/command-palette.tsx:1142",
-      "components/app/template-gallery.tsx:278"
+      "components/app/command-palette.tsx:1143",
+      "components/app/template-gallery.tsx:279"
     ]
   },
   "Partir d’un modèle, ou le demander à l’IA": {
@@ -12754,6 +12997,11 @@
   "Pas cette fois…": {
     "where": [
       "components/app/forms/quiz.tsx:188"
+    ]
+  },
+  "Pas de boucle dans une boucle": {
+    "where": [
+      "lib/automations.ts:1230"
     ]
   },
   "Pas de dépendances": {
@@ -12779,12 +13027,12 @@
   },
   "Pas encore d’exécution. « Tester » en lance une sur la ligne de votre choix.": {
     "where": [
-      "components/app/automations.tsx:986"
+      "components/app/automations.tsx:1002"
     ]
   },
   "Pas encore de compte ?": {
     "where": [
-      "components/login.tsx:173"
+      "components/login.tsx:174"
     ]
   },
   "Pas mal !": {
@@ -12794,17 +13042,17 @@
   },
   "passée": {
     "where": [
-      "lib/automations.ts:1088"
+      "lib/automations.ts:1376"
     ]
   },
   "passée : aucun destinataire": {
     "where": [
-      "lib/automations.ts:1087"
+      "lib/automations.ts:1375"
     ]
   },
   "passée : aucune ligne": {
     "where": [
-      "lib/automations.ts:1085"
+      "lib/automations.ts:1373"
     ]
   },
   "Passer seul à la suite après un choix": {
@@ -12858,7 +13106,7 @@
     "where": [
       "components/app/admin/admin-panel.tsx:32",
       "components/app/admin/permissions-tab.tsx:157",
-      "components/app/command-palette.tsx:1335"
+      "components/app/command-palette.tsx:1336"
     ]
   },
   "Personne": {
@@ -12875,8 +13123,8 @@
   },
   "Personne à prévenir": {
     "where": [
-      "lib/automations.ts:867",
-      "lib/automations.ts:955"
+      "lib/automations.ts:1139",
+      "lib/automations.ts:1235"
     ]
   },
   "Personne pour l’instant.": {
@@ -12891,7 +13139,7 @@
   },
   "Personnelle": {
     "where": [
-      "components/app/command-palette.tsx:943",
+      "components/app/command-palette.tsx:944",
       "components/app/sql/query-dialog.tsx:42"
     ]
   },
@@ -12985,7 +13233,7 @@
   },
   "plus de 100 exécutions dans l’heure": {
     "where": [
-      "lib/automations.ts:1027"
+      "lib/automations.ts:1307"
     ]
   },
   "Plus fin": {
@@ -13088,7 +13336,7 @@
   },
   "Poser une question au Copilot": {
     "where": [
-      "components/app/command-palette.tsx:2305"
+      "components/app/command-palette.tsx:2306"
     ]
   },
   "Posez une question sur vos données, demandez une carte, un filtre, un onglet, un nouveau tableau de bord…": {
@@ -13098,7 +13346,7 @@
   },
   "Posez votre question au Copilot…": {
     "where": [
-      "components/app/command-palette.tsx:1803"
+      "components/app/command-palette.tsx:1804"
     ]
   },
   "Position": {
@@ -13141,6 +13389,11 @@
       "components/app/analytics/dashboard-copilot.tsx:491"
     ]
   },
+  "Pour chaque ligne": {
+    "where": [
+      "lib/automations.ts:211"
+    ]
+  },
   "pour confirmer": {
     "where": [
       "components/app/base-menu.tsx:284",
@@ -13159,7 +13412,7 @@
   },
   "pour la ligne déclencheuse,": {
     "where": [
-      "components/app/automation-steps.tsx:925"
+      "components/app/automation-steps.tsx:1269"
     ]
   },
   "Pour les valeurs des champs date, à l’affichage comme à la saisie. Les deux formes se tapent toujours, quel que soit le choix.": {
@@ -13209,7 +13462,7 @@
   },
   "pour une étape précédente. Une citation seule passe la valeur telle quelle — une relation, une personne, un choix.": {
     "where": [
-      "components/app/automation-steps.tsx:927"
+      "components/app/automation-steps.tsx:1271"
     ]
   },
   "Pourcentage": {
@@ -13264,7 +13517,7 @@
   },
   "Première connexion ?": {
     "where": [
-      "components/login.tsx:185"
+      "components/login.tsx:186"
     ]
   },
   "Première page": {
@@ -13310,12 +13563,12 @@
   },
   "Prévenir quelqu’un": {
     "where": [
-      "lib/automations.ts:152"
+      "lib/automations.ts:205"
     ]
   },
   "Pris quand aucun chemin avant lui ne convient.": {
     "where": [
-      "components/app/automation-steps.tsx:1320"
+      "components/app/automation-steps.tsx:1670"
     ]
   },
   "Prise": {
@@ -13335,7 +13588,7 @@
   },
   "Prochaine exécution : {value}": {
     "where": [
-      "components/app/automation-steps.tsx:522"
+      "components/app/automation-steps.tsx:533"
     ]
   },
   "Prochains passages : {map}": {
@@ -13355,8 +13608,8 @@
   },
   "Profil": {
     "where": [
-      "components/app/command-palette.tsx:1310",
-      "components/app/settings/profile-tab.tsx:45",
+      "components/app/command-palette.tsx:1311",
+      "components/app/settings/profile-tab.tsx:46",
       "components/app/settings/settings-panel.tsx:30"
     ]
   },
@@ -13374,7 +13627,7 @@
     "one": "Projet · {count} base",
     "other": "Projet · {count} bases",
     "where": [
-      "components/app/command-palette.tsx:691",
+      "components/app/command-palette.tsx:692",
       "components/app/project-menu.tsx:158"
     ]
   },
@@ -13385,7 +13638,7 @@
   },
   "projet||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:329"
+      "components/app/command-palette.tsx:330"
     ]
   },
   "Projets": {
@@ -13400,8 +13653,8 @@
   },
   "Proposé par l’IA": {
     "where": [
-      "components/app/template-gallery.tsx:392",
-      "components/app/template-gallery.tsx:635"
+      "components/app/template-gallery.tsx:393",
+      "components/app/template-gallery.tsx:636"
     ]
   },
   "Proposé par un agent pour {value}, via le jeton": {
@@ -13411,7 +13664,7 @@
   },
   "Proposer avec l’IA": {
     "where": [
-      "components/app/template-gallery.tsx:362"
+      "components/app/template-gallery.tsx:363"
     ]
   },
   "Proposer de refaire le quiz": {
@@ -13426,12 +13679,12 @@
   },
   "Proposez au moins un choix à l’IA.": {
     "where": [
-      "lib/automations.ts:1159"
+      "lib/automations.ts:1459"
     ]
   },
   "Proposition en cours… {elapsed} s": {
     "where": [
-      "components/app/template-gallery.tsx:361"
+      "components/app/template-gallery.tsx:362"
     ]
   },
   "Propositions des agents — {label}": {
@@ -13466,12 +13719,7 @@
   },
   "Public": {
     "where": [
-      "components/app/views/share-dialog.tsx:110"
-    ]
-  },
-  "publique seulement ; 10 secondes au plus.": {
-    "where": [
-      "components/app/automation-steps.tsx:800"
+      "components/app/views/share-dialog.tsx:111"
     ]
   },
   "Purge possible à partir du {at}. Seul un administrateur d’instance peut l’avancer, en le justifiant.": {
@@ -13516,19 +13764,19 @@
   },
   "Quand": {
     "where": [
-      "components/app/automation-flow.tsx:262",
-      "components/app/automation-steps.tsx:422",
+      "components/app/automation-flow.tsx:289",
+      "components/app/automation-steps.tsx:433",
       "components/product-glimpse.tsx:891"
     ]
   },
   "quand aucun autre ne convient": {
     "where": [
-      "lib/automations.ts:1010"
+      "lib/automations.ts:1290"
     ]
   },
   "Quand prévenir": {
     "where": [
-      "components/app/webhook-dialog.tsx:332"
+      "components/app/webhook-dialog.tsx:348"
     ]
   },
   "Quand une colonne citée change": {
@@ -13591,7 +13839,7 @@
   },
   "Question · {base}": {
     "where": [
-      "components/app/command-palette.tsx:883"
+      "components/app/command-palette.tsx:884"
     ]
   },
   "question « {label} » ({vizLabels})": {
@@ -13601,13 +13849,13 @@
   },
   "Question {count}": {
     "where": [
-      "app/page.tsx:367",
+      "app/page.tsx:368",
       "components/app/workspace.tsx:1462"
     ]
   },
   "question graphique||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:337"
+      "components/app/command-palette.tsx:338"
     ]
   },
   "Question lue": {
@@ -13659,12 +13907,12 @@
   },
   "Questions et tableaux de bord": {
     "where": [
-      "components/app/command-palette.tsx:182"
+      "components/app/command-palette.tsx:183"
     ]
   },
   "Questions non posées par le lien": {
     "where": [
-      "components/app/views/share-dialog.tsx:607"
+      "components/app/views/share-dialog.tsx:608"
     ]
   },
   "Qui la voit": {
@@ -13675,20 +13923,20 @@
   },
   "Qui peut lire": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:299",
-      "components/app/views/share-dialog.tsx:126",
-      "components/app/views/share-dialog.tsx:462"
+      "components/app/analytics/share-dashboard-dialog.tsx:300",
+      "components/app/views/share-dialog.tsx:127",
+      "components/app/views/share-dialog.tsx:463"
     ]
   },
   "Qui peut répondre": {
     "where": [
-      "components/app/views/share-dialog.tsx:126",
-      "components/app/views/share-dialog.tsx:462"
+      "components/app/views/share-dialog.tsx:127",
+      "components/app/views/share-dialog.tsx:463"
     ]
   },
   "Qui prévenir": {
     "where": [
-      "components/app/automation-steps.tsx:715"
+      "components/app/automation-steps.tsx:727"
     ]
   },
   "Qui voit la question": {
@@ -13708,7 +13956,7 @@
   },
   "quitter déconnexion sortir||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1350"
+      "components/app/command-palette.tsx:1351"
     ]
   },
   "Quiz": {
@@ -13718,14 +13966,14 @@
   },
   "Raccourcis": {
     "where": [
-      "components/app/command-palette.tsx:1995"
+      "components/app/command-palette.tsx:1996"
     ]
   },
   "Raccourcis clavier": {
     "where": [
-      "components/app/command-palette.tsx:188",
-      "components/app/command-palette.tsx:1302",
-      "components/app/command-palette.tsx:1791"
+      "components/app/command-palette.tsx:189",
+      "components/app/command-palette.tsx:1303",
+      "components/app/command-palette.tsx:1792"
     ]
   },
   "Rafraîchissement": {
@@ -13735,7 +13983,7 @@
   },
   "raison inconnue": {
     "where": [
-      "lib/automations.ts:1041"
+      "lib/automations.ts:1321"
     ]
   },
   "Rang": {
@@ -13780,7 +14028,7 @@
   },
   "Récents": {
     "where": [
-      "components/app/command-palette.tsx:178"
+      "components/app/command-palette.tsx:179"
     ]
   },
   "Recevez par courriel un lien pour en choisir un nouveau. Il vaut 30 minutes.": {
@@ -13805,19 +14053,19 @@
   },
   "Recharger les lignes": {
     "where": [
-      "components/app/command-palette.tsx:1188"
+      "components/app/command-palette.tsx:1189"
     ]
   },
   "Recherche": {
     "where": [
-      "components/app/command-palette.tsx:2295",
+      "components/app/command-palette.tsx:2296",
       "components/app/field-icon.tsx:110",
       "lib/format.ts:234"
     ]
   },
   "Recherche dans les lignes…": {
     "where": [
-      "components/app/command-palette.tsx:1943"
+      "components/app/command-palette.tsx:1944"
     ]
   },
   "Recherche indisponible.": {
@@ -13837,7 +14085,7 @@
   },
   "Rechercher dans « {label} »…": {
     "where": [
-      "components/app/command-palette.tsx:1793"
+      "components/app/command-palette.tsx:1794"
     ]
   },
   "Rechercher dans la table": {
@@ -13847,18 +14095,18 @@
   },
   "Rechercher dans les lignes de « {base} »…": {
     "where": [
-      "components/app/command-palette.tsx:1799"
+      "components/app/command-palette.tsx:1800"
     ]
   },
   "Rechercher partout": {
     "where": [
-      "components/app/command-palette.tsx:464",
-      "components/app/command-palette.tsx:1834"
+      "components/app/command-palette.tsx:465",
+      "components/app/command-palette.tsx:1835"
     ]
   },
   "Rechercher tables, lignes, commandes…": {
     "where": [
-      "components/app/command-palette.tsx:472"
+      "components/app/command-palette.tsx:473"
     ]
   },
   "Rechercher un enregistrement…": {
@@ -13869,8 +14117,8 @@
   },
   "Rechercher un modèle": {
     "where": [
-      "components/app/template-gallery.tsx:294",
-      "components/app/template-gallery.tsx:295"
+      "components/app/template-gallery.tsx:295",
+      "components/app/template-gallery.tsx:296"
     ]
   },
   "Rechercher un utilisateur": {
@@ -13880,7 +14128,7 @@
   },
   "Rechercher une commande…": {
     "where": [
-      "components/app/command-palette.tsx:1795"
+      "components/app/command-palette.tsx:1796"
     ]
   },
   "Rechercher une personne…": {
@@ -13890,12 +14138,12 @@
   },
   "Rechercher une table, une ligne, une commande…": {
     "where": [
-      "components/app/command-palette.tsx:1804"
+      "components/app/command-palette.tsx:1805"
     ]
   },
   "Rechercher une table, une vue, un tableau de bord…": {
     "where": [
-      "components/app/command-palette.tsx:1797"
+      "components/app/command-palette.tsx:1798"
     ]
   },
   "Rechercher une valeur…": {
@@ -13938,7 +14186,7 @@
   },
   "Rédiger, résumer, classer — une réponse pour les étapes suivantes": {
     "where": [
-      "lib/automations.ts:168"
+      "lib/automations.ts:222"
     ]
   },
   "Redimensionner {label}": {
@@ -13958,7 +14206,7 @@
   },
   "Réduire le panneau latéral": {
     "where": [
-      "components/app/command-palette.tsx:1273"
+      "components/app/command-palette.tsx:1274"
     ]
   },
   "Refaire le quiz": {
@@ -14021,14 +14269,14 @@
   },
   "Régénérer": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:274",
-      "components/app/views/share-dialog.tsx:433"
+      "components/app/analytics/share-dashboard-dialog.tsx:275",
+      "components/app/views/share-dialog.tsx:434"
     ]
   },
   "Régénérer le lien": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:284",
-      "components/app/views/share-dialog.tsx:443"
+      "components/app/analytics/share-dashboard-dialog.tsx:285",
+      "components/app/views/share-dialog.tsx:444"
     ]
   },
   "Région (nom ou code)": {
@@ -14053,12 +14301,12 @@
   },
   "réglages préférences compte||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1325"
+      "components/app/command-palette.tsx:1326"
     ]
   },
   "Réglages||onglet d’une automatisation": {
     "where": [
-      "components/app/automations.tsx:628"
+      "components/app/automations.tsx:629"
     ]
   },
   "Réglages||pictogramme d’engrenage": {
@@ -14083,12 +14331,12 @@
   },
   "règles déclencheurs workflows||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1083"
+      "components/app/command-palette.tsx:1084"
     ]
   },
   "Réglez le déclencheur, puis ajoutez ce qu’elle doit faire.": {
     "where": [
-      "components/app/automations.tsx:614"
+      "components/app/automations.tsx:615"
     ]
   },
   "Regroupement de date": {
@@ -14119,17 +14367,17 @@
   },
   "Rejoindre « {label} »": {
     "where": [
-      "app/invitation/[token]/page.tsx:130"
+      "app/invitation/[token]/page.tsx:131"
     ]
   },
   "Rejoindre la base": {
     "where": [
-      "app/invitation/[token]/page.tsx:162"
+      "app/invitation/[token]/page.tsx:163"
     ]
   },
   "Rejoindre le projet": {
     "where": [
-      "app/invitation/[token]/page.tsx:161"
+      "app/invitation/[token]/page.tsx:162"
     ]
   },
   "Relancer": {
@@ -14145,7 +14393,7 @@
   },
   "Relation « {label} »…": {
     "where": [
-      "lib/templates.ts:533"
+      "lib/templates.ts:27"
     ]
   },
   "Relation client": {
@@ -14176,7 +14424,7 @@
   },
   "Relations entre les lignes…": {
     "where": [
-      "lib/templates.ts:655"
+      "lib/templates.ts:33"
     ]
   },
   "Relié à {count} cartes.": {
@@ -14217,6 +14465,11 @@
       "components/app/proposal-dialog.tsx:47"
     ]
   },
+  "Remplacer": {
+    "where": [
+      "components/app/automation-steps.tsx:1144"
+    ]
+  },
   "Rempli par l’IA": {
     "where": [
       "components/app/schema-editor.tsx:773"
@@ -14250,7 +14503,7 @@
   },
   "renommer description apparence||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1183"
+      "components/app/command-palette.tsx:1184"
     ]
   },
   "Renommer le groupe": {
@@ -14269,6 +14522,11 @@
       "components/app/analytics/drill-menu.tsx:154"
     ]
   },
+  "Répéter des étapes sur chaque ligne qui répond à un filtre": {
+    "where": [
+      "lib/automations.ts:224"
+    ]
+  },
   "Replier {label}": {
     "where": [
       "components/app/admin/permissions-tab.tsx:410",
@@ -14277,13 +14535,13 @@
   },
   "Replier la liste": {
     "where": [
-      "components/app/automations.tsx:212",
+      "components/app/automations.tsx:213",
       "components/app/dashboards.tsx:308"
     ]
   },
   "Replier la liste des automatisations": {
     "where": [
-      "components/app/automations.tsx:220"
+      "components/app/automations.tsx:221"
     ]
   },
   "Replier la liste des tableaux et des questions": {
@@ -14303,23 +14561,28 @@
   },
   "Répondre ne demande aucun droit sur la table : chaque réponse ajoute une ligne à « {label} », et rien d’autre de la table n’est montré.": {
     "where": [
-      "components/app/views/share-dialog.tsx:323"
+      "components/app/views/share-dialog.tsx:324"
     ]
   },
   "Réponse (une clé : .reponse.clé)": {
     "where": [
-      "lib/automations.ts:476"
+      "lib/automations.ts:615"
+    ]
+  },
+  "réponse {detail}": {
+    "where": [
+      "lib/automations.ts:1410"
     ]
   },
   "Réponse attendue": {
     "where": [
-      "components/app/automation-steps.tsx:854",
-      "components/app/automation-steps.tsx:859"
+      "components/app/automation-steps.tsx:842",
+      "components/app/automation-steps.tsx:847"
     ]
   },
   "réponse de {detail} caractères": {
     "where": [
-      "lib/automations.ts:1098"
+      "lib/automations.ts:1396"
     ]
   },
   "Réponse de l’IA inutilisable. Reformulez la demande.": {
@@ -14345,7 +14608,7 @@
   "réponse reçue": {
     "where": [
       "components/product-glimpse.tsx:261",
-      "lib/automations.ts:1097"
+      "lib/automations.ts:1395"
     ]
   },
   "Réponses": {
@@ -14355,12 +14618,12 @@
   },
   "Reprendre": {
     "where": [
-      "components/app/webhook-dialog.tsx:250"
+      "components/app/webhook-dialog.tsx:266"
     ]
   },
   "Reprendre {label}": {
     "where": [
-      "components/app/webhook-dialog.tsx:257"
+      "components/app/webhook-dialog.tsx:273"
     ]
   },
   "Reprendre le filtre et le tri affichés": {
@@ -14370,12 +14633,12 @@
   },
   "Reprendre les choix d’un champ": {
     "where": [
-      "components/app/automation-steps.tsx:888"
+      "components/app/automation-steps.tsx:876"
     ]
   },
   "Reprendre les choix d’un champ…": {
     "where": [
-      "components/app/automation-steps.tsx:887"
+      "components/app/automation-steps.tsx:875"
     ]
   },
   "Requête": {
@@ -14385,7 +14648,7 @@
   },
   "Requête {count}": {
     "where": [
-      "app/page.tsx:357"
+      "app/page.tsx:358"
     ]
   },
   "Requête {value}": {
@@ -14405,7 +14668,7 @@
   },
   "Requête enregistrée · {base}": {
     "where": [
-      "components/app/command-palette.tsx:786"
+      "components/app/command-palette.tsx:787"
     ]
   },
   "Requête personnelle": {
@@ -14427,7 +14690,7 @@
   },
   "requête sql enregistrée||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:334"
+      "components/app/command-palette.tsx:335"
     ]
   },
   "Requêtes": {
@@ -14447,8 +14710,8 @@
   },
   "Réservé aux groupes": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:311",
-      "components/app/views/share-dialog.tsx:468"
+      "components/app/analytics/share-dashboard-dialog.tsx:312",
+      "components/app/views/share-dialog.tsx:469"
     ]
   },
   "Ressources humaines": {
@@ -14458,7 +14721,7 @@
   },
   "rest openapi mcp agents développeurs||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1106"
+      "components/app/command-palette.tsx:1107"
     ]
   },
   "Restaurer": {
@@ -14483,7 +14746,7 @@
   },
   "Résume {{notes}} en une phrase, sur un ton neutre.": {
     "where": [
-      "components/app/automation-steps.tsx:849"
+      "components/app/automation-steps.tsx:837"
     ]
   },
   "Résume {{Notes}} en une phrase, sur un ton neutre.": {
@@ -14524,7 +14787,7 @@
   },
   "Rétablir : {label}": {
     "where": [
-      "components/app/command-palette.tsx:1208"
+      "components/app/command-palette.tsx:1209"
     ]
   },
   "Rétablir cette ligne telle qu’elle était": {
@@ -14534,7 +14797,7 @@
   },
   "Rétablir l’écriture annulée": {
     "where": [
-      "components/app/command-palette.tsx:2324"
+      "components/app/command-palette.tsx:2325"
     ]
   },
   "Rétablir||refaire une écriture annulée": {
@@ -14549,12 +14812,12 @@
   },
   "Retire aussi ses étapes": {
     "where": [
-      "components/app/automation-steps.tsx:1249"
+      "components/app/automation-steps.tsx:1598"
     ]
   },
   "Retiré du catalogue de l’instance": {
     "where": [
-      "components/app/template-gallery.tsx:1134"
+      "components/app/template-gallery.tsx:1132"
     ]
   },
   "Retirer": {
@@ -14586,7 +14849,7 @@
   },
   "Retirer de l’instance": {
     "where": [
-      "components/app/template-gallery.tsx:1142"
+      "components/app/template-gallery.tsx:1140"
     ]
   },
   "Retirer du groupe": {
@@ -14604,9 +14867,14 @@
       "components/app/share-access-dialog.tsx:308"
     ]
   },
+  "Retirer l’en-tête {n}": {
+    "where": [
+      "components/app/automation-steps.tsx:1126"
+    ]
+  },
   "Retirer l’étape": {
     "where": [
-      "components/app/automations.tsx:751"
+      "components/app/automations.tsx:754"
     ]
   },
   "Retirer l’étape {title}": {
@@ -14619,6 +14887,11 @@
       "components/app/look-picker.tsx:359"
     ]
   },
+  "Retirer la boucle et ses étapes": {
+    "where": [
+      "components/app/automations.tsx:753"
+    ]
+  },
   "Retirer la condition": {
     "where": [
       "components/app/forms/settings.tsx:381"
@@ -14626,7 +14899,7 @@
   },
   "Retirer la condition et ses chemins": {
     "where": [
-      "components/app/automations.tsx:750"
+      "components/app/automations.tsx:751"
     ]
   },
   "Retirer la règle": {
@@ -14647,17 +14920,17 @@
   },
   "Retirer le champ {value}": {
     "where": [
-      "components/app/automation-steps.tsx:339"
+      "components/app/automation-steps.tsx:350"
     ]
   },
   "Retirer le chemin": {
     "where": [
-      "components/app/automations.tsx:799"
+      "components/app/automations.tsx:814"
     ]
   },
   "Retirer le chemin {label}": {
     "where": [
-      "components/app/automation-steps.tsx:1255"
+      "components/app/automation-steps.tsx:1604"
     ]
   },
   "Retirer le choix {value}": {
@@ -14705,7 +14978,7 @@
   },
   "Retour aux données": {
     "where": [
-      "app/page.tsx:1476",
+      "app/page.tsx:1481",
       "components/app/history.tsx:446",
       "components/app/integrations.tsx:97"
     ]
@@ -14718,12 +14991,12 @@
   "Réussie": {
     "where": [
       "components/product-glimpse.tsx:881",
-      "lib/automations.ts:1038"
+      "lib/automations.ts:1318"
     ]
   },
   "revenir": {
     "where": [
-      "components/app/command-palette.tsx:1983"
+      "components/app/command-palette.tsx:1984"
     ]
   },
   "Revenir à l’étape précédente": {
@@ -14744,7 +15017,7 @@
   },
   "Revenir en arrière, champ vide": {
     "where": [
-      "components/app/command-palette.tsx:2301"
+      "components/app/command-palette.tsx:2302"
     ]
   },
   "Révoqué": {
@@ -14795,12 +15068,12 @@
   },
   "Rien n’a encore été envoyé.": {
     "where": [
-      "components/app/webhook-dialog.tsx:414"
+      "components/app/webhook-dialog.tsx:459"
     ]
   },
   "Rien ne correspond à « {query} ».": {
     "where": [
-      "components/app/command-palette.tsx:1952"
+      "components/app/command-palette.tsx:1953"
     ]
   },
   "Rien ne correspond.": {
@@ -14840,7 +15113,7 @@
   },
   "Sa réponse": {
     "where": [
-      "lib/automations.ts:467"
+      "lib/automations.ts:606"
     ]
   },
   "Sablier attente": {
@@ -14898,7 +15171,7 @@
   },
   "Sans objet": {
     "where": [
-      "lib/automations.ts:880"
+      "lib/automations.ts:1152"
     ]
   },
   "Sans titre": {
@@ -14924,14 +15197,14 @@
     "one": "Sans votre accord, {count} champ IA a été créé comme un champ ordinaire, avec ses valeurs d’exemple.",
     "other": "Sans votre accord, {count} champs IA ont été créés comme des champs ordinaires, avec leurs valeurs d’exemple.",
     "where": [
-      "lib/templates.ts:608"
+      "lib/templates.ts:64"
     ]
   },
   "Sans votre accord, {count} champs IA ont été créés comme des champs ordinaires.": {
     "one": "Sans votre accord, {count} champ IA a été créé comme un champ ordinaire.",
     "other": "Sans votre accord, {count} champs IA ont été créés comme des champs ordinaires.",
     "where": [
-      "lib/templates.ts:613"
+      "lib/templates.ts:69"
     ]
   },
   "Santé": {
@@ -14948,13 +15221,13 @@
   },
   "schéma colonnes champs tables||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1049"
+      "components/app/command-palette.tsx:1050"
     ]
   },
   "Se connecter": {
     "where": [
-      "app/invitation/[token]/page.tsx:207",
-      "components/login.tsx:303",
+      "app/invitation/[token]/page.tsx:208",
+      "components/login.tsx:304",
       "components/signup.tsx:54"
     ]
   },
@@ -14965,7 +15238,7 @@
   },
   "Se déconnecter": {
     "where": [
-      "components/app/command-palette.tsx:1349",
+      "components/app/command-palette.tsx:1350",
       "components/app/user-menu.tsx:153"
     ]
   },
@@ -14977,6 +15250,21 @@
   "Seconde valeur": {
     "where": [
       "components/app/analytics/viz-settings.tsx:385"
+    ]
+  },
+  "Secret : chiffré, jamais réaffiché": {
+    "where": [
+      "components/app/automation-steps.tsx:1102"
+    ]
+  },
+  "Secret enregistré": {
+    "where": [
+      "components/app/automation-steps.tsx:1135"
+    ]
+  },
+  "Secret enregistré, pour {host}": {
+    "where": [
+      "components/app/automation-steps.tsx:1136"
     ]
   },
   "Secteur": {
@@ -15016,7 +15304,7 @@
   },
   "Sécurité": {
     "where": [
-      "components/app/command-palette.tsx:1311",
+      "components/app/command-palette.tsx:1312",
       "components/app/settings/security-tab.tsx:24",
       "components/app/settings/settings-panel.tsx:31"
     ]
@@ -15034,7 +15322,7 @@
   },
   "Sélectionnez un projet en haut du panneau de gauche.": {
     "where": [
-      "app/page.tsx:934"
+      "app/page.tsx:939"
     ]
   },
   "Selon la valeur — la première règle qui tient :": {
@@ -15096,7 +15384,8 @@
   },
   "Sens du tri": {
     "where": [
-      "components/app/automation-steps.tsx:688"
+      "components/app/automation-steps.tsx:700",
+      "components/app/automation-steps.tsx:1233"
     ]
   },
   "Séparateur": {
@@ -15221,7 +15510,7 @@
   },
   "Seulement les commandes": {
     "where": [
-      "components/app/command-palette.tsx:2302"
+      "components/app/command-palette.tsx:2303"
     ]
   },
   "Seulement les différences": {
@@ -15231,17 +15520,17 @@
   },
   "Seulement les lignes": {
     "where": [
-      "components/app/command-palette.tsx:2304"
+      "components/app/command-palette.tsx:2305"
     ]
   },
   "Seulement les tables et objets": {
     "where": [
-      "components/app/command-palette.tsx:2303"
+      "components/app/command-palette.tsx:2304"
     ]
   },
   "Seulement si": {
     "where": [
-      "components/app/automation-steps.tsx:538",
+      "components/app/automation-steps.tsx:549",
       "components/app/forms/settings.tsx:355"
     ]
   },
@@ -15267,13 +15556,13 @@
   },
   "Si": {
     "where": [
-      "components/app/automation-steps.tsx:1331",
-      "lib/automations.ts:808"
+      "components/app/automation-steps.tsx:1681",
+      "lib/automations.ts:1079"
     ]
   },
   "Si plusieurs répondent, la première par": {
     "where": [
-      "components/app/automation-steps.tsx:666"
+      "components/app/automation-steps.tsx:678"
     ]
   },
   "Si un compte existe pour {email}, un courriel vient de partir. Ouvrez le lien qu’il contient, dans les 30 minutes.": {
@@ -15293,9 +15582,9 @@
   },
   "Sinon": {
     "where": [
-      "components/app/automation-steps.tsx:1192",
-      "components/app/automation-steps.tsx:1284",
-      "lib/automations.ts:811"
+      "components/app/automation-steps.tsx:1541",
+      "components/app/automation-steps.tsx:1633",
+      "lib/automations.ts:1082"
     ]
   },
   "Sirène urgence": {
@@ -15333,7 +15622,7 @@
   },
   "Son adresse est peut-être mal écrite, ou ce qu’elle désignait a été renommé ou supprimé.": {
     "where": [
-      "app/page.tsx:1062"
+      "app/page.tsx:1067"
     ]
   },
   "Son auteur l’a désactivé.": {
@@ -15353,7 +15642,7 @@
   },
   "son propriétaire n’a plus de compte actif": {
     "where": [
-      "lib/automations.ts:1026"
+      "lib/automations.ts:1306"
     ]
   },
   "Sorte de jointure": {
@@ -15410,8 +15699,8 @@
   "statut eq \"fait\"": {
     "where": [
       "components/app/analytics/filter-editor.tsx:535",
-      "components/app/automation-steps.tsx:549",
-      "components/app/automation-steps.tsx:1342"
+      "components/app/automation-steps.tsx:560",
+      "components/app/automation-steps.tsx:1692"
     ]
   },
   "Stock": {
@@ -15422,14 +15711,14 @@
   },
   "Structure": {
     "where": [
-      "app/page.tsx:97",
+      "app/page.tsx:98",
       "components/app/environments-dialog.tsx:712",
       "components/app/environments-dialog.tsx:1125"
     ]
   },
   "Structure de « {base} »": {
     "where": [
-      "components/app/command-palette.tsx:1044"
+      "components/app/command-palette.tsx:1045"
     ]
   },
   "Structure de {label}": {
@@ -15444,7 +15733,7 @@
   },
   "Suggestions": {
     "where": [
-      "components/app/command-palette.tsx:187"
+      "components/app/command-palette.tsx:188"
     ]
   },
   "Suivant": {
@@ -15482,7 +15771,7 @@
   },
   "Suivre une relation": {
     "where": [
-      "components/app/command-palette.tsx:2322"
+      "components/app/command-palette.tsx:2323"
     ]
   },
   "supérieur à": {
@@ -15502,7 +15791,7 @@
   },
   "suppression": {
     "where": [
-      "components/app/webhook-dialog.tsx:437"
+      "components/app/webhook-dialog.tsx:482"
     ]
   },
   "suppression d’une ligne": {
@@ -15526,7 +15815,7 @@
   },
   "Suppression||écriture qui déclenche un webhook": {
     "where": [
-      "components/app/webhook-dialog.tsx:39"
+      "components/app/webhook-dialog.tsx:40"
     ]
   },
   "supprimé": {
@@ -15585,7 +15874,7 @@
   "Supprimer {label}": {
     "where": [
       "components/app/integrations.tsx:217",
-      "components/app/webhook-dialog.tsx:276"
+      "components/app/webhook-dialog.tsx:292"
     ]
   },
   "Supprimer ce commentaire ?": {
@@ -15605,7 +15894,7 @@
   },
   "Supprimer l’automatisation": {
     "where": [
-      "components/app/automations.tsx:562"
+      "components/app/automations.tsx:563"
     ]
   },
   "Supprimer l’environnement {environment}": {
@@ -15773,14 +16062,14 @@
   },
   "Surveiller seulement ces champs (aucun coché : tout changement).": {
     "where": [
-      "components/app/automation-steps.tsx:443"
+      "components/app/automation-steps.tsx:454"
     ]
   },
   "Suspendu": {
     "where": [
-      "components/app/analytics/share-dashboard-dialog.tsx:46",
+      "components/app/analytics/share-dashboard-dialog.tsx:47",
       "components/app/token-dialog.tsx:74",
-      "components/app/views/share-dialog.tsx:64"
+      "components/app/views/share-dialog.tsx:65"
     ]
   },
   "Synchronisation avec la comptabilité": {
@@ -15790,7 +16079,7 @@
   },
   "synchronisation connecteurs sources||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1094"
+      "components/app/command-palette.tsx:1095"
     ]
   },
   "Synchronisation des lignes": {
@@ -15800,7 +16089,7 @@
   },
   "Synchronisation ERP": {
     "where": [
-      "components/app/webhook-dialog.tsx:316"
+      "components/app/webhook-dialog.tsx:332"
     ]
   },
   "Synchronisée": {
@@ -15844,14 +16133,14 @@
   },
   "Table": {
     "where": [
-      "components/app/command-palette.tsx:1163",
+      "components/app/command-palette.tsx:1164",
       "components/app/history.tsx:495",
       "components/app/import-dialog.tsx:839"
     ]
   },
   "Table · {base}": {
     "where": [
-      "components/app/command-palette.tsx:739"
+      "components/app/command-palette.tsx:740"
     ]
   },
   "Table · champ": {
@@ -15861,12 +16150,17 @@
   },
   "Table « {label} » ({value}/{tablesCount})…": {
     "where": [
-      "lib/templates.ts:420"
+      "lib/templates.ts:17"
     ]
   },
   "Table « {label} » créée : {value} lignes": {
     "where": [
       "components/app/integrations.tsx:475"
+    ]
+  },
+  "Table à parcourir": {
+    "where": [
+      "components/app/automation-steps.tsx:1196"
     ]
   },
   "Table cible": {
@@ -15886,7 +16180,7 @@
   },
   "Table du déclencheur": {
     "where": [
-      "components/app/automation-steps.tsx:437"
+      "components/app/automation-steps.tsx:448"
     ]
   },
   "Table liée": {
@@ -15896,22 +16190,22 @@
   },
   "Table où chercher": {
     "where": [
-      "components/app/automation-steps.tsx:651"
+      "components/app/automation-steps.tsx:663"
     ]
   },
   "Table où créer": {
     "where": [
-      "components/app/automation-steps.tsx:627"
+      "components/app/automation-steps.tsx:639"
     ]
   },
   "table||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:331"
+      "components/app/command-palette.tsx:332"
     ]
   },
   "Tableau « {label} » › {reason}": {
     "where": [
-      "lib/template-export.ts:420"
+      "lib/template-export.ts:426"
     ]
   },
   "Tableau croisé": {
@@ -15929,12 +16223,12 @@
   },
   "Tableau de bord · {base}": {
     "where": [
-      "components/app/command-palette.tsx:859"
+      "components/app/command-palette.tsx:860"
     ]
   },
   "Tableau de bord « {label} »…": {
     "where": [
-      "lib/templates.ts:723"
+      "lib/templates.ts:41"
     ]
   },
   "Tableau de bord {value}": {
@@ -15964,7 +16258,7 @@
   },
   "tableau de bord||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:336"
+      "components/app/command-palette.tsx:337"
     ]
   },
   "Tableau des lignes liées": {
@@ -15975,14 +16269,14 @@
   },
   "Tableaux de bord": {
     "where": [
-      "app/page.tsx:99",
+      "app/page.tsx:100",
       "components/app/analytics/dashboard-copilot.tsx:328",
       "components/app/dashboards.tsx:326"
     ]
   },
   "Tableaux de bord de « {base} »": {
     "where": [
-      "components/app/command-palette.tsx:1066"
+      "components/app/command-palette.tsx:1067"
     ]
   },
   "Tables": {
@@ -15997,12 +16291,12 @@
   },
   "Tables et objets": {
     "where": [
-      "components/app/command-palette.tsx:152"
+      "components/app/command-palette.tsx:153"
     ]
   },
   "Tables et vues": {
     "where": [
-      "components/app/command-palette.tsx:180"
+      "components/app/command-palette.tsx:181"
     ]
   },
   "Tables supprimées — {label}": {
@@ -16043,7 +16337,7 @@
   },
   "Tapez au moins deux lettres pour chercher dans les lignes.": {
     "where": [
-      "components/app/command-palette.tsx:1949"
+      "components/app/command-palette.tsx:1950"
     ]
   },
   "Tapez votre réponse ici…": {
@@ -16065,7 +16359,7 @@
   "Télécharger": {
     "where": [
       "components/app/template-export-dialog.tsx:216",
-      "components/app/template-gallery.tsx:1104"
+      "components/app/template-gallery.tsx:1102"
     ]
   },
   "Télécharger {name}": {
@@ -16110,13 +16404,13 @@
   },
   "Tester": {
     "where": [
-      "components/app/automations.tsx:927",
+      "components/app/automations.tsx:943",
       "components/app/integrations.tsx:212"
     ]
   },
   "Tester sur une ligne": {
     "where": [
-      "components/app/automations.tsx:940"
+      "components/app/automations.tsx:956"
     ]
   },
   "Texte": {
@@ -16138,7 +16432,7 @@
   },
   "Texte du courriel": {
     "where": [
-      "components/app/automation-steps.tsx:1086"
+      "components/app/automation-steps.tsx:1435"
     ]
   },
   "Texte long": {
@@ -16177,22 +16471,22 @@
   },
   "thème apparence couleurs||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1267"
+      "components/app/command-palette.tsx:1268"
     ]
   },
   "Thème clair": {
     "where": [
-      "components/app/command-palette.tsx:1256"
+      "components/app/command-palette.tsx:1257"
     ]
   },
   "Thème du système": {
     "where": [
-      "components/app/command-palette.tsx:1260"
+      "components/app/command-palette.tsx:1261"
     ]
   },
   "Thème sombre": {
     "where": [
-      "components/app/command-palette.tsx:1257"
+      "components/app/command-palette.tsx:1258"
     ]
   },
   "Thermomètre": {
@@ -16285,13 +16579,13 @@
   },
   "touches clavier aide||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:1303"
+      "components/app/command-palette.tsx:1304"
     ]
   },
   "Toujours": {
     "where": [
       "components/app/analytics/viz-settings.tsx:804",
-      "lib/automations.ts:1014"
+      "lib/automations.ts:1294"
     ]
   },
   "Toujours à propos d’une ligne que vous pouvez lire.": {
@@ -16301,7 +16595,7 @@
   },
   "toujours pris : donnez-lui une condition": {
     "where": [
-      "lib/automations.ts:999"
+      "lib/automations.ts:1279"
     ]
   },
   "Tous les {every} jours à {hour} (le compte repart le 1er du mois)": {
@@ -16316,7 +16610,7 @@
   },
   "Tous les chemins": {
     "where": [
-      "components/app/automations.tsx:780"
+      "components/app/automations.tsx:795"
     ]
   },
   "tous les droits": {
@@ -16336,8 +16630,8 @@
   },
   "Tous les modèles": {
     "where": [
-      "components/app/template-gallery.tsx:384",
-      "components/app/template-gallery.tsx:620"
+      "components/app/template-gallery.tsx:385",
+      "components/app/template-gallery.tsx:621"
     ]
   },
   "Tous les utilisateurs": {
@@ -16347,7 +16641,7 @@
   },
   "Tout": {
     "where": [
-      "components/app/command-palette.tsx:151",
+      "components/app/command-palette.tsx:152",
       "components/app/views/view-dialog.tsx:1031"
     ]
   },
@@ -16407,14 +16701,20 @@
   },
   "Tout sélectionner": {
     "where": [
-      "components/app/command-palette.tsx:2320",
-      "components/app/grid/data-grid.tsx:679"
+      "components/app/command-palette.tsx:2321",
+      "components/app/grid/data-grid.tsx:679",
+      "components/app/webhook-dialog.tsx:356"
+    ]
+  },
+  "Tout sélectionner dans {label}": {
+    "where": [
+      "components/app/webhook-dialog.tsx:385"
     ]
   },
   "Tout voir": {
     "where": [
-      "components/app/automation-flow.tsx:714",
-      "components/app/automation-flow.tsx:719"
+      "components/app/automation-flow.tsx:811",
+      "components/app/automation-flow.tsx:816"
     ]
   },
   "Toute colonne": {
@@ -16434,12 +16734,12 @@
   },
   "Toute personne qui a le lien lit {subject}, sans compte.": {
     "where": [
-      "components/app/views/share-dialog.tsx:112"
+      "components/app/views/share-dialog.tsx:113"
     ]
   },
   "Toute personne qui a le lien répond, sans compte.": {
     "where": [
-      "components/app/views/share-dialog.tsx:113"
+      "components/app/views/share-dialog.tsx:114"
     ]
   },
   "Toute personne qui atteint cette instance peut créer son compte, puis ses propres projets.": {
@@ -16485,12 +16785,12 @@
   },
   "Toutes les heures": {
     "where": [
-      "components/app/automation-steps.tsx:478"
+      "components/app/automation-steps.tsx:489"
     ]
   },
   "Toutes les heures, à la minute {at}": {
     "where": [
-      "components/app/automation-flow.tsx:518"
+      "components/app/automation-flow.tsx:597"
     ]
   },
   "Toutes les heures, à la minute {minute}": {
@@ -16605,7 +16905,8 @@
   },
   "Trier par": {
     "where": [
-      "components/app/automation-steps.tsx:675"
+      "components/app/automation-steps.tsx:687",
+      "components/app/automation-steps.tsx:1220"
     ]
   },
   "trimestre de l’année": {
@@ -16699,11 +17000,6 @@
       "components/app/import-dialog.tsx:979"
     ]
   },
-  "Un": {
-    "where": [
-      "components/app/automation-steps.tsx:796"
-    ]
-  },
   "un agent : Claude ou tout client MCP": {
     "where": [
       "components/app/token-dialog.tsx:66"
@@ -16726,7 +17022,7 @@
   },
   "Un appel par exécution, journalisé et plafonné par heure avec les champs IA. À redonner quand la consigne change.": {
     "where": [
-      "components/app/automation-steps.tsx:911"
+      "components/app/automation-steps.tsx:899"
     ]
   },
   "Un appel par ligne et par calcul, journalisé et plafonné par heure.": {
@@ -16776,7 +17072,7 @@
   },
   "Un chemin": {
     "where": [
-      "lib/automations.ts:985"
+      "lib/automations.ts:1265"
     ]
   },
   "Un chemin ne peut traverser qu’une seule relation.": {
@@ -16791,7 +17087,7 @@
   },
   "Un choix dans une liste": {
     "where": [
-      "lib/automations.ts:183"
+      "lib/automations.ts:238"
     ]
   },
   "Un choix est trop long : 200 caractères au maximum.": {
@@ -16816,7 +17112,7 @@
   },
   "Un choix par ligne. Écrite dans un champ Choix, la réponse y est rangée au choix de même libellé.": {
     "where": [
-      "components/app/automation-steps.tsx:892"
+      "components/app/automation-steps.tsx:880"
     ]
   },
   "Un choix porte un pictogramme ou une image, pas les deux.": {
@@ -16841,7 +17137,7 @@
   },
   "Un compte lié vous connecte en un clic, sans mot de passe. Lier ou délier un compte demande votre mot de passe.": {
     "where": [
-      "components/app/settings/profile-tab.tsx:310"
+      "components/app/settings/profile-tab.tsx:311"
     ]
   },
   "Un CRM léger pour une équipe commerciale. Les opportunités avancent dans un pipeline, portent un montant pondéré par leur probabilité, et l'IA en évalue le risque et conseille la prochaine action à partir des notes. Les échanges avec les clients sont consignés et résumés, les entreprises cumulent ce qu'elles représentent.": {
@@ -16852,6 +17148,11 @@
   "Un de ces champs a changé depuis : annuler cette modification effacerait la plus récente.": {
     "where": [
       "lib/messages.ts:100"
+    ]
+  },
+  "Un en-tête n’a pas de nom": {
+    "where": [
+      "lib/automations.ts:751"
     ]
   },
   "Un environnement par colonne ; ce qui diffère de la production est surligné.": {
@@ -16866,7 +17167,7 @@
   },
   "Un filtre est trop long : 4 000 caractères au plus.": {
     "where": [
-      "lib/automations.ts:1153"
+      "lib/automations.ts:1453"
     ]
   },
   "Un filtre et une couleur ; la première règle qui correspond l’emporte.": {
@@ -16877,6 +17178,11 @@
   "Un formulaire doit poser au moins une question.": {
     "where": [
       "lib/messages.ts:260"
+    ]
+  },
+  "Un formulaire, clé=valeur": {
+    "where": [
+      "components/app/automation-steps.tsx:1021"
     ]
   },
   "Un gestionnaire de tickets pour une équipe produit. Chaque ticket est rattaché à un composant et à un sprint ; l'IA propose une catégorie, estime la gravité et résume le signalement. Un kanban suit l'avancement, une chronologie montre les sprints, un formulaire permet à n'importe qui de signaler un problème, et une automatisation note la date de résolution.": {
@@ -16909,6 +17215,11 @@
       "components/app/token-dialog.tsx:235"
     ]
   },
+  "Un JSON à composer": {
+    "where": [
+      "components/app/automation-steps.tsx:1020"
+    ]
+  },
   "Un même champ est cité deux fois.": {
     "where": [
       "lib/messages.ts:259"
@@ -16916,12 +17227,12 @@
   },
   "Un message dans un canal connecté": {
     "where": [
-      "lib/automations.ts:167"
+      "lib/automations.ts:221"
     ]
   },
   "Un modèle au format JSON du chapitre 20 — exporté d’une base, proposé par l’IA ou écrit à la main. Il rejoint la galerie de toute l’instance ; un modèle de même clé est remplacé.": {
     "where": [
-      "components/app/template-gallery.tsx:1202"
+      "components/app/template-gallery.tsx:1200"
     ]
   },
   "Un montant": {
@@ -16948,7 +17259,7 @@
     "where": [
       "components/app/analytics/sql-question.tsx:219",
       "components/app/forms/answers.ts:65",
-      "lib/automations.ts:179"
+      "lib/automations.ts:234"
     ]
   },
   "un nombre arrondi": {
@@ -16991,11 +17302,6 @@
       "components/app/ai-field.tsx:715"
     ]
   },
-  "Un POST en HTTPS": {
-    "where": [
-      "lib/automations.ts:166"
-    ]
-  },
   "un programme, un script, une synchronisation": {
     "where": [
       "components/app/token-dialog.tsx:65"
@@ -17008,7 +17314,7 @@
   },
   "Un projet regroupe vos bases. Créez le vôtre — ou ouvrez le lien d’invitation qu’on vous a envoyé pour rejoindre celui d’une équipe.": {
     "where": [
-      "app/page.tsx:898"
+      "app/page.tsx:903"
     ]
   },
   "Un second axe fait lire deux échelles à la fois : réservez-le aux mesures qui ne se comparent pas.": {
@@ -17033,7 +17339,8 @@
   },
   "Un texte": {
     "where": [
-      "components/app/analytics/sql-question.tsx:220"
+      "components/app/analytics/sql-question.tsx:220",
+      "components/app/automation-steps.tsx:1022"
     ]
   },
   "Un texte : « 12 rue des Lilas, Lyon ».": {
@@ -17043,7 +17350,7 @@
   },
   "Un texte court, sur une ligne": {
     "where": [
-      "lib/automations.ts:178"
+      "lib/automations.ts:233"
     ]
   },
   "Un texte de la vue est trop long.": {
@@ -17053,7 +17360,7 @@
   },
   "Un texte libre": {
     "where": [
-      "lib/automations.ts:177"
+      "lib/automations.ts:232"
     ]
   },
   "Un thème, une couleur, une police : tout est déjà réglé, changez ce que vous voulez.": {
@@ -17063,7 +17370,12 @@
   },
   "Un webhook prévient un autre système, dans la seconde, qu’une ligne a été créée, modifiée ou supprimée — y compris en SQL direct —, avec la ligne complète avant et après. Chaque envoi est signé.": {
     "where": [
-      "components/app/webhook-dialog.tsx:172"
+      "components/app/webhook-dialog.tsx:188"
+    ]
+  },
+  "Une adresse en https est attendue.": {
+    "where": [
+      "lib/automations.ts:1465"
     ]
   },
   "Une adresse est située une fois pour toutes par le service de géocodage de l’instance ; deux nombres se placent tels quels.": {
@@ -17083,7 +17395,7 @@
   },
   "Une adresse web": {
     "where": [
-      "lib/automations.ts:182"
+      "lib/automations.ts:237"
     ]
   },
   "Une automatisation vous adresse une notification.": {
@@ -17113,7 +17425,22 @@
   },
   "Une base prête à l’emploi dans « {label} » : tables, lignes d’exemple, vues, tableaux de bord et automatisations.": {
     "where": [
-      "components/app/template-gallery.tsx:280"
+      "components/app/template-gallery.tsx:281"
+    ]
+  },
+  "Une boucle ne peut pas en contenir une autre.": {
+    "where": [
+      "lib/automations.ts:1488"
+    ]
+  },
+  "Une boucle parcourt de 1 à {d} lignes.": {
+    "where": [
+      "lib/automations.ts:1489"
+    ]
+  },
+  "Une clé d’API, un jeton : laissez-le secret. Chiffré, il n’est plus jamais affiché, et ne part que vers l’hôte pour lequel vous l’avez donné.": {
+    "where": [
+      "components/app/automation-steps.tsx:977"
     ]
   },
   "Une colonne par choix de la liste ; glisser une carte change sa valeur, glisser l’en-tête d’une colonne la déplace.": {
@@ -17123,12 +17450,12 @@
   },
   "Une condition a au moins un chemin.": {
     "where": [
-      "lib/automations.ts:1135"
+      "lib/automations.ts:1435"
     ]
   },
   "Une condition teste une ligne : à heure fixe, cherchez-en une d’abord.": {
     "where": [
-      "lib/automations.ts:1125"
+      "lib/automations.ts:1425"
     ]
   },
   "une date": {
@@ -17140,7 +17467,7 @@
   "Une date": {
     "where": [
       "components/app/analytics/sql-question.tsx:217",
-      "lib/automations.ts:181"
+      "lib/automations.ts:236"
     ]
   },
   "une date déplacée": {
@@ -17183,9 +17510,9 @@
       "lib/messages.ts:37"
     ]
   },
-  "Une horloge n’a pas de ligne : pour agir sur une ligne, commencez par « Chercher une ligne ».": {
+  "Une horloge n’a pas de ligne : pour agir sur des lignes, commencez par « Chercher une ligne » ou « Pour chaque ligne ».": {
     "where": [
-      "components/app/automation-steps.tsx:529"
+      "components/app/automation-steps.tsx:540"
     ]
   },
   "Une ligne devient un PDF : une facture, un devis, une fiche. Le texte cite les colonnes, un tableau liste les lignes liées. Chacun le lit avec ses droits : un champ qu’il ne voit pas n’y figure pas.": {
@@ -17195,13 +17522,13 @@
   },
   "Une ligne est créée": {
     "where": [
-      "lib/automations.ts:142"
+      "lib/automations.ts:195"
     ]
   },
   "Une ligne est modifiée": {
     "where": [
       "components/product-glimpse.tsx:892",
-      "lib/automations.ts:143"
+      "lib/automations.ts:196"
     ]
   },
   "Une ligne par enregistrement, regroupées sous des titres.": {
@@ -17246,12 +17573,12 @@
   },
   "Une notification dans basedb": {
     "where": [
-      "lib/automations.ts:164"
+      "lib/automations.ts:218"
     ]
   },
   "Une notification ouvre une ligne : à heure fixe, cherchez-en une d’abord.": {
     "where": [
-      "components/app/automation-steps.tsx:705"
+      "components/app/automation-steps.tsx:717"
     ]
   },
   "Une nouvelle table": {
@@ -17262,6 +17589,11 @@
   "Une page de saisie : chaque envoi ajoute une ligne.": {
     "where": [
       "lib/views.ts:134"
+    ]
+  },
+  "Une paire clé=valeur par ligne, envoyée encodée comme un formulaire web.": {
+    "where": [
+      "components/app/automation-steps.tsx:944"
     ]
   },
   "Une par écran, dans cet ordre. Donnez sous chacune sa bonne réponse et ce qu’elle rapporte ; sans bonne réponse, la question est posée sans être notée.": {
@@ -17276,12 +17608,12 @@
   },
   "une personne": {
     "where": [
-      "lib/automations.ts:827"
+      "lib/automations.ts:1098"
     ]
   },
   "Une personne à prévenir n’a plus de compte.": {
     "where": [
-      "lib/automations.ts:1143"
+      "lib/automations.ts:1443"
     ]
   },
   "Une personne de l’espace de travail. Une personne dont le compte est désactivé reste affichée sur ses lignes, mais n’est plus proposée.": {
@@ -17340,6 +17672,17 @@
       "components/app/forms/form-fill.tsx:325"
     ]
   },
+  "Une requête {method} n’envoie pas de corps.": {
+    "where": [
+      "components/app/automation-steps.tsx:1063",
+      "lib/automations.ts:1487"
+    ]
+  },
+  "Une requête HTTPS vers un service : méthode, en-têtes, corps": {
+    "where": [
+      "lib/automations.ts:220"
+    ]
+  },
   "Une seule ligne liée : une ligne de la cible encore liée ne peut pas être supprimée.": {
     "where": [
       "components/app/schema-editor.tsx:1698"
@@ -17347,7 +17690,7 @@
   },
   "une table": {
     "where": [
-      "components/app/automation-flow.tsx:523"
+      "components/app/automation-flow.tsx:602"
     ]
   },
   "Une table existante": {
@@ -17387,7 +17730,7 @@
   },
   "Une valeur peut citer :": {
     "where": [
-      "components/app/automation-steps.tsx:925"
+      "components/app/automation-steps.tsx:1269"
     ]
   },
   "Une vraie vue PostgreSQL de la base, rangée parmi ses tables. Chacun la lit avec ses propres droits : elle ne montre jamais un champ qu’on ne voit pas.": {
@@ -17412,7 +17755,7 @@
   },
   "Urgent\nNormal\nPlus tard": {
     "where": [
-      "components/app/automation-steps.tsx:873"
+      "components/app/automation-steps.tsx:861"
     ]
   },
   "Utilisateur": {
@@ -17430,7 +17773,7 @@
     "where": [
       "components/app/admin/admin-panel.tsx:30",
       "components/app/admin/users-tab.tsx:110",
-      "components/app/command-palette.tsx:1333"
+      "components/app/command-palette.tsx:1334"
     ]
   },
   "Utilisateurs et groupes": {
@@ -17462,12 +17805,18 @@
   },
   "Valeur {value}": {
     "where": [
-      "components/app/automation-steps.tsx:348"
+      "components/app/automation-steps.tsx:359"
     ]
   },
   "valeur absente de la liste": {
     "where": [
       "lib/import.ts:491"
+    ]
+  },
+  "Valeur de l’en-tête {n}": {
+    "where": [
+      "components/app/automation-steps.tsx:1154",
+      "components/app/automation-steps.tsx:1162"
     ]
   },
   "Valeur enregistrée (non modifiable)": {
@@ -17502,9 +17851,20 @@
       "lib/messages.ts:78"
     ]
   },
+  "Valeur secrète": {
+    "where": [
+      "components/app/automation-steps.tsx:1153"
+    ]
+  },
+  "Valeur secrète de l’en-tête {n}": {
+    "where": [
+      "components/app/automation-steps.tsx:1110"
+    ]
+  },
   "Valeur, ou {{champ}}": {
     "where": [
-      "components/app/automation-steps.tsx:349"
+      "components/app/automation-steps.tsx:360",
+      "components/app/automation-steps.tsx:1163"
     ]
   },
   "Valeurs": {
@@ -17593,12 +17953,12 @@
   },
   "Vérifier la signature (Node.js)": {
     "where": [
-      "components/app/webhook-dialog.tsx:63"
+      "components/app/webhook-dialog.tsx:64"
     ]
   },
   "Vérifiez qu’elle est démarrée, puis rechargez.": {
     "where": [
-      "app/page.tsx:844"
+      "app/page.tsx:849"
     ]
   },
   "Verrouillé": {
@@ -17708,7 +18068,7 @@
   "Voir les lignes": {
     "where": [
       "components/app/admin/permissions-tab.tsx:56",
-      "components/app/share-access-dialog.tsx:43",
+      "components/app/share-access-dialog.tsx:44",
       "components/app/views/view-switcher.tsx:259"
     ]
   },
@@ -17746,7 +18106,7 @@
   },
   "Votre administrateur crée votre compte et vous transmet un mot de passe temporaire. Si l’instance a été installée avec une adresse d’administrateur imposée, son mot de passe s’est affiché une seule fois dans les journaux du serveur.": {
     "where": [
-      "components/login.tsx:192"
+      "components/login.tsx:193"
     ]
   },
   "Votre adresse vient de votre fournisseur d’identité : elle ne se change pas ici.": {
@@ -17756,7 +18116,7 @@
   },
   "Votre compte n’a pas de mot de passe : lier ou délier un fournisseur, qui demande de le confirmer, n’est pas possible ici. Un administrateur peut vous en attribuer un.": {
     "where": [
-      "components/app/settings/profile-tab.tsx:368"
+      "components/app/settings/profile-tab.tsx:369"
     ]
   },
   "Votre compte n’a pas de mot de passe : vous vous connectez par votre fournisseur d’identité.": {
@@ -17766,7 +18126,7 @@
   },
   "Votre compte se connecte par un fournisseur d’identité : son adresse suit celle de votre compte chez lui, à chaque connexion.": {
     "where": [
-      "components/app/settings/profile-tab.tsx:171"
+      "components/app/settings/profile-tab.tsx:172"
     ]
   },
   "Votre demande au Copilot": {
@@ -17791,7 +18151,7 @@
   },
   "Votre seul moyen de connexion : il ne peut pas être délié.": {
     "where": [
-      "components/app/settings/profile-tab.tsx:343"
+      "components/app/settings/profile-tab.tsx:344"
     ]
   },
   "Votre table est prête. Ajoutez votre premier enregistrement pour lui donner vie.": {
@@ -17811,12 +18171,12 @@
   },
   "Vous devez pouvoir lire tous les champs des tables choisies : un envoi n’est jamais amputé d’un champ.": {
     "where": [
-      "components/app/webhook-dialog.tsx:367"
+      "components/app/webhook-dialog.tsx:412"
     ]
   },
   "Vous êtes connecté en tant que": {
     "where": [
-      "app/invitation/[token]/page.tsx:138"
+      "app/invitation/[token]/page.tsx:139"
     ]
   },
   "Vous ferez mieux la prochaine fois": {
@@ -17881,12 +18241,12 @@
   },
   "Vue « {label} »…": {
     "where": [
-      "lib/templates.ts:714"
+      "lib/templates.ts:39"
     ]
   },
   "Vue de « {table} » · {kind}": {
     "where": [
-      "components/app/command-palette.tsx:933"
+      "components/app/command-palette.tsx:934"
     ]
   },
   "Vue indisponible": {
@@ -17932,12 +18292,12 @@
   },
   "Vue SQL · {base}": {
     "where": [
-      "components/app/command-palette.tsx:764"
+      "components/app/command-palette.tsx:765"
     ]
   },
   "vue sql||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:333"
+      "components/app/command-palette.tsx:334"
     ]
   },
   "Vue verrouillée : déverrouillez-la depuis le sélecteur pour la modifier": {
@@ -17947,7 +18307,7 @@
   },
   "vue||mots-clés de recherche": {
     "where": [
-      "components/app/command-palette.tsx:332"
+      "components/app/command-palette.tsx:333"
     ]
   },
   "Webhooks": {
@@ -17957,12 +18317,12 @@
   },
   "Webhooks — {label}": {
     "where": [
-      "components/app/webhook-dialog.tsx:170"
+      "components/app/webhook-dialog.tsx:186"
     ]
   },
   "Webhooks de cette base": {
     "where": [
-      "components/app/webhook-dialog.tsx:197"
+      "components/app/webhook-dialog.tsx:213"
     ]
   },
   "Webhooks…": {
@@ -17977,14 +18337,14 @@
   },
   "Zoom arrière": {
     "where": [
-      "components/app/automation-flow.tsx:703",
-      "components/app/automation-flow.tsx:708"
+      "components/app/automation-flow.tsx:800",
+      "components/app/automation-flow.tsx:805"
     ]
   },
   "Zoom avant": {
     "where": [
-      "components/app/automation-flow.tsx:692",
-      "components/app/automation-flow.tsx:697"
+      "components/app/automation-flow.tsx:789",
+      "components/app/automation-flow.tsx:794"
     ]
   }
 }

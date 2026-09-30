@@ -1,13 +1,14 @@
 ---
 title: Automatiseringer
-description: Når en række ændres, på et fast tidspunkt eller med et klik — rediger, opret, find, forgren, spørg AI, giv besked, send en e-mail, kald en webhook, skriv på Slack.
+description: Når en række ændres, på et fast tidspunkt eller med et klik — rediger, opret, find, gentag for hver række, forgren, spørg AI, giv besked, send en e-mail, kald en tjeneste, skriv på Slack.
 ---
 
 En automatisering siger **hvornår**, **hvis** og **så**: når en opgave skifter til »Fait«,
 notér tidspunktet; når en negativ anmeldelse kommer ind, giv den ansvarlige besked, og skriv på
 Slack; hver mandag kl. 9, opret rækken til teammødet. Og når én handling ikke er nok, følger den
-et **flow**: find en række, tag den ene eller den anden gren alt efter, hvad den siger, og genbrug
-i et trin det, som et tidligere trin har fundet eller skrevet.
+et **flow**: find en række, tag den ene eller den anden gren alt efter, hvad den siger, gentag
+trin for hver række, der matcher et filter, og genbrug i et trin det, som et tidligere trin har
+fundet eller skrevet.
 
 De åbnes fra **Automatiseringer** i blokken for den åbne database nederst i sidepanelet og kræver
 niveauet **Administrere**.
@@ -50,14 +51,58 @@ Op til tredive trin i rækkefølge; det første, der mislykkes, stopper de efter
 | **Find en række** | den første række i en tabel, der matcher et filter, så de efterfølgende trin kan citere eller redigere den |
 | **Giv nogen besked** | en [notifikation](/basedb/da/fonctionnalites/collaboration/#notifikationer) til udvalgte personer eller til personen i et Person-felt |
 | **Send en e-mail** | til personer i teamet, til personen i et Person-felt, til adressen i et E-mail-felt — en kunde, en leverandør — eller til skrevne adresser; emnet og teksten citerer rækken og de foregående trin |
-| **Kald en webhook** | en `POST` over HTTPS til en adresse efter eget valg; svaret kan derefter citeres |
+| **Kald en webhook** | en HTTPS-anmodning til en tjeneste — metode, adresse, headere og brødtekst, som du selv bestemmer ([detaljer](#kald-en-tjeneste)); svaret kan derefter citeres |
 | **Send til Slack** | en besked i en [forbundet](/basedb/da/integrations/synchronisation/#slack) kanal |
 | **Spørg AI** | et svar fra [AI-udbyderen](/basedb/da/fonctionnalites/ia/) på en instruktion, der citerer rækken og de tidligere trin — skriv, opsummér, klassificér —, læst som en tekst, et tal, ja eller nej, en dato eller et valg fra en liste |
 | **Betingelse** | flere grene: den første, hvis betingelse er opfyldt, tages, »Ellers« når ingen er det; grenene mødes igen bagefter |
+| **For hver række** | de trin, den indeholder, én gang for hver række i en tabel, der matcher et filter ([detaljer](#for-hver-række)) |
 
 En søgning, der ikke finder noget, stopper ikke flowet: de trin, der skulle redigere dens række,
 springes over. Vil du gøre noget andet i det tilfælde, tester en betingelse det — en gren med et
 tomt filter tages, så snart søgningen har fundet noget.
+
+## For hver række
+
+Trinnet **For hver række** læser de rækker i en tabel, der matcher dets filter — tomt: alle —,
+i den valgte rækkefølge, op til dets grænse (50 som standard, højst 200), og udfører derefter
+én gang for hver af dem de trin, der er placeret i dets ramme. »Hver mandag, ryk for ubetalte
+fakturaer« skrives: **På et fast tidspunkt**, derefter **For hver række** af fakturaer
+`payee eq false and relancee eq false`, og i løkken en e-mail til fakturaens kontakt og
+**Rediger en række**, der afkrydser »Relancée«.
+
+I løkken navngiver trinnets id **gennemgangens række**: `{{e1.client}}` citerer den, og
+**Rediger en række** foreslår den blandt de rækker, der kan redigeres. Efter løkken fortæller
+`{{e1.nombre}}`, hvor mange rækker den har gennemgået — til en opsummering på Slack, for
+eksempel. Filteret kan citere det foregående: udløst af en betalt faktura,
+`facture eq {{_id}}` gennemgår dens detaljelinjer.
+
+Ud over grænsen venter de resterende rækker på den næste kørsel, som siger det: sørg for, at de
+behandlede rækker falder uden for filteret — et afkrydsningsfelt »relancée«, en dato — så de
+alle bliver behandlet hen over flere kørsler. En løkke kan ikke indeholde en anden, og en
+kørsel stopper efter to minutter.
+
+## Kald en tjeneste
+
+Trinnet **Kald en webhook** sender som standard automatiseringens data som en `POST`: den
+valgte række og det, de foregående trin har fundet eller skrevet. For at tale med en tjeneste,
+som den forventer det, indstiller du:
+
+- **metoden**: `POST`, `PUT`, `PATCH`, `GET` eller `DELETE` — de to sidste uden brødtekst;
+- **adressen**, der kan citere efter sin vært — `https://api.exemple.fr/clients/{{e2.numero}}`;
+  hver værdi kodes der;
+- **headere**, hvis værdi kan citere: `Idempotency-Key: {{_id}}`;
+- **brødteksten**: automatiseringens data, en **JSON at sammensætte**, en **formular** (et
+  `nøgle=værdi`-par pr. linje) eller en **tekst**. I en JSON er et citat i anførselstegn tekst,
+  og uden for anførselstegn en værdi — et tal, ja eller nej, en liste:
+
+```json
+{ "facture": "{{e1.numero}}", "montant": {{e1.montant}}, "payee": {{e1.payee}} }
+```
+
+En API-nøgle eller et token sættes i en **hemmelig** header (hængelåsen): krypteret med
+instansnøglen bliver den aldrig vist igen — hverken på skærmen, via API'et eller til Copilot —
+og sendes kun til den vært, du har givet den til. Skifter adressens vært, skal værdien gives
+igen; **Erstat** indtaster en ny.
 
 ## Spørg AI
 
@@ -89,6 +134,8 @@ tekst:
   `e2` — hvert trin viser sit id på sit kort;
 - `{{e3.statut}}`, `{{e3.reponse.numero}}`: det, webhooken `e3` svarede;
 - `{{e4.reponse}}`: svaret fra AI-trinnet `e4`;
+- `{{e5.client}}` i løkken `e5`, gennemgangens række; `{{e5.nombre}}` efter den, antallet af
+  gennemgåede rækker;
 - `{{_maintenant}}`: tidspunktet for kørslen.
 
 En værdi, der består af ét enkelt citat, overfører selve værdien: en relation, en person, et
@@ -123,7 +170,7 @@ Copilot læse rækker i samtalen (højst 50 pr. læsning), og hver læsning list
 **Kørsler** gemmer de seneste 50 i 30 dage: afventer, i gang, lykkedes, sprunget over med sin
 årsag, mislykkedes med sin kode. Vælger du en, lægges den oven på flowet — den valgte gren
 tegnes op, hvert gennemført trin fortæller, hvad det gjorde, og hvor lang tid det tog, og resten
-nedtones.
+nedtones. I en løkke fortæller hvert trin også, hvor mange gange det har kørt.
 
 ## På hvis vegne den handler
 
@@ -137,15 +184,17 @@ alle andre.
 
 - Det, en automatisering skriver, udløser ingen andre: det, der skal hænge sammen, skrives i ét
   flow.
-- En søgning giver én række, den første; endnu intet »for hver række« og ingen ventetid
-  (»tre dage efter«).
+- En søgning giver én række, den første; en løkke gennemgår højst 200 pr. kørsel, og det
+  første trin, der mislykkes, stopper den. Ingen ventetid (»tre dage efter«).
 - Ingen scripts. En e-mail sendes som almindelig tekst, én pr. modtager — højst tyve pr.
   trin —, via [instansens afsendelsesserver](/basedb/da/hebergement/variables/#e-mails); et svar
   går til den person, der ejer automatiseringen.
 - En betingelse tester en række: for at vælge en gren ud fra AI's svar skal svaret først skrives
   i et felt i rækken.
 - En [databaseskabelon](/basedb/da/fonctionnalites/modeles/) medtager kun automatiseringer uden
-  søgning, betingelse eller AI-trin.
+  søgning, løkke, betingelse eller AI-trin, og aldrig en webhook.
+- En webhook følger ikke omdirigeringer og venter højst 10 sekunder; et andet svar end 2xx får
+  trinnet til at mislykkes.
 - 100 kørsler i timen pr. automatisering; et mistet tidspunkt i en tidsplan indhentes kun én
   gang.
 - Forsinkelsen mellem skrivningen og handlingen er i størrelsesordenen et sekund.

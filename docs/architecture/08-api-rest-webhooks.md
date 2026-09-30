@@ -77,7 +77,7 @@ Toutes les routes sont préfixées de `/api/v1/{tenantRef}`. La colonne « droit
 | `GET` | `/me/notifications` | Notifications de l'appelant, `unread=true` pour les seules non-lues ; `meta.unread` (chapitre 16 §2) | — | **session seule** |
 | `POST` | `/me/notifications/read` | Marquer lues : `{ids}` ou `{all: true}` | — | **session seule** |
 | `GET` | `/me/tokens` | Les jetons d'intégration que l'appelant a créés, sur toutes les bases, avec la base qu'ils ouvrent (`null` une fois supprimée) ; jamais un secret (chapitre 11 §10) | — | **session seule** |
-| `GET` | `/events` | Flux temps réel `text/event-stream` : signaux d'écriture, de commentaire, de notification, de présence (chapitre 16 §3) | `read` sur la table suivie | **session seule** |
+| `GET` | `/events` | Flux temps réel `text/event-stream` : signaux d'écriture, de commentaire, de notification, de présence (chapitre 16 §3). Un jeton d'intégration y suit une table sans y être présent, revérifié à chaque battement (chapitre 16 §3.2) | `read` sur la table suivie | session, jeton |
 | `POST` | `/presence` | Déplacer la présence d'un flux ouvert vers une autre ligne de sa table : `{session, base, table, record?}` | `read` | **session seule** |
 | `GET` `POST` | `/admin/bases/{base}/integrations` | Connexions Slack de la base ; en ajouter une `{label, url}` — l'adresse n'est jamais rendue (chapitre 19 §1) | `manage_schema` | **session seule** |
 | `DELETE` | `/admin/bases/{base}/integrations/{id}` | Supprimer une connexion | `manage_schema` | **session seule** |
@@ -114,7 +114,7 @@ Toutes les routes sont préfixées de `/api/v1/{tenantRef}`. La colonne « droit
 | `GET` | `/admin/bases/{base}/automations/{id}/runs` | Ses 50 dernières exécutions | `manage_schema` | **session seule** |
 | `POST` | `/automations/{id}/run` | L'exécuter pour une ligne `{record}` : un bouton (`read` sur la ligne) ou un essai (`manage_schema`) ; `202` | selon le cas | session, jeton |
 | `POST` | `/history/undo` | Annuler une transaction de l'appelant : `{transaction}` (chapitre 16 §4) ; la réponse porte sa propre transaction | selon les écritures annulées | session, jeton |
-| `POST` | `/admin/bases` | Créer une base : `label`, `description?` (§9.5) | `manage_schema` (portée tenant) | **session seule** |
+| `POST` | `/admin/bases` | Créer une base : `label`, `description?` (§9.5) ; avec `template` — la clé d'un modèle du catalogue ou le modèle entier —, `rows?`, `ai_consent?`, `language?`, `project?`, la construire d'un modèle en une opération, rien de créé si une étape échoue ; avec `Accept: application/x-ndjson`, les étapes au fil de l'eau (chapitre 20 §4) | `manage_schema` (portée tenant) | **session seule** |
 | `POST` | `/admin/bases/{base}/tables` | Créer une table et ses champs initiaux : `description?` sur la table et sur chaque champ | `manage_schema` | **session seule** |
 | `POST` | `/admin/bases/{base}/tables/{table}/fields` | Ajouter un champ : `description?`, `format?` (`{display, currency?, rating_max?}`, chapitre 04 §2.11) ; une formule avec `formula: {expression, timezone?}` (chapitre 04 §7) ; une recherche, un cumul, un décompte avec `rollup: {via, via_table?, target?, aggregate?}` — `via` le champ relation suivi, `via_table` la table qui le porte quand il désigne celle-ci (sens entrant), `target` le champ lu, `aggregate` parmi `count`, `sum`, `avg`, `min`, `max` (chapitre 04 §7 ter) | `manage_schema` | **session seule** |
 | `POST` | `/admin/bases/{base}/tables/{table}/links` | Ajouter un champ lien : `description?`, `required?`, `on_delete?` ; `multiple: true` pour une relation multiple (chapitre 04 §4 bis), dont `on_delete` vaut `set_null` — « retirer de la liste » — par défaut et n'admet pas `cascade` ; la réponse porte `kind` et `constraint` nul pour elle | `manage_schema` + `read` sur la cible | **session seule** |
@@ -1080,6 +1080,23 @@ Règles, toutes exigées :
 6. Délai de connexion 5 s, délai total 10 s, corps de réponse lu au plus 8 Kio puis ignoré ; **URL revalidée à chaque tentative**.
 7. **Le mode développement ne relâche que l'obligation HTTPS, jamais le filtrage d'adresses**, et il est refusé si l'environnement déclare une production.
 
+**Les serveurs internes de l'exploitant, et eux seuls.** Un serveur du réseau de
+l'exploitant — un assistant, un outil métier — n'a pas d'adresse publique et parle souvent
+HTTP sur son propre port. `BASEDB_WEBHOOK_ALLOW` les nomme, séparés par des virgules : un
+nom (`chat.intra.exemple.fr`), un domaine et tous les noms dessous (`*.intra.exemple.fr`,
+qui n'inclut pas `intra.exemple.fr` lui-même), une adresse ou une plage (`10.12.0.0/16`,
+`fd12::/16`). Une cible nommée là, ou dont **toutes** les adresses résolues tombent dans une
+plage de la liste, passe quels que soient son adresse, son port et son schéma ; toute autre
+reste soumise aux règles 1 à 6. La liste vaut pour tout ce qui sort par ce filtre :
+webhooks, requêtes HTTP des automatisations, sources des tables synchronisées. Une entrée
+illisible arrête le démarrage plutôt que d'être lue autrement que son auteur ne l'a écrite.
+C'est une décision d'exploitant, jamais d'un tenant : une personne qui crée un webhook ne
+peut pas étendre la liste.
+
+L'autre sens existe aussi : un serveur interne qui ne peut pas être joint **se connecte**
+à basedb et suit une table par le flux `/events`, avec un jeton d'intégration de la base
+(chapitre 16 §3.2) — des signaux, jamais des valeurs, relues ensuite par l'API.
+
 **Ce que voit le créateur de l'abonnement.** Le webhook ne doit pas devenir un scanner du réseau interne. L'état exposé se limite à `status` et à un `error_code` ternaire — livrée, échec temporaire, échec permanent — auquel s'ajoute `WEBHOOK_TARGET_REJECTED` quand le filtre d'adresses a bloqué, **sans dire pourquoi**. Le code HTTP du point d'arrivée est exposé, le créateur en ayant besoin pour déboguer son propre service, mais **ni le détail réseau (DNS, connexion, TLS), ni la latence** ne le sont : c'est le détail réseau et la latence qui font le scanner, pas un `502` renvoyé par un service que l'on administre soi-même.
 
 ### 10.9 Exploitation de la file
@@ -1553,7 +1570,7 @@ listées ; masque de lecture complet exigé et revérifié à la réactivation ;
 programmés par le drain du chapitre 07 ; ordre FIFO par clé de partition ; signature
 `t=<unix>,v1=<hex>` ; réessais à repli exponentiel respectant `Retry-After` ;
 désactivation après cinquante échecs ; filtre d'adresses (HTTPS, adresses publiques
-seulement). Écarts : l'adresse résolue n'est pas épinglée pour la connexion (la résolution
+seulement), et les serveurs internes nommés par `BASEDB_WEBHOOK_ALLOW` (§10.8). Écarts : l'adresse résolue n'est pas épinglée pour la connexion (la résolution
 DNS est contrôlée avant l'envoi, pas imposée à la socket) ; `BASEDB_WEBHOOK_DEV=1` lève
 l'exigence de HTTPS **et** le filtre d'adresses, en développement seulement ; pas
 d'événement de resynchronisation (§10.7) ; les nombres voyagent en chaînes, tels que

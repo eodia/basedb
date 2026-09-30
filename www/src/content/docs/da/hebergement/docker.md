@@ -29,8 +29,8 @@ volumen, `/data`, til filerne i felterne Fil og Billede.
 | Tag | Indhold |
 |---|---|
 | `latest` | den senest udgivne version |
-| `0.4` | den seneste version 0.4.x |
-| `0.4.0` | præcis denne version |
+| `0.5` | den seneste version 0.5.x |
+| `0.5.0` | præcis denne version |
 
 ## Tjenesterne
 
@@ -52,6 +52,24 @@ docker compose down                 # stop (volumenerne bevares)
 
 Fra en klon af repositoriet bygger `docker compose up -d --build` imaget ud fra koden i stedet
 for at hente det.
+
+## Bag en gateway, under en sti
+
+Når basedb udgives under en sti — `https://passerelle.example.com/basedb/` i stedet for i
+roden af et domæne —, angiv denne sti:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# eller, uden offentlig adresse:
+BASEDB_BASE_PATH=/basedb
+```
+
+Alt går derefter under `/basedb`: brugerfladen, `/basedb/api`, `/basedb/mcp`, delingslinkene
+og dem i e-mails. Gatewayen kan **bevare stien** ved at videresende forespørgslen, eller
+**fjerne den**: basedb accepterer begge dele. `BASEDB_BASE_PATH=/` fremtvinger roden.
+
+Imaget er det samme for alle adresser: stien skrives i brugerfladen, når containeren starter,
+og at ændre sti kun kræver en genstart.
 
 ## Skift portene
 

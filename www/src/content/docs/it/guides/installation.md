@@ -73,7 +73,7 @@ Conserva la chiave generata: vedi il riquadro qui sotto.
 
 :::caution[La chiave dell’istanza]
 `BASEDB_ENCRYPTION_KEY` firma le sessioni e cifra i segreti salvati (chiavi IA,
-segreti dei webhook, link dei moduli). Cambiarla disconnette tutti e rende illeggibili questi
+segreti dei webhook, intestazioni segrete delle automazioni, link dei moduli). Cambiarla disconnette tutti e rende illeggibili questi
 segreti. Generala una volta sola e salvala insieme al database.
 :::
 

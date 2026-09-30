@@ -1536,6 +1536,28 @@ export default {
 		title: 'Mi változott a basedb-ben',
 		intro: 'Minden változás részletei <a href="https://github.com/eodia/basedb/commits/main">a tároló előzményeiben</a> találhatók. Ami ezután jön: az <a href="/feuille-de-route/">ütemterv</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'A basedb-re támaszkodó alkalmazásoknak',
+				tag: 'Új',
+				items: [
+					'<strong>Egyetlen hívással, egy sablonból létrehozott adatbázis</strong>: a szerver az egész sablont alkalmazza — táblákat, kapcsolatokat, sorokat, nézeteket, automatizálásokat —, vagy semmit, ha egy lépés meghiúsul. Ezt használja a galéria is, egy alkalmazás, amely szintén magát telepíti. <a href="/integrations/api-rest/#adatbázis-létrehozása-egy-sablonból">Adatbázis létrehozása egy sablonból</a>',
+					'<strong>Token ellenőrzése</strong>: az az alkalmazás, amelynek átadják egy személy tokenét, megkérdezi a basedb-t, hogy az még érvényes-e, és kiért — a fiókjáért, a csoportjaiért. <a href="/integrations/api-rest/#token-ellenőrzése">Token ellenőrzése</a>',
+					'<strong>A belső szerverei</strong>: a webhookok és automatizálások csak azokat érik el, amelyeket a <code>BASEDB_WEBHOOK_ALLOW</code>-ban megad, HTTP-vel is; egy program egy integrációs tokennel valós időben is követhet egy táblát. <a href="/integrations/webhooks/#webhook-nélkül-tábla-követése">Tábla követése</a>',
+					'<strong>Egy elérési út alatt, egy átjáró mögött</strong>: a basedb egy olyan címen jelenik meg, mint a <code>https://passerelle.example.com/basedb/</code>, akár megtartja az átjáró az elérési utat, akár leveszi. <a href="/hebergement/docker/#egy-átjáró-mögött-egy-elérési-út-alatt">Egy átjáró mögött</a>',
+					'<strong>Egy webhook, az összes tábla egyszerre</strong>: egy esemény be- vagy kikapcsolása az összes táblához, vagy egy tábla összes eseményéhez, egyetlen kattintással.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automatizálások, amelyek bejárják a sorait, és API-kkal beszélnek',
+				tag: 'Új',
+				items: [
+					'<strong>Minden sorra</strong>: egy lépés, amely megismétli a sajátjait egy tábla minden olyan során, amely megfelel egy szűrőnek – minden hétfőn küldjön emlékeztetőt az összes kifizetetlen számláról, nem csak az elsőről. <a href="/fonctionnalites/automatisations/#minden-sorra">Minden sorra</a>',
+					'<strong>Egy webhook, amely bármely API-val szóba tud állni</strong>: a metódus, egy sorra hivatkozó cím, fejlécek, valamint egy JSON, űrlap vagy szöveg formátumú, a sor értékeivel összeállított törzs. <a href="/fonctionnalites/automatisations/#szolgáltatás-hívása">Szolgáltatás hívása</a>',
+					'<strong>Egy API-kulcs titkos marad</strong>: titkosítva soha többé nem jelenik meg – sem a képernyőn, sem az API-ban, sem a Copilotnak –, és csak arra a hosztra kerül, amelyhez megadta.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'A térkép, és címek, amelyek megtalálják a helyüket',
@@ -1888,8 +1910,8 @@ export default {
 						text: 'Az SQL-nézetek átmásolása a struktúrával együtt környezetek létrehozásakor vagy összehasonlításakor, és az adatbázissablonokban.',
 					},
 					loops: {
-						title: 'Ciklusok és várakozás az automatizálásokban',
-						text: 'Lépések ismétlése minden talált sorra, várakozás a következő előtt („három nappal később”), és a folyamatok átvitele az adatbázissablonokba.',
+						title: 'Várakozás az automatizálásokban',
+						text: 'Várakozás a következő lépés előtt („három nappal később”), és a folyamatok – feltételek, keresések, ciklusok – átvitele az adatbázissablonokba.',
 					},
 					textFormulas: {
 						title: 'Szövegképletek',

@@ -73,8 +73,9 @@ Guarde a chave gerada: veja o quadro abaixo.
 
 :::caution[A chave da instância]
 `BASEDB_ENCRYPTION_KEY` assina as sessões e criptografa os segredos salvos (chaves de IA,
-segredos de webhooks, links de formulários). Alterá-la desconecta todo mundo e torna esses
-segredos ilegíveis. Gere-a uma vez e faça backup dela junto com o banco.
+segredos de webhooks, cabeçalhos secretos das automações, links de formulários). Alterá-la
+desconecta todo mundo e torna esses segredos ilegíveis. Gere-a uma vez e faça backup dela
+junto com o banco.
 :::
 
 ## Para desenvolver

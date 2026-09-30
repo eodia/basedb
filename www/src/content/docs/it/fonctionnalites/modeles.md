@@ -147,5 +147,5 @@ Qualsiasi database può anche diventare un modello: **Salva come modello** nel m
 database, sotto **Altre azioni**. Le sue tabelle, campi, istruzioni IA, relazioni, viste condivise, dashboard e
 automazioni — e, se vuoi, fino a 50 righe per tabella — si scaricano in
 JSON, pronti a entrare nel catalogo ufficiale o in quello dell’istanza. Un’automazione che
-cerca una riga, prende rami o cita un passaggio precedente resta esclusa per
-ora, e la schermata lo indica.
+cerca una riga, percorre righe, prende rami o cita un passaggio precedente resta esclusa
+per ora, e la schermata lo indica.

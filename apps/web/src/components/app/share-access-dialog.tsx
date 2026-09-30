@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { type AccessLevel, type Invitation, type Sharing, api } from '@/lib/api/client'
+import { linkTo } from '@/lib/base-path'
 import { $t, groupName, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
@@ -54,8 +55,7 @@ const LABELS: Readonly<Record<AccessLevel | 'granular', string>> = {
 }
 
 /** The page an invitation's link opens, on this very interface. */
-export const invitationUrl = (token: string) =>
-  `${window.location.origin}/invitation/${encodeURIComponent(token)}`
+export const invitationUrl = (token: string) => linkTo(`/invitation/${encodeURIComponent(token)}`)
 
 const initials = (name: string) =>
   name

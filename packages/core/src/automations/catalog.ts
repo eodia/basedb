@@ -1,6 +1,7 @@
 import { AI_KINDS, type AiKind } from '../ai/answer.js'
 import { resolveProvider } from '../ai/draft.js'
 import { MAX_PROMPT_CHARS } from '../ai/prompt.js'
+import { seal } from '../auth/sealing.js'
 import { BasedbError } from '../errors/index.js'
 import { isAddress } from '../mail/message.js'
 import { requireOnBase } from '../rbac/require.js'
@@ -34,6 +35,24 @@ export interface Schedule {
 export type RowSource = string
 
 export const TRIGGER_ROW = 'trigger'
+
+export type HttpMethod = 'POST' | 'PUT' | 'PATCH' | 'GET' | 'DELETE'
+
+/** How a webhook's own body is written: JSON, `clé=valeur` pairs, or plain text. */
+export type BodyFormat = 'json' | 'form' | 'text'
+
+/**
+ * A header a webhook step sends (chapter 17 §1.3). A secret one — a key, a token — is
+ * sealed by the instance key, for its base and for the host it was given for, and never
+ * read back: the API shows its name alone, a save that leaves its value out keeps it, and
+ * a new host asks for it again — it cannot be sent elsewhere by changing the address.
+ */
+export type WebhookHeader =
+  | { readonly name: string; readonly value: string }
+  | { readonly name: string; readonly sealed: string; readonly host: string }
+
+/** What a secret header is sealed for: one purpose of the instance key (A25). */
+export const WEBHOOK_SECRET = 'automation/webhook-header'
 
 export type AutomationStep =
   | {
@@ -88,9 +107,28 @@ export type AutomationStep =
   | {
       readonly id: string
       readonly kind: 'webhook'
-      /** The row sent; `null`: none. */
+      /** The row the automation's own body sends; `null`: none. */
       readonly record: RowSource | null
+      /** May cite, after its host: `https://api.exemple.fr/clients/{{e2.numero}}`. */
       readonly url: string
+      readonly method: HttpMethod
+      readonly headers: readonly WebhookHeader[]
+      /** Composed, citing what came before; `null`: the automation's own JSON. */
+      readonly body: string | null
+      readonly format: BodyFormat
+    }
+  | {
+      readonly id: string
+      readonly kind: 'for_each'
+      /** The table's catalog key. */
+      readonly table: string
+      /** In the language of filters, citing what came before; empty: every row. */
+      readonly filter: string
+      readonly sort: string | null
+      /** The rows gone through at most, in the order of `sort`. */
+      readonly limit: number
+      /** Run once per row, which they cite and act on by the loop's identifier. */
+      readonly steps: readonly AutomationStep[]
     }
   | {
       readonly id: string
@@ -183,6 +221,31 @@ export const MAX_NOTIFIED = 20
 export const MAX_MAILED = 20
 /** The choices an AI step may be asked to pick among. */
 export const MAX_AI_OPTIONS = 50
+/** The rows a loop goes through, at most and when none is said. */
+export const MAX_LOOP_ROWS = 200
+export const DEFAULT_LOOP_ROWS = 50
+export const MAX_HEADERS = 20
+export const MAX_BODY_CHARS = 10_000
+export const HTTP_METHODS: readonly HttpMethod[] = ['POST', 'PUT', 'PATCH', 'GET', 'DELETE']
+/** A GET or a DELETE sends no body. */
+export const hasBody = (method: HttpMethod) => method !== 'GET' && method !== 'DELETE'
+const BODY_FORMATS: readonly BodyFormat[] = ['json', 'form', 'text']
+/** A header's name, as HTTP spells one. */
+const HEADER_NAME = /^[A-Za-z0-9!#$%&'*+.^_`|~-]{1,100}$/
+/** What HTTP itself decides — the connection, the length, the host. */
+const FORBIDDEN_HEADERS = new Set([
+  'host',
+  'content-length',
+  'transfer-encoding',
+  'connection',
+  'keep-alive',
+  'upgrade',
+  'te',
+  'trailer',
+  'expect',
+  'proxy-authorization',
+  'proxy-connection',
+])
 
 const invalid = (field: string, reason: string, detail?: unknown) =>
   new BasedbError('REQUEST_INVALID', {
@@ -204,6 +267,65 @@ export const CITATION = /\{\{\s*([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)\s*\}\}/g
 
 export function citationsOf(text: string): string[][] {
   return [...text.matchAll(CITATION)].map((m) => (m[1] as string).split('.'))
+}
+
+/** A citation at the start of a text. */
+export const CITATION_AT = /^\{\{\s*([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)\s*\}\}/
+
+/**
+ * A JSON body with each citation replaced by what `cite` gives for it — told whether it
+ * stands inside a string, where it must be text that cannot close it, or outside, where it
+ * is a value of its own. What is typed around the citations is left as it is.
+ */
+export function composeJson(
+  template: string,
+  cite: (path: string, quoted: boolean) => string,
+): string {
+  let out = ''
+  let quoted = false
+  let i = 0
+  while (i < template.length) {
+    const c = template[i] as string
+    if (c === '{') {
+      const m = CITATION_AT.exec(template.slice(i))
+      if (m !== null) {
+        out += cite(m[1] as string, quoted)
+        i += m[0].length
+        continue
+      }
+    }
+    if (quoted && c === '\\') {
+      out += template.slice(i, i + 2)
+      i += 2
+      continue
+    }
+    if (c === '"') quoted = !quoted
+    out += c
+    i++
+  }
+  return out
+}
+
+/** A form body's pairs, as written: one `clé=valeur` per line or between `&`. */
+export function formPairs(template: string): Array<readonly [string, string]> {
+  return template
+    .split(/\r?\n|&/)
+    .map((pair) => pair.trim())
+    .filter((pair) => pair !== '')
+    .map((pair) => {
+      const at = pair.indexOf('=')
+      return at < 0
+        ? ([pair, ''] as const)
+        : ([pair.slice(0, at).trim(), pair.slice(at + 1).trim()] as const)
+    })
+}
+
+/** An address as written, its citations stood in for: the host must be written out. */
+function urlOf(raw: unknown, field: string): { readonly text: string; readonly plain: string } {
+  const text = typeof raw === 'string' ? raw.trim() : ''
+  const authority = /^[a-z][a-z0-9+.-]*:\/\/([^/?#]*)/i.exec(text)?.[1] ?? ''
+  if (authority.includes('{')) throw invalid(field, 'hote_cite')
+  return { text, plain: text.replace(CITATION, 'x') }
 }
 
 // ── Schedules ────────────────────────────────────────────────────────────────
@@ -395,12 +517,22 @@ function rowSource(
   return { ref, table }
 }
 
+/** Every step of a flow, depth first: what paths and loops hold included. */
+export function stepsOf(steps: readonly AutomationStep[]): AutomationStep[] {
+  return steps.flatMap((s) => [
+    s,
+    ...(s.kind === 'branch' ? s.paths.flatMap((p) => stepsOf(p.steps)) : []),
+    ...(s.kind === 'for_each' ? stepsOf(s.steps) : []),
+  ])
+}
+
 /** Every identifier a flow already carries, so that the new ones do not collide. */
 function idsOf(raw: unknown, into: Set<string>): Set<string> {
   if (!Array.isArray(raw)) return into
   for (const item of raw) {
     const step = (item ?? {}) as Record<string, unknown>
     if (typeof step.id === 'string') into.add(step.id)
+    idsOf(step.steps, into)
     for (const p of Array.isArray(step.paths) ? step.paths : []) {
       const path = (p ?? {}) as Record<string, unknown>
       if (typeof path.id === 'string') into.add(path.id)
@@ -426,6 +558,13 @@ interface Walk {
    * configured — switching an automation on or off never does.
    */
   readonly writing: boolean
+  /**
+   * Seals a secret header for keeping; `null` when nothing is kept — a draft checked for
+   * the copilot, where a secret left out is taken as given.
+   */
+  readonly sealing: ((plaintext: string) => string) | null
+  /** The headers each webhook step of the saved automation has, by step: what a save keeps. */
+  readonly kept: ReadonlyMap<string, readonly WebhookHeader[]>
   count: number
 }
 
@@ -458,6 +597,7 @@ async function checkedSteps(
   outer: Scope,
   at: string,
   depth: number,
+  inLoop = false,
 ): Promise<AutomationStep[]> {
   if (!Array.isArray(raw)) throw invalid(at, 'etapes_invalides')
   const scope = { trigger: outer.trigger, steps: new Map(outer.steps) }
@@ -469,7 +609,7 @@ async function checkedSteps(
     if (walk.count > MAX_STEPS) throw invalid('actions', 'trop_d_etapes', MAX_STEPS)
     const id = identifier(walk, a.id, 'e', `${field}.id`)
     try {
-      const { step, gives } = await checkedStep(walk, a, id, scope, field, depth)
+      const { step, gives } = await checkedStep(walk, a, id, scope, field, depth, inLoop)
       out.push(step)
       if (gives !== undefined) scope.steps.set(id, gives)
     } catch (error) {
@@ -479,6 +619,81 @@ async function checkedSteps(
   return out
 }
 
+/** The headers of a webhook step, checked; a secret one sealed, or kept from the save before. */
+function checkedHeaders(
+  walk: Walk,
+  raw: unknown,
+  step: string,
+  host: string,
+  scope: Scope,
+  at: string,
+): WebhookHeader[] {
+  const list = Array.isArray(raw) ? raw : []
+  if (list.length > MAX_HEADERS) throw invalid(at, 'trop_d_entetes', MAX_HEADERS)
+  const seen = new Set<string>()
+  const out: WebhookHeader[] = []
+  for (const [index, item] of list.entries()) {
+    const h = (item ?? {}) as Record<string, unknown>
+    const field = `${at}[${index}]`
+    const name = typeof h.name === 'string' ? h.name.trim() : ''
+    if (!HEADER_NAME.test(name)) throw invalid(`${field}.name`, 'entete_invalide', name)
+    const key = name.toLowerCase()
+    if (FORBIDDEN_HEADERS.has(key)) throw invalid(`${field}.name`, 'entete_interdit', name)
+    if (seen.has(key)) throw invalid(`${field}.name`, 'entete_en_double', name)
+    seen.add(key)
+    const value = typeof h.value === 'string' ? h.value : ''
+    if (value.length > 4000 || /[\r\n\0]/.test(value))
+      throw invalid(`${field}.value`, 'valeur_d_entete_invalide', name)
+    if (h.secret !== true) {
+      checkCitations(value, scope, `${field}.value`)
+      out.push({ name, value })
+      continue
+    }
+    if (value.trim() !== '') {
+      // Sealed with what it is for: another base, another host, and it will not open.
+      const sealed =
+        walk.sealing === null
+          ? ''
+          : walk.sealing(JSON.stringify({ base: walk.baseId, host, value: value.trim() }))
+      out.push({ name, sealed, host })
+      continue
+    }
+    const before = (walk.kept.get(step) ?? []).find(
+      (k): k is Extract<WebhookHeader, { sealed: string }> =>
+        'sealed' in k && k.name.toLowerCase() === key,
+    )
+    if (before === undefined) {
+      if (walk.sealing !== null) throw invalid(`${field}.value`, 'secret_manquant', name)
+      out.push({ name, sealed: '', host })
+      continue
+    }
+    if (before.host !== host) throw invalid(`${field}.value`, 'secret_a_redonner', name)
+    out.push(before)
+  }
+  return out
+}
+
+/** A webhook's own body, checked for what its format asks. */
+function checkedBody(raw: unknown, format: BodyFormat, scope: Scope, at: string): string {
+  const body = typeof raw === 'string' ? raw.trim() : ''
+  if (body === '') throw invalid(at, 'corps_vide')
+  if (body.length > MAX_BODY_CHARS) throw invalid(at, 'corps_trop_long', MAX_BODY_CHARS)
+  checkCitations(body, scope, at)
+  if (format === 'json') {
+    // Parsed as the run will send it: a citation is a text inside a string, a value outside.
+    try {
+      JSON.parse(composeJson(body, (_, quoted) => (quoted ? 'x' : '0')))
+    } catch {
+      throw invalid(at, 'corps_json_invalide')
+    }
+  } else if (format === 'form') {
+    const pairs = body.split(/\r?\n|&/).filter((pair) => pair.trim() !== '')
+    if (pairs.some((pair) => !pair.includes('=')) || formPairs(body).some(([key]) => key === ''))
+      throw invalid(at, 'corps_formulaire_invalide')
+  }
+  return body
+}
+
 async function checkedStep(
   walk: Walk,
   a: Record<string, unknown>,
@@ -486,6 +701,7 @@ async function checkedStep(
   scope: Scope,
   at: string,
   depth: number,
+  inLoop: boolean,
 ): Promise<{ readonly step: AutomationStep; readonly gives?: TableInfo | null }> {
   switch (a.kind) {
     case 'update_record': {
@@ -608,9 +824,63 @@ async function checkedStep(
     }
     case 'webhook': {
       const source = rowSource(a.record, scope, `${at}.record`, null)
-      const url = typeof a.url === 'string' ? a.url.trim() : ''
-      await checkTarget(url, walk.targets)
-      return { step: { id, kind: 'webhook', record: source.ref, url }, gives: null }
+      const url = urlOf(a.url, `${at}.url`)
+      checkCitations(url.text, scope, `${at}.url`)
+      // Its host checked as it is written; what a citation adds is checked again at each run.
+      const host = (await checkTarget(url.plain, walk.targets)).host.toLowerCase()
+      const method = a.method === undefined || a.method === null ? 'POST' : a.method
+      if (typeof method !== 'string' || !(HTTP_METHODS as readonly string[]).includes(method))
+        throw invalid(`${at}.method`, 'methode_inconnue', method)
+      const format = a.format === undefined || a.format === null ? 'json' : a.format
+      if (typeof format !== 'string' || !(BODY_FORMATS as readonly string[]).includes(format))
+        throw invalid(`${at}.format`, 'format_inconnu', format)
+      const headers = checkedHeaders(walk, a.headers, id, host, scope, `${at}.headers`)
+      const composed = a.body !== undefined && a.body !== null
+      if (composed && !hasBody(method as HttpMethod))
+        throw invalid(`${at}.body`, 'corps_sans_objet', method)
+      const body = composed ? checkedBody(a.body, format as BodyFormat, scope, `${at}.body`) : null
+      return {
+        step: {
+          id,
+          kind: 'webhook',
+          record: source.ref,
+          url: url.text,
+          method: method as HttpMethod,
+          headers,
+          body,
+          format: format as BodyFormat,
+        },
+        gives: null,
+      }
+    }
+    case 'for_each': {
+      if (inLoop) throw invalid(at, 'boucle_dans_boucle')
+      if (depth >= MAX_DEPTH) throw invalid(at, 'branches_trop_profondes', MAX_DEPTH)
+      const table = tableByName(walk.tables, a.table, `${at}.table`)
+      const filter = typeof a.filter === 'string' ? a.filter.trim() : ''
+      if (filter.length > 4000) throw invalid(`${at}.filter`, 'texte_trop_long')
+      checkCitations(filter, scope, `${at}.filter`)
+      const sort = typeof a.sort === 'string' && a.sort.trim() !== '' ? a.sort.trim() : null
+      if (sort !== null) {
+        const name = sort.replace(/^-/, '')
+        if (!table.fields.has(name) && !SYSTEM_SORTS.has(name))
+          throw invalid(`${at}.sort`, 'champ_inconnu', name)
+      }
+      const limit = a.limit === undefined || a.limit === null ? DEFAULT_LOOP_ROWS : a.limit
+      if (
+        typeof limit !== 'number' ||
+        !Number.isInteger(limit) ||
+        limit < 1 ||
+        limit > MAX_LOOP_ROWS
+      )
+        throw invalid(`${at}.limit`, 'limite_invalide', MAX_LOOP_ROWS)
+      // Inside, the loop's identifier names the row of the turn; after it, how many there were.
+      const inner = { trigger: scope.trigger, steps: new Map(scope.steps).set(id, table) }
+      const steps = await checkedSteps(walk, a.steps ?? [], inner, `${at}.steps`, depth + 1, true)
+      return {
+        step: { id, kind: 'for_each', table: table.id, filter, sort, limit, steps },
+        gives: null,
+      }
     }
     case 'slack': {
       const integration = typeof a.integration === 'string' ? a.integration : ''
@@ -690,7 +960,14 @@ async function checkedStep(
             : when === null
               ? 'Sinon'
               : `Chemin ${index + 1}`
-        const steps = await checkedSteps(walk, p.steps ?? [], scope, `${field}.steps`, depth + 1)
+        const steps = await checkedSteps(
+          walk,
+          p.steps ?? [],
+          scope,
+          `${field}.steps`,
+          depth + 1,
+          inLoop,
+        )
         paths.push({ id: pathId, label, when, steps })
       }
       return { step: { id, kind: 'branch', paths } }
@@ -707,6 +984,7 @@ async function checkedDefinition(
   input: AutomationInput,
   current: Automation | null,
   targets: TargetPolicy,
+  sealing: ((plaintext: string) => string) | null,
 ) {
   const label = typeof input.label === 'string' ? input.label.trim() : (current?.label ?? '')
   if (label === '' || label.length > 255) throw invalid('label', 'libelle_invalide')
@@ -759,6 +1037,12 @@ async function checkedDefinition(
     taken: idsOf(rawSteps, new Set()),
     seen: new Set(),
     writing: input.actions !== undefined,
+    sealing,
+    kept: new Map(
+      stepsOf(current?.actions ?? []).flatMap((s) =>
+        s.kind === 'webhook' ? [[s.id, s.headers] as const] : [],
+      ),
+    ),
     count: 0,
   }
   const actions = await checkedSteps(
@@ -771,10 +1055,38 @@ async function checkedDefinition(
   return { label, description, enabled, trigger, condition, actions }
 }
 
-/** Steps as the API shows them — tables by key, `user_field` — and takes them back. */
+/**
+ * Steps as the API shows them — tables by key, `user_field` — and takes them back. A secret
+ * header shows its name and the host it was given for: its value never leaves the kernel.
+ */
 export function wireSteps(steps: readonly AutomationStep[]): Record<string, unknown>[] {
   return steps.map((s): Record<string, unknown> => {
     switch (s.kind) {
+      case 'webhook':
+        return {
+          id: s.id,
+          kind: s.kind,
+          record: s.record,
+          url: s.url,
+          method: s.method,
+          headers: s.headers.map((h) =>
+            'sealed' in h
+              ? { name: h.name, value: null, secret: true, host: h.host }
+              : { name: h.name, value: h.value, secret: false },
+          ),
+          body: s.body,
+          format: s.format,
+        }
+      case 'for_each':
+        return {
+          id: s.id,
+          kind: s.kind,
+          table: s.table,
+          filter: s.filter,
+          sort: s.sort,
+          limit: s.limit,
+          steps: wireSteps(s.steps),
+        }
       case 'notify':
         return {
           id: s.id,
@@ -815,12 +1127,33 @@ export function wireSteps(steps: readonly AutomationStep[]): Record<string, unkn
 
 /**
  * Steps as stored. Those saved before flows had neither identifiers nor a row named: they
- * are numbered in order, and act on the triggering row, as they always did.
+ * are numbered in order, and act on the triggering row, as they always did. A webhook
+ * saved before it could be composed posts the automation's own JSON, as it did.
  */
 function storedSteps(raw: unknown, hasRow: boolean): AutomationStep[] {
   if (!Array.isArray(raw)) return []
+  const within = (s: Record<string, unknown>): Record<string, unknown> => ({
+    ...s,
+    ...(s.kind === 'webhook'
+      ? {
+          method: s.method ?? 'POST',
+          headers: s.headers ?? [],
+          body: s.body ?? null,
+          format: s.format ?? 'json',
+        }
+      : {}),
+    ...(Array.isArray(s.steps) ? { steps: s.steps.map(within) } : {}),
+    ...(Array.isArray(s.paths)
+      ? {
+          paths: s.paths.map((p: Record<string, unknown>) => ({
+            ...p,
+            steps: Array.isArray(p.steps) ? p.steps.map(within) : [],
+          })),
+        }
+      : {}),
+  })
   return raw.map((item, index) => {
-    const s = item as Record<string, unknown>
+    const s = within(item as Record<string, unknown>)
     const id = typeof s.id === 'string' ? s.id : `e${index + 1}`
     if (s.kind === 'update_record') return { ...s, id, record: s.record ?? TRIGGER_ROW }
     if (s.kind === 'notify' || s.kind === 'webhook')
@@ -946,10 +1279,22 @@ export async function checkAutomationDraft(
     ctx,
     async (exec) => {
       await requireOnBase(exec, ctx, 'manage_schema', request.baseId)
-      return checkedDefinition(exec, ctx, request.baseId, request.input, null, targets)
+      // Nothing kept: a secret header given or left out is taken as it is, and never sealed.
+      return checkedDefinition(exec, ctx, request.baseId, request.input, null, targets, null)
     },
     { readOnly: true },
   )
+}
+
+/**
+ * How a save seals a webhook's secret headers: by the instance key. Without it — a kernel
+ * started with none — a secret header is refused rather than kept in the clear.
+ */
+function sealingBy(instanceKey: (() => string) | undefined) {
+  return (plaintext: string) => {
+    if (instanceKey === undefined) throw invalid('headers', 'secret_impossible')
+    return seal(instanceKey(), WEBHOOK_SECRET, plaintext)
+  }
 }
 
 export async function createAutomation(
@@ -957,10 +1302,19 @@ export async function createAutomation(
   ctx: RequestContext,
   targets: TargetPolicy,
   request: { readonly baseId: string; readonly input: AutomationInput },
+  instanceKey?: () => string,
 ): Promise<Automation> {
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
     await requireOnBase(exec, ctx, 'manage_schema', request.baseId)
-    const d = await checkedDefinition(exec, ctx, request.baseId, request.input, null, targets)
+    const d = await checkedDefinition(
+      exec,
+      ctx,
+      request.baseId,
+      request.input,
+      null,
+      targets,
+      sealingBy(instanceKey),
+    )
     const [row] = await exec.query<{ id: string }>(
       `INSERT INTO _basedb.automation
          (tenant_id, base_id, label, description, is_enabled, trigger_kind, table_id, trigger,
@@ -995,11 +1349,20 @@ export async function updateAutomation(
   ctx: RequestContext,
   targets: TargetPolicy,
   request: { readonly baseId: string; readonly id: string; readonly input: AutomationInput },
+  instanceKey?: () => string,
 ): Promise<Automation> {
   return withTransaction(pools, 'catalog', ctx, async (exec) => {
     await requireOnBase(exec, ctx, 'manage_schema', request.baseId)
     const current = await requireAutomation(exec, ctx, request.baseId, request.id)
-    const d = await checkedDefinition(exec, ctx, request.baseId, request.input, current, targets)
+    const d = await checkedDefinition(
+      exec,
+      ctx,
+      request.baseId,
+      request.input,
+      current,
+      targets,
+      sealingBy(instanceKey),
+    )
     await exec.query(
       `UPDATE _basedb.automation
           SET label = $2, description = $3, is_enabled = $4, trigger_kind = $5, table_id = $6,

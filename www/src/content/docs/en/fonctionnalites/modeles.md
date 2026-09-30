@@ -148,5 +148,5 @@ key. An AI proposal can be added to it in one click.
 Any base can also become a template: **Save as template** in the base’s menu, under **More
 actions**. Its tables, fields, AI prompts, relations, shared views, dashboards and
 automations — and, if you want, up to 50 rows per table — are downloaded as JSON, ready to join
-the official catalog or the instance’s. An automation that finds a row, takes branches or cites
-a previous step is left out for now, and the screen says so.
+the official catalog or the instance’s. An automation that finds a row, loops over rows, takes
+branches or cites a previous step is left out for now, and the screen says so.

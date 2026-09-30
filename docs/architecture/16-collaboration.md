@@ -219,6 +219,14 @@ lecture en cache de la connexion ; il ne transporte aucune valeur.
 Un même acteur ouvre au plus 10 flux à la fois (`RATE_LIMIT_EXCEEDED` au-delà) ; un flux
 est fermé par le serveur après 30 minutes, et le navigateur le rouvre.
 
+**Un programme suit une table** avec un jeton d'intégration émis pour `rest` : un serveur
+interne, qu'aucun webhook ne peut joindre (chapitre 08 §10.8), ouvre le flux depuis là où
+il est et relit par l'API ce que les signaux désignent. Le jeton compte ses propres flux,
+pas ceux de son créateur ; il n'entre dans aucune présence et ne reçoit ni notification
+ni pointeur à lui ; il est **revérifié à chaque `ping`** — révoqué, expiré ou suspendu, son
+flux se ferme dans les 20 secondes. Pour un réglage lu rarement, relire périodiquement les
+lignes changées depuis la dernière fois (`filter=_updated_at gt "…"`) reste plus simple.
+
 ### 3.3 Présence
 
 La présence dit qui regarde la même table, et quelle ligne chacun a ouverte. Elle vit

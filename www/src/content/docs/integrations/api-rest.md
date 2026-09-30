@@ -70,12 +70,55 @@ Avec le même jeton :
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | les tableaux de bord d’une base |
 | `GET /api/v1/<tenant>/meta/users` | les membres de l’espace, pour un champ Personne |
 | `GET /api/v1/<tenant>/meta/templates` | les modèles de base de la galerie |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | suivre une table en temps réel : des signaux, relus ensuite par les routes ci-dessus (voir [Webhooks](/basedb/integrations/webhooks/#sans-webhook--suivre-une-table)) |
 
 Les [vues partagées](/basedb/fonctionnalites/vues-partagees/) se lisent sans compte :
 `GET /api/v1/views/<jeton>` et `…/rows` en JSON, `…/calendar.ics` en iCalendar.
 
 Construire — créer une automatisation, un tableau de bord, une intégration — reste réservé à
 une session de l’interface : un jeton lit et écrit des lignes, il ne change pas la base.
+
+## Créer une base d’un modèle
+
+Une application qui s’installe crée sa base en **un appel** : le serveur applique le modèle —
+tables, champs, relations, lignes d’exemple, vues, tableaux de bord, automatisations — et, si
+une étape échoue, ne laisse aucune base derrière lui.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` est la clé d’un modèle de la galerie, ou un modèle entier au
+[format des modèles](/basedb/fonctionnalites/modeles/). Avec l’en-tête
+`Accept: application/x-ndjson`, la réponse arrive ligne à ligne : une ligne `{"step": …}` par
+étape, puis la base créée. Cet appel demande le jeton d’accès d’une personne qui peut créer une
+base (`POST /auth/session/access`, après connexion) : un jeton d’intégration n’ouvre qu’une base
+existante.
+
+## Vérifier un jeton
+
+Les jetons de basedb ne se vérifient pas hors de basedb. Une application qui en reçoit un —
+un outil ouvert depuis basedb avec le jeton de la personne, par exemple — demande ce qu’il vaut
+(introspection, RFC 7662), avec son propre jeton d’intégration :
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Tout jeton qui ne vaut pas — inconnu, expiré, révoqué, session fermée, autre espace — répond
+`{"active": false}`, sans dire pourquoi. La réponse est lue en direct : une déconnexion se voit
+aussitôt. Pour un jeton d’intégration, la réponse dit aussi la base qu’il ouvre (`base`), son
+accès (`read` ou `write`) et ses surfaces.
 
 ## La documentation générée
 

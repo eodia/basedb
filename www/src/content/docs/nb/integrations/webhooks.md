@@ -40,3 +40,31 @@ som fanges opp av triggere.
 
 Webhooks sendes bare til **offentlige HTTPS**-adresser. Under utvikling
 godtar `BASEDB_WEBHOOK_DEV=1` HTTP og lokale adresser.
+
+For en **server i nettverket ditt** navngir driftsansvarlig for instansen den i
+`BASEDB_WEBHOOK_ALLOW` – et navn, et domene (`*.intra.example.com`), en adresse eller et område
+(`10.12.0.0/16`):
+
+```bash
+BASEDB_WEBHOOK_ALLOW=chat.intra.example.com,10.12.0.0/16
+```
+
+Disse målene godtas uansett adresse, port og skjema, HTTP inkludert. Listen gjelder også for
+HTTP-forespørslene fra automatiseringer og kildene til synkroniserte tabeller; den settes i
+miljøet, aldri fra grensesnittet.
+
+## Uten webhook: følge en tabell
+
+En server som ikke kan nås, kan også **koble seg til** basedb og følge en tabell via
+sanntidsstrømmen, med et integrasjonstoken for databasen:
+
+```bash
+curl -N "https://basedb.example.com/api/v1/t4z56fq/events?base=b_t4z56fq_ventes&table=opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN"
+```
+
+Strømmen (`text/event-stream`) bærer **signaler** – hendelsen `records`, med identifikatorene
+til radene som er opprettet, endret eller slettet –, aldri verdiene: programmet leser deretter
+disse radene på nytt via [REST-API-et](/basedb/nb/integrations/api-rest/). Et tilbakekalt token
+stenger strømmen sin innen 20 sekunder. For en tabell som leses sjelden, er det nok å lese de
+endrede radene på nytt en gang iblant: `filter=_updated_at gt "2026-09-30T08:00:00Z"`.

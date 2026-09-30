@@ -1547,6 +1547,28 @@ export default {
 		title: 'Lo que ha cambiado en basedb',
 		intro: 'El detalle de cada cambio está en <a href="https://github.com/eodia/basedb/commits/main">el historial del repositorio</a>. Lo que viene después: la <a href="/feuille-de-route/">hoja de ruta</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'Para las aplicaciones que se apoyan en basedb',
+				tag: 'Novedad',
+				items: [
+					'<strong>Una base creada a partir de una plantilla en una sola llamada</strong>: el servidor aplica toda la plantilla — tablas, relaciones, filas, vistas, automatizaciones —, o nada si un paso falla. La galería también recurre a ella, una aplicación que también se instala así. <a href="/integrations/api-rest/#crear-una-base-a-partir-de-una-plantilla">Crear una base a partir de una plantilla</a>',
+					'<strong>Verificar un token</strong>: una aplicación a la que se le pasa el token de una persona le pregunta a basedb si aún es válido, y para quién — su cuenta, sus grupos. <a href="/integrations/api-rest/#verificar-un-token">Verificar un token</a>',
+					'<strong>Tus servidores internos</strong>: los webhooks y las automatizaciones contactan con los que indiques en <code>BASEDB_WEBHOOK_ALLOW</code>, HTTP incluido; un programa también puede seguir una tabla en tiempo real con un token de integración. <a href="/integrations/webhooks/#sin-webhook-seguir-una-tabla">Seguir una tabla</a>',
+					'<strong>Bajo una ruta, detrás de una pasarela</strong>: basedb se publica en una dirección como <code>https://passerelle.example.com/basedb/</code>, ya sea que la pasarela conserve la ruta o la elimine. <a href="/hebergement/docker/#detrás-de-una-pasarela-bajo-una-ruta">Detrás de una pasarela</a>',
+					'<strong>Un webhook, todas las tablas a la vez</strong>: marcar o desmarcar un evento para todas las tablas, o todos los eventos de una tabla, con un clic.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automatizaciones que recorren tus filas y hablan con las API',
+				tag: 'Novedad',
+				items: [
+					'<strong>Para cada fila</strong>: un paso que repite los suyos en cada fila de una tabla que cumple un filtro — cada lunes, reclamar todas las facturas impagadas, no solo la primera. <a href="/fonctionnalites/automatisations/#para-cada-fila">Para cada fila</a>',
+					'<strong>Un webhook que habla con cualquier API</strong>: el método, una dirección que cita la fila, encabezados, un cuerpo en JSON, en formulario o en texto, compuesto con los valores de la fila. <a href="/fonctionnalites/automatisations/#llamar-a-un-servicio">Llamar a un servicio</a>',
+					'<strong>Una clave de API permanece secreta</strong>: cifrada, no se vuelve a mostrar nunca — ni en la pantalla, ni por la API, ni al Copilot — y solo se envía al host para el que la diste.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'El mapa, y direcciones que se encuentran',
@@ -1899,8 +1921,8 @@ export default {
 						text: 'Copiar las vistas SQL junto con la estructura al crear o comparar entornos, y en las plantillas de base.',
 					},
 					loops: {
-						title: 'Bucles y esperas en las automatizaciones',
-						text: 'Repetir pasos para cada fila encontrada, esperar antes del siguiente («tres días después») y llevar los flujos a las plantillas de base.',
+						title: 'Esperas en las automatizaciones',
+						text: 'Esperar antes del paso siguiente («tres días después») y llevar los flujos —condiciones, búsquedas, bucles— a las plantillas de base.',
 					},
 					textFormulas: {
 						title: 'Fórmulas de texto',

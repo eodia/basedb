@@ -73,8 +73,9 @@ Păstrați cheia generată: consultați caseta de mai jos.
 
 :::caution[Cheia instanței]
 `BASEDB_ENCRYPTION_KEY` semnează sesiunile și criptează secretele salvate (chei AI, secrete
-de webhook-uri, linkuri de formulare). Schimbarea ei deconectează pe toată lumea și face
-aceste secrete ilizibile. Generați-o o singură dată și salvați-o împreună cu baza de date.
+de webhook-uri, anteturi secrete ale automatizărilor, linkuri de formulare). Schimbarea ei
+deconectează pe toată lumea și face aceste secrete ilizibile. Generați-o o singură dată și
+salvați-o împreună cu baza de date.
 :::
 
 ## Pentru dezvoltare

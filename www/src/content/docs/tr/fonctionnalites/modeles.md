@@ -145,5 +145,5 @@ aktarabilir**: şablon tüm kullanıcılarının galerisine katılır ve aynı a
 Her veritabanı da bir şablona dönüşebilir: veritabanının menüsünde, **Diğer eylemler** altında **Şablon olarak kaydet**. Tabloları, alanları, yapay zeka talimatları, ilişkileri, paylaşılan
 görünümleri, panoları ve otomasyonları — ve isterseniz tablo başına 50 satıra kadar — JSON
 olarak indirilir; resmî kataloğa ya da kurulumun kataloğuna katılmaya hazırdır. Bir satır
-arayan, dallara ayrılan ya da önceki bir adıma atıf yapan bir otomasyon şimdilik dışarıda kalır
-ve ekran bunu belirtir.
+arayan, satırları tarayan, dallara ayrılan ya da önceki bir adıma atıf yapan bir otomasyon
+şimdilik dışarıda kalır ve ekran bunu belirtir.

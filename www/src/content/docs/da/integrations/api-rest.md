@@ -70,12 +70,55 @@ Med det samme token:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | en databases dashboards |
 | `GET /api/v1/<tenant>/meta/users` | arbejdsområdets medlemmer, til et Person-felt |
 | `GET /api/v1/<tenant>/meta/templates` | galleriets databaseskabeloner |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | følg en tabel i realtid: signaler, som derefter genlæses via ovenstående ruter (se [Webhooks](/basedb/da/integrations/webhooks/#uden-webhook-følg-en-tabel)) |
 
 [Delte visninger](/basedb/da/fonctionnalites/vues-partagees/) kan læses uden konto:
 `GET /api/v1/views/<jeton>` og `…/rows` i JSON, `…/calendar.ics` i iCalendar.
 
 At bygge — oprette en automatisering, et dashboard, en integration — er forbeholdt en session i
 brugerfladen: et token læser og skriver rækker, det ændrer ikke databasen.
+
+## Opret en database fra en skabelon
+
+En applikation, der installeres, opretter sin database i **ét kald**: serveren anvender
+skabelonen — tabeller, felter, relationer, eksempelrækker, visninger, dashboards,
+automatiseringer — og efterlader ingen database, hvis et trin mislykkes.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` er nøglen til en skabelon fra galleriet, eller en hel skabelon i
+[skabelonformatet](/basedb/da/fonctionnalites/modeles/). Med headeren
+`Accept: application/x-ndjson` ankommer svaret linje for linje: en linje `{"step": …}` pr.
+trin, derefter den oprettede database. Dette kald kræver adgangstokenet fra en person, der kan
+oprette en database (`POST /auth/session/access`, efter login): et integrationstoken åbner kun
+en eksisterende database.
+
+## Kontroller et token
+
+basedbs tokens kan ikke kontrolleres uden for basedb. En applikation, der modtager et — et
+værktøj, der åbnes fra basedb med personens token, for eksempel — spørger, hvad det er værd
+(introspektion, RFC 7662), med sit eget integrationstoken:
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Ethvert token, der ikke er gyldigt — ukendt, udløbet, tilbagekaldt, session afsluttet, andet
+arbejdsområde — svarer `{"active": false}`, uden at sige hvorfor. Svaret læses direkte: en
+udlogning ses med det samme. For et integrationstoken angiver svaret også den database, det
+åbner (`base`), dets adgang (`read` eller `write`) og dets flader.
 
 ## Den genererede dokumentation
 

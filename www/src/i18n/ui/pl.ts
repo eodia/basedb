@@ -1539,6 +1539,28 @@ export default {
 		title: 'Co zmieniło się w basedb',
 		intro: 'Szczegóły każdej zmiany są w <a href="https://github.com/eodia/basedb/commits/main">historii repozytorium</a>. Co dalej: <a href="/feuille-de-route/">plan rozwoju</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'Dla aplikacji, które opierają się na basedb',
+				tag: 'Nowość',
+				items: [
+					'<strong>Baza utworzona z szablonu jednym wywołaniem</strong>: serwer stosuje cały szablon — tabele, relacje, wiersze, widoki, automatyzacje —, albo nic, jeśli jeden etap się nie powiedzie. Korzysta z tego galeria, aplikacja, która też się instaluje. <a href="/integrations/api-rest/#tworzenie-bazy-z-szablonu">Tworzenie bazy z szablonu</a>',
+					'<strong>Sprawdzanie tokenu</strong>: aplikacja, której przekazano token danej osoby, pyta basedb, czy jest on wciąż aktualny i dla kogo — jej konto, jej grupy. <a href="/integrations/api-rest/#sprawdzanie-tokenu">Sprawdzanie tokenu</a>',
+					'<strong>Twoje wewnętrzne serwery</strong>: webhooki i automatyzacje łączą się tylko z tymi, które wymienisz w <code>BASEDB_WEBHOOK_ALLOW</code>, również przez HTTP; program może też śledzić tabelę w czasie rzeczywistym za pomocą tokenu integracji. <a href="/integrations/webhooks/#bez-webhooka-śledzenie-tabeli">Śledzenie tabeli</a>',
+					'<strong>Pod ścieżką, za bramą</strong>: basedb publikuje się pod adresem takim jak <code>https://passerelle.example.com/basedb/</code>, niezależnie od tego, czy brama zachowuje ścieżkę, czy ją usuwa. <a href="/hebergement/docker/#za-bramą-pod-ścieżką">Za bramą</a>',
+					'<strong>Jeden webhook, wszystkie tabele naraz</strong>: zaznacz lub odznacz zdarzenie dla wszystkich tabel, albo wszystkie zdarzenia dla jednej tabeli, jednym kliknięciem.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automatyzacje, które przechodzą przez twoje wiersze i rozmawiają z API',
+				tag: 'Nowość',
+				items: [
+					'<strong>Dla każdego wiersza</strong>: krok, który powtarza swoje kroki na każdym wierszu tabeli spełniającym filtr — w każdy poniedziałek ponaglij wszystkie nieopłacone faktury, nie tylko pierwszą. <a href="/fonctionnalites/automatisations/#dla-każdego-wiersza">Dla każdego wiersza</a>',
+					'<strong>Webhook, który rozmawia z dowolnym API</strong>: metoda, adres przytaczający wiersz, nagłówki, treść w JSON-ie, formularzu lub tekście, skomponowana z wartości wiersza. <a href="/fonctionnalites/automatisations/#wywołaj-usługę">Wywołaj usługę</a>',
+					'<strong>Klucz API pozostaje tajny</strong>: zaszyfrowany, nie jest już nigdy wyświetlany — ani na ekranie, ani przez API, ani Copilotowi — i trafia tylko do hosta, dla którego go podano.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'Mapa i adresy, które się znajdują',
@@ -1891,8 +1913,8 @@ export default {
 						text: 'Kopiowanie widoków SQL razem ze strukturą przy tworzeniu lub porównywaniu środowisk oraz w szablonach baz.',
 					},
 					loops: {
-						title: 'Pętle i oczekiwanie w automatyzacjach',
-						text: 'Powtarzanie kroków dla każdego znalezionego wiersza, oczekiwanie przed kolejnym krokiem („trzy dni później”) i przenoszenie przepływów do szablonów baz.',
+						title: 'Oczekiwanie w automatyzacjach',
+						text: 'Oczekiwanie przed kolejnym krokiem („trzy dni później”) i przenoszenie przepływów — warunków, wyszukiwań, pętli — do szablonów baz.',
 					},
 					textFormulas: {
 						title: 'Formuły tekstowe',

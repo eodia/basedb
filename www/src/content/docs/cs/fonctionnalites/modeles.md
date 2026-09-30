@@ -146,4 +146,5 @@ ní lze přidat jedním kliknutím.
 **Další akce**. Její tabulky, pole, pokyny AI, vazby, sdílená zobrazení, řídicí panely
 a automatizace – a pokud chcete, až 50 řádků na tabulku – se stáhnou jako JSON, připravené
 k zařazení do oficiálního katalogu nebo do katalogu instance. Automatizace, která vyhledává
-řádek, větví se nebo cituje předchozí krok, zatím zůstává stranou a obrazovka to oznámí.
+řádek, prochází řádky, větví se nebo cituje předchozí krok, zatím zůstává stranou a obrazovka
+to oznámí.

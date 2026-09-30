@@ -50,6 +50,7 @@ description: basedb 读取的所有变量及其默认值。
 | `BASEDB_PORT` | `3000` | 发布在 127.0.0.1 上的端口：界面、`/api` 和 `/mcp` |
 | `BASEDB_VERSION` | `latest` | `eodia/basedb` 镜像的标签 |
 | `BASEDB_PUBLIC_URL` | — | basedb 的公开地址，用于 OIDC 回调 |
+| `BASEDB_BASE_PATH` | `BASEDB_PUBLIC_URL` 的路径部分 | basedb 在网关之后所使用的路径，`https://passerelle.example.com/basedb/` 对应 `/basedb`；参见[Docker Compose](/basedb/zh-cn/hebergement/docker/#位于网关之后路径之下) |
 | `BASEDB_DOMAIN` | — | 由 Caddy 代理以 HTTPS 提供服务的域名 |
 | `BASEDB_ORIGINS` | — | 其页面会从浏览器调用 API 的其他网站，以逗号分隔；basedb 自身的界面位于同一地址，无需设置 |
 | `BASEDB_API`、`BASEDB_MCP` | `/`、`/mcp` | 浏览器所见的 API 和 MCP 地址；仅需为开发环境（`pnpm start`）设置 |
@@ -114,6 +115,16 @@ expéditeur no-reply@exemple.fr.` 服务器拒绝的邮件会在 1、5、30、12
 | `BASEDB_AI_QUOTA` | `120` | 每个租户每小时的交互式调用次数 |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | 每个租户每小时的 AI 字段计算次数 |
 | `BASEDB_AI_WORKER` | `1` | `0`：此进程中不执行后台计算 |
+
+## 发往内部网络的 Webhook
+
+| 变量 | 默认值 | 作用 |
+|---|---|---|
+| `BASEDB_WEBHOOK_ALLOW` | — | 您的内部服务器，以逗号分隔：一个名称（`chat.intra.example.com`）、一个域名及其子域名（`*.intra.example.com`）、一个地址或一个地址段（`10.12.0.0/16`） |
+
+Webhook、自动化发出的 HTTP 请求以及同步数据表，都只会发往公开的 HTTPS 地址。列表中的目标会被
+额外接受，无论其地址、端口和协议如何——包括 HTTP。无法识别的条目会阻止启动。参见
+[Webhook](/basedb/zh-cn/integrations/webhooks/#目标地址)。
 
 ## 公开演示
 

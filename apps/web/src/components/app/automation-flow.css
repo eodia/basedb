@@ -31,6 +31,11 @@
   pointer-events: all !important;
 }
 
+/* A loop's frame is drawn under its steps: the « + » and the cards it surrounds take the pointer. */
+.automation-flow .react-flow__node.react-flow__node-frame {
+  pointer-events: none !important;
+}
+
 /* The library's credit, kept, on the canvas's own ground in both themes. */
 .automation-flow .react-flow__attribution {
   background: transparent;

@@ -1,14 +1,14 @@
 ---
 title: Automatisierungen
-description: Wenn sich eine Zeile ändert, zu fester Uhrzeit oder per Klick – bearbeiten, anlegen, suchen, verzweigen, die KI fragen, benachrichtigen, eine E-Mail senden, einen Webhook aufrufen, in Slack schreiben.
+description: Wenn sich eine Zeile ändert, zu fester Uhrzeit oder per Klick – bearbeiten, anlegen, suchen, auf jeder Zeile wiederholen, verzweigen, die KI fragen, benachrichtigen, eine E-Mail senden, einen Dienst aufrufen, in Slack schreiben.
 ---
 
 Eine Automatisierung sagt **wann**, **falls** und **dann**: Wenn eine Aufgabe auf „Fait“ wechselt,
 die Uhrzeit festhalten; wenn eine negative Bewertung eingeht, die Verantwortliche benachrichtigen
 und in Slack schreiben; jeden Montag um 9 Uhr die Zeile für das Teammeeting anlegen. Und wenn eine
 Aktion nicht genügt, folgt sie einem **Ablauf**: eine Zeile suchen, je nach deren Inhalt den einen
-oder anderen Zweig nehmen, in einem Schritt wiederverwenden, was ein vorheriger Schritt gefunden
-oder geschrieben hat.
+oder anderen Zweig nehmen, Schritte auf jeder Zeile wiederholen, die einem Filter entspricht, in
+einem Schritt wiederverwenden, was ein vorheriger Schritt gefunden oder geschrieben hat.
 
 Sie öffnen sich über **Automatisierungen** im Block der geöffneten Datenbank unten in der
 Seitenleiste und erfordern die Stufe **Verwalten**.
@@ -53,14 +53,60 @@ Bis zu dreißig Schritte, der Reihe nach; der erste, der fehlschlägt, stoppt di
 | **Zeile suchen** | die erste Zeile einer Tabelle, die einem Filter entspricht, damit die folgenden Schritte sie zitieren oder bearbeiten |
 | **Jemanden benachrichtigen** | eine [Benachrichtigung](/basedb/de/fonctionnalites/collaboration/#benachrichtigungen) an ausgewählte Personen oder an die Person aus einem Feld Person |
 | **E-Mail senden** | an Personen des Teams, an die aus einem Feld Person, an die Adresse aus einem Feld E-Mail – einen Kunden, einen Lieferanten – oder an eingegebene Adressen; Betreff und Text zitieren die Zeile und die vorherigen Schritte |
-| **Webhook aufrufen** | ein `POST` über HTTPS an die Adresse Ihrer Wahl; seine Antwort lässt sich anschließend zitieren |
+| **Webhook aufrufen** | eine HTTPS-Anfrage an einen Dienst – Methode, Adresse, Header und Text nach Ihrer Wahl ([Details](#einen-dienst-aufrufen)); seine Antwort lässt sich anschließend zitieren |
 | **An Slack senden** | eine Nachricht in einen [verbundenen](/basedb/de/integrations/synchronisation/#slack) Kanal |
 | **KI fragen** | eine Antwort des [KI-Anbieters](/basedb/de/fonctionnalites/ia/) auf eine Anweisung, die die Zeile und die vorherigen Schritte zitiert – verfassen, zusammenfassen, einordnen –, gelesen als Text, Zahl, Ja oder Nein, Datum oder Auswahl aus einer Liste |
 | **Bedingung** | mehrere Zweige: Der erste, dessen Bedingung erfüllt ist, wird genommen, „Sonst“, wenn keiner es ist; die Zweige laufen danach wieder zusammen |
+| **Für jede Zeile** | die Schritte, die sie enthält, einmal für jede Zeile einer Tabelle, die einem Filter entspricht ([Details](#für-jede-zeile)) |
 
 Eine Suche, die nichts findet, stoppt den Ablauf nicht: Die Schritte, die ihre Zeile bearbeiten
 sollten, werden übersprungen. Um in diesem Fall etwas anderes zu tun, prüft das eine Bedingung –
 ein Zweig mit leerem Filter wird genommen, sobald die Suche etwas gefunden hat.
+
+## Für jede Zeile
+
+Der Schritt **Für jede Zeile** durchläuft die Zeilen einer Tabelle, die seinem Filter entsprechen –
+leer: alle –, in der gewählten Reihenfolge, bis zu seiner Grenze (standardmäßig 50, höchstens 200),
+und führt dann einmal für jede von ihnen die in seinem Rahmen platzierten Schritte aus. „Jeden
+Montag die unbezahlten Rechnungen mahnen“ schreibt sich so: **Zu fester Uhrzeit**, dann **Für jede
+Zeile** der Rechnungen `payee eq false and relancee eq false`, und in der Schleife eine E-Mail an
+den Kontakt der Rechnung sowie **Zeile bearbeiten**, das „Gemahnt“ ankreuzt.
+
+In der Schleife benennt die Kennung des Schritts die **Zeile der Runde**: `{{e1.client}}` zitiert
+sie, und **Zeile bearbeiten** schlägt sie unter den zu bearbeitenden Zeilen vor. Nach der Schleife
+sagt `{{e1.nombre}}`, wie viele Zeilen sie durchlaufen hat – zum Beispiel für eine Zusammenfassung
+auf Slack. Der Filter kann zitieren, was vorausgeht: ausgelöst durch eine bezahlte Rechnung,
+durchläuft `facture eq {{_id}}` ihre Detailzeilen.
+
+Über die Grenze hinaus warten die übrigen Zeilen auf die nächste Ausführung, die das anzeigt:
+Schließen Sie im Filter die bereits bearbeiteten aus – ein Kästchen „gemahnt“, ein Datum –, um sie
+im Lauf der Ausführungen alle zu bearbeiten. Eine Schleife enthält keine andere Schleife, und eine
+Ausführung endet nach spätestens zwei Minuten.
+
+## Einen Dienst aufrufen
+
+Der Schritt **Webhook aufrufen** sendet standardmäßig per `POST` die Daten der Automatisierung:
+die gewählte Zeile und das, was die vorherigen Schritte gefunden oder geschrieben haben. Damit er
+mit einem Dienst so spricht, wie dieser es erwartet, stellen Sie ein:
+
+- die **Methode**: `POST`, `PUT`, `PATCH`, `GET` oder `DELETE` – die beiden letzteren ohne Text;
+- die **Adresse**, die nach ihrem Host zitieren kann – `https://api.exemple.fr/clients/{{e2.numero}}`;
+  jeder Wert wird darin codiert;
+- **Header**, deren Wert zitieren kann: `Idempotency-Key: {{_id}}`;
+- den **Text**: die Daten der Automatisierung, ein **JSON zum Schreiben**, ein **Formular**
+  (ein Schlüssel=Wert-Paar pro Zeile) oder ein **Text**. In einem JSON ist ein Zitat in
+  Anführungszeichen Text, und außerhalb der Anführungszeichen ein Wert – eine Zahl, Ja oder Nein,
+  eine Liste:
+
+```json
+{ "facture": "{{e1.numero}}", "montant": {{e1.montant}}, "payee": {{e1.payee}} }
+```
+
+Ein API-Schlüssel oder ein Token kommt in einen **geheimen** Header (das Schloss-Symbol): durch
+den Schlüssel der Instanz verschlüsselt, wird er nie wieder angezeigt – weder auf dem Bildschirm,
+noch über die API, noch beim Copilot – und geht nur an den Host, für den Sie ihn angegeben haben.
+Ändert sich der Host der Adresse, muss er erneut eingegeben werden; **Ersetzen** erfasst einen
+neuen.
 
 ## KI fragen
 
@@ -93,6 +139,8 @@ jedem Text:
   hat – jeder Schritt trägt seine Kennung auf seiner Karte;
 - `{{e3.statut}}`, `{{e3.reponse.numero}}`: was der Webhook `e3` geantwortet hat;
 - `{{e4.reponse}}`: die Antwort des KI-Schritts `e4`;
+- `{{e5.client}}` in der Schleife `e5`, die Zeile der Runde; `{{e5.nombre}}` danach, die Anzahl
+  der durchlaufenen Zeilen;
 - `{{_maintenant}}`: der Zeitpunkt der Ausführung.
 
 Ein Wert, der aus einem einzigen Zitat besteht, übergibt den Wert selbst: eine Verknüpfung, eine
@@ -130,7 +178,8 @@ aufgelistet wird.
 und zwar wirklich. Der Reiter **Ausführungen** bewahrt die letzten 50 für 30 Tage auf: wartend,
 laufend, erfolgreich, übersprungen mit Grund, fehlgeschlagen mit Code. Wählen Sie eine aus, wird sie
 auf den Ablauf gelegt – der genommene Zweig ist nachgezeichnet, jeder durchlaufene Schritt sagt,
-was er getan hat und wie lange es gedauert hat, der Rest ist ausgegraut.
+was er getan hat und wie lange es gedauert hat, der Rest ist ausgegraut. In einer Schleife sagt
+jeder Schritt außerdem, wie oft er durchlaufen wurde.
 
 ## In wessen Namen sie handelt
 
@@ -144,15 +193,18 @@ und ihre Schreibvorgänge lassen sich wie alle anderen rückgängig machen.
 
 - Was eine Automatisierung schreibt, löst keine andere aus: Was aufeinander folgen soll, gehört
   in einen einzigen Ablauf.
-- Eine Suche liefert eine Zeile, die erste; noch kein „für jede Zeile“ und kein Warten („drei
-  Tage danach“).
+- Eine Suche liefert eine Zeile, die erste; eine Schleife durchläuft höchstens 200 pro
+  Ausführung, und der erste fehlschlagende Schritt bricht sie ab. Kein Warten („drei Tage
+  danach“).
 - Kein Skript. Eine E-Mail geht als reiner Text hinaus, eine pro Empfänger – höchstens zwanzig
   pro Schritt –, über den [E-Mail-Versand](/basedb/de/hebergement/variables/#e-mails) der
   Instanz; eine Antwort erreicht die Person, der die Automatisierung gehört.
 - Eine Bedingung prüft eine Zeile: Um je nach KI-Antwort einen Zweig zu nehmen, schreiben Sie
   diese zuerst in ein Feld der Zeile.
 - Eine [Datenbankvorlage](/basedb/de/fonctionnalites/modeles/) übernimmt nur Automatisierungen
-  ohne Suche, Bedingung oder KI-Schritt.
+  ohne Suche, Schleife, Bedingung oder KI-Schritt, und nie einen Webhook.
+- Ein Webhook folgt keiner Weiterleitung und wartet höchstens 10 Sekunden; eine Antwort außer 2xx
+  lässt den Schritt fehlschlagen.
 - 100 Ausführungen pro Stunde und pro Automatisierung; ein verpasster Zeitpunkt wird nur einmal
   nachgeholt.
 - Die Verzögerung zwischen Schreibvorgang und Aktion liegt im Bereich einer Sekunde.

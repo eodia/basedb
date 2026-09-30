@@ -1547,6 +1547,28 @@ export default {
 		title: 'Hva som er endret i basedb',
 		intro: 'Detaljene i hver endring står i <a href="https://github.com/eodia/basedb/commits/main">historikken til depotet</a>. Hva som kommer videre: <a href="/feuille-de-route/">veikartet</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'For applikasjoner som bygger på basedb',
+				tag: 'Nytt',
+				items: [
+					'<strong>En database opprettet fra en mal med ett kall</strong>: serveren bruker hele malen — tabeller, relasjoner, rader, visninger, automatiseringer — eller ingenting hvis ett trinn mislykkes. Galleriet bruker dette, en applikasjon som også installerer seg selv. <a href="/integrations/api-rest/#opprette-en-database-fra-en-mal">Opprette en database fra en mal</a>',
+					'<strong>Verifisere et token</strong>: en applikasjon som får en persons token, spør basedb om det fremdeles er gyldig, og for hvem — vedkommendes konto, vedkommendes grupper. <a href="/integrations/api-rest/#verifisere-et-token">Verifisere et token</a>',
+					'<strong>Dine interne servere</strong>: webhooker og automatiseringer kontakter bare dem du oppgir i <code>BASEDB_WEBHOOK_ALLOW</code>, også over HTTP; et program kan også følge en tabell i realtid med et integrasjonstoken. <a href="/integrations/webhooks/#uten-webhook-følge-en-tabell">Følge en tabell</a>',
+					'<strong>Under en sti, bak en gateway</strong>: basedb publiseres på en adresse som <code>https://passerelle.example.com/basedb/</code>, uansett om gatewayen beholder stien eller fjerner den. <a href="/hebergement/docker/#bak-en-gateway-under-en-sti">Bak en gateway</a>',
+					'<strong>Én webhook, alle tabellene på én gang</strong>: kryss av eller fjern en hendelse for alle tabeller, eller alle hendelser for én tabell, med ett klikk.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automatiseringer som gjennomgår radene dine og snakker med API-er',
+				tag: 'Nytt',
+				items: [
+					'<strong>For hver rad</strong>: et trinn som gjentar sine egne trinn på hver rad i en tabell som samsvarer med et filter — hver mandag purre på alle ubetalte fakturaer, ikke bare den første. <a href="/fonctionnalites/automatisations/#for-hver-rad">For hver rad</a>',
+					'<strong>En webhook som snakker med hvilken som helst API</strong>: metoden, en adresse som refererer til raden, headere, en brødtekst i JSON, som skjema eller som tekst, satt sammen med verdiene fra raden. <a href="/fonctionnalites/automatisations/#kall-en-tjeneste">Kall en tjeneste</a>',
+					'<strong>En API-nøkkel forblir hemmelig</strong>: kryptert vises den aldri igjen — verken på skjermen, i API-et eller til Copilot — og den sendes bare til verten du har gitt den til.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'Kartet, og adresser som finner sin plass',
@@ -1899,8 +1921,8 @@ export default {
 						text: 'Kopiere SQL-visningene sammen med strukturen når man oppretter eller sammenligner miljøer, og i databasemalene.',
 					},
 					loops: {
-						title: 'Løkker og venting i automatiseringer',
-						text: 'Gjenta trinn for hver rad som blir funnet, vente før det neste («tre dager etter»), og ta med flytene i databasemalene.',
+						title: 'Venting i automatiseringer',
+						text: 'Vente før neste trinn («tre dager etter»), og ta med flytene – betingelser, søk, løkker – i databasemalene.',
 					},
 					textFormulas: {
 						title: 'Formler for tekst',

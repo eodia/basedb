@@ -6,9 +6,10 @@ Une **automatisation** fait quelque chose quand quelque chose arrive : quand une
 est créée, quand un champ change, à heure fixe, ou quand on clique sur un **bouton** dans
 une ligne. Elle modifie la ligne, en crée une autre, prévient quelqu'un, demande une
 réponse à l'IA ou appelle un service extérieur — et, quand une seule action ne suffit pas,
-elle suit un **flux** : chercher une ligne, bifurquer selon ce qu'elle dit, passer à
-l'étape suivante ce que la précédente a trouvé ou écrit. Ce chapitre fixe ce qu'elle peut
-faire, au nom de qui, et ce qui l'empêche de s'emballer.
+elle suit un **flux** : chercher une ligne, bifurquer selon ce qu'elle dit, répéter des
+étapes sur chaque ligne qui répond à un filtre, passer à l'étape suivante ce que la
+précédente a trouvé ou écrit. Ce chapitre fixe ce qu'elle peut faire, au nom de qui, et ce
+qui l'empêche de s'emballer.
 
 Trois principes, repris des chapitres qui précèdent :
 
@@ -31,7 +32,8 @@ donner ni ligne à désigner ; ce qui fait un flux ne se montre qu'à qui s'en s
 Elle appartient à une base (`_basedb.automation`, chapitre 02). Elle a un nom, une
 description, un interrupteur (active ou non), **un déclencheur**, une **condition**
 facultative et **un flux d'étapes** : des actions les unes après les autres, dont une
-**condition** peut faire plusieurs chemins qui se rejoignent ensuite (§1.5).
+**condition** peut faire plusieurs chemins qui se rejoignent ensuite (§1.5), et une
+**boucle** répéter des étapes sur chaque ligne trouvée (§1.8).
 
 Construire, modifier, supprimer, consulter les automatisations d'une base et leurs
 exécutions demande `manage_schema` sur la base, en session : elles nomment des tables et
@@ -81,14 +83,13 @@ l'automatisation, et `trigger` est réservé.
 | `find_record` | cherche la première ligne qui répond à un filtre | la table ; le filtre (vide : toute ligne) ; l'ordre (`champ` ou `-champ`, par défaut celui de création) | la ligne trouvée — ou aucune |
 | `notify` | notification interne (chapitre 16 §2), nature `automation` | la ligne dont elle parle (§1.4) ; des personnes et/ou un champ « personne » de cette ligne ; un message | — |
 | `email` | un courriel par destinataire, par le serveur d'envoi de l'instance (chapitre 16 §2.5) | la ligne dont il parle (§1.4, facultative) ; des personnes, un champ « personne » et/ou un champ « e-mail » de cette ligne, des adresses écrites — 20 au plus ; l'objet et le message, qui citent ce qui précède (§1.6) | — |
-| `webhook` | `POST` d'un JSON vers une adresse | l'adresse (`https`) ; la ligne envoyée (§1.4) | le code de réponse et la réponse (§1.6) |
+| `webhook` | une requête HTTPS vers un service (§1.9) | la méthode (`POST` par défaut, `PUT`, `PATCH`, `GET`, `DELETE`) ; l'adresse (`https`), qui peut citer après son hôte ; des en-têtes, en clair ou secrets ; le corps — le JSON de l'automatisation et sa ligne (§1.4), ou un corps composé en JSON, en formulaire ou en texte | le code de réponse et la réponse (§1.6) |
 | `slack` | un message dans un canal Slack (chapitre 19 §1) | une connexion de la base, le message | — |
 | `ai` | demande une réponse au fournisseur d'IA (chapitre 12 §1.8) | la consigne, qui cite ce qui précède (§1.6) ; la réponse attendue (`answer`) — texte libre ou court, nombre, oui ou non, date, adresse web, un choix parmi une liste (`options`) ; le consentement (`consent`) | la réponse, lue dans son type |
 | `branch` | une condition : des chemins, dont un seul est pris (§1.5) | les chemins, dans l'ordre | — |
+| `for_each` | une boucle : ses étapes, une fois pour chaque ligne qui répond (§1.8) | la table ; le filtre (vide : toutes les lignes) ; l'ordre ; la limite (`limit`, 50 par défaut, 200 au plus) ; les étapes (`steps`) | à ses étapes, la ligne du tour ; après elle, le nombre de lignes parcourues |
 
-Le corps d'un webhook porte l'automatisation, le déclencheur, la ligne envoyée, l'instant,
-et, sous `steps`, ce que les étapes précédentes ont trouvé ou écrit, par identifiant. Un
-webhook obéit aux règles d'adresse des webhooks (chapitre 08 §10.3 : `https`, pas
+Un webhook obéit aux règles d'adresse des webhooks (chapitre 08 §10.3 : `https`, pas
 d'adresse privée), attend 10 secondes au plus, et échoue (`AUTOMATION_WEBHOOK_FAILED`) sur
 toute réponse autre que `2xx`.
 
@@ -124,8 +125,9 @@ pas (chapitre 20), pas plus qu'un webhook ou un message Slack.
 
 `update_record`, `notify` et `webhook` agissent sur une ligne, que nomme leur réglage
 `record` : `trigger`, la ligne qui a déclenché, ou l'identifiant d'une étape passée avant
-elle qui en donne une (`find_record`, `create_record`, `update_record`). Absent, c'est la
-ligne déclencheuse — ce qu'une automatisation d'avant les flux a toujours fait, et qu'elle
+elle qui en donne une (`find_record`, `create_record`, `update_record`, et, pour les
+étapes qu'elle contient, la boucle `for_each` qui les répète). Absent, c'est la ligne
+déclencheuse — ce qu'une automatisation d'avant les flux a toujours fait, et qu'elle
 continue de faire telle qu'elle est enregistrée.
 
 Une horloge n'a pas de ligne : `update_record` y est refusé à l'enregistrement tant qu'il
@@ -188,6 +190,8 @@ Une valeur, un message, un filtre cite ce qui précède :
 | `{{e2.champ}}`, `{{e2._id}}` | un champ, l'identifiant de la ligne qu'a donnée l'étape `e2` |
 | `{{e3.statut}}`, `{{e3.reponse.cle}}` | le code de réponse du webhook `e3`, une clé de sa réponse (JSON, 64 Kio lus au plus) |
 | `{{e4.reponse}}` | la réponse de l'étape IA `e4` : un texte, un nombre, oui ou non, une date, un choix par son libellé |
+| `{{e5.champ}}`, `{{e5._id}}` | dans la boucle `e5`, un champ, l'identifiant de la ligne du tour |
+| `{{e5.nombre}}` | après la boucle `e5`, le nombre de lignes qu'elle a parcourues |
 
 Dans un message ou un texte, un champ se lit comme on le lit : une relation par sa valeur
 d'affichage, un choix par son libellé, une personne par son nom. Une valeur faite d'**une
@@ -201,6 +205,15 @@ Dans un **filtre**, une citation est toujours une valeur comparée, jamais du la
 texte y devient une chaîne entre guillemets, ses guillemets échappés ; un nombre et un
 booléen restent nus ; une relation y est l'identifiant de sa ligne. Une valeur écrite par
 un formulaire ne peut donc pas changer ce que cherche une automatisation.
+
+La même règle vaut pour ce qu'un webhook envoie (§1.9). Dans son **adresse**, une citation
+est encodée (`encodeURIComponent`) : elle ajoute au chemin ou à la requête, jamais un
+segment ni un paramètre. Dans un corps **JSON**, une citation entre guillemets est du texte
+échappé, qui ne ferme pas la chaîne ; hors guillemets, une valeur JSON — un nombre (une
+colonne numérique aussi, que PostgreSQL rend en texte), oui ou non, `null`, une relation, un
+choix, une personne par leur texte, plusieurs par une liste, la réponse d'un webhook ou de
+l'IA telle qu'elle est venue. Dans un **formulaire**, chaque paire est encodée comme un
+formulaire web.
 
 Un champ que le propriétaire ne peut pas lire, une étape qui n'a rien donné : la citation
 est vide.
@@ -217,6 +230,73 @@ est vide.
 | Réponse d'un webhook lue pour être citée | 64 Kio |
 | Consigne d'une étape IA | 8 000 caractères |
 | Choix proposés à une étape IA | 50 |
+| Lignes parcourues par une boucle | 200 (50 si rien n'est dit) |
+| Boucles imbriquées | aucune : une boucle n'en contient pas d'autre |
+| En-têtes d'un webhook | 20, de 4 000 caractères chacun |
+| Corps composé d'un webhook | 10 000 caractères |
+| Durée d'une exécution | 2 minutes, vérifiées à chaque tour de boucle (`DEADLINE_EXCEEDED`) |
+
+### 1.8 Pour chaque ligne
+
+Une étape `for_each` lit, **une fois** et avec les droits du propriétaire, les lignes d'une
+table qui répondent à son filtre — qui cite ce qui précède, comme celui d'une recherche —,
+dans son ordre, jusqu'à sa limite ; puis elle exécute ses étapes (`steps`) **une fois pour
+chacune**. Dans la boucle, son identifiant nomme la **ligne du tour** : `{{e5.client}}` la
+cite, `"record": "e5"` la modifie ou en parle, un chemin la teste. Chaque tour repart à
+neuf : ce qu'une étape de la boucle a trouvé au tour précédent ne se cite pas au suivant.
+Après la boucle, ses étapes ne se citent plus et sa ligne non plus ; `{{e5.nombre}}` dit
+combien de lignes elle a parcourues.
+
+La première étape qui échoue arrête l'exécution, à quelque tour que ce soit ; les tours
+déjà faits restent faits. Au-delà de sa limite, les lignes restent pour la prochaine
+exécution — l'exécution le dit (`more`) : pour les traiter toutes au fil des exécutions, la
+boucle fait sortir de son filtre celles qu'elle a traitées (une case « relancée », une date
+de relance). Une boucle ne contient pas de boucle : le travail d'une exécution reste celui
+d'une liste, pas d'un produit de listes.
+
+```json
+{ "label": "Relances du lundi",
+  "trigger": { "kind": "schedule", "schedule": { "every": "week", "weekday": 1, "at": "09:00" } },
+  "actions": [
+    { "kind": "for_each", "table": "factures", "limit": 100, "sort": "echeance",
+      "filter": "payee eq false and relancee eq false",
+      "steps": [
+        { "kind": "email", "record": "e1", "email_field": "contact",
+          "subject": "Facture {{e1.numero}}", "message": "Bonjour, la facture {{e1.numero}}…" },
+        { "kind": "update_record", "record": "e1", "values": { "relancee": true } } ] },
+    { "kind": "notify", "users": ["…"], "message": "{{e1.nombre}} relances envoyées" } ] }
+```
+
+### 1.9 Un webhook composé
+
+Sans réglage, un webhook envoie en `POST` le **JSON de l'automatisation** : l'automatisation,
+le déclencheur, la ligne envoyée (§1.4), l'instant, et, sous `steps`, ce que les étapes
+précédentes ont trouvé ou écrit, par identifiant — ce qu'il a toujours fait. Pour parler à
+un service tel qu'il l'attend, l'étape règle :
+
+- la **méthode** : `GET` et `DELETE` n'envoient pas de corps (en donner un est refusé,
+  `corps_sans_objet`) ;
+- l'**adresse**, qui peut citer après son hôte (`https://api.exemple.fr/clients/{{e2.numero}}`) :
+  l'hôte s'écrit en toutes lettres (`hote_cite`), c'est lui que les règles d'adresse
+  vérifient à l'enregistrement, et encore à chaque exécution ;
+- des **en-têtes** (`headers: [{ name, value, secret }]`), dont la valeur peut citer ;
+  ceux que HTTP fixe lui-même (`Host`, `Content-Length`, `Connection`…) sont refusés
+  (`entete_interdit`) ;
+- un **corps composé** (`body`), dans un format (`format`) : `json`, `form` (une paire
+  `clé=valeur` par ligne) ou `text` ; il est vérifié à l'enregistrement — un JSON qui ne
+  s'analyse pas, citations mises en place, est refusé (`corps_json_invalide`). Son
+  `Content-Type` suit le format, sauf si un en-tête l'écrit.
+
+Un **en-tête secret** (`secret: true`) — une clé d'API, un jeton — est **scellé** par la clé
+de l'instance (A25, finalité `automation/webhook-header`) avec la base et l'hôte pour
+lesquels il a été donné, et n'est **plus jamais montré** : l'API le rend avec son nom, `value:
+null` et cet hôte ; le Copilot n'en voit que le nom ; un modèle de base n'en porte pas. Un
+enregistrement qui le renvoie sans valeur le **garde** — l'éditeur n'a rien d'autre à
+renvoyer —, mais seulement si l'adresse vise toujours le même hôte : sinon il faut le redonner
+(`secret_a_redonner`). Changer l'adresse ne suffit donc pas à envoyer le secret ailleurs ; et
+un secret descellé pour une autre base ou un autre hôte fait échouer l'étape plutôt que de
+partir. Une instance sans clé de chiffrement refuse un en-tête secret (`secret_impossible`)
+plutôt que de le garder en clair.
 
 ---
 
@@ -233,7 +313,8 @@ la requête pour un bouton. Un travailleur du processus d'API, comme celui des c
    `skipped` ;
 2. la condition, sur la ligne relue sous les droits du propriétaire — fausse : `skipped` ;
    une ligne qui ne se lit plus : `skipped` ;
-3. les étapes, dans l'ordre, une condition descendant le chemin qu'elle prend ; chacune
+3. les étapes, dans l'ordre, une condition descendant le chemin qu'elle prend, une boucle
+   répétant les siennes pour chaque ligne ; chacune
    avec les droits du propriétaire, par les mêmes chemins que l'API (masques,
    contraintes, historique). Une étape lit une ligne **telle que les précédentes l'ont
    laissée** : une ligne modifiée est relue. La première étape qui échoue arrête
@@ -245,7 +326,11 @@ l'ordre : son identifiant (`step`), sa nature (`kind`), son résultat (`succeede
 `failed`, `skipped`), le chemin pris par une condition (`path`, `null` si aucun), ce
 qu'elle a fait (`detail` : les champs écrits, l'identifiant de la ligne créée ou trouvée,
 le nombre de personnes prévenues, le code HTTP, la longueur d'une réponse de l'IA) et sa
-durée en millisecondes (`ms`). Ni
+durée en millisecondes (`ms`). Une boucle y dit combien de lignes elle a parcourues
+(`detail`) et si d'autres restaient au-delà de sa limite (`more`) ; une étape qu'elle
+contient n'y figure **qu'une fois**, pour tous ses tours : combien (`times`), la durée
+cumulée, le pire de ses résultats et ce qu'il a dit — les personnes prévenues et les
+courriels, additionnés ; tous les chemins pris par une condition (`taken`). Ni
 les valeurs lues ni celles écrites n'y sont recopiées : l'historique les garde, avec ses
 droits. Une exécution d'avant les flux, sans identifiants, se lit dans l'ordre des
 étapes du premier niveau.
@@ -270,8 +355,11 @@ droits du propriétaire : une ligne qu'il ne voit pas n'est pas trouvée.
   `skipped`, raison `debit` — un import de 10 000 lignes ne déclenche pas
   10 000 webhooks.
 - **Pas de chaîne entre automatisations** : §1.1.
-- **Pas de boucle dans un flux** : il se lit de haut en bas, une fois ; une condition
-  n'envoie jamais en arrière (§1.5), et ses bornes (§1.7) bornent l'exécution.
+- **Un flux qui ne revient pas en arrière** : il se lit de haut en bas ; une condition
+  n'envoie jamais en arrière (§1.5), une boucle répète ses étapes sur une liste lue une
+  fois et bornée (§1.8), et une exécution s'arrête au bout de 2 minutes
+  (`DEADLINE_EXCEEDED`) : le travailleur les prend l'une après l'autre, et une boucle de
+  webhooks lents ne doit pas retenir les automatisations de toute l'instance.
 - **Horloge** : au plus une exécution en attente par automatisation planifiée ; une
   échéance manquée pendant un arrêt est rattrapée une fois, pas autant de fois qu'elle a
   été manquée.
@@ -319,8 +407,9 @@ filtre pas, ne se trie pas, ne s'importe pas et ne se demande pas dans un formul
 | `POST` | `/ai/bases/{base}/automation-copilot` | un tour du Copilot des automatisations : `{messages, automation?, draft?, read_data}` ; propose, n'enregistre rien (§6) | `manage_schema` | session seule |
 
 Une automatisation se lit et s'écrit avec son flux entier sous `actions` : les étapes et,
-dans une condition, ses chemins (`paths`) et leurs étapes, chacune avec son identifiant.
-Une table s'y écrit par son nom ou sa clé, et se lit par sa clé.
+dans une condition, ses chemins (`paths`) et leurs étapes, dans une boucle ses étapes
+(`steps`), chacune avec son identifiant. Une table s'y écrit par son nom ou sa clé, et se
+lit par sa clé. Un en-tête secret s'y lit sans sa valeur (§1.9).
 
 ---
 
@@ -371,11 +460,20 @@ comme l'écran des automatisations ; ses appels sont ceux du copilote — `usage
   seule garantie simple contre une boucle entre deux automatisations qui se modifient
   l'une l'autre, et ce qu'une chaîne aurait fait s'écrit dans un seul flux.
 - **Un arbre, pas un graphe libre** : une condition ouvre des chemins qui se rejoignent
-  ensuite, rien ne revient en arrière. Ni boucle, ni étape atteinte par deux côtés dont on
-  ne saurait lequel a écrit ; ce qu'une étape peut citer se décide à l'enregistrement, et
-  une exécution se lit comme un chemin dans l'arbre. Un graphe libre ne se justifierait
-  qu'avec ce qu'il permettrait — attendre, reprendre, répéter — et qui demanderait une
-  file par étape.
+  ensuite, une boucle tient ses étapes comme un chemin tient les siennes, rien ne revient
+  en arrière. Ni étape atteinte par deux côtés dont on ne saurait lequel a écrit ; ce
+  qu'une étape peut citer se décide à l'enregistrement, et une exécution se lit comme un
+  chemin dans l'arbre. Un graphe libre ne se justifierait qu'avec ce qu'il permettrait —
+  attendre, reprendre — et qui demanderait une file par étape.
+- **Répéter sur une liste, pas revenir en arrière** : une boucle lit ses lignes une fois,
+  bornées, puis les parcourt ; elle ne se relance pas sur ce qu'elle a écrit, et ne
+  contient pas d'autre boucle. Son travail se sait avant de commencer — une liste, pas une
+  condition d'arrêt —, et une étape qu'elle répète se garde une fois dans l'exécution,
+  avec ses tours, plutôt que deux cents.
+- **Un secret de webhook scellé pour un hôte** : l'écran d'une automatisation se montre à
+  qui construit la base, et son flux au fournisseur d'IA du Copilot ; une clé d'API n'a rien
+  à y faire. Scellée, elle n'est vue par personne ; liée à l'hôte, elle ne part pas ailleurs
+  quand quelqu'un change l'adresse sans la connaître.
 - **Une étape relit les lignes**, elle ne reçoit pas de copie : ce qu'elle voit est ce que
   la base contient à cet instant, sous les droits du propriétaire, et une exécution ne
   garde que ses traces (§2.1) — pas les données.
@@ -400,10 +498,15 @@ comme l'écran des automatisations ; ses appels sont ceux du copilote — `usage
 
 - Une automatisation qui écrit n'en déclenche pas d'autre : « quand une facture est
   payée, retrouver le projet, le clore, puis prévenir le client » s'écrit en un seul flux.
-- Une recherche donne **une** ligne, la première qui répond ; il n'y a pas encore de
-  « pour chaque ligne » — traiter à heure fixe toutes les factures en retard.
+- Une recherche donne **une** ligne, la première qui répond ; pour en traiter plusieurs,
+  une boucle (§1.8) — 200 au plus par exécution, et la première étape qui échoue arrête
+  toute la boucle : un courriel refusé au tour 3 laisse les tours suivants à la prochaine
+  exécution.
 - Un flux s'exécute d'une traite : pas d'attente (« trois jours après »), pas de reprise
   d'une exécution échouée là où elle s'est arrêtée.
+- Un webhook ne suit pas de redirection, et n'attend pas plus de 10 secondes ; une API qui
+  demande une authentification en plusieurs temps (OAuth) passe par un service qu'on
+  contrôle, qui détient le jeton.
 - Ce qu'un chemin a trouvé ne se cite pas après la condition : ce que plusieurs chemins
   doivent partager se cherche avant elle.
 - Une condition ne teste que des lignes : pour bifurquer sur la réponse de l'IA, l'écrire
@@ -412,6 +515,6 @@ comme l'écran des automatisations ; ses appels sont ceux du copilote — `usage
   entre-temps est jugée telle qu'elle est.
 - Un modèle de base (chapitre 20) ne porte encore que des étapes les unes après les
   autres sur la ligne déclencheuse : l'export d'une base laisse de côté, en le disant,
-  une automatisation qui cherche, bifurque, demande à l'IA ou cite une étape.
+  une automatisation qui cherche, bifurque, boucle, demande à l'IA ou cite une étape.
 - Le délai entre l'écriture et l'exécution est celui d'un drain plus un tour du
   travailleur, de l'ordre de la seconde.

@@ -34,9 +34,9 @@ S3 depolamasıyla sağlayıcınızın yedekleme politikasını izleyin (sürüml
 ## Kurulum anahtarı
 
 `BASEDB_ENCRYPTION_KEY`, veritabanında kayıtlı gizli bilgileri şifreler (yapay zeka
-anahtarları, webhook sırları, form bağlantıları). **Anahtarı olmadan veritabanının bir yedeği
-bu gizli bilgileri geri yüklemez.** Anahtarı gizli bilgi yöneticinizde, yedeklerin yanında
-saklayın.
+anahtarları, webhook sırları, otomasyonların gizli üst bilgileri, form bağlantıları).
+**Anahtarı olmadan veritabanının bir yedeği bu gizli bilgileri geri yüklemez.** Anahtarı gizli
+bilgi yöneticinizde, yedeklerin yanında saklayın.
 
 ## Güncelleme
 
@@ -47,7 +47,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION`, en son sürüm (`latest`) yerine belirli bir sürümü (`0.4.0`) sabitler.
+`BASEDB_VERSION`, en son sürüm (`latest`) yerine belirli bir sürümü (`0.5.0`) sabitler.
 
 Başlangıçta basedb **kataloğunu kendiliğinden günceller**: sürümünüzde henüz bulunmayan
 geçişleri sırayla, her birini kendi işlemi (transaction) içinde uygular ve

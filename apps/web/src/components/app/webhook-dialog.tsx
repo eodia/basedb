@@ -20,6 +20,7 @@ import { type Webhook, type WebhookDelivery, type WebhookEvent, api } from '@/li
 import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
+import type { CheckedState } from '@radix-ui/react-checkbox'
 import { ChevronDown, Loader2, Pause, Play, Trash2, Webhook as WebhookIcon } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -135,13 +136,28 @@ export function WebhookDialog({
     }
   }
 
-  const toggle = (table: string, event: WebhookEvent, on: boolean) =>
+  // A box of the grid is a (table, event); a box of a row, a column or the corner stands for
+  // several — ticked when all are, a dash when some are, and a click ticks or clears them all.
+  type Cell = readonly [table: string, event: WebhookEvent]
+  const has = ([table, event]: Cell) => (chosen[table] ?? []).includes(event)
+  const stateOf = (cells: readonly Cell[]): CheckedState => {
+    const ticked = cells.filter(has).length
+    return ticked === 0 ? false : ticked === cells.length ? true : 'indeterminate'
+  }
+  const setAll = (cells: readonly Cell[], on: boolean) =>
     setChosen((was) => {
-      const current = new Set(was[table] ?? [])
-      if (on) current.add(event)
-      else current.delete(event)
-      return { ...was, [table]: EVENTS.map((e) => e.id).filter((id) => current.has(id)) }
+      const next = { ...was }
+      for (const [table, event] of cells) {
+        const current = new Set(next[table] ?? [])
+        if (on) current.add(event)
+        else current.delete(event)
+        next[table] = EVENTS.map((e) => e.id).filter((id) => current.has(id))
+      }
+      return next
     })
+  const rowOf = (table: string): Cell[] => EVENTS.map((e) => [table, e.id] as const)
+  const columnOf = (event: WebhookEvent): Cell[] => base.tables.map((t) => [t.name, event] as const)
+  const everything = base.tables.flatMap((t) => rowOf(t.name))
 
   const subscriptions = Object.entries(chosen)
     .filter(([, events]) => events.length > 0)
@@ -334,10 +350,28 @@ export function WebhookDialog({
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50 text-xs text-muted-foreground">
                       <tr>
-                        <th className="px-3 py-1.5 text-left font-medium">{$t('Table')}</th>
+                        <th className="px-3 py-1.5 text-left font-medium">
+                          <span className="flex items-center gap-2">
+                            <Checkbox
+                              aria-label={$t('Tout sélectionner')}
+                              checked={stateOf(everything)}
+                              onCheckedChange={(on) => setAll(everything, on === true)}
+                            />
+                            {$t('Table')}
+                          </span>
+                        </th>
                         {EVENTS.map((e) => (
                           <th key={e.id} className="px-3 py-1.5 font-medium">
-                            {e.label}
+                            <span className="flex flex-col items-center gap-1">
+                              {e.label}
+                              <Checkbox
+                                aria-label={$t('{label} dans toutes les tables', {
+                                  label: e.label,
+                                })}
+                                checked={stateOf(columnOf(e.id))}
+                                onCheckedChange={(on) => setAll(columnOf(e.id), on === true)}
+                              />
+                            </span>
                           </th>
                         ))}
                       </tr>
@@ -345,7 +379,18 @@ export function WebhookDialog({
                     <tbody className="divide-y">
                       {base.tables.map((t) => (
                         <tr key={t.name}>
-                          <td className="px-3 py-1.5">{t.label}</td>
+                          <td className="px-3 py-1.5">
+                            <span className="flex items-center gap-2">
+                              <Checkbox
+                                aria-label={$t('Tout sélectionner dans {label}', {
+                                  label: t.label,
+                                })}
+                                checked={stateOf(rowOf(t.name))}
+                                onCheckedChange={(on) => setAll(rowOf(t.name), on === true)}
+                              />
+                              {t.label}
+                            </span>
+                          </td>
                           {EVENTS.map((e) => (
                             <td key={e.id} className="px-3 py-1.5 text-center">
                               <Checkbox
@@ -353,8 +398,8 @@ export function WebhookDialog({
                                   label: e.label,
                                   label2: t.label,
                                 })}
-                                checked={(chosen[t.name] ?? []).includes(e.id)}
-                                onCheckedChange={(on) => toggle(t.name, e.id, on === true)}
+                                checked={has([t.name, e.id])}
+                                onCheckedChange={(on) => setAll([[t.name, e.id]], on === true)}
                               />
                             </td>
                           ))}

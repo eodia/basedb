@@ -34,7 +34,7 @@ Med S3-lagring følger du din udbyders backuppolitik (versionering, replikering)
 ## Instansnøglen
 
 `BASEDB_ENCRYPTION_KEY` krypterer de hemmeligheder, der er gemt i databasen (AI-nøgler,
-webhook-hemmeligheder, formularlinks). **En backup af databasen uden dens nøgle gendanner ikke
+webhook-hemmeligheder, automatiseringernes hemmelige headere, formularlinks). **En backup af databasen uden dens nøgle gendanner ikke
 disse hemmeligheder.** Opbevar den i din hemmelighedsmanager ved siden af dine backups.
 
 ## Opdatering
@@ -46,7 +46,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` fastlåser en bestemt version (`0.4.0`) i stedet for den seneste (`latest`).
+`BASEDB_VERSION` fastlåser en bestemt version (`0.5.0`) i stedet for den seneste (`latest`).
 
 Ved start **opdaterer basedb selv sit katalog**: det anvender i rækkefølge, hver i sin egen
 transaktion, de migreringer, som din version endnu ikke har, og registrerer dem i

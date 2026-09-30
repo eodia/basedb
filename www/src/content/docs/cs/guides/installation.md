@@ -72,8 +72,8 @@ Vygenerovaný klíč si uschovejte: viz rámeček níže.
 
 :::caution[Klíč instance]
 `BASEDB_ENCRYPTION_KEY` podepisuje relace a šifruje uložená tajemství (klíče AI, tajemství
-webhooků, odkazy formulářů). Jeho změna všechny odhlásí a tato tajemství se stanou
-nečitelnými. Vygenerujte ho jednou a zálohujte ho spolu s databází.
+webhooků, tajné hlavičky automatizací, odkazy formulářů). Jeho změna všechny odhlásí a tato
+tajemství se stanou nečitelnými. Vygenerujte ho jednou a zálohujte ho spolu s databází.
 :::
 
 ## Pro vývoj

@@ -1,13 +1,13 @@
 ---
 title: Automatizaciones
-description: Cuando cambia una fila, a una hora fija o con un clic; modificar, crear, buscar, bifurcar, preguntar a la IA, avisar, enviar un correo electrónico, llamar a un webhook, escribir en Slack.
+description: Cuando cambia una fila, a una hora fija o con un clic; modificar, crear, buscar, repetir en cada fila, bifurcar, preguntar a la IA, avisar, enviar un correo electrónico, llamar a un servicio, escribir en Slack.
 ---
 
 Una automatización dice **cuándo**, **si** y **entonces**: cuando una tarea pasa a «Fait», anotar
 la hora; cuando llega una reseña negativa, avisar a la responsable y escribir en Slack; cada
 lunes a las 9:00, crear la fila de la reunión de equipo. Y cuando una acción no basta, sigue un
-**flujo**: buscar una fila, tomar una rama u otra según lo que diga, reutilizar
-en un paso lo que un paso anterior ha encontrado o escrito.
+**flujo**: buscar una fila, tomar una rama u otra según lo que diga, repetir pasos en cada
+fila que cumple un filtro, reutilizar en un paso lo que un paso anterior ha encontrado o escrito.
 
 Se abren desde **Automatizaciones**, en el bloque de la base abierta en la parte inferior de la barra
 lateral, y requieren el nivel **Gestión**.
@@ -50,14 +50,58 @@ Hasta treinta pasos, en orden; el primero que falla detiene los siguientes.
 | **Buscar una fila** | la primera fila de una tabla que cumple un filtro, para que los pasos siguientes la citen o la modifiquen |
 | **Avisar a alguien** | una [notificación](/basedb/es/fonctionnalites/collaboration/#notificaciones) a personas elegidas, o a la de un campo Persona |
 | **Enviar un correo electrónico** | a personas del equipo, a la de un campo Persona, a la dirección de un campo Correo electrónico (un cliente, un proveedor) o a direcciones escritas; el asunto y el texto citan la fila y los pasos anteriores |
-| **Llamar a un webhook** | un `POST` por HTTPS a la dirección que elijas; su respuesta se puede citar después |
+| **Llamar a un webhook** | una solicitud HTTPS a un servicio: método, dirección, encabezados y cuerpo a tu gusto ([detalles](#llamar-a-un-servicio)); su respuesta se puede citar después |
 | **Enviar a Slack** | un mensaje en un canal [conectado](/basedb/es/integrations/synchronisation/#slack) |
 | **Preguntar a la IA** | una respuesta del [proveedor de IA](/basedb/es/fonctionnalites/ia/) a una instrucción que cita la fila y los pasos anteriores (redactar, resumir, clasificar), leída como un texto, un número, sí o no, una fecha o una opción de una lista |
 | **Condición** | varias ramas: se toma la primera cuya condición se cumple, y «Si no» cuando no se cumple ninguna; después, las ramas vuelven a unirse |
+| **Para cada fila** | los pasos que contiene, una vez por cada fila de una tabla que cumple un filtro ([detalles](#para-cada-fila)) |
 
 Una búsqueda que no encuentra nada no detiene el flujo: los pasos que debían modificar su
 fila se omiten. Para hacer otra cosa en ese caso, una condición lo comprueba: una rama
 con el filtro vacío se toma en cuanto la búsqueda ha encontrado algo.
+
+## Para cada fila
+
+El paso **Para cada fila** lee las filas de una tabla que cumplen su filtro —vacío: todas—, en
+el orden elegido, hasta su límite (50 de forma predeterminada, 200 como máximo), y luego ejecuta
+una vez por cada una los pasos colocados en su marco. «Cada lunes, reclamar las facturas
+impagadas» se escribe así: **A una hora fija**, luego **Para cada fila** de las facturas
+`payee eq false and relancee eq false`, y dentro del bucle un correo electrónico al contacto de
+la factura y **Modificar una fila** que marca «Relancée».
+
+En el bucle, el identificador del paso nombra la **fila del turno**: `{{e1.client}}` la cita, y
+**Modificar una fila** la ofrece entre las filas que se pueden modificar. Después del bucle,
+`{{e1.nombre}}` indica cuántas filas ha recorrido (para un resumen en Slack, por ejemplo). El
+filtro puede citar lo anterior: desencadenada por una factura pagada, `facture eq {{_id}}`
+recorre sus líneas de detalle.
+
+Más allá del límite, las filas restantes esperan la siguiente ejecución, que lo indica: haz que
+salgan del filtro las que ya están tratadas (una casilla «relancée», una fecha) para tratarlas
+todas a lo largo de las ejecuciones. Un bucle no contiene otro bucle, y una ejecución se detiene
+a los dos minutos como máximo.
+
+## Llamar a un servicio
+
+El paso **Llamar a un webhook** envía por defecto, en `POST`, los datos de la automatización: la
+fila elegida y lo que los pasos anteriores han encontrado o escrito. Para hablar con un servicio
+tal como lo espera, se ajustan:
+
+- el **método**: `POST`, `PUT`, `PATCH`, `GET` o `DELETE` (estos dos últimos sin cuerpo);
+- la **dirección**, que puede citar después de su host: `https://api.exemple.fr/clients/{{e2.numero}}`;
+  cada valor se codifica ahí;
+- unos **encabezados**, cuyo valor puede citar: `Idempotency-Key: {{_id}}`;
+- el **cuerpo**: los datos de la automatización, un **JSON que componer**, un **formulario** (un
+  par `clave=valor` por línea) o un **texto**. En un JSON, una cita entre comillas es texto, y
+  fuera de comillas un valor (un número, sí o no, una lista):
+
+```json
+{ "facture": "{{e1.numero}}", "montant": {{e1.montant}}, "payee": {{e1.payee}} }
+```
+
+Una clave de API o un token se pone en un encabezado **secreto** (el candado): cifrado por la
+clave de la instancia, no se vuelve a mostrar nunca (ni en la pantalla, ni por la API, ni al
+Copilot) y solo parte hacia el host para el que lo diste. Cambiar el host de la dirección exige
+volver a darlo; **Reemplazar** introduce uno nuevo.
 
 ## Preguntar a la IA
 
@@ -89,6 +133,8 @@ a cada texto:
   paso lleva su identificador en su tarjeta;
 - `{{e3.statut}}`, `{{e3.reponse.numero}}`: lo que ha respondido el webhook `e3`;
 - `{{e4.reponse}}`: la respuesta del paso de IA `e4`;
+- `{{e5.client}}` en el bucle `e5`, la fila del turno; `{{e5.nombre}}` después de él, el número
+  de filas recorridas;
 - `{{_maintenant}}`: el instante de la ejecución.
 
 Un valor formado por una sola cita pasa el propio valor: una relación, una persona, una
@@ -124,7 +170,7 @@ y los canales de Slack se envían con marcadores (`p1`, `s1`), nunca con su iden
 verdad. La pestaña **Ejecuciones** conserva las 50 últimas durante 30 días: en espera, en curso, completada,
 descartada con su motivo, fallida con su código. Al elegir una, se superpone al flujo: la rama
 tomada queda trazada, cada paso ejecutado indica lo que hizo y cuánto tardó, y el resto aparece
-atenuado.
+atenuado. En un bucle, cada paso indica también cuántas veces se ha ejecutado.
 
 ## En nombre de quién actúa
 
@@ -138,15 +184,17 @@ se deshacen como las demás.
 
 - Lo que escribe una automatización no desencadena ninguna otra: lo que deba encadenarse se escribe
   en un solo flujo.
-- Una búsqueda da una fila, la primera; todavía no hay «para cada fila», ni
-  esperas («tres días después»).
+- Una búsqueda da una fila, la primera; un bucle recorre 200 como máximo por ejecución, y el
+  primer paso que falla lo detiene. Sin esperas («tres días después»).
 - Sin scripts. Un correo electrónico se envía en texto simple, uno por destinatario (veinte como
   máximo por paso), a través del [servidor de envío](/basedb/es/hebergement/variables/#correos-electrónicos)
   de la instancia; una respuesta llega a la persona propietaria de la automatización.
 - Una condición comprueba una fila: para tomar una rama según la respuesta de la IA, escríbela
   primero en un campo de la fila.
 - Una [plantilla de base](/basedb/es/fonctionnalites/modeles/) solo incluye las automatizaciones sin
-  búsqueda, condición ni paso de IA.
+  búsqueda, bucle, condición ni paso de IA, y nunca un webhook.
+- Un webhook no sigue redirecciones y espera 10 segundos como máximo; una respuesta distinta de
+  2xx hace fallar el paso.
 - 100 ejecuciones por hora y por automatización; una ejecución programada que no se haya realizado solo se recupera
   una vez.
 - El retraso entre la escritura y la acción es del orden de un segundo.

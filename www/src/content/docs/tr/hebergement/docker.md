@@ -29,8 +29,8 @@ ile Görsel alanlarının dosyaları için bir birim, `/data`, tanımlar.
 | Etiket | İçerik |
 |---|---|
 | `latest` | yayımlanan son sürüm |
-| `0.4` | son 0.4.x sürümü |
-| `0.4.0` | tam olarak bu sürüm |
+| `0.5` | son 0.5.x sürümü |
+| `0.5.0` | tam olarak bu sürüm |
 
 ## Servisler
 
@@ -51,6 +51,23 @@ docker compose down                 # durdur (birimler kalır)
 ```
 
 Deponun bir klonundan `docker compose up -d --build`, imajı indirmek yerine koddan derler.
+
+## Bir ağ geçidinin arkasında, bir yol altında
+
+basedb bir yol altında yayımlandığında — bir alan adının köküne değil, `https://passerelle.example.com/basedb/` adresinde —, bu yolu belirtin:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# veya, herkese açık adres olmadan:
+BASEDB_BASE_PATH=/basedb
+```
+
+Böylece her şey `/basedb` altından geçer: arayüz, `/basedb/api`, `/basedb/mcp`, paylaşım
+bağlantıları ve e-posta bağlantıları. Ağ geçidi isteği ilettiğinde **yolu koruyabilir** ya da
+**kaldırabilir**: basedb ikisini de kabul eder. `BASEDB_BASE_PATH=/` köke zorlar.
+
+İmaj tüm adresler için aynıdır: yol, konteynerin başlatılmasında arayüze yazılır ve yolu
+değiştirmek yalnızca bir yeniden başlatma gerektirir.
 
 ## Portları değiştirme
 

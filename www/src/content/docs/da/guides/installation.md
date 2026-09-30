@@ -73,7 +73,7 @@ Gem den genererede nøgle: se boksen nedenfor.
 
 :::caution[Instansnøglen]
 `BASEDB_ENCRYPTION_KEY` signerer sessioner og krypterer gemte hemmeligheder (AI-nøgler,
-webhook-hemmeligheder, formularlinks). Hvis du ændrer den, logges alle ud, og disse
+webhook-hemmeligheder, automatiseringernes hemmelige headere, formularlinks). Hvis du ændrer den, logges alle ud, og disse
 hemmeligheder bliver ulæselige. Generér den én gang, og tag backup af den sammen med databasen.
 :::
 

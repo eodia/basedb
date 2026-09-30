@@ -29,8 +29,8 @@ Das Image läuft unter dem Benutzer `node` auf Node 22, deklariert eine Integrit
 | Tag | Inhalt |
 |---|---|
 | `latest` | die zuletzt veröffentlichte Version |
-| `0.4` | die neueste Version 0.4.x |
-| `0.4.0` | genau diese Version |
+| `0.5` | die neueste Version 0.5.x |
+| `0.5.0` | genau diese Version |
 
 ## Die Dienste
 
@@ -52,6 +52,24 @@ docker compose down                 # stoppen (die Volumes bleiben)
 
 Aus einem Klon des Repositorys baut `docker compose up -d --build` das Image aus dem Quellcode,
 statt es herunterzuladen.
+
+## Hinter einem Gateway, unter einem Pfad
+
+Wenn basedb unter einem Pfad veröffentlicht wird – `https://passerelle.example.com/basedb/` statt
+an der Wurzel einer Domain –, geben Sie diesen Pfad an:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# oder, ohne öffentliche Adresse:
+BASEDB_BASE_PATH=/basedb
+```
+
+Alles läuft dann unter `/basedb`: die Oberfläche, `/basedb/api`, `/basedb/mcp`, die Freigabelinks
+und die der E-Mails. Das Gateway kann **den Pfad beibehalten**, indem es die Anfrage weiterleitet,
+oder ihn **entfernen**: basedb akzeptiert beides. `BASEDB_BASE_PATH=/` erzwingt die Wurzel.
+
+Das Image ist für alle Adressen dasselbe: Der Pfad wird beim Start des Containers in die
+Oberfläche geschrieben, und ein Pfadwechsel erfordert nur einen Neustart.
 
 ## Die Ports ändern
 

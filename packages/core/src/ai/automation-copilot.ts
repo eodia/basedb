@@ -134,20 +134,25 @@ function flatten(steps: ReadonlyArray<Raw>): Raw[] {
           flatten(Array.isArray(record(p).steps) ? (record(p).steps as Raw[]) : []),
         )
       : []),
+    ...(Array.isArray(s.steps) ? flatten(s.steps as Raw[]) : []),
   ])
 }
 
-/** A flow with each step rewritten — the paths' included. */
+/** A flow with each step rewritten — the paths' and the loops' included. */
 function mapSteps(steps: unknown, edit: (step: Raw) => Raw): Raw[] {
   return (Array.isArray(steps) ? steps : []).map((item) => {
     const step = edit({ ...record(item) })
-    if (!Array.isArray(step.paths)) return step
     return {
       ...step,
-      paths: step.paths.map((p) => {
-        const path = record(p)
-        return { ...path, steps: mapSteps(path.steps, edit) }
-      }),
+      ...(Array.isArray(step.steps) ? { steps: mapSteps(step.steps, edit) } : {}),
+      ...(Array.isArray(step.paths)
+        ? {
+            paths: step.paths.map((p) => {
+              const path = record(p)
+              return { ...path, steps: mapSteps(path.steps, edit) }
+            }),
+          }
+        : {}),
     }
   })
 }
@@ -162,6 +167,7 @@ const STEP_LABELS: Readonly<Record<string, string>> = {
   slack: 'Envoyer sur Slack',
   ai: 'Demander à l’IA',
   branch: 'Condition',
+  for_each: 'Pour chaque ligne',
 }
 
 const TRIGGER_LABELS: Readonly<Record<string, string>> = {
@@ -244,6 +250,13 @@ export async function automationCopilotTurn(
       }
       if (typeof out.integration === 'string') {
         out.integration = channels.find((c) => c.id === out.integration)?.ref ?? out.integration
+      }
+      // A secret header is named, never shown: the editor's unsaved one no more than a kept one.
+      if (Array.isArray(out.headers)) {
+        out.headers = out.headers.map((h) => {
+          const header = record(h)
+          return header.secret === true ? { ...header, value: null } : header
+        })
       }
       out.consent = undefined
       return out
@@ -450,7 +463,10 @@ export async function automationCopilotTurn(
     switch (s.kind) {
       case 'create_record':
       case 'find_record':
+      case 'for_each':
         return `${label} dans ${labelOfTable(s.table)}`
+      case 'webhook':
+        return `${label} : ${String(s.method ?? 'POST')} ${String(s.url ?? '')}`
       case 'update_record':
         return `${label}${row(s.record)} : ${Object.keys(record(s.values)).join(', ')}`
       case 'notify':
@@ -484,6 +500,8 @@ export async function automationCopilotTurn(
           paths: Array.isArray(s.paths)
             ? s.paths.map((p) => ({ ...record(p), steps: undefined }))
             : undefined,
+          // A loop changes by its own settings; what it holds is compared step by step.
+          steps: undefined,
         },
         Object.keys(s).sort(),
       )
@@ -608,14 +626,15 @@ LES ÉTAPES ("steps"), dans l'ordre :
   { "kind": "find_record", "table": "<name>", "filter": "<filtre, vide : n'importe quelle ligne>", "sort": "<colonne>" ou "-<colonne>" } — la PREMIÈRE ligne qui répond ; rien trouvé : les étapes qui la modifient sont passées ;
   { "kind": "notify", "record": "trigger" | "<id>", "users": ["p1"], "user_field": "<colonne personne de cette ligne>", "message": "…" } — une notification dans basedb, qui ouvre la ligne ;
   { "kind": "email", "record": "trigger" | "<id>" | null, "users": ["p1"], "user_field": "<colonne personne de cette ligne>", "email_field": "<colonne e-mail de cette ligne>", "addresses": ["<adresse écrite>"], "subject": "…", "message": "…" } — un courriel en texte simple, par le serveur d'envoi de l'instance ; au moins un destinataire, 20 au plus ; une réponse va à la personne qui possède l'automatisation ;
-  { "kind": "webhook", "record": "trigger" | "<id>" | null, "url": "https://…" } ;
+  { "kind": "webhook", "url": "https://…", "method": "POST" | "PUT" | "PATCH" | "GET" | "DELETE", "headers": [{ "name": "…", "value": "…", "secret": false }], "body": null | "<corps composé>", "format": "json" | "form" | "text", "record": "trigger" | "<id>" | null } — une requête HTTPS vers un service ou une API ; "url" peut citer APRÈS l'hôte (https://api.exemple.fr/clients/{{e2.numero}}) ; "body": null envoie le JSON de l'automatisation (la ligne "record", ce que les étapes ont trouvé) ; un corps composé cite : en "json", une citation entre guillemets est du texte, hors guillemets une valeur ({"montant": {{montant}}}) ; en "form", une paire clé=valeur par ligne ; GET et DELETE n'ont pas de corps ; une clé d'API, un jeton : un en-tête { "name": "Authorization", "value": null, "secret": true } que la personne remplit elle-même dans l'éditeur — n'écris JAMAIS de secret, et garde tels quels ceux qui existent ;
   { "kind": "slack", "integration": "s1", "message": "…" } ;
   { "kind": "ai", "prompt": "<consigne citant ce qui précède>", "answer": "long_text" | "short_text" | "number" | "boolean" | "date" | "url" | "select", "options": ["<choix>", …] } — une réponse de l'IA, qui n'agit sur rien : les étapes suivantes la citent ;
+  { "kind": "for_each", "table": "<name>", "filter": "<filtre, vide : toutes les lignes>", "sort": "<colonne>" ou "-<colonne>", "limit": 1..200 (50 par défaut), "steps": [ … ] } — les étapes de "steps" une fois pour chaque ligne qui répond, dans l'ordre, jusqu'à la limite ; dedans, l'id de la boucle nomme la ligne du tour : {{e2.<colonne>}}, "record": "e2" pour la modifier ; après la boucle, {{e2.nombre}} = le nombre de lignes parcourues ; pas de boucle dans une boucle ;
   { "kind": "branch", "paths": [ { "label": "…", "when": { "record": "trigger" | "<id>", "condition": "<filtre ; vide : la ligne existe>" }, "steps": [ … ] }, { "label": "Sinon", "when": null, "steps": [ … ] } ] } — le premier chemin qui tient est pris ; "Sinon" en dernier ; les chemins se rejoignent ensuite.
   — chaque étape a un "id" : GARDE ceux des étapes existantes (les citations en dépendent) ; n'en donne pas aux nouvelles, basedb les numérote (e1, e2…) dans l'ordre de lecture.
 
 CITER dans une valeur, un message, une consigne, un filtre :
-  {{<colonne>}} de la ligne déclencheuse, {{_id}}, {{_maintenant}} ; {{e2.<colonne>}}, {{e2._id}} de la ligne d'une étape ; {{e3.reponse}} la réponse d'une étape ai ; {{e4.statut}}, {{e4.reponse.<clé>}} d'un webhook.
+  {{<colonne>}} de la ligne déclencheuse, {{_id}}, {{_maintenant}} ; {{e2.<colonne>}}, {{e2._id}} de la ligne d'une étape ; {{e3.reponse}} la réponse d'une étape ai ; {{e4.statut}}, {{e4.reponse.<clé>}} d'un webhook ; {{e5.<colonne>}} la ligne du tour dans une boucle e5, {{e5.nombre}} après elle.
   — une étape ne cite que les étapes passées AVANT elle sur tous les chemins : après une branch, ce que ses chemins ont fait ne se cite plus ;
   — une valeur faite d'une seule citation passe la valeur telle quelle (un lien, une personne, un choix, un nombre) ;
   — dans un filtre, une citation est une valeur : « projets_id eq {{projets_id}} », sans guillemets autour.
@@ -627,7 +646,7 @@ UN FILTRE ("condition", "filter", "when.condition") : « colonne opérateur vale
 RÈGLES :
   — UNE AUTOMATISATION SIMPLE RESTE SIMPLE : le moins d'étapes possible. Pas de recherche quand la ligne déclencheuse suffit ; la "condition" plutôt qu'une branch quand il n'y a qu'un cas ; pas d'étape ai sans besoin de rédiger, résumer, classer ou juger ;
   — pour changer l'automatisation à l'écran : "target": "current", avec la définition COMPLÈTE après le changement ; pour une autre : "target": "new" ;
-  — à heure fixe il n'y a pas de ligne déclencheuse : pas de "condition", ni de "record": "trigger" ; commence par find_record ;
+  — à heure fixe il n'y a pas de ligne déclencheuse : pas de "condition", ni de "record": "trigger" ; commence par find_record, ou par for_each pour agir sur PLUSIEURS lignes (« chaque matin, relancer les factures en retard ») ;
   — n'écris que dans des colonnes qui ne sont pas "writable": false ; une liste par la "value" ou le "label" d'un de ses choix ;
   — personnes et canaux par leur "ref", jamais inventés ; sans canal Slack, pas d'étape slack ; sans "mail", pas d'étape email ;
   — prévenir quelqu'un DE L'ÉQUIPE : notify ; écrire à l'extérieur (un client, un fournisseur, une adresse d'une colonne e-mail) : email ;

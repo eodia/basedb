@@ -1536,6 +1536,28 @@ export default {
 		title: 'What changed in basedb',
 		intro: 'The details of every change are in <a href="https://github.com/eodia/basedb/commits/main">the repository history</a>. What comes next: the <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'For applications that rely on basedb',
+				tag: 'New',
+				items: [
+					'<strong>A base created from a template in one call</strong>: the server applies the whole template — tables, relations, rows, views, automations — or nothing if a step fails. The gallery uses it, an application that installs itself too. <a href="/integrations/api-rest/#creating-a-base-from-a-template">Creating a base from a template</a>',
+					'<strong>Checking a token</strong>: an application handed a person’s token asks basedb whether it is still valid, and for whom — their account, their groups. <a href="/integrations/api-rest/#checking-a-token">Checking a token</a>',
+					'<strong>Your internal servers</strong>: webhooks and automations reach the ones you name in <code>BASEDB_WEBHOOK_ALLOW</code>, HTTP included; a program can also follow a table in real time with an integration token. <a href="/integrations/webhooks/#without-a-webhook-following-a-table">Following a table</a>',
+					'<strong>Under a path, behind a gateway</strong>: basedb is published at an address like <code>https://passerelle.example.com/basedb/</code>, whether the gateway keeps the path or strips it. <a href="/hebergement/docker/#behind-a-gateway-under-a-path">Behind a gateway</a>',
+					'<strong>One webhook, all tables at once</strong>: check or uncheck an event for every table, or every event of one table, in a single click.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automations that loop through your rows and talk to APIs',
+				tag: 'New',
+				items: [
+					'<strong>For each row</strong>: a step that repeats its own steps on each row of a table that matches a filter — every Monday, follow up on every unpaid invoice, not just the first one. <a href="/fonctionnalites/automatisations/#for-each-row">For each row</a>',
+					'<strong>A webhook that talks to any API</strong>: the method, an address that cites the row, headers, a body in JSON, form or text, composed with the row’s values. <a href="/fonctionnalites/automatisations/#call-a-service">Call a service</a>',
+					'<strong>An API key stays secret</strong>: encrypted, it is never shown again — not on screen, not by the API, not to Copilot — and is only sent to the host you gave it for.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'The map, and addresses that can be found',
@@ -1888,8 +1910,8 @@ export default {
 						text: 'Copying SQL views along with the schema when creating or comparing environments, and in base templates.',
 					},
 					loops: {
-						title: 'Loops and waits in automations',
-						text: 'Repeating steps for each row found, waiting before the next one (“three days later”), and carrying flows into base templates.',
+						title: 'Waits in automations',
+						text: 'Waiting before the next step (“three days later”), and carrying flows — conditions, searches, loops — into base templates.',
 					},
 					textFormulas: {
 						title: 'Text formulas',

@@ -147,5 +147,5 @@ Elke database kan ook een sjabloon worden: **Opslaan als sjabloon** in het menu 
 database, onder **Meer acties**. De tabellen, velden, AI-instructies, relaties, gedeelde weergaven, dashboards en
 automatiseringen — en, als je dat wilt, tot 50 rijen per tabel — worden gedownload als
 JSON, klaar om in de officiële catalogus of in die van de instantie te worden opgenomen. Een automatisering die
-een rij zoekt, vertakkingen neemt of een eerdere stap citeert, blijft voorlopig buiten
-beschouwing, en het scherm meldt dat.
+een rij zoekt, rijen doorloopt, vertakkingen neemt of een eerdere stap citeert, blijft voorlopig
+buiten beschouwing, en het scherm meldt dat.

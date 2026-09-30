@@ -73,8 +73,9 @@ docker run -d --name basedb -p 3000:3000 -v basedb-files:/data \
 
 :::caution[Kurulum anahtarı]
 `BASEDB_ENCRYPTION_KEY` oturumları imzalar ve kayıtlı gizli bilgileri şifreler (yapay zeka
-anahtarları, webhook sırları, form bağlantıları). Onu değiştirmek herkesin oturumunu kapatır ve
-bu gizli bilgileri okunamaz hâle getirir. Bir kez üretin, veritabanıyla birlikte yedekleyin.
+anahtarları, webhook sırları, otomasyonların gizli üst bilgileri, form bağlantıları). Onu
+değiştirmek herkesin oturumunu kapatır ve bu gizli bilgileri okunamaz hâle getirir. Bir kez
+üretin, veritabanıyla birlikte yedekleyin.
 :::
 
 ## Geliştirme için

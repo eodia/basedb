@@ -73,7 +73,7 @@ Bewahren Sie den erzeugten Schlüssel auf: siehe den Hinweis unten.
 
 :::caution[Der Instanzschlüssel]
 `BASEDB_ENCRYPTION_KEY` signiert die Sitzungen und verschlüsselt die gespeicherten Geheimnisse
-(KI-Schlüssel, Webhook-Geheimnisse, Formular-Links). Wer ihn ändert, meldet alle ab und macht
+(KI-Schlüssel, Webhook-Geheimnisse, geheime Header von Automatisierungen, Formular-Links). Wer ihn ändert, meldet alle ab und macht
 diese Geheimnisse unlesbar. Erzeugen Sie ihn einmal und sichern Sie ihn zusammen mit der Datenbank.
 :::
 

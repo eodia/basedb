@@ -35,7 +35,7 @@ replicatie).
 ## De instantiesleutel
 
 `BASEDB_ENCRYPTION_KEY` versleutelt de geheimen die in de database zijn opgeslagen (AI-sleutels,
-webhookgeheimen, formulierlinks). **Een back-up van de database zonder de sleutel herstelt die
+webhookgeheimen, geheime headers van automatiseringen, formulierlinks). **Een back-up van de database zonder de sleutel herstelt die
 geheimen niet.** Bewaar de sleutel in je geheimenbeheer, naast de back-ups.
 
 ## Bijwerken
@@ -47,7 +47,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` legt een precieze versie vast (`0.4.0`) in plaats van de nieuwste (`latest`).
+`BASEDB_VERSION` legt een precieze versie vast (`0.5.0`) in plaats van de nieuwste (`latest`).
 
 Bij het opstarten **werkt basedb zijn catalogus zelf bij**: het past, in volgorde en
 elk in een eigen transactie, de migraties toe die jouw versie nog niet heeft, en registreert ze

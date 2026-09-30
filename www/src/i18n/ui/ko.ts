@@ -1525,6 +1525,28 @@ export default {
 		title: 'basedb에서 바뀐 내용',
 		intro: '각 변경의 자세한 내용은 <a href="https://github.com/eodia/basedb/commits/main">저장소 기록</a>에 있습니다. 앞으로의 계획은 <a href="/feuille-de-route/">로드맵</a>에서 확인하세요.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'basedb를 기반으로 하는 애플리케이션을 위해',
+				tag: '신규',
+				items: [
+					'<strong>한 번의 호출로 템플릿에서 만드는 데이터베이스</strong>: 서버가 템플릿 전체 — 테이블, 관계, 행, 보기, 자동화 — 를 적용하며, 한 단계라도 실패하면 아무것도 적용하지 않습니다. 갤러리도 이 방식을 씁니다. 갤러리 역시 설치할 수 있는 애플리케이션입니다. <a href="/integrations/api-rest/#템플릿으로-데이터베이스-만들기">템플릿으로 데이터베이스 만들기</a>',
+					'<strong>토큰 확인</strong>: 누군가의 토큰을 전달받은 애플리케이션이 그 토큰이 아직 유효한지, 누구의 것인지 — 계정, 그룹 — 를 basedb에 물어볼 수 있습니다. <a href="/integrations/api-rest/#토큰-확인">토큰 확인</a>',
+					'<strong>여러분의 내부 서버로</strong>: 웹훅과 자동화는 <code>BASEDB_WEBHOOK_ALLOW</code>에 지정한 대상에만 연결됩니다 — HTTP도 포함해서요. 프로그램은 연동 토큰으로 테이블을 실시간으로 추적할 수도 있습니다. <a href="/integrations/webhooks/#웹훅-없이-테이블-추적하기">테이블 추적하기</a>',
+					'<strong>게이트웨이 뒤, 하위 경로에서</strong>: basedb는 <code>https://passerelle.example.com/basedb/</code>와 같은 주소로 게시될 수 있습니다. 게이트웨이가 그 경로를 유지하든 제거하든 상관없습니다. <a href="/hebergement/docker/#게이트웨이-뒤-하위-경로에서">게이트웨이 뒤에서</a>',
+					'<strong>웹훅 하나로 모든 테이블을 한 번에</strong>: 클릭 한 번으로 모든 테이블에 대해 이벤트를 켜거나 끄고, 한 테이블의 모든 이벤트를 켜거나 끌 수 있습니다.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: '행을 통과하며 API와 대화하는 자동화',
+				tag: '신규',
+				items: [
+					'<strong>행 반복</strong>: 필터에 맞는 테이블의 각 행마다 그 안의 단계를 반복하는 단계입니다 — 매주 월요일, 첫 번째 청구서만이 아니라 미납 청구서 전부를 독촉합니다. <a href="/fonctionnalites/automatisations/#행-반복">행 반복</a>',
+					'<strong>어떤 API와도 대화하는 웹훅</strong>: 메서드, 행을 인용하는 주소, 헤더, 행의 값으로 구성하는 JSON·양식·텍스트 본문. <a href="/fonctionnalites/automatisations/#서비스-호출">서비스 호출</a>',
+					'<strong>API 키는 계속 시크릿으로 남습니다</strong>: 암호화되어 다시는 표시되지 않습니다 — 화면에도, API에도, Copilot에도 — 그리고 지정한 호스트로만 전송됩니다.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: '지도, 그리고 제자리를 찾는 주소',
@@ -1871,8 +1893,8 @@ export default {
 						text: '환경을 만들거나 비교할 때, 그리고 데이터베이스 템플릿에서 SQL 뷰를 스키마와 함께 복사합니다.',
 					},
 					loops: {
-						title: '자동화의 반복과 대기',
-						text: '찾은 행마다 단계를 반복하고, 다음 단계 전에 기다리고(“3일 후”), 흐름을 데이터베이스 템플릿에 담습니다.',
+						title: '자동화의 대기',
+						text: '다음 단계 전에 기다리고(“3일 후”), 흐름(조건, 검색, 반복)을 데이터베이스 템플릿에 담습니다.',
 					},
 					textFormulas: {
 						title: '텍스트 수식',

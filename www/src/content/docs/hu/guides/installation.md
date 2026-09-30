@@ -73,8 +73,9 @@ docker run -d --name basedb -p 3000:3000 -v basedb-files:/data \
 
 :::caution[A példány kulcsa]
 A `BASEDB_ENCRYPTION_KEY` aláírja a munkameneteket, és titkosítja a tárolt titkokat
-(MI-kulcsok, webhooktitkok, űrlaphivatkozások). Ha megváltoztatja, mindenki kijelentkezik, és
-ezek a titkok olvashatatlanná válnak. Egyszer hozza létre, és az adatbázissal együtt mentse.
+(MI-kulcsok, webhooktitkok, az automatizálások titkos fejlécei, űrlaphivatkozások). Ha
+megváltoztatja, mindenki kijelentkezik, és ezek a titkok olvashatatlanná válnak. Egyszer hozza
+létre, és az adatbázissal együtt mentse.
 :::
 
 ## Fejlesztéshez

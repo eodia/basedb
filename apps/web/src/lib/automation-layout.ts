@@ -3,8 +3,9 @@ import type { Draft, DraftPath, DraftStep } from '@/lib/automations'
 /**
  * Where each piece of a flow sits on the canvas — chapter 17, drawn. A flow is a tree read
  * top to bottom: a branch opens its paths side by side, each path runs down its own
- * steps, and they meet again below it. Laid out here, by arithmetic rather than by a
- * general graph layout: a tree needs none, and what is computed can be tested.
+ * steps, and they meet again below it; a loop holds its steps in a frame, from which an
+ * arrow goes back up to it. Laid out here, by arithmetic rather than by a general graph
+ * layout: a tree needs none, and what is computed can be tested.
  */
 
 export const STEP_SIZE = { w: 280, h: 68 } as const
@@ -17,12 +18,17 @@ export const GAP_Y = 56
 export const GAP_X = 36
 /** Above the point where paths meet: room for each path's « + » before its edge turns. */
 export const MERGE_GAP = GAP_Y + 24
+/** Beside a loop's steps, inside its frame: room for the arrow that goes back up. */
+export const FRAME_PAD_X = 28
+/** Below the point where a loop's steps end, inside its frame. */
+export const FRAME_BOTTOM = 10
 
 export const TRIGGER_NODE = '__trigger'
 export const END_NODE = '__end'
 export const mergeOf = (branch: string) => `${branch}__merge`
+export const frameOf = (loop: string) => `${loop}__frame`
 
-export type FlowNodeKind = 'trigger' | 'step' | 'path' | 'merge' | 'end'
+export type FlowNodeKind = 'trigger' | 'step' | 'path' | 'merge' | 'end' | 'frame'
 
 export interface FlowNode {
   readonly id: string
@@ -33,7 +39,10 @@ export interface FlowNode {
   readonly h: number
 }
 
-/** Where a step inserted by an edge's « + » goes: a sequence — the root or a path — and a place. */
+/**
+ * Where a step inserted by an edge's « + » goes: a sequence — the root, a path, a loop —
+ * and a place.
+ */
 export interface Slot {
   readonly path: string | null
   readonly index: number
@@ -70,7 +79,19 @@ function columnSize(path: DraftPath): Size {
   }
 }
 
+/** A loop's frame: its steps, and the room beside them for the arrow back up. */
+function frameWidth(step: Extract<DraftStep, { kind: 'for_each' }>): number {
+  return Math.max(STEP_SIZE.w, sequenceSize(step.steps).w) + 2 * FRAME_PAD_X
+}
+
 function blockSize(step: DraftStep): Size {
+  if (step.kind === 'for_each') {
+    const body = sequenceSize(step.steps)
+    return {
+      w: frameWidth(step),
+      h: STEP_SIZE.h + GAP_Y + (body.h === 0 ? 0 : body.h + GAP_Y) + MERGE_SIZE + FRAME_BOTTOM,
+    }
+  }
   if (step.kind !== 'branch') return STEP_SIZE
   const columns = step.paths.map(columnSize)
   return {
@@ -110,8 +131,47 @@ function placeSequence(
   return previous
 }
 
+/**
+ * A loop: its card, its steps below it in a frame — laid first, under everything else —
+ * reaching down to the point where a turn ends, from which the frame draws the way back up.
+ */
+function placeLoop(
+  step: Extract<DraftStep, { kind: 'for_each' }>,
+  cx: number,
+  y: number,
+  out: Out,
+): string {
+  const body = sequenceSize(step.steps)
+  const top = y + STEP_SIZE.h + GAP_Y
+  const end = body.h === 0 ? top : top + body.h + GAP_Y
+  const width = frameWidth(step)
+  // From the card's middle, where the arrow comes back, to just below the turn's end.
+  out.nodes.push({
+    id: frameOf(step.id),
+    kind: 'frame',
+    x: cx - width / 2,
+    y: y + STEP_SIZE.h / 2,
+    w: width,
+    h: end + MERGE_SIZE + FRAME_BOTTOM - (y + STEP_SIZE.h / 2),
+  })
+  out.nodes.push({ id: step.id, kind: 'step', x: cx - STEP_SIZE.w / 2, y, ...STEP_SIZE })
+  const merge = mergeOf(step.id)
+  const last = placeSequence(step.steps, step.id, cx, top, step.id, out)
+  out.edges.push(edge(last, merge, { path: step.id, index: step.steps.length }))
+  out.nodes.push({
+    id: merge,
+    kind: 'merge',
+    x: cx - MERGE_SIZE / 2,
+    y: end,
+    w: MERGE_SIZE,
+    h: MERGE_SIZE,
+  })
+  return merge
+}
+
 /** A step — or a branch, its paths and where they meet; returns the piece to go on from. */
 function placeBlock(step: DraftStep, cx: number, y: number, out: Out): string {
+  if (step.kind === 'for_each') return placeLoop(step, cx, y, out)
   out.nodes.push({ id: step.id, kind: 'step', x: cx - STEP_SIZE.w / 2, y, ...STEP_SIZE })
   if (step.kind !== 'branch') return step.id
   const columns = step.paths.map(columnSize)

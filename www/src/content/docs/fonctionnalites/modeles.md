@@ -151,5 +151,5 @@ Toute base peut aussi devenir un modèle : **Enregistrer comme modèle** dans le
 base, sous **Autres actions**. Ses tables, champs, consignes IA, relations, vues partagées, tableaux de bord et
 automatisations — et, si vous le voulez, jusqu’à 50 lignes par table — se téléchargent en
 JSON, prêts à rejoindre le catalogue officiel ou celui de l’instance. Une automatisation qui
-cherche une ligne, prend des chemins ou cite une étape précédente reste en dehors pour
-l’instant, et l’écran le dit.
+cherche une ligne, parcourt des lignes, prend des chemins ou cite une étape précédente reste
+en dehors pour l’instant, et l’écran le dit.

@@ -401,6 +401,7 @@ Toutes sous `/auth/`, sans référence de tenant, hors OpenAPI. `401` génériqu
 | `/auth/me` | PATCH | cookie | `200` : le compte tel qu'il est désormais ; nom affiché, format des dates, premier jour de la semaine, notifications refusées — chacun facultatif ; `400`, `422` |
 | `/auth/me/email` | PUT | cookie **élevé** | `200`, `403 ELEVATION_REQUIRED`, `403 ACTION_FORBIDDEN` sans mot de passe, `409 EMAIL_TAKEN` (§2.6) |
 | `/auth/identities` | GET | cookie | `200` : présence d'un mot de passe, et chaque fournisseur de l'instance, lié ou non, avec ses dates |
+| `/auth/introspect` | POST | jeton d'intégration (`rest`) | `200` : l'objet de la RFC 7662, `{ "active": false }` pour tout jeton qui ne vaut pas ; `401 TOKEN_INVALID` et voisins pour l'appelant (§11) |
 
 **Limitation de débit et protection par identité sont deux mécanismes distincts, et
 un seul des deux est exact.** Conformément à A4 et au §13.1 de « API REST, OpenAPI,
@@ -536,6 +537,55 @@ par « Modèle de permissions » ; ils ne sont rappelés ici que pour la lisibil
 des routes d'authentification. Les codes de dépassement de débit sont ceux de
 « API REST, OpenAPI, webhooks, jetons d'intégration » ; ceux du contrôle
 d'origine appartiennent à « Modèle de permissions ».
+
+## 11. Vérifier un jeton depuis une autre application
+
+Les jetons de basedb se vérifient contre sa clé et son catalogue : un jeton d'accès est
+signé par la clé d'instance **et** lié à sa session (§4.1), un jeton d'intégration n'est
+qu'une empreinte en base. Aucune application extérieure ne peut les vérifier seule. Une
+application qui en reçoit un — un assistant ouvert depuis basedb, une passerelle devant
+un service — le demande donc à basedb : **introspection de jeton, RFC 7662**.
+
+```http
+POST /auth/introspect
+Authorization: Bearer bdb_…            ← l'application : un jeton d'intégration du tenant
+Content-Type: application/x-www-form-urlencoded
+
+token=<le jeton reçu>
+```
+
+Le corps suit la RFC (formulaire, `token`, `token_type_hint` accepté et ignoré) ; un corps
+JSON `{"token": "…"}` vaut autant. La réponse est l'objet nu de la RFC, `Cache-Control:
+no-store` :
+
+| Champ | Jeton d'accès (une personne) | Jeton d'intégration |
+|---|---|---|
+| `active` | `true` | `true` |
+| `token_type` | `access_token` | `integration_token` |
+| `sub` | l'identifiant du compte | celui de son créateur |
+| `username`, `email`, `name` | le compte | son créateur |
+| `tenant` | la référence du tenant | idem |
+| `groups` | les libellés des groupes du compte | ceux de son créateur |
+| `exp` | l'échéance du jeton (15 minutes au plus) | l'échéance, absente s'il n'en a pas |
+| `iat` | — | sa création |
+| `base`, `access`, `surfaces` | — | la base qu'il ouvre (identifiant), `read` ou `write`, ses surfaces |
+
+**L'appelant prouve qui il est** par un jeton d'intégration du tenant, émis pour la
+surface `rest` : sans lui, `401` avec les codes de `verifyApiToken` (chapitre 08 §11),
+jamais un indice sur le jeton demandé. **Tout jeton qui ne vaut pas se lit pareil** :
+`{ "active": false }` — inconnu, mal formé, expiré, révoqué, suspendu, session fermée,
+compte désactivé, ou jeton d'un autre tenant que celui de l'appelant. Aucun champ ne dit
+lequel : l'introspection ne doit pas devenir un oracle.
+
+**La réponse est lue en direct**, jamais d'un cache : une session fermée une seconde plus
+tôt est inactive. Une application qui garde la réponse le fait sous sa responsabilité, pas
+au-delà de `exp`.
+
+Ce que la route n'est **pas** : un fournisseur OIDC. basedb ne délivre pas de jeton
+d'identité à une application tierce, n'a pas de `/.well-known/openid-configuration` ni de
+clés publiques à publier ; l'application reçoit le jeton d'une personne déjà connectée à
+basedb et demande ce qu'il vaut. Devenir fournisseur (enregistrement des clients,
+consentement, clés tournantes) reste hors v1.
 
 ## Décisions retenues
 

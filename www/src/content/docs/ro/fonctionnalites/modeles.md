@@ -147,5 +147,5 @@ Orice bază poate deveni și ea un șablon: **Salvați ca șablon** în meniul b
 acțiuni**. Tabelele, câmpurile, instrucțiunile AI, relațiile, vizualizările partajate,
 tablourile de bord și automatizările ei — și, dacă doriți, până la 50 de rânduri pe tabel — se
 descarcă în JSON, gata să intre în catalogul oficial sau în cel al instanței. O automatizare
-care caută un rând, ia ramuri sau citează un pas anterior rămâne deocamdată pe dinafară, iar
-ecranul spune acest lucru.
+care caută un rând, parcurge rânduri, ia ramuri sau citează un pas anterior rămâne deocamdată
+pe dinafară, iar ecranul spune acest lucru.

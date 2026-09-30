@@ -59,6 +59,7 @@ import {
   type SqlViewSummary,
   api,
 } from '@/lib/api/client'
+import { withoutBase } from '@/lib/base-path'
 import { $t, followAccountLocale } from '@/lib/i18n'
 import { messageFor, reasonFor } from '@/lib/messages'
 import { applyPreferences } from '@/lib/preferences'
@@ -441,7 +442,11 @@ export default function App() {
         if (stale) return
         // An address naming a place — a bookmark, a link — lands there; one naming nothing
         // says so. The settings and the administration are drawn over the base chosen below.
-        const addressed = placeOf(window.location.pathname, window.location.search, tenant ?? '')
+        const addressed = placeOf(
+          withoutBase(window.location.pathname),
+          window.location.search,
+          tenant ?? '',
+        )
         const reached = addressed !== null && (await goTo.current(addressed, found))
         if (stale) return
         if (addressed === null || !reached) setMissing(true)
@@ -827,7 +832,7 @@ export default function App() {
         )
   useAddressBar(address, async () => {
     if (!loaded || me === null) return
-    const place = placeOf(window.location.pathname, window.location.search, me.tenant)
+    const place = placeOf(withoutBase(window.location.pathname), window.location.search, me.tenant)
     if (place === null || !(await followAddress(place, projects))) setMissing(true)
   })
 

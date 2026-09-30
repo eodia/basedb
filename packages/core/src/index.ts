@@ -121,6 +121,7 @@ import { checkSqlQuery, runSqlQuestion } from './analytics/sql.js'
 import { writeAudit } from './audit/journal.js'
 import { bootstrapAdministrator, bootstrapInstance, bootstrapOpen } from './auth/bootstrap.js'
 import { requireElevatedSession } from './auth/elevation.js'
+import { type Introspection, introspectToken } from './auth/introspect.js'
 import { type OidcProvider, loadProviders, requireProvider } from './auth/oidc-providers.js'
 import {
   type AssertedIdentity,
@@ -525,6 +526,11 @@ import {
   updateSyncedTable,
 } from './sync/tables.js'
 import {
+  type AppliedTemplate,
+  type ApplyTemplateRequest,
+  applyTemplate,
+} from './templates/apply.js'
+import {
   type CatalogEntry,
   type CatalogListing,
   DEFAULT_TEMPLATES_URL,
@@ -610,6 +616,8 @@ export type { SqlView, SqlViewInput, SqlViewSummary } from './catalog/sql-views.
 export type { Integration } from './integrations/slack.js'
 export type { SyncedTable } from './sync/tables.js'
 export type { CatalogEntry, CatalogListing, TemplateSource } from './templates/catalog.js'
+export type { AppliedTemplate, ApplyTemplateRequest } from './templates/apply.js'
+export type { Introspection } from './auth/introspect.js'
 export { DEFAULT_TEMPLATES_URL, resetTemplateCatalog } from './templates/catalog.js'
 export type { TemplateDraft, TemplateDraftRequest } from './templates/draft.js'
 export type { SourceKind } from './sync/sources.js'
@@ -619,6 +627,7 @@ export { DEFAULTS_BY_KIND } from './records/defaults.js'
 export type { Member } from './catalog/members.js'
 export type { Proposal, ProposedField } from './proposals/index.js'
 export type { TargetPolicy } from './webhooks/target.js'
+export { parseTrusted } from './webhooks/target.js'
 export type {
   Deletion,
   Revision,
@@ -962,6 +971,16 @@ export interface Kernel {
   authenticateCookie(token: string | undefined): Promise<Authenticated>
   /** Believes an access token — `/api/v1` only. */
   authenticateAccessToken(token: string | undefined): Promise<Authenticated>
+  /**
+   * Whether a token is good, and whose — for another application holding an integration
+   * token of the same workspace: introspection, RFC 7662 (chapter 13 §11).
+   */
+  introspectToken(request: {
+    readonly caller: string | undefined
+    readonly token: string | undefined
+    readonly requestId?: string
+    readonly ip?: string | null
+  }): Promise<Introspection>
   /** Exchanges the cookie for a 15-minute access token. Writes nothing. */
   issueAccessToken(
     sessionToken: string | undefined,
@@ -2093,6 +2112,11 @@ export interface Kernel {
   /** Imports a template into the instance — an administrator of the instance. */
   importTemplate(ctx: RequestContext, raw: unknown): ReturnType<typeof importTemplate>
   deleteTemplate(ctx: RequestContext, key: string): Promise<void>
+  /**
+   * Applies a template into a new base, in one operation — chapter 20 §4: the whole base,
+   * or none (a step that fails sends the half-built base to the trash, then is thrown).
+   */
+  applyTemplate(ctx: RequestContext, request: ApplyTemplateRequest): Promise<AppliedTemplate>
   /** A template proposed by the AI from a sentence (chapter 20 §5). */
   draftTemplate(
     ctx: RequestContext,
@@ -2561,7 +2585,7 @@ export function startKernel(config: KernelConfig): Kernel {
   /** The AI workers started, stopped by `close` before the pools they use. */
   const workers: AiWorker[] = []
 
-  return {
+  const kernel: Kernel = {
     async migrateCatalog(options) {
       const applied = await migrateCatalogSchema(config.connectionString, APPLICATION_VERSION, {
         onApplied: options?.onApplied,
@@ -2650,6 +2674,7 @@ export function startKernel(config: KernelConfig): Kernel {
     login: (request) => login(pools, instanceKey(), request),
     authenticateCookie: (token) => authenticateCookie(pools, token),
     authenticateAccessToken: (token) => authenticateAccessToken(pools, instanceKey(), token),
+    introspectToken: (request) => introspectToken(pools, instanceKey(), request),
     issueAccessToken: (token, csrf) => issueAccessToken(pools, instanceKey(), token, csrf),
     logout: (token) => logout(pools, token),
     whoAmI: (authenticated) => whoAmI(pools, authenticated),
@@ -3080,6 +3105,7 @@ export function startKernel(config: KernelConfig): Kernel {
     getTemplate: (ctx, key, locale) => getTemplate(pools, ctx, templates, key, locale),
     importTemplate: (ctx, raw) => importTemplate(pools, ctx, raw),
     deleteTemplate: (ctx, key) => deleteTemplate(pools, ctx, key),
+    applyTemplate: (ctx, request) => applyTemplate(kernel, ctx, request),
     draftTemplate: (ctx, transport, request) => draftTemplate(pools, ctx, transport, request),
     listIntegrations: (ctx, request) => listIntegrations(pools, ctx, request),
     createIntegration: (ctx, request) =>
@@ -3222,8 +3248,10 @@ export function startKernel(config: KernelConfig): Kernel {
     deleteDocumentTemplate: (ctx, request) => deleteDocumentTemplate(pools, ctx, request),
     renderDocument: (ctx, request) => renderDocument(pools, ctx, request),
     listAutomations: (ctx, request) => listAutomations(pools, ctx, request),
-    createAutomation: (ctx, request) => createAutomation(pools, ctx, webhookTargets, request),
-    updateAutomation: (ctx, request) => updateAutomation(pools, ctx, webhookTargets, request),
+    createAutomation: (ctx, request) =>
+      createAutomation(pools, ctx, webhookTargets, request, instanceKey),
+    updateAutomation: (ctx, request) =>
+      updateAutomation(pools, ctx, webhookTargets, request, instanceKey),
     deleteAutomation: (ctx, request) => deleteAutomation(pools, ctx, request),
     listAutomationRuns: (ctx, request) => listAutomationRuns(pools, ctx, request),
     requestAutomationRun: (ctx, request) => requestRun(pools, ctx, request),
@@ -3339,4 +3367,5 @@ export function startKernel(config: KernelConfig): Kernel {
       await pools.end()
     },
   }
+  return kernel
 }

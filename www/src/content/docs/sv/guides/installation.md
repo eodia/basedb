@@ -73,7 +73,7 @@ Spara den genererade nyckeln: se rutan nedan.
 
 :::caution[Instansnyckeln]
 `BASEDB_ENCRYPTION_KEY` signerar sessionerna och krypterar sparade hemligheter (AI-nycklar,
-webhook-hemligheter, formulärlänkar). Ändrar du den loggas alla ut och de hemligheterna blir
+webhook-hemligheter, automatiseringarnas hemliga huvuden, formulärlänkar). Ändrar du den loggas alla ut och de hemligheterna blir
 oläsliga. Generera den en gång och säkerhetskopiera den tillsammans med databasen.
 :::
 

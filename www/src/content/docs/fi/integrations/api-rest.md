@@ -71,12 +71,54 @@ Samalla tunnuksella:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | tietokannan koontinäytöt |
 | `GET /api/v1/<tenant>/meta/users` | työtilan jäsenet Henkilö-kenttää varten |
 | `GET /api/v1/<tenant>/meta/templates` | gallerian tietokantamallit |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | seuraa taulukkoa reaaliajassa: signaaleja, jotka luetaan sitten yllä olevien reittien kautta (katso [Webhookit](/basedb/fi/integrations/webhooks/#ei-webhookia-taulukon-seuraaminen)) |
 
 [Jaettuja näkymiä](/basedb/fi/fonctionnalites/vues-partagees/) luetaan ilman tiliä:
 `GET /api/v1/views/<jeton>` ja `…/rows` JSON-muodossa, `…/calendar.ics` iCalendar-muodossa.
 
 Rakentaminen – automaation, koontinäytön tai integraation luominen – on varattu käyttöliittymän
 istunnolle: tunnus lukee ja kirjoittaa rivejä, se ei muuta tietokantaa.
+
+## Tietokannan luominen mallista
+
+Asennettava sovellus luo tietokantansa **yhdellä kutsulla**: palvelin soveltaa mallia —
+taulukot, kentät, viittaukset, esimerkkirivit, näkymät, koontinäytöt, automaatiot — ja jos
+jokin vaihe epäonnistuu, se ei jätä jälkeensä yhtään tietokantaa.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` on gallerian mallin avain, tai kokonainen malli [mallin muodossa](/basedb/fi/fonctionnalites/modeles/). Otsakkeella
+`Accept: application/x-ndjson` vastaus saapuu rivi kerrallaan: yksi rivi `{"step": …}` per
+vaihe, ja lopuksi luotu tietokanta. Tämä kutsu vaatii pääsytunnuksen henkilöltä, joka voi luoda
+tietokannan (`POST /auth/session/access`, kirjautumisen jälkeen): integraatiotunnus avaa vain
+olemassa olevan tietokannan.
+
+## Tunnuksen tarkistaminen
+
+basedb:n tunnuksia ei voi tarkistaa basedb:n ulkopuolella. Sovellus, joka vastaanottaa
+tunnuksen — esimerkiksi basedb:stä avattu työkalu, jolla on henkilön tunnus — kysyy sen
+pätevyyden (introspektio, RFC 7662) omalla integraatiotunnuksellaan:
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Jokainen tunnus, joka ei ole pätevä — tuntematon, vanhentunut, mitätöity, istunto suljettu,
+toinen työtila — vastaa `{"active": false}`, kertomatta syytä. Vastaus luetaan suorassa:
+uloskirjautuminen näkyy välittömästi. Integraatiotunnuksen kohdalla vastaus kertoo myös
+tietokannan, jonka se avaa (`base`), sen käyttöoikeuden (`read` tai `write`) ja pinnat.
 
 ## Luotu dokumentaatio
 

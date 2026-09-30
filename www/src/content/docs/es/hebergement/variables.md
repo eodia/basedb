@@ -51,6 +51,7 @@ Consulta [Cuentas e inicio de sesión](/basedb/es/hebergement/connexion/).
 | `BASEDB_PORT` | `3000` | puerto publicado en 127.0.0.1: la interfaz, `/api` y `/mcp` |
 | `BASEDB_VERSION` | `latest` | la etiqueta de la imagen `eodia/basedb` |
 | `BASEDB_PUBLIC_URL` | — | dirección pública de basedb, para el retorno OIDC |
+| `BASEDB_BASE_PATH` | la ruta de `BASEDB_PUBLIC_URL` | la ruta bajo la que se sirve basedb detrás de una pasarela, `/basedb` para `https://passerelle.example.com/basedb/`; consulta [Docker Compose](/basedb/es/hebergement/docker/#detrás-de-una-pasarela-bajo-una-ruta) |
 | `BASEDB_DOMAIN` | — | el dominio servido en HTTPS por el proxy Caddy |
 | `BASEDB_ORIGINS` | — | otros sitios cuyas páginas llaman a la API desde el navegador, separados por comas; innecesario para la interfaz de basedb, servida en la misma dirección |
 | `BASEDB_API`, `BASEDB_MCP` | `/`, `/mcp` | la API y el MCP vistos desde el navegador; solo hay que ajustarlos para la pila de desarrollo (`pnpm start`) |
@@ -123,6 +124,17 @@ Al arrancar, el registro dice qué servicio se está usando: `Géocodage : https
 | `BASEDB_AI_QUOTA` | `120` | llamadas interactivas por hora y por tenant |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | cálculos de campos de IA por hora y por tenant |
 | `BASEDB_AI_WORKER` | `1` | `0`: sin cálculos en segundo plano en este proceso |
+
+## Webhooks hacia la red interna
+
+| Variable | Predeterminado | Función |
+|---|---|---|
+| `BASEDB_WEBHOOK_ALLOW` | — | tus servidores internos, separados por comas: un nombre (`chat.intra.example.com`), un dominio y sus subdominios (`*.intra.example.com`), una dirección o un rango (`10.12.0.0/16`) |
+
+Los webhooks, las solicitudes HTTP de las automatizaciones y las tablas sincronizadas solo se
+envían a direcciones públicas en HTTPS. Además se acepta un destino de la lista, sea cual sea su
+dirección, su puerto y su esquema —HTTP incluido—. Una entrada ilegible impide el arranque.
+Consulta [Webhooks](/basedb/es/integrations/webhooks/#destinos).
 
 ## Demo pública
 

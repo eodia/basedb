@@ -147,5 +147,5 @@ Cualquier base puede convertirse también en una plantilla: **Guardar como plant
 base, en **Más acciones**. Sus tablas, campos, instrucciones de IA, relaciones, vistas compartidas, paneles y
 automatizaciones (y, si quieres, hasta 50 filas por tabla) se descargan en
 JSON, listos para incorporarse al catálogo oficial o al de la instancia. Una automatización que
-busca una fila, toma ramas o cita un paso anterior se queda fuera por
+busca una fila, recorre filas, toma ramas o cita un paso anterior se queda fuera por
 ahora, y la pantalla lo indica.

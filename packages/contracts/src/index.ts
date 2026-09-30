@@ -215,3 +215,20 @@ export {
   type QuizReveal,
   type QuizScore,
 } from './quiz.js'
+export {
+  aiFieldsOf,
+  applyTemplate,
+  automationFor,
+  blockFor,
+  filterFor,
+  rowFor,
+  specFor,
+  textFor,
+  type BuiltField,
+  type BuiltTable,
+  type TemplateApplyOptions,
+  type TemplateApplyReport,
+  type TemplateFieldInput,
+  type TemplateOperations,
+  type TemplateStep,
+} from './template-apply.js'

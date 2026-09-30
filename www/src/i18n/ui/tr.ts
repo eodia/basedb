@@ -1551,6 +1551,28 @@ export default {
 		title: 'basedb’de neler değişti',
 		intro: 'Her değişikliğin ayrıntısı <a href="https://github.com/eodia/basedb/commits/main">deponun geçmişinde</a>. Sırada ne var: <a href="/feuille-de-route/">yol haritası</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'basedb’ye dayanan uygulamalar için',
+				tag: 'Yeni',
+				items: [
+					'<strong>Bir çağrıyla bir şablondan oluşturulan veritabanı</strong>: sunucu şablonun tamamını uygular — tablolar, ilişkiler, satırlar, görünümler, otomasyonlar — ya da bir adım başarısız olursa hiçbiri. Galeri de bunu kullanır, kendisi de kurulan bir uygulamadır. <a href="/integrations/api-rest/#bir-şablondan-veritabanı-oluşturmak">Bir şablondan veritabanı oluşturmak</a>',
+					'<strong>Bir token’ı doğrulamak</strong>: bir kişinin token’ı kendisine verilen bir uygulama, basedb’ye onun hâlâ geçerli olup olmadığını ve kime ait olduğunu — hesabını, gruplarını — sorar. <a href="/integrations/api-rest/#bir-tokenı-doğrulamak">Bir token’ı doğrulamak</a>',
+					'<strong>İç sunucularınız</strong>: webhook’lar ve otomasyonlar yalnızca <code>BASEDB_WEBHOOK_ALLOW</code> içinde belirttiklerinize ulaşır, HTTP dahil; bir program da bir entegrasyon token’ıyla bir tabloyu gerçek zamanlı olarak takip edebilir. <a href="/integrations/webhooks/#webhook-olmadan-bir-tabloyu-takip-etmek">Bir tabloyu takip etmek</a>',
+					'<strong>Bir yol altında, bir ağ geçidinin arkasında</strong>: basedb, <code>https://passerelle.example.com/basedb/</code> gibi bir adreste yayımlanır; ağ geçidi bu yolu korusun ya da kaldırsın. <a href="/hebergement/docker/#bir-ağ-geçidinin-arkasında-bir-yol-altında">Bir ağ geçidinin arkasında</a>',
+					'<strong>Bir webhook, tüm tablolar birden</strong>: tüm tablolar için bir olayı, ya da bir tablonun tüm olaylarını tek bir tıklamayla işaretleyin veya işaretini kaldırın.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Satırlarınızı tarayan ve API’lerle konuşan otomasyonlar',
+				tag: 'Yeni',
+				items: [
+					'<strong>Her satır için</strong>: bir filtreye uyan bir tablonun her satırında kendi adımlarını tekrarlayan bir adım — her pazartesi, yalnızca ilkini değil, ödenmemiş tüm faturaları hatırlatmak gibi. <a href="/fonctionnalites/automatisations/#her-satır-için">Her satır için</a>',
+					'<strong>Herhangi bir API’yle konuşan bir webhook</strong>: yöntem, satıra atıf yapan bir adres, üst bilgiler, satırın değerleriyle oluşturulan JSON, form ya da metin biçiminde bir gövde. <a href="/fonctionnalites/automatisations/#bir-servis-çağırma">Bir servis çağırma</a>',
+					'<strong>Bir API anahtarı gizli kalır</strong>: şifrelenir, bir daha asla gösterilmez — ne ekranda, ne API’de, ne de Copilot’ta — ve yalnızca kendisi için verildiği sunucuya gider.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'Harita ve yerini bulan adresler',
@@ -1903,8 +1925,8 @@ export default {
 						text: 'Ortamlar oluşturulurken ya da karşılaştırılırken ve veritabanı şablonlarında SQL görünümlerini yapıyla birlikte kopyalamak.',
 					},
 					loops: {
-						title: 'Otomasyonlarda döngüler ve beklemeler',
-						text: 'Bulunan her satır için adımları tekrarlamak, bir sonrakinden önce beklemek (“üç gün sonra”) ve akışları veritabanı şablonlarına taşımak.',
+						title: 'Otomasyonlarda beklemeler',
+						text: 'Bir sonraki adımdan önce beklemek (“üç gün sonra”) ve akışları — koşullar, aramalar, döngüler — veritabanı şablonlarına taşımak.',
 					},
 					textFormulas: {
 						title: 'Metin formülleri',

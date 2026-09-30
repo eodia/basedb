@@ -70,12 +70,54 @@ Se stejným tokenem:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | řídicí panely databáze |
 | `GET /api/v1/<tenant>/meta/users` | členové pracovního prostoru, pro pole Osoba |
 | `GET /api/v1/<tenant>/meta/templates` | šablony databází z galerie |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | sledování tabulky v reálném čase: signály, znovu čtené pomocí cest výše (viz [Webhooky](/basedb/cs/integrations/webhooks/#bez-webhooku-sledování-tabulky)) |
 
 [Sdílená zobrazení](/basedb/cs/fonctionnalites/vues-partagees/) se čtou bez účtu:
 `GET /api/v1/views/<jeton>` a `…/rows` v JSON, `…/calendar.ics` v iCalendar.
 
 Budování – vytvoření automatizace, řídicího panelu, integrace – zůstává vyhrazeno relaci
 v rozhraní: token čte a zapisuje řádky, databázi nemění.
+
+## Vytvoření databáze ze šablony
+
+Aplikace, která se instaluje, vytvoří svou databázi **jedním voláním**: server použije
+šablonu — tabulky, pole, vazby, ukázkové řádky, zobrazení, řídicí panely, automatizace —
+a pokud některý krok selže, nezanechá po sobě žádnou databázi.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` je klíč šablony z galerie, nebo celá šablona ve [formátu šablon](/basedb/cs/fonctionnalites/modeles/).
+S hlavičkou `Accept: application/x-ndjson` přichází odpověď po řádcích: jeden řádek
+`{"step": …}` na krok, a nakonec vytvořená databáze. Toto volání vyžaduje přístupový token
+osoby, která může vytvořit databázi (`POST /auth/session/access`, po přihlášení): integrační
+token otevře jen existující databázi.
+
+## Ověření tokenu
+
+Tokeny basedb se neověřují mimo basedb. Aplikace, která nějaký obdrží — například nástroj
+otevřený z basedb s tokenem dané osoby —, se zeptá, co vlastně platí (introspekce, RFC 7662),
+a to svým vlastním integračním tokenem:
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Token, který neplatí — neznámý, vypršelý, odvolaný, uzavřená relace, jiný pracovní prostor —,
+odpoví `{"active": false}`, aniž by řekl proč. Odpověď se čte naživo: odhlášení se projeví
+okamžitě. U integračního tokenu odpověď navíc uvádí databázi, kterou otevírá (`base`), jeho
+přístup (`read` nebo `write`) a jeho přístupové cesty.
 
 ## Vygenerovaná dokumentace
 

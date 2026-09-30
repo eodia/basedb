@@ -28,7 +28,7 @@ import { copy, download } from '@/lib/export'
 import { $t, $tp } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { optionIcon } from '@/lib/option-icons'
-import { aiFieldsOf, applyTemplate } from '@/lib/templates'
+import { aiFieldsOf, stepText, warningsOf } from '@/lib/templates'
 import { cn } from '@/lib/utils'
 import { KIND_INFO } from '@/lib/views'
 import { type Template, labelKey } from '@basedb/contracts'
@@ -51,6 +51,7 @@ import {
   Trash2,
   Upload,
   Wand2,
+  X,
   Zap,
 } from 'lucide-react'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -915,7 +916,6 @@ function CreatePanel({
   const [busy, setBusy] = useState(false)
   const [steps, setSteps] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [built, setBuilt] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const stepsEnd = useRef<HTMLDivElement>(null)
 
@@ -923,7 +923,6 @@ function CreatePanel({
     setLabel(template.base.label)
     setSteps([])
     setError(null)
-    setBuilt(null)
   }, [template])
 
   const json = () => JSON.stringify(template, null, 2)
@@ -933,30 +932,31 @@ function CreatePanel({
     onBuilding(true)
     setError(null)
     setSteps([$t('Base…')])
-    let name: string | null = null
     try {
-      const created = await api.createBase(label.trim(), template.base.description, project.id)
-      name = created.name
-      const report = await applyTemplate(template, created.name, {
-        onStep: (step) => {
-          setSteps((previous) => [...previous, step])
+      // Built by the server, in one operation: the whole base, or none.
+      const created = await api.createBaseFromTemplate(
+        {
+          template,
+          label: label.trim(),
+          ...(template.base.description === undefined
+            ? {}
+            : { description: template.base.description }),
+          project: project.id,
+          rows: withRows,
+          aiConsent: consent,
+        },
+        (step) => {
+          setSteps((previous) => [...previous, stepText(step)])
           requestAnimationFrame(() => stepsEnd.current?.scrollIntoView({ block: 'nearest' }))
         },
-        aiConsent: consent,
-        rows: withRows,
-        me: me.id,
-      })
+      )
+      const warnings = warningsOf(created.report, consent)
       toast.success($t('Base « {label} » créée', { label: label.trim() }), {
-        description: report.warnings.length > 0 ? report.warnings.join(' ') : undefined,
+        description: warnings.length > 0 ? warnings.join(' ') : undefined,
       })
       onDone(created.name)
     } catch (e) {
-      setError(
-        name === null
-          ? messageFor(e)
-          : $t('La base est créée, mais incomplète : {e}', { e: messageFor(e) }),
-      )
-      setBuilt(name)
+      setError($t('La base n’a pas été créée : {e}', { e: messageFor(e) }))
     } finally {
       setBusy(false)
       onBuilding(false)
@@ -1052,10 +1052,13 @@ function CreatePanel({
                 index < steps.length - 1 || !busy ? 'text-muted-foreground' : 'font-medium',
               )}
             >
-              {index < steps.length - 1 || !busy ? (
+              {index < steps.length - 1 || (!busy && error === null) ? (
                 <Check className="size-3 text-emerald-600" />
-              ) : (
+              ) : busy ? (
                 <Loader2 className="size-3 animate-spin" />
+              ) : (
+                // The step that failed: the base was not kept.
+                <X className="size-3 text-destructive" />
               )}
               {step}
             </p>
@@ -1066,11 +1069,6 @@ function CreatePanel({
       {error !== null && (
         <div className="space-y-2">
           <p className="text-sm text-destructive">{error}</p>
-          {built !== null && (
-            <Button variant="outline" size="sm" onClick={() => onDone(built)}>
-              {$t('Ouvrir la base incomplète')}
-            </Button>
-          )}
         </div>
       )}
 

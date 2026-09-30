@@ -29,8 +29,8 @@ Avbildningen körs som användaren `node`, på Node 22, och deklarerar en hälso
 | Tagg | Innehåll |
 |---|---|
 | `latest` | den senaste publicerade versionen |
-| `0.4` | den senaste versionen 0.4.x |
-| `0.4.0` | exakt den versionen |
+| `0.5` | den senaste versionen 0.5.x |
+| `0.5.0` | exakt den versionen |
 
 ## Tjänsterna
 
@@ -52,6 +52,24 @@ docker compose down                 # stoppa (volymerna finns kvar)
 
 Från en klon av repot bygger `docker compose up -d --build` avbildningen från koden i stället
 för att ladda ned den.
+
+## Bakom en gateway, under en sökväg
+
+När basedb publiceras under en sökväg – `https://passerelle.example.com/basedb/` i stället för
+vid roten av en domän – anger du sökvägen:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# eller, utan offentlig adress:
+BASEDB_BASE_PATH=/basedb
+```
+
+Allt går då via `/basedb`: gränssnittet, `/basedb/api`, `/basedb/mcp`, delningslänkarna och
+länkarna i e-postmeddelandena. Gatewayen kan **behålla sökvägen** genom att skicka vidare
+förfrågan, eller **ta bort den**: basedb godtar båda. `BASEDB_BASE_PATH=/` tvingar fram roten.
+
+Avbildningen är densamma för alla adresser: sökvägen skrivs i gränssnittet när containern
+startar, och att ändra sökväg kräver bara en omstart.
 
 ## Ändra portarna
 

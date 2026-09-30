@@ -40,3 +40,30 @@ by a trigger.
 
 Webhooks only go to **public HTTPS** addresses. In development, `BASEDB_WEBHOOK_DEV=1` accepts
 HTTP and local addresses.
+
+For a **server on your network**, the instance’s operator names it in `BASEDB_WEBHOOK_ALLOW` —
+a hostname, a domain (`*.intra.example.com`), an address or a range (`10.12.0.0/16`):
+
+```bash
+BASEDB_WEBHOOK_ALLOW=chat.intra.example.com,10.12.0.0/16
+```
+
+These targets are accepted whatever their address, port and scheme, HTTP included. The list
+also applies to automations’ HTTP requests and synced tables’ sources; it is set in the
+environment, never from the interface.
+
+## Without a webhook: following a table
+
+A server that cannot be reached can also **connect** to basedb and follow a table through the
+real-time stream, with an integration token of the base:
+
+```bash
+curl -N "https://basedb.example.com/api/v1/t4z56fq/events?base=b_t4z56fq_ventes&table=opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN"
+```
+
+The stream (`text/event-stream`) carries **signals** — the `records` event, with the ids of
+rows created, updated or deleted —, never the values: the program then reads these rows back
+through the [REST API](/basedb/en/integrations/api-rest/). A revoked token closes its stream
+within 20 seconds. For a table read rarely, reading the changed rows back from time to time is
+enough: `filter=_updated_at gt "2026-09-30T08:00:00Z"`.

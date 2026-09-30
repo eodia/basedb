@@ -149,5 +149,5 @@ Jede Datenbank kann auch zu einer Vorlage werden: **Als Vorlage speichern** im M
 unter **Weitere Aktionen**. Ihre Tabellen, Felder, KI-Anweisungen, Verknüpfungen, freigegebenen Ansichten, Dashboards und
 Automatisierungen – und, wenn Sie möchten, bis zu 50 Zeilen pro Tabelle – werden als JSON
 heruntergeladen, bereit für den offiziellen Katalog oder den der Instanz. Eine Automatisierung, die
-eine Zeile sucht, Zweige nimmt oder einen vorherigen Schritt zitiert, bleibt vorerst außen vor, und
-der Bildschirm sagt das.
+eine Zeile sucht, Zeilen durchläuft, Zweige nimmt oder einen vorherigen Schritt zitiert, bleibt
+vorerst außen vor, und der Bildschirm sagt das.

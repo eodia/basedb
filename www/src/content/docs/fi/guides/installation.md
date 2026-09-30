@@ -73,8 +73,8 @@ Säilytä luotu avain: katso alla oleva laatikko.
 
 :::caution[Instanssin avain]
 `BASEDB_ENCRYPTION_KEY` allekirjoittaa istunnot ja salaa tallennetut salaisuudet (tekoälyavaimet,
-webhookien salaisuudet, lomakelinkit). Sen vaihtaminen kirjaa kaikki ulos ja tekee näistä
-salaisuuksista lukukelvottomia. Luo se kerran ja varmuuskopioi se tietokannan kanssa.
+webhookien salaisuudet, automaatioiden salaiset otsakkeet, lomakelinkit). Sen vaihtaminen kirjaa
+kaikki ulos ja tekee näistä salaisuuksista lukukelvottomia. Luo se kerran ja varmuuskopioi se tietokannan kanssa.
 :::
 
 ## Kehitystä varten

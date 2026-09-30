@@ -1547,6 +1547,28 @@ export default {
 		title: 'Cosa è cambiato in basedb',
 		intro: 'Il dettaglio di ogni modifica è nella <a href="https://github.com/eodia/basedb/commits/main">cronologia del repository</a>. Cosa arriverà dopo: la <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'Per le applicazioni che si appoggiano a basedb',
+				tag: 'Novità',
+				items: [
+					'<strong>Un database creato da un modello con una sola chiamata</strong>: il server applica tutto il modello — tabelle, relazioni, righe, viste, automazioni —, oppure niente se un passaggio fallisce. Anche la galleria la usa, un’applicazione che si installa a sua volta così. <a href="/integrations/api-rest/#creare-un-database-da-un-modello">Creare un database da un modello</a>',
+					'<strong>Verificare un token</strong>: un’applicazione a cui viene passato il token di una persona chiede a basedb se è ancora valido, e per chi — il suo account, i suoi gruppi. <a href="/integrations/api-rest/#verificare-un-token">Verificare un token</a>',
+					'<strong>I tuoi server interni</strong>: webhook e automazioni contattano quelli che indichi in <code>BASEDB_WEBHOOK_ALLOW</code>, HTTP compreso; un programma può anche seguire una tabella in tempo reale con un token di integrazione. <a href="/integrations/webhooks/#senza-webhook-seguire-una-tabella">Seguire una tabella</a>',
+					'<strong>Sotto un percorso, dietro un gateway</strong>: basedb si pubblica a un indirizzo come <code>https://passerelle.example.com/basedb/</code>, sia che il gateway mantenga il percorso, sia che lo tolga. <a href="/hebergement/docker/#dietro-un-gateway-sotto-un-percorso">Dietro un gateway</a>',
+					'<strong>Un webhook, tutte le tabelle in un colpo</strong>: selezionare o deselezionare un evento per tutte le tabelle, o tutti gli eventi di una tabella, con un clic.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automazioni che percorrono le tue righe e parlano con le API',
+				tag: 'Novità',
+				items: [
+					'<strong>Per ogni riga</strong>: un passaggio che ripete i propri passaggi su ogni riga di una tabella che risponde a un filtro — ogni lunedì, sollecitare tutte le fatture non pagate, non solo la prima. <a href="/fonctionnalites/automatisations/#per-ogni-riga">Per ogni riga</a>',
+					'<strong>Un webhook che parla con qualsiasi API</strong>: il metodo, un indirizzo che cita la riga, delle intestazioni, un corpo in JSON, in modulo o in testo, composto con i valori della riga. <a href="/fonctionnalites/automatisations/#chiamare-un-servizio">Chiamare un servizio</a>',
+					'<strong>Una chiave API resta segreta</strong>: cifrata, non viene più mostrata — né a schermo, né dall’API, né al Copilot — e parte solo verso l’host per cui l’hai fornita.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'La mappa, e indirizzi che si trovano',
@@ -1899,8 +1921,8 @@ export default {
 						text: 'Copiare le viste SQL insieme alla struttura quando si creano o si confrontano ambienti, e nei modelli di database.',
 					},
 					loops: {
-						title: 'Cicli e attese nelle automazioni',
-						text: 'Ripetere dei passaggi per ogni riga trovata, attendere prima del successivo («tre giorni dopo»), e portare i flussi nei modelli di database.',
+						title: 'Attese nelle automazioni',
+						text: 'Attendere prima del passaggio successivo («tre giorni dopo»), e portare i flussi — condizioni, ricerche, cicli — nei modelli di database.',
 					},
 					textFormulas: {
 						title: 'Formule sul testo',

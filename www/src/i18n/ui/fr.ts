@@ -1449,6 +1449,28 @@ const fr = {
 		intro: 'Le détail de chaque changement est dans <a href="https://github.com/eodia/basedb/commits/main">l’historique du dépôt</a>. Ce qui vient ensuite : la <a href="/feuille-de-route/">feuille de route</a>.',
 		/** Newest first. */
 		entries: {
+			applications: entry({
+				date: '2026-09-30',
+				title: 'Pour les applications qui s’appuient sur basedb',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Une base créée d’un modèle en un appel</strong> : le serveur applique tout le modèle — tables, relations, lignes, vues, automatisations —, ou rien si une étape échoue. La galerie s’en sert, une application qui s’installe aussi. <a href="/integrations/api-rest/#créer-une-base-dun-modèle">Créer une base d’un modèle</a>',
+					'<strong>Vérifier un jeton</strong> : une application à qui l’on passe le jeton d’une personne demande à basedb s’il vaut encore, et pour qui — son compte, ses groupes. <a href="/integrations/api-rest/#vérifier-un-jeton">Vérifier un jeton</a>',
+					'<strong>Vos serveurs internes</strong> : webhooks et automatisations joignent ceux que vous nommez dans <code>BASEDB_WEBHOOK_ALLOW</code>, HTTP compris ; un programme peut aussi suivre une table en temps réel avec un jeton d’intégration. <a href="/integrations/webhooks/#sans-webhook--suivre-une-table">Suivre une table</a>',
+					'<strong>Sous un chemin, derrière une passerelle</strong> : basedb se publie à une adresse comme <code>https://passerelle.example.com/basedb/</code>, que la passerelle garde le chemin ou le retire. <a href="/hebergement/docker/#derrière-une-passerelle-sous-un-chemin">Derrière une passerelle</a>',
+					'<strong>Un webhook, toutes les tables d’un coup</strong> : cocher ou décocher un événement pour toutes les tables, ou tous les événements d’une table, en un clic.',
+				],
+			}),
+			loopsWebhooks: entry({
+				date: '2026-09-30',
+				title: 'Des automatisations qui parcourent vos lignes et parlent aux API',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Pour chaque ligne</strong> : une étape qui répète les siennes sur chaque ligne d’une table qui répond à un filtre — chaque lundi, relancer toutes les factures impayées, pas seulement la première. <a href="/fonctionnalites/automatisations/#pour-chaque-ligne">Pour chaque ligne</a>',
+					'<strong>Un webhook qui parle à n’importe quelle API</strong> : la méthode, une adresse qui cite la ligne, des en-têtes, un corps en JSON, en formulaire ou en texte, composé avec les valeurs de la ligne. <a href="/fonctionnalites/automatisations/#appeler-un-service">Appeler un service</a>',
+					'<strong>Une clé d’API reste secrète</strong> : chiffrée, elle n’est plus jamais affichée — ni à l’écran, ni par l’API, ni au Copilot — et ne part que vers l’hôte pour lequel vous l’avez donnée.',
+				],
+			}),
 			maps: entry({
 				date: '2026-09-30',
 				title: 'La carte, et des adresses qui se retrouvent',
@@ -1803,8 +1825,8 @@ const fr = {
 						text: 'Recopier les vues SQL avec la structure quand on crée ou compare des environnements, et dans les modèles de base.',
 					}),
 					loops: item({
-						title: 'Boucles et attentes dans les automatisations',
-						text: 'Répéter des étapes pour chaque ligne trouvée, attendre avant la suivante (« trois jours après »), et emporter les flux dans les modèles de base.',
+						title: 'Attentes dans les automatisations',
+						text: 'Attendre avant l’étape suivante (« trois jours après »), et emporter les flux — conditions, recherches, boucles — dans les modèles de base.',
 					}),
 					textFormulas: item({
 						title: 'Formules sur le texte',

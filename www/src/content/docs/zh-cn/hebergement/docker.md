@@ -22,8 +22,8 @@ basedb 以**单个镜像** [`eodia/basedb`](https://hub.docker.com/r/eodia/based
 | 标签 | 内容 |
 |---|---|
 | `latest` | 最新发布的版本 |
-| `0.4` | 最新的 0.4.x 版本 |
-| `0.4.0` | 恰好是这个版本 |
+| `0.5` | 最新的 0.5.x 版本 |
+| `0.5.0` | 恰好是这个版本 |
 
 ## 服务
 
@@ -44,6 +44,23 @@ docker compose down                 # 停止（卷会保留）
 ```
 
 在仓库的克隆目录中运行 `docker compose up -d --build`，会从源代码构建镜像，而不是下载镜像。
+
+## 位于网关之后，路径之下
+
+当 basedb 发布在某个路径下——例如 `https://passerelle.example.com/basedb/`，而不是在某个域名的
+根路径下——时，请指定这个路径：
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# 或者，在没有公开地址的情况下：
+BASEDB_BASE_PATH=/basedb
+```
+
+此后一切都会置于 `/basedb` 之下：界面、`/basedb/api`、`/basedb/mcp`、分享链接以及邮件中的链接。
+网关可以在转发请求时**保留路径**，也可以**去掉路径**：这两种方式 basedb 都能接受。
+`BASEDB_BASE_PATH=/` 会强制使用根路径。
+
+镜像对所有地址都是同一个：路径会在容器启动时写入界面，更改路径只需重启即可生效。
 
 ## 修改端口
 

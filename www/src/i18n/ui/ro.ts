@@ -1537,6 +1537,28 @@ export default {
 		title: 'Ce s-a schimbat în basedb',
 		intro: 'Detaliile fiecărei schimbări se află în <a href="https://github.com/eodia/basedb/commits/main">istoricul depozitului</a>. Ce urmează: <a href="/feuille-de-route/">foaia de parcurs</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'Pentru aplicațiile care se bazează pe basedb',
+				tag: 'Nou',
+				items: [
+					'<strong>O bază creată dintr-un model printr-un singur apel</strong>: serverul aplică tot modelul — tabele, relații, rânduri, vizualizări, automatizări —, sau nimic dacă un pas eșuează. Galeria recurge și ea la el, o aplicație care se instalează tot așa. <a href="/integrations/api-rest/#crearea-unei-baze-dintr-un-model">Crearea unei baze dintr-un model</a>',
+					'<strong>Verificarea unui token</strong>: o aplicație căreia i se transmite tokenul unei persoane întreabă basedb dacă acesta este încă valid, și pentru cine — contul său, grupurile sale. <a href="/integrations/api-rest/#verificarea-unui-token">Verificarea unui token</a>',
+					'<strong>Serverele dumneavoastră interne</strong>: webhookurile și automatizările contactează pe cele pe care le indicați în <code>BASEDB_WEBHOOK_ALLOW</code>, HTTP inclus; un program poate și el urmări un tabel în timp real cu un token de integrare. <a href="/integrations/webhooks/#fără-webhook-urmărirea-unui-tabel">Urmărirea unui tabel</a>',
+					'<strong>Sub o cale, în spatele unei porți de acces</strong>: basedb se publică la o adresă precum <code>https://passerelle.example.com/basedb/</code>, fie că poarta de acces păstrează calea, fie că o elimină. <a href="/hebergement/docker/#în-spatele-unei-porți-de-acces-sub-o-cale">În spatele unei porți de acces</a>',
+					'<strong>Un webhook, toate tabelele dintr-o dată</strong>: bifați sau debifați un eveniment pentru toate tabelele, sau toate evenimentele unui tabel, cu un clic.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automatizări care vă parcurg rândurile și vorbesc cu API-uri',
+				tag: 'Nou',
+				items: [
+					'<strong>Pentru fiecare rând</strong>: un pas care își repetă pașii pe fiecare rând dintr-un tabel care răspunde unui filtru — în fiecare luni, retrimiteți toate facturile neplătite, nu doar prima. <a href="/fonctionnalites/automatisations/#pentru-fiecare-rând">Pentru fiecare rând</a>',
+					'<strong>Un webhook care vorbește cu orice API</strong>: metoda, o adresă care citează rândul, anteturi, un corp în JSON, sub formă de formular sau de text, compus cu valorile rândului. <a href="/fonctionnalites/automatisations/#apelați-un-serviciu">Apelați un serviciu</a>',
+					'<strong>O cheie de API rămâne secretă</strong>: criptată, nu mai este afișată niciodată — nici pe ecran, nici de API, nici de Copilot — și pleacă doar către gazda pentru care ați dat-o.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'Harta, și adrese care își găsesc locul',
@@ -1889,8 +1911,8 @@ export default {
 						text: 'Copierea vizualizărilor SQL împreună cu structura la crearea sau compararea mediilor, precum și în șabloanele pentru baze.',
 					},
 					loops: {
-						title: 'Bucle și așteptări în automatizări',
-						text: 'Repetarea unor pași pentru fiecare rând găsit, așteptarea înainte de pasul următor („trei zile mai târziu”) și includerea fluxurilor în șabloanele pentru baze.',
+						title: 'Așteptări în automatizări',
+						text: 'Așteptarea înainte de pasul următor („trei zile mai târziu”) și includerea fluxurilor — condiții, căutări, bucle — în șabloanele pentru baze.',
 					},
 					textFormulas: {
 						title: 'Formule pe text',

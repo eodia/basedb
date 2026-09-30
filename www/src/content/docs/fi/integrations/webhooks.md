@@ -42,3 +42,31 @@ jonka liipaisin tallentaa.
 
 Webhookit lähtevät vain **julkisiin HTTPS-osoitteisiin**. Kehityksessä `BASEDB_WEBHOOK_DEV=1`
 hyväksyy HTTP:n ja paikalliset osoitteet.
+
+**Oman verkkosi palvelinta** varten instanssin ylläpitäjä nimeää sen muuttujassa
+`BASEDB_WEBHOOK_ALLOW` — nimi, verkkotunnus (`*.intra.example.com`), osoite tai osoitealue
+(`10.12.0.0/16`):
+
+```bash
+BASEDB_WEBHOOK_ALLOW=chat.intra.example.com,10.12.0.0/16
+```
+
+Näitä kohteita hyväksytään olipa niiden osoite, portti ja skeema mikä tahansa, HTTP mukaan
+lukien. Luettelo koskee myös automaatioiden HTTP-pyyntöjä ja synkronoitujen taulukoiden
+lähteitä; se asetetaan ympäristössä, ei koskaan käyttöliittymästä.
+
+## Ei webhookia: taulukon seuraaminen
+
+Palvelin, jota ei voida tavoittaa, voi myös **muodostaa yhteyden** basedb:hen ja seurata
+taulukkoa reaaliaikaisen virran avulla, tietokannan integraatiotunnuksella:
+
+```bash
+curl -N "https://basedb.example.com/api/v1/t4z56fq/events?base=b_t4z56fq_ventes&table=opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN"
+```
+
+Virta (`text/event-stream`) kantaa **signaaleja** — tapahtuman `records`, jossa on luotujen,
+muokattujen tai poistettujen rivien tunnisteet —, ei koskaan arvoja: ohjelma lukee nämä rivit
+sitten [REST API:n](/basedb/fi/integrations/api-rest/) kautta. Mitätöity tunnus sulkee virtansa
+20 sekunnin kuluessa. Harvoin luettavalle taulukolle riittää lukea muuttuneet rivit aika ajoin:
+`filter=_updated_at gt "2026-09-30T08:00:00Z"`.

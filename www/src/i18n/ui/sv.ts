@@ -1536,6 +1536,28 @@ export default {
 		title: 'Vad som har ändrats i basedb',
 		intro: 'Detaljerna för varje ändring finns i <a href="https://github.com/eodia/basedb/commits/main">repots historik</a>. Vad som kommer härnäst: <a href="/feuille-de-route/">färdplanen</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'För applikationer som bygger på basedb',
+				tag: 'Nytt',
+				items: [
+					'<strong>En databas skapad från en mall med ett anrop</strong>: servern tillämpar hela mallen — tabeller, relationer, rader, vyer, automatiseringar — eller ingenting om ett steg misslyckas. Galleriet använder det, en applikation som också installerar sig själv. <a href="/integrations/api-rest/#skapa-en-databas-från-en-mall">Skapa en databas från en mall</a>',
+					'<strong>Kontrollera en token</strong>: en applikation som får en persons token frågar basedb om den fortfarande gäller, och för vem — personens konto, personens grupper. <a href="/integrations/api-rest/#kontrollera-en-token">Kontrollera en token</a>',
+					'<strong>Dina interna servrar</strong>: webhooks och automatiseringar kontaktar bara de du anger i <code>BASEDB_WEBHOOK_ALLOW</code>, även över HTTP; ett program kan också följa en tabell i realtid med en integrationstoken. <a href="/integrations/webhooks/#utan-webhook-följa-en-tabell">Följa en tabell</a>',
+					'<strong>Under en sökväg, bakom en gateway</strong>: basedb publiceras på en adress som <code>https://passerelle.example.com/basedb/</code>, oavsett om gatewayen behåller sökvägen eller tar bort den. <a href="/hebergement/docker/#bakom-en-gateway-under-en-sökväg">Bakom en gateway</a>',
+					'<strong>En webhook, alla tabeller på en gång</strong>: markera eller avmarkera en händelse för alla tabeller, eller alla händelser för en tabell, med ett klick.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automatiseringar som går igenom dina rader och pratar med API:er',
+				tag: 'Nytt',
+				items: [
+					'<strong>För varje rad</strong>: ett steg som upprepar sina steg på varje rad i en tabell som matchar ett filter – varje måndag, skicka en påminnelse för alla obetalda fakturor, inte bara den första. <a href="/fonctionnalites/automatisations/#för-varje-rad">För varje rad</a>',
+					'<strong>En webhook som pratar med vilket API som helst</strong>: metoden, en adress som citerar raden, huvuden, ett innehåll i JSON, i formulär eller i text, sammansatt med radens värden. <a href="/fonctionnalites/automatisations/#anropa-en-tjänst">Anropa en tjänst</a>',
+					'<strong>En API-nyckel förblir hemlig</strong>: krypterad visas den aldrig igen – varken på skärmen, i API:et eller för Copiloten – och skickas bara till den värd du angav den för.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'Kartan, och adresser som hittas',
@@ -1888,8 +1910,8 @@ export default {
 						text: 'Kopiera SQL-vyerna tillsammans med strukturen när miljöer skapas eller jämförs, och i databasmallar.',
 					},
 					loops: {
-						title: 'Loopar och väntan i automatiseringar',
-						text: 'Upprepa steg för varje hittad rad, vänta före nästa (”tre dagar senare”), och ta med flödena i databasmallar.',
+						title: 'Väntan i automatiseringar',
+						text: 'Vänta före nästa steg (”tre dagar senare”), och ta med flödena – villkor, sökningar, loopar – i databasmallar.',
 					},
 					textFormulas: {
 						title: 'Formler för text',

@@ -70,12 +70,54 @@ curl -X POST "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportu
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | 데이터베이스의 대시보드 |
 | `GET /api/v1/<tenant>/meta/users` | 사람 필드에 쓸 워크스페이스 멤버 |
 | `GET /api/v1/<tenant>/meta/templates` | 갤러리의 데이터베이스 템플릿 |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | 테이블을 실시간으로 추적: 신호만 오며, 위의 경로들로 다시 읽습니다([웹훅](/basedb/ko/integrations/webhooks/#웹훅-없이-테이블-추적하기) 참고) |
 
 [공유 보기](/basedb/ko/fonctionnalites/vues-partagees/)는 계정 없이 읽을 수 있습니다.
 `GET /api/v1/views/<jeton>`과 `…/rows`는 JSON으로, `…/calendar.ics`는 iCalendar로 제공됩니다.
 
 자동화, 대시보드, 연동을 만드는 등의 구성 작업은 인터페이스 세션에서만 할 수 있습니다. 토큰은
 행을 읽고 쓸 뿐, 데이터베이스 자체를 바꾸지는 않습니다.
+
+## 템플릿으로 데이터베이스 만들기
+
+설치되는 애플리케이션은 **한 번의 호출**로 데이터베이스를 만듭니다: 서버가 템플릿 — 테이블, 필드,
+관계, 예시 행, 보기, 대시보드, 자동화 — 을 적용하며, 어느 단계에서든 실패하면 데이터베이스를 남기지
+않습니다.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template`은 갤러리 템플릿의 키이거나, [템플릿 형식](/basedb/ko/fonctionnalites/modeles/)에 맞는
+템플릿 전체입니다. `Accept: application/x-ndjson` 헤더를 쓰면 응답이 한 줄씩 도착합니다: 단계마다
+`{"step": …}` 한 줄, 그리고 만들어진 데이터베이스. 이 호출에는 데이터베이스를 만들 수 있는 사용자의
+액세스 토큰이 필요합니다(로그인 후 `POST /auth/session/access`): 연동 토큰은 이미 있는 데이터베이스만
+엽니다.
+
+## 토큰 확인
+
+basedb의 토큰은 basedb 밖에서 확인할 수 없습니다. 토큰을 받은 애플리케이션 — 예를 들어 basedb에서
+그 사람의 토큰을 가지고 열린 도구 — 은 자신의 연동 토큰으로 그 값이 무엇인지 확인합니다(인트로스펙션,
+RFC 7662):
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+값이 유효하지 않은 토큰은 — 알 수 없거나, 만료되었거나, 철회되었거나, 세션이 닫혔거나, 다른
+워크스페이스의 것이거나 — 이유를 말하지 않고 `{"active": false}`를 반환합니다. 응답은 실시간으로
+읽히므로, 로그아웃은 즉시 반영됩니다. 연동 토큰의 경우, 응답은 그 토큰이 여는 데이터베이스(`base`),
+권한(`read` 또는 `write`), 그리고 영역도 알려 줍니다.
 
 ## 자동 생성 문서
 

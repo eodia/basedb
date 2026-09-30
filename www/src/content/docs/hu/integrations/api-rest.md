@@ -71,12 +71,57 @@ Ugyanazzal a tokennel:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | egy adatbázis irányítópultjai |
 | `GET /api/v1/<tenant>/meta/users` | a munkaterület tagjai, egy Személy mezőhöz |
 | `GET /api/v1/<tenant>/meta/templates` | a galéria adatbázissablonjai |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | egy tábla valós idejű követése: jelzések, amelyeket a fenti útvonalak olvasnak vissza utólag (lásd: [Webhookok](/basedb/hu/integrations/webhooks/#webhook-nélkül-tábla-követése)) |
 
 A [megosztott nézetek](/basedb/hu/fonctionnalites/vues-partagees/) fiók nélkül olvashatók:
 `GET /api/v1/views/<jeton>` és `…/rows` JSON-ban, `…/calendar.ics` iCalendar formátumban.
 
 Az építés – automatizálás, irányítópult, integráció létrehozása – a felületen nyitott
 munkamenetnek van fenntartva: egy token sorokat olvas és ír, az adatbázist nem változtatja meg.
+
+## Adatbázis létrehozása egy sablonból
+
+Egy települő alkalmazás **egyetlen hívással** hozza létre az adatbázisát: a szerver
+alkalmazza a sablont — táblákat, mezőket, kapcsolatokat, mintasorokat, nézeteket,
+irányítópultokat, automatizálásokat —, és ha egy lépés meghiúsul, nem hagy maga után
+semmilyen adatbázist.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+A `template` a galéria egy sablonjának kulcsa, vagy egy teljes sablon a
+[sablonok formátumában](/basedb/hu/fonctionnalites/modeles/). Az
+`Accept: application/x-ndjson` fejléccel a válasz soronként érkezik: egy `{"step": …}` sor
+minden lépéshez, majd a létrehozott adatbázis. Ez a hívás egy olyan személy hozzáférési
+tokenjét igényli, aki létrehozhat adatbázist (`POST /auth/session/access`, bejelentkezés
+után): egy integrációs token csak egy már létező adatbázist nyit meg.
+
+## Token ellenőrzése
+
+A basedb tokenjei a basedb-n kívül nem ellenőrizhetők. Egy alkalmazás, amely kap egyet —
+például egy, a basedb-ből a személy tokenjével megnyitott eszköz —, megkérdezi, mit ér
+(introspekció, RFC 7662), a saját integrációs tokenjével:
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Minden token, amely nem ér semmit — ismeretlen, lejárt, visszavont, lezárt munkamenet, másik
+munkaterület —, `{"active": false}` választ ad, anélkül hogy megmondaná, miért. A válasz
+élőben olvasott: egy kijelentkezés azonnal látható rajta. Egy integrációs token esetén a
+válasz azt is elmondja, melyik adatbázist nyitja meg (`base`), mi a hozzáférése (`read` vagy
+`write`), és melyek a felületei.
 
 ## A generált dokumentáció
 

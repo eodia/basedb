@@ -41,3 +41,31 @@ istoric, captat de un trigger.
 
 Webhook-urile pleacă doar către adrese **HTTPS publice**. În dezvoltare,
 `BASEDB_WEBHOOK_DEV=1` acceptă HTTP și adresele locale.
+
+Pentru un **server din rețeaua dumneavoastră**, exploatantul instanței îl numește în
+`BASEDB_WEBHOOK_ALLOW` — un nume, un domeniu (`*.intra.example.com`), o adresă sau o plajă
+(`10.12.0.0/16`):
+
+```bash
+BASEDB_WEBHOOK_ALLOW=chat.intra.example.com,10.12.0.0/16
+```
+
+Aceste destinații sunt acceptate indiferent de adresa, portul și schema lor, HTTP inclusiv.
+Lista este valabilă și pentru cererile HTTP ale automatizărilor și sursele tabelelor
+sincronizate; se reglează din mediu, niciodată din interfață.
+
+## Fără webhook: urmărirea unui tabel
+
+Un server care nu poate fi contactat se poate și el **conecta** la basedb și poate urmări un
+tabel prin fluxul în timp real, cu un token de integrare al bazei:
+
+```bash
+curl -N "https://basedb.example.com/api/v1/t4z56fq/events?base=b_t4z56fq_ventes&table=opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN"
+```
+
+Fluxul (`text/event-stream`) transportă **semnale** — evenimentul `records`, cu identificatorii
+rândurilor create, modificate sau șterse —, niciodată valorile: programul recitește apoi aceste
+rânduri prin [API REST](/basedb/ro/integrations/api-rest/). Un token revocat își închide fluxul
+în 20 de secunde. Pentru un tabel citit rar, este suficient să recitiți din când în când
+rândurile schimbate: `filter=_updated_at gt "2026-09-30T08:00:00Z"`.

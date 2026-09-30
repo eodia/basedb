@@ -1547,6 +1547,28 @@ export default {
 		title: 'Mitä basedb:ssä on muuttunut',
 		intro: 'Jokaisen muutoksen yksityiskohdat ovat <a href="https://github.com/eodia/basedb/commits/main">tietovaraston historiassa</a>. Mitä seuraavaksi: <a href="/feuille-de-route/">tiekartta</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'Sovelluksille, jotka nojautuvat basedb:hen',
+				tag: 'Uutta',
+				items: [
+					'<strong>Tietokanta luotu mallista yhdellä kutsulla</strong>: palvelin toteuttaa koko mallin – taulukot, suhteet, rivit, näkymät, automaatiot – tai ei mitään, jos jokin vaihe epäonnistuu. Myös galleria käyttää sitä, sovellus, joka asentuu samalla tavalla. <a href="/integrations/api-rest/#tietokannan-luominen-mallista">Tietokannan luominen mallista</a>',
+					'<strong>Tunnuksen tarkistaminen</strong>: sovellus, jolle välitetään henkilön tunnus, kysyy basedb:ltä, onko se yhä voimassa, ja kenelle – hänen tilinsä, hänen ryhmänsä. <a href="/integrations/api-rest/#tunnuksen-tarkistaminen">Tunnuksen tarkistaminen</a>',
+					'<strong>Omat sisäiset palvelimesi</strong>: webhookit ja automaatiot ottavat yhteyttä niihin, jotka nimeät muuttujassa <code>BASEDB_WEBHOOK_ALLOW</code>, HTTP mukaan lukien; ohjelma voi myös seurata taulukkoa reaaliajassa integraatiotunnuksella. <a href="/integrations/webhooks/#ei-webhookia-taulukon-seuraaminen">Taulukon seuraaminen</a>',
+					'<strong>Polun alla, yhdyskäytävän takana</strong>: basedb julkaistaan osoitteessa kuten <code>https://passerelle.example.com/basedb/</code>, riippumatta siitä, säilyttääkö yhdyskäytävä polun vai poistaako sen. <a href="/hebergement/docker/#yhdyskäytävän-takana-polun-alla">Yhdyskäytävän takana</a>',
+					'<strong>Yksi webhook, kaikki taulukot kerralla</strong>: valitse tai poista valinta tapahtumalle kaikissa taulukoissa, tai kaikille tapahtumille yhdessä taulukossa, yhdellä napsautuksella.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automaatiot, jotka käyvät läpi rivisi ja puhuvat API:lle',
+				tag: 'Uutta',
+				items: [
+					'<strong>Jokaiselle riville</strong>: vaihe, joka toistaa omansa jokaisella taulukon rivillä, joka vastaa suodatinta — joka maanantai muistuta kaikista maksamattomista laskuista, ei vain ensimmäisestä. <a href="/fonctionnalites/automatisations/#jokaiselle-riville">Jokaiselle riville</a>',
+					'<strong>Webhook, joka puhuu mille tahansa API:lle</strong>: metodi, riviin viittaava osoite, otsakkeet, JSON-, lomake- tai tekstimuotoinen runko, koottuna rivin arvoista. <a href="/fonctionnalites/automatisations/#kutsu-palvelua">Kutsu palvelua</a>',
+					'<strong>API-avain pysyy salaisena</strong>: salattuna sitä ei enää koskaan näytetä — ei ruudulla, ei API:n kautta, eikä Copilotille — ja se lähtee vain sille isännälle, jolle sen annoit.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'Kartta, ja osoitteet jotka löytävät paikkansa',
@@ -1899,8 +1921,8 @@ export default {
 						text: 'SQL-näkymien kopioiminen rakenteen mukana, kun ympäristöjä luodaan tai verrataan, sekä tietokantamalleissa.',
 					},
 					loops: {
-						title: 'Silmukat ja odotukset automaatioissa',
-						text: 'Vaiheiden toistaminen jokaiselle löydetylle riville, odottaminen ennen seuraavaa (”kolme päivää myöhemmin”) ja työnkulkujen vieminen tietokantamalleihin.',
+						title: 'Odotukset automaatioissa',
+						text: 'Odottaminen ennen seuraavaa vaihetta (”kolme päivää myöhemmin”) ja työnkulkujen – ehtojen, hakujen, silmukoiden – vieminen tietokantamalleihin.',
 					},
 					textFormulas: {
 						title: 'Tekstikaavat',

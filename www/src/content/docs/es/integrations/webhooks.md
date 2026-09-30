@@ -40,3 +40,31 @@ que captura un disparador.
 
 Los webhooks solo se envían a direcciones **HTTPS públicas**. En desarrollo,
 `BASEDB_WEBHOOK_DEV=1` acepta HTTP y las direcciones locales.
+
+Para un **servidor de tu red**, quien administra la instancia lo nombra en
+`BASEDB_WEBHOOK_ALLOW` —un nombre, un dominio (`*.intra.example.com`), una dirección o un rango
+(`10.12.0.0/16`)—:
+
+```bash
+BASEDB_WEBHOOK_ALLOW=chat.intra.example.com,10.12.0.0/16
+```
+
+Estos destinos se aceptan sea cual sea su dirección, su puerto y su esquema, HTTP incluido. La
+lista también vale para las solicitudes HTTP de las automatizaciones y las fuentes de las tablas
+sincronizadas; se configura en el entorno, nunca desde la interfaz.
+
+## Sin webhook: seguir una tabla
+
+Un servidor al que no se puede llegar también puede **conectarse** a basedb y seguir una tabla
+por el flujo en tiempo real, con un token de integración de la base:
+
+```bash
+curl -N "https://basedb.example.com/api/v1/t4z56fq/events?base=b_t4z56fq_ventes&table=opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN"
+```
+
+El flujo (`text/event-stream`) lleva **señales** —el evento `records`, con los identificadores
+de las filas creadas, modificadas o eliminadas—, nunca los valores: el programa vuelve a leer
+después esas filas con la [API REST](/basedb/es/integrations/api-rest/). Un token revocado
+cierra su flujo en los 20 segundos siguientes. Para una tabla que se lee raras veces, basta con
+volver a leer de vez en cuando las filas cambiadas: `filter=_updated_at gt "2026-09-30T08:00:00Z"`.

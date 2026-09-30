@@ -15,6 +15,7 @@ import { Choice } from '@/components/ui/choice'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ApiError, type DemoAccount, api } from '@/lib/api/client'
+import { withBase } from '@/lib/base-path'
 import { $t, LOCALE_NAMES } from '@/lib/i18n'
 import { reasonFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
@@ -37,7 +38,7 @@ export function Login({
   description = $t('Connectez-vous pour retrouver vos bases et vos tables.'),
   initialEmail = '',
   alwaysOfferSignUp = false,
-  returnTo = '/',
+  returnTo = withBase('/'),
 }: {
   readonly onSignedIn: () => void
   /** Offered when the instance lets anyone create an account. */
@@ -316,7 +317,7 @@ export function Login({
  * Nothing when there are none. The same buttons sign in and sign up: a first sign-in
  * creates the account when the instance lets anyone create one.
  */
-export function OidcButtons({ returnTo = '/' }: { readonly returnTo?: string }) {
+export function OidcButtons({ returnTo = withBase('/') }: { readonly returnTo?: string }) {
   const [providers, setProviders] = useState<ReadonlyArray<{ slug: string; label: string }>>([])
 
   useEffect(() => {

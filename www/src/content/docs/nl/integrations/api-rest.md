@@ -70,12 +70,55 @@ Met hetzelfde token:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | de dashboards van een database |
 | `GET /api/v1/<tenant>/meta/users` | de leden van de werkruimte, voor een veld Persoon |
 | `GET /api/v1/<tenant>/meta/templates` | de databasesjablonen uit de galerie |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | een tabel in realtime volgen: signalen, die vervolgens via de routes hierboven worden herlezen (zie [Webhooks](/basedb/nl/integrations/webhooks/#zonder-webhook-een-tabel-volgen)) |
 
 [Gedeelde weergaven](/basedb/nl/fonctionnalites/vues-partagees/) lees je zonder account:
 `GET /api/v1/views/<jeton>` en `…/rows` in JSON, `…/calendar.ics` in iCalendar.
 
 Bouwen — een automatisering, een dashboard of een integratie aanmaken — blijft voorbehouden aan
 een sessie in de interface: een token leest en schrijft rijen, het verandert de database niet.
+
+## Een database aanmaken vanuit een sjabloon
+
+Een applicatie die wordt geïnstalleerd, maakt haar database in **één aanroep**: de server past
+het sjabloon toe — tabellen, velden, relaties, voorbeeldrijen, weergaven, dashboards,
+automatiseringen — en als een stap mislukt, blijft er geen database achter.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` is de sleutel van een sjabloon uit de galerie, of een heel sjabloon in het
+[sjabloonformaat](/basedb/nl/fonctionnalites/modeles/). Met de header
+`Accept: application/x-ndjson` komt het antwoord regel voor regel binnen: één regel `{"step": …}`
+per stap, en dan de aangemaakte database. Deze aanroep vraagt het toegangstoken van iemand die
+een database kan aanmaken (`POST /auth/session/access`, na het inloggen): een integratietoken
+opent alleen een bestaande database.
+
+## Een token controleren
+
+Tokens van basedb worden niet buiten basedb gecontroleerd. Een applicatie die er een ontvangt —
+bijvoorbeeld een tool die vanuit basedb wordt geopend met het token van de persoon — vraagt op
+wat het waard is (introspectie, RFC 7662), met haar eigen integratietoken:
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Elk token dat niet geldig is — onbekend, verlopen, ingetrokken, beëindigde sessie, andere
+werkruimte — antwoordt met `{"active": false}`, zonder te zeggen waarom. Het antwoord wordt live
+gelezen: een uitloggen is meteen zichtbaar. Voor een integratietoken vermeldt het antwoord ook de
+database die het opent (`base`), zijn toegang (`read` of `write`) en zijn oppervlakken.
 
 ## De gegenereerde documentatie
 

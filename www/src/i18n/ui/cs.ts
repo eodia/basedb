@@ -1540,6 +1540,28 @@ export default {
 		title: 'Co se v basedb změnilo',
 		intro: 'Podrobnosti o každé změně najdete v <a href="https://github.com/eodia/basedb/commits/main">historii repozitáře</a>. Co přijde dál: <a href="/feuille-de-route/">plán vývoje</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'Pro aplikace, které se opírají o basedb',
+				tag: 'Novinka',
+				items: [
+					'<strong>Databáze vytvořená ze šablony jedním voláním</strong>: server použije celou šablonu – tabulky, vztahy, řádky, zobrazení, automatizace – nebo nic, pokud některý krok selže. Galerie ji používá, aplikace, která se také instaluje. <a href="/integrations/api-rest/#vytvoření-databáze-ze-šablony">Vytvoření databáze ze šablony</a>',
+					'<strong>Ověření tokenu</strong>: aplikace, které je předán token nějaké osoby, se zeptá basedb, zda je ještě platný, a pro koho – jeho účet, jeho skupiny. <a href="/integrations/api-rest/#ověření-tokenu">Ověření tokenu</a>',
+					'<strong>Vaše vnitřní servery</strong>: webhooky a automatizace se spojí s těmi, které uvedete v <code>BASEDB_WEBHOOK_ALLOW</code>, HTTP včetně; program může také sledovat tabulku v reálném čase pomocí integračního tokenu. <a href="/integrations/webhooks/#bez-webhooku-sledování-tabulky">Sledování tabulky</a>',
+					'<strong>Pod cestou, za branou</strong>: basedb se publikuje na adrese jako <code>https://passerelle.example.com/basedb/</code>, ať brána cestu zachová, nebo ji odstraní. <a href="/hebergement/docker/#za-branou-pod-cestou">Za branou</a>',
+					'<strong>Jeden webhook, všechny tabulky najednou</strong>: zaškrtnout nebo odškrtnout událost pro všechny tabulky, nebo všechny události jedné tabulky, jedním kliknutím.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automatizace, které procházejí vaše řádky a mluví s API',
+				tag: 'Novinka',
+				items: [
+					'<strong>Pro každý řádek</strong>: krok, který opakuje své kroky na každém řádku tabulky, která odpovídá filtru – každé pondělí upomenout všechny neuhrazené faktury, ne jen tu první. <a href="/fonctionnalites/automatisations/#pro-každý-řádek">Pro každý řádek</a>',
+					'<strong>Webhook, který mluví s jakýmkoli API</strong>: metoda, adresa citující řádek, hlavičky, tělo v JSON, ve formuláři nebo v textu, sestavené z hodnot řádku. <a href="/fonctionnalites/automatisations/#zavolat-službu">Zavolat službu</a>',
+					'<strong>Klíč API zůstává v tajnosti</strong>: zašifrovaný se už nikdy nezobrazí – ani na obrazovce, ani přes API, ani Copilotovi – a odchází jen k hostiteli, pro kterého jste ho zadali.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'Mapa, a adresy, které se najdou',
@@ -1892,8 +1914,8 @@ export default {
 						text: 'Kopírování pohledů SQL spolu se strukturou při vytváření nebo porovnávání prostředí a v šablonách databází.',
 					},
 					loops: {
-						title: 'Smyčky a čekání v automatizacích',
-						text: 'Opakování kroků pro každý nalezený řádek, čekání před dalším krokem („tři dny poté“) a přenášení toků v šablonách databází.',
+						title: 'Čekání v automatizacích',
+						text: 'Čekání před dalším krokem („tři dny poté“) a přenášení toků — podmínek, vyhledávání, smyček — v šablonách databází.',
 					},
 					textFormulas: {
 						title: 'Vzorce pro text',

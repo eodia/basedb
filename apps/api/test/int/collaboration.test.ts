@@ -331,6 +331,7 @@ async function nextEvent(
   reader: ReadableStreamDefaultReader<Uint8Array>,
   name: string,
   buffer: { text: string },
+  seen: string[] = [],
 ): Promise<Record<string, unknown>> {
   const decoder = new TextDecoder()
   const deadline = Date.now() + 10_000
@@ -340,6 +341,7 @@ async function nextEvent(
     for (const block of blocks) {
       const event = /^event: (.*)$/m.exec(block)?.[1]
       const payload = /^data: (.*)$/m.exec(block)?.[1]
+      if (event !== undefined) seen.push(event)
       if (event === name) return JSON.parse(payload ?? '{}') as Record<string, unknown>
     }
     if (Date.now() > deadline) throw new Error(`no ${name} event`)
@@ -424,5 +426,46 @@ describe('the live stream', () => {
       headers: { authorization: `Bearer ${bob.token}` },
     })
     expect(response.status).toBe(404)
+  })
+  it('is open to a program with an integration token — no viewer, and closed when revoked', async () => {
+    const issued = await data<{ id: string; secret: string }>(
+      await call(admin, `${V1}/admin/tokens`, 'POST', {
+        label: 'Serveur interne',
+        base,
+        access: 'read',
+      }),
+    )
+    const controller = new AbortController()
+    const response = await app.request(`${V1}/events?base=${base}&table=visites`, {
+      headers: { authorization: `Bearer ${issued.secret}` },
+      signal: controller.signal,
+    })
+    expect(response.status).toBe(200)
+    const reader = (response.body as ReadableStream<Uint8Array>).getReader()
+    const buffer = { text: '' }
+    await nextEvent(reader, 'ready', buffer)
+
+    const row = await createRow({ nom: 'Metz' })
+    await kernel.drainHistory()
+    const seen: string[] = []
+    expect(await nextEvent(reader, 'records', buffer, seen)).toMatchObject({
+      ids: [row.id],
+      ops: ['insert'],
+    })
+    // A program is not someone on the table: it never entered its presence.
+    expect(seen).not.toContain('presence')
+    controller.abort()
+    await reader.cancel().catch(() => undefined)
+
+    // Another tenant's address finds nothing; a revoked token opens nothing.
+    const elsewhere = await app.request(`/api/v1/t000000/events?base=${base}&table=visites`, {
+      headers: { authorization: `Bearer ${issued.secret}` },
+    })
+    expect(elsewhere.status).toBe(404)
+    await call(admin, `${V1}/admin/tokens/${issued.id}`, 'DELETE')
+    const revoked = await app.request(`${V1}/events?base=${base}&table=visites`, {
+      headers: { authorization: `Bearer ${issued.secret}` },
+    })
+    expect(revoked.status).toBe(401)
   })
 })

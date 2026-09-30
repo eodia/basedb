@@ -1,13 +1,14 @@
 ---
 title: Otomasyonlar
-description: Bir satır değiştiğinde, belirli bir saatte ya da bir tıklamayla — değiştirmek, oluşturmak, aramak, dallanmak, yapay zekaya sormak, haber vermek, e-posta göndermek, bir webhook çağırmak, Slack'e yazmak.
+description: Bir satır değiştiğinde, belirli bir saatte ya da bir tıklamayla — değiştirmek, oluşturmak, aramak, her satırda yinelemek, dallanmak, yapay zekaya sormak, haber vermek, e-posta göndermek, bir servis çağırmak, Slack'e yazmak.
 ---
 
 Bir otomasyon **ne zaman**, **eğer** ve **o hâlde** sorularını yanıtlar: bir görev “Fait”
 durumuna geçtiğinde saati not etmek; olumsuz bir değerlendirme geldiğinde sorumluya haber vermek
 ve Slack'e yazmak; her pazartesi saat 9'da ekip toplantısının satırını oluşturmak. Tek bir eylem
 yetmediğinde otomasyon bir **akış** izler: bir satır aramak, satırın söylediğine göre bir dala
-ya da diğerine girmek, bir adımda önceki bir adımın bulduğunu ya da yazdığını yeniden kullanmak.
+ya da diğerine girmek, bir filtreye uyan her satırda adımları yinelemek, bir adımda önceki bir
+adımın bulduğunu ya da yazdığını yeniden kullanmak.
 
 Otomasyonlar, kenar çubuğunun altındaki açık veritabanı bloğunda yer alan **Otomasyonlar**
 bağlantısından açılır ve **Yönetim** düzeyini gerektirir.
@@ -49,14 +50,58 @@ Sırayla otuz adıma kadar; başarısız olan ilk adım sonrakileri durdurur.
 | **Satır ara** | bir tablonun bir filtreye uyan ilk satırını bulur; sonraki adımlar ona atıf yapabilsin ya da onu değiştirebilsin diye |
 | **Birine haber ver** | seçilen kişilere ya da bir Kişi alanındaki kişiye bir [bildirim](/basedb/tr/fonctionnalites/collaboration/#bildirimler) gönderir |
 | **E-posta gönder** | ekipten kişilere, bir Kişi alanındakine, bir E-posta alanının adresine — bir müşteri, bir tedarikçi — ya da yazılan adreslere; konu ve metin satıra ve önceki adımlara atıf yapar |
-| **Webhook çağır** | seçtiğiniz adrese HTTPS üzerinden bir `POST`; yanıtına ardından atıf yapılabilir |
+| **Webhook çağır** | bir servise HTTPS isteği — yöntemine, adresine, üst bilgilerine ve gövdesine siz karar verirsiniz ([ayrıntılar](#bir-servis-çağırma)) ; yanıtına ardından atıf yapılabilir |
 | **Slack'e gönder** | [bağlı](/basedb/tr/integrations/synchronisation/#slack) bir kanala bir mesaj |
 | **Yapay zekaya sor** | [yapay zeka sağlayıcısından](/basedb/tr/fonctionnalites/ia/), satıra ve önceki adımlara atıf yapan bir talimata yanıt — yazmak, özetlemek, sınıflandırmak —; yanıt bir metin, bir sayı, evet ya da hayır, bir tarih ya da bir listeden bir seçim olarak okunur |
 | **Koşul** | birkaç dal: koşulu sağlanan ilk dal izlenir, hiçbiri sağlanmadığında “Aksi halde”; dallar ardından yeniden birleşir |
+| **Her satır için** | içerdiği adımları, bir filtreye uyan bir tablonun her satırı için bir kez ([ayrıntılar](#her-satır-için)) |
 
 Hiçbir şey bulamayan bir arama akışı durdurmaz: onun satırını değiştirecek adımlar atlanır. Bu
 durumda başka bir şey yapmak için bir koşul bunu test eder — filtresi boş olan bir dal, arama
 bir sonuç bulur bulmaz izlenir.
+
+## Her satır için
+
+**Her satır için** adımı, bir tablonun filtresine uyan satırlarını — filtre boşsa hepsini —
+seçilen sırayla, sınırına kadar (varsayılan 50, en fazla 200) okur, ardından içindeki
+adımları her satır için bir kez çalıştırır. “Her pazartesi, ödenmemiş faturaları hatırlat”
+şöyle yazılır: **Belirli bir saatte**, ardından `payee eq false and relancee eq false`
+filtresiyle faturalar üzerinde **Her satır için**; döngü içinde faturanın kişisine bir
+e-posta ve “relancée” kutusunu işaretleyen **Satırı düzenle**.
+
+Döngü içinde, adımın kimliği **turun satırını** adlandırır: `{{e1.client}}` ona atıf yapar,
+ve **Satırı düzenle** onu değiştirilecek satırlar arasında önerir. Döngüden sonra,
+`{{e1.nombre}}` kaç satır taradığını söyler — örneğin Slack'te bir özet için. Filtre
+öncekine atıf yapabilir: ödenmiş bir fatura tarafından tetiklendiğinde, `facture eq {{_id}}`
+onun kalem satırlarını tarar.
+
+Sınırın ötesindeki kalan satırlar bir sonraki çalıştırmayı bekler ve bu belirtilir:
+işlenenleri — bir “relancée” kutusu, bir tarih — filtreden çıkarın ki hepsi çalıştırmalar
+boyunca işlensin. Bir döngü başka bir döngü içermez, ve bir çalıştırma iki dakikanın
+sonunda durur.
+
+## Bir servis çağırma
+
+**Webhook çağır** adımı, varsayılan olarak `POST` yöntemiyle otomasyonun verilerini
+gönderir: seçilen satırı ve önceki adımların bulduğu ya da yazdığı şeyi. Bir servisle onun
+beklediği biçimde konuşmak için şunlar ayarlanır:
+
+- **yöntem**: `POST`, `PUT`, `PATCH`, `GET` ya da `DELETE` — bu son ikisinde gövde yoktur;
+- sunucusundan sonra atıf yapabilen **adres** — `https://api.exemple.fr/clients/{{e2.numero}}` ;
+  her değer orada kodlanır;
+- değeri atıf yapabilen **üst bilgiler**: `Idempotency-Key: {{_id}}` ;
+- **gövde**: otomasyonun verileri, **oluşturulacak bir JSON**, satır başına bir
+  `anahtar=değer` çifti içeren bir **form** ya da bir **metin**. Bir JSON'da tırnak içindeki
+  bir atıf metindir, tırnak dışındaki ise bir değerdir — bir sayı, evet ya da hayır, bir liste:
+
+```json
+{ "facture": "{{e1.numero}}", "montant": {{e1.montant}}, "payee": {{e1.payee}} }
+```
+
+Bir API anahtarı ya da bir token, **gizli** bir üst bilgiye (kilit simgesi) konur: kurulum
+anahtarıyla şifrelenir, bir daha asla gösterilmez — ne ekranda, ne API'de, ne de Copilot'ta —
+ve yalnızca kendisi için verildiği sunucuya gider. Adresin sunucusunu değiştirmek onu yeniden
+vermenizi gerektirir; **Değiştir** yenisini girer.
 
 ## Yapay zekaya sor
 
@@ -88,6 +133,8 @@ Değerler, mesajlar ve filtreler, her metnin yanındaki **{ }** düğmesiyle ön
   her adımın kimliği kartında yazılıdır;
 - `{{e3.statut}}`, `{{e3.reponse.numero}}`: `e3` webhook'unun verdiği yanıt;
 - `{{e4.reponse}}`: `e4` yapay zeka adımının yanıtı;
+- `{{e5.client}}`, `e5` döngüsünde turun satırı; ondan sonra `{{e5.nombre}}`, taranan satır
+  sayısı;
 - `{{_maintenant}}`: çalıştırmanın anı.
 
 Tek bir atıftan oluşan bir değer, değerin kendisini aktarır: bir ilişki, bir kişi, bir seçim —
@@ -124,7 +171,7 @@ verir (okuma başına en fazla 50); her okuma, yanıtın altında listelenir.
 **Çalıştırmalar** sekmesi son 50 çalıştırmayı 30 gün boyunca saklar: beklemede, devam ediyor,
 başarılı, gerekçesiyle atlandı, koduyla başarısız oldu. Birini seçmek onu akışın üzerine
 yerleştirir — izlenen dal çizilir, geçilen her adım ne yaptığını ve ne kadar sürdüğünü söyler,
-geri kalanı soluklaşır.
+geri kalanı soluklaşır. Bir döngüde, her adım kaç kez çalıştığını da söyler.
 
 ## Kimin adına çalışır
 
@@ -138,15 +185,17 @@ gibi geri alınabilir.
 
 - Bir otomasyonun yazdığı şey başka hiçbir otomasyonu tetiklemez: art arda gelmesi gerekenler
   tek bir akışta yazılır.
-- Bir arama tek bir satır verir, ilkini; henüz “her satır için” ya da bekleme (“üç gün sonra”)
-  yok.
+- Bir arama tek bir satır verir, ilkini; bir döngü çalıştırma başına en fazla 200 satır tarar,
+  ve başarısız olan ilk adım onu durdurur. Bekleme (“üç gün sonra”) yok.
 - Betik yok. Bir e-posta düz metin olarak gönderilir, her alıcıya bir tane — adım başına en
   fazla yirmi —, kurulumun [gönderim sunucusu](/basedb/tr/hebergement/variables/#e-postalar)
   üzerinden; bir yanıt otomasyonun sahibi olan kişiye gelir.
 - Bir koşul bir satırı test eder: yapay zekanın yanıtına göre bir dal seçmek için yanıtı önce
   satırın bir alanına yazın.
-- Bir [veritabanı şablonu](/basedb/tr/fonctionnalites/modeles/) yalnızca arama, koşul ya da
-  yapay zeka adımı içermeyen otomasyonları taşır.
+- Bir [veritabanı şablonu](/basedb/tr/fonctionnalites/modeles/) yalnızca arama, döngü, koşul
+  ya da yapay zeka adımı içermeyen otomasyonları taşır, ve asla bir webhook.
+- Bir webhook yönlendirmeleri izlemez ve en fazla 10 saniye bekler; 2xx dışında bir yanıt
+  adımı başarısız kılar.
 - Otomasyon başına saatte 100 çalıştırma; kaçırılan bir saatlik zamanlama yalnızca bir kez
   telafi edilir.
 - Yazma ile eylem arasındaki gecikme saniye mertebesindedir.

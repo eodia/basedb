@@ -42,3 +42,31 @@ historii, rejestrowanej przez wyzwalacz.
 
 Webhooki są wysyłane tylko na **publiczne adresy HTTPS**. W środowisku deweloperskim
 `BASEDB_WEBHOOK_DEV=1` akceptuje HTTP i adresy lokalne.
+
+Dla **serwera z twojej sieci** administrator instancji podaje go w
+`BASEDB_WEBHOOK_ALLOW` – nazwa, domena (`*.intra.example.com`), adres lub zakres
+(`10.12.0.0/16`):
+
+```bash
+BASEDB_WEBHOOK_ALLOW=chat.intra.example.com,10.12.0.0/16
+```
+
+Te cele są przyjmowane niezależnie od ich adresu, portu i schematu, HTTP włącznie. Lista
+obejmuje też żądania HTTP automatyzacji i źródła tabel synchronizowanych; ustawia się ją w
+środowisku, nigdy z interfejsu.
+
+## Bez webhooka: śledzenie tabeli
+
+Serwer, z którym nie można się połączyć, może też **połączyć się** z basedb i śledzić tabelę
+przez strumień w czasie rzeczywistym, z tokenem integracji bazy:
+
+```bash
+curl -N "https://basedb.example.com/api/v1/t4z56fq/events?base=b_t4z56fq_ventes&table=opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN"
+```
+
+Strumień (`text/event-stream`) przenosi **sygnały** – zdarzenie `records`, z identyfikatorami
+utworzonych, zmienionych lub usuniętych wierszy –, nigdy wartości: program odczytuje potem te
+wiersze przez [API REST](/basedb/pl/integrations/api-rest/). Unieważniony token zamyka swój
+strumień w ciągu 20 sekund. Dla tabeli czytanej rzadko wystarczy od czasu do czasu odczytać
+zmienione wiersze: `filter=_updated_at gt "2026-09-30T08:00:00Z"`.

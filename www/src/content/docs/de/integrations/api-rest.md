@@ -71,12 +71,55 @@ Mit demselben Token:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | die Dashboards einer Datenbank |
 | `GET /api/v1/<tenant>/meta/users` | die Mitglieder des Arbeitsbereichs, für ein Feld Person |
 | `GET /api/v1/<tenant>/meta/templates` | die Datenbankvorlagen der Galerie |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | eine Tabelle in Echtzeit verfolgen: Signale, die anschließend über die obigen Routen erneut gelesen werden (siehe [Webhooks](/basedb/de/integrations/webhooks/#ohne-webhook-eine-tabelle-verfolgen)) |
 
 Die [freigegebenen Ansichten](/basedb/de/fonctionnalites/vues-partagees/) lassen sich ohne Konto
 lesen: `GET /api/v1/views/<jeton>` und `…/rows` als JSON, `…/calendar.ics` als iCalendar.
 
 Aufbauen – eine Automatisierung, ein Dashboard, eine Integration anlegen – bleibt einer Sitzung in
 der Oberfläche vorbehalten: Ein Token liest und schreibt Zeilen, es ändert nicht die Datenbank.
+
+## Eine Datenbank aus einer Vorlage anlegen
+
+Eine Anwendung, die sich installiert, legt ihre Datenbank in **einem Aufruf** an: Der Server
+wendet die Vorlage an – Tabellen, Felder, Verknüpfungen, Beispielzeilen, Ansichten, Dashboards,
+Automatisierungen – und lässt, falls ein Schritt fehlschlägt, keine Datenbank zurück.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` ist der Schlüssel einer Vorlage aus der Galerie, oder eine vollständige Vorlage im
+[Format der Vorlagen](/basedb/de/fonctionnalites/modeles/). Mit dem Header
+`Accept: application/x-ndjson` kommt die Antwort Zeile für Zeile: eine Zeile `{"step": …}` pro
+Schritt, dann die angelegte Datenbank. Dieser Aufruf verlangt das Zugriffstoken einer Person, die
+eine Datenbank anlegen darf (`POST /auth/session/access`, nach der Anmeldung): Ein
+Integrationstoken öffnet nur eine bestehende Datenbank.
+
+## Ein Token prüfen
+
+Token von basedb lassen sich nicht außerhalb von basedb prüfen. Eine Anwendung, die eines erhält
+– zum Beispiel ein von basedb aus geöffnetes Werkzeug mit dem Token der Person –, fragt ab, was es
+wert ist (Introspektion, RFC 7662), mit ihrem eigenen Integrationstoken:
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Jedes Token, das nichts wert ist – unbekannt, abgelaufen, widerrufen, Sitzung beendet, anderer
+Arbeitsbereich –, antwortet mit `{"active": false}`, ohne den Grund zu nennen. Die Antwort wird
+live gelesen: Eine Abmeldung zeigt sich sofort. Für ein Integrationstoken sagt die Antwort auch,
+welche Datenbank es öffnet (`base`), seinen Zugriff (`read` oder `write`) und seine Oberflächen.
 
 ## Die generierte Dokumentation
 

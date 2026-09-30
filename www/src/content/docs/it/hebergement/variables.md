@@ -51,6 +51,7 @@ Vedi [Account e accesso](/basedb/it/hebergement/connexion/).
 | `BASEDB_PORT` | `3000` | porta pubblicata su 127.0.0.1: l’interfaccia, `/api` e `/mcp` |
 | `BASEDB_VERSION` | `latest` | il tag dell’immagine `eodia/basedb` |
 | `BASEDB_PUBLIC_URL` | — | indirizzo pubblico di basedb, per il reindirizzamento OIDC |
+| `BASEDB_BASE_PATH` | il percorso di `BASEDB_PUBLIC_URL` | il percorso sotto il quale basedb è servito dietro un gateway, `/basedb` per `https://passerelle.example.com/basedb/`; vedi [Docker Compose](/basedb/it/hebergement/docker/#dietro-un-gateway-sotto-un-percorso) |
 | `BASEDB_DOMAIN` | — | il dominio servito in HTTPS dal proxy Caddy |
 | `BASEDB_ORIGINS` | — | altri siti le cui pagine chiamano l’API dal browser, separati da virgole; non necessario per l’interfaccia di basedb, servita allo stesso indirizzo |
 | `BASEDB_API`, `BASEDB_MCP` | `/`, `/mcp` | l’API e MCP visti dal browser; da impostare solo per lo stack di sviluppo (`pnpm start`) |
@@ -122,6 +123,17 @@ All’avvio, il log dice quale servizio è impiegato: `Géocodage : https://nomi
 | `BASEDB_AI_QUOTA` | `120` | chiamate interattive per ora e per tenant |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | calcoli dei campi IA per ora e per tenant |
 | `BASEDB_AI_WORKER` | `1` | `0`: nessun calcolo in background in questo processo |
+
+## Webhook verso la rete interna
+
+| Variabile | Predefinito | Ruolo |
+|---|---|---|
+| `BASEDB_WEBHOOK_ALLOW` | — | i tuoi server interni, separati da virgole: un nome (`chat.intra.example.com`), un dominio e i suoi sottodomini (`*.intra.example.com`), un indirizzo o un intervallo (`10.12.0.0/16`) |
+
+Webhook, richieste HTTP delle automazioni e tabelle sincronizzate partono solo verso indirizzi
+pubblici in HTTPS. Una destinazione della lista viene accettata in più, indipendentemente dal suo
+indirizzo, dalla sua porta e dal suo schema — HTTP compreso. Una voce illeggibile impedisce
+l’avvio. Vedi [Webhook](/basedb/it/integrations/webhooks/#destinazioni).
 
 ## Demo pubblica
 

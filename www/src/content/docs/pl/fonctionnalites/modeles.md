@@ -142,5 +142,5 @@ Każda baza może też stać się szablonem: **Zapisz jako szablon** w menu bazy
 działań**. Jej tabele, pola, polecenia AI, relacje, widoki udostępnione, pulpity i
 automatyzacje – oraz, jeśli chcesz, do 50 wierszy na tabelę – pobiera się jako JSON, gotowy
 do włączenia do oficjalnego katalogu lub katalogu instancji. Automatyzacja, która wyszukuje
-wiersz, wybiera gałęzie lub przytacza poprzedni krok, na razie jest pomijana, a ekran o tym
-informuje.
+wiersz, przechodzi przez wiersze, wybiera gałęzie lub przytacza poprzedni krok, na razie jest
+pomijana, a ekran o tym informuje.

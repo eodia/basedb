@@ -5,6 +5,7 @@ import { AuthLayout, PRESSABLE, REVEAL, pauseOnSuccess, revealAt } from '@/compo
 import { Login, OidcButtons } from '@/components/login'
 import { Button } from '@/components/ui/button'
 import { type AccessLevel, type InvitationPreview, type Me, api } from '@/lib/api/client'
+import { withBase } from '@/lib/base-path'
 import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { useTheme } from '@/lib/theme'
@@ -90,7 +91,7 @@ export default function InvitationPage() {
       setJoined(true)
       remember(accepted.projectId)
       await pauseOnSuccess()
-      window.location.assign('/')
+      window.location.assign(withBase('/'))
     } catch (e) {
       setError(messageFor(e))
       setJoining(false)
@@ -119,7 +120,7 @@ export default function InvitationPage() {
             )}
           </p>
           <Button asChild variant="outline" className="mt-6">
-            <a href="/">{$t('Aller à basedb')}</a>
+            <a href={withBase('/')}>{$t('Aller à basedb')}</a>
           </Button>
         </div>
       </main>

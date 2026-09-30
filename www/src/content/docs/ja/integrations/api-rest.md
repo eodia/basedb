@@ -60,10 +60,41 @@ curl -X POST "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportu
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | データベースのダッシュボード |
 | `GET /api/v1/<tenant>/meta/users` | ワークスペースのメンバー（メンバーフィールド用） |
 | `GET /api/v1/<tenant>/meta/templates` | ギャラリーのデータベーステンプレート |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | テーブルをリアルタイムで追跡します：信号を返し、その後は上記のルートで読み直します（[Webhook](/basedb/ja/integrations/webhooks/#webhookなしテーブルを追跡する)を参照） |
 
 [共有ビュー](/basedb/ja/fonctionnalites/vues-partagees/)は、アカウントなしで読めます：`GET /api/v1/views/<jeton>`と`…/rows`はJSONで、`…/calendar.ics`はiCalendarで取得できます。
 
 構築（オートメーション、ダッシュボード、連携の作成）は、インターフェースのセッションに限られます。トークンは行を読み書きするためのもので、データベースを変更するものではありません。
+
+## テンプレートからのデータベース作成
+
+インストールされるアプリケーションは、**1回の呼び出し**でデータベースを作成します：サーバーがテンプレートを適用し——テーブル、フィールド、リレーション、サンプル行、ビュー、ダッシュボード、オートメーション——、いずれかのステップが失敗した場合は、データベースを何も残しません。
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template`は、ギャラリーのテンプレートのキー、または[テンプレート形式](/basedb/ja/fonctionnalites/modeles/)に沿ったテンプレート全体です。`Accept: application/x-ndjson`ヘッダーを付けると、応答は1行ずつ届きます：ステップごとに`{"step": …}`の行が送られ、最後に作成されたデータベースが届きます。この呼び出しには、データベースを作成できる人のアクセストークンが必要です（ログイン後の`POST /auth/session/access`）：連携トークンは既存のデータベースしか開けません。
+
+## トークンの検証
+
+basedbのトークンは、basedbの外では検証できません。トークンを受け取ったアプリケーション——例えば、本人のトークンを使ってbasedbから開かれたツール——は、自分自身の連携トークンを使って、そのトークンの価値を尋ねます（イントロスペクション、RFC 7662）：
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+価値のないトークン——不明、期限切れ、取り消し済み、セッション終了、別のワークスペース——は、理由を示さずに`{"active": false}`と応答します。応答はリアルタイムで読み取られます：ログアウトはすぐに反映されます。連携トークンの場合、応答にはそれが開くデータベース（`base`）、そのアクセス権（`read`または`write`）、そしてその窓口も含まれます。
 
 ## 生成されるドキュメント
 

@@ -28,8 +28,8 @@ basedb는 amd64와 arm64용 **단일 이미지** [`eodia/basedb`](https://hub.do
 | 태그 | 내용 |
 |---|---|
 | `latest` | 최신 배포 버전 |
-| `0.4` | 최신 0.4.x 버전 |
-| `0.4.0` | 정확히 이 버전 |
+| `0.5` | 최신 0.5.x 버전 |
+| `0.5.0` | 정확히 이 버전 |
 
 ## 서비스
 
@@ -51,6 +51,24 @@ docker compose down                 # 중지(볼륨은 유지됨)
 
 저장소를 클론했다면 `docker compose up -d --build`로 이미지를 내려받는 대신 코드에서 빌드할 수
 있습니다.
+
+## 게이트웨이 뒤 하위 경로에서
+
+basedb가 하위 경로에 배포될 때 — 도메인의 루트가 아니라 `https://passerelle.example.com/basedb/`처럼
+— 이 경로를 지정하세요:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# 또는, 공개 주소가 없다면:
+BASEDB_BASE_PATH=/basedb
+```
+
+그러면 인터페이스, `/basedb/api`, `/basedb/mcp`, 공유 링크와 이메일 링크까지 모두 `/basedb` 아래에
+놓입니다. 게이트웨이는 요청을 전달할 때 **경로를 유지**하거나 **제거**할 수 있으며, basedb는 둘 다
+받아들입니다. `BASEDB_BASE_PATH=/`는 루트를 강제합니다.
+
+이미지는 모든 주소에서 동일합니다: 경로는 컨테이너가 시작될 때 인터페이스에 기록되며, 경로를 바꾸려면
+재시작만 하면 됩니다.
 
 ## 포트 변경
 

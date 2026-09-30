@@ -1,13 +1,14 @@
 ---
 title: Automazioni
-description: Quando una riga cambia, a orario fisso o con un clic — modificare, creare, cercare, diramare, chiedere all’IA, avvisare, inviare un’email, chiamare un webhook, scrivere su Slack.
+description: Quando una riga cambia, a orario fisso o con un clic — modificare, creare, cercare, ripetere su ogni riga, diramare, chiedere all’IA, avvisare, inviare un’email, chiamare un servizio, scrivere su Slack.
 ---
 
 Un’automazione dice **quando**, **se** e **allora**: quando un’attività passa a «Fait», annotare
 l’ora; quando arriva una recensione negativa, avvisare la responsabile e scrivere su Slack; ogni
 lunedì alle 9, creare la riga della riunione di team. E quando un’azione non basta, segue un
-**flusso**: cercare una riga, prendere un ramo o un altro in base a ciò che contiene, riutilizzare
-in un passaggio ciò che un passaggio precedente ha trovato o scritto.
+**flusso**: cercare una riga, prendere un ramo o un altro in base a ciò che contiene, ripetere
+passaggi su ogni riga che risponde a un filtro, riutilizzare in un passaggio ciò che un passaggio
+precedente ha trovato o scritto.
 
 Si aprono da **Automazioni**, nel riquadro del database aperto in fondo alla barra
 laterale, e richiedono il livello **Gestione**.
@@ -50,14 +51,58 @@ Fino a trenta passaggi, in ordine; il primo che fallisce ferma i successivi.
 | **Cerca una riga** | la prima riga di una tabella che soddisfa un filtro, perché i passaggi successivi la citino o la modifichino |
 | **Avvisa qualcuno** | una [notifica](/basedb/it/fonctionnalites/collaboration/#notifiche) a persone scelte, o a quella di un campo Persona |
 | **Invia un’email** | a persone del team, a quella di un campo Persona, all’indirizzo di un campo E-mail — un cliente, un fornitore — o a indirizzi scritti; l’oggetto e il testo citano la riga e i passaggi precedenti |
-| **Chiama un webhook** | un `POST` in HTTPS verso l’indirizzo che preferisci; la sua risposta si può poi citare |
+| **Chiama un webhook** | una richiesta HTTPS verso un servizio — metodo, indirizzo, intestazioni e corpo a tua scelta ([dettagli](#chiamare-un-servizio)); la sua risposta si può poi citare |
 | **Invia su Slack** | un messaggio in un canale [collegato](/basedb/it/integrations/synchronisation/#slack) |
 | **Chiedi all’IA** | una risposta del [fornitore di IA](/basedb/it/fonctionnalites/ia/) a un’istruzione che cita la riga e i passaggi precedenti — redigere, riassumere, classificare —, letta come testo, numero, sì o no, data o scelta in un elenco |
 | **Condizione** | più rami: viene preso il primo la cui condizione è soddisfatta, «Altrimenti» quando nessuna lo è; i rami poi si ricongiungono |
+| **Per ogni riga** | i passaggi che contiene, una volta per ogni riga di una tabella che soddisfa un filtro ([dettagli](#per-ogni-riga)) |
 
 Una ricerca che non trova nulla non ferma il flusso: i passaggi che dovevano modificare la sua
 riga vengono saltati. Per fare altro in questo caso, lo si verifica con una condizione — un ramo
 il cui filtro è vuoto viene preso non appena la ricerca ha trovato qualcosa.
+
+## Per ogni riga
+
+Il passaggio **Per ogni riga** legge le righe di una tabella che soddisfano il suo filtro — vuoto:
+tutte —, nell’ordine scelto, fino al suo limite (50 per impostazione predefinita, 200 al massimo), poi esegue
+una volta per ciascuna i passaggi posti nel suo riquadro. «Ogni lunedì, sollecitare le fatture
+non pagate» si scrive così: **A orario fisso**, poi **Per ogni riga** delle fatture
+`payee eq false and relancee eq false`, e nel ciclo un’email al contatto della fattura
+e **Modifica una riga** che spunta «Relancée».
+
+Nel ciclo, l’identificativo del passaggio nomina la **riga del giro**: `{{e1.client}}` la cita,
+e **Modifica una riga** la propone tra le righe da modificare. Dopo il ciclo,
+`{{e1.nombre}}` indica quante righe ha percorso — per un riepilogo su Slack, ad
+esempio. Il filtro può citare ciò che precede: attivata da una fattura pagata,
+`facture eq {{_id}}` percorre le sue righe di dettaglio.
+
+Oltre il limite, le righe restanti attendono la prossima esecuzione, che lo segnala:
+fai uscire dal filtro quelle già trattate — una casella «relancée», una data — per
+trattarle tutte nel corso delle esecuzioni. Un ciclo non contiene un altro ciclo, e
+un’esecuzione si ferma dopo due minuti.
+
+## Chiamare un servizio
+
+Il passaggio **Chiama un webhook** invia per impostazione predefinita, in `POST`, i dati dell’automazione:
+la riga scelta e ciò che i passaggi precedenti hanno trovato o scritto. Per parlare con un
+servizio come si aspetta, si impostano:
+
+- il **metodo**: `POST`, `PUT`, `PATCH`, `GET` o `DELETE` — questi ultimi due senza corpo;
+- l’**indirizzo**, che può citare dopo il suo host — `https://api.exemple.fr/clients/{{e2.numero}}`;
+  ogni valore vi viene codificato;
+- delle **intestazioni**, il cui valore può citare: `Idempotency-Key: {{_id}}`;
+- il **corpo**: i dati dell’automazione, un **JSON da comporre**, un **modulo**
+  (una coppia `chiave=valore` per riga) o un **testo**. In un JSON, una citazione tra
+  virgolette è testo, e fuori dalle virgolette un valore — un numero, sì o no, un elenco:
+
+```json
+{ "facture": "{{e1.numero}}", "montant": {{e1.montant}}, "payee": {{e1.payee}} }
+```
+
+Una chiave API o un token si inserisce in un’intestazione **segreta** (il lucchetto): cifrato dalla chiave
+dell’istanza, non viene più mostrato — né a schermo, né dall’API, né al Copilot — e
+parte solo verso l’host per cui l’hai fornito. Cambiare l’host dell’indirizzo richiede di dare
+di nuovo il valore segreto; **Sostituisci** ne inserisce uno nuovo.
 
 ## Chiedi all’IA
 
@@ -89,6 +134,8 @@ a ogni testo:
   passaggio mostra il proprio identificativo sulla sua scheda;
 - `{{e3.statut}}`, `{{e3.reponse.numero}}`: ciò che ha risposto il webhook `e3`;
 - `{{e4.reponse}}`: la risposta del passaggio IA `e4`;
+- `{{e5.client}}` nel ciclo `e5`, la riga del giro; `{{e5.nombre}}` dopo di esso, il numero
+  di righe percorse;
 - `{{_maintenant}}`: l’istante dell’esecuzione.
 
 Un valore composto da una sola citazione passa il valore stesso: una relazione, una persona, una
@@ -124,7 +171,7 @@ e i canali Slack vengono inviati con dei segnaposto (`p1`, `s1`), mai con il lor
 serio. La tab **Esecuzioni** conserva le ultime 50, per 30 giorni: in attesa, in corso, riuscita,
 scartata con il motivo, non riuscita con il codice. Sceglierne una la sovrappone al flusso — il ramo
 percorso viene tracciato, ogni passaggio eseguito dice cosa ha fatto e in quanto tempo, il resto è
-attenuato.
+attenuato. In un ciclo, ogni passaggio indica anche quante volte è stato eseguito.
 
 ## Per conto di chi agisce
 
@@ -138,15 +185,17 @@ si annullano come le altre.
 
 - Ciò che scrive un’automazione non ne attiva nessun’altra: ciò che deve concatenarsi va scritto
   in un unico flusso.
-- Una ricerca restituisce una riga, la prima; non c’è ancora un «per ogni riga», né
-  un’attesa («tre giorni dopo»).
+- Una ricerca restituisce una riga, la prima; un ciclo ne percorre 200 al massimo per
+  esecuzione, e il primo passaggio che fallisce lo ferma. Nessuna attesa («tre giorni dopo»).
 - Niente script. Un’email parte come testo semplice, una per destinatario — venti al massimo
   per passaggio —, tramite il [server di invio](/basedb/it/hebergement/variables/#email)
   dell’istanza; una risposta arriva alla persona che possiede l’automazione.
 - Una condizione verifica una riga: per prendere un ramo in base alla risposta dell’IA, scrivila
   prima in un campo della riga.
 - Un [modello di database](/basedb/it/fonctionnalites/modeles/) include solo le automazioni senza
-  ricerca, condizione né passaggio IA.
+  ricerca, ciclo, condizione né passaggio IA, e mai un webhook.
+- Un webhook non segue reindirizzamenti e attende 10 secondi al massimo; una risposta diversa da
+  2xx fa fallire il passaggio.
 - 100 esecuzioni all’ora per automazione; una scadenza oraria mancata viene recuperata
   una sola volta.
 - Il ritardo tra la scrittura e l’azione è dell’ordine del secondo.

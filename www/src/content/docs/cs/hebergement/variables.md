@@ -51,6 +51,7 @@ Viz [Účty a přihlášení](/basedb/cs/hebergement/connexion/).
 | `BASEDB_PORT` | `3000` | port publikovaný na 127.0.0.1: rozhraní, `/api` a `/mcp` |
 | `BASEDB_VERSION` | `latest` | tag obrazu `eodia/basedb` |
 | `BASEDB_PUBLIC_URL` | – | veřejná adresa basedb pro návrat z OIDC |
+| `BASEDB_BASE_PATH` | cesta z `BASEDB_PUBLIC_URL` | cesta, pod kterou basedb běží za branou, `/basedb` pro `https://passerelle.example.com/basedb/`; viz [Docker Compose](/basedb/cs/hebergement/docker/#za-branou-pod-cestou) |
 | `BASEDB_DOMAIN` | – | doména obsluhovaná přes HTTPS proxy Caddy |
 | `BASEDB_ORIGINS` | – | další weby, jejichž stránky volají API z prohlížeče, oddělené čárkami; pro rozhraní basedb, obsluhované na stejné adrese, není potřeba |
 | `BASEDB_API`, `BASEDB_MCP` | `/`, `/mcp` | API a MCP z pohledu prohlížeče; nastavujte jen pro vývojové prostředí (`pnpm start`) |
@@ -122,6 +123,17 @@ Při spuštění protokol říká, která služba se používá: `Géocodage : h
 | `BASEDB_AI_QUOTA` | `120` | interaktivní volání za hodinu na pracovní prostor |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | výpočty polí AI za hodinu na pracovní prostor |
 | `BASEDB_AI_WORKER` | `1` | `0`: žádné výpočty na pozadí v tomto procesu |
+
+## Webhooky do vnitřní sítě
+
+| Proměnná | Výchozí | Role |
+|---|---|---|
+| `BASEDB_WEBHOOK_ALLOW` | — | vaše vnitřní servery, oddělené čárkami: název (`chat.intra.example.com`), doména a její subdomény (`*.intra.example.com`), adresa nebo rozsah (`10.12.0.0/16`) |
+
+Webhooky, HTTP požadavky automatizací a synchronizované tabulky odcházejí jen na veřejné
+adresy HTTPS. Navíc se přijme i cíl z tohoto seznamu, bez ohledu na jeho adresu, port a
+schéma — včetně HTTP. Nečitelný záznam zabrání startu. Viz
+[Webhooky](/basedb/cs/integrations/webhooks/#cíle).
 
 ## Veřejná demoverze
 

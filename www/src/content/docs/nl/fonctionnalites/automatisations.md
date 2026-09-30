@@ -1,13 +1,14 @@
 ---
 title: Automatiseringen
-description: Als een rij verandert, op een vast tijdstip of met één klik — bewerken, aanmaken, zoeken, vertakken, AI raadplegen, een melding sturen, een e-mail versturen, een webhook aanroepen, naar Slack schrijven.
+description: Als een rij verandert, op een vast tijdstip of met één klik — bewerken, aanmaken, zoeken, op elke rij herhalen, vertakken, AI raadplegen, een melding sturen, een e-mail versturen, een dienst aanroepen, naar Slack schrijven.
 ---
 
 Een automatisering zegt **wanneer**, **als** en **dan**: als een taak op “Fait” komt, het
 tijdstip noteren; als er een negatieve review binnenkomt, de verantwoordelijke een melding sturen en naar Slack schrijven; elke
 maandag om 9.00 uur de rij voor het teamoverleg aanmaken. En als één actie niet genoeg is, volgt ze een
-**flow**: een rij zoeken, de ene of de andere vertakking nemen afhankelijk van wat die rij zegt, in een stap
-hergebruiken wat een eerdere stap heeft gevonden of geschreven.
+**flow**: een rij zoeken, de ene of de andere vertakking nemen afhankelijk van wat die rij zegt, stappen
+herhalen op elke rij die aan een filter voldoet, in een stap hergebruiken wat een eerdere stap heeft
+gevonden of geschreven.
 
 Je opent ze via **Automatiseringen**, in het blok van de geopende database onderaan de
 zijbalk, en ze vragen het niveau **Beheren**.
@@ -50,14 +51,59 @@ Tot dertig stappen, in volgorde; de eerste die mislukt, stopt de volgende.
 | **Rij zoeken** | de eerste rij van een tabel die aan een filter voldoet, zodat de volgende stappen haar kunnen citeren of wijzigen |
 | **Iemand een melding sturen** | een [melding](/basedb/nl/fonctionnalites/collaboration/#meldingen) aan gekozen personen, of aan de persoon in een veld Persoon |
 | **Een e-mail versturen** | aan mensen van het team, aan de persoon in een veld Persoon, aan het adres in een veld E-mail — een klant, een leverancier — of aan getypte adressen; het onderwerp en de tekst citeren de rij en de vorige stappen |
-| **Webhook aanroepen** | een `POST` via HTTPS naar het adres van je keuze; het antwoord kun je daarna citeren |
+| **Webhook aanroepen** | een HTTPS-verzoek naar een dienst — methode, adres, headers en body naar eigen inzicht ([details](#een-dienst-aanroepen)); het antwoord kun je daarna citeren |
 | **Naar Slack sturen** | een bericht in een [gekoppeld](/basedb/nl/integrations/synchronisation/#slack) kanaal |
 | **AI raadplegen** | een antwoord van de [AI-provider](/basedb/nl/fonctionnalites/ia/) op een instructie die de rij en de vorige stappen citeert — opstellen, samenvatten, indelen —, gelezen als een tekst, een getal, ja of nee, een datum of een keuze uit een lijst |
 | **Voorwaarde** | meerdere vertakkingen: de eerste waarvan de voorwaarde is vervuld, wordt genomen, “Anders” als geen enkele dat is; de vertakkingen komen daarna weer samen |
+| **Voor elke rij** | de stappen die ze bevat, één keer voor elke rij van een tabel die aan een filter voldoet ([details](#voor-elke-rij)) |
 
 Een zoekactie die niets vindt, stopt de flow niet: de stappen die haar rij moesten wijzigen,
 worden overgeslagen. Om in dat geval iets anders te doen, test een voorwaarde dat — een vertakking
 met een leeg filter wordt genomen zodra de zoekactie iets heeft gevonden.
+
+## Voor elke rij
+
+De stap **Voor elke rij** leest de rijen van een tabel die aan haar filter voldoen — leeg: alle
+—, in de gekozen volgorde, tot haar limiet (standaard 50, hooguit 200), en voert daarna één keer
+voor elke rij de stappen uit die in haar kader staan. “Elke maandag de onbetaalde facturen
+aanmanen” schrijf je als: **Op een vast tijdstip**, daarna **Voor elke rij** van de facturen
+`payee eq false and relancee eq false`, en in de lus een e-mail aan de contactpersoon van de
+factuur en **Rij wijzigen** die “Relancée” aanvinkt.
+
+In de lus noemt het id van de stap de **rij van de ronde**: `{{e1.client}}` citeert haar, en
+**Rij wijzigen** stelt haar voor tussen de te wijzigen rijen. Na de lus geeft `{{e1.nombre}}` aan
+hoeveel rijen ze heeft doorlopen — voor een samenvatting op Slack, bijvoorbeeld. Het filter kan
+citeren wat eraan voorafgaat: geactiveerd door een betaalde factuur, doorloopt
+`facture eq {{_id}}` haar detailregels.
+
+Boven de limiet wachten de resterende rijen op de volgende uitvoering, die dat meldt: laat de
+rijen die al verwerkt zijn uit het filter vallen — een vakje “relancée”, een datum — om ze
+allemaal te verwerken in de loop van de uitvoeringen. Een lus kan geen andere lus bevatten, en
+een uitvoering stopt na twee minuten.
+
+## Een dienst aanroepen
+
+De stap **Webhook aanroepen** stuurt standaard, in `POST`, de gegevens van de automatisering: de
+gekozen rij en wat de vorige stappen hebben gevonden of geschreven. Om met een dienst te praten
+zoals die het verwacht, stel je in:
+
+- de **methode**: `POST`, `PUT`, `PATCH`, `GET` of `DELETE` — de laatste twee zonder body;
+- het **adres**, dat na de host kan citeren — `https://api.exemple.fr/clients/{{e2.numero}}`;
+  elke waarde wordt daarin gecodeerd;
+- **headers**, waarvan de waarde kan citeren: `Idempotency-Key: {{_id}}`;
+- de **body**: de gegevens van de automatisering, een **JSON om te schrijven**, een
+  **formulier** (een paar `sleutel=waarde` per regel) of een **tekst**. In een JSON is een citaat
+  tussen aanhalingstekens tekst, en buiten aanhalingstekens een waarde — een getal, ja of nee,
+  een lijst:
+
+```json
+{ "facture": "{{e1.numero}}", "montant": {{e1.montant}}, "payee": {{e1.payee}} }
+```
+
+Een API-sleutel of een token zet je in een **geheime** header (het slotje): versleuteld met de
+sleutel van de instantie, wordt hij nooit meer getoond — niet op het scherm, niet door de API,
+niet aan Copilot — en gaat alleen naar de host waarvoor je hem hebt opgegeven. Verandert de host
+van het adres, dan geef je hem opnieuw op; **Vervangen** voert een nieuwe in.
 
 ## AI raadplegen
 
@@ -89,6 +135,8 @@ elke tekst:
   stap toont zijn id op zijn kaart;
 - `{{e3.statut}}`, `{{e3.reponse.numero}}`: wat webhook `e3` heeft geantwoord;
 - `{{e4.reponse}}`: het antwoord van AI-stap `e4`;
+- `{{e5.client}}` in de lus `e5`, de rij van de ronde; `{{e5.nombre}}` erna, het aantal doorlopen
+  rijen;
 - `{{_maintenant}}`: het tijdstip van de uitvoering.
 
 Een waarde die uit één enkele verwijzing bestaat, geeft de waarde zelf door: een relatie, een persoon, een
@@ -124,7 +172,7 @@ en Slack-kanalen gaan mee onder markeringen (`p1`, `s1`), nooit met hun id. Het 
 wel. Het tabblad **Uitvoeringen** bewaart de laatste 50, gedurende 30 dagen: in afwachting, bezig, geslaagd,
 overgeslagen met de reden, mislukt met de code. Kies er een en die wordt op de flow geplaatst — de genomen
 vertakking wordt getekend, elke doorlopen stap zegt wat ze heeft gedaan en hoe lang dat duurde, de rest is
-vervaagd.
+vervaagd. In een lus geeft elke stap ook aan hoeveel keer ze heeft gedraaid.
 
 ## Namens wie ze handelt
 
@@ -138,15 +186,17 @@ maak je ongedaan zoals alle andere.
 
 - Wat een automatisering schrijft, triggert geen andere automatisering: wat op elkaar moet volgen, schrijf je
   in één flow.
-- Een zoekactie levert één rij op, de eerste; nog geen “voor elke rij”, en ook geen
-  wachttijd (“drie dagen later”).
+- Een zoekactie levert één rij op, de eerste; een lus doorloopt er hooguit 200 per uitvoering,
+  en de eerste stap die mislukt, stopt de lus. Geen wachttijd (“drie dagen later”).
 - Geen scripts. Een e-mail wordt als platte tekst verstuurd, één per ontvanger — hooguit twintig
   per stap —, via de [verzendserver](/basedb/nl/hebergement/variables/#e-mails) van de
   instantie; een antwoord komt terecht bij de eigenaar van de automatisering.
 - Een voorwaarde test een rij: om een vertakking te nemen op basis van het antwoord van de AI, schrijf je dat
   eerst in een veld van de rij.
 - Een [databasesjabloon](/basedb/nl/fonctionnalites/modeles/) neemt alleen automatiseringen mee zonder
-  zoekactie, voorwaarde of AI-stap.
+  zoekactie, lus, voorwaarde of AI-stap, en nooit een webhook.
+- Een webhook volgt geen omleiding en wacht maximaal 10 seconden; een andere reactie dan 2xx laat
+  de stap mislukken.
 - 100 uitvoeringen per uur per automatisering; een gemist uurlijks tijdstip wordt maar
   één keer ingehaald.
 - De vertraging tussen de schrijfactie en de actie is in de orde van een seconde.

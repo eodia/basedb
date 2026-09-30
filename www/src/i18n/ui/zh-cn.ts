@@ -1525,6 +1525,28 @@ export default {
 		title: 'basedb 的变化',
 		intro: '每项变更的细节见<a href="https://github.com/eodia/basedb/commits/main">仓库的提交历史</a>。接下来要做的：<a href="/feuille-de-route/">路线图</a>。',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: '面向基于 basedb 构建的应用',
+				tag: '新功能',
+				items: [
+					'<strong>一次调用即可从模板创建数据库</strong>：服务器会应用整个模板——数据表、关联、行、视图、自动化——如果某一步失败，则什么都不会应用。模板库正是这样实现的，它本身也是一个可以安装的应用。<a href="/integrations/api-rest/#从模板创建数据库">从模板创建数据库</a>',
+					'<strong>验证令牌</strong>：收到某人令牌的应用，可以向 basedb 询问它是否仍然有效，以及属于谁——他的账户、他的用户组。<a href="/integrations/api-rest/#验证令牌">验证令牌</a>',
+					'<strong>您的内部服务器</strong>：Webhook 和自动化只会连接您在 <code>BASEDB_WEBHOOK_ALLOW</code> 中列出的地址，包括 HTTP；程序也可以用集成令牌实时跟踪一张数据表。<a href="/integrations/webhooks/#不用-webhook跟踪一张数据表">跟踪一张数据表</a>',
+					'<strong>位于网关之后，路径之下</strong>：basedb 可以发布在类似 <code>https://passerelle.example.com/basedb/</code> 这样的地址上，无论网关是保留还是去掉这段路径。<a href="/hebergement/docker/#位于网关之后路径之下">位于网关之后</a>',
+					'<strong>一个 Webhook，一次设置所有数据表</strong>：一次点击，即可为所有数据表勾选或取消某个事件，或为一张数据表勾选或取消所有事件。',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: '遍历您的行、对接 API 的自动化',
+				tag: '新功能',
+				items: [
+					'<strong>遍历行</strong>：一个步骤，让其中包含的步骤对数据表中符合筛选条件的每一行都执行一次——每周一提醒所有未付的发票，不再只是第一张。<a href="/fonctionnalites/automatisations/#遍历行">遍历行</a>',
+					'<strong>可以对接任意 API 的 Webhook</strong>：方法、可引用该行的地址、标头，以及用该行的值组成的 JSON、表单或文本正文。<a href="/fonctionnalites/automatisations/#调用服务">调用服务</a>',
+					'<strong>API 密钥始终保密</strong>：加密后，它不会再被显示——无论在界面上、通过 API，还是对 Copilot——并且只会发往您为其指定的主机。',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: '地图，以及找到自己位置的地址',
@@ -1871,8 +1893,8 @@ export default {
 						text: '在创建或比较环境时，以及在数据库模板中，随结构一起复制 SQL 视图。',
 					},
 					loops: {
-						title: '自动化中的循环与等待',
-						text: '对找到的每一行重复执行步骤，在下一步之前等待（“三天后”），并将流程带入数据库模板。',
+						title: '自动化中的等待',
+						text: '在下一步之前等待（“三天后”），并将流程（条件、搜索、循环）带入数据库模板。',
 					},
 					textFormulas: {
 						title: '文本公式',

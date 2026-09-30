@@ -9,8 +9,33 @@ import type { NextConfig } from 'next'
  * Sans cette règle, une action serveur Next.js finirait par ouvrir une connexion
  * PostgreSQL et contourner la couche de permissions.
  */
+/**
+ * The path basedb is served under — `/basedb` behind a gateway at
+ * `https://gateway.exemple.fr/basedb/`, empty at the root of its own address.
+ *
+ * Next fixes it at build time, and the Docker image is built once for every address: its
+ * build carries a marker instead, which the image replaces with `BASEDB_BASE_PATH` as it
+ * starts (docker/image/start.mjs). Outside the image, the variable is read here directly.
+ */
+const BASE_PATH_MARKER = '/__basedb_base_path__'
+
+function basePathOf(raw: string | undefined): string {
+  const trimmed = (raw ?? '').trim().replace(/\/+$/, '')
+  if (trimmed === '') return ''
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+}
+
+const basePath =
+  process.env.BASEDB_WEB_STANDALONE === '1'
+    ? BASE_PATH_MARKER
+    : basePathOf(process.env.BASEDB_BASE_PATH)
+
 const config: NextConfig = {
   transpilePackages: ['@basedb/contracts'],
+  ...(basePath === '' ? {} : { basePath }),
+  // Inlined where the code must write an address by hand (lib/base-path.ts): the history
+  // of the address bar, the links a person copies to share.
+  env: { BASEDB_BASE_PATH_BUILT: basePath },
   // Development only: Next's badge sits bottom-left by default — on the profile menu,
   // which holds the documentation, the integrations and the administration.
   devIndicators: { position: 'bottom-right' },

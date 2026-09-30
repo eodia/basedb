@@ -70,12 +70,55 @@ Con lo stesso token:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | le dashboard di un database |
 | `GET /api/v1/<tenant>/meta/users` | i membri dello spazio di lavoro, per un campo Persona |
 | `GET /api/v1/<tenant>/meta/templates` | i modelli di database della galleria |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | seguire una tabella in tempo reale: dei segnali, riletti poi dalle route qui sopra (vedi [Webhook](/basedb/it/integrations/webhooks/#senza-webhook-seguire-una-tabella)) |
 
 Le [viste condivise](/basedb/it/fonctionnalites/vues-partagees/) si leggono senza account:
 `GET /api/v1/views/<jeton>` e `…/rows` in JSON, `…/calendar.ics` in iCalendar.
 
 Costruire — creare un’automazione, una dashboard, un’integrazione — resta riservato a
 una sessione dell’interfaccia: un token legge e scrive righe, non modifica il database.
+
+## Creare un database da un modello
+
+Un’applicazione che si installa crea il suo database in **una sola chiamata**: il server applica il modello —
+tabelle, campi, relazioni, righe di esempio, viste, dashboard, automazioni — e, se
+un passaggio fallisce, non lascia alcun database dietro di sé.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` è la chiave di un modello della galleria, oppure un modello intero nel
+[formato dei modelli](/basedb/it/fonctionnalites/modeles/). Con l’intestazione
+`Accept: application/x-ndjson`, la risposta arriva riga per riga: una riga `{"step": …}` per
+passaggio, poi il database creato. Questa chiamata richiede il token di accesso di una persona che può creare un
+database (`POST /auth/session/access`, dopo l’accesso): un token di integrazione apre solo un database
+esistente.
+
+## Verificare un token
+
+I token di basedb non si verificano fuori da basedb. Un’applicazione che ne riceve uno —
+uno strumento aperto da basedb con il token della persona, per esempio — chiede quanto vale
+(introspezione, RFC 7662), con il proprio token di integrazione:
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Ogni token che non vale — sconosciuto, scaduto, revocato, sessione chiusa, altro spazio di lavoro — risponde
+`{"active": false}`, senza dire perché. La risposta è letta in diretta: una disconnessione si vede
+immediatamente. Per un token di integrazione, la risposta indica anche il database che apre (`base`), il suo
+accesso (`read` o `write`) e le sue superfici.
 
 ## La documentazione generata
 

@@ -72,8 +72,8 @@ Keep the generated key: see the box below.
 
 :::caution[The instance key]
 `BASEDB_ENCRYPTION_KEY` signs sessions and encrypts stored secrets (AI keys, webhook secrets,
-form links). Changing it signs everyone out and makes those secrets unreadable. Generate it
-once, and back it up with the database.
+automation secret headers, form links). Changing it signs everyone out and makes those secrets
+unreadable. Generate it once, and back it up with the database.
 :::
 
 ## For development

@@ -34,8 +34,8 @@ With S3 storage, follow your provider’s backup policy (versioning, replication
 ## The instance key
 
 `BASEDB_ENCRYPTION_KEY` encrypts the secrets stored in the database (AI keys, webhook secrets,
-form links). **A database backup without its key does not restore those secrets.** Keep it in
-your secrets manager, next to the backups.
+automation secret headers, form links). **A database backup without its key does not restore
+those secrets.** Keep it in your secrets manager, next to the backups.
 
 ## Updating
 
@@ -46,7 +46,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` pins a specific version (`0.4.0`) rather than the latest (`latest`).
+`BASEDB_VERSION` pins a specific version (`0.5.0`) rather than the latest (`latest`).
 
 At startup, basedb **updates its catalog by itself**: it applies, in order and each in its own
 transaction, the migrations your version does not have yet, and records them in

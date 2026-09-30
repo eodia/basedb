@@ -51,6 +51,7 @@ Consultați [Conturi și conectare](/basedb/ro/hebergement/connexion/).
 | `BASEDB_PORT` | `3000` | port publicat pe 127.0.0.1: interfața, `/api` și `/mcp` |
 | `BASEDB_VERSION` | `latest` | eticheta imaginii `eodia/basedb` |
 | `BASEDB_PUBLIC_URL` | — | adresa publică a basedb, pentru redirecționarea OIDC |
+| `BASEDB_BASE_PATH` | calea din `BASEDB_PUBLIC_URL` | calea sub care este servit basedb în spatele unei porți de acces, `/basedb` pentru `https://passerelle.example.com/basedb/`; consultați [Docker Compose](/basedb/ro/hebergement/docker/#în-spatele-unei-porți-de-acces-sub-o-cale) |
 | `BASEDB_DOMAIN` | — | domeniul servit prin HTTPS de proxy-ul Caddy |
 | `BASEDB_ORIGINS` | — | alte site-uri ale căror pagini apelează API-ul din browser, separate prin virgule; inutil pentru interfața basedb, servită la aceeași adresă |
 | `BASEDB_API`, `BASEDB_MCP` | `/`, `/mcp` | API-ul și MCP-ul văzute din browser; de setat doar pentru mediul de dezvoltare (`pnpm start`) |
@@ -122,6 +123,17 @@ La pornire, jurnalul spune ce serviciu este folosit: `Géocodage : https://nomin
 | `BASEDB_AI_QUOTA` | `120` | apeluri interactive pe oră și pe spațiu de lucru |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | calcule de câmpuri AI pe oră și pe spațiu de lucru |
 | `BASEDB_AI_WORKER` | `1` | `0`: fără calcul în fundal în acest proces |
+
+## Webhook-uri către rețeaua internă
+
+| Variabilă | Implicit | Rol |
+|---|---|---|
+| `BASEDB_WEBHOOK_ALLOW` | — | serverele dumneavoastră interne, separate prin virgule: un nume (`chat.intra.example.com`), un domeniu și subdomeniile lui (`*.intra.example.com`), o adresă sau o plajă (`10.12.0.0/16`) |
+
+Webhook-urile, cererile HTTP ale automatizărilor și tabelele sincronizate pleacă doar către
+adrese publice în HTTPS. O destinație din listă este acceptată în plus, indiferent de adresa,
+portul și schema ei — HTTP inclusiv. O intrare ilizibilă blochează pornirea. Consultați
+[Webhook-uri](/basedb/ro/integrations/webhooks/#destinații).
 
 ## Demo publică
 

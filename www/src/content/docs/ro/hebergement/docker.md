@@ -29,8 +29,8 @@ Imaginea rulează sub utilizatorul `node`, pe Node 22, declară o verificare de 
 | Etichetă | Conținut |
 |---|---|
 | `latest` | ultima versiune publicată |
-| `0.4` | ultima versiune 0.4.x |
-| `0.4.0` | exact această versiune |
+| `0.5` | ultima versiune 0.5.x |
+| `0.5.0` | exact această versiune |
 
 ## Serviciile
 
@@ -52,6 +52,24 @@ docker compose down                 # opriți (volumele rămân)
 
 Dintr-o clonă a depozitului, `docker compose up -d --build` construiește imaginea din cod în
 loc să o descarce.
+
+## În spatele unei porți de acces, sub o cale
+
+Când basedb este publicat sub o cale — `https://passerelle.example.com/basedb/` și nu la
+rădăcina unui domeniu —, indicați această cale:
+
+```bash
+BASEDB_PUBLIC_URL=https://passerelle.example.com/basedb
+# sau, fără adresă publică:
+BASEDB_BASE_PATH=/basedb
+```
+
+Totul trece atunci sub `/basedb`: interfața, `/basedb/api`, `/basedb/mcp`, link-urile de
+partajare și cele din e-mailuri. Poarta de acces poate **păstra calea** transmițând cererea sau
+o poate **elimina**: basedb le acceptă pe amândouă. `BASEDB_BASE_PATH=/` forțează rădăcina.
+
+Imaginea este aceeași pentru toate adresele: calea este scrisă în interfață la pornirea
+containerului, iar schimbarea căii cere doar o repornire.
 
 ## Schimbarea porturilor
 

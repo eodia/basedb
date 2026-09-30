@@ -1,13 +1,13 @@
 ---
 title: Automations
-description: When a row changes, at a set time or at the click of a button — update, create, find, branch, ask AI, notify, send an email, call a webhook, post to Slack.
+description: When a row changes, at a set time or at the click of a button — update, create, find, repeat on each row, branch, ask AI, notify, send an email, call a service, post to Slack.
 ---
 
 An automation says **when**, **if** and **then**: when a task moves to “Fait”, record the
 time; when a negative review comes in, notify the person in charge and post to Slack; every
 Monday at 9 a.m., create the row for the team meeting. And when one action is not enough, it
-follows a **flow**: find a row, take one branch or another depending on what it says, reuse in
-one step what an earlier step found or wrote.
+follows a **flow**: find a row, take one branch or another depending on what it says, repeat
+steps on each row that matches a filter, reuse in one step what an earlier step found or wrote.
 
 They open from **Automations**, in the block of the open base at the bottom of the sidebar,
 and require the **Manage** level.
@@ -49,14 +49,55 @@ Up to thirty steps, in order; the first one that fails stops the following ones.
 | **Find row** | the first row of a table that matches a filter, so that the following steps can cite or update it |
 | **Notify someone** | a [notification](/basedb/en/fonctionnalites/collaboration/#notifications) to chosen people, or to the one in a Person field |
 | **Send an email** | to people on the team, to the one in a Person field, to the address in an Email field — a client, a supplier — or to written addresses; the subject and text cite the row and the previous steps |
-| **Call webhook** | an HTTPS `POST` to the address of your choice; its response can then be cited |
+| **Call webhook** | an HTTPS request to a service — method, address, headers and body of your choosing ([details](#call-a-service)); its response can then be cited |
 | **Send to Slack** | a message in a [connected](/basedb/en/integrations/synchronisation/#slack) channel |
 | **Ask AI** | an answer from the [AI provider](/basedb/en/fonctionnalites/ia/) to a prompt that cites the row and the previous steps — draft, summarize, classify —, read as a text, a number, yes or no, a date or a choice from a list |
 | **Condition** | several branches: the first one whose condition is met is taken, “Otherwise” when none is; the branches then join again |
+| **For each row** | the steps it contains, once for each row of a table that matches a filter ([details](#for-each-row)) |
 
 A search that finds nothing does not stop the flow: the steps that were to update its row are
 skipped. To do something else in that case, a condition tests it — a branch whose filter is
 empty is taken as soon as the search has found something.
+
+## For each row
+
+The **For each row** step reads the rows of a table that match its filter — empty: all of
+them —, in the chosen order, up to its limit (50 by default, 200 at most), then runs the steps
+placed inside it once for each one. “Every Monday, follow up on unpaid invoices” is written as:
+**At a set time**, then **For each row** of invoices matching
+`payee eq false and relancee eq false`, and inside the loop an email to the invoice’s contact
+and **Update row** to check “Relancée”.
+
+Inside the loop, the step’s identifier names the **current row**: `{{e1.client}}` cites it, and
+**Update row** offers it among the rows to update. After the loop, `{{e1.nombre}}` says how many
+rows it processed — for a summary on Slack, say. The filter can cite what came before:
+triggered by a paid invoice, `facture eq {{_id}}` loops over its detail rows.
+
+Beyond the limit, the remaining rows wait for the next run, which says so: take the rows
+already handled out of the filter — a “relancée” checkbox, a date — so they all get handled
+across runs. A loop can’t contain another one, and a run stops after two minutes.
+
+## Call a service
+
+The **Call webhook** step sends the automation’s data by default, as a `POST`: the chosen row
+and what the previous steps found or wrote. To talk to a service the way it expects, you set:
+
+- the **method**: `POST`, `PUT`, `PATCH`, `GET` or `DELETE` — the last two without a body;
+- the **address**, which can cite values after its host —
+  `https://api.exemple.fr/clients/{{e2.numero}}`; each value is encoded there;
+- **headers**, whose value can cite: `Idempotency-Key: {{_id}}`;
+- the **body**: the automation’s data, **Custom JSON**, a **form** (one `key=value` pair per
+  line) or a **text**. In a JSON, a citation inside quotes is text, and outside quotes a
+  value — a number, yes or no, a list:
+
+```json
+{ "facture": "{{e1.numero}}", "montant": {{e1.montant}}, "payee": {{e1.payee}} }
+```
+
+An API key or a token goes in a **secret** header (the lock icon): encrypted with the instance
+key, it is never shown again — not on screen, not by the API, not to Copilot — and is only sent
+to the host you gave it for. Changing the address’s host requires giving it again; **Replace**
+enters a new one.
 
 ## Ask AI
 
@@ -88,6 +129,8 @@ text:
   shows its identifier on its card;
 - `{{e3.statut}}`, `{{e3.reponse.numero}}`: what webhook `e3` responded;
 - `{{e4.reponse}}`: the answer of AI step `e4`;
+- `{{e5.client}}` in loop `e5`, the current row; `{{e5.nombre}}` after it, the number of rows
+  processed;
 - `{{_maintenant}}`: the moment of the run.
 
 A value made of a single citation passes the value itself: a relation, a person, a choice —
@@ -121,7 +164,8 @@ answer.
 **Test on a row** runs the saved automation on a chosen row, for real. The **Runs** tab keeps
 the last 50, for 30 days: pending, running, succeeded, skipped with its reason, failed with its
 code. Choosing one lays it over the flow — the branch taken is traced, each step passed says
-what it did and how long it took, the rest is dimmed.
+what it did and how long it took, the rest is dimmed. Inside a loop, each step also says how
+many times it ran.
 
 ## On whose behalf it acts
 
@@ -134,14 +178,16 @@ bypassing it, and a search only finds what they can read. The history shows it a
 
 - What an automation writes triggers no other automation: whatever must follow on is written
   in a single flow.
-- A search returns one row, the first; no “for each row” yet, nor waiting (“three days
-  later”).
+- A search returns one row, the first; a loop processes 200 at most per run, and the first
+  step that fails stops it. No waiting (“three days later”).
 - No scripts. An email goes out as plain text, one per recipient — twenty at most per step —,
   through the instance’s [mail server](/basedb/en/hebergement/variables/#emails); a reply
   reaches the person who owns the automation.
 - A condition tests a row: to take a branch based on the AI’s answer, first write it into a
   field of the row.
 - A [base template](/basedb/en/fonctionnalites/modeles/) only carries automations without
-  searches, conditions or AI steps.
+  searches, loops, conditions or AI steps, and never a webhook.
+- A webhook does not follow redirects and waits 10 seconds at most; a response other than 2xx
+  fails the step.
 - 100 runs per hour per automation; a missed scheduled time is caught up only once.
 - The delay between the write and the action is on the order of a second.

@@ -1547,6 +1547,28 @@ export default {
 		title: 'O que mudou no basedb',
 		intro: 'Os detalhes de cada mudança estão <a href="https://github.com/eodia/basedb/commits/main">no histórico do repositório</a>. O que vem a seguir: o <a href="/feuille-de-route/">roteiro</a>.',
 		entries: {
+			applications: {
+				date: '2026-09-30',
+				title: 'Para os aplicativos que se apoiam no basedb',
+				tag: 'Novo',
+				items: [
+					'<strong>Uma base criada a partir de um modelo em uma única chamada</strong>: o servidor aplica todo o modelo — tabelas, relações, linhas, visões, automações —, ou nada se uma etapa falhar. A galeria também recorre a ela, um aplicativo que também se instala assim. <a href="/integrations/api-rest/#criar-uma-base-a-partir-de-um-modelo">Criar uma base a partir de um modelo</a>',
+					'<strong>Verificar um token</strong>: um aplicativo ao qual se passa o token de uma pessoa pergunta ao basedb se ele ainda é válido, e para quem — sua conta, seus grupos. <a href="/integrations/api-rest/#verificar-um-token">Verificar um token</a>',
+					'<strong>Seus servidores internos</strong>: webhooks e automações contatam os que você indicar em <code>BASEDB_WEBHOOK_ALLOW</code>, HTTP incluído; um programa também pode acompanhar uma tabela em tempo real com um token de integração. <a href="/integrations/webhooks/#sem-webhook-acompanhar-uma-tabela">Acompanhar uma tabela</a>',
+					'<strong>Sob um caminho, atrás de um gateway</strong>: o basedb é publicado em um endereço como <code>https://passerelle.example.com/basedb/</code>, quer o gateway mantenha o caminho, quer o remova. <a href="/hebergement/docker/#atrás-de-um-gateway-sob-um-caminho">Atrás de um gateway</a>',
+					'<strong>Um webhook, todas as tabelas de uma vez</strong>: marcar ou desmarcar um evento para todas as tabelas, ou todos os eventos de uma tabela, com um clique.',
+				],
+			},
+			loopsWebhooks: {
+				date: '2026-09-30',
+				title: 'Automações que percorrem suas linhas e falam com APIs',
+				tag: 'Novo',
+				items: [
+					'<strong>Para cada linha</strong>: uma etapa que repete as suas em cada linha de uma tabela que atende a um filtro — toda segunda-feira, cobrar todas as faturas em aberto, não só a primeira. <a href="/fonctionnalites/automatisations/#para-cada-linha">Para cada linha</a>',
+					'<strong>Um webhook que fala com qualquer API</strong>: o método, um endereço que cita a linha, cabeçalhos, um corpo em JSON, em formulário ou em texto, composto com os valores da linha. <a href="/fonctionnalites/automatisations/#chamar-um-serviço">Chamar um serviço</a>',
+					'<strong>Uma chave de API permanece secreta</strong>: criptografada, ela nunca mais é exibida — nem na tela, nem pela API, nem para o Copilot — e só é enviada ao host para o qual você a forneceu.',
+				],
+			},
 			maps: {
 				date: '2026-09-30',
 				title: 'O mapa, e endereços que se encontram',
@@ -1899,8 +1921,8 @@ export default {
 						text: 'Copiar as visões SQL com a estrutura ao criar ou comparar ambientes, e nos modelos de base.',
 					},
 					loops: {
-						title: 'Loops e esperas nas automações',
-						text: 'Repetir etapas para cada linha encontrada, esperar antes da seguinte (“três dias depois”) e levar os fluxos para os modelos de base.',
+						title: 'Esperas nas automações',
+						text: 'Esperar antes da etapa seguinte (“três dias depois”) e levar os fluxos — condições, buscas, loops — para os modelos de base.',
 					},
 					textFormulas: {
 						title: 'Fórmulas de texto',

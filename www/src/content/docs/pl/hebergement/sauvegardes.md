@@ -35,7 +35,8 @@ replikacja).
 ## Klucz instancji
 
 `BASEDB_ENCRYPTION_KEY` szyfruje sekrety zapisane w bazie (klucze AI, sekrety webhooków,
-linki formularzy). **Kopia zapasowa bazy bez jej klucza nie przywraca tych sekretów.**
+sekretne nagłówki automatyzacji, linki formularzy). **Kopia zapasowa bazy bez jej klucza nie
+przywraca tych sekretów.**
 Przechowuj go w menedżerze sekretów, obok kopii zapasowych.
 
 ## Aktualizacja
@@ -47,7 +48,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` ustala konkretną wersję (`0.4.0`) zamiast najnowszej (`latest`).
+`BASEDB_VERSION` ustala konkretną wersję (`0.5.0`) zamiast najnowszej (`latest`).
 
 Przy starcie basedb **sam aktualizuje swój katalog**: stosuje, po kolei i każdą w osobnej
 transakcji, migracje, których twoja wersja jeszcze nie ma, i zapisuje je w

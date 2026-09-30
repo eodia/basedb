@@ -70,12 +70,55 @@ With the same token:
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | a base’s dashboards |
 | `GET /api/v1/<tenant>/meta/users` | the workspace’s members, for a Person field |
 | `GET /api/v1/<tenant>/meta/templates` | the base templates in the gallery |
+| `GET /api/v1/<tenant>/events?base=<base>&table=<table>` | follow a table in real time: signals, read back afterwards through the routes above (see [Webhooks](/basedb/en/integrations/webhooks/#without-a-webhook-following-a-table)) |
 
 [Shared views](/basedb/en/fonctionnalites/vues-partagees/) can be read without an account:
 `GET /api/v1/views/<jeton>` and `…/rows` in JSON, `…/calendar.ics` in iCalendar.
 
 Building — creating an automation, a dashboard, an integration — remains reserved for an
 interface session: a token reads and writes rows, it does not change the base.
+
+## Creating a base from a template
+
+An application being installed creates its base in **a single call**: the server applies the
+template — tables, fields, relations, sample rows, views, dashboards, automations — and, if a
+step fails, leaves no base behind.
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/t4z56fq/admin/bases" \
+  -H "Authorization: Bearer $ACCES" -H "content-type: application/json" \
+  -d '{"template": "crm", "label": "Ventes", "rows": false}'
+```
+
+`template` is the key of a gallery template, or a whole template in the
+[template format](/basedb/en/fonctionnalites/modeles/). With the `Accept: application/x-ndjson`
+header, the response arrives line by line: one `{"step": …}` line per step, then the created
+base. This call needs the access token of a person who can create a base
+(`POST /auth/session/access`, after signing in): an integration token only opens an existing
+base.
+
+## Checking a token
+
+basedb’s tokens cannot be checked outside basedb. An application that receives one — a tool
+opened from basedb with the person’s token, for example — asks what it is worth (introspection,
+RFC 7662), with its own integration token:
+
+```bash
+curl -X POST "http://localhost:3000/auth/introspect" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  --data-urlencode "token=$JETON_RECU"
+```
+
+```json
+{ "active": true, "token_type": "access_token",
+  "sub": "0195a…", "email": "claire@example.com", "name": "Claire Martin",
+  "tenant": "t4z56fq", "groups": ["Commerciaux"], "exp": 1790000000 }
+```
+
+Any token that is not valid — unknown, expired, revoked, session closed, other workspace —
+answers `{"active": false}`, without saying why. The answer is read live: a sign-out shows up
+immediately. For an integration token, the answer also gives the base it opens (`base`), its
+access (`read` or `write`) and its surfaces.
 
 ## The generated documentation
 

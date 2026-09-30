@@ -1,3 +1,4 @@
+import { withBase } from '@/lib/base-path'
 import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
@@ -39,7 +40,7 @@ export function Brand({
       aria-label={compact ? 'basedb' : undefined}
     >
       <img
-        src={`/brand/mark${tone === 'light' ? '-light' : ''}.svg`}
+        src={withBase(`/brand/mark${tone === 'light' ? '-light' : ''}.svg`)}
         width={size}
         height={size}
         alt=""

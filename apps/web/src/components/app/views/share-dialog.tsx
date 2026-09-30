@@ -24,6 +24,7 @@ import {
   calendarFeedUrl,
   sharedViewApiUrl,
 } from '@/lib/api/client'
+import { linkTo } from '@/lib/base-path'
 import { $t, $tp, groupName, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
@@ -76,7 +77,7 @@ function toLocalInput(iso: string | null): string {
 export const answered = (kind: ViewKind) => kind === 'form' || kind === 'survey' || kind === 'quiz'
 
 export function shareUrl(token: string, kind: ViewKind = 'form'): string {
-  return `${window.location.origin}/${answered(kind) ? 'f' : 'v'}/${token}`
+  return linkTo(`/${answered(kind) ? 'f' : 'v'}/${token}`)
 }
 
 /** The code another site pastes to frame a shared view. */
