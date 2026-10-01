@@ -30,7 +30,7 @@ La imagen se ejecuta con el usuario `node`, sobre Node 22, y declara una comprob
 |---|---|
 | `latest` | la última versión publicada |
 | `0.5` | la última versión 0.5.x |
-| `0.5.0` | exactamente esa versión |
+| `0.5.1` | exactamente esa versión |
 
 ## Los servicios
 

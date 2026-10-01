@@ -1551,6 +1551,16 @@ export default {
 		title: 'basedb’de neler değişti',
 		intro: 'Her değişikliğin ayrıntısı <a href="https://github.com/eodia/basedb/commits/main">deponun geçmişinde</a>. Sırada ne var: <a href="/feuille-de-route/">yol haritası</a>.',
 		entries: {
+			resilience: {
+				date: '2026-10-01',
+				title: 'Kesilen bir bağlantı artık basedb’yi durdurmuyor',
+				tag: 'Barındırma',
+				items: [
+					'<strong>Kesilen bir bağlantıda artık durma yok</strong>: PostgreSQL bir bağlantıyı kapattığında — yeniden başlatma, ağ kesintisi, hareketsiz kalmış bir işlem — yalnızca onu tutan sorgu başarısız olur; basedb devam eder ve günlüğü hangi işin onu tuttuğunu söyler.',
+					'<strong>Yüklü bir veritabanında daha az bekleme</strong>: bir tablo sayfası artık bağlı satırları okurken bir işlemi açık tutmuyor ve 15 saniye içinde bağlantı alamayan bir sorgu, sonsuza kadar beklemek yerine bir hata alıyor.',
+					'<strong>Yazıldığı gibi okunan yapay zeka başlıkları</strong>: <code>BASEDB_AI_HEADERS</code>, Ansible’ın yeniden yazdığı biçimi — <code>{\'api-key\': \'…\'}</code> — ve satır başına bir başlığı da kabul eder; bunlarla <code>openai_compatible</code> bir anahtara gerek duymaz.',
+				],
+			},
 			applications: {
 				date: '2026-09-30',
 				title: 'basedb’ye dayanan uygulamalar için',

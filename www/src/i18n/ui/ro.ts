@@ -1537,6 +1537,16 @@ export default {
 		title: 'Ce s-a schimbat în basedb',
 		intro: 'Detaliile fiecărei schimbări se află în <a href="https://github.com/eodia/basedb/commits/main">istoricul depozitului</a>. Ce urmează: <a href="/feuille-de-route/">foaia de parcurs</a>.',
 		entries: {
+			resilience: {
+				date: '2026-10-01',
+				title: 'O conexiune întreruptă nu mai oprește basedb',
+				tag: 'Găzduire',
+				items: [
+					'<strong>Fără oprire la o conexiune întreruptă</strong>: când PostgreSQL închide o conexiune — repornire, întrerupere de rețea, o tranzacție rămasă inactivă —, doar interogarea care o ținea eșuează; basedb continuă, iar jurnalul său spune ce lucrare o ținea.',
+					'<strong>Mai puțină așteptare pe o bază încărcată</strong>: o pagină de tabel nu mai ține o tranzacție deschisă în timp ce citește rândurile asociate, iar o interogare care nu obține o conexiune în 15 secunde primește o eroare în loc să aștepte la nesfârșit.',
+					'<strong>Anteturi de AI citite așa cum sunt scrise</strong>: <code>BASEDB_AI_HEADERS</code> acceptă și forma pe care Ansible o rescrie, <code>{\'api-key\': \'…\'}</code>, precum și un antet pe linie; cu acestea, <code>openai_compatible</code> nu mai are nevoie de o cheie.',
+				],
+			},
 			applications: {
 				date: '2026-09-30',
 				title: 'Pentru aplicațiile care se bazează pe basedb',

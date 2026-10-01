@@ -116,6 +116,14 @@ const BY_SQLSTATE: ReadonlyMap<string, ErrorCode> = new Map<string, ErrorCode>([
   ['57014', 'DEADLINE_EXCEEDED'],
   ['53300', 'SERVICE_UNAVAILABLE'],
   ['53200', 'SERVICE_UNAVAILABLE'],
+  // The server stopping, starting, or closing the connection: not the caller's fault.
+  ['57P01', 'SERVICE_UNAVAILABLE'],
+  ['57P02', 'SERVICE_UNAVAILABLE'],
+  ['57P03', 'SERVICE_UNAVAILABLE'],
+  ['25P03', 'SERVICE_UNAVAILABLE'],
+  ['08000', 'SERVICE_UNAVAILABLE'],
+  ['08003', 'SERVICE_UNAVAILABLE'],
+  ['08006', 'SERVICE_UNAVAILABLE'],
   ['42501', 'PRIVILEGES_INSUFFICIENT'],
 ])
 

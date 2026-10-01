@@ -1536,6 +1536,16 @@ export default {
 		title: 'Mi változott a basedb-ben',
 		intro: 'Minden változás részletei <a href="https://github.com/eodia/basedb/commits/main">a tároló előzményeiben</a> találhatók. Ami ezután jön: az <a href="/feuille-de-route/">ütemterv</a>.',
 		entries: {
+			resilience: {
+				date: '2026-10-01',
+				title: 'Egy megszakadt kapcsolat már nem állítja meg a basedb-t',
+				tag: 'Üzemeltetés',
+				items: [
+					'<strong>Nincs többé leállás egy megszakadt kapcsolat miatt</strong>: amikor a PostgreSQL bezár egy kapcsolatot — újraindítás, hálózati kimaradás, tétlenül maradt tranzakció —, csak az azt tartó lekérdezés hiúsul meg; a basedb folytatja, és a naplója megmondja, melyik munka tartotta.',
+					'<strong>Kevesebb várakozás egy terhelt adatbázison</strong>: egy táblaoldal már nem tart nyitva egy tranzakciót, amíg a kapcsolódó sorokat olvassa, és egy lekérdezés, amely 15 másodpercen belül nem kap kapcsolatot, hibát kap a végtelen várakozás helyett.',
+					'<strong>MI-fejlécek úgy olvasva, ahogyan írják őket</strong>: <code>BASEDB_AI_HEADERS</code> elfogadja azt a formát is, amelyre az Ansible átírja, <code>{\'api-key\': \'…\'}</code>, és egy fejlécet soronként; ezekkel az <code>openai_compatible</code> megvan kulcs nélkül.',
+				],
+			},
 			applications: {
 				date: '2026-09-30',
 				title: 'A basedb-re támaszkodó alkalmazásoknak',

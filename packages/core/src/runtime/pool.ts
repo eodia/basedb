@@ -71,6 +71,13 @@ export interface PoolSettings {
   readonly lockTimeoutMs: number
   readonly statementTimeoutMs: number
   readonly idleInTransactionTimeoutMs: number
+  /**
+   * How long a request waits for a connection of a full pool before `SERVICE_UNAVAILABLE`;
+   * 0 for no limit. Without one, a pool emptied by slow work queues every request behind
+   * it for good — and a transaction that waits for a connection of its own pool sits idle
+   * until the server closes it.
+   */
+  readonly acquireTimeoutMs: number
 }
 
 /**
@@ -86,18 +93,22 @@ export const DEFAULT_SETTINGS: Readonly<Record<PoolName, PoolSettings>> = Object
     lockTimeoutMs: 3_000,
     statementTimeoutMs: 15_000,
     idleInTransactionTimeoutMs: 30_000,
+    acquireTimeoutMs: 15_000,
   },
   data: {
     max: 20,
     lockTimeoutMs: 3_000,
     statementTimeoutMs: 30_000,
     idleInTransactionTimeoutMs: 30_000,
+    acquireTimeoutMs: 15_000,
   },
   ddl: {
     max: 2,
     lockTimeoutMs: 5_000,
     statementTimeoutMs: 600_000,
     idleInTransactionTimeoutMs: 60_000,
+    // Structure operations queue behind one another by design (one lock per base).
+    acquireTimeoutMs: 0,
   },
 })
 
@@ -135,6 +146,51 @@ export function executorOf(client: PoolClient): Executor {
   }
 }
 
+/** Who borrowed a connection, and when — said if the server closes it while it is out. */
+const borrowed = new WeakMap<object, { readonly at: number; readonly by: Error }>()
+
+/** The calls of the kernel that led to a borrowing, without the driver's own frames. */
+function callers(by: Error): string {
+  return (by.stack ?? '')
+    .split('\n')
+    .slice(1)
+    .map((line) => line.trim())
+    .filter((line) => !/node_modules|node:internal|runtime[\\/]pool\.[jt]s/.test(line))
+    .slice(0, 4)
+    .join(' ← ')
+}
+
+/**
+ * A connection the server closes — a restart, a network cut, a timeout it enforces, such as
+ * `idle_in_transaction_session_timeout` — must not take the process down. node-postgres
+ * emits `error` on the client, and on the pool for an idle one; with no listener, Node
+ * throws it (« Unhandled 'error' event »): the API stops, and the container with it. And
+ * while a connection is borrowed, the pool has taken its own listener off.
+ *
+ * So every client carries a listener for its whole life, and every pool one too. A dead
+ * client is dropped by the pool when it is released; the request that held it fails alone.
+ */
+export function survive(pool: Pool, name: string): Pool {
+  // The clients' listener below says it; the pool's only keeps Node from throwing.
+  pool.on('error', () => undefined)
+  pool.on('connect', (client) => {
+    client.on('error', (error: Error & { code?: string }) => {
+      const out = borrowed.get(client)
+      const held =
+        out === undefined
+          ? 'au repos'
+          : `empruntée depuis ${Math.round((Date.now() - out.at) / 1000)} s par ${callers(out.by)}`
+      console.error(
+        `PostgreSQL (${name}) : connexion fermée par le serveur${error.code ? ` [${error.code}]` : ''} — ${error.message} ; ${held}`,
+      )
+    })
+  })
+  // `Pools.acquire` says better who borrowed; this is for the pools that borrow directly.
+  pool.on('acquire', (client) => borrowed.set(client, { at: Date.now(), by: new Error() }))
+  pool.on('release', (_error, client) => borrowed.delete(client))
+  return pool
+}
+
 export class Pools {
   private readonly pools: Map<PoolName, Pool> = new Map()
   /** Connections whose contract has already been checked, by object identity. */
@@ -152,8 +208,12 @@ export class Pools {
           idle_in_transaction_session_timeout: `${settings.idleInTransactionTimeoutMs}ms`,
         }),
         application_name: `basedb:${name}`,
+        connectionTimeoutMillis: settings.acquireTimeoutMs,
+        // A peer gone without a word — a network cut — is noticed, not waited on forever.
+        keepAlive: true,
+        keepAliveInitialDelayMillis: 30_000,
       }
-      this.pools.set(name, new Pool(config))
+      this.pools.set(name, survive(new Pool(config), name))
     }
   }
 
@@ -166,7 +226,15 @@ export class Pools {
     const pool = this.pools.get(name)
     if (pool === undefined) throw new BasedbError('INTERNAL_ERROR', { details: { pool: name } })
 
-    const client = await pool.connect()
+    let client: PoolClient
+    try {
+      client = await pool.connect()
+    } catch (error) {
+      // No connection within `acquireTimeoutMs`, or none the server accepts.
+      throw translatePgError(error as { code?: string })
+    }
+    // Here, the stack still leads to the caller — through its awaits.
+    borrowed.set(client, { at: Date.now(), by: new Error() })
     if (this.verified.has(client)) return client
 
     try {

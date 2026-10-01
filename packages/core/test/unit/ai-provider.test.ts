@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { endpointFromEnv, resolveProvider } from '../../src/ai/draft.js'
+import { endpointFromEnv, headersShape, resolveProvider } from '../../src/ai/draft.js'
 import type { BasedbError } from '../../src/errors/index.js'
 import type { Executor } from '../../src/runtime/pool.js'
 import type { RequestContext } from '../../src/tx/context.js'
@@ -142,8 +142,10 @@ describe('the address and headers of the environment', () => {
     for (const [BASEDB_AI_BASE_URL, BASEDB_AI_HEADERS, setting] of [
       ['atelier.openai.azure.com', '', 'BASEDB_AI_BASE_URL'],
       ['ftp://atelier.example.com', '', 'BASEDB_AI_BASE_URL'],
-      ['', 'api-key: cle', 'BASEDB_AI_HEADERS'],
+      ['', 'api-key cle', 'BASEDB_AI_HEADERS'],
       ['', '["api-key", "cle"]', 'BASEDB_AI_HEADERS'],
+      ['', "{'api-key': 'cle'", 'BASEDB_AI_HEADERS'],
+      ['', "{'api-key' 'cle'}", 'BASEDB_AI_HEADERS'],
       ['', '{"api-key": 42}', 'BASEDB_AI_HEADERS'],
       ['', '{"api key": "cle"}', 'BASEDB_AI_HEADERS'],
       ['', '{"api-key": "cle\\r\\nx-autre: 1"}', 'BASEDB_AI_HEADERS'],
@@ -157,6 +159,32 @@ describe('the address and headers of the environment', () => {
       expect(refused?.code, `${BASEDB_AI_BASE_URL}${BASEDB_AI_HEADERS}`).toBe('AI_NOT_CONFIGURED')
       expect(refused?.details).toMatchObject({ setting })
     }
+  })
+
+  it('read the object as the tools in between leave it', () => {
+    for (const BASEDB_AI_HEADERS of [
+      // Ansible, which turns a JSON string into a dictionary and writes it back in Python.
+      "{'api-key': 'cle-azure', 'X-Tenant': 'groupe'}",
+      // A shell `export` without quotes: the quotes are gone.
+      '{api-key:cle-azure,X-Tenant:groupe}',
+      // One header per line.
+      'api-key: cle-azure\nX-Tenant: groupe',
+      ' {"api-key": "cle-azure", "x-tenant": "groupe"} ',
+    ]) {
+      expect(endpointFromEnv({ BASEDB_AI_HEADERS }), BASEDB_AI_HEADERS).toEqual({
+        headers: { 'api-key': 'cle-azure', 'x-tenant': 'groupe' },
+      })
+    }
+    // A quoted value keeps what a bare one could not: a comma, a colon.
+    expect(endpointFromEnv({ BASEDB_AI_HEADERS: "{'authorization': 'Basic a:b,c'}" })).toEqual({
+      headers: { authorization: 'Basic a:b,c' },
+    })
+  })
+
+  it('say what they received without a value', () => {
+    expect(headersShape("{'api-key': 'secret', 'x-tenant': 'groupe'}")).toBe(
+      "{'api-key': …, 'x-tenant': …}",
+    )
   })
 
   it('are nothing when unset or empty', () => {

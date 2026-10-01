@@ -1536,6 +1536,16 @@ export default {
 		title: 'What changed in basedb',
 		intro: 'The details of every change are in <a href="https://github.com/eodia/basedb/commits/main">the repository history</a>. What comes next: the <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			resilience: {
+				date: '2026-10-01',
+				title: 'A dropped connection no longer stops basedb',
+				tag: 'Hosting',
+				items: [
+					'<strong>No more stopping on a dropped connection</strong>: when PostgreSQL closes a connection — a restart, a network outage, a transaction left idle — only the query that held it fails; basedb keeps going, and its log says which job was holding it.',
+					'<strong>Less waiting on a busy database</strong>: a table page no longer keeps a transaction open while it reads linked rows, and a query that doesn’t get a connection within 15 seconds gets an error instead of waiting forever.',
+					'<strong>AI headers read the way they’re written</strong>: <code>BASEDB_AI_HEADERS</code> also accepts the form Ansible rewrites it into, <code>{\'api-key\': \'…\'}</code>, and one header per line; with them, <code>openai_compatible</code> can do without a key.',
+				],
+			},
 			applications: {
 				date: '2026-09-30',
 				title: 'For applications that rely on basedb',

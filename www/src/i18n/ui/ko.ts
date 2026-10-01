@@ -1525,6 +1525,16 @@ export default {
 		title: 'basedb에서 바뀐 내용',
 		intro: '각 변경의 자세한 내용은 <a href="https://github.com/eodia/basedb/commits/main">저장소 기록</a>에 있습니다. 앞으로의 계획은 <a href="/feuille-de-route/">로드맵</a>에서 확인하세요.',
 		entries: {
+			resilience: {
+				date: '2026-10-01',
+				title: '끊어진 연결이 더 이상 basedb를 멈추지 않습니다',
+				tag: '호스팅',
+				items: [
+					'<strong>끊어진 연결에도 더 이상 멈추지 않음</strong>: PostgreSQL이 연결을 닫을 때 — 재시작, 네트워크 장애, 유휴 상태로 남은 트랜잭션 등 — 그 연결을 쥐고 있던 쿼리만 실패합니다. basedb는 계속 실행되며, 로그에 어떤 작업이 그 연결을 쥐고 있었는지 남습니다.',
+					'<strong>부하가 큰 데이터베이스에서 대기 시간 감소</strong>: 테이블 페이지는 연결된 행을 읽는 동안 더 이상 트랜잭션을 열어 두지 않으며, 15초 안에 연결을 얻지 못한 쿼리는 끝없이 기다리는 대신 오류를 받습니다.',
+					'<strong>작성한 그대로 읽히는 AI 헤더</strong>: <code>BASEDB_AI_HEADERS</code>는 Ansible이 다시 쓰는 형식인 <code>{\'api-key\': \'…\'}</code>, 그리고 한 줄에 헤더 하나씩 쓰는 형식도 받아들입니다. 이 형식을 쓰면 <code>openai_compatible</code>은 키 없이도 동작합니다.',
+				],
+			},
 			applications: {
 				date: '2026-09-30',
 				title: 'basedb를 기반으로 하는 애플리케이션을 위해',

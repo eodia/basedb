@@ -1540,6 +1540,16 @@ export default {
 		title: 'Hvad der er ændret i basedb',
 		intro: 'Detaljerne om hver ændring findes i <a href="https://github.com/eodia/basedb/commits/main">repositoriets historik</a>. Det, der kommer bagefter: <a href="/feuille-de-route/">køreplanen</a>.',
 		entries: {
+			resilience: {
+				date: '2026-10-01',
+				title: 'En afbrudt forbindelse stopper ikke længere basedb',
+				tag: 'Hosting',
+				items: [
+					'<strong>Ingen stop mere ved en afbrudt forbindelse</strong>: når PostgreSQL lukker en forbindelse — en genstart, et netværksudfald, en transaktion der er blevet inaktiv — er det kun forespørgslen, der holdt den, som mislykkes; basedb fortsætter, og dens log angiver, hvilket arbejde der holdt den.',
+					'<strong>Mindre venten på en belastet database</strong>: en tabelside holder ikke længere en transaktion åben, mens den læser tilknyttede rækker, og en forespørgsel, der ikke får en forbindelse inden for 15 sekunder, får en fejl i stedet for at vente i det uendelige.',
+					'<strong>AI-headere læst som de skrives</strong>: <code>BASEDB_AI_HEADERS</code> accepterer også den form, Ansible omskriver den til, <code>{\'api-key\': \'…\'}</code>, samt en header pr. linje; med dem kan <code>openai_compatible</code> undvære en nøgle.',
+				],
+			},
 			applications: {
 				date: '2026-09-30',
 				title: 'Til applikationer, der bygger på basedb',

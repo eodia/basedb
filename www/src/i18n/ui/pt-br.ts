@@ -1547,6 +1547,16 @@ export default {
 		title: 'O que mudou no basedb',
 		intro: 'Os detalhes de cada mudança estão <a href="https://github.com/eodia/basedb/commits/main">no histórico do repositório</a>. O que vem a seguir: o <a href="/feuille-de-route/">roteiro</a>.',
 		entries: {
+			resilience: {
+				date: '2026-10-01',
+				title: 'Uma queda de conexão não interrompe mais o basedb',
+				tag: 'Hospedagem',
+				items: [
+					'<strong>Fim das paradas por uma conexão perdida</strong>: quando o PostgreSQL fecha uma conexão — reinício, interrupção de rede, transação que ficou inativa —, apenas a consulta que a mantinha falha; o basedb continua, e seu registro diz qual tarefa a mantinha.',
+					'<strong>Menos espera em uma base de dados sobrecarregada</strong>: uma página de tabela não mantém mais uma transação aberta enquanto lê as linhas relacionadas, e uma consulta que não obtém uma conexão em 15 segundos recebe um erro em vez de esperar para sempre.',
+					'<strong>Cabeçalhos de IA lidos como são escritos</strong>: <code>BASEDB_AI_HEADERS</code> também aceita a forma que o Ansible reescreve, <code>{\'api-key\': \'…\'}</code>, e um cabeçalho por linha; com eles, <code>openai_compatible</code> dispensa a chave.',
+				],
+			},
 			applications: {
 				date: '2026-09-30',
 				title: 'Para os aplicativos que se apoiam no basedb',

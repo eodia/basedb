@@ -30,7 +30,7 @@ A lemezkép a `node` felhasználóval fut, Node 22-n, deklarál egy állapot-ell
 |---|---|
 | `latest` | a legutóbb kiadott verzió |
 | `0.5` | a legutóbbi 0.5.x verzió |
-| `0.5.0` | pontosan ez a verzió |
+| `0.5.1` | pontosan ez a verzió |
 
 ## A szolgáltatások
 

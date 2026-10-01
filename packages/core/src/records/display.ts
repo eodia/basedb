@@ -179,23 +179,31 @@ export interface ResolvedDisplays {
 export async function resolveDisplays(
   pools: Pools,
   ctx: RequestContext,
-  exec: Executor,
+  /**
+   * Runs the catalog reads in a transaction of their own — closed BEFORE the targets' rows
+   * are read. Held open across those reads, it would sit idle while the data pool serves
+   * them: past `idle_in_transaction_session_timeout` when that pool is busy, and the server
+   * closes it.
+   */
+  catalog: <T>(work: (exec: Executor) => Promise<T>) => Promise<T>,
   tableId: string,
   rows: ReadonlyArray<Record<string, unknown>>,
   expand: ExpandRequest = new Map(),
   /** The columns the reader may see — the projection the caller already computed. */
   readableColumns: ReadonlySet<string> = new Set(),
 ): Promise<ResolvedDisplays> {
-  const fields = await loadLinkFields(exec, tableId)
-  // The early exit is conditioned on the ABSENCE of an expansion: an `expand` naming an
-  // impossible column must be refused whether the page is empty or the table carries no
-  // link. Otherwise the answer would depend on the data, and an empty page would silently
-  // accept a request a full page refuses.
-  if (expand.size === 0 && (fields.length === 0 || rows.length === 0)) {
-    return { rows, sql: [], included: {} }
-  }
-
-  const targets = await resolveTargets(exec, ctx, fields)
+  const { fields, targets } = await catalog(async (exec) => {
+    const fields = await loadLinkFields(exec, tableId)
+    // The early exit is conditioned on the ABSENCE of an expansion: an `expand` naming an
+    // impossible column must be refused whether the page is empty or the table carries no
+    // link. Otherwise the answer would depend on the data, and an empty page would silently
+    // accept a request a full page refuses.
+    if (expand.size === 0 && (fields.length === 0 || rows.length === 0)) {
+      return { fields, targets: null }
+    }
+    return { fields, targets: await resolveTargets(exec, ctx, fields) }
+  })
+  if (targets === null) return { rows, sql: [], included: {} }
 
   // The bound counts the target tables RESOLVED IN TOTAL, expanded or not: it is the
   // number of round trips that hurts, not the projection width (§5.1).

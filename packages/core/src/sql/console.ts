@@ -7,7 +7,7 @@ import { type ActorGrants, type Target, decide } from '../rbac/decide.js'
 import { loadGrants } from '../rbac/loader.js'
 import { loadBaseTarget } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
-import { startupOptions } from '../runtime/pool.js'
+import { startupOptions, survive } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 
 /**
@@ -182,6 +182,7 @@ export async function runConsoleSql(
   const pool = consolePool(connectionString, password, scope.schema)
   const started = Date.now()
   let client: PoolClient | undefined
+  let entry: { command: string | null; rowCount: number | null; code: string | null } | null = null
   try {
     client = await pool.connect()
     // Belt and braces: the pool is opened as `basedb_console`, and this refuses to run
@@ -259,11 +260,11 @@ export async function runConsoleSql(
       mode: 'console' as const,
     }
 
-    await audit(pools, ctx, request.baseId, sql, outcome.command, outcome.rowCount, null)
+    entry = { command: outcome.command, rowCount: outcome.rowCount, code: null }
     return outcome
   } catch (error) {
     const refusal = asStatementError(error)
-    await audit(pools, ctx, request.baseId, sql, null, null, refusal.code)
+    entry = { command: null, rowCount: null, code: refusal.code }
     throw refusal
   } finally {
     if (client !== undefined) {
@@ -277,6 +278,11 @@ export async function runConsoleSql(
         .catch(() => undefined)
     }
     client?.release()
+    // Once the connection is back: written on another one, the audit must not hold this
+    // transaction open — idle — while it waits for a connection of the catalog.
+    if (entry !== null) {
+      await audit(pools, ctx, request.baseId, sql, entry.command, entry.rowCount, entry.code)
+    }
   }
 }
 
@@ -457,7 +463,7 @@ async function provision(
 const consolePools = new Map<string, Pool>()
 
 function consolePool(connectionString: string, password: string, schema: string): Pool {
-  const key = `${schema} ${connectionString}`
+  const key = `${schema}\x00${connectionString}`
   const existing = consolePools.get(key)
   if (existing !== undefined) return existing
 
@@ -474,9 +480,12 @@ function consolePool(connectionString: string, password: string, schema: string)
       idle_in_transaction_session_timeout: '30000ms',
     }),
     application_name: 'basedb:console',
+    connectionTimeoutMillis: 15_000,
+    keepAlive: true,
   })
-  // A pool that throws on an idle client error takes the process down with it.
-  pool.on('error', () => undefined)
+  // A pool, or a borrowed client, that throws on a connection error takes the process
+  // down with it.
+  survive(pool, 'console')
   consolePools.set(key, pool)
   return pool
 }

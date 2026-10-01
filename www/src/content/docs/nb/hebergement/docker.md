@@ -30,7 +30,7 @@ Imaget kjører som brukeren `node`, på Node 22, deklarerer en helsesjekk
 |---|---|
 | `latest` | den siste publiserte versjonen |
 | `0.5` | den siste 0.5.x-versjonen |
-| `0.5.0` | nøyaktig denne versjonen |
+| `0.5.1` | nøyaktig denne versjonen |
 
 ## Tjenestene
 

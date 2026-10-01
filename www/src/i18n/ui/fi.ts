@@ -1547,6 +1547,16 @@ export default {
 		title: 'Mitä basedb:ssä on muuttunut',
 		intro: 'Jokaisen muutoksen yksityiskohdat ovat <a href="https://github.com/eodia/basedb/commits/main">tietovaraston historiassa</a>. Mitä seuraavaksi: <a href="/feuille-de-route/">tiekartta</a>.',
 		entries: {
+			resilience: {
+				date: '2026-10-01',
+				title: 'Katkennut yhteys ei enää pysäytä basedb:tä',
+				tag: 'Isännöinti',
+				items: [
+					'<strong>Ei enää pysähdystä katkenneesta yhteydestä</strong>: kun PostgreSQL sulkee yhteyden – uudelleenkäynnistys, verkkokatko, toimettomaksi jäänyt transaktio –, epäonnistuu vain sitä pitänyt kysely; basedb jatkaa, ja sen loki kertoo, mikä työ sitä piti.',
+					'<strong>Vähemmän odottelua kuormitetulla tietokannalla</strong>: taulukon sivu ei enää pidä transaktiota auki lukiessaan liittyviä rivejä, ja kysely, joka ei saa yhteyttä 15 sekunnissa, saa virheen sen sijaan, että odottaisi loputtomiin.',
+					'<strong>Tekoälyn otsakkeet luetaan niin kuin ne kirjoitetaan</strong>: <code>BASEDB_AI_HEADERS</code> hyväksyy myös muodon, jonka Ansible kirjoittaa uudelleen, <code>{\'api-key\': \'…\'}</code>, sekä yhden otsakkeen riviä kohti; niiden avulla <code>openai_compatible</code> toimii ilman avainta.',
+				],
+			},
 			applications: {
 				date: '2026-09-30',
 				title: 'Sovelluksille, jotka nojautuvat basedb:hen',

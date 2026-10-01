@@ -30,7 +30,7 @@ L’image tourne sous l’utilisateur `node`, sur Node 22, déclare une vérific
 |---|---|
 | `latest` | la dernière version publiée |
 | `0.5` | la dernière version 0.5.x |
-| `0.5.0` | exactement cette version |
+| `0.5.1` | exactement cette version |
 
 ## Les services
 

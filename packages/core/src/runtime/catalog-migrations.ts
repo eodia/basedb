@@ -66,6 +66,8 @@ async function connect(connectionString: string): Promise<Client> {
     options: startupOptions({ lock_timeout: '3s', statement_timeout: '60s' }),
     application_name: 'basedb:catalog',
   })
+  // A connection the server closes fails the migration under way, not the process.
+  client.on('error', () => undefined)
   await client.connect()
   return client
 }

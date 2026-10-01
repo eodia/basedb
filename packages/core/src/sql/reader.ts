@@ -6,7 +6,7 @@ import { quoteLiteral } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { SYSTEM_COLUMNS, decide } from '../rbac/decide.js'
 import type { Executor, Pools } from '../runtime/pool.js'
-import { startupOptions } from '../runtime/pool.js'
+import { startupOptions, survive } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import {
   CONSOLE_DEFAULT_LIMIT,
@@ -362,6 +362,7 @@ export async function runReaderSql(
   let shadows = await provision(pools, ctx, role, password, reach, false)
   const started = Date.now()
   let client: PoolClient | undefined
+  let entry: { command: string | null; rowCount: number | null; code: string | null } | null = null
   try {
     try {
       client = await readerPool(connectionString, role, password, reach.schema).connect()
@@ -433,11 +434,11 @@ export async function runReaderSql(
       schema: reach.schema,
       mode: 'reader',
     }
-    await audit(pools, ctx, request.baseId, sql, outcome.command, outcome.rowCount, null, 'reader')
+    entry = { command: outcome.command, rowCount: outcome.rowCount, code: null }
     return outcome
   } catch (error) {
     const refusal = asStatementError(error)
-    await audit(pools, ctx, request.baseId, sql, null, null, refusal.code, 'reader')
+    entry = { command: null, rowCount: null, code: refusal.code }
     throw refusal
   } finally {
     if (client !== undefined) {
@@ -446,6 +447,20 @@ export async function runReaderSql(
       await client.query('ROLLBACK').catch(() => undefined)
       await client.query('DISCARD ALL').catch(() => undefined)
       client.release()
+    }
+    // Once the connection is back: written on another one, the audit must not hold this
+    // transaction open — idle — while it waits for a connection of the catalog.
+    if (entry !== null) {
+      await audit(
+        pools,
+        ctx,
+        request.baseId,
+        sql,
+        entry.command,
+        entry.rowCount,
+        entry.code,
+        'reader',
+      )
     }
   }
 }
@@ -479,8 +494,10 @@ function readerPool(
       idle_in_transaction_session_timeout: '30000ms',
     }),
     application_name: 'basedb:reader',
+    connectionTimeoutMillis: 15_000,
+    keepAlive: true,
   })
-  pool.on('error', () => undefined)
+  survive(pool, 'reader')
   readerPools.set(key, pool)
   return pool
 }

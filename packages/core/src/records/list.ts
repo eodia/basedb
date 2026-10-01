@@ -237,13 +237,14 @@ export async function listRecords(
   const resolved =
     (options.links ?? 'display') === 'id'
       ? { rows: page, sql: [] as readonly string[], included: {} }
-      : await withTransaction(
+      : await resolveDisplays(
           pools,
-          'catalog',
           ctx,
-          (exec) =>
-            resolveDisplays(pools, ctx, exec, options.tableId, page, expand, new Set(plan.columns)),
-          { readOnly: true },
+          (work) => withTransaction(pools, 'catalog', ctx, work, { readOnly: true }),
+          options.tableId,
+          page,
+          expand,
+          new Set(plan.columns),
         )
 
   const rows =

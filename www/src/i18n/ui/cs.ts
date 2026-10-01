@@ -1540,6 +1540,16 @@ export default {
 		title: 'Co se v basedb změnilo',
 		intro: 'Podrobnosti o každé změně najdete v <a href="https://github.com/eodia/basedb/commits/main">historii repozitáře</a>. Co přijde dál: <a href="/feuille-de-route/">plán vývoje</a>.',
 		entries: {
+			resilience: {
+				date: '2026-10-01',
+				title: 'Přerušené spojení už basedb nezastaví',
+				tag: 'Hosting',
+				items: [
+					'<strong>Konec zastavení při přerušeném spojení</strong>: když PostgreSQL uzavře spojení – restart, výpadek sítě, transakce, která zůstala nečinná –, selže jen dotaz, který je drželo; basedb pokračuje dál a jeho log říká, jaká úloha je drželo.',
+					'<strong>Méně čekání na vytížené databázi</strong>: stránka tabulky už nedrží otevřenou transakci, zatímco čte propojené řádky, a dotaz, který nedostane spojení do 15 sekund, vrátí chybu místo nekonečného čekání.',
+					'<strong>Hlavičky AI čtené tak, jak se píšou</strong>: <code>BASEDB_AI_HEADERS</code> přijímá i tvar, do kterého je přepíše Ansible, <code>{\'api-key\': \'…\'}</code>, a jednu hlavičku na řádek; s nimi se <code>openai_compatible</code> obejde bez klíče.',
+				],
+			},
 			applications: {
 				date: '2026-09-30',
 				title: 'Pro aplikace, které se opírají o basedb',

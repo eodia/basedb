@@ -1525,6 +1525,16 @@ export default {
 		title: 'basedb 的变化',
 		intro: '每项变更的细节见<a href="https://github.com/eodia/basedb/commits/main">仓库的提交历史</a>。接下来要做的：<a href="/feuille-de-route/">路线图</a>。',
 		entries: {
+			resilience: {
+				date: '2026-10-01',
+				title: '连接中断不再让 basedb 停止运行',
+				tag: '部署',
+				items: [
+					'<strong>连接断开不再导致停止</strong>：当 PostgreSQL 关闭一个连接时——重启、网络中断、保持空闲的事务——只有占用该连接的查询会失败；basedb 会继续运行，日志会记录是哪项工作占用了它。',
+					'<strong>负载较高的数据库减少等待</strong>：数据表页面在读取关联行时不再保持事务开启，而在 15 秒内未能获取连接的查询会收到一个错误，而不是无限等待。',
+					'<strong>AI 标头按书写方式读取</strong>：<code>BASEDB_AI_HEADERS</code> 也接受 Ansible 改写后的形式——<code>{\'api-key\': \'…\'}</code>——以及每行一个标头的写法；有了它们，<code>openai_compatible</code> 就不需要密钥了。',
+				],
+			},
 			applications: {
 				date: '2026-09-30',
 				title: '面向基于 basedb 构建的应用',

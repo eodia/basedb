@@ -724,6 +724,82 @@ export async function resolveProvider(
   return { provider, model, apiKey, keyScope: secret.scope_kind, ...endpoint }
 }
 
+/**
+ * `BASEDB_AI_HEADERS`, read as an operator's tools leave it. A JSON object first. Then the
+ * same object as the tools in between often rewrite it: Ansible turns a JSON string into a
+ * dictionary and writes it back with single quotes (`{'api-key': '…'}`); a shell `export`
+ * without quotes strips them (`{api-key:…}`). And plainly, one `Name: value` per line.
+ * `null` when it is none of these; the names and values are checked by the caller.
+ */
+function headerEntries(raw: string): Array<[string, unknown]> | null {
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? Object.entries(parsed)
+      : null
+  } catch {
+    // Not JSON: one of the shapes below, or nothing.
+  }
+  if (raw.startsWith('{') && raw.endsWith('}')) return looseObject(raw.slice(1, -1))
+  if (raw.startsWith('[')) return null
+  const entries: Array<[string, string]> = []
+  for (const line of raw.split(/\r?\n/)) {
+    if (line.trim() === '') continue
+    const colon = line.indexOf(':')
+    if (colon <= 0) return null
+    entries.push([line.slice(0, colon).trim(), line.slice(colon + 1).trim()])
+  }
+  return entries.length > 0 ? entries : null
+}
+
+/** `'a': 'b', "c": d` — keys and values quoted with ' or ", or bare. */
+function looseObject(inner: string): Array<[string, string]> | null {
+  const entries: Array<[string, string]> = []
+  let at = 0
+  const blank = () => {
+    while (at < inner.length && /\s/.test(inner[at] as string)) at++
+  }
+  const token = (stops: string): string | null => {
+    blank()
+    const quote = inner[at]
+    if (quote === '"' || quote === "'") {
+      let text = ''
+      at++
+      while (at < inner.length && inner[at] !== quote) {
+        if (inner[at] === '\\' && at + 1 < inner.length) at++
+        text += inner[at]
+        at++
+      }
+      if (at >= inner.length) return null
+      at++
+      return text
+    }
+    const start = at
+    while (at < inner.length && !stops.includes(inner[at] as string)) at++
+    const text = inner.slice(start, at).trim()
+    return text === '' ? null : text
+  }
+  blank()
+  while (at < inner.length) {
+    const name = token(':')
+    blank()
+    if (name === null || inner[at] !== ':') return null
+    at++
+    const value = token(',')
+    blank()
+    if (value === null || (at < inner.length && inner[at] !== ',')) return null
+    at++
+    entries.push([name, value])
+    blank()
+  }
+  return entries.length > 0 ? entries : null
+}
+
+/** What was received, for the log: the names, never a value. */
+export function headersShape(raw: string): string {
+  return raw.replace(/:[^,}\n]*/g, ': …').slice(0, 200)
+}
+
 /** A header name as HTTP allows it (RFC 9110 §5.6.2). */
 const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/
 
@@ -757,16 +833,7 @@ export function endpointFromEnv(env: NodeJS.ProcessEnv): {
 
   const raw = (env.BASEDB_AI_HEADERS ?? '').trim()
   if (raw !== '') {
-    let parsed: unknown = null
-    try {
-      parsed = JSON.parse(raw)
-    } catch {
-      // Refused below, with every other shape that is not an object of strings.
-    }
-    const entries =
-      parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
-        ? Object.entries(parsed)
-        : null
+    const entries = headerEntries(raw)
     if (
       entries === null ||
       entries.some(

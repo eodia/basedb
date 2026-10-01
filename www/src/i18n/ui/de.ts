@@ -1547,6 +1547,16 @@ export default {
 		title: 'Was sich in basedb geändert hat',
 		intro: 'Jede einzelne Änderung steht im <a href="https://github.com/eodia/basedb/commits/main">Verlauf des Repositorys</a>. Was als Nächstes kommt: die <a href="/feuille-de-route/">Roadmap</a>.',
 		entries: {
+			resilience: {
+				date: '2026-10-01',
+				title: 'Eine unterbrochene Verbindung stoppt basedb nicht mehr',
+				tag: 'Hosting',
+				items: [
+					'<strong>Kein Stopp mehr bei einer unterbrochenen Verbindung</strong>: wenn PostgreSQL eine Verbindung schließt – ein Neustart, ein Netzwerkausfall, eine inaktiv gebliebene Transaktion –, schlägt nur die Abfrage fehl, die sie hielt; basedb läuft weiter, und sein Protokoll nennt, welche Aufgabe sie hielt.',
+					'<strong>Weniger Wartezeit bei einer stark ausgelasteten Datenbank</strong>: eine Tabellenseite hält keine Transaktion mehr offen, während sie verknüpfte Zeilen liest, und eine Abfrage, die innerhalb von 15 Sekunden keine Verbindung erhält, bekommt einen Fehler, statt endlos zu warten.',
+					'<strong>KI-Header, gelesen wie man sie schreibt</strong>: <code>BASEDB_AI_HEADERS</code> akzeptiert auch die Form, die Ansible daraus macht, <code>{\'api-key\': \'…\'}</code>, sowie einen Header pro Zeile; damit kommt <code>openai_compatible</code> ohne Schlüssel aus.',
+				],
+			},
 			applications: {
 				date: '2026-09-30',
 				title: 'Für Anwendungen, die auf basedb aufbauen',

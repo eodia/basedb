@@ -1523,6 +1523,16 @@ export default {
 		title: 'basedbの変更点',
 		intro: '変更の詳細は<a href="https://github.com/eodia/basedb/commits/main">リポジトリの履歴</a>にあります。今後の予定は<a href="/feuille-de-route/">ロードマップ</a>をご覧ください。',
 		entries: {
+			resilience: {
+				date: '2026-10-01',
+				title: '接続が切れてもbasedbはもう止まりません',
+				tag: 'ホスティング',
+				items: [
+					'<strong>切れた接続でもう止まらない</strong>：PostgreSQLが接続を閉じても——再起動、ネットワーク障害、アイドル状態のまま残ったトランザクションなど——失敗するのはそれを保持していたクエリだけです。basedbは動作を続け、ログにはどの作業がそれを保持していたかが記録されます。',
+					'<strong>負荷の高いデータベースでの待ちが減少</strong>：テーブルのページは、関連する行を読み込む間もうトランザクションを開いたままにしません。また、15秒以内に接続を取得できなかったクエリは、無限に待つのではなくエラーを受け取ります。',
+					'<strong>書いたとおりに読まれるAIヘッダー</strong>：<code>BASEDB_AI_HEADERS</code>はAnsibleが書き換える形式——<code>{\'api-key\': \'…\'}</code>——や、1行に1つのヘッダーという形式も受け付けます。これらを使えば、<code>openai_compatible</code>はキーなしで済みます。',
+				],
+			},
 			applications: {
 				date: '2026-09-30',
 				title: 'basedbを基盤にするアプリケーションのために',

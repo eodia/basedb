@@ -1449,6 +1449,16 @@ const fr = {
 		intro: 'Le détail de chaque changement est dans <a href="https://github.com/eodia/basedb/commits/main">l’historique du dépôt</a>. Ce qui vient ensuite : la <a href="/feuille-de-route/">feuille de route</a>.',
 		/** Newest first. */
 		entries: {
+			resilience: entry({
+				date: '2026-10-01',
+				title: 'Une connexion coupée n’arrête plus basedb',
+				tag: 'Hébergement',
+				items: [
+					'<strong>Plus d’arrêt sur une connexion coupée</strong> : quand PostgreSQL ferme une connexion — redémarrage, coupure réseau, transaction restée inactive —, seule la requête qui la tenait échoue ; basedb continue, et son journal dit quel travail la tenait.',
+					'<strong>Moins d’attente sur une base chargée</strong> : une page de table ne garde plus de transaction ouverte pendant qu’elle lit les lignes liées, et une requête qui n’obtient pas de connexion en 15 secondes reçoit une erreur au lieu d’attendre sans fin.',
+					'<strong>Des en-têtes d’IA lus comme on les écrit</strong> : <code>BASEDB_AI_HEADERS</code> accepte aussi la forme qu’Ansible réécrit, <code>{\'api-key\': \'…\'}</code>, et un en-tête par ligne ; avec eux, <code>openai_compatible</code> se passe de clé.',
+				],
+			}),
 			applications: entry({
 				date: '2026-09-30',
 				title: 'Pour les applications qui s’appuient sur basedb',

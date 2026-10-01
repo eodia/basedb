@@ -67,6 +67,8 @@ export class Listener {
     const retry = (error: unknown) => {
       if (this.client === client) this.client = null
       client.removeAllListeners()
+      // Its socket may still say something as it closes: heard, not thrown.
+      client.on('error', () => undefined)
       client.end().catch(() => undefined)
       if (this.stopped) return
       this.onError(error)

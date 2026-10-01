@@ -7,6 +7,7 @@ import {
   OIDC_PRESETS,
   type OidcProvider,
   endpointFromEnv,
+  headersShape,
   parseAddress,
   parseTrusted,
   smtpMailer,
@@ -357,7 +358,7 @@ if (aiProvider !== undefined) {
   } catch (error) {
     console.error(
       (error as BasedbError).details?.setting === 'BASEDB_AI_HEADERS'
-        ? 'IA : BASEDB_AI_HEADERS doit être un objet JSON de chaînes : {"api-key":"…"}.'
+        ? `IA : BASEDB_AI_HEADERS illisible (reçu : ${headersShape(process.env.BASEDB_AI_HEADERS ?? '')}) — un objet JSON {"api-key":"…"}, ou une ligne « api-key: … » par en-tête.`
         : 'IA : BASEDB_AI_BASE_URL n’est pas une adresse http(s).',
     )
   }

@@ -30,7 +30,7 @@ Das Image läuft unter dem Benutzer `node` auf Node 22, deklariert eine Integrit
 |---|---|
 | `latest` | die zuletzt veröffentlichte Version |
 | `0.5` | die neueste Version 0.5.x |
-| `0.5.0` | genau diese Version |
+| `0.5.1` | genau diese Version |
 
 ## Die Dienste
 

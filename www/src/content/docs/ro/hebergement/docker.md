@@ -30,7 +30,7 @@ Imaginea rulează sub utilizatorul `node`, pe Node 22, declară o verificare de 
 |---|---|
 | `latest` | ultima versiune publicată |
 | `0.5` | ultima versiune 0.5.x |
-| `0.5.0` | exact această versiune |
+| `0.5.1` | exact această versiune |
 
 ## Serviciile
 
