@@ -1,13 +1,14 @@
 ---
 title: Automatizaciones
-description: Cuando cambia una fila, a una hora fija o con un clic; modificar, crear, buscar, repetir en cada fila, bifurcar, preguntar a la IA, avisar, enviar un correo electrónico, llamar a un servicio, escribir en Slack.
+description: Cuando cambia una fila, entra en un filtro o desaparece, cuando llega una fecha, a una hora fija, con un clic o con una llamada —modificar, crear, buscar, contar, repetir, bifurcar, esperar, intentar, preguntar a la IA, generar un PDF, avisar, enviar un correo electrónico, llamar a un servicio.
 ---
 
 Una automatización dice **cuándo**, **si** y **entonces**: cuando una tarea pasa a «Fait», anotar
 la hora; cuando llega una reseña negativa, avisar a la responsable y escribir en Slack; cada
 lunes a las 9:00, crear la fila de la reunión de equipo. Y cuando una acción no basta, sigue un
 **flujo**: buscar una fila, tomar una rama u otra según lo que diga, repetir pasos en cada
-fila que cumple un filtro, reutilizar en un paso lo que un paso anterior ha encontrado o escrito.
+fila que cumple un filtro, reutilizar en un paso lo que un paso anterior ha encontrado o escrito,
+**esperar** tres días antes de un recordatorio, enviar un **PDF** adjunto.
 
 Se abren desde **Automatizaciones**, en el bloque de la base abierta en la parte inferior de la barra
 lateral, y requieren el nivel **Gestión**.
@@ -17,8 +18,10 @@ lateral, y requieren el nivel **Gestión**.
 ## El flujo
 
 El flujo se dibuja de arriba abajo: el desencadenador y luego cada paso. Un **+** sobre una línea
-añade un paso en ese punto; una tarjeta abre sus ajustes a la derecha. Una automatización
-sencilla (un desencadenador y una acción) cabe en dos tarjetas y se configura como antes.
+abre la lista de pasos, ordenados por categoría —Filas, Comunicar, Documentos, IA, Lógica—, con
+una búsqueda, y añade el elegido en ese punto; una tarjeta abre sus ajustes a la derecha. Una
+automatización sencilla (un desencadenador y una acción) cabe en dos tarjetas y se configura
+como antes.
 
 ## Cuándo
 
@@ -28,6 +31,10 @@ sencilla (un desencadenador y una acción) cabe en dos tarjetas y se configura c
 | **Se modifica una fila** | la tabla y, si hace falta, solo los campos que vigilar |
 | **A una hora fija** | cada hora, cada día o cada semana, a la hora y en la zona horaria elegidas |
 | **Se hace clic en un botón** | un [campo Botón](/basedb/es/fonctionnalites/tables-et-champs/#botón) de la tabla |
+| **Se elimina una fila** | la tabla; los pasos citan la fila tal como era |
+| **Una fila entra en un filtro** | la tabla y el filtro: la automatización se dispara cuando una fila entra en él, y no vuelve a dispararse hasta que haya salido de él —«una factura pasa a estar atrasada», no «se modifica una factura atrasada» |
+| **Llega una fecha** | un campo Fecha de la tabla, un desplazamiento —tres días antes, el mismo día, una semana después— y la hora: recordatorios de vencimiento, aniversarios de contrato |
+| **Se recibe un webhook** | nada: la automatización recibe su propia dirección, que otro programa puede llamar ([detalles](#un-servicio-que-llama-a-basedb)) |
 
 Un desencadenador sobre las filas ve **todas** las escrituras: la interfaz, la API, un agente, un
 formulario compartido e incluso el SQL directo, porque las automatizaciones parten del historial, que las
@@ -41,7 +48,8 @@ de actuar**. Una ejecución cuya condición no se cumple queda «descartada», y
 
 ## Entonces
 
-Hasta treinta pasos, en orden; el primero que falla detiene los siguientes.
+Hasta cuarenta pasos, en orden; el primero que falla detiene los siguientes —salvo dentro de un
+bloque **Intentar** ([detalles](#intentar)).
 
 | Paso | Lo que hace |
 |---|---|
@@ -55,10 +63,21 @@ Hasta treinta pasos, en orden; el primero que falla detiene los siguientes.
 | **Preguntar a la IA** | una respuesta del [proveedor de IA](/basedb/es/fonctionnalites/ia/) a una instrucción que cita la fila y los pasos anteriores (redactar, resumir, clasificar), leída como un texto, un número, sí o no, una fecha o una opción de una lista |
 | **Condición** | varias ramas: se toma la primera cuya condición se cumple, y «Si no» cuando no se cumple ninguna; después, las ramas vuelven a unirse |
 | **Para cada fila** | los pasos que contiene, una vez por cada fila de una tabla que cumple un filtro ([detalles](#para-cada-fila)) |
+| **Eliminar una fila** | la fila que ha desencadenado, o la que un paso ha encontrado —va a la papelera |
+| **Contar y sumar** | el número de filas de un filtro, su suma, su media, su mínimo o máximo, para citar o comprobar después |
+| **Generar un PDF** | el [documento](/basedb/es/fonctionnalites/documents/) de una fila, guardado en un campo Archivo o adjunto a un correo electrónico |
+| **Esperar** | una duración, o hasta la fecha de un campo ([detalles](#esperar)) |
+| **Intentar** | unos pasos, y otros que hacer si alguno de ellos falla ([detalles](#intentar)) |
+| **Lanzar una automatización** | otra automatización de la base, sobre una fila de su tabla |
 
 Una búsqueda que no encuentra nada no detiene el flujo: los pasos que debían modificar su
-fila se omiten. Para hacer otra cosa en ese caso, una condición lo comprueba: una rama
-con el filtro vacío se toma en cuanto la búsqueda ha encontrado algo.
+fila se omiten. Para hacer otra cosa en ese caso, **Si no se encuentra ninguna fila…**,
+debajo de la búsqueda, añade una condición que lo compruebe.
+
+Una **condición** comprueba una fila con un filtro, o un **valor**: la respuesta de la IA, el
+código de un webhook, un total —«`{{e2.reponse}}` es igual a Urgente», «`{{e3.somme.montant}}`
+es mayor o igual que 1000». Los números se comparan como números, los textos sin acentos ni
+mayúsculas.
 
 ## Para cada fila
 
@@ -79,6 +98,63 @@ Más allá del límite, las filas restantes esperan la siguiente ejecución, que
 salgan del filtro las que ya están tratadas (una casilla «relancée», una fecha) para tratarlas
 todas a lo largo de las ejecuciones. Un bucle no contiene otro bucle, y una ejecución se detiene
 a los dos minutos como máximo.
+
+## Esperar
+
+El paso **Esperar** pone la ejecución en pausa —tres horas, dos días— o hasta la fecha de un
+campo de una fila, con un desplazamiento y una hora: «la víspera del vencimiento, a las 9:00».
+La ejecución aparece **En pausa** en la pestaña **Ejecuciones**, con la fecha de su reanudación.
+
+Continúa en el paso siguiente **releyendo** sus filas: «tres días después de enviar el
+presupuesto, si todavía no está aceptado, reclamar» se escribe **Esperar** 3 días, y luego una
+condición sobre el estado del presupuesto, tal como esté ese día. Desactivar la automatización
+detiene las ejecuciones en pausa; una espera no se coloca ni en un bucle ni en un bloque
+**Intentar**, y dura un año como máximo.
+
+## Intentar
+
+El bloque **Intentar** tiene dos caminos. El primero se ejecuta; si alguno de sus pasos falla,
+el flujo continúa por el segundo, **En caso de error**, que cita el fallo —`{{e4.erreur}}`, el
+código, y `{{e4.etape}}`, el paso—, y luego sigue después del bloque. Así se puede avisar a
+alguien cuando un servicio no responde, sin detenerlo todo.
+
+Más sencillo: un webhook puede **reintentar** por sí mismo hasta tres veces tras un fallo del
+servicio, y un bucle puede **continuar** a pesar de una fila en error.
+
+## Un PDF y un correo electrónico
+
+**Generar un PDF** hace el documento de una fila —con una [plantilla de
+documento](/basedb/es/fonctionnalites/documents/) de su tabla, o la ficha con todos sus campos—
+y puede guardarlo en un campo Archivo. **Enviar un correo electrónico** puede adjuntarlo
+después, junto con los archivos de un campo Archivo o Imagen:
+
+- un correo **a cada uno**, o **uno solo para todos**, con destinatarios **en copia**;
+- un mensaje en **texto enriquecido** —negrita, listas, enlaces— que cita la fila;
+- una dirección de **respuesta**: la tuya por defecto, o la de un campo Correo electrónico;
+- hasta 50 destinatarios, 10 archivos adjuntos y 15 MB.
+
+«Cuando un presupuesto pasa a Aceptado, enviar la factura al cliente, con la contabilidad en
+copia»: **Una fila entra en un filtro** `statut eq "accepte"`, **Generar un PDF** con la
+plantilla Factura, **Enviar un correo electrónico** al campo Correo electrónico del cliente, con
+la factura adjunta.
+
+## Un servicio que llama a basedb
+
+Con el desencadenador **Se recibe un webhook**, la automatización tiene su propia dirección
+secreta, para dar al programa que debe lanzarla —una tienda en línea, un formulario externo, una
+herramienta de automatización:
+
+```bash
+curl -X POST "https://basedb.example.com/api/v1/hooks/<secret>" \
+  -H "content-type: application/json" \
+  -d '{"client": {"nom": "Dupont"}, "total": 120}'
+```
+
+Los pasos citan lo que ha enviado: `{{trigger.client.nom}}`, `{{trigger.total}}`; un
+formulario se lee igual, un texto mediante `{{trigger.texte}}`. La dirección se copia desde los
+ajustes del desencadenador; **Cambiar de dirección** la sustituye, y la anterior deja de
+funcionar al instante. Una llamada recibe `202`, la automatización se ejecuta en el mismo
+segundo.
 
 ## Llamar a un servicio
 
@@ -135,6 +211,11 @@ a cada texto:
 - `{{e4.reponse}}`: la respuesta del paso de IA `e4`;
 - `{{e5.client}}` en el bucle `e5`, la fila del turno; `{{e5.nombre}}` después de él, el número
   de filas recorridas;
+- `{{e6.nombre}}`, `{{e6.somme.montant}}`, `{{e6.moyenne.montant}}`, `{{e6.max.echeance}}`: lo
+  que ha contado el paso `e6`;
+- `{{e7.erreur}}`, `{{e7.etape}}`: el fallo que ha detectado el bloque **Intentar** `e7`;
+- `{{e8.nom}}`: el nombre del PDF del paso `e8`;
+- `{{trigger.client.nom}}`: lo que ha enviado un webhook entrante;
 - `{{_maintenant}}`: el instante de la ejecución.
 
 Un valor formado por una sola cita pasa el propio valor: una relación, una persona, una
@@ -183,18 +264,17 @@ se deshacen como las demás.
 ## Límites
 
 - Lo que escribe una automatización no desencadena ninguna otra: lo que deba encadenarse se escribe
-  en un solo flujo.
-- Una búsqueda da una fila, la primera; un bucle recorre 200 como máximo por ejecución, y el
-  primer paso que falla lo detiene. Sin esperas («tres días después»).
-- Sin scripts. Un correo electrónico se envía en texto simple, uno por destinatario (veinte como
-  máximo por paso), a través del [servidor de envío](/basedb/es/hebergement/variables/#correos-electrónicos)
-  de la instancia; una respuesta llega a la persona propietaria de la automatización.
-- Una condición comprueba una fila: para tomar una rama según la respuesta de la IA, escríbela
-  primero en un campo de la fila.
+  en un solo flujo, o mediante **Lanzar una automatización**, hasta tres niveles como máximo.
+- Una búsqueda da una fila, la primera; un bucle recorre 200 como máximo por ejecución. Una
+  ejecución dura dos minutos como máximo, sin contar las esperas.
+- Sin scripts. Un correo electrónico se envía a través del [servidor de envío](/basedb/es/hebergement/variables/#correos-electrónicos)
+  de la instancia.
 - Una [plantilla de base](/basedb/es/fonctionnalites/modeles/) solo incluye las automatizaciones sin
   búsqueda, bucle, condición ni paso de IA, y nunca un webhook.
 - Un webhook no sigue redirecciones y espera 10 segundos como máximo; una respuesta distinta de
-  2xx hace fallar el paso.
+  2xx hace fallar el paso, tras sus reintentos.
+- Una fecha que llega se busca cada minuto; solo cuentan las que han llegado después de
+  guardarse la automatización.
 - 100 ejecuciones por hora y por automatización; una ejecución programada que no se haya realizado solo se recupera
   una vez.
 - El retraso entre la escritura y la acción es del orden de un segundo.

@@ -204,6 +204,21 @@ RETURNING ${returning};`,
 }
 
 /**
+ * A token deletes one row, never the rows a cascade would take with it — in tables it
+ * may not even read (chapter 09 §8.1): the table must be the target of no link that
+ * empties with it.
+ */
+async function refuseCascade(exec: Executor, tableId: string): Promise<void> {
+  const [row] = await exec.query<{ cascades: boolean }>(
+    `SELECT EXISTS (SELECT 1 FROM _basedb.field_link_config
+                     WHERE target_table_id = $1 AND on_delete = 'cascade'
+                       AND fk_dropped_at IS NULL) AS cascades`,
+    [tableId],
+  )
+  if (row?.cascades === true) throw new BasedbError('TOKEN_CASCADE_FORBIDDEN')
+}
+
+/**
  * Deletes a record.
  *
  * Deleting a ROW is physical — it is deleting a FIELD or a TABLE that is logical
@@ -221,6 +236,7 @@ export async function deleteRecord(
     ctx,
     async (exec) => {
       const c = await prepare(exec, ctx, options.tableId, 'delete')
+      if (ctx.actor.kind === 'token') await refuseCascade(exec, options.tableId)
       return {
         sql: `DELETE FROM ${c.relation} AS ${quoteIdentifier(ROW_ALIAS)}
  WHERE "_id" = $1 AND ( /*predicat_lignes*/ ${c.rows} )

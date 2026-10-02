@@ -28,9 +28,9 @@ Crie no n8n uma credencial **basedb API**:
 | **Workspace** | a referência do espaço, a mesma dos endereços da API (`/api/v1/<espaco>/…`): `t4z56fq`, exceto se a instância fixar `BASEDB_TENANT` |
 | **Token** | um **token de integração**: menu **⋯** da base → **API e agentes** → **Tokens de API e MCP…** |
 
-Um token abre **uma** base. Ele lê suas linhas, as escreve se tiver sido criado com escrita,
-nunca tem mais permissões do que a pessoa que o criou, e **nunca exclui**. Ao salvar, o n8n
-testa a conexão e informa se o token é recusado.
+Um token abre **uma** base. Ele lê suas linhas, as escreve se tiver sido criado com escrita, e
+nunca tem mais permissões do que a pessoa que o criou. Ao salvar, o n8n testa a conexão e informa
+se o token é recusado.
 
 ## Ler e escrever: o nó basedb
 
@@ -57,9 +57,9 @@ interrompe o nó com o código do basedb e o que ele quer dizer.
 - Uma **relação** se lê `{ "id": …, "display": … }` e se escreve pelo `_id` da linha vinculada.
 - **Create or Update** nunca altera várias linhas: se várias tiverem os valores, o nó para em
   vez de arriscar um palpite.
-- Sem operação **Delete**: um token não exclui. Para remover linhas, marque-as (um status
-  “Arquivado”), ou confie a exclusão a uma
-  [automação](/basedb/pt-br/fonctionnalites/automatisations/).
+- Sem operação **Delete**: para remover linhas, marque-as (um status “Arquivado”), confie a
+  exclusão a uma [automação](/basedb/pt-br/fonctionnalites/automatisations/), ou chame a
+  [API REST](/basedb/pt-br/integrations/api-rest/) com um token criado para excluir.
 
 ## Disparar um workflow
 

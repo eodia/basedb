@@ -1,10 +1,12 @@
+import { createHash, randomBytes } from 'node:crypto'
 import { AI_KINDS, type AiKind } from '../ai/answer.js'
 import { resolveProvider } from '../ai/draft.js'
 import { MAX_PROMPT_CHARS } from '../ai/prompt.js'
-import { seal } from '../auth/sealing.js'
+import { seal, unseal } from '../auth/sealing.js'
 import { BasedbError } from '../errors/index.js'
 import { isAddress } from '../mail/message.js'
 import { requireOnBase } from '../rbac/require.js'
+import { sanitizeRichText } from '../records/rich-text.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { type TargetPolicy, checkTarget } from '../webhooks/target.js'
@@ -17,7 +19,31 @@ import { type TargetPolicy, checkTarget } from '../webhooks/target.js'
  * and read again, with the owner's rights, at every run.
  */
 
-export type TriggerKind = 'record_created' | 'record_updated' | 'schedule' | 'button'
+export type TriggerKind =
+  | 'record_created'
+  | 'record_updated'
+  | 'schedule'
+  | 'button'
+  | 'record_deleted'
+  | 'record_matches'
+  | 'date_reached'
+  | 'webhook'
+
+/** The triggers that carry no table: a clock, and a call from outside. */
+export const TABLELESS: ReadonlySet<TriggerKind> = new Set(['schedule', 'webhook'])
+
+/**
+ * A date that arrives (chapter 17 §1.1): the date a field of the row holds, moved by days
+ * — `-3`: three days before —, at a time of day in a time zone; a date-and-time field keeps
+ * its own time.
+ */
+export interface DateTrigger {
+  readonly field: string
+  readonly offsetDays: number
+  /** `HH:MM`, for a field holding a date alone. */
+  readonly at: string
+  readonly timezone: string
+}
 
 export interface Schedule {
   readonly every: 'hour' | 'day' | 'week'
@@ -102,7 +128,16 @@ export type AutomationStep =
       /** Addresses written out. */
       readonly addresses: readonly string[]
       readonly subject: string
+      /** Plain text, or the rich text of the app's editor when `format` is `html`. */
       readonly message: string
+      /** One mail per recipient, or one mail to all of them. */
+      readonly mode: MailMode
+      /** In copy, of a mail sent to all together. */
+      readonly cc: readonly string[]
+      /** Where an answer goes — an address, or a citation of one; `null`: the owner. */
+      readonly replyTo: string | null
+      readonly format: 'text' | 'html'
+      readonly attachments: readonly MailAttachment[]
     }
   | {
       readonly id: string
@@ -116,6 +151,8 @@ export type AutomationStep =
       /** Composed, citing what came before; `null`: the automation's own JSON. */
       readonly body: string | null
       readonly format: BodyFormat
+      /** Tries again after a network error, a 429 or a 5xx: 0 to 3 times. */
+      readonly retries: number
     }
   | {
       readonly id: string
@@ -127,8 +164,51 @@ export type AutomationStep =
       readonly sort: string | null
       /** The rows gone through at most, in the order of `sort`. */
       readonly limit: number
+      /** A turn that fails stops the run, or the loop goes on with the next row. */
+      readonly onError: 'stop' | 'continue'
       /** Run once per row, which they cite and act on by the loop's identifier. */
       readonly steps: readonly AutomationStep[]
+    }
+  | { readonly id: string; readonly kind: 'delete_record'; readonly record: RowSource }
+  | {
+      readonly id: string
+      readonly kind: 'aggregate'
+      /** The table's catalog key. */
+      readonly table: string
+      /** In the language of filters, citing what came before; empty: every row. */
+      readonly filter: string
+      readonly measures: readonly Measure[]
+    }
+  | {
+      readonly id: string
+      readonly kind: 'run_automation'
+      /** Another automation of the base. */
+      readonly automation: string
+      /** The row it starts on, when its trigger has a table. */
+      readonly record: RowSource | null
+    }
+  | {
+      readonly id: string
+      readonly kind: 'document'
+      readonly record: RowSource
+      /** A document template of that row's table; `null`: the sheet with every field. */
+      readonly template: string | null
+      /** A file field of that table the PDF is added to; `null`: kept for the run alone. */
+      readonly field: string | null
+      /** The file's name, citing what came before; empty: the template's and the row's. */
+      readonly name: string
+    }
+  | {
+      readonly id: string
+      readonly kind: 'wait'
+      readonly duration: WaitDuration | null
+      readonly until: WaitUntil | null
+    }
+  | {
+      readonly id: string
+      readonly kind: 'attempt'
+      /** Two ways: the steps tried, then those run if one of them fails. */
+      readonly paths: readonly BranchPath[]
     }
   | {
       readonly id: string
@@ -155,9 +235,82 @@ export type AutomationStep =
 export interface BranchPath {
   readonly id: string
   readonly label: string
-  /** A row, and a filter it must satisfy; `null`: otherwise — the last path only. */
-  readonly when: { readonly record: RowSource; readonly condition: string } | null
+  /**
+   * A row, and a filter it must satisfy; or a value — what a step before answered —
+   * compared with another; `null`: otherwise — the last path only.
+   */
+  readonly when: RowTest | ValueTest | null
   readonly steps: readonly AutomationStep[]
+}
+
+export interface RowTest {
+  readonly record: RowSource
+  readonly condition: string
+}
+
+export type ValueOperator =
+  | 'eq'
+  | 'ne'
+  | 'contains'
+  | 'not_contains'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'empty'
+  | 'not_empty'
+
+export const VALUE_OPERATORS: readonly ValueOperator[] = [
+  'eq',
+  'ne',
+  'contains',
+  'not_contains',
+  'gt',
+  'gte',
+  'lt',
+  'lte',
+  'empty',
+  'not_empty',
+]
+
+/** A value test: a text citing anything before, compared with another (chapter 17 §1.5). */
+export interface ValueTest {
+  readonly value: string
+  readonly op: ValueOperator
+  readonly operand: string
+}
+
+export const isValueTest = (when: RowTest | ValueTest): when is ValueTest => 'op' in when
+
+/** One mail per recipient, or one mail to all, who then see each other. */
+export type MailMode = 'each' | 'together'
+
+/** What an e-mail step attaches: a PDF a step before made, or the files of a row's field. */
+export type MailAttachment =
+  | { readonly step: string }
+  | { readonly record: RowSource; readonly field: string }
+
+/** A measure an aggregate step computes over the rows it counts. */
+export interface Measure {
+  readonly fn: 'sum' | 'avg' | 'min' | 'max'
+  readonly field: string
+}
+
+/** How each measure is cited after the step: `{{e3.somme.montant}}`. */
+export const MEASURE_NAMES = { sum: 'somme', avg: 'moyenne', min: 'min', max: 'max' } as const
+
+export interface WaitDuration {
+  readonly amount: number
+  readonly unit: 'minutes' | 'hours' | 'days'
+}
+
+/** Until the date a field of a row holds, moved by days, at a time of day. */
+export interface WaitUntil {
+  readonly record: RowSource
+  readonly field: string
+  readonly offsetDays: number
+  readonly at: string
+  readonly timezone: string
 }
 
 /** What chapter 17 first called an action is now a step. */
@@ -165,11 +318,13 @@ export type AutomationAction = AutomationStep
 
 export interface AutomationTrigger {
   readonly kind: TriggerKind
-  /** The table's catalog key; `null` for a schedule. */
+  /** The table's catalog key; `null` for a schedule and a webhook. */
   readonly table: string | null
   /** The watched fields of `record_updated` — none: any change. */
   readonly fields: readonly string[]
   readonly schedule: Schedule | null
+  /** The date of `date_reached`. */
+  readonly date: DateTrigger | null
 }
 
 export interface Automation {
@@ -187,13 +342,22 @@ export interface Automation {
   readonly lastRun: { readonly status: string; readonly at: string } | null
   readonly createdAt: string
   readonly updatedAt: string
+  /**
+   * The address a `webhook` trigger is called at, for whoever builds the base — opened from
+   * its sealed form by `revealHook`; `null` when it is not shown, or there is none.
+   */
+  readonly hook: { readonly path: string } | null
+  /** The address, sealed by the instance key, as kept. Never shown. */
+  readonly hookSealed: string | null
 }
 
 export interface AutomationRun {
   readonly id: string
   readonly trigger: string
   readonly recordId: string | null
-  readonly status: 'queued' | 'running' | 'succeeded' | 'failed' | 'skipped'
+  readonly status: 'queued' | 'running' | 'waiting' | 'succeeded' | 'failed' | 'skipped'
+  /** When a waiting run goes on. */
+  readonly resumeAt: string | null
   readonly reason: string | null
   readonly errorCode: string | null
   readonly steps: ReadonlyArray<Record<string, unknown>>
@@ -209,16 +373,30 @@ export interface AutomationInput {
   readonly trigger?: unknown
   readonly condition?: unknown
   readonly actions?: unknown
+  /** A new address for a `webhook` trigger: the old one stops at once. */
+  readonly regenerate_hook?: unknown
 }
 
 /** Steps in all, branches and what they hold included. */
-export const MAX_STEPS = 30
+export const MAX_STEPS = 40
 /** Branches within branches. */
 export const MAX_DEPTH = 3
 export const MAX_PATHS = 5
 export const MAX_NOTIFIED = 20
 /** The recipients an e-mail step names — people and addresses together. */
-export const MAX_MAILED = 20
+export const MAX_MAILED = 50
+/** In copy of a mail sent to all together. */
+export const MAX_CC = 20
+export const MAX_ATTACHMENTS = 10
+/** What a mail's attachments may weigh together: what relays accept. */
+export const MAX_ATTACHED_BYTES = 15 * 1024 * 1024
+/** The measures an aggregate step computes. */
+export const MAX_MEASURES = 5
+/** The longest a run may wait: a year. */
+export const MAX_WAIT_DAYS = 365
+/** Automations started by automations, one after the other, at most. */
+export const MAX_CHAIN = 3
+export const MAX_RETRIES = 3
 /** The choices an AI step may be asked to pick among. */
 export const MAX_AI_OPTIONS = 50
 /** The rows a loop goes through, at most and when none is said. */
@@ -252,7 +430,26 @@ const invalid = (field: string, reason: string, detail?: unknown) =>
     details: { field, reason, ...(detail === undefined ? {} : { detail }) },
   })
 
-const TRIGGERS: readonly TriggerKind[] = ['record_created', 'record_updated', 'schedule', 'button']
+const TRIGGERS: readonly TriggerKind[] = [
+  'record_created',
+  'record_updated',
+  'schedule',
+  'button',
+  'record_deleted',
+  'record_matches',
+  'date_reached',
+  'webhook',
+]
+/** What a document step may add a PDF to, and an e-mail step attach. */
+const FILE_KINDS = new Set(['file', 'image'])
+/** What a date trigger and a wait read. */
+const DATE_KINDS = new Set(['date', 'datetime'])
+/**
+ * What `sum` and `avg` add up — a computed field when it gives a number, which the run
+ * finds out —; `min` and `max` take a date, and a number given in order, too.
+ */
+const NUMERIC_KINDS = new Set(['number', 'count', 'rollup', 'formula'])
+const ORDERED_KINDS = new Set([...NUMERIC_KINDS, 'autonumber', 'date', 'datetime'])
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 /** A step's or a path's identifier: what `{{e2.champ}}` and `record` name. */
 const STEP_ID = /^[a-z][a-z0-9_]{0,31}$/
@@ -468,13 +665,20 @@ function tableByName(tables: Map<string, TableInfo>, name: unknown, field: strin
 interface Scope {
   readonly trigger: TableInfo | null
   readonly steps: ReadonlyMap<string, TableInfo | null>
+  /** The triggering row is one just deleted: cited as it was, never acted on. */
+  readonly deleted?: boolean
+  /** What an outside call sent: cited `{{trigger.client.nom}}`. */
+  readonly payload?: boolean
 }
 
 /** A text may cite a step only once it has run: one passed on every way here. */
 function checkCitations(text: string, scope: Scope, field: string): void {
   for (const path of citationsOf(text)) {
     const head = path[0] as string
-    if (path.length > 1 && !scope.steps.has(head)) throw invalid(field, 'etape_inconnue', head)
+    // `{{trigger.…}}`: the triggering row, or what an outside call sent.
+    const triggering = head === TRIGGER_ROW && (scope.trigger !== null || scope.payload === true)
+    if (path.length > 1 && !triggering && !scope.steps.has(head))
+      throw invalid(field, 'etape_inconnue', head)
   }
 }
 
@@ -503,6 +707,7 @@ function rowSource(
   scope: Scope,
   field: string,
   required: string | null,
+  acting = false,
 ): { readonly ref: string | null; readonly table: TableInfo | null } {
   const ref =
     typeof raw === 'string' && raw !== '' ? raw : scope.trigger === null ? null : TRIGGER_ROW
@@ -510,6 +715,9 @@ function rowSource(
     if (required !== null) throw invalid(field, required)
     return { ref: null, table: null }
   }
+  // A row just deleted is cited as it was; there is nothing left to write, delete or read.
+  if (ref === TRIGGER_ROW && acting && scope.deleted === true)
+    throw invalid(field, 'ligne_supprimee')
   if (ref === TRIGGER_ROW) return { ref, table: scope.trigger }
   const table = scope.steps.get(ref)
   if (table === undefined) throw invalid(field, 'etape_inconnue', ref)
@@ -521,7 +729,9 @@ function rowSource(
 export function stepsOf(steps: readonly AutomationStep[]): AutomationStep[] {
   return steps.flatMap((s) => [
     s,
-    ...(s.kind === 'branch' ? s.paths.flatMap((p) => stepsOf(p.steps)) : []),
+    ...(s.kind === 'branch' || s.kind === 'attempt'
+      ? s.paths.flatMap((p) => stepsOf(p.steps))
+      : []),
     ...(s.kind === 'for_each' ? stepsOf(s.steps) : []),
   ])
 }
@@ -565,7 +775,18 @@ interface Walk {
   readonly sealing: ((plaintext: string) => string) | null
   /** The headers each webhook step of the saved automation has, by step: what a save keeps. */
   readonly kept: ReadonlyMap<string, readonly WebhookHeader[]>
+  /** The automation being saved, which a step may not start; `null` for a new one. */
+  readonly self: string | null
+  /** The document steps met so far: what an e-mail may attach. */
+  readonly documents: Set<string>
   count: number
+}
+
+/** Where a step stands: how deep, and inside what — a loop, an attempt. */
+interface Place {
+  readonly depth: number
+  readonly inLoop: boolean
+  readonly inAttempt: boolean
 }
 
 /** The identifier given, checked, or a new one: `e3` for a step, `c2` for a path. */
@@ -596,11 +817,15 @@ async function checkedSteps(
   raw: unknown,
   outer: Scope,
   at: string,
-  depth: number,
-  inLoop = false,
+  place: Place,
 ): Promise<AutomationStep[]> {
   if (!Array.isArray(raw)) throw invalid(at, 'etapes_invalides')
-  const scope = { trigger: outer.trigger, steps: new Map(outer.steps) }
+  const scope: Scope = {
+    trigger: outer.trigger,
+    steps: new Map(outer.steps),
+    ...(outer.deleted === true ? { deleted: true } : {}),
+    ...(outer.payload === true ? { payload: true } : {}),
+  }
   const out: AutomationStep[] = []
   for (const [index, item] of raw.entries()) {
     const field = `${at}[${index}]`
@@ -609,9 +834,9 @@ async function checkedSteps(
     if (walk.count > MAX_STEPS) throw invalid('actions', 'trop_d_etapes', MAX_STEPS)
     const id = identifier(walk, a.id, 'e', `${field}.id`)
     try {
-      const { step, gives } = await checkedStep(walk, a, id, scope, field, depth, inLoop)
+      const { step, gives } = await checkedStep(walk, a, id, scope, field, place)
       out.push(step)
-      if (gives !== undefined) scope.steps.set(id, gives)
+      if (gives !== undefined) (scope.steps as Map<string, TableInfo | null>).set(id, gives)
     } catch (error) {
       throw aboutStep(error, id)
     }
@@ -700,12 +925,11 @@ async function checkedStep(
   id: string,
   scope: Scope,
   at: string,
-  depth: number,
-  inLoop: boolean,
+  place: Place,
 ): Promise<{ readonly step: AutomationStep; readonly gives?: TableInfo | null }> {
   switch (a.kind) {
     case 'update_record': {
-      const source = rowSource(a.record, scope, `${at}.record`, 'action_sans_ligne')
+      const source = rowSource(a.record, scope, `${at}.record`, 'action_sans_ligne', true)
       const table = source.table as TableInfo
       const values = checkedValues(a.values, table, `${at}.values`, scope)
       return {
@@ -804,10 +1028,43 @@ async function checkedStep(
       if (subject === '' || subject.length > 200 || /[\r\n]/.test(subject))
         throw invalid(`${at}.subject`, 'objet_invalide')
       checkCitations(subject, scope, `${at}.subject`)
-      const message = typeof a.message === 'string' ? a.message.trim() : ''
-      if (message === '' || message.length > 5000)
+      const format = a.format === undefined || a.format === null ? 'text' : a.format
+      if (format !== 'text' && format !== 'html')
+        throw invalid(`${at}.format`, 'format_inconnu', format)
+      const written = typeof a.message === 'string' ? a.message.trim() : ''
+      // A rich text is kept in the canonical form of the app's rich texts: what the editor
+      // writes, nothing a script could hide in.
+      const message = format === 'html' ? sanitizeRichText(written) : written
+      if (message === '' || message.length > (format === 'html' ? 50_000 : 5000))
         throw invalid(`${at}.message`, 'message_invalide')
       checkCitations(message, scope, `${at}.message`)
+      const mode = a.mode === undefined || a.mode === null ? 'each' : a.mode
+      if (mode !== 'each' && mode !== 'together')
+        throw invalid(`${at}.mode`, 'valeur_invalide', mode)
+      const cc = Array.isArray(a.cc)
+        ? [
+            ...new Set(
+              a.cc
+                .filter((x): x is string => typeof x === 'string')
+                .map((x) => x.trim().replace(/^mailto:/i, ''))
+                .filter((x) => x !== ''),
+            ),
+          ]
+        : []
+      if (cc.length > 0 && mode !== 'together') throw invalid(`${at}.cc`, 'copie_sans_envoi_groupe')
+      if (cc.length > MAX_CC) throw invalid(`${at}.cc`, 'trop_de_destinataires', MAX_CC)
+      const wrongCopy = cc.find((x) => !isAddress(x))
+      if (wrongCopy !== undefined) throw invalid(`${at}.cc`, 'adresse_email', wrongCopy)
+      const replyTo =
+        typeof a.reply_to === 'string' && a.reply_to.trim() !== '' ? a.reply_to.trim() : null
+      if (replyTo !== null) {
+        // An address written out, or what a citation will give: checked again when sent.
+        const plain = replyTo.replace(CITATION, '')
+        if (replyTo.length > 254 || (plain === replyTo && !isAddress(replyTo)))
+          throw invalid(`${at}.reply_to`, 'reponse_a_invalide', replyTo)
+        checkCitations(replyTo, scope, `${at}.reply_to`)
+      }
+      const attachments = checkedAttachments(a.attachments, scope, walk, `${at}.attachments`)
       return {
         step: {
           id,
@@ -819,6 +1076,11 @@ async function checkedStep(
           addresses,
           subject,
           message,
+          mode,
+          cc,
+          replyTo,
+          format,
+          attachments,
         },
       }
     }
@@ -839,6 +1101,14 @@ async function checkedStep(
       if (composed && !hasBody(method as HttpMethod))
         throw invalid(`${at}.body`, 'corps_sans_objet', method)
       const body = composed ? checkedBody(a.body, format as BodyFormat, scope, `${at}.body`) : null
+      const retries = a.retries === undefined || a.retries === null ? 0 : a.retries
+      if (
+        typeof retries !== 'number' ||
+        !Number.isInteger(retries) ||
+        retries < 0 ||
+        retries > MAX_RETRIES
+      )
+        throw invalid(`${at}.retries`, 'reessais_invalides', MAX_RETRIES)
       return {
         step: {
           id,
@@ -849,13 +1119,14 @@ async function checkedStep(
           headers,
           body,
           format: format as BodyFormat,
+          retries,
         },
         gives: null,
       }
     }
     case 'for_each': {
-      if (inLoop) throw invalid(at, 'boucle_dans_boucle')
-      if (depth >= MAX_DEPTH) throw invalid(at, 'branches_trop_profondes', MAX_DEPTH)
+      if (place.inLoop) throw invalid(at, 'boucle_dans_boucle')
+      if (place.depth >= MAX_DEPTH) throw invalid(at, 'branches_trop_profondes', MAX_DEPTH)
       const table = tableByName(walk.tables, a.table, `${at}.table`)
       const filter = typeof a.filter === 'string' ? a.filter.trim() : ''
       if (filter.length > 4000) throw invalid(`${at}.filter`, 'texte_trop_long')
@@ -874,11 +1145,18 @@ async function checkedStep(
         limit > MAX_LOOP_ROWS
       )
         throw invalid(`${at}.limit`, 'limite_invalide', MAX_LOOP_ROWS)
+      const onError = a.on_error === undefined || a.on_error === null ? 'stop' : a.on_error
+      if (onError !== 'stop' && onError !== 'continue')
+        throw invalid(`${at}.on_error`, 'valeur_invalide', onError)
       // Inside, the loop's identifier names the row of the turn; after it, how many there were.
-      const inner = { trigger: scope.trigger, steps: new Map(scope.steps).set(id, table) }
-      const steps = await checkedSteps(walk, a.steps ?? [], inner, `${at}.steps`, depth + 1, true)
+      const inner: Scope = { ...scope, steps: new Map(scope.steps).set(id, table) }
+      const steps = await checkedSteps(walk, a.steps ?? [], inner, `${at}.steps`, {
+        ...place,
+        depth: place.depth + 1,
+        inLoop: true,
+      })
       return {
-        step: { id, kind: 'for_each', table: table.id, filter, sort, limit, steps },
+        step: { id, kind: 'for_each', table: table.id, filter, sort, limit, onError, steps },
         gives: null,
       }
     }
@@ -934,7 +1212,7 @@ async function checkedStep(
       }
     }
     case 'branch': {
-      if (depth >= MAX_DEPTH) throw invalid(at, 'branches_trop_profondes', MAX_DEPTH)
+      if (place.depth >= MAX_DEPTH) throw invalid(at, 'branches_trop_profondes', MAX_DEPTH)
       const raw = Array.isArray(a.paths) ? a.paths : []
       if (raw.length === 0) throw invalid(`${at}.paths`, 'aucun_chemin')
       if (raw.length > MAX_PATHS) throw invalid(`${at}.paths`, 'trop_de_chemins', MAX_PATHS)
@@ -946,11 +1224,20 @@ async function checkedStep(
         let when: BranchPath['when'] = null
         if (p.when !== null && p.when !== undefined) {
           const w = p.when as Record<string, unknown>
-          const source = rowSource(w.record, scope, `${field}.when.record`, 'condition_sans_ligne')
-          const condition = typeof w.condition === 'string' ? w.condition.trim() : ''
-          if (condition.length > 4000) throw invalid(`${field}.when.condition`, 'texte_trop_long')
-          checkCitations(condition, scope, `${field}.when.condition`)
-          when = { record: source.ref as string, condition }
+          if (w.op !== undefined) {
+            when = checkedValueTest(w, scope, `${field}.when`)
+          } else {
+            const source = rowSource(
+              w.record,
+              scope,
+              `${field}.when.record`,
+              'condition_sans_ligne',
+            )
+            const condition = typeof w.condition === 'string' ? w.condition.trim() : ''
+            if (condition.length > 4000) throw invalid(`${field}.when.condition`, 'texte_trop_long')
+            checkCitations(condition, scope, `${field}.when.condition`)
+            when = { record: source.ref as string, condition }
+          }
         } else if (index !== raw.length - 1) {
           throw invalid(`${field}.when`, 'sinon_en_dernier')
         }
@@ -960,21 +1247,240 @@ async function checkedStep(
             : when === null
               ? 'Sinon'
               : `Chemin ${index + 1}`
-        const steps = await checkedSteps(
-          walk,
-          p.steps ?? [],
-          scope,
-          `${field}.steps`,
-          depth + 1,
-          inLoop,
-        )
+        const steps = await checkedSteps(walk, p.steps ?? [], scope, `${field}.steps`, {
+          ...place,
+          depth: place.depth + 1,
+        })
         paths.push({ id: pathId, label, when, steps })
       }
       return { step: { id, kind: 'branch', paths } }
     }
+    case 'attempt': {
+      if (place.depth >= MAX_DEPTH) throw invalid(at, 'branches_trop_profondes', MAX_DEPTH)
+      const raw = Array.isArray(a.paths) ? a.paths : []
+      if (raw.length !== 2) throw invalid(`${at}.paths`, 'essai_deux_chemins')
+      const paths: BranchPath[] = []
+      for (const [index, item] of raw.entries()) {
+        const p = (item ?? {}) as Record<string, unknown>
+        const field = `${at}.paths[${index}]`
+        const pathId = identifier(walk, p.id, 'c', `${field}.id`)
+        const label =
+          typeof p.label === 'string' && p.label.trim() !== ''
+            ? p.label.trim().slice(0, 60)
+            : index === 0
+              ? 'Essayer'
+              : 'En cas d’échec'
+        // What failed is cited in the second way: `{{e4.erreur}}`, `{{e4.etape}}`.
+        const inner: Scope =
+          index === 0 ? scope : { ...scope, steps: new Map(scope.steps).set(id, null) }
+        const steps = await checkedSteps(walk, p.steps ?? [], inner, `${field}.steps`, {
+          ...place,
+          depth: place.depth + 1,
+          inAttempt: true,
+        })
+        paths.push({ id: pathId, label, when: null, steps })
+      }
+      // After it, `{{e4.erreur}}` reads what failed — empty when nothing did.
+      return { step: { id, kind: 'attempt', paths }, gives: null }
+    }
+    case 'delete_record': {
+      const source = rowSource(a.record, scope, `${at}.record`, 'action_sans_ligne', true)
+      return { step: { id, kind: 'delete_record', record: source.ref as string } }
+    }
+    case 'aggregate': {
+      const table = tableByName(walk.tables, a.table, `${at}.table`)
+      const filter = typeof a.filter === 'string' ? a.filter.trim() : ''
+      if (filter.length > 4000) throw invalid(`${at}.filter`, 'texte_trop_long')
+      checkCitations(filter, scope, `${at}.filter`)
+      const raw = Array.isArray(a.measures) ? a.measures : []
+      if (raw.length > MAX_MEASURES)
+        throw invalid(`${at}.measures`, 'trop_de_mesures', MAX_MEASURES)
+      const measures: Measure[] = []
+      for (const [index, item] of raw.entries()) {
+        const m = (item ?? {}) as Record<string, unknown>
+        const field = typeof m.field === 'string' ? m.field : ''
+        const kind = table.fields.get(field)
+        const fn = m.fn
+        const fits =
+          (fn === 'sum' || fn === 'avg') && kind !== undefined
+            ? NUMERIC_KINDS.has(kind)
+            : (fn === 'min' || fn === 'max') && kind !== undefined && ORDERED_KINDS.has(kind)
+        if (!fits) throw invalid(`${at}.measures[${index}]`, 'mesure_invalide', `${fn}:${field}`)
+        if (!measures.some((x) => x.fn === fn && x.field === field))
+          measures.push({ fn: fn as Measure['fn'], field })
+      }
+      return {
+        step: { id, kind: 'aggregate', table: table.id, filter, measures },
+        gives: null,
+      }
+    }
+    case 'run_automation': {
+      const target = typeof a.automation === 'string' ? a.automation : ''
+      if (!UUID.test(target)) throw invalid(`${at}.automation`, 'automation_inconnue', target)
+      if (target === walk.self) throw invalid(`${at}.automation`, 'automation_elle_meme')
+      const [found] = await walk.exec.query<{ trigger_kind: TriggerKind; table_id: string | null }>(
+        `SELECT trigger_kind, table_id::text FROM _basedb.automation
+          WHERE id = $1 AND base_id = $2 AND deleted_at IS NULL`,
+        [target, walk.baseId],
+      )
+      if (found === undefined) throw invalid(`${at}.automation`, 'automation_inconnue', target)
+      if (found.table_id === null) {
+        return { step: { id, kind: 'run_automation', automation: target, record: null } }
+      }
+      const source = rowSource(a.record, scope, `${at}.record`, 'ligne_requise')
+      if (source.table?.id !== found.table_id) throw invalid(`${at}.record`, 'table_differente')
+      return { step: { id, kind: 'run_automation', automation: target, record: source.ref } }
+    }
+    case 'document': {
+      const source = rowSource(a.record, scope, `${at}.record`, 'action_sans_ligne', true)
+      const table = source.table as TableInfo
+      const template =
+        typeof a.template === 'string' && a.template !== '' ? a.template.toLowerCase() : null
+      if (template !== null) {
+        const [found] = UUID.test(template)
+          ? await walk.exec.query<{ id: string }>(
+              'SELECT id::text FROM _basedb.document_template WHERE id = $1 AND table_id = $2',
+              [template, table.id],
+            )
+          : []
+        if (found === undefined) throw invalid(`${at}.template`, 'modele_inconnu', template)
+      }
+      const field = typeof a.field === 'string' && a.field !== '' ? a.field : null
+      if (field !== null && table.fields.get(field) !== 'file')
+        throw invalid(`${at}.field`, 'champ_fichier_attendu', field)
+      const name = typeof a.name === 'string' ? a.name.trim().slice(0, 200) : ''
+      checkCitations(name, scope, `${at}.name`)
+      walk.documents.add(id)
+      return {
+        step: { id, kind: 'document', record: source.ref as string, template, field, name },
+        gives: null,
+      }
+    }
+    case 'wait': {
+      if (place.inLoop) throw invalid(at, 'attente_dans_boucle')
+      if (place.inAttempt) throw invalid(at, 'attente_dans_essai')
+      const d = a.duration as Record<string, unknown> | null | undefined
+      const u = a.until as Record<string, unknown> | null | undefined
+      if ((d === null || d === undefined) === (u === null || u === undefined))
+        throw invalid(at, 'attente_invalide')
+      if (d !== null && d !== undefined) {
+        const unit = d.unit
+        const amount = d.amount
+        const days =
+          typeof amount === 'number'
+            ? unit === 'days'
+              ? amount
+              : unit === 'hours'
+                ? amount / 24
+                : unit === 'minutes'
+                  ? amount / 1440
+                  : Number.NaN
+            : Number.NaN
+        if (
+          typeof amount !== 'number' ||
+          !Number.isInteger(amount) ||
+          amount < 1 ||
+          !(days <= MAX_WAIT_DAYS)
+        )
+          throw invalid(`${at}.duration`, 'attente_invalide', MAX_WAIT_DAYS)
+        return {
+          step: {
+            id,
+            kind: 'wait',
+            duration: { amount, unit: unit as WaitDuration['unit'] },
+            until: null,
+          },
+        }
+      }
+      const w = u as Record<string, unknown>
+      const source = rowSource(w.record, scope, `${at}.until.record`, 'action_sans_ligne', true)
+      const field = typeof w.field === 'string' ? w.field : ''
+      if (!DATE_KINDS.has(source.table?.fields.get(field) ?? ''))
+        throw invalid(`${at}.until.field`, 'champ_date_attendu', field)
+      const offsetDays = w.offset_days === undefined ? 0 : w.offset_days
+      if (
+        typeof offsetDays !== 'number' ||
+        !Number.isInteger(offsetDays) ||
+        Math.abs(offsetDays) > MAX_WAIT_DAYS
+      )
+        throw invalid(`${at}.until.offset_days`, 'decalage_invalide', MAX_WAIT_DAYS)
+      const { at: time, timezone } = checkedTimeOfDay(w, `${at}.until`)
+      return {
+        step: {
+          id,
+          kind: 'wait',
+          duration: null,
+          until: { record: source.ref as string, field, offsetDays, at: time, timezone },
+        },
+      }
+    }
     default:
       throw invalid(`${at}.kind`, 'action_inconnue', a.kind)
   }
+}
+
+/** A time of day and a time zone, as a date trigger or a wait gives them. */
+function checkedTimeOfDay(
+  raw: Record<string, unknown>,
+  at: string,
+): { readonly at: string; readonly timezone: string } {
+  const time = typeof raw.at === 'string' && raw.at !== '' ? raw.at : '09:00'
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw invalid(`${at}.at`, 'heure_invalide')
+  const timezone =
+    typeof raw.timezone === 'string' && raw.timezone !== '' ? raw.timezone : 'Europe/Paris'
+  try {
+    new Intl.DateTimeFormat('fr', { timeZone: timezone })
+  } catch {
+    throw invalid(`${at}.timezone`, 'fuseau_inconnu')
+  }
+  return { at: time, timezone }
+}
+
+/**
+ * What an e-mail attaches: the PDF a document step before it made — one that ran on every
+ * way here —, or the files of a file or image field of a row it may name.
+ */
+function checkedAttachments(raw: unknown, scope: Scope, walk: Walk, at: string): MailAttachment[] {
+  const list = Array.isArray(raw) ? raw : []
+  if (list.length > MAX_ATTACHMENTS) throw invalid(at, 'trop_de_pieces_jointes', MAX_ATTACHMENTS)
+  const out: MailAttachment[] = []
+  for (const [index, item] of list.entries()) {
+    const x = (item ?? {}) as Record<string, unknown>
+    const field = `${at}[${index}]`
+    if (typeof x.step === 'string') {
+      if (!walk.documents.has(x.step) || !scope.steps.has(x.step))
+        throw invalid(field, 'piece_jointe_invalide', x.step)
+      out.push({ step: x.step })
+      continue
+    }
+    const source = rowSource(x.record, scope, `${field}.record`, 'piece_jointe_invalide')
+    const name = typeof x.field === 'string' ? x.field : ''
+    if (!FILE_KINDS.has(source.table?.fields.get(name) ?? ''))
+      throw invalid(`${field}.field`, 'champ_fichier_attendu', name)
+    out.push({ record: source.ref as string, field: name })
+  }
+  return out
+}
+
+/** A value test of a branch's path: a text citing what came before, an operator, another. */
+function checkedValueTest(w: Record<string, unknown>, scope: Scope, at: string): ValueTest {
+  const op = w.op
+  if (typeof op !== 'string' || !(VALUE_OPERATORS as readonly string[]).includes(op))
+    throw invalid(`${at}.op`, 'operateur_inconnu', op)
+  const value = typeof w.value === 'string' ? w.value.trim() : ''
+  if (value === '' || value.length > 1000) throw invalid(`${at}.value`, 'valeur_invalide')
+  checkCitations(value, scope, `${at}.value`)
+  const operand =
+    op === 'empty' || op === 'not_empty'
+      ? ''
+      : typeof w.operand === 'string'
+        ? w.operand.trim()
+        : typeof w.operand === 'number'
+          ? String(w.operand)
+          : ''
+  if (operand.length > 1000) throw invalid(`${at}.operand`, 'valeur_invalide')
+  checkCitations(operand, scope, `${at}.operand`)
+  return { value, op: op as ValueOperator, operand }
 }
 
 async function checkedDefinition(
@@ -997,13 +1503,22 @@ async function checkedDefinition(
   const enabled = input.enabled === undefined ? (current?.enabled ?? true) : input.enabled === true
 
   const tables = await tablesOf(exec, baseId)
-  const rawTrigger = (input.trigger ?? current?.trigger ?? {}) as Record<string, unknown>
+  const rawTrigger = (input.trigger ??
+    (current === null ? {} : wireTrigger(current.trigger))) as Record<string, unknown>
   const kind = rawTrigger.kind as TriggerKind
   if (!TRIGGERS.includes(kind))
     throw invalid('trigger.kind', 'declencheur_inconnu', rawTrigger.kind)
   let trigger: AutomationTrigger
   if (kind === 'schedule') {
-    trigger = { kind, table: null, fields: [], schedule: checkedSchedule(rawTrigger.schedule) }
+    trigger = {
+      kind,
+      table: null,
+      fields: [],
+      schedule: checkedSchedule(rawTrigger.schedule),
+      date: null,
+    }
+  } else if (kind === 'webhook') {
+    trigger = { kind, table: null, fields: [], schedule: null, date: null }
   } else {
     const table = tableByName(tables, rawTrigger.table, 'trigger.table')
     const fields =
@@ -1012,7 +1527,23 @@ async function checkedDefinition(
         : []
     for (const f of fields)
       if (!table.fields.has(f)) throw invalid('trigger.fields', 'champ_inconnu', f)
-    trigger = { kind, table: table.id, fields, schedule: null }
+    let date: DateTrigger | null = null
+    if (kind === 'date_reached') {
+      const d = (rawTrigger.date ?? {}) as Record<string, unknown>
+      const field = typeof d.field === 'string' ? d.field : ''
+      if (!DATE_KINDS.has(table.fields.get(field) ?? ''))
+        throw invalid('trigger.date.field', 'champ_date_attendu', field)
+      const offsetDays = d.offset_days === undefined || d.offset_days === null ? 0 : d.offset_days
+      if (
+        typeof offsetDays !== 'number' ||
+        !Number.isInteger(offsetDays) ||
+        Math.abs(offsetDays) > MAX_WAIT_DAYS
+      )
+        throw invalid('trigger.date.offset_days', 'decalage_invalide', MAX_WAIT_DAYS)
+      const { at, timezone } = checkedTimeOfDay(d, 'trigger.date')
+      date = { field, offsetDays, at, timezone }
+    }
+    trigger = { kind, table: table.id, fields, schedule: null, date }
   }
   const source = trigger.table === null ? null : (tables.get(trigger.table) ?? null)
 
@@ -1021,6 +1552,9 @@ async function checkedDefinition(
     typeof rawCondition === 'string' && rawCondition.trim() !== '' ? rawCondition.trim() : null
   if (condition !== null && trigger.table === null)
     throw invalid('condition', 'condition_sans_ligne')
+  // « Entre dans un filtre » is the filter itself: without one, nothing to enter.
+  if (condition === null && kind === 'record_matches')
+    throw invalid('condition', 'condition_requise')
   if (condition !== null && condition.length > 4000) throw invalid('condition', 'texte_trop_long')
   // Checked before any step has run: it cites the triggering row only.
   if (condition !== null)
@@ -1043,16 +1577,42 @@ async function checkedDefinition(
         s.kind === 'webhook' ? [[s.id, s.headers] as const] : [],
       ),
     ),
+    self: current?.id ?? null,
+    documents: new Set(),
     count: 0,
   }
   const actions = await checkedSteps(
     walk,
     rawSteps,
-    { trigger: source, steps: new Map() },
+    {
+      trigger: source,
+      steps: new Map(),
+      ...(kind === 'record_deleted' ? { deleted: true } : {}),
+      ...(kind === 'webhook' ? { payload: true } : {}),
+    },
     'actions',
-    0,
+    { depth: 0, inLoop: false, inAttempt: false },
   )
   return { label, description, enabled, trigger, condition, actions }
+}
+
+/** A trigger as the API shows it — `offset_days` — and takes it back. */
+export function wireTrigger(trigger: AutomationTrigger): Record<string, unknown> {
+  return {
+    kind: trigger.kind,
+    table: trigger.table,
+    fields: trigger.fields,
+    schedule: trigger.schedule,
+    date:
+      trigger.date === null
+        ? null
+        : {
+            field: trigger.date.field,
+            offset_days: trigger.date.offsetDays,
+            at: trigger.date.at,
+            timezone: trigger.date.timezone,
+          },
+  }
 }
 
 /**
@@ -1076,6 +1636,7 @@ export function wireSteps(steps: readonly AutomationStep[]): Record<string, unkn
           ),
           body: s.body,
           format: s.format,
+          retries: s.retries,
         }
       case 'for_each':
         return {
@@ -1085,7 +1646,24 @@ export function wireSteps(steps: readonly AutomationStep[]): Record<string, unkn
           filter: s.filter,
           sort: s.sort,
           limit: s.limit,
+          on_error: s.onError,
           steps: wireSteps(s.steps),
+        }
+      case 'wait':
+        return {
+          id: s.id,
+          kind: s.kind,
+          duration: s.duration,
+          until:
+            s.until === null
+              ? null
+              : {
+                  record: s.until.record,
+                  field: s.until.field,
+                  offset_days: s.until.offsetDays,
+                  at: s.until.at,
+                  timezone: s.until.timezone,
+                },
         }
       case 'notify':
         return {
@@ -1107,8 +1685,14 @@ export function wireSteps(steps: readonly AutomationStep[]): Record<string, unkn
           addresses: s.addresses,
           subject: s.subject,
           message: s.message,
+          mode: s.mode,
+          cc: s.cc,
+          reply_to: s.replyTo,
+          format: s.format,
+          attachments: s.attachments,
         }
       case 'branch':
+      case 'attempt':
         return {
           id: s.id,
           kind: s.kind,
@@ -1140,8 +1724,20 @@ function storedSteps(raw: unknown, hasRow: boolean): AutomationStep[] {
           headers: s.headers ?? [],
           body: s.body ?? null,
           format: s.format ?? 'json',
+          retries: s.retries ?? 0,
         }
       : {}),
+    // Saved before mails could be sent together, in HTML, with attachments: as they were.
+    ...(s.kind === 'email'
+      ? {
+          mode: s.mode ?? 'each',
+          cc: s.cc ?? [],
+          replyTo: s.replyTo ?? null,
+          format: s.format ?? 'text',
+          attachments: s.attachments ?? [],
+        }
+      : {}),
+    ...(s.kind === 'for_each' ? { onError: s.onError ?? 'stop' } : {}),
     ...(Array.isArray(s.steps) ? { steps: s.steps.map(within) } : {}),
     ...(Array.isArray(s.paths)
       ? {
@@ -1182,12 +1778,14 @@ interface Row extends Record<string, unknown> {
   readonly last_at: string | null
   readonly created_at: string
   readonly updated_at: string
+  readonly hook_sealed: string | null
 }
 
 const COLUMNS = `a.id::text, a.base_id::text, a.label, a.description, a.is_enabled, a.trigger_kind,
        a.table_id::text, a.trigger, a.condition, a.actions, a.owner_id::text,
        coalesce(nullif(u.display_name, ''), u.email) AS owner_name, a.next_run_at::text,
-       last.status AS last_status, last.at AS last_at, a.created_at::text, a.updated_at::text`
+       last.status AS last_status, last.at AS last_at, a.created_at::text, a.updated_at::text,
+       a.hook_sealed`
 const FROM = `FROM _basedb.automation a
        JOIN _basedb.app_user u ON u.id = a.owner_id
        LEFT JOIN LATERAL (
@@ -1196,7 +1794,7 @@ const FROM = `FROM _basedb.automation a
           ORDER BY r.queued_at DESC LIMIT 1) last ON true`
 
 function shaped(row: Row): Automation {
-  const t = row.trigger as { fields?: string[]; schedule?: Schedule }
+  const t = row.trigger as { fields?: string[]; schedule?: Schedule; date?: DateTrigger }
   return {
     id: row.id,
     baseId: row.base_id,
@@ -1208,6 +1806,7 @@ function shaped(row: Row): Automation {
       table: row.table_id,
       fields: t.fields ?? [],
       schedule: t.schedule ?? null,
+      date: t.date ?? null,
     },
     condition: row.condition,
     actions: storedSteps(row.actions, row.table_id !== null),
@@ -1216,6 +1815,31 @@ function shaped(row: Row): Automation {
     lastRun: row.last_status === null ? null : { status: row.last_status, at: row.last_at ?? '' },
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    hook: null,
+    hookSealed: row.hook_sealed,
+  }
+}
+
+/** What a webhook trigger's secret is sealed for: one purpose of the instance key (A25). */
+export const HOOK_SECRET = 'automation/hook'
+
+/** A webhook trigger's address, under the API, from its secret. */
+export const hookPath = (secret: string) => `/api/v1/hooks/${secret}`
+
+/** An automation with its webhook address opened — for whoever builds the base. */
+export function revealHook(automation: Automation, instanceKey?: () => string): Automation {
+  if (automation.hookSealed === null || instanceKey === undefined) return automation
+  const secret = unseal(instanceKey(), HOOK_SECRET, automation.hookSealed)
+  return secret === null ? automation : { ...automation, hook: { path: hookPath(secret) } }
+}
+
+/** A new secret address: what is kept of it, sealed and hashed. */
+function newHook(instanceKey: (() => string) | undefined): { sealed: string; hash: Buffer } {
+  if (instanceKey === undefined) throw invalid('trigger', 'secret_impossible')
+  const secret = randomBytes(24).toString('base64url')
+  return {
+    sealed: seal(instanceKey(), HOOK_SECRET, secret),
+    hash: createHash('sha256').update(secret).digest(),
   }
 }
 
@@ -1241,6 +1865,7 @@ export async function listAutomations(
   pools: Pools,
   ctx: RequestContext,
   request: { readonly baseId: string },
+  instanceKey?: () => string,
 ): Promise<Automation[]> {
   return withTransaction(
     pools,
@@ -1254,7 +1879,7 @@ export async function listAutomations(
           ORDER BY a.created_at`,
         [request.baseId],
       )
-      return rows.map(shaped)
+      return rows.map((row) => revealHook(shaped(row), instanceKey))
     },
     { readOnly: true },
   )
@@ -1315,11 +1940,14 @@ export async function createAutomation(
       targets,
       sealingBy(instanceKey),
     )
+    const hook = d.trigger.kind === 'webhook' ? newHook(instanceKey) : null
     const [row] = await exec.query<{ id: string }>(
       `INSERT INTO _basedb.automation
          (tenant_id, base_id, label, description, is_enabled, trigger_kind, table_id, trigger,
-          condition, actions, owner_id, next_run_at, created_by)
-       SELECT b.tenant_id, b.id, $2, $3, $4, $5, $6, $7::jsonb, $8, $9::jsonb, $10, $11, $10
+          condition, actions, owner_id, next_run_at, created_by, hook_sealed, hook_hash,
+          scanned_until)
+       SELECT b.tenant_id, b.id, $2, $3, $4, $5, $6, $7::jsonb, $8, $9::jsonb, $10, $11, $10,
+              $12, $13, $14
          FROM _basedb.base b WHERE b.id = $1
        RETURNING id::text`,
       [
@@ -1329,18 +1957,34 @@ export async function createAutomation(
         d.enabled,
         d.trigger.kind,
         d.trigger.table,
-        JSON.stringify({ fields: d.trigger.fields, schedule: d.trigger.schedule }),
+        storedTrigger(d.trigger),
         d.condition,
         JSON.stringify(d.actions),
         ctx.actor.id,
-        d.trigger.schedule === null
-          ? null
-          : nextRunOf(d.trigger.schedule, ctx.timestamp).toISOString(),
+        nextDueOf(d.trigger, ctx.timestamp),
+        hook?.sealed ?? null,
+        hook?.hash ?? null,
+        // A date that arrives counts from now on: those already past are not caught up.
+        d.trigger.kind === 'date_reached' ? ctx.timestamp.toISOString() : null,
       ],
       'insert',
     )
-    return (await loadAutomation(exec, (row as { id: string }).id)) as Automation
+    return revealHook(
+      (await loadAutomation(exec, (row as { id: string }).id)) as Automation,
+      instanceKey,
+    )
   })
+}
+
+/** The trigger's own settings, as kept beside its kind and table. */
+const storedTrigger = (trigger: AutomationTrigger) =>
+  JSON.stringify({ fields: trigger.fields, schedule: trigger.schedule, date: trigger.date })
+
+/** When the worker next looks at it: a schedule's next run, a date trigger's next search. */
+function nextDueOf(trigger: AutomationTrigger, now: Date): string | null {
+  if (trigger.schedule !== null) return nextRunOf(trigger.schedule, now).toISOString()
+  if (trigger.kind === 'date_reached') return now.toISOString()
+  return null
 }
 
 /** Rewrites an automation; whoever saves it becomes its owner (chapter 17 §1). */
@@ -1363,11 +2007,30 @@ export async function updateAutomation(
       targets,
       sealingBy(instanceKey),
     )
+    // A webhook keeps its address, unless a new one is asked for; another trigger has none.
+    const hook =
+      d.trigger.kind !== 'webhook'
+        ? null
+        : current.hookSealed === null || request.input.regenerate_hook === true
+          ? newHook(instanceKey)
+          : 'kept'
+    // A date trigger searches from now on when it is new, changed, or switched back on: what
+    // came due meanwhile is not caught up. Otherwise it goes on from where it was.
+    const sameDates =
+      current.trigger.kind === 'date_reached' &&
+      d.trigger.kind === 'date_reached' &&
+      current.trigger.table === d.trigger.table &&
+      JSON.stringify(current.trigger.date) === JSON.stringify(d.trigger.date) &&
+      (current.enabled || !d.enabled)
     await exec.query(
       `UPDATE _basedb.automation
           SET label = $2, description = $3, is_enabled = $4, trigger_kind = $5, table_id = $6,
               trigger = $7::jsonb, condition = $8, actions = $9::jsonb, owner_id = $10,
-              next_run_at = $11, updated_at = pg_catalog.clock_timestamp()
+              next_run_at = CASE WHEN $14 THEN next_run_at ELSE $11::timestamptz END,
+              hook_sealed = CASE WHEN $12 THEN hook_sealed ELSE $13 END,
+              hook_hash = CASE WHEN $12 THEN hook_hash ELSE $15::bytea END,
+              scanned_until = CASE WHEN $14 THEN scanned_until ELSE $16::timestamptz END,
+              updated_at = pg_catalog.clock_timestamp()
         WHERE id = $1`,
       [
         request.id,
@@ -1376,28 +2039,47 @@ export async function updateAutomation(
         d.enabled,
         d.trigger.kind,
         d.trigger.table,
-        JSON.stringify({ fields: d.trigger.fields, schedule: d.trigger.schedule }),
+        storedTrigger(d.trigger),
         d.condition,
         JSON.stringify(d.actions),
         ctx.actor.id,
-        d.trigger.schedule === null
-          ? null
-          : nextRunOf(d.trigger.schedule, ctx.timestamp).toISOString(),
+        nextDueOf(d.trigger, ctx.timestamp),
+        hook === 'kept',
+        hook === null || hook === 'kept' ? null : hook.sealed,
+        sameDates,
+        hook === null || hook === 'kept' ? null : hook.hash,
+        d.trigger.kind === 'date_reached' ? ctx.timestamp.toISOString() : null,
       ],
       'update',
     )
-    // Switched off: what was waiting will not run.
-    if (!d.enabled) {
+    // « Entre dans un filtre » remembers which rows are in it: another filter, another set.
+    if (
+      current.trigger.kind === 'record_matches' &&
+      (d.trigger.kind !== 'record_matches' ||
+        current.condition !== d.condition ||
+        current.trigger.table !== d.trigger.table)
+    ) {
       await exec.query(
-        `UPDATE _basedb.automation_run SET status = 'skipped', reason = 'desactivee',
-                finished_at = pg_catalog.clock_timestamp()
-          WHERE automation_id = $1 AND status = 'queued'`,
+        'DELETE FROM _basedb.automation_match WHERE automation_id = $1',
         [request.id],
-        'update',
+        'delete',
       )
     }
-    return (await loadAutomation(exec, request.id)) as Automation
+    // Switched off: what was queued or waiting will not run.
+    if (!d.enabled) await stopRuns(exec, request.id, 'desactivee')
+    return revealHook((await loadAutomation(exec, request.id)) as Automation, instanceKey)
   })
+}
+
+/** The runs queued or waiting of an automation switched off or deleted: they will not run. */
+async function stopRuns(exec: Executor, id: string, reason: string): Promise<void> {
+  await exec.query(
+    `UPDATE _basedb.automation_run SET status = 'skipped', reason = $2, resume_at = NULL,
+            finished_at = pg_catalog.clock_timestamp()
+      WHERE automation_id = $1 AND status IN ('queued', 'waiting')`,
+    [id, reason],
+    'update',
+  )
 }
 
 export async function deleteAutomation(
@@ -1413,13 +2095,7 @@ export async function deleteAutomation(
       [request.id],
       'update',
     )
-    await exec.query(
-      `UPDATE _basedb.automation_run SET status = 'skipped', reason = 'supprimee',
-              finished_at = pg_catalog.clock_timestamp()
-        WHERE automation_id = $1 AND status = 'queued'`,
-      [request.id],
-      'update',
-    )
+    await stopRuns(exec, request.id, 'supprimee')
   })
 }
 
@@ -1440,6 +2116,7 @@ export async function listAutomationRuns(
         trigger_kind: string
         record_id: string | null
         status: AutomationRun['status']
+        resume_at: string | null
         reason: string | null
         error_code: string | null
         steps: Array<Record<string, unknown>>
@@ -1447,8 +2124,8 @@ export async function listAutomationRuns(
         started_at: string | null
         finished_at: string | null
       }>(
-        `SELECT id::text, trigger_kind, record_id::text, status, reason, error_code, steps,
-                queued_at::text, started_at::text, finished_at::text
+        `SELECT id::text, trigger_kind, record_id::text, status, resume_at::text, reason,
+                error_code, steps, queued_at::text, started_at::text, finished_at::text
            FROM _basedb.automation_run WHERE automation_id = $1
           ORDER BY queued_at DESC LIMIT 50`,
         [request.id],
@@ -1458,6 +2135,7 @@ export async function listAutomationRuns(
         trigger: r.trigger_kind,
         recordId: r.record_id,
         status: r.status,
+        resumeAt: r.resume_at === null ? null : new Date(r.resume_at).toISOString(),
         reason: r.reason,
         errorCode: r.error_code,
         steps: r.steps,

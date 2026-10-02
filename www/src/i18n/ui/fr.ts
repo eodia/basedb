@@ -1181,10 +1181,10 @@ const fr = {
 		agents: feature({
 			label: 'API REST · MCP · webhooks',
 			title: 'Vos agents IA accèdent aux données, {pas aux clés du château.}',
-			lead: 'Le serveur MCP donne douze outils aux agents ; l’API REST, les mêmes données à vos programmes. Un seul point de contrôle des droits, les mêmes journaux.',
+			lead: 'Le serveur MCP donne quatorze outils aux agents ; l’API REST, les mêmes données à vos programmes. Un seul point de contrôle des droits, les mêmes journaux.',
 			bullets: [
 				'<strong>Un jeton par base</strong>, en lecture seule par défaut, jamais plus de droits que la personne qui l’a créé.',
-				'<strong>Un agent ne supprime rien</strong> et ne change pas la structure : il la propose, une personne approuve.',
+				'<strong>Un agent ne supprime qu’avec votre accord</strong>, une ligne à la fois, et ne change pas la structure : il la propose, une personne approuve.',
 				'<strong>Une documentation générée</strong> pour chaque base, filtrée par vos droits, avec sa spécification OpenAPI 3.1.',
 				'<strong>Des webhooks</strong> signés, ordonnés et réessayés à chaque écriture.',
 			],
@@ -1418,7 +1418,7 @@ const fr = {
 			}),
 			agent: question({
 				q: 'Comment un agent IA se connecte-t-il ?',
-				a: 'Par le serveur MCP, avec un jeton d’intégration limité à une base, en lecture seule par défaut. Un agent lit, crée et modifie des lignes selon ses droits ; il ne supprime rien et ne change pas la structure : il la propose, et une personne approuve.',
+				a: 'Par le serveur MCP, avec un jeton d’intégration limité à une base, en lecture seule par défaut. Un agent lit, crée et modifie des lignes selon ses droits — et en supprime, une à la fois, si son jeton a été créé pour cela ; il ne change pas la structure : il la propose, et une personne approuve.',
 			}),
 			postgres: question({
 				q: 'Quelle version de PostgreSQL faut-il ?',
@@ -1449,6 +1449,47 @@ const fr = {
 		intro: 'Le détail de chaque changement est dans <a href="https://github.com/eodia/basedb/commits/main">l’historique du dépôt</a>. Ce qui vient ensuite : la <a href="/feuille-de-route/">feuille de route</a>.',
 		/** Newest first. */
 		entries: {
+			agentDelete: entry({
+				date: '2026-10-02',
+				title: 'Des agents qui suppriment, si vous le permettez',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Un troisième niveau de jeton</strong>, « Lecture, écriture et suppression » : un programme supprime par l’API REST, un agent par le nouvel outil <code>delete_record</code> — une ligne à la fois, rendue dans la réponse. <a href="/integrations/mcp/#supprimer-des-lignes">Supprimer des lignes</a>',
+					'<strong>Revenir en arrière</strong> : <code>restore_record</code> ramène une ligne supprimée sous son identifiant ; une suppression qu’une relation en cascade étendrait à d’autres lignes reste réservée à l’interface.',
+				],
+			}),
+			tokens: entry({
+				date: '2026-10-02',
+				title: 'Des jetons pour qui gère une base',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Le niveau Gestion suffit</strong> : donné sur une base ou sur son projet, il permet de créer les jetons d’intégration de ses bases, sans être administrateur. <a href="/integrations/api-rest/#un-jeton">Un jeton</a>',
+					'<strong>Dit clairement sinon</strong> : à qui lit ou écrit sans gérer la base, la fenêtre des jetons dit à qui s’adresser ; à un compte sans mot de passe, pourquoi il ne peut pas encore en créer.',
+				],
+			}),
+			advancedFlows: entry({
+				date: '2026-10-02',
+				title: 'Des automatisations qui attendent, rattrapent un échec et envoient des PDF',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Quatre déclencheurs de plus</strong> : une ligne est supprimée ; une ligne entre dans un filtre — « une facture passe en retard » ; une date arrive — trois jours avant l’échéance, à 9 h ; un autre logiciel appelle l’adresse secrète de l’automatisation. <a href="/fonctionnalites/automatisations/#un-service-qui-appelle-basedb">Un service qui appelle basedb</a>',
+					'<strong>Attendre</strong> trois jours, ou jusqu’à la date d’un champ, puis reprendre en relisant la ligne : « s’il n’est toujours pas accepté, relancer ». <a href="/fonctionnalites/automatisations/#attendre">Attendre</a>',
+					'<strong>Générer un PDF et l’envoyer</strong> : le document d’une ligne, rangé dans un champ Document ou joint à un courriel — en texte riche, avec des destinataires en copie et une adresse de réponse, à chacun ou un seul à tous. <a href="/fonctionnalites/automatisations/#un-pdf-et-un-courriel">Un PDF et un courriel</a>',
+					'<strong>Supprimer une ligne, compter et additionner, lancer une autre automatisation</strong> ; une condition teste aussi une valeur — la réponse de l’IA, un total —, et une recherche qui ne trouve rien a son propre chemin.',
+					'<strong>Essayer</strong> : des étapes, et d’autres si l’une échoue ; un webhook réessaie de lui-même, une boucle continue malgré une ligne en échec. <a href="/fonctionnalites/automatisations/#essayer">Essayer</a>',
+					'<strong>Toutes les étapes à portée de main</strong> : le <strong>+</strong> ouvre une fenêtre rangée par catégorie, avec une recherche, au lieu d’un menu qui pouvait être tronqué.',
+				],
+			}),
+			designer: entry({
+				date: '2026-10-02',
+				title: 'Des documents PDF à vos couleurs',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Cinq points de départ</strong> — facture, devis, fiche, attestation, page vierge —, construits avec les colonnes de votre table : numéro, date, montants, photo, lignes liées. <a href="/fonctionnalites/documents/#créer-un-modèle">Créer un modèle</a>',
+					'<strong>Votre logo et vos couleurs</strong> : un en-tête avec logo et coordonnées, un pied avec mentions légales et numéros de page, une couleur d’accent, des polices avec ou sans empattement, un cadre autour de la page. <a href="/fonctionnalites/documents/#en-tête-et-pied-de-page">En-tête et pied de page</a>',
+					'<strong>De nouveaux blocs</strong> : un titre sur un bandeau, une image, deux ou trois colonnes, un récapitulatif HT / TTC, un tableau à en-tête coloré, un séparateur. Ils se glissent pour se réordonner, et l’aperçu suit chaque modification. <a href="/fonctionnalites/documents/#le-contenu--des-blocs">Les blocs</a>',
+				],
+			}),
 			resilience: entry({
 				date: '2026-10-01',
 				title: 'Une connexion coupée n’arrête plus basedb',
@@ -1835,8 +1876,8 @@ const fr = {
 						text: 'Recopier les vues SQL avec la structure quand on crée ou compare des environnements, et dans les modèles de base.',
 					}),
 					loops: item({
-						title: 'Attentes dans les automatisations',
-						text: 'Attendre avant l’étape suivante (« trois jours après »), et emporter les flux — conditions, recherches, boucles — dans les modèles de base.',
+						title: 'Des flux complets dans les modèles de base',
+						text: 'Emporter les flux d’automatisation — conditions, recherches, boucles, attentes, PDF — dans les modèles de base, qui n’en gardent aujourd’hui que les étapes simples.',
 					}),
 					textFormulas: item({
 						title: 'Formules sur le texte',

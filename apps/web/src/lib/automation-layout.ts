@@ -1,12 +1,16 @@
-import type { Draft, DraftPath, DraftStep } from '@/lib/automations'
+import type { Draft, DraftPath, DraftStep, PathHolder } from '@/lib/automations'
 
 /**
  * Where each piece of a flow sits on the canvas — chapter 17, drawn. A flow is a tree read
- * top to bottom: a branch opens its paths side by side, each path runs down its own
- * steps, and they meet again below it; a loop holds its steps in a frame, from which an
- * arrow goes back up to it. Laid out here, by arithmetic rather than by a general graph
- * layout: a tree needs none, and what is computed can be tested.
+ * top to bottom: a branch — or an attempt — opens its paths side by side, each path runs
+ * down its own steps, and they meet again below it; a loop holds its steps in a frame,
+ * from which an arrow goes back up to it. Laid out here, by arithmetic rather than by a
+ * general graph layout: a tree needs none, and what is computed can be tested.
  */
+
+/** A branch and an attempt are drawn alike: their paths side by side, meeting below. */
+const opens = (step: DraftStep): step is PathHolder =>
+  step.kind === 'branch' || step.kind === 'attempt'
 
 export const STEP_SIZE = { w: 280, h: 68 } as const
 export const PATH_SIZE = { w: 200, h: 34 } as const
@@ -92,7 +96,7 @@ function blockSize(step: DraftStep): Size {
       h: STEP_SIZE.h + GAP_Y + (body.h === 0 ? 0 : body.h + GAP_Y) + MERGE_SIZE + FRAME_BOTTOM,
     }
   }
-  if (step.kind !== 'branch') return STEP_SIZE
+  if (!opens(step)) return STEP_SIZE
   const columns = step.paths.map(columnSize)
   return {
     w: Math.max(STEP_SIZE.w, columns.reduce((n, c) => n + c.w, 0) + GAP_X * (columns.length - 1)),
@@ -169,11 +173,14 @@ function placeLoop(
   return merge
 }
 
-/** A step — or a branch, its paths and where they meet; returns the piece to go on from. */
+/**
+ * A step — or a branch or an attempt, its paths and where they meet; returns the piece to
+ * go on from.
+ */
 function placeBlock(step: DraftStep, cx: number, y: number, out: Out): string {
   if (step.kind === 'for_each') return placeLoop(step, cx, y, out)
   out.nodes.push({ id: step.id, kind: 'step', x: cx - STEP_SIZE.w / 2, y, ...STEP_SIZE })
-  if (step.kind !== 'branch') return step.id
+  if (!opens(step)) return step.id
   const columns = step.paths.map(columnSize)
   const width = columns.reduce((n, c) => n + c.w, 0) + GAP_X * (columns.length - 1)
   const top = y + STEP_SIZE.h + GAP_Y

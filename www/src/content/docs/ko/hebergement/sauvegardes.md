@@ -46,7 +46,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION`을 설정하면 최신 버전(`latest`) 대신 특정 버전(`0.5.1`)으로 고정합니다.
+`BASEDB_VERSION`을 설정하면 최신 버전(`latest`) 대신 특정 버전(`0.6.0`)으로 고정합니다.
 
 시작할 때 basedb는 **카탈로그를 스스로 업데이트합니다**. 현재 버전에 아직 없는 마이그레이션을
 순서대로, 각각 자체 트랜잭션 안에서 적용하고 `_basedb.catalog_migration`에 기록합니다. 데이터는

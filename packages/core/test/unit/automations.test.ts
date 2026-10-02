@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { formPairs, nextRunOf } from '../../src/automations/catalog.js'
 import {
   type Citable,
+  datesDue,
+  holds,
+  momentOf,
   render,
   renderFilter,
   renderForm,
+  renderHtml,
   renderJson,
   renderUrl,
 } from '../../src/automations/engine.js'
@@ -96,6 +100,26 @@ describe('a message citing the row', () => {
         scope(row, { people: new Map([['u1', 'Marie']]) }),
       ),
     ).toBe('Peindre (Fait) pour ACME, par Marie — r1')
+  })
+
+  it('writes a number without the zeros its column keeps', () => {
+    const numbers = new Map<string, ProjectedField>([
+      ['montant', { name: 'montant', kind: 'number' } as ProjectedField],
+      ['code', { name: 'code', kind: 'short_text' } as ProjectedField],
+    ])
+    const cite = (montant: unknown) =>
+      render('{{montant}}|{{code}}', {
+        rows: new Map([
+          ['trigger', { table: 't1', fields: numbers, row: { montant, code: '2.50' } }],
+        ]),
+        data: new Map(),
+        people: new Map(),
+        now: new Date(),
+      })
+    expect(cite('1840.5000000000')).toBe('1840.5|2.50')
+    expect(cite('-12.0000000000')).toBe('-12|2.50')
+    expect(cite('100')).toBe('100|2.50')
+    expect(cite('10.0100000000')).toBe('10.01|2.50')
   })
 
   it('leaves empty what it cannot read, and says when', () => {
@@ -233,6 +257,66 @@ describe('a webhook’s body and address citing the row', () => {
     )
     expect(renderUrl('https://api.exemple.fr/v{{nom}}', scope({ ...row, nom: '..' }))).toBe(
       'https://api.exemple.fr/v..',
+    )
+  })
+})
+
+describe('a value test of a branch', () => {
+  it('compares numbers as numbers, text without accents or case, and tells empty', () => {
+    expect(holds('350', 'gte', '300')).toBe(true)
+    expect(holds('9', 'gt', '10')).toBe(false)
+    expect(holds('12,5', 'lt', '13')).toBe(true)
+    expect(holds('Élevé', 'eq', 'eleve')).toBe(true)
+    expect(holds('Urgent : rappeler', 'contains', 'URGENT')).toBe(true)
+    expect(holds('rappeler', 'not_contains', 'urgent')).toBe(true)
+    expect(holds('2026-10-01', 'lt', '2026-10-02')).toBe(true)
+    expect(holds('  ', 'empty', '')).toBe(true)
+    expect(holds('x', 'not_empty', '')).toBe(true)
+    expect(holds('a', 'ne', 'b')).toBe(true)
+  })
+})
+
+describe('a date that comes due', () => {
+  const when = { offsetDays: -3, at: '09:00', timezone: 'Europe/Paris' }
+
+  it('is the date moved by days, at the time of day where it is', () => {
+    // 10 October minus three days, 9:00 in Paris (summer time): 7:00 UTC on 7 October.
+    expect(momentOf('2026-10-10', 'date', when)?.toISOString()).toBe('2026-10-07T07:00:00.000Z')
+    // A date and time keeps its own time, moved by days.
+    expect(momentOf('2026-10-10T15:30:00.000Z', 'datetime', when)?.toISOString()).toBe(
+      '2026-10-07T15:30:00.000Z',
+    )
+    expect(momentOf('', 'date', when)).toBeNull()
+  })
+
+  it('is found by the dates whose moment fell in the window, and only those', () => {
+    const from = new Date('2026-10-07T06:00:00.000Z')
+    const to = new Date('2026-10-07T08:00:00.000Z')
+    expect(datesDue(when, from, to)).toEqual(['2026-10-10'])
+    expect(datesDue(when, to, new Date('2026-10-07T09:00:00.000Z'))).toEqual([])
+    // A day long: every date whose moment it holds.
+    expect(
+      datesDue(
+        { ...when, offsetDays: 0 },
+        new Date('2026-10-07T07:30:00Z'),
+        new Date('2026-10-09T07:30:00Z'),
+      ),
+    ).toEqual(['2026-10-08', '2026-10-09'])
+  })
+})
+
+describe('an HTML mail', () => {
+  it('writes what it cites escaped: words, never tags', () => {
+    const scope: Citable = {
+      rows: new Map([
+        ['trigger', { table: 't', fields: new Map(), row: { nom: 'Toit & <fenêtres>' } }],
+      ]),
+      data: new Map(),
+      people: new Map(),
+      now: new Date(),
+    }
+    expect(renderHtml('<p><strong>{{nom}}</strong></p>', scope)).toBe(
+      '<p><strong>Toit &amp; &lt;fenêtres&gt;</strong></p>',
     )
   })
 })

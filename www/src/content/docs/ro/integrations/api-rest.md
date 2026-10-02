@@ -13,12 +13,16 @@ URL-urile lui poartă numele fizice — cele pe care le citiți și în SQL.
 
 ## Un token
 
-În interfață, meniul **⋯** al bazei → **API și agenți** → **Tokenuri API și MCP…**: acolo creați
-un **token de integrare** limitat la această bază, doar în citire în mod implicit, după ce v-ați
-confirmat parola. Este afișat o singură dată; puneți-l într-o variabilă de mediu.
+În interfață, meniul **⋯** al bazei → **API și agenți** → **Tokenuri API și MCP…**: cine are
+nivelul **Gestionare** pe bază, sau pe proiectul ei, creează acolo un **token de integrare**
+limitat la această bază, doar în citire în mod implicit, după confirmarea parolei — un cont fără
+parolă, care se conectează printr-un furnizor de identitate, nu poate încă face asta. Este
+afișat o singură dată; puneți-l într-o variabilă de mediu.
 
-Un token citește, creează și modifică dacă a fost creat cu drept de scriere, **nu șterge
-niciodată** și nu are niciodată mai multe permisiuni decât persoana care l-a creat.
+Un token citește; creează și modifică dacă a fost creat cu drept de scriere, și **șterge dacă a
+fost creat pentru aceasta** — drepturile „Citire, scriere și ștergere” —, cu excepția unui rând
+pe care o relație în cascadă l-ar antrena împreună cu altele. Nu are niciodată mai multe
+permisiuni decât persoana care l-a creat.
 
 ```bash
 export BASEDB_TOKEN=bdb_…

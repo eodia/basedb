@@ -7,7 +7,7 @@
 // to it, never rename one." The "Normative chapter" column alone is authoritative on a
 // code's parentage.
 //
-// 237 codes, 8 domains.
+// 238 codes, 8 domains.
 //
 // The `condition` strings are quoted verbatim from the French document, which is
 // authoritative on their wording.
@@ -259,6 +259,7 @@ export type ErrorCode =
   | 'TOKEN_EXPIRY_REQUIRED'
   | 'TOKEN_INVALID'
   | 'TOKEN_PRIVILEGE_REFUSED'
+  | 'TOKEN_CASCADE_FORBIDDEN'
   | 'TOKEN_READ_ONLY'
   | 'TOKEN_REVOKED'
   | 'TOKEN_SUSPENDED'
@@ -1945,6 +1946,14 @@ export const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCodeEntry>> = Object.f
   TOKEN_PRIVILEGE_REFUSED: Object.freeze({
     condition: 'Rôle de jeton portant manage_schema, manage_permissions ou manage_tokens',
     httpStatus: 422,
+    httpStatusNote: null,
+    chapter: '05',
+    domain: 'authentification',
+  }),
+  TOKEN_CASCADE_FORBIDDEN: Object.freeze({
+    condition:
+      "Suppression par un jeton d'une ligne qu'une relation en cascade emporterait avec d'autres",
+    httpStatus: 409,
     httpStatusNote: null,
     chapter: '05',
     domain: 'authentification',

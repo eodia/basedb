@@ -76,4 +76,5 @@ runs.
 An **integration token** is created in the interface: the base’s **⋯** menu → **API and
 agents** → **API and MCP tokens…**. It opens one base, reads its rows, writes them if it was
 created with write access, never has more permissions than the person who created it, and
-**never deletes**: `delete()` requires a session’s permissions.
+**only deletes if it was created for that** (“Read, write and delete”): otherwise `delete()`
+is refused.

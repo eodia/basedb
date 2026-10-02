@@ -76,5 +76,6 @@ käynnistyy.
 
 **Integraatiotunnus** luodaan käyttöliittymässä: tietokannan **⋯**-valikko → **API ja agentit**
 → **API- ja MCP-tunnukset…**. Se avaa yhden tietokannan, lukee sen rivejä, kirjoittaa niitä, jos
-se on luotu kirjoitusoikeuksin, ei koskaan enempää oikeuksia kuin sen luoneella henkilöllä, ja
-**ei koskaan poista**: `delete()` vaatii istunnon oikeudet.
+se on luotu kirjoitusoikeuksin, eikä sillä ole koskaan enempää oikeuksia kuin sen luoneella
+henkilöllä, ja **poistaa vain, jos se on luotu tätä varten** (”Luku, kirjoitus ja poisto”): muuten
+`delete()` hylätään.

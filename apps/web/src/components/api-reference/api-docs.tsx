@@ -465,7 +465,10 @@ interface DocBase {
  * The integration tokens, one click from the pages that explain them — offered only to
  * whoever may mint a token for this base, which is what the dialog would demand anyway.
  */
-function TokenButton({ base }: { readonly base: DocBase }) {
+function TokenButton({
+  base,
+  hasPassword,
+}: { readonly base: DocBase; readonly hasPassword?: boolean }) {
   const [open, setOpen] = useState(false)
   if (base.actions?.includes('manage_tokens') !== true) return null
   return (
@@ -476,7 +479,12 @@ function TokenButton({ base }: { readonly base: DocBase }) {
           {$t('Jetons')}
         </Button>
       </Hint>
-      <TokenDialog open={open} base={base} onClose={() => setOpen(false)} />
+      <TokenDialog
+        open={open}
+        base={base}
+        hasPassword={hasPassword}
+        onClose={() => setOpen(false)}
+      />
     </>
   )
 }
@@ -484,9 +492,11 @@ function TokenButton({ base }: { readonly base: DocBase }) {
 function DocsBody({
   base,
   pages,
+  hasPassword,
 }: {
   readonly base: DocBase
   readonly pages: readonly DocPage[]
+  readonly hasPassword?: boolean
 }) {
   const groups = useMemo(() => toGroups(pages), [pages])
   // Previous and next follow what the navigation shows, which is grouped — not the payload.
@@ -613,7 +623,7 @@ function DocsBody({
 
           <div className="flex shrink-0 items-center gap-2">
             <Reminder />
-            <TokenButton base={base} />
+            <TokenButton base={base} hasPassword={hasPassword} />
             <SpecDownload base={base.name} />
           </div>
         </div>
@@ -649,7 +659,7 @@ function DocsBody({
 
           <aside
             aria-label={$t('Sur cette page')}
-            className="scroll-discret hidden w-56 shrink-0 overflow-y-auto py-12 pr-4 pl-2 @6xl:block"
+            className="scroll-discret hidden w-52 shrink-0 overflow-y-auto py-12 pr-4 pl-2 @5xl:block @6xl:w-56"
           >
             <OnThisPage key={page.slug} entries={entries} scroller={scroller} onFollow={follow} />
           </aside>
@@ -676,10 +686,13 @@ function Notice({ children }: { readonly children: React.ReactNode }) {
 export function ApiDocs({
   base,
   doc,
+  hasPassword,
 }: {
   readonly base: DocBase
   /** What was fetched when the base opened — shown at once, then replaced by a fresh read. */
   readonly doc: ApiDocumentation | null
+  /** Whether the reader can prove a password — which minting a token asks. */
+  readonly hasPassword?: boolean
 }) {
   const [current, setCurrent] = useState(doc)
   const [failure, setFailure] = useState<string | null>(null)
@@ -711,7 +724,8 @@ export function ApiDocs({
 
   const pages = useMemo(() => (current === null ? [] : toPages(current.sections)), [current])
 
-  if (pages.length > 0) return <DocsBody key={base.name} base={base} pages={pages} />
+  if (pages.length > 0)
+    return <DocsBody key={base.name} base={base} pages={pages} hasPassword={hasPassword} />
   if (failure !== null) return <Notice>{failure}</Notice>
   return <Notice>{$t('Chargement de la documentation…')}</Notice>
 }

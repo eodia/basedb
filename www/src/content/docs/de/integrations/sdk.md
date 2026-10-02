@@ -78,5 +78,5 @@ bevor das Programm läuft.
 Ein **Integrationstoken** wird in der Oberfläche angelegt: Menü **⋯** der Datenbank →
 **API und Agenten** → **API- und MCP-Token …**. Es öffnet eine Datenbank, liest ihre Zeilen,
 schreibt sie, wenn es mit Schreibrecht angelegt wurde, hat nie mehr Berechtigungen als die
-Person, die es angelegt hat, und **löscht nie**: `delete()` erfordert die Berechtigungen einer
-Sitzung.
+Person, die es angelegt hat, und **löscht nur, wenn es dafür angelegt wurde** („Lesen, Schreiben
+und Löschen“): Andernfalls wird `delete()` abgelehnt.

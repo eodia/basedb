@@ -29,8 +29,8 @@ Create a **basedb API** credential in n8n:
 | **Token** | an **integration token**: the base’s **⋯** menu → **API and agents** → **API and MCP tokens…** |
 
 A token opens **one** base. It reads its rows, writes them if it was created with write access,
-never has more permissions than the person who created it, and **never deletes**. On save, n8n
-tries the connection and says if the token is refused.
+and never has more permissions than the person who created it. On save, n8n tries the
+connection and says if the token is refused.
 
 ## Reading and writing: the basedb node
 
@@ -57,9 +57,9 @@ code and what it means.
 - A **relation** reads as `{ "id": …, "display": … }` and is written by the linked row’s `_id`.
 - **Create or Update** never updates several rows: if several carry the values, the node stops
   rather than guess.
-- No **Delete** operation: a token does not delete. To remove rows, mark them (a status
-  “Archived”), or hand deletion to an
-  [automation](/basedb/en/fonctionnalites/automatisations/).
+- No **Delete** operation: to remove rows, mark them (a status “Archived”), hand deletion to an
+  [automation](/basedb/en/fonctionnalites/automatisations/), or call the
+  [REST API](/basedb/en/integrations/api-rest/) with a token created to delete.
 
 ## Running a workflow
 

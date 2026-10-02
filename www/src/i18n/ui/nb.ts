@@ -1284,10 +1284,10 @@ export default {
 		agents: {
 			label: 'REST-API · MCP · webhooks',
 			title: 'KI-agentene dine får dataene, {ikke hele nøkkelknippet.}',
-			lead: 'MCP-serveren gir agentene tolv verktøy; REST-API-et gir programmene dine de samme dataene. Ett enkelt kontrollpunkt for tillatelser, de samme loggene.',
+			lead: 'MCP-serveren gir agentene fjorten verktøy; REST-API-et gir programmene dine de samme dataene. Ett enkelt kontrollpunkt for tillatelser, de samme loggene.',
 			bullets: [
 				'<strong>Ett token per database</strong>, skrivebeskyttet som standard, aldri med flere tillatelser enn personen som opprettet det.',
-				'<strong>En agent sletter ingenting</strong> og endrer ikke strukturen: den foreslår, et menneske godkjenner.',
+				'<strong>En agent sletter bare med din tillatelse</strong>, én rad om gangen, og endrer ikke strukturen: den foreslår, et menneske godkjenner.',
 				'<strong>Generert dokumentasjon</strong> for hver database, filtrert etter tillatelsene dine, med OpenAPI 3.1-spesifikasjon.',
 				'<strong>Webhooks</strong> ved hver skriving – signert, i rekkefølge og med nye forsøk.',
 			],
@@ -1520,7 +1520,7 @@ export default {
 			},
 			agent: {
 				q: 'Hvordan kobler en KI-agent seg til?',
-				a: 'Via MCP-serveren, med et integrasjonstoken som er begrenset til én database, skrivebeskyttet som standard. En agent leser, oppretter og endrer rader i tråd med tillatelsene sine; den sletter ingenting og endrer ikke strukturen: den foreslår, og et menneske godkjenner.',
+				a: 'Via MCP-serveren, med et integrasjonstoken som er begrenset til én database, skrivebeskyttet som standard. En agent leser, oppretter og endrer rader i tråd med tillatelsene sine – og sletter, én rad om gangen, hvis tokenet er opprettet for det; den endrer ikke strukturen: den foreslår, og et menneske godkjenner.',
 			},
 			postgres: {
 				q: 'Hvilken versjon av PostgreSQL trengs?',
@@ -1547,6 +1547,47 @@ export default {
 		title: 'Hva som er endret i basedb',
 		intro: 'Detaljene i hver endring står i <a href="https://github.com/eodia/basedb/commits/main">historikken til depotet</a>. Hva som kommer videre: <a href="/feuille-de-route/">veikartet</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Agenter som sletter, hvis du tillater det',
+				tag: 'Nytt',
+				items: [
+					'<strong>Et tredje nivå for token</strong>, «Lesing, skriving og sletting»: et program sletter via REST-API-et, en agent via det nye verktøyet <code>delete_record</code> – én rad om gangen, returnert i svaret. <a href="/integrations/mcp/#slette-rader">Slette rader</a>',
+					'<strong>Gå tilbake</strong>: <code>restore_record</code> gjenoppretter en slettet rad under identifikatoren sin; en sletting som en kaskaderelasjon ville utvide til andre rader, er fortsatt forbeholdt grensesnittet.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Token for den som administrerer en database',
+				tag: 'Nytt',
+				items: [
+					'<strong>Nivået Administrere er nok</strong>: gitt på en database eller på prosjektet dens, gjør det mulig å opprette integrasjonstokener for databasene sine, uten å være administrator. <a href="/integrations/api-rest/#et-token">Et token</a>',
+					'<strong>Sier det ellers klart</strong>: den som leser eller skriver uten å administrere databasen, får i token-vinduet vite hvem man skal kontakte; en konto uten passord får vite hvorfor den ikke kan opprette et ennå.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automatiseringer som venter, fanger opp feil og sender PDF-er',
+				tag: 'Nytt',
+				items: [
+					'<strong>Fire nye utløsere</strong>: en rad slettes; en rad kommer inn i et filter — «en faktura blir forsinket»; en dato kommer — tre dager før forfall, kl. 9; annen programvare kaller automatiseringens hemmelige adresse. <a href="/fonctionnalites/automatisations/#en-tjeneste-som-kaller-basedb">En tjeneste som kaller basedb</a>',
+					'<strong>Vent</strong> tre dager, eller til datoen i et felt, og fortsett ved å lese raden på nytt: «hvis det fortsatt ikke er godtatt, purre». <a href="/fonctionnalites/automatisations/#vent">Vent</a>',
+					'<strong>Generere en PDF og sende den</strong>: dokumentet til en rad, lagt i et Fil-felt eller lagt ved en e-post — som formatert tekst, med mottakere i kopi og en svaradresse, til hver eller én til alle. <a href="/fonctionnalites/automatisations/#en-pdf-og-en-e-post">En PDF og en e-post</a>',
+					'<strong>Slette en rad, telle og summere, starte en annen automatisering</strong>; en betingelse kan også teste en verdi — KI-svaret, et total-tall —, og et søk som ikke finner noe, har sin egen gren.',
+					'<strong>Prøv</strong>: noen trinn, og andre hvis ett av dem mislykkes; en webhook prøver på nytt av seg selv, en løkke fortsetter selv om en rad mislykkes. <a href="/fonctionnalites/automatisations/#prøv">Prøv</a>',
+					'<strong>Alle trinnene lett tilgjengelig</strong>: <strong>+</strong> åpner et vindu ordnet etter kategori, med et søkefelt, i stedet for en meny som kunne bli avkuttet.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'PDF-dokumenter i dine farger',
+				tag: 'Nytt',
+				items: [
+					'<strong>Fem utgangspunkter</strong> — faktura, tilbud, raddetaljer, attest, blank side —, bygget med kolonnene i tabellen din: nummer, dato, beløp, bilde, koblede rader. <a href="/fonctionnalites/documents/#opprett-en-mal">Opprett en mal</a>',
+					'<strong>Logoen og fargene dine</strong>: en topptekst med logo og kontaktopplysninger, en bunntekst med juridiske opplysninger og sidetall, en aksentfarge, skrifttyper med eller uten seriffer, en ramme rundt siden. <a href="/fonctionnalites/documents/#topptekst-og-bunntekst">Topptekst og bunntekst</a>',
+					'<strong>Nye blokker</strong>: en tittel på et bånd, et bilde, to eller tre kolonner, et sammendrag eks. mva / inkl. mva, en tabell med farget topptekstrad, en skillelinje. De dras for å endre rekkefølge, og forhåndsvisningen følger hver endring. <a href="/fonctionnalites/documents/#innholdet-blokker">Blokkene</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'En avbrutt tilkobling stopper ikke lenger basedb',
@@ -1931,8 +1972,8 @@ export default {
 						text: 'Kopiere SQL-visningene sammen med strukturen når man oppretter eller sammenligner miljøer, og i databasemalene.',
 					},
 					loops: {
-						title: 'Venting i automatiseringer',
-						text: 'Vente før neste trinn («tre dager etter»), og ta med flytene – betingelser, søk, løkker – i databasemalene.',
+						title: 'Komplette flyter i databasemalene',
+						text: 'Ta med automatiseringsflytene — betingelser, søk, løkker, venting, PDF — i databasemalene, som i dag bare tar med de enkle trinnene.',
 					},
 					textFormulas: {
 						title: 'Formler for tekst',

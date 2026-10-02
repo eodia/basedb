@@ -27,7 +27,6 @@ import {
   PencilLine,
   Search,
   Sparkles,
-  SquareTerminal,
   Table2,
   Target,
   TrendingUp,
@@ -45,15 +44,14 @@ import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useStat
  *
  * Three small scenes play in it, in a loop, named by the tabs above the window — a click on
  * one plays its scene from the beginning, and the loop goes on from there:
- * - the tables: a query types itself out and the rows it returns light up; a colleague
- *   changes a cell and the result follows, live; the question changes, and so does the
- *   answer;
+ * - the tables: a colleague changes a cell and everyone sees it, live — then changes it
+ *   again;
  * - a dashboard: its figures and charts rise, then the colleague picks a city in a filter
  *   and every card follows;
  * - an automation: the client the colleague made active sets it off, and its steps run one
  *   after the other — the AI writes a welcome, a task is created, the team is told.
  * The same data, read, watched and acted on by several people at once — which is what
- * basedb is. Asked for less motion, it shows the first answer, still.
+ * basedb is. Asked for less motion, each scene shows how it ends, still.
  */
 
 type Status = 'Actif' | 'Prospect' | 'Ancien'
@@ -159,7 +157,7 @@ const SCENES: ReadonlyArray<{
   readonly Icon: LucideIcon
   readonly ms: number
 }> = [
-  { id: 'data', label: $t('Tables'), Icon: Table2, ms: 17000 },
+  { id: 'data', label: $t('Tables'), Icon: Table2, ms: 11000 },
   { id: 'dashboard', label: $t('Tableaux de bord'), Icon: LayoutDashboard, ms: 9500 },
   { id: 'automation', label: $t('Automatisations'), Icon: Zap, ms: 10500 },
 ]
@@ -172,15 +170,6 @@ const CRUMBS: Readonly<Record<Scene, string>> = {
   dashboard: $t('Tableaux de bord'),
   automation: $t('Automatisations'),
 }
-
-/** The two questions the scene asks, in turn. */
-const BY_STATUS = "statut = 'Actif'"
-const BY_CITY = "ville = 'Lyon'"
-const PREFIX = 'select nom, ville\n  from clients\n where '
-const query = (clause: string) => `${PREFIX}${clause};`
-
-const matches = (clause: string, client: Client) =>
-  clause === BY_STATUS ? client.status === 'Actif' : client.city === 'Lyon'
 
 // Fixed widths, wider than the window: the last column runs off its edge, as more of the
 // table would. Narrower screens drop « Secteur », so that « Statut » — what the scene is
@@ -299,31 +288,6 @@ interface Run {
 
 const IDLE: Run = { passed: 0, on: null }
 
-/** Syntax colours for the few words the console ever shows, typed or half typed. */
-function Highlighted({ text }: { readonly text: string }) {
-  return (
-    <>
-      {text.split(/(\bselect\b|\bfrom\b|\bwhere\b|'[^']*'?)/).map((part, i) =>
-        part === '' ? null : (
-          <span
-            // biome-ignore lint/suspicious/noArrayIndexKey: pieces of one string, in order
-            key={i}
-            className={
-              part.startsWith("'")
-                ? 'text-syn-string'
-                : /^(select|from|where)$/.test(part)
-                  ? 'text-syn-keyword'
-                  : undefined
-            }
-          >
-            {part}
-          </span>
-        ),
-      )}
-    </>
-  )
-}
-
 interface Spot {
   readonly x: number
   readonly y: number
@@ -354,9 +318,6 @@ function useScenes(measure: (target: Aim) => Spot | null) {
   const [cycle, setCycle] = useState(0)
   const [still, setStill] = useState(false)
   // The table.
-  const [text, setText] = useState('')
-  const [typing, setTyping] = useState(false)
-  const [clause, setClause] = useState<string | null>(null)
   const [edited, setEdited] = useState<Status>(CLIENTS[EDITED].status)
   const [editing, setEditing] = useState(false)
   // The colleague, wherever they are.
@@ -374,8 +335,6 @@ function useScenes(measure: (target: Aim) => Spot | null) {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setStill(true)
       setScene(from.scene)
-      setText(query(BY_STATUS))
-      setClause(BY_STATUS)
       setGrown(true)
       setRun(DONE)
       setAnswer(WELCOME)
@@ -398,34 +357,6 @@ function useScenes(measure: (target: Aim) => Spot | null) {
     /** Waits until a scene has lasted its time, so that its tab fills up as it ends. */
     const until = (deadline: number) => sleep(Math.max(0, deadline - performance.now()))
 
-    let shown = ''
-    const show = (next: string) => {
-      shown = next
-      setText(next)
-    }
-    // Erases back to what the two texts share, then types the rest — as someone would.
-    const typeTo = async (target: string, pace = 38) => {
-      setTyping(true)
-      let common = 0
-      while (common < Math.min(shown.length, target.length) && shown[common] === target[common]) {
-        common += 1
-      }
-      while (shown.length > common) {
-        show(shown.slice(0, -1))
-        await sleep(20)
-      }
-      while (shown.length < target.length) {
-        show(target.slice(0, shown.length + 1))
-        await sleep(pace)
-      }
-      setTyping(false)
-    }
-    const ask = async (next: string, pace?: number) => {
-      setClause(null)
-      await typeTo(query(next), pace)
-      await sleep(320)
-      setClause(next)
-    }
     // The colleague comes to the cell, changes it, and leaves.
     const edit = async (to: Status) => {
       const spot = measure('cell')
@@ -481,15 +412,11 @@ function useScenes(measure: (target: Aim) => Spot | null) {
     }
 
     const scenes: Readonly<Record<Scene, () => Promise<void>>> = {
-      // The tables: a query, a colleague's change, another query, another change.
+      // The tables: a colleague's change, then another.
       data: async () => {
         await sleep(1100)
-        await ask(BY_STATUS, 34)
-        await sleep(1600)
         await edit('Actif')
         await sleep(2200)
-        await ask(BY_CITY)
-        await sleep(2000)
         await edit('Prospect')
       },
       // A dashboard: its figures rise, then a filter narrows every card to Lyon.
@@ -507,9 +434,6 @@ function useScenes(measure: (target: Aim) => Spot | null) {
     }
     // Every scene starts again from its beginning, as it was before anything happened.
     const reset = () => {
-      show('')
-      setTyping(false)
-      setClause(null)
       setEdited(CLIENTS[EDITED].status)
       setEditing(false)
       setCursor(null)
@@ -549,9 +473,6 @@ function useScenes(measure: (target: Aim) => Spot | null) {
     scene,
     cycle,
     still,
-    text,
-    typing,
-    clause,
     edited,
     editing,
     cursor,
@@ -1023,26 +944,10 @@ export function ProductGlimpse() {
       ? { x: box.left - origin.left + 44, y: box.top - origin.top + 18 }
       : { x: box.left - origin.left + box.width * 0.55, y: box.top - origin.top + box.height * 0.6 }
   }, [])
-  const {
-    play,
-    scene,
-    cycle,
-    still,
-    text,
-    typing,
-    clause,
-    edited,
-    editing,
-    cursor,
-    pressing,
-    grown,
-    lyon,
-    run,
-    answer,
-  } = useScenes(measure)
+  const { play, scene, cycle, still, edited, editing, cursor, pressing, grown, lyon, run, answer } =
+    useScenes(measure)
 
   const rows = CLIENTS.map((c, i) => (i === EDITED ? { ...c, status: edited } : c))
-  const hits = clause === null ? 0 : rows.filter((c) => matches(clause, c)).length
 
   return (
     <div className="relative hidden flex-col overflow-hidden border-l bg-surface lg:flex">
@@ -1207,26 +1112,14 @@ export function ProductGlimpse() {
                   </div>
 
                   {rows.map((client, i) => {
-                    const hit = clause !== null && matches(clause, client)
-                    // Rows light up one after the other, and go out together.
-                    const delay = hit ? `${i * 70}ms` : '0ms'
                     return (
                       <div
                         key={client.name}
                         className={cn(
-                          'relative grid h-10 items-center border-b transition-colors duration-500 short:h-9',
+                          'relative grid h-10 items-center border-b short:h-9',
                           COLUMNS,
-                          hit && 'bg-primary/10',
                         )}
-                        style={{ transitionDelay: delay }}
                       >
-                        <span
-                          className={cn(
-                            'absolute inset-y-0 left-0 w-0.5 origin-top bg-primary transition-[opacity,scale] duration-500',
-                            hit ? 'scale-y-100 opacity-100' : 'scale-y-0 opacity-0',
-                          )}
-                          style={{ transitionDelay: delay }}
-                        />
                         <span className="pl-3 text-xs text-muted-foreground tabular-nums">
                           {i + 1}
                         </span>
@@ -1304,59 +1197,6 @@ export function ProductGlimpse() {
                 </span>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* The same table, read in SQL — while the tables play. */}
-      <div
-        aria-hidden="true"
-        className="absolute bottom-[7%] left-[6%] w-[22rem] short:bottom-[4%]"
-      >
-        <div
-          className={cn(
-            'transition-[opacity,translate] duration-500 ease-out',
-            scene === 'data'
-              ? 'translate-y-0 opacity-100'
-              : 'pointer-events-none translate-y-4 opacity-0',
-          )}
-        >
-          <div className="animate-in fade-in zoom-in-95 slide-in-from-bottom-4 overflow-hidden rounded-xl border border-code-border bg-code text-code-foreground shadow-[0_24px_60px_-16px_rgb(0_0_0/0.45)] duration-500 fill-mode-both [animation-delay:650ms]">
-            <div className="flex items-center gap-2 border-b border-code-border px-4 py-2.5 text-xs text-syn-comment short:hidden">
-              <SquareTerminal className="size-3.5" />
-              {$t('Console SQL')}
-              <span
-                className={cn(
-                  'ml-auto size-1.5 rounded-full transition-colors duration-300',
-                  typing ? 'bg-syn-number' : clause !== null ? 'bg-primary' : 'bg-syn-comment/40',
-                )}
-              />
-            </div>
-            <pre className="min-h-[5.25rem] px-4 pt-3 font-mono text-[13px] leading-6 whitespace-pre">
-              <Highlighted text={text} />
-              <span
-                className={cn(
-                  'ml-px inline-block h-4 w-[7px] translate-y-[3px] bg-code-foreground/70',
-                  !typing && 'animate-pulse',
-                )}
-              />
-            </pre>
-            <p
-              className={cn(
-                'flex gap-1 px-4 pb-3 font-mono text-[13px] leading-6 text-syn-comment transition-opacity duration-300',
-                clause !== null ? 'opacity-100' : 'opacity-0',
-              )}
-            >
-              --
-              <span
-                // The count changes with the data: the new number slides in.
-                key={hits}
-                className="inline-block animate-in fade-in slide-in-from-bottom-1 duration-300"
-              >
-                {hits}
-              </span>
-              {$tp(hits, 'ligne', 'lignes')}
-            </p>
           </div>
         </div>
       </div>

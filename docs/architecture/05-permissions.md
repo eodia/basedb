@@ -49,7 +49,7 @@ Après la décision, un filtre soustractif dépendant de la surface est appliqu�
 | Surface (`audit_log.surface`) | Verbes et opérations retirés |
 |---|---|
 | `ui`, `rest` | aucun |
-| `mcp` | `delete`, `manage_permissions`, `manage_tokens` ; `manage_schema` dégradé en **proposition de migration** ; **approbation d'une migration**, **délivrance et usage d'un jeton de confirmation**, et toute opération réservée (§1.5) |
+| `mcp` | `manage_permissions`, `manage_tokens` ; `delete` hors d'un jeton créé pour supprimer, et toujours sur une table qu'un lien en cascade vise (§2.3) ; `manage_schema` dégradé en **proposition de migration** ; **approbation d'une migration**, **délivrance et usage d'un jeton de confirmation**, et toute opération réservée (§1.5) |
 | `webhook` (émission) | tout sauf `read` |
 | `system` | aucun verbe retiré, mais le contexte est nommé, borné à un tenant et à une liste blanche de tâches (§6.4) |
 
@@ -148,10 +148,10 @@ Raison d'être : le cadrage prévoit un texte long « HTML riche assaini côté 
 | Rôle | Exactement un (`api_token.role_id`), du même tenant par contrainte de catalogue, soumis à la non-escalade : à la création comme à toute modification, l'ensemble des couples (portée, action) du rôle visé doit être inclus dans les capacités effectives du créateur, sinon `PRIVILEGE_ESCALATION`. |
 | Bornage permanent | `capacites(jeton) = capacites(api_token.role_id) ∩ capacites(api_token.created_by)`, **recalculée à chaque décision**. Un jeton dont le créateur est désactivé, retiré d'un rôle ou sorti du tenant devient inerte sans action sur le jeton. C'est ce qui ferme l'élargissement différé : ajouter une ligne `permission` au rôle porté n'élargit le jeton que dans la limite des droits de son porteur. |
 | Verbes interdits | Un rôle porté par un jeton ne peut contenir ni `manage_schema`, ni `manage_permissions`, ni `manage_tokens`. Refus `TOKEN_PRIVILEGE_REFUSED`. Sans cette règle, un jeton fuité dans un dépôt Git ou un journal d'automatisation vaudrait un compte concepteur, hors de tout écran de confirmation. |
-| `delete` | **Autorisé**, s'il figure explicitement dans le rôle. L'interdire pousserait les intégrateurs vers un compte utilisateur partagé, qui est pire. |
+| `delete` | **Autorisé**, s'il figure explicitement dans le rôle : le jeton créé « lecture, écriture et suppression » (`access: delete`). L'interdire pousserait les intégrateurs vers un compte utilisateur partagé, qui est pire. **Jamais en cascade** : un jeton ne supprime aucune ligne d'une table visée par un lien `on_delete = 'cascade'` (`TOKEN_CASCADE_FORBIDDEN`), sur aucune surface — la suppression ligne à ligne ne devient pas, sans le dire, une suppression de masse dans des tables que le porteur ne lit pas. |
 | Portée | `api_token.tenant_id` obligatoire ; `api_token.base_id` facultatif — s'il est renseigné, toute cible hors de cette base est `INVISIBLE`. |
 | Surfaces | `api_token.allowed_surfaces`, sous-ensemble non vide de `{rest, mcp}` (§1.2). |
-| Expiration | *Décision révisée* : `expires_at` est **nul par défaut** — le jeton vit jusqu'à sa révocation. Une durée donnée à la création va de 1 à 365 jours, sinon refus `TOKEN_EXPIRY_REQUIRED` ; l'échéance posée est comparée à l'horloge du serveur à chaque décision. Ce qui borne un jeton sans échéance est ailleurs : une seule base, jamais `delete` ni `manage_*`, inerte dès que son créateur est désactivé, dernière utilisation affichée, révocable à tout moment. |
+| Expiration | *Décision révisée* : `expires_at` est **nul par défaut** — le jeton vit jusqu'à sa révocation. Une durée donnée à la création va de 1 à 365 jours, sinon refus `TOKEN_EXPIRY_REQUIRED` ; l'échéance posée est comparée à l'horloge du serveur à chaque décision. Ce qui borne un jeton sans échéance est ailleurs : une seule base, `delete` seulement si on le lui donne, jamais `manage_*`, inerte dès que son créateur est désactivé, dernière utilisation affichée, révocable à tout moment. |
 | Secret | Seule l'empreinte `token_hash` est stockée. La valeur en clair n'est affichée qu'une fois, à la création ; `token_prefix` sert à l'identifier ensuite. La comparaison d'empreinte est faite en temps constant. |
 
 ---

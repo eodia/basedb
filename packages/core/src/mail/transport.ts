@@ -27,15 +27,19 @@ export function smtpMailer(config: SmtpConfig, from: Address): Mailer {
     const { data } = composeMail(
       {
         from,
-        to: [{ address: message.to }],
+        to: [message.to, ...(message.also ?? [])].map((address) => ({ address })),
+        cc: (message.cc ?? []).map((address) => ({ address })),
         replyTo,
         subject: message.subject,
         text: message.body,
         html: message.html ?? null,
         automatic: message.automatic ?? false,
+        attachments: message.attachments ?? [],
       },
       { at: new Date(), domain },
     )
-    await sendSmtp(config, { from: from.address, to: [message.to] }, data)
+    // Every mailbox the mail names, copies included, is a recipient of the envelope.
+    const recipients = [message.to, ...(message.also ?? []), ...(message.cc ?? [])]
+    await sendSmtp(config, { from: from.address, to: [...new Set(recipients)] }, data)
   }
 }

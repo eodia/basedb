@@ -1,6 +1,6 @@
 ---
 title: Automatiseringar
-description: När en rad ändras, vid en fast tid eller med ett klick – redigera, skapa, hitta, upprepa på varje rad, förgrena, fråga AI, avisera, skicka e-post, anropa en tjänst, skriva i Slack.
+description: När en rad ändras, kommer in i ett filter eller försvinner, när ett datum infaller, vid en fast tid, med ett klick eller ett anrop – redigera, skapa, hitta, räkna, upprepa, förgrena, vänta, försök, fråga AI, skapa en PDF, avisera, skicka e-post, anropa en tjänst.
 ---
 
 En automatisering anger **när**, **om** och **då**: när en uppgift går till ”Fait”, anteckna
@@ -8,7 +8,7 @@ tiden; när ett negativt omdöme kommer in, avisera den ansvariga och skriv i Sl
 kl. 9, skapa raden för teamets avstämning. Och när en åtgärd inte räcker följer den ett
 **flöde**: hitta en rad, ta en gren eller en annan beroende på vad den säger, upprepa steg på
 varje rad som matchar ett filter, återanvänd i ett steg det som ett tidigare steg har hittat
-eller skrivit.
+eller skrivit, **vänta** tre dagar innan en påminnelse, skicka en **PDF** som bilaga.
 
 De öppnas från **Automatiseringar**, i blocket för den öppna databasen längst ned i sidofältet,
 och kräver nivån **Hantera**.
@@ -17,9 +17,10 @@ och kräver nivån **Hantera**.
 
 ## Flödet
 
-Flödet ritas uppifrån och ned: utlösaren, sedan varje steg. Ett **+** på en linje lägger till ett
-steg på det stället; ett kort öppnar sina inställningar till höger. En enkel automatisering –
-en utlösare och en åtgärd – ryms på två kort och ställs in som förut.
+Flödet ritas uppifrån och ned: utlösaren, sedan varje steg. Ett **+** på en linje öppnar listan
+över steg, ordnade efter kategori – Rader, Kommunicera, Dokument, AI, Logik – med en sökruta,
+och lägger till det valda steget på det stället; ett kort öppnar sina inställningar till höger.
+En enkel automatisering – en utlösare och en åtgärd – ryms på två kort och ställs in som förut.
 
 ## När
 
@@ -29,6 +30,10 @@ en utlösare och en åtgärd – ryms på två kort och ställs in som förut.
 | **En rad ändras** | tabellen, och vid behov bara de fält som ska bevakas |
 | **Vid en fast tid** | varje timme, varje dag eller varje vecka, vid vald tid och i vald tidszon |
 | **Någon klickar på en knapp** | ett [Knapp-fält](/basedb/sv/fonctionnalites/tables-et-champs/#knapp) i tabellen |
+| **En rad tas bort** | tabellen; stegen citerar raden som den var |
+| **En rad kommer in i ett filter** | tabellen och filtret: automatiseringen startar när en rad kommer in i det, och startar inte igen förrän den har lämnat det – ”en faktura blir försenad”, inte ”en försenad faktura ändras” |
+| **Ett datum infaller** | ett Datum-fält i tabellen, en förskjutning – tre dagar innan, samma dag, en vecka efter – och tiden: påminnelser om förfallodatum, avtalsjubileer |
+| **En webhook tas emot** | inget: automatiseringen får sin egen adress, som ett annat program anropar ([detaljer](#en-tjänst-som-anropar-basedb)) |
 
 En utlösare för rader ser **alla** skrivningar: gränssnittet, API:et, en agent, ett delat
 formulär och till och med direkt SQL – automatiseringarna utgår från historiken, som fångar
@@ -43,7 +48,8 @@ och säger det.
 
 ## Då
 
-Upp till trettio steg, i ordning; det första som misslyckas stoppar de följande.
+Upp till fyrtio steg, i ordning; det första som misslyckas stoppar de följande – utom i ett
+**Försök**-block ([detaljer](#försök)).
 
 | Steg | Vad det gör |
 |---|---|
@@ -57,10 +63,20 @@ Upp till trettio steg, i ordning; det första som misslyckas stoppar de följand
 | **Fråga AI** | ett svar från [AI-leverantören](/basedb/sv/fonctionnalites/ia/) på en instruktion som citerar raden och de tidigare stegen – formulera, sammanfatta, klassificera –, tolkat som en text, ett tal, ja eller nej, ett datum eller ett val i en lista |
 | **Villkor** | flera grenar: den första vars villkor är uppfyllt tas, ”Annars” när inget är det; grenarna går sedan ihop igen |
 | **För varje rad** | de steg den innehåller, en gång för varje rad i en tabell som matchar ett filter ([detaljer](#för-varje-rad)) |
+| **Ta bort en rad** | raden som utlöste, eller den som ett steg har hittat – den hamnar i papperskorgen |
+| **Räkna och summera** | antalet rader i ett filter, deras summa, medelvärde, minimum eller maximum, att citera eller testa i efterhand |
+| **Generera en PDF** | [dokumentet](/basedb/sv/fonctionnalites/documents/) för en rad, sparat i ett Fil-fält eller bifogat ett e-postmeddelande |
+| **Vänta** | en viss tid, eller till ett fälts datum ([detaljer](#vänta)) |
+| **Försök** | steg, och andra att göra om ett av dem misslyckas ([detaljer](#försök)) |
+| **Kör en automatisering** | en annan automatisering i databasen, på en rad i dess tabell |
 
 En sökning som inte hittar något stoppar inte flödet: de steg som skulle ha ändrat dess rad
-hoppas över. Vill du göra något annat i det fallet testar ett villkor det – en gren med tomt
-filter tas så snart sökningen har hittat något.
+hoppas över. Vill du göra något annat i det fallet lägger **Om ingen rad hittas …**, under
+sökningen, till ett villkor som testar det.
+
+Ett **villkor** testar en rad med ett filter, eller ett **värde**: AI:ns svar, en webhooks kod,
+en totalsumma – ”`{{e2.reponse}}` är lika med Urgent”, ”`{{e3.somme.montant}}` är större än
+eller lika med 1000”. Tal jämförs som tal, text utan accenter eller versaler.
 
 ## För varje rad
 
@@ -81,6 +97,60 @@ Utöver gränsen väntar de återstående raderna på nästa körning, som säge
 redan är behandlade ur filtret – en kryssruta ”Påmind”, ett datum – för att med tiden behandla
 dem alla, körning efter körning. En loop innehåller ingen annan loop, och en körning stoppas
 efter högst två minuter.
+
+## Vänta
+
+Steget **Vänta** pausar körningen – tre timmar, två dagar – eller till datumet i ett fält på en
+rad, med en förskjutning och en tid: ”dagen innan förfallodatumet, kl. 9”. Körningen visas som
+**Pausad** på fliken **Körningar**, med datumet för när den återupptas.
+
+Den återupptas vid nästa steg genom att **läsa om** sina rader: ”tre dagar efter att offerten
+skickades, om den fortfarande inte är accepterad, skicka en påminnelse” skrivs **Vänta** 3
+dagar, sedan ett villkor på offertens status, så som den är den dagen. Att inaktivera
+automatiseringen stoppar pausade körningar; en väntan kan inte placeras i en loop eller i ett
+**Försök**-block, och varar högst ett år.
+
+## Försök
+
+**Försök**-blocket har två grenar. Den första körs; om något av dess steg misslyckas fortsätter
+flödet med den andra, **Vid fel**, som citerar felet – `{{e4.erreur}}`, koden, och
+`{{e4.etape}}`, steget –, och återupptas sedan efter blocket. Ett sätt att avisera någon när en
+tjänst inte svarar, utan att stoppa allt.
+
+Enklare uttryckt: en webhook kan **försöka igen** på egen hand upp till tre gånger efter ett
+tjänstefel, och en loop kan **fortsätta** trots en rad som misslyckas.
+
+## En PDF och ett e-postmeddelande
+
+**Generera en PDF** gör dokumentet för en rad – med en [dokumentmall](/basedb/sv/fonctionnalites/documents/)
+för dess tabell, eller raddetaljerna med alla dess fält – och kan spara det i ett Fil-fält.
+**Skicka e-post** kan sedan bifoga det, med filerna i ett Fil- eller Bild-fält:
+
+- ett e-postmeddelande **till var och en**, eller **ett enda till alla**, med mottagare **i
+  kopia**;
+- ett meddelande i **formaterad text** – fetstil, listor, länkar – som citerar raden;
+- en **svarsadress**: din som standard, eller den i ett E-post-fält;
+- högst 50 mottagare, 10 bilagor och 15 MB.
+
+”När en offert går till Accepterad, skicka fakturan till kunden, med ekonomiavdelningen i
+kopia”: **En rad kommer in i ett filter** `statut eq "accepte"`, **Generera en PDF** med mallen
+Faktura, **Skicka e-post** till kundens E-post-fält, med fakturan bifogad.
+
+## En tjänst som anropar basedb
+
+Med utlösaren **En webhook tas emot** har automatiseringen sin egen hemliga adress, att ge till
+programmet som ska starta den – en nätbutik, ett externt formulär, ett automatiseringsverktyg:
+
+```bash
+curl -X POST "https://basedb.example.com/api/v1/hooks/<secret>" \
+  -H "content-type: application/json" \
+  -d '{"client": {"nom": "Dupont"}, "total": 120}'
+```
+
+Stegen citerar det som skickades: `{{trigger.client.nom}}`, `{{trigger.total}}`; ett formulär
+läses på samma sätt, en text via `{{trigger.texte}}`. Adressen kopieras från utlösarens
+inställningar; **Byt adress** ersätter den, och den gamla upphör genast att gälla. Ett anrop
+får `202`, automatiseringen körs inom sekunden.
 
 ## Anropa en tjänst
 
@@ -137,6 +207,11 @@ text:
 - `{{e4.reponse}}`: svaret från AI-steget `e4`;
 - `{{e5.client}}` i loopen `e5`, varvets rad; `{{e5.nombre}}` efter den, antalet rader den har
   gått igenom;
+- `{{e6.nombre}}`, `{{e6.somme.montant}}`, `{{e6.moyenne.montant}}`, `{{e6.max.echeance}}`: det
+  steget `e6` räknade;
+- `{{e7.erreur}}`, `{{e7.etape}}`: felet som **Försök**-blocket `e7` fångade;
+- `{{e8.nom}}`: namnet på PDF:en från steget `e8`;
+- `{{trigger.client.nom}}`: det som en inkommande webhook skickade;
 - `{{_maintenant}}`: tidpunkten för körningen.
 
 Ett värde som består av ett enda citat skickar vidare själva värdet: en relation, en person, ett
@@ -185,17 +260,16 @@ som alla andra.
 ## Begränsningar
 
 - Det en automatisering skriver utlöser inga andra: det som ska ske i följd skrivs i ett enda
-  flöde.
-- En sökning ger en rad, den första; en loop går igenom högst 200 per körning, och det första
-  steget som misslyckas stoppar den. Ingen väntan (”tre dagar senare”).
-- Inga skript. Ett e-postmeddelande skickas som ren text, ett per mottagare – högst tjugo per
-  steg –, via instansens [sändningsserver](/basedb/sv/hebergement/variables/#e-post); ett svar
-  går till personen som äger automatiseringen.
-- Ett villkor testar en rad: vill du välja gren utifrån AI:ns svar skriver du det först i ett
-  fält på raden.
+  flöde, eller via **Kör en automatisering**, högst tre nivåer.
+- En sökning ger en rad, den första; en loop går igenom högst 200 per körning. En körning tar
+  högst två minuter, väntetider oräknade.
+- Inga skript. Ett e-postmeddelande skickas via instansens
+  [sändningsserver](/basedb/sv/hebergement/variables/#e-post).
 - En [databasmall](/basedb/sv/fonctionnalites/modeles/) tar bara med automatiseringar utan
   sökning, loop, villkor eller AI-steg, och aldrig en webhook.
-- En webhook följer ingen omdirigering och väntar högst 10 sekunder; ett annat svar än
-  2xx gör att steget misslyckas.
+- En webhook följer ingen omdirigering och väntar högst 10 sekunder; ett annat svar än 2xx gör
+  att steget misslyckas, efter sina återförsök.
+- Ett datum som infaller söks varje minut; bara de som inträffar efter att automatiseringen
+  sparades räknas.
 - 100 körningar per timme och automatisering; en missad timkörning tas bara igen en gång.
 - Fördröjningen mellan skrivningen och åtgärden är i storleksordningen en sekund.

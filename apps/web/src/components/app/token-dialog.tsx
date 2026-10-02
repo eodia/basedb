@@ -23,14 +23,16 @@ import {
 } from '@/components/ui/select'
 import { Hint } from '@/components/ui/tooltip'
 import {
+  ApiError,
   type ApiToken,
   type DescribedBase,
+  type TokenAccess,
   type TokenSurface,
   api,
   mcpEndpoint,
   restRoot,
 } from '@/lib/api/client'
-import { $t, intlLocale } from '@/lib/i18n'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { KeyRound, Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -137,18 +139,41 @@ export function doorsOf(surfaces: readonly string[]): string {
     .join(' · ')
 }
 
+/** What a token may do, as its badge and the rights menu say it. */
+export const accessLabel = (access: TokenAccess) =>
+  access === 'delete'
+    ? $t('Lecture, écriture et suppression')
+    : access === 'write'
+      ? $t('Lecture et écriture')
+      : $t('Lecture seule')
+
+/** Why a token is refused to whoever reads or writes the base without managing it. */
+const needsManage = () =>
+  $t(
+    'Créer un jeton pour cette base demande le niveau Gestion sur elle, ou sur son projet. Demandez-le à une personne qui la gère, ou à un administrateur.',
+  )
+
+/** What went wrong, said for tokens: a refusal of `manage_tokens` is not about the administration. */
+const explain = (e: unknown) =>
+  e instanceof ApiError && e.code === 'ADMIN_REQUIRED' ? needsManage() : messageFor(e)
+
 export function TokenDialog({
   open,
   base,
+  hasPassword = true,
   onClose,
 }: {
   readonly open: boolean
-  readonly base: Pick<DescribedBase, 'name' | 'label'>
+  /** Its verbs, when known: without `manage_tokens`, the dialog says why instead of failing. */
+  readonly base: Pick<DescribedBase, 'name' | 'label'> & { readonly actions?: readonly string[] }
+  /** An account signed in through a provider only cannot prove a password (chapter 13 §5). */
+  readonly hasPassword?: boolean
   readonly onClose: () => void
 }) {
+  const manages = base.actions === undefined || base.actions.includes('manage_tokens')
   const [tokens, setTokens] = useState<readonly ApiToken[] | null>(null)
   const [label, setLabel] = useState('')
-  const [access, setAccess] = useState<'read' | 'write'>('read')
+  const [access, setAccess] = useState<TokenAccess>('read')
   const [surfaces, setSurfaces] = useState<ReadonlySet<TokenSurface>>(new Set(['rest', 'mcp']))
   const [days, setDays] = useState<Duration>('never')
   const [password, setPassword] = useState('')
@@ -165,7 +190,7 @@ export function TokenDialog({
       setTokens(await api.tokens(base.name))
     } catch (e) {
       setTokens([])
-      setError(messageFor(e))
+      setError(explain(e))
     }
   }, [base.name])
 
@@ -179,8 +204,8 @@ export function TokenDialog({
     setIssued(null)
     setError(null)
     setTokens(null)
-    void load()
-  }, [open, load])
+    if (manages) void load()
+  }, [open, load, manages])
 
   /** Elevates, then acts: each act that opens or closes a door proves the password. */
   const elevated = async (act: () => Promise<void>) => {
@@ -193,7 +218,7 @@ export function TokenDialog({
       setPassword('')
       await load()
     } catch (e) {
-      setError(messageFor(e))
+      setError(explain(e))
     } finally {
       setBusy(false)
     }
@@ -233,12 +258,21 @@ export function TokenDialog({
           <DialogTitle>{$t('Jetons API et MCP — {label}', { label: base.label })}</DialogTitle>
           <DialogDescription>
             {$t(
-              'Un jeton d’intégration ouvre cette base à un programme, par l’API REST, ou à un agent (Claude ou tout client MCP) : il la lit et, si vous le décidez, y crée et modifie des lignes. Il ne peut ni supprimer une ligne ni changer la structure, et ne voit que ce que vous pouvez voir.',
+              'Un jeton d’intégration ouvre cette base à un programme, par l’API REST, ou à un agent (Claude ou tout client MCP) : il la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il ne change jamais la structure, et ne voit que ce que vous pouvez voir.',
             )}
           </DialogDescription>
         </DialogHeader>
 
-        {issued !== null && snippets !== null ? (
+        {!manages ? (
+          <div className="min-w-0 space-y-4">
+            <p className="rounded-md border bg-muted/40 px-3 py-2.5 text-sm">{needsManage()}</p>
+            <DialogFooter>
+              <Button variant="ghost" onClick={onClose}>
+                {$t('Fermer')}
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : issued !== null && snippets !== null ? (
           <div className="min-w-0 space-y-3">
             <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
               {$t(
@@ -307,12 +341,8 @@ export function TokenDialog({
                             })}
                           </span>
                         </span>
-                        <Badge variant="secondary">
-                          {token.access === 'write'
-                            ? $t('Lecture et écriture')
-                            : $t('Lecture seule')}
-                        </Badge>
-                        {state === null ? (
+                        <Badge variant="secondary">{accessLabel(token.access)}</Badge>
+                        {state === null && hasPassword ? (
                           // Disabled buttons raise no pointer events: the hint hangs on a wrapper
                           // so it can still say why, while the password field is empty.
                           <Hint
@@ -334,7 +364,7 @@ export function TokenDialog({
                               </Button>
                             </span>
                           </Hint>
-                        ) : (
+                        ) : state === null ? null : (
                           <span className="text-xs text-muted-foreground">{state}</span>
                         )}
                       </li>
@@ -344,90 +374,112 @@ export function TokenDialog({
               )}
             </section>
 
-            <section className="space-y-3">
-              <h3 className="text-sm font-medium">{$t('Nouveau jeton')}</h3>
-              <div className="space-y-1.5">
-                <Label htmlFor="token-label">{$t('À quoi sert ce jeton ?')}</Label>
-                <Input
-                  id="token-label"
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                  placeholder={$t('Synchronisation avec la comptabilité')}
-                  maxLength={200}
-                />
-              </div>
-
-              <fieldset className="space-y-1.5">
-                <legend className="mb-1.5 text-sm font-medium">{$t('Accès')}</legend>
-                {SURFACES.map((s) => (
-                  <div key={s.id} className="flex items-center gap-2 text-sm">
-                    <Checkbox
-                      id={`token-surface-${s.id}`}
-                      checked={surfaces.has(s.id)}
-                      onCheckedChange={(on) => toggle(s.id, on === true)}
-                    />
-                    <label htmlFor={`token-surface-${s.id}`} className="cursor-pointer">
-                      {s.label} <span className="text-muted-foreground">— {s.hint}</span>
-                    </label>
-                  </div>
-                ))}
-                {surfaces.size === 0 && (
-                  <p className="text-xs text-destructive">{$t('Choisissez au moins un accès.')}</p>
-                )}
-              </fieldset>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label>{$t('Droits')}</Label>
-                  <Select value={access} onValueChange={(v) => setAccess(v as 'read' | 'write')}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="read">{$t('Lecture seule')}</SelectItem>
-                      <SelectItem value="write">{$t('Lecture et écriture')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{$t('Validité')}</Label>
-                  <Select value={days} onValueChange={(v) => setDays(v as Duration)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DURATIONS.map((d) => (
-                        <SelectItem key={d} value={d}>
-                          {d === 'never' ? $t('Sans expiration') : `${d} jours`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              {access === 'write' && (
-                <p className="text-xs text-muted-foreground">
-                  {$t('Le jeton pourra créer et modifier des lignes, jamais en supprimer.')}
-                </p>
-              )}
-            </section>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="token-password">{$t('Votre mot de passe')}</Label>
-              <Input
-                id="token-password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && ready && void create()}
-              />
-              <p className="text-xs text-muted-foreground">
+            {!hasPassword ? (
+              <p className="rounded-md border bg-muted/40 px-3 py-2.5 text-sm">
                 {$t(
-                  'Demandé pour créer ou révoquer un jeton : ouvrir une porte vers l’extérieur exige une preuve récente.',
+                  'Créer ou révoquer un jeton demande de confirmer son mot de passe, et votre compte se connecte par un fournisseur d’identité, sans mot de passe. Demandez-le à une personne qui gère cette base et se connecte avec un mot de passe.',
                 )}
               </p>
-            </div>
+            ) : (
+              <>
+                <section className="space-y-3">
+                  <h3 className="text-sm font-medium">{$t('Nouveau jeton')}</h3>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="token-label">{$t('À quoi sert ce jeton ?')}</Label>
+                    <Input
+                      id="token-label"
+                      value={label}
+                      onChange={(e) => setLabel(e.target.value)}
+                      placeholder={$t('Synchronisation avec la comptabilité')}
+                      maxLength={200}
+                    />
+                  </div>
+
+                  <fieldset className="space-y-1.5">
+                    <legend className="mb-1.5 text-sm font-medium">{$t('Accès')}</legend>
+                    {SURFACES.map((s) => (
+                      <div key={s.id} className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          id={`token-surface-${s.id}`}
+                          checked={surfaces.has(s.id)}
+                          onCheckedChange={(on) => toggle(s.id, on === true)}
+                        />
+                        <label htmlFor={`token-surface-${s.id}`} className="cursor-pointer">
+                          {s.label} <span className="text-muted-foreground">— {s.hint}</span>
+                        </label>
+                      </div>
+                    ))}
+                    {surfaces.size === 0 && (
+                      <p className="text-xs text-destructive">
+                        {$t('Choisissez au moins un accès.')}
+                      </p>
+                    )}
+                  </fieldset>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>{$t('Droits')}</Label>
+                      <Select value={access} onValueChange={(v) => setAccess(v as TokenAccess)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="read">{$t('Lecture seule')}</SelectItem>
+                          <SelectItem value="write">{accessLabel('write')}</SelectItem>
+                          <SelectItem value="delete">{accessLabel('delete')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>{$t('Validité')}</Label>
+                      <Select value={days} onValueChange={(v) => setDays(v as Duration)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DURATIONS.map((d) => (
+                            <SelectItem key={d} value={d}>
+                              {d === 'never'
+                                ? $t('Sans expiration')
+                                : $tp(Number(d), '{count} jour', '{count} jours')}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {access === 'write' && (
+                    <p className="text-xs text-muted-foreground">
+                      {$t('Le jeton pourra créer et modifier des lignes, jamais en supprimer.')}
+                    </p>
+                  )}
+                  {access === 'delete' && (
+                    <p className="text-xs text-muted-foreground">
+                      {$t(
+                        'Le jeton pourra aussi supprimer des lignes, une à la fois. Une ligne supprimée se restaure depuis son historique — ou par l’agent lui-même, avec restore_record.',
+                      )}
+                    </p>
+                  )}
+                </section>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="token-password">{$t('Votre mot de passe')}</Label>
+                  <Input
+                    id="token-password"
+                    type="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && ready && void create()}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {$t(
+                      'Demandé pour créer ou révoquer un jeton : ouvrir une porte vers l’extérieur exige une preuve récente.',
+                    )}
+                  </p>
+                </div>
+              </>
+            )}
 
             {error !== null && (
               <p role="alert" className="text-sm text-destructive">
@@ -439,9 +491,11 @@ export function TokenDialog({
               <Button variant="ghost" onClick={onClose} disabled={busy}>
                 {$t('Fermer')}
               </Button>
-              <Button onClick={() => void create()} disabled={!ready}>
-                {busy ? $t('Création…') : $t('Créer le jeton')}
-              </Button>
+              {hasPassword && (
+                <Button onClick={() => void create()} disabled={!ready}>
+                  {busy ? $t('Création…') : $t('Créer le jeton')}
+                </Button>
+              )}
             </DialogFooter>
           </div>
         )}

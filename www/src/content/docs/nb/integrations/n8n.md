@@ -29,8 +29,8 @@ Opprett en identifikasjon **basedb API** i n8n:
 | **Token** | et **integrasjonstoken**: menyen **⋯** på basen → **API og agenter** → **API- og MCP-tokener…** |
 
 Et token åpner **én** base. Det leser radene, skriver dem hvis det ble opprettet med
-skriverettighet, har aldri flere tillatelser enn personen som opprettet det, og **sletter
-aldri**. Ved lagring prøver n8n forbindelsen og sier om tokenet blir avvist.
+skriverettighet, og har aldri flere tillatelser enn personen som opprettet det. Ved lagring
+prøver n8n forbindelsen og sier om tokenet blir avvist.
 
 ## Lese og skrive: basedb-noden
 
@@ -57,9 +57,9 @@ basedbs kode og hva den betyr.
 - En **relasjon** leses `{ "id": …, "display": … }` og skrives med `_id`-en til den koblede raden.
 - **Create or Update** endrer aldri flere rader: hvis flere har verdiene, stopper noden
   i stedet for å gjette.
-- Ingen operasjon **Delete**: et token sletter ikke. For å fjerne rader, merk dem
-  (en status «Arkivert»), eller la en
-  [automatisering](/basedb/nb/fonctionnalites/automatisations/) stå for slettingen.
+- Ingen operasjon **Delete**: for å fjerne rader, merk dem (en status «Arkivert»), la en
+  [automatisering](/basedb/nb/fonctionnalites/automatisations/) stå for slettingen, eller kall
+  [REST-API-et](/basedb/nb/integrations/api-rest/) med et token opprettet for å slette.
 
 ## Start en arbeidsflyt
 

@@ -29,8 +29,8 @@ volumen, `/data`, til filerne i felterne Fil og Billede.
 | Tag | Indhold |
 |---|---|
 | `latest` | den senest udgivne version |
-| `0.5` | den seneste version 0.5.x |
-| `0.5.1` | præcis denne version |
+| `0.6` | den seneste version 0.6.x |
+| `0.6.0` | præcis denne version |
 
 ## Tjenesterne
 

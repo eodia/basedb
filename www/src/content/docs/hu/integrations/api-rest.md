@@ -13,13 +13,17 @@ fizikai neveket tartalmazzák – ugyanazokat, amelyeket SQL-ben is olvas.
 
 ## Token
 
-A felületen az adatbázis **⋯** menüje → **API és ügynökök** → **API- és MCP-tokenek…**: itt hozhat
-létre egy erre az adatbázisra korlátozott, alapértelmezés szerint csak olvasási **integrációs
-tokent**, miután megerősítette a jelszavát. Csak egyszer jelenik meg; helyezze el egy környezeti
+A felületen az adatbázis **⋯** menüje → **API és ügynökök** → **API- és MCP-tokenek…**: akinek az
+adatbázison, vagy annak projektjén, **Kezelés** szintje van, az itt hoz létre egy erre az
+adatbázisra korlátozott, alapértelmezés szerint csak olvasási **integrációs tokent**, miután
+megerősítette a jelszavát — a jelszó nélküli fiók, amely egy identitásszolgáltatón keresztül
+jelentkezik be, ezt még nem teheti meg. Csak egyszer jelenik meg; helyezze el egy környezeti
 változóban.
 
-Egy token olvas, és ha írási joggal hozták létre, létrehoz és módosít, de **soha nem töröl**, és
-soha nincs több jogosultsága, mint annak a személynek, aki létrehozta.
+Egy token olvas; létrehoz és módosít, ha írásra jött létre, és **töröl, ha erre jött létre** —
+jogosultság: „Olvasás, írás és törlés” —, kivéve egy olyan sort, amelyet egy kaszkádolt
+kapcsolat másokkal együtt vinne el. Soha nincs több jogosultsága, mint annak a személynek, aki
+létrehozta.
 
 ```bash
 export BASEDB_TOKEN=bdb_…

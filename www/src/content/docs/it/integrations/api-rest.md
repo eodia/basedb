@@ -13,12 +13,15 @@ I suoi URL riportano i nomi fisici — quelli che leggi anche in SQL.
 
 ## Un token
 
-Nell’interfaccia, menu **⋯** del database → **API e agenti** → **Token API e MCP…**: qui si crea un **token
-di integrazione** limitato a questo database, in sola lettura per impostazione predefinita, dopo aver confermato la propria
-password. Viene mostrato una sola volta; mettilo in una variabile d’ambiente.
+Nell’interfaccia, menu **⋯** del database → **API e agenti** → **Token API e MCP…**: chi ha il
+livello **Gestione** sul database, o sul suo progetto, vi crea un **token di integrazione**
+limitato a questo database, in sola lettura per impostazione predefinita, dopo aver confermato la
+propria password — un account senza password, che accede tramite un fornitore di identità, non
+può ancora farlo. Viene mostrato una sola volta; mettilo in una variabile d’ambiente.
 
-Un token legge, crea e modifica se è stato creato in scrittura, **non elimina mai**, e non ha mai
-più permessi della persona che l’ha creato.
+Un token legge; crea e modifica se è stato creato in scrittura, ed **elimina se è stato creato per
+questo** — permessi «Lettura, scrittura ed eliminazione», salvo una riga che una relazione a
+cascata porterebbe via insieme ad altre. Non ha mai più permessi della persona che l’ha creato.
 
 ```bash
 export BASEDB_TOKEN=bdb_…

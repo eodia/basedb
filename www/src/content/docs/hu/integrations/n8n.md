@@ -28,9 +28,9 @@ Hozzon létre az n8n-ben egy **basedb API** hitelesítő adatot:
 | **Workspace** | a munkaterület azonosítója, ugyanaz, mint az API címeiben (`/api/v1/<munkaterület>/…`): `t4z56fq`, kivéve ha a példány `BASEDB_TENANT`-ot rögzít |
 | **Token** | egy **integrációs token**: az adatbázis **⋯** menüje → **API és ügynökök** → **API- és MCP-tokenek…** |
 
-Egy token **egy** adatbázist nyit meg. Olvassa a sorait, írja is, ha íráshoz jött létre,
-sosincs több joga, mint annak a személynek, aki létrehozta, és **soha nem töröl**. Mentéskor
-az n8n kipróbálja a kapcsolatot, és jelzi, ha a tokent elutasítja.
+Egy token **egy** adatbázist nyit meg. Olvassa a sorait, írja is, ha íráshoz jött létre, és
+sosincs több joga, mint annak a személynek, aki létrehozta. Mentéskor az n8n kipróbálja a
+kapcsolatot, és jelzi, ha a tokent elutasítja.
 
 ## Olvasás és írás: a basedb csomópont
 
@@ -59,9 +59,10 @@ a csomópontot.
   írható.
 - A **Create or Update** soha nem módosít egyszerre több sort: ha több sor is hordozza az
   értékeket, a csomópont megáll, helyette hogy találgatna.
-- Nincs **Delete** művelet: egy token nem töröl. Sorok eltávolításához jelölje meg őket (egy
-  „Archivált” státusszal), vagy bízza a törlést egy
-  [automatizálásra](/basedb/hu/fonctionnalites/automatisations/).
+- Nincs **Delete** művelet: sorok eltávolításához jelölje meg őket (egy „Archivált”
+  státusszal), bízza a törlést egy
+  [automatizálásra](/basedb/hu/fonctionnalites/automatisations/), vagy hívja a
+  [REST API-t](/basedb/hu/integrations/api-rest/) egy törlésre létrehozott tokennel.
 
 ## Egy workflow indítása
 

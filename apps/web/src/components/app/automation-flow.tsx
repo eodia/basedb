@@ -1,15 +1,14 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Hint } from '@/components/ui/tooltip'
-import type { AutomationRun, DescribedBase, Member } from '@/lib/api/client'
+import type {
+  Automation,
+  AutomationRun,
+  AutomationTriggerKind,
+  DescribedBase,
+  Member,
+} from '@/lib/api/client'
 import {
   END_NODE,
   FRAME_BOTTOM,
@@ -28,20 +27,21 @@ import {
   type Draft,
   type DraftPath,
   type DraftStep,
+  type PathHolder,
   type RunStepRecord,
-  STEP_HINTS,
   STEP_LABELS,
-  STEP_MENU,
   type StepKind,
   TRIGGER_LABELS,
   allSteps,
   findPath,
-  inLoop,
+  offsetText,
   pathSummary,
   runStepSentence,
   runStepsById,
   stepProblem,
   stepSummary,
+  triggerHasTable,
+  triggerProblem,
 } from '@/lib/automations'
 import { useTheme } from '@/lib/theme'
 import { cn } from '@/lib/utils'
@@ -66,11 +66,17 @@ import './automation-flow.css'
 import { $t, weekdayNames } from '@/lib/i18n'
 import {
   Bell,
+  CalendarClock,
   CircleCheck,
   CircleSlash,
   CircleX,
   Clock,
   FilePlus2,
+  FileText,
+  FileX2,
+  Hourglass,
+  LifeBuoy,
+  ListFilter,
   type LucideIcon,
   Mail,
   Maximize,
@@ -80,132 +86,100 @@ import {
   Plus,
   Repeat,
   Search,
+  Sigma,
   Sparkles,
   Split,
+  Trash2,
   TriangleAlert,
   Webhook,
+  Workflow,
   Zap,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react'
-import { type ReactNode, createContext, useContext, useEffect, useMemo } from 'react'
+import { createContext, useContext, useEffect, useMemo } from 'react'
 
 /**
  * An automation's flow, drawn — chapter 17 on the canvas: the trigger on top, each step a
- * card below it, a condition opening its paths side by side and having them meet again.
- * A « + » on an edge inserts a step there; a card opens its settings. A run chosen in the
- * list is laid over the flow: each step it passed says how it went, the way it took is
- * drawn, the rest is dimmed.
+ * card below it, a condition — or an attempt — opening its paths side by side and having
+ * them meet again. A « + » on an edge asks the editor's picker for a step to insert there;
+ * a card opens its settings. A run chosen in the list is laid over the flow: each step it
+ * passed says how it went, the way it took is drawn, the rest is dimmed.
  */
 
 export const STEP_ICONS: Readonly<Record<StepKind, LucideIcon>> = {
   update_record: PencilLine,
   create_record: FilePlus2,
   find_record: Search,
+  delete_record: Trash2,
+  aggregate: Sigma,
   notify: Bell,
   email: Mail,
   webhook: Webhook,
   slack: MessageSquareText,
+  document: FileText,
   ai: Sparkles,
   branch: Split,
   for_each: Repeat,
+  attempt: LifeBuoy,
+  wait: Hourglass,
+  run_automation: Workflow,
 }
 
-/** Actions in one tone, a search in another, the AI in its own, what shapes the flow in a fourth. */
-const STEP_TONES: Readonly<Record<StepKind, string>> = {
-  update_record: 'bg-sky-500/12 text-sky-700 dark:text-sky-300',
-  create_record: 'bg-sky-500/12 text-sky-700 dark:text-sky-300',
-  notify: 'bg-sky-500/12 text-sky-700 dark:text-sky-300',
-  email: 'bg-sky-500/12 text-sky-700 dark:text-sky-300',
-  webhook: 'bg-sky-500/12 text-sky-700 dark:text-sky-300',
-  slack: 'bg-sky-500/12 text-sky-700 dark:text-sky-300',
-  find_record: 'bg-teal-500/12 text-teal-700 dark:text-teal-300',
+const ACTION = 'bg-sky-500/12 text-sky-700 dark:text-sky-300'
+const READ = 'bg-teal-500/12 text-teal-700 dark:text-teal-300'
+const FLOW = 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
+
+/**
+ * Actions in one tone, what reads rows in another, the AI in its own, what shapes the flow
+ * in a fourth — a deletion in red, as anything that deletes.
+ */
+export const STEP_TONES: Readonly<Record<StepKind, string>> = {
+  update_record: ACTION,
+  create_record: ACTION,
+  notify: ACTION,
+  email: ACTION,
+  webhook: ACTION,
+  slack: ACTION,
+  document: ACTION,
+  delete_record: 'bg-rose-500/12 text-rose-700 dark:text-rose-300',
+  find_record: READ,
+  aggregate: READ,
   // The colour of the AI across the product — an AI field's switch, the copilot.
   ai: 'bg-violet-500/12 text-violet-700 dark:text-violet-300',
-  branch: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
-  for_each: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+  branch: FLOW,
+  for_each: FLOW,
+  attempt: FLOW,
+  wait: FLOW,
+  run_automation: FLOW,
 }
+
+export const TRIGGER_ICONS: Readonly<Record<AutomationTriggerKind, LucideIcon>> = {
+  record_created: Zap,
+  record_updated: PencilLine,
+  record_deleted: FileX2,
+  record_matches: ListFilter,
+  button: MousePointerClick,
+  schedule: Clock,
+  date_reached: CalendarClock,
+  webhook: Webhook,
+}
+
+/** A trigger in the accent: what sets the flow off. */
+export const TRIGGER_TONE = 'bg-primary/12 text-primary'
 
 // ── What the canvas asks of the editor ──────────────────────────────────────
 
 interface FlowActions {
   readonly select: (id: string) => void
-  readonly insert: (slot: Slot, kind: StepKind) => void
-  /** Whether a slot lies in a loop, where no other loop may go. */
-  readonly looped: (slot: Slot) => boolean
+  /** Opens the editor's picker for a step to insert there. */
+  readonly pick: (slot: Slot) => void
 }
 
 const Actions = createContext<FlowActions>({
   select: () => undefined,
-  insert: () => undefined,
-  looped: () => false,
+  pick: () => undefined,
 })
-
-/**
- * The menu of the steps one may add: the actions first, then what shapes a flow — but no
- * loop inside a loop.
- */
-export function StepMenu({
-  onPick,
-  children,
-  align = 'center',
-  looped = false,
-}: {
-  readonly onPick: (kind: StepKind) => void
-  readonly children: ReactNode
-  readonly align?: 'start' | 'center' | 'end'
-  readonly looped?: boolean
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-      <DropdownMenuContent align={align} className="w-72">
-        {STEP_MENU.map((group, g) => (
-          <div key={group.join()}>
-            {g > 0 && <DropdownMenuSeparator />}
-            {group
-              .filter((kind) => !(looped && kind === 'for_each'))
-              .map((kind) => {
-                const Icon = STEP_ICONS[kind]
-                return (
-                  <DropdownMenuItem
-                    key={kind}
-                    onSelect={() => onPick(kind)}
-                    className="items-start gap-2.5 py-2"
-                  >
-                    <span
-                      className={cn(
-                        'mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md',
-                        STEP_TONES[kind],
-                      )}
-                    >
-                      <Icon className="size-3.5" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm">{STEP_LABELS[kind]}</span>
-                      <span className="block text-xs text-muted-foreground">
-                        {STEP_HINTS[kind]}
-                      </span>
-                    </span>
-                  </DropdownMenuItem>
-                )
-              })}
-          </div>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-/** The same menu on the canvas, inserting where it was opened. */
-function AddStepMenu({ slot, children }: { readonly slot: Slot; readonly children: ReactNode }) {
-  const { insert, looped } = useContext(Actions)
-  return (
-    <StepMenu onPick={(kind) => insert(slot, kind)} looped={looped(slot)}>
-      {children}
-    </StepMenu>
-  )
-}
 
 // ── Nodes ───────────────────────────────────────────────────────────────────
 
@@ -222,6 +196,7 @@ interface TriggerData extends CardData {
   readonly summary: string
   readonly condition: string
   readonly icon: LucideIcon
+  readonly problem: string | null
 }
 
 interface StepData extends CardData {
@@ -233,6 +208,8 @@ interface StepData extends CardData {
 
 interface PathData extends CardData {
   readonly path: DraftPath
+  /** The branch or the attempt it belongs to. */
+  readonly holder: PathHolder | null
   readonly taken: boolean
 }
 
@@ -281,17 +258,30 @@ function TriggerCard({ id, data }: NodeProps<TriggerNode>) {
         className={cardClass(data.selected, data.dimmed)}
         style={{ height: data.height }}
       >
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
+        <span
+          className={cn(
+            'flex size-9 shrink-0 items-center justify-center rounded-lg',
+            TRIGGER_TONE,
+          )}
+        >
           <Icon className="size-4.5" />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             {$t('Quand')}
           </span>
-          <span className="block truncate text-sm font-medium">{data.title}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-medium">{data.title}</span>
+            {data.problem !== null && (
+              <TriangleAlert
+                className="size-3.5 shrink-0 text-amber-500"
+                aria-label={data.problem}
+              />
+            )}
+          </span>
           <span className="block truncate text-xs text-muted-foreground">
-            {data.summary}
-            {data.condition !== '' && (
+            {data.problem ?? data.summary}
+            {data.problem === null && data.condition !== '' && (
               <>
                 {$t(' · si ')}
                 <span className="font-mono">{data.condition}</span>
@@ -305,18 +295,27 @@ function TriggerCard({ id, data }: NodeProps<TriggerNode>) {
 }
 
 function RunMark({ run }: { readonly run: RunStepRecord }) {
-  const Icon =
-    run.status === 'succeeded' ? CircleCheck : run.status === 'failed' ? CircleX : CircleSlash
+  // A wait passed holds the run until it goes on: an hourglass, not a tick.
+  const waits = run.kind === 'wait' && run.status === 'succeeded'
+  const Icon = waits
+    ? Hourglass
+    : run.status === 'succeeded'
+      ? CircleCheck
+      : run.status === 'failed'
+        ? CircleX
+        : CircleSlash
   return (
     <Hint label={runStepSentence(run)}>
       <span
         className={cn(
           'flex items-center gap-1 text-[11px]',
-          run.status === 'succeeded'
-            ? 'text-emerald-600 dark:text-emerald-400'
-            : run.status === 'failed'
-              ? 'text-destructive'
-              : 'text-muted-foreground',
+          waits
+            ? 'text-sky-600 dark:text-sky-400'
+            : run.status === 'succeeded'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : run.status === 'failed'
+                ? 'text-destructive'
+                : 'text-muted-foreground',
         )}
       >
         <Icon className="size-4" />
@@ -376,27 +375,36 @@ function StepCard({ id, data }: NodeProps<StepNode>) {
 
 function PathChip({ id, data }: NodeProps<PathNode>) {
   const { select } = useContext(Actions)
+  const summary = pathSummary(data.path, data.holder)
+  const attempt = data.holder?.kind === 'attempt'
+  // An attempt's second path is taken only when a step of the first fails.
+  const rescue = attempt && data.holder?.paths[1]?.id === data.path.id
   return (
     <div style={{ width: data.width, height: data.height }} className="flex justify-center">
       <Ports />
-      <Hint label={pathSummary(data.path)}>
+      <Hint label={summary}>
         <button
           type="button"
           onClick={() => select(id)}
           className={cn(
             'flex h-full max-w-full items-center gap-1.5 rounded-full border bg-card px-3 text-xs shadow-xs transition-[opacity,border-color]',
             'hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            data.path.otherwise && 'border-dashed',
+            (data.path.otherwise || rescue) && 'border-dashed',
+            rescue && 'border-rose-500/45 text-rose-700 dark:text-rose-300',
             data.taken && 'border-primary text-primary',
             data.selected && 'border-primary ring-2 ring-primary/25',
             data.dimmed && 'opacity-40',
           )}
         >
+          {attempt &&
+            (rescue ? (
+              <TriangleAlert className="size-3 shrink-0" />
+            ) : (
+              <LifeBuoy className="size-3 shrink-0 text-amber-600 dark:text-amber-400" />
+            ))}
           <span className="shrink-0 font-medium">{data.path.label || $t('Chemin')}</span>
-          {!data.path.otherwise && (
-            <span className="truncate font-mono text-[11px] text-muted-foreground">
-              {pathSummary(data.path)}
-            </span>
+          {!data.path.otherwise && !attempt && (
+            <span className="truncate font-mono text-[11px] text-muted-foreground">{summary}</span>
           )}
         </button>
       </Hint>
@@ -467,22 +475,22 @@ function LoopFrame({ data }: NodeProps<BareNode>) {
 }
 
 function EndButton({ data }: NodeProps<BareNode>) {
+  const { pick } = useContext(Actions)
   return (
     <div style={{ width: data.width, height: data.height }} className="flex justify-center">
       <Ports />
-      <AddStepMenu slot={{ path: null, index: data.append ?? 0 }}>
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn(
-            'nodrag h-9 gap-1.5 rounded-full bg-card shadow-xs',
-            data.dimmed && 'opacity-40',
-          )}
-        >
-          <Plus className="size-4" />
-          {$t('Ajouter une étape')}
-        </Button>
-      </AddStepMenu>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => pick({ path: null, index: data.append ?? 0 })}
+        className={cn(
+          'nodrag h-9 gap-1.5 rounded-full bg-card shadow-xs',
+          data.dimmed && 'opacity-40',
+        )}
+      >
+        <Plus className="size-4" />
+        {$t('Ajouter une étape')}
+      </Button>
     </div>
   )
 }
@@ -518,6 +526,7 @@ function Link({
   targetPosition,
   data,
 }: EdgeProps<LinkEdge>) {
+  const { pick } = useContext(Actions)
   const centerY =
     data?.bend === 'source'
       ? sourceY + GAP_Y / 2
@@ -556,19 +565,15 @@ function Link({
               pointerEvents: 'all',
             }}
           >
-            {/* AddStepMenu doesn't forward props to its button, so the tooltip hangs on a wrapping span */}
             <Hint label={$t('Ajouter une étape ici')}>
-              <span className="inline-flex">
-                <AddStepMenu slot={data.insert}>
-                  <button
-                    type="button"
-                    aria-label={$t('Ajouter une étape ici')}
-                    className="flex size-5 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-xs transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <Plus className="size-3" />
-                  </button>
-                </AddStepMenu>
-              </span>
+              <button
+                type="button"
+                aria-label={$t('Ajouter une étape ici')}
+                onClick={() => data.insert !== null && pick(data.insert)}
+                className="flex size-5 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-xs transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Plus className="size-3" />
+              </button>
             </Hint>
           </div>
         </EdgeLabelRenderer>
@@ -581,13 +586,6 @@ const EDGE_TYPES = { link: Link }
 
 // ── The canvas ──────────────────────────────────────────────────────────────
 
-const TRIGGER_ICONS = {
-  record_created: Zap,
-  record_updated: PencilLine,
-  schedule: Clock,
-  button: MousePointerClick,
-} as const
-
 const WEEKDAYS = weekdayNames('long')
 
 function triggerSummary(draft: Draft, base: DescribedBase): string {
@@ -599,17 +597,29 @@ function triggerSummary(draft: Draft, base: DescribedBase): string {
       return $t('Le {value} à {at}', { value: WEEKDAYS[s.weekday - 1] ?? WEEKDAYS[0], at: s.at })
     return $t('Chaque jour à {at}', { at: s.at })
   }
-  const table = base.tables.find((x) => x.name === t.table)?.label ?? $t('une table')
-  return $t('Dans {table}', { table })
+  if (t.kind === 'webhook') return $t('Une requête à l’adresse de l’automatisation')
+  const table = base.tables.find((x) => x.name === t.table)
+  if (t.kind === 'date_reached' && t.date.field !== '') {
+    const field = table?.fields.find((f) => f.name === t.date.field)
+    return $t('{field} de {table}, {offset}', {
+      field: field?.label ?? t.date.field,
+      table: table?.label ?? t.table,
+      offset: offsetText(t.date.offsetDays),
+    })
+  }
+  return $t('Dans {table}', { table: table?.label ?? $t('une table') })
 }
 
 export interface FlowCanvasProps {
   readonly draft: Draft
   readonly base: DescribedBase
   readonly members: readonly Member[]
+  /** The automations of the base, what a step that starts one names; `null` while read. */
+  readonly automations: readonly Automation[] | null
   readonly selected: string
   readonly onSelect: (id: string) => void
-  readonly onInsert: (slot: Slot, kind: StepKind) => void
+  /** Asks for a step to insert at a place: the editor's picker opens. */
+  readonly onPick: (slot: Slot) => void
   /** The run laid over the flow, if any. */
   readonly run: AutomationRun | null
   /** A piece to bring into view — a step just added. */
@@ -628,9 +638,10 @@ function Canvas({
   draft,
   base,
   members,
+  automations,
   selected,
   onSelect,
-  onInsert,
+  onPick,
   run,
   focus,
 }: FlowCanvasProps) {
@@ -647,6 +658,19 @@ function Canvas({
       if (record.kind === 'for_each') {
         reached.add(mergeOf(id))
         reached.add(frameOf(id))
+        continue
+      }
+      if (record.kind === 'attempt') {
+        // The steps are tried; the second path is reached when one of them failed.
+        const attempt = allSteps(draft.steps).find((s) => s.id === id)
+        if (attempt?.kind === 'attempt') {
+          attempt.paths.forEach((path, index) => {
+            if (index === 0 || path.steps.some((s) => steps.has(s.id))) reached.add(path.id)
+          })
+        }
+        reached.add(mergeOf(id))
+        if (typeof record.path === 'string') reached.add(record.path)
+        for (const path of record.taken ?? []) reached.add(path)
         continue
       }
       if (record.kind !== 'branch') continue
@@ -679,8 +703,9 @@ function Canvas({
               ...card,
               title: TRIGGER_LABELS[draft.trigger.kind],
               summary: triggerSummary(draft, base),
-              condition: draft.trigger.kind === 'schedule' ? '' : draft.condition.trim(),
+              condition: triggerHasTable(draft.trigger.kind) ? draft.condition.trim() : '',
               icon: TRIGGER_ICONS[draft.trigger.kind],
+              problem: run === null ? triggerProblem(draft) : null,
             } satisfies TriggerData,
           }
         case 'step': {
@@ -691,18 +716,23 @@ function Canvas({
             data: {
               ...card,
               step,
-              summary: stepSummary(step, draft, base, members),
-              problem: stepProblem(step, draft),
+              summary: stepSummary(step, draft, base, members, automations ?? []),
+              problem: stepProblem(step, draft, automations),
               run: overlay?.steps.get(n.id) ?? null,
             } satisfies StepData,
           }
         }
         case 'path': {
-          const path = findPath(draft.steps, n.id)?.path as DraftPath
+          const found = findPath(draft.steps, n.id)
           return {
             ...common,
             type: 'path',
-            data: { ...card, path, taken: overlay?.reached.has(n.id) ?? false } satisfies PathData,
+            data: {
+              ...card,
+              path: found?.path as DraftPath,
+              holder: found?.branch ?? null,
+              taken: overlay?.reached.has(n.id) ?? false,
+            } satisfies PathData,
           }
         }
         case 'frame':
@@ -714,7 +744,7 @@ function Canvas({
           return { ...common, type: n.kind, data: { ...card, append: draft.steps.length } }
       }
     })
-  }, [layout, draft, base, members, selected, overlay])
+  }, [layout, draft, base, members, automations, selected, overlay, run])
 
   const edges = useMemo(
     (): LinkEdge[] =>
@@ -753,14 +783,7 @@ function Canvas({
     return () => clearTimeout(timer)
   }, [focus, layout, flow])
 
-  const actions = useMemo(
-    () => ({
-      select: onSelect,
-      insert: onInsert,
-      looped: (slot: Slot) => inLoop(draft.steps, slot.path),
-    }),
-    [onSelect, onInsert, draft.steps],
-  )
+  const actions = useMemo(() => ({ select: onSelect, pick: onPick }), [onSelect, onPick])
 
   return (
     <Actions.Provider value={actions}>

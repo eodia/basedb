@@ -54,6 +54,10 @@ export const en: Catalog = {
     'Find a row’s `_id` from its display value, before writing a relation.',
   'Créer une ligne.': 'Create a row.',
   'Modifier les champs nommés d’une ligne.': 'Update the named fields of a row.',
+  'Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.':
+    'Delete a row, with a token created to delete — the response returns it.',
+  'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
+    'Restore a deleted row, by its `_id`, from the history.',
   'Proposer une table et ses premiers champs — une personne décide.':
     'Propose a table and its first fields — a person decides.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
@@ -71,13 +75,16 @@ export const en: Catalog = {
   'Trouver une ligne par sa valeur d’affichage, {field}':
     'Find a row by its display value, {field}',
   'Modifier une ligne': 'Update a row',
+  'Supprimer une ligne — avec un jeton créé pour supprimer':
+    'Delete a row — with a token created to delete',
+  'Ramener une ligne supprimée': 'Restore a deleted row',
   'Aucun outil ne vous est ouvert sur cette table.': 'No tool is open to you on this table.',
   'Un jeton que vous créez n’a jamais plus de droits que vous : ces outils sont un maximum.':
     'A token you create never has more permissions than you: these tools are a maximum.',
   Outil: 'Tool',
   Pour: 'For',
-  'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.':
-    'Deleting a row remains reserved for the REST API and the interface: no MCP tool deletes.',
+  'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
+    'An agent only deletes with a token created “Read, write and delete”, one row at a time; the deleted row comes back through `restore_record` or from the history.',
   '**Invisibles pour un agent :** {fields}. Pour lui, ces colonnes n’existent pas : il ne peut ni les lire, ni les filtrer, ni les écrire.':
     '**Invisible to an agent:** {fields}. To it, these columns don’t exist: it can neither read, filter, nor write them.',
   'Arguments d’un appel': 'Arguments of a call',
@@ -85,13 +92,13 @@ export const en: Catalog = {
     'Creating a token for this base requires **Manage** level, which you don’t have. Ask the person who manages it for one.',
   '<jeton>': '<token>',
   'Connecter un agent': 'Connect an agent',
-  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.':
-    'basedb’s **MCP server** opens this base to an AI agent — Claude or any MCP client: it discovers it, reads it, and, if you decide to, creates and updates rows in it. It goes through the same permissions as the REST API.',
+  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.':
+    'basedb’s **MCP server** opens this base to an AI agent — Claude or any MCP client: it discovers it, reads it, and, if you decide to, creates, updates and deletes rows in it. It goes through the same permissions as the REST API.',
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**This base is not open to agents.** As long as it isn’t, no tool sees it, whatever token is presented.',
   'Créer un jeton': 'Create a token',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'In the interface, the base’s “⋯” menu → **API and agents** → **API and MCP tokens…**, with **MCP** access checked. The token is limited to this base, **read-only** by default: write access is chosen explicitly. It is shown only once, and can be revoked from the same screen. Also checked for the **REST API**, the same token serves a program (see “Authentication”).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'In the interface, the base’s “⋯” menu → **API and agents** → **API and MCP tokens…**, with **MCP** access checked. The token is limited to this base, **read-only** by default: write access, and delete access, are chosen explicitly. It is shown only once, and can be revoked from the same screen. Also checked for the **REST API**, the same token serves a program (see “Authentication”).',
   'Garder le jeton hors de la configuration': 'Keep the token out of the configuration',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'The token goes in the `BASEDB_TOKEN` environment variable, never in the client’s configuration file: that file is versioned, synced, and readable by every program in the session.',
@@ -125,6 +132,8 @@ export const en: Catalog = {
     'To write a relation: `lookup_records` on the target table, then `create_record` or `update_record` with the `_id` found.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'To evolve the schema: `propose_create_table` or `propose_add_field`, then `get_proposal` to follow the decision.',
+  'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
+    'To delete: `get_record` first, to be sure of the row, then `delete_record` — which returns it in its response; `restore_record` restores it.',
   'Propositions de structure': 'Schema proposals',
   'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend dans la file « Propositions » de la base, où une personne qui peut modifier la structure l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.':
     'An agent never changes the schema itself: it **proposes**. The proposal waits in the base’s “Agent proposals” queue, where a person who can modify the schema approves or rejects it; without a decision, it expires after 24 hours. Once approved, it is applied on behalf of the person who created the token — if that person still has the right to do so — and appears in the history like any other change.',
@@ -133,8 +142,8 @@ export const en: Catalog = {
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'No deletion, no renaming, no cascading relation (`MCP_CASCADE_FORBIDDEN`).',
   'Ce qui n’existe pas': 'What doesn’t exist',
-  'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
-    'No tool deletes a row, runs SQL, or manages permissions or tokens. An agent that calls such a name — `delete_record`, `run_sql`… — gets `MCP_OPERATION_EXCLUDED`, whatever base is targeted.',
+  'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
+    'No tool deletes several rows at once, a table, or a field, runs SQL, or manages permissions or tokens. An agent that calls such a name — `delete_records`, `run_sql`… — gets `MCP_OPERATION_EXCLUDED`, whatever base is targeted.',
   Bornes: 'Limits',
   '`limit` : 25 lignes par défaut, 100 au plus.': '`limit`: 25 rows by default, 100 at most.',
   'Un filtre compte au plus 10 prédicats, combinés par ET ; un tri, au plus 3 champs.':
@@ -148,8 +157,8 @@ export const en: Catalog = {
     'An agent never sees more than the person who created its token — and often less.',
   '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.':
     '**Permissions**: the token’s own, cross-checked on every call against its creator’s. If that person’s permissions drop, the token’s drop with them; if their account is disabled, the token stops responding.',
-  '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
-    '**Read, create, update** — never delete. A read-only token refuses any write (`TOKEN_READ_ONLY`).',
+  '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
+    '**Read, create, update** — and delete, one row at a time, only with a token created for that. A read-only token refuses any write (`TOKEN_READ_ONLY`).',
   '**Cette base** : ouverte aux agents.': '**This base**: open to agents.',
   '**Cette base** : **fermée aux agents** — aucun outil ne la voit.':
     '**This base**: **closed to agents** — no tool sees it.',
@@ -232,8 +241,8 @@ export const en: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'All data routes require a **token**, in the `Authorization` header. The session cookie is never accepted here: a browser sends it on every request, including those triggered by a foreign page.',
   'Jeton d’intégration': 'Integration token',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'A program — a script, a sync, another application — presents an **integration token**, which starts with `bdb_`. It is only valid for this base; it reads, and creates and updates if it was created with write access, but **never deletes**; and it never has more permissions than the person who created it, cross-checked on every call. Administration, the SQL console and AI remain closed to it.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'A program — a script, a sync, another application — presents an **integration token**, which starts with `bdb_`. It is only valid for this base; it reads, creates and updates if it was created with write access, and **only deletes if it was created for that**; it never has more permissions than the person who created it, cross-checked on every call. Administration, the SQL console and AI remain closed to it.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'To create one: the base’s “⋯” menu → **API and agents** → **API and MCP tokens…**, with **REST API** access checked. It is shown only once.',
   Appel: 'Call',

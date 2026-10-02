@@ -273,6 +273,8 @@ async function drainBatch(exec: Executor): Promise<number> {
         op: row.op,
         actorKind: row.actor_kind,
         changed: list.map((d) => d.field.column),
+        // What an automation on deletions cites of the row: as it was.
+        ...(row.op === 'delete' ? { before: row.before } : {}),
       })
       if (row.op !== 'delete') {
         for (const d of list) {

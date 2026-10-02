@@ -29,8 +29,8 @@ Opret et legitimationssæt **basedb API** i n8n:
 | **Token** | et **integrationstoken**: menuen **⋯** af databasen → **API og agenter** → **API- og MCP-tokens…** |
 
 Et token åbner **én** database. Det læser dens rækker, skriver dem, hvis det er oprettet med
-skriveadgang, har aldrig flere tilladelser end den person, der oprettede det, og **sletter
-aldrig**. Ved oprettelsen afprøver n8n forbindelsen og siger, om tokenet afvises.
+skriveadgang, og har aldrig flere tilladelser end den person, der oprettede det. Ved oprettelsen
+afprøver n8n forbindelsen og siger, om tokenet afvises.
 
 ## Læs og skriv: noden basedb
 
@@ -58,9 +58,10 @@ kode og hvad den betyder.
   `_id`.
 - **Create or Update** ændrer aldrig flere rækker: hvis flere bærer værdierne, stopper noden
   hellere end at gætte.
-- Ingen **Delete**-handling: et token sletter ikke. For at fjerne rækker kan du markere dem
-  (en status »Arkiveret«), eller lade en
-  [automatisering](/basedb/da/fonctionnalites/automatisations/) tage sig af sletningen.
+- Ingen **Delete**-handling: for at fjerne rækker kan du markere dem (en status »Arkiveret«),
+  lade en [automatisering](/basedb/da/fonctionnalites/automatisations/) tage sig af sletningen,
+  eller kalde [REST-API'et](/basedb/da/integrations/api-rest/) med et token oprettet til at
+  slette.
 
 ## Start et workflow
 

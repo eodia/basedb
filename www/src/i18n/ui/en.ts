@@ -1284,10 +1284,10 @@ export default {
 		agents: {
 			label: 'REST API · MCP · webhooks',
 			title: 'Your AI agents get the data, {not the keys to the kingdom.}',
-			lead: 'The MCP server gives agents twelve tools; the REST API gives your programs the same data. A single point of permission control, the same logs.',
+			lead: 'The MCP server gives agents fourteen tools; the REST API gives your programs the same data. A single point of permission control, the same logs.',
 			bullets: [
 				'<strong>One token per base</strong>, read-only by default, never with more permissions than the person who created it.',
-				'<strong>An agent deletes nothing</strong> and doesn’t change the schema: it proposes, a person approves.',
+				'<strong>An agent only deletes with your approval</strong>, one row at a time, and doesn’t change the schema: it proposes, a person approves.',
 				'<strong>Generated documentation</strong> for every base, filtered by your permissions, with its OpenAPI 3.1 specification.',
 				'<strong>Webhooks</strong> on every write: signed, ordered and retried.',
 			],
@@ -1509,7 +1509,7 @@ export default {
 			},
 			agent: {
 				q: 'How does an AI agent connect?',
-				a: 'Through the MCP server, with an integration token limited to one base, read-only by default. An agent reads, creates and updates rows according to its permissions; it deletes nothing and doesn’t change the schema: it proposes, and a person approves.',
+				a: 'Through the MCP server, with an integration token limited to one base, read-only by default. An agent reads, creates and updates rows according to its permissions — and deletes them, one at a time, if its token was created for that; it doesn’t change the schema: it proposes, and a person approves.',
 			},
 			postgres: {
 				q: 'Which version of PostgreSQL do I need?',
@@ -1536,6 +1536,47 @@ export default {
 		title: 'What changed in basedb',
 		intro: 'The details of every change are in <a href="https://github.com/eodia/basedb/commits/main">the repository history</a>. What comes next: the <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Agents that delete, if you allow it',
+				tag: 'New',
+				items: [
+					'<strong>A third token level</strong>, “Read, write and delete”: a program deletes through the REST API, an agent through the new <code>delete_record</code> tool — one row at a time, returned in the response. <a href="/integrations/mcp/#deleting-rows">Deleting rows</a>',
+					'<strong>Undoing it</strong>: <code>restore_record</code> brings a deleted row back under its identifier; a deletion that a cascading relation would extend to other rows remains reserved for the interface.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Tokens for whoever manages a base',
+				tag: 'New',
+				items: [
+					'<strong>The Manage level is enough</strong>: given on a base or on its project, it lets you create the integration tokens of its bases, without being an administrator. <a href="/integrations/api-rest/#a-token">A token</a>',
+					'<strong>Says so clearly otherwise</strong>: to whoever reads or writes without managing the base, the tokens window says who to ask; to an account without a password, why it cannot create one yet.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automations that wait, catch a failure and send PDFs',
+				tag: 'New',
+				items: [
+					'<strong>Four more triggers</strong>: a row is deleted; a row enters a filter — “an invoice becomes overdue”; a date arrives — three days before the due date, at 9 a.m.; another piece of software calls the automation’s secret address. <a href="/fonctionnalites/automatisations/#a-service-that-calls-basedb">A service that calls basedb</a>',
+					'<strong>Wait</strong> three days, or until the date in a field, then resume by re-reading the row: “if it is still not accepted, follow up”. <a href="/fonctionnalites/automatisations/#wait">Wait</a>',
+					'<strong>Generate a PDF and send it</strong>: the document of a row, stored in a File field or attached to an email — in rich text, with CC recipients and a reply-to address, to each one or one to everyone. <a href="/fonctionnalites/automatisations/#a-pdf-and-an-email">A PDF and an email</a>',
+					'<strong>Delete a row, count and add up, run another automation</strong>; a condition can also test a value — the AI’s answer, a total —, and a search that finds nothing has its own branch.',
+					'<strong>Try</strong>: steps, and others if one of them fails; a webhook retries on its own, a loop continues despite a row that failed. <a href="/fonctionnalites/automatisations/#try">Try</a>',
+					'<strong>Every step within reach</strong>: the <strong>+</strong> opens a window arranged by category, with a search, instead of a menu that could get cut off.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'PDF documents in your colors',
+				tag: 'New',
+				items: [
+					'<strong>Five starting points</strong> — invoice, quote, record sheet, certificate, blank page —, built with your table’s columns: number, date, amounts, photo, linked rows. <a href="/fonctionnalites/documents/#create-a-template">Create a template</a>',
+					'<strong>Your logo and your colors</strong>: a header with logo and contact details, a footer with legal notices and page numbers, an accent color, serif or sans-serif fonts, a border around the page. <a href="/fonctionnalites/documents/#header-and-footer">Header and footer</a>',
+					'<strong>New blocks</strong>: a title on a band, an image, two or three columns, a net / gross summary, a table with a colored header, a separator. They can be dragged to reorder, and the preview follows every change. <a href="/fonctionnalites/documents/#the-content-blocks">The blocks</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'A dropped connection no longer stops basedb',
@@ -1920,8 +1961,8 @@ export default {
 						text: 'Copying SQL views along with the schema when creating or comparing environments, and in base templates.',
 					},
 					loops: {
-						title: 'Waits in automations',
-						text: 'Waiting before the next step (“three days later”), and carrying flows — conditions, searches, loops — into base templates.',
+						title: 'Complete flows in base templates',
+						text: 'Carrying automation flows — conditions, searches, loops, waits, PDFs — into base templates, which today only keep the simple steps.',
 					},
 					textFormulas: {
 						title: 'Text formulas',

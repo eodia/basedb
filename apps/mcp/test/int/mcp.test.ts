@@ -36,9 +36,10 @@ let clients: { tableId: string; name: string }
 let factures: { tableId: string; name: string }
 let dupont: string
 let acme: string
-/** Integration tokens: writing, read-only, and one scoped to the other base. */
+/** Integration tokens: writing, read-only, deleting, and one scoped to the other base. */
 let writer: string
 let reader: string
+let deleter: string
 let rhToken: string
 
 interface Rpc {
@@ -233,7 +234,7 @@ beforeAll(async () => {
   // Tokens are minted from a session elevated minutes ago (05 §2.2).
   const login = await kernel.login({ email: 'admin@basedb.local', password: PASSWORD })
   const elevated = await kernel.elevate(login.sessionToken, PASSWORD)
-  const mint = async (label: string, baseId: string, access: 'read' | 'write') =>
+  const mint = async (label: string, baseId: string, access: 'read' | 'write' | 'delete') =>
     (
       await kernel.createApiToken(admin, {
         label,
@@ -245,6 +246,7 @@ beforeAll(async () => {
     ).secret
   writer = await mint('Agent CRM', crm.baseId, 'write')
   reader = await mint('Lecture CRM', crm.baseId, 'read')
+  deleter = await mint('Ménage CRM', crm.baseId, 'delete')
   rhToken = await mint('Agent RH', rh.baseId, 'read')
 
   // A quota generous enough that the suite never trips it by accident.
@@ -331,13 +333,14 @@ describe('handshake and session (§9.4)', () => {
 })
 
 describe('the tool catalog (§2)', () => {
-  it('tools/list declares exactly the twelve tools of lots 1 to 3', async () => {
+  it('tools/list declares exactly the fourteen tools', async () => {
     const session = await open(reader)
     const r = await rpc(reader, request('tools/list'), session)
     const tools = (r.body?.result as { tools: Array<{ name: string; description: string }> }).tools
     expect(tools.map((t) => t.name).sort()).toEqual(
       [
         'create_record',
+        'delete_record',
         'describe_base',
         'describe_table',
         'get_proposal',
@@ -347,6 +350,7 @@ describe('the tool catalog (§2)', () => {
         'lookup_records',
         'propose_add_field',
         'propose_create_table',
+        'restore_record',
         'update_record',
         'whoami',
       ].sort(),
@@ -360,7 +364,7 @@ describe('the tool catalog (§2)', () => {
 
   it('a reserved name answers MCP_OPERATION_EXCLUDED, whatever it names', async () => {
     const session = await open(writer)
-    const a = await call(writer, session, 'delete_record', { base: 'crm', table: 'clients' })
+    const a = await call(writer, session, 'delete_records', { base: 'crm', table: 'clients' })
     const b = await call(writer, session, 'drop_table', { base: 'nexiste_pas' })
     expect(a.isError && b.isError).toBe(true)
     expect(a.payload.code).toBe('MCP_OPERATION_EXCLUDED')
@@ -491,7 +495,7 @@ describe('discovery (§4)', () => {
     expect(payload.actor.kind).toBe('token')
     expect(payload.actor.token.label).toBe('Agent CRM')
     expect(payload.scope.base.name).toBe('crm')
-    expect(payload.access).toEqual({ read: true, create: true, update: true })
+    expect(payload.access).toEqual({ read: true, create: true, update: true, delete: false })
     expect(payload.budgets.rows_written_per_hour).toBe(500)
   })
 
@@ -934,6 +938,100 @@ describe('writing (§6)', () => {
       idempotency_key: 'cle-2',
     })
     expect(fixed.payload.created).toBe(true)
+  })
+})
+
+describe('deleting, for a token made to delete', () => {
+  const row = (id: string) => ({ base: 'crm', table: 'factures', _id: id })
+
+  it('deletes one row, hands it back, and restore_record brings it back under its _id', async () => {
+    const session = await open(deleter)
+    const made = await call(deleter, session, 'create_record', {
+      base: 'crm',
+      table: 'factures',
+      values: { numero: 'F-SUPPR', montant: 10, clients_id: acme },
+    })
+    expect(made.isError, made.text).toBe(false)
+    const id = made.payload._id as string
+
+    // A token that writes was not made to delete, and is told what would be.
+    const writing = await open(writer)
+    const refused = await call(writer, writing, 'delete_record', row(id))
+    expect(refused.payload.code).toBe('PERMISSION_DENIED')
+    expect(refused.payload.hint).toContain('Lecture, écriture et suppression')
+    const reading = await open(reader)
+    expect((await call(reader, reading, 'delete_record', row(id))).payload.code).toBe(
+      'TOKEN_READ_ONLY',
+    )
+
+    const gone = await call(deleter, session, 'delete_record', row(id))
+    expect(gone.isError, gone.text).toBe(false)
+    expect(gone.payload).toMatchObject({ _id: id, deleted: true, restorable: true })
+    expect(gone.payload.record.numero).toBe('F-SUPPR')
+    expect((await call(deleter, session, 'get_record', row(id))).payload.code).toBe(
+      'RESOURCE_NOT_FOUND',
+    )
+    expect((await call(deleter, session, 'delete_record', row(id))).payload.code).toBe(
+      'RESOURCE_NOT_FOUND',
+    )
+
+    const back = await call(deleter, session, 'restore_record', row(id))
+    expect(back.isError, back.text).toBe(false)
+    expect(back.payload).toMatchObject({ _id: id, restored: true })
+    expect(back.payload.record.numero).toBe('F-SUPPR')
+    expect(back.payload.record.clients_id.id).toBe(acme)
+    expect((await call(deleter, session, 'restore_record', row(id))).payload.code).toBe(
+      'RESTORE_RECORD_PRESENT',
+    )
+  })
+
+  it('a row still designated by a link is refused, and stays', async () => {
+    const session = await open(deleter)
+    const client = { base: 'crm', table: 'clients', _id: dupont }
+    const refused = await call(deleter, session, 'delete_record', client)
+    expect(refused.payload.code).toBe('ROW_REFERENCED')
+    expect((await call(deleter, session, 'get_record', client)).isError).toBe(false)
+  })
+
+  it('a row a cascade would take others with is not a token’s to delete', async () => {
+    // As if a person had confirmed, in the interface, that a client takes its invoices.
+    const grant = await sql.query<{ id: string }>(
+      `INSERT INTO _basedb.cascade_grant (base_id, granted_by, confirmation_text)
+       VALUES ($1, $2, 'confirmé') RETURNING id`,
+      [crm.baseId, adminId],
+    )
+    const link = `UPDATE _basedb.field_link_config SET on_delete = $1, cascade_grant_id = $2
+                   WHERE target_table_id = $3`
+    await sql.query(link, ['cascade', grant.rows[0]?.id, clients.tableId])
+    try {
+      const session = await open(deleter)
+      const made = await call(deleter, session, 'create_record', {
+        base: 'crm',
+        table: 'clients',
+        values: { raison_sociale: 'Sans facture' },
+      })
+      const refused = await call(deleter, session, 'delete_record', {
+        base: 'crm',
+        table: 'clients',
+        _id: made.payload._id,
+      })
+      expect(refused.payload.code).toBe('TOKEN_CASCADE_FORBIDDEN')
+    } finally {
+      await sql.query(link, ['restrict', null, clients.tableId])
+    }
+  })
+
+  it('whoami and describe_table say the token deletes', async () => {
+    const session = await open(deleter)
+    const me = await call(deleter, session, 'whoami')
+    expect(me.payload.access).toMatchObject({
+      read: true,
+      create: true,
+      update: true,
+      delete: true,
+    })
+    const writing = await open(writer)
+    expect((await call(writer, writing, 'whoami')).payload.access.delete).toBe(false)
   })
 })
 

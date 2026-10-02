@@ -29,8 +29,8 @@ Legen Sie in n8n Anmeldedaten **basedb API** an:
 | **Token** | ein **Integrationstoken**: Menü **⋯** der Datenbank → **API und Agenten** → **API- und MCP-Token …** |
 
 Ein Token öffnet **eine** Datenbank. Es liest ihre Zeilen, schreibt sie, wenn es mit Schreibrecht
-angelegt wurde, hat nie mehr Berechtigungen als die Person, die es angelegt hat, und **löscht
-nie**. Beim Speichern testet n8n die Verbindung und sagt, ob das Token abgelehnt wird.
+angelegt wurde, und hat nie mehr Berechtigungen als die Person, die es angelegt hat. Beim
+Speichern testet n8n die Verbindung und sagt, ob das Token abgelehnt wird.
 
 ## Lesen und schreiben: der Node basedb
 
@@ -58,9 +58,10 @@ Ein vom Feld abgelehnter Wert stoppt den Node mit dem Code von basedb und seiner
   verknüpften Zeile geschrieben.
 - **Create or Update** ändert nie mehrere Zeilen: Tragen mehrere die Werte, stoppt der Node,
   statt zu raten.
-- Keine Operation **Delete**: Ein Token löscht nicht. Um Zeilen zu entfernen, markieren Sie sie
-  (einen Status „Archivé“), oder überlassen Sie das Löschen einer
-  [Automatisierung](/basedb/de/fonctionnalites/automatisations/).
+- Keine Operation **Delete**: Um Zeilen zu entfernen, markieren Sie sie (einen Status
+  „Archivé“), überlassen Sie das Löschen einer
+  [Automatisierung](/basedb/de/fonctionnalites/automatisations/), oder rufen Sie die
+  [REST-API](/basedb/de/integrations/api-rest/) mit einem zum Löschen angelegten Token auf.
 
 ## Einen Workflow starten
 

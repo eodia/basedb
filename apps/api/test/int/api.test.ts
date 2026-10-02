@@ -1219,6 +1219,23 @@ describe('/admin — adding a field to a live table', () => {
     await expect(r.json()).resolves.toMatchObject({ code: 'RESOURCE_NOT_FOUND' })
   })
 
+  it('refuses a choice or a file at a table’s creation as the caller’s mistake, not an incident', async () => {
+    for (const field of [
+      { label: 'Statut', kind: 'select', options: [{ value: 'a', label: 'A' }] },
+      { label: 'Pièces', kind: 'file' },
+    ]) {
+      const r = await app.request(
+        `${V1}/admin/bases/${schema}/tables`,
+        json({ label: 'Avec un choix', fields: [{ label: 'Nom', kind: 'short_text' }, field] }),
+      )
+      expect(r.status).toBe(400)
+      await expect(r.json()).resolves.toMatchObject({
+        code: 'REQUEST_INVALID',
+        details: { field: 'fields[1].kind', reason: 'champ_apres_creation' },
+      })
+    }
+  })
+
   it('refuses a link here, and names the operation that does it', async () => {
     const r = await app.request(
       `${V1}/admin/bases/${schema}/tables/contacts/fields`,
@@ -1850,9 +1867,13 @@ describe('integration tokens — chapter 08 §11', () => {
     })
     expect(updated.status).toBe(200)
 
-    // Never delete; another base does not exist.
+    // A token that writes does not delete; one created to delete does. Another base
+    // does not exist.
     const deleted = await writer('DELETE', `${V1}/data/${base}/contacts/${row._id}`)
     expect(deleted.status).toBe(403)
+    const deleter = bearing(await mint({ label: 'Ménage', access: 'delete' }))
+    expect((await deleter('DELETE', `${V1}/data/${base}/contacts/${row._id}`)).status).toBe(204)
+    expect((await writer('GET', `${V1}/data/${base}/contacts/${row._id}`)).status).toBe(404)
     expect((await writer('GET', `${V1}/data/${other}/contacts`)).status).toBe(404)
 
     // The routes of a person stay a person's: administration, SQL console.

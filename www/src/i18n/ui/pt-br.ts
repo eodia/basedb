@@ -1284,10 +1284,10 @@ export default {
 		agents: {
 			label: 'API REST · MCP · webhooks',
 			title: 'Seus agentes de IA acessam os dados, {não a chave do cofre.}',
-			lead: 'O servidor MCP dá doze ferramentas aos agentes; a API REST, os mesmos dados aos seus programas. Um único ponto de controle das permissões, os mesmos logs.',
+			lead: 'O servidor MCP dá catorze ferramentas aos agentes; a API REST, os mesmos dados aos seus programas. Um único ponto de controle das permissões, os mesmos logs.',
 			bullets: [
 				'<strong>Um token por base</strong>, somente leitura por padrão, nunca com mais permissões do que a pessoa que o criou.',
-				'<strong>Um agente não exclui nada</strong> e não muda a estrutura: ele a propõe, uma pessoa aprova.',
+				'<strong>Um agente só exclui com o seu consentimento</strong>, uma linha por vez, e não muda a estrutura: ele a propõe, uma pessoa aprova.',
 				'<strong>Uma documentação gerada</strong> para cada base, filtrada pelas suas permissões, com sua especificação OpenAPI 3.1.',
 				'<strong>Webhooks</strong> a cada escrita: assinados, ordenados e com novas tentativas.',
 			],
@@ -1520,7 +1520,7 @@ export default {
 			},
 			agent: {
 				q: 'Como um agente de IA se conecta?',
-				a: 'Pelo servidor MCP, com um token de integração limitado a uma base, somente leitura por padrão. Um agente lê, cria e edita linhas conforme suas permissões; ele não exclui nada e não muda a estrutura: ele a propõe, e uma pessoa aprova.',
+				a: 'Pelo servidor MCP, com um token de integração limitado a uma base, somente leitura por padrão. Um agente lê, cria e edita linhas conforme suas permissões — e exclui, uma por vez, se o token dele tiver sido criado para isso; ele não muda a estrutura: ele a propõe, e uma pessoa aprova.',
 			},
 			postgres: {
 				q: 'Qual versão do PostgreSQL é necessária?',
@@ -1547,6 +1547,47 @@ export default {
 		title: 'O que mudou no basedb',
 		intro: 'Os detalhes de cada mudança estão <a href="https://github.com/eodia/basedb/commits/main">no histórico do repositório</a>. O que vem a seguir: o <a href="/feuille-de-route/">roteiro</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Agentes que excluem, se você permitir',
+				tag: 'Novo',
+				items: [
+					'<strong>Um terceiro nível de token</strong>, “Leitura, escrita e exclusão”: um programa exclui pela API REST, um agente pela nova ferramenta <code>delete_record</code> — uma linha por vez, retornada na resposta. <a href="/integrations/mcp/#excluir-linhas">Excluir linhas</a>',
+					'<strong>Voltar atrás</strong>: <code>restore_record</code> restaura uma linha excluída pelo identificador dela; uma exclusão que uma relação em cascata estenderia a outras linhas continua reservada à interface.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Tokens para quem gerencia uma base',
+				tag: 'Novo',
+				items: [
+					'<strong>O nível Gerenciamento basta</strong>: concedido em uma base ou no seu projeto, permite criar os tokens de integração de suas bases, sem ser administrador. <a href="/integrations/api-rest/#um-token">Um token</a>',
+					'<strong>Senão, diz isso claramente</strong>: a quem lê ou escreve sem gerenciar a base, a janela de tokens diz a quem recorrer; a uma conta sem senha, por que ainda não pode criar um.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automações que esperam, recuperam de uma falha e enviam PDFs',
+				tag: 'Novo',
+				items: [
+					'<strong>Mais quatro gatilhos</strong>: uma linha é excluída; uma linha entra em um filtro — “uma fatura passa a estar em atraso”; uma data chega — três dias antes do vencimento, às 9h; outro programa chama o endereço secreto da automação. <a href="/fonctionnalites/automatisations/#um-serviço-que-chama-o-basedb">Um serviço que chama o basedb</a>',
+					'<strong>Aguardar</strong> três dias, ou até a data de um campo, e depois retomar relendo a linha: “se ele ainda não foi aceito, cobrar”. <a href="/fonctionnalites/automatisations/#aguardar">Aguardar</a>',
+					'<strong>Gerar um PDF e enviá-lo</strong>: o documento de uma linha, arquivado em um campo Arquivo ou anexado a um e-mail — em texto formatado, com destinatários em cópia e um endereço de resposta, para cada um ou um único para todos. <a href="/fonctionnalites/automatisations/#um-pdf-e-um-e-mail">Um PDF e um e-mail</a>',
+					'<strong>Excluir uma linha, contar e somar, executar outra automação</strong>; uma condição também testa um valor — a resposta da IA, um total —, e uma busca que não encontra nada tem seu próprio caminho.',
+					'<strong>Tentar</strong>: etapas, e outras se uma delas falhar; um webhook tenta de novo por conta própria, um loop continua mesmo com uma linha em falha. <a href="/fonctionnalites/automatisations/#tentar">Tentar</a>',
+					'<strong>Todas as etapas à mão</strong>: o <strong>+</strong> abre uma janela organizada por categoria, com uma busca, no lugar de um menu que podia ficar cortado.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'Documentos PDF com suas cores',
+				tag: 'Novo',
+				items: [
+					'<strong>Cinco pontos de partida</strong> — fatura, orçamento, ficha, atestado, página em branco —, construídos com as colunas da sua tabela: número, data, valores, foto, linhas vinculadas. <a href="/fonctionnalites/documents/#criar-um-modelo">Criar um modelo</a>',
+					'<strong>Seu logotipo e suas cores</strong>: um cabeçalho com logotipo e dados de contato, um rodapé com informações legais e números de página, uma cor de destaque, fontes com ou sem serifa, uma moldura ao redor da página. <a href="/fonctionnalites/documents/#cabeçalho-e-rodapé">Cabeçalho e rodapé</a>',
+					'<strong>Novos blocos</strong>: um título em uma faixa, uma imagem, duas ou três colunas, um resumo de subtotal e total, uma tabela com cabeçalho colorido, um separador. Eles se arrastam para reordenar, e a pré-visualização acompanha cada modificação. <a href="/fonctionnalites/documents/#o-conteúdo-os-blocos">Os blocos</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'Uma queda de conexão não interrompe mais o basedb',
@@ -1931,8 +1972,8 @@ export default {
 						text: 'Copiar as visões SQL com a estrutura ao criar ou comparar ambientes, e nos modelos de base.',
 					},
 					loops: {
-						title: 'Esperas nas automações',
-						text: 'Esperar antes da etapa seguinte (“três dias depois”) e levar os fluxos — condições, buscas, loops — para os modelos de base.',
+						title: 'Fluxos completos nos modelos de base',
+						text: 'Levar os fluxos de automação — condições, buscas, loops, esperas, PDFs — para os modelos de base, que hoje mantêm apenas as etapas simples.',
 					},
 					textFormulas: {
 						title: 'Fórmulas de texto',

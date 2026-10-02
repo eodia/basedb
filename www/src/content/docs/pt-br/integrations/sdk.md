@@ -76,5 +76,5 @@ programa seja executado.
 
 Um **token de integração** se cria na interface: menu **⋯** da base → **API e agentes** →
 **Tokens de API e MCP…**. Ele abre uma base, lê suas linhas, as escreve se tiver sido criado com
-escrita, nunca tem mais permissões do que a pessoa que o criou, e **nunca exclui**: `delete()`
-exige as permissões de uma sessão.
+escrita, nunca tem mais permissões do que a pessoa que o criou, e **só exclui se tiver sido criado
+para isso** (“Leitura, escrita e exclusão”): caso contrário, `delete()` é recusado.

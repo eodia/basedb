@@ -55,6 +55,10 @@ export const fi: Catalog = {
     'Rivin `_id`-tunnisteen selvittäminen sen näyttöarvon perusteella, ennen viittauksen kirjoittamista.',
   'Créer une ligne.': 'Rivin luominen.',
   'Modifier les champs nommés d’une ligne.': 'Rivin nimettyjen kenttien muokkaaminen.',
+  'Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.':
+    'Rivin poistaminen tunnuksella, joka on luotu poistamista varten — vastaus palauttaa sen.',
+  'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
+    'Poistetun rivin palauttaminen, sen `_id`-tunnisteella, historiasta.',
   'Proposer une table et ses premiers champs — une personne décide.':
     'Taulukon ja sen ensimmäisten kenttien ehdottaminen – päätöksen tekee henkilö.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
@@ -78,8 +82,11 @@ export const fi: Catalog = {
     'Luomallasi tunnuksella ei koskaan ole enempää oikeuksia kuin sinulla itselläsi: nämä työkalut ovat yläraja.',
   Outil: 'Työkalu',
   Pour: 'Tarkoitus',
-  'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.':
-    'Rivin poistaminen on varattu REST APIlle ja käyttöliittymälle: mikään MCP-työkalu ei poista.',
+  'Supprimer une ligne — avec un jeton créé pour supprimer':
+    'Poista rivi — tunnuksella, joka on luotu poistamista varten',
+  'Ramener une ligne supprimée': 'Palauta poistettu rivi',
+  'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
+    'Agentti poistaa vain tunnuksella, joka on luotu oikeuksin ”Luku, kirjoitus ja poisto”, yhden rivin kerrallaan; poistettu rivi palautuu työkalulla `restore_record` tai historiasta.',
   '**Invisibles pour un agent :** {fields}. Pour lui, ces colonnes n’existent pas : il ne peut ni les lire, ni les filtrer, ni les écrire.':
     '**Näkymättömät agentille:** {fields}. Agentille näitä sarakkeita ei ole olemassa: se ei voi lukea, suodattaa eikä kirjoittaa niitä.',
   'Arguments d’un appel': 'Kutsun argumentit',
@@ -87,13 +94,13 @@ export const fi: Catalog = {
     'Tunnuksen luominen tälle tietokannalle vaatii **Hallintaoikeus**-tason, jota sinulla ei ole. Pyydä tunnusta tietokantaa hallinnoivalta henkilöltä.',
   '<jeton>': '<tunnus>',
   'Connecter un agent': 'Agentin liittäminen',
-  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.':
-    'basedb:n **MCP-palvelin** avaa tämän tietokannan tekoälyagentille – Claude tai mikä tahansa MCP-asiakas: se löytää tietokannan, lukee sitä ja päätöksesi mukaan luo ja muokkaa siinä rivejä. Se noudattaa samoja käyttöoikeuksia kuin REST API.',
+  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.':
+    'basedb:n **MCP-palvelin** avaa tämän tietokannan tekoälyagentille – Claude tai mikä tahansa MCP-asiakas: se löytää tietokannan, lukee sitä ja päätöksesi mukaan luo, muokkaa ja poistaa siinä rivejä. Se noudattaa samoja käyttöoikeuksia kuin REST API.',
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Tämä tietokanta ei ole avoinna agenteille.** Niin kauan kuin se ei ole, mikään työkalu ei näe sitä, esitetystä tunnuksesta riippumatta.',
   'Créer un jeton': 'Tunnuksen luominen',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'Käyttöliittymässä tietokannan ”⋯”-valikko → **API ja agentit** → **API- ja MCP-tunnukset…**, **MCP**-pääsy valittuna. Tunnus on rajattu tähän tietokantaan, ja oletuksena se on **vain luku** -oikeuksin: kirjoitusoikeus valitaan erikseen. Se näytetään vain kerran, ja sen voi perua samalta näytöltä. Kun myös **REST API** on valittuna, sama tunnus toimii myös ohjelmalle (katso ”Todennus”).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'Käyttöliittymässä tietokannan ”⋯”-valikko → **API ja agentit** → **API- ja MCP-tunnukset…**, **MCP**-pääsy valittuna. Tunnus on rajattu tähän tietokantaan, ja oletuksena se on **vain luku** -oikeuksin: kirjoitusoikeus ja poisto-oikeus valitaan erikseen. Se näytetään vain kerran, ja sen voi perua samalta näytöltä. Kun myös **REST API** on valittuna, sama tunnus toimii myös ohjelmalle (katso ”Todennus”).',
   'Garder le jeton hors de la configuration': 'Tunnuksen pitäminen erillään asetuksista',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Tunnus tallennetaan ympäristömuuttujaan `BASEDB_TOKEN`, ei koskaan asiakasohjelman asetustiedostoon: se on versionhallinnassa, synkronoitu ja kaikkien istunnon ohjelmien luettavissa.',
@@ -127,6 +134,8 @@ export const fi: Catalog = {
     'Viittauksen kirjoittamiseksi: `lookup_records` kohdetaulukkoon, sitten `create_record` tai `update_record` löydetyllä `_id`-arvolla.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'Rakenteen muuttamiseksi: `propose_create_table` tai `propose_add_field`, sitten `get_proposal` päätöksen seuraamiseksi.',
+  'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
+    'Poistamiseksi: `get_record` ensin, rivin varmistamiseksi, sitten `delete_record` — joka palauttaa sen vastauksessaan; `restore_record` palauttaa sen.',
   'Propositions de structure': 'Rakenne-ehdotukset',
   'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend dans la file « Propositions » de la base, où une personne qui peut modifier la structure l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.':
     'Agentti ei koskaan muuta rakennetta itse: se **ehdottaa**. Ehdotus odottaa tietokannan ”Agenttien ehdotukset” -jonossa, jossa rakennetta muokata voiva henkilö hyväksyy tai hylkää sen; ilman päätöstä se vanhenee 24 tunnin kuluttua. Hyväksyttynä se toteutetaan tunnuksen luoneen henkilön nimissä – jos hänellä yhä on siihen oikeus – ja näkyy historiassa kuten mikä tahansa muu muutos.',
@@ -135,8 +144,8 @@ export const fi: Catalog = {
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Ei poistoja, ei uudelleennimeämisiä, ei kaskadoituja viittauksia (`MCP_CASCADE_FORBIDDEN`).',
   'Ce qui n’existe pas': 'Mitä ei ole olemassa',
-  'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
-    'Mikään työkalu ei poista riviä, suorita SQL:ää eikä hallinnoi oikeuksia tai tunnuksia. Agentti, joka kutsuu tällaista nimeä – `delete_record`, `run_sql`… – saa vastauksen `MCP_OPERATION_EXCLUDED`, kohteena olevasta tietokannasta riippumatta.',
+  'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
+    'Mikään työkalu ei poista useita rivejä kerralla, taulukkoa tai kenttää, suorita SQL:ää eikä hallinnoi oikeuksia tai tunnuksia. Agentti, joka kutsuu tällaista nimeä – `delete_records`, `run_sql`… – saa vastauksen `MCP_OPERATION_EXCLUDED`, kohteena olevasta tietokannasta riippumatta.',
   Bornes: 'Rajat',
   '`limit` : 25 lignes par défaut, 100 au plus.': '`limit`: 25 riviä oletuksena, enintään 100.',
   'Un filtre compte au plus 10 prédicats, combinés par ET ; un tri, au plus 3 champs.':
@@ -150,8 +159,8 @@ export const fi: Catalog = {
     'Agentti ei koskaan näe enempää kuin sen tunnuksen luonut henkilö – ja usein vähemmän.',
   '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.':
     '**Oikeudet**: tunnuksen omat, jotka tarkistetaan joka kutsulla sen luojan oikeuksia vasten. Jos tämän henkilön oikeudet vähenevät, tunnuksen oikeudet vähenevät niiden mukana; jos hänen tilinsä poistetaan käytöstä, tunnus lakkaa vastaamasta.',
-  '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
-    '**Lukea, luoda, muokata** – ei koskaan poistaa. Vain luku -tunnus hylkää kaiken kirjoittamisen (`TOKEN_READ_ONLY`).',
+  '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
+    '**Lukea, luoda, muokata** – ja poistaa, yksi rivi kerrallaan, vain tunnuksella, joka on luotu tätä varten. Vain luku -tunnus hylkää kaiken kirjoittamisen (`TOKEN_READ_ONLY`).',
   '**Cette base** : ouverte aux agents.': '**Tämä tietokanta**: avoinna agenteille.',
   '**Cette base** : **fermée aux agents** — aucun outil ne la voit.':
     '**Tämä tietokanta**: **suljettu agenteilta** – mikään työkalu ei näe sitä.',
@@ -236,8 +245,8 @@ export const fi: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Kaikki data-reitit vaativat **tunnuksen** `Authorization`-otsakkeessa. Istuntoevästettä ei koskaan hyväksytä täällä: selain lähettää sen jokaisella pyynnöllä, myös niillä, jotka vieras sivu aiheuttaa.',
   'Jeton d’intégration': 'Integraatiotunnus',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Ohjelma – skripti, synkronointi, muu sovellus – esittää **integraatiotunnuksen**, joka alkaa merkeillä `bdb_`. Se on voimassa vain tälle tietokannalle; se lukee sekä luo ja muokkaa, jos se on luotu kirjoitusoikeuksin, mutta **ei koskaan poista**; eikä sillä ole koskaan enempää oikeuksia kuin sen luoneella henkilöllä, tarkistettuna joka kutsulla. Ylläpito, SQL-konsoli ja tekoäly pysyvät siltä suljettuina.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Ohjelma – skripti, synkronointi, muu sovellus – esittää **integraatiotunnuksen**, joka alkaa merkeillä `bdb_`. Se on voimassa vain tälle tietokannalle; se lukee, luo ja muokkaa, jos se on luotu kirjoitusoikeuksin, ja **poistaa vain, jos se on luotu tätä varten**; eikä sillä ole koskaan enempää oikeuksia kuin sen luoneella henkilöllä, tarkistettuna joka kutsulla. Ylläpito, SQL-konsoli ja tekoäly pysyvät siltä suljettuina.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Sellaisen luomiseksi: tietokannan ”⋯”-valikko → **API ja agentit** → **API- ja MCP-tunnukset…**, **REST API** -pääsy valittuna. Se näytetään vain kerran.',
   Appel: 'Kutsu',

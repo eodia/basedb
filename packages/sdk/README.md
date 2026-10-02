@@ -57,8 +57,8 @@ for await (const row of deals.all({ filter: filter`statut eq ${'gagne'} and mont
 
 An integration token is created in basedb from the base's menu, **API et agents › Jetons API et
 MCP…**. It opens one base, reads its rows, writes them if it was created with write access, and
-never has more rights than the person who created it. It **never deletes**: `delete()` needs a
-session's rights.
+never has more rights than the person who created it. It **deletes only if it was created to**
+(« Lecture, écriture et suppression »): otherwise `delete()` is refused.
 
 ## License
 

@@ -359,8 +359,8 @@ export class Table<T extends TableTypes> {
   }
 
   /**
-   * Deletes a row — with a session's rights: an integration token never deletes
-   * (`ADMIN_REQUIRED`).
+   * Deletes a row — with a session's rights, or an integration token created to delete
+   * (« Lecture, écriture et suppression »); any other token is refused.
    */
   async delete(id: string): Promise<void> {
     await this.#db.request('DELETE', `${this.#path}/${encodeURIComponent(id)}`)

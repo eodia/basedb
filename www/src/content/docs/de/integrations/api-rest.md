@@ -13,13 +13,17 @@ Ihre URLs tragen die physischen Namen – dieselben, die Sie auch in SQL lesen.
 
 ## Ein Token
 
-In der Oberfläche, Menü **⋯** der Datenbank → **API und Agenten** → **API- und MCP-Token …**: Dort
-legen Sie ein **Integrationstoken** an, das auf diese Datenbank beschränkt und standardmäßig
-schreibgeschützt ist, nachdem Sie Ihr Passwort bestätigt haben. Es wird nur einmal angezeigt;
-legen Sie es in einer Umgebungsvariablen ab.
+In der Oberfläche, Menü **⋯** der Datenbank → **API und Agenten** → **API- und MCP-Token …**: Wer
+die Stufe **Verwalten** auf der Datenbank oder ihrem Projekt hat, legt dort ein
+**Integrationstoken** an, das auf diese Datenbank beschränkt und standardmäßig schreibgeschützt
+ist, nachdem das Passwort bestätigt wurde – ein Konto ohne Passwort, das sich über einen
+Identitätsanbieter anmeldet, kann das noch nicht. Es wird nur einmal angezeigt; legen Sie es in
+einer Umgebungsvariablen ab.
 
-Ein Token liest, legt an und ändert, wenn es mit Schreibrecht angelegt wurde, **löscht nie** und hat
-nie mehr Berechtigungen als die Person, die es angelegt hat.
+Ein Token liest; es legt an und ändert, wenn es mit Schreibrecht angelegt wurde, und **löscht,
+wenn es dafür angelegt wurde** — Rechte „Lesen, Schreiben und Löschen“ —, außer einer Zeile, die
+über eine Verknüpfung mit Kaskade andere mitnehmen würde. Es hat nie mehr Berechtigungen als die
+Person, die es angelegt hat.
 
 ```bash
 export BASEDB_TOKEN=bdb_…

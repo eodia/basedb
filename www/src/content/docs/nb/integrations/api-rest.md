@@ -13,12 +13,16 @@ URL-ene bruker de fysiske navnene – de samme som du også leser i SQL.
 
 ## Et token
 
-I grensesnittet, databasens **⋯**-meny → **API og agenter** → **API- og MCP-tokener…**: der oppretter du et **integrasjonstoken**
-som er begrenset til denne databasen, skrivebeskyttet som standard, etter at du har bekreftet
-passordet ditt. Det vises bare én gang; legg det i en miljøvariabel.
+I grensesnittet, databasens **⋯**-meny → **API og agenter** → **API- og MCP-tokener…**: den som har
+nivået **Administrere** på databasen, eller på dens prosjekt, oppretter der et
+**integrasjonstoken** som er begrenset til denne databasen, skrivebeskyttet som standard, etter
+at passordet er bekreftet — en konto uten passord, som logger inn via en identitetsleverandør,
+kan ikke gjøre det ennå. Det vises bare én gang; legg det i en miljøvariabel.
 
-Et token leser, oppretter og endrer hvis det ble opprettet med skrivetilgang, **sletter aldri**, og har aldri
-flere tillatelser enn personen som opprettet det.
+Et token leser; det oppretter og endrer hvis det ble opprettet med skrivetilgang, og **sletter
+hvis det ble opprettet for det** – rettighetene «Lesing, skriving og sletting» – unntatt en rad
+som en kaskaderelasjon ville ta med andre rader. Det har aldri flere tillatelser enn personen
+som opprettet det.
 
 ```bash
 export BASEDB_TOKEN=bdb_…

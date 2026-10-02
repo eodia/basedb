@@ -54,6 +54,10 @@ export const tr: Catalog = {
     'Bir ilişki yazmadan önce, bir satırın `_id` değerini görüntüleme değerinden bulur.',
   'Créer une ligne.': 'Bir satır oluşturur.',
   'Modifier les champs nommés d’une ligne.': 'Bir satırın adlandırılan alanlarını değiştirir.',
+  'Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.':
+    'Bir satırı siler, silmek için oluşturulmuş bir token’la — yanıt onu döndürür.',
+  'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
+    'Silinen bir satırı, `_id` değeriyle, geçmişinden geri yükler.',
   'Proposer une table et ses premiers champs — une personne décide.':
     'Bir tablo ve ilk alanlarını önerir — kararı bir kişi verir.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
@@ -71,13 +75,16 @@ export const tr: Catalog = {
   'Trouver une ligne par sa valeur d’affichage, {field}':
     'Bir satırı görüntüleme değerine göre bulur, {field}',
   'Modifier une ligne': 'Satırı düzenle',
+  'Supprimer une ligne — avec un jeton créé pour supprimer':
+    'Satırı sil — silmek için oluşturulmuş bir token’la',
+  'Ramener une ligne supprimée': 'Silinen satırı geri yükle',
   'Aucun outil ne vous est ouvert sur cette table.': 'Bu tabloda size açık hiçbir araç yok.',
   'Un jeton que vous créez n’a jamais plus de droits que vous : ces outils sont un maximum.':
     'Oluşturduğunuz bir token, sizden asla daha fazla hakka sahip olmaz: bu araçlar bir üst sınırdır.',
   Outil: 'Araç',
   Pour: 'Amaç',
-  'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.':
-    'Bir satırı silmek yalnızca REST API’ye ve arayüze özgü kalır: hiçbir MCP aracı silme işlemi yapmaz.',
+  'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
+    'Bir ajan yalnızca “Okuma, yazma ve silme” olarak oluşturulmuş bir token’la siler, bir kerede bir satır; silinen satır `restore_record` ile ya da geçmişinden geri gelir.',
   '**Invisibles pour un agent :** {fields}. Pour lui, ces colonnes n’existent pas : il ne peut ni les lire, ni les filtrer, ni les écrire.':
     '**Bir ajan için görünmez:** {fields}. Onun için bu sütunlar yoktur: ne okuyabilir, ne filtreleyebilir, ne de yazabilir.',
   'Arguments d’un appel': 'Çağrı argümanları',
@@ -85,13 +92,13 @@ export const tr: Catalog = {
     'Bu veritabanı için bir token oluşturmak **Yönetim** düzeyini gerektirir; bu düzeye sahip değilsiniz. Bunu veritabanını yöneten kişiden isteyin.',
   '<jeton>': '<token>',
   'Connecter un agent': 'Bir ajan bağlama',
-  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.':
-    'basedb’nin **MCP sunucusu**, bu veritabanını bir yapay zeka ajanına — Claude’a ya da herhangi bir MCP istemcisine — açar: ajan veritabanını keşfeder, okur ve siz izin verirseniz satırlar oluşturur ve değiştirir. Bu işlem, REST API ile aynı izinlerden geçer.',
+  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.':
+    'basedb’nin **MCP sunucusu**, bu veritabanını bir yapay zeka ajanına — Claude’a ya da herhangi bir MCP istemcisine — açar: ajan veritabanını keşfeder, okur ve siz izin verirseniz satırlar oluşturur, değiştirir ve siler. Bu işlem, REST API ile aynı izinlerden geçer.',
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Bu veritabanı ajanlara açık değil.** Açılana kadar, sunulan token ne olursa olsun hiçbir araç onu göremez.',
   'Créer un jeton': 'Token oluşturma',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'Arayüzde, veritabanının “⋯” menüsü → **API ve ajanlar** → **API ve MCP token’ları…**, **MCP** erişimi işaretli. Token bu veritabanıyla sınırlıdır ve varsayılan olarak **salt okunur**dur: yazma izni açıkça seçilir. Yalnızca bir kez gösterilir ve aynı ekrandan iptal edilir. **REST API** için de işaretlenirse, aynı token bir program tarafından da kullanılır (bkz. “Kimlik doğrulama”).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'Arayüzde, veritabanının “⋯” menüsü → **API ve ajanlar** → **API ve MCP token’ları…**, **MCP** erişimi işaretli. Token bu veritabanıyla sınırlıdır ve varsayılan olarak **salt okunur**dur: yazma izni ve silme izni açıkça seçilir. Yalnızca bir kez gösterilir ve aynı ekrandan iptal edilir. **REST API** için de işaretlenirse, aynı token bir program tarafından da kullanılır (bkz. “Kimlik doğrulama”).',
   'Garder le jeton hors de la configuration': 'Token’ı yapılandırmanın dışında tutma',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Token, `BASEDB_TOKEN` ortam değişkenine yerleştirilir; istemcinin yapılandırma dosyasına asla konmaz: bu dosya sürüm kontrolüne alınır, senkronize edilir ve oturumdaki tüm programlar tarafından okunabilir.',
@@ -125,6 +132,8 @@ export const tr: Catalog = {
     'Bir ilişki yazmak için: hedef tabloda `lookup_records`, ardından bulunan `_id` ile `create_record` ya da `update_record`.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'Yapıyı geliştirmek için: `propose_create_table` ya da `propose_add_field`, ardından kararı izlemek için `get_proposal`.',
+  'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
+    'Silmek için: önce satırdan emin olmak için `get_record`, ardından yanıtında onu döndüren `delete_record`; `restore_record` onu geri yükler.',
   'Propositions de structure': 'Yapı önerileri',
   'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend dans la file « Propositions » de la base, où une personne qui peut modifier la structure l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.':
     'Bir ajan yapıyı asla kendisi değiştirmez: yalnızca **önerir**. Öneri, veritabanının “Ajan önerileri” kuyruğunda bekler; orada yapıyı değiştirebilen bir kişi onu onaylar ya da reddeder; karar verilmezse 24 saat sonra süresi dolar. Onaylanırsa, token’ı oluşturan kişinin adına uygulanır — bu kişinin hâlâ bu işlemi yapma hakkı varsa — ve geçmişte diğer her değişiklik gibi görünür.',
@@ -133,8 +142,8 @@ export const tr: Catalog = {
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Silme yok, yeniden adlandırma yok, kademeli (cascade) ilişki yok (`MCP_CASCADE_FORBIDDEN`).',
   'Ce qui n’existe pas': 'Var olmayanlar',
-  'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
-    'Hiçbir araç bir satırı silmez, SQL çalıştırmaz ya da hakları veya token’ları yönetmez. Böyle bir adı çağıran bir ajan — `delete_record`, `run_sql`… — hedeflenen veritabanı ne olursa olsun `MCP_OPERATION_EXCLUDED` alır.',
+  'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
+    'Hiçbir araç birden fazla satırı aynı anda, bir tabloyu ya da bir alanı silmez, SQL çalıştırmaz ya da hakları veya token’ları yönetmez. Böyle bir adı çağıran bir ajan — `delete_records`, `run_sql`… — hedeflenen veritabanı ne olursa olsun `MCP_OPERATION_EXCLUDED` alır.',
   Bornes: 'Sınırlar',
   '`limit` : 25 lignes par défaut, 100 au plus.':
     '`limit`: varsayılan olarak 25 satır, en fazla 100.',
@@ -149,8 +158,8 @@ export const tr: Catalog = {
     'Bir ajan, token’ını oluşturan kişiden asla daha fazlasını göremez — çoğu zaman daha azını görür.',
   '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.':
     '**Haklar**: token’ın hakları, her çağrıda onu oluşturan kişinin haklarıyla kesiştirilir. Bu kişinin hakları azalırsa, token’ın hakları da onlarla birlikte azalır; hesabı devre dışı bırakılırsa, token yanıt vermeyi durdurur.',
-  '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
-    '**Okuma, oluşturma, değiştirme** — asla silme. Salt okunur bir token her türlü yazmayı reddeder (`TOKEN_READ_ONLY`).',
+  '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
+    '**Okuma, oluşturma, değiştirme** — ve silme, bir kerede bir satır, yalnızca bunun için oluşturulmuş bir token’la. Salt okunur bir token her türlü yazmayı reddeder (`TOKEN_READ_ONLY`).',
   '**Cette base** : ouverte aux agents.': '**Bu veritabanı**: ajanlara açık.',
   '**Cette base** : **fermée aux agents** — aucun outil ne la voit.':
     '**Bu veritabanı**: **ajanlara kapalı** — hiçbir araç onu görmez.',
@@ -234,8 +243,8 @@ export const tr: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Tüm veri yolları, `Authorization` başlığında bir **token** ister. Oturum çerezi burada asla kabul edilmez: bir tarayıcı bunu, yabancı bir sayfanın tetiklediği istekler dahil, her istekte gönderir.',
   'Jeton d’intégration': 'Entegrasyon token’ı',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Bir program — betik, senkronizasyon, başka bir uygulama — `bdb_` ile başlayan bir **entegrasyon token’ı** sunar. Bu token yalnızca bu veritabanı için geçerlidir; okur, yazma izniyle oluşturulduysa oluşturur ve değiştirir, ama **asla silmez**; ve onu oluşturan kişiden, her çağrıda kesiştirilerek, asla daha fazla hakka sahip olmaz. Yönetim paneli, SQL konsolu ve yapay zeka ona kapalı kalır.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Bir program — betik, senkronizasyon, başka bir uygulama — `bdb_` ile başlayan bir **entegrasyon token’ı** sunar. Bu token yalnızca bu veritabanı için geçerlidir; okur, yazma izniyle oluşturulduysa oluşturur ve değiştirir; yalnızca bunun için oluşturulduysa siler; ve onu oluşturan kişiden, her çağrıda kesiştirilerek, asla daha fazla hakka sahip olmaz. Yönetim paneli, SQL konsolu ve yapay zeka ona kapalı kalır.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Bir tane oluşturmak için: veritabanının “⋯” menüsü → **API ve ajanlar** → **API ve MCP token’ları…**, **REST API** erişimi işaretli. Yalnızca bir kez gösterilir.',
   Appel: 'Çağrı',

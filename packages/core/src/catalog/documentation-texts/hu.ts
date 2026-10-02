@@ -55,6 +55,10 @@ export const hu: Catalog = {
     'Egy sor `_id`-jének megkeresése a megjelenítési értéke alapján, egy kapcsolat beírása előtt.',
   'Créer une ligne.': 'Sor létrehozása.',
   'Modifier les champs nommés d’une ligne.': 'Egy sor megnevezett mezőinek módosítása.',
+  'Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.':
+    'Egy sor törlése, egy törlésre létrehozott tokennel — a válasz visszaadja azt.',
+  'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
+    'Egy törölt sor visszahozása, a `_id`-je alatt, az előzményekből.',
   'Proposer une table et ses premiers champs — une personne décide.':
     'Egy tábla és az első mezőinek javaslása — egy személy dönt.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
@@ -78,8 +82,11 @@ export const hu: Catalog = {
     'Az Ön által létrehozott tokennek soha nincs több jogosultsága, mint Önnek: ezek az eszközök egy felső korlátot jelentenek.',
   Outil: 'Eszköz',
   Pour: 'Cél',
-  'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.':
-    'Egy sor törlése továbbra is a REST API-nak és a felületnek van fenntartva: egyetlen MCP-eszköz sem töröl.',
+  'Supprimer une ligne — avec un jeton créé pour supprimer':
+    'Egy sor törlése — egy törlésre létrehozott tokennel',
+  'Ramener une ligne supprimée': 'Egy törölt sor visszahozása',
+  'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
+    'Egy ügynök csak egy „Olvasás, írás és törlés” jogosultsággal létrehozott tokennel töröl, egyszerre egy sort; a törölt sor a `restore_record` segítségével vagy az előzményekből kerül vissza.',
   '**Invisibles pour un agent :** {fields}. Pour lui, ces colonnes n’existent pas : il ne peut ni les lire, ni les filtrer, ni les écrire.':
     '**Ügynök számára láthatatlan:** {fields}. Számára ezek az oszlopok nem léteznek: nem tudja őket sem olvasni, sem szűrni, sem írni.',
   'Arguments d’un appel': 'Egy hívás argumentumai',
@@ -87,13 +94,13 @@ export const hu: Catalog = {
     'Egy token létrehozása ehhez az adatbázishoz a **Kezelés** szintet igényli, amellyel Ön nem rendelkezik. Kérjen egyet attól a személytől, aki kezeli.',
   '<jeton>': '<token>',
   'Connecter un agent': 'Ügynök csatlakoztatása',
-  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.':
-    'A basedb **MCP-szervere** megnyitja ezt az adatbázist egy MI-ügynök előtt — legyen az Claude vagy bármely MCP-kliens —, amely felfedezi, olvassa, és ha Ön úgy dönt, sorokat hoz létre és módosít benne. Ugyanazokon a jogosultságokon megy keresztül, mint a REST API.',
+  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.':
+    'A basedb **MCP-szervere** megnyitja ezt az adatbázist egy MI-ügynök előtt — legyen az Claude vagy bármely MCP-kliens —, amely felfedezi, olvassa, és ha Ön úgy dönt, sorokat hoz létre, módosít és töröl benne. Ugyanazokon a jogosultságokon megy keresztül, mint a REST API.',
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Ez az adatbázis nincs megnyitva ügynökök előtt.** Amíg ez így marad, egyetlen eszköz sem látja, bármelyik tokent mutatják is be.',
   'Créer un jeton': 'Token létrehozása',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'A felületen az adatbázis „⋯” menüjében → **API és ügynökök** → **API- és MCP-tokenek…**, bejelölt **MCP** hozzáféréssel. A token erre az adatbázisra korlátozódik, alapértelmezés szerint **csak olvasható**: az írás kifejezetten választható. Csak egyszer jelenik meg, és ugyanarról a képernyőről vonható vissza. A **REST API** hozzáférés is bejelölve, ugyanaz a token szolgál egy programhoz (lásd: „Hitelesítés”).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'A felületen az adatbázis „⋯” menüjében → **API és ügynökök** → **API- és MCP-tokenek…**, bejelölt **MCP** hozzáféréssel. A token erre az adatbázisra korlátozódik, alapértelmezés szerint **csak olvasható**: az írás, és a törlés, kifejezetten választhatók. Csak egyszer jelenik meg, és ugyanarról a képernyőről vonható vissza. A **REST API** hozzáférés is bejelölve, ugyanaz a token szolgál egy programhoz (lásd: „Hitelesítés”).',
   'Garder le jeton hors de la configuration': 'A token távoltartása a konfigurációtól',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'A token a `BASEDB_TOKEN` környezeti változóba kerül, soha nem a kliens konfigurációs fájljába: ez utóbbi verziókezelt, szinkronizált, és a munkamenet minden programja számára olvasható.',
@@ -127,6 +134,8 @@ export const hu: Catalog = {
     'Egy kapcsolat írásához: `lookup_records` a céltáblán, majd `create_record` vagy `update_record` a megtalált `_id`-vel.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'A struktúra fejlesztéséhez: `propose_create_table` vagy `propose_add_field`, majd `get_proposal` a döntés nyomon követésére.',
+  'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
+    'Törléshez: előbb `get_record`, hogy biztosan a megfelelő sorról legyen szó, majd `delete_record` — amely visszaadja azt a válaszában; a `restore_record` visszahozza.',
   'Propositions de structure': 'Struktúra-javaslatok',
   'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend dans la file « Propositions » de la base, où une personne qui peut modifier la structure l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.':
     'Egy ügynök soha nem módosítja saját maga a struktúrát: **javasol**. A javaslat az adatbázis „Ügynökök javaslatai” sorában vár, ahol egy, a struktúra módosítására jogosult személy jóváhagyja vagy elutasítja; döntés hiányában 24 óra után lejár. Jóváhagyás esetén annak a személynek a nevében kerül alkalmazásra, aki a tokent létrehozta — ha ennek a személynek még mindig joga van hozzá —, és úgy jelenik meg az előzményekben, mint bármely más módosítás.',
@@ -135,8 +144,8 @@ export const hu: Catalog = {
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Nincs törlés, nincs átnevezés, nincs kaszkádolt kapcsolat (`MCP_CASCADE_FORBIDDEN`).',
   'Ce qui n’existe pas': 'Ami nem létezik',
-  'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
-    'Egyetlen eszköz sem töröl sort, nem futtat SQL-t, és nem kezel jogosultságokat vagy tokeneket. Az az ügynök, amely ilyen nevet hív meg — `delete_record`, `run_sql`… —, `MCP_OPERATION_EXCLUDED` hibát kap, bármelyik adatbázist is célozza.',
+  'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
+    'Egyetlen eszköz sem töröl egyszerre több sort, egy táblát vagy egy mezőt, nem futtat SQL-t, és nem kezel jogosultságokat vagy tokeneket. Az az ügynök, amely ilyen nevet hív meg — `delete_records`, `run_sql`… —, `MCP_OPERATION_EXCLUDED` hibát kap, bármelyik adatbázist is célozza.',
   Bornes: 'Korlátok',
   '`limit` : 25 lignes par défaut, 100 au plus.':
     '`limit`: alapértelmezés szerint 25 sor, legfeljebb 100.',
@@ -151,8 +160,8 @@ export const hu: Catalog = {
     'Egy ügynök soha nem lát többet, mint az a személy, aki a tokenjét létrehozta — és gyakran kevesebbet.',
   '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.':
     '**Jogosultságok**: a tokené, amelyeket minden híváskor összevetnek a létrehozója jogosultságaival. Ha ennek a személynek csökkennek a jogosultságai, a tokené is csökken velük; ha a fiókja letiltásra kerül, a token nem válaszol többé.',
-  '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
-    '**Olvasás, létrehozás, módosítás** — soha nem törlés. Egy csak olvasható token minden írást elutasít (`TOKEN_READ_ONLY`).',
+  '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
+    '**Olvasás, létrehozás, módosítás** — és törlés, egyszerre egy sort, de csak egy erre létrehozott tokennel. Egy csak olvasható token minden írást elutasít (`TOKEN_READ_ONLY`).',
   '**Cette base** : ouverte aux agents.': '**Ez az adatbázis**: nyitva áll az ügynökök előtt.',
   '**Cette base** : **fermée aux agents** — aucun outil ne la voit.':
     '**Ez az adatbázis**: **zárva az ügynökök előtt** — egyetlen eszköz sem látja.',
@@ -236,8 +245,8 @@ export const hu: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Minden adatútvonal egy **tokent** igényel, az `Authorization` fejlécben. A munkamenet-sütit itt soha nem fogadják el: egy böngésző minden kéréssel elküldi, beleértve azokat is, amelyeket egy idegen oldal vált ki.',
   'Jeton d’intégration': 'Integrációs token',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Egy program — szkript, szinkronizálás, másik alkalmazás — egy **integrációs tokent** mutat be, amely `bdb_` előtaggal kezdődik. Csak erre az adatbázisra érvényes; olvas, és létrehoz, illetve módosít, ha írásra jött létre, de **soha nem töröl**; és soha nincs több jogosultsága, mint annak a személynek, aki létrehozta, minden híváskor összevetve. Az adminisztráció, az SQL-konzol és az MI zárva marad előtte.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Egy program — szkript, szinkronizálás, másik alkalmazás — egy **integrációs tokent** mutat be, amely `bdb_` előtaggal kezdődik. Csak erre az adatbázisra érvényes; olvas, létrehoz és módosít, ha írásra jött létre, és **csak akkor töröl, ha törlésre jött létre**; soha nincs több jogosultsága, mint annak a személynek, aki létrehozta, minden híváskor összevetve. Az adminisztráció, az SQL-konzol és az MI zárva marad előtte.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Egy létrehozásához: az adatbázis „⋯” menüje → **API és ügynökök** → **API- és MCP-tokenek…**, bejelölt **REST API** hozzáféréssel. Csak egyszer jelenik meg.',
   Appel: 'Hívás',

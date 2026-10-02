@@ -78,5 +78,5 @@ programme ne tourne.
 
 Un **jeton d’intégration** se crée dans l’interface : menu **⋯** de la base → **API et agents**
 → **Jetons API et MCP…**. Il ouvre une base, lit ses lignes, les écrit s’il a été créé en
-écriture, n’a jamais plus de droits que la personne qui l’a créé, et **ne supprime jamais** :
-`delete()` demande les droits d’une session.
+écriture, n’a jamais plus de droits que la personne qui l’a créé, et **ne supprime que s’il a été
+créé pour cela** (« Lecture, écriture et suppression ») : sinon `delete()` est refusé.

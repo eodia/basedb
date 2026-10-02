@@ -1284,10 +1284,10 @@ export default {
 		agents: {
 			label: 'REST-API · MCP · Webhooks',
 			title: 'Ihre KI-Agenten bekommen die Daten, {nicht den Generalschlüssel.}',
-			lead: 'Der MCP-Server gibt Agenten zwölf Tools, die REST-API Ihren Programmen dieselben Daten. Eine einzige Stelle, an der Berechtigungen geprüft werden, dieselben Protokolle.',
+			lead: 'Der MCP-Server gibt Agenten vierzehn Tools, die REST-API Ihren Programmen dieselben Daten. Eine einzige Stelle, an der Berechtigungen geprüft werden, dieselben Protokolle.',
 			bullets: [
 				'<strong>Ein Token pro Datenbank</strong>, standardmäßig schreibgeschützt, nie mit mehr Berechtigungen als die Person, die es angelegt hat.',
-				'<strong>Ein Agent löscht nichts</strong> und ändert nicht die Struktur: Er schlägt sie vor, ein Mensch genehmigt.',
+				'<strong>Ein Agent löscht nur mit Ihrer Zustimmung</strong>, eine Zeile auf einmal, und ändert nicht die Struktur: Er schlägt sie vor, ein Mensch genehmigt.',
 				'<strong>Eine generierte Dokumentation</strong> für jede Datenbank, nach Ihren Berechtigungen gefiltert, mit ihrer OpenAPI-3.1-Spezifikation.',
 				'<strong>Webhooks</strong> bei jedem Schreibvorgang: signiert, geordnet und bei Fehlern wiederholt.',
 			],
@@ -1520,7 +1520,7 @@ export default {
 			},
 			agent: {
 				q: 'Wie verbindet sich ein KI-Agent?',
-				a: 'Über den MCP-Server, mit einem Integrationstoken, das auf eine Datenbank beschränkt und standardmäßig schreibgeschützt ist. Ein Agent liest, erstellt und bearbeitet Zeilen gemäß seinen Berechtigungen; er löscht nichts und ändert nicht die Struktur: Er schlägt sie vor, und ein Mensch genehmigt.',
+				a: 'Über den MCP-Server, mit einem Integrationstoken, das auf eine Datenbank beschränkt und standardmäßig schreibgeschützt ist. Ein Agent liest, erstellt und bearbeitet Zeilen gemäß seinen Berechtigungen — und löscht sie, eine auf einmal, wenn sein Token dafür angelegt wurde; er ändert nicht die Struktur: Er schlägt sie vor, und ein Mensch genehmigt.',
 			},
 			postgres: {
 				q: 'Welche PostgreSQL-Version brauche ich?',
@@ -1547,6 +1547,47 @@ export default {
 		title: 'Was sich in basedb geändert hat',
 		intro: 'Jede einzelne Änderung steht im <a href="https://github.com/eodia/basedb/commits/main">Verlauf des Repositorys</a>. Was als Nächstes kommt: die <a href="/feuille-de-route/">Roadmap</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Agenten, die löschen, wenn Sie es erlauben',
+				tag: 'Neu',
+				items: [
+					'<strong>Eine dritte Token-Stufe</strong>, „Lesen, Schreiben und Löschen“: Ein Programm löscht über die REST-API, ein Agent über das neue Tool <code>delete_record</code> — eine Zeile auf einmal, zurückgegeben in der Antwort. <a href="/integrations/mcp/#zeilen-löschen">Zeilen löschen</a>',
+					'<strong>Rückgängig machen</strong>: <code>restore_record</code> bringt eine gelöschte Zeile anhand ihrer Kennung zurück; eine Löschung, die eine Verknüpfung mit Kaskade auf andere Zeilen ausdehnen würde, bleibt der Oberfläche vorbehalten.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Token für alle, die eine Datenbank verwalten',
+				tag: 'Neu',
+				items: [
+					'<strong>Die Stufe Verwalten genügt</strong>: auf einer Datenbank oder ihrem Projekt vergeben, erlaubt sie, die Integrationstoken ihrer Datenbanken anzulegen, ohne Administrator zu sein. <a href="/integrations/api-rest/#ein-token">Ein Token</a>',
+					'<strong>Sagt es sonst deutlich</strong>: Wer liest oder schreibt, ohne die Datenbank zu verwalten, erfährt im Token-Fenster, an wen man sich wenden soll; ein Konto ohne Passwort erfährt, warum es noch keines anlegen kann.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automatisierungen, die warten, einen Fehlschlag auffangen und PDFs versenden',
+				tag: 'Neu',
+				items: [
+					'<strong>Vier weitere Auslöser</strong>: eine Zeile wird gelöscht; eine Zeile tritt in einen Filter ein – „eine Rechnung wird überfällig“; ein Datum tritt ein – drei Tage vor der Frist, um 9 Uhr; eine andere Software ruft die geheime Adresse der Automatisierung auf. <a href="/fonctionnalites/automatisations/#ein-dienst-der-basedb-aufruft">Ein Dienst, der basedb aufruft</a>',
+					'<strong>Warten</strong>: drei Tage, oder bis zum Datum eines Feldes, dann beim nächsten Schritt die Zeile neu einlesen: „falls es immer noch nicht angenommen ist, nachfassen“. <a href="/fonctionnalites/automatisations/#warten">Warten</a>',
+					'<strong>Ein PDF erstellen und versenden</strong>: das Dokument einer Zeile, abgelegt in einem Feld Datei oder einer E-Mail angehängt – als formatierter Text, mit Empfängern in Cc und einer Antwortadresse, an jeden oder eine einzige an alle. <a href="/fonctionnalites/automatisations/#ein-pdf-und-eine-e-mail">Ein PDF und eine E-Mail</a>',
+					'<strong>Eine Zeile löschen, zählen und addieren, eine andere Automatisierung starten</strong>; eine Bedingung prüft auch einen Wert – die Antwort der KI, eine Summe –, und eine Suche, die nichts findet, hat ihren eigenen Zweig.',
+					'<strong>Versuchen</strong>: Schritte, und weitere, falls einer von ihnen fehlschlägt; ein Webhook versucht es von selbst erneut, eine Schleife läuft trotz einer fehlgeschlagenen Zeile weiter. <a href="/fonctionnalites/automatisations/#versuchen">Versuchen</a>',
+					'<strong>Alle Schritte in Reichweite</strong>: Das <strong>+</strong> öffnet ein nach Kategorie geordnetes Fenster mit einer Suche, statt eines Menüs, das abgeschnitten sein konnte.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'PDF-Dokumente in Ihren Farben',
+				tag: 'Neu',
+				items: [
+					'<strong>Fünf Ausgangspunkte</strong> – Rechnung, Angebot, Datenblatt, Bescheinigung, leere Seite –, erstellt mit den Spalten Ihrer Tabelle: Nummer, Datum, Beträge, Foto, verknüpfte Zeilen. <a href="/fonctionnalites/documents/#eine-vorlage-erstellen">Eine Vorlage erstellen</a>',
+					'<strong>Ihr Logo und Ihre Farben</strong>: eine Kopfzeile mit Logo und Kontaktdaten, eine Fußzeile mit rechtlichen Hinweisen und Seitenzahlen, eine Akzentfarbe, Schriftarten mit oder ohne Serifen, ein Rahmen um die Seite. <a href="/fonctionnalites/documents/#kopf--und-fußzeile">Kopf- und Fußzeile</a>',
+					'<strong>Neue Blöcke</strong>: ein Titel auf einem Banner, ein Bild, zwei oder drei Spalten, eine Netto-/Brutto-Übersicht, eine Tabelle mit farbiger Kopfzeile, eine Trennlinie. Sie lassen sich zum Neuordnen ziehen, und die Vorschau folgt jeder Änderung. <a href="/fonctionnalites/documents/#der-inhalt-blöcke">Die Blöcke</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'Eine unterbrochene Verbindung stoppt basedb nicht mehr',
@@ -1931,8 +1972,8 @@ export default {
 						text: 'SQL-Views mit der Struktur übernehmen, wenn Umgebungen angelegt oder verglichen werden, und in Datenbankvorlagen.',
 					},
 					loops: {
-						title: 'Wartezeiten in Automatisierungen',
-						text: 'Vor dem nächsten Schritt warten („drei Tage danach“) und Abläufe – Bedingungen, Suchen, Schleifen – in Datenbankvorlagen mitnehmen.',
+						title: 'Vollständige Abläufe in Datenbankvorlagen',
+						text: 'Automatisierungsabläufe – Bedingungen, Suchen, Schleifen, Wartezeiten, PDFs – in Datenbankvorlagen mitnehmen, die davon heute nur die einfachen Schritte behalten.',
 					},
 					textFormulas: {
 						title: 'Formeln für Text',

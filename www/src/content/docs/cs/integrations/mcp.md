@@ -4,8 +4,8 @@ description: Připojení AI agenta k basedb přes Model Context Protocol.
 ---
 
 basedb poskytuje **server MCP** (`POST /mcp`, na stejné adrese jako rozhraní): agent – Claude,
-asistent pro programování, váš vlastní agent – v něm objevuje databáze, čte a zapisuje řádky
-a **navrhuje** změny struktury.
+asistent pro programování, váš vlastní agent – v něm objevuje databáze, čte a zapisuje řádky,
+pokud mu to dovolíte i odstraňuje, a **navrhuje** změny struktury.
 
 ## Připojení agenta
 
@@ -21,7 +21,7 @@ claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
   --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 
-## Dvanáct nástrojů
+## Čtrnáct nástrojů
 
 | Nástroj | Role |
 |---|---|
@@ -29,11 +29,26 @@ claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
 | `list_bases`, `describe_base`, `describe_table` | objevování struktury a jejích popisů |
 | `list_records`, `get_record`, `lookup_records` | čtení, filtrování, dohledání zobrazované hodnoty |
 | `create_record`, `update_record` | zápis řádků |
+| `delete_record`, `restore_record` | odstranit řádek — s tokenem k tomu vytvořeným — a vrátit ho zpět |
 | `propose_create_table`, `propose_add_field`, `get_proposal` | návrh změny struktury |
+
+## Odstraňování řádků
+
+Token vytvořený s oprávněním **Čtení, zápis a odstranění** umožňuje agentovi odstraňovat
+řádky, **jeden po druhém**, podle jejich `_id`. `delete_record` vrátí řádek tak, jak byl,
+a odstranění se zaznamená do historie jménem tokenu; `restore_record` vrátí řádek zpět pod jeho
+`_id` — agent tak sám napraví svou chybu, a totéž může udělat i člověk z historie.
+
+Agent neodstraňuje:
+
+- s tokenem pouze pro čtení, nebo pro čtení a zápis: odmítnutí řekne, jaký token vytvořit;
+- řádek, který by kaskádová vazba odnesla spolu s dalšími (`TOKEN_CASCADE_FORBIDDEN`):
+  takové odstranění se provádí v rozhraní, osobou, která vidí, co tím odnáší;
+- více řádků najednou: to žádný nástroj neumí.
 
 ## Co agent nedělá
 
-- **Nic neodstraňuje.**
+- **Odstraňuje jen s vaším souhlasem**: token k tomu vytvořený, jeden řádek po druhém.
 - **Nemění strukturu**: navrhuje ji. Návrh čeká v **Návrhy agentů…** (nabídka databáze), kde
   ho osoba, která spravuje strukturu, schválí nebo zamítne; bez rozhodnutí vyprší po
   24 hodinách.

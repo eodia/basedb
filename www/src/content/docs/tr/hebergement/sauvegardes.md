@@ -47,7 +47,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION`, en son sürüm (`latest`) yerine belirli bir sürümü (`0.5.1`) sabitler.
+`BASEDB_VERSION`, en son sürüm (`latest`) yerine belirli bir sürümü (`0.6.0`) sabitler.
 
 Başlangıçta basedb **kataloğunu kendiliğinden günceller**: sürümünüzde henüz bulunmayan
 geçişleri sırayla, her birini kendi işlemi (transaction) içinde uygular ve

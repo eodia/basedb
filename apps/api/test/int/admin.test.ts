@@ -310,6 +310,35 @@ describe('projects, people and permissions — one story over HTTP', () => {
     expect(table.status).toBe(403)
   })
 
+  it('« Gestion » on the project lets the newcomer mint a token for a base of it', async () => {
+    const asked = {
+      base: baseName,
+      label: 'Agent d’Alice',
+      access: 'write',
+      surfaces: ['mcp'],
+      expires_in_days: 30,
+    }
+    alice = await elevate(alice, 'un cheval bleu dans la prairie')
+    // Reading and writing are not managing: the base's doors are not hers to open.
+    const refused = await call(alice, `${V1}/admin/tokens`, 'POST', asked)
+    expect(refused.status).toBe(403)
+    expect(((await refused.json()) as { code: string }).code).toBe('ADMIN_REQUIRED')
+
+    // Given on the project, « Gestion » covers its bases — tokens included.
+    const project = (level: string) =>
+      call(admin, `${V1}/admin/access`, 'POST', {
+        changes: [{ group: groupId, scope: { kind: 'project', id: projectId }, level }],
+      })
+    expect((await project('manage')).status).toBe(200)
+    const minted = await call(alice, `${V1}/admin/tokens`, 'POST', asked)
+    expect(minted.status).toBe(201)
+    const listed = await data<Array<{ label: string }>>(
+      await call(alice, `${V1}/admin/tokens?base=${baseName}`),
+    )
+    expect(listed.map((t) => t.label)).toContain('Agent d’Alice')
+    expect((await project('read')).status).toBe(200)
+  })
+
   it('a project that still holds a base is not deleted', async () => {
     const r = await call(admin, `${V1}/admin/projects/${projectId}`, 'DELETE')
     expect(r.status).toBe(409)

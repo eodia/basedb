@@ -29,8 +29,8 @@ A imagem roda com o usuário `node`, no Node 22, declara uma verificação de sa
 | Tag | Conteúdo |
 |---|---|
 | `latest` | a última versão publicada |
-| `0.5` | a última versão 0.5.x |
-| `0.5.1` | exatamente esta versão |
+| `0.6` | a última versão 0.6.x |
+| `0.6.0` | exatamente esta versão |
 
 ## Os serviços
 

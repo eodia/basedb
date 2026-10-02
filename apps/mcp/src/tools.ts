@@ -12,7 +12,8 @@ import { Checker, INPUT_BOUNDS } from './validate.js'
  * `describe_table`, whose results are labelled as data.
  *
  * Lots 1, 2 and 3: six reads, the lookup, the two writes, and the structure proposals —
- * which change nothing: a person decides, in the application (§7).
+ * which change nothing: a person decides, in the application (§7). Then the deletion of
+ * one row, for a token created to delete, and its way back from the history.
  * `propose_create_base` is not declared: a token is bound to one base, and a base is
  * created from its project, by a person.
  */
@@ -197,7 +198,7 @@ const whoami: ToolDefinition = {
   name: 'whoami',
   title: 'Identité du jeton',
   description:
-    'Rend l’identité effective de ce jeton : l’utilisateur qui l’a créé, la base de sa portée, ses droits effectifs (lecture, création, modification) et les budgets sous lesquels il travaille. Aucun paramètre.',
+    'Rend l’identité effective de ce jeton : l’utilisateur qui l’a créé, la base de sa portée, ses droits effectifs (lecture, création, modification, suppression) et les budgets sous lesquels il travaille. Aucun paramètre.',
   inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   annotations: { title: 'Identité du jeton', ...READ },
   objectKind: 'token',
@@ -573,6 +574,65 @@ const updateRecordTool: ToolDefinition = {
   },
 }
 
+/** A row named by its `_id`: deleted, or brought back. */
+const ROW_INPUT = {
+  type: 'object',
+  properties: {
+    base: BASE,
+    table: TABLE,
+    _id: { type: 'string', description: 'L’identifiant de la ligne.' },
+    idempotency_key: IDEMPOTENCY,
+  },
+  required: ['base', 'table', '_id'],
+  additionalProperties: false,
+}
+
+function rowArgs(args: Readonly<Record<string, unknown>>) {
+  const c = new Checker(args).only(['base', 'table', '_id', 'idempotency_key'])
+  const base = c.name('base') as string
+  const table = c.name('table') as string
+  const id = c.uuid('_id') as string
+  const key = c.string('idempotency_key', INPUT_BOUNDS.idempotencyKey)
+  c.done()
+  return { base, table, id, idempotencyKey: key }
+}
+
+const deleteRecordTool: ToolDefinition = {
+  name: 'delete_record',
+  title: 'Supprimer un enregistrement',
+  description: `Supprime une ligne désignée par son _id. Réservé à un jeton créé avec le droit de suppression : voir access.delete dans whoami, et access dans describe_table. Ne supprimez qu’à la demande explicite de la personne, une ligne à la fois. La réponse rend la ligne telle qu’elle était ; la suppression est historisée au nom du jeton, et restore_record ramène la ligne. Une ligne encore désignée par un lien d’une autre table peut être refusée (ROW_REFERENCED). ${DATA}`,
+  inputSchema: ROW_INPUT,
+  annotations: {
+    title: 'Supprimer un enregistrement',
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  objectKind: 'record',
+  async run(tc, args) {
+    return writeOutcome(await tc.kernel.agentDeleteRecord(tc.ctx, rowArgs(args)))
+  },
+}
+
+const restoreRecordTool: ToolDefinition = {
+  name: 'restore_record',
+  title: 'Restaurer un enregistrement supprimé',
+  description: `Ramène une ligne supprimée, sous son propre _id, avec les valeurs qu’elle avait au moment de sa dernière suppression. Demande le droit de créer des lignes. Refusé si la ligne existe de nouveau (RESTORE_RECORD_PRESENT), ou si elle désignait une ligne qui a disparu depuis (RESTORE_TARGET_MISSING). ${DATA}`,
+  inputSchema: ROW_INPUT,
+  annotations: {
+    title: 'Restaurer un enregistrement supprimé',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  objectKind: 'record',
+  async run(tc, args) {
+    return writeOutcome(await tc.kernel.agentRestoreRecord(tc.ctx, rowArgs(args)))
+  },
+}
+
 // ── Lot 3: proposals (§7) ──────────────────────────────────────────────────────
 
 /** Where a person decides — a fixed sentence, never a link (§7.7, rule 5). */
@@ -835,6 +895,8 @@ export const TOOLS: readonly ToolDefinition[] = [
   lookupRecords,
   createRecordTool,
   updateRecordTool,
+  deleteRecordTool,
+  restoreRecordTool,
   proposeCreateTable,
   proposeAddField,
   getProposal,
@@ -851,7 +913,6 @@ export const TOOLS_BY_NAME: ReadonlyMap<string, ToolDefinition> = new Map(
  * tool": this code teaches something about the product, never about a resource.
  */
 export const RESERVED_NAMES: ReadonlySet<string> = new Set([
-  'delete_record',
   'delete_records',
   'bulk_delete',
   'bulk_update',

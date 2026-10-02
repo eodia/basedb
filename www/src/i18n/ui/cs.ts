@@ -1288,10 +1288,10 @@ export default {
 		agents: {
 			label: 'REST API · MCP · webhooky',
 			title: 'Vaši AI agenti mají přístup k datům, {ne ke klíčům od hradu.}',
-			lead: 'Server MCP dává agentům dvanáct nástrojů; REST API dává vašim programům tatáž data. Jediný bod kontroly oprávnění, tytéž protokoly.',
+			lead: 'Server MCP dává agentům čtrnáct nástrojů; REST API dává vašim programům tatáž data. Jediný bod kontroly oprávnění, tytéž protokoly.',
 			bullets: [
 				'<strong>Jeden token na databázi</strong>, ve výchozím nastavení jen pro čtení, nikdy s většími oprávněními, než má osoba, která ho vytvořila.',
-				'<strong>Agent nic neodstraní</strong> a nemění strukturu: navrhne změnu, člověk ji schválí.',
+				'<strong>Agent odstraňuje jen s vaším souhlasem</strong>, jeden řádek po druhém, a nemění strukturu: navrhne změnu, člověk ji schválí.',
 				'<strong>Generovaná dokumentace</strong> pro každou databázi, filtrovaná podle vašich oprávnění, se specifikací OpenAPI 3.1.',
 				'<strong>Webhooky</strong> při každém zápisu: podepsané, doručované v pořadí a opakované.',
 			],
@@ -1513,7 +1513,7 @@ export default {
 			},
 			agent: {
 				q: 'Jak se připojí AI agent?',
-				a: 'Přes server MCP, s integračním tokenem omezeným na jednu databázi, ve výchozím nastavení jen pro čtení. Agent čte, vytváří a upravuje řádky podle svých oprávnění; nic neodstraňuje a nemění strukturu: navrhne změnu a člověk ji schválí.',
+				a: 'Přes server MCP, s integračním tokenem omezeným na jednu databázi, ve výchozím nastavení jen pro čtení. Agent čte, vytváří a upravuje řádky podle svých oprávnění — a odstraňuje je, jeden po druhém, pokud byl jeho token vytvořen i k tomu; nemění strukturu: navrhne změnu a člověk ji schválí.',
 			},
 			postgres: {
 				q: 'Jakou verzi PostgreSQL potřebuji?',
@@ -1540,6 +1540,47 @@ export default {
 		title: 'Co se v basedb změnilo',
 		intro: 'Podrobnosti o každé změně najdete v <a href="https://github.com/eodia/basedb/commits/main">historii repozitáře</a>. Co přijde dál: <a href="/feuille-de-route/">plán vývoje</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Agenti, kteří odstraňují, pokud to dovolíte',
+				tag: 'Novinka',
+				items: [
+					'<strong>Třetí úroveň tokenu</strong>, „Čtení, zápis a odstranění“: program odstraňuje přes REST API, agent novým nástrojem <code>delete_record</code> — jeden řádek po druhém, vrácený v odpovědi. <a href="/integrations/mcp/#odstraňování-řádků">Odstraňování řádků</a>',
+					'<strong>Vrátit zpět</strong>: <code>restore_record</code> vrátí odstraněný řádek pod jeho identifikátorem; odstranění, které by kaskádová vazba rozšířila na další řádky, zůstává vyhrazeno rozhraní.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Tokeny pro toho, kdo správuje databázi',
+				tag: 'Novinka',
+				items: [
+					'<strong>Úroveň Správa stačí</strong>: udělená na databázi nebo na jejím projektu umožňuje vytvářet integrační tokeny jejích databází, aniž by šlo o správce. <a href="/integrations/api-rest/#token">Token</a>',
+					'<strong>Jinak to řekne jasně</strong>: tomu, kdo čte nebo zapisuje bez správy databáze, okno tokenů řekne, na koho se obrátit; účtu bez hesla, proč ho ještě nemůže vytvořit.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automatizace, které čekají, zachytí selhání a odesílají PDF',
+				tag: 'Novinka',
+				items: [
+					'<strong>Čtyři další spouštěče</strong>: řádek je odstraněn; řádek vstoupí do filtru — „faktura se opozdí“; nastává datum — tři dny před splatností, v 9:00; jiný program zavolá tajnou adresu automatizace. <a href="/fonctionnalites/automatisations/#služba-která-volá-basedb">Služba, která volá basedb</a>',
+					'<strong>Čekat</strong> tři dny, nebo do data pole, a pak pokračovat tak, že znovu přečte řádek: „pokud stále není přijata, upomenout“. <a href="/fonctionnalites/automatisations/#čekat">Čekat</a>',
+					'<strong>Vygenerovat PDF a odeslat ho</strong>: dokument řádku, uložený do pole Soubor nebo přiložený k e-mailu — ve formátovaném textu, s příjemci v kopii a adresou pro odpověď, pro každého nebo jeden pro všechny. <a href="/fonctionnalites/automatisations/#pdf-a-e-mail">PDF a e-mail</a>',
+					'<strong>Odstranit řádek, počítat a sčítat, spustit jinou automatizaci</strong>; podmínka testuje i hodnotu — odpověď AI, celkový součet —, a vyhledání, které nic nenajde, má svou vlastní cestu.',
+					'<strong>Zkusit</strong>: kroky, a další, pokud některý selže; webhook se sám zkusí znovu, smyčka pokračuje i přes řádek, který selhal. <a href="/fonctionnalites/automatisations/#zkusit">Zkusit</a>',
+					'<strong>Všechny kroky na dosah</strong>: <strong>+</strong> otevře okno rozdělené do kategorií, s vyhledáváním, místo nabídky, která mohla být zkrácená.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'Dokumenty PDF ve vašich barvách',
+				tag: 'Novinka',
+				items: [
+					'<strong>Pět výchozích bodů</strong> — faktura, cenová nabídka, karta, osvědčení, prázdná stránka —, sestavených ze sloupců vaší tabulky: číslo, datum, částky, fotka, propojené řádky. <a href="/fonctionnalites/documents/#vytvořit-šablonu">Vytvořit šablonu</a>',
+					'<strong>Vaše logo a vaše barvy</strong>: záhlaví s logem a kontaktními údaji, zápatí s právními údaji a čísly stránek, akcentová barva, písma s patkami nebo bez patek, rámeček kolem stránky. <a href="/fonctionnalites/documents/#záhlaví-a-zápatí">Záhlaví a zápatí</a>',
+					'<strong>Nové bloky</strong>: titulek na pruhu, obrázek, dva nebo tři sloupce, souhrn bez DPH / s DPH, tabulka s barevným záhlavím, oddělovač. Táhnutím se přeřazují, a náhled sleduje každou úpravu. <a href="/fonctionnalites/documents/#obsah-bloky">Bloky</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'Přerušené spojení už basedb nezastaví',
@@ -1924,8 +1965,8 @@ export default {
 						text: 'Kopírování pohledů SQL spolu se strukturou při vytváření nebo porovnávání prostředí a v šablonách databází.',
 					},
 					loops: {
-						title: 'Čekání v automatizacích',
-						text: 'Čekání před dalším krokem („tři dny poté“) a přenášení toků — podmínek, vyhledávání, smyček — v šablonách databází.',
+						title: 'Celé toky v šablonách databází',
+						text: 'Přenášet toky automatizací — podmínky, vyhledávání, smyčky, čekání, PDF — do šablon databází, které dnes uchovávají jen jednoduché kroky.',
 					},
 					textFormulas: {
 						title: 'Vzorce pro text',

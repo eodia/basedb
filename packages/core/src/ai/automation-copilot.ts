@@ -168,6 +168,12 @@ const STEP_LABELS: Readonly<Record<string, string>> = {
   ai: 'Demander à l’IA',
   branch: 'Condition',
   for_each: 'Pour chaque ligne',
+  delete_record: 'Supprimer une ligne',
+  aggregate: 'Compter et additionner',
+  run_automation: 'Lancer une automatisation',
+  document: 'Générer un PDF',
+  wait: 'Attendre',
+  attempt: 'Essayer',
 }
 
 const TRIGGER_LABELS: Readonly<Record<string, string>> = {
@@ -175,6 +181,10 @@ const TRIGGER_LABELS: Readonly<Record<string, string>> = {
   record_updated: 'une ligne est modifiée',
   schedule: 'à heure fixe',
   button: 'on clique sur un bouton',
+  record_deleted: 'une ligne est supprimée',
+  record_matches: 'une ligne entre dans un filtre',
+  date_reached: 'une date arrive',
+  webhook: 'un service appelle son adresse',
 }
 
 export async function automationCopilotTurn(
@@ -477,6 +487,7 @@ export async function automationCopilotTurn(
       case 'ai':
         return `${label} : ${quoted(String(s.prompt ?? ''))}`
       case 'branch':
+      case 'attempt':
         return `${label} : ${(Array.isArray(s.paths) ? s.paths : [])
           .map((p) => String(record(p).label ?? ''))
           .join(' / ')}`
@@ -614,27 +625,38 @@ CE QUE TU REÇOIS (la charge utile) :
 
 UNE AUTOMATISATION (une action) :
 { "type": "automation", "target": "current" | "new", "label": "…", "description": "…", "enabled": true,
-  "trigger": { "kind": "record_created" | "record_updated" | "schedule" | "button", "table": "<name>", "fields": ["<colonnes surveillées par record_updated ; vide : tout changement>"],
+  "trigger": { "kind": "record_created" | "record_updated" | "record_deleted" | "record_matches" | "date_reached" | "schedule" | "button" | "webhook", "table": "<name>", "fields": ["<colonnes surveillées par record_updated ; vide : tout changement>"],
+               "date": { "field": "<colonne date ou date-heure>", "offset_days": <jours, -3 = trois jours avant>, "at": "HH:MM", "timezone": "Europe/Paris" },
                "schedule": { "every": "hour" | "day" | "week", "at": "HH:MM", "weekday": 1..7 (lundi = 1), "timezone": "Europe/Paris" } },
   "condition": "<filtre sur la ligne déclencheuse, ou null>",
   "steps": [ … ] }
-  — "schedule" seulement pour kind "schedule" (sans "table" ni "condition") ; "table" pour les autres.
+  — "schedule" seulement pour kind "schedule" (sans "table" ni "condition") ; "date" seulement pour "date_reached" ; "table" pour tous sauf "schedule" et "webhook" ;
+  — "record_deleted" : une ligne vient d'être supprimée ; on la cite telle qu'elle était, aucune étape n'agit sur "trigger" ;
+  — "record_matches" : une ligne créée ou modifiée ENTRE dans le filtre "condition" (obligatoire) ; elle ne repart qu'après en être sortie ;
+  — "date_reached" : la date d'une colonne arrive, décalée de "offset_days" jours, à "at" (relances, échéances, anniversaires) ;
+  — "webhook" : un service extérieur appelle l'adresse propre de l'automatisation ; pas de "table" ni de "condition" ; on cite ce qu'il a envoyé : {{trigger.<clé>}}.
 
 LES ÉTAPES ("steps"), dans l'ordre :
   { "kind": "update_record", "record": "trigger" | "<id d'une étape>", "values": { "<colonne>": "<valeur>" } } — modifier la ligne déclencheuse, ou celle qu'une étape a trouvée ou créée ;
   { "kind": "create_record", "table": "<name>", "values": { … } } ;
   { "kind": "find_record", "table": "<name>", "filter": "<filtre, vide : n'importe quelle ligne>", "sort": "<colonne>" ou "-<colonne>" } — la PREMIÈRE ligne qui répond ; rien trouvé : les étapes qui la modifient sont passées ;
   { "kind": "notify", "record": "trigger" | "<id>", "users": ["p1"], "user_field": "<colonne personne de cette ligne>", "message": "…" } — une notification dans basedb, qui ouvre la ligne ;
-  { "kind": "email", "record": "trigger" | "<id>" | null, "users": ["p1"], "user_field": "<colonne personne de cette ligne>", "email_field": "<colonne e-mail de cette ligne>", "addresses": ["<adresse écrite>"], "subject": "…", "message": "…" } — un courriel en texte simple, par le serveur d'envoi de l'instance ; au moins un destinataire, 20 au plus ; une réponse va à la personne qui possède l'automatisation ;
-  { "kind": "webhook", "url": "https://…", "method": "POST" | "PUT" | "PATCH" | "GET" | "DELETE", "headers": [{ "name": "…", "value": "…", "secret": false }], "body": null | "<corps composé>", "format": "json" | "form" | "text", "record": "trigger" | "<id>" | null } — une requête HTTPS vers un service ou une API ; "url" peut citer APRÈS l'hôte (https://api.exemple.fr/clients/{{e2.numero}}) ; "body": null envoie le JSON de l'automatisation (la ligne "record", ce que les étapes ont trouvé) ; un corps composé cite : en "json", une citation entre guillemets est du texte, hors guillemets une valeur ({"montant": {{montant}}}) ; en "form", une paire clé=valeur par ligne ; GET et DELETE n'ont pas de corps ; une clé d'API, un jeton : un en-tête { "name": "Authorization", "value": null, "secret": true } que la personne remplit elle-même dans l'éditeur — n'écris JAMAIS de secret, et garde tels quels ceux qui existent ;
+  { "kind": "email", "record": "trigger" | "<id>" | null, "users": ["p1"], "user_field": "<colonne personne de cette ligne>", "email_field": "<colonne e-mail de cette ligne>", "addresses": ["<adresse écrite>"], "subject": "…", "message": "<p>…</p>", "format": "html" } — un courriel par le serveur d'envoi de l'instance ; son message est du texte riche en HTML (<p>, <strong>, <em>, <ul>/<ol>/<li>, <a href>) qui cite comme un texte ; au moins un destinataire, 50 au plus ; options : "mode": "each" (un courriel par destinataire, défaut) | "together" (un seul courriel à tous), "cc": ["<adresse>"] (avec "together"), "reply_to": "<adresse ou citation>" (défaut : la personne qui possède l'automatisation), "attachments": [{ "step": "<id d'une étape document>" } | { "record": "trigger" | "<id>", "field": "<colonne fichier>" }] ;
+  { "kind": "webhook", "url": "https://…", "method": "POST" | "PUT" | "PATCH" | "GET" | "DELETE", "headers": [{ "name": "…", "value": "…", "secret": false }], "body": null | "<corps composé>", "format": "json" | "form" | "text", "record": "trigger" | "<id>" | null } — une requête HTTPS vers un service ou une API ; "url" peut citer APRÈS l'hôte (https://api.exemple.fr/clients/{{e2.numero}}) ; "body": null envoie le JSON de l'automatisation (la ligne "record", ce que les étapes ont trouvé) ; un corps composé cite : en "json", une citation entre guillemets est du texte, hors guillemets une valeur ({"montant": {{montant}}}) ; en "form", une paire clé=valeur par ligne ; GET et DELETE n'ont pas de corps ; une clé d'API, un jeton : un en-tête { "name": "Authorization", "value": null, "secret": true } que la personne remplit elle-même dans l'éditeur — n'écris JAMAIS de secret, et garde tels quels ceux qui existent ; "retries": 0..3 réessaie après une erreur réseau, un 429 ou un 5xx ;
   { "kind": "slack", "integration": "s1", "message": "…" } ;
   { "kind": "ai", "prompt": "<consigne citant ce qui précède>", "answer": "long_text" | "short_text" | "number" | "boolean" | "date" | "url" | "select", "options": ["<choix>", …] } — une réponse de l'IA, qui n'agit sur rien : les étapes suivantes la citent ;
-  { "kind": "for_each", "table": "<name>", "filter": "<filtre, vide : toutes les lignes>", "sort": "<colonne>" ou "-<colonne>", "limit": 1..200 (50 par défaut), "steps": [ … ] } — les étapes de "steps" une fois pour chaque ligne qui répond, dans l'ordre, jusqu'à la limite ; dedans, l'id de la boucle nomme la ligne du tour : {{e2.<colonne>}}, "record": "e2" pour la modifier ; après la boucle, {{e2.nombre}} = le nombre de lignes parcourues ; pas de boucle dans une boucle ;
-  { "kind": "branch", "paths": [ { "label": "…", "when": { "record": "trigger" | "<id>", "condition": "<filtre ; vide : la ligne existe>" }, "steps": [ … ] }, { "label": "Sinon", "when": null, "steps": [ … ] } ] } — le premier chemin qui tient est pris ; "Sinon" en dernier ; les chemins se rejoignent ensuite.
+  { "kind": "for_each", "table": "<name>", "filter": "<filtre, vide : toutes les lignes>", "sort": "<colonne>" ou "-<colonne>", "limit": 1..200 (50 par défaut), "steps": [ … ] } — les étapes de "steps" une fois pour chaque ligne qui répond, dans l'ordre, jusqu'à la limite ; dedans, l'id de la boucle nomme la ligne du tour : {{e2.<colonne>}}, "record": "e2" pour la modifier ; après la boucle, {{e2.nombre}} = le nombre de lignes parcourues ; pas de boucle dans une boucle ; "on_error": "stop" (défaut) | "continue" (une ligne en échec n'arrête pas les suivantes) ;
+  { "kind": "branch", "paths": [ { "label": "…", "when": { "record": "trigger" | "<id>", "condition": "<filtre ; vide : la ligne existe>" }, "steps": [ … ] }, { "label": "Sinon", "when": null, "steps": [ … ] } ] } — le premier chemin qui tient est pris ; "Sinon" en dernier ; les chemins se rejoignent ensuite. Un chemin peut aussi tester une VALEUR : "when": { "value": "{{e3.reponse}}", "op": "eq" | "ne" | "contains" | "not_contains" | "gt" | "gte" | "lt" | "lte" | "empty" | "not_empty", "operand": "<texte ou citation>" } — la réponse d'une étape ai, le statut d'un webhook, {{e2._id}} "empty" pour « aucune ligne trouvée » ;
+  { "kind": "delete_record", "record": "trigger" | "<id>" } — supprime la ligne (elle va à la corbeille) ;
+  { "kind": "aggregate", "table": "<name>", "filter": "<filtre>", "measures": [{ "fn": "sum" | "avg" | "min" | "max", "field": "<colonne nombre ou date>" }] } — compte les lignes du filtre et calcule jusqu'à 5 mesures ;
+  { "kind": "run_automation", "automation": "<id d'une automatisation de la base>", "record": "trigger" | "<id>" | null } — lance une autre automatisation, sur une ligne de sa table si son déclencheur en a une ;
+  { "kind": "document", "record": "trigger" | "<id>", "template": "<id d'un modèle de document de la table>" | null, "field": "<colonne fichier où ranger le PDF>" | null, "name": "<nom du fichier, peut citer>" } — un PDF de la ligne (null : la fiche avec tous les champs), à joindre ensuite à un courriel ;
+  { "kind": "wait", "duration": { "amount": 3, "unit": "minutes" | "hours" | "days" } } ou { "kind": "wait", "until": { "record": "trigger" | "<id>", "field": "<colonne date>", "offset_days": 0, "at": "09:00", "timezone": "Europe/Paris" } } — l'exécution attend (365 jours au plus), puis reprend en relisant ses lignes ; jamais dans une boucle ni dans un essai ;
+  { "kind": "attempt", "paths": [ { "label": "Essayer", "steps": [ … ] }, { "label": "En cas d’échec", "steps": [ … ] } ] } — si une étape du premier chemin échoue, l'exécution continue par le second (qui cite {{e4.erreur}}, {{e4.etape}}), puis après le bloc.
   — chaque étape a un "id" : GARDE ceux des étapes existantes (les citations en dépendent) ; n'en donne pas aux nouvelles, basedb les numérote (e1, e2…) dans l'ordre de lecture.
 
 CITER dans une valeur, un message, une consigne, un filtre :
-  {{<colonne>}} de la ligne déclencheuse, {{_id}}, {{_maintenant}} ; {{e2.<colonne>}}, {{e2._id}} de la ligne d'une étape ; {{e3.reponse}} la réponse d'une étape ai ; {{e4.statut}}, {{e4.reponse.<clé>}} d'un webhook ; {{e5.<colonne>}} la ligne du tour dans une boucle e5, {{e5.nombre}} après elle.
+  {{<colonne>}} de la ligne déclencheuse, {{_id}}, {{_maintenant}} ; {{e2.<colonne>}}, {{e2._id}} de la ligne d'une étape ; {{e3.reponse}} la réponse d'une étape ai ; {{e4.statut}}, {{e4.reponse.<clé>}} d'un webhook ; {{e5.<colonne>}} la ligne du tour dans une boucle e5, {{e5.nombre}} après elle ; {{e6.nombre}}, {{e6.somme.<colonne>}}, {{e6.moyenne.<colonne>}}, {{e6.min.<colonne>}}, {{e6.max.<colonne>}} d'un aggregate ; {{e7.erreur}}, {{e7.etape}} d'un attempt ; {{e8.nom}} d'un document ; {{trigger.<clé>}} de ce qu'a envoyé un webhook entrant.
   — une étape ne cite que les étapes passées AVANT elle sur tous les chemins : après une branch, ce que ses chemins ont fait ne se cite plus ;
   — une valeur faite d'une seule citation passe la valeur telle quelle (un lien, une personne, un choix, un nombre) ;
   — dans un filtre, une citation est une valeur : « projets_id eq {{projets_id}} », sans guillemets autour.
@@ -650,7 +672,9 @@ RÈGLES :
   — n'écris que dans des colonnes qui ne sont pas "writable": false ; une liste par la "value" ou le "label" d'un de ses choix ;
   — personnes et canaux par leur "ref", jamais inventés ; sans canal Slack, pas d'étape slack ; sans "mail", pas d'étape email ;
   — prévenir quelqu'un DE L'ÉQUIPE : notify ; écrire à l'extérieur (un client, un fournisseur, une adresse d'une colonne e-mail) : email ;
-  — une condition ne teste qu'une ligne : pour bifurquer sur la réponse d'une étape ai, l'écrire d'abord dans une colonne de la ligne, puis tester la ligne ;
+  — pour bifurquer sur la réponse d'une étape ai, d'un webhook, d'un aggregate : un chemin à test de valeur ; sur l'état d'une ligne : un chemin à filtre ;
+  — « trois jours après », « la veille de l'échéance » : une étape wait, ou un déclencheur date_reached quand le départ est la date elle-même ;
+  — un service qui peut échouer (webhook, courriel) dont l'échec ne doit pas tout arrêter : un attempt ;
   — expliquer une automatisation ou une exécution (« pourquoi a-t-elle échoué ? ») : réponds à partir de "automation" et "runs", sans action, sauf si une réparation est demandée ou évidente — propose-la alors ;
   — tu PROPOSES, la personne applique : ne dis jamais qu'une automatisation est créée ou modifiée — dis « je propose », « voici » ;
   — n'emploie que les tables, colonnes, choix, personnes et canaux de la charge utile ; n'invente rien ;

@@ -207,3 +207,32 @@ describe('the SMTP conversation', () => {
     expect(open.heard.some((l) => l.startsWith('AUTH'))).toBe(false)
   })
 })
+
+describe('a mail with copies and files', () => {
+  it('names the copies, and carries each file beside the message, its name in any script', () => {
+    const { data } = composeMail(
+      {
+        from: { address: 'basedb@exemple.fr' },
+        to: [{ address: 'compta@exemple.fr' }, { address: 'client@exemple.fr' }],
+        cc: [{ address: 'direction@exemple.fr' }],
+        subject: 'Devis',
+        text: 'Voici le devis.',
+        html: '<p>Voici le devis.</p>',
+        attachments: [
+          { name: 'Devis « été ».pdf', type: 'application/pdf', bytes: Buffer.from('%PDF-1.7') },
+          { name: 'notes', type: 'pas un type', bytes: Buffer.from('x') },
+        ],
+      },
+      { at: AT, domain: 'exemple.fr' },
+    )
+    expect(data).toContain('To: compta@exemple.fr,\r\n client@exemple.fr')
+    expect(data).toContain('Cc: direction@exemple.fr')
+    expect(data).toContain('Content-Type: multipart/mixed')
+    expect(data).toContain('Content-Type: multipart/alternative')
+    expect(data).toContain("filename*=UTF-8''Devis%20%C2%AB%20%C3%A9t%C3%A9%20%C2%BB.pdf")
+    expect(data).toContain('Content-Type: application/pdf; name="Devis _ _t_ _.pdf"')
+    expect(data).toContain('Content-Type: application/octet-stream')
+    expect(data).toContain(Buffer.from('%PDF-1.7').toString('base64'))
+    expect(data.split('\r\n').every((line) => line.length <= 998)).toBe(true)
+  })
+})

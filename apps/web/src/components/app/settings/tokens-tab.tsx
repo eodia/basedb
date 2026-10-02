@@ -2,7 +2,7 @@
 
 import { cancelled, useElevated } from '@/components/app/elevation'
 import { Refusal, SettingsSection, TabHeading } from '@/components/app/settings/section'
-import { doorsOf, stateOf } from '@/components/app/token-dialog'
+import { accessLabel, doorsOf, stateOf } from '@/components/app/token-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { type OwnApiToken, api } from '@/lib/api/client'
@@ -166,7 +166,7 @@ function TokenList({
               </span>
             </span>
             <Badge variant="secondary" className="shrink-0">
-              {token.access === 'write' ? $t('Lecture et écriture') : $t('Lecture seule')}
+              {accessLabel(token.access)}
             </Badge>
             {state === null ? (
               <Button

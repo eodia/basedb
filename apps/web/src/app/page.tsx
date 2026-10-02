@@ -1119,6 +1119,7 @@ export default function App() {
               onBack={() => void focusBase(base.name, 'open')}
               onChanged={() => refreshBase()}
               administers={me.isAdmin}
+              hasPassword={me.hasPassword}
               buildable={buildableTables(projects, base.name)}
             />
           )}
@@ -1454,6 +1455,7 @@ function SectionPanel({
   onBack,
   onChanged,
   administers,
+  hasPassword,
   buildable,
 }: {
   readonly section: Section
@@ -1462,6 +1464,7 @@ function SectionPanel({
   readonly onBack: () => void
   readonly onChanged: () => Promise<void>
   readonly administers: boolean
+  readonly hasPassword: boolean
   readonly buildable: ReadonlySet<string>
 }) {
   return (
@@ -1499,7 +1502,7 @@ function SectionPanel({
             buildable={buildable}
           />
         ) : (
-          <ApiDocs base={base} doc={doc} />
+          <ApiDocs base={base} doc={doc} hasPassword={hasPassword} />
         )}
       </div>
     </div>

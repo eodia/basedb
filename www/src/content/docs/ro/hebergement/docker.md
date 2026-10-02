@@ -29,8 +29,8 @@ Imaginea rulează sub utilizatorul `node`, pe Node 22, declară o verificare de 
 | Etichetă | Conținut |
 |---|---|
 | `latest` | ultima versiune publicată |
-| `0.5` | ultima versiune 0.5.x |
-| `0.5.1` | exact această versiune |
+| `0.6` | ultima versiune 0.6.x |
+| `0.6.0` | exact această versiune |
 
 ## Serviciile
 

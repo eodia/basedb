@@ -1564,6 +1564,20 @@ CREATE INDEX idx_automation_run_list ON _basedb.automation_run (automation_id, q
 
 Une **automatisation** porte son déclencheur en deux temps : `trigger_kind` et `table_id`, que le drain lit à chaque lot pour savoir quelles tables en ont, et `trigger`, les réglages qu'il n'a pas à interroger (champs surveillés, horloge). `trigger` et `actions` sont des `jsonb` validés par le noyau à l'écriture ; ils ne produisent aucun DDL et chaque champ ou table qu'ils citent est relu, droits compris, à l'exécution. `actions` porte le flux entier — les étapes, et dans une condition ses chemins et leurs étapes, chacune avec son identifiant (chapitre 17 §1.3) : un flux n'a pas demandé de colonne, et une automatisation enregistrée avant les flux se lit telle quelle. `owner_id` est la personne au nom de qui elle agit (chapitre 17 §2.2). Une **exécution** garde dans `steps` chaque étape par où elle est passée — son identifiant, son résultat, le chemin qu'a pris une condition, sa durée —, et `error_code` (un code du registre A23, recopié) ; elle est purgée après 30 jours (A24).
 
+La migration **0020** élargit ces tables (chapitre 17 §1.1, §1.10). `trigger_kind` accepte
+aussi `record_deleted`, `record_matches`, `date_reached` et `webhook`, sous une contrainte
+désormais nommée (`ck_automation_trigger_kind`) ; un webhook entrant n'a pas de table, comme
+une horloge. Son adresse secrète est gardée deux fois — son empreinte (`hook_hash`, unique)
+pour la retrouver, scellée par la clé d'instance (`hook_sealed`) pour la remontrer —, et
+`scanned_until` dit jusqu'où une date qui arrive a été cherchée. Une exécution peut être
+`waiting`, avec l'heure de sa reprise (`resume_at`, présente si et seulement si elle attend)
+et ce qu'elle tient (`state`) ; `payload` garde ce que le déclencheur apporte sans ligne à
+relire — le corps d'un appel entrant, une ligne telle qu'avant sa suppression — et `depth` la
+profondeur d'une automatisation lancée par une autre. `automation_match` liste les lignes
+qui satisfont le filtre d'une automatisation « entre dans un filtre ». La file des courriels
+(`mail_outbox`) gagne un corps HTML, des destinataires groupés (`also_to`), une copie (`cc`)
+et des pièces jointes (`attachments`, par leur clé dans le stockage des fichiers).
+
 ### Tableaux de bord
 
 ```sql

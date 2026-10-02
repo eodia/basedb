@@ -38,7 +38,7 @@ const HINTS: Readonly<Record<string, string>> = {
   TOKEN_SUSPENDED: REVOKED,
   TOKEN_READ_ONLY: 'This token reads only: create one with write access to write rows.',
   ADMIN_REQUIRED:
-    'A token may not do that: it reads and writes the rows of one base, and never deletes.',
+    'A token may not do that: it reads and writes the rows of one base, and deletes only if it was created to.',
   PERMISSION_DENIED: 'The person who created the token may not do that on this table.',
   ACTION_FORBIDDEN: 'The person who created the token may not do that on this table.',
   RESOURCE_NOT_FOUND: 'No such base, table or row — or the token does not open it.',

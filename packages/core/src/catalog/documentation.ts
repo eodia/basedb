@@ -344,10 +344,10 @@ export const DOCUMENTED_MCP_TOOLS: ReadonlyArray<{
   readonly name: string
   readonly summary: string
   /**
-   * What it needs: nothing, reading, creating or modifying rows — or proposing a change
-   * of structure, which a person then approves or refuses (chapter 09 §7).
+   * What it needs: nothing, reading, creating, modifying or deleting rows — or proposing a
+   * change of structure, which a person then approves or refuses (chapter 09 §7).
    */
-  readonly needs: 'none' | 'read' | 'create' | 'update' | 'propose'
+  readonly needs: 'none' | 'read' | 'create' | 'update' | 'delete' | 'propose'
 }> = [
   {
     name: 'whoami',
@@ -391,6 +391,16 @@ export const DOCUMENTED_MCP_TOOLS: ReadonlyArray<{
     name: 'update_record',
     summary: phrase('Modifier les champs nommés d’une ligne.'),
     needs: 'update',
+  },
+  {
+    name: 'delete_record',
+    summary: phrase('Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.'),
+    needs: 'delete',
+  },
+  {
+    name: 'restore_record',
+    summary: phrase('Ramener une ligne supprimée, sous son `_id`, depuis l’historique.'),
+    needs: 'create',
   },
   {
     name: 'propose_create_table',
@@ -462,6 +472,12 @@ function agentUsage(base: ProjectedBase, table: ProjectedTable, t: Say): string[
   }
   if (table.actions.includes('create')) rows.push([code('create_record'), t('Créer une ligne')])
   if (table.actions.includes('update')) rows.push([code('update_record'), t('Modifier une ligne')])
+  if (table.actions.includes('delete')) {
+    rows.push([code('delete_record'), t('Supprimer une ligne — avec un jeton créé pour supprimer')])
+  }
+  if (table.actions.includes('create')) {
+    rows.push([code('restore_record'), t('Ramener une ligne supprimée')])
+  }
 
   if (rows.length === 0) {
     lines.push(t('Aucun outil ne vous est ouvert sur cette table.'))
@@ -478,7 +494,7 @@ function agentUsage(base: ProjectedBase, table: ProjectedTable, t: Say): string[
     lines.push(
       '',
       t(
-        'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.',
+        'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.',
       ),
     )
   }
@@ -556,7 +572,7 @@ function agentSections(base: ProjectedBase, t: Say): DocSection[] {
     group: t(GROUP_MCP),
     markdown: [
       t(
-        'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.',
+        'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.',
       ),
       '',
       ...(base.agentsEnabled
@@ -575,7 +591,7 @@ function agentSections(base: ProjectedBase, t: Say): DocSection[] {
       ...(mintsTokens
         ? [
             t(
-              'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).',
+              'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).',
             ),
           ]
         : noTokenForYou(t)),
@@ -655,7 +671,7 @@ function agentSections(base: ProjectedBase, t: Say): DocSection[] {
         DOCUMENTED_MCP_TOOLS.map((tool) => [
           code(tool.name),
           t(tool.summary),
-          tool.needs === 'create' || tool.needs === 'update'
+          tool.needs === 'create' || tool.needs === 'update' || tool.needs === 'delete'
             ? t('oui')
             : tool.needs === 'propose'
               ? t('propose')
@@ -678,6 +694,9 @@ function agentSections(base: ProjectedBase, t: Say): DocSection[] {
       `- ${t(
         'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.',
       )}`,
+      `- ${t(
+        'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.',
+      )}`,
       '',
       `### ${t('Propositions de structure')}`,
       '',
@@ -695,7 +714,7 @@ function agentSections(base: ProjectedBase, t: Say): DocSection[] {
       `### ${t('Ce qui n’existe pas')}`,
       '',
       t(
-        'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.',
+        'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.',
       ),
       '',
       `### ${t('Bornes')}`,
@@ -720,7 +739,7 @@ function agentSections(base: ProjectedBase, t: Say): DocSection[] {
         '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.',
       )}`,
       `- ${t(
-        '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).',
+        '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).',
       )}`,
       `- ${
         base.agentsEnabled
@@ -1050,7 +1069,7 @@ export function toDocumentation(
       `### ${t('Jeton d’intégration')}`,
       '',
       t(
-        'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.',
+        'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.',
       ),
       '',
       ...(base.baseActions.includes('manage_tokens')

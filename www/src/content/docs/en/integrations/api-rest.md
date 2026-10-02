@@ -13,12 +13,15 @@ the physical names — the ones you also read in SQL.
 
 ## A token
 
-In the interface, the base’s **⋯** menu → **API and agents** → **API and MCP tokens…**: there
-you create an **integration token** limited to that base, read-only by default, after
-confirming your password. It is shown only once; put it in an environment variable.
+In the interface, the base’s **⋯** menu → **API and agents** → **API and MCP tokens…**: whoever
+has the **Manage** level on the base, or on its project, creates an **integration token** there,
+limited to that base, read-only by default, after confirming their password — an account
+without a password, which signs in through an identity provider, cannot do so yet. It is shown
+only once; put it in an environment variable.
 
-A token reads, creates and updates if it was created with write access, **never deletes**, and
-never has more permissions than the person who created it.
+A token reads; it creates and updates if it was created with write access, and **deletes if it
+was created for that** — “Read, write and delete” rights, except a row that a cascading relation
+would take along with others. It never has more permissions than the person who created it.
 
 ```bash
 export BASEDB_TOKEN=bdb_…

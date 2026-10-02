@@ -1,6 +1,6 @@
 ---
 title: Automatisierungen
-description: Wenn sich eine Zeile ändert, zu fester Uhrzeit oder per Klick – bearbeiten, anlegen, suchen, auf jeder Zeile wiederholen, verzweigen, die KI fragen, benachrichtigen, eine E-Mail senden, einen Dienst aufrufen, in Slack schreiben.
+description: Wenn sich eine Zeile ändert, in einen Filter eintritt oder verschwindet, wenn ein Datum eintritt, zu fester Uhrzeit, per Klick oder durch einen Aufruf – bearbeiten, anlegen, suchen, zählen, wiederholen, verzweigen, warten, versuchen, die KI fragen, ein PDF erstellen, benachrichtigen, eine E-Mail senden, einen Dienst aufrufen.
 ---
 
 Eine Automatisierung sagt **wann**, **falls** und **dann**: Wenn eine Aufgabe auf „Fait“ wechselt,
@@ -8,7 +8,8 @@ die Uhrzeit festhalten; wenn eine negative Bewertung eingeht, die Verantwortlich
 und in Slack schreiben; jeden Montag um 9 Uhr die Zeile für das Teammeeting anlegen. Und wenn eine
 Aktion nicht genügt, folgt sie einem **Ablauf**: eine Zeile suchen, je nach deren Inhalt den einen
 oder anderen Zweig nehmen, Schritte auf jeder Zeile wiederholen, die einem Filter entspricht, in
-einem Schritt wiederverwenden, was ein vorheriger Schritt gefunden oder geschrieben hat.
+einem Schritt wiederverwenden, was ein vorheriger Schritt gefunden oder geschrieben hat, drei Tage
+vor einer Mahnung **warten**, ein **PDF** als Anhang senden.
 
 Sie öffnen sich über **Automatisierungen** im Block der geöffneten Datenbank unten in der
 Seitenleiste und erfordern die Stufe **Verwalten**.
@@ -18,8 +19,9 @@ Seitenleiste und erfordern die Stufe **Verwalten**.
 ## Der Ablauf
 
 Der Ablauf wird von oben nach unten gezeichnet: der Auslöser, dann jeder Schritt. Ein **+** auf
-einer Linie fügt an dieser Stelle einen Schritt hinzu; eine Karte öffnet ihre Einstellungen
-rechts. Eine einfache Automatisierung – ein Auslöser und eine Aktion – passt auf zwei Karten und
+einer Linie öffnet die Liste der Schritte, nach Kategorie geordnet – Zeilen, Kommunizieren,
+Dokumente, KI, Logik – mit einer Suche, und fügt den gewählten an dieser Stelle hinzu; eine
+Karte öffnet ihre Einstellungen rechts. Eine einfache Automatisierung – ein Auslöser und eine Aktion – passt auf zwei Karten und
 wird eingestellt wie bisher.
 
 ## Wann
@@ -30,6 +32,10 @@ wird eingestellt wie bisher.
 | **Eine Zeile wird geändert** | die Tabelle und bei Bedarf nur die zu überwachenden Felder |
 | **Zu fester Uhrzeit** | stündlich, täglich oder wöchentlich, zur gewählten Uhrzeit und in der gewählten Zeitzone |
 | **Klick auf eine Schaltfläche** | ein [Feld Schaltfläche](/basedb/de/fonctionnalites/tables-et-champs/#schaltfläche) der Tabelle |
+| **Eine Zeile wird gelöscht** | die Tabelle; die Schritte zitieren die Zeile, wie sie war |
+| **Eine Zeile tritt in einen Filter ein** | die Tabelle und der Filter: Die Automatisierung startet, wenn eine Zeile eintritt, und erst wieder, nachdem sie ihn verlassen hat – „eine Rechnung wird überfällig“, nicht „eine überfällige Rechnung wird geändert“ |
+| **Ein Datum tritt ein** | ein Datumsfeld der Tabelle, ein Versatz – drei Tage vorher, am selben Tag, eine Woche danach – und die Uhrzeit: Fristerinnerungen, Vertragsjubiläen |
+| **Ein Webhook wird empfangen** | nichts: Die Automatisierung erhält ihre eigene Adresse, die eine andere Software aufruft ([Details](#ein-dienst-der-basedb-aufruft)) |
 
 Ein Auslöser auf Zeilen sieht **alle** Schreibvorgänge: die Oberfläche, die API, einen Agenten,
 ein freigegebenes Formular und sogar direktes SQL – Automatisierungen gehen vom Verlauf aus, der
@@ -44,7 +50,8 @@ sagt das.
 
 ## Dann
 
-Bis zu dreißig Schritte, der Reihe nach; der erste, der fehlschlägt, stoppt die folgenden.
+Bis zu vierzig Schritte, der Reihe nach; der erste, der fehlschlägt, stoppt die folgenden – außer
+in einem Block **Versuchen** ([Details](#versuchen)).
 
 | Schritt | Was er tut |
 |---|---|
@@ -58,10 +65,21 @@ Bis zu dreißig Schritte, der Reihe nach; der erste, der fehlschlägt, stoppt di
 | **KI fragen** | eine Antwort des [KI-Anbieters](/basedb/de/fonctionnalites/ia/) auf eine Anweisung, die die Zeile und die vorherigen Schritte zitiert – verfassen, zusammenfassen, einordnen –, gelesen als Text, Zahl, Ja oder Nein, Datum oder Auswahl aus einer Liste |
 | **Bedingung** | mehrere Zweige: Der erste, dessen Bedingung erfüllt ist, wird genommen, „Sonst“, wenn keiner es ist; die Zweige laufen danach wieder zusammen |
 | **Für jede Zeile** | die Schritte, die sie enthält, einmal für jede Zeile einer Tabelle, die einem Filter entspricht ([Details](#für-jede-zeile)) |
+| **Zeile löschen** | die Zeile, die ausgelöst hat, oder die, die ein Schritt gefunden hat – sie wandert in den Papierkorb |
+| **Zählen und addieren** | die Anzahl der Zeilen eines Filters, ihre Summe, ihren Durchschnitt, ihr Minimum oder Maximum, um sie anschließend zu zitieren oder zu testen |
+| **PDF erstellen** | das [Dokument](/basedb/de/fonctionnalites/documents/) einer Zeile, abgelegt in einem Feld Datei oder einer E-Mail angehängt |
+| **Warten** | eine Dauer, oder bis zum Datum eines Feldes ([Details](#warten)) |
+| **Versuchen** | Schritte, und weitere, falls einer von ihnen fehlschlägt ([Details](#versuchen)) |
+| **Eine Automatisierung starten** | eine andere Automatisierung der Datenbank, auf einer Zeile ihrer Tabelle |
 
 Eine Suche, die nichts findet, stoppt den Ablauf nicht: Die Schritte, die ihre Zeile bearbeiten
-sollten, werden übersprungen. Um in diesem Fall etwas anderes zu tun, prüft das eine Bedingung –
-ein Zweig mit leerem Filter wird genommen, sobald die Suche etwas gefunden hat.
+sollten, werden übersprungen. Um in diesem Fall etwas anderes zu tun, fügt **Wenn keine Zeile
+gefunden wird…**, unter der Suche, eine Bedingung hinzu, die das prüft.
+
+Eine **Bedingung** prüft eine Zeile mit einem Filter, oder einen **Wert**: die Antwort der KI,
+den Code eines Webhooks, eine Summe – „`{{e2.reponse}}` ist gleich Urgent“, „`{{e3.somme.montant}}`
+ist größer oder gleich 1000“. Zahlen werden zahlenweise verglichen, Texte ohne Rücksicht auf
+Akzente oder Groß- und Kleinschreibung.
 
 ## Für jede Zeile
 
@@ -82,6 +100,64 @@ durchläuft `facture eq {{_id}}` ihre Detailzeilen.
 Schließen Sie im Filter die bereits bearbeiteten aus – ein Kästchen „gemahnt“, ein Datum –, um sie
 im Lauf der Ausführungen alle zu bearbeiten. Eine Schleife enthält keine andere Schleife, und eine
 Ausführung endet nach spätestens zwei Minuten.
+
+## Warten
+
+Der Schritt **Warten** setzt die Ausführung in Pause – drei Stunden, zwei Tage – oder bis zum
+Datum eines Feldes einer Zeile, mit einem Versatz und einer Uhrzeit: „am Vortag der Frist, um
+9 Uhr“. Die Ausführung erscheint als **Pausiert** im Reiter **Ausführungen**, mit dem Datum
+ihrer Fortsetzung.
+
+Sie setzt sich beim nächsten Schritt fort, indem sie ihre Zeilen **neu einliest**: „drei Tage
+nach dem Versand des Angebots, falls es immer noch nicht angenommen ist, nachfassen“ schreibt
+sich als **Warten** 3 Tage, dann eine Bedingung auf den Status des Angebots, wie er an diesem
+Tag ist. Die Automatisierung zu deaktivieren stoppt die pausierten Ausführungen; ein Warten
+lässt sich weder in einer Schleife noch in einem Block **Versuchen** platzieren, und dauert
+höchstens ein Jahr.
+
+## Versuchen
+
+Der Block **Versuchen** hat zwei Zweige. Der erste wird ausgeführt; schlägt einer seiner
+Schritte fehl, läuft der Ablauf mit dem zweiten weiter, **Bei einem Fehlschlag**, der den
+Fehler zitiert – `{{e4.erreur}}`, den Code, und `{{e4.etape}}`, den Schritt –, und setzt sich
+danach nach dem Block fort. So lässt sich jemand benachrichtigen, wenn ein Dienst nicht
+antwortet, ohne alles zu stoppen.
+
+Einfacher gesagt: Ein Webhook kann sich nach einem Ausfall des Dienstes bis zu drei Mal selbst
+**erneut versuchen**, und eine Schleife kann trotz einer fehlgeschlagenen Zeile **weiterlaufen**.
+
+## Ein PDF und eine E-Mail
+
+**PDF erstellen** erzeugt das Dokument einer Zeile – mit einer
+[Dokumentvorlage](/basedb/de/fonctionnalites/documents/) ihrer Tabelle, oder dem Datenblatt
+all ihrer Felder – und kann es in einem Feld Datei ablegen. **E-Mail senden** kann es
+anschließend anhängen, zusammen mit den Dateien eines Feldes Datei oder Bild:
+
+- eine E-Mail **an jeden**, oder **eine einzige an alle**, mit Empfängern in **Cc**;
+- eine Nachricht in **formatiertem Text** – fett, Listen, Links – die die Zeile zitiert;
+- eine **Antwortadresse**: standardmäßig Ihre, oder die eines Feldes E-Mail;
+- bis zu 50 Empfängern, 10 Anhängen und 15 MB.
+
+„Wenn ein Angebot auf Accepté wechselt, die Rechnung an den Kunden senden, die Buchhaltung in
+Cc“: **Eine Zeile tritt in einen Filter ein** `statut eq "accepte"`, **PDF erstellen** mit der
+Vorlage Rechnung, **E-Mail senden** an das Feld E-Mail des Kunden, die Rechnung angehängt.
+
+## Ein Dienst, der basedb aufruft
+
+Mit dem Auslöser **Ein Webhook wird empfangen** erhält die Automatisierung ihre eigene geheime
+Adresse, die an die Software weitergegeben wird, die sie starten soll – einen Onlineshop, ein
+externes Formular, ein Automatisierungswerkzeug:
+
+```bash
+curl -X POST "https://basedb.example.com/api/v1/hooks/<secret>" \
+  -H "content-type: application/json" \
+  -d '{"client": {"nom": "Dupont"}, "total": 120}'
+```
+
+Die Schritte zitieren, was er gesendet hat: `{{trigger.client.nom}}`, `{{trigger.total}}`; ein
+Formular liest sich ebenso, ein Text über `{{trigger.texte}}`. Die Adresse lässt sich aus den
+Einstellungen des Auslösers kopieren; **Adresse ändern** ersetzt sie, und die alte antwortet
+sofort nicht mehr. Ein Aufruf erhält `202`, die Automatisierung läuft innerhalb einer Sekunde.
 
 ## Einen Dienst aufrufen
 
@@ -141,6 +217,11 @@ jedem Text:
 - `{{e4.reponse}}`: die Antwort des KI-Schritts `e4`;
 - `{{e5.client}}` in der Schleife `e5`, die Zeile der Runde; `{{e5.nombre}}` danach, die Anzahl
   der durchlaufenen Zeilen;
+- `{{e6.nombre}}`, `{{e6.somme.montant}}`, `{{e6.moyenne.montant}}`, `{{e6.max.echeance}}`: was
+  der Schritt `e6` gezählt hat;
+- `{{e7.erreur}}`, `{{e7.etape}}`: der Fehler, den der Block **Versuchen** `e7` aufgefangen hat;
+- `{{e8.nom}}`: der Name des PDFs des Schritts `e8`;
+- `{{trigger.client.nom}}`: was ein eingehender Webhook gesendet hat;
 - `{{_maintenant}}`: der Zeitpunkt der Ausführung.
 
 Ein Wert, der aus einem einzigen Zitat besteht, übergibt den Wert selbst: eine Verknüpfung, eine
@@ -192,19 +273,17 @@ und ihre Schreibvorgänge lassen sich wie alle anderen rückgängig machen.
 ## Grenzen
 
 - Was eine Automatisierung schreibt, löst keine andere aus: Was aufeinander folgen soll, gehört
-  in einen einzigen Ablauf.
+  in einen einzigen Ablauf, oder über **Eine Automatisierung starten**, höchstens drei Ebenen tief.
 - Eine Suche liefert eine Zeile, die erste; eine Schleife durchläuft höchstens 200 pro
-  Ausführung, und der erste fehlschlagende Schritt bricht sie ab. Kein Warten („drei Tage
-  danach“).
-- Kein Skript. Eine E-Mail geht als reiner Text hinaus, eine pro Empfänger – höchstens zwanzig
-  pro Schritt –, über den [E-Mail-Versand](/basedb/de/hebergement/variables/#e-mails) der
-  Instanz; eine Antwort erreicht die Person, der die Automatisierung gehört.
-- Eine Bedingung prüft eine Zeile: Um je nach KI-Antwort einen Zweig zu nehmen, schreiben Sie
-  diese zuerst in ein Feld der Zeile.
+  Ausführung. Eine Ausführung dauert höchstens zwei Minuten, Wartezeiten nicht eingerechnet.
+- Kein Skript. Eine E-Mail wird über den [E-Mail-Versand](/basedb/de/hebergement/variables/#e-mails)
+  der Instanz verschickt.
 - Eine [Datenbankvorlage](/basedb/de/fonctionnalites/modeles/) übernimmt nur Automatisierungen
   ohne Suche, Schleife, Bedingung oder KI-Schritt, und nie einen Webhook.
 - Ein Webhook folgt keiner Weiterleitung und wartet höchstens 10 Sekunden; eine Antwort außer 2xx
-  lässt den Schritt fehlschlagen.
+  lässt den Schritt fehlschlagen, nach seinen Neuversuchen.
+- Ein eintretendes Datum wird jede Minute gesucht; es zählen nur die, die nach dem Speichern der
+  Automatisierung eintreten.
 - 100 Ausführungen pro Stunde und pro Automatisierung; ein verpasster Zeitpunkt wird nur einmal
   nachgeholt.
 - Die Verzögerung zwischen Schreibvorgang und Aktion liegt im Bereich einer Sekunde.

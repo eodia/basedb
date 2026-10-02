@@ -8,10 +8,12 @@ import type { Pools } from '../runtime/pool.js'
 import type { RequestContext } from '../tx/context.js'
 import { withTransaction } from '../tx/context.js'
 import { findFonts } from './fonts.js'
+import { fieldImage } from './images.js'
 import { type LaidBlock, type LaidDocument, layoutPdf } from './layout.js'
 import {
   type DocumentBlock,
   type DocumentSpec,
+  type ImageSource,
   MAX_ROWS_LISTED,
   SHEET,
   normalizeSpec,
@@ -382,6 +384,35 @@ export async function prepareDocument(
   const display =
     (named === undefined ? '' : format(row[named.name], named)) || String(row._id).slice(0, 8)
   const label = template?.label ?? own.label
+  const cite = (text: string, html = true) =>
+    resolve(text, row, fields, known(own.id), format, html)
+
+  // The pictures: those sent with the template, and those of the row's image fields — a
+  // field the reader may not read is not in the row, and gives none.
+  const sources: ImageSource[] = []
+  if (spec.header.show !== 'none' && spec.header.logo !== null) sources.push(spec.header.logo)
+  const visit = (block: DocumentBlock) => {
+    if (block.kind === 'image') sources.push(block.source)
+    if (block.kind === 'columns') for (const column of block.columns) column.forEach(visit)
+  }
+  spec.blocks.forEach(visit)
+  const pictures = new Map<string, Buffer | null>()
+  for (const source of sources) {
+    if (source.kind !== 'field' || pictures.has(source.field)) continue
+    const field = fields.get(source.field)
+    pictures.set(
+      source.field,
+      field?.kind === 'image'
+        ? await fieldImage(pools, request.tableId, source.field, row[source.field])
+        : null,
+    )
+  }
+  const picture = (source: ImageSource | null): Buffer | null => {
+    if (source === null) return null
+    if (source.kind === 'field') return pictures.get(source.field) ?? null
+    const comma = source.data.indexOf(',')
+    return comma < 0 ? null : Buffer.from(source.data.slice(comma + 1), 'base64')
+  }
 
   const blocks: LaidBlock[] = []
   if (template === null) blocks.push({ kind: 'html', html: `<h1>${escapeHtml(display)}</h1>` })
@@ -395,15 +426,24 @@ export async function prepareDocument(
       case 'text':
         return block.html === ''
           ? null
-          : { kind: 'html', html: resolve(block.html, row, fields, known(own.id), format, true) }
+          : {
+              kind: 'html',
+              html: cite(block.html),
+              align: block.align,
+              size: block.size,
+              style: block.style,
+            }
       case 'fields': {
         const names = block.fields.length === 0 ? [...fields.keys()] : block.fields
         const rows = names.flatMap((name) => {
           const field = fields.get(name)
           if (field === undefined || field.kind === 'button') return []
-          return [{ label: field.label, value: format(row[name], field) }]
+          const value = format(row[name], field)
+          return block.hide_empty && value === '' ? [] : [{ label: field.label, value }]
         })
-        return rows.length === 0 ? null : { kind: 'fields', rows }
+        return rows.length === 0
+          ? null
+          : { kind: 'fields', rows, columns: block.columns, labels: block.labels }
       }
       case 'rows': {
         const found = listed.get(i)
@@ -429,8 +469,13 @@ export async function prepareDocument(
               })
         return {
           kind: 'table',
-          title: block.title,
-          columns: columns.map((f) => ({ label: f.label, numeric: numeric(f) })),
+          title: cite(block.title, false),
+          columns: columns.map((f) => ({
+            label: block.headers[f.name] ?? f.label,
+            numeric: numeric(f),
+            ...(block.align[f.name] === undefined ? {} : { align: block.align[f.name] }),
+            width: block.widths[f.name] ?? null,
+          })),
           rows: found.rows.map((r) => columns.map((f) => format(r[f.name], f))),
           // The first column says what the last row is, when it sums nothing itself.
           totals:
@@ -438,7 +483,49 @@ export async function prepareDocument(
               ? null
               : totals.map((t, c) => (c === 0 && t === null ? (TOTAL[spec.locale] ?? 'Total') : t)),
           more: found.more ? `… ${MAX_ROWS_LISTED}+` : null,
+          style: block.style,
+          zebra: block.zebra,
         }
+      }
+      case 'image': {
+        const data = picture(block.source)
+        return data === null
+          ? null
+          : { kind: 'image', data, width: block.width, align: block.align }
+      }
+      case 'title': {
+        const text = cite(block.text, false)
+        const subtitle = cite(block.subtitle, false)
+        return text === '' && subtitle === ''
+          ? null
+          : {
+              kind: 'title',
+              text,
+              subtitle,
+              style: block.style,
+              align: block.align,
+              size: block.size,
+            }
+      }
+      case 'divider':
+        return {
+          kind: 'divider',
+          color: block.color,
+          thickness: block.thickness,
+          width: block.width,
+        }
+      case 'spacer':
+        return { kind: 'spacer', height: block.height }
+      case 'columns': {
+        const columns = block.columns.map((column) =>
+          column.flatMap((inner) => {
+            const laid = layBlock(inner, -1)
+            return laid === null ? [] : [laid]
+          }),
+        )
+        return columns.every((c) => c.length === 0)
+          ? null
+          : { kind: 'columns', widths: block.widths, columns }
       }
       case 'break':
         return { kind: 'break' }
@@ -450,7 +537,24 @@ export async function prepareDocument(
       title: `${label} — ${display}`,
       locale: spec.locale,
       page: spec.page,
-      footer: resolve(spec.footer, row, fields, known(own.id), format, false),
+      theme: spec.theme,
+      header:
+        spec.header.show === 'none'
+          ? null
+          : {
+              show: spec.header.show,
+              logo: picture(spec.header.logo),
+              logoWidth: spec.header.logo_width,
+              left: cite(spec.header.left),
+              right: cite(spec.header.right),
+              rule: spec.header.rule,
+            },
+      footer: {
+        html: cite(spec.footer.html),
+        align: spec.footer.align,
+        pageNumbers: spec.footer.page_numbers,
+        rule: spec.footer.rule,
+      },
       pageLabel: (p, n) => `${p} / ${n}`,
       blocks,
     },

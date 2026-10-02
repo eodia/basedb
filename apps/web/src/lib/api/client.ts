@@ -970,23 +970,140 @@ export type DocumentRowsSource =
   /** The rows a multiple link of this row names. */
   | { readonly kind: 'outgoing'; readonly field: string }
 
+export type DocumentAlign = 'left' | 'center' | 'right'
+export type DocumentFace = 'sans' | 'serif'
+
+/** A picture: sent with the template (a PNG or JPEG `data:` address), or a row's image field. */
+export type DocumentImageSource =
+  | { readonly kind: 'upload'; readonly data: string }
+  | { readonly kind: 'field'; readonly field: string }
+
+/** Colours, faces, sizes and margins of a document (chapter 21 §1.1). */
+export interface DocumentTheme {
+  readonly accent: string
+  readonly text: string
+  readonly font: DocumentFace
+  readonly title_font: DocumentFace
+  /** Points, 8 to 14. */
+  readonly size: number
+  /** Millimetres, 8 to 40. */
+  readonly margin: number
+  readonly titles: 'plain' | 'accent' | 'rule'
+  readonly border: 'none' | 'line' | 'double'
+}
+
+export interface DocumentHeader {
+  readonly show: 'none' | 'first' | 'every'
+  readonly logo: DocumentImageSource | null
+  /** Millimetres. */
+  readonly logo_width: number
+  readonly left: string
+  readonly right: string
+  readonly rule: boolean
+}
+
+export interface DocumentFooter {
+  readonly html: string
+  readonly align: 'left' | 'center'
+  readonly page_numbers: boolean
+  readonly rule: boolean
+}
+
+export interface DocumentTextBlock {
+  readonly kind: 'text'
+  readonly html: string
+  readonly align: DocumentAlign | 'justify'
+  readonly size: 'small' | 'normal' | 'large'
+  readonly style: 'plain' | 'tint' | 'border' | 'bar'
+}
+
+/** The row's fields, by name; none: every field the reader reads. */
+export interface DocumentFieldsBlock {
+  readonly kind: 'fields'
+  readonly fields: readonly string[]
+  readonly columns: 1 | 2 | 3
+  readonly labels: 'beside' | 'above' | 'summary'
+  readonly hide_empty: boolean
+}
+
+export interface DocumentRowsBlock {
+  readonly kind: 'rows'
+  readonly title: string
+  readonly source: DocumentRowsSource
+  readonly columns: readonly string[]
+  readonly totals: readonly string[]
+  readonly style: 'light' | 'accent' | 'lines'
+  readonly zebra: boolean
+  readonly headers: Readonly<Record<string, string>>
+  /** Percent of the table's width. */
+  readonly widths: Readonly<Record<string, number>>
+  readonly align: Readonly<Record<string, DocumentAlign>>
+}
+
+export interface DocumentImageBlock {
+  readonly kind: 'image'
+  readonly source: DocumentImageSource
+  /** Percent of the width it is set in. */
+  readonly width: number
+  readonly align: DocumentAlign
+}
+
+export interface DocumentTitleBlock {
+  readonly kind: 'title'
+  readonly text: string
+  readonly subtitle: string
+  readonly style: 'plain' | 'accent' | 'underline' | 'band' | 'bleed'
+  readonly align: DocumentAlign
+  readonly size: 'medium' | 'large' | 'huge'
+}
+
+export interface DocumentDividerBlock {
+  readonly kind: 'divider'
+  readonly color: 'accent' | 'light' | 'text'
+  /** Points. */
+  readonly thickness: number
+  /** Percent of the width it is set in, centred. */
+  readonly width: number
+}
+
+export interface DocumentSpacerBlock {
+  readonly kind: 'spacer'
+  /** Millimetres. */
+  readonly height: number
+}
+
+/** What a column of a columns block holds. */
+export type DocumentColumnBlock =
+  | DocumentTextBlock
+  | DocumentFieldsBlock
+  | DocumentImageBlock
+  | DocumentTitleBlock
+  | DocumentDividerBlock
+  | DocumentSpacerBlock
+
+export interface DocumentColumnsBlock {
+  readonly kind: 'columns'
+  /** Relative widths, one per column. */
+  readonly widths: readonly number[]
+  readonly columns: ReadonlyArray<readonly DocumentColumnBlock[]>
+}
+
 export type DocumentBlock =
-  | { readonly kind: 'text'; readonly html: string }
-  /** The row's fields, by name; none: every field the reader reads. */
-  | { readonly kind: 'fields'; readonly fields: readonly string[] }
-  | {
-      readonly kind: 'rows'
-      readonly title: string
-      readonly source: DocumentRowsSource
-      readonly columns: readonly string[]
-      readonly totals: readonly string[]
-    }
+  | DocumentColumnBlock
+  | DocumentRowsBlock
+  | DocumentColumnsBlock
   | { readonly kind: 'break' }
 
 export interface DocumentSpec {
-  readonly page: { readonly size: 'A4' | 'LETTER'; readonly orientation: 'portrait' | 'landscape' }
+  readonly page: {
+    readonly size: 'A4' | 'LETTER'
+    readonly orientation: 'portrait' | 'landscape'
+    readonly valign: 'top' | 'center'
+  }
   readonly locale: Locale
-  readonly footer: string
+  readonly theme: DocumentTheme
+  readonly header: DocumentHeader
+  readonly footer: DocumentFooter
   readonly blocks: readonly DocumentBlock[]
 }
 
@@ -1248,13 +1365,16 @@ export interface Migration {
 export type TokenSurface = 'rest' | 'mcp'
 
 /** An integration token as the administration shows it: never its secret. */
+/** What a token may do on its base's rows: read; read and write; or all that, and delete. */
+export type TokenAccess = 'read' | 'write' | 'delete'
+
 export interface ApiToken {
   readonly id: string
   readonly label: string
   /** The eight characters after `bdb_`, enough to recognize a token. */
   readonly prefix: string
   readonly base_id: string | null
-  readonly access: 'read' | 'write'
+  readonly access: TokenAccess
   readonly surfaces: readonly string[]
   readonly created_at: string
   /** `null`: no expiry — the token lives until it is revoked. */
@@ -1716,7 +1836,15 @@ export interface ButtonConfig {
   readonly automation: string | null
 }
 
-export type AutomationTriggerKind = 'record_created' | 'record_updated' | 'schedule' | 'button'
+export type AutomationTriggerKind =
+  | 'record_created'
+  | 'record_updated'
+  | 'schedule'
+  | 'button'
+  | 'record_deleted'
+  | 'record_matches'
+  | 'date_reached'
+  | 'webhook'
 
 export interface AutomationSchedule {
   readonly every: 'hour' | 'day' | 'week'
@@ -1724,6 +1852,44 @@ export interface AutomationSchedule {
   readonly weekday: number
   readonly timezone: string
 }
+
+/**
+ * The date a `date_reached` trigger waits for: a `date` or `datetime` field of the row,
+ * moved by days (−3: three days before), at a time of day — ignored for a datetime —, in
+ * a time zone.
+ */
+export interface AutomationDate {
+  readonly field: string
+  readonly offset_days: number
+  readonly at: string
+  readonly timezone: string
+}
+
+/** How a branch path compares a value — a text that may cite — with another. */
+export type AutomationValueOp =
+  | 'eq'
+  | 'ne'
+  | 'contains'
+  | 'not_contains'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'empty'
+  | 'not_empty'
+
+/** What an aggregate step computes over the rows it counts. */
+export interface AutomationMeasure {
+  readonly fn: 'sum' | 'avg' | 'min' | 'max'
+  readonly field: string
+}
+
+/** A mail's attachment: the PDF of a document step before it, or a file field of a row. */
+export type AutomationAttachment =
+  | { readonly step: string }
+  | { readonly record: string; readonly field: string }
+
+export type AutomationWaitUnit = 'minutes' | 'hours' | 'days'
 
 export type AutomationHttpMethod = 'POST' | 'PUT' | 'PATCH' | 'GET' | 'DELETE'
 
@@ -1785,6 +1951,15 @@ export type AutomationStep =
       readonly addresses: readonly string[]
       readonly subject: string
       readonly message: string
+      /** One mail per recipient (`each`, when absent), or one to all, who see each other. */
+      readonly mode?: 'each' | 'together'
+      /** In copy — a mail to all together only. */
+      readonly cc?: readonly string[]
+      /** An address or a citation; `null`: the automation's owner. */
+      readonly reply_to?: string | null
+      /** `html`: the message is the app's rich text; plain text when absent. */
+      readonly format?: 'text' | 'html'
+      readonly attachments?: readonly AutomationAttachment[]
     }
   | {
       readonly id?: string
@@ -1797,6 +1972,8 @@ export type AutomationStep =
       /** Composed, citing what came before; `null`: the automation's own JSON. */
       readonly body?: string | null
       readonly format?: AutomationBodyFormat
+      /** Tries again after a network error, a 429 or a 5xx: 0 to 3, none when absent. */
+      readonly retries?: number
     }
   | {
       readonly id?: string
@@ -1807,8 +1984,62 @@ export type AutomationStep =
       readonly sort: string | null
       /** The rows gone through at most; 50 when absent. */
       readonly limit?: number
+      /** A row whose step fails stops the run (`stop`, when absent) or is passed. */
+      readonly on_error?: 'stop' | 'continue'
       /** Run once per row, which they cite by the loop's identifier. */
       readonly steps: readonly AutomationStep[]
+    }
+  | {
+      readonly id?: string
+      readonly kind: 'delete_record'
+      /** `trigger`, or the step whose row goes to the trash. */
+      readonly record: string
+    }
+  | {
+      readonly id?: string
+      readonly kind: 'aggregate'
+      readonly table: string
+      /** May cite; empty: every row. */
+      readonly filter: string
+      readonly measures: readonly AutomationMeasure[]
+    }
+  | {
+      readonly id?: string
+      readonly kind: 'run_automation'
+      /** Another automation of the base. */
+      readonly automation: string
+      /** The row it runs on, when its trigger has a table; `null` otherwise. */
+      readonly record: string | null
+    }
+  | {
+      readonly id?: string
+      readonly kind: 'document'
+      readonly record: string
+      /** A document template of the row's table; `null`: the sheet of every field. */
+      readonly template: string | null
+      /** A file field of that table the PDF is added to, or `null`. */
+      readonly field: string | null
+      /** The file's name, which may cite; empty: the template's label and the row's. */
+      readonly name: string
+    }
+  | {
+      readonly id?: string
+      readonly kind: 'wait'
+      /** Exactly one of `duration` and `until`. */
+      readonly duration: { readonly amount: number; readonly unit: AutomationWaitUnit } | null
+      readonly until: {
+        readonly record: string
+        readonly field: string
+        readonly offset_days: number
+        readonly at: string
+        readonly timezone: string
+      } | null
+    }
+  | {
+      readonly id?: string
+      readonly kind: 'attempt'
+      /** Always two: the steps tried, and those run when one of them fails. */
+      readonly paths: readonly AutomationPath[]
     }
   | {
       readonly id?: string
@@ -1841,11 +2072,17 @@ export type AutomationAiAnswer =
   | 'url'
   | 'select'
 
-/** A way out of a branch: the first whose row satisfies its filter; `when: null`, otherwise. */
+/**
+ * A way out of a branch: the first whose row satisfies its filter, or whose value test
+ * holds; `when: null`, otherwise. An attempt's two paths have no test.
+ */
 export interface AutomationPath {
   readonly id?: string
   readonly label: string
-  readonly when: { readonly record: string; readonly condition: string } | null
+  readonly when:
+    | { readonly record: string; readonly condition: string }
+    | { readonly value: string; readonly op: AutomationValueOp; readonly operand: string }
+    | null
   readonly steps: readonly AutomationStep[]
 }
 
@@ -1885,10 +2122,12 @@ export interface Automation {
   readonly enabled: boolean
   readonly trigger: {
     readonly kind: AutomationTriggerKind
-    /** The table's identifier; `null` for a schedule. */
+    /** The table's identifier; `null` for a schedule and a webhook. */
     readonly table: string | null
     readonly fields: readonly string[]
     readonly schedule: AutomationSchedule | null
+    /** The date a `date_reached` trigger waits for. */
+    readonly date?: AutomationDate | null
   }
   readonly condition: string | null
   readonly actions: readonly AutomationAction[]
@@ -1897,6 +2136,11 @@ export interface Automation {
   readonly last_run: { readonly status: string; readonly at: string } | null
   readonly created_at: string
   readonly updated_at: string
+  /**
+   * Where a `webhook` trigger is called — `/api/v1/hooks/<secret>`, relative to the API's
+   * address (`hookUrl`) —, shown to whoever builds the base; `null` otherwise.
+   */
+  readonly hook?: { readonly path: string } | null
 }
 
 /** What an automation is saved with — tables by name or identifier. */
@@ -1909,16 +2153,26 @@ export interface AutomationInput {
     readonly table?: string | null
     readonly fields?: readonly string[]
     readonly schedule?: AutomationSchedule | null
+    readonly date?: AutomationDate | null
   }
   readonly condition?: string | null
   readonly actions?: readonly AutomationAction[]
+  /** A new address for a `webhook` trigger: the old one stops answering at once. */
+  readonly regenerate_hook?: boolean
+}
+
+/** The address an external program calls to start a `webhook` automation. */
+export function hookUrl(path: string): string {
+  return `${BASE}${path}`
 }
 
 export interface AutomationRun {
   readonly id: string
   readonly trigger: string
   readonly record_id: string | null
-  readonly status: 'queued' | 'running' | 'succeeded' | 'failed' | 'skipped'
+  /** `waiting`: held by a `wait` step until `resume_at`. */
+  readonly status: 'queued' | 'running' | 'waiting' | 'succeeded' | 'failed' | 'skipped'
+  readonly resume_at?: string | null
   readonly reason: string | null
   readonly error_code: string | null
   /** Each step passed, in order; `action` alone for a run from before flows. */
@@ -2637,7 +2891,7 @@ export const api = {
   createToken: (request: {
     readonly base: string
     readonly label: string
-    readonly access: 'read' | 'write'
+    readonly access: TokenAccess
     readonly surfaces: readonly TokenSurface[]
     /** 1 to 365 days, or `null`: no expiry. */
     readonly expiresInDays: number | null

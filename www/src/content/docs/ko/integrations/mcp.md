@@ -5,7 +5,7 @@ description: Model Context Protocol로 AI 에이전트를 basedb에 연결합니
 
 basedb는 **MCP 서버**(`POST /mcp`, 인터페이스와 같은 주소)를 제공합니다. Claude, 코딩
 어시스턴트, 직접 만든 에이전트 등 어떤 에이전트든 여기서 데이터베이스를 찾아보고, 행을 읽고
-쓰며, 스키마 변경을 **제안**합니다.
+쓰며, 허용하면 삭제도 하고, 스키마 변경을 **제안**합니다.
 
 ## 에이전트 연결
 
@@ -21,7 +21,7 @@ claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
   --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 
-## 12가지 도구
+## 14가지 도구
 
 | 도구 | 역할 |
 |---|---|
@@ -29,11 +29,27 @@ claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
 | `list_bases`, `describe_base`, `describe_table` | 스키마와 그 설명 살펴보기 |
 | `list_records`, `get_record`, `lookup_records` | 읽기, 필터링, 표시 값 확인 |
 | `create_record`, `update_record` | 행 쓰기 |
+| `delete_record`, `restore_record` | 행 삭제 — 그 권한으로 만들어진 토큰 필요 — 와 복원 |
 | `propose_create_table`, `propose_add_field`, `get_proposal` | 스키마 변경 제안 |
+
+## 행 삭제
+
+**읽기, 쓰기 및 삭제** 권한으로 만들어진 토큰이 있으면 에이전트가 `_id`로 행을 **한 번에 한
+개씩** 삭제할 수 있습니다. `delete_record`는 삭제되기 전 그대로의 행을 돌려주며, 삭제는 그
+토큰의 이름으로 기록에 남습니다. `restore_record`는 같은 `_id`로 그 행을 되돌립니다 —
+에이전트가 스스로 자신의 실수를 되돌릴 수도 있고, 사람이 기록에서 되돌릴 수도 있습니다.
+
+에이전트가 삭제하지 않는 경우:
+
+- 읽기 전용 토큰, 또는 읽기와 쓰기 권한만 있는 토큰일 때 — 거부 응답이 어떤 토큰을 만들어야
+  하는지 알려줍니다.
+- 연쇄 관계로 다른 행까지 함께 삭제될 행일 때(`TOKEN_CASCADE_FORBIDDEN`) — 이런 삭제는
+  무엇이 함께 삭제되는지 보이는 사람이 인터페이스에서 수행합니다.
+- 여러 행을 한 번에 삭제할 때 — 이를 수행하는 도구가 없습니다.
 
 ## 에이전트가 하지 않는 일
 
-- **아무것도 삭제하지 않습니다.**
+- **동의가 있을 때만 삭제합니다**: 그 목적으로 만들어진 토큰으로, 한 번에 한 행씩.
 - **스키마를 바꾸지 않습니다**. 제안만 합니다. 제안은 **에이전트 제안…**(데이터베이스 메뉴)에서
   대기하며, 스키마를 관리하는 사람이 승인하거나 거부합니다. 결정이 없으면 24시간 뒤에
   만료됩니다.

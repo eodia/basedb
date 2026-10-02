@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Automation, DescribedBase, Field } from '../../src/lib/api/client'
+import type { Automation, AutomationStep, DescribedBase, Field } from '../../src/lib/api/client'
 import {
   END_NODE,
   GAP_Y,
@@ -9,16 +9,26 @@ import {
   layoutFlow,
   mergeOf,
 } from '../../src/lib/automation-layout'
+import { pickerMatches } from '../../src/lib/automation-picker'
 import {
   type Draft,
+  type DraftPath,
   type DraftStep,
+  STEP_CATEGORIES,
+  STEP_HINTS,
+  STEP_KEYWORDS,
+  STEP_LABELS,
+  type StepKind,
   buttonUrl,
+  changeableRows,
   citeGroups,
   draftOf,
   draftOfDefinition,
   emptyDraft,
   filterIssue,
   findStep,
+  htmlOfText,
+  inAttempt,
   inLoop,
   inputOf,
   insertStep,
@@ -26,18 +36,28 @@ import {
   loopsAround,
   moveStep,
   newStep,
+  notFoundBranch,
+  pathProblem,
+  pathSummary,
   referencesOf,
+  refusalOf,
   removeStep,
   rowChoices,
   runSentence,
   runStepSentence,
   runStepsById,
+  slotCaption,
   stepProblem,
+  stepSummary,
   stepsAtSlot,
   stepsBefore,
+  textOfHtml,
+  triggerProblem,
+  unavailableSteps,
   withoutCitations,
   withoutJsonCitations,
 } from '../../src/lib/automations'
+import { pillsToVariables, variablesToPills } from '../../src/lib/rich-text'
 
 /**
  * Automations as the editor shows them — chapter 17.
@@ -449,6 +469,7 @@ describe('a webhook composed', () => {
         ],
         body: '{"nom": "{{nom}}"}',
         format: 'json',
+        retries: 2,
       },
     ],
   }
@@ -477,6 +498,7 @@ describe('a webhook composed', () => {
       ],
       body: '{"nom": "{{nom}}"}',
       format: 'json',
+      retries: 2,
     })
     // A GET sends no body; a blank header row does not travel.
     const get = {
@@ -545,6 +567,7 @@ describe('a loop', () => {
         filter: 'statut eq "a_faire"',
         sort: '-nom',
         limit: 20,
+        on_error: 'continue',
         steps: [
           { id: 'e2', kind: 'update_record', record: 'e1', values: { nom: '{{e1.nom}} !' } },
           {
@@ -628,6 +651,8 @@ describe('a loop', () => {
     expect(rowChoices(draft, base, after, [])).toEqual([])
     expect(citeGroups(draft, base, after, [])[0]?.items).toEqual([
       { label: 'Nombre de lignes parcourues', token: '{{e1.nombre}}' },
+      // It goes on after a failing row: how many failed.
+      { label: 'Nombre de lignes en échec', token: '{{e1.echecs}}' },
     ])
     expect(stepsAtSlot(draft.steps, 'e1', 1).map((s) => s.id)).toEqual(['e1', 'e2'])
   })
@@ -696,5 +721,663 @@ describe('a button’s address', () => {
   it('opens only an http(s) or mailto address', () => {
     expect(buttonUrl('javascript:alert({{numero}})', row, fields)).toBeNull()
     expect(buttonUrl('{{numero}}', row, fields)).toBeNull()
+  })
+})
+
+// ── The triggers, steps and options added with the picker ──────────────────────
+
+/** Invoices and their clients: numbers, dates, a file to keep a PDF in. */
+const sales = {
+  name: 'b_ventes',
+  tables: [
+    {
+      id: 't1',
+      name: 'factures',
+      label: 'Factures',
+      fields: [
+        { name: 'numero', label: 'Numéro', kind: 'short_text' },
+        { name: 'montant', label: 'Montant', kind: 'number' },
+        { name: 'echeance', label: 'Échéance', kind: 'date' },
+        { name: 'rdv', label: 'Rendez-vous', kind: 'datetime' },
+        { name: 'pdf', label: 'PDF', kind: 'file' },
+        { name: 'client', label: 'Client', kind: 'short_text' },
+        {
+          name: 'total',
+          label: 'Total',
+          kind: 'formula',
+          computed: { result_kind: 'number', stored: false, multiple: false },
+        },
+      ],
+    },
+    {
+      id: 't2',
+      name: 'clients',
+      label: 'Clients',
+      fields: [{ name: 'nom', label: 'Nom', kind: 'short_text' }],
+    },
+  ],
+} as unknown as DescribedBase
+
+/** Every new kind of step, and every new option, as the API gives them. */
+const everything: Automation = {
+  ...automation,
+  trigger: { kind: 'record_created', table: 't1', fields: [], schedule: null },
+  condition: null,
+  actions: [
+    {
+      id: 'e1',
+      kind: 'aggregate',
+      table: 't1',
+      filter: 'client eq {{client}}',
+      measures: [
+        { fn: 'sum', field: 'montant' },
+        { fn: 'max', field: 'echeance' },
+      ],
+    },
+    {
+      id: 'e2',
+      kind: 'document',
+      record: 'trigger',
+      template: 'modele-1',
+      field: 'pdf',
+      name: 'Facture {{numero}}',
+    },
+    {
+      id: 'e3',
+      kind: 'email',
+      record: 'trigger',
+      users: [],
+      user_field: null,
+      email_field: null,
+      addresses: ['compta@exemple.fr'],
+      subject: 'Facture {{numero}}',
+      message: '<p>Total : {{e1.somme.montant}}</p>',
+      mode: 'together',
+      cc: ['direction@exemple.fr'],
+      reply_to: '{{client}}',
+      format: 'html',
+      attachments: [{ step: 'e2' }, { record: 'trigger', field: 'pdf' }],
+    },
+    {
+      id: 'e4',
+      kind: 'attempt',
+      paths: [
+        {
+          id: 'c1',
+          label: 'Essayer',
+          when: null,
+          steps: [{ id: 'e5', kind: 'run_automation', automation: 'a2', record: 'trigger' }],
+        },
+        {
+          id: 'c2',
+          label: 'En cas d’échec',
+          when: null,
+          steps: [
+            {
+              id: 'e6',
+              kind: 'notify',
+              record: 'trigger',
+              users: ['u1'],
+              user_field: null,
+              message: 'Échec {{e4.erreur}} à {{e4.etape}}',
+            },
+          ],
+        },
+      ],
+    },
+    { id: 'e7', kind: 'wait', duration: { amount: 3, unit: 'days' }, until: null },
+    {
+      id: 'e8',
+      kind: 'wait',
+      duration: null,
+      until: {
+        record: 'trigger',
+        field: 'echeance',
+        offset_days: -2,
+        at: '08:30',
+        timezone: 'Europe/Paris',
+      },
+    },
+    {
+      id: 'e9',
+      kind: 'branch',
+      paths: [
+        {
+          id: 'c3',
+          label: 'Gros',
+          when: { value: '{{e1.somme.montant}}', op: 'gte', operand: '1000' },
+          steps: [],
+        },
+        {
+          id: 'c4',
+          label: 'Rien',
+          when: { value: '{{e1.nombre}}', op: 'empty', operand: '' },
+          steps: [],
+        },
+        {
+          id: 'c5',
+          label: 'Sinon',
+          when: null,
+          steps: [{ id: 'e10', kind: 'delete_record', record: 'trigger' }],
+        },
+      ],
+    },
+  ],
+}
+
+/** The automation `e5` starts: its trigger has the table of invoices. */
+const started = { ...automation, id: 'a2', label: 'Relance', trigger: everything.trigger }
+
+const at = (draft: Draft, id: string) => findStep(draft.steps, id) as DraftStep
+
+describe('the new steps and options', () => {
+  const draft = draftOf(everything, sales)
+
+  it('go back to the API as they came, tables by name', () => {
+    const out = inputOf(draft).actions as readonly AutomationStep[]
+    expect(out).toEqual(
+      everything.actions.map((s) => (s.kind === 'aggregate' ? { ...s, table: 'factures' } : s)),
+    )
+  })
+
+  it('read in the editor with their own words', () => {
+    expect(at(draft, 'e3')).toMatchObject({
+      mode: 'together',
+      cc: 'direction@exemple.fr',
+      replyTo: '{{client}}',
+      format: 'html',
+    })
+    expect(at(draft, 'e7')).toMatchObject({ mode: 'duration', amount: 3, unit: 'days' })
+    expect(at(draft, 'e8')).toMatchObject({
+      mode: 'until',
+      record: 'trigger',
+      field: 'echeance',
+      offsetDays: -2,
+      at: '08:30',
+    })
+    const branch = at(draft, 'e9') as Extract<DraftStep, { kind: 'branch' }>
+    expect(branch.paths.map((p) => [p.test, p.otherwise])).toEqual([
+      ['value', false],
+      ['value', false],
+      ['row', true],
+    ])
+    expect(pathSummary(branch.paths[0] as DraftPath)).toBe('{{e1.somme.montant}} ≥ 1000')
+    expect(pathSummary(branch.paths[1] as DraftPath)).toBe('{{e1.nombre}} est vide')
+    const members = [] as never[]
+    expect(stepSummary(at(draft, 'e7'), draft, sales, members)).toBe('3 jours')
+    expect(stepSummary(at(draft, 'e8'), draft, sales, members)).toBe(
+      'Jusqu’à Échéance, 2 jours avant',
+    )
+    expect(stepSummary(at(draft, 'e5'), draft, sales, members, [started])).toBe('Relance')
+  })
+
+  it('write a mail in rich text: a plain message opens as paragraphs, and goes back as HTML', () => {
+    const plain = {
+      ...everything,
+      actions: everything.actions.map((s) =>
+        s.kind === 'email'
+          ? { ...s, format: undefined, message: 'Bonjour {{client}},\n<b>merci</b>' }
+          : s,
+      ),
+    }
+    const opened = draftOf(plain, sales)
+    expect(at(opened, 'e3')).toMatchObject({
+      format: 'html',
+      message: '<p>Bonjour {{client}},</p><p>&lt;b&gt;merci&lt;/b&gt;</p>',
+    })
+    expect(
+      (inputOf(opened).actions as readonly AutomationStep[]).find((s) => s.kind === 'email'),
+    ).toMatchObject({
+      format: 'html',
+      message: '<p>Bonjour {{client}},</p><p>&lt;b&gt;merci&lt;/b&gt;</p>',
+    })
+    expect(newStep('email', opened, sales, 'e99')).toMatchObject({ format: 'html', message: '' })
+  })
+
+  it('keep a copy aside while each recipient gets a mail of their own', () => {
+    const each = { ...(at(draft, 'e3') as Extract<DraftStep, { kind: 'email' }>), mode: 'each' }
+    expect(inputOf({ ...draft, steps: [each as DraftStep] }).actions?.[0]).toMatchObject({
+      mode: 'each',
+      cc: [],
+    })
+  })
+
+  it('say nothing is wrong when nothing is', () => {
+    for (const step of ['e1', 'e2', 'e3', 'e5', 'e6', 'e7', 'e8', 'e9', 'e10']) {
+      expect([step, stepProblem(at(draft, step), draft, [started])]).toEqual([step, null])
+    }
+  })
+
+  it('cite what each gives, and an attempt’s error only in its second path', () => {
+    const groups = citeGroups(draft, sales, stepsBefore(draft.steps, 'e3') ?? [])
+    expect(groups.find((g) => g.label === 'e1 · Compter et additionner')?.items).toEqual([
+      { label: 'Nombre de lignes', token: '{{e1.nombre}}' },
+      { label: 'Somme · Montant', token: '{{e1.somme.montant}}' },
+      { label: 'Maximum · Échéance', token: '{{e1.max.echeance}}' },
+    ])
+    expect(groups.find((g) => g.label === 'e2 · Générer un PDF')?.items).toEqual([
+      { label: 'Nom du fichier', token: '{{e2.nom}}' },
+    ])
+    const rescue = citeGroups(draft, sales, stepsBefore(draft.steps, 'e6') ?? [])
+    expect(rescue.find((g) => g.label === 'e4 · Essayer')?.items.map((i) => i.token)).toEqual([
+      '{{e4.erreur}}',
+      '{{e4.etape}}',
+    ])
+    expect(stepsBefore(draft.steps, 'e5')?.map((s) => s.id)).toEqual(['e1', 'e2', 'e3'])
+    // After the block, neither path surely ran; what failed, if anything, is cited still.
+    expect(stepsBefore(draft.steps, 'e7')?.map((s) => s.id)).toEqual(['e1', 'e2', 'e3', 'e4'])
+    const tried = insertStep(draft.steps, 'c1', 1, {
+      ...(at(draft, 'e6') as DraftStep),
+      id: 'e11',
+    })
+    expect(stepProblem(findStep(tried, 'e11') as DraftStep, { ...draft, steps: tried })).toMatch(
+      /e4/,
+    )
+  })
+
+  it('names what a mail attaches among what it refers to', () => {
+    expect(referencesOf(at(draft, 'e3'))).toEqual(['e2', 'e1'])
+  })
+
+  it('says what is wrong before the API does', () => {
+    const problem = (step: DraftStep) => stepProblem(step, draft, [started])
+    const mail = at(draft, 'e3') as Extract<DraftStep, { kind: 'email' }>
+    expect(problem({ ...mail, cc: 'pas une adresse' })).toMatch(/copie/)
+    expect(problem({ ...mail, replyTo: 'quelqu’un' })).toMatch(/Répondre à/)
+    expect(problem({ ...mail, message: '<p></p>' })).toBe('Message vide')
+    expect(
+      problem({
+        ...mail,
+        addresses: Array.from({ length: 51 }, (_, i) => `p${i}@exemple.fr`).join(', '),
+      }),
+    ).toMatch(/50/)
+    const wait = at(draft, 'e7') as Extract<DraftStep, { kind: 'wait' }>
+    expect(problem({ ...wait, amount: 400 })).toMatch(/365/)
+    expect(problem({ ...wait, amount: 0 })).toMatch(/365/)
+    expect(problem({ ...(at(draft, 'e8') as DraftStep), field: '' } as DraftStep)).toMatch(
+      /champ date/,
+    )
+    const count = at(draft, 'e1') as Extract<DraftStep, { kind: 'aggregate' }>
+    expect(problem({ ...count, measures: [{ fn: 'sum', field: '' }] })).toMatch(/mesure/)
+    const run = at(draft, 'e5') as Extract<DraftStep, { kind: 'run_automation' }>
+    expect(problem({ ...run, automation: '' })).toMatch(/Choisissez/)
+    expect(problem({ ...run, record: '' })).toMatch(/ligne/)
+    expect(stepProblem(run, draft, [])).toMatch(/n’existe plus/)
+    // Not known yet: the kernel judges.
+    expect(stepProblem({ ...run, record: '' }, draft, null)).toBeNull()
+    expect(problem({ ...(at(draft, 'e2') as DraftStep), record: '' } as DraftStep)).toMatch(/PDF/)
+    const branch = at(draft, 'e9') as Extract<DraftStep, { kind: 'branch' }>
+    const [big] = branch.paths
+    expect(pathProblem({ ...(big as DraftPath), value: ' ' }, draft)).toMatch(/aucune valeur/)
+    expect(pathProblem({ ...(big as DraftPath), operand: '' }, draft)).toMatch(/comparer/)
+    expect(pathProblem({ ...(big as DraftPath), op: 'not_empty', operand: '' }, draft)).toBeNull()
+  })
+
+  it('makes each new kind preset on what is there', () => {
+    const kinds: StepKind[] = [
+      'delete_record',
+      'aggregate',
+      'run_automation',
+      'document',
+      'wait',
+      'attempt',
+    ]
+    const made = kinds.map((k, i) => newStep(k, draft, sales, `e${20 + i}`))
+    expect(made).toMatchObject([
+      { kind: 'delete_record', record: 'trigger' },
+      { kind: 'aggregate', table: 'factures', filter: '', measures: [] },
+      { kind: 'run_automation', automation: '', record: '' },
+      { kind: 'document', record: 'trigger', template: '', field: '', name: '' },
+      { kind: 'wait', mode: 'duration', amount: 1, unit: 'days' },
+      {
+        kind: 'attempt',
+        paths: [
+          { id: 'c6', label: 'Essayer', otherwise: false },
+          { id: 'c7', label: 'En cas d’échec', otherwise: false },
+        ],
+      },
+    ])
+    // An attempt sent: two paths, no test.
+    expect(inputOf({ ...draft, steps: [made[5] as DraftStep] }).actions?.[0]).toEqual({
+      id: 'e25',
+      kind: 'attempt',
+      paths: [
+        { id: 'c6', label: 'Essayer', when: null, steps: [] },
+        { id: 'c7', label: 'En cas d’échec', when: null, steps: [] },
+      ],
+    })
+  })
+
+  it('draws an attempt like a branch: two paths side by side, meeting below', () => {
+    const { nodes, edges } = layoutFlow(draft)
+    const node = (id: string) => nodes.find((n) => n.id === id)
+    expect(node('c1')?.y).toBe(node('c2')?.y)
+    expect((node('c1')?.x ?? 0) < (node('c2')?.x ?? 0)).toBe(true)
+    expect(edges.filter((e) => e.source === 'e4').map((e) => [e.target, e.bend])).toEqual([
+      ['c1', 'source'],
+      ['c2', 'source'],
+    ])
+    expect(edges.filter((e) => e.target === mergeOf('e4')).map((e) => e.insert)).toEqual([
+      { path: 'c1', index: 1 },
+      { path: 'c2', index: 1 },
+    ])
+    expect(edges.find((e) => e.target === 'e7')?.source).toBe(mergeOf('e4'))
+  })
+
+  it('says where a step goes, and what may not go there', () => {
+    expect(slotCaption(draft, { path: null, index: 0 })).toBe('Juste après le déclencheur')
+    expect(slotCaption(draft, { path: null, index: 1 })).toBe('Après e1 · Compter et additionner')
+    expect(slotCaption(draft, { path: 'c2', index: 0 })).toBe(
+      'Au début du chemin « En cas d’échec »',
+    )
+    expect(inAttempt(draft.steps, 'c2')).toBe(true)
+    expect(unavailableSteps(draft.steps, 'c2')).toEqual({ wait: 'Pas d’attente dans « Essayer »' })
+    expect(unavailableSteps(draft.steps, null)).toEqual({})
+    const waiting = insertStep(draft.steps, 'c1', 0, newStep('wait', draft, sales, 'e30'))
+    expect(stepProblem(findStep(waiting, 'e30') as DraftStep, { ...draft, steps: waiting })).toBe(
+      'Pas d’attente dans « Essayer »',
+    )
+  })
+})
+
+describe('the steps that may not go everywhere', () => {
+  it('keeps waits and loops out of loops, and three levels at most', () => {
+    const looped = draftOf(
+      {
+        ...automation,
+        actions: [{ id: 'e1', kind: 'for_each', table: 't1', filter: '', sort: null, steps: [] }],
+      },
+      base,
+    )
+    expect(unavailableSteps(looped.steps, 'e1')).toEqual({
+      for_each: 'Pas de boucle dans une boucle',
+      wait: 'Pas d’attente dans une boucle',
+    })
+    const waiting = insertStep(looped.steps, 'e1', 0, newStep('wait', looped, base, 'e2'))
+    expect(stepProblem(findStep(waiting, 'e2') as DraftStep, { ...looped, steps: waiting })).toBe(
+      'Pas d’attente dans une boucle',
+    )
+
+    // Conditions within conditions, three deep.
+    let draft: Draft = { ...emptyDraft(base), steps: [] }
+    let path: string | null = null
+    for (const id of ['e1', 'e2', 'e3']) {
+      const branch = newStep('branch', draft, base, id) as Extract<DraftStep, { kind: 'branch' }>
+      draft = { ...draft, steps: insertStep(draft.steps, path, 0, branch) }
+      path = branch.paths[0]?.id ?? null
+    }
+    expect(unavailableSteps(draft.steps, path)).toMatchObject({
+      branch: '3 niveaux imbriqués au plus',
+      attempt: '3 niveaux imbriqués au plus',
+      for_each: '3 niveaux imbriqués au plus',
+    })
+    const deep = insertStep(draft.steps, path, 0, newStep('attempt', draft, base, 'e4'))
+    expect(stepProblem(findStep(deep, 'e4') as DraftStep, { ...draft, steps: deep })).toMatch(
+      /niveaux/,
+    )
+  })
+})
+
+describe('the new triggers', () => {
+  const on = (trigger: Automation['trigger'], actions: Automation['actions'] = []) =>
+    draftOf({ ...automation, trigger, condition: null, actions }, base)
+
+  it('a row deleted: cited as it was, never changed', () => {
+    const draft = on({ kind: 'record_deleted', table: 't1', fields: [], schedule: null }, [
+      { id: 'e1', kind: 'update_record', record: 'trigger', values: { nom: 'x' } },
+    ])
+    expect(inputOf(draft).trigger).toMatchObject({ kind: 'record_deleted', table: 'taches' })
+    expect(stepProblem(at(draft, 'e1'), draft)).toMatch(/supprimée/)
+    expect(newStep('delete_record', draft, base, 'e2')).toMatchObject({ record: '' })
+    expect(newStep('notify', draft, base, 'e2')).toMatchObject({ record: 'trigger' })
+    expect(changeableRows(draft, rowChoices(draft, base, []))).toEqual([])
+    expect(citeGroups(draft, base, [])[0]?.label).toBe('La ligne supprimée, telle qu’elle était')
+  })
+
+  it('a row entering a filter: the filter is required', () => {
+    const draft = on({ kind: 'record_matches', table: 't1', fields: [], schedule: null })
+    expect(triggerProblem(draft)).toMatch(/filtre/)
+    const filled = { ...draft, condition: 'statut eq "retard"' }
+    expect(triggerProblem(filled)).toBeNull()
+    expect(inputOf(filled).condition).toBe('statut eq "retard"')
+  })
+
+  it('a date reached: its field, days before or after, a time, a zone — both ways', () => {
+    const draft = draftOf(
+      {
+        ...automation,
+        condition: null,
+        actions: [],
+        trigger: {
+          kind: 'date_reached',
+          table: 't1',
+          fields: [],
+          schedule: null,
+          date: { field: 'echeance', offset_days: -3, at: '08:30', timezone: 'Europe/Paris' },
+        },
+      },
+      sales,
+    )
+    expect(draft.trigger.date).toEqual({
+      field: 'echeance',
+      offsetDays: -3,
+      at: '08:30',
+      timezone: 'Europe/Paris',
+    })
+    expect(inputOf(draft).trigger).toEqual({
+      kind: 'date_reached',
+      table: 'factures',
+      fields: [],
+      schedule: null,
+      date: { field: 'echeance', offset_days: -3, at: '08:30', timezone: 'Europe/Paris' },
+    })
+    expect(triggerProblem(draft)).toBeNull()
+    const set = (date: Partial<Draft['trigger']['date']>) => ({
+      ...draft,
+      trigger: { ...draft.trigger, date: { ...draft.trigger.date, ...date } },
+    })
+    expect(triggerProblem(set({ field: '' }))).toMatch(/champ date/)
+    expect(triggerProblem(set({ offsetDays: 400 }))).toMatch(/365/)
+    expect(triggerProblem(set({ at: '25:00' }))).toMatch(/Heure/)
+    // Any other trigger sends no date.
+    expect(
+      inputOf({ ...draft, trigger: { ...draft.trigger, kind: 'record_created' } }).trigger,
+    ).not.toHaveProperty('date')
+  })
+
+  it('a webhook received: no table, no condition, its body cited by key', () => {
+    const draft = {
+      ...on({ kind: 'webhook', table: null, fields: [], schedule: null }, [
+        {
+          id: 'e1',
+          kind: 'create_record',
+          table: 't2',
+          values: { entree: '{{trigger.client.nom}} : {{trigger.montant}}' },
+        },
+      ]),
+      condition: 'x eq 1',
+    }
+    expect(inputOf(draft)).toMatchObject({
+      trigger: { kind: 'webhook', table: null },
+      condition: null,
+    })
+    expect(citeGroups(draft, base, [])[0]).toEqual({
+      label: 'La requête reçue',
+      items: [
+        { label: 'client.nom', token: '{{trigger.client.nom}}' },
+        { label: 'montant', token: '{{trigger.montant}}' },
+        { label: 'Le corps, s’il est du texte', token: '{{trigger.texte}}' },
+      ],
+    })
+    expect(referencesOf(at(draft, 'e1'))).toEqual([])
+    expect(stepProblem(at(draft, 'e1'), draft)).toBeNull()
+    expect(rowChoices(draft, base, [])).toEqual([])
+    expect(newStep('update_record', draft, base, 'e2')).toMatchObject({ record: '' })
+  })
+})
+
+describe('« Si aucune ligne n’est trouvée… »', () => {
+  it('inserts after a search a condition testing that it found nothing', () => {
+    const draft = draftOf(flow, base)
+    const branch = notFoundBranch(draft, 'e1', 'e9') as Extract<DraftStep, { kind: 'branch' }>
+    expect(branch.paths).toMatchObject([
+      { label: 'Aucune ligne trouvée', test: 'value', value: '{{e1._id}}', op: 'empty' },
+      { label: 'Ligne trouvée', otherwise: true },
+    ])
+    const steps = insertStep(draft.steps, null, 1, branch)
+    const next = { ...draft, steps }
+    expect(pathProblem(branch.paths[0] as DraftPath, next)).toBeNull()
+    expect(inputOf(next).actions?.[1]).toMatchObject({
+      id: 'e9',
+      kind: 'branch',
+      paths: [{ when: { value: '{{e1._id}}', op: 'empty', operand: '' } }, { when: null }],
+    })
+  })
+})
+
+describe('a run held by a wait', () => {
+  it('says when it goes on, and how the new steps went', () => {
+    expect(
+      runSentence({ status: 'waiting', resume_at: '2026-10-03T07:00:00Z' } as Parameters<
+        typeof runSentence
+      >[0]),
+    ).toMatch(/^En pause, reprend le .*2026/)
+    expect(
+      runSentence({ status: 'skipped', reason: 'regle_de_lignes' } as Parameters<
+        typeof runSentence
+      >[0]),
+    ).toMatch(/règle de lignes/)
+    expect(
+      runStepSentence({
+        step: 'e7',
+        kind: 'wait',
+        status: 'succeeded',
+        detail: '2026-10-03T07:00:00Z',
+      }),
+    ).toMatch(/^attente jusqu’au /)
+    expect(
+      runStepSentence({ step: 'e7', kind: 'wait', status: 'succeeded', detail: 'aucune_date' }),
+    ).toMatch(/aucune date/)
+    // An attempt names the path it ended on.
+    expect(
+      runStepSentence({
+        step: 'e4',
+        kind: 'attempt',
+        status: 'succeeded',
+        path: 'c2',
+        detail: 'En cas d’échec',
+      }),
+    ).toBe('chemin « En cas d’échec »')
+    // A loop going on after failing rows says `turns/failures`.
+    expect(
+      runStepSentence({ step: 'e1', kind: 'for_each', status: 'succeeded', detail: '10/2' }),
+    ).toBe('10 lignes parcourues · 2 en échec')
+    expect(
+      runStepSentence({ step: 'e1', kind: 'for_each', status: 'succeeded', detail: '10' }),
+    ).toBe('10 lignes parcourues')
+    expect(
+      runStepSentence({
+        step: 'e5',
+        kind: 'run_automation',
+        status: 'failed',
+        error_code: 'REQUEST_INVALID',
+        detail: 'chaine_trop_longue',
+      }),
+    ).toMatch(/trop d’automatisations/)
+  })
+})
+
+describe('the refusals of the new definitions', () => {
+  it('each says what to do in a sentence', () => {
+    const reasons = [
+      'ligne_supprimee',
+      'condition_requise',
+      'champ_date_attendu',
+      'decalage_invalide',
+      'attente_invalide',
+      'attente_dans_boucle',
+      'attente_dans_essai',
+      'automation_inconnue',
+      'automation_elle_meme',
+      'ligne_requise',
+      'table_differente',
+      'modele_inconnu',
+      'champ_fichier_attendu',
+      'mesure_invalide',
+      'trop_de_mesures',
+      'piece_jointe_invalide',
+      'trop_de_pieces_jointes',
+      'copie_sans_envoi_groupe',
+      'reponse_a_invalide',
+      'essai_deux_chemins',
+      'operateur_inconnu',
+      'reessais_invalides',
+    ]
+    for (const reason of reasons) {
+      expect([reason, refusalOf({ reason, detail: 'x', step: 'e2' }).sentence]).not.toEqual([
+        reason,
+        null,
+      ])
+    }
+    expect(refusalOf({ reason: 'trop_de_mesures', detail: 5 }).sentence).toBe('5 mesures au plus.')
+  })
+})
+
+describe('a mail written out', () => {
+  it('turns from plain text to rich text and back', () => {
+    const html = htmlOfText('Bonjour {{nom}},\n<b>merci</b> & à bientôt')
+    expect(html).toBe('<p>Bonjour {{nom}},</p><p>&lt;b&gt;merci&lt;/b&gt; &amp; à bientôt</p>')
+    expect(textOfHtml(html)).toBe('Bonjour {{nom}},\n<b>merci</b> & à bientôt')
+    expect(textOfHtml('<ul><li>un</li><li>deux</li></ul>')).toBe('- un\n- deux')
+  })
+
+  it('cites a step’s value or a key of the request as a pill', () => {
+    const stored = '<p>{{e2.nom}} — {{trigger.client.Nom}} — {{nom}}</p>'
+    const editable = variablesToPills(stored)
+    expect(editable).toBe(
+      '<p><span data-variable="e2.nom"></span> — <span data-variable="trigger.client.Nom"></span> — <span data-variable="nom"></span></p>',
+    )
+    expect(pillsToVariables(editable)).toBe(stored)
+  })
+})
+
+describe('the step picker', () => {
+  const entries = STEP_CATEGORIES.flatMap((c) =>
+    c.kinds.map((kind) => ({
+      id: kind,
+      category: c.id,
+      label: STEP_LABELS[kind],
+      hint: STEP_HINTS[kind],
+      keywords: STEP_KEYWORDS[kind],
+    })),
+  )
+  const first = (query: string) => pickerMatches(entries, query, null).matches[0]?.entry.id
+
+  it('lists every step by category while nothing is typed', () => {
+    const all = pickerMatches(entries, '', null)
+    expect(all.total).toBe(16)
+    expect(all.matches.map((m) => m.entry.id)).toEqual(entries.map((e) => e.id))
+    expect(all.counts).toEqual({ rows: 5, communicate: 4, documents: 1, ai: 1, logic: 5 })
+    expect(pickerMatches(entries, '', 'logic').matches.map((m) => m.entry.id)).toEqual([
+      'branch',
+      'for_each',
+      'attempt',
+      'wait',
+      'run_automation',
+    ])
+  })
+
+  it('finds a step by its name, what it does, or a word it answers to — accents aside', () => {
+    expect(first('courriel')).toBe('email')
+    expect(first('facture')).toBe('document')
+    expect(first('generer')).toBe('document')
+    expect(first('boucle')).toBe('for_each')
+    expect(first('corbeille')).toBe('delete_record')
+    expect(first('attendre')).toBe('wait')
+    expect(first('somme')).toBe('aggregate')
+    expect(pickerMatches(entries, 'zzzz', null).total).toBe(0)
+    const found = pickerMatches(entries, 'pdf', null)
+    expect(found.counts).toEqual({ documents: 1 })
+    expect([...(found.matches[0]?.lit ?? [])]).toEqual([11, 12, 13])
   })
 })

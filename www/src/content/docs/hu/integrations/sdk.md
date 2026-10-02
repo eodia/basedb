@@ -77,5 +77,6 @@ Egy nem létező tábla, mező vagy választás **típushiba**, még mielőtt a 
 
 Egy **integrációs token** a felületen jön létre: az adatbázis **⋯** menüje → **API és
 ügynökök** → **API- és MCP-tokenek…**. Egy adatbázist nyit meg, olvassa a sorait, írja is, ha
-íráshoz jött létre, sosincs több joga, mint annak a személynek, aki létrehozta, és **soha nem
-töröl**: a `delete()` egy munkamenet jogait igényli.
+íráshoz jött létre, sosincs több joga, mint annak a személynek, aki létrehozta, és **csak akkor
+töröl, ha erre jött létre** („Olvasás, írás és törlés”): egyébként a `delete()` meghívása
+elutasításra kerül.

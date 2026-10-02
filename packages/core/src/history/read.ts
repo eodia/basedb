@@ -642,6 +642,32 @@ export async function restoreRecord(
   })
 }
 
+/**
+ * Brings back a row by its own identifier — its LAST deletion, the one that took it
+ * away. What an agent undoes its own mistake with, knowing the `_id` and not a revision.
+ */
+export async function restoreDeletedRecord(
+  pools: Pools,
+  ctx: RequestContext,
+  request: { readonly tableId: string; readonly recordId: string },
+): Promise<{ readonly tableId: string; readonly recordId: string }> {
+  await drainHistory(pools).catch(() => undefined)
+
+  return withTransaction(pools, 'data', ctx, async (exec) => {
+    const [last] = await exec.query<{ id: string }>(
+      `SELECT id::text FROM _basedb.record_revision
+        WHERE table_id = $1 AND record_id = $2 AND op = 'delete'
+        ORDER BY occurred_at DESC LIMIT 1`,
+      [request.tableId, request.recordId],
+    )
+    const revision = last === undefined ? null : await loadRevision(exec, last.id)
+    if (revision === null) {
+      throw new BasedbError('RESOURCE_NOT_FOUND', { details: { record: request.recordId } })
+    }
+    return restoreIn(exec, ctx, revision)
+  })
+}
+
 /** The restoration of one deletion, inside a transaction the caller holds. */
 export async function restoreIn(
   exec: Executor,

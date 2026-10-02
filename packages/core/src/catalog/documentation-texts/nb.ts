@@ -55,6 +55,10 @@ export const nb: Catalog = {
     'Finne `_id`-en til en rad ut fra visningsverdien, før en relasjon skrives.',
   'Créer une ligne.': 'Opprette en rad.',
   'Modifier les champs nommés d’une ligne.': 'Endre navngitte felt i en rad.',
+  'Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.':
+    'Slette en rad, med et token opprettet for å slette – svaret gir den tilbake.',
+  'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
+    'Gjenopprette en slettet rad, ut fra `_id`-en sin, fra historikken.',
   'Proposer une table et ses premiers champs — une personne décide.':
     'Foreslå en tabell og de første feltene – en person avgjør.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
@@ -71,14 +75,17 @@ export const nb: Catalog = {
   'Trouver une ligne par sa valeur d’affichage, {field}':
     'Finne en rad ut fra visningsverdien, {field}',
   'Modifier une ligne': 'Endre en rad',
+  'Supprimer une ligne — avec un jeton créé pour supprimer':
+    'Slette en rad – med et token opprettet for å slette',
+  'Ramener une ligne supprimée': 'Gjenopprette en slettet rad',
   'Aucun outil ne vous est ouvert sur cette table.':
     'Ingen verktøy er tilgjengelige for deg på denne tabellen.',
   'Un jeton que vous créez n’a jamais plus de droits que vous : ces outils sont un maximum.':
     'Et token du oppretter, har aldri flere tillatelser enn deg: disse verktøyene er et maksimum.',
   Outil: 'Verktøy',
   Pour: 'Formål',
-  'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.':
-    'Å slette en rad er fortsatt forbeholdt REST-API-et og grensesnittet: ingen MCP-verktøy sletter.',
+  'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
+    'En agent sletter bare med et token opprettet med «Lesing, skriving og sletting», én rad om gangen; den slettede raden kommer tilbake via `restore_record` eller fra historikken.',
   '**Invisibles pour un agent :** {fields}. Pour lui, ces colonnes n’existent pas : il ne peut ni les lire, ni les filtrer, ni les écrire.':
     '**Usynlige for en agent:** {fields}. For agenten finnes ikke disse kolonnene: den kan verken lese, filtrere eller skrive dem.',
   'Arguments d’un appel': 'Argumenter for et kall',
@@ -86,13 +93,13 @@ export const nb: Catalog = {
     'Å opprette et token for denne databasen krever nivået **Administrere**, som du ikke har. Be personen som administrerer den, om å opprette et.',
   '<jeton>': '<token>',
   'Connecter un agent': 'Koble til en agent',
-  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.':
-    '**MCP-serveren** til basedb åpner denne databasen for en KI-agent – Claude eller en hvilken som helst MCP-klient: den oppdager den, leser den, og hvis du bestemmer det, oppretter og endrer rader i den. Den bruker de samme tillatelsene som REST-API-et.',
+  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.':
+    '**MCP-serveren** til basedb åpner denne databasen for en KI-agent – Claude eller en hvilken som helst MCP-klient: den oppdager den, leser den, og hvis du bestemmer det, oppretter, endrer og sletter rader i den. Den bruker de samme tillatelsene som REST-API-et.',
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Denne databasen er ikke åpen for agenter.** Så lenge den ikke er det, ser ingen verktøy den, uansett hvilket token som blir vist frem.',
   'Créer un jeton': 'Opprette et token',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'I grensesnittet, menyen «⋯» til databasen → **API og agenter** → **API- og MCP-tokener…**, med **MCP**-tilgang avkrysset. Tokenet er begrenset til denne databasen, **skrivebeskyttet** som standard: skrivetilgang velges eksplisitt. Det vises bare én gang, og kan tilbakekalles fra samme skjerm. Med **REST-API**-tilgang også avkrysset, brukes det samme tokenet av et program (se «Autentisering»).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'I grensesnittet, menyen «⋯» til databasen → **API og agenter** → **API- og MCP-tokener…**, med **MCP**-tilgang avkrysset. Tokenet er begrenset til denne databasen, **skrivebeskyttet** som standard: skrivetilgang, og sletting, velges eksplisitt. Det vises bare én gang, og kan tilbakekalles fra samme skjerm. Med **REST-API**-tilgang også avkrysset, brukes det samme tokenet av et program (se «Autentisering»).',
   'Garder le jeton hors de la configuration': 'Holde tokenet utenfor konfigurasjonen',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Tokenet legges i miljøvariabelen `BASEDB_TOKEN`, aldri i klientens konfigurasjonsfil: den er versjonert, synkronisert, og lesbar for alle programmene i økten.',
@@ -126,6 +133,8 @@ export const nb: Catalog = {
     'For å skrive en relasjon: `lookup_records` på måltabellen, deretter `create_record` eller `update_record` med den funnede `_id`-en.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'For å endre strukturen: `propose_create_table` eller `propose_add_field`, deretter `get_proposal` for å følge avgjørelsen.',
+  'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
+    'For å slette: `get_record` først, for å være sikker på raden, deretter `delete_record` – som gir den tilbake i svaret sitt; `restore_record` gjenoppretter den.',
   'Propositions de structure': 'Forslag til struktur',
   'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend dans la file « Propositions » de la base, où une personne qui peut modifier la structure l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.':
     'En agent endrer aldri strukturen selv: den **foreslår**. Forslaget venter i køen «Forslag» til databasen, der en person som kan endre strukturen, godkjenner eller avviser det; uten en avgjørelse utløper det etter 24 timer. Godkjent blir det utført i navnet til personen som opprettet tokenet – hvis denne personen fortsatt har rett til det – og vises i historikken som enhver annen endring.',
@@ -134,8 +143,8 @@ export const nb: Catalog = {
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Ingen sletting, ingen omdøping, ingen relasjon i kaskade (`MCP_CASCADE_FORBIDDEN`).',
   'Ce qui n’existe pas': 'Det som ikke finnes',
-  'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
-    'Ingen verktøy sletter en rad, kjører SQL eller håndterer tillatelser eller tokener. En agent som kaller et slikt navn – `delete_record`, `run_sql`… – mottar `MCP_OPERATION_EXCLUDED`, uansett hvilken database det gjelder.',
+  'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
+    'Ingen verktøy sletter flere rader samtidig, en tabell eller et felt, kjører SQL eller håndterer tillatelser eller tokener. En agent som kaller et slikt navn – `delete_records`, `run_sql`… – mottar `MCP_OPERATION_EXCLUDED`, uansett hvilken database det gjelder.',
   Bornes: 'Begrensninger',
   '`limit` : 25 lignes par défaut, 100 au plus.': '`limit`: 25 rader som standard, høyst 100.',
   'Un filtre compte au plus 10 prédicats, combinés par ET ; un tri, au plus 3 champs.':
@@ -149,8 +158,8 @@ export const nb: Catalog = {
     'En agent ser aldri mer enn personen som opprettet tokenet dens – og ofte mindre.',
   '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.':
     '**Tillatelser**: tokenets egne, sammenlignet ved hvert kall med skaperens. Hvis denne personens tillatelser reduseres, reduseres tokenets med dem; hvis kontoen deaktiveres, slutter tokenet å svare.',
-  '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
-    '**Lese, opprette, endre** – aldri slette. Et skrivebeskyttet token avviser all skriving (`TOKEN_READ_ONLY`).',
+  '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
+    '**Lese, opprette, endre** – og slette, én rad om gangen, bare med et token opprettet for det. Et skrivebeskyttet token avviser all skriving (`TOKEN_READ_ONLY`).',
   '**Cette base** : ouverte aux agents.': '**Denne databasen**: åpen for agenter.',
   '**Cette base** : **fermée aux agents** — aucun outil ne la voit.':
     '**Denne databasen**: **stengt for agenter** – ingen verktøy ser den.',
@@ -233,8 +242,8 @@ export const nb: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Alle dataruter krever et **token**, i headeren `Authorization`. Øktinformasjonskapselen godtas aldri her: en nettleser sender den med hver forespørsel, inkludert dem en fremmed side utløser.',
   'Jeton d’intégration': 'Integrasjonstoken',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Et program – skript, synkronisering, en annen applikasjon – presenterer et **integrasjonstoken**, som begynner med `bdb_`. Det gjelder bare for denne databasen; det leser, og oppretter og endrer hvis det ble opprettet med skrivetilgang, men **sletter aldri**; og det har aldri flere tillatelser enn personen som opprettet det, sammenlignet ved hvert kall. Administrasjon, SQL-konsollen og KI-en forblir stengt for det.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Et program – skript, synkronisering, en annen applikasjon – presenterer et **integrasjonstoken**, som begynner med `bdb_`. Det gjelder bare for denne databasen; det leser, oppretter og endrer hvis det ble opprettet med skrivetilgang, og **sletter bare hvis det ble opprettet for det**; og det har aldri flere tillatelser enn personen som opprettet det, sammenlignet ved hvert kall. Administrasjon, SQL-konsollen og KI-en forblir stengt for det.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'For å opprette ett: menyen «⋯» til databasen → **API og agenter** → **API- og MCP-tokener…**, med **REST-API**-tilgang avkrysset. Det vises bare én gang.',
   Appel: 'Kall',

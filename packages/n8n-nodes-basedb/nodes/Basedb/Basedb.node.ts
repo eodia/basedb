@@ -17,8 +17,8 @@ import { allRows, basedbRequest, getBases, getColumns, getTables, tableOf } from
  * integration token, never more. The base, the table and its fields are those the token
  * sees; the values are converted to what each field takes (dates, lists, links).
  *
- * A token never deletes: there is no « Delete » here, and a workflow that must remove rows
- * does it from an automation of basedb, or marks them.
+ * There is no « Delete » here: a workflow that must remove rows does it from an automation
+ * of basedb, or marks them — or calls the REST API with a token created to delete.
  */
 
 /** What the matching fields mean, for an update and for a « Create or Update ». */

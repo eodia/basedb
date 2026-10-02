@@ -1,8 +1,9 @@
 import { BasedbError } from '../errors/index.js'
+import { restoreDeletedRecord } from '../history/read.js'
 import { createRecord } from '../records/create.js'
 import { OPERATORS, type Operator } from '../records/filter.js'
 import { listRecords } from '../records/list.js'
-import { updateRecord } from '../records/update.js'
+import { deleteRecord, updateRecord } from '../records/update.js'
 import { shapeEmail, shapeUrl } from '../records/values.js'
 import type { Pools } from '../runtime/pool.js'
 import type { RequestContext } from '../tx/context.js'
@@ -625,12 +626,20 @@ function writableValues(
   return out
 }
 
-/** `PERMISSION_DENIED` when the bearer can read but not do; `TOKEN_READ_ONLY` if the token is why. */
-function requireWrite(table: AgentTable, action: 'create' | 'update'): void {
+/**
+ * `PERMISSION_DENIED` when the bearer can read but not do; `TOKEN_READ_ONLY` if the token
+ * is why — or, for a token that writes but was not made to delete, a refusal that says so.
+ */
+function requireWrite(table: AgentTable, action: 'create' | 'update' | 'delete'): void {
   const decision = table.decisions[action]
   if (decision.verdict === 'ALLOWED') return
   const object = { kind: 'table', name: table.row.table_name }
   if (decision.reason === 'TOKEN_ACTION_NOT_GRANTED') {
+    if (action === 'delete' && table.decisions.update.verdict === 'ALLOWED') {
+      throw new BasedbError('PERMISSION_DENIED', {
+        details: { object, action, hint: 'token_delete' },
+      })
+    }
     throw new BasedbError('TOKEN_READ_ONLY', { details: { object } })
   }
   // The table is readable — the bearer knows it by an authorized path, so the refusal
@@ -780,6 +789,96 @@ export async function agentUpdateRecord(
       return {
         _id: request.id.toLowerCase(),
         updated: true,
+        ...(record === null ? {} : { record }),
+        provenance: 'user_data',
+      }
+    },
+  )
+  return writeResult(table, response)
+}
+
+/** A row designated by its `_id`, in a table of the bearer's base. */
+export interface AgentRowRequest {
+  readonly base: string
+  readonly table: string
+  readonly id: string
+  readonly idempotencyKey?: string
+}
+
+/**
+ * `delete_record` — for a token created to delete. The row is read first, under the read
+ * mask, and handed back: the agent keeps what it removed. The deletion is the kernel's
+ * ordinary one, captured by the history with the token's name, and `restore_record`
+ * brings the row back.
+ */
+export async function agentDeleteRecord(
+  pools: Pools,
+  ctx: RequestContext,
+  request: AgentRowRequest,
+): Promise<AgentWriteResult> {
+  const view = await agentView(pools, ctx)
+  const table = resolveAgentTable(view, request.base, request.table)
+  requireWrite(table, 'delete')
+  if (!UUID.test(request.id)) throw new BasedbError('RESOURCE_NOT_FOUND')
+  const id = request.id.toLowerCase()
+
+  const response = await idempotent(
+    pools,
+    ctx,
+    request.idempotencyKey,
+    'mcp.delete_record',
+    { base: table.base.row.id, table: table.row.id, id },
+    async () => {
+      const record = await readBack(pools, ctx, view, table, id)
+      try {
+        await deleteRecord(pools, ctx, { tableId: table.row.id, recordId: id })
+      } catch (error) {
+        agentError(error, table, view)
+      }
+      return {
+        _id: id,
+        deleted: true,
+        restorable: true,
+        ...(record === null ? {} : { record }),
+        provenance: 'user_data',
+      }
+    },
+  )
+  return writeResult(table, response)
+}
+
+/**
+ * `restore_record` — brings back a row deleted from a table of the base, under its own
+ * `_id`, with the values its last deletion captured. A restoration is a creation: it asks
+ * `create`, and a row present again is refused (`RESTORE_RECORD_PRESENT`).
+ */
+export async function agentRestoreRecord(
+  pools: Pools,
+  ctx: RequestContext,
+  request: AgentRowRequest,
+): Promise<AgentWriteResult> {
+  const view = await agentView(pools, ctx)
+  const table = resolveAgentTable(view, request.base, request.table)
+  requireWrite(table, 'create')
+  if (!UUID.test(request.id)) throw new BasedbError('RESOURCE_NOT_FOUND')
+  const id = request.id.toLowerCase()
+
+  const response = await idempotent(
+    pools,
+    ctx,
+    request.idempotencyKey,
+    'mcp.restore_record',
+    { base: table.base.row.id, table: table.row.id, id },
+    async () => {
+      try {
+        await restoreDeletedRecord(pools, ctx, { tableId: table.row.id, recordId: id })
+      } catch (error) {
+        agentError(error, table, view)
+      }
+      const record = await readBack(pools, ctx, view, table, id)
+      return {
+        _id: id,
+        restored: true,
         ...(record === null ? {} : { record }),
         provenance: 'user_data',
       }

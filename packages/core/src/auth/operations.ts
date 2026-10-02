@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { BasedbError } from '../errors/index.js'
+import type { MailFile } from '../mail/message.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { mailLocale, mailTexts, resetTexts } from './mail-texts.js'
 import { checkPasswordPolicy, dummyVerify, hashPassword, verifyPassword } from './password.js'
@@ -614,6 +615,12 @@ export interface MailMessage {
   readonly replyTo?: string
   /** Written by a machine (RFC 3834 `Auto-Submitted`): no out-of-office reply to it. */
   readonly automatic?: boolean
+  /** More recipients of the same mail, beside `to`: they see each other. */
+  readonly also?: readonly string[]
+  /** In copy. */
+  readonly cc?: readonly string[]
+  /** Files attached. */
+  readonly attachments?: readonly MailFile[]
 }
 
 export type Mailer = (message: MailMessage) => Promise<void>

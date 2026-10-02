@@ -1,7 +1,8 @@
 'use client'
 
 import { AutomationCopilot, type FlowBridge } from '@/components/app/automation-copilot'
-import { FlowCanvas, STEP_ICONS, StepMenu } from '@/components/app/automation-flow'
+import { FlowCanvas, STEP_ICONS } from '@/components/app/automation-flow'
+import { StepPicker } from '@/components/app/automation-picker'
 import { PathSettings, StepSettings, TriggerSettings } from '@/components/app/automation-steps'
 import { CopilotToggle } from '@/components/app/copilot-toggle'
 import { SidebarToggle } from '@/components/app/sidebar'
@@ -37,7 +38,6 @@ import {
   findPath,
   findStep,
   freshId,
-  inLoop,
   inputOf,
   insertStep,
   locate,
@@ -61,6 +61,7 @@ import {
   ArrowDown,
   ArrowUp,
   Ellipsis,
+  LifeBuoy,
   Loader2,
   PanelLeftClose,
   PanelLeftOpen,
@@ -319,8 +320,12 @@ function Panel({
               key={selected === 'new' ? `new:${seed.n}` : selected}
               base={base}
               automation={current}
+              automations={automations}
               initial={selected === 'new' ? seed.draft : null}
               register={register}
+              onReload={async () => {
+                await load()
+              }}
               onSaved={async (saved) => {
                 await load()
                 setSelected(saved.id)
@@ -353,11 +358,16 @@ function RunDot({ status }: { readonly status: string }) {
         ? 'bg-rose-500'
         : status === 'skipped'
           ? 'bg-muted-foreground/50'
-          : 'bg-amber-500'
+          : status === 'waiting'
+            ? 'bg-sky-500'
+            : 'bg-amber-500'
   return <span className={cn('inline-block size-1.5 rounded-full align-middle', tone)} />
 }
 
-/** The runs of an automation, read again while one is under way. */
+/** How close a waiting run's resumption must be for its list to be read again on its own. */
+const RESUMING_SOON_MS = 15 * 60_000
+
+/** The runs of an automation, read again while one is under way, or about to go on. */
 function useRuns(base: DescribedBase, automation: Automation | null, tick: number) {
   const [runs, setRuns] = useState<readonly AutomationRun[] | null>(null)
   const id = automation?.id ?? null
@@ -375,28 +385,45 @@ function useRuns(base: DescribedBase, automation: Automation | null, tick: numbe
     () => (runs ?? []).some((r) => r.status === 'queued' || r.status === 'running'),
     [runs],
   )
+  // A run held by a wait for days is not watched; one about to go on is, now and then.
+  const resuming = useMemo(
+    () =>
+      (runs ?? []).some(
+        (r) =>
+          r.status === 'waiting' &&
+          typeof r.resume_at === 'string' &&
+          Date.parse(r.resume_at) - Date.now() < RESUMING_SOON_MS,
+      ),
+    [runs],
+  )
   useEffect(() => {
-    if (!pending) return
-    const timer = setInterval(() => void load(), 2000)
+    if (!pending && !resuming) return
+    const timer = setInterval(() => void load(), pending ? 2000 : 20_000)
     return () => clearInterval(timer)
-  }, [pending, load])
+  }, [pending, resuming, load])
   return runs
 }
 
 function Editor({
   base,
   automation,
+  automations,
   initial,
   register,
+  onReload,
   onSaved,
   onDeleted,
 }: {
   readonly base: DescribedBase
   readonly automation: Automation | null
+  /** The automations of the base — those a step may start; `null` while read. */
+  readonly automations: readonly Automation[] | null
   /** What a new automation opens with — a proposal of the copilot. */
   readonly initial: Draft | null
   /** Gives the copilot the editor's flow, to read and to lay a proposal on. */
   readonly register: (bridge: FlowBridge | null) => void
+  /** Reads the automations again — after a webhook's address was renewed. */
+  readonly onReload: () => Promise<void>
   readonly onSaved: (saved: Automation) => Promise<void>
   readonly onDeleted: () => Promise<void>
 }) {
@@ -455,18 +482,44 @@ function Editor({
     setTab('settings')
   }, [])
 
-  const insert = (slot: Slot, kind: StepKind) => {
-    const id = freshId(draft.steps, 'e')
-    const step = newStep(kind, draft, base, id)
+  // One picker for the whole flow: the canvas's « + » and the inspector's buttons ask it
+  // for a step at a place.
+  const [picking, setPicking] = useState<Slot | null>(null)
+  const pick = useCallback((slot: Slot) => setPicking(slot), [])
+
+  /** Adds a step made elsewhere at a place, and opens it. */
+  const place = (slot: Slot, step: DraftStep, open: string = step.id) => {
     setDraft((d) => ({ ...d, steps: insertStep(d.steps, slot.path, slot.index, step) }))
-    setSelected(id)
-    setFocus(id)
+    setSelected(open)
+    setFocus(step.id)
     setTab('settings')
     setShownRun(null)
   }
 
+  const insert = (slot: Slot, kind: StepKind) =>
+    place(slot, newStep(kind, draft, base, freshId(draft.steps, 'e')))
+
+  /** Right after a step, in its own sequence: a step made for it — « Si aucune ligne… ». */
+  const insertAfter = (
+    after: string,
+    make: (id: string) => DraftStep,
+    open?: (step: DraftStep) => string,
+  ) => {
+    const where = locate(draft.steps, after)
+    if (where === null) return
+    const step = make(freshId(draft.steps, 'e'))
+    place({ path: where.path, index: where.index + 1 }, step, open?.(step))
+  }
+
   const setSteps = (edit: (steps: readonly DraftStep[]) => DraftStep[]) =>
     setDraft((d) => ({ ...d, steps: edit(d.steps) }))
+
+  /** A new address for a webhook trigger: the old one stops at once. */
+  const regenerateHook = async () => {
+    if (automation === null) return
+    await api.updateAutomation(base.name, automation.id, { regenerate_hook: true })
+    await onReload()
+  }
 
   const save = async () => {
     setBusy(true)
@@ -588,11 +641,21 @@ function Editor({
             draft={draft}
             base={base}
             members={members}
+            automations={automations}
             selected={tab === 'settings' ? selected : ''}
             onSelect={select}
-            onInsert={insert}
+            onPick={pick}
             run={run}
             focus={focus}
+          />
+          <StepPicker
+            draft={draft}
+            slot={picking}
+            onPick={(kind) => {
+              if (picking !== null) insert(picking, kind)
+              setPicking(null)
+            }}
+            onClose={() => setPicking(null)}
           />
           {run !== null && (
             <div className="absolute top-3 left-3 z-10 flex max-w-[calc(100%-1.5rem)] items-center gap-2 whitespace-nowrap rounded-full border bg-card px-3 py-1 text-xs shadow-sm">
@@ -638,11 +701,14 @@ function Editor({
                 draft={draft}
                 base={base}
                 automation={automation}
+                automations={automations}
                 selected={selected}
                 onSelect={select}
                 onDraft={(patch) => setDraft((d) => ({ ...d, ...patch }))}
                 onSteps={setSteps}
-                onInsert={insert}
+                onPick={pick}
+                onInsertAfter={insertAfter}
+                onRegenerateHook={regenerateHook}
               />
             </TabsContent>
             <TabsContent value="runs" className="min-h-0 flex-1 overflow-y-auto scroll-discret">
@@ -665,20 +731,32 @@ function Inspector({
   draft,
   base,
   automation,
+  automations,
   selected,
   onSelect,
   onDraft,
   onSteps,
-  onInsert,
+  onPick,
+  onInsertAfter,
+  onRegenerateHook,
 }: {
   readonly draft: Draft
   readonly base: DescribedBase
   readonly automation: Automation | null
+  readonly automations: readonly Automation[] | null
   readonly selected: string
   readonly onSelect: (id: string) => void
   readonly onDraft: (patch: Partial<Draft>) => void
   readonly onSteps: (edit: (steps: readonly DraftStep[]) => DraftStep[]) => void
-  readonly onInsert: (slot: Slot, kind: StepKind) => void
+  /** Opens the picker for a step to add at a place. */
+  readonly onPick: (slot: Slot) => void
+  /** Adds a step made for another right after it — and opens it, or what `open` names. */
+  readonly onInsertAfter: (
+    after: string,
+    make: (id: string) => DraftStep,
+    open?: (step: DraftStep) => string,
+  ) => void
+  readonly onRegenerateHook: () => Promise<void>
 }) {
   const members = useMembers()
 
@@ -689,14 +767,23 @@ function Inspector({
         title={$t('Déclencheur')}
         tone="bg-primary/12 text-primary"
       >
-        <TriggerSettings draft={draft} base={base} automation={automation} onChange={onDraft} />
+        <TriggerSettings
+          draft={draft}
+          base={base}
+          automation={automation}
+          onChange={onDraft}
+          onRegenerateHook={onRegenerateHook}
+        />
         {draft.steps.length === 0 && (
-          <StepMenu onPick={(kind) => onInsert({ path: null, index: 0 }, kind)} align="start">
-            <Button variant="outline" size="sm" className="mt-6 w-full gap-1.5">
-              <Plus className="size-4" />
-              {$t('Ajouter une étape')}
-            </Button>
-          </StepMenu>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-6 w-full gap-1.5"
+            onClick={() => onPick({ path: null, index: 0 })}
+          >
+            <Plus className="size-4" />
+            {$t('Ajouter une étape')}
+          </Button>
         )}
       </Pane>
     )
@@ -751,30 +838,36 @@ function Inspector({
                 ? $t('Retirer la condition et ses chemins')
                 : step.kind === 'for_each'
                   ? $t('Retirer la boucle et ses étapes')
-                  : $t('Retirer l’étape')}
+                  : step.kind === 'attempt'
+                    ? $t('Retirer « Essayer » et ses chemins')
+                    : $t('Retirer l’étape')}
             </Button>
           </>
         }
       >
         <StepSettings
+          // A form per step: what one holds — a rich text being written — is not another's.
+          key={step.id}
           step={step}
           draft={draft}
           base={base}
           members={members}
+          automation={automation}
+          automations={automations}
           onChange={(next) => onSteps((s) => replaceStep(s, step.id, next))}
           onSelect={onSelect}
+          onInsertAfter={(make, open) => onInsertAfter(step.id, make, open)}
         />
         {step.kind === 'for_each' && (
-          <StepMenu
-            onPick={(kind) => onInsert({ path: step.id, index: step.steps.length }, kind)}
-            align="start"
-            looped
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-6 w-full gap-1.5"
+            onClick={() => onPick({ path: step.id, index: step.steps.length })}
           >
-            <Button variant="outline" size="sm" className="mt-6 w-full gap-1.5">
-              <Plus className="size-4" />
-              {$t('Ajouter une étape dans la boucle')}
-            </Button>
-          </StepMenu>
+            <Plus className="size-4" />
+            {$t('Ajouter une étape dans la boucle')}
+          </Button>
         )}
       </Pane>
     )
@@ -783,36 +876,51 @@ function Inspector({
   const found = findPath(draft.steps, selected)
   if (found !== null) {
     const { branch, path } = found
+    const attempt = branch.kind === 'attempt'
+    const rescue = attempt && branch.paths[1]?.id === path.id
     return (
       <Pane
-        icon={<Split className="size-4" />}
-        title={path.otherwise ? $t('Chemin « Sinon »') : $t('Chemin')}
+        icon={attempt ? <LifeBuoy className="size-4" /> : <Split className="size-4" />}
+        title={
+          attempt
+            ? $t('Chemin « {label} »', { label: path.label })
+            : path.otherwise
+              ? $t('Chemin « Sinon »')
+              : $t('Chemin')
+        }
         id={path.id}
-        tone="bg-amber-500/15 text-amber-700 dark:text-amber-300"
+        tone={
+          rescue
+            ? 'bg-rose-500/12 text-rose-700 dark:text-rose-300'
+            : 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
+        }
         footer={
           <>
             <Button variant="ghost" size="sm" onClick={() => onSelect(branch.id)}>
-              {$t('Tous les chemins')}
+              {attempt ? $t('Revenir à « Essayer »') : $t('Tous les chemins')}
             </Button>
             <div className="flex-1" />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-destructive hover:text-destructive"
-              disabled={branch.paths.length === 1}
-              onClick={() => {
-                onSteps((s) =>
-                  replaceStep(s, branch.id, {
-                    ...branch,
-                    paths: branch.paths.filter((p) => p.id !== path.id),
-                  }),
-                )
-                onSelect(branch.id)
-              }}
-            >
-              <Trash2 className="size-4" />
-              {$t('Retirer le chemin')}
-            </Button>
+            {/* An attempt has its two paths, always. */}
+            {!attempt && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-destructive hover:text-destructive"
+                disabled={branch.paths.length === 1}
+                onClick={() => {
+                  onSteps((s) =>
+                    replaceStep(s, branch.id, {
+                      ...branch,
+                      paths: branch.paths.filter((p) => p.id !== path.id),
+                    }),
+                  )
+                  onSelect(branch.id)
+                }}
+              >
+                <Trash2 className="size-4" />
+                {$t('Retirer le chemin')}
+              </Button>
+            )}
           </>
         }
       >
@@ -822,16 +930,15 @@ function Inspector({
           base={base}
           onChange={(next) => onSteps((s) => replacePath(s, path.id, () => next))}
         />
-        <StepMenu
-          onPick={(kind) => onInsert({ path: path.id, index: path.steps.length }, kind)}
-          align="start"
-          looped={inLoop(draft.steps, path.id)}
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-6 w-full gap-1.5"
+          onClick={() => onPick({ path: path.id, index: path.steps.length })}
         >
-          <Button variant="outline" size="sm" className="mt-6 w-full gap-1.5">
-            <Plus className="size-4" />
-            {$t('Ajouter une étape à ce chemin')}
-          </Button>
-        </StepMenu>
+          <Plus className="size-4" />
+          {$t('Ajouter une étape à ce chemin')}
+        </Button>
       </Pane>
     )
   }

@@ -13,12 +13,16 @@ Jego adresy URL zawierają nazwy fizyczne – te same, które czytasz w SQL.
 
 ## Token
 
-W interfejsie, menu **⋯** bazy → **API i agenci** → **Tokeny API i MCP…**: tworzy się tam **token
-integracji** ograniczony do tej bazy, domyślnie tylko do odczytu, po potwierdzeniu swojego
-hasła. Jest wyświetlany tylko raz; umieść go w zmiennej środowiskowej.
+W interfejsie, menu **⋯** bazy → **API i agenci** → **Tokeny API i MCP…**: osoba z poziomem
+**Zarządzanie** na bazie lub na jej projekcie tworzy tam **token integracji** ograniczony do tej
+bazy, domyślnie tylko do odczytu, po potwierdzeniu swojego hasła – konto bez hasła, logujące się
+przez dostawcę tożsamości, nie może tego jeszcze zrobić. Jest wyświetlany tylko raz; umieść go w
+zmiennej środowiskowej.
 
-Token czyta, tworzy i zmienia, jeśli został utworzony z prawem zapisu, **nigdy niczego nie
-usuwa** i nigdy nie ma większych uprawnień niż osoba, która go utworzyła.
+Token czyta; tworzy i zmienia, jeśli został utworzony z prawem zapisu, a **usuwa, jeśli został
+utworzony do tego** — uprawnienia „Odczyt, zapis i usuwanie” — poza wierszem, który zabrałaby ze
+sobą relacja kaskadowa razem z innymi. Nigdy nie ma większych uprawnień niż osoba, która go
+utworzyła.
 
 ```bash
 export BASEDB_TOKEN=bdb_…

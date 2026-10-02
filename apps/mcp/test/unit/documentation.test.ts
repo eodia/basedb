@@ -17,7 +17,7 @@ describe('the tools the documentation describes', () => {
       const documented = DOCUMENTED_MCP_TOOLS.find((t) => t.name === tool.name)
       const writes =
         documented?.needs !== undefined &&
-        ['create', 'update', 'propose'].includes(documented.needs)
+        ['create', 'update', 'delete', 'propose'].includes(documented.needs)
       expect({ tool: tool.name, writes }).toEqual({
         tool: tool.name,
         writes: tool.annotations.readOnlyHint !== true,

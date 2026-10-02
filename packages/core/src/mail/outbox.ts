@@ -1,6 +1,8 @@
 import type { Mailer } from '../auth/operations.js'
 import type { NotificationKind } from '../collab/notifications.js'
+import type { FileStorage } from '../files/storage.js'
 import type { Executor, Pools } from '../runtime/pool.js'
+import type { MailFile } from './message.js'
 import { notificationMailTexts } from './notification-texts.js'
 import { SmtpError } from './smtp.js'
 
@@ -39,7 +41,20 @@ interface Due extends Record<string, unknown> {
   readonly reply_to: string | null
   readonly subject: string | null
   readonly body_text: string | null
+  readonly body_html: string | null
+  readonly also_to: string[] | null
+  readonly cc: string[] | null
+  readonly attachments: Attachment[] | null
   readonly attempts: number
+}
+
+/** A file an automation's mail attaches, by its key in the storage. */
+interface Attachment {
+  readonly key: string
+  readonly name: string
+  readonly type: string
+  /** Made for this mail — a PDF —: removed once the mail is sent or given up. */
+  readonly owned: boolean
 }
 
 export interface MailDelivery {
@@ -47,6 +62,8 @@ export interface MailDelivery {
   readonly mailer?: Mailer
   /** Where the interface is reached — what a link in a mail points at. */
   readonly publicUrl?: string | null
+  /** Where the files an automation's mail attaches are kept. */
+  readonly storage?: FileStorage
 }
 
 async function takeDue(pools: Pools): Promise<Due[]> {
@@ -55,7 +72,7 @@ async function takeDue(pools: Pools): Promise<Due[]> {
     try {
       const due = await exec.query<Due>(
         `SELECT id::text, origin, user_id::text, notification_id::text, recipient, reply_to,
-                subject, body_text, attempts
+                subject, body_text, body_html, also_to, cc, attachments, attempts
            FROM _basedb.mail_outbox
           WHERE status = 'pending' AND not_before <= clock_timestamp()
           ORDER BY not_before
@@ -298,17 +315,56 @@ export async function deliverMails(pools: Pools, delivery: MailDelivery): Promis
           to: d.recipient,
           subject: d.subject ?? '',
           body: d.body_text ?? '',
+          ...(d.body_html === null ? {} : { html: d.body_html }),
           ...(d.reply_to === null ? {} : { replyTo: d.reply_to }),
+          ...(d.also_to === null ? {} : { also: d.also_to }),
+          ...(d.cc === null ? {} : { cc: d.cc }),
+          ...(d.attachments === null
+            ? {}
+            : { attachments: await filesOf(delivery.storage, d.attachments) }),
           automatic: true,
         })
         await markSent(exec, [d.id])
+        await release(delivery.storage, d)
         sent += 1
       } catch (error) {
         await markFailed(exec, [d], error)
+        if (final(d, error)) await release(delivery.storage, d)
       }
     }
     return sent
   })
+}
+
+/** Whether a refusal was the last: given up, not tried again. */
+const final = (row: Due, error: unknown) =>
+  (error instanceof SmtpError && error.permanent) || BACKOFF_MINUTES[row.attempts - 1] === undefined
+
+/** The bytes of the files a mail attaches, read from the storage. */
+async function filesOf(
+  storage: FileStorage | undefined,
+  attachments: readonly Attachment[],
+): Promise<MailFile[]> {
+  if (storage === undefined) throw new SmtpError('no file storage for the attachments', 550)
+  const out: MailFile[] = []
+  for (const a of attachments) {
+    const chunks: Uint8Array[] = []
+    const reader = (await storage.get(a.key)).getReader()
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      chunks.push(value)
+    }
+    out.push({ name: a.name, type: a.type, bytes: Buffer.concat(chunks) })
+  }
+  return out
+}
+
+/** The files made for a mail — a PDF — go once it is sent or given up; a field's stay. */
+async function release(storage: FileStorage | undefined, row: Due): Promise<void> {
+  for (const a of row.attachments ?? []) {
+    if (a.owned) await storage?.delete(a.key).catch(() => undefined)
+  }
 }
 
 /** Sent and failed mails are kept a month, then forgotten. */

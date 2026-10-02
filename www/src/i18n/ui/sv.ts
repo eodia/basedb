@@ -1284,10 +1284,10 @@ export default {
 		agents: {
 			label: 'REST-API · MCP · webhooks',
 			title: 'Dina AI-agenter når dina data, {inte nycklarna till huset.}',
-			lead: 'MCP-servern ger agenterna tolv verktyg; REST-API:et ger dina program samma data. En enda punkt för behörighetskontroll, samma loggar.',
+			lead: 'MCP-servern ger agenterna fjorton verktyg; REST-API:et ger dina program samma data. En enda punkt för behörighetskontroll, samma loggar.',
 			bullets: [
 				'<strong>En token per databas</strong>, skrivskyddad som standard, aldrig med fler behörigheter än personen som skapade den.',
-				'<strong>En agent tar inte bort något</strong> och ändrar inte strukturen: den föreslår, en person godkänner.',
+				'<strong>En agent tar bara bort med ditt godkännande</strong>, en rad i taget, och ändrar inte strukturen: den föreslår, en person godkänner.',
 				'<strong>Genererad dokumentation</strong> för varje databas, filtrerad efter dina behörigheter, med sin OpenAPI 3.1-specifikation.',
 				'<strong>Webhooks</strong> vid varje skrivning: signerade, ordnade och med nya försök.',
 			],
@@ -1509,7 +1509,7 @@ export default {
 			},
 			agent: {
 				q: 'Hur ansluter en AI-agent?',
-				a: 'Via MCP-servern, med en integrationstoken som är begränsad till en databas, skrivskyddad som standard. En agent läser, skapar och ändrar rader enligt sina behörigheter; den tar inte bort något och ändrar inte strukturen: den föreslår, och en person godkänner.',
+				a: 'Via MCP-servern, med en integrationstoken som är begränsad till en databas, skrivskyddad som standard. En agent läser, skapar och ändrar rader enligt sina behörigheter – och tar bort, en rad i taget, om dess token har skapats för det; den ändrar inte strukturen: den föreslår, och en person godkänner.',
 			},
 			postgres: {
 				q: 'Vilken version av PostgreSQL behövs?',
@@ -1536,6 +1536,47 @@ export default {
 		title: 'Vad som har ändrats i basedb',
 		intro: 'Detaljerna för varje ändring finns i <a href="https://github.com/eodia/basedb/commits/main">repots historik</a>. Vad som kommer härnäst: <a href="/feuille-de-route/">färdplanen</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Agenter som tar bort, om du tillåter det',
+				tag: 'Nytt',
+				items: [
+					'<strong>En tredje tokennivå</strong>, ”Läsa, skriva och ta bort”: ett program tar bort via REST-API:et, en agent via det nya verktyget <code>delete_record</code> – en rad i taget, som ges tillbaka i svaret. <a href="/integrations/mcp/#ta-bort-rader">Ta bort rader</a>',
+					'<strong>Gå tillbaka</strong>: <code>restore_record</code> återställer en borttagen rad med dess identifierare; en borttagning som en kaskadrelation skulle utöka till andra rader förblir förbehållen gränssnittet.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Token för den som hanterar en databas',
+				tag: 'Nytt',
+				items: [
+					'<strong>Nivån Hantera räcker</strong>: given på en databas eller på dess projekt, gör den det möjligt att skapa integrationstokens för dess databaser, utan att vara administratör. <a href="/integrations/api-rest/#en-token">En token</a>',
+					'<strong>Säger det annars tydligt</strong>: den som läser eller skriver utan att hantera databasen får i tokenfönstret veta vem man ska vända sig till; ett konto utan lösenord får veta varför det inte kan skapa en än.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automatiseringar som väntar, fångar fel och skickar PDF:er',
+				tag: 'Nytt',
+				items: [
+					'<strong>Fyra utlösare till</strong>: en rad tas bort; en rad kommer in i ett filter – ”en faktura blir försenad”; ett datum infaller – tre dagar innan förfallodatumet, kl. 9; ett annat program anropar automatiseringens hemliga adress. <a href="/fonctionnalites/automatisations/#en-tjänst-som-anropar-basedb">En tjänst som anropar basedb</a>',
+					'<strong>Vänta</strong> tre dagar, eller till datumet i ett fält, och återuppta sedan genom att läsa om raden: ”om den fortfarande inte är accepterad, skicka en påminnelse”. <a href="/fonctionnalites/automatisations/#vänta">Vänta</a>',
+					'<strong>Generera en PDF och skicka den</strong>: dokumentet för en rad, sparat i ett Fil-fält eller bifogat ett e-postmeddelande – i formaterad text, med mottagare i kopia och en svarsadress, till var och en eller ett enda till alla. <a href="/fonctionnalites/automatisations/#en-pdf-och-ett-e-postmeddelande">En PDF och ett e-postmeddelande</a>',
+					'<strong>Ta bort en rad, räkna och summera, köra en annan automatisering</strong>; ett villkor kan också testa ett värde – AI:ns svar, en totalsumma –, och en sökning som inte hittar något får sin egen gren.',
+					'<strong>Försök</strong>: steg, och andra om ett av dem misslyckas; en webhook försöker igen på egen hand, en loop fortsätter trots en rad som misslyckas. <a href="/fonctionnalites/automatisations/#försök">Försök</a>',
+					'<strong>Alla steg inom räckhåll</strong>: <strong>+</strong> öppnar ett fönster ordnat efter kategori, med en sökruta, i stället för en meny som kunde bli avskuren.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'PDF-dokument i dina egna färger',
+				tag: 'Nytt',
+				items: [
+					'<strong>Fem utgångspunkter</strong> — faktura, offert, informationsblad, intyg, tom sida —, byggda med din tabells kolumner: nummer, datum, belopp, foto, länkade rader. <a href="/fonctionnalites/documents/#skapa-en-mall">Skapa en mall</a>',
+					'<strong>Din logotyp och dina färger</strong>: ett sidhuvud med logotyp och kontaktuppgifter, en sidfot med juridisk information och sidnummer, en accentfärg, typsnitt med eller utan serifer, en ram runt sidan. <a href="/fonctionnalites/documents/#sidhuvud-och-sidfot">Sidhuvud och sidfot</a>',
+					'<strong>Nya block</strong>: en rubrik på en banderoll, en bild, två eller tre kolumner, en sammanfattning exkl./inkl. moms, en tabell med färgad rubrikrad, en avgränsare. De dras för att ordnas om, och förhandsvisningen följer varje ändring. <a href="/fonctionnalites/documents/#innehållet-block">Blocken</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'En avbruten anslutning stoppar inte längre basedb',
@@ -1920,8 +1961,8 @@ export default {
 						text: 'Kopiera SQL-vyerna tillsammans med strukturen när miljöer skapas eller jämförs, och i databasmallar.',
 					},
 					loops: {
-						title: 'Väntan i automatiseringar',
-						text: 'Vänta före nästa steg (”tre dagar senare”), och ta med flödena – villkor, sökningar, loopar – i databasmallar.',
+						title: 'Fullständiga flöden i databasmallar',
+						text: 'Ta med automatiseringsflödena – villkor, sökningar, loopar, väntan, PDF – i databasmallar, som i dag bara behåller de enkla stegen.',
 					},
 					textFormulas: {
 						title: 'Formler för text',

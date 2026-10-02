@@ -15,9 +15,18 @@ export interface Address {
   readonly name?: string | null
 }
 
+/** A file a mail carries, as its bytes. */
+export interface MailFile {
+  readonly name: string
+  readonly type: string
+  readonly bytes: Uint8Array
+}
+
 export interface OutgoingMail {
   readonly from: Address
   readonly to: readonly Address[]
+  /** In copy: seen by every recipient. */
+  readonly cc?: readonly Address[]
   readonly replyTo?: Address | null
   readonly subject: string
   /** The plain text: what every client can show. */
@@ -28,6 +37,8 @@ export interface OutgoingMail {
   readonly automatic?: boolean
   /** A `List-Unsubscribe` address, for a mail a person may stop receiving. */
   readonly unsubscribe?: string | null
+  /** Files attached: the message and them, side by side (`multipart/mixed`). */
+  readonly attachments?: readonly MailFile[]
 }
 
 export class MailFormatError extends Error {}
@@ -82,12 +93,34 @@ export function formatAddress(a: Address): string {
 }
 
 /** base64, 76 characters a line. */
-function base64Lines(text: string): string {
+function base64Lines(text: string | Uint8Array): string {
   return (
-    Buffer.from(text, 'utf8')
+    (typeof text === 'string' ? Buffer.from(text, 'utf8') : Buffer.from(text))
       .toString('base64')
       .match(/.{1,76}/g) ?? []
   ).join('\r\n')
+}
+
+/** A file's type as a header may carry it; anything else is plain bytes. */
+const MEDIA_TYPE = /^[a-z0-9.+-]+\/[a-z0-9.+-]+$/
+
+/**
+ * The headers of an attached file. Its name twice: in RFC 2231 form, which carries any
+ * character, and in plain ASCII for the clients that read only that one.
+ */
+function fileHeaders(file: MailFile): string[] {
+  const type = MEDIA_TYPE.test(file.type) ? file.type : 'application/octet-stream'
+  const name = file.name.replace(/[\r\n]/g, ' ')
+  const plain = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_')
+  const encoded = encodeURIComponent(name).replace(
+    /['()*]/g,
+    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
+  )
+  return [
+    `Content-Type: ${type}; name="${plain}"`,
+    'Content-Transfer-Encoding: base64',
+    `Content-Disposition: attachment; filename="${plain}"; filename*=UTF-8''${encoded}`,
+  ]
 }
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -113,6 +146,9 @@ export function composeMail(
     `Date: ${mailDate(options.at)}`,
     `From: ${formatAddress(mail.from)}`,
     `To: ${mail.to.map(formatAddress).join(',\r\n ')}`,
+    ...((mail.cc ?? []).length > 0
+      ? [`Cc: ${(mail.cc ?? []).map(formatAddress).join(',\r\n ')}`]
+      : []),
     ...(mail.replyTo ? [`Reply-To: ${formatAddress(mail.replyTo)}`] : []),
     `Subject: ${encodeWords(mail.subject)}`,
     `Message-ID: ${messageId}`,
@@ -126,23 +162,40 @@ export function composeMail(
     '',
     base64Lines(mail.text),
   ]
-  let body: string[]
+  // The message itself: its text, or its text and its HTML side by side.
+  let part: { readonly headers: string[]; readonly body: string[] }
   if (mail.html) {
     const boundary = `basedb-${randomBytes(12).toString('hex')}`
-    headers.push(`Content-Type: multipart/alternative; boundary="${boundary}"`)
-    body = [
-      `--${boundary}`,
-      ...text,
-      `--${boundary}`,
-      'Content-Type: text/html; charset=utf-8',
-      'Content-Transfer-Encoding: base64',
-      '',
-      base64Lines(mail.html),
-      `--${boundary}--`,
-    ]
+    part = {
+      headers: [`Content-Type: multipart/alternative; boundary="${boundary}"`],
+      body: [
+        `--${boundary}`,
+        ...text,
+        `--${boundary}`,
+        'Content-Type: text/html; charset=utf-8',
+        'Content-Transfer-Encoding: base64',
+        '',
+        base64Lines(mail.html),
+        `--${boundary}--`,
+      ],
+    }
   } else {
-    headers.push(text[0] as string, text[1] as string)
-    body = [text[3] as string]
+    part = { headers: [text[0] as string, text[1] as string], body: [text[3] as string] }
+  }
+  const files = mail.attachments ?? []
+  let body: string[]
+  if (files.length === 0) {
+    headers.push(...part.headers)
+    body = part.body
+  } else {
+    // The message first, then each file, as parts of one mixed whole.
+    const boundary = `basedb-${randomBytes(12).toString('hex')}`
+    headers.push(`Content-Type: multipart/mixed; boundary="${boundary}"`)
+    body = [`--${boundary}`, ...part.headers, '', ...part.body]
+    for (const file of files) {
+      body.push(`--${boundary}`, ...fileHeaders(file), '', base64Lines(file.bytes))
+    }
+    body.push(`--${boundary}--`)
   }
   return { data: [...headers, '', ...body, ''].join('\r\n'), messageId }
 }

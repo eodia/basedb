@@ -28,9 +28,9 @@ Crea in n8n una credenziale **basedb API**:
 | **Workspace** | il riferimento dello spazio di lavoro, quello degli indirizzi dell’API (`/api/v1/<espace>/…`): `t4z56fq`, a meno che l’istanza non fissi `BASEDB_TENANT` |
 | **Token** | un **token di integrazione**: menu **⋯** del database → **API e agenti** → **Token API e MCP…** |
 
-Un token apre **un** database. Legge le sue righe, le scrive se è stato creato in scrittura, non
-ha mai più permessi della persona che l’ha creato, e **non elimina mai**. Al salvataggio, n8n
-prova la connessione e dice se il token viene rifiutato.
+Un token apre **un** database. Legge le sue righe, le scrive se è stato creato in scrittura, e non
+ha mai più permessi della persona che l’ha creato. Al salvataggio, n8n prova la connessione e dice
+se il token viene rifiutato.
 
 ## Leggere e scrivere: il nodo basedb
 
@@ -58,9 +58,9 @@ valore che il campo rifiuta ferma il nodo con il codice di basedb e il suo signi
   collegata.
 - **Create or Update** non modifica mai più righe: se più righe portano i valori, il nodo si
   ferma invece di indovinare.
-- Nessuna operazione **Delete**: un token non elimina. Per rimuovere righe, contrassegnale (uno
-  stato «Archiviato»), oppure affida l’eliminazione a un’
-  [automazione](/basedb/it/fonctionnalites/automatisations/).
+- Nessuna operazione **Delete**: per rimuovere righe, contrassegnale (uno stato «Archiviato»),
+  affida l’eliminazione a un’[automazione](/basedb/it/fonctionnalites/automatisations/), oppure
+  chiama l’[API REST](/basedb/it/integrations/api-rest/) con un token creato per eliminare.
 
 ## Avviare un workflow
 

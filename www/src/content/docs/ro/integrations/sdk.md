@@ -79,4 +79,5 @@ programul să ruleze.
 Un **token de integrare** se creează din interfață: meniul **⋯** al bazei → **API și agenți**
 → **Tokenuri API și MCP…**. Deschide o bază, citește rândurile ei, le scrie dacă a fost creat
 cu drept de scriere, nu are niciodată mai multe permisiuni decât persoana care l-a creat, și
-**nu șterge niciodată**: `delete()` cere permisiunile unei sesiuni.
+**nu șterge decât dacă a fost creat pentru aceasta** („Citire, scriere și ștergere”): altfel
+`delete()` este refuzat.

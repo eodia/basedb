@@ -76,5 +76,5 @@ körs.
 
 En **integrationstoken** skapas i gränssnittet: databasens **⋯**-meny → **API och agenter** →
 **API- och MCP-tokens…**. Den öppnar en databas, läser dess rader, skriver dem om den skapades
-med skrivrätt, har aldrig fler behörigheter än personen som skapade den, och **tar aldrig
-bort**: `delete()` kräver en sessions behörigheter.
+med skrivrätt, har aldrig fler behörigheter än personen som skapade den, och **tar bara bort om
+den har skapats för det** (”Läsa, skriva och ta bort”): annars avvisas `delete()`.

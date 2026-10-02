@@ -1285,10 +1285,10 @@ export default {
 		agents: {
 			label: 'API REST · MCP · webhookuri',
 			title: 'Agenții AI primesc acces la date, {nu cheile castelului.}',
-			lead: 'Serverul MCP le oferă agenților douăsprezece instrumente; API-ul REST oferă aceleași date programelor dumneavoastră. Un singur punct de control al permisiunilor, aceleași jurnale.',
+			lead: 'Serverul MCP le oferă agenților paisprezece instrumente; API-ul REST oferă aceleași date programelor dumneavoastră. Un singur punct de control al permisiunilor, aceleași jurnale.',
 			bullets: [
 				'<strong>Un token pentru fiecare bază</strong>, implicit doar în citire, niciodată cu mai multe permisiuni decât persoana care l-a creat.',
-				'<strong>Un agent nu șterge nimic</strong> și nu schimbă structura: o propune, iar o persoană aprobă.',
+				'<strong>Un agent nu șterge decât cu acordul dumneavoastră</strong>, câte un rând, și nu schimbă structura: o propune, iar o persoană aprobă.',
 				'<strong>O documentație generată</strong> pentru fiecare bază, filtrată după permisiunile dumneavoastră, cu specificația ei OpenAPI 3.1.',
 				'<strong>Webhookuri</strong> semnate, ordonate și reîncercate, la fiecare scriere.',
 			],
@@ -1510,7 +1510,7 @@ export default {
 			},
 			agent: {
 				q: 'Cum se conectează un agent AI?',
-				a: 'Prin serverul MCP, cu un token de integrare limitat la o bază, implicit doar în citire. Un agent citește, creează și modifică rânduri în limita permisiunilor sale; nu șterge nimic și nu schimbă structura: o propune, iar o persoană aprobă.',
+				a: 'Prin serverul MCP, cu un token de integrare limitat la o bază, implicit doar în citire. Un agent citește, creează și modifică rânduri în limita permisiunilor sale — și le șterge, câte unul, dacă tokenul său a fost creat pentru aceasta; nu schimbă structura: o propune, iar o persoană aprobă.',
 			},
 			postgres: {
 				q: 'Ce versiune de PostgreSQL este necesară?',
@@ -1537,6 +1537,47 @@ export default {
 		title: 'Ce s-a schimbat în basedb',
 		intro: 'Detaliile fiecărei schimbări se află în <a href="https://github.com/eodia/basedb/commits/main">istoricul depozitului</a>. Ce urmează: <a href="/feuille-de-route/">foaia de parcurs</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Agenți care șterg, cu acordul dumneavoastră',
+				tag: 'Nou',
+				items: [
+					'<strong>Un al treilea nivel de token</strong>, „Citire, scriere și ștergere”: un program șterge prin API-ul REST, un agent prin noul instrument <code>delete_record</code> — câte un rând, redat în răspuns. <a href="/integrations/mcp/#ștergerea-rândurilor">Ștergerea rândurilor</a>',
+					'<strong>Revenirea înapoi</strong>: <code>restore_record</code> readuce un rând șters sub identificatorul său; o ștergere pe care o relație în cascadă ar extinde-o la alte rânduri rămâne rezervată interfeței.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Tokenuri pentru cine gestionează o bază',
+				tag: 'Nou',
+				items: [
+					'<strong>Nivelul Gestionare este suficient</strong>: acordat pe o bază sau pe proiectul ei, permite crearea tokenurilor de integrare ale bazelor sale, fără a fi administrator. <a href="/integrations/api-rest/#un-token">Un token</a>',
+					'<strong>Altfel, o spune clar</strong>: celui care citește sau scrie fără să gestioneze baza, fereastra tokenurilor îi spune cui să se adreseze; unui cont fără parolă, de ce nu poate încă să creeze unul.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automatizări care așteaptă, recuperează un eșec și trimit PDF-uri',
+				tag: 'Nou',
+				items: [
+					'<strong>Patru declanșatoare noi</strong>: un rând este șters; un rând intră într-un filtru — „o factură trece în întârziere”; o dată ajunge — trei zile înainte de scadență, la ora 9; un alt program apelează adresa secretă a automatizării. <a href="/fonctionnalites/automatisations/#un-serviciu-care-apelează-basedb">Un serviciu care apelează basedb</a>',
+					'<strong>Așteptare</strong> trei zile, sau până la data unui câmp, apoi reluare prin recitirea rândului: „dacă încă nu este acceptat, relansați”. <a href="/fonctionnalites/automatisations/#așteptare">Așteptare</a>',
+					'<strong>Generare PDF și trimiterea lui</strong>: documentul unui rând, pus într-un câmp Fișier sau atașat la un e-mail — în text formatat, cu destinatari în copie și o adresă de răspuns, fiecăruia sau unul singur, pentru toți. <a href="/fonctionnalites/automatisations/#un-pdf-și-un-e-mail">Un PDF și un e-mail</a>',
+					'<strong>Ștergere rând, numărare și adunare, lansare altă automatizare</strong>; o condiție testează și o valoare — răspunsul AI, un total —, iar o căutare care nu găsește nimic are propria sa ramură.',
+					'<strong>Încercare</strong>: pași, și alții dacă unul eșuează; un webhook reîncearcă de la sine, o buclă continuă în ciuda unui rând eșuat. <a href="/fonctionnalites/automatisations/#încercare">Încercare</a>',
+					'<strong>Toți pașii la îndemână</strong>: <strong>+</strong> deschide o fereastră rânduită pe categorii, cu o căutare, în locul unui meniu care putea fi trunchiat.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'Documente PDF în culorile dumneavoastră',
+				tag: 'Nou',
+				items: [
+					'<strong>Cinci puncte de pornire</strong> — factură, ofertă, fișă, adeverință, pagină goală —, construite cu coloanele tabelului dumneavoastră: număr, dată, sume, fotografie, rânduri legate. <a href="/fonctionnalites/documents/#crearea-unui-model">Crearea unui model</a>',
+					'<strong>Logo-ul și culorile dumneavoastră</strong>: un antet cu logo și date de contact, un subsol cu mențiuni legale și numere de pagină, o culoare de accent, fonturi cu sau fără serife, un cadru în jurul paginii. <a href="/fonctionnalites/documents/#antet-și-subsol-de-pagină">Antet și subsol de pagină</a>',
+					'<strong>Blocuri noi</strong>: un titlu pe un bandou, o imagine, două sau trei coloane, o recapitulare fără TVA / cu TVA, un tabel cu antet colorat, un separator. Se trag pentru a se reordona, iar previzualizarea urmează fiecare modificare. <a href="/fonctionnalites/documents/#conținutul-blocuri">Blocurile</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'O conexiune întreruptă nu mai oprește basedb',
@@ -1921,8 +1962,8 @@ export default {
 						text: 'Copierea vizualizărilor SQL împreună cu structura la crearea sau compararea mediilor, precum și în șabloanele pentru baze.',
 					},
 					loops: {
-						title: 'Așteptări în automatizări',
-						text: 'Așteptarea înainte de pasul următor („trei zile mai târziu”) și includerea fluxurilor — condiții, căutări, bucle — în șabloanele pentru baze.',
+						title: 'Fluxuri complete în șabloanele pentru baze',
+						text: 'Includerea fluxurilor de automatizare — condiții, căutări, bucle, așteptări, PDF-uri — în șabloanele pentru baze, care astăzi nu păstrează decât pașii simpli.',
 					},
 					textFormulas: {
 						title: 'Formule pe text',

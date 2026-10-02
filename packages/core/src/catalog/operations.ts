@@ -151,6 +151,20 @@ export interface CreateTableResult {
   readonly qualifiedName: string
 }
 
+/** The kinds a table can be created with: the others are added to it afterwards. */
+const CREATED_WITH_TABLE: ReadonlySet<string> = new Set([
+  'short_text',
+  'long_text',
+  'number',
+  'boolean',
+  'date',
+  'datetime',
+  'url',
+  'email',
+  'autonumber',
+  'user',
+])
+
 /**
  * Creates a table and its fields, in ONE operation.
  *
@@ -185,6 +199,14 @@ export async function createTable(
   if (computed >= 0) {
     throw new BasedbError('REQUEST_INVALID', {
       details: { field: `fields[${computed}].kind`, reason: 'champ_calcule_apres_creation' },
+    })
+  }
+  // A choice, a relation, a file… needs a configuration the creation does not take: the
+  // caller's request, not an incident — added once the table exists, one by one.
+  const later = request.fields.findIndex((f) => !CREATED_WITH_TABLE.has(f.kind))
+  if (later >= 0) {
+    throw new BasedbError('REQUEST_INVALID', {
+      details: { field: `fields[${later}].kind`, reason: 'champ_apres_creation' },
     })
   }
 

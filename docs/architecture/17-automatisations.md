@@ -48,12 +48,49 @@ des champs, et agissent en leur nom. Qui enregistre une automatisation en devien
 | `record_updated` | une ligne de la table est modifiée | la table ; les champs surveillés (aucun : tout changement) |
 | `schedule` | à intervalle régulier | toutes les heures, chaque jour ou chaque semaine ; l'heure et le jour, dans un fuseau |
 | `button` | on clique sur un bouton qui la désigne (§4) | la table |
+| `record_deleted` | une ligne de la table est supprimée | la table |
+| `record_matches` | une ligne créée ou modifiée **entre** dans un filtre | la table ; la condition (§1.2), obligatoire : c'est le filtre |
+| `date_reached` | la date d'un champ arrive | la table ; un champ date ou date-heure ; un décalage en jours (−365 à 365 : `-3`, trois jours avant) ; l'heure et le fuseau, pour un champ date seule |
+| `webhook` | un service extérieur appelle l'adresse propre de l'automatisation | — |
 
-`record_created` et `record_updated` naissent au **drain** : une écriture faite par
+`record_created`, `record_updated`, `record_deleted` et `record_matches` naissent au
+**drain** : une écriture faite par
 l'interface, l'API, MCP, un formulaire partagé ou en SQL direct les déclenche également.
 **Une écriture faite par une automatisation n'en déclenche aucune** : c'est ce qui rend
 les boucles impossibles. Ce qu'une chaîne d'automatisations aurait fait s'écrit en un
-seul flux.
+seul flux — ou par l'étape `run_automation` (§1.3), qui en lance une autre explicitement,
+trois niveaux au plus.
+
+**Une ligne supprimée** se cite telle qu'elle était : le drain garde son image d'avant la
+suppression avec l'exécution (`payload`), réduite aux champs que le propriétaire lit. Rien
+n'agit plus sur elle : une étape qui modifierait, supprimerait, mettrait en PDF ou attendrait
+la ligne déclencheuse est refusée à l'enregistrement (`ligne_supprimee`). Un propriétaire
+soumis à une règle de lignes sur cette table n'est prévenu d'aucune suppression, comme le
+journal des suppressions ne lui en montre aucune (chapitre 05 §16) : l'exécution est
+`skipped`, raison `regle_de_lignes`.
+
+**Entrer dans un filtre** : chaque écriture de la table est regardée, au moment de
+l'exécution, contre la condition. La ligne y satisfait et n'y était pas : l'automatisation
+part, et la ligne est notée dans `_basedb.automation_match`. Elle y satisfait encore : rien.
+Elle n'y satisfait plus : elle est retirée de la liste, et pourra y entrer de nouveau. Une
+exécution qui ne part pas n'est pas gardée — l'onglet des exécutions ne se remplit pas de
+chaque écriture de la table — et ne compte pas dans le débit (§2.3). Changer la table ou le
+filtre vide la liste.
+
+**Une date qui arrive** : le travailleur cherche, une fois par minute, les lignes dont la
+date — décalée de ses jours, à son heure — est tombée depuis sa dernière recherche, avec
+les droits du propriétaire ; une exécution par ligne. Seules comptent les dates arrivées
+après l'enregistrement ou la réactivation de l'automatisation ; après un arrêt de
+l'instance, sept jours au plus sont rattrapés. La condition (§1.2) est vérifiée à
+l'exécution, ligne en main.
+
+**Un webhook entrant** : à l'enregistrement, l'automatisation reçoit une adresse secrète,
+`POST /api/v1/hooks/{secret}`, scellée par la clé d'instance (montrée à qui construit la
+base) et retrouvée par son empreinte. Un appel sans compte — le secret est la preuve —
+envoie du JSON, un formulaire ou du texte (64 Kio au plus), que les étapes citent
+`{{trigger.<clé>}}` ; il reçoit `202 {run}`. Une adresse inconnue ou une automatisation
+désactivée répondent la même chose (`404`) ; `regenerate_hook: true` en donne une nouvelle,
+l'ancienne cesse aussitôt.
 
 ### 1.2 Condition
 
@@ -82,12 +119,18 @@ l'automatisation, et `trigger` est réservé.
 | `create_record` | crée une ligne dans une table de la base | la table, les champs et leurs valeurs | la ligne créée |
 | `find_record` | cherche la première ligne qui répond à un filtre | la table ; le filtre (vide : toute ligne) ; l'ordre (`champ` ou `-champ`, par défaut celui de création) | la ligne trouvée — ou aucune |
 | `notify` | notification interne (chapitre 16 §2), nature `automation` | la ligne dont elle parle (§1.4) ; des personnes et/ou un champ « personne » de cette ligne ; un message | — |
-| `email` | un courriel par destinataire, par le serveur d'envoi de l'instance (chapitre 16 §2.5) | la ligne dont il parle (§1.4, facultative) ; des personnes, un champ « personne » et/ou un champ « e-mail » de cette ligne, des adresses écrites — 20 au plus ; l'objet et le message, qui citent ce qui précède (§1.6) | — |
-| `webhook` | une requête HTTPS vers un service (§1.9) | la méthode (`POST` par défaut, `PUT`, `PATCH`, `GET`, `DELETE`) ; l'adresse (`https`), qui peut citer après son hôte ; des en-têtes, en clair ou secrets ; le corps — le JSON de l'automatisation et sa ligne (§1.4), ou un corps composé en JSON, en formulaire ou en texte | le code de réponse et la réponse (§1.6) |
+| `email` | un courriel par destinataire, ou un seul à tous, par le serveur d'envoi de l'instance (chapitre 16 §2.5) | la ligne dont il parle (§1.4, facultative) ; des personnes, un champ « personne » et/ou un champ « e-mail » de cette ligne, des adresses écrites — 50 au plus ; l'envoi (`mode` : `each`, un par destinataire, ou `together`, un à tous) ; une copie (`cc`, avec `together`) ; l'adresse de réponse (`reply_to`, écrite ou citée ; par défaut le propriétaire) ; l'objet et le message, en texte riche (`format` : `html`, ce qu'écrit l'éditeur ; `text`, un texte simple, reste accepté par l'API), qui citent ce qui précède (§1.6) ; des pièces jointes (`attachments`) : le PDF d'une étape `document`, les fichiers d'un champ | — |
+| `webhook` | une requête HTTPS vers un service (§1.9) | la méthode (`POST` par défaut, `PUT`, `PATCH`, `GET`, `DELETE`) ; l'adresse (`https`), qui peut citer après son hôte ; des en-têtes, en clair ou secrets ; le corps — le JSON de l'automatisation et sa ligne (§1.4), ou un corps composé en JSON, en formulaire ou en texte ; les réessais (`retries`, 0 à 3) | le code de réponse et la réponse (§1.6) |
 | `slack` | un message dans un canal Slack (chapitre 19 §1) | une connexion de la base, le message | — |
 | `ai` | demande une réponse au fournisseur d'IA (chapitre 12 §1.8) | la consigne, qui cite ce qui précède (§1.6) ; la réponse attendue (`answer`) — texte libre ou court, nombre, oui ou non, date, adresse web, un choix parmi une liste (`options`) ; le consentement (`consent`) | la réponse, lue dans son type |
 | `branch` | une condition : des chemins, dont un seul est pris (§1.5) | les chemins, dans l'ordre | — |
-| `for_each` | une boucle : ses étapes, une fois pour chaque ligne qui répond (§1.8) | la table ; le filtre (vide : toutes les lignes) ; l'ordre ; la limite (`limit`, 50 par défaut, 200 au plus) ; les étapes (`steps`) | à ses étapes, la ligne du tour ; après elle, le nombre de lignes parcourues |
+| `for_each` | une boucle : ses étapes, une fois pour chaque ligne qui répond (§1.8) | la table ; le filtre (vide : toutes les lignes) ; l'ordre ; la limite (`limit`, 50 par défaut, 200 au plus) ; ce que fait un tour qui échoue (`on_error` : `stop` ou `continue`) ; les étapes (`steps`) | à ses étapes, la ligne du tour ; après elle, le nombre de lignes parcourues |
+| `delete_record` | supprime une ligne — à la corbeille, avec son historique, comme toute suppression | la ligne (§1.4) | — |
+| `aggregate` | compte les lignes d'un filtre et calcule des mesures | la table ; le filtre ; jusqu'à 5 mesures (`sum`, `avg` d'un nombre ; `min`, `max` d'un nombre ou d'une date) | le nombre de lignes et chaque mesure (§1.6) |
+| `run_automation` | lance une autre automatisation de la base | l'automatisation ; la ligne, de sa table, si son déclencheur en a une | — |
+| `document` | un PDF de la ligne (chapitre 21), rendu avec les droits du propriétaire | la ligne ; un modèle de document de sa table, ou la fiche ; un champ fichier où le ranger (facultatif) ; le nom du fichier, qui peut citer | le nom du fichier ; le PDF, qu'un courriel peut joindre |
+| `wait` | l'exécution attend (§1.10) | une durée (minutes, heures, jours), ou la date d'un champ d'une ligne, décalée de jours, à une heure | — |
+| `attempt` | un essai : deux chemins, le second pris si une étape du premier échoue (§1.11) | les deux chemins | ce qui a échoué (§1.6) |
 
 Un webhook obéit aux règles d'adresse des webhooks (chapitre 08 §10.3 : `https`, pas
 d'adresse privée), attend 10 secondes au plus, et échoue (`AUTOMATION_WEBHOOK_FAILED`) sur
@@ -115,9 +158,21 @@ combien ; aucun destinataire — un champ vide, une personne qui ne peut pas lir
 elle est passée (`aucun_destinataire`). Une personne du locataire reçoit à son adresse de
 connexion, si elle peut lire la table de la ligne, comme pour une notification ; une adresse
 écrite ou lue dans un champ « e-mail » reçoit sans condition : c'est l'auteur de
-l'automatisation qui l'a voulue. Le courriel est en texte simple, porte
-`Auto-Submitted: auto-generated`, et sa réponse (`Reply-To`) va au **propriétaire** de
-l'automatisation, pas à l'adresse du relais. Sans serveur d'envoi, l'étape échoue
+l'automatisation qui l'a voulue. Le courriel porte `Auto-Submitted: auto-generated`, et
+sa réponse (`Reply-To`) va au **propriétaire** de l'automatisation — ou à l'adresse que
+l'étape écrit ou cite —, pas à l'adresse du relais.
+
+**Envoyé à tous ensemble** (`mode: together`), il part une fois, à tous les destinataires
+qui se voient, avec la copie (`Cc`) ; sinon, un par boîte. **En texte riche** — l'éditeur n'écrit plus que lui, et ouvre un
+message simple enregistré avant comme un paragraphe par ligne —, le message est
+gardé sous la forme canonique des textes riches de l'application (chapitre 04 §2.2) ; une
+citation y est écrite échappée — des mots, jamais des balises — et une version texte en est
+tirée pour les clients qui ne lisent pas le HTML. **Les pièces jointes** — 10 au plus,
+15 Mo en tout — sont le PDF d'une étape `document` passée avant (rendu de nouveau s'il n'est
+plus en mémoire, après une attente) ou les fichiers d'un champ fichier ou image que le
+propriétaire lit. La file (`mail_outbox`) les garde par leur clé dans le stockage des
+fichiers (`attachments`) ; un PDF fait pour le courriel est effacé une fois celui-ci envoyé
+ou abandonné, un fichier de champ n'est qu'emprunté. Sans serveur d'envoi, l'étape échoue
 (`MAIL_NOT_CONFIGURED`) et l'éditeur le dit dès qu'on la règle ; un modèle de base n'en porte
 pas (chapitre 20), pas plus qu'un webhook ou un message Slack.
 
@@ -138,7 +193,11 @@ les factures (`payee eq false`, ordre `emise_le`), puis `notify` à propos de sa
 
 Une recherche qui n'a rien trouvé ne fait pas échouer l'exécution : les étapes qui
 agiraient sur sa ligne sont **passées** (`skipped`, `aucune_ligne`) et le flux continue.
-Pour faire autre chose quand rien n'est trouvé, une condition le teste (§1.5).
+Pour faire autre chose quand rien n'est trouvé, une condition le teste (§1.5) : un test de
+valeur `{{e1._id}}` `empty`.
+
+`delete_record`, `document`, `wait` (jusqu'à une date) et `run_automation` nomment leur ligne
+de la même façon.
 
 ### 1.5 Conditions et chemins
 
@@ -148,6 +207,14 @@ et un test `when` : une ligne (`record`, §1.4) et un filtre qu'elle doit satisf
 droits du propriétaire). Un filtre vide demande seulement que la ligne existe — ce qui
 se lit, après une recherche, « si elle a trouvé ». Le **dernier** chemin peut n'avoir
 aucun test (`when: null`) : c'est « Sinon ».
+
+Un chemin peut aussi tester **une valeur** : `when: {value, op, operand}`, un texte qui cite
+ce qui précède — la réponse d'une étape IA, le code d'un webhook, une mesure — comparé à un
+autre. Les opérateurs : `eq`, `ne`, `contains`, `not_contains`, `gt`, `gte`, `lt`, `lte`,
+`empty`, `not_empty`. Deux nombres se comparent en nombres (une virgule décimale lue comme
+un point), le reste en texte, sans accents ni casse ; une date AAAA-MM-JJ se compare dans
+l'ordre. C'est ce qui permet de bifurquer sur ce qu'a dit l'IA sans l'écrire d'abord dans la
+ligne.
 
 Le **premier** chemin dont le test tient est pris, et lui seul ; aucun ne tient et il n'y
 a pas de « Sinon » : aucun n'est pris. Les chemins **se rejoignent** ensuite, et le flux
@@ -192,9 +259,14 @@ Une valeur, un message, un filtre cite ce qui précède :
 | `{{e4.reponse}}` | la réponse de l'étape IA `e4` : un texte, un nombre, oui ou non, une date, un choix par son libellé |
 | `{{e5.champ}}`, `{{e5._id}}` | dans la boucle `e5`, un champ, l'identifiant de la ligne du tour |
 | `{{e5.nombre}}` | après la boucle `e5`, le nombre de lignes qu'elle a parcourues |
+| `{{e6.nombre}}`, `{{e6.somme.champ}}`, `{{e6.moyenne.champ}}`, `{{e6.min.champ}}`, `{{e6.max.champ}}` | ce qu'a compté et calculé l'étape `aggregate` `e6` |
+| `{{e7.erreur}}`, `{{e7.etape}}` | dans le second chemin de l'essai `e7` (et après lui), le code de l'échec et l'étape qui a échoué ; vides si rien n'a échoué |
+| `{{e8.nom}}` | le nom du fichier PDF de l'étape `document` `e8` |
+| `{{trigger.cle}}` | pour un webhook entrant, une clé de ce qu'il a envoyé (texte : `{{trigger.texte}}`) |
 
 Dans un message ou un texte, un champ se lit comme on le lit : une relation par sa valeur
-d'affichage, un choix par son libellé, une personne par son nom. Une valeur faite d'**une
+d'affichage, un choix par son libellé, une personne par son nom, un nombre sans les zéros que
+garde sa colonne `numeric` (`1840.5`, pas `1840.5000000000`). Une valeur faite d'**une
 seule citation**, écrite dans un champ qui n'est pas un texte, passe la valeur elle-même :
 une relation par l'identifiant de sa ligne, un choix par sa clé, une personne, un nombre —
 c'est ainsi qu'une étape relie la ligne qu'elle crée à celle qu'une autre a trouvée. Un
@@ -222,7 +294,7 @@ est vide.
 
 | Borne | Valeur |
 |---|---|
-| Étapes en tout, conditions et ce qu'elles contiennent compris | 30 |
+| Étapes en tout, conditions et ce qu'elles contiennent compris | 40 |
 | Chemins par condition | 5 |
 | Conditions imbriquées | 3 niveaux |
 | Filtre, condition | 4 000 caractères |
@@ -234,7 +306,14 @@ est vide.
 | Boucles imbriquées | aucune : une boucle n'en contient pas d'autre |
 | En-têtes d'un webhook | 20, de 4 000 caractères chacun |
 | Corps composé d'un webhook | 10 000 caractères |
-| Durée d'une exécution | 2 minutes, vérifiées à chaque tour de boucle (`DEADLINE_EXCEEDED`) |
+| Durée d'une exécution | 2 minutes, vérifiées à chaque tour de boucle (`DEADLINE_EXCEEDED`) — le temps d'une attente ne compte pas |
+| Destinataires d'un courriel | 50 ; 20 en copie |
+| Pièces jointes d'un courriel | 10, 15 Mo en tout |
+| Mesures d'une étape `aggregate` | 5 |
+| Attente | 365 jours |
+| Réessais d'un webhook | 3, après 2, 5 et 10 secondes |
+| Automatisations lancées par d'autres, à la suite | 3 niveaux |
+| Corps d'un webhook entrant | 64 Kio |
 
 ### 1.8 Pour chaque ligne
 
@@ -300,13 +379,42 @@ plutôt que de le garder en clair.
 
 ---
 
+### 1.10 Attendre
+
+Une étape `wait` arrête l'exécution le temps dit — une durée, ou jusqu'à la date d'un champ
+d'une ligne décalée de jours, à une heure dans un fuseau — puis la reprend à l'étape
+suivante. Une date déjà passée, ou absente, ne fait pas attendre. L'exécution passe à
+l'état **`waiting`**, avec l'heure de sa reprise (`resume_at`) et ce qu'elle tient
+(`state`) : le flux tel qu'il était à son départ — le modifier entre-temps ne la déplace
+pas —, les lignes tenues **par leur identifiant**, ce que les étapes ont répondu, la trace.
+À la reprise, le travailleur la prend comme une exécution en file : le propriétaire et
+l'automatisation sont vérifiés de nouveau, et les lignes **relues** — c'est l'état du jour
+de la reprise qui compte : « trois jours après l'envoi du devis, s'il n'est toujours pas
+accepté… ». Une ligne supprimée entre-temps est tenue comme aucune. Désactiver ou supprimer
+l'automatisation arrête ses exécutions en attente (§3). Une attente est refusée dans une
+boucle (`attente_dans_boucle`) et dans un essai (`attente_dans_essai`) : leurs tours et
+leurs reprises ne se reprennent pas au milieu.
+
+### 1.11 Essayer
+
+Une étape `attempt` porte deux chemins : le premier est exécuté ; si l'une de ses étapes
+échoue, l'échec est gardé dans la trace et l'exécution continue par le **second**, qui cite
+`{{e7.erreur}}` et `{{e7.etape}}`, puis reprend après le bloc. Sans échec, le second
+chemin est passé. Un échec du second chemin arrête l'exécution, comme partout. C'est la
+façon de rendre un service fragile — un webhook, un courriel — non bloquant, ou de prévenir
+quelqu'un quand il échoue. Un webhook peut aussi **réessayer** de lui-même (`retries`) après
+une erreur réseau, un `429` ou un `5xx`, dans le temps de l'exécution ; et une boucle peut
+**continuer** malgré un tour en échec (`on_error: continue`), sa trace disant combien.
+
 ## 2. Exécution
 
 ### 2.1 La file
 
 Chaque déclenchement ajoute une **exécution** à `_basedb.automation_run`, à l'état
-`queued` : dans la transaction du drain pour une ligne, à l'échéance pour une horloge, à
-la requête pour un bouton. Un travailleur du processus d'API, comme celui des champs IA
+`queued` : dans la transaction du drain pour une ligne, à l'échéance pour une horloge ou une
+date, à la requête pour un bouton, un appel entrant ou une étape `run_automation` (qui note
+sa profondeur, `depth`). Une exécution `waiting` dont l'heure est venue est reprise par le
+même travailleur. Un travailleur du processus d'API, comme celui des champs IA
 (chapitre 12 §1.5), les prend par lots (`FOR UPDATE SKIP LOCKED`) et les exécute :
 
 1. le propriétaire est-il toujours actif ? l'automatisation toujours active ? — sinon
@@ -354,7 +462,11 @@ droits du propriétaire : une ligne qu'il ne voit pas n'est pas trouvée.
 - **Débit** : 100 exécutions par heure et par automatisation ; au-delà, l'exécution est
   `skipped`, raison `debit` — un import de 10 000 lignes ne déclenche pas
   10 000 webhooks.
-- **Pas de chaîne entre automatisations** : §1.1.
+- **Pas de chaîne entre automatisations** : §1.1 ; une étape `run_automation` en lance une
+  explicitement, trois niveaux au plus (`chaine_trop_longue`), dans le débit de la cible ;
+  une automatisation ne se lance pas elle-même (`automation_elle_meme`).
+- **Webhook entrant** : 60 appels par minute et par adresse, puis le débit horaire ; un
+  corps de 64 Kio au plus.
 - **Un flux qui ne revient pas en arrière** : il se lit de haut en bas ; une condition
   n'envoie jamais en arrière (§1.5), une boucle répète ses étapes sur une liste lue une
   fois et bornée (§1.8), et une exécution s'arrête au bout de 2 minutes
@@ -369,8 +481,8 @@ droits du propriétaire : une ligne qu'il ne voit pas n'est pas trouvée.
 
 ## 3. Désactiver, supprimer
 
-Désactivée, une automatisation ne déclenche plus rien, et ses exécutions en attente sont
-`skipped`. Supprimée (logiquement), elle disparaît des écrans ; un bouton qui la
+Désactivée, une automatisation ne déclenche plus rien, et ses exécutions en file **ou en
+attente d'une reprise** sont `skipped`. Supprimée (logiquement), elle disparaît des écrans ; un bouton qui la
 désignait n'agit plus et le dit (`AUTOMATION_DISABLED`).
 
 ---
@@ -404,12 +516,15 @@ filtre pas, ne se trie pas, ne s'importe pas et ne se demande pas dans un formul
 | `PATCH` `DELETE` | `/admin/bases/{base}/automations/{id}` | la modifier (qui enregistre en devient propriétaire) ; la supprimer | `manage_schema` | session seule |
 | `GET` | `/admin/bases/{base}/automations/{id}/runs` | ses 50 dernières exécutions, étape par étape | `manage_schema` | session seule |
 | `POST` | `/automations/{id}/run` | l'exécuter pour une ligne : un clic sur un bouton (`read` sur la ligne), ou un essai depuis l'écran (`manage_schema`) | selon le cas | session, jeton |
+| `POST` | `/api/v1/hooks/{secret}` | l'adresse propre d'une automatisation à webhook entrant (§1.1) : `202 {run}` | le secret | aucun compte |
 | `POST` | `/ai/bases/{base}/automation-copilot` | un tour du Copilot des automatisations : `{messages, automation?, draft?, read_data}` ; propose, n'enregistre rien (§6) | `manage_schema` | session seule |
 
 Une automatisation se lit et s'écrit avec son flux entier sous `actions` : les étapes et,
 dans une condition, ses chemins (`paths`) et leurs étapes, dans une boucle ses étapes
 (`steps`), chacune avec son identifiant. Une table s'y écrit par son nom ou sa clé, et se
-lit par sa clé. Un en-tête secret s'y lit sans sa valeur (§1.9).
+lit par sa clé. Un en-tête secret s'y lit sans sa valeur (§1.9). Une automatisation à
+webhook entrant se lit avec son adresse (`hook.path`) ; `PATCH` avec `regenerate_hook: true`
+en donne une nouvelle. Une exécution en attente se lit avec `resume_at`.
 
 ---
 

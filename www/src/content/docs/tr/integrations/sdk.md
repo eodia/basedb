@@ -75,4 +75,5 @@ Var olmayan bir tablo, alan ya da seçim, program çalışmadan önce bile bir *
 Bir **entegrasyon token'ı** arayüzde oluşturulur: veritabanının **⋯** menüsü → **API ve
 ajanlar** → **API ve MCP token'ları…**. Bir veritabanını açar, satırlarını okur, yazma
 yetkisiyle oluşturulduysa yazar, onu oluşturan kişiden asla daha fazla izne sahip olmaz ve
-**asla silmez**: `delete()` bir oturumun izinlerini gerektirir.
+**yalnızca bunun için oluşturulduysa siler** (“Okuma, yazma ve silme”): aksi hâlde `delete()`
+reddedilir.

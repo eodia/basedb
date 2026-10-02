@@ -1,6 +1,6 @@
 ---
 title: Automatizări
-description: Când un rând se schimbă, la oră fixă sau cu un clic — modificați, creați, căutați, repetați pe fiecare rând, ramificați, întrebați AI, anunțați, trimiteți un e-mail, apelați un serviciu, scrieți pe Slack.
+description: Când un rând se schimbă, intră într-un filtru sau dispare, când sosește o dată, la oră fixă, cu un clic sau cu un apel — modificați, creați, căutați, numărați, repetați, ramificați, așteptați, încercați, întrebați AI, generați un PDF, anunțați, trimiteți un e-mail, apelați un serviciu.
 ---
 
 O automatizare spune **când**, **dacă** și **atunci**: când o sarcină trece la „Fait”, notați
@@ -8,7 +8,8 @@ ora; când sosește o recenzie negativă, anunțați responsabila și scrieți p
 luni la ora 9, creați rândul pentru ședința echipei. Iar când o singură acțiune nu este
 suficientă, automatizarea urmează un **flux**: caută un rând, ia o ramură sau alta în funcție
 de ce conține acesta, repetă pași pe fiecare rând care răspunde unui filtru, reutilizează
-într-un pas ce a găsit sau a scris un pas anterior.
+într-un pas ce a găsit sau a scris un pas anterior, **așteaptă** trei zile înainte de o
+relansare, trimite un **PDF** ca atașament.
 
 Automatizările se deschid din **Automatizări**, în blocul bazei deschise din partea de jos a
 barei laterale, și cer nivelul **Gestionare**.
@@ -17,9 +18,11 @@ barei laterale, și cer nivelul **Gestionare**.
 
 ## Fluxul
 
-Fluxul se desenează de sus în jos: declanșatorul, apoi fiecare pas. Un **+** pe o linie adaugă
-un pas în acel loc; un card își deschide setările în dreapta. O automatizare simplă — un
-declanșator și o acțiune — încape în două carduri și se configurează ca înainte.
+Fluxul se desenează de sus în jos: declanșatorul, apoi fiecare pas. Un **+** pe o linie
+deschide lista pașilor, rânduiți pe categorii — Rânduri, Comunicare, Documente, AI,
+Logică — cu o căutare, și adaugă în acel loc pe cel ales; un card își deschide setările în
+dreapta. O automatizare simplă — un declanșator și o acțiune — încape în două carduri și se
+configurează ca înainte.
 
 ## Când
 
@@ -29,6 +32,10 @@ declanșator și o acțiune — încape în două carduri și se configurează c
 | **Un rând este modificat** | tabelul și, la nevoie, doar câmpurile de urmărit |
 | **La oră fixă** | în fiecare oră, în fiecare zi sau în fiecare săptămână, la ora și în fusul orar alese |
 | **Se face clic pe un buton** | un [câmp Buton](/basedb/ro/fonctionnalites/tables-et-champs/#buton) al tabelului |
+| **Un rând este șters** | tabelul; pașii citează rândul așa cum era |
+| **Un rând intră într-un filtru** | tabelul și filtrul: automatizarea pornește când un rând intră în el, și repornește abia după ce a ieșit din el — „o factură trece în întârziere”, nu „o factură în întârziere este modificată” |
+| **O dată ajunge** | un câmp Dată al tabelului, un decalaj — trei zile înainte, chiar în ziua respectivă, o săptămână după — și ora: relansări de scadență, aniversări de contract |
+| **Un webhook este primit** | nimic: automatizarea își primește propria adresă, pe care o apelează un alt program ([detalii](#un-serviciu-care-apelează-basedb)) |
 
 Un declanșator pe rânduri vede **toate** scrierile: interfața, API-ul, un agent, un formular
 partajat și chiar SQL-ul direct — automatizările pornesc din istoric, care le captează pe
@@ -43,7 +50,8 @@ lucru.
 
 ## Atunci
 
-Până la treizeci de pași, în ordine; primul care eșuează îi oprește pe următorii.
+Până la patruzeci de pași, în ordine; primul care eșuează îi oprește pe următorii — cu excepția
+unui bloc **Încercare** ([detalii](#încercare)).
 
 | Pas | Ce face |
 |---|---|
@@ -57,10 +65,21 @@ Până la treizeci de pași, în ordine; primul care eșuează îi oprește pe u
 | **Întrebați AI** | un răspuns al [furnizorului de AI](/basedb/ro/fonctionnalites/ia/) la o instrucțiune care citează rândul și pașii anteriori — redactare, rezumat, clasificare —, citit ca text, număr, da sau nu, dată sau opțiune dintr-o listă |
 | **Condiție** | mai multe ramuri: este luată prima a cărei condiție este îndeplinită, „Altfel” când niciuna nu este; ramurile se reunesc apoi |
 | **Pentru fiecare rând** | pașii pe care îi conține, o dată pentru fiecare rând dintr-un tabel care răspunde unui filtru ([detalii](#pentru-fiecare-rând)) |
+| **Ștergere rând** | rândul care a declanșat automatizarea, sau cel pe care l-a găsit un pas — este pus la coșul de gunoi |
+| **Numărare și adunare** | numărul de rânduri dintr-un filtru, suma lor, media lor, minimul sau maximul lor, de citat sau de testat apoi |
+| **Generare PDF** | [documentul](/basedb/ro/fonctionnalites/documents/) unui rând, pus într-un câmp Fișier sau atașat la un e-mail |
+| **Așteptare** | o durată, sau până la data unui câmp ([detalii](#așteptare)) |
+| **Încercare** | pași, și alții de făcut dacă unul dintre ei eșuează ([detalii](#încercare)) |
+| **Lansare automatizare** | o altă automatizare a bazei, pe un rând din tabelul ei |
 
 O căutare care nu găsește nimic nu oprește fluxul: pașii care trebuiau să modifice rândul ei
-sunt săriți. Pentru a face altceva în acest caz, o condiție testează situația — o ramură cu
-filtrul gol este luată imediat ce căutarea a găsit ceva.
+sunt săriți. Pentru a face altceva în acest caz, **Dacă niciun rând nu este găsit…**, sub
+căutare, adaugă o condiție care testează acest lucru.
+
+O **condiție** testează un rând cu un filtru, sau o **valoare**: răspunsul AI, codul unui
+webhook, un total — „`{{e2.reponse}}` este egal cu Urgent”, „`{{e3.somme.montant}}` este mai
+mare sau egal cu 1000”. Numerele se compară drept numere, textele fără diacritice și fără
+majuscule.
 
 ## Pentru fiecare rând
 
@@ -81,6 +100,61 @@ Dincolo de limită, rândurile rămase așteaptă următoarea execuție, care se
 scoateți din filtru rândurile deja tratate — o casetă „relancée”, o dată — pentru a le trata
 pe toate de-a lungul execuțiilor. O buclă nu conține altă buclă, iar o execuție se oprește
 după două minute.
+
+## Așteptare
+
+Pasul **Așteptare** pune execuția în pauză — trei ore, două zile — sau până la data unui
+câmp al unui rând, cu un decalaj și o oră: „în ziua premergătoare scadenței, la ora 9”.
+Execuția apare **În pauză** în fila **Execuții**, cu data reluării ei.
+
+Reia la pasul următor **recitind** rândurile sale: „trei zile după trimiterea ofertei, dacă
+încă nu este acceptată, relansați” se scrie **Așteptare** 3 zile, apoi o condiție pe statutul
+ofertei, așa cum este ea în acea zi. Dezactivarea automatizării oprește execuțiile în pauză; o
+așteptare nu se pune nici într-o buclă, nici într-un bloc **Încercare**, și durează cel mult un
+an.
+
+## Încercare
+
+Blocul **Încercare** are două ramuri. Prima este executată; dacă unul dintre pașii ei
+eșuează, fluxul continuă cu a doua, **În caz de eșec**, care citează eșecul —
+`{{e4.erreur}}`, codul, și `{{e4.etape}}`, pasul —, apoi continuă după bloc. Astfel puteți
+anunța pe cineva când un serviciu nu răspunde, fără să opriți totul.
+
+Mai simplu: un webhook poate **reîncerca** de la sine de până la trei ori după o cădere a
+serviciului, iar o buclă poate **continua** în ciuda unui rând eșuat.
+
+## Un PDF și un e-mail
+
+**Generare PDF** face documentul unui rând — cu un [model de
+document](/basedb/ro/fonctionnalites/documents/) al tabelului său, sau fișa cu toate
+câmpurile lui — și îl poate pune într-un câmp Fișier. **Trimitere e-mail** îl poate atașa
+apoi, împreună cu fișierele dintr-un câmp Fișier sau Imagine:
+
+- un e-mail **fiecăruia**, sau **unul singur, pentru toți**, cu destinatari **în copie**;
+- un mesaj în **text formatat** — aldin, liste, linkuri — care citează rândul;
+- o adresă de **răspuns**: a dumneavoastră în mod implicit, sau cea dintr-un câmp E-mail;
+- cel mult 50 de destinatari, 10 fișiere atașate și 15 Mo.
+
+„Când o ofertă trece la Acceptat, trimiteți factura clientului, cu contabilitatea în copie”:
+**Un rând intră într-un filtru** `statut eq "accepte"`, **Generare PDF** cu modelul Factură,
+**Trimitere e-mail** la câmpul E-mail al clientului, cu factura atașată.
+
+## Un serviciu care apelează basedb
+
+Cu declanșatorul **Un webhook este primit**, automatizarea are propria sa adresă secretă, de
+dat programului care trebuie să o lanseze — un magazin online, un formular extern, un
+instrument de automatizare:
+
+```bash
+curl -X POST "https://basedb.example.com/api/v1/hooks/<secret>" \
+  -H "content-type: application/json" \
+  -d '{"client": {"nom": "Dupont"}, "total": 120}'
+```
+
+Pașii citează ce a trimis acesta: `{{trigger.client.nom}}`, `{{trigger.total}}`; un formular
+se citește la fel, un text prin `{{trigger.texte}}`. Adresa se copiază din setările
+declanșatorului; **Schimbați adresa** o înlocuiește, iar cea veche încetează imediat. Un apel
+primește `202`, automatizarea pornește în aceeași secundă.
 
 ## Apelați un serviciu
 
@@ -137,6 +211,11 @@ text:
 - `{{e4.reponse}}`: răspunsul pasului AI `e4`;
 - `{{e5.client}}` în bucla `e5`, rândul curent; `{{e5.nombre}}` după ea, numărul de rânduri
   parcurse;
+- `{{e6.nombre}}`, `{{e6.somme.montant}}`, `{{e6.moyenne.montant}}`, `{{e6.max.echeance}}`: ce
+  a numărat pasul `e6`;
+- `{{e7.erreur}}`, `{{e7.etape}}`: eșecul recuperat de blocul **Încercare** `e7`;
+- `{{e8.nom}}`: numele PDF-ului pasului `e8`;
+- `{{trigger.client.nom}}`: ce a trimis un webhook primit;
 - `{{_maintenant}}`: momentul execuției.
 
 O valoare formată dintr-o singură citare transmite valoarea însăși: o relație, o persoană, o
@@ -186,18 +265,17 @@ anulează ca toate celelalte.
 ## Limite
 
 - Ce scrie o automatizare nu declanșează nicio altă automatizare: ce trebuie înlănțuit se
-  scrie într-un singur flux.
-- O căutare dă un singur rând, primul; o buclă parcurge cel mult 200 pe execuție, iar primul
-  pas care eșuează o oprește. Fără așteptare („trei zile mai târziu”).
-- Fără script. Un e-mail este trimis ca text simplu, unul pe destinatar — cel mult douăzeci pe
-  pas —, prin [serverul de trimitere](/basedb/ro/hebergement/variables/#e-mailuri) al instanței;
-  un răspuns ajunge la persoana care deține automatizarea.
-- O condiție testează un rând: pentru a lua o ramură după răspunsul AI, scrieți-l mai întâi
-  într-un câmp al rândului.
+  scrie într-un singur flux, sau prin **Lansare automatizare**, cel mult trei niveluri.
+- O căutare dă un singur rând, primul; o buclă parcurge cel mult 200 pe execuție. O execuție
+  durează cel mult două minute, fără a include așteptările.
+- Fără script. Un e-mail este trimis prin [serverul de trimitere](/basedb/ro/hebergement/variables/#e-mailuri)
+  al instanței.
 - Un [șablon pentru bază](/basedb/ro/fonctionnalites/modeles/) nu preia decât automatizările
   fără căutare, buclă, condiție sau pas AI, și niciodată un webhook.
 - Un webhook nu urmează nicio redirecționare și așteaptă cel mult 10 secunde; un răspuns
-  altul decât 2xx face pasul să eșueze.
+  altul decât 2xx face pasul să eșueze, după reîncercările lui.
+- O dată care ajunge este căutată în fiecare minut; contează doar cele ajunse după salvarea
+  automatizării.
 - 100 de execuții pe oră pentru fiecare automatizare; o programare orară ratată este recuperată
   o singură dată.
 - Întârzierea dintre scriere și acțiune este de ordinul unei secunde.

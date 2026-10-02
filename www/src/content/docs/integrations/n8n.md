@@ -28,9 +28,9 @@ Créez dans n8n un identifiant **basedb API** :
 | **Workspace** | la référence de l’espace, celle des adresses de l’API (`/api/v1/<espace>/…`) : `t4z56fq`, sauf si l’instance fixe `BASEDB_TENANT` |
 | **Token** | un **jeton d’intégration** : menu **⋯** de la base → **API et agents** → **Jetons API et MCP…** |
 
-Un jeton ouvre **une** base. Il lit ses lignes, les écrit s’il a été créé en écriture, n’a
-jamais plus de droits que la personne qui l’a créé, et **ne supprime jamais**. À l’enregistrement,
-n8n essaie la connexion et dit si le jeton est refusé.
+Un jeton ouvre **une** base. Il lit ses lignes, les écrit s’il a été créé en écriture, et n’a
+jamais plus de droits que la personne qui l’a créé. À l’enregistrement, n8n essaie la connexion
+et dit si le jeton est refusé.
 
 ## Lire et écrire : le nœud basedb
 
@@ -57,9 +57,9 @@ arrête le nœud sur le code de basedb et ce qu’il veut dire.
 - Une **relation** se lit `{ "id": …, "display": … }` et s’écrit par l’`_id` de la ligne liée.
 - **Create or Update** ne modifie jamais plusieurs lignes : si plusieurs portent les valeurs,
   le nœud s’arrête plutôt que de deviner.
-- Pas d’opération **Delete** : un jeton ne supprime pas. Pour retirer des lignes, marquez-les
-  (un statut « Archivé »), ou confiez la suppression à une
-  [automatisation](/basedb/fonctionnalites/automatisations/).
+- Pas d’opération **Delete** : pour retirer des lignes, marquez-les (un statut « Archivé »),
+  confiez la suppression à une [automatisation](/basedb/fonctionnalites/automatisations/), ou
+  appelez l’[API REST](/basedb/integrations/api-rest/) avec un jeton créé pour supprimer.
 
 ## Lancer un workflow
 

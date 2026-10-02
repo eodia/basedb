@@ -76,5 +76,5 @@ běží.
 
 **Integrační token** se vytváří v rozhraní: nabídka **⋯** databáze → **API a agenti** →
 **Tokeny API a MCP…**. Otevírá jednu databázi, čte její řádky, zapisuje je, pokud byl
-vytvořen pro zápis, nikdy nemá víc oprávnění než osoba, která ho vytvořila, a **nikdy nic
-neodstraňuje**: `delete()` vyžaduje oprávnění relace.
+vytvořen pro zápis, nikdy nemá víc oprávnění než osoba, která ho vytvořila, a **odstraňuje jen
+tehdy, pokud byl vytvořen i k tomu** („Čtení, zápis a odstranění“): jinak je `delete()` odmítnuto.

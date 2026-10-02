@@ -1284,10 +1284,10 @@ export default {
 		agents: {
 			label: 'REST API · MCP · webhookit',
 			title: 'Tekoälyagenttisi saavat tiedot, {eivät avaimia valtakuntaan.}',
-			lead: 'MCP-palvelin antaa agenteille kaksitoista työkalua, REST API samat tiedot ohjelmillesi. Yksi käyttöoikeuksien tarkistuspiste, samat lokit.',
+			lead: 'MCP-palvelin antaa agenteille neljätoista työkalua, REST API samat tiedot ohjelmillesi. Yksi käyttöoikeuksien tarkistuspiste, samat lokit.',
 			bullets: [
 				'<strong>Yksi tunnus tietokantaa kohden</strong>, oletuksena vain lukuoikeuksin, eikä koskaan enempää oikeuksia kuin sen luoneella henkilöllä.',
-				'<strong>Agentti ei poista mitään</strong> eikä muuta rakennetta: se ehdottaa, ja ihminen hyväksyy.',
+				'<strong>Agentti poistaa vain suostumuksellasi</strong>, yksi rivi kerrallaan, eikä muuta rakennetta: se ehdottaa, ja ihminen hyväksyy.',
 				'<strong>Automaattisesti luotu dokumentaatio</strong> jokaiselle tietokannalle, käyttöoikeuksiesi mukaan suodatettuna ja OpenAPI 3.1 -määrittelyineen.',
 				'<strong>Webhookit</strong> jokaisesta kirjoituksesta: allekirjoitetut, järjestyksessä toimitetut ja tarvittaessa uudelleen yritetyt.',
 			],
@@ -1520,7 +1520,7 @@ export default {
 			},
 			agent: {
 				q: 'Miten tekoälyagentti liitetään?',
-				a: 'MCP-palvelimen kautta integraatiotunnuksella, joka on rajattu yhteen tietokantaan ja oletuksena vain lukuoikeuksin. Agentti lukee, luo ja muokkaa rivejä käyttöoikeuksiensa mukaan; se ei poista mitään eikä muuta rakennetta: se ehdottaa, ja ihminen hyväksyy.',
+				a: 'MCP-palvelimen kautta integraatiotunnuksella, joka on rajattu yhteen tietokantaan ja oletuksena vain lukuoikeuksin. Agentti lukee, luo ja muokkaa rivejä käyttöoikeuksiensa mukaan — ja poistaa niitä, yksi kerrallaan, jos sen tunnus on luotu tätä varten; se ei muuta rakennetta: se ehdottaa, ja ihminen hyväksyy.',
 			},
 			postgres: {
 				q: 'Mikä PostgreSQL-versio tarvitaan?',
@@ -1547,6 +1547,47 @@ export default {
 		title: 'Mitä basedb:ssä on muuttunut',
 		intro: 'Jokaisen muutoksen yksityiskohdat ovat <a href="https://github.com/eodia/basedb/commits/main">tietovaraston historiassa</a>. Mitä seuraavaksi: <a href="/feuille-de-route/">tiekartta</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Agentit, jotka poistavat, jos sen sallit',
+				tag: 'Uutta',
+				items: [
+					'<strong>Kolmas tunnustaso</strong>, ”Luku, kirjoitus ja poisto”: ohjelma poistaa REST API:n kautta, agentti uudella työkalulla <code>delete_record</code> — yksi rivi kerrallaan, palautettuna vastauksessa. <a href="/integrations/mcp/#rivien-poistaminen">Rivien poistaminen</a>',
+					'<strong>Peruuttaminen</strong>: <code>restore_record</code> tuo poistetun rivin takaisin sen tunnisteella; poisto, jonka kaskadoitu viittaus ulottaisi muihin riveihin, on varattu käyttöliittymälle.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Tunnukset sille, joka hallinnoi tietokantaa',
+				tag: 'Uutta',
+				items: [
+					'<strong>Hallintaoikeus-taso riittää</strong>: tietokantaan tai sen projektiin annettuna se antaa luvan luoda sen tietokantojen integraatiotunnukset, vaikkei olisi ylläpitäjä. <a href="/integrations/api-rest/#tunnus">Tunnus</a>',
+					'<strong>Muuten se sanoo sen selvästi</strong>: sille, joka lukee tai kirjoittaa hallinnoimatta tietokantaa, tunnusikkuna kertoo, kenen puoleen kääntyä; tilille, jolla ei ole salasanaa, miksi se ei voi vielä luoda sitä.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automaatiot, jotka odottavat, selviytyvät virheestä ja lähettävät PDF:iä',
+				tag: 'Uutta',
+				items: [
+					'<strong>Neljä uutta käynnistintä</strong>: rivi poistetaan; rivi täyttää suodattimen — ”lasku muuttuu myöhässä olevaksi”; päivämäärä saapuu — kolme päivää ennen eräpäivää, klo 9; toinen ohjelmisto kutsuu automaation salaista osoitetta. <a href="/fonctionnalites/automatisations/#palvelu-joka-kutsuu-basedbtä">Palvelu, joka kutsuu basedb:tä</a>',
+					'<strong>Odota</strong> kolme päivää, tai kunnes kentän päivämäärä saapuu, ja jatka lukemalla rivi uudelleen: ”jos sitä ei ole vielä hyväksytty, muistuta”. <a href="/fonctionnalites/automatisations/#odota">Odota</a>',
+					'<strong>Luo PDF ja lähetä se</strong>: rivin asiakirja, joka tallennetaan Tiedosto-kenttään tai liitetään sähköpostiin — muotoiltuna tekstinä, kopio-osoitteiden ja vastausosoitteen kanssa, jokaiselle erikseen tai yksi kaikille. <a href="/fonctionnalites/automatisations/#pdf-ja-sähköposti">PDF ja sähköposti</a>',
+					'<strong>Poista rivi, laske ja summaa, käynnistä toinen automaatio</strong>; ehto testaa myös arvon — tekoälyn vastauksen, summan —, ja haku, joka ei löydä mitään, saa oman haaransa.',
+					'<strong>Yritä</strong>: vaiheita, ja muita, jos jokin niistä epäonnistuu; webhook yrittää uudelleen itsestään, silmukka jatkuu epäonnistuneesta rivistä huolimatta. <a href="/fonctionnalites/automatisations/#yritä">Yritä</a>',
+					'<strong>Kaikki vaiheet käden ulottuvilla</strong>: <strong>+</strong> avaa kategorioihin jaetun ikkunan hakukentän kanssa, sen sijaan että käytettäisi valikkoa, joka saattoi jäädä kesken.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'PDF-asiakirjat väreihisi sovitettuna',
+				tag: 'Uutta',
+				items: [
+					'<strong>Viisi lähtökohtaa</strong> — lasku, tarjous, rivin tiedot, todistus, tyhjä sivu —, rakennettuna taulukkosi sarakkeista: numero, päivämäärä, summat, valokuva, linkitetyt rivit. <a href="/fonctionnalites/documents/#luo-malli">Luo malli</a>',
+					'<strong>Logosi ja värisi</strong>: ylätunniste logolla ja yhteystiedoilla, alatunniste lakisääteisin merkinnöin ja sivunumeroin, korostusväri, fontit groteskilla tai antiikvalla, kehys sivun ympärillä. <a href="/fonctionnalites/documents/#ylätunniste-ja-alatunniste">Ylätunniste ja alatunniste</a>',
+					'<strong>Uusia lohkoja</strong>: otsikko bannerilla, kuva, kaksi tai kolme saraketta, veroton/verollinen yhteenveto, taulukko värillisellä otsikkorivillä, erotinviiva. Niitä vedetään uudelleenjärjestämistä varten, ja esikatselu seuraa joka muutosta. <a href="/fonctionnalites/documents/#sisältö-lohkot">Lohkot</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'Katkennut yhteys ei enää pysäytä basedb:tä',
@@ -1931,8 +1972,8 @@ export default {
 						text: 'SQL-näkymien kopioiminen rakenteen mukana, kun ympäristöjä luodaan tai verrataan, sekä tietokantamalleissa.',
 					},
 					loops: {
-						title: 'Odotukset automaatioissa',
-						text: 'Odottaminen ennen seuraavaa vaihetta (”kolme päivää myöhemmin”) ja työnkulkujen – ehtojen, hakujen, silmukoiden – vieminen tietokantamalleihin.',
+						title: 'Täydet työnkulut tietokantamalleihin',
+						text: 'Automaation työnkulkujen — ehtojen, hakujen, silmukoiden, odotusten, PDF:ien — vieminen tietokantamalleihin, jotka ottavat niistä tänään mukaan vain yksinkertaiset vaiheet.',
 					},
 					textFormulas: {
 						title: 'Tekstikaavat',

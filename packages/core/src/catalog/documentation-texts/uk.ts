@@ -53,6 +53,10 @@ export const uk: Catalog = {
     'Знайти `_id` рядка за значенням його відображення, перед тим як записати зв’язок.',
   'Créer une ligne.': 'Створити рядок.',
   'Modifier les champs nommés d’une ligne.': 'Змінити названі поля рядка.',
+  'Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.':
+    'Видалити рядок токеном, створеним для видалення, — відповідь повертає його.',
+  'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
+    'Повернути видалений рядок, під його `_id`, з історії.',
   'Proposer une table et ses premiers champs — une personne décide.':
     'Запропонувати таблицю та її перші поля — рішення ухвалює людина.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
@@ -70,14 +74,17 @@ export const uk: Catalog = {
   'Trouver une ligne par sa valeur d’affichage, {field}':
     'Знайти рядок за значенням його відображення, {field}',
   'Modifier une ligne': 'Змінити рядок',
+  'Supprimer une ligne — avec un jeton créé pour supprimer':
+    'Видалити рядок — токеном, створеним для видалення',
+  'Ramener une ligne supprimée': 'Повернути видалений рядок',
   'Aucun outil ne vous est ouvert sur cette table.':
     'Жоден інструмент не відкритий вам для цієї таблиці.',
   'Un jeton que vous créez n’a jamais plus de droits que vous : ces outils sont un maximum.':
     'Токен, який ви створюєте, ніколи не має більше дозволів, ніж ви: ці інструменти — це максимум.',
   Outil: 'Інструмент',
   Pour: 'Призначення',
-  'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.':
-    'Видалення рядка залишається доступним лише через REST API та інтерфейс: жоден інструмент MCP не видаляє.',
+  'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
+    'Агент видаляє лише токеном, створеним із правами «Читання, запис і видалення», і лише по одному рядку; видалений рядок повертається через `restore_record` або з історії.',
   '**Invisibles pour un agent :** {fields}. Pour lui, ces colonnes n’existent pas : il ne peut ni les lire, ni les filtrer, ni les écrire.':
     '**Невидимі для агента:** {fields}. Для нього ці стовпці не існують: він не може ні читати їх, ні фільтрувати, ні записувати.',
   'Arguments d’un appel': 'Аргументи виклику',
@@ -85,13 +92,13 @@ export const uk: Catalog = {
     'Щоб створити токен для цієї бази, потрібен рівень **Керування**, якого у вас немає. Попросіть його в людини, яка керує базою.',
   '<jeton>': '<токен>',
   'Connecter un agent': 'Підключити агента',
-  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.':
-    '**Сервер MCP** basedb відкриває цю базу агенту ШІ — Claude чи будь-якому клієнту MCP: він виявляє її, читає й, якщо ви так вирішите, створює та змінює в ній рядки. Він діє за тими самими дозволами, що й REST API.',
+  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.':
+    '**Сервер MCP** basedb відкриває цю базу агенту ШІ — Claude чи будь-якому клієнту MCP: він виявляє її, читає й, якщо ви так вирішите, створює, змінює та видаляє в ній рядки. Він діє за тими самими дозволами, що й REST API.',
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Ця база не відкрита для агентів.** Поки це так, жоден інструмент її не бачить, незалежно від пред’явленого токена.',
   'Créer un jeton': 'Створити токен',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'В інтерфейсі, у меню бази «⋯» → **API та агенти** → **Токени API і MCP…**, позначте доступ **MCP**. Токен обмежено цією базою, за замовчуванням **лише читання**: запис вибирається явно. Він показується лише один раз і відкликається з того самого екрана. Якщо позначено також **REST API**, той самий токен слугує для програми (див. «Автентифікація»).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'В інтерфейсі, у меню бази «⋯» → **API та агенти** → **Токени API і MCP…**, позначте доступ **MCP**. Токен обмежено цією базою, за замовчуванням **лише читання**: запис, і видалення, вибираються явно. Він показується лише один раз і відкликається з того самого екрана. Якщо позначено також **REST API**, той самий токен слугує для програми (див. «Автентифікація»).',
   'Garder le jeton hors de la configuration': 'Тримати токен поза конфігурацією',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Токен розміщують у змінній середовища `BASEDB_TOKEN`, ніколи у файлі конфігурації клієнта: він версіонується, синхронізується і доступний для читання всім програмам сеансу.',
@@ -125,6 +132,8 @@ export const uk: Catalog = {
     'Щоб записати зв’язок: `lookup_records` на цільовій таблиці, потім `create_record` або `update_record` зі знайденим `_id`.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'Щоб змінити структуру: `propose_create_table` або `propose_add_field`, потім `get_proposal`, щоб відстежити рішення.',
+  'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
+    'Щоб видалити: спершу `get_record`, щоб переконатися в рядку, потім `delete_record` — який віддає його у своїй відповіді; `restore_record` повертає його назад.',
   'Propositions de structure': 'Пропозиції щодо структури',
   'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend dans la file « Propositions » de la base, où une personne qui peut modifier la structure l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.':
     'Агент ніколи сам не змінює структуру: він **пропонує**. Пропозиція очікує в черзі «Пропозиції» бази, де людина, яка може змінювати структуру, схвалює або відхиляє її; без рішення вона спливає через 24 години. Схвалена, вона застосовується від імені особи, яка створила токен, — якщо ця особа й досі має на це право, — і з’являється в історії як будь-яка інша зміна.',
@@ -133,8 +142,8 @@ export const uk: Catalog = {
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Ніякого видалення, ніякого перейменування, ніякого каскадного зв’язку (`MCP_CASCADE_FORBIDDEN`).',
   'Ce qui n’existe pas': 'Чого не існує',
-  'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
-    'Жоден інструмент не видаляє рядок, не виконує SQL і не керує дозволами чи токенами. Агент, який викликає таку назву — `delete_record`, `run_sql`… — отримує `MCP_OPERATION_EXCLUDED`, незалежно від цільової бази.',
+  'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
+    'Жоден інструмент не видаляє кілька рядків одразу, таблицю чи поле, не виконує SQL і не керує дозволами чи токенами. Агент, який викликає таку назву — `delete_records`, `run_sql`… — отримує `MCP_OPERATION_EXCLUDED`, незалежно від цільової бази.',
   Bornes: 'Обмеження',
   '`limit` : 25 lignes par défaut, 100 au plus.':
     '`limit`: 25 рядків за замовчуванням, не більше 100.',
@@ -149,8 +158,8 @@ export const uk: Catalog = {
     'Агент ніколи не бачить більше, ніж особа, яка створила його токен, — а часто й менше.',
   '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.':
     '**Дозволи**: ті, що має токен, які при кожному виклику звіряються з дозволами його творця. Якщо дозволи цієї особи зменшуються, дозволи токена зменшуються разом із ними; якщо її обліковий запис вимкнено, токен перестає відповідати.',
-  '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
-    '**Читати, створювати, змінювати** — ніколи не видаляти. Токен лише для читання відхиляє будь-який запис (`TOKEN_READ_ONLY`).',
+  '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
+    '**Читати, створювати, змінювати** — і видаляти, по одному рядку, лише токеном, створеним для цього. Токен лише для читання відхиляє будь-який запис (`TOKEN_READ_ONLY`).',
   '**Cette base** : ouverte aux agents.': '**Ця база**: відкрита для агентів.',
   '**Cette base** : **fermée aux agents** — aucun outil ne la voit.':
     '**Ця база**: **закрита для агентів** — жоден інструмент її не бачить.',
@@ -234,8 +243,8 @@ export const uk: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Усі маршрути даних вимагають **токен** у заголовку `Authorization`. Кука сеансу тут ніколи не приймається: браузер надсилає її з кожним запитом, зокрема з тими, які провокує стороння сторінка.',
   'Jeton d’intégration': 'Токен інтеграції',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Програма — скрипт, синхронізація, інший застосунок — пред’являє **токен інтеграції**, який починається з `bdb_`. Він дійсний лише для цієї бази; він читає, а також створює й змінює, якщо його створено з правом запису, але **ніколи не видаляє**; і він ніколи не має більше дозволів, ніж особа, яка його створила, що звіряються при кожному виклику. Адміністрування, консоль SQL та ШІ для нього залишаються закритими.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Програма — скрипт, синхронізація, інший застосунок — пред’являє **токен інтеграції**, який починається з `bdb_`. Він дійсний лише для цієї бази; він читає, створює й змінює, якщо його створено з правом запису, і **видаляє лише якщо його створено для цього**; він ніколи не має більше дозволів, ніж особа, яка його створила, що звіряються при кожному виклику. Адміністрування, консоль SQL та ШІ для нього залишаються закритими.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Щоб створити такий: у меню бази «⋯» → **API та агенти** → **Токени API і MCP…**, позначте доступ **REST API**. Він показується лише один раз.',
   Appel: 'Виклик',

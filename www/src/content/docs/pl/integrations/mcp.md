@@ -4,8 +4,8 @@ description: Podłącz agenta AI do basedb przez Model Context Protocol.
 ---
 
 basedb udostępnia **serwer MCP** (`POST /mcp`, pod tym samym adresem co interfejs): agent –
-Claude, asystent programisty, twój własny agent – odkrywa w nim bazy, czyta i zapisuje wiersze
-oraz **proponuje** zmiany struktury.
+Claude, asystent programisty, twój własny agent – odkrywa w nim bazy, czyta i zapisuje wiersze,
+usuwa je, jeśli mu na to pozwolisz, oraz **proponuje** zmiany struktury.
 
 ## Podłączanie agenta
 
@@ -21,7 +21,7 @@ claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
   --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
 ```
 
-## Dwanaście narzędzi
+## Czternaście narzędzi
 
 | Narzędzie | Rola |
 |---|---|
@@ -29,11 +29,26 @@ claude mcp add basedb -- node <dépôt basedb>/apps/mcp/dist/relay.js \
 | `list_bases`, `describe_base`, `describe_table` | odkrywanie struktury i jej opisów |
 | `list_records`, `get_record`, `lookup_records` | odczyt, filtrowanie, rozwiązywanie wartości wyświetlanej |
 | `create_record`, `update_record` | zapis wierszy |
+| `delete_record`, `restore_record` | usunięcie wiersza — tokenem utworzonym do tego — i jego przywrócenie |
 | `propose_create_table`, `propose_add_field`, `get_proposal` | proponowanie zmiany struktury |
+
+## Usuwanie wierszy
+
+Token utworzony z uprawnieniami **Odczyt, zapis i usuwanie** pozwala agentowi usuwać
+wiersze, **po jednym na raz**, po ich `_id`. `delete_record` zwraca wiersz takim, jaki był,
+a usunięcie jest odnotowane w historii w imieniu tokena; `restore_record` przywraca wiersz pod
+jego `_id` — agent sam naprawia swój błąd, a osoba może to zrobić również z historii.
+
+Agent nie usuwa:
+
+- tokenem tylko do odczytu albo do odczytu i zapisu: odmowa mówi, jaki token trzeba utworzyć;
+- wiersza, który relacja kaskadowa zabrałaby razem z innymi (`TOKEN_CASCADE_FORBIDDEN`): takie
+  usunięcie wykonuje się w interfejsie, przez osobę, która widzi, co zostanie zabrane;
+- wielu wierszy na raz: żadne narzędzie tego nie robi.
 
 ## Czego agent nie robi
 
-- **Niczego nie usuwa.**
+- **Usuwa tylko za twoją zgodą**: token utworzony do tego celu, jeden wiersz na raz.
 - **Nie zmienia struktury**: proponuje ją. Propozycja czeka w **Propozycje agentów…** (menu
   bazy), gdzie osoba zarządzająca strukturą ją zatwierdza lub odrzuca; bez decyzji wygasa po
   24 godzinach.

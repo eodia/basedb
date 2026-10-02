@@ -53,6 +53,10 @@ export const pl: Catalog = {
     'Znalezienie `_id` wiersza na podstawie jego wartości wyświetlanej, przed zapisaniem relacji.',
   'Créer une ligne.': 'Tworzenie wiersza.',
   'Modifier les champs nommés d’une ligne.': 'Modyfikowanie podanych pól wiersza.',
+  'Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.':
+    'Usuwanie wiersza, tokenem utworzonym do usuwania — odpowiedź go zwraca.',
+  'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
+    'Przywrócenie usuniętego wiersza, pod jego `_id`, z historii.',
   'Proposer une table et ses premiers champs — une personne décide.':
     'Zaproponowanie tabeli i jej pierwszych pól — decyzję podejmuje osoba.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
@@ -71,14 +75,17 @@ export const pl: Catalog = {
   'Trouver une ligne par sa valeur d’affichage, {field}':
     'Znalezienie wiersza po jego wartości wyświetlanej, {field}',
   'Modifier une ligne': 'Edycja wiersza',
+  'Supprimer une ligne — avec un jeton créé pour supprimer':
+    'Usuwanie wiersza — tokenem utworzonym do usuwania',
+  'Ramener une ligne supprimée': 'Przywrócenie usuniętego wiersza',
   'Aucun outil ne vous est ouvert sur cette table.':
     'Żadne narzędzie nie jest dla ciebie dostępne w tej tabeli.',
   'Un jeton que vous créez n’a jamais plus de droits que vous : ces outils sont un maximum.':
     'Token, który tworzysz, nigdy nie ma więcej uprawnień niż ty: te narzędzia to maksimum.',
   Outil: 'Narzędzie',
   Pour: 'Zastosowanie',
-  'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.':
-    'Usuwanie wiersza pozostaje zastrzeżone dla API REST i interfejsu: żadne narzędzie MCP nie usuwa.',
+  'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
+    'Agent usuwa tylko za pomocą tokena utworzonego jako „Odczyt, zapis i usuwanie”, po jednym wierszu na raz; usunięty wiersz wraca przez `restore_record` albo z historii.',
   '**Invisibles pour un agent :** {fields}. Pour lui, ces colonnes n’existent pas : il ne peut ni les lire, ni les filtrer, ni les écrire.':
     '**Niewidoczne dla agenta:** {fields}. Dla niego te kolumny nie istnieją: nie może ich ani odczytać, ani filtrować, ani zapisać.',
   'Arguments d’un appel': 'Argumenty wywołania',
@@ -86,13 +93,13 @@ export const pl: Catalog = {
     'Utworzenie tokena dla tej bazy wymaga poziomu **Zarządzanie**, którego nie masz. Poproś o niego osobę zarządzającą tą bazą.',
   '<jeton>': '<token>',
   'Connecter un agent': 'Podłączanie agenta',
-  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.':
-    '**Serwer MCP** basedb otwiera tę bazę agentowi AI — Claude lub dowolnemu klientowi MCP: agent ją odkrywa, odczytuje, a jeśli tak zdecydujesz, także tworzy i modyfikuje w niej wiersze. Korzysta z tych samych uprawnień co API REST.',
+  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.':
+    '**Serwer MCP** basedb otwiera tę bazę agentowi AI — Claude lub dowolnemu klientowi MCP: agent ją odkrywa, odczytuje, a jeśli tak zdecydujesz, także tworzy, modyfikuje i usuwa w niej wiersze. Korzysta z tych samych uprawnień co API REST.',
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Ta baza nie jest otwarta dla agentów.** Dopóki nie zostanie otwarta, żadne narzędzie jej nie widzi, niezależnie od przedstawionego tokena.',
   'Créer un jeton': 'Tworzenie tokena',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'W interfejsie, menu „⋯” bazy → **API i agenci** → **Tokeny API i MCP…**, z zaznaczonym dostępem **MCP**. Token jest ograniczony do tej bazy, domyślnie **tylko do odczytu**: zapis wybiera się jawnie. Jest wyświetlany tylko raz i można go odwołać z tego samego ekranu. Zaznaczony także dla **API REST**, ten sam token służy programowi (zobacz „Uwierzytelnianie”).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'W interfejsie, menu „⋯” bazy → **API i agenci** → **Tokeny API i MCP…**, z zaznaczonym dostępem **MCP**. Token jest ograniczony do tej bazy, domyślnie **tylko do odczytu**: zapis, a także usuwanie, wybiera się jawnie. Jest wyświetlany tylko raz i można go odwołać z tego samego ekranu. Zaznaczony także dla **API REST**, ten sam token służy programowi (zobacz „Uwierzytelnianie”).',
   'Garder le jeton hors de la configuration': 'Przechowywanie tokena poza konfiguracją',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Token umieszcza się w zmiennej środowiskowej `BASEDB_TOKEN`, nigdy w pliku konfiguracyjnym klienta: ten plik bywa wersjonowany, synchronizowany i czytelny dla wszystkich programów w sesji.',
@@ -126,6 +133,8 @@ export const pl: Catalog = {
     'Aby zapisać relację: `lookup_records` na tabeli docelowej, a potem `create_record` lub `update_record` ze znalezionym `_id`.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'Aby zmienić strukturę: `propose_create_table` lub `propose_add_field`, a potem `get_proposal`, aby śledzić decyzję.',
+  'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
+    'Aby usunąć: najpierw `get_record`, żeby się upewnić, o który wiersz chodzi, a potem `delete_record` — który zwraca go w swojej odpowiedzi; `restore_record` go przywraca.',
   'Propositions de structure': 'Propozycje zmian struktury',
   'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend dans la file « Propositions » de la base, où une personne qui peut modifier la structure l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.':
     'Agent nigdy sam nie zmienia struktury: on **proponuje**. Propozycja czeka w kolejce „Propozycje” danej bazy, gdzie osoba mogąca zmieniać strukturę zatwierdza ją lub odrzuca; bez decyzji wygasa po 24 godzinach. Zatwierdzona, jest wprowadzana w imieniu osoby, która utworzyła token — jeśli nadal ma ona do tego prawo — i pojawia się w historii jak każda inna zmiana.',
@@ -134,8 +143,8 @@ export const pl: Catalog = {
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Bez usuwania, bez zmiany nazwy, bez relacji kaskadowych (`MCP_CASCADE_FORBIDDEN`).',
   'Ce qui n’existe pas': 'Czego nie ma',
-  'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
-    'Żadne narzędzie nie usuwa wiersza, nie wykonuje SQL ani nie zarządza uprawnieniami czy tokenami. Agent, który wywoła taką nazwę — `delete_record`, `run_sql`… — otrzymuje `MCP_OPERATION_EXCLUDED`, niezależnie od docelowej bazy.',
+  'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
+    'Żadne narzędzie nie usuwa wielu wierszy naraz, tabeli ani pola, nie wykonuje SQL ani nie zarządza uprawnieniami czy tokenami. Agent, który wywoła taką nazwę — `delete_records`, `run_sql`… — otrzymuje `MCP_OPERATION_EXCLUDED`, niezależnie od docelowej bazy.',
   Bornes: 'Ograniczenia',
   '`limit` : 25 lignes par défaut, 100 au plus.': '`limit`: domyślnie 25 wierszy, maksymalnie 100.',
   'Un filtre compte au plus 10 prédicats, combinés par ET ; un tri, au plus 3 champs.':
@@ -149,8 +158,8 @@ export const pl: Catalog = {
     'Agent nigdy nie widzi więcej niż osoba, która utworzyła jego token — a często mniej.',
   '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.':
     '**Uprawnienia**: te, które ma token, przy każdym wywołaniu zestawiane z uprawnieniami jego twórcy. Jeśli uprawnienia tej osoby maleją, uprawnienia tokena maleją razem z nimi; jeśli jej konto zostanie wyłączone, token przestaje odpowiadać.',
-  '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
-    '**Odczyt, tworzenie, modyfikowanie** — nigdy usuwanie. Token tylko do odczytu odrzuca każdy zapis (`TOKEN_READ_ONLY`).',
+  '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
+    '**Odczyt, tworzenie, modyfikowanie** — i usuwanie, po jednym wierszu na raz, tylko za pomocą tokena utworzonego do tego. Token tylko do odczytu odrzuca każdy zapis (`TOKEN_READ_ONLY`).',
   '**Cette base** : ouverte aux agents.': '**Ta baza**: otwarta dla agentów.',
   '**Cette base** : **fermée aux agents** — aucun outil ne la voit.':
     '**Ta baza**: **zamknięta dla agentów** — żadne narzędzie jej nie widzi.',
@@ -234,8 +243,8 @@ export const pl: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Wszystkie trasy danych wymagają **tokena**, w nagłówku `Authorization`. Ciasteczko sesji nigdy nie jest tu akceptowane: przeglądarka wysyła je przy każdym żądaniu, także tych wywołanych przez obcą stronę.',
   'Jeton d’intégration': 'Token integracyjny',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Program — skrypt, synchronizacja, inna aplikacja — przedstawia **token integracyjny**, który zaczyna się od `bdb_`. Jest ważny tylko dla tej bazy; odczytuje, a jeśli został utworzony z prawem zapisu, także tworzy i modyfikuje, ale **nigdy nie usuwa**; i nigdy nie ma więcej uprawnień niż osoba, która go utworzyła, zestawianych przy każdym wywołaniu. Administracja, konsola SQL i AI pozostają dla niego zamknięte.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Program — skrypt, synchronizacja, inna aplikacja — przedstawia **token integracyjny**, który zaczyna się od `bdb_`. Jest ważny tylko dla tej bazy; odczytuje, a jeśli został utworzony z prawem zapisu, także tworzy i modyfikuje, i **usuwa tylko wtedy, gdy został do tego utworzony**; nigdy nie ma więcej uprawnień niż osoba, która go utworzyła, zestawianych przy każdym wywołaniu. Administracja, konsola SQL i AI pozostają dla niego zamknięte.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Aby go utworzyć: menu „⋯” bazy → **API i agenci** → **Tokeny API i MCP…**, z zaznaczonym dostępem **API REST**. Jest wyświetlany tylko raz.',
   Appel: 'Wywołanie',

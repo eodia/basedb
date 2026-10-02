@@ -1284,10 +1284,10 @@ export default {
 		agents: {
 			label: 'REST API · MCP · webhookok',
 			title: 'Az MI-ügynökei az adatokat kapják meg, {nem a kulcsot mindenhez.}',
-			lead: 'Az MCP-szerver tizenkét eszközt ad az ügynököknek; a REST API ugyanazokat az adatokat a programjainak. Egyetlen jogosultság-ellenőrzési pont, ugyanazok a naplók.',
+			lead: 'Az MCP-szerver tizennégy eszközt ad az ügynököknek; a REST API ugyanazokat az adatokat a programjainak. Egyetlen jogosultság-ellenőrzési pont, ugyanazok a naplók.',
 			bullets: [
 				'<strong>Adatbázisonként egy token</strong>, alapértelmezés szerint csak olvasható, és soha nem kap több jogosultságot, mint a létrehozója.',
-				'<strong>Az ügynök semmit nem töröl</strong>, és nem módosítja a struktúrát: javaslatot tesz, egy ember jóváhagyja.',
+				'<strong>Az ügynök csak az Ön jóváhagyásával töröl</strong>, egyszerre egy sort, és nem módosítja a struktúrát: javaslatot tesz, egy ember jóváhagyja.',
 				'<strong>Generált dokumentáció</strong> minden adatbázishoz, az Ön jogosultságai szerint szűrve, OpenAPI 3.1-specifikációval.',
 				'<strong>Webhookok</strong> minden írásnál: aláírva, sorrendben, újrapróbálva.',
 			],
@@ -1509,7 +1509,7 @@ export default {
 			},
 			agent: {
 				q: 'Hogyan csatlakozik egy MI-ügynök?',
-				a: 'Az MCP-szerveren keresztül, egyetlen adatbázisra korlátozott, alapértelmezés szerint csak olvasható integrációs tokennel. Az ügynök a jogosultságai szerint olvas, hoz létre és módosít sorokat; semmit nem töröl, és nem módosítja a struktúrát: javaslatot tesz, egy ember pedig jóváhagyja.',
+				a: 'Az MCP-szerveren keresztül, egyetlen adatbázisra korlátozott, alapértelmezés szerint csak olvasható integrációs tokennel. Az ügynök a jogosultságai szerint olvas, hoz létre és módosít sorokat — és töröl is, egyszerre egyet, ha a tokenje erre lett létrehozva; nem módosítja a struktúrát: javaslatot tesz, egy ember pedig jóváhagyja.',
 			},
 			postgres: {
 				q: 'Melyik PostgreSQL-verzió szükséges?',
@@ -1536,6 +1536,47 @@ export default {
 		title: 'Mi változott a basedb-ben',
 		intro: 'Minden változás részletei <a href="https://github.com/eodia/basedb/commits/main">a tároló előzményeiben</a> találhatók. Ami ezután jön: az <a href="/feuille-de-route/">ütemterv</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Ügynökök, amelyek törölnek, ha Ön megengedi',
+				tag: 'Új',
+				items: [
+					'<strong>A tokenek harmadik szintje</strong>, „Olvasás, írás és törlés”: egy program a REST API-val töröl, egy ügynök az új <code>delete_record</code> eszközzel — egyszerre egy sort, amelyet a válasz visszaad. <a href="/integrations/mcp/#sorok-törlése">Sorok törlése</a>',
+					'<strong>Visszalépés</strong>: a <code>restore_record</code> az azonosítója alatt hozza vissza a törölt sort; az a törlés, amelyet egy kaszkádolt kapcsolat más sorokra is kiterjesztene, a felületnek van fenntartva.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Tokenek annak, aki egy adatbázist kezel',
+				tag: 'Új',
+				items: [
+					'<strong>A Kezelés szint elég</strong>: egy adatbázison vagy annak projektjén adva lehetővé teszi adatbázisai integrációs tokenjeinek létrehozását, anélkül hogy adminisztrátor lenne. <a href="/integrations/api-rest/#token">Token</a>',
+					'<strong>Máskülönben világosan megmondja</strong>: annak, aki olvas vagy ír anélkül, hogy kezelné az adatbázist, a tokenablak megmondja, kihez forduljon; egy jelszó nélküli fióknak, hogy miért nem hozhat még létre egyet.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automatizálások, amelyek várnak, hibát fognak el, és PDF-eket küldenek',
+				tag: 'Új',
+				items: [
+					'<strong>Négy további eseményindító</strong>: egy sor törlődik; egy sor belép egy szűrőbe – „egy számla késésbe kerül”; egy dátum eljön – három nappal a határidő előtt, 9 órakor; egy másik szoftver hívja meg az automatizálás titkos címét. <a href="/fonctionnalites/automatisations/#egy-szolgáltatás-amely-a-basedb-t-hívja">Egy szolgáltatás, amely a basedb-t hívja</a>',
+					'<strong>Várakozás</strong> három napot, vagy egy mező dátumáig, majd folytatás a sor újraolvasásával: „ha még nem fogadták el, küldjön emlékeztetőt”. <a href="/fonctionnalites/automatisations/#várakozás">Várakozás</a>',
+					'<strong>PDF létrehozása és elküldése</strong>: egy sor dokumentuma, amely egy Fájl mezőbe kerül, vagy egy e-mailhez csatolható – formázott szöveggel, másolatban szereplő címzettekkel és egy válaszcímmel, mindenkinek külön-külön vagy egy közös e-mailben mindenkinek. <a href="/fonctionnalites/automatisations/#egy-pdf-és-egy-e-mail">Egy PDF és egy e-mail</a>',
+					'<strong>Sor törlése, számlálás és összeadás, egy másik automatizálás indítása</strong>; egy feltétel egy értéket is tesztel – az MI válaszát, egy összeget –, és az eredmény nélküli keresésnek saját ága van.',
+					'<strong>Próbálkozás</strong>: lépések, és mások, ha egyikük sikertelen; egy webhook magától újra próbálkozik, egy ciklus folytatódik egy sikertelen sor ellenére. <a href="/fonctionnalites/automatisations/#próbálkozás">Próbálkozás</a>',
+					'<strong>Minden lépés kéznél van</strong>: a <strong>+</strong> egy kategóriánként rendezett, kereséssel ellátott ablakot nyit meg, egy esetleg csonkolt menü helyett.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'PDF-dokumentumok az Ön színeiben',
+				tag: 'Új',
+				items: [
+					'<strong>Öt kiindulási pont</strong> – számla, árajánlat, adatlap, igazolás, üres oldal –, amelyek a tábla oszlopaival épülnek fel: szám, dátum, összegek, fotó, kapcsolt sorok. <a href="/fonctionnalites/documents/#sablon-létrehozása">Sablon létrehozása</a>',
+					'<strong>Az Ön logója és színei</strong>: fejrész logóval és elérhetőségekkel, lábrész jogi közleményekkel és lapszámokkal, egy kiemelő szín, talpas vagy talp nélküli betűtípusok, egy keret a lap körül. <a href="/fonctionnalites/documents/#fejrész-és-lábrész">Fejrész és lábrész</a>',
+					'<strong>Új blokkok</strong>: egy cím egy sávon, egy kép, két vagy három oszlop, egy nettó/bruttó összesítő, egy színes fejrészű táblázat, egy elválasztó. Húzással rendezhetők át, és az előnézet követi minden módosítást. <a href="/fonctionnalites/documents/#a-tartalom-blokkok">A blokkok</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'Egy megszakadt kapcsolat már nem állítja meg a basedb-t',
@@ -1920,8 +1961,8 @@ export default {
 						text: 'Az SQL-nézetek átmásolása a struktúrával együtt környezetek létrehozásakor vagy összehasonlításakor, és az adatbázissablonokban.',
 					},
 					loops: {
-						title: 'Várakozás az automatizálásokban',
-						text: 'Várakozás a következő lépés előtt („három nappal később”), és a folyamatok – feltételek, keresések, ciklusok – átvitele az adatbázissablonokba.',
+						title: 'Teljes folyamatok az adatbázissablonokban',
+						text: 'Az automatizálási folyamatok – feltételek, keresések, ciklusok, várakozások, PDF – átvitele az adatbázissablonokba, amelyek ma még csak az egyszerű lépéseket tartják meg.',
 					},
 					textFormulas: {
 						title: 'Szövegképletek',

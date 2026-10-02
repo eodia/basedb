@@ -1,6 +1,6 @@
 ---
 title: Automatizace
-description: Když se změní řádek, v pevný čas nebo kliknutím – upravit, vytvořit, vyhledat, opakovat pro každý řádek, větvit, zeptat se AI, upozornit, odeslat e-mail, zavolat službu, napsat do Slacku.
+description: Když se řádek změní, vstoupí do filtru nebo zmizí, když nastane datum, v pevný čas, kliknutím nebo voláním – upravit, vytvořit, vyhledat, počítat, opakovat, větvit, čekat, zkusit, zeptat se AI, vytvořit PDF, upozornit, odeslat e-mail, zavolat službu.
 ---
 
 Automatizace říká **kdy**, **jestli** a **pak**: když úkol přejde do stavu „Fait“, zaznamenat
@@ -8,7 +8,7 @@ Automatizace říká **kdy**, **jestli** a **pak**: když úkol přejde do stavu
 pondělí v 9:00 vytvořit řádek týmové porady. A když jedna akce nestačí, sleduje **tok**:
 vyhledat řádek, vydat se jednou či druhou větví podle toho, co obsahuje, opakovat kroky na
 každém řádku, který odpovídá filtru, znovu použít v kroku to, co předchozí krok našel nebo
-zapsal.
+zapsal, **čekat** tři dny před upomínkou, odeslat **PDF** v příloze.
 
 Otevírají se přes **Automatizace** v bloku otevřené databáze dole v postranním panelu
 a vyžadují úroveň **Správa**.
@@ -17,9 +17,10 @@ a vyžadují úroveň **Správa**.
 
 ## Tok
 
-Tok se kreslí shora dolů: spouštěč, pak jednotlivé kroky. **+** na spojnici přidá krok na
-dané místo; karta otevře své nastavení vpravo. Jednoduchá automatizace – spouštěč a akce – se
-vejde do dvou karet a nastavuje se jako dříve.
+Tok se kreslí shora dolů: spouštěč, pak jednotlivé kroky. **+** na spojnici otevře seznam
+kroků, rozdělený do kategorií — Řádky, Komunikace, Dokumenty, AI, Logika — s vyhledáváním,
+a přidá zvolený krok na dané místo; karta otevře své nastavení vpravo. Jednoduchá automatizace
+– spouštěč a akce – se vejde do dvou karet a nastavuje se jako dříve.
 
 ## Kdy
 
@@ -29,6 +30,10 @@ vejde do dvou karet a nastavuje se jako dříve.
 | **Řádek je upraven** | tabulka a případně jen pole, která se mají sledovat |
 | **V pevný čas** | každou hodinu, každý den nebo každý týden, ve zvolenou hodinu a ve zvoleném časovém pásmu |
 | **Kliknutí na tlačítko** | [pole Tlačítko](/basedb/cs/fonctionnalites/tables-et-champs/#tlačítko) tabulky |
+| **Řádek je odstraněn** | tabulka; kroky citují řádek tak, jak vypadal |
+| **Řádek vstoupí do filtru** | tabulka a filtr: automatizace se spustí, jakmile do něj řádek vstoupí, a znovu až poté, co z něj vystoupí – „faktura se opozdí“, ne „opožděná faktura je upravena“ |
+| **Nastává datum** | pole Datum tabulky, posun – tři dny před, v tentýž den, týden po – a hodina: upomínky splatnosti, výročí smlouvy |
+| **Přijat webhook** | nic: automatizace získá svou vlastní adresu, kterou zavolá jiný program ([podrobnosti](#služba-která-volá-basedb)) |
 
 Spouštěč nad řádky vidí **všechny** zápisy: rozhraní, API, agenta, sdílený formulář, a dokonce
 i přímé SQL – automatizace vycházejí z historie, která je zachytí všechny.
@@ -41,7 +46,8 @@ akce**. Spuštění, jehož podmínka není splněna, je „přeskočeno“ a uv
 
 ## Pak
 
-Až třicet kroků, v daném pořadí; první, který selže, zastaví ty následující.
+Až čtyřicet kroků, v daném pořadí; první, který selže, zastaví ty následující – kromě kroků
+v bloku **Zkusit** ([podrobnosti](#zkusit)).
 
 | Krok | Co dělá |
 |---|---|
@@ -55,10 +61,20 @@ Až třicet kroků, v daném pořadí; první, který selže, zastaví ty násle
 | **Zeptat se AI** | odpověď [poskytovatele AI](/basedb/cs/fonctionnalites/ia/) na pokyn, který cituje řádek a předchozí kroky – napsat, shrnout, zařadit –, čtenou jako text, číslo, ano či ne, datum nebo volbu ze seznamu |
 | **Podmínka** | několik větví: použije se první, jejíž podmínka je splněna, a „Jinak“, když není splněna žádná; větve se pak opět spojí |
 | **Pro každý řádek** | kroky, které obsahuje, jednou pro každý řádek tabulky, který odpovídá filtru ([podrobnosti](#pro-každý-řádek)) |
+| **Odstranit řádek** | řádek, který automatizaci spustil, nebo ten, který najde některý krok – přesune se do koše |
+| **Počítat a sčítat** | počet řádků filtru, jejich součet, průměr, minimum nebo maximum, k citaci nebo otestování dále |
+| **Vygenerovat PDF** | [dokument](/basedb/cs/fonctionnalites/documents/) řádku, uložený do pole Soubor nebo přiložený k e-mailu |
+| **Čekat** | dobu, nebo do data pole ([podrobnosti](#čekat)) |
+| **Zkusit** | kroky, a další, které se provedou, pokud některý z nich selže ([podrobnosti](#zkusit)) |
+| **Spustit automatizaci** | jinou automatizaci databáze, na řádku její tabulky |
 
 Vyhledání, které nic nenajde, tok nezastaví: kroky, které měly upravit nalezený řádek, se
-přeskočí. Chcete-li v takovém případě udělat něco jiného, otestujte to podmínkou – větev
-s prázdným filtrem se použije, jakmile vyhledání něco našlo.
+přeskočí. Pro jiný postup v tomto případě **Pokud není nalezen žádný řádek…**, pod vyhledáním,
+přidá podmínku, která to testuje.
+
+**Podmínka** testuje řádek filtrem, nebo **hodnotu**: odpověď AI, kód webhooku, celkový
+součet – „`{{e2.reponse}}` se rovná Urgent“, „`{{e3.somme.montant}}` je větší nebo rovno 1000“.
+Čísla se porovnávají jako čísla, texty bez diakritiky a velkých písmen.
 
 ## Pro každý řádek
 
@@ -78,6 +94,60 @@ Nad rámec limitu čekají zbývající řádky na příští spuštění, kter�
 už zpracované, vyřaďte z filtru – zaškrtávací políčko „relancée“, datum –, aby se postupně
 zpracovaly všechny při dalších spuštěních. Smyčka neobsahuje jinou smyčku a spuštění se
 zastaví po dvou minutách.
+
+## Čekat
+
+Krok **Čekat** uvede spuštění do pauzy — tři hodiny, dva dny — nebo do data pole řádku, s
+posunem a hodinou: „den před splatností, v 9:00“. Spuštění se zobrazí jako **Pozastaveno**
+v záložce **Spuštění**, s datem svého pokračování.
+
+Pokračuje dalším krokem tak, že **znovu přečte** své řádky: „tři dny po odeslání nabídky,
+pokud stále není přijata, upomenout“ se zapíše jako **Čekat** 3 dny, pak podmínka na stav
+nabídky tak, jak je ten den. Deaktivace automatizace zastaví pozastavená spuštění; čekání se
+neumísťuje ani do smyčky, ani do bloku **Zkusit**, a trvá nejvýše rok.
+
+## Zkusit
+
+Blok **Zkusit** má dvě větve. První se provede; pokud některý z jejích kroků selže, tok
+pokračuje druhou, **V případě selhání**, která cituje selhání — `{{e4.erreur}}`, kód,
+a `{{e4.etape}}`, krok —, a pak pokračuje za blokem. To umožní někoho upozornit, když služba
+neodpovídá, bez zastavení všeho.
+
+Jednodušeji: webhook se může sám **zkusit znovu** až třikrát po výpadku služby, a smyčka může
+**pokračovat** i přes řádek, který selhal.
+
+## PDF a e-mail
+
+**Vygenerovat PDF** vytvoří dokument řádku — se [šablonou
+dokumentu](/basedb/cs/fonctionnalites/documents/) jeho tabulky, nebo listem všech jeho polí —
+a může ho uložit do pole Soubor. **Odeslat e-mail** ho pak může přiložit, se soubory z pole
+Soubor nebo Obrázek:
+
+- e-mail **pro každého**, nebo **jeden pro všechny**, s příjemci **v kopii**;
+- zpráva ve **formátovaném textu** — tučně, seznamy, odkazy — která cituje řádek;
+- adresa pro **odpověď**: vaše ve výchozím nastavení, nebo z pole E-mail;
+- nejvýše 50 příjemců, 10 příloh a 15 MB.
+
+„Když nabídka přejde na Přijato, odeslat fakturu klientovi, účetní v kopii“:
+**Řádek vstoupí do filtru** `statut eq "accepte"`, **Vygenerovat PDF** se šablonou Faktura,
+**Odeslat e-mail** na pole E-mail klienta, s přiloženou fakturou.
+
+## Služba, která volá basedb
+
+Se spouštěčem **Přijat webhook** má automatizace svou vlastní tajnou adresu, kterou dáte
+programu, který ji má spustit — internetovému obchodu, externímu formuláři, nástroji pro
+automatizaci:
+
+```bash
+curl -X POST "https://basedb.example.com/api/v1/hooks/<secret>" \
+  -H "content-type: application/json" \
+  -d '{"client": {"nom": "Dupont"}, "total": 120}'
+```
+
+Kroky citují to, co odeslal: `{{trigger.client.nom}}`, `{{trigger.total}}`; formulář se čte
+stejně, text přes `{{trigger.texte}}`. Adresa se kopíruje z nastavení spouštěče; **Změnit
+adresu** ji nahradí, a stará okamžitě přestane platit. Volání obdrží `202`, automatizace se
+spustí během vteřiny.
 
 ## Zavolat službu
 
@@ -134,6 +204,11 @@ textu:
 - `{{e4.reponse}}`: odpověď kroku AI `e4`;
 - `{{e5.client}}` ve smyčce `e5`, řádek aktuálního průchodu; `{{e5.nombre}}` po ní, počet
   řádků, kterými prošla;
+- `{{e6.nombre}}`, `{{e6.somme.montant}}`, `{{e6.moyenne.montant}}`, `{{e6.max.echeance}}`: co
+  napočítal krok `e6`;
+- `{{e7.erreur}}`, `{{e7.etape}}`: selhání, které zachytil blok **Zkusit** `e7`;
+- `{{e8.nom}}`: název PDF kroku `e8`;
+- `{{trigger.client.nom}}`: co odeslal příchozí webhook;
 - `{{_maintenant}}`: okamžik spuštění.
 
 Hodnota tvořená jedinou citací předá samotnou hodnotu: vazbu, osobu, volbu – tak se
@@ -181,17 +256,16 @@ jako ostatní.
 ## Omezení
 
 - Co automatizace zapíše, nespustí žádnou jinou: co má následovat po sobě, patří do jediného
-  toku.
-- Vyhledání vrátí jeden řádek, ten první; smyčka jich za jedno spuštění projde nejvýše 200,
-  a první krok, který selže, ji zastaví. Žádné čekání („tři dny poté“).
-- Žádný skript. E-mail odchází jako prostý text, jeden pro každého příjemce — nejvýše dvacet
-  na krok —, přes [odesílací server](/basedb/cs/hebergement/variables/#e-maily) instance;
-  odpověď přijde osobě, která automatizaci naposledy uložila.
-- Podmínka testuje řádek: chcete-li zvolit větev podle odpovědi AI, zapište ji nejprve do
-  pole řádku.
+  toku, nebo přes **Spustit automatizaci**, nejvýše tři úrovně.
+- Vyhledání vrátí jeden řádek, ten první; smyčka jich za jedno spuštění projde nejvýše 200.
+  Spuštění trvá nejvýše dvě minuty, bez započítání čekání.
+- Žádný skript. E-mail odchází přes [odesílací server](/basedb/cs/hebergement/variables/#e-maily)
+  instance.
 - [Šablona databáze](/basedb/cs/fonctionnalites/modeles/) přenáší jen automatizace bez
   vyhledání, smyčky, podmínky a kroku AI, a nikdy webhook.
 - Webhook nesleduje přesměrování a čeká nejvýše 10 sekund; odpověď jiná než 2xx způsobí selhání
-  kroku.
+  kroku, po jeho opakovaných pokusech.
+- Nastalé datum se hledá každou minutu; započítávají se jen ta, která nastala po uložení
+  automatizace.
 - 100 spuštění za hodinu na automatizaci; zmeškaný hodinový termín se dožene jen jednou.
 - Prodleva mezi zápisem a akcí je v řádu sekund.

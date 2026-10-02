@@ -77,4 +77,5 @@ uruchomi.
 **Token integracji** tworzy się w interfejsie: menu **⋯** bazy → **API i agenci**
 → **Tokeny API i MCP…**. Otwiera on jedną bazę, odczytuje jej wiersze, zapisuje je, jeśli
 został utworzony z prawem zapisu, nigdy nie ma większych uprawnień niż osoba, która go
-utworzyła, i **nigdy niczego nie usuwa**: `delete()` wymaga uprawnień sesji.
+utworzyła, i **usuwa tylko wtedy, gdy został do tego utworzony** („Odczyt, zapis i usuwanie”):
+w przeciwnym razie `delete()` jest odrzucane.

@@ -54,6 +54,10 @@ export const ro: Catalog = {
     'Găsirea `_id`-ului unui rând după valoarea sa de afișare, înainte de a scrie o relație.',
   'Créer une ligne.': 'Crearea unui rând.',
   'Modifier les champs nommés d’une ligne.': 'Modificarea câmpurilor numite ale unui rând.',
+  'Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.':
+    'Ștergerea unui rând, cu un token creat pentru ștergere — răspunsul îl redă.',
+  'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
+    'Readucerea unui rând șters, sub `_id`-ul său, din istoric.',
   'Proposer une table et ses premiers champs — une personne décide.':
     'Propunerea unui tabel și a primelor sale câmpuri — o persoană decide.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
@@ -72,14 +76,17 @@ export const ro: Catalog = {
   'Trouver une ligne par sa valeur d’affichage, {field}':
     'Găsirea unui rând după valoarea sa de afișare, {field}',
   'Modifier une ligne': 'Modificarea unui rând',
+  'Supprimer une ligne — avec un jeton créé pour supprimer':
+    'Ștergerea unui rând — cu un token creat pentru ștergere',
+  'Ramener une ligne supprimée': 'Readucerea unui rând șters',
   'Aucun outil ne vous est ouvert sur cette table.':
     'Niciun instrument nu vă este deschis pe acest tabel.',
   'Un jeton que vous créez n’a jamais plus de droits que vous : ces outils sont un maximum.':
     'Un token pe care îl creați nu are niciodată mai multe permisiuni decât dumneavoastră: aceste instrumente sunt un maxim.',
   Outil: 'Instrument',
   Pour: 'Scop',
-  'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.':
-    'Ștergerea unui rând rămâne rezervată API REST și interfeței: niciun instrument MCP nu șterge.',
+  'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
+    'Un agent nu șterge decât cu un token creat „Citire, scriere și ștergere”, câte un rând; rândul șters se restaurează prin `restore_record` sau din istoric.',
   '**Invisibles pour un agent :** {fields}. Pour lui, ces colonnes n’existent pas : il ne peut ni les lire, ni les filtrer, ni les écrire.':
     '**Invizibile pentru un agent:** {fields}. Pentru el, aceste coloane nu există: nu le poate nici citi, nici filtra, nici scrie.',
   'Arguments d’un appel': 'Argumentele unui apel',
@@ -87,13 +94,13 @@ export const ro: Catalog = {
     'Crearea unui token pentru această bază necesită nivelul **Gestionare**, pe care nu îl aveți. Solicitați unul persoanei care o gestionează.',
   '<jeton>': '<token>',
   'Connecter un agent': 'Conectarea unui agent',
-  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.':
-    '**Serverul MCP** al basedb deschide această bază unui agent AI — Claude sau orice client MCP: acesta o descoperă, o citește și, dacă decideți astfel, creează și modifică rânduri în ea. Trece prin aceleași permisiuni ca API REST.',
+  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.':
+    '**Serverul MCP** al basedb deschide această bază unui agent AI — Claude sau orice client MCP: acesta o descoperă, o citește și, dacă decideți astfel, creează, modifică și șterge rânduri în ea. Trece prin aceleași permisiuni ca API REST.',
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Această bază nu este deschisă agenților.** Cât timp nu este, niciun instrument nu o vede, indiferent de tokenul prezentat.',
   'Créer un jeton': 'Crearea unui token',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'În interfață, meniul „⋯” al bazei → **API și agenți** → **Tokenuri API și MCP…**, cu accesul **MCP** bifat. Tokenul este limitat la această bază, **doar în citire** în mod implicit: scrierea se alege explicit. Este afișat o singură dată și se revocă din același ecran. Bifat și pentru **API REST**, același token servește pentru un program (vezi „Autentificare”).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'În interfață, meniul „⋯” al bazei → **API și agenți** → **Tokenuri API și MCP…**, cu accesul **MCP** bifat. Tokenul este limitat la această bază, **doar în citire** în mod implicit: scrierea, și ștergerea, se aleg explicit. Este afișat o singură dată și se revocă din același ecran. Bifat și pentru **API REST**, același token servește pentru un program (vezi „Autentificare”).',
   'Garder le jeton hors de la configuration': 'Păstrarea tokenului în afara configurației',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Tokenul se pune în variabila de mediu `BASEDB_TOKEN`, niciodată în fișierul de configurare al clientului: acesta este versionat, sincronizat și lizibil de toate programele sesiunii.',
@@ -127,6 +134,8 @@ export const ro: Catalog = {
     'Pentru a scrie o relație: `lookup_records` pe tabelul țintă, apoi `create_record` sau `update_record` cu `_id`-ul găsit.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'Pentru a modifica structura: `propose_create_table` sau `propose_add_field`, apoi `get_proposal` pentru a urmări decizia.',
+  'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
+    'Pentru a șterge: `get_record` întâi, pentru a fi sigur de rând, apoi `delete_record` — care îl redă în răspunsul său; `restore_record` îl readuce.',
   'Propositions de structure': 'Propuneri de structură',
   'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend dans la file « Propositions » de la base, où une personne qui peut modifier la structure l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.':
     'Un agent nu modifică niciodată singur structura: el **propune**. Propunerea așteaptă în coada „Propuneri” a bazei, unde o persoană care poate modifica structura o aprobă sau o refuză; fără decizie, expiră după 24 de ore. Aprobată, este aplicată în numele persoanei care a creat tokenul — dacă această persoană mai are dreptul să o facă — și apare în istoric ca orice altă modificare.',
@@ -135,8 +144,8 @@ export const ro: Catalog = {
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Nicio ștergere, nicio redenumire, nicio relație în cascadă (`MCP_CASCADE_FORBIDDEN`).',
   'Ce qui n’existe pas': 'Ce nu există',
-  'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
-    'Niciun instrument nu șterge un rând, nu execută SQL și nu gestionează permisiunile sau tokenurile. Un agent care apelează un astfel de nume — `delete_record`, `run_sql`… — primește `MCP_OPERATION_EXCLUDED`, indiferent de baza vizată.',
+  'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
+    'Niciun instrument nu șterge mai multe rânduri deodată, un tabel sau un câmp, nu execută SQL și nu gestionează permisiunile sau tokenurile. Un agent care apelează un astfel de nume — `delete_records`, `run_sql`… — primește `MCP_OPERATION_EXCLUDED`, indiferent de baza vizată.',
   Bornes: 'Limite',
   '`limit` : 25 lignes par défaut, 100 au plus.':
     '`limit`: 25 de rânduri în mod implicit, cel mult 100.',
@@ -151,8 +160,8 @@ export const ro: Catalog = {
     'Un agent nu vede niciodată mai mult decât persoana care i-a creat tokenul — și adesea mai puțin.',
   '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.':
     '**Permisiuni**: cele ale tokenului, verificate încrucișat la fiecare apel cu cele ale creatorului său. Dacă permisiunile acestei persoane scad, cele ale tokenului scad odată cu ele; dacă contul său este dezactivat, tokenul încetează să răspundă.',
-  '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
-    '**Citire, creare, modificare** — niciodată ștergere. Un token doar în citire refuză orice scriere (`TOKEN_READ_ONLY`).',
+  '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
+    '**Citire, creare, modificare** — și ștergere, câte un rând, doar cu un token creat pentru aceasta. Un token doar în citire refuză orice scriere (`TOKEN_READ_ONLY`).',
   '**Cette base** : ouverte aux agents.': '**Această bază**: deschisă agenților.',
   '**Cette base** : **fermée aux agents** — aucun outil ne la voit.':
     '**Această bază**: **închisă agenților** — niciun instrument nu o vede.',
@@ -235,8 +244,8 @@ export const ro: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Toate rutele de date necesită un **token**, în antetul `Authorization`. Cookie-ul de sesiune nu este niciodată acceptat aici: un browser îl trimite la fiecare cerere, inclusiv cele provocate de o pagină străină.',
   'Jeton d’intégration': 'Token de integrare',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Un program — script, sincronizare, altă aplicație — prezintă un **token de integrare**, care începe cu `bdb_`. Este valabil doar pentru această bază; citește, iar creează și modifică dacă a fost creat cu drept de scriere, dar **nu șterge niciodată**; și nu are niciodată mai multe permisiuni decât persoana care l-a creat, verificate încrucișat la fiecare apel. Administrarea, consola SQL și AI-ul îi rămân închise.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Un program — script, sincronizare, altă aplicație — prezintă un **token de integrare**, care începe cu `bdb_`. Este valabil doar pentru această bază; citește, creează și modifică dacă a fost creat cu drept de scriere, și **nu șterge decât dacă a fost creat pentru aceasta**; nu are niciodată mai multe permisiuni decât persoana care l-a creat, verificate încrucișat la fiecare apel. Administrarea, consola SQL și AI-ul îi rămân închise.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Pentru a crea unul: meniul „⋯” al bazei → **API și agenți** → **Tokenuri API și MCP…**, cu accesul **API REST** bifat. Este afișat o singură dată.',
   Appel: 'Apel',

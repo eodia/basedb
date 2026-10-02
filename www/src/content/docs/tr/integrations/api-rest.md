@@ -13,13 +13,16 @@ adları taşır — SQL'de de okuduğunuz adları.
 
 ## Bir token
 
-Arayüzde, veritabanının **⋯** menüsü → **API ve ajanlar** → **API ve MCP token'ları…**: şifrenizi
-doğruladıktan sonra burada bu veritabanıyla sınırlı, varsayılan olarak salt okunur bir
-**entegrasyon token'ı** oluşturulur. Token yalnızca bir kez gösterilir; onu bir ortam
-değişkenine koyun.
+Arayüzde, veritabanının **⋯** menüsü → **API ve ajanlar** → **API ve MCP token'ları…**: veritabanı
+ya da projesi üzerinde **Yönetim** düzeyine sahip olan kişi, şifresini doğruladıktan sonra
+burada bu veritabanıyla sınırlı, varsayılan olarak salt okunur bir **entegrasyon token'ı**
+oluşturur — bir kimlik sağlayıcısıyla giriş yapan şifresiz bir hesap bunu henüz yapamaz. Token
+yalnızca bir kez gösterilir; onu bir ortam değişkenine koyun.
 
-Bir token okur; yazma yetkisiyle oluşturulduysa oluşturur ve değiştirir; **asla silmez** ve onu
-oluşturan kişiden asla daha fazla izne sahip olmaz.
+Bir token okur; yazma yetkisiyle oluşturulduysa oluşturur ve değiştirir, bunun için
+oluşturulduysa da **siler** — “Okuma, yazma ve silme” hakları, kademeli (cascade) bir ilişkinin
+başka satırlarla birlikte götüreceği bir satır hariç. Onu oluşturan kişiden asla daha fazla izne
+sahip olmaz.
 
 ```bash
 export BASEDB_TOKEN=bdb_…

@@ -77,4 +77,5 @@ kører.
 Et **integrationstoken** oprettes i brugerfladen: menuen **⋯** af databasen → **API og
 agenter** → **API- og MCP-tokens…**. Det åbner en database, læser dens rækker, skriver dem,
 hvis det er oprettet med skriveadgang, har aldrig flere tilladelser end den person, der
-oprettede det, og **sletter aldrig**: `delete()` kræver en sessions tilladelser.
+oprettede det, og **sletter kun, hvis det er oprettet til det** (»Læse, skrive og slette«):
+ellers afvises `delete()`.

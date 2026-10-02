@@ -1,6 +1,6 @@
 ---
 title: Automatisations
-description: Quand une ligne change, à heure fixe ou d’un clic — modifier, créer, chercher, répéter sur chaque ligne, bifurquer, demander à l’IA, prévenir, envoyer un courriel, appeler un service, écrire sur Slack.
+description: Quand une ligne change, arrive dans un filtre ou disparaît, quand une date arrive, à heure fixe, d’un clic ou d’un appel — modifier, créer, chercher, compter, répéter, bifurquer, attendre, essayer, demander à l’IA, faire un PDF, prévenir, envoyer un courriel, appeler un service.
 ---
 
 Une automatisation dit **quand**, **si** et **alors** : quand une tâche passe à « Fait », noter
@@ -8,7 +8,8 @@ l’heure ; quand un avis négatif arrive, prévenir la responsable et écrire s
 lundi à 9 h, créer la ligne du point d’équipe. Et quand une action ne suffit pas, elle suit un
 **flux** : chercher une ligne, prendre un chemin ou un autre selon ce qu’elle dit, répéter des
 étapes sur chaque ligne qui répond à un filtre, réutiliser dans une étape ce qu’une étape
-précédente a trouvé ou écrit.
+précédente a trouvé ou écrit, **attendre** trois jours avant une relance, envoyer un **PDF** en
+pièce jointe.
 
 Elles s’ouvrent depuis **Automatisations**, dans le bloc de la base ouverte en bas de la barre
 latérale, et demandent le niveau **Gestion**.
@@ -18,7 +19,9 @@ latérale, et demandent le niveau **Gestion**.
 ## Le flux
 
 Le flux se dessine de haut en bas : le déclencheur, puis chaque étape. Un **+** sur un trait
-ajoute une étape à cet endroit ; une carte ouvre ses réglages à droite. Une automatisation
+ouvre la liste des étapes, rangées par catégorie — Lignes, Communiquer, Documents, IA,
+Logique — avec une recherche, et ajoute celle choisie à cet endroit ; une carte ouvre ses
+réglages à droite. Une automatisation
 simple — un déclencheur et une action — tient en deux cartes, et se règle comme avant.
 
 ## Quand
@@ -29,6 +32,10 @@ simple — un déclencheur et une action — tient en deux cartes, et se règle 
 | **Une ligne est modifiée** | la table, et au besoin les seuls champs à surveiller |
 | **À heure fixe** | toutes les heures, chaque jour ou chaque semaine, à l’heure et dans le fuseau choisis |
 | **On clique sur un bouton** | un [champ Bouton](/basedb/fonctionnalites/tables-et-champs/#bouton) de la table |
+| **Une ligne est supprimée** | la table ; les étapes citent la ligne telle qu’elle était |
+| **Une ligne entre dans un filtre** | la table et le filtre : l’automatisation part quand une ligne y entre, et ne repart qu’après en être sortie — « une facture passe en retard », pas « une facture en retard est modifiée » |
+| **Une date arrive** | un champ Date de la table, un décalage — trois jours avant, le jour même, une semaine après — et l’heure : relances d’échéance, anniversaires de contrat |
+| **Un webhook est reçu** | rien : l’automatisation reçoit sa propre adresse, qu’un autre logiciel appelle ([détails](#un-service-qui-appelle-basedb)) |
 
 Un déclencheur sur les lignes voit **toutes** les écritures : l’interface, l’API, un agent, un
 formulaire partagé, et même le SQL direct — les automatisations partent de l’historique, qui les
@@ -42,7 +49,8 @@ d’agir**. Une exécution dont la condition n’est pas remplie est « écarté
 
 ## Alors
 
-Jusqu’à trente étapes, dans l’ordre ; la première qui échoue arrête les suivantes.
+Jusqu’à quarante étapes, dans l’ordre ; la première qui échoue arrête les suivantes — sauf
+dans un bloc **Essayer** ([détails](#essayer)).
 
 | Étape | Ce qu’elle fait |
 |---|---|
@@ -56,10 +64,21 @@ Jusqu’à trente étapes, dans l’ordre ; la première qui échoue arrête les
 | **Demander à l’IA** | une réponse du [fournisseur d’IA](/basedb/fonctionnalites/ia/) à une consigne qui cite la ligne et les étapes précédentes — rédiger, résumer, classer —, lue comme un texte, un nombre, oui ou non, une date ou un choix dans une liste |
 | **Condition** | plusieurs chemins : le premier dont la condition est remplie est pris, « Sinon » quand aucun ne l’est ; les chemins se rejoignent ensuite |
 | **Pour chaque ligne** | les étapes qu’elle contient, une fois pour chaque ligne d’une table qui répond à un filtre ([détails](#pour-chaque-ligne)) |
+| **Supprimer une ligne** | la ligne qui a déclenché, ou celle qu’une étape a trouvée — elle va à la corbeille |
+| **Compter et additionner** | le nombre de lignes d’un filtre, leur somme, leur moyenne, leur minimum ou maximum, à citer ou à tester ensuite |
+| **Générer un PDF** | le [document](/basedb/fonctionnalites/documents/) d’une ligne, rangé dans un champ Document ou joint à un courriel |
+| **Attendre** | une durée, ou jusqu’à la date d’un champ ([détails](#attendre)) |
+| **Essayer** | des étapes, et d’autres à faire si l’une d’elles échoue ([détails](#essayer)) |
+| **Lancer une automatisation** | une autre automatisation de la base, sur une ligne de sa table |
 
 Une recherche qui ne trouve rien n’arrête pas le flux : les étapes qui devaient modifier sa
-ligne sont passées. Pour faire autre chose dans ce cas, une condition le teste — un chemin
-dont le filtre est vide est pris dès que la recherche a trouvé.
+ligne sont passées. Pour faire autre chose dans ce cas, **Si aucune ligne n’est trouvée…**,
+sous la recherche, ajoute une condition qui le teste.
+
+Une **condition** teste une ligne avec un filtre, ou une **valeur** : la réponse de l’IA, le
+code d’un webhook, un total — « `{{e2.reponse}}` est égal à Urgent », « `{{e3.somme.montant}}`
+est supérieur ou égal à 1000 ». Les nombres se comparent en nombres, les textes sans accents ni
+majuscules.
 
 ## Pour chaque ligne
 
@@ -80,6 +99,61 @@ Au-delà de la limite, les lignes restantes attendent la prochaine exécution, q
 faites sortir du filtre celles qui sont traitées — une case « relancée », une date — pour les
 traiter toutes au fil des exécutions. Une boucle ne contient pas d’autre boucle, et une
 exécution s’arrête au bout de deux minutes.
+
+## Attendre
+
+L’étape **Attendre** met l’exécution en pause — trois heures, deux jours — ou jusqu’à la date
+d’un champ d’une ligne, avec un décalage et une heure : « la veille de l’échéance, à 9 h ».
+L’exécution apparaît **En pause** dans l’onglet **Exécutions**, avec la date de sa reprise.
+
+Elle reprend à l’étape suivante en **relisant** ses lignes : « trois jours après l’envoi du
+devis, s’il n’est toujours pas accepté, relancer » s’écrit **Attendre** 3 jours, puis une
+condition sur le statut du devis, tel qu’il est ce jour-là. Désactiver l’automatisation arrête
+les exécutions en pause ; une attente ne se place ni dans une boucle ni dans un bloc
+**Essayer**, et dure un an au plus.
+
+## Essayer
+
+Le bloc **Essayer** a deux chemins. Le premier est exécuté ; si l’une de ses étapes échoue, le
+flux continue par le second, **En cas d’échec**, qui cite l’échec — `{{e4.erreur}}`, le code,
+et `{{e4.etape}}`, l’étape —, puis reprend après le bloc. De quoi prévenir quelqu’un quand un
+service ne répond pas, sans tout arrêter.
+
+Plus simplement : un webhook peut **réessayer** de lui-même jusqu’à trois fois après une panne
+du service, et une boucle peut **continuer** malgré une ligne en échec.
+
+## Un PDF et un courriel
+
+**Générer un PDF** fait le document d’une ligne — avec un [modèle de
+document](/basedb/fonctionnalites/documents/) de sa table, ou la fiche de tous ses champs — et
+peut le ranger dans un champ Document. **Envoyer un courriel** peut ensuite le joindre, avec
+les fichiers d’un champ Document ou Image :
+
+- un courriel **à chacun**, ou **un seul à tous**, avec des destinataires **en copie** ;
+- un message en **texte riche** — gras, listes, liens — qui cite la ligne ;
+- une adresse de **réponse** : la vôtre par défaut, ou celle d’un champ E-mail ;
+- jusqu’à 50 destinataires, 10 pièces jointes et 15 Mo.
+
+« Quand un devis passe à Accepté, envoyer la facture au client, la comptabilité en copie » :
+**Une ligne entre dans un filtre** `statut eq "accepte"`, **Générer un PDF** avec le modèle
+Facture, **Envoyer un courriel** au champ E-mail du client, la facture jointe.
+
+## Un service qui appelle basedb
+
+Avec le déclencheur **Un webhook est reçu**, l’automatisation a sa propre adresse secrète, à donner
+au logiciel qui doit la lancer — une boutique en ligne, un formulaire externe, un outil
+d’automatisation :
+
+```bash
+curl -X POST "https://basedb.example.com/api/v1/hooks/<secret>" \
+  -H "content-type: application/json" \
+  -d '{"client": {"nom": "Dupont"}, "total": 120}'
+```
+
+Les étapes citent ce qu’il a envoyé : `{{trigger.client.nom}}`, `{{trigger.total}}` ; un
+formulaire se lit de même, un texte par `{{trigger.texte}}`. L’adresse se copie depuis les
+réglages du déclencheur ; **Changer d’adresse** la remplace, et l’ancienne cesse aussitôt. Un
+appel reçoit `202`, l’automatisation tourne dans la seconde.
 
 ## Appeler un service
 
@@ -136,6 +210,11 @@ de chaque texte :
 - `{{e4.reponse}}` : la réponse de l’étape IA `e4` ;
 - `{{e5.client}}` dans la boucle `e5`, la ligne du tour ; `{{e5.nombre}}` après elle, le nombre
   de lignes parcourues ;
+- `{{e6.nombre}}`, `{{e6.somme.montant}}`, `{{e6.moyenne.montant}}`, `{{e6.max.echeance}}` : ce
+  qu’a compté l’étape `e6` ;
+- `{{e7.erreur}}`, `{{e7.etape}}` : l’échec qu’a rattrapé le bloc **Essayer** `e7` ;
+- `{{e8.nom}}` : le nom du PDF de l’étape `e8` ;
+- `{{trigger.client.nom}}` : ce qu’a envoyé un webhook entrant ;
 - `{{_maintenant}}` : l’instant de l’exécution.
 
 Une valeur faite d’une seule citation passe la valeur elle-même : une relation, une personne, un
@@ -184,18 +263,17 @@ s’annulent comme les autres.
 ## Limites
 
 - Ce qu’écrit une automatisation n’en déclenche aucune autre : ce qui doit s’enchaîner s’écrit
-  dans un seul flux.
+  dans un seul flux, ou par **Lancer une automatisation**, trois niveaux au plus.
 - Une recherche donne une ligne, la première ; une boucle en parcourt 200 au plus par
-  exécution, et la première étape qui échoue l’arrête. Pas d’attente (« trois jours après »).
-- Pas de script. Un courriel part en texte simple, un par destinataire — vingt au plus par
-  étape —, par le [serveur d’envoi](/basedb/hebergement/variables/#courriels) de l’instance ;
-  une réponse arrive à la personne qui possède l’automatisation.
-- Une condition teste une ligne : pour prendre un chemin selon la réponse de l’IA, l’écrire
-  d’abord dans un champ de la ligne.
+  exécution. Une exécution dure deux minutes au plus, attentes non comprises.
+- Pas de script. Un courriel part par le [serveur d’envoi](/basedb/hebergement/variables/#courriels)
+  de l’instance.
 - Un [modèle de base](/basedb/fonctionnalites/modeles/) n’emporte que les automatisations sans
   recherche, boucle, condition ni étape IA, et jamais un webhook.
 - Un webhook ne suit pas de redirection et attend 10 secondes au plus ; une réponse autre que
-  2xx fait échouer l’étape.
+  2xx fait échouer l’étape, après ses réessais.
+- Une date qui arrive est cherchée chaque minute ; seules comptent celles arrivées après
+  l’enregistrement de l’automatisation.
 - 100 exécutions par heure et par automatisation ; une échéance horaire manquée n’est rattrapée
   qu’une fois.
 - Le délai entre l’écriture et l’action est de l’ordre de la seconde.

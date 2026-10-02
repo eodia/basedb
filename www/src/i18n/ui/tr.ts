@@ -1288,10 +1288,10 @@ export default {
 		agents: {
 			label: 'REST API · MCP · webhook’lar',
 			title: 'Yapay zeka ajanlarınız verilere erişir, {kasanın anahtarlarına değil.}',
-			lead: 'MCP sunucusu ajanlara on iki araç verir; REST API ise aynı verileri programlarınıza. Tek bir izin denetim noktası, aynı günlükler.',
+			lead: 'MCP sunucusu ajanlara on dört araç verir; REST API ise aynı verileri programlarınıza. Tek bir izin denetim noktası, aynı günlükler.',
 			bullets: [
 				'<strong>Veritabanı başına bir token</strong>: varsayılan olarak salt okunur, onu oluşturan kişiden asla daha fazla izne sahip değil.',
-				'<strong>Bir ajan hiçbir şey silmez</strong> ve yapıyı değiştirmez: değişikliği önerir, bir kişi onaylar.',
+				'<strong>Bir ajan yalnızca sizin onayınızla siler</strong>, bir kerede bir satır, ve yapıyı değiştirmez: değişikliği önerir, bir kişi onaylar.',
 				'Her veritabanı için <strong>otomatik oluşturulan belgeler</strong>: izinlerinize göre filtrelenmiş, OpenAPI 3.1 belirtimiyle birlikte.',
 				'Her yazmada imzalı, sıralı ve yeniden denenen <strong>webhook’lar</strong>.',
 			],
@@ -1524,7 +1524,7 @@ export default {
 			},
 			agent: {
 				q: 'Bir yapay zeka ajanı nasıl bağlanır?',
-				a: 'MCP sunucusu üzerinden, tek bir veritabanıyla sınırlı ve varsayılan olarak salt okunur bir entegrasyon token’ıyla. Bir ajan, izinlerine göre satırları okur, oluşturur ve düzenler; hiçbir şey silmez ve yapıyı değiştirmez: değişikliği önerir, bir kişi onaylar.',
+				a: 'MCP sunucusu üzerinden, tek bir veritabanıyla sınırlı ve varsayılan olarak salt okunur bir entegrasyon token’ıyla. Bir ajan, izinlerine göre satırları okur, oluşturur ve düzenler — ve token’ı bunun için oluşturulduysa, bir kerede bir satır, siler; yapıyı değiştirmez: değişikliği önerir, bir kişi onaylar.',
 			},
 			postgres: {
 				q: 'Hangi PostgreSQL sürümü gerekiyor?',
@@ -1551,6 +1551,47 @@ export default {
 		title: 'basedb’de neler değişti',
 		intro: 'Her değişikliğin ayrıntısı <a href="https://github.com/eodia/basedb/commits/main">deponun geçmişinde</a>. Sırada ne var: <a href="/feuille-de-route/">yol haritası</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'İzninizle silen ajanlar',
+				tag: 'Yeni',
+				items: [
+					'<strong>Üçüncü bir token düzeyi</strong>, “Okuma, yazma ve silme”: bir program REST API ile siler, bir ajan ise yeni <code>delete_record</code> aracıyla — bir kerede bir satır, yanıtta döndürülür. <a href="/integrations/mcp/#satırları-silme">Satırları silme</a>',
+					'<strong>Geri alma</strong>: <code>restore_record</code>, silinen bir satırı kimliği altında geri getirir; kademeli (cascade) bir ilişkinin başka satırlara da genişleteceği bir silme, arayüze ayrılmış kalır.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Veritabanını yönetenler için token’lar',
+				tag: 'Yeni',
+				items: [
+					'<strong>Yönetim düzeyi yeterlidir</strong>: bir veritabanı veya onun projesi üzerinde verildiğinde, yönetici olmadan veritabanlarının entegrasyon token’larını oluşturmayı sağlar. <a href="/integrations/api-rest/#bir-token">Bir token</a>',
+					'<strong>Aksi halde bunu açıkça söyler</strong>: veritabanını yönetmeden okuyan ya da yazan kişiye token penceresi kime başvuracağını söyler; şifresiz bir hesaba, neden henüz bir token’ı oluşturamadığını söyler.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Bekleyen, bir başarısızlığı yakalayan ve PDF gönderen otomasyonlar',
+				tag: 'Yeni',
+				items: [
+					'<strong>Dört yeni tetikleyici</strong>: bir satır silinir; bir satır bir filtreye girer — “bir fatura gecikmiş duruma geçer”; bir tarih gelir — vadeden üç gün önce, saat 9’da; başka bir yazılım otomasyonun gizli adresini çağırır. <a href="/fonctionnalites/automatisations/#bir-servis-basedbyi-çağırdığında">Bir servis basedb’yi çağırdığında</a>',
+					'<strong>Bekle</strong>: üç gün, ya da bir alanın tarihine kadar, sonra satırı yeniden okuyarak devam eder: “hâlâ kabul edilmediyse yeniden hatırlat”. <a href="/fonctionnalites/automatisations/#bekle">Bekle</a>',
+					'<strong>PDF oluştur ve gönder</strong>: bir satırın belgesi, bir Dosya alanına konur ya da bir e-postaya eklenir — zengin metin olarak, bilgi alıcıları ve bir yanıt adresiyle, her birine ya da herkese tek bir tane. <a href="/fonctionnalites/automatisations/#pdf-ve-e-posta">PDF ve e-posta</a>',
+					'<strong>Satırı sil, say ve topla, başka bir otomasyon başlat</strong>; bir koşul artık bir değeri de test eder — yapay zekanın yanıtı, bir toplam —, ve hiçbir şey bulamayan bir arama kendi yoluna sahiptir.',
+					'<strong>Deneme</strong>: bazı adımlar, ve biri başarısız olursa yapılacak başkaları; bir webhook kendiliğinden yeniden dener, bir döngü başarısız bir satıra karşın sürer. <a href="/fonctionnalites/automatisations/#deneme">Deneme</a>',
+					'<strong>Tüm adımlar elinizin altında</strong>: kısalabilen bir menü yerine, <strong>+</strong> kategoriye göre sıralanmış ve aranabilir bir pencere açar.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'Kendi renklerinizde PDF belgeleri',
+				tag: 'Yeni',
+				items: [
+					'<strong>Beş başlangıç noktası</strong> — fatura, teklif, föy, belge, boş sayfa —, tablonuzun sütunlarıyla oluşturulur: numara, tarih, tutarlar, fotoğraf, bağlı satırlar. <a href="/fonctionnalites/documents/#şablon-oluşturma">Şablon oluşturma</a>',
+					'<strong>Logonuz ve renkleriniz</strong>: logo ve iletişim bilgileriyle bir üst bilgi, yasal bilgiler ve sayfa numaralarıyla bir altbilgi, bir vurgu rengi, tırnaklı ya da tırnaksız yazı tipleri, sayfanın etrafında bir çerçeve. <a href="/fonctionnalites/documents/#üst-bilgi-ve-altbilgi">Üst bilgi ve altbilgi</a>',
+					'<strong>Yeni bloklar</strong>: bir bant üzerinde başlık, bir görsel, iki ya da üç sütun, bir KDV hariç / dahil özeti, renkli üst bilgili bir tablo, bir ayırıcı. Yeniden sıralamak için sürüklenirler, ve önizleme her değişikliği izler. <a href="/fonctionnalites/documents/#i̇çerik-bloklar">Bloklar</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'Kesilen bir bağlantı artık basedb’yi durdurmuyor',
@@ -1935,8 +1976,8 @@ export default {
 						text: 'Ortamlar oluşturulurken ya da karşılaştırılırken ve veritabanı şablonlarında SQL görünümlerini yapıyla birlikte kopyalamak.',
 					},
 					loops: {
-						title: 'Otomasyonlarda beklemeler',
-						text: 'Bir sonraki adımdan önce beklemek (“üç gün sonra”) ve akışları — koşullar, aramalar, döngüler — veritabanı şablonlarına taşımak.',
+						title: 'Veritabanı şablonlarında eksiksiz akışlar',
+						text: 'Otomasyon akışlarını — koşullar, aramalar, döngüler, beklemeler, PDF’ler — veritabanı şablonlarına taşımak; bunlar şimdilik yalnızca basit adımları koruyor.',
 					},
 					textFormulas: {
 						title: 'Metin formülleri',

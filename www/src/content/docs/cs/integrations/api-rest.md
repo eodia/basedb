@@ -13,12 +13,15 @@ fyzické názvy – ty, které čtete i v SQL.
 
 ## Token
 
-V rozhraní zvolte v nabídce **⋯** databáze → **API a agenti** → **Tokeny API a MCP…**: zde
-vytvoříte **integrační token** omezený na tuto databázi, ve výchozím nastavení jen pro čtení,
-poté co potvrdíte své heslo. Zobrazí se jen jednou; uložte ho do proměnné prostředí.
+V rozhraní zvolte v nabídce **⋯** databáze → **API a agenti** → **Tokeny API a MCP…**: kdo má nad
+databází nebo jejím projektem úroveň **Správa**, zde vytvoří **integrační token** omezený na
+tuto databázi, ve výchozím nastavení jen pro čtení, poté co potvrdí své heslo – účet bez hesla,
+který se přihlašuje přes poskytovatele identity, to ještě nemůže udělat. Zobrazí se jen jednou;
+uložte ho do proměnné prostředí.
 
-Token čte, a pokud byl vytvořen pro zápis, také vytváří a upravuje, **nikdy nic
-neodstraňuje** a nikdy nemá víc oprávnění než osoba, která ho vytvořila.
+Token čte, a pokud byl vytvořen pro zápis, také vytváří a upravuje, a **odstraňuje, pokud byl
+vytvořen i k tomu** — oprávnění „Čtení, zápis a odstranění“, kromě řádku, který by s sebou odnesla
+kaskádová vazba k dalším. Nikdy nemá víc oprávnění než osoba, která ho vytvořila.
 
 ```bash
 export BASEDB_TOKEN=bdb_…

@@ -13,12 +13,15 @@ Ses URL portent les noms physiques — ceux que vous lisez aussi en SQL.
 
 ## Un jeton
 
-Dans l’interface, menu **⋯** de la base → **API et agents** → **Jetons API et MCP…** : on y crée un **jeton
-d’intégration** limité à cette base, en lecture seule par défaut, après avoir confirmé son mot de
-passe. Il n’est affiché qu’une fois ; placez-le dans une variable d’environnement.
+Dans l’interface, menu **⋯** de la base → **API et agents** → **Jetons API et MCP…** : qui a le
+niveau **Gestion** sur la base, ou sur son projet, y crée un **jeton d’intégration** limité à cette
+base, en lecture seule par défaut, après avoir confirmé son mot de passe — un compte qui se
+connecte par un fournisseur d’identité, sans mot de passe, ne le peut pas encore. Il n’est affiché
+qu’une fois ; placez-le dans une variable d’environnement.
 
-Un jeton lit, crée et modifie s’il a été créé en écriture, **ne supprime jamais**, et n’a jamais
-plus de droits que la personne qui l’a créé.
+Un jeton lit ; il crée et modifie s’il a été créé en écriture, et **supprime s’il a été créé pour
+cela** — droits « Lecture, écriture et suppression », sauf une ligne qu’une relation en cascade
+emporterait avec d’autres. Il n’a jamais plus de droits que la personne qui l’a créé.
 
 ```bash
 export BASEDB_TOKEN=bdb_…

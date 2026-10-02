@@ -2,7 +2,7 @@ import { BasedbError } from '../errors/index.js'
 import { requireOnTable } from '../rbac/require.js'
 import type { Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
-import { type DocumentSpec, normalizeSpec } from './spec.js'
+import { type DocumentSpec, normalizeSpec, readSpec } from './spec.js'
 
 /**
  * The document templates of a table — chapter 21 §2. Whoever reads the table sees their
@@ -24,16 +24,17 @@ interface TemplateRow extends Record<string, unknown> {
   readonly id: string
   readonly table_id: string
   readonly label: string
-  readonly spec: DocumentSpec
+  readonly spec: unknown
   readonly position: number
   readonly updated_at: string
 }
 
+/** A template as stored, its definition read as it reads today — settings added since at their default. */
 const ofRow = (row: TemplateRow, withSpec: boolean): DocumentTemplate => ({
   id: row.id,
   tableId: row.table_id,
   label: row.label,
-  spec: withSpec ? row.spec : null,
+  spec: withSpec ? readSpec(row.spec) : null,
   position: row.position,
   updatedAt: row.updated_at,
 })

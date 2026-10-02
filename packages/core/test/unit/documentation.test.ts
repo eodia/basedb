@@ -334,8 +334,10 @@ describe('the agent surface (MCP)', () => {
     }
     // A display column is what `lookup_records` resolves: offered because there is one.
     expect(agent).toContain('| `lookup_records` |')
-    // No tool deletes: the page says where deleting happens instead.
-    expect(agent).toContain('aucun outil MCP ne supprime')
+    // Deleting is a tool too, for a token made to delete — and a deleted row comes back.
+    expect(agent).toContain('| `delete_record` |')
+    expect(agent).toContain('| `restore_record` |')
+    expect(agent).toContain('« Lecture, écriture et suppression »')
   })
 
   it('offers only the tools the reader holds, and lookup only with a display column', () => {
@@ -393,7 +395,7 @@ describe('the agent surface (MCP)', () => {
   it('tells a program how to get and present an integration token', () => {
     const auth = section(doc, 'api-authentification')?.markdown ?? ''
     expect(auth).toContain('### Jeton d’intégration')
-    expect(auth).toContain('**ne supprime jamais**')
+    expect(auth).toContain('**ne supprime que s’il a été créé pour cela**')
     expect(auth).toContain('**Jetons API et MCP…**')
     const withoutRight = section(
       toDocumentation(base([invoices], null, { baseActions: ['read'] }), TENANT),
@@ -405,6 +407,9 @@ describe('the agent surface (MCP)', () => {
   it('lists every tool once, with whether it writes', () => {
     const tools = section(doc, 'mcp-outils')?.markdown ?? ''
     expect(tools).toContain('| `create_record` | Créer une ligne. | oui |')
+    // Deleting writes: the table says so, like for a creation.
+    const deletion = tools.split('\n').find((line) => line.startsWith('| `delete_record` |'))
+    expect(deletion).toMatch(/\| oui \|$/)
     expect(tools).toContain('| `list_records` |')
     expect(tools).toContain('MCP_OPERATION_EXCLUDED')
   })

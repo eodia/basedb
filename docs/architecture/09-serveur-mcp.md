@@ -77,7 +77,7 @@ Ce chapitre n'introduit aucun objet de catalogue. Il s'appuie sur ceux-ci, défi
 
 Noms d'outils en anglais `snake_case` (convention MCP, meilleure reconnaissance par les modèles). **Descriptions rédigées en français, langue unique en v1** : l'internationalisation des descriptions d'outils n'est pas au périmètre, et deux versions linguistiques d'une même description finissent par diverger.
 
-### 2.2 Tableau normatif des treize outils
+### 2.2 Tableau normatif des quinze outils
 
 Ce tableau est **normatif**. Le test de conformité de la section 10 échoue si l'ensemble des outils déclarés à l'exécution diffère de cette liste. « Champ inscriptible » signifie `field_permission.access = 'write'` pour le rôle effectif (chapitre 05).
 
@@ -92,12 +92,14 @@ Ce tableau est **normatif**. Le test de conformité de la section 10 échoue si 
 | `lookup_records` | Résout une valeur d'affichage en candidats `_id` | `read` sur la table cible **et** sur son champ d'affichage | non | 2 |
 | `create_record` | Crée une ligne | `create` sur la table ; chaque champ écrit inscriptible | oui | 2 |
 | `update_record` | Modifie les champs nommés d'une ligne | `update` sur la table ; chaque champ écrit inscriptible | oui | 2 |
+| `delete_record` | Supprime une ligne par son `_id`, et la rend dans sa réponse | `delete` sur la table — que seul porte un jeton créé pour supprimer ; aucun lien en cascade vers la table (§8.1) | oui | 4 |
+| `restore_record` | Ramène une ligne supprimée sous son `_id`, depuis l'historique | `create` sur la table | oui | 4 |
 | `propose_create_base` | Propose la création d'une base, `description` facultative | `manage_schema` au niveau tenant | non | 3 |
 | `propose_create_table` | Propose une table et ses champs initiaux, `description` facultative de chacun | `manage_schema` sur la base | non | 3 |
 | `propose_add_field` | Propose un champ, y compris de type lien, `description` facultative | `manage_schema` sur la table ; pour un lien, `manage_schema` **et** `read` sur la cible | non | 3 |
 | `get_proposal` | Relit une proposition et son état | portée ∧ (auteur ∨ `manage_schema` sur la base) | non | 3 |
 
-**Sous-totaux : lot 1 = 6, lot 2 = 3, lot 3 = 4. Treize outils en v1.**
+**Sous-totaux : lot 1 = 6, lot 2 = 3, lot 3 = 4, lot 4 = 2. Quinze outils** — `propose_create_base` n'est pas déclaré : un jeton n'ouvre qu'une base.
 
 `lookup_records` est classé au lot 2 bien qu'il soit en lecture : sa seule raison d'être est de résoudre la cible d'un lien avant une écriture. Le livrer avec le lot de lecture exposerait une primitive de recherche sans le besoin qui la justifie.
 
@@ -105,7 +107,6 @@ Ce tableau est **normatif**. Le test de conformité de la section 10 échoue si 
 
 | Absent | Motif |
 |---|---|
-| Suppression d'un enregistrement | Voir §8.1 : geste rare, réversible seulement par l'historique, et dont l'automatisation n'apporte rien face au coût d'un second mécanisme d'approbation |
 | Suppression logique ou purge d'une base, d'une table, d'un champ | Effet large, irréversible pour l'agent, geste réfléchi fait dans l'éditeur de schéma |
 | Modification d'un champ existant (`propose_update_field`) | Hors du périmètre MCP fixé par le cadrage |
 | Changement de type d'un champ | Le type est immuable ; c'est une migration en plusieurs étapes avec recopie, dont l'échec partiel se règle à la main |
@@ -571,9 +572,17 @@ La file de revue humaine est le garde-fou central de ce chapitre ; la saturer es
 
 ## 8. Opérations destructrices
 
-### 8.1 Exclusion de la suppression d'enregistrement
+### 8.1 La suppression d'un enregistrement, pour un jeton créé pour cela
 
-Le cadrage laisse le choix : « Opérations destructrices exclues ou soumises à confirmation humaine ». **La v1 exclut.** Aucun outil MCP ne supprime de ligne, et il n'existe pas de demande de suppression différée.
+*Décision révisée (lot 4).* La v1 excluait toute suppression, pour les trois motifs ci-dessous. Elle est ouverte, à trois conditions qui y répondent une à une :
+
+1. **Un droit donné exprès, sans second mécanisme d'approbation.** Un jeton porte `delete` seulement s'il a été créé « lecture, écriture et suppression » (chapitre 05 §2.3), par une personne qui détient elle-même ce droit. Le consentement est donné à la création du jeton, dans l'application et hors de la conversation (§8.3) ; un jeton qui écrit sans supprimer reçoit `PERMISSION_DENIED` (`hint: token_delete`), qui dit quel jeton créer.
+2. **Jamais de cascade.** Un jeton — MCP comme REST — ne supprime aucune ligne d'une table visée par un lien `on_delete = 'cascade'` (`TOKEN_CASCADE_FORBIDDEN`, lu dans le catalogue avant tout `DELETE`) : **un agent ne peut toujours déclencher aucune cascade**. Un lien `restrict` refuse la suppression (`ROW_REFERENCED`) ; un lien `set_null` vide les cellules qui désignaient la ligne, comme pour toute suppression.
+3. **Réversible.** `delete_record` lit la ligne sous le masque de lecture avant de la supprimer et la rend dans sa réponse ; la suppression est capturée par l'historique au nom du jeton ; `restore_record` la ramène sous son `_id` (chapitre 07 §12.1), comme une personne depuis l'historique.
+
+Une ligne à la fois : aucun outil n'accepte de liste d'identifiants ni de filtre, et `delete_records`, `bulk_delete` restent des noms réservés (§8.2).
+
+Les motifs de l'exclusion d'origine, auxquels ces conditions répondent :
 
 Motifs, dans l'ordre de poids :
 
@@ -581,13 +590,13 @@ Motifs, dans l'ordre de poids :
 2. **La cascade est celle de PostgreSQL (A14).** Un administrateur peut créer un lien en cascade depuis l'interface, et la clause `ON DELETE CASCADE` est alors réellement émise en base. Un outil de suppression ligne à ligne deviendrait, sans le dire, un outil de suppression de masse : supprimer une facture détruirait toutes ses lignes de facture, table sur laquelle le porteur peut n'avoir ni `delete`, ni même `read`, sous une approbation ne parlant que d'une facture. Le décompte préalable et la confirmation humaine exigés par A14 ne peuvent pas être obtenus dans la conversation (§8.3). Fermer la suppression ferme cette chaîne entièrement, puisque plus aucune opération MCP n'émet de `DELETE` : **un agent ne peut déclencher aucune cascade**.
 3. **Réversibilité.** L'écrasement par `update_record` est réversible par l'historique (§6.4) ; une suppression ne l'est pas de la même manière. La ligne de partage est là, et elle est nette.
 
-Si la suppression est réintroduite en v2, elle passera par le cycle et l'écran des propositions, sans mécanisme parallèle, et la fermeture transitive des arêtes `field_link_config.on_delete = 'cascade'` devra être calculée à la demande **et** à l'approbation, avec exigence de `delete` sur chaque table de la fermeture, décompte par table affiché au décideur, et refus si la fermeture a grossi entre-temps.
+Une suppression qui cascade, si elle est un jour ouverte aux agents, passera par le cycle et l'écran des propositions, sans mécanisme parallèle, et la fermeture transitive des arêtes `field_link_config.on_delete = 'cascade'` devra être calculée à la demande **et** à l'approbation, avec exigence de `delete` sur chaque table de la fermeture, décompte par table affiché au décideur, et refus si la fermeture a grossi entre-temps.
 
 ### 8.2 Autres exclusions et gestionnaire de noms réservés
 
 Les exclusions sont listées en §2.3. **Les outils exclus ne sont pas déclarés** : ils n'apparaissent pas dans `tools/list`.
 
-Un appel portant l'un des noms d'une **liste fermée de noms réservés** (`delete_record`, `drop_table`, `drop_field`, `drop_base`, `execute_sql`, `change_field_type`, `grant_permission`, `create_token`…) rend `MCP_OPERATION_EXCLUDED`, avec la phrase indiquant la surface où l'opération existe. Ce gestionnaire **ne lit ni ne résout aucun paramètre** : il ne touche pas au catalogue, et sa réponse est identique quelle que soit la base nommée. Tout autre nom inconnu produit l'erreur de protocole standard « outil inconnu ». Ce code n'apprend rien sur les ressources, seulement sur le produit.
+Un appel portant l'un des noms d'une **liste fermée de noms réservés** (`delete_records`, `drop_table`, `drop_field`, `drop_base`, `execute_sql`, `change_field_type`, `grant_permission`, `create_token`…) rend `MCP_OPERATION_EXCLUDED`, avec la phrase indiquant la surface où l'opération existe. Ce gestionnaire **ne lit ni ne résout aucun paramètre** : il ne touche pas au catalogue, et sa réponse est identique quelle que soit la base nommée. Tout autre nom inconnu produit l'erreur de protocole standard « outil inconnu ». Ce code n'apprend rien sur les ressources, seulement sur le produit.
 
 ### 8.3 Pourquoi aucune confirmation ne transite par la conversation
 
@@ -902,6 +911,9 @@ Tous ces codes appartiennent au registre unique d'A23 ; ceux marqués « registr
 | `TEXT_TOO_LONG` | `description` d'une proposition de plus de 1 000 caractères | registre (04) | non |
 | `MCP_OPERATION_EXCLUDED` | Nom réservé d'une opération exclue en v1 | 09 | non |
 | `MCP_CASCADE_FORBIDDEN` | `on_delete: "cascade"` demandé par un agent | 09 | non |
+| `TOKEN_CASCADE_FORBIDDEN` | Suppression d'une ligne qu'une relation en cascade emporterait avec d'autres | registre (05) | non |
+| `ROW_REFERENCED` | Suppression d'une ligne encore désignée par un lien `restrict` | registre (08) | non |
+| `RESTORE_RECORD_PRESENT` | `restore_record` sur une ligne présente de nouveau | registre (07) | non |
 | `TOKEN_READ_ONLY` | Écriture avec un jeton dont le rôle ne porte que `read` | 09 | non |
 | `TOKEN_SUSPENDED` | Budget d'écriture ou seuil d'énumération dépassé | 09 | non |
 | `TOKEN_INVALID` | Jeton inconnu, ou ne portant pas `mcp` dans ses surfaces autorisées | registre (05) | non |

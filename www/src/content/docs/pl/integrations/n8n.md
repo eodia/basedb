@@ -29,8 +29,8 @@ Utwórz w n8n dane uwierzytelniające **basedb API**:
 | **Token** | **token integracji**: menu **⋯** bazy → **API i agenci** → **Tokeny API i MCP…** |
 
 Token otwiera **jedną** bazę. Odczytuje jej wiersze, zapisuje je, jeśli został utworzony z
-prawem zapisu, nigdy nie ma większych uprawnień niż osoba, która go utworzyła, i **nigdy niczego
-nie usuwa**. Przy zapisywaniu n8n sprawdza połączenie i informuje, jeśli token jest odrzucony.
+prawem zapisu, i nigdy nie ma większych uprawnień niż osoba, która go utworzyła. Przy
+zapisywaniu n8n sprawdza połączenie i informuje, jeśli token jest odrzucony.
 
 ## Odczyt i zapis: węzeł basedb
 
@@ -58,8 +58,9 @@ na kodzie basedb i jego znaczeniu.
   powiązanego wiersza.
 - **Create or Update** nigdy nie zmienia kilku wierszy: jeśli kilka ma te wartości, węzeł
   zatrzymuje się, zamiast zgadywać.
-- Bez operacji **Delete**: token nie usuwa. Aby usunąć wiersze, oznacz je (status „Archivé”),
-  albo powierz usuwanie [automatyzacji](/basedb/pl/fonctionnalites/automatisations/).
+- Bez operacji **Delete**: aby usunąć wiersze, oznacz je (status „Archivé”), powierz usuwanie
+  [automatyzacji](/basedb/pl/fonctionnalites/automatisations/), albo wywołaj
+  [API REST](/basedb/pl/integrations/api-rest/) tokenem utworzonym do usuwania.
 
 ## Uruchamianie workflow
 

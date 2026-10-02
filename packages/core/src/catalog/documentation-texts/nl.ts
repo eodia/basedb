@@ -54,6 +54,10 @@ export const nl: Catalog = {
     'De `_id` van een rij vinden via de weergavewaarde, vóór het schrijven van een relatie.',
   'Créer une ligne.': 'Een rij maken.',
   'Modifier les champs nommés d’une ligne.': 'De genoemde velden van een rij wijzigen.',
+  'Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.':
+    'Een rij verwijderen, met een token dat voor verwijderen is aangemaakt — het antwoord geeft de rij terug.',
+  'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
+    'Een verwijderde rij terughalen, onder dezelfde `_id`, vanuit de geschiedenis.',
   'Proposer une table et ses premiers champs — une personne décide.':
     'Een tabel en de eerste velden ervan voorstellen — een persoon beslist.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
@@ -71,14 +75,17 @@ export const nl: Catalog = {
   'Trouver une ligne par sa valeur d’affichage, {field}':
     'Een rij vinden via de weergavewaarde, {field}',
   'Modifier une ligne': 'Rij wijzigen',
+  'Supprimer une ligne — avec un jeton créé pour supprimer':
+    'Een rij verwijderen — met een token dat voor verwijderen is aangemaakt',
+  'Ramener une ligne supprimée': 'Een verwijderde rij terughalen',
   'Aucun outil ne vous est ouvert sur cette table.':
     'Op deze tabel staat geen enkele tool voor je open.',
   'Un jeton que vous créez n’a jamais plus de droits que vous : ces outils sont un maximum.':
     'Een token dat je aanmaakt heeft nooit meer rechten dan jij: deze tools zijn een maximum.',
   Outil: 'Tool',
   Pour: 'Voor',
-  'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.':
-    'Een rij verwijderen blijft voorbehouden aan de REST-API en de interface: geen enkele MCP-tool verwijdert.',
+  'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
+    'Een agent verwijdert alleen met een token dat is aangemaakt met “Lezen, schrijven en verwijderen”, één rij per keer; de verwijderde rij komt terug via `restore_record` of vanuit de geschiedenis.',
   '**Invisibles pour un agent :** {fields}. Pour lui, ces colonnes n’existent pas : il ne peut ni les lire, ni les filtrer, ni les écrire.':
     '**Onzichtbaar voor een agent:** {fields}. Voor de agent bestaan deze kolommen niet: hij kan ze niet lezen, niet filteren en niet schrijven.',
   'Arguments d’un appel': 'Argumenten van een aanroep',
@@ -86,13 +93,13 @@ export const nl: Catalog = {
     'Voor het aanmaken van een token voor deze database heb je het niveau **Beheren** nodig, dat je niet hebt. Vraag er een aan bij de persoon die de database beheert.',
   '<jeton>': '<token>',
   'Connecter un agent': 'Een agent aansluiten',
-  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.':
-    'De **MCP-server** van basedb stelt deze database open voor een AI-agent — Claude of een andere MCP-client: die ontdekt de database, leest ze en maakt en wijzigt er, als jij dat beslist, rijen in. Hij werkt met dezelfde rechten als de REST-API.',
+  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.':
+    'De **MCP-server** van basedb stelt deze database open voor een AI-agent — Claude of een andere MCP-client: die ontdekt de database, leest ze en maakt, wijzigt en verwijdert er, als jij dat beslist, rijen. Hij werkt met dezelfde rechten als de REST-API.',
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Deze database staat niet open voor agents.** Zolang dat niet het geval is, ziet geen enkele tool die, ongeacht welk token wordt gebruikt.',
   'Créer un jeton': 'Een token aanmaken',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'In de interface, menu “⋯” van de database → **API en agents** → **API- en MCP-tokens…**, toegang **MCP** aangevinkt. Het token is beperkt tot deze database, standaard **alleen-lezen**: schrijven kies je expliciet. Het wordt maar één keer getoond, en kan vanaf hetzelfde scherm worden ingetrokken. Ook aangevinkt voor de **REST-API**, hetzelfde token werkt dan voor een programma (zie “Authenticatie”).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'In de interface, menu “⋯” van de database → **API en agents** → **API- en MCP-tokens…**, toegang **MCP** aangevinkt. Het token is beperkt tot deze database, standaard **alleen-lezen**: schrijven, en verwijderen, kies je expliciet. Het wordt maar één keer getoond, en kan vanaf hetzelfde scherm worden ingetrokken. Ook aangevinkt voor de **REST-API**, hetzelfde token werkt dan voor een programma (zie “Authenticatie”).',
   'Garder le jeton hors de la configuration': 'Het token buiten de configuratie houden',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     "Het token komt in de omgevingsvariabele `BASEDB_TOKEN`, nooit in het configuratiebestand van de client: dat bestand wordt geversioneerd, gesynchroniseerd en is leesbaar voor alle programma's van de sessie.",
@@ -126,6 +133,8 @@ export const nl: Catalog = {
     'Om een relatie te schrijven: `lookup_records` op de doeltabel, daarna `create_record` of `update_record` met de gevonden `_id`.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'Om de structuur te laten evolueren: `propose_create_table` of `propose_add_field`, daarna `get_proposal` om de beslissing te volgen.',
+  'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
+    'Om te verwijderen: eerst `get_record`, om zeker te zijn van de rij, dan `delete_record` — die de rij teruggeeft in het antwoord; `restore_record` zet hem terug.',
   'Propositions de structure': 'Structuurvoorstellen',
   'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend dans la file « Propositions » de la base, où une personne qui peut modifier la structure l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.':
     'Een agent wijzigt de structuur nooit zelf: hij **stelt voor**. Het voorstel wacht in de wachtrij “Agentvoorstellen” van de database, waar een persoon die de structuur mag wijzigen het goedkeurt of weigert; zonder beslissing verloopt het na 24 uur. Eenmaal goedgekeurd, wordt het toegepast namens de persoon die het token heeft aangemaakt — als die persoon daar nog steeds recht toe heeft — en verschijnt het in de geschiedenis als elke andere wijziging.',
@@ -134,8 +143,8 @@ export const nl: Catalog = {
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Geen verwijderen, geen hernoemen, geen cascaderelatie (`MCP_CASCADE_FORBIDDEN`).',
   'Ce qui n’existe pas': 'Wat niet bestaat',
-  'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
-    "Geen enkele tool verwijdert een rij, voert SQL uit of beheert rechten of tokens. Een agent die zo'n naam aanroept — `delete_record`, `run_sql`… — krijgt `MCP_OPERATION_EXCLUDED`, ongeacht welke database het betreft.",
+  'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
+    "Geen enkele tool verwijdert meerdere rijen tegelijk, een tabel of een veld, voert SQL uit of beheert rechten of tokens. Een agent die zo'n naam aanroept — `delete_records`, `run_sql`… — krijgt `MCP_OPERATION_EXCLUDED`, ongeacht welke database het betreft.",
   Bornes: 'Limieten',
   '`limit` : 25 lignes par défaut, 100 au plus.': '`limit`: standaard 25 rijen, hoogstens 100.',
   'Un filtre compte au plus 10 prédicats, combinés par ET ; un tri, au plus 3 champs.':
@@ -149,8 +158,8 @@ export const nl: Catalog = {
     'Een agent ziet nooit meer dan de persoon die zijn token heeft aangemaakt — en vaak minder.',
   '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.':
     '**Rechten**: die van het token, bij elke aanroep vergeleken met die van de maker ervan. Als de rechten van die persoon afnemen, nemen die van het token mee af; als het account van die persoon wordt gedeactiveerd, reageert het token niet meer.',
-  '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
-    '**Lezen, aanmaken, wijzigen** — nooit verwijderen. Een alleen-lezen token weigert elke schrijfactie (`TOKEN_READ_ONLY`).',
+  '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
+    '**Lezen, aanmaken, wijzigen** — en verwijderen, één rij per keer, maar alleen met een token dat daarvoor is aangemaakt. Een alleen-lezen token weigert elke schrijfactie (`TOKEN_READ_ONLY`).',
   '**Cette base** : ouverte aux agents.': '**Deze database**: open voor agents.',
   '**Cette base** : **fermée aux agents** — aucun outil ne la voit.':
     '**Deze database**: **gesloten voor agents** — geen enkele tool ziet die.',
@@ -233,8 +242,8 @@ export const nl: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Alle routes voor gegevens vereisen een **token**, in de header `Authorization`. Het sessiecookie wordt hier nooit geaccepteerd: een browser stuurt dat bij elk verzoek mee, ook bij verzoeken die door een externe pagina worden veroorzaakt.',
   'Jeton d’intégration': 'Integratietoken',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Een programma — script, synchronisatie, andere applicatie — presenteert een **integratietoken**, dat begint met `bdb_`. Het geldt alleen voor deze database; het leest, en maakt aan en wijzigt als het met schrijfrechten is aangemaakt, maar **verwijdert nooit**; en het heeft nooit meer rechten dan de persoon die het heeft aangemaakt, bij elke aanroep opnieuw vergeleken. Beheer, de SQL-console en AI blijven voor dit token gesloten.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Een programma — script, synchronisatie, andere applicatie — presenteert een **integratietoken**, dat begint met `bdb_`. Het geldt alleen voor deze database; het leest, maakt aan en wijzigt als het met schrijfrechten is aangemaakt, en **verwijdert alleen als het daarvoor is aangemaakt**; en het heeft nooit meer rechten dan de persoon die het heeft aangemaakt, bij elke aanroep opnieuw vergeleken. Beheer, de SQL-console en AI blijven voor dit token gesloten.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Om er een aan te maken: menu “⋯” van de database → **API en agents** → **API- en MCP-tokens…**, toegang **REST-API** aangevinkt. Het wordt maar één keer getoond.',
   Appel: 'Aanroep',

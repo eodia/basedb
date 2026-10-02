@@ -1,6 +1,6 @@
 ---
 title: Automatiseringer
-description: Når en række ændres, på et fast tidspunkt eller med et klik — rediger, opret, find, gentag for hver række, forgren, spørg AI, giv besked, send en e-mail, kald en tjeneste, skriv på Slack.
+description: Når en række ændres, kommer ind i et filter eller forsvinder, når en dato indtræffer, på et fast tidspunkt, med et klik eller et kald — redigere, oprette, finde, tælle, gentage, forgrene, vente, prøve, spørge AI, lave en PDF, give besked, sende en e-mail, kalde en tjeneste.
 ---
 
 En automatisering siger **hvornår**, **hvis** og **så**: når en opgave skifter til »Fait«,
@@ -8,7 +8,7 @@ notér tidspunktet; når en negativ anmeldelse kommer ind, giv den ansvarlige be
 Slack; hver mandag kl. 9, opret rækken til teammødet. Og når én handling ikke er nok, følger den
 et **flow**: find en række, tag den ene eller den anden gren alt efter, hvad den siger, gentag
 trin for hver række, der matcher et filter, og genbrug i et trin det, som et tidligere trin har
-fundet eller skrevet.
+fundet eller skrevet, **vente** tre dage før en rykker, sende en **PDF** som vedhæftning.
 
 De åbnes fra **Automatiseringer** i blokken for den åbne database nederst i sidepanelet og kræver
 niveauet **Administrere**.
@@ -17,9 +17,10 @@ niveauet **Administrere**.
 
 ## Flowet
 
-Flowet tegnes oppefra og ned: udløseren og derefter hvert trin. Et **+** på en linje tilføjer et
-trin på det sted; et kort åbner sine indstillinger til højre. En enkel automatisering — en
-udløser og en handling — fylder to kort og indstilles som før.
+Flowet tegnes oppefra og ned: udløseren og derefter hvert trin. Et **+** på en linje åbner
+listen over trin, ordnet efter kategori — Rækker, Kommunikere, Dokumenter, AI, Logik — med en
+søgning, og tilføjer det valgte trin på det sted; et kort åbner sine indstillinger til højre. En
+enkel automatisering — en udløser og en handling — fylder to kort og indstilles som før.
 
 ## Hvornår
 
@@ -29,6 +30,10 @@ udløser og en handling — fylder to kort og indstilles som før.
 | **En række ændres** | tabellen og om nødvendigt kun de felter, der skal overvåges |
 | **På et fast tidspunkt** | hver time, hver dag eller hver uge, på det valgte klokkeslæt og i den valgte tidszone |
 | **Der klikkes på en knap** | et [Knap-felt](/basedb/da/fonctionnalites/tables-et-champs/#knap) i tabellen |
+| **En række slettes** | tabellen; trinnene citerer rækken, som den var |
+| **En række kommer ind i et filter** | tabellen og filteret: automatiseringen starter, når en række kommer ind i det, og starter først igen, når den er kommet ud af det igen — »en faktura bliver forsinket«, ikke »en forsinket faktura ændres« |
+| **En dato indtræffer** | et Dato-felt i tabellen, en forskydning — tre dage før, selve dagen, en uge efter — og klokkeslættet: rykkere for forfaldsdatoer, kontraktårsdage |
+| **En webhook modtages** | intet: automatiseringen får sin egen adresse, som et andet program kalder ([detaljer](#en-tjeneste-der-kalder-basedb)) |
 
 En udløser på rækker ser **alle** skrivninger: brugerfladen, API'et, en agent, en delt formular og
 endda direkte SQL — automatiseringerne tager udgangspunkt i historikken, som fanger dem alle.
@@ -42,7 +47,8 @@ det.
 
 ## Så
 
-Op til tredive trin i rækkefølge; det første, der mislykkes, stopper de efterfølgende.
+Op til fyrre trin, i rækkefølge; det første, der mislykkes, stopper de efterfølgende — undtagen
+i en **Prøv**-blok ([detaljer](#prøv)).
 
 | Trin | Hvad det gør |
 |---|---|
@@ -56,10 +62,20 @@ Op til tredive trin i rækkefølge; det første, der mislykkes, stopper de efter
 | **Spørg AI** | et svar fra [AI-udbyderen](/basedb/da/fonctionnalites/ia/) på en instruktion, der citerer rækken og de tidligere trin — skriv, opsummér, klassificér —, læst som en tekst, et tal, ja eller nej, en dato eller et valg fra en liste |
 | **Betingelse** | flere grene: den første, hvis betingelse er opfyldt, tages, »Ellers« når ingen er det; grenene mødes igen bagefter |
 | **For hver række** | de trin, den indeholder, én gang for hver række i en tabel, der matcher et filter ([detaljer](#for-hver-række)) |
+| **Slette en række** | rækken, der udløste, eller den, et trin har fundet — den går i papirkurven |
+| **Tælle og summere** | antallet af rækker i et filter, deres sum, deres gennemsnit, deres minimum eller maksimum, til at citere eller teste bagefter |
+| **Generer en PDF** | [dokumentet](/basedb/da/fonctionnalites/documents/) for en række, lagt i et Fil-felt eller sendt som vedhæftning til en e-mail |
+| **Vent** | en varighed, eller indtil datoen i et felt ([detaljer](#vent)) |
+| **Prøv** | nogle trin, og andre, der skal udføres, hvis ét af dem mislykkes ([detaljer](#prøv)) |
+| **Start en automatisering** | en anden automatisering i databasen, på en række i dens tabel |
 
 En søgning, der ikke finder noget, stopper ikke flowet: de trin, der skulle redigere dens række,
-springes over. Vil du gøre noget andet i det tilfælde, tester en betingelse det — en gren med et
-tomt filter tages, så snart søgningen har fundet noget.
+springes over. Vil du gøre noget andet i det tilfælde, tilføjer **Hvis ingen række findes …**
+under søgningen en betingelse, der tester det.
+
+En **betingelse** tester en række med et filter, eller en **værdi**: AI'ens svar, koden fra en
+webhook, en total — »`{{e2.reponse}}` er lig med Urgent«, »`{{e3.somme.montant}}` er større end
+eller lig med 1000«. Tal sammenlignes som tal, tekster uden accenter eller store bogstaver.
 
 ## For hver række
 
@@ -80,6 +96,60 @@ Ud over grænsen venter de resterende rækker på den næste kørsel, som siger 
 behandlede rækker falder uden for filteret — et afkrydsningsfelt »relancée«, en dato — så de
 alle bliver behandlet hen over flere kørsler. En løkke kan ikke indeholde en anden, og en
 kørsel stopper efter to minutter.
+
+## Vent
+
+Trinnet **Vent** sætter kørslen på pause — tre timer, to dage — eller indtil datoen i et felt på
+en række, med en forskydning og et klokkeslæt: »dagen før forfaldsdatoen, kl. 9«. Kørslen vises
+som **På pause** under fanen **Kørsler**, med datoen for dens genoptagelse.
+
+Den genoptager ved det næste trin ved at **genindlæse** sine rækker: »tre dage efter afsendelsen
+af tilbuddet, hvis det stadig ikke er accepteret, ryk« skrives som **Vent** 3 dage, derefter en
+betingelse på tilbuddets status, som den er den dag. Deaktivering af automatiseringen stopper
+kørsler, der er på pause; en ventetid kan ikke placeres i en løkke eller i en **Prøv**-blok, og
+varer højst et år.
+
+## Prøv
+
+Blokken **Prøv** har to grene. Den første udføres; hvis et af dens trin mislykkes, fortsætter
+flowet med den anden, **Ved fejl**, som citerer fejlen — `{{e4.erreur}}`, koden, og
+`{{e4.etape}}`, trinnet —, og fortsætter derefter efter blokken. Det gør det muligt at give
+nogen besked, når en tjeneste ikke svarer, uden at stoppe alt.
+
+Mere enkelt: en webhook kan **gentage sig selv** op til tre gange efter en fejl i tjenesten, og
+en løkke kan **fortsætte**, selv om en række er mislykket.
+
+## En PDF og en e-mail
+
+**Generer en PDF** laver dokumentet for en række — med en [dokumentskabelon](/basedb/da/fonctionnalites/documents/)
+for dens tabel, eller oversigten over alle dens felter — og kan lægge det i et Fil-felt.
+**Send en e-mail** kan derefter vedhæfte det, sammen med filerne fra et Fil- eller Billede-felt:
+
+- en e-mail **til hver enkelt**, eller **én enkelt til alle**, med modtagere **i kopi**;
+- en besked i **formateret tekst** — fed, lister, links — der citerer rækken;
+- en **svaradresse**: din egen som standard, eller adressen fra et E-mail-felt;
+- op til 50 modtagere, 10 vedhæftede filer og 15 MB.
+
+»Når et tilbud går til Accepteret, send fakturaen til kunden, bogholderiet i kopi«:
+**En række kommer ind i et filter** `statut eq "accepte"`, **Generer en PDF** med skabelonen
+Faktura, **Send en e-mail** til kundens E-mail-felt, med fakturaen vedhæftet.
+
+## En tjeneste, der kalder basedb
+
+Med udløseren **En webhook modtages** har automatiseringen sin egen hemmelige adresse, som skal
+gives til det program, der skal starte den — en webshop, en ekstern formular, et
+automatiseringsværktøj:
+
+```bash
+curl -X POST "https://basedb.example.com/api/v1/hooks/<secret>" \
+  -H "content-type: application/json" \
+  -d '{"client": {"nom": "Dupont"}, "total": 120}'
+```
+
+Trinnene citerer det, der er sendt: `{{trigger.client.nom}}`, `{{trigger.total}}`; en formular
+læses på samme måde, en tekst med `{{trigger.texte}}`. Adressen kopieres fra udløserens
+indstillinger; **Skift adresse** erstatter den, og den gamle ophører med det samme. Et kald får
+`202` som svar, og automatiseringen kører i løbet af sekundet.
 
 ## Kald en tjeneste
 
@@ -136,6 +206,11 @@ tekst:
 - `{{e4.reponse}}`: svaret fra AI-trinnet `e4`;
 - `{{e5.client}}` i løkken `e5`, gennemgangens række; `{{e5.nombre}}` efter den, antallet af
   gennemgåede rækker;
+- `{{e6.nombre}}`, `{{e6.somme.montant}}`, `{{e6.moyenne.montant}}`, `{{e6.max.echeance}}`: det,
+  trinnet `e6` har talt;
+- `{{e7.erreur}}`, `{{e7.etape}}`: fejlen, som **Prøv**-blokken `e7` har fanget;
+- `{{e8.nom}}`: navnet på PDF'en fra trinnet `e8`;
+- `{{trigger.client.nom}}`: det, en indgående webhook har sendt;
 - `{{_maintenant}}`: tidspunktet for kørslen.
 
 En værdi, der består af ét enkelt citat, overfører selve værdien: en relation, en person, et
@@ -183,18 +258,16 @@ alle andre.
 ## Begrænsninger
 
 - Det, en automatisering skriver, udløser ingen andre: det, der skal hænge sammen, skrives i ét
-  flow.
-- En søgning giver én række, den første; en løkke gennemgår højst 200 pr. kørsel, og det
-  første trin, der mislykkes, stopper den. Ingen ventetid (»tre dage efter«).
-- Ingen scripts. En e-mail sendes som almindelig tekst, én pr. modtager — højst tyve pr.
-  trin —, via [instansens afsendelsesserver](/basedb/da/hebergement/variables/#e-mails); et svar
-  går til den person, der ejer automatiseringen.
-- En betingelse tester en række: for at vælge en gren ud fra AI's svar skal svaret først skrives
-  i et felt i rækken.
+  flow, eller med **Start en automatisering**, højst tre niveauer.
+- En søgning giver én række, den første; en løkke gennemgår højst 200 pr. kørsel. En kørsel
+  varer højst to minutter, ventetid ikke talt med.
+- Ingen scripts. En e-mail sendes via [instansens afsendelsesserver](/basedb/da/hebergement/variables/#e-mails).
 - En [databaseskabelon](/basedb/da/fonctionnalites/modeles/) medtager kun automatiseringer uden
   søgning, løkke, betingelse eller AI-trin, og aldrig en webhook.
 - En webhook følger ikke omdirigeringer og venter højst 10 sekunder; et andet svar end 2xx får
-  trinnet til at mislykkes.
+  trinnet til at mislykkes, efter dets gentagelser.
+- En dato, der indtræffer, kontrolleres hvert minut; kun de, der er indtruffet efter
+  automatiseringen blev gemt, tælles.
 - 100 kørsler i timen pr. automatisering; et mistet tidspunkt i en tidsplan indhentes kun én
   gang.
 - Forsinkelsen mellem skrivningen og handlingen er i størrelsesordenen et sekund.

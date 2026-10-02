@@ -38,7 +38,7 @@ export interface Introspection {
   readonly iat?: number
   /** For an integration token: the base it opens (its id), what it may do, its doors. */
   readonly base?: string | null
-  readonly access?: 'read' | 'write'
+  readonly access?: 'read' | 'write' | 'delete'
   readonly surfaces?: readonly string[]
 }
 
@@ -94,6 +94,7 @@ async function integrationToken(pools: Pools, secret: string, now: Date) {
       created_by: string
       base: string | null
       can_write: boolean
+      can_delete: boolean
       allowed_surfaces: string[]
       created_at: Date
       expires_at: Date | null
@@ -101,7 +102,9 @@ async function integrationToken(pools: Pools, secret: string, now: Date) {
       `SELECT tk.created_by::text, tk.base_id::text AS base, tk.allowed_surfaces,
               tk.created_at, tk.expires_at,
               EXISTS (SELECT 1 FROM _basedb.permission p
-                       WHERE p.role_id = tk.role_id AND p.action IN ('create', 'update')) AS can_write
+                       WHERE p.role_id = tk.role_id AND p.action IN ('create', 'update')) AS can_write,
+              EXISTS (SELECT 1 FROM _basedb.permission p
+                       WHERE p.role_id = tk.role_id AND p.action = 'delete') AS can_delete
          FROM _basedb.api_token tk
         WHERE tk.token_hash = $1
           AND tk.revoked_at IS NULL AND tk.suspended_at IS NULL
@@ -151,7 +154,7 @@ export async function introspectToken(
       iat: seconds(found.created_at),
       ...(found.expires_at === null ? {} : { exp: seconds(found.expires_at) }),
       base: found.base,
-      access: found.can_write ? 'write' : 'read',
+      access: found.can_delete ? 'delete' : found.can_write ? 'write' : 'read',
       surfaces: found.allowed_surfaces,
     }
   }

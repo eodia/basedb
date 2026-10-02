@@ -54,6 +54,10 @@ export const ja: Catalog = {
     'リレーションを書き込む前に、表示値から行の `_id` を検索します。',
   'Créer une ligne.': '行を作成します。',
   'Modifier les champs nommés d’une ligne.': '行の指定したフィールドを変更します。',
+  'Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.':
+    '削除用に作成されたトークンで行を削除します — レスポンスがその行を返します。',
+  'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
+    '削除された行を、その `_id` のまま履歴から復元します。',
   'Proposer une table et ses premiers champs — une personne décide.':
     'テーブルと最初のフィールドを提案します — 判断するのは人です。',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
@@ -70,14 +74,17 @@ export const ja: Catalog = {
   'Lire une ligne par son `_id`': '`_id` を指定して行を読み取る',
   'Trouver une ligne par sa valeur d’affichage, {field}': '表示値（{field}）から行を検索する',
   'Modifier une ligne': '行を変更する',
+  'Supprimer une ligne — avec un jeton créé pour supprimer':
+    '行を削除する — 削除用に作成されたトークンで',
+  'Ramener une ligne supprimée': '削除された行を復元する',
   'Aucun outil ne vous est ouvert sur cette table.':
     'このテーブルに対して使えるツールはありません。',
   'Un jeton que vous créez n’a jamais plus de droits que vous : ces outils sont un maximum.':
     '作成したトークンの権限が、自分自身の権限を超えることはありません。これらのツールが、その上限です。',
   Outil: 'ツール',
   Pour: '用途',
-  'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.':
-    '行の削除は、引き続きREST APIとインターフェースだけができます。MCPツールで削除できるものはありません。',
+  'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
+    'エージェントが削除できるのは、「読み取り、書き込みと削除」で作成されたトークンを使う場合だけで、一度に1行です。削除された行は、`restore_record` から、または履歴から復元できます。',
   '**Invisibles pour un agent :** {fields}. Pour lui, ces colonnes n’existent pas : il ne peut ni les lire, ni les filtrer, ni les écrire.':
     '**エージェントには見えません：** {fields}。エージェントにとって、これらの列は存在しません。読み取ることも、フィルターに使うことも、書き込むこともできません。',
   'Arguments d’un appel': '呼び出しの引数',
@@ -85,13 +92,13 @@ export const ja: Catalog = {
     'このデータベースでトークンを作成するには**管理**レベルの権限が必要ですが、現在その権限はありません。管理者に発行を依頼してください。',
   '<jeton>': '<token>',
   'Connecter un agent': 'エージェントをつなぐ',
-  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.':
-    'basedbの**MCPサーバー**は、このデータベースをAIエージェント — Claude、または任意のMCPクライアント — に公開します。エージェントはこれを検出し、読み取り、許可すればこの中の行を作成・変更します。使われる権限はREST APIと同じです。',
+  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.':
+    'basedbの**MCPサーバー**は、このデータベースをAIエージェント — Claude、または任意のMCPクライアント — に公開します。エージェントはこれを検出し、読み取り、許可すればこの中の行を作成・変更・削除します。使われる権限はREST APIと同じです。',
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**このデータベースはエージェントに公開されていません。** 公開されるまでは、どのトークンを使ってもツールからは見えません。',
   'Créer un jeton': 'トークンを作成',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'インターフェースでは、データベースの「⋯」メニュー → **APIとエージェント** → **APIとMCPのトークン…** から、**MCP** アクセスにチェックを入れます。トークンはこのデータベースに限定され、既定では**読み取り専用**です。書き込みを行うには明示的に選択します。トークンは一度しか表示されず、同じ画面から取り消せます。**REST API** にもチェックを入れれば、同じトークンをプログラムから利用できます（「認証」を参照）。',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'インターフェースでは、データベースの「⋯」メニュー → **APIとエージェント** → **APIとMCPのトークン…** から、**MCP** アクセスにチェックを入れます。トークンはこのデータベースに限定され、既定では**読み取り専用**です。書き込みと削除は、それぞれ明示的に選択します。トークンは一度しか表示されず、同じ画面から取り消せます。**REST API** にもチェックを入れれば、同じトークンをプログラムから利用できます（「認証」を参照）。',
   'Garder le jeton hors de la configuration': 'トークンを設定ファイルの外に置く',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'トークンは環境変数 `BASEDB_TOKEN` に設定し、クライアントの設定ファイルには置きません。設定ファイルはバージョン管理され、同期され、そのセッションの全プログラムから読み取れるためです。',
@@ -125,6 +132,8 @@ export const ja: Catalog = {
     'リレーションを書き込むには、対象テーブルに対して `lookup_records` を呼び出し、見つかった `_id` を使って `create_record` または `update_record` を呼び出します。',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     '構造を変更するには、`propose_create_table` または `propose_add_field` を呼び出し、`get_proposal` で判断結果を確認します。',
+  'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
+    '削除するには、まず `get_record` でその行を確認し、次に `delete_record` を呼び出します — レスポンスにその行が返されます。`restore_record` で元に戻せます。',
   'Propositions de structure': '構造の変更提案',
   'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend dans la file « Propositions » de la base, où une personne qui peut modifier la structure l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.':
     'エージェントが自ら構造を変更することはありません。エージェントは**提案する**だけです。提案はデータベースの「エージェントの提案」の一覧で待機し、構造を変更できる人が承認または却下します。判断がなければ24時間で失効します。承認されると、トークンを作成した人の名前で適用され — その人が今も権限を持っている場合に限り — 変更履歴には他の変更と同様に記録されます。',
@@ -133,8 +142,8 @@ export const ja: Catalog = {
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     '削除、名前変更、連鎖的なリレーションの追加はできません（`MCP_CASCADE_FORBIDDEN`）。',
   'Ce qui n’existe pas': '存在しない操作',
-  'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
-    '行を削除したり、SQLを実行したり、権限やトークンを管理したりするツールはありません。`delete_record`、`run_sql`… のような名前を呼び出したエージェントは — 対象のデータベースにかかわらず — `MCP_OPERATION_EXCLUDED` を受け取ります。',
+  'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
+    '複数行を一度に削除したり、テーブルやフィールドを削除したり、SQLを実行したり、権限やトークンを管理したりするツールはありません。`delete_records`、`run_sql`… のような名前を呼び出したエージェントは — 対象のデータベースにかかわらず — `MCP_OPERATION_EXCLUDED` を受け取ります。',
   Bornes: '上限',
   '`limit` : 25 lignes par défaut, 100 au plus.': '`limit`：既定は25行、最大100行です。',
   'Un filtre compte au plus 10 prédicats, combinés par ET ; un tri, au plus 3 champs.':
@@ -148,8 +157,8 @@ export const ja: Catalog = {
     'エージェントが見られる範囲は、トークンを作成した人の範囲を超えることはありません — むしろ、それより狭いことがほとんどです。',
   '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.':
     '**権限**：トークンの権限は、呼び出しのたびに作成者本人の権限と照合されます。その人の権限が下がれば、トークンの権限も一緒に下がります。アカウントが無効化されると、トークンは応答しなくなります。',
-  '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
-    '**読み取り、作成、変更** — 削除は決してできません。読み取り専用のトークンは、あらゆる書き込みを拒否します（`TOKEN_READ_ONLY`）。',
+  '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
+    '**読み取り、作成、変更** — そして削除も、一度に1行、専用に作成されたトークンでのみ可能です。読み取り専用のトークンは、あらゆる書き込みを拒否します（`TOKEN_READ_ONLY`）。',
   '**Cette base** : ouverte aux agents.': '**このデータベース**：エージェントに公開されています。',
   '**Cette base** : **fermée aux agents** — aucun outil ne la voit.':
     '**このデータベース**：**エージェントには非公開**です — どのツールからも見えません。',
@@ -232,8 +241,8 @@ export const ja: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'すべてのデータ用ルートは、`Authorization` ヘッダーに**トークン**を必要とします。セッションクッキーはここでは一切受け付けられません。ブラウザは、外部のページが引き起こしたリクエストも含め、すべてのリクエストにクッキーを送信してしまうためです。',
   'Jeton d’intégration': '連携トークン',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'プログラム — スクリプト、連携、他のアプリケーションなど — は `bdb_` で始まる**連携トークン**を提示します。これはこのデータベースだけに有効です。読み取りを行い、書き込み権限で作成されていれば作成や変更も行いますが、**削除だけは決して行いません**。また、権限は作成した人の権限を、呼び出しのたびに照合したうえで、常にそれ以下です。管理画面、SQLコンソール、AIへのアクセスは閉じられています。',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'プログラム — スクリプト、連携、他のアプリケーションなど — は `bdb_` で始まる**連携トークン**を提示します。これはこのデータベースだけに有効です。読み取りを行い、書き込み権限で作成されていれば作成や変更も行い、**削除は、そのために作成されている場合のみ行います**。また、権限は作成した人の権限を、呼び出しのたびに照合したうえで、常にそれ以下です。管理画面、SQLコンソール、AIへのアクセスは閉じられています。',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     '作成するには、データベースの「⋯」メニュー → **APIとエージェント** → **APIとMCPのトークン…** から、**REST API** アクセスにチェックを入れます。表示されるのは一度きりです。',
   Appel: '呼び出し例',

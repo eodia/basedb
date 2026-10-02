@@ -24,7 +24,8 @@ then restart n8n.
   your instance sets `BASEDB_TENANT`.
 - **Token** — an integration token, created in basedb from the base's menu, **API et agents ›
   Jetons API et MCP…**. It opens one base, reads its rows, and writes them if it was created with
-  write access. It never has more rights than the person who created it, and it never deletes.
+  write access. It never has more rights than the person who created it, and deletes only if it
+  was created to — which this node does not do: it has no Delete operation.
 
 The **basedb Webhook Trigger** takes another credential: the signing secret basedb shows once,
 when the webhook is created (**API et agents › Webhooks…**, with the node's production URL).

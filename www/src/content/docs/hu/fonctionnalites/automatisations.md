@@ -1,6 +1,6 @@
 ---
 title: Automatizálások
-description: Amikor egy sor megváltozik, ütemezetten vagy egy kattintásra – módosítás, létrehozás, keresés, ismétlés minden soron, elágazás, az MI megkérdezése, értesítés, e-mail küldése, szolgáltatás hívása, üzenet a Slackre.
+description: Amikor egy sor megváltozik, belép egy szűrőbe vagy eltűnik, amikor egy dátum eljön, ütemezetten, egy kattintásra vagy egy hívásra – módosítás, létrehozás, keresés, számlálás, ismétlés, elágazás, várakozás, próbálkozás, az MI megkérdezése, PDF készítése, értesítés, e-mail küldése, szolgáltatás hívása.
 ---
 
 Az automatizálás egy **mikor**, egy **ha** és egy **akkor** részből áll: amikor egy feladat „Fait”
@@ -8,7 +8,8 @@ Az automatizálás egy **mikor**, egy **ha** és egy **akkor** részből áll: a
 és ír a Slackre; minden hétfőn 9 órakor létrehozza a csapatmegbeszélés sorát. Ha pedig egy
 művelet nem elég, egy **folyamatot** követ: megkeres egy sort, az alapján, amit a sor tartalmaz,
 egyik vagy másik ágon halad tovább, lépéseket ismétel egy szűrőnek megfelelő minden egyes során,
-és egy lépésben újra felhasználja, amit egy korábbi lépés talált vagy írt.
+és egy lépésben újra felhasználja, amit egy korábbi lépés talált vagy írt, három napot **vár**
+egy ismétlés előtt, és mellékletként egy **PDF**-et küld.
 
 Az **Automatizálások** menüpontból nyithatók meg, az oldalsáv alján, a megnyitott adatbázis
 blokkjában, és **Kezelés** szintű jogosultságot igényelnek.
@@ -18,9 +19,10 @@ blokkjában, és **Kezelés** szintű jogosultságot igényelnek.
 ## A folyamat
 
 A folyamat fentről lefelé rajzolódik ki: az eseményindító, majd az egyes lépések. Egy vonalon
-lévő **+** azon a helyen ad hozzá egy lépést; egy kártya jobb oldalt nyitja meg a beállításait.
-Egy egyszerű automatizálás – egy eseményindító és egy művelet – két kártyán elfér, és ugyanúgy
-állítható be, mint korábban.
+lévő **+** megnyitja a lépések listáját, kategóriánként – Sorok, Kommunikáció, Dokumentumok, MI,
+Logika – rendezve, kereséssel, és hozzáadja a kiválasztottat azon a helyen; egy kártya jobb
+oldalt nyitja meg a beállításait. Egy egyszerű automatizálás – egy eseményindító és egy művelet
+– két kártyán elfér, és ugyanúgy állítható be, mint korábban.
 
 ## Mikor
 
@@ -30,6 +32,10 @@ Egy egyszerű automatizálás – egy eseményindító és egy művelet – két
 | **Sor módosításakor** | a tábla, és szükség esetén csak a figyelendő mezők |
 | **Ütemezetten** | óránként, naponta vagy hetente, a választott időpontban és időzónában |
 | **Gombra kattintáskor** | a tábla egy [Gomb mezője](/basedb/hu/fonctionnalites/tables-et-champs/#gomb) |
+| **Egy sor törlődik** | a tábla; a lépések a sort olyannak idézik, amilyen volt |
+| **Egy sor belép egy szűrőbe** | a tábla és a szűrő: az automatizálás akkor indul, amikor egy sor belép a szűrőbe, és csak azután indul újra, hogy előbb kilépett belőle – „egy számla késésbe kerül”, nem „egy késésben lévő számla módosul” |
+| **Egy dátum eljön** | a tábla egy Dátum mezője, egy eltolás – három nappal előtte, aznap, egy héttel utána – és az időpont: határidő-emlékeztetők, szerződés-évfordulók |
+| **Egy webhook beérkezik** | semmi: az automatizálás saját címet kap, amelyet egy másik szoftver hív meg ([részletek](#egy-szolgáltatás-amely-a-basedb-t-hívja)) |
 
 A sorokra vonatkozó eseményindító **minden** írást lát: a felületét, az API-ét, egy ügynökét,
 egy megosztott űrlapét, sőt a közvetlen SQL-ét is – az automatizálások az előzményekből
@@ -44,7 +50,8 @@ művelet pillanatában** értékel ki. Az a futtatás, amelynek feltétele nem t
 
 ## Akkor
 
-Legfeljebb harminc lépés, sorrendben; az első sikertelen lépés leállítja a következőket.
+Legfeljebb negyven lépés, sorrendben; az első sikertelen lépés leállítja a következőket – kivéve
+egy **Próbálkozás** blokkban ([részletek](#próbálkozás)).
 
 | Lépés | Mit csinál |
 |---|---|
@@ -58,10 +65,21 @@ Legfeljebb harminc lépés, sorrendben; az első sikertelen lépés leállítja 
 | **MI megkérdezése** | az [MI-szolgáltató](/basedb/hu/fonctionnalites/ia/) válasza egy utasításra, amely a sorra és a korábbi lépésekre hivatkozik – megfogalmazás, összefoglalás, besorolás –, szövegként, számként, igen/nem értékként, dátumként vagy egy lista egyik elemeként értelmezve |
 | **Feltétel** | több ág: az első, amelynek feltétele teljesül, kerül sorra, az „Egyébként” ág pedig akkor, ha egyiké sem; az ágak ezután újra összefutnak |
 | **Minden sorra** | a benne található lépéseket egyszer végrehajtja egy tábla minden olyan sorára, amely megfelel egy szűrőnek ([részletek](#minden-sorra)) |
+| **Sor törlése** | az eseményt kiváltó sor, vagy az, amelyet egy lépés talált – a kukába kerül |
+| **Számlálás és összeadás** | egy szűrő sorainak száma, összege, átlaga, minimuma vagy maximuma, amelyre később hivatkozni vagy amelyet tesztelni lehet |
+| **PDF létrehozása** | egy sor [dokumentuma](/basedb/hu/fonctionnalites/documents/), amely egy Fájl mezőbe kerül, vagy egy e-mailhez csatolható |
+| **Várakozás** | egy időtartam, vagy egy mező dátumáig ([részletek](#várakozás)) |
+| **Próbálkozás** | lépések, és mások, amelyeket akkor kell elvégezni, ha egyikük sikertelen ([részletek](#próbálkozás)) |
+| **Automatizálás indítása** | az adatbázis egy másik automatizálása, a táblájának egy során |
 
 Az eredmény nélküli keresés nem állítja le a folyamatot: azok a lépések, amelyeknek a talált
-sort kellett volna módosítaniuk, kimaradnak. Ha ilyenkor valami mást szeretne tenni, egy
-feltétel ellenőrzi ezt – az üres szűrőjű ág akkor kerül sorra, ha a keresés talált valamit.
+sort kellett volna módosítaniuk, kimaradnak. Ha ilyenkor valami mást szeretne tenni, a keresés
+alatt a **Ha nem található sor…** feltételt ad hozzá, amely ezt ellenőrzi.
+
+Egy **feltétel** egy sort vizsgál egy szűrővel, vagy egy **értéket** – az MI válaszát, egy
+webhook kódját, egy összeget – „`{{e2.reponse}}` egyenlő Urgent”, „`{{e3.somme.montant}}`
+nagyobb vagy egyenlő, mint 1000”. A számok számként hasonlítódnak össze, a szövegek ékezetek és
+nagybetűk nélkül.
 
 ## Minden sorra
 
@@ -83,6 +101,65 @@ A korláton túli sorok a következő futtatásra várnak, amely ezt jelzi is: a
 egy „relancée” jelölőnégyzettel, egy dátummal – vegye ki a szűrőből, hogy a futtatások során
 mindegyiket feldolgozza a rendszer. Egy ciklus nem tartalmaz másik ciklust, és egy futtatás két
 perc után megáll.
+
+## Várakozás
+
+A **Várakozás** lépés szünetelteti a futtatást – három órát, két napot –, vagy egy sor egy
+mezőjének dátumáig, egy eltolással és egy időponttal: „a határidő előestéjén, 9 órakor”. A
+futtatás **Szüneteltetve** állapotban jelenik meg a **Futtatások** lapon, a folytatás
+dátumával.
+
+A következő lépésnél folytatódik, **újraolvasva** a sorait: „három nappal az árajánlat
+elküldése után, ha még nem fogadták el, küldjön emlékeztetőt” így írható meg: **Várakozás** 3
+napig, majd egy feltétel az árajánlat akkori állapotáról. Az automatizálás letiltása leállítja
+a szünetelő futtatásokat; egy várakozás nem helyezhető el sem egy ciklusban, sem egy
+**Próbálkozás** blokkban, és legfeljebb egy évig tart.
+
+## Próbálkozás
+
+A **Próbálkozás** blokknak két ága van. Az első fut le; ha egyik lépése sikertelen, a folyamat
+a második ágon, a **Hiba esetén** ágon folytatódik, amely hivatkozik a hibára – `{{e4.erreur}}`,
+a kód, és `{{e4.etape}}`, a lépés –, majd a blokk után folytatódik. Ezzel lehet értesíteni
+valakit, amikor egy szolgáltatás nem válaszol, anélkül, hogy minden megállna.
+
+Egyszerűbben: egy webhook magától **újra próbálkozhat**, legfeljebb háromszor, egy
+szolgáltatáshiba után, és egy ciklus **folytatódhat** egy sikertelen sor ellenére.
+
+## Egy PDF és egy e-mail
+
+A **PDF létrehozása** elkészíti egy sor dokumentumát – a táblájának egy
+[dokumentumsablonjával](/basedb/hu/fonctionnalites/documents/), vagy minden mezőjének
+adatlapjával –, és elhelyezheti egy Fájl mezőben. Az **E-mail küldése** ezután csatolhatja,
+egy Fájl vagy Kép mező fájljaival együtt:
+
+- egy-egy e-mail **mindenkinek**, vagy **egy közös mindenkinek**, **másolatban** szereplő
+  címzettekkel;
+- egy üzenet **formázott szövegben** – félkövér, listák, hivatkozások –, amely a sorra
+  hivatkozik;
+- egy **válaszcím**: alapértelmezés szerint az Öné, vagy egy E-mail mezőé;
+- legfeljebb 50 címzett, 10 melléklet és 15 MB.
+
+„Amikor egy árajánlat Elfogadott állapotba kerül, küldje el a számlát az ügyfélnek, a
+könyvelésnek másolatban”: **Egy sor belép egy szűrőbe** `statut eq "accepte"`, **PDF
+létrehozása** a Számla sablonnal, **E-mail küldése** az ügyfél E-mail mezőjére, a számlával
+csatolva.
+
+## Egy szolgáltatás, amely a basedb-t hívja
+
+Az **Egy webhook beérkezik** eseményindítóval az automatizálásnak saját titkos címe van,
+amelyet át kell adni annak a szoftvernek, amelynek el kell indítania azt – egy webáruháznak,
+egy külső űrlapnak, egy automatizálási eszköznek:
+
+```bash
+curl -X POST "https://basedb.example.com/api/v1/hooks/<secret>" \
+  -H "content-type: application/json" \
+  -d '{"client": {"nom": "Dupont"}, "total": 120}'
+```
+
+A lépések hivatkoznak arra, amit küldött: `{{trigger.client.nom}}`, `{{trigger.total}}`; egy
+űrlap ugyanígy olvasható, egy szöveg a `{{trigger.texte}}` alakban. A cím az eseményindító
+beállításaiból másolható; a **Cím módosítása** lecseréli, és a régi azonnal megszűnik. Egy
+hívás `202`-t kap válaszul, az automatizálás egy másodpercen belül lefut.
 
 ## Szolgáltatás hívása
 
@@ -139,6 +216,11 @@ szövegek melletti **{ }** gombbal:
 - `{{e3.statut}}`, `{{e3.reponse.numero}}`: amit az `e3` webhook válaszolt;
 - `{{e4.reponse}}`: az `e4` MI-lépés válasza;
 - `{{e5.client}}` az `e5` ciklusban a kör sora; `{{e5.nombre}}` utána a bejárt sorok száma;
+- `{{e6.nombre}}`, `{{e6.somme.montant}}`, `{{e6.moyenne.montant}}`, `{{e6.max.echeance}}`: amit
+  az `e6` lépés számolt;
+- `{{e7.erreur}}`, `{{e7.etape}}`: a hiba, amelyet a **Próbálkozás** `e7` blokk elkapott;
+- `{{e8.nom}}`: az `e8` lépés PDF-jének a neve;
+- `{{trigger.client.nom}}`: amit egy bejövő webhook küldött;
 - `{{_maintenant}}`: a futtatás időpontja.
 
 Az egyetlen hivatkozásból álló érték magát az értéket adja át: egy kapcsolatot, egy személyt,
@@ -191,19 +273,19 @@ többi.
 ## Korlátok
 
 - Amit egy automatizálás ír, az nem indít el másikat: aminek egymás után kell következnie,
-  azt egyetlen folyamatba kell írni.
-- A keresés egy sort ad, az elsőt; egy ciklus végrehajtásonként legfeljebb 200-at jár be, és
-  az első sikertelen lépés leállítja. Várakozás („három nappal később”) nincs.
-- Nincs szkript. Egy e-mail egyszerű szövegben megy ki, címzettenként egy – lépésenként
-  legfeljebb húsz –, a példány [levélküldő szerverén](/basedb/hu/hebergement/variables/#e-mailek)
-  keresztül; a válasz az automatizálás tulajdonosához érkezik.
-- A feltétel egy sort vizsgál: ha az MI válasza szerint szeretne ágat választani, először írja
-  a választ a sor egy mezőjébe.
+  azt egyetlen folyamatba kell írni, vagy az **Automatizálás indítása** lépéssel, legfeljebb
+  három szinten.
+- A keresés egy sort ad, az elsőt; egy ciklus végrehajtásonként legfeljebb 200-at jár be. Egy
+  futtatás legfeljebb két percig tart, a várakozásokat nem számítva.
+- Nincs szkript. Egy e-mail a példány
+  [levélküldő szerverén](/basedb/hu/hebergement/variables/#e-mailek) keresztül megy ki.
 - Az [adatbázissablon](/basedb/hu/fonctionnalites/modeles/) csak azokat az automatizálásokat
   viszi magával, amelyekben nincs keresés, ciklus, feltétel vagy MI-lépés – webhookot pedig
   sosem.
 - Egy webhook nem követ átirányítást, és legfeljebb 10 másodpercet vár; a 2xx-től eltérő
-  válasz a lépés sikertelenségét okozza.
+  válasz a lépés sikertelenségét okozza, az újrapróbálkozásai után.
+- Egy eljövő dátumot percenként megvizsgál a rendszer; csak azok számítanak, amelyek az
+  automatizálás mentése után következnek be.
 - Automatizálásonként óránként 100 futtatás; egy kimaradt óránkénti időpontot csak egyszer
   pótol a rendszer.
 - Az írás és a művelet közötti késleltetés másodperces nagyságrendű.

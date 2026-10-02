@@ -79,6 +79,9 @@ export function checkCatalog(locale, catalog, src = source()) {
       if (!same(found.sort(), expected.sort()))
         result.errors.push(`${key}: placeholders {${found}} ≠ {${expected}}`)
       if (value.trim() === '' && key.trim() !== '') result.errors.push(`${key}: empty translation`)
+      // What follows `||` in a key tells the translator the sense; it is never displayed.
+      if (value.includes('||'))
+        result.errors.push(`${key}: the context after « || » was translated too`)
     }
   }
   for (const key of Object.keys(catalog)) if (!(key in src)) result.stale.push(key)

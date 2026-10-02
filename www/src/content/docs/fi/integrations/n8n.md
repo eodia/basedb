@@ -29,8 +29,8 @@ Luo n8n:ssä **basedb API**-tunniste:
 | **Token** | **integraatiotunnus**: tietokannan **⋯**-valikko → **API ja agentit** → **API- ja MCP-tunnukset…** |
 
 Tunnus avaa **yhden** tietokannan. Se lukee sen rivejä, kirjoittaa niitä, jos se on luotu
-kirjoitusoikeuksin, ei koskaan enempää oikeuksia kuin sen luoneella henkilöllä, ja **ei koskaan
-poista**. Tallennettaessa n8n kokeilee yhteyttä ja kertoo, jos tunnus hylätään.
+kirjoitusoikeuksin, eikä sillä ole koskaan enempää oikeuksia kuin sen luoneella henkilöllä.
+Tallennettaessa n8n kokeilee yhteyttä ja kertoo, jos tunnus hylätään.
 
 ## Lukeminen ja kirjoittaminen: solmu basedb
 
@@ -58,8 +58,9 @@ koodilla ja sen selityksellä.
   `_id`:llä.
 - **Create or Update** ei koskaan muokkaa useaa riviä: jos useampi kantaa näitä arvoja, solmu
   pysähtyy sen sijaan, että arvaisi.
-- Ei **Delete**-toimintoa: tunnus ei poista. Rivien poistamiseksi merkitse ne (tila ”Arkistoitu”),
-  tai anna poisto [automaation](/basedb/fi/fonctionnalites/automatisations/) tehtäväksi.
+- Ei **Delete**-toimintoa: rivien poistamiseksi merkitse ne (tila ”Arkistoitu”), anna poisto
+  [automaation](/basedb/fi/fonctionnalites/automatisations/) tehtäväksi, tai kutsu
+  [REST API:a](/basedb/fi/integrations/api-rest/) tunnuksella, joka on luotu poistamista varten.
 
 ## Työnkulun käynnistäminen
 

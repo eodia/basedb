@@ -755,6 +755,7 @@ d'un code : un chapitre ne revendique un code que si l'annexe le lui attribue.
 | `TOKEN_EXPIRY_REQUIRED` | Durée de vie d'un jeton donnée hors de 1 à 365 jours (l'absence de durée vaut « sans échéance ») | 422 | 05 |
 | `TOKEN_INVALID` | Jeton inconnu, ou présenté hors de `allowed_surfaces` | 401 | 05 |
 | `TOKEN_PRIVILEGE_REFUSED` | Rôle de jeton portant `manage_schema`, `manage_permissions` ou `manage_tokens` | 422 | 05 |
+| `TOKEN_CASCADE_FORBIDDEN` | Suppression par un jeton d'une ligne qu'une relation en cascade emporterait avec d'autres | 409 | 05 |
 | `TOKEN_READ_ONLY` | Écriture avec un jeton dont le rôle ne porte que `read` | — | 09 |
 | `TOKEN_REVOKED` | Jeton connu, révoqué ; la session MCP est close | 401 | 08 |
 | `TOKEN_SUSPENDED` | Budget d'écriture ou seuil d'énumération dépassé | — | 09 |

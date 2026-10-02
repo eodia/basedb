@@ -13,13 +13,16 @@ indeholder de fysiske navne — dem, du også læser i SQL.
 
 ## Et token
 
-I brugerfladen, databasens **⋯**-menu → **API og agenter** → **API- og MCP-tokens…**: her
-opretter du et **integrationstoken**, der er begrænset til denne database og som standard er
-skrivebeskyttet, efter at have bekræftet din adgangskode. Det vises kun én gang; læg det i en
-miljøvariabel.
+I brugerfladen, databasens **⋯**-menu → **API og agenter** → **API- og MCP-tokens…**: den, der har
+niveauet **Administrere** på databasen, eller på dens projekt, opretter her et
+**integrationstoken**, der er begrænset til denne database og som standard er skrivebeskyttet,
+efter at have bekræftet adgangskoden — en konto uden adgangskode, der logger ind via en
+identitetsudbyder, kan ikke gøre det endnu. Det vises kun én gang; læg det i en miljøvariabel.
 
-Et token læser, opretter og redigerer, hvis det er oprettet med skriveadgang, **sletter aldrig**
-og har aldrig flere tilladelser end den person, der oprettede det.
+Et token læser; det opretter og redigerer, hvis det er oprettet med skriveadgang, og **sletter,
+hvis det er oprettet til det** — rettighederne »Læse, skrive og slette« — undtagen en række, som en
+kaskaderelation ville tage med sig sammen med andre. Det har aldrig flere tilladelser end den
+person, der oprettede det.
 
 ```bash
 export BASEDB_TOKEN=bdb_…

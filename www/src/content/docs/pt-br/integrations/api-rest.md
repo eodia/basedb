@@ -13,12 +13,15 @@ Suas URLs levam os nomes físicos — os mesmos que você lê em SQL.
 
 ## Um token
 
-Na interface, menu **⋯** da base → **API e agentes** → **Tokens de API e MCP…**: ali você cria um **token
-de integração** limitado a essa base, somente para leitura por padrão, depois de confirmar a sua
-senha. Ele só é exibido uma vez; coloque-o em uma variável de ambiente.
+Na interface, menu **⋯** da base → **API e agentes** → **Tokens de API e MCP…**: quem tem o nível
+**Gerenciamento** na base, ou no seu projeto, cria ali um **token de integração** limitado a
+essa base, somente para leitura por padrão, depois de confirmar a sua senha — uma conta sem
+senha, que entra por um provedor de identidade, ainda não pode fazer isso. Ele só é exibido uma
+vez; coloque-o em uma variável de ambiente.
 
-Um token lê, cria e altera se tiver sido criado com escrita, **nunca exclui** e nunca tem
-mais permissões do que a pessoa que o criou.
+Um token lê; cria e altera se tiver sido criado com escrita, e **exclui se tiver sido criado para
+isso** — permissões “Leitura, escrita e exclusão”, exceto uma linha que uma relação em cascata
+levaria junto com outras. Ele nunca tem mais permissões do que a pessoa que o criou.
 
 ```bash
 export BASEDB_TOKEN=bdb_…

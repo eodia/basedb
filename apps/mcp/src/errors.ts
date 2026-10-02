@@ -55,6 +55,12 @@ const MESSAGES: Readonly<Record<string, string>> = {
   IDEMPOTENCY_INTERRUPTED: 'L’appel portant cette clé d’idempotence a été interrompu.',
   IDEMPOTENCY_STALE: 'Les droits ont changé depuis l’appel portant cette clé d’idempotence.',
   LINK_TARGET_NOT_FOUND: 'La ligne cible de ce lien est introuvable.',
+  ROW_REFERENCED: 'Cette ligne est encore désignée par un lien d’une autre ligne.',
+  TOKEN_CASCADE_FORBIDDEN:
+    'Une relation en cascade emporterait d’autres lignes avec celle-ci : un jeton ne la supprime pas.',
+  RESTORE_RECORD_PRESENT: 'Cette ligne existe de nouveau : il n’y a rien à restaurer.',
+  RESTORE_TARGET_MISSING:
+    'Cette ligne désignait une ligne qui a disparu depuis : elle ne peut pas revenir telle quelle.',
   LOCK_UNAVAILABLE: 'La table est momentanément verrouillée.',
   FILTER_OPERATOR_INVALID: 'Cet opérateur ne s’applique pas à ce champ.',
   FILTER_TOO_COMPLEX: 'Le filtre est trop complexe.',
@@ -103,6 +109,12 @@ const HINTS: Readonly<Record<string, string>> = {
   LINK_TARGET_NOT_FOUND:
     'Un lien se renseigne avec le _id d’une ligne de la table cible ; lookup_records le trouve.',
   LOCK_UNAVAILABLE: 'Réessayez dans quelques instants.',
+  ROW_REFERENCED:
+    'Supprimez ou modifiez d’abord les lignes qui la désignent ; describe_table dit, pour chaque lien, ce que devient une ligne liée (on_delete).',
+  RESTORE_RECORD_PRESENT: 'Lisez la ligne avec get_record.',
+  TOKEN_CASCADE_FORBIDDEN:
+    'Cette suppression se fait dans l’interface basedb, par une personne qui voit ce qu’elle emporte.',
+  RESTORE_TARGET_MISSING: 'Restaurez d’abord la ligne qu’elle désignait, puis réessayez.',
   FILTER_OPERATOR_INVALID:
     'Les opérateurs admis par type figurent dans la description de list_records.',
   SORT_UNAVAILABLE: 'Triez sur un autre champ.',
@@ -115,6 +127,8 @@ const HINTS: Readonly<Record<string, string>> = {
 const SPECIFIC_HINTS: Readonly<Record<string, string>> = {
   describe_table: 'Cette table n’a pas de champ d’affichage lisible : consultez describe_table.',
   rich_text: 'Les champs de texte riche se modifient dans l’interface basedb.',
+  token_delete:
+    'Ce jeton n’a pas été créé pour supprimer : un jeton « Lecture, écriture et suppression » se crée dans l’interface basedb.',
 }
 
 const RETRYABLE: ReadonlySet<string> = new Set([

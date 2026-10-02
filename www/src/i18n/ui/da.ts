@@ -1288,10 +1288,10 @@ export default {
 		agents: {
 			label: 'REST-API · MCP · webhooks',
 			title: 'Dine AI-agenter får adgang til data, {ikke til hele nøgleknippet.}',
-			lead: 'MCP-serveren giver agenterne tolv værktøjer; REST-API’et giver dine programmer de samme data. Ét kontrolpunkt for tilladelser, de samme logs.',
+			lead: 'MCP-serveren giver agenterne fjorten værktøjer; REST-API’et giver dine programmer de samme data. Ét kontrolpunkt for tilladelser, de samme logs.',
 			bullets: [
 				'<strong>Ét token pr. database</strong>, skrivebeskyttet som standard og aldrig med flere tilladelser end den person, der oprettede det.',
-				'<strong>En agent sletter intet</strong> og ændrer ikke strukturen: den foreslår, et menneske godkender.',
+				'<strong>En agent sletter kun med din tilladelse</strong>, én række ad gangen, og ændrer ikke strukturen: den foreslår, et menneske godkender.',
 				'<strong>Genereret dokumentation</strong> for hver database, filtreret efter dine tilladelser, med dens OpenAPI 3.1-specifikation.',
 				'<strong>Webhooks</strong> ved hver skrivning: signerede, leveret i rækkefølge og sendt igen ved fejl.',
 			],
@@ -1513,7 +1513,7 @@ export default {
 			},
 			agent: {
 				q: 'Hvordan forbinder en AI-agent sig?',
-				a: 'Via MCP-serveren med et integrationstoken, der er begrænset til én database og skrivebeskyttet som standard. En agent læser, opretter og redigerer rækker efter sine tilladelser; den sletter intet og ændrer ikke strukturen: den foreslår, og et menneske godkender.',
+				a: 'Via MCP-serveren med et integrationstoken, der er begrænset til én database og skrivebeskyttet som standard. En agent læser, opretter og redigerer rækker efter sine tilladelser — og sletter dem, én ad gangen, hvis dens token er oprettet til det; den ændrer ikke strukturen: den foreslår, og et menneske godkender.',
 			},
 			postgres: {
 				q: 'Hvilken version af PostgreSQL kræves?',
@@ -1540,6 +1540,47 @@ export default {
 		title: 'Hvad der er ændret i basedb',
 		intro: 'Detaljerne om hver ændring findes i <a href="https://github.com/eodia/basedb/commits/main">repositoriets historik</a>. Det, der kommer bagefter: <a href="/feuille-de-route/">køreplanen</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Agenter, der sletter, hvis du tillader det',
+				tag: 'Ny',
+				items: [
+					'<strong>Et tredje token-niveau</strong>, »Læse, skrive og slette«: et program sletter via REST-API\'et, en agent via det nye værktøj <code>delete_record</code> — én række ad gangen, gengivet i svaret. <a href="/integrations/mcp/#slet-rækker">Slet rækker</a>',
+					'<strong>Fortryd</strong>: <code>restore_record</code> bringer en slettet række tilbage under dens identifikator; en sletning, som en kaskaderelation ville udvide til andre rækker, forbliver forbeholdt brugerfladen.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Token til den, der administrerer en database',
+				tag: 'Ny',
+				items: [
+					'<strong>Niveauet Administrere er nok</strong>: givet på en database eller på dens projekt, gør det muligt at oprette integrationstokens til dens databaser, uden at være administrator. <a href="/integrations/api-rest/#et-token">Et token</a>',
+					'<strong>Siger det ellers klart</strong>: den, der læser eller skriver uden at administrere databasen, får i token-vinduet at vide, hvem man skal kontakte; en konto uden adgangskode får at vide, hvorfor den ikke kan oprette et endnu.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automatiseringer, der venter, fanger en fejl og sender PDF\'er',
+				tag: 'Ny',
+				items: [
+					'<strong>Fire udløsere mere</strong>: en række slettes; en række kommer ind i et filter — »en faktura bliver forsinket«; en dato indtræffer — tre dage før forfaldsdatoen, kl. 9; et andet program kalder automatiseringens hemmelige adresse. <a href="/fonctionnalites/automatisations/#en-tjeneste-der-kalder-basedb">En tjeneste, der kalder basedb</a>',
+					'<strong>Vent</strong> tre dage, eller indtil datoen i et felt, og genoptag derefter ved at genindlæse rækken: »hvis det stadig ikke er accepteret, ryk«. <a href="/fonctionnalites/automatisations/#vent">Vent</a>',
+					'<strong>Generer en PDF og send den</strong>: dokumentet for en række, lagt i et Fil-felt eller vedhæftet en e-mail — i formateret tekst, med modtagere i kopi og en svaradresse, til hver enkelt eller én enkelt til alle. <a href="/fonctionnalites/automatisations/#en-pdf-og-en-e-mail">En PDF og en e-mail</a>',
+					'<strong>Slette en række, tælle og summere, starte en anden automatisering</strong>; en betingelse tester også en værdi — AI\'ens svar, en total —, og en søgning, der ikke finder noget, har sin egen gren.',
+					'<strong>Prøv</strong>: nogle trin, og andre, hvis ét af dem mislykkes; en webhook gentager sig selv, en løkke fortsætter på trods af en mislykket række. <a href="/fonctionnalites/automatisations/#prøv">Prøv</a>',
+					'<strong>Alle trin lige ved hånden</strong>: <strong>+</strong> åbner et vindue ordnet efter kategori, med en søgning, i stedet for en menu, der kunne blive afskåret.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'PDF-dokumenter i dine farver',
+				tag: 'Ny',
+				items: [
+					'<strong>Fem udgangspunkter</strong> — faktura, tilbud, informationsblad, attest, tom side —, bygget med kolonnerne fra din tabel: nummer, dato, beløb, foto, forbundne rækker. <a href="/fonctionnalites/documents/#opret-en-skabelon">Opret en skabelon</a>',
+					'<strong>Dit logo og dine farver</strong>: et sidehoved med logo og kontaktoplysninger, en sidefod med juridiske oplysninger og sidetal, en accentfarve, skrifttyper med eller uden serif, en ramme omkring siden. <a href="/fonctionnalites/documents/#sidehoved-og-sidefod">Sidehoved og sidefod</a>',
+					'<strong>Nye blokke</strong>: en titel på et banner, et billede, to eller tre kolonner, en oversigt ekskl. moms / inkl. moms, en tabel med farvet overskriftsrække, en separator. De trækkes for at blive omordnet, og forhåndsvisningen følger hver ændring. <a href="/fonctionnalites/documents/#indholdet-blokke">Blokkene</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'En afbrudt forbindelse stopper ikke længere basedb',
@@ -1924,8 +1965,8 @@ export default {
 						text: 'Kopiér SQL-views med strukturen, når der oprettes eller sammenlignes miljøer, og i databaseskabeloner.',
 					},
 					loops: {
-						title: 'Ventetid i automatiseringer',
-						text: 'Vent før næste trin (»tre dage efter«), og tag flows — betingelser, søgninger, løkker — med i databaseskabeloner.',
+						title: 'Komplette flows i databaseskabeloner',
+						text: 'Medtage automatiseringsflows — betingelser, søgninger, løkker, ventetider, PDF\'er — i databaseskabeloner, som i dag kun gemmer de enkle trin.',
 					},
 					textFormulas: {
 						title: 'Formler på tekst',

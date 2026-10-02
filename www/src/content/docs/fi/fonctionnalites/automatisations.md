@@ -1,14 +1,15 @@
 ---
 title: Automaatiot
-description: Kun rivi muuttuu, tiettyyn aikaan tai napsautuksella – muokkaa, luo, etsi, toista jokaisella rivillä, haaraudu, kysy tekoälyltä, ilmoita, lähetä sähköposti, kutsu palvelua, kirjoita Slackiin.
+description: Kun rivi muuttuu, täyttää suodattimen tai katoaa, kun päivämäärä saapuu, tiettyyn aikaan, napsautuksella tai kutsulla – muokkaa, luo, etsi, laske, toista, haaraudu, odota, yritä, kysy tekoälyltä, luo PDF, ilmoita, lähetä sähköposti, kutsu palvelua.
 ---
 
 Automaatio kertoo **milloin**, **jos** ja **sitten**: kun tehtävä siirtyy tilaan ”Fait”, kirjaa
 kellonaika; kun kielteinen arvio saapuu, ilmoita vastuuhenkilölle ja kirjoita Slackiin; joka
 maanantai klo 9 luo tiimipalaverin rivi. Ja kun yksi toiminto ei riitä, se seuraa
 **työnkulkua**: etsi rivi, valitse haara sen mukaan, mitä rivillä lukee, toista vaiheita
-jokaisella suodatinta vastaavalla rivillä, ja käytä vaiheessa uudelleen sitä, minkä aiempi
-vaihe löysi tai kirjoitti.
+jokaisella suodatinta vastaavalla rivillä, käytä vaiheessa uudelleen sitä, minkä aiempi
+vaihe löysi tai kirjoitti, **odota** kolme päivää ennen muistutusta ja lähetä **PDF**
+liitteenä.
 
 Ne avataan kohdasta **Automaatiot** sivupalkin alaosan avoimen tietokannan lohkosta, ja ne
 vaativat **Hallintaoikeus**-tason.
@@ -17,9 +18,11 @@ vaativat **Hallintaoikeus**-tason.
 
 ## Työnkulku
 
-Työnkulku piirretään ylhäältä alas: käynnistin ja sitten jokainen vaihe. Viivan **+** lisää
-vaiheen siihen kohtaan; kortti avaa asetuksensa oikealle. Yksinkertainen automaatio – käynnistin
-ja yksi toiminto – mahtuu kahteen korttiin ja määritetään kuten ennenkin.
+Työnkulku piirretään ylhäältä alas: käynnistin ja sitten jokainen vaihe. Viivan **+** avaa
+vaiheluettelon, joka on jaoteltu kategorioihin — Rivit, Viestintä, Asiakirjat, Tekoäly,
+Logiikka — ja sisältää hakukentän, ja lisää valitun vaiheen siihen kohtaan; kortti avaa
+asetuksensa oikealle. Yksinkertainen automaatio – käynnistin ja yksi toiminto – mahtuu kahteen
+korttiin ja määritetään kuten ennenkin.
 
 ## Milloin
 
@@ -29,6 +32,10 @@ ja yksi toiminto – mahtuu kahteen korttiin ja määritetään kuten ennenkin.
 | **Riviä muokataan** | taulukko ja tarvittaessa vain seurattavat kentät |
 | **Tiettyyn aikaan** | tunneittain, päivittäin tai viikoittain valittuna kellonaikana ja valitulla aikavyöhykkeellä |
 | **Painiketta napsautetaan** | taulukon [Painike-kenttä](/basedb/fi/fonctionnalites/tables-et-champs/#painike) |
+| **Rivi poistetaan** | taulukko; vaiheet viittaavat riviin sellaisena kuin se oli |
+| **Rivi täyttää suodattimen** | taulukko ja suodatin: automaatio käynnistyy, kun rivi täyttää sen, ja käynnistyy uudelleen vasta sen jälkeen, kun rivi on poistunut suodattimesta — ”lasku muuttuu myöhässä olevaksi”, ei ”myöhässä olevaa laskua muokataan” |
+| **Päivämäärä saapuu** | taulukon Päivämäärä-kenttä, siirtymä — kolme päivää aiemmin, samana päivänä, viikko jälkeenpäin — ja kellonaika: eräpäivän muistutukset, sopimuksen vuosipäivät |
+| **Webhook vastaanotetaan** | ei mitään: automaatio saa oman osoitteensa, jota toinen ohjelmisto kutsuu ([lisätiedot](#palvelu-joka-kutsuu-basedbtä)) |
 
 Rivien käynnistin näkee **kaikki** kirjoitukset: käyttöliittymän, API:n, agentin, jaetun
 lomakkeen ja jopa suoran SQL:n – automaatiot lähtevät liikkeelle historiasta, joka tallentaa ne
@@ -42,8 +49,8 @@ hetkellä**. Suoritus, jonka ehto ei täyty, ”ohitetaan”, ja se kerrotaan.
 
 ## Sitten
 
-Enintään kolmekymmentä vaihetta järjestyksessä; ensimmäinen epäonnistuva vaihe pysäyttää
-seuraavat.
+Enintään neljäkymmentä vaihetta järjestyksessä; ensimmäinen epäonnistuva vaihe pysäyttää
+seuraavat — paitsi **Yritä**-lohkon sisällä ([lisätiedot](#yritä)).
 
 | Vaihe | Mitä se tekee |
 |---|---|
@@ -57,10 +64,20 @@ seuraavat.
 | **Kysy tekoälyltä** | [tekoälypalveluntarjoajan](/basedb/fi/fonctionnalites/ia/) vastaus kehotteeseen, joka viittaa riviin ja aiempiin vaiheisiin – kirjoita, tiivistä, luokittele –, luettuna tekstinä, lukuna, kyllä tai ei -vastauksena, päivämääränä tai luettelon valintana |
 | **Ehto** | useita haaroja: ensimmäinen, jonka ehto täyttyy, valitaan, ja ”Muuten”, kun mikään ei täyty; haarat yhdistyvät sen jälkeen |
 | **Jokaiselle riville** | sen sisältämät vaiheet, kerran jokaiselle taulukon riville, joka vastaa suodatinta ([lisätiedot](#jokaiselle-riville)) |
+| **Poista rivi** | automaation käynnistänyt rivi, tai vaiheen löytämä rivi — se siirtyy roskakoriin |
+| **Laske ja summaa** | suodattimeen täsmäävien rivien määrä, niiden summa, keskiarvo, pienin tai suurin arvo — viitattavaksi tai testattavaksi myöhemmin |
+| **Luo PDF** | rivin [asiakirja](/basedb/fi/fonctionnalites/documents/), joka tallennetaan Tiedosto-kenttään tai liitetään sähköpostiin |
+| **Odota** | aika, tai kunnes kentän päivämäärä saapuu ([lisätiedot](#odota)) |
+| **Yritä** | vaiheita, ja muita tehtäväksi, jos jokin niistä epäonnistuu ([lisätiedot](#yritä)) |
+| **Käynnistä automaatio** | tietokannan toisen automaation, sen taulukon rivillä |
 
 Haku, joka ei löydä mitään, ei pysäytä työnkulkua: vaiheet, joiden piti muokata sen riviä,
-ohitetaan. Jos haluat tehdä siinä tapauksessa jotain muuta, ehto testaa sen – haara, jonka
-suodatin on tyhjä, valitaan heti, kun haku on löytänyt rivin.
+ohitetaan. Jos haluat tehdä siinä tapauksessa jotain muuta, **Jos riviä ei löydy …** haun alla
+lisää ehdon, joka testaa sen.
+
+**Ehto** testaa rivin suodattimella, tai **arvon**: tekoälyn vastauksen, webhookin koodin,
+summan — ”`{{e2.reponse}}` on sama kuin Urgent”, ”`{{e3.somme.montant}}` on suurempi tai yhtä
+suuri kuin 1000”. Luvut verrataan lukuina, tekstit ilman aksentteja ja isoja kirjaimia.
 
 ## Jokaiselle riville
 
@@ -81,6 +98,61 @@ Rajan ylittävät rivit odottavat seuraavaa suoritusta, joka kertoo siitä: jät
 ulkopuolelle jo käsitellyt — esimerkiksi ”uudelleenkäsitelty”-valintaruutu tai päivämäärä —
 jotta ne kaikki tulevat käsitellyiksi suoritusten myötä. Silmukka ei voi sisältää toista
 silmukkaa, ja suoritus pysähtyy kahden minuutin kuluttua.
+
+## Odota
+
+**Odota**-vaihe asettaa suorituksen tauolle — kolme tuntia, kaksi päivää — tai kunnes rivin
+kentän päivämäärä saapuu, siirtymällä ja kellonajalla: ”eräpäivää edeltävänä päivänä, klo 9”.
+Suoritus näkyy **Tauolla**-tilassa **Suoritukset**-välilehdellä, jatkumisen päivämäärän kanssa.
+
+Se jatkuu seuraavaan vaiheeseen **lukemalla rivit uudelleen**: ”kolme päivää tarjouksen
+lähettämisen jälkeen, jos sitä ei ole vielä hyväksytty, muistuta” kirjoitetaan **Odota** 3
+päivää, ja sen jälkeen ehto tarjouksen tilasta, sellaisena kuin se on sinä päivänä. Automaation
+poistaminen käytöstä pysäyttää tauolla olevat suoritukset; odotusta ei voi sijoittaa
+silmukkaan eikä **Yritä**-lohkoon, ja se kestää enintään vuoden.
+
+## Yritä
+
+**Yritä**-lohkossa on kaksi haaraa. Ensimmäinen suoritetaan; jos jokin sen vaiheista
+epäonnistuu, työnkulku jatkuu toisesta, **Virheen sattuessa** -haarasta, joka viittaa
+virheeseen — `{{e4.erreur}}`, koodiin, ja `{{e4.etape}}`, vaiheeseen —, ja jatkuu sitten lohkon
+jälkeen. Näin voit ilmoittaa jollekulle, kun palvelu ei vastaa, lopettamatta kaikkea.
+
+Yksinkertaisemmin: webhook voi **yrittää uudelleen** itsestään enintään kolme kertaa palvelun
+kaatumisen jälkeen, ja silmukka voi **jatkaa** epäonnistuneesta rivistä huolimatta.
+
+## PDF ja sähköposti
+
+**Luo PDF** tekee rivin asiakirjan — sen taulukon
+[asiakirjamallilla](/basedb/fi/fonctionnalites/documents/) tai kaikkien kenttien kortilla — ja
+voi tallentaa sen Tiedosto-kenttään. **Lähetä sähköposti** voi sitten liittää sen mukaan,
+samoin kuin Tiedosto- tai Kuva-kentän tiedostot:
+
+- sähköposti **jokaiselle erikseen**, tai **yksi kaikille**, kopio-osoitteiden kanssa;
+- viesti **muotoillussa tekstissä** — lihavointi, luettelot, linkit — joka viittaa riviin;
+- **vastausosoite**: omasi oletuksena, tai E-mail-kentän osoite;
+- enintään 50 vastaanottajaa, 10 liitettä ja 15 Mt.
+
+”Kun tarjous siirtyy tilaan Accepté, lähetä lasku asiakkaalle, kirjanpito kopiona”:
+**Rivi täyttää suodattimen** `statut eq "accepte"`, **Luo PDF** mallilla Lasku, **Lähetä
+sähköposti** asiakkaan E-mail-kenttään, lasku liitteenä.
+
+## Palvelu, joka kutsuu basedb:tä
+
+**Webhook vastaanotetaan** -käynnistimellä automaatiolla on oma salainen osoitteensa, joka
+annetaan ohjelmistolle, jonka on käynnistettävä se — verkkokauppa, ulkoinen lomake,
+automaatiotyökalu:
+
+```bash
+curl -X POST "https://basedb.example.com/api/v1/hooks/<secret>" \
+  -H "content-type: application/json" \
+  -d '{"client": {"nom": "Dupont"}, "total": 120}'
+```
+
+Vaiheet viittaavat siihen, mitä se lähetti: `{{trigger.client.nom}}`, `{{trigger.total}}`;
+lomake luetaan samoin, teksti `{{trigger.texte}}`:llä. Osoite kopioidaan käynnistimen
+asetuksista; **Muuta osoitetta** korvaa sen, ja vanha lakkaa toimimasta välittömästi. Kutsu
+saa vastaukseksi `202`:n, ja automaatio käynnistyy sekunnin sisällä.
 
 ## Kutsu palvelua
 
@@ -137,6 +209,11 @@ Arvot, viestit ja suodattimet viittaavat aiempaan kunkin tekstin vieressä oleva
 - `{{e4.reponse}}`: tekoälyvaiheen `e4` vastaus;
 - `{{e5.client}}` silmukassa `e5`, kierroksen rivi; `{{e5.nombre}}` sen jälkeen, läpikäytyjen
   rivien määrä;
+- `{{e6.nombre}}`, `{{e6.somme.montant}}`, `{{e6.moyenne.montant}}`, `{{e6.max.echeance}}`:
+  vaiheen `e6` laskemat arvot;
+- `{{e7.erreur}}`, `{{e7.etape}}`: **Yritä**-lohkon `e7` kiinniottama virhe;
+- `{{e8.nom}}`: vaiheen `e8` PDF:n nimi;
+- `{{trigger.client.nom}}`: saapuvan webhookin lähettämä tieto;
 - `{{_maintenant}}`: suorituksen hetki.
 
 Yhdestä viittauksesta koostuva arvo välittää itse arvon: viittauksen, henkilön, valinnan – näin
@@ -186,18 +263,18 @@ kirjoitukset voi kumota kuten muutkin.
 ## Rajoitukset
 
 - Automaation kirjoitukset eivät käynnistä muita automaatioita: toisiaan seuraavat toiminnot
-  kirjoitetaan yhteen työnkulkuun.
-- Haku antaa yhden rivin, ensimmäisen; silmukka käy läpi enintään 200 riviä suoritusta kohti,
-  ja ensimmäinen epäonnistuva vaihe pysäyttää sen. Odotusta (”kolme päivää myöhemmin”) ei ole.
-- Ei skriptejä. Sähköposti lähtee tekstimuodossa, yksi kullekin vastaanottajalle – enintään
-  kaksikymmentä vaihetta kohden –, instanssin [lähetyspalvelimen](/basedb/fi/hebergement/variables/#sähköpostit)
-  kautta; vastaus saapuu automaation omistavalle henkilölle.
-- Ehto testaa riviä: jos haluat valita haaran tekoälyn vastauksen mukaan, kirjoita vastaus ensin
-  rivin kenttään.
+  kirjoitetaan yhteen työnkulkuun, tai **Käynnistä automaatio** -vaiheella, enintään kolme
+  tasoa.
+- Haku antaa yhden rivin, ensimmäisen; silmukka käy läpi enintään 200 riviä suoritusta kohti.
+  Suoritus kestää enintään kaksi minuuttia, odotukset pois lukien.
+- Ei skriptejä. Sähköposti lähtee instanssin
+  [lähetyspalvelimen](/basedb/fi/hebergement/variables/#sähköpostit) kautta.
 - [Tietokantamalli](/basedb/fi/fonctionnalites/modeles/) ottaa mukaan vain automaatiot, joissa
   ei ole hakua, silmukkaa, ehtoa eikä tekoälyvaihetta, eikä koskaan webhookia.
 - Webhook ei seuraa uudelleenohjauksia ja odottaa enintään 10 sekuntia; muu kuin 2xx-vastaus
-  epäonnistuttaa vaiheen.
+  epäonnistuttaa vaiheen, sen uudelleenyritysten jälkeen.
+- Saapuva päivämäärä tarkistetaan minuutin välein; vain automaation tallentamisen jälkeen
+  saapuneet lasketaan.
 - 100 suoritusta tunnissa automaatiota kohden; väliin jäänyt ajastettu suoritus tehdään
   jälkikäteen vain kerran.
 - Viive kirjoituksen ja toiminnon välillä on noin sekunnin luokkaa.

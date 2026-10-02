@@ -1,6 +1,6 @@
 ---
 title: Automazioni
-description: Quando una riga cambia, a orario fisso o con un clic — modificare, creare, cercare, ripetere su ogni riga, diramare, chiedere all’IA, avvisare, inviare un’email, chiamare un servizio, scrivere su Slack.
+description: Quando una riga cambia, entra in un filtro o scompare, quando arriva una data, a orario fisso, con un clic o con una chiamata — modificare, creare, cercare, contare, ripetere, diramare, attendere, provare, chiedere all’IA, generare un PDF, avvisare, inviare un’email, chiamare un servizio.
 ---
 
 Un’automazione dice **quando**, **se** e **allora**: quando un’attività passa a «Fait», annotare
@@ -8,7 +8,8 @@ l’ora; quando arriva una recensione negativa, avvisare la responsabile e scriv
 lunedì alle 9, creare la riga della riunione di team. E quando un’azione non basta, segue un
 **flusso**: cercare una riga, prendere un ramo o un altro in base a ciò che contiene, ripetere
 passaggi su ogni riga che risponde a un filtro, riutilizzare in un passaggio ciò che un passaggio
-precedente ha trovato o scritto.
+precedente ha trovato o scritto, **attendere** tre giorni prima di un sollecito, inviare un
+**PDF** in allegato.
 
 Si aprono da **Automazioni**, nel riquadro del database aperto in fondo alla barra
 laterale, e richiedono il livello **Gestione**.
@@ -18,7 +19,9 @@ laterale, e richiedono il livello **Gestione**.
 ## Il flusso
 
 Il flusso si disegna dall’alto verso il basso: il trigger, poi ogni passaggio. Un **+** su un collegamento
-aggiunge un passaggio in quel punto; una scheda apre le sue impostazioni a destra. Un’automazione
+apre l’elenco dei passaggi, raggruppati per categoria — Righe, Comunicare, Documenti, IA,
+Logica — con una ricerca, e aggiunge quello scelto in quel punto; una scheda apre le sue
+impostazioni a destra. Un’automazione
 semplice — un trigger e un’azione — sta in due schede, e si configura come prima.
 
 ## Quando
@@ -29,6 +32,10 @@ semplice — un trigger e un’azione — sta in due schede, e si configura come
 | **Una riga viene modificata** | la tabella e, se serve, i soli campi da monitorare |
 | **A orario fisso** | ogni ora, ogni giorno o ogni settimana, all’ora e nel fuso orario scelti |
 | **Clic su un pulsante** | un [campo Pulsante](/basedb/it/fonctionnalites/tables-et-champs/#pulsante) della tabella |
+| **Una riga viene eliminata** | la tabella; i passaggi citano la riga così com’era |
+| **Una riga entra in un filtro** | la tabella e il filtro: l’automazione parte quando una riga vi entra, e riparte solo dopo che ne è uscita — «una fattura passa in ritardo», non «una fattura in ritardo viene modificata» |
+| **Una data arriva** | un campo Data della tabella, uno scarto — tre giorni prima, lo stesso giorno, una settimana dopo — e l’ora: solleciti di scadenza, anniversari di contratto |
+| **Un webhook viene ricevuto** | niente: l’automazione riceve un proprio indirizzo, che un altro software chiama ([dettagli](#un-servizio-che-chiama-basedb)) |
 
 Un trigger sulle righe vede **tutte** le scritture: l’interfaccia, l’API, un agente, un
 modulo condiviso, e persino l’SQL diretto — le automazioni partono dalla cronologia, che le
@@ -42,7 +49,8 @@ di agire**. Un’esecuzione la cui condizione non è soddisfatta viene «scartat
 
 ## Allora
 
-Fino a trenta passaggi, in ordine; il primo che fallisce ferma i successivi.
+Fino a quaranta passaggi, in ordine; il primo che fallisce ferma i successivi — tranne in un
+blocco **Prova** ([dettagli](#prova)).
 
 | Passaggio | Cosa fa |
 |---|---|
@@ -56,10 +64,21 @@ Fino a trenta passaggi, in ordine; il primo che fallisce ferma i successivi.
 | **Chiedi all’IA** | una risposta del [fornitore di IA](/basedb/it/fonctionnalites/ia/) a un’istruzione che cita la riga e i passaggi precedenti — redigere, riassumere, classificare —, letta come testo, numero, sì o no, data o scelta in un elenco |
 | **Condizione** | più rami: viene preso il primo la cui condizione è soddisfatta, «Altrimenti» quando nessuna lo è; i rami poi si ricongiungono |
 | **Per ogni riga** | i passaggi che contiene, una volta per ogni riga di una tabella che soddisfa un filtro ([dettagli](#per-ogni-riga)) |
+| **Elimina una riga** | la riga che ha attivato il trigger, o quella che un passaggio ha trovato — va nel cestino |
+| **Contare e sommare** | il numero di righe di un filtro, la loro somma, la loro media, il loro minimo o massimo, da citare o verificare in seguito |
+| **Genera un PDF** | il [documento](/basedb/it/fonctionnalites/documents/) di una riga, salvato in un campo File o allegato a un’email |
+| **Attendi** | una durata, oppure finché non arriva la data di un campo ([dettagli](#attendi)) |
+| **Prova** | dei passaggi, e altri da eseguire se uno di essi fallisce ([dettagli](#prova)) |
+| **Avvia un’automazione** | un’altra automazione del database, su una riga della sua tabella |
 
 Una ricerca che non trova nulla non ferma il flusso: i passaggi che dovevano modificare la sua
-riga vengono saltati. Per fare altro in questo caso, lo si verifica con una condizione — un ramo
-il cui filtro è vuoto viene preso non appena la ricerca ha trovato qualcosa.
+riga vengono saltati. Per fare altro in questo caso, **Se non viene trovata nessuna riga…**,
+sotto la ricerca, aggiunge una condizione che lo verifica.
+
+Una **condizione** verifica una riga con un filtro, oppure un **valore**: la risposta dell’IA, il
+codice di un webhook, un totale — «`{{e2.reponse}}` è uguale a Urgente», «`{{e3.somme.montant}}`
+è maggiore o uguale a 1000». I numeri si confrontano come numeri, i testi senza accenti né
+maiuscole.
 
 ## Per ogni riga
 
@@ -80,6 +99,61 @@ Oltre il limite, le righe restanti attendono la prossima esecuzione, che lo segn
 fai uscire dal filtro quelle già trattate — una casella «relancée», una data — per
 trattarle tutte nel corso delle esecuzioni. Un ciclo non contiene un altro ciclo, e
 un’esecuzione si ferma dopo due minuti.
+
+## Attendi
+
+Il passaggio **Attendi** mette l’esecuzione in pausa — tre ore, due giorni — oppure finché non
+arriva la data di un campo di una riga, con uno scarto e un’ora: «il giorno prima della scadenza,
+alle 9». L’esecuzione appare **In pausa** nella tab **Esecuzioni**, con la data della sua ripresa.
+
+Riprende al passaggio successivo **rileggendo** le sue righe: «tre giorni dopo l’invio del
+preventivo, se non è ancora stato accettato, sollecitare» si scrive **Attendi** 3 giorni, poi una
+condizione sullo stato del preventivo, così com’è quel giorno. Disattivare l’automazione ferma
+le esecuzioni in pausa; un’attesa non si inserisce né in un ciclo né in un blocco **Prova**, e
+dura al massimo un anno.
+
+## Prova
+
+Il blocco **Prova** ha due rami. Il primo viene eseguito; se uno dei suoi passaggi fallisce, il
+flusso continua con il secondo, **In caso di errore**, che cita l’errore — `{{e4.erreur}}`, il
+codice, e `{{e4.etape}}`, il passaggio —, poi riprende dopo il blocco. Utile per avvisare
+qualcuno quando un servizio non risponde, senza fermare tutto.
+
+Più semplicemente: un webhook può **riprovare** da solo fino a tre volte dopo un guasto del
+servizio, e un ciclo può **continuare** nonostante una riga in errore.
+
+## Un PDF e un’email
+
+**Genera un PDF** crea il documento di una riga — con un [modello di
+documento](/basedb/it/fonctionnalites/documents/) della sua tabella, o la scheda di tutti i suoi
+campi — e può salvarlo in un campo File. **Invia un’email** può poi allegarlo, con i file di un
+campo File o Immagine:
+
+- un’email **a ciascuno**, oppure **una sola a tutti**, con destinatari **in copia**;
+- un messaggio in **testo formattato** — grassetto, elenchi, link — che cita la riga;
+- un indirizzo di **risposta**: il tuo per impostazione predefinita, o quello di un campo E-mail;
+- fino a 50 destinatari, 10 allegati e 15 MB.
+
+«Quando un preventivo passa ad Accettato, invia la fattura al cliente, la contabilità in copia»:
+**Una riga entra in un filtro** `statut eq "accepte"`, **Genera un PDF** con il modello Fattura,
+**Invia un’email** al campo E-mail del cliente, con la fattura allegata.
+
+## Un servizio che chiama basedb
+
+Con il trigger **Un webhook viene ricevuto**, l’automazione ha un proprio indirizzo segreto, da
+fornire al software che deve avviarla — un negozio online, un modulo esterno, uno strumento di
+automazione:
+
+```bash
+curl -X POST "https://basedb.example.com/api/v1/hooks/<secret>" \
+  -H "content-type: application/json" \
+  -d '{"client": {"nom": "Dupont"}, "total": 120}'
+```
+
+I passaggi citano ciò che ha inviato: `{{trigger.client.nom}}`, `{{trigger.total}}`; un modulo si
+legge allo stesso modo, un testo con `{{trigger.texte}}`. L’indirizzo si copia dalle
+impostazioni del trigger; **Cambia indirizzo** lo sostituisce, e il vecchio cessa
+immediatamente. Una chiamata riceve `202`, l’automazione parte entro un secondo.
 
 ## Chiamare un servizio
 
@@ -136,6 +210,11 @@ a ogni testo:
 - `{{e4.reponse}}`: la risposta del passaggio IA `e4`;
 - `{{e5.client}}` nel ciclo `e5`, la riga del giro; `{{e5.nombre}}` dopo di esso, il numero
   di righe percorse;
+- `{{e6.nombre}}`, `{{e6.somme.montant}}`, `{{e6.moyenne.montant}}`, `{{e6.max.echeance}}`: ciò
+  che ha contato il passaggio `e6`;
+- `{{e7.erreur}}`, `{{e7.etape}}`: l’errore che ha intercettato il blocco **Prova** `e7`;
+- `{{e8.nom}}`: il nome del PDF del passaggio `e8`;
+- `{{trigger.client.nom}}`: ciò che ha inviato un webhook in ingresso;
 - `{{_maintenant}}`: l’istante dell’esecuzione.
 
 Un valore composto da una sola citazione passa il valore stesso: una relazione, una persona, una
@@ -184,18 +263,17 @@ si annullano come le altre.
 ## Limiti
 
 - Ciò che scrive un’automazione non ne attiva nessun’altra: ciò che deve concatenarsi va scritto
-  in un unico flusso.
+  in un unico flusso, oppure con **Avvia un’automazione**, al massimo tre livelli.
 - Una ricerca restituisce una riga, la prima; un ciclo ne percorre 200 al massimo per
-  esecuzione, e il primo passaggio che fallisce lo ferma. Nessuna attesa («tre giorni dopo»).
-- Niente script. Un’email parte come testo semplice, una per destinatario — venti al massimo
-  per passaggio —, tramite il [server di invio](/basedb/it/hebergement/variables/#email)
-  dell’istanza; una risposta arriva alla persona che possiede l’automazione.
-- Una condizione verifica una riga: per prendere un ramo in base alla risposta dell’IA, scrivila
-  prima in un campo della riga.
+  esecuzione. Un’esecuzione dura al massimo due minuti, attese escluse.
+- Niente script. Un’email parte tramite il [server di invio](/basedb/it/hebergement/variables/#email)
+  dell’istanza.
 - Un [modello di database](/basedb/it/fonctionnalites/modeles/) include solo le automazioni senza
   ricerca, ciclo, condizione né passaggio IA, e mai un webhook.
 - Un webhook non segue reindirizzamenti e attende 10 secondi al massimo; una risposta diversa da
-  2xx fa fallire il passaggio.
+  2xx fa fallire il passaggio, dopo i suoi tentativi.
+- Una data che arriva viene cercata ogni minuto; contano solo quelle arrivate dopo il salvataggio
+  dell’automazione.
 - 100 esecuzioni all’ora per automazione; una scadenza oraria mancata viene recuperata
   una sola volta.
 - Il ritardo tra la scrittura e l’azione è dell’ordine del secondo.

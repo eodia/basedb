@@ -78,5 +78,6 @@ programma venga eseguito.
 
 Un **token di integrazione** si crea nell’interfaccia: menu **⋯** del database → **API e
 agenti** → **Token API e MCP…**. Apre un database, legge le sue righe, le scrive se è stato
-creato in scrittura, non ha mai più permessi della persona che l’ha creato, e **non elimina
-mai**: `delete()` richiede i permessi di una sessione.
+creato in scrittura, non ha mai più permessi della persona che l’ha creato, ed **elimina solo se
+è stato creato per questo** («Lettura, scrittura ed eliminazione»): altrimenti `delete()` viene
+rifiutato.

@@ -8,11 +8,15 @@
  * which the editor's schema understands and a person cannot type half of.
  */
 
-/** A variable as stored: a physical name between double braces. */
-const STORED = /\{\{\s*([a-z0-9_]+)\s*\}\}/g
+/**
+ * A variable as stored: a physical name between double braces — or, in an automation's
+ * mail, a dotted citation: a step's value `{{e2.champ}}`, a key of a request received
+ * `{{trigger.client.nom}}`.
+ */
+const STORED = /\{\{\s*([a-z0-9_]+(?:\.[A-Za-z0-9_]+)*)\s*\}\}/g
 
 /** A pill as the editor writes it back. */
-const PILL = /<span[^>]*data-variable="([a-z0-9_]+)"[^>]*>[\s\S]*?<\/span>/g
+const PILL = /<span[^>]*data-variable="([a-z0-9_]+(?:\.[A-Za-z0-9_]+)*)"[^>]*>[\s\S]*?<\/span>/g
 
 /** Stored → editable: each `{{nom}}` becomes a pill the editor parses as one atom. */
 export function variablesToPills(html: string): string {

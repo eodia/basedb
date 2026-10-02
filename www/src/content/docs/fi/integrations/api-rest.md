@@ -14,12 +14,15 @@ ovat fyysiset nimet – samat, jotka luet myös SQL:ssä.
 ## Tunnus
 
 Käyttöliittymässä tietokannan **⋯**-valikko → **API ja agentit** → **API- ja MCP-tunnukset…**:
-siellä luodaan tähän tietokantaan rajattu **integraatiotunnus**, oletuksena vain luku -oikeuksin,
-kun olet ensin vahvistanut salasanasi. Se näytetään vain kerran; tallenna se
-ympäristömuuttujaan.
+henkilö, jolla on tietokantaan tai sen projektiin **Hallintaoikeus**-taso, luo siellä tähän
+tietokantaan rajatun **integraatiotunnuksen**, oletuksena vain luku -oikeuksin, kun salasana on
+ensin vahvistettu – tili, jolla ei ole salasanaa ja joka kirjautuu tunnistautumispalvelun
+kautta, ei voi tehdä sitä vielä. Se näytetään vain kerran; tallenna se ympäristömuuttujaan.
 
-Tunnus lukee, luo ja muokkaa, jos se on luotu kirjoitusoikeuksin, **ei koskaan poista**, eikä
-sillä ole koskaan enempää oikeuksia kuin sen luoneella henkilöllä.
+Tunnus lukee; se luo ja muokkaa, jos se on luotu kirjoitusoikeuksin, ja **poistaa, jos se on luotu
+tätä varten** — oikeudet ”Luku, kirjoitus ja poisto” —, paitsi riviä, jonka kaskadoitu viittaus
+veisi mukanaan muiden rivien kanssa. Sillä ei ole koskaan enempää oikeuksia kuin sen luoneella
+henkilöllä.
 
 ```bash
 export BASEDB_TOKEN=bdb_…

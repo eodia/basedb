@@ -29,8 +29,8 @@ Creați în n8n o dată de conectare **basedb API**:
 | **Token** | un **token de integrare**: meniul **⋯** al bazei → **API și agenți** → **Tokenuri API și MCP…** |
 
 Un token deschide **o singură** bază. Citește rândurile ei, le scrie dacă a fost creat cu drept
-de scriere, nu are niciodată mai multe permisiuni decât persoana care l-a creat, și **nu șterge
-niciodată**. La salvare, n8n încearcă conexiunea și spune dacă tokenul este refuzat.
+de scriere, și nu are niciodată mai multe permisiuni decât persoana care l-a creat. La salvare,
+n8n încearcă conexiunea și spune dacă tokenul este refuzat.
 
 ## Citire și scriere: nodul basedb
 
@@ -57,9 +57,9 @@ basedb și ce înseamnă el.
 - O **relație** se citește `{ "id": …, "display": … }` și se scrie prin `_id`-ul rândului legat.
 - **Create or Update** nu modifică niciodată mai multe rânduri: dacă mai multe au aceste
   valori, nodul se oprește în loc să ghicească.
-- Fără operația **Delete**: un token nu șterge. Pentru a retrage rânduri, marcați-le (un statut
-  „Arhivat”), sau confiați ștergerea unei
-  [automatizări](/basedb/ro/fonctionnalites/automatisations/).
+- Fără operația **Delete**: pentru a retrage rânduri, marcați-le (un statut „Arhivat”),
+  confiați ștergerea unei [automatizări](/basedb/ro/fonctionnalites/automatisations/), sau
+  apelați [API-ul REST](/basedb/ro/integrations/api-rest/) cu un token creat pentru ștergere.
 
 ## Lansarea unui flux de lucru
 

@@ -79,4 +79,5 @@ programma draait.
 Een **integratietoken** maak je aan in de interface: menu **⋯** van de database → **API en
 agents** → **API- en MCP-tokens…**. Het opent één database, leest haar rijen, schrijft ze als
 het met schrijfrechten is aangemaakt, heeft nooit meer rechten dan de persoon die het heeft
-aangemaakt, en **verwijdert nooit**: `delete()` vraagt de rechten van een sessie.
+aangemaakt, en **verwijdert alleen als het daarvoor is aangemaakt** (“Lezen, schrijven en
+verwijderen”): anders wordt `delete()` geweigerd.

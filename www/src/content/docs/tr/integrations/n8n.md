@@ -28,9 +28,9 @@ n8n'de bir **basedb API** kimlik bilgisi oluşturun:
 | **Workspace** | çalışma alanının referansı, API adreslerindeki (`/api/v1/<espace>/…`) referans: `t4z56fq`, kurulum `BASEDB_TENANT`'ı belirlemediyse |
 | **Token** | bir **entegrasyon token'ı**: veritabanının **⋯** menüsü → **API ve ajanlar** → **API ve MCP token'ları…** |
 
-Bir token **bir** veritabanını açar. Satırlarını okur, yazma yetkisiyle oluşturulduysa yazar, onu
-oluşturan kişiden asla daha fazla izne sahip olmaz ve **asla silmez**. Kaydedilirken n8n bağlantıyı
-dener ve token reddedilirse bunu bildirir.
+Bir token **bir** veritabanını açar. Satırlarını okur, yazma yetkisiyle oluşturulduysa yazar ve
+onu oluşturan kişiden asla daha fazla izne sahip olmaz. Kaydedilirken n8n bağlantıyı dener ve
+token reddedilirse bunu bildirir.
 
 ## Okumak ve yazmak: basedb düğümü
 
@@ -57,9 +57,9 @@ durdurur.
 - Bir **ilişki** `{ "id": …, "display": … }` olarak okunur ve bağlı satırın `_id`'siyle yazılır.
 - **Create or Update** hiçbir zaman birden çok satırı değiştirmez: birden çoğu bu değerleri
   taşıyorsa, düğüm tahmin etmek yerine durur.
-- **Delete** işlemi yok: bir token silmez. Satırları kaldırmak için onları işaretleyin (bir
-  “Arşivlendi” durumu), ya da silmeyi bir
-  [otomasyona](/basedb/tr/fonctionnalites/automatisations/) bırakın.
+- **Delete** işlemi yok: satırları kaldırmak için onları işaretleyin (bir “Arşivlendi” durumu),
+  silmeyi bir [otomasyona](/basedb/tr/fonctionnalites/automatisations/) bırakın, ya da silmek
+  için oluşturulmuş bir token'la [REST API](/basedb/tr/integrations/api-rest/)'yi çağırın.
 
 ## Bir iş akışı başlatmak
 

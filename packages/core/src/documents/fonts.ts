@@ -11,6 +11,10 @@ import * as fontkit from 'fontkit'
  * Noto Sans CJK (`/usr/share/fonts`, Debian's packages); `BASEDB_PDF_FONTS` names a folder
  * of one's own; on a developer's machine, the system's faces serve. With none, the PDF's
  * own Helvetica sets what it can, and a character it cannot is written « ? ».
+ *
+ * A template may ask for a serif: Noto Serif when the folder of one's own or the system
+ * has it, else the Times every PDF reader carries — which writes Western European text,
+ * and leaves to the Latin face a run it cannot write whole.
  */
 
 export interface FontFace {
@@ -19,13 +23,34 @@ export interface FontFace {
   readonly family?: string
 }
 
-export interface FontSet {
+export interface FontStyles {
   readonly regular: FontFace
   readonly bold: FontFace
   readonly italic: FontFace
   readonly boldItalic: FontFace
+}
+
+export interface FontSet extends FontStyles {
   /** For what the Latin face lacks, tried in order: each in a regular and a bold weight. */
   readonly fallbacks: ReadonlyArray<{ readonly regular: FontFace; readonly bold: FontFace }>
+  /** An embedded serif, when one is found; without it, the PDF's own Times. */
+  readonly serif?: FontStyles | null
+}
+
+const NOTO_SERIF = [
+  'NotoSerif-Regular.ttf',
+  'NotoSerif-Bold.ttf',
+  'NotoSerif-Italic.ttf',
+  'NotoSerif-BoldItalic.ttf',
+] as const
+
+/** Noto Serif, in the folder of one's own or Debian's. */
+function serifIn(folder: string | undefined): FontStyles | null {
+  for (const dir of [...(folder ? [folder] : []), '/usr/share/fonts/truetype/noto']) {
+    const found = latinIn(dir, NOTO_SERIF)
+    if (found !== null) return found
+  }
+  return null
 }
 
 /** The CJK face whose glyph shapes are the reader's, by the document's language. */
@@ -39,7 +64,7 @@ const exists = (file: string) => {
   }
 }
 
-function latinIn(dir: string, names: readonly [string, string, string, string]) {
+function latinIn(dir: string, names: readonly [string, string, string, string]): FontStyles | null {
   const files = names.map((n) => path.join(dir, n))
   return files.every(exists)
     ? {
@@ -79,7 +104,7 @@ export function findFonts(locale: string, folder = process.env.BASEDB_PDF_FONTS)
     ['/usr/share/fonts/truetype/noto', '/usr/share/fonts/opentype/noto'],
   ] as const) {
     const latin = latinIn(latinDir, noto)
-    if (latin !== null) return { ...latin, fallbacks: cjk(cjkDir) }
+    if (latin !== null) return { ...latin, fallbacks: cjk(cjkDir), serif: serifIn(folder) }
   }
 
   // A developer's machine: the system's own faces.
@@ -105,6 +130,7 @@ export function findFonts(locale: string, folder = process.env.BASEDB_PDF_FONTS)
       fallbacks: order.flatMap(([regular, bold]) =>
         regular === null || regular === undefined ? [] : [{ regular, bold: bold ?? regular }],
       ),
+      serif: serifIn(folder),
     }
   }
   const mac = '/System/Library/Fonts/Supplemental'
@@ -119,6 +145,7 @@ export function findFonts(locale: string, folder = process.env.BASEDB_PDF_FONTS)
     return {
       ...macArial,
       fallbacks: exists(unicode) ? [{ regular: { path: unicode }, bold: { path: unicode } }] : [],
+      serif: serifIn(folder),
     }
   }
   return null
@@ -154,6 +181,16 @@ export function covers(face: FontFace, text: string): boolean {
 
 /** What the built-in Helvetica can write: Windows-1252, the rest as « ? ». */
 const WIN_ANSI_EXTRAS = new Set('€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ')
+
+/** Whether the PDF's own faces — Helvetica, Times — write every character of `text`. */
+export function winAnsiCovers(text: string): boolean {
+  for (const ch of text) {
+    const cp = ch.codePointAt(0) as number
+    if (cp >= 0x80 && cp <= 0x9f) return false
+    if (cp > 0xff && !WIN_ANSI_EXTRAS.has(ch)) return false
+  }
+  return true
+}
 
 export function winAnsi(text: string): string {
   let out = ''

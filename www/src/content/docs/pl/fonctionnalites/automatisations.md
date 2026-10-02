@@ -1,6 +1,6 @@
 ---
 title: Automatyzacje
-description: Gdy wiersz się zmienia, o stałej porze lub jednym kliknięciem – edytuj, utwórz, znajdź, powtórz na każdym wierszu, rozgałęź, zapytaj AI, powiadom, wyślij e-mail, wywołaj usługę, napisz na Slacku.
+description: Gdy wiersz się zmienia, trafia do filtra lub z niego wypada, gdy nadchodzi data, o stałej porze, jednym kliknięciem lub wywołaniem – edytuj, utwórz, znajdź, policz, powtórz, rozgałęź, zaczekaj, spróbuj, zapytaj AI, zrób PDF, powiadom, wyślij e-mail, wywołaj usługę.
 ---
 
 Automatyzacja mówi **kiedy**, **jeśli** i **wtedy**: gdy zadanie przechodzi do stanu „Fait”,
@@ -8,7 +8,8 @@ zanotuj godzinę; gdy przychodzi negatywna opinia, powiadom osobę odpowiedzialn
 Slacku; w każdy poniedziałek o 9:00 utwórz wiersz cotygodniowego spotkania zespołu. A gdy jedna
 akcja nie wystarcza, automatyzacja podąża za **przepływem**: znajduje wiersz, wybiera tę lub
 inną gałąź w zależności od tego, co w nim jest, powtarza kroki na każdym wierszu, który
-odpowiada filtrowi, wykorzystuje w kroku to, co poprzedni krok znalazł lub zapisał.
+odpowiada filtrowi, wykorzystuje w kroku to, co poprzedni krok znalazł lub zapisał, **czeka**
+trzy dni przed ponagleniem, wysyła **PDF** w załączniku.
 
 Otwiera się je z **Automatyzacje**, w bloku otwartej bazy na dole paska bocznego; wymagają
 poziomu **Zarządzanie**.
@@ -17,9 +18,11 @@ poziomu **Zarządzanie**.
 
 ## Przepływ
 
-Przepływ rysuje się z góry na dół: wyzwalacz, a potem każdy krok. **+** na linii dodaje krok w
-tym miejscu; karta otwiera swoje ustawienia po prawej. Prosta automatyzacja – wyzwalacz i jedna
-akcja – mieści się na dwóch kartach i konfiguruje się ją jak dawniej.
+Przepływ rysuje się z góry na dół: wyzwalacz, a potem każdy krok. **+** na linii otwiera listę
+kroków, podzielonych na kategorie — Wiersze, Komunikacja, Dokumenty, AI, Logika — z
+wyszukiwaniem, i dodaje w tym miejscu wybrany krok; karta otwiera swoje ustawienia po prawej.
+Prosta automatyzacja – wyzwalacz i jedna akcja – mieści się na dwóch kartach i konfiguruje się
+ją jak dawniej.
 
 ## Kiedy
 
@@ -29,6 +32,10 @@ akcja – mieści się na dwóch kartach i konfiguruje się ją jak dawniej.
 | **Wiersz został zmieniony** | tabela oraz, w razie potrzeby, tylko obserwowane pola |
 | **O stałej porze** | co godzinę, codziennie lub co tydzień, o wybranej godzinie i w wybranej strefie czasowej |
 | **Kliknięto przycisk** | [pole Przycisk](/basedb/pl/fonctionnalites/tables-et-champs/#przycisk) tabeli |
+| **Wiersz jest usuwany** | tabela; kroki przytaczają wiersz taki, jaki był |
+| **Wiersz trafia do filtra** | tabela i filtr: automatyzacja uruchamia się, gdy wiersz wchodzi do filtra, i uruchamia się znowu dopiero wtedy, gdy najpierw z niego wyjdzie — „faktura staje się zaległa”, nie „zaległa faktura jest zmieniana” |
+| **Nadchodzi data** | pole Data tabeli, przesunięcie — trzy dni wcześniej, tego samego dnia, tydzień później — i godzina: ponaglenia przed terminem, rocznice umowy |
+| **Odebrano webhook** | nic: automatyzacja otrzymuje własny adres, który wywołuje inne oprogramowanie ([szczegóły](#usługa-wywołująca-basedb)) |
 
 Wyzwalacz na wierszach widzi **wszystkie** zapisy: z interfejsu, API, agenta, formularza
 udostępnionego, a nawet z bezpośredniego SQL – automatyzacje startują z historii, która
@@ -43,7 +50,8 @@ oznaczone.
 
 ## Wtedy
 
-Do trzydziestu kroków, po kolei; pierwszy, który się nie powiedzie, zatrzymuje kolejne.
+Do czterdziestu kroków, po kolei; pierwszy, który się nie powiedzie, zatrzymuje kolejne — poza
+blokiem **Spróbuj** ([szczegóły](#spróbuj)).
 
 | Krok | Co robi |
 |---|---|
@@ -57,10 +65,21 @@ Do trzydziestu kroków, po kolei; pierwszy, który się nie powiedzie, zatrzymuj
 | **Zapytaj AI** | odpowiedź [dostawcy AI](/basedb/pl/fonctionnalites/ia/) na polecenie, które przytacza wiersz i poprzednie kroki – napisz, streść, sklasyfikuj –, odczytaną jako tekst, liczba, tak lub nie, data albo wybór z listy |
 | **Warunek** | kilka gałęzi: wybierana jest pierwsza, której warunek jest spełniony, a „W przeciwnym razie”, gdy żaden nie jest; gałęzie potem się łączą |
 | **Dla każdego wiersza** | kroki, które zawiera, raz dla każdego wiersza tabeli spełniającego filtr ([szczegóły](#dla-każdego-wiersza)) |
+| **Usuń wiersz** | wiersz, który wyzwolił automatyzację, albo ten, który znalazł krok — trafia do kosza |
+| **Licz i sumuj** | liczbę wierszy filtra, ich sumę, średnią, minimum lub maksimum, do przytoczenia albo sprawdzenia później |
+| **Generuj PDF** | [dokument](/basedb/pl/fonctionnalites/documents/) wiersza, zapisany w polu Plik albo załączony do e-maila |
+| **Czekaj** | czas trwania, albo do daty z pola ([szczegóły](#czekaj)) |
+| **Spróbuj** | kroki, i inne do wykonania, jeśli jeden z nich się nie powiedzie ([szczegóły](#spróbuj)) |
+| **Uruchom automatyzację** | inną automatyzację bazy, na wierszu jej tabeli |
 
 Wyszukiwanie, które niczego nie znajduje, nie zatrzymuje przepływu: kroki, które miały zmienić
-znaleziony wiersz, są pomijane. Aby w takim przypadku zrobić coś innego, sprawdza to warunek –
-gałąź z pustym filtrem jest wybierana, gdy tylko wyszukiwanie coś znalazło.
+znaleziony wiersz, są pomijane. Aby w takim przypadku zrobić coś innego, **Jeśli nie znaleziono
+żadnego wiersza…**, pod wyszukiwaniem, dodaje warunek, który to sprawdza.
+
+**Warunek** sprawdza wiersz za pomocą filtra, albo **wartość**: odpowiedź AI, kod webhooka,
+sumę — „`{{e2.reponse}}` jest równe Pilne”, „`{{e3.somme.montant}}` jest większe lub równe
+1000”. Liczby porównuje się jako liczby, a teksty — bez rozróżniania wielkości liter i znaków
+diakrytycznych.
 
 ## Dla każdego wiersza
 
@@ -81,6 +100,61 @@ Powyżej limitu pozostałe wiersze czekają na kolejne uruchomienie, które to s
 filtra te już przetworzone — pole wyboru „Relancée”, datę — aby przetworzyć je wszystkie w
 kolejnych uruchomieniach. Pętla nie zawiera innej pętli, a uruchomienie zatrzymuje się po
 dwóch minutach.
+
+## Czekaj
+
+Krok **Czekaj** wstrzymuje uruchomienie — trzy godziny, dwa dni — albo do daty z pola wiersza,
+z przesunięciem i godziną: „dzień przed terminem, o 9:00”. Uruchomienie pojawia się jako
+**Wstrzymane** w zakładce **Uruchomienia**, z datą swojego wznowienia.
+
+Wznawia się od kolejnego kroku, **odczytując na nowo** swoje wiersze: „trzy dni po wysłaniu
+wyceny, jeśli wciąż nie jest zaakceptowana, ponaglić” zapisuje się jako **Czekaj** 3 dni, a
+potem warunek na statusie wyceny, taki, jaki jest tego dnia. Wyłączenie automatyzacji zatrzymuje
+wstrzymane uruchomienia; oczekiwanie nie umieszcza się ani w pętli, ani w bloku **Spróbuj**, i
+trwa najwyżej rok.
+
+## Spróbuj
+
+Blok **Spróbuj** ma dwie gałęzie. Pierwsza jest wykonywana; jeśli jeden z jej kroków się nie
+powiedzie, przepływ kontynuuje drugą, **W razie niepowodzenia**, która przytacza niepowodzenie
+— `{{e4.erreur}}`, kod, i `{{e4.etape}}`, krok —, a potem wraca po bloku. Dzięki temu można
+powiadomić kogoś, gdy usługa nie odpowiada, bez zatrzymywania wszystkiego.
+
+Prościej: webhook może sam **spróbować ponownie** do trzech razy po awarii usługi, a pętla
+może **kontynuować** mimo wiersza w niepowodzeniu.
+
+## PDF i e-mail
+
+**Generuj PDF** tworzy dokument wiersza — z [szablonu
+dokumentu](/basedb/pl/fonctionnalites/documents/) jego tabeli, albo kartą wszystkich jego pól —
+i może go zapisać w polu Plik. **Wyślij e-mail** może go potem załączyć, wraz z plikami z pola
+Plik albo Obraz:
+
+- e-mail **do każdego**, albo **jeden do wszystkich**, z adresatami **w kopii**;
+- wiadomość w **tekście sformatowanym** — pogrubienie, listy, linki — która przytacza wiersz;
+- adres **odpowiedzi**: twój domyślnie, albo z pola E-mail;
+- do 50 odbiorców, 10 załączników i 15 MB.
+
+„Gdy wycena przechodzi do statusu Zaakceptowana, wyślij fakturę do klienta, z księgowością w
+kopii”: **Wiersz trafia do filtra** `statut eq "accepte"`, **Generuj PDF** z szablonem
+Faktura, **Wyślij e-mail** do pola E-mail klienta, z załączoną fakturą.
+
+## Usługa wywołująca basedb
+
+Z wyzwalaczem **Odebrano webhook** automatyzacja ma własny, tajny adres, który trzeba podać
+oprogramowaniu, które ma ją uruchamiać — sklepowi internetowemu, zewnętrznemu formularzowi,
+narzędziu do automatyzacji:
+
+```bash
+curl -X POST "https://basedb.example.com/api/v1/hooks/<secret>" \
+  -H "content-type: application/json" \
+  -d '{"client": {"nom": "Dupont"}, "total": 120}'
+```
+
+Kroki przytaczają to, co zostało wysłane: `{{trigger.client.nom}}`, `{{trigger.total}}`;
+formularz odczytuje się podobnie, tekst przez `{{trigger.texte}}`. Adres kopiuje się z ustawień
+wyzwalacza; **Zmień adres** go zamienia, a stary natychmiast przestaje działać. Wywołanie
+otrzymuje `202`, automatyzacja uruchamia się w ciągu sekundy.
 
 ## Wywołaj usługę
 
@@ -137,6 +211,11 @@ obok każdego tekstu:
 - `{{e4.reponse}}`: odpowiedź kroku AI `e4`;
 - `{{e5.client}}` w pętli `e5`, wiersz bieżącego przebiegu; `{{e5.nombre}}` po niej, liczba
   przetworzonych wierszy;
+- `{{e6.nombre}}`, `{{e6.somme.montant}}`, `{{e6.moyenne.montant}}`, `{{e6.max.echeance}}`: to,
+  co policzył krok `e6`;
+- `{{e7.erreur}}`, `{{e7.etape}}`: niepowodzenie, które przechwycił blok **Spróbuj** `e7`;
+- `{{e8.nom}}`: nazwa PDF-a z kroku `e8`;
+- `{{trigger.client.nom}}`: to, co wysłał przychodzący webhook;
 - `{{_maintenant}}`: chwila uruchomienia.
 
 Wartość złożona z jednego odwołania przekazuje samą wartość: relację, osobę, wybór – w ten
@@ -184,19 +263,17 @@ a jej zapisy można cofać jak wszystkie inne.
 ## Ograniczenia
 
 - To, co zapisuje automatyzacja, nie wyzwala żadnej innej: to, co ma następować po sobie,
-  zapisuje się w jednym przepływie.
+  zapisuje się w jednym przepływie, albo przez **Uruchom automatyzację**, najwyżej trzy poziomy.
 - Wyszukiwanie zwraca jeden wiersz, pierwszy; pętla przetwarza ich najwyżej 200 na
-  uruchomienie, a pierwszy krok, który się nie powiedzie, ją zatrzymuje. Nie ma oczekiwania
-  („trzy dni później”).
-- Bez skryptów. E-mail wychodzi jako zwykły tekst, jeden na odbiorcę – co najwyżej dwadzieścia
-  na krok –, przez [serwer wysyłki](/basedb/pl/hebergement/variables/#e-maile) instancji;
-  odpowiedź trafia do osoby, która ostatnio zapisała automatyzację.
-- Warunek sprawdza wiersz: aby wybrać gałąź w zależności od odpowiedzi AI, najpierw zapisz ją
-  w polu wiersza.
+  uruchomienie. Uruchomienie trwa najwyżej dwie minuty, nie licząc oczekiwań.
+- Bez skryptów. E-mail wychodzi przez [serwer wysyłki](/basedb/pl/hebergement/variables/#e-maile)
+  instancji.
 - [Szablon bazy](/basedb/pl/fonctionnalites/modeles/) zabiera tylko automatyzacje bez
   wyszukiwania, pętli, warunku i kroku AI, i nigdy webhook.
 - Webhook nie podąża za przekierowaniem i czeka najwyżej 10 sekund; odpowiedź inna niż 2xx
-  powoduje niepowodzenie kroku.
+  powoduje niepowodzenie kroku, po jego ponownych próbach.
+- Nadejście daty jest sprawdzane co minutę; liczą się tylko te, które nadeszły po zapisaniu
+  automatyzacji.
 - 100 uruchomień na godzinę na automatyzację; pominięty termin godzinowy jest nadrabiany tylko
   raz.
 - Opóźnienie między zapisem a akcją jest rzędu sekundy.

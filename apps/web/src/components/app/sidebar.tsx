@@ -377,6 +377,7 @@ export function Sidebar({
       <TokenDialog
         open={dialog.kind === 'mcp'}
         base={dialog.base}
+        hasPassword={user.hasPassword}
         onClose={() => setDialog(null)}
       />
       <WebhookDialog

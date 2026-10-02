@@ -1284,10 +1284,10 @@ export default {
 		agents: {
 			label: 'API REST · MCP · webhook',
 			title: 'I tuoi agenti IA accedono ai dati, {non alle chiavi di casa.}',
-			lead: 'Il server MCP dà dodici strumenti agli agenti; l’API REST, gli stessi dati ai tuoi programmi. Un unico punto di controllo dei permessi, gli stessi log.',
+			lead: 'Il server MCP dà quattordici strumenti agli agenti; l’API REST, gli stessi dati ai tuoi programmi. Un unico punto di controllo dei permessi, gli stessi log.',
 			bullets: [
 				'<strong>Un token per database</strong>, in sola lettura per impostazione predefinita, mai con più permessi della persona che l’ha creato.',
-				'<strong>Un agente non elimina nulla</strong> e non cambia la struttura: la propone, una persona approva.',
+				'<strong>Un agente elimina solo con il tuo consenso</strong>, una riga alla volta, e non cambia la struttura: la propone, una persona approva.',
 				'<strong>Una documentazione generata</strong> per ogni database, filtrata in base ai tuoi permessi, con la sua specifica OpenAPI 3.1.',
 				'<strong>Webhook</strong> firmati, ordinati e ritentati a ogni scrittura.',
 			],
@@ -1520,7 +1520,7 @@ export default {
 			},
 			agent: {
 				q: 'Come si collega un agente IA?',
-				a: 'Tramite il server MCP, con un token di integrazione limitato a un database, in sola lettura per impostazione predefinita. Un agente legge, crea e modifica righe secondo i suoi permessi; non elimina nulla e non cambia la struttura: la propone, e una persona approva.',
+				a: 'Tramite il server MCP, con un token di integrazione limitato a un database, in sola lettura per impostazione predefinita. Un agente legge, crea e modifica righe secondo i suoi permessi — e ne elimina, una alla volta, se il suo token è stato creato per questo; non cambia la struttura: la propone, e una persona approva.',
 			},
 			postgres: {
 				q: 'Quale versione di PostgreSQL serve?',
@@ -1547,6 +1547,47 @@ export default {
 		title: 'Cosa è cambiato in basedb',
 		intro: 'Il dettaglio di ogni modifica è nella <a href="https://github.com/eodia/basedb/commits/main">cronologia del repository</a>. Cosa arriverà dopo: la <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Agenti che eliminano, se lo permetti',
+				tag: 'Novità',
+				items: [
+					'<strong>Un terzo livello di token</strong>, «Lettura, scrittura ed eliminazione»: un programma elimina tramite l’API REST, un agente tramite il nuovo strumento <code>delete_record</code> — una riga alla volta, restituita nella risposta. <a href="/integrations/mcp/#eliminare-righe">Eliminare righe</a>',
+					'<strong>Tornare indietro</strong>: <code>restore_record</code> ripristina una riga eliminata con il suo identificativo; un’eliminazione che una relazione a cascata estenderebbe ad altre righe resta riservata all’interfaccia.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Token per chi gestisce un database',
+				tag: 'Novità',
+				items: [
+					'<strong>Il livello Gestione basta</strong>: concesso su un database o sul suo progetto, permette di creare i token di integrazione dei suoi database, senza essere amministratore. <a href="/integrations/api-rest/#un-token">Un token</a>',
+					'<strong>Altrimenti lo dice chiaramente</strong>: a chi legge o scrive senza gestire il database, la finestra dei token dice a chi rivolgersi; a un account senza password, perché non può ancora crearne uno.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automazioni che attendono, recuperano un errore e inviano PDF',
+				tag: 'Novità',
+				items: [
+					'<strong>Quattro trigger in più</strong>: una riga viene eliminata; una riga entra in un filtro — «una fattura passa in ritardo»; una data arriva — tre giorni prima della scadenza, alle 9; un altro software chiama l’indirizzo segreto dell’automazione. <a href="/fonctionnalites/automatisations/#un-servizio-che-chiama-basedb">Un servizio che chiama basedb</a>',
+					'<strong>Attendi</strong> tre giorni, oppure finché non arriva la data di un campo, poi riprendi rileggendo la riga: «se non è ancora stato accettato, sollecitare». <a href="/fonctionnalites/automatisations/#attendi">Attendi</a>',
+					'<strong>Genera un PDF e invialo</strong>: il documento di una riga, salvato in un campo File o allegato a un’email — in testo formattato, con destinatari in copia e un indirizzo di risposta, a ciascuno o uno solo a tutti. <a href="/fonctionnalites/automatisations/#un-pdf-e-unemail">Un PDF e un’email</a>',
+					'<strong>Eliminare una riga, contare e sommare, avviare un’altra automazione</strong>; una condizione verifica anche un valore — la risposta dell’IA, un totale —, e una ricerca che non trova nulla ha un proprio ramo.',
+					'<strong>Prova</strong>: dei passaggi, e altri se uno fallisce; un webhook riprova da solo, un ciclo continua nonostante una riga in errore. <a href="/fonctionnalites/automatisations/#prova">Prova</a>',
+					'<strong>Tutti i passaggi a portata di mano</strong>: il <strong>+</strong> apre una finestra organizzata per categoria, con una ricerca, al posto di un menu che poteva essere troncato.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'Documenti PDF nei tuoi colori',
+				tag: 'Novità',
+				items: [
+					'<strong>Cinque punti di partenza</strong> — fattura, preventivo, scheda, attestato, pagina vuota —, costruiti con le colonne della tua tabella: numero, data, importi, foto, righe collegate. <a href="/fonctionnalites/documents/#creare-un-modello">Creare un modello</a>',
+					'<strong>Il tuo logo e i tuoi colori</strong>: un’intestazione con logo e contatti, un piè di pagina con note legali e numeri di pagina, un colore d’accento, caratteri con o senza grazie, una cornice attorno alla pagina. <a href="/fonctionnalites/documents/#intestazione-e-piè-di-pagina">Intestazione e piè di pagina</a>',
+					'<strong>Nuovi blocchi</strong>: un titolo su una fascia, un’immagine, due o tre colonne, un riepilogo imponibile/totale, una tabella con intestazione colorata, un separatore. Si trascinano per riordinarli, e l’anteprima segue ogni modifica. <a href="/fonctionnalites/documents/#il-contenuto-i-blocchi">I blocchi</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'Una connessione interrotta non ferma più basedb',
@@ -1931,8 +1972,8 @@ export default {
 						text: 'Copiare le viste SQL insieme alla struttura quando si creano o si confrontano ambienti, e nei modelli di database.',
 					},
 					loops: {
-						title: 'Attese nelle automazioni',
-						text: 'Attendere prima del passaggio successivo («tre giorni dopo»), e portare i flussi — condizioni, ricerche, cicli — nei modelli di database.',
+						title: 'Flussi completi nei modelli di database',
+						text: 'Portare i flussi di automazione — condizioni, ricerche, cicli, attese, PDF — nei modelli di database, che oggi conservano solo i passaggi semplici.',
 					},
 					textFormulas: {
 						title: 'Formule sul testo',

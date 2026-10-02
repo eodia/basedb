@@ -29,8 +29,8 @@ V n8n vytvořte přihlašovací údaj **basedb API**:
 | **Token** | **integrační token**: nabídka **⋯** databáze → **API a agenti** → **Tokeny API a MCP…** |
 
 Token otevírá **jednu** databázi. Čte její řádky, zapisuje je, pokud byl vytvořen pro zápis,
-nikdy nemá víc oprávnění než osoba, která ho vytvořila, a **nikdy nic neodstraňuje**. Při
-uložení n8n vyzkouší spojení a řekne, zda je token odmítnut.
+a nikdy nemá víc oprávnění než osoba, která ho vytvořila. Při uložení n8n vyzkouší spojení
+a řekne, zda je token odmítnut.
 
 ## Čtení a zápis: uzel basedb
 
@@ -58,8 +58,9 @@ zastaví uzel na kódu basedb a jeho významu.
   řádku.
 - **Create or Update** nikdy neupraví více řádků: pokud jich víc nese tyto hodnoty, uzel se
   zastaví, místo aby hádal.
-- Žádná operace **Delete**: token nic neodstraňuje. Pro vyřazení řádků je označte (stav
-  „Archivé“), nebo svěřte odstranění [automatizaci](/basedb/cs/fonctionnalites/automatisations/).
+- Žádná operace **Delete**: pro vyřazení řádků je označte (stav „Archivé“), svěřte odstranění
+  [automatizaci](/basedb/cs/fonctionnalites/automatisations/), nebo zavolejte
+  [REST API](/basedb/cs/integrations/api-rest/) s tokenem vytvořeným k odstranění.
 
 ## Spuštění workflow
 

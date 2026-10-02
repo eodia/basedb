@@ -54,6 +54,10 @@ export const ko: Catalog = {
     '관계를 기록하기 전에, 표시 값으로 행의 `_id`를 찾습니다.',
   'Créer une ligne.': '행을 생성합니다.',
   'Modifier les champs nommés d’une ligne.': '행의 지정된 필드를 수정합니다.',
+  'Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.':
+    '행을 삭제합니다. 삭제 권한으로 만들어진 토큰만 가능하며, 응답이 그 행을 돌려줍니다.',
+  'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
+    '`_id`로 삭제된 행을 기록에서 복원합니다.',
   'Proposer une table et ses premiers champs — une personne décide.':
     '테이블과 그 첫 필드들을 제안합니다 — 결정은 사람이 합니다.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
@@ -69,14 +73,17 @@ export const ko: Catalog = {
   'Lire une ligne par son `_id`': '`_id`로 행 읽기',
   'Trouver une ligne par sa valeur d’affichage, {field}': '표시 값으로 행 찾기, {field}',
   'Modifier une ligne': '행 수정',
+  'Supprimer une ligne — avec un jeton créé pour supprimer':
+    '행 삭제 — 삭제 권한으로 만들어진 토큰 필요',
+  'Ramener une ligne supprimée': '삭제된 행 복원',
   'Aucun outil ne vous est ouvert sur cette table.':
     '이 테이블에서 사용할 수 있는 도구가 없습니다.',
   'Un jeton que vous créez n’a jamais plus de droits que vous : ces outils sont un maximum.':
     '직접 만드는 토큰은 본인보다 많은 권한을 가질 수 없습니다. 이 도구들이 최대 범위입니다.',
   Outil: '도구',
   Pour: '용도',
-  'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.':
-    '행 삭제는 REST API와 인터페이스에서만 가능합니다. MCP 도구는 삭제를 지원하지 않습니다.',
+  'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
+    '에이전트는 “읽기, 쓰기 및 삭제”로 만들어진 토큰으로만 삭제할 수 있으며, 한 번에 한 행씩 삭제합니다. 삭제된 행은 `restore_record`나 기록을 통해 돌아옵니다.',
   '**Invisibles pour un agent :** {fields}. Pour lui, ces colonnes n’existent pas : il ne peut ni les lire, ni les filtrer, ni les écrire.':
     '**에이전트에게 보이지 않음:** {fields}. 에이전트에게 이 열은 존재하지 않으며, 읽거나 필터링하거나 쓸 수 없습니다.',
   'Arguments d’un appel': '호출 인자',
@@ -84,13 +91,13 @@ export const ko: Catalog = {
     '이 데이터베이스의 토큰을 만들려면 **관리** 권한이 필요하지만, 회원님에게는 이 권한이 없습니다. 데이터베이스를 관리하는 사람에게 요청하세요.',
   '<jeton>': '<token>',
   'Connecter un agent': '에이전트 연결',
-  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.':
-    'basedb의 **MCP 서버**는 이 데이터베이스를 AI 에이전트에게 엽니다 — Claude든 다른 MCP 클라이언트든 상관없습니다. 에이전트는 데이터베이스를 찾아보고 읽으며, 원하는 경우 행을 생성하고 수정할 수 있습니다. 이때 적용되는 권한은 REST API와 동일합니다.',
+  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.':
+    'basedb의 **MCP 서버**는 이 데이터베이스를 AI 에이전트에게 엽니다 — Claude든 다른 MCP 클라이언트든 상관없습니다. 에이전트는 데이터베이스를 찾아보고 읽으며, 원하는 경우 행을 생성, 수정, 삭제할 수 있습니다. 이때 적용되는 권한은 REST API와 동일합니다.',
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**이 데이터베이스는 에이전트에 열려 있지 않습니다.** 열리기 전까지는 어떤 토큰을 제시하더라도 어떤 도구도 이 데이터베이스를 볼 수 없습니다.',
   'Créer un jeton': '토큰 만들기',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    '인터페이스에서 데이터베이스의 “⋯” 메뉴 → **API 및 에이전트** → **API 및 MCP 토큰…**에서 **MCP** 액세스를 체크하세요. 토큰은 이 데이터베이스로 범위가 제한되며 기본적으로 **읽기 전용**이고, 쓰기 권한은 명시적으로 선택해야 합니다. 토큰은 한 번만 표시되며, 같은 화면에서 해지할 수 있습니다. **REST API**도 체크하면 같은 토큰을 프로그램에서도 사용할 수 있습니다(“인증” 참고).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    '인터페이스에서 데이터베이스의 “⋯” 메뉴 → **API 및 에이전트** → **API 및 MCP 토큰…**에서 **MCP** 액세스를 체크하세요. 토큰은 이 데이터베이스로 범위가 제한되며 기본적으로 **읽기 전용**이고, 쓰기 권한과 삭제 권한은 명시적으로 선택해야 합니다. 토큰은 한 번만 표시되며, 같은 화면에서 해지할 수 있습니다. **REST API**도 체크하면 같은 토큰을 프로그램에서도 사용할 수 있습니다(“인증” 참고).',
   'Garder le jeton hors de la configuration': '토큰을 설정 파일 밖에 두기',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     '토큰은 환경 변수 `BASEDB_TOKEN`에 저장하고, 클라이언트의 설정 파일에는 절대 넣지 마세요. 설정 파일은 버전 관리되고 동기화되며, 세션의 모든 프로그램이 읽을 수 있습니다.',
@@ -124,6 +131,8 @@ export const ko: Catalog = {
     '관계를 기록하려면: 대상 테이블에 `lookup_records`를 사용한 다음, 찾은 `_id`로 `create_record` 또는 `update_record`를 호출합니다.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     '스키마를 변경하려면: `propose_create_table` 또는 `propose_add_field`를 사용한 다음, `get_proposal`로 결정 상황을 확인합니다.',
+  'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
+    '삭제하려면: 먼저 `get_record`로 행을 확인한 다음 `delete_record`를 호출합니다 — 응답이 그 행을 돌려줍니다. `restore_record`로 다시 가져올 수 있습니다.',
   'Propositions de structure': '스키마 변경 제안',
   'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend dans la file « Propositions » de la base, où une personne qui peut modifier la structure l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.':
     '에이전트는 스키마를 직접 바꾸지 않고 **제안**만 합니다. 제안은 데이터베이스의 “에이전트 제안” 대기열에서 기다리며, 스키마를 수정할 수 있는 사람이 승인하거나 거부합니다. 결정이 없으면 24시간 후 만료됩니다. 승인되면 토큰을 만든 사람의 이름으로 적용되고 — 그 사람이 여전히 그럴 권한이 있는 경우에 한해 — 다른 변경 사항과 마찬가지로 기록에 나타납니다.',
@@ -132,8 +141,8 @@ export const ko: Catalog = {
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     '삭제, 이름 변경, 연쇄 관계는 제안할 수 없습니다(`MCP_CASCADE_FORBIDDEN`).',
   'Ce qui n’existe pas': '존재하지 않는 기능',
-  'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
-    '어떤 도구도 행을 삭제하거나 SQL을 실행하거나 권한·토큰을 관리하지 않습니다. 에이전트가 `delete_record`, `run_sql`… 같은 이름을 호출하면 대상 데이터베이스와 관계없이 `MCP_OPERATION_EXCLUDED`를 받습니다.',
+  'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
+    '어떤 도구도 여러 행을 한 번에 삭제하거나, 테이블이나 필드를 삭제하거나, SQL을 실행하거나, 권한·토큰을 관리하지 않습니다. 에이전트가 `delete_records`, `run_sql`… 같은 이름을 호출하면 대상 데이터베이스와 관계없이 `MCP_OPERATION_EXCLUDED`를 받습니다.',
   Bornes: '제한',
   '`limit` : 25 lignes par défaut, 100 au plus.': '`limit`: 기본값 25행, 최대 100행.',
   'Un filtre compte au plus 10 prédicats, combinés par ET ; un tri, au plus 3 champs.':
@@ -147,8 +156,8 @@ export const ko: Catalog = {
     '에이전트는 토큰을 만든 사람보다 많이 볼 수 없으며, 대개는 더 적게 봅니다.',
   '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.':
     '**권한**: 토큰의 권한이며, 호출할 때마다 만든 사람의 권한과 대조됩니다. 그 사람의 권한이 줄어들면 토큰의 권한도 함께 줄어들고, 계정이 비활성화되면 토큰도 응답을 멈춥니다.',
-  '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
-    '**읽기, 생성, 수정**만 가능하며 삭제는 불가능합니다. 읽기 전용 토큰은 모든 쓰기를 거부합니다(`TOKEN_READ_ONLY`).',
+  '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
+    '**읽기, 생성, 수정** — 그리고 그 목적으로 만들어진 토큰이 있다면 한 번에 한 행씩 삭제도 가능합니다. 읽기 전용 토큰은 모든 쓰기를 거부합니다(`TOKEN_READ_ONLY`).',
   '**Cette base** : ouverte aux agents.': '**이 데이터베이스**: 에이전트에 열려 있습니다.',
   '**Cette base** : **fermée aux agents** — aucun outil ne la voit.':
     '**이 데이터베이스**: **에이전트에 닫혀 있습니다** — 어떤 도구도 볼 수 없습니다.',
@@ -231,8 +240,8 @@ export const ko: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     '모든 데이터 경로는 `Authorization` 헤더에 **토큰**을 요구합니다. 세션 쿠키는 여기서 절대 허용되지 않습니다. 브라우저는 다른 사이트가 유발한 요청을 포함해 모든 요청에 쿠키를 보내기 때문입니다.',
   'Jeton d’intégration': '연동 토큰',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    '스크립트, 동기화, 다른 애플리케이션 등 프로그램은 `bdb_`로 시작하는 **연동 토큰**을 사용합니다. 이 토큰은 해당 데이터베이스에만 유효합니다. 읽기를 하며, 쓰기 권한으로 만들어졌다면 생성과 수정도 하지만 **절대 삭제하지 않고**, 만든 사람의 권한을 호출할 때마다 대조하여 그보다 많은 권한을 갖지 않습니다. 관리, SQL 콘솔, AI 기능은 사용할 수 없습니다.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    '스크립트, 동기화, 다른 애플리케이션 등 프로그램은 `bdb_`로 시작하는 **연동 토큰**을 사용합니다. 이 토큰은 해당 데이터베이스에만 유효합니다. 읽기를 하며, 쓰기 권한으로 만들어졌다면 생성과 수정도 하고, **그 목적으로 만들어진 경우에만 삭제**하며, 만든 사람의 권한을 호출할 때마다 대조하여 그보다 많은 권한을 갖지 않습니다. 관리, SQL 콘솔, AI 기능은 사용할 수 없습니다.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     '토큰을 만들려면: 데이터베이스의 “⋯” 메뉴 → **API 및 에이전트** → **API 및 MCP 토큰…**에서 **REST API** 액세스를 체크하세요. 토큰은 한 번만 표시됩니다.',
   Appel: '호출',

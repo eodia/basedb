@@ -67,12 +67,15 @@ import {
 } from './agent/describe.js'
 import {
   type AgentListRequest,
+  type AgentRowRequest,
   type AgentRows,
   type AgentWriteRequest,
   agentCreateRecord,
+  agentDeleteRecord,
   agentGetRecord,
   agentListRecords,
   agentLookupRecords,
+  agentRestoreRecord,
   agentUpdateRecord,
 } from './agent/records.js'
 import {
@@ -187,7 +190,12 @@ import {
   listAutomations,
   updateAutomation,
 } from './automations/catalog.js'
-import { requestRun, runAutomations, startAutomationWorker } from './automations/engine.js'
+import {
+  receiveHook,
+  requestRun,
+  runAutomations,
+  startAutomationWorker,
+} from './automations/engine.js'
 import { APPLICATION_VERSION } from './catalog/cache.js'
 import { type FormulaInput, setFormula } from './catalog/computed-fields.js'
 import {
@@ -366,6 +374,7 @@ import {
   proposeMigration,
   reclaimStaleMigrations,
 } from './ddl/migration.js'
+import { useDocumentStorage } from './documents/images.js'
 import { type RenderedDocument, renderDocument } from './documents/render.js'
 import {
   type DocumentTemplate,
@@ -586,7 +595,8 @@ export type {
   Schedule,
   TriggerKind,
 } from './automations/catalog.js'
-export { wireSteps } from './automations/catalog.js'
+export { wireSteps, wireTrigger } from './automations/catalog.js'
+export { HOOK_BYTES } from './automations/engine.js'
 export type { ButtonInput } from './catalog/fields.js'
 export type {
   InvitationPreview,
@@ -834,6 +844,7 @@ export type {
   AgentColumn,
   AgentListRequest,
   AgentPredicate,
+  AgentRowRequest,
   AgentRows,
   AgentWriteRequest,
   AgentWriteResult,
@@ -1243,6 +1254,10 @@ export interface Kernel {
     ctx: RequestContext,
     request: AgentWriteRequest & { readonly id: string },
   ): Promise<AgentWrite>
+  /** `delete_record` — for a token created to delete; the row comes back with the answer. */
+  agentDeleteRecord(ctx: RequestContext, request: AgentRowRequest): Promise<AgentWrite>
+  /** `restore_record` — a deleted row back under its own `_id`, from the history. */
+  agentRestoreRecord(ctx: RequestContext, request: AgentRowRequest): Promise<AgentWrite>
   /** The audit line of one agent call — the shape of its parameters, never their values. */
   recordAgentCall(ctx: RequestContext, call: AgentCall): Promise<void>
   createBase(
@@ -2310,6 +2325,11 @@ export interface Kernel {
   ): Promise<{ runId: string }>
   /** One pass of the automation worker, now; returns the runs handled. */
   runAutomations(options?: { readonly aiTransport?: ProviderTransport }): Promise<number>
+  /**
+   * A call to an automation's own address, from outside (chapter 17 §1.1): a run is queued
+   * with what was sent. An unknown address and a switched-off automation read the same.
+   */
+  receiveHook(request: { secret: string; payload: unknown }): Promise<{ runId: string }>
   /** Undoes a transaction of the caller's (chapter 16 §4); returns the undo's own. */
   undoTransaction(ctx: RequestContext, request: { transaction: string }): Promise<Undone>
   /** The comments of a row, oldest first (chapter 16 §1). */
@@ -2450,6 +2470,8 @@ export function startKernel(config: KernelConfig): Kernel {
   const storage = createFileStorage(
     config.files?.storage ?? { driver: 'local', directory: '.basedb/files' },
   )
+  // A document's pictures of image fields are read from it (chapter 21 §1.3).
+  useDocumentStorage(pools, storage)
   const files: FileDeps = {
     pools,
     storage,
@@ -2669,6 +2691,8 @@ export function startKernel(config: KernelConfig): Kernel {
     agentLookupRecords: (ctx, request) => agentLookupRecords(pools, ctx, request),
     agentCreateRecord: (ctx, request) => agentCreateRecord(pools, ctx, request),
     agentUpdateRecord: (ctx, request) => agentUpdateRecord(pools, ctx, request),
+    agentDeleteRecord: (ctx, request) => agentDeleteRecord(pools, ctx, request),
+    agentRestoreRecord: (ctx, request) => agentRestoreRecord(pools, ctx, request),
     recordAgentCall: (ctx, call) => recordAgentCall(pools, ctx, digestKey, call),
 
     login: (request) => login(pools, instanceKey(), request),
@@ -3099,7 +3123,7 @@ export function startKernel(config: KernelConfig): Kernel {
     restoreRecord: (ctx, request) => restoreRecord(pools, ctx, request),
     drainHistory: () => drainHistory(pools),
     deliverMails: () =>
-      deliverMails(pools, { mailer: config.mailer, publicUrl: config.publicUrl ?? null }),
+      deliverMails(pools, { mailer: config.mailer, publicUrl: config.publicUrl ?? null, storage }),
     undoTransaction: (ctx, request) => undoTransaction(pools, ctx, request),
     listTemplates: (ctx, locale) => listTemplates(pools, ctx, templates, locale),
     getTemplate: (ctx, key, locale) => getTemplate(pools, ctx, templates, key, locale),
@@ -3247,7 +3271,7 @@ export function startKernel(config: KernelConfig): Kernel {
     updateDocumentTemplate: (ctx, request) => updateDocumentTemplate(pools, ctx, request),
     deleteDocumentTemplate: (ctx, request) => deleteDocumentTemplate(pools, ctx, request),
     renderDocument: (ctx, request) => renderDocument(pools, ctx, request),
-    listAutomations: (ctx, request) => listAutomations(pools, ctx, request),
+    listAutomations: (ctx, request) => listAutomations(pools, ctx, request, instanceKey),
     createAutomation: (ctx, request) =>
       createAutomation(pools, ctx, webhookTargets, request, instanceKey),
     updateAutomation: (ctx, request) =>
@@ -3260,8 +3284,10 @@ export function startKernel(config: KernelConfig): Kernel {
         targets: webhookTargets,
         instanceKey,
         mailAvailable: config.mailer !== undefined,
+        files,
         ...(options?.aiTransport === undefined ? {} : { aiTransport: options.aiTransport }),
       }),
+    receiveHook: (request) => receiveHook(pools, request),
     listComments: (ctx, request) => listComments(pools, ctx, request),
     addComment: (ctx, request) => addComment(pools, ctx, request),
     editComment: (ctx, request) => editComment(pools, ctx, request),
@@ -3325,6 +3351,7 @@ export function startKernel(config: KernelConfig): Kernel {
           targets: webhookTargets,
           instanceKey,
           mailAvailable: config.mailer !== undefined,
+          files,
           ...(options?.aiTransport === undefined ? {} : { aiTransport: options.aiTransport }),
         },
         DRAIN_INTERVAL_MS,
@@ -3333,7 +3360,7 @@ export function startKernel(config: KernelConfig): Kernel {
       // The mail queue (chapter 16 §2.4): notifications left unread, automations' mails.
       stopMail = startMailLoop(
         pools,
-        { mailer: config.mailer, publicUrl: config.publicUrl ?? null },
+        { mailer: config.mailer, publicUrl: config.publicUrl ?? null, storage },
         5_000,
         (error) => console.error('envoi des courriels :', error),
       )

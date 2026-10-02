@@ -1287,10 +1287,10 @@ export default {
 		agents: {
 			label: 'API REST · MCP · webhooki',
 			title: 'Twoi agenci AI dostają dane, {a nie klucze do zamku.}',
-			lead: 'Serwer MCP daje agentom dwanaście narzędzi; API REST – te same dane twoim programom. Jeden punkt kontroli uprawnień, te same dzienniki.',
+			lead: 'Serwer MCP daje agentom czternaście narzędzi; API REST – te same dane twoim programom. Jeden punkt kontroli uprawnień, te same dzienniki.',
 			bullets: [
 				'<strong>Jeden token na bazę</strong>, domyślnie tylko do odczytu, nigdy z większymi uprawnieniami niż osoba, która go utworzyła.',
-				'<strong>Agent niczego nie usuwa</strong> i nie zmienia struktury: proponuje zmianę, a człowiek ją zatwierdza.',
+				'<strong>Agent usuwa tylko za twoją zgodą</strong>, jeden wiersz na raz, i nie zmienia struktury: proponuje zmianę, a człowiek ją zatwierdza.',
 				'<strong>Generowana dokumentacja</strong> dla każdej bazy, filtrowana według twoich uprawnień, ze specyfikacją OpenAPI 3.1.',
 				'<strong>Webhooki</strong> podpisane, uporządkowane i ponawiane przy każdym zapisie.',
 			],
@@ -1512,7 +1512,7 @@ export default {
 			},
 			agent: {
 				q: 'Jak łączy się agent AI?',
-				a: 'Przez serwer MCP, z tokenem integracji ograniczonym do jednej bazy, domyślnie tylko do odczytu. Agent czyta, tworzy i zmienia wiersze zgodnie ze swoimi uprawnieniami; niczego nie usuwa i nie zmienia struktury: proponuje zmianę, a człowiek ją zatwierdza.',
+				a: 'Przez serwer MCP, z tokenem integracji ograniczonym do jednej bazy, domyślnie tylko do odczytu. Agent czyta, tworzy i zmienia wiersze zgodnie ze swoimi uprawnieniami — a także je usuwa, po jednym na raz, jeśli jego token został do tego utworzony; nie zmienia struktury: proponuje zmianę, a człowiek ją zatwierdza.',
 			},
 			postgres: {
 				q: 'Jakiej wersji PostgreSQL potrzeba?',
@@ -1539,6 +1539,47 @@ export default {
 		title: 'Co zmieniło się w basedb',
 		intro: 'Szczegóły każdej zmiany są w <a href="https://github.com/eodia/basedb/commits/main">historii repozytorium</a>. Co dalej: <a href="/feuille-de-route/">plan rozwoju</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Agenci, którzy usuwają, jeśli im na to pozwolisz',
+				tag: 'Nowość',
+				items: [
+					'<strong>Trzeci poziom tokena</strong>, „Odczyt, zapis i usuwanie”: program usuwa przez API REST, agent przez nowe narzędzie <code>delete_record</code> — jeden wiersz na raz, zwracany w odpowiedzi. <a href="/integrations/mcp/#usuwanie-wierszy">Usuwanie wierszy</a>',
+					'<strong>Wycofanie się</strong>: <code>restore_record</code> przywraca usunięty wiersz pod jego identyfikatorem; usunięcie, które relacja kaskadowa rozciągnęłaby na inne wiersze, pozostaje zarezerwowane dla interfejsu.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Tokeny dla tego, kto zarządza bazą',
+				tag: 'Nowość',
+				items: [
+					'<strong>Poziom Zarządzanie wystarczy</strong>: nadany na bazie lub na jej projekcie, pozwala tworzyć tokeny integracji jej baz, bez bycia administratorem. <a href="/integrations/api-rest/#token">Token</a>',
+					'<strong>W przeciwnym razie mówi to jasno</strong>: osobie, która czyta lub zapisuje bez zarządzania bazą, okno tokenów mówi, do kogo się zwrócić; kontu bez hasła – czemu nie może go jeszcze utworzyć.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automatyzacje, które czekają, przechwytują niepowodzenia i wysyłają PDF-y',
+				tag: 'Nowość',
+				items: [
+					'<strong>Cztery nowe wyzwalacze</strong>: wiersz jest usuwany; wiersz trafia do filtra — „faktura staje się zaległa”; nadchodzi data — trzy dni przed terminem, o 9:00; inne oprogramowanie wywołuje tajny adres automatyzacji. <a href="/fonctionnalites/automatisations/#usługa-wywołująca-basedb">Usługa wywołująca basedb</a>',
+					'<strong>Czekaj</strong> trzy dni, albo do daty z pola, a potem wznów, odczytując wiersz na nowo: „jeśli wciąż nie jest zaakceptowana, ponaglić”. <a href="/fonctionnalites/automatisations/#czekaj">Czekaj</a>',
+					'<strong>Generuj PDF i wyślij go</strong>: dokument wiersza, zapisany w polu Plik albo załączony do e-maila — w tekście sformatowanym, z adresatami w kopii i adresem odpowiedzi, do każdego albo jednym do wszystkich. <a href="/fonctionnalites/automatisations/#pdf-i-e-mail">PDF i e-mail</a>',
+					'<strong>Usuń wiersz, licz i sumuj, uruchom inną automatyzację</strong>; warunek sprawdza też wartość — odpowiedź AI, sumę —, a wyszukiwanie, które niczego nie znajduje, ma własną gałąź.',
+					'<strong>Spróbuj</strong>: kroki, i inne, jeśli jeden się nie powiedzie; webhook sam próbuje ponownie, a pętla kontynuuje mimo wiersza w niepowodzeniu. <a href="/fonctionnalites/automatisations/#spróbuj">Spróbuj</a>',
+					'<strong>Wszystkie kroki w zasięgu ręki</strong>: <strong>+</strong> otwiera okno podzielone na kategorie, z wyszukiwaniem, zamiast menu, które mogło być obcięte.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'Dokumenty PDF w twoich kolorach',
+				tag: 'Nowość',
+				items: [
+					'<strong>Pięć punktów wyjścia</strong> — faktura, wycena, karta danych, zaświadczenie, pusta strona —, zbudowanych z kolumn twojej tabeli: numer, data, kwoty, zdjęcie, powiązane wiersze. <a href="/fonctionnalites/documents/#nowy-szablon">Nowy szablon</a>',
+					'<strong>Twoje logo i twoje kolory</strong>: nagłówek z logo i danymi kontaktowymi, stopka z informacjami prawnymi i numerami stron, kolor akcentu, czcionki szeryfowe albo bezszeryfowe, ramka wokół strony. <a href="/fonctionnalites/documents/#nagłówek-i-stopka">Nagłówek i stopka</a>',
+					'<strong>Nowe bloki</strong>: tytuł na banerze, obraz, dwie albo trzy kolumny, podsumowanie netto / brutto, tabela z kolorowym nagłówkiem, separator. Przeciąga się je, aby zmienić ich kolejność, a podgląd śledzi każdą zmianę. <a href="/fonctionnalites/documents/#zawartość-bloki">Bloki</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'Zerwane połączenie nie zatrzymuje już basedb',
@@ -1923,8 +1964,8 @@ export default {
 						text: 'Kopiowanie widoków SQL razem ze strukturą przy tworzeniu lub porównywaniu środowisk oraz w szablonach baz.',
 					},
 					loops: {
-						title: 'Oczekiwanie w automatyzacjach',
-						text: 'Oczekiwanie przed kolejnym krokiem („trzy dni później”) i przenoszenie przepływów — warunków, wyszukiwań, pętli — do szablonów baz.',
+						title: 'Pełne przepływy w szablonach baz',
+						text: 'Przenoszenie przepływów automatyzacji — warunków, wyszukiwań, pętli, oczekiwań, PDF-ów — do szablonów baz, które dziś zachowują z nich tylko proste kroki.',
 					},
 					textFormulas: {
 						title: 'Formuły tekstowe',

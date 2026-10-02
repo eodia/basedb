@@ -29,9 +29,8 @@ Maak in n8n een identiteitsgegeven **basedb API** aan:
 | **Token** | een **integratietoken**: menu **⋯** van de database → **API en agents** → **API- en MCP-tokens…** |
 
 Een token opent **één** database. Het leest haar rijen, schrijft ze als het met schrijfrechten
-is aangemaakt, heeft nooit meer rechten dan de persoon die het heeft aangemaakt, en
-**verwijdert nooit**. Bij het opslaan probeert n8n de verbinding en meldt het of het token wordt
-geweigerd.
+is aangemaakt, en heeft nooit meer rechten dan de persoon die het heeft aangemaakt. Bij het
+opslaan probeert n8n de verbinding en meldt het of het token wordt geweigerd.
 
 ## Lezen en schrijven: de basedb-node
 
@@ -59,9 +58,11 @@ veld weigert, stopt de node op de code van basedb en wat die betekent.
   de gekoppelde rij.
 - **Create or Update** wijzigt nooit meerdere rijen: als er meerdere de waarden dragen, stopt
   de node in plaats van te raden.
-- Geen bewerking **Delete**: een token verwijdert niet. Om rijen te verwijderen, markeer je ze
-  (een status “Archivé”), of vertrouw je de verwijdering toe aan een
-  [automatisering](/basedb/nl/fonctionnalites/automatisations/).
+- Geen bewerking **Delete**: om rijen te verwijderen, markeer je ze (een status “Archivé”),
+  vertrouw je de verwijdering toe aan een
+  [automatisering](/basedb/nl/fonctionnalites/automatisations/), of roep je de
+  [REST-API](/basedb/nl/integrations/api-rest/) aan met een token dat voor verwijderen is
+  aangemaakt.
 
 ## Een workflow starten
 

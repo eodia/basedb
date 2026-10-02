@@ -78,4 +78,5 @@ programmet kjører.
 Et **integrasjonstoken** opprettes i grensesnittet: menyen **⋯** på basen → **API og agenter**
 → **API- og MCP-tokener…**. Det åpner én base, leser radene, skriver dem hvis det ble opprettet
 med skriverettighet, har aldri flere tillatelser enn personen som opprettet det, og **sletter
-aldri**: `delete()` krever tillatelsene til en økt.
+bare hvis det ble opprettet for det** («Lesing, skriving og sletting»): ellers blir `delete()`
+avvist.

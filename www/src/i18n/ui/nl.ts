@@ -1284,10 +1284,10 @@ export default {
 		agents: {
 			label: 'REST-API · MCP · webhooks',
 			title: 'Je AI-agents krijgen de gegevens, {niet de sleutels van de kluis.}',
-			lead: 'De MCP-server geeft agents twaalf tools; de REST-API geeft je programma’s dezelfde gegevens. Eén controlepunt voor rechten, dezelfde logs.',
+			lead: 'De MCP-server geeft agents veertien tools; de REST-API geeft je programma’s dezelfde gegevens. Eén controlepunt voor rechten, dezelfde logs.',
 			bullets: [
 				'<strong>Eén token per database</strong>, standaard alleen-lezen, nooit met meer rechten dan de persoon die het heeft aangemaakt.',
-				'<strong>Een agent verwijdert niets</strong> en wijzigt de structuur niet: hij stelt voor, een mens keurt goed.',
+				'<strong>Een agent verwijdert alleen met jouw toestemming</strong>, één rij per keer, en wijzigt de structuur niet: hij stelt voor, een mens keurt goed.',
 				'<strong>Gegenereerde documentatie</strong> voor elke database, gefilterd op je rechten, met de bijbehorende OpenAPI 3.1-specificatie.',
 				'<strong>Webhooks</strong> bij elke schrijfactie: ondertekend, op volgorde en opnieuw geprobeerd.',
 			],
@@ -1509,7 +1509,7 @@ export default {
 			},
 			agent: {
 				q: 'Hoe maakt een AI-agent verbinding?',
-				a: 'Via de MCP-server, met een integratietoken dat beperkt is tot één database, standaard alleen-lezen. Een agent leest, maakt en wijzigt rijen volgens zijn rechten; hij verwijdert niets en wijzigt de structuur niet: hij stelt voor, en een mens keurt goed.',
+				a: 'Via de MCP-server, met een integratietoken dat beperkt is tot één database, standaard alleen-lezen. Een agent leest, maakt en wijzigt rijen volgens zijn rechten — en verwijdert ze, één voor één, als zijn token daarvoor is aangemaakt; hij wijzigt de structuur niet: hij stelt voor, en een mens keurt goed.',
 			},
 			postgres: {
 				q: 'Welke versie van PostgreSQL is nodig?',
@@ -1536,6 +1536,47 @@ export default {
 		title: 'Wat er in basedb is veranderd',
 		intro: 'Elke wijziging in detail staat in <a href="https://github.com/eodia/basedb/commits/main">de geschiedenis van de repository</a>. Wat er hierna komt: de <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Agents die verwijderen, als jij dat toestaat',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Een derde tokenniveau</strong>, “Lezen, schrijven en verwijderen”: een programma verwijdert via de REST-API, een agent via de nieuwe tool <code>delete_record</code> — één rij per keer, teruggegeven in het antwoord. <a href="/integrations/mcp/#rijen-verwijderen">Rijen verwijderen</a>',
+					'<strong>Teruggaan</strong>: <code>restore_record</code> brengt een verwijderde rij terug onder dezelfde identificatie; een verwijdering die een cascaderelatie zou uitbreiden naar andere rijen blijft voorbehouden aan de interface.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Tokens voor wie een database beheert',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Het niveau Beheren is genoeg</strong>: toegekend op een database of op het project ervan, maakt het mogelijk om de integratietokens van zijn databases aan te maken, zonder beheerder te zijn. <a href="/integrations/api-rest/#een-token">Een token</a>',
+					'<strong>Zegt het anders duidelijk</strong>: wie leest of schrijft zonder de database te beheren, ziet in het tokenvenster tot wie hij zich moet richten; een account zonder wachtwoord ziet waarom het er nog geen kan aanmaken.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automatiseringen die wachten, een mislukking opvangen en PDF’s versturen',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Vier triggers erbij</strong>: een rij wordt verwijderd; een rij komt in een filter — “een factuur raakt achterstallig”; een datum breekt aan — drie dagen voor de vervaldatum, om 9.00 uur; een andere toepassing roept het geheime adres van de automatisering aan. <a href="/fonctionnalites/automatisations/#een-dienst-die-basedb-aanroept">Een dienst die basedb aanroept</a>',
+					'<strong>Wachten</strong> drie dagen, of tot de datum van een veld, en dan verdergaan door de rij opnieuw te lezen: “als die nog niet is geaccepteerd, aanmanen”. <a href="/fonctionnalites/automatisations/#wachten">Wachten</a>',
+					'<strong>Een PDF genereren en versturen</strong>: het document van een rij, opgeslagen in een veld Bestand of bijgevoegd aan een e-mail — in opgemaakte tekst, met ontvangers in cc en een antwoordadres, aan elk apart of één voor iedereen. <a href="/fonctionnalites/automatisations/#een-pdf-en-een-e-mail">Een PDF en een e-mail</a>',
+					'<strong>Een rij verwijderen, tellen en optellen, een andere automatisering starten</strong>; een voorwaarde test ook een waarde — het antwoord van de AI, een totaal —, en een zoekactie die niets vindt, heeft haar eigen vertakking.',
+					'<strong>Proberen</strong>: stappen, en andere als een ervan mislukt; een webhook probeert zichzelf opnieuw, een lus gaat door ondanks een mislukte rij. <a href="/fonctionnalites/automatisations/#proberen">Proberen</a>',
+					'<strong>Alle stappen binnen handbereik</strong>: de <strong>+</strong> opent een venster gerangschikt per categorie, met een zoekveld, in plaats van een menu dat afgekapt kon worden.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'PDF-documenten in jouw kleuren',
+				tag: 'Nieuw',
+				items: [
+					'<strong>Vijf startpunten</strong> — factuur, offerte, fiche, attest, lege pagina —, opgebouwd met de kolommen van je tabel: nummer, datum, bedragen, foto, gekoppelde rijen. <a href="/fonctionnalites/documents/#een-sjabloon-maken">Een sjabloon maken</a>',
+					'<strong>Je logo en je kleuren</strong>: een koptekst met logo en gegevens, een voettekst met wettelijke vermeldingen en paginanummers, een accentkleur, lettertypen met of zonder schreef, een kader rond de pagina. <a href="/fonctionnalites/documents/#koptekst-en-voettekst">Koptekst en voettekst</a>',
+					'<strong>Nieuwe blokken</strong>: een titel op een band, een afbeelding, twee of drie kolommen, een overzicht excl. / incl. btw, een tabel met gekleurde koptekst, een scheidingslijn. Je versleept ze om ze te herschikken, en het voorbeeld volgt elke wijziging. <a href="/fonctionnalites/documents/#de-inhoud-blokken">De blokken</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'Een onderbroken verbinding stopt basedb niet meer',
@@ -1920,8 +1961,8 @@ export default {
 						text: 'SQL-views meekopiëren met de structuur bij het aanmaken of vergelijken van omgevingen, en in databasesjablonen.',
 					},
 					loops: {
-						title: 'Wachttijden in automatiseringen',
-						text: 'Wachten vóór de volgende stap (“drie dagen later”), en flows – voorwaarden, zoekacties, lussen – meenemen in databasesjablonen.',
+						title: 'Volledige flows in databasesjablonen',
+						text: 'Automatiseringsflows — voorwaarden, zoekacties, lussen, wachttijden, PDF’s — meenemen in databasesjablonen, die vandaag alleen de eenvoudige stappen bewaren.',
 					},
 					textFormulas: {
 						title: 'Formules op tekst',

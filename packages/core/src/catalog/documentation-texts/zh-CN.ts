@@ -72,8 +72,14 @@ export const zhCN: Catalog = {
     '您创建的令牌权限永远不会超过您本人：以上工具已是上限。',
   Outil: '工具',
   Pour: '用途',
-  'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.':
-    '删除行仍然只能通过 REST API 和界面完成：没有任何 MCP 工具执行删除操作。',
+  'Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.':
+    '删除一行，使用专门为删除创建的令牌——响应中会返回该行。',
+  'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
+    '按 `_id` 从历史记录中恢复已删除的行。',
+  'Supprimer une ligne — avec un jeton créé pour supprimer': '删除一行——使用专门为删除创建的令牌',
+  'Ramener une ligne supprimée': '恢复已删除的行',
+  'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
+    '智能体只有在令牌被创建为“读写和删除”权限时才会删除，且一次只删除一行；已删除的行可以通过 `restore_record` 或从历史记录中恢复。',
   '**Invisibles pour un agent :** {fields}. Pour lui, ces colonnes n’existent pas : il ne peut ni les lire, ni les filtrer, ni les écrire.':
     '**对智能体不可见：** {fields}。对它而言，这些列并不存在：它既不能读取，也不能筛选或写入。',
   'Arguments d’un appel': '调用参数',
@@ -81,13 +87,13 @@ export const zhCN: Catalog = {
     '为此数据库创建令牌需要**可管理**权限，而您目前没有该权限。请向管理此数据库的人申请。',
   '<jeton>': '<token>',
   'Connecter un agent': '连接智能体',
-  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.':
-    'basedb 的 **MCP 服务器**可以将此数据库开放给 AI 智能体——Claude 或任意 MCP 客户端：它会发现该数据库、读取其中的数据，并且如果您允许，还可以创建和修改行。它使用与 REST API 相同的权限。',
+  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.':
+    'basedb 的 **MCP 服务器**可以将此数据库开放给 AI 智能体——Claude 或任意 MCP 客户端：它会发现该数据库、读取其中的数据，并且如果您允许，还可以创建、修改和删除行。它使用与 REST API 相同的权限。',
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**此数据库未对智能体开放。**在开放之前，无论提供何种令牌，任何工具都无法看到它。',
   'Créer un jeton': '创建令牌',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    '在界面中，依次点击数据库的“⋯”菜单 → **API 与智能体** → **API 和 MCP 令牌…**，勾选 **MCP** 访问权限。该令牌仅对此数据库有效，默认**只读**：如需写入权限，需显式勾选。它只会显示一次，并可在同一界面中撤销。同时勾选 **REST API** 时，同一个令牌也可供程序使用（参见“身份验证”）。',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    '在界面中，依次点击数据库的“⋯”菜单 → **API 与智能体** → **API 和 MCP 令牌…**，勾选 **MCP** 访问权限。该令牌仅对此数据库有效，默认**只读**：如需写入权限或删除权限，需显式勾选。它只会显示一次，并可在同一界面中撤销。同时勾选 **REST API** 时，同一个令牌也可供程序使用（参见“身份验证”）。',
   'Garder le jeton hors de la configuration': '让令牌远离配置文件',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     '令牌应保存在环境变量 `BASEDB_TOKEN` 中，绝不能放进客户端的配置文件：配置文件会被纳入版本管理、同步，并且可以被会话中的所有程序读取。',
@@ -121,6 +127,8 @@ export const zhCN: Catalog = {
     '要写入一个关联：先在目标数据表上调用 `lookup_records`，然后使用查到的 `_id` 调用 `create_record` 或 `update_record`。',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     '要调整结构：调用 `propose_create_table` 或 `propose_add_field`，然后用 `get_proposal` 跟踪处理结果。',
+  'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
+    '要删除：先调用 `get_record` 确认是哪一行，然后调用 `delete_record`——它会在响应中返回该行；`restore_record` 可以将其恢复。',
   'Propositions de structure': '结构提议',
   'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend dans la file « Propositions » de la base, où une personne qui peut modifier la structure l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.':
     '智能体从不会自行修改结构：它只能**提议**。提议会进入数据库的“智能体提议…”队列，等待有权修改结构的人批准或拒绝；如果一直没有决定，提议会在 24 小时后过期。一旦获批，系统会以创建该令牌的人的名义应用该提议——前提是此人仍拥有相应权限——并像其他任何修改一样出现在历史记录中。',
@@ -129,8 +137,8 @@ export const zhCN: Catalog = {
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     '不支持删除、重命名，也不支持级联关联（`MCP_CASCADE_FORBIDDEN`）。',
   'Ce qui n’existe pas': '不存在的操作',
-  'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
-    '没有任何工具会删除行、执行 SQL，或是管理权限和令牌。智能体若调用此类名称——`delete_record`、`run_sql`…——无论目标数据库是哪一个，都会收到 `MCP_OPERATION_EXCLUDED`。',
+  'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
+    '没有任何工具会一次删除多行、删除数据表或字段，也不会执行 SQL，或管理权限和令牌。智能体若调用此类名称——`delete_records`、`run_sql`…——无论目标数据库是哪一个，都会收到 `MCP_OPERATION_EXCLUDED`。',
   Bornes: '限制',
   '`limit` : 25 lignes par défaut, 100 au plus.': '`limit`：默认 25 行，最多 100 行。',
   'Un filtre compte au plus 10 prédicats, combinés par ET ; un tri, au plus 3 champs.':
@@ -144,8 +152,8 @@ export const zhCN: Catalog = {
     '智能体看到的内容永远不会超过创建其令牌的人——通常还会更少。',
   '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.':
     '**权限**：即令牌自身的权限，每次调用都会与创建者当前的权限取交集。如果此人的权限降低，令牌的权限也会随之降低；如果此人的账户被停用，令牌将不再响应。',
-  '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
-    '**读取、创建、修改**——但绝不删除。只读令牌会拒绝任何写入操作（`TOKEN_READ_ONLY`）。',
+  '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
+    '**读取、创建、修改**——以及删除，一次一行，但仅限专门为此创建的令牌。只读令牌会拒绝任何写入操作（`TOKEN_READ_ONLY`）。',
   '**Cette base** : ouverte aux agents.': '**此数据库**：已对智能体开放。',
   '**Cette base** : **fermée aux agents** — aucun outil ne la voit.':
     '**此数据库**：**未对智能体开放**——没有任何工具能看到它。',
@@ -227,8 +235,8 @@ export const zhCN: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     '所有数据路由都需要在 `Authorization` 请求头中提供**令牌**。这里绝不接受会话 Cookie：因为浏览器会在每个请求中自动带上它，包括由外部页面触发的请求。',
   'Jeton d’intégration': '集成令牌',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    '程序——脚本、同步任务、其他应用——需要出示一个**集成令牌**，其前缀为 `bdb_`。它仅对此数据库有效：可以读取，如果创建时授予了写入权限，还可以创建和修改，但**从不删除**；并且它的权限永远不会超过创建它的人，且每次调用都会与此人的当前权限取交集。管理后台、SQL 控制台和 AI 功能对它始终关闭。',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    '程序——脚本、同步任务、其他应用——需要出示一个**集成令牌**，其前缀为 `bdb_`。它仅对此数据库有效：可以读取，如果创建时授予了写入权限，还可以创建和修改，并且**只有在专门为删除而创建时才会删除**；它的权限永远不会超过创建它的人，且每次调用都会与此人的当前权限取交集。管理后台、SQL 控制台和 AI 功能对它始终关闭。',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     '创建方法：依次点击数据库的“⋯”菜单 → **API 与智能体** → **API 和 MCP 令牌…**，勾选 **REST API** 访问权限。它只会显示一次。',
   Appel: '调用',

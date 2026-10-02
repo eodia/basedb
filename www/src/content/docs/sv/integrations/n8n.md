@@ -29,8 +29,8 @@ Skapa en autentiseringsuppgift **basedb API** i n8n:
 | **Token** | en **integrationstoken**: databasens **⋯**-meny → **API och agenter** → **API- och MCP-tokens…** |
 
 En token öppnar **en** databas. Den läser dess rader, skriver dem om den skapades med
-skrivrätt, har aldrig fler behörigheter än personen som skapade den, och **tar aldrig bort**.
-Vid sparandet testar n8n anslutningen och säger till om token avvisas.
+skrivrätt, och har aldrig fler behörigheter än personen som skapade den. Vid sparandet testar
+n8n anslutningen och säger till om token avvisas.
 
 ## Läsa och skriva: noden basedb
 
@@ -58,9 +58,9 @@ och vad den betyder.
   `_id`.
 - **Create or Update** ändrar aldrig flera rader: om flera har värdena stoppar noden hellre än
   att gissa.
-- Ingen åtgärd **Delete**: en token tar inte bort. Vill du ta bort rader, markera dem (en status
-  ”Arkiverad”) eller låt en [automatisering](/basedb/sv/fonctionnalites/automatisations/) sköta
-  borttagningen.
+- Ingen åtgärd **Delete**: vill du ta bort rader, markera dem (en status ”Arkiverad”), låt en
+  [automatisering](/basedb/sv/fonctionnalites/automatisations/) sköta borttagningen, eller
+  anropa [REST-API:et](/basedb/sv/integrations/api-rest/) med en token skapad för att ta bort.
 
 ## Starta ett arbetsflöde
 

@@ -112,5 +112,11 @@
     "name": "0019_index_des_cles_etrangeres.sql",
     "sha256": "78cdcd1c6999061436658e226a3bd103887887898ce2c2173e46e0809151692f",
     "release": "0.4.0"
+  },
+  {
+    "version": 20,
+    "name": "0020_automatisations_avancees.sql",
+    "sha256": "0c5cf70da10a19d861e328408a0f1075149cdd6cdb90a19ce707275557963613",
+    "release": "0.6.0"
   }
 ]

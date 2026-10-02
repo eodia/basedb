@@ -1,116 +1,64 @@
 'use client'
 
-import { RichTextEditor } from '@/components/app/rich-text-editor'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Choice } from '@/components/ui/choice'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   type DocumentBlock,
   type DocumentSpec,
   type DocumentTemplate,
-  type Field,
   type Table,
   api,
 } from '@/lib/api/client'
-import { $t, LOCALES, LOCALE_NAMES, locale } from '@/lib/i18n'
+import { $t } from '@/lib/i18n'
 import { messageFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
+import { arrayMove } from '@dnd-kit/sortable'
+import { FileText, LayoutTemplate, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { BlockPicker } from './block-picker'
+import { BlockList } from './blocks'
 import {
-  ArrowDown,
-  ArrowUp,
-  FileText,
-  ListChecks,
-  Loader2,
-  Plus,
-  RefreshCw,
-  Rows3,
-  SeparatorHorizontal,
-  Trash2,
-  Type,
-} from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+  type BlockKind,
+  MAX_BLOCKS,
+  complete,
+  countBlocks,
+  newBlock,
+  sendable,
+  sourcesOf,
+} from './model'
+import { HeaderFooterPanel, StylePanel } from './panels'
+import { type PresetId, buildPreset, presets } from './presets'
 
 /**
- * The document templates of a table — chapter 21. A list on the left, the one chosen in
- * the middle, and beside it the PDF it makes of the row the editor was opened from —
- * unsaved changes included, set by the server as they would be once saved.
+ * The document templates of a table — chapter 21. The templates on the left; the one
+ * chosen in the middle — its blocks, its style and page, its header and footer —; and
+ * beside it the PDF it makes of the row the editor was opened from, set again by the
+ * server a moment after each change, unsaved changes included.
  *
- * A template is a page (its size and orientation), the language its values are written
- * in, a line at the foot of each page, and blocks: rich text citing the row's columns,
- * the row's fields, the rows linked to it as a table with its totals, a page break.
+ * A new template starts from a starting point — an invoice, a quote, a sheet, a
+ * certificate — built from the table's own columns, or from a blank page.
  */
 
-type Draft = { readonly id: string | null; readonly label: string; readonly spec: DocumentSpec }
-
-const NUMERIC = new Set(['number', 'count', 'autonumber'])
-const numeric = (f: Field) =>
-  NUMERIC.has(f.computed?.result_kind ?? f.kind) && f.computed?.multiple !== true
-const shown = (fields: readonly Field[]) =>
-  fields.filter((f) => f.system !== true && f.kind !== 'button')
-
-function firstDraft(table: Table): Draft {
-  const named =
-    table.display_field ??
-    table.fields.find((f) => f.kind === 'short_text' && f.system !== true)?.name
-  return {
-    id: null,
-    label: $t('Nouveau modèle'),
-    spec: {
-      page: { size: 'A4', orientation: 'portrait' },
-      locale: locale(),
-      footer: '',
-      blocks: [
-        { kind: 'text', html: named === undefined ? '' : `<h1>{{${named}}}</h1>` },
-        { kind: 'fields', fields: [] },
-      ],
-    },
-  }
+interface Draft {
+  readonly id: string | null
+  readonly label: string
+  readonly spec: DocumentSpec
+  /** One per block: what React and the drag know it by. */
+  readonly keys: readonly string[]
 }
 
-/** The relations a table block may list: links to this table, and its multiple links. */
-function sourcesOf(table: Table, tables: readonly Table[]) {
-  const out: Array<{
-    value: string
-    label: string
-    table: Table
-    source: Extract<DocumentBlock, { kind: 'rows' }>['source']
-  }> = []
-  for (const t of tables) {
-    for (const f of t.fields) {
-      if ((f.kind === 'link' || f.kind === 'multi_link') && f.link?.target === table.name) {
-        out.push({
-          value: `in:${t.id}:${f.name}`,
-          label: $t('{table} — par « {field} »', { table: t.label, field: f.label }),
-          table: t,
-          source: { kind: 'incoming', table: t.id, field: f.name },
-        })
-      }
-    }
-  }
-  for (const f of table.fields) {
-    const target = tables.find((t) => t.name === f.link?.target)
-    if (f.kind === 'multi_link' && target !== undefined) {
-      out.push({
-        value: `out:${f.name}`,
-        label: $t('{table} — liées par « {field} »', { table: target.label, field: f.label }),
-        table: target,
-        source: { kind: 'outgoing', field: f.name },
-      })
-    }
-  }
-  return out
-}
+const newKey = () => Math.random().toString(36).slice(2, 10)
 
-const sourceKey = (s: Extract<DocumentBlock, { kind: 'rows' }>['source']) =>
-  s.kind === 'incoming' ? `in:${s.table}:${s.field}` : `out:${s.field}`
+const draftOf = (id: string | null, label: string, spec: DocumentSpec): Draft => ({
+  id,
+  label,
+  spec,
+  keys: spec.blocks.map(newKey),
+})
+
+type Tab = 'blocks' | 'style' | 'frame'
 
 export function DocumentTemplatesDialog({
   open,
@@ -127,28 +75,38 @@ export function DocumentTemplatesDialog({
   readonly onClose: () => void
 }) {
   const [templates, setTemplates] = useState<readonly DocumentTemplate[]>([])
+  /** `null`: the starting points are shown, to begin a new template. */
   const [draft, setDraft] = useState<Draft | null>(null)
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const [tab, setTab] = useState<Tab>('blocks')
+  const [opened, setOpened] = useState<ReadonlySet<string>>(new Set())
+  const [inserting, setInserting] = useState<number | null>(null)
+  /** The block just added: brought into view. */
+  const [added, setAdded] = useState<string | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [previewing, setPreviewing] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
   const previewUrl = useRef<string | null>(null)
+  const asked = useRef(0)
 
-  const choose = useCallback(
-    (template: DocumentTemplate | null) => {
-      setDraft(
-        template === null || template.spec === undefined
-          ? firstDraft(table)
-          : { id: template.id, label: template.label, spec: template.spec },
-      )
-      setDirty(false)
-      setConfirming(false)
-      setError(null)
-    },
-    [table],
-  )
+  const sources = useMemo(() => sourcesOf(table, tables), [table, tables])
+  const ctx = useMemo(() => ({ table, sources }), [table, sources])
+
+  const choose = useCallback((template: DocumentTemplate | null) => {
+    setDraft(
+      template === null ? null : draftOf(template.id, template.label, complete(template.spec)),
+    )
+    setDirty(false)
+    setConfirming(false)
+    setLeaving(false)
+    setError(null)
+    setOpened(new Set())
+    setTab('blocks')
+  }, [])
 
   const load = useCallback(
     async (select?: string) => {
@@ -172,60 +130,68 @@ export function DocumentTemplatesDialog({
     [],
   )
 
-  const change = (next: Partial<Draft> | ((d: Draft) => Draft)) => {
-    setDraft((d) => (d === null ? d : typeof next === 'function' ? next(d) : { ...d, ...next }))
+  const change = (next: (d: Draft) => Draft) => {
+    setDraft((d) => (d === null ? d : next(d)))
     setDirty(true)
+    setLeaving(false)
   }
   const changeSpec = (next: Partial<DocumentSpec>) =>
     change((d) => ({ ...d, spec: { ...d.spec, ...next } }))
-  const setBlock = (i: number, block: DocumentBlock) =>
-    change((d) => ({
-      ...d,
-      spec: { ...d.spec, blocks: d.spec.blocks.map((b, j) => (j === i ? block : b)) },
-    }))
+  const setBlocks = (blocks: readonly DocumentBlock[], keys: readonly string[]) =>
+    change((d) => ({ ...d, spec: { ...d.spec, blocks }, keys }))
 
-  const sources = useMemo(() => sourcesOf(table, tables), [table, tables])
+  const refresh = useCallback(
+    async (shown: Draft) => {
+      const mine = ++asked.current
+      setPreviewing(true)
+      try {
+        const blob = await api.documentPreview(table, recordId, {
+          label: shown.label,
+          spec: sendable(shown.spec),
+        })
+        if (mine !== asked.current) return
+        if (previewUrl.current !== null) URL.revokeObjectURL(previewUrl.current)
+        previewUrl.current = URL.createObjectURL(blob)
+        // The page fitted to the width, without the viewer's column of thumbnails.
+        setPreview(`${previewUrl.current}#navpanes=0&view=FitH`)
+        setPreviewError(null)
+      } catch (e) {
+        if (mine === asked.current) setPreviewError(messageFor(e))
+      } finally {
+        if (mine === asked.current) setPreviewing(false)
+      }
+    },
+    [table, recordId],
+  )
 
-  const refresh = async () => {
-    if (draft === null) return
-    setPreviewing(true)
-    setError(null)
-    try {
-      const blob = await api.documentPreview(table, recordId, {
-        label: draft.label,
-        spec: draft.spec,
-      })
-      if (previewUrl.current !== null) URL.revokeObjectURL(previewUrl.current)
-      previewUrl.current = URL.createObjectURL(blob)
-      setPreview(previewUrl.current)
-    } catch (e) {
-      setError(messageFor(e))
-    } finally {
-      setPreviewing(false)
-    }
-  }
-
-  // The preview follows the template chosen, once, without waiting for a click.
+  // The preview follows the draft: at once for a template chosen, a moment after the
+  // last change otherwise — not at each keystroke.
   const shownId = draft?.id ?? 'new'
-  // biome-ignore lint/correctness/useExhaustiveDependencies: once per template chosen, not per keystroke
+  const lastShown = useRef<string | null>(null)
   useEffect(() => {
-    if (open && draft !== null) void refresh()
-  }, [open, shownId])
+    if (!open || draft === null) return
+    const fresh = lastShown.current !== shownId
+    lastShown.current = shownId
+    const timer = setTimeout(() => void refresh(draft), fresh ? 0 : 700)
+    return () => clearTimeout(timer)
+  }, [open, draft, shownId, refresh])
 
   const save = async () => {
     if (draft === null) return
     setBusy(true)
     setError(null)
     try {
+      const body = { label: draft.label, spec: sendable(draft.spec) }
       const saved =
         draft.id === null
-          ? await api.createDocumentTemplate(table, { label: draft.label, spec: draft.spec })
-          : await api.updateDocumentTemplate(table, draft.id, {
-              label: draft.label,
-              spec: draft.spec,
-            })
-      await load(saved.id)
-      await refresh()
+          ? await api.createDocumentTemplate(table, body)
+          : await api.updateDocumentTemplate(table, draft.id, body)
+      const list = await api.documentTemplates(table)
+      setTemplates(list)
+      // The draft stays as it is — its keys, its open cards —, now saved.
+      setDraft((d) => (d === null ? d : { ...d, id: saved.id, label: saved.label }))
+      lastShown.current = saved.id
+      setDirty(false)
     } catch (e) {
       setError(messageFor(e))
     } finally {
@@ -234,7 +200,7 @@ export function DocumentTemplatesDialog({
   }
 
   const remove = async () => {
-    if (draft?.id === null || draft === null) return
+    if (draft === null || draft.id === null) return
     setBusy(true)
     try {
       await api.deleteDocumentTemplate(table, draft.id)
@@ -246,24 +212,101 @@ export function DocumentTemplatesDialog({
     }
   }
 
-  const add = (block: DocumentBlock) =>
-    change((d) => ({ ...d, spec: { ...d.spec, blocks: [...d.spec.blocks, block] } }))
+  const close = () => {
+    if (busy) return
+    if (dirty && !leaving) {
+      setLeaving(true)
+      return
+    }
+    onClose()
+  }
+
+  const start = (id: PresetId) => {
+    const built = buildPreset(id, table, sources)
+    setDraft(draftOf(null, built.label, built.spec))
+    setDirty(true)
+    setOpened(new Set())
+    setTab('blocks')
+    setError(null)
+  }
+
+  const insert = (kind: BlockKind) => {
+    if (draft === null || inserting === null) return
+    const block = newBlock(kind, table, sources)
+    if (block === null) return
+    const key = newKey()
+    const at = inserting
+    setBlocks(
+      [...draft.spec.blocks.slice(0, at), block, ...draft.spec.blocks.slice(at)],
+      [...draft.keys.slice(0, at), key, ...draft.keys.slice(at)],
+    )
+    setOpened((o) => new Set(o).add(key))
+    setAdded(key)
+  }
+
+  const full = draft !== null && countBlocks(draft.spec.blocks) >= MAX_BLOCKS
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="flex h-[88vh] max-w-[min(1400px,96vw)] flex-col gap-3 sm:max-w-[min(1400px,96vw)]">
-        <DialogHeader>
-          <DialogTitle>{$t('Modèles de document — {label}', { label: table.label })}</DialogTitle>
-          <DialogDescription>
-            {$t(
-              'Une ligne devient un PDF : une facture, un devis, une fiche. Le texte cite les colonnes, un tableau liste les lignes liées. Chacun le lit avec ses droits : un champ qu’il ne voit pas n’y figure pas.',
-            )}
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog open={open} onOpenChange={(o) => !o && close()}>
+      <DialogContent
+        showCloseButton={false}
+        // Nothing is focused on opening: the first button would show its ring for nothing.
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="flex h-[94vh] max-w-[min(1600px,98vw)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(1600px,98vw)]"
+      >
+        <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-5 py-3">
+          <FileText className="size-4 text-muted-foreground" />
+          <div className="min-w-0 flex-1">
+            <DialogTitle className="truncate">
+              {$t('Modèles de document — {label}', { label: table.label })}
+            </DialogTitle>
+            <DialogDescription className="truncate text-xs">
+              {$t(
+                'Une ligne devient un PDF : une facture, un devis, une fiche. Chacun le lit avec ses droits : un champ qu’il ne voit pas n’y figure pas.',
+              )}
+            </DialogDescription>
+          </div>
+          {leaving ? (
+            <div className="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-sm">
+              {$t('Modifications non enregistrées.')}
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                {$t('Fermer sans enregistrer')}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setLeaving(false)}>
+                {$t('Continuer')}
+              </Button>
+            </div>
+          ) : (
+            <>
+              {draft?.id !== null && draft !== null && (
+                <Button
+                  variant={confirming ? 'destructive' : 'ghost'}
+                  size="sm"
+                  onClick={() => (confirming ? void remove() : setConfirming(true))}
+                  disabled={busy}
+                >
+                  <Trash2 className="size-4" />
+                  {confirming ? $t('Confirmer la suppression') : $t('Supprimer le modèle')}
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={close} disabled={busy}>
+                {$t('Fermer')}
+              </Button>
+            </>
+          )}
+          <Button
+            size="sm"
+            onClick={() => void save()}
+            disabled={busy || draft === null || (!dirty && draft.id !== null)}
+          >
+            {busy && <Loader2 className="size-4 animate-spin" />}
+            {$t('Enregistrer')}
+          </Button>
+        </header>
 
-        <div className="grid min-h-0 flex-1 grid-cols-[12rem_minmax(0,1fr)_minmax(0,26rem)] gap-4">
+        <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[12rem_minmax(0,1fr)_minmax(0,26rem)] xl:grid-cols-[13rem_minmax(0,1fr)_minmax(0,34rem)]">
           {/* The templates of the table. */}
-          <nav className="min-h-0 space-y-1 overflow-y-auto scroll-discret">
+          <nav className="hidden min-h-0 space-y-1 overflow-y-auto border-r p-3 scroll-discret lg:block">
             {templates.map((t) => (
               <button
                 key={t.id}
@@ -278,6 +321,12 @@ export function DocumentTemplatesDialog({
                 <span className="truncate">{t.label}</span>
               </button>
             ))}
+            {draft !== null && draft.id === null && (
+              <div className="flex w-full items-center gap-2 rounded-md bg-accent px-2 py-1.5 text-sm font-medium">
+                <FileText className="size-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{draft.label}</span>
+              </div>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -289,406 +338,300 @@ export function DocumentTemplatesDialog({
             </Button>
           </nav>
 
-          {/* The one chosen. */}
-          <div className="min-h-0 space-y-4 overflow-y-auto pr-1 scroll-discret">
-            {draft !== null && (
-              <>
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_9rem_10rem]">
+          {/* The one chosen, or where a new one starts. */}
+          <main className="flex min-h-0 flex-col">
+            {draft === null ? (
+              <Gallery onPick={start} />
+            ) : (
+              <Tabs
+                value={tab}
+                onValueChange={(t) => setTab(t as Tab)}
+                className="flex min-h-0 flex-1 flex-col"
+              >
+                <div className="space-y-2 border-b px-4 pt-3">
                   <Input
                     value={draft.label}
-                    onChange={(e) => change({ label: e.target.value })}
+                    onChange={(e) => change((d) => ({ ...d, label: e.target.value }))}
                     aria-label={$t('Nom du modèle')}
-                    className="h-9"
+                    className="h-9 text-base font-medium"
                   />
-                  <Choice
-                    value={draft.spec.page.size}
-                    onValueChange={(size) =>
-                      changeSpec({ page: { ...draft.spec.page, size: size as 'A4' | 'LETTER' } })
-                    }
-                    options={[
-                      { value: 'A4', label: 'A4' },
-                      { value: 'LETTER', label: 'Letter' },
-                    ]}
-                    aria-label={$t('Format de page')}
-                    size="default"
-                  />
-                  <Choice
-                    value={draft.spec.page.orientation}
-                    onValueChange={(o) =>
-                      changeSpec({
-                        page: { ...draft.spec.page, orientation: o as 'portrait' | 'landscape' },
-                      })
-                    }
-                    options={[
-                      { value: 'portrait', label: $t('Portrait') },
-                      { value: 'landscape', label: $t('Paysage') },
-                    ]}
-                    aria-label={$t('Orientation')}
-                    size="default"
-                  />
-                  <Choice
-                    value={draft.spec.locale}
-                    onValueChange={(l) => changeSpec({ locale: l as DocumentSpec['locale'] })}
-                    options={LOCALES.map((l) => ({ value: l, label: LOCALE_NAMES[l] }))}
-                    aria-label={$t('Langue des valeurs')}
-                    size="default"
-                  />
+                  <TabsList className="border-b-0">
+                    <TabsTrigger value="blocks">{$t('Contenu')}</TabsTrigger>
+                    <TabsTrigger value="style">{$t('Style et page')}</TabsTrigger>
+                    <TabsTrigger value="frame">{$t('En-tête et pied de page')}</TabsTrigger>
+                  </TabsList>
                 </div>
-
-                <ol className="space-y-3">
-                  {draft.spec.blocks.map((block, i) => (
-                    <li
-                      // biome-ignore lint/suspicious/noArrayIndexKey: blocks have no identity but their place, which the arrows change
-                      key={i}
-                      className="rounded-lg border"
-                    >
-                      <BlockHeader
-                        block={block}
-                        first={i === 0}
-                        last={i === draft.spec.blocks.length - 1}
-                        onMove={(by) =>
-                          change((d) => {
-                            const blocks = [...d.spec.blocks]
-                            const [moved] = blocks.splice(i, 1)
-                            blocks.splice(i + by, 0, moved as DocumentBlock)
-                            return { ...d, spec: { ...d.spec, blocks } }
-                          })
-                        }
-                        onRemove={() =>
-                          change((d) => ({
-                            ...d,
-                            spec: { ...d.spec, blocks: d.spec.blocks.filter((_, j) => j !== i) },
-                          }))
-                        }
-                      />
-                      <div className="p-3">
-                        <BlockBody
-                          block={block}
-                          table={table}
-                          sources={sources}
-                          onChange={(b) => setBlock(i, b)}
-                        />
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => add({ kind: 'text', html: '' })}
-                  >
-                    <Type className="size-4" />
-                    {$t('Texte')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => add({ kind: 'fields', fields: [] })}
-                  >
-                    <ListChecks className="size-4" />
-                    {$t('Champs de la ligne')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={sources.length === 0}
-                    onClick={() => {
-                      const first = sources[0]
-                      if (first === undefined) return
-                      add({
-                        kind: 'rows',
-                        title: first.table.label,
-                        source: first.source,
-                        columns: shown(first.table.fields)
-                          .filter((f) => f.kind !== 'link' && f.kind !== 'multi_link')
-                          .slice(0, 4)
-                          .map((f) => f.name),
-                        totals: [],
-                      })
-                    }}
-                  >
-                    <Rows3 className="size-4" />
-                    {$t('Tableau des lignes liées')}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => add({ kind: 'break' })}>
-                    <SeparatorHorizontal className="size-4" />
-                    {$t('Saut de page')}
-                  </Button>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="document-footer" className="text-sm text-muted-foreground">
-                    {$t('Pied de page')}
-                  </label>
-                  <Input
-                    id="document-footer"
-                    value={draft.spec.footer}
-                    onChange={(e) => changeSpec({ footer: e.target.value })}
-                    placeholder="SIRET 123 456 789 00012 — {{numero}}"
-                    className="h-9"
-                  />
-                  <span className="block text-xs text-muted-foreground">
-                    {$t(
-                      'Sur chaque page, avec son numéro. Il cite une colonne comme un texte, son nom entre doubles accolades.',
+                <div className="min-h-0 flex-1 overflow-y-auto p-4 scroll-discret">
+                  <TabsContent value="blocks" className="space-y-3">
+                    {draft.spec.blocks.length === 0 && (
+                      <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                        {$t('Aucun bloc : ajoutez un titre, un texte, les champs de la ligne…')}
+                      </p>
                     )}
-                  </span>
+                    <BlockList
+                      blocks={draft.spec.blocks}
+                      keys={draft.keys}
+                      opened={opened}
+                      onToggle={(key) =>
+                        setOpened((o) => {
+                          const next = new Set(o)
+                          if (next.has(key)) next.delete(key)
+                          else next.add(key)
+                          return next
+                        })
+                      }
+                      onChange={(i, block) =>
+                        change((d) => ({
+                          ...d,
+                          spec: {
+                            ...d.spec,
+                            blocks: d.spec.blocks.map((b, j) => (j === i ? block : b)),
+                          },
+                        }))
+                      }
+                      onMove={(from, to) => {
+                        if (to < 0 || to >= draft.spec.blocks.length) return
+                        setBlocks(
+                          arrayMove([...draft.spec.blocks], from, to),
+                          arrayMove([...draft.keys], from, to),
+                        )
+                      }}
+                      onRemove={(i) =>
+                        setBlocks(
+                          draft.spec.blocks.filter((_, j) => j !== i),
+                          draft.keys.filter((_, j) => j !== i),
+                        )
+                      }
+                      onDuplicate={(i) => {
+                        if (full) return
+                        const key = newKey()
+                        setBlocks(
+                          [
+                            ...draft.spec.blocks.slice(0, i + 1),
+                            draft.spec.blocks[i] as DocumentBlock,
+                            ...draft.spec.blocks.slice(i + 1),
+                          ],
+                          [...draft.keys.slice(0, i + 1), key, ...draft.keys.slice(i + 1)],
+                        )
+                      }}
+                      onInsert={(at) => !full && setInserting(at)}
+                      added={added}
+                      ctx={ctx}
+                    />
+                    <Button
+                      variant="ghost"
+                      className="w-full border border-dashed text-muted-foreground"
+                      disabled={full}
+                      onClick={() => setInserting(draft.spec.blocks.length)}
+                    >
+                      <Plus className="size-4" />
+                      {full
+                        ? $t('{count} blocs au plus', { count: MAX_BLOCKS })
+                        : $t('Ajouter un bloc')}
+                    </Button>
+                  </TabsContent>
+                  <TabsContent value="style">
+                    <StylePanel spec={draft.spec} onChange={changeSpec} />
+                  </TabsContent>
+                  <TabsContent value="frame">
+                    <HeaderFooterPanel spec={draft.spec} table={table} onChange={changeSpec} />
+                  </TabsContent>
                 </div>
-              </>
+              </Tabs>
             )}
-          </div>
+            {error !== null && (
+              <p
+                role="alert"
+                className="m-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+              >
+                {error}
+              </p>
+            )}
+          </main>
 
           {/* What it makes of the row. */}
-          <div className="flex min-h-0 flex-col gap-2">
+          <aside className="hidden min-h-0 flex-col gap-2 border-l bg-muted/30 p-3 lg:flex">
             <div className="flex items-center gap-2">
               <span className="flex-1 text-sm text-muted-foreground">
-                {$t('Aperçu sur la ligne ouverte')}
+                {previewing ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    {$t('Mise en page…')}
+                  </span>
+                ) : (
+                  $t('Aperçu sur la ligne ouverte')
+                )}
               </span>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => void refresh()}
-                disabled={previewing}
+                onClick={() => draft !== null && void refresh(draft)}
+                disabled={previewing || draft === null}
               >
-                {previewing ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="size-4" />
-                )}
+                <RefreshCw className="size-4" />
                 {$t('Actualiser')}
               </Button>
             </div>
-            <div className="min-h-0 flex-1 overflow-hidden rounded-lg border bg-muted/40">
-              {preview !== null ? (
+            <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border bg-muted/40">
+              {draft !== null && preview !== null ? (
                 <iframe title={$t('Aperçu du document')} src={preview} className="size-full" />
               ) : (
-                <div className="flex size-full items-center justify-center text-sm text-muted-foreground">
-                  {previewing ? <Loader2 className="size-5 animate-spin" /> : $t('Aucun aperçu')}
+                <div className="flex size-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
+                  {previewing ? (
+                    <Loader2 className="size-5 animate-spin" />
+                  ) : draft === null ? (
+                    $t('Choisissez un point de départ : l’aperçu s’affichera ici.')
+                  ) : (
+                    $t('Aucun aperçu')
+                  )}
                 </div>
               )}
+              {previewError !== null && draft !== null && (
+                <p
+                  role="alert"
+                  className="absolute inset-x-2 bottom-2 rounded-md border border-destructive/30 bg-background/95 px-3 py-2 text-xs text-destructive shadow"
+                >
+                  {previewError}
+                </p>
+              )}
             </div>
-          </div>
+          </aside>
         </div>
 
-        {error !== null && (
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-          >
-            {error}
-          </p>
-        )}
-
-        <div className="flex items-center gap-2">
-          {draft?.id !== null && draft !== null && (
-            <Button
-              variant={confirming ? 'destructive' : 'ghost'}
-              onClick={() => (confirming ? void remove() : setConfirming(true))}
-              disabled={busy}
-            >
-              <Trash2 className="size-4" />
-              {confirming ? $t('Confirmer la suppression') : $t('Supprimer le modèle')}
-            </Button>
-          )}
-          <span className="flex-1" />
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
-            {$t('Fermer')}
-          </Button>
-          <Button
-            onClick={() => void save()}
-            disabled={busy || draft === null || (!dirty && draft.id !== null)}
-          >
-            {busy && <Loader2 className="size-4 animate-spin" />}
-            {$t('Enregistrer')}
-          </Button>
-        </div>
+        <BlockPicker
+          open={inserting !== null}
+          onClose={() => setInserting(null)}
+          onPick={insert}
+          unavailable={
+            sources.length === 0 ? { rows: $t('Aucune autre table n’est liée à celle-ci.') } : {}
+          }
+        />
       </DialogContent>
     </Dialog>
   )
 }
 
-const BLOCK_LABELS: Readonly<Record<DocumentBlock['kind'], string>> = {
-  text: $t('Texte'),
-  fields: $t('Champs de la ligne'),
-  rows: $t('Tableau des lignes liées'),
-  break: $t('Saut de page'),
-}
-
-function BlockHeader({
-  block,
-  first,
-  last,
-  onMove,
-  onRemove,
-}: {
-  readonly block: DocumentBlock
-  readonly first: boolean
-  readonly last: boolean
-  readonly onMove: (by: -1 | 1) => void
-  readonly onRemove: () => void
-}) {
+/** The starting points of a new template, each drawn in small. */
+function Gallery({ onPick }: { readonly onPick: (id: PresetId) => void }) {
   return (
-    <div className="flex items-center gap-1 border-b bg-muted/40 px-3 py-1.5">
-      <span className="flex-1 text-xs font-medium text-muted-foreground">
-        {BLOCK_LABELS[block.kind]}
-      </span>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        disabled={first}
-        onClick={() => onMove(-1)}
-        aria-label={$t('Monter')}
-      >
-        <ArrowUp className="size-3.5" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        disabled={last}
-        onClick={() => onMove(1)}
-        aria-label={$t('Descendre')}
-      >
-        <ArrowDown className="size-3.5" />
-      </Button>
-      <Button variant="ghost" size="icon-sm" onClick={onRemove} aria-label={$t('Retirer le bloc')}>
-        <Trash2 className="size-3.5" />
-      </Button>
-    </div>
-  )
-}
-
-function Checks({
-  fields,
-  chosen,
-  onChange,
-  disabled,
-}: {
-  readonly fields: readonly Field[]
-  readonly chosen: readonly string[]
-  readonly onChange: (next: string[]) => void
-  readonly disabled?: (f: Field) => boolean
-}) {
-  const id = useId()
-  return (
-    <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-      {fields.map((f) => (
-        <label
-          key={f.name}
-          htmlFor={`${id}-${f.name}`}
-          className="flex items-center gap-1.5 text-sm"
-        >
-          <Checkbox
-            id={`${id}-${f.name}`}
-            checked={chosen.includes(f.name)}
-            disabled={disabled?.(f) ?? false}
-            onCheckedChange={(v) =>
-              onChange(v === true ? [...chosen, f.name] : chosen.filter((n) => n !== f.name))
-            }
-          />
-          {f.label}
-        </label>
-      ))}
-    </div>
-  )
-}
-
-function BlockBody({
-  block,
-  table,
-  sources,
-  onChange,
-}: {
-  readonly block: DocumentBlock
-  readonly table: Table
-  readonly sources: ReturnType<typeof sourcesOf>
-  readonly onChange: (next: DocumentBlock) => void
-}): ReactNode {
-  switch (block.kind) {
-    case 'text':
-      return (
-        <div className="rounded-md border">
-          <RichTextEditor
-            value={block.html}
-            onChange={(html) => html !== block.html && onChange({ ...block, html })}
-            fields={shown(table.fields)}
-            placeholder={$t('Écrire, et citer une colonne avec le menu « Colonne »…')}
-            contentClassName="min-h-24"
-          />
-        </div>
-      )
-    case 'fields':
-      return (
-        <div className="space-y-2">
-          <Checks
-            fields={shown(table.fields)}
-            chosen={block.fields}
-            onChange={(fields) => onChange({ ...block, fields })}
-          />
-          <p className="text-xs text-muted-foreground">
-            {$t('Aucun coché : tous les champs que le lecteur peut lire, dans leur ordre.')}
+    <div className="min-h-0 flex-1 overflow-y-auto p-6 scroll-discret">
+      <div className="mx-auto max-w-3xl space-y-5">
+        <div className="space-y-1">
+          <h2 className="flex items-center gap-2 text-base font-semibold">
+            <LayoutTemplate className="size-4 text-muted-foreground" />
+            {$t('Nouveau modèle')}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {$t(
+              'Choisissez un point de départ : il est construit avec les colonnes de cette table, et tout s’y change ensuite.',
+            )}
           </p>
         </div>
-      )
-    case 'rows': {
-      const found = sources.find((s) => s.value === sourceKey(block.source))
-      const theirs = found === undefined ? [] : shown(found.table.fields)
-      const columns = theirs.filter((f) => block.columns.includes(f.name))
-      return (
-        <div className="space-y-3">
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Input
-              value={block.title}
-              onChange={(e) => onChange({ ...block, title: e.target.value })}
-              placeholder={$t('Titre du tableau')}
-              aria-label={$t('Titre du tableau')}
-              className="h-9"
-            />
-            <Choice
-              value={found?.value ?? null}
-              onValueChange={(v) => {
-                const next = sources.find((s) => s.value === v)
-                if (next !== undefined)
-                  onChange({ ...block, source: next.source, columns: [], totals: [] })
-              }}
-              options={sources.map((s) => ({ value: s.value, label: s.label }))}
-              placeholder={$t('Lignes à lister')}
-              aria-label={$t('Lignes à lister')}
-              size="default"
-            />
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs text-muted-foreground">{$t('Colonnes, dans cet ordre')}</span>
-            <Checks
-              fields={theirs}
-              chosen={block.columns}
-              onChange={(next) =>
-                onChange({
-                  ...block,
-                  columns: theirs.map((f) => f.name).filter((n) => next.includes(n)),
-                  totals: block.totals.filter((t) => next.includes(t)),
-                })
-              }
-            />
-          </div>
-          {columns.some(numeric) && (
-            <div className="space-y-1">
-              <span className="text-xs text-muted-foreground">{$t('Totaux sous le tableau')}</span>
-              <Checks
-                fields={columns.filter(numeric)}
-                chosen={block.totals}
-                onChange={(totals) => onChange({ ...block, totals })}
-              />
-            </div>
-          )}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          {presets().map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onPick(p.id)}
+              className="group flex flex-col gap-3 rounded-xl border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/40 focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              <Miniature id={p.id} accent={p.accent} />
+              <span className="space-y-0.5">
+                <span className="block text-sm font-medium">{p.label}</span>
+                <span className="block text-xs text-muted-foreground">{p.description}</span>
+              </span>
+            </button>
+          ))}
         </div>
-      )
-    }
-    case 'break':
-      return (
-        <p className="text-xs text-muted-foreground">
-          {$t('La suite commence sur une nouvelle page.')}
-        </p>
-      )
-  }
+      </div>
+    </div>
+  )
+}
+
+/**
+ * A starting point drawn as a sheet of paper: white whatever the theme, since it is
+ * the page that will be printed.
+ */
+function Miniature({ id, accent }: { readonly id: PresetId; readonly accent: string }) {
+  const line = (w: string, extra = '') => (
+    <div className={cn('h-1 rounded-full bg-neutral-200', extra)} style={{ width: w }} />
+  )
+  const landscape = id === 'certificate'
+  return (
+    <div className="flex h-36 items-center justify-center rounded-lg bg-muted/60 p-3">
+      <div
+        className={cn(
+          'relative overflow-hidden rounded-sm bg-white shadow-md ring-1 ring-black/5 transition-transform group-hover:-translate-y-0.5',
+          landscape ? 'aspect-[1.414/1] h-24' : 'aspect-[1/1.414] h-full',
+        )}
+      >
+        {id === 'blank' && (
+          <div className="space-y-1.5 p-2.5">
+            <div className="h-2 w-2/3 rounded-sm" style={{ backgroundColor: accent }} />
+            {line('90%', 'mt-2')}
+            {line('75%')}
+            {line('85%')}
+            {line('60%')}
+          </div>
+        )}
+        {id === 'invoice' && (
+          <div className="space-y-1.5 p-2">
+            <div className="flex items-start justify-between">
+              <div className="size-3 rounded-sm" style={{ backgroundColor: accent }} />
+              <div className="h-1.5 w-6 rounded-sm" style={{ backgroundColor: accent }} />
+            </div>
+            <div className="h-px w-full" style={{ backgroundColor: accent }} />
+            {line('40%')}
+            <div className="h-1.5 w-full rounded-[1px]" style={{ backgroundColor: accent }} />
+            {line('100%')}
+            {line('100%', 'bg-neutral-100')}
+            {line('100%')}
+            <div className="ml-auto h-1.5 w-2/5 rounded-[1px] bg-neutral-200" />
+          </div>
+        )}
+        {id === 'quote' && (
+          <div className="space-y-1.5 p-2">
+            <div className="h-4 w-full rounded-[1px]" style={{ backgroundColor: accent }} />
+            <div className="grid grid-cols-3 gap-1">
+              {line('100%')}
+              {line('100%')}
+              {line('100%')}
+            </div>
+            <div className="h-px w-full" style={{ backgroundColor: accent }} />
+            {line('100%')}
+            {line('100%')}
+            <div className="h-2 w-full border-l-2 bg-neutral-50" style={{ borderColor: accent }} />
+          </div>
+        )}
+        {id === 'sheet' && (
+          <div>
+            <div className="h-6 w-full" style={{ backgroundColor: accent }} />
+            <div className="grid grid-cols-2 gap-1.5 p-2">
+              <div className="h-8 rounded-[2px] bg-neutral-200" />
+              <div className="space-y-1">
+                {line('100%')}
+                {line('70%')}
+                {line('90%')}
+              </div>
+            </div>
+            <div className="space-y-1 px-2">
+              {line('40%')}
+              {line('100%')}
+            </div>
+          </div>
+        )}
+        {id === 'certificate' && (
+          <div
+            className="absolute inset-1 flex flex-col items-center justify-center gap-1 border-2 border-double"
+            style={{ borderColor: accent }}
+          >
+            <div className="h-1.5 w-1/2 rounded-sm" style={{ backgroundColor: accent }} />
+            {line('35%')}
+            <div className="h-1 w-1/3 rounded-sm bg-neutral-400" />
+            {line('55%')}
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }

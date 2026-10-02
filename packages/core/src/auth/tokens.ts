@@ -3,6 +3,7 @@ import { writeAudit, writeSecurity } from '../audit/journal.js'
 import { BasedbError } from '../errors/index.js'
 import { type Action, type Target, decide } from '../rbac/decide.js'
 import { loadGrants } from '../rbac/loader.js'
+import { loadBaseTarget } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, type Surface, withTransaction } from '../tx/context.js'
 import { loadSessionById } from './session.js'
@@ -27,9 +28,9 @@ import { loadSessionById } from './session.js'
  * No expiry by default because what these tokens feed — an agent's configuration, a
  * sync job — breaks silently the day the token dies, and a token that dies on a schedule
  * nobody remembers is replaced by one pasted in a hurry. What keeps an eternal token in
- * check is elsewhere: it is bound to one base, it never carries `delete` nor a
- * `manage_*`, it is inert the moment its creator is disabled, its last use is shown, and
- * revocation is one click away.
+ * check is elsewhere: it is bound to one base, it carries `delete` only when its creator
+ * says so and never a `manage_*`, it is inert the moment its creator is disabled, its
+ * last use is shown, and revocation is one click away.
  */
 export const TOKEN_DEFAULT_DAYS: number | null = null
 export const TOKEN_MAX_DAYS = 365
@@ -46,13 +47,17 @@ const TOKEN_PATTERN = /^bdb_([a-z0-9]{8})_([0-9A-Za-z]{43})$/
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 const PREFIX_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 
-/** What a token lets its bearer do on the data of its base. */
-export type TokenAccess = 'read' | 'write'
+/**
+ * What a token lets its bearer do on the data of its base: read; read and write; or read,
+ * write and delete — a deleted row is restored from the history.
+ */
+export type TokenAccess = 'read' | 'write' | 'delete'
 
-/** The verbs of a token's role — never `delete`, never a `manage_*` (05 §2.3). */
+/** The verbs of a token's role — `delete` only when asked, never a `manage_*` (05 §2.3). */
 const ACTIONS_OF: Readonly<Record<TokenAccess, readonly Action[]>> = {
   read: ['read'],
   write: ['read', 'create', 'update'],
+  delete: ['read', 'create', 'update', 'delete'],
 }
 
 export interface CreateApiTokenRequest {
@@ -117,19 +122,16 @@ function newSecret(): { secret: string; prefix: string } {
   return { secret: `bdb_${prefix}_${base62(randomBytes(32))}`, prefix }
 }
 
-/** The base a token is scoped to, as a decision target. */
+/**
+ * The base a token is scoped to, as a decision target — with its project: « Gestion »
+ * is most often given on a project, and covers its bases (chapter 05 §15).
+ */
 async function baseTarget(exec: Executor, ctx: RequestContext, baseId: string): Promise<Target> {
-  const rows = await exec.query<{ id: string }>(
-    `SELECT b.id
-       FROM _basedb.base b
-       JOIN _basedb.tenant t ON t.id = b.tenant_id
-      WHERE b.id::text = $1 AND t.ref = $2 AND b.is_live AND b.deleted_at IS NULL`,
-    [baseId, ctx.tenantId],
-  )
-  if (rows[0] === undefined) {
+  const target = await loadBaseTarget(exec, ctx, baseId)
+  if (target === null) {
     throw new BasedbError('RESOURCE_NOT_FOUND', { details: { base: baseId } })
   }
-  return { kind: 'base', id: rows[0].id, tenantId: ctx.tenantId }
+  return target
 }
 
 /**
@@ -164,7 +166,7 @@ function summaryOf(row: TokenRow): ApiTokenSummary {
     label: row.label,
     prefix: row.token_prefix,
     baseId: row.base_id,
-    access: row.can_write ? 'write' : 'read',
+    access: row.can_delete ? 'delete' : row.can_write ? 'write' : 'read',
     surfaces: row.allowed_surfaces,
     createdAt: new Date(row.created_at).toISOString(),
     expiresAt: row.expires_at === null ? null : new Date(row.expires_at).toISOString(),
@@ -188,13 +190,16 @@ interface TokenRow extends Record<string, unknown> {
   readonly suspended_at: string | Date | null
   readonly created_by: string
   readonly can_write: boolean
+  readonly can_delete: boolean
 }
 
 const SUMMARY_COLUMNS = `tk.id, tk.label, tk.token_prefix, tk.base_id, tk.allowed_surfaces,
        tk.created_at, tk.expires_at, tk.last_used_at, tk.revoked_at, tk.suspended_at,
        tk.created_by,
        EXISTS (SELECT 1 FROM _basedb.permission p
-                WHERE p.role_id = tk.role_id AND p.action IN ('create', 'update')) AS can_write`
+                WHERE p.role_id = tk.role_id AND p.action IN ('create', 'update')) AS can_write,
+       EXISTS (SELECT 1 FROM _basedb.permission p
+                WHERE p.role_id = tk.role_id AND p.action = 'delete') AS can_delete`
 
 /**
  * Mints a token — chapter 08 §11, chapter 05 §2.3.
@@ -203,8 +208,8 @@ const SUMMARY_COLUMNS = `tk.id, tk.label, tk.token_prefix, tk.base_id, tk.allowe
  * must have been elevated minutes ago; the caller must hold `manage_tokens` on the base;
  * and every verb the token's role will carry must be one the caller holds there
  * (non-escalation). The role is the token's own, scoped to its base, and carries
- * `read`, plus `create` and `update` for a writing token — never `delete`, never a
- * `manage_*`.
+ * `read`, plus `create` and `update` for a writing token, plus `delete` for one that
+ * deletes — never a `manage_*`.
  */
 export async function createApiToken(
   pools: Pools,
@@ -219,7 +224,7 @@ export async function createApiToken(
   if ([...label].length > 200) {
     throw new BasedbError('LABEL_TOO_LONG', { details: { maximum: 200 } })
   }
-  if (request.access !== 'read' && request.access !== 'write') {
+  if (!Object.hasOwn(ACTIONS_OF, request.access)) {
     throw new BasedbError('REQUEST_INVALID', { details: { field: 'access' } })
   }
   const surfaces = [...new Set(request.surfaces)]

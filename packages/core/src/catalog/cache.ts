@@ -40,7 +40,7 @@ export const DOCUMENT_MAX_BYTES = 2 * 1024 * 1024
  * Without it, during a rolling deployment, one process would serve a `304` for a
  * document the other version would have generated differently.
  */
-export const APPLICATION_VERSION = '0.5.1'
+export const APPLICATION_VERSION = '0.6.0'
 
 /** The two counters, read in one query. */
 export interface CatalogVersions {

@@ -1284,10 +1284,10 @@ export default {
 		agents: {
 			label: 'API REST · MCP · webhooks',
 			title: 'Tus agentes de IA acceden a los datos, {no a las llaves del castillo.}',
-			lead: 'El servidor MCP da doce herramientas a los agentes; la API REST, los mismos datos a tus programas. Un único punto de control de los permisos, los mismos registros.',
+			lead: 'El servidor MCP da catorce herramientas a los agentes; la API REST, los mismos datos a tus programas. Un único punto de control de los permisos, los mismos registros.',
 			bullets: [
 				'<strong>Un token por base</strong>, de solo lectura por defecto, nunca con más permisos que la persona que lo creó.',
-				'<strong>Un agente no elimina nada</strong> ni cambia la estructura: la propone, y una persona la aprueba.',
+				'<strong>Un agente solo elimina con tu permiso</strong>, una fila a la vez, y no cambia la estructura: la propone, una persona la aprueba.',
 				'<strong>Una documentación generada</strong> para cada base, filtrada por tus permisos, con su especificación OpenAPI 3.1.',
 				'<strong>Webhooks</strong> firmados, ordenados y reintentados en cada escritura.',
 			],
@@ -1520,7 +1520,7 @@ export default {
 			},
 			agent: {
 				q: '¿Cómo se conecta un agente de IA?',
-				a: 'Mediante el servidor MCP, con un token de integración limitado a una base, de solo lectura por defecto. Un agente lee, crea y modifica filas según sus permisos; no elimina nada ni cambia la estructura: la propone, y una persona la aprueba.',
+				a: 'Mediante el servidor MCP, con un token de integración limitado a una base, de solo lectura por defecto. Un agente lee, crea y modifica filas según sus permisos —y elimina, una a la vez, si su token se ha creado para ello—; no cambia la estructura: la propone, y una persona la aprueba.',
 			},
 			postgres: {
 				q: '¿Qué versión de PostgreSQL hace falta?',
@@ -1547,6 +1547,47 @@ export default {
 		title: 'Lo que ha cambiado en basedb',
 		intro: 'El detalle de cada cambio está en <a href="https://github.com/eodia/basedb/commits/main">el historial del repositorio</a>. Lo que viene después: la <a href="/feuille-de-route/">hoja de ruta</a>.',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: 'Agentes que eliminan, si tú lo permites',
+				tag: 'Novedad',
+				items: [
+					'<strong>Un tercer nivel de token</strong>, «Lectura, escritura y eliminación»: un programa elimina mediante la API REST, un agente mediante la nueva herramienta <code>delete_record</code> — una fila a la vez, devuelta en la respuesta. <a href="/integrations/mcp/#eliminar-filas">Eliminar filas</a>',
+					'<strong>Volver atrás</strong>: <code>restore_record</code> restaura una fila eliminada bajo su identificador; una eliminación que una relación en cascada extendería a otras filas sigue reservada a la interfaz.',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: 'Tokens para quien gestiona una base',
+				tag: 'Novedad',
+				items: [
+					'<strong>El nivel Gestión basta</strong>: otorgado sobre una base o sobre su proyecto, permite crear los tokens de integración de sus bases, sin ser administrador. <a href="/integrations/api-rest/#un-token">Un token</a>',
+					'<strong>Si no, lo dice claramente</strong>: a quien lee o escribe sin gestionar la base, la ventana de tokens le dice a quién dirigirse; a una cuenta sin contraseña, por qué todavía no puede crear uno.',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: 'Automatizaciones que esperan, se recuperan de un error y envían PDF',
+				tag: 'Novedad',
+				items: [
+					'<strong>Cuatro desencadenadores más</strong>: se elimina una fila; una fila entra en un filtro —«una factura pasa a estar atrasada»—; llega una fecha —tres días antes del vencimiento, a las 9:00—; otro programa llama a la dirección secreta de la automatización. <a href="/fonctionnalites/automatisations/#un-servicio-que-llama-a-basedb">Un servicio que llama a basedb</a>',
+					'<strong>Esperar</strong> tres días, o hasta la fecha de un campo, y luego continuar releyendo la fila: «si todavía no está aceptado, reclamar». <a href="/fonctionnalites/automatisations/#esperar">Esperar</a>',
+					'<strong>Generar un PDF y enviarlo</strong>: el documento de una fila, guardado en un campo Archivo o adjunto a un correo electrónico —en texto enriquecido, con destinatarios en copia y una dirección de respuesta, a cada uno o uno solo para todos. <a href="/fonctionnalites/automatisations/#un-pdf-y-un-correo-electrónico">Un PDF y un correo electrónico</a>',
+					'<strong>Eliminar una fila, contar y sumar, lanzar otra automatización</strong>; una condición también puede comprobar un valor —la respuesta de la IA, un total—, y una búsqueda que no encuentra nada tiene su propio camino.',
+					'<strong>Intentar</strong>: unos pasos, y otros si alguno falla; un webhook reintenta por sí mismo, un bucle continúa a pesar de una fila en error. <a href="/fonctionnalites/automatisations/#intentar">Intentar</a>',
+					'<strong>Todos los pasos a mano</strong>: el <strong>+</strong> abre una ventana ordenada por categoría, con una búsqueda, en lugar de un menú que podía quedar cortado.',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: 'Documentos PDF con tus colores',
+				tag: 'Novedad',
+				items: [
+					'<strong>Cinco puntos de partida</strong> —factura, presupuesto, ficha, certificado, página en blanco—, construidos con las columnas de tu tabla: número, fecha, importes, foto, filas vinculadas. <a href="/fonctionnalites/documents/#crear-una-plantilla">Crear una plantilla</a>',
+					'<strong>Tu logo y tus colores</strong>: un encabezado con logo y datos de contacto, un pie con menciones legales y números de página, un color de acento, fuentes con o sin serifa, un marco alrededor de la página. <a href="/fonctionnalites/documents/#encabezado-y-pie-de-página">Encabezado y pie de página</a>',
+					'<strong>Nuevos bloques</strong>: un título sobre una franja, una imagen, dos o tres columnas, un resumen de importe sin impuestos / total con impuestos, una tabla con encabezado de color, un separador. Se arrastran para reordenarlos, y la vista previa sigue cada modificación. <a href="/fonctionnalites/documents/#el-contenido-bloques">Los bloques</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: 'Una conexión interrumpida ya no detiene basedb',
@@ -1931,8 +1972,8 @@ export default {
 						text: 'Copiar las vistas SQL junto con la estructura al crear o comparar entornos, y en las plantillas de base.',
 					},
 					loops: {
-						title: 'Esperas en las automatizaciones',
-						text: 'Esperar antes del paso siguiente («tres días después») y llevar los flujos —condiciones, búsquedas, bucles— a las plantillas de base.',
+						title: 'Flujos completos en las plantillas de base',
+						text: 'Llevar los flujos de automatización —condiciones, búsquedas, bucles, esperas, PDF— a las plantillas de base, que hoy solo conservan los pasos simples.',
 					},
 					textFormulas: {
 						title: 'Fórmulas de texto',

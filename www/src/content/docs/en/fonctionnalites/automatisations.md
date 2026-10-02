@@ -1,13 +1,14 @@
 ---
 title: Automations
-description: When a row changes, at a set time or at the click of a button — update, create, find, repeat on each row, branch, ask AI, notify, send an email, call a service, post to Slack.
+description: When a row changes, enters a filter or disappears, when a date arrives, at a set time, at the click of a button or a call — update, create, find, count, repeat, branch, wait, try, ask AI, make a PDF, notify, send an email, call a service.
 ---
 
 An automation says **when**, **if** and **then**: when a task moves to “Fait”, record the
 time; when a negative review comes in, notify the person in charge and post to Slack; every
 Monday at 9 a.m., create the row for the team meeting. And when one action is not enough, it
 follows a **flow**: find a row, take one branch or another depending on what it says, repeat
-steps on each row that matches a filter, reuse in one step what an earlier step found or wrote.
+steps on each row that matches a filter, reuse in one step what an earlier step found or wrote,
+**wait** three days before a follow-up, send a **PDF** as an attachment.
 
 They open from **Automations**, in the block of the open base at the bottom of the sidebar,
 and require the **Manage** level.
@@ -16,9 +17,10 @@ and require the **Manage** level.
 
 ## The flow
 
-The flow is drawn from top to bottom: the trigger, then each step. A **+** on a line adds a
-step at that point; a card opens its settings on the right. A simple automation — a trigger
-and an action — fits in two cards, and is set up as before.
+The flow is drawn from top to bottom: the trigger, then each step. A **+** on a line opens the
+list of steps, grouped by category — Rows, Communicate, Documents, AI, Logic — with a search,
+and adds the one you choose at that point; a card opens its settings on the right. A simple
+automation — a trigger and an action — fits in two cards, and is set up as before.
 
 ## When
 
@@ -28,6 +30,10 @@ and an action — fits in two cards, and is set up as before.
 | **A row is updated** | the table, and optionally only the fields to watch |
 | **At a set time** | every hour, every day or every week, at the chosen time and in the chosen time zone |
 | **A button is clicked** | a [Button field](/basedb/en/fonctionnalites/tables-et-champs/#button) of the table |
+| **A row is deleted** | the table; the steps cite the row as it was |
+| **A row enters a filter** | the table and the filter: the automation runs when a row enters it, and does not run again until it has left — “an invoice becomes overdue”, not “an overdue invoice is updated” |
+| **A date arrives** | a Date field of the table, an offset — three days before, the same day, a week after — and the time: due-date reminders, contract anniversaries |
+| **A webhook is received** | nothing: the automation gets its own address, which another piece of software calls ([details](#a-service-that-calls-basedb)) |
 
 A trigger on rows sees **all** writes: the interface, the API, an agent, a shared form, and
 even direct SQL — automations start from the history, which captures them all.
@@ -40,7 +46,8 @@ moment of acting**. A run whose condition is not met is “skipped”, and says 
 
 ## Then
 
-Up to thirty steps, in order; the first one that fails stops the following ones.
+Up to forty steps, in order; the first one that fails stops the following ones — except inside
+a **Try** block ([details](#try)).
 
 | Step | What it does |
 |---|---|
@@ -54,10 +61,20 @@ Up to thirty steps, in order; the first one that fails stops the following ones.
 | **Ask AI** | an answer from the [AI provider](/basedb/en/fonctionnalites/ia/) to a prompt that cites the row and the previous steps — draft, summarize, classify —, read as a text, a number, yes or no, a date or a choice from a list |
 | **Condition** | several branches: the first one whose condition is met is taken, “Otherwise” when none is; the branches then join again |
 | **For each row** | the steps it contains, once for each row of a table that matches a filter ([details](#for-each-row)) |
+| **Delete a row** | the row that triggered, or the one a step found — it goes to the trash |
+| **Count and add up** | the number of rows matching a filter, their sum, average, minimum or maximum, to cite or test afterwards |
+| **Generate a PDF** | the [document](/basedb/en/fonctionnalites/documents/) of a row, stored in a File field or attached to an email |
+| **Wait** | a duration, or until the date in a field ([details](#wait)) |
+| **Try** | steps, and others to run if one of them fails ([details](#try)) |
+| **Run an automation** | another automation of the base, on a row of its table |
 
 A search that finds nothing does not stop the flow: the steps that were to update its row are
-skipped. To do something else in that case, a condition tests it — a branch whose filter is
-empty is taken as soon as the search has found something.
+skipped. To do something else in that case, **If no row is found…**, below the search, adds a
+condition that tests it.
+
+A **condition** tests a row with a filter, or a **value**: the AI's answer, a webhook's code, a
+total — “`{{e2.reponse}}` equals Urgent”, “`{{e3.somme.montant}}` is greater than or equal to
+1000”. Numbers are compared as numbers, text without accents or capitals.
 
 ## For each row
 
@@ -76,6 +93,59 @@ triggered by a paid invoice, `facture eq {{_id}}` loops over its detail rows.
 Beyond the limit, the remaining rows wait for the next run, which says so: take the rows
 already handled out of the filter — a “relancée” checkbox, a date — so they all get handled
 across runs. A loop can’t contain another one, and a run stops after two minutes.
+
+## Wait
+
+The **Wait** step pauses the run — three hours, two days — or until the date in a field of a
+row, with an offset and a time: “the day before the due date, at 9 a.m.”. The run appears as
+**Paused** in the **Runs** tab, with the date it resumes.
+
+It resumes at the next step by **re-reading** its rows: “three days after the quote is sent, if
+it is still not accepted, follow up” is written as **Wait** 3 days, then a condition on the
+quote's status, as it stands that day. Disabling the automation stops paused runs; a wait
+cannot be placed inside a loop or a **Try** block, and lasts at most a year.
+
+## Try
+
+The **Try** block has two branches. The first one runs; if one of its steps fails, the flow
+continues with the second, **On failure**, which cites the failure — `{{e4.erreur}}`, the code,
+and `{{e4.etape}}`, the step —, then resumes after the block. This lets you notify someone when
+a service does not respond, without stopping everything.
+
+More simply: a webhook can **retry** itself up to three times after a service outage, and a
+loop can **continue** despite a row that failed.
+
+## A PDF and an email
+
+**Generate a PDF** makes the document of a row — with a [document
+template](/basedb/en/fonctionnalites/documents/) of its table, or the sheet of all its fields —
+and can store it in a File field. **Send an email** can then attach it, along with the files of
+a File or Image field:
+
+- an email **to each one**, or **one, to everyone**, with recipients **in CC**;
+- a message in **rich text** — bold, lists, links — that cites the row;
+- a **reply-to** address: yours by default, or the one in an Email field;
+- up to 50 recipients, 10 attachments and 15 MB.
+
+“When a quote moves to Accepted, send the invoice to the client, with accounting in CC”: **A
+row enters a filter** `statut eq "accepte"`, **Generate a PDF** with the Invoice template,
+**Send an email** to the client's Email field, with the invoice attached.
+
+## A service that calls basedb
+
+With the **A webhook is received** trigger, the automation has its own secret address, to give
+to the software that must start it — an online shop, an external form, an automation tool:
+
+```bash
+curl -X POST "https://basedb.example.com/api/v1/hooks/<secret>" \
+  -H "content-type: application/json" \
+  -d '{"client": {"nom": "Dupont"}, "total": 120}'
+```
+
+The steps cite what it sent: `{{trigger.client.nom}}`, `{{trigger.total}}`; a form reads the
+same way, a text through `{{trigger.texte}}`. The address is copied from the trigger’s
+settings; **Change address** replaces it, and the old one stops working at once. A call
+receives `202`, and the automation runs within the second.
 
 ## Call a service
 
@@ -131,6 +201,11 @@ text:
 - `{{e4.reponse}}`: the answer of AI step `e4`;
 - `{{e5.client}}` in loop `e5`, the current row; `{{e5.nombre}}` after it, the number of rows
   processed;
+- `{{e6.nombre}}`, `{{e6.somme.montant}}`, `{{e6.moyenne.montant}}`, `{{e6.max.echeance}}`: what
+  step `e6` counted;
+- `{{e7.erreur}}`, `{{e7.etape}}`: the failure caught by the **Try** block `e7`;
+- `{{e8.nom}}`: the name of the PDF from step `e8`;
+- `{{trigger.client.nom}}`: what an incoming webhook sent;
 - `{{_maintenant}}`: the moment of the run.
 
 A value made of a single citation passes the value itself: a relation, a person, a choice —
@@ -177,17 +252,15 @@ bypassing it, and a search only finds what they can read. The history shows it a
 ## Limits
 
 - What an automation writes triggers no other automation: whatever must follow on is written
-  in a single flow.
-- A search returns one row, the first; a loop processes 200 at most per run, and the first
-  step that fails stops it. No waiting (“three days later”).
-- No scripts. An email goes out as plain text, one per recipient — twenty at most per step —,
-  through the instance’s [mail server](/basedb/en/hebergement/variables/#emails); a reply
-  reaches the person who owns the automation.
-- A condition tests a row: to take a branch based on the AI’s answer, first write it into a
-  field of the row.
+  in a single flow, or through **Run an automation**, three levels at most.
+- A search returns one row, the first; a loop processes 200 at most per run. A run lasts two
+  minutes at most, not counting waits.
+- No scripts. An email goes out through the instance's [mail server](/basedb/en/hebergement/variables/#emails).
 - A [base template](/basedb/en/fonctionnalites/modeles/) only carries automations without
   searches, loops, conditions or AI steps, and never a webhook.
 - A webhook does not follow redirects and waits 10 seconds at most; a response other than 2xx
-  fails the step.
+  fails the step, after its retries.
+- An arriving date is checked every minute; only the ones that arrive after the automation was
+  saved count.
 - 100 runs per hour per automation; a missed scheduled time is caught up only once.
 - The delay between the write and the action is on the order of a second.

@@ -29,8 +29,8 @@ Crea en n8n una credencial **basedb API**:
 | **Token** | un **token de integración**: menú **⋯** de la base → **API y agentes** → **Tokens de API y MCP…** |
 
 Un token abre **una** base. Lee sus filas, las escribe si se ha creado con permiso de
-escritura, nunca tiene más permisos que la persona que lo creó, y **nunca elimina**. Al
-guardarlo, n8n prueba la conexión y dice si el token se rechaza.
+escritura, y nunca tiene más permisos que la persona que lo creó. Al guardarlo, n8n prueba la
+conexión y dice si el token se rechaza.
 
 ## Leer y escribir: el nodo basedb
 
@@ -58,9 +58,9 @@ detiene el nodo con el código de basedb y lo que significa.
   vinculada.
 - **Create or Update** nunca modifica varias filas: si varias tienen esos valores, el nodo se
   detiene en lugar de adivinar.
-- Sin operación **Delete**: un token no elimina. Para retirar filas, márcalas (un estado
-  «Archivado»), o confía la eliminación a una
-  [automatización](/basedb/es/fonctionnalites/automatisations/).
+- Sin operación **Delete**: para retirar filas, márcalas (un estado «Archivado»), confía la
+  eliminación a una [automatización](/basedb/es/fonctionnalites/automatisations/), o llama a la
+  [API REST](/basedb/es/integrations/api-rest/) con un token creado para eliminar.
 
 ## Lanzar un workflow
 

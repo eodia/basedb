@@ -20,6 +20,7 @@ import {
   type DashboardSharing,
   type DocumentTemplate,
   type FormSharing,
+  HOOK_BYTES,
   type Integration,
   type Kernel,
   type MetaKind,
@@ -39,8 +40,10 @@ import {
   type SqlConsoleResult,
   type SqlView,
   type SyncedTable,
+  type TokenAccess,
   VARY,
   wireSteps,
+  wireTrigger,
 } from '@basedb/core'
 import { type Context, Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
@@ -1683,15 +1686,12 @@ export function createApp(options: AppOptions) {
     label: a.label,
     description: a.description,
     enabled: a.enabled,
-    trigger: {
-      kind: a.trigger.kind,
-      table: a.trigger.table,
-      fields: a.trigger.fields,
-      schedule: a.trigger.schedule,
-    },
+    trigger: wireTrigger(a.trigger),
     condition: a.condition,
     // The flow's steps, branches and what they hold included (chapter 17 §1.3).
     actions: wireSteps(a.actions),
+    // A webhook trigger's own address, for whoever builds the base (chapter 17 §1.1).
+    hook: a.hook,
     owner: a.owner,
     next_run_at: a.nextRunAt,
     last_run: a.lastRun,
@@ -1703,6 +1703,7 @@ export function createApp(options: AppOptions) {
     trigger: r.trigger,
     record_id: r.recordId,
     status: r.status,
+    resume_at: r.resumeAt,
     reason: r.reason,
     error_code: r.errorCode,
     steps: r.steps,
@@ -1772,6 +1773,50 @@ export function createApp(options: AppOptions) {
     })
     return c.json({ data: { run: queued.runId } }, 202)
   })
+
+  /** A minute's calls to one automation's address: past it, the caller waits. */
+  const hookCalls = new RateLimiter(60, 60_000)
+
+  /**
+   * An automation's own address, called from outside (chapter 17 §1.1): no account, the
+   * secret in the path is the credential. A JSON body is kept as sent, a form as an object,
+   * any other text as `{texte}`; at most 64 KiB.
+   */
+  app.post(
+    '/api/v1/hooks/:secret',
+    bodyLimit({
+      maxSize: HOOK_BYTES,
+      onError: () => {
+        throw new BasedbError('BODY_TOO_LARGE', { details: { maximum: HOOK_BYTES } })
+      },
+    }),
+    async (c) => {
+      const secret = c.req.param('secret')
+      const verdict = hookCalls.check(secret, Date.now())
+      if (!verdict.allowed) {
+        c.header('retry-after', String(verdict.retryAfter))
+        throw new BasedbError('RATE_LIMIT_EXCEEDED', {
+          details: { retry_after: verdict.retryAfter },
+        })
+      }
+      const type = c.req.header('content-type') ?? ''
+      const text = await c.req.text()
+      let payload: unknown = {}
+      if (text.trim() !== '') {
+        if (type.includes('application/x-www-form-urlencoded')) {
+          payload = Object.fromEntries(new URLSearchParams(text))
+        } else {
+          try {
+            payload = JSON.parse(text)
+          } catch {
+            payload = { texte: text }
+          }
+        }
+      }
+      const queued = await options.kernel.receiveHook({ secret, payload })
+      return c.json({ data: { run: queued.runId } }, 202)
+    },
+  )
 
   /** Undoes a transaction of the caller's; the undo's own is what a redo names (§4). */
   app.post('/api/v1/:tenantRef/history/undo', async (c) => {
@@ -4641,10 +4686,10 @@ export function createApp(options: AppOptions) {
     const issued = await options.kernel.createApiToken(ctx, {
       label: typeof body.label === 'string' ? body.label : '',
       baseId: base.baseId,
-      // Checked by the kernel, which refuses anything but `read` and `write`, and any
-      // surface but `rest` and `mcp`. Absent: both doors — the API for a program, MCP
+      // Checked by the kernel, which refuses anything but `read`, `write` and `delete`, and
+      // any surface but `rest` and `mcp`. Absent: both doors — the API for a program, MCP
       // for an agent — since one base's integration usually wants both.
-      access: body.access as 'read' | 'write',
+      access: body.access as TokenAccess,
       surfaces: Array.isArray(body.surfaces)
         ? (body.surfaces as ('rest' | 'mcp')[])
         : ['rest', 'mcp'],

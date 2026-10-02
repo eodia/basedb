@@ -1273,10 +1273,10 @@ export default {
 		agents: {
 			label: 'REST API · MCP · Webhook',
 			title: '您的 AI 智能体能访问数据，{却拿不到万能钥匙。}',
-			lead: 'MCP 服务器为智能体提供十二种工具；REST API 为您的程序提供同样的数据。唯一的权限检查点，同一套日志。',
+			lead: 'MCP 服务器为智能体提供十四种工具；REST API 为您的程序提供同样的数据。唯一的权限检查点，同一套日志。',
 			bullets: [
 				'<strong>每个数据库一个令牌</strong>，默认只读，权限绝不会超过创建它的人。',
-				'<strong>智能体不会删除任何内容</strong>，也不会修改结构：它只提议，由人来批准。',
+				'<strong>智能体只在您同意时才会删除</strong>，一次一行，也不会修改结构：它只提议，由人来批准。',
 				'<strong>自动生成的文档</strong>，每个数据库一份，按您的权限过滤，并附带 OpenAPI 3.1 规范。',
 				'<strong>Webhook</strong>：每次写入都会触发，带签名、按顺序、失败重试。',
 			],
@@ -1498,7 +1498,7 @@ export default {
 			},
 			agent: {
 				q: 'AI 智能体如何接入？',
-				a: '通过 MCP 服务器，使用仅限于一个数据库的集成令牌，默认只读。智能体按其权限读取、创建和修改行；它不会删除任何内容，也不会修改结构：它只提议，由人来批准。',
+				a: '通过 MCP 服务器，使用仅限于一个数据库的集成令牌，默认只读。智能体按其权限读取、创建和修改行——如果其令牌是为此创建的，还会一次删除一行；它不会修改结构：它只提议，由人来批准。',
 			},
 			postgres: {
 				q: '需要哪个版本的 PostgreSQL？',
@@ -1525,6 +1525,47 @@ export default {
 		title: 'basedb 的变化',
 		intro: '每项变更的细节见<a href="https://github.com/eodia/basedb/commits/main">仓库的提交历史</a>。接下来要做的：<a href="/feuille-de-route/">路线图</a>。',
 		entries: {
+			agentDelete: {
+				date: '2026-10-02',
+				title: '智能体也能删除——如果您允许',
+				tag: '新功能',
+				items: [
+					'<strong>令牌新增第三个级别</strong>，“读写和删除”：程序通过 REST API 删除，智能体通过新工具 <code>delete_record</code>——一次删除一行，响应中会返回该行。<a href="/integrations/mcp/#删除行">删除行</a>',
+					'<strong>撤销操作</strong>：<code>restore_record</code> 按标识符将已删除的行恢复回来；会因级联关联而牵连其他行的删除，仍只能在界面中进行。',
+				],
+			},
+			tokens: {
+				date: '2026-10-02',
+				title: '面向数据库管理者的令牌',
+				tag: '新功能',
+				items: [
+					'<strong>拥有可管理级别即可</strong>：只要在数据库或其项目上拥有该级别，无需成为管理员，也能创建其数据库的集成令牌。<a href="/integrations/api-rest/#令牌">令牌</a>',
+					'<strong>否则会明确说明</strong>：对于只能查看或编辑、但无法管理数据库的人，令牌窗口会说明应联系谁；对于没有密码的账户，会说明为什么还不能创建令牌。',
+				],
+			},
+			advancedFlows: {
+				date: '2026-10-02',
+				title: '可以等待、捕获失败并发送 PDF 的自动化',
+				tag: '新功能',
+				items: [
+					'<strong>新增四个触发器</strong>：行被删除；行进入筛选——“一张发票变为逾期”；日期到达——到期前三天，上午 9 点；或由其他软件调用自动化的专属地址。<a href="/fonctionnalites/automatisations/#调用-basedb-的服务">调用 basedb 的服务</a>',
+					'<strong>等待</strong>三天，或等到某个字段的日期，然后重新读取该行并继续执行：“如果仍未被接受，发出提醒”。<a href="/fonctionnalites/automatisations/#等待">等待</a>',
+					'<strong>生成 PDF 并发送</strong>：某一行的文档，存入文件字段，或作为邮件附件发送——支持富文本、抄送收件人和回复地址，可每人一封或统一发送给所有人。<a href="/fonctionnalites/automatisations/#pdf-与邮件">PDF 与邮件</a>',
+					'<strong>删除一行、统计，以及运行另一个自动化</strong>；条件现在也可以判断一个值——AI 的回答、某个统计结果——查找不到结果时还有专属的处理路径。',
+					'<strong>尝试</strong>：一组步骤，以及其中一步失败时执行的另一组步骤；Webhook 可以自行重试，循环也能在某一行失败时继续执行。<a href="/fonctionnalites/automatisations/#尝试">尝试</a>',
+					'<strong>所有步骤尽在掌握</strong>：<strong>+</strong> 会打开一个按类别分组、带搜索框的窗口，而不再是可能被截断的菜单。',
+				],
+			},
+			designer: {
+				date: '2026-10-02',
+				title: '按您的配色定制的 PDF 文档',
+				tag: '新功能',
+				items: [
+					'<strong>五种起点</strong>——发票、报价单、资料表、证明、空白页面——均由您数据表的列构成：编号、日期、金额、照片、关联行。<a href="/fonctionnalites/documents/#创建模板">创建模板</a>',
+					'<strong>您的徽标与配色</strong>：带徽标和联系方式的页眉，带法律声明和页码的页脚，一个强调色，黑体或宋体字体，以及页面周围的边框。<a href="/fonctionnalites/documents/#页眉和页脚">页眉和页脚</a>',
+					'<strong>全新区块</strong>：横幅标题、图片、两栏或三栏布局、含税/不含税汇总、带彩色表头的表格、分隔线。拖动即可重新排序，预览会跟随每次修改更新。<a href="/fonctionnalites/documents/#内容区块">区块</a>',
+				],
+			},
 			resilience: {
 				date: '2026-10-01',
 				title: '连接中断不再让 basedb 停止运行',
@@ -1903,8 +1944,8 @@ export default {
 						text: '在创建或比较环境时，以及在数据库模板中，随结构一起复制 SQL 视图。',
 					},
 					loops: {
-						title: '自动化中的等待',
-						text: '在下一步之前等待（“三天后”），并将流程（条件、搜索、循环）带入数据库模板。',
+						title: '数据库模板中的完整流程',
+						text: '把自动化流程——条件、查找、循环、等待、PDF——带入数据库模板，而这些模板目前只保留简单的步骤。',
 					},
 					textFormulas: {
 						title: '文本公式',

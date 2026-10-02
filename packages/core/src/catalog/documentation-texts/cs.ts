@@ -53,6 +53,10 @@ export const cs: Catalog = {
     'Nalezení `_id` řádku podle jeho zobrazované hodnoty, před zápisem vazby.',
   'Créer une ligne.': 'Vytvoření řádku.',
   'Modifier les champs nommés d’une ligne.': 'Úprava pojmenovaných polí řádku.',
+  'Supprimer une ligne, avec un jeton créé pour supprimer — la réponse la rend.':
+    'Odstranění řádku, s tokenem vytvořeným k odstranění — odpověď ho vrátí.',
+  'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
+    'Vrácení odstraněného řádku, pod jeho `_id`, z historie.',
   'Proposer une table et ses premiers champs — une personne décide.':
     'Návrh tabulky a jejích prvních polí — rozhoduje osoba.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
@@ -70,14 +74,17 @@ export const cs: Catalog = {
   'Trouver une ligne par sa valeur d’affichage, {field}':
     'Najít řádek podle jeho zobrazované hodnoty, {field}',
   'Modifier une ligne': 'Upravit řádek',
+  'Supprimer une ligne — avec un jeton créé pour supprimer':
+    'Odstranit řádek — s tokenem vytvořeným k odstranění',
+  'Ramener une ligne supprimée': 'Vrátit odstraněný řádek',
   'Aucun outil ne vous est ouvert sur cette table.':
     'K této tabulce pro vás není otevřený žádný nástroj.',
   'Un jeton que vous créez n’a jamais plus de droits que vous : ces outils sont un maximum.':
     'Token, který vytvoříte, nemá nikdy víc práv než vy: tyto nástroje jsou maximum.',
   Outil: 'Nástroj',
   Pour: 'Účel',
-  'Supprimer une ligne reste réservé à l’API REST et à l’interface : aucun outil MCP ne supprime.':
-    'Odstranění řádku zůstává vyhrazeno REST API a rozhraní: žádný nástroj MCP neodstraňuje.',
+  'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
+    'Agent odstraňuje pouze s tokenem vytvořeným s oprávněním „Čtení, zápis a odstranění“, a to jeden řádek po druhém; odstraněný řádek se vrátí pomocí `restore_record`, nebo z historie.',
   '**Invisibles pour un agent :** {fields}. Pour lui, ces colonnes n’existent pas : il ne peut ni les lire, ni les filtrer, ni les écrire.':
     '**Neviditelné pro agenta:** {fields}. Pro něj tyto sloupce neexistují: nemůže je ani číst, ani filtrovat, ani zapisovat.',
   'Arguments d’un appel': 'Argumenty volání',
@@ -85,13 +92,13 @@ export const cs: Catalog = {
     'Vytvoření tokenu pro tuto databázi vyžaduje úroveň **Správa**, kterou nemáte. Požádejte o něj osobu, která databázi spravuje.',
   '<jeton>': '<token>',
   'Connecter un agent': 'Připojení agenta',
-  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée et modifie des lignes. Il passe par les mêmes permissions que l’API REST.':
-    '**Server MCP** basedb otevírá tuto databázi AI agentovi — Claude nebo libovolnému klientovi MCP: agent ji objevuje, čte a, pokud se tak rozhodnete, v ní vytváří a upravuje řádky. Řídí se stejnými oprávněními jako REST API.',
+  'Le **serveur MCP** de basedb ouvre cette base à un agent IA — Claude ou tout client MCP : il la découvre, la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il passe par les mêmes permissions que l’API REST.':
+    '**Server MCP** basedb otevírá tuto databázi AI agentovi — Claude nebo libovolnému klientovi MCP: agent ji objevuje, čte a, pokud se tak rozhodnete, v ní vytváří, upravuje a odstraňuje řádky. Řídí se stejnými oprávněními jako REST API.',
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Tato databáze není otevřená agentům.** Dokud otevřená není, žádný nástroj ji nevidí, ať je předložen jakýkoli token.',
   'Créer un jeton': 'Vytvoření tokenu',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture se choisit explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'V rozhraní: v nabídce „⋯“ databáze → **API a agenti** → **Tokeny API a MCP…**, zaškrtnutý přístup **MCP**. Token je omezen na tuto databázi a ve výchozím nastavení je **jen pro čtení**: zápis se volí výslovně. Zobrazí se jen jednou a lze ho zrušit ze stejné obrazovky. Když je zaškrtnuto i pro **REST API**, stejný token slouží programu (viz „Autentizace“).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'V rozhraní: v nabídce „⋯“ databáze → **API a agenti** → **Tokeny API a MCP…**, zaškrtnutý přístup **MCP**. Token je omezen na tuto databázi a ve výchozím nastavení je **jen pro čtení**: zápis, a odstranění, se volí výslovně. Zobrazí se jen jednou a lze ho zrušit ze stejné obrazovky. Když je zaškrtnuto i pro **REST API**, stejný token slouží programu (viz „Autentizace“).',
   'Garder le jeton hors de la configuration': 'Uchování tokenu mimo konfiguraci',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Token patří do proměnné prostředí `BASEDB_TOKEN`, nikdy do konfiguračního souboru klienta: ten je verzovaný, synchronizovaný a čitelný všemi programy dané relace.',
@@ -125,6 +132,8 @@ export const cs: Catalog = {
     'Pro zápis vazby: `lookup_records` na cílové tabulce, poté `create_record` nebo `update_record` s nalezeným `_id`.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'Pro změnu struktury: `propose_create_table` nebo `propose_add_field`, poté `get_proposal` pro sledování rozhodnutí.',
+  'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
+    'Pro odstranění: nejprve `get_record`, aby bylo jisté, o který řádek jde, poté `delete_record` — ten ho vrátí ve své odpovědi; `restore_record` ho vrátí zpět.',
   'Propositions de structure': 'Návrhy změn struktury',
   'Un agent ne modifie jamais la structure lui-même : il **propose**. La proposition attend dans la file « Propositions » de la base, où une personne qui peut modifier la structure l’approuve ou la refuse ; sans décision, elle expire au bout de 24 heures. Approuvée, elle est appliquée au nom de la personne qui a créé le jeton — si cette personne a toujours le droit de le faire — et apparaît dans l’historique comme n’importe quelle modification.':
     'Agent nikdy strukturu neupravuje sám: pouze ji **navrhuje**. Návrh čeká ve frontě „Návrhy“ dané databáze, kde ho osoba, která může upravovat strukturu, schválí nebo zamítne; bez rozhodnutí vyprší po 24 hodinách. Po schválení se použije jménem osoby, která token vytvořila — pokud k tomu tato osoba stále má právo — a objeví se v historii jako jakákoli jiná změna.',
@@ -133,8 +142,8 @@ export const cs: Catalog = {
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Žádné odstraňování, žádné přejmenování, žádná kaskádová vazba (`MCP_CASCADE_FORBIDDEN`).',
   'Ce qui n’existe pas': 'Co neexistuje',
-  'Aucun outil ne supprime une ligne, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_record`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
-    'Žádný nástroj neodstraňuje řádek, nespouští SQL ani nespravuje oprávnění nebo tokeny. Agent, který zavolá takový název — `delete_record`, `run_sql`… — dostane `MCP_OPERATION_EXCLUDED`, ať je cílová databáze jakákoli.',
+  'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
+    'Žádný nástroj neodstraňuje více řádků najednou, celou tabulku ani pole, nespouští SQL ani nespravuje oprávnění nebo tokeny. Agent, který zavolá takový název — `delete_records`, `run_sql`… — dostane `MCP_OPERATION_EXCLUDED`, ať je cílová databáze jakákoli.',
   Bornes: 'Limity',
   '`limit` : 25 lignes par défaut, 100 au plus.': '`limit`: výchozí hodnota 25 řádků, nejvýše 100.',
   'Un filtre compte au plus 10 prédicats, combinés par ET ; un tri, au plus 3 champs.':
@@ -148,8 +157,8 @@ export const cs: Catalog = {
     'Agent nikdy nevidí víc než osoba, která vytvořila jeho token — a často méně.',
   '**Droits** : ceux du jeton, recoupés à chaque appel avec ceux de son créateur. Si les droits de cette personne baissent, ceux du jeton baissent avec eux ; si son compte est désactivé, le jeton cesse de répondre.':
     '**Oprávnění**: oprávnění tokenu, při každém volání porovnaná s oprávněními jeho tvůrce. Pokud se oprávnění této osoby sníží, sníží se s nimi i oprávnění tokenu; pokud je její účet deaktivován, token přestane odpovídat.',
-  '**Lire, créer, modifier** — jamais supprimer. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
-    '**Číst, vytvářet, upravovat** — nikdy odstraňovat. Token jen pro čtení odmítne jakýkoli zápis (`TOKEN_READ_ONLY`).',
+  '**Lire, créer, modifier** — et supprimer, une ligne à la fois, seulement avec un jeton créé pour cela. Un jeton en lecture seule refuse toute écriture (`TOKEN_READ_ONLY`).':
+    '**Číst, vytvářet, upravovat** — a odstraňovat, jeden řádek po druhém, pouze s tokenem vytvořeným k tomu. Token jen pro čtení odmítne jakýkoli zápis (`TOKEN_READ_ONLY`).',
   '**Cette base** : ouverte aux agents.': '**Tato databáze**: otevřená agentům.',
   '**Cette base** : **fermée aux agents** — aucun outil ne la voit.':
     '**Tato databáze**: **uzavřená agentům** — žádný nástroj ji nevidí.',
@@ -233,8 +242,8 @@ export const cs: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Všechny datové cesty vyžadují **token**, v hlavičce `Authorization`. Cookie relace zde není nikdy přijímána: prohlížeč ji odesílá při každém požadavku, včetně těch, které vyvolá cizí stránka.',
   'Jeton d’intégration': 'Integrační token',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, et crée et modifie s’il a été créé en écriture, mais **ne supprime jamais** ; et il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Program — skript, synchronizace, jiná aplikace — předkládá **integrační token**, který začíná na `bdb_`. Platí jen pro tuto databázi; čte, a pokud byl vytvořen pro zápis, i vytváří a upravuje, ale **nikdy nic neodstraňuje**; a nikdy nemá víc práv než osoba, která ho vytvořila, porovnávaných při každém volání. Administrace, SQL konzole a AI mu zůstávají uzavřené.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Program — skript, synchronizace, jiná aplikace — předkládá **integrační token**, který začíná na `bdb_`. Platí jen pro tuto databázi; čte, a pokud byl vytvořen pro zápis, i vytváří a upravuje, a **odstraňuje jen tehdy, pokud byl vytvořen i k tomu**; nikdy nemá víc práv než osoba, která ho vytvořila, porovnávaných při každém volání. Administrace, SQL konzole a AI mu zůstávají uzavřené.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Pro vytvoření: v nabídce „⋯“ databáze → **API a agenti** → **Tokeny API a MCP…**, zaškrtnutý přístup **REST API**. Zobrazí se jen jednou.',
   Appel: 'Volání',

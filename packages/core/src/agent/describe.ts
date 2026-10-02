@@ -438,6 +438,7 @@ export async function agentWhoAmI(
       read: tables.length > 0,
       create: tables.some((t) => t.decisions.create.verdict === 'ALLOWED'),
       update: tables.some((t) => t.decisions.update.verdict === 'ALLOWED'),
+      delete: tables.some((t) => t.decisions.delete.verdict === 'ALLOWED'),
     },
     budgets,
     provenance: 'user_data' as const,

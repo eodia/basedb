@@ -13,12 +13,16 @@ De URL’s bevatten de fysieke namen — dezelfde die je ook in SQL leest.
 
 ## Een token
 
-In de interface, menu **⋯** van de database → **API en agents** → **API- en MCP-tokens…**: daar maak je een
-**integratietoken** aan dat beperkt is tot deze database, standaard alleen-lezen, nadat je je
-wachtwoord hebt bevestigd. Het wordt maar één keer getoond; zet het in een omgevingsvariabele.
+In de interface, menu **⋯** van de database → **API en agents** → **API- en MCP-tokens…**: wie het
+niveau **Beheren** heeft op de database, of op het project ervan, maakt daar een
+**integratietoken** aan dat beperkt is tot deze database, standaard alleen-lezen, nadat het
+wachtwoord is bevestigd — een account zonder wachtwoord, dat via een identiteitsprovider inlogt,
+kan dat nog niet. Het wordt maar één keer getoond; zet het in een omgevingsvariabele.
 
-Een token leest, maakt aan en wijzigt als het met schrijfrechten is aangemaakt, **verwijdert nooit**, en heeft nooit
-meer rechten dan de persoon die het heeft aangemaakt.
+Een token leest; het maakt aan en wijzigt als het met schrijfrechten is aangemaakt, en
+**verwijdert als het daarvoor is aangemaakt** — rechten “Lezen, schrijven en verwijderen”, behalve
+een rij die via een cascaderelatie andere rijen mee zou nemen. Het heeft nooit meer rechten dan de
+persoon die het heeft aangemaakt.
 
 ```bash
 export BASEDB_TOKEN=bdb_…
