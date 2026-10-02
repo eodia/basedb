@@ -30,7 +30,7 @@ L’immagine gira con l’utente `node`, su Node 22, dichiara un controllo di in
 |---|---|
 | `latest` | l’ultima versione pubblicata |
 | `0.6` | l’ultima versione 0.6.x |
-| `0.6.0` | esattamente questa versione |
+| `0.6.1` | esattamente questa versione |
 
 ## I servizi
 

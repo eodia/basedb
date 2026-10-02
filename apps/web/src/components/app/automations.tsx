@@ -173,9 +173,17 @@ function Panel({
   // Another address — the browser's back, a link: the panel shows the automation it names.
   // Keyed on the address alone: one just clicked must not be taken back by an address that
   // has not heard of it yet.
+  // The list read again — every ten seconds, after a save — is no new address: followed once.
+  const followed = useRef<string | null>(null)
   useEffect(() => {
-    if (focus === null || automations === null) return
-    if (automations.some((a) => a.id === focus)) setSelected(focus)
+    if (focus === null) {
+      followed.current = null
+      return
+    }
+    if (automations === null || followed.current === focus) return
+    if (!automations.some((a) => a.id === focus)) return
+    followed.current = focus
+    setSelected(focus)
   }, [focus, automations])
 
   // What the panel shows, told to the address. Nothing while the list is read.

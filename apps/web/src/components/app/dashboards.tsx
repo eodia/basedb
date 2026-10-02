@@ -212,9 +212,24 @@ function Panel({
   // address that has not heard of it yet.
   const focusKind = focus?.kind ?? null
   const focusId = focus?.id ?? null
+  // The address last followed. A list read again — a dashboard just created, a question just
+  // saved — is no new address: the panel may already show what was created, which the address
+  // has not heard of yet, and following the old address again would send the two after each
+  // other forever.
+  const followed = useRef<string | null>(null)
   useEffect(() => {
-    if (focusKind === null || focusId === null || dashboards === null) return
+    if (focusKind === null || focusId === null) {
+      // An address naming nothing: the next one is followed, even the one before it.
+      followed.current = null
+      return
+    }
+    if (dashboards === null) return
+    const address = `${focusKind}:${focusId}`
+    if (followed.current === address) return
     const question = focusKind === 'question' ? questions.find((q) => q.id === focusId) : undefined
+    // What it names may not be read yet: followed once it is.
+    if (focusKind === 'dashboard' ? !dashboards.some((d) => d.id === focusId) : !question) return
+    followed.current = address
     const key = opened + 1
     setView((current) => {
       if (focusKind === 'dashboard') {
