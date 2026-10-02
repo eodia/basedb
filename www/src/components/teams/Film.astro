@@ -1,7 +1,7 @@
 ---
 /**
  * The demonstration, after the story: two films, and a switch between them. First the
- * short one — forty seconds of titles, the real screens and music, no voice (`teaser`) —
+ * short one — a minute of titles, the real screens, a voice and music (`teaser`) —
  * then the full tour, six minutes around basedb with its subtitles and its chapters: a
  * chapter plays the film from where it starts, and lights up while it plays. « Regarder la
  * démo », in the headline, brings the reader here and starts the film shown
@@ -10,8 +10,9 @@
  * Each film is made twice: in French for the French page, in English for every other one.
  * The tour is `public/video/basedb-demo-<fr|en>.{mp4,vtt}` and `basedb-demo-poster-<fr|en>.jpg`,
  * made in `basedb-video/` (`node scripts/web.mjs <langue>`); the short film is
- * `basedb-40s-<fr|en>.mp4` and `basedb-40s-poster-<fr|en>.jpg`, made in `basedb-video/promo/`
- * (`node site.mjs`). The chapters' times follow the tour of the page.
+ * `basedb-60s-<fr|en>.{mp4,vtt}` and `basedb-60s-poster-<fr|en>.jpg`, made in
+ * `basedb-video/promo/` (`node site.mjs`). Both films show their subtitles where the page is
+ * not in the film's language. The chapters' times follow the tour of the page.
  */
 import { type Locale, i18n } from '../../i18n';
 
@@ -54,8 +55,9 @@ const film = locale === 'fr' ? 'fr' : 'en';
 
 	<div class="films tm-rise">
 		<div class="player" data-player="short" data-for="short">
-			<video preload="metadata" playsinline poster={`${base}/video/basedb-40s-poster-${film}.jpg`}>
-				<source src={`${base}/video/basedb-40s-${film}.mp4`} type="video/mp4" />
+			<video preload="metadata" playsinline poster={`${base}/video/basedb-60s-poster-${film}.jpg`}>
+				<source src={`${base}/video/basedb-60s-${film}.mp4`} type="video/mp4" />
+				<track kind="captions" src={`${base}/video/basedb-60s-${film}.vtt`} srclang={film} label={v.captions} default={locale !== film} />
 			</video>
 			<button type="button" class="play" data-play>
 				<span class="cta">

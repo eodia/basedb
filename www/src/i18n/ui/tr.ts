@@ -570,11 +570,11 @@ export default {
 			},
 		},
 		teaser: {
-			tabs: { label: 'Videoyu seçin', short: '40 saniyede', full: 'Tam tur' },
-			titleAccent: '40 saniyede.',
-			text: 'Tablolar, görünümler, formlar, otomasyonlar ve yapay zekâ: basedb’nin özü, müzikle.',
-			duration: '40 sn',
-			inEnglish: 'Videodaki metinler İngilizcedir.',
+			tabs: { label: 'Videoyu seçin', short: 'Bir dakikada', full: 'Tam tur' },
+			titleAccent: 'bir dakikada.',
+			text: 'Tablolar, görünümler, formlar, otomasyonlar ve yapay zekâ: basedb’nin özü, anlatım ve müzikle.',
+			duration: '1 dk',
+			inEnglish: 'Video İngilizcedir, alt yazıları da İngilizcedir.',
 		},
 
 		video: {

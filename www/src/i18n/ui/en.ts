@@ -566,11 +566,11 @@ export default {
 			},
 		},
 		teaser: {
-			tabs: { label: 'Choose the film', short: 'In 40 seconds', full: 'The full tour' },
-			titleAccent: 'in 40 seconds.',
-			text: 'Tables, views, forms, automations and AI: the heart of basedb, set to music.',
-			duration: '0:40',
-			inEnglish: 'The film’s text is in English.',
+			tabs: { label: 'Choose the film', short: 'In one minute', full: 'The full tour' },
+			titleAccent: 'in one minute.',
+			text: 'Tables, views, forms, automations and AI: the heart of basedb, narrated and set to music.',
+			duration: '1:00',
+			inEnglish: 'The video is in English, with English subtitles.',
 		},
 
 		video: {

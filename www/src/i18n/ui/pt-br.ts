@@ -566,11 +566,11 @@ export default {
 			},
 		},
 		teaser: {
-			tabs: { label: 'Escolher o vídeo', short: 'Em 40 segundos', full: 'O tour completo' },
-			titleAccent: 'em 40 segundos.',
-			text: 'Tabelas, visualizações, formulários, automações e IA: o essencial do basedb, com música.',
-			duration: '40 s',
-			inEnglish: 'Os textos do vídeo estão em inglês.',
+			tabs: { label: 'Escolher o vídeo', short: 'Em um minuto', full: 'O tour completo' },
+			titleAccent: 'em um minuto.',
+			text: 'Tabelas, visualizações, formulários, automações e IA: o essencial do basedb, narrado e com música.',
+			duration: '1 min',
+			inEnglish: 'O vídeo está em inglês, com legendas em inglês.',
 		},
 
 		video: {

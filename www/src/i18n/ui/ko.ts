@@ -562,11 +562,11 @@ export default {
 			},
 		},
 		teaser: {
-			tabs: { label: '영상 선택', short: '40초 만에', full: '전체 둘러보기' },
-			titleAccent: '40초 만에.',
-			text: '테이블, 보기, 양식, 자동화, AI — basedb의 핵심을 음악과 함께.',
-			duration: '40초',
-			inEnglish: '영상 속 텍스트는 영어입니다.',
+			tabs: { label: '영상 선택', short: '1분 만에', full: '전체 둘러보기' },
+			titleAccent: '1분 만에.',
+			text: '테이블, 보기, 양식, 자동화, AI — basedb의 핵심을 내레이션과 음악으로.',
+			duration: '1분',
+			inEnglish: '이 영상은 영어로 되어 있으며, 영어 자막이 제공됩니다.',
 		},
 
 		video: {

@@ -566,11 +566,11 @@ export default {
 			},
 		},
 		teaser: {
-			tabs: { label: 'Välj video', short: 'På 40 sekunder', full: 'Hela rundturen' },
-			titleAccent: 'på 40 sekunder.',
-			text: 'Tabeller, vyer, formulär, automatiseringar och AI: det viktigaste i basedb, till musik.',
-			duration: '40 s',
-			inEnglish: 'Texterna i videon är på engelska.',
+			tabs: { label: 'Välj video', short: 'På en minut', full: 'Hela rundturen' },
+			titleAccent: 'på en minut.',
+			text: 'Tabeller, vyer, formulär, automatiseringar och AI: det viktigaste i basedb, med berättarröst och musik.',
+			duration: '1 min',
+			inEnglish: 'Videon är på engelska, med engelska undertexter.',
 		},
 
 		video: {

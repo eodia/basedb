@@ -567,11 +567,11 @@ export default {
 		},
 
 		teaser: {
-			tabs: { label: 'Wybierz film', short: 'W 40 sekund', full: 'Pełna prezentacja' },
-			titleAccent: 'w 40 sekund.',
-			text: 'Tabele, widoki, formularze, automatyzacje i AI: to, co najważniejsze w basedb, w rytmie muzyki.',
-			duration: '40 s',
-			inEnglish: 'Napisy w filmie są po angielsku.',
+			tabs: { label: 'Wybierz film', short: 'W minutę', full: 'Pełna prezentacja' },
+			titleAccent: 'w minutę.',
+			text: 'Tabele, widoki, formularze, automatyzacje i AI: to, co najważniejsze w basedb, z lektorem i muzyką.',
+			duration: '1 min',
+			inEnglish: 'Film jest w języku angielskim, z angielskimi napisami.',
 		},
 
 		video: {

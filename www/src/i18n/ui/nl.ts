@@ -566,11 +566,11 @@ export default {
 			},
 		},
 		teaser: {
-			tabs: { label: 'Kies de video', short: 'In 40 seconden', full: 'De volledige rondleiding' },
-			titleAccent: 'in 40 seconden.',
-			text: 'Tabellen, weergaven, formulieren, automatiseringen en AI: de kern van basedb, op muziek.',
-			duration: '40 s',
-			inEnglish: 'De teksten in de video zijn in het Engels.',
+			tabs: { label: 'Kies de video', short: 'In één minuut', full: 'De volledige rondleiding' },
+			titleAccent: 'in één minuut.',
+			text: 'Tabellen, weergaven, formulieren, automatiseringen en AI: de kern van basedb, ingesproken en op muziek.',
+			duration: '1 min',
+			inEnglish: 'De video is in het Engels, met Engelse ondertiteling.',
 		},
 
 		video: {

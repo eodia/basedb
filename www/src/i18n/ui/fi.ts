@@ -566,11 +566,11 @@ export default {
 			},
 		},
 		teaser: {
-			tabs: { label: 'Valitse video', short: '40 sekunnissa', full: 'Koko esittely' },
-			titleAccent: '40 sekunnissa.',
-			text: 'Taulukot, näkymät, lomakkeet, automaatiot ja tekoäly: basedbin olennaisin, musiikin tahdissa.',
-			duration: '40 s',
-			inEnglish: 'Videon tekstit ovat englanniksi.',
+			tabs: { label: 'Valitse video', short: 'Minuutissa', full: 'Koko esittely' },
+			titleAccent: 'minuutissa.',
+			text: 'Taulukot, näkymät, lomakkeet, automaatiot ja tekoäly: basedbin olennaisin, selostettuna ja musiikin tahdissa.',
+			duration: '1 min',
+			inEnglish: 'Video on englanniksi, tekstitys englanniksi.',
 		},
 
 		video: {

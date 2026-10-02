@@ -566,11 +566,11 @@ export default {
 			},
 		},
 		teaser: {
-			tabs: { label: 'Alegeți filmul', short: 'În 40 de secunde', full: 'Turul complet' },
-			titleAccent: 'în 40 de secunde.',
-			text: 'Tabele, vizualizări, formulare, automatizări și IA: esențialul basedb, pe muzică.',
-			duration: '40 s',
-			inEnglish: 'Textele din film sunt în engleză.',
+			tabs: { label: 'Alegeți filmul', short: 'Într-un minut', full: 'Turul complet' },
+			titleAccent: 'într-un minut.',
+			text: 'Tabele, vizualizări, formulare, automatizări și IA: esențialul basedb, cu narațiune și muzică.',
+			duration: '1 min',
+			inEnglish: 'Videoclipul este în engleză, cu subtitrări în engleză.',
 		},
 
 		video: {

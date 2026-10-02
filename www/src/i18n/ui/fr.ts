@@ -543,16 +543,16 @@ const fr = {
 		},
 
 		/**
-		 * The short film, first in the demonstration section: forty seconds of titles, the real
-		 * screens and music, no voice. The switch over the player goes from it to the full tour
+		 * The short film, first in the demonstration section: a minute of titles, the real
+		 * screens, a voice and music. The switch over the player goes from it to the full tour
 		 * (`video`) and back; `duration` is written on its poster.
 		 */
 		teaser: {
-			tabs: { label: 'Choisir le film', short: 'En 40 secondes', full: 'La visite complète' },
-			titleAccent: 'en 40 secondes.',
-			text: 'Tables, vues, formulaires, automatisations et IA : l’essentiel de basedb, en musique.',
-			duration: '40 s',
-			inEnglish: 'Les textes du film sont en anglais.',
+			tabs: { label: 'Choisir le film', short: 'En une minute', full: 'La visite complète' },
+			titleAccent: 'en une minute.',
+			text: 'Tables, vues, formulaires, automatisations et IA : l’essentiel de basedb, commenté et en musique.',
+			duration: '1 min',
+			inEnglish: 'Le film est en anglais, avec des sous-titres en anglais.',
 		},
 
 		/**

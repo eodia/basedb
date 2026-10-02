@@ -566,11 +566,11 @@ export default {
 			},
 		},
 		teaser: {
-			tabs: { label: 'Videó kiválasztása', short: '40 másodpercben', full: 'A teljes bemutató' },
-			titleAccent: '40 másodpercben.',
-			text: 'Táblák, nézetek, űrlapok, automatizálások és MI: a basedb lényege, zenével.',
-			duration: '40 mp',
-			inEnglish: 'A videó szövegei angolul vannak.',
+			tabs: { label: 'Videó kiválasztása', short: 'Egy perc alatt', full: 'A teljes bemutató' },
+			titleAccent: 'egy perc alatt.',
+			text: 'Táblák, nézetek, űrlapok, automatizálások és MI: a basedb lényege, narrációval és zenével.',
+			duration: '1 perc',
+			inEnglish: 'A videó angol nyelvű, angol feliratokkal.',
 		},
 
 		video: {

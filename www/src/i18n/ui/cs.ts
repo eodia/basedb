@@ -567,11 +567,11 @@ export default {
 		},
 
 		teaser: {
-			tabs: { label: 'Vybrat video', short: 'Za 40 sekund', full: 'Celá prohlídka' },
-			titleAccent: 'za 40 sekund.',
-			text: 'Tabulky, zobrazení, formuláře, automatizace a AI: to podstatné z basedb, s hudbou.',
-			duration: '40 s',
-			inEnglish: 'Texty ve videu jsou v angličtině.',
+			tabs: { label: 'Vybrat video', short: 'Za minutu', full: 'Celá prohlídka' },
+			titleAccent: 'za minutu.',
+			text: 'Tabulky, zobrazení, formuláře, automatizace a AI: to podstatné z basedb, s komentářem a hudbou.',
+			duration: '1 min',
+			inEnglish: 'Video je v angličtině, s anglickými titulky.',
 		},
 
 		video: {

@@ -1,0 +1,34 @@
+WEBVTT
+
+00:04.350 --> 00:08.025
+Meet basedb, the database for the whole team.
+
+00:08.600 --> 00:12.641
+As simple as a spreadsheet, but every field has a real type.
+
+00:14.600 --> 00:17.392
+Six views, always the same rows.
+
+00:20.400 --> 00:25.673
+The whole team, at once: comment, mention, and see it live.
+
+00:26.450 --> 00:30.265
+Forms people enjoy, and every answer becomes a row.
+
+00:32.350 --> 00:34.280
+They even turn into quizzes.
+
+00:35.300 --> 00:37.711
+Automate, without a line of code,
+
+00:38.700 --> 00:41.448
+and follow it all on live dashboards.
+
+00:42.450 --> 00:46.123
+Need a filter or a query? Just ask the AI.
+
+00:48.450 --> 00:53.904
+And under every table, a real Postgres table, open to all your tools.
+
+00:54.450 --> 00:57.733
+Free, open source, and your data stays yours.

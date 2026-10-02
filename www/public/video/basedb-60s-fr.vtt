@@ -1,0 +1,34 @@
+WEBVTT
+
+00:04.350 --> 00:07.369
+Voici basedb, la base de données de toute l'équipe.
+
+00:08.600 --> 00:11.816
+Simple comme un tableur, mais chaque champ a un vrai type.
+
+00:14.600 --> 00:18.313
+Six vues, et toujours les mêmes lignes : chacun travaille comme il préfère.
+
+00:20.400 --> 00:25.579
+Toute l'équipe y travaille en même temps : on commente, on mentionne, et tout arrive en direct.
+
+00:26.450 --> 00:30.351
+Des formulaires qui donnent envie de répondre, et chaque réponse devient une ligne.
+
+00:32.350 --> 00:33.722
+Ils deviennent même des quiz.
+
+00:35.300 --> 00:37.732
+Automatisez, sans écrire une ligne de code,
+
+00:38.700 --> 00:41.242
+et suivez tout sur des tableaux de bord toujours à jour.
+
+00:42.450 --> 00:47.435
+Besoin d'un filtre ou d'une requête ? Demandez à l'IA : rien ne change sans votre accord.
+
+00:48.450 --> 00:52.583
+Et sous chaque table, une vraie table Postgres, ouverte à tous vos outils.
+
+00:54.450 --> 00:58.253
+basedb est libre, gratuit, et vos données restent chez vous.
