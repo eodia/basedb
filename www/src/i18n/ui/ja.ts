@@ -1523,6 +1523,14 @@ export default {
 		title: 'basedbの変更点',
 		intro: '変更の詳細は<a href="https://github.com/eodia/basedb/commits/main">リポジトリの履歴</a>にあります。今後の予定は<a href="/feuille-de-route/">ロードマップ</a>をご覧ください。',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: '社内証明書の背後にあるAIプロバイダー',
+				tag: 'ホスティング',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong>を指定すると、自己署名証明書のAIゲートウェイや、通信を再署名するプロキシの背後にあるAIゲートウェイにも、インスタンスの他の呼び出しの証明書検証を無効にすることなく接続できます。<a href="/fonctionnalites/ia/#azureゲートウェイローカルモデル">Azure、ゲートウェイ、ローカルモデル</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'データベース全体に1つのトークン、環境は呼び出しごとに選択',

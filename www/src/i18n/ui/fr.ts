@@ -1449,6 +1449,14 @@ const fr = {
 		intro: 'Le détail de chaque changement est dans <a href="https://github.com/eodia/basedb/commits/main">l’historique du dépôt</a>. Ce qui vient ensuite : la <a href="/feuille-de-route/">feuille de route</a>.',
 		/** Newest first. */
 		entries: {
+			aiTls: entry({
+				date: '2026-10-09',
+				title: 'Un fournisseur d’IA derrière un certificat interne',
+				tag: 'Hébergement',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> joint une passerelle d’IA au certificat auto-signé, ou derrière un proxy qui re-signe le trafic, sans couper la vérification des autres appels de l’instance. <a href="/fonctionnalites/ia/#azure-une-passerelle-un-modèle-local">Azure, une passerelle, un modèle local</a>',
+				],
+			}),
 			oneToken: entry({
 				date: '2026-10-09',
 				title: 'Un jeton pour toute la base, l’environnement au choix',

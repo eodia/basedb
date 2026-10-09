@@ -4,20 +4,63 @@ description: Kentän tekoälyasetus, luonnokset, Copilot ja koontinäyttöjen Co
 ---
 
 Tekoäly on **valinnainen**. Ilman määritettyä palveluntarjoajaa mitään ei lähde minnekään.
-basedb osaa keskustella **OpenAI**:n, **Anthropicin** ja **Mistralin** kanssa omalla avaimellasi.
+basedb osaa keskustella **OpenAI**:n, **Anthropicin** ja **Mistralin** kanssa omalla avaimellasi
+– sekä minkä tahansa OpenAI:n API:a puhuvan palvelimen kanssa: **Azure**, yrityksen yhdyskäytävä,
+omalla palvelimellasi ajettava malli.
 
 ## Palveluntarjoajan määrittäminen
 
 Niin kauan kuin käyttöliittymään ei ole tallennettu asetuksia, API lukee ympäristönsä:
 
 ```bash
-BASEDB_AI_PROVIDER=mistral      # openai, anthropic tai mistral
+BASEDB_AI_PROVIDER=mistral      # openai, anthropic, mistral tai openai_compatible
 BASEDB_AI_MODEL=mistral-small-latest
 MISTRAL_API_KEY=…               # tai BASEDB_AI_API_KEY
 ```
 
 Avain luetaan muuttujasta `BASEDB_AI_API_KEY` tai sen puuttuessa palveluntarjoajan tavallisesta
 muuttujasta (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`).
+
+### Azure, yhdyskäytävä, paikallinen malli
+
+`BASEDB_AI_PROVIDER=openai_compatible` lähettää kutsut OpenAI:n muodossa muuttujan
+`BASEDB_AI_BASE_URL` osoitteeseen: osoite on se, mikä edeltää polkua `/chat/completions`,
+parametrit mukaan lukien. Muuttuja `BASEDB_AI_HEADERS` lisää jokaiseen kutsuun ne otsakkeet,
+joita palvelin vaatii, JSON-objektina.
+
+```bash
+# Azure OpenAI: käyttöönoton nimi mallina, avain otsakkeessa api-key
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=mon-deploiement
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/v1
+BASEDB_AI_HEADERS='{"api-key":"…"}'
+
+# Azuren vanhempi muoto, käyttöönottokohtainen: parametri jää polun perään
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/deployments/mon-deploiement?api-version=2024-10-21
+
+# Ollamalla ajettava malli, ilman avainta
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=llama3.1
+BASEDB_AI_BASE_URL=http://ollama:11434/v1
+```
+
+Arvolla `openai_compatible` avain on valinnainen: jos `BASEDB_AI_API_KEY` on annettu, se lähtee
+`Authorization: Bearer` -otsakkeessa. Muuttujan `BASEDB_AI_HEADERS` otsake korvaa avaimen
+otsakkeen – esimerkiksi yhdyskäytävä, joka haluaa oman `Authorization`-otsakkeensa.
+
+Muuttujat `BASEDB_AI_BASE_URL` ja `BASEDB_AI_HEADERS` palvelevat myös kolmea muuta
+palveluntarjoajaa, kun niihin otetaan yhteys yhdyskäytävän kautta: palveluntarjoajalla
+`anthropic` osoite on se, mikä edeltää polkua `/messages`. Nämä kaksi muuttujaa kuuluvat
+ympäristön palveluntarjoajalle, ja vain sille: työtila, joka on valinnut toisen, ei saa
+osoitetta, otsakkeita eikä avainta. API:n käynnistys kirjaa valitun palveluntarjoajan ja
+ilmoittaa virheellisestä osoitteesta tai JSON-objektista.
+
+Sisäinen yhdyskäytävä, jonka TLS-varmenne on itse allekirjoitettu, tai yrityksen
+välityspalvelin, joka allekirjoittaa liikenteen uudelleen, saa kutsut epäonnistumaan:
+`BASEDB_AI_PROVIDER_SSL_VERIFY=false` lopettaa varmenteen tarkistamisen **vain tämän
+palveluntarjoajan osalta** – kaikki instanssin muut lähtevät kutsut ja palveluntarjoaja, jonka
+työtila on voinut valita, tarkistetaan edelleen. Käynnistys ilmoittaa asiasta. Koska avain
+kulkee jokaisessa kutsussa, rajaa asetus verkkoon, jota hallitset itse.
 
 ## Kentän tekoälyasetus
 

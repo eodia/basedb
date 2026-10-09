@@ -1547,6 +1547,14 @@ export default {
 		title: 'Mitä basedb:ssä on muuttunut',
 		intro: 'Jokaisen muutoksen yksityiskohdat ovat <a href="https://github.com/eodia/basedb/commits/main">tietovaraston historiassa</a>. Mitä seuraavaksi: <a href="/feuille-de-route/">tiekartta</a>.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: 'Tekoälypalveluntarjoaja sisäisellä varmenteella',
+				tag: 'Isännöinti',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> yhdistää instanssin tekoälyn yhdyskäytävään, jonka varmenne on itse allekirjoitettu tai joka on liikenteen uudelleen allekirjoittavan välityspalvelimen takana, katkaisematta instanssin muiden kutsujen tarkistusta. <a href="/fonctionnalites/ia/#azure-yhdyskäytävä-paikallinen-malli">Azure, yhdyskäytävä, paikallinen malli</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'Yksi tunnus koko tietokannalle, ympäristö valittavissa',

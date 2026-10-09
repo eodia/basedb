@@ -4,20 +4,59 @@ description: 필드의 AI 옵션, 초안, Copilot과 대시보드 Copilot, 그�
 ---
 
 AI는 **선택 사항**입니다. 공급자를 설정하지 않으면 어떤 데이터도 외부로 나가지 않습니다.
-basedb는 사용자의 키로 **OpenAI**, **Anthropic**, **Mistral**과 통신할 수 있습니다.
+basedb는 사용자의 키로 **OpenAI**, **Anthropic**, **Mistral**과 통신할 수 있으며, OpenAI의 API를
+쓰는 모든 서버(**Azure**, 기업용 게이트웨이, 직접 운영하는 모델)와도 통신할 수 있습니다.
 
 ## 공급자 설정
 
 인터페이스에 저장된 설정이 없는 동안에는 API가 환경 변수를 읽습니다.
 
 ```bash
-BASEDB_AI_PROVIDER=mistral      # openai, anthropic 또는 mistral
+BASEDB_AI_PROVIDER=mistral      # openai, anthropic, mistral 또는 openai_compatible
 BASEDB_AI_MODEL=mistral-small-latest
 MISTRAL_API_KEY=…               # 또는 BASEDB_AI_API_KEY
 ```
 
 키는 `BASEDB_AI_API_KEY`에서 읽으며, 이 변수가 없으면 공급자별 일반적인 변수 이름
 (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`)에서 읽습니다.
+
+### Azure, 게이트웨이, 로컬 모델
+
+`BASEDB_AI_PROVIDER=openai_compatible`은 호출을 OpenAI 형식으로 `BASEDB_AI_BASE_URL`의 주소에
+보냅니다. 이 주소는 `/chat/completions` 앞까지의 부분이며 매개변수도 포함합니다.
+`BASEDB_AI_HEADERS`는 그 서버가 요구하는 헤더를 JSON 객체로 모든 호출에 추가합니다.
+
+```bash
+# Azure OpenAI: 모델에는 배포 이름을 쓰고, 키는 api-key 헤더에 넣음
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=mon-deploiement
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/v1
+BASEDB_AI_HEADERS='{"api-key":"…"}'
+
+# Azure의 이전 형식(배포별): 매개변수는 경로 뒤에 그대로 둠
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/deployments/mon-deploiement?api-version=2024-10-21
+
+# Ollama로 제공하는 모델, 키 없음
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=llama3.1
+BASEDB_AI_BASE_URL=http://ollama:11434/v1
+```
+
+`openai_compatible`에서는 키가 선택 사항입니다. `BASEDB_AI_API_KEY`를 지정하면
+`Authorization: Bearer`로 전송됩니다. `BASEDB_AI_HEADERS`의 헤더는 키로 만든 헤더를 대체합니다.
+예를 들어 자체 `Authorization`을 요구하는 게이트웨이가 그렇습니다.
+
+`BASEDB_AI_BASE_URL`과 `BASEDB_AI_HEADERS`는 게이트웨이를 통해 연결하는 나머지 세 공급자에도
+쓸 수 있습니다. `anthropic`의 경우 주소는 `/messages` 앞까지의 부분입니다. 이 두 변수는 환경
+변수로 지정한 공급자에만 적용됩니다. 다른 공급자를 선택한 워크스페이스는 주소도, 헤더도, 키도
+받지 않습니다. API는 시작할 때 채택한 공급자를 기록하고, 잘못된 주소나 JSON 객체가 있으면
+알려 줍니다.
+
+TLS 인증서가 자체 서명된 내부 게이트웨이나 트래픽을 다시 서명하는 기업 프록시가 있으면 호출이
+실패합니다. `BASEDB_AI_PROVIDER_SSL_VERIFY=false`는 **이 공급자의 인증서만** 검증하지 않습니다.
+인스턴스의 다른 모든 외부 호출과, 워크스페이스가 선택했을 수 있는 공급자는 계속 검증됩니다.
+시작할 때 이 사실이 알려집니다. 키가 모든 호출에 실려 가므로, 직접 통제하는 네트워크에서만
+사용하세요.
 
 ## 필드의 AI 옵션
 

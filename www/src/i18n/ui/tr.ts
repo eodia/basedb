@@ -1551,6 +1551,14 @@ export default {
 		title: 'basedb’de neler değişti',
 		intro: 'Her değişikliğin ayrıntısı <a href="https://github.com/eodia/basedb/commits/main">deponun geçmişinde</a>. Sırada ne var: <a href="/feuille-de-route/">yol haritası</a>.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: 'İç sertifikanın arkasındaki bir yapay zeka sağlayıcısı',
+				tag: 'Barındırma',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong>, kendinden imzalı sertifikalı bir yapay zeka ağ geçidine ya da trafiği yeniden imzalayan bir proxy’nin arkasındakine, kurulumun diğer çağrılarının doğrulamasını kapatmadan ulaşır. <a href="/fonctionnalites/ia/#azure-bir-ağ-geçidi-yerel-bir-model">Azure, bir ağ geçidi, yerel bir model</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'Tüm veritabanı için tek token, ortamı siz seçin',

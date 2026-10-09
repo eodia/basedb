@@ -117,9 +117,12 @@ La pornire, jurnalul spune ce serviciu este folosit: `Géocodage : https://nomin
 
 | Variabilă | Implicit | Rol |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic` sau `mistral` |
+| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic`, `mistral` sau `openai_compatible` (Azure, o poartă de acces, un model local) |
 | `BASEDB_AI_MODEL` | — | modelul |
-| `BASEDB_AI_API_KEY` | — | cheia (altfel `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_API_KEY` | — | cheia (altfel `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`); opțională pentru `openai_compatible` |
+| `BASEDB_AI_BASE_URL` | adresa furnizorului | tot ce precedă `/chat/completions` (`/messages` pentru `anthropic`), parametrii incluși; obligatorie pentru `openai_compatible` — consultați [Inteligență artificială](/basedb/ro/fonctionnalites/ia/#azure-o-poartă-de-acces-un-model-local) |
+| `BASEDB_AI_HEADERS` | — | antete adăugate la fiecare apel, sub forma unui obiect JSON: `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`: certificatul TLS al furnizorului nu este verificat — o poartă de acces internă cu certificat autosemnat; consultați [Inteligență artificială](/basedb/ro/fonctionnalites/ia/#azure-o-poartă-de-acces-un-model-local) |
 | `BASEDB_AI_QUOTA` | `120` | apeluri interactive pe oră și pe spațiu de lucru |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | calcule de câmpuri AI pe oră și pe spațiu de lucru |
 | `BASEDB_AI_WORKER` | `1` | `0`: fără calcul în fundal în acest proces |

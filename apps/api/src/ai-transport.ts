@@ -1,4 +1,5 @@
 import { BasedbError, type ProviderName, type ProviderTransport } from '@basedb/core'
+import { Agent, fetch as undiciFetch } from 'undici'
 
 /**
  * The AI transport — chapter 12 §2.3, the adapter's half.
@@ -44,6 +45,31 @@ const BASE_URL: Readonly<Partial<Record<ProviderName, string>>> = {
 const breaker = new Map<string, { failures: number; openUntil: number }>()
 const BREAKER_THRESHOLD = 5
 const BREAKER_MS = 5 * 60_000
+
+/**
+ * The connection of a call whose certificate the operator said not to check —
+ * `BASEDB_AI_PROVIDER_SSL_VERIFY=false`, which the kernel passes for the environment's
+ * provider alone (`verifyCertificate`). Every other outgoing call of the instance —
+ * another tenant's provider, webhooks, mail — keeps checking certificates, which
+ * `NODE_TLS_REJECT_UNAUTHORIZED=0` would not.
+ */
+let unchecked: Agent | undefined
+type Send = (
+  url: string,
+  init: { method: string; headers: Record<string, string>; body: string; signal: AbortSignal },
+) => Promise<{
+  ok: boolean
+  status: number
+  headers: { get(name: string): string | null }
+  json(): Promise<unknown>
+}>
+
+function sender(verify: boolean): Send {
+  if (verify) return fetch
+  unchecked ??= new Agent({ connect: { rejectUnauthorized: false } })
+  const dispatcher = unchecked
+  return (url, init) => undiciFetch(url, { ...init, dispatcher })
+}
 
 function instruction(system: string, schema: Record<string, unknown>): string {
   return `${system}\n\nSCHÉMA DE LA RÉPONSE :\n${JSON.stringify(schema, null, 2)}`
@@ -192,6 +218,7 @@ export const providerTransport: ProviderTransport = async (request) => {
 
   const deadline = Date.now() + Math.max(1_000, request.timeoutMs)
   let lastStatus: number | null = null
+  const send = sender(request.verifyCertificate !== false)
 
   for (let round = 0; round < 2; round++) {
     const remaining = deadline - Date.now()
@@ -201,7 +228,7 @@ export const providerTransport: ProviderTransport = async (request) => {
     const timer = setTimeout(() => controller.abort(), remaining)
 
     try {
-      const response = await fetch(attempt.url, {
+      const response = await send(attempt.url, {
         method: 'POST',
         headers: attempt.headers,
         body: JSON.stringify(attempt.body),

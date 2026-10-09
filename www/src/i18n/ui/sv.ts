@@ -1536,6 +1536,14 @@ export default {
 		title: 'Vad som har ändrats i basedb',
 		intro: 'Detaljerna för varje ändring finns i <a href="https://github.com/eodia/basedb/commits/main">repots historik</a>. Vad som kommer härnäst: <a href="/feuille-de-route/">färdplanen</a>.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: 'En AI-leverantör bakom ett internt certifikat',
+				tag: 'Drift',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> når en AI-gateway med självsignerat certifikat, eller en som ligger bakom en proxy som signerar om trafiken, utan att stänga av kontrollen av instansens övriga anrop. <a href="/fonctionnalites/ia/#azure-en-gateway-en-lokal-modell">Azure, en gateway, en lokal modell</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'En token för hela databasen, miljön efter eget val',

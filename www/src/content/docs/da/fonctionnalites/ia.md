@@ -4,20 +4,60 @@ description: AI-tilvalget for et felt, kladder, Copilot og dashboardenes Copilot
 ---
 
 AI er **valgfrit**. Uden en konfigureret udbyder sendes intet nogen steder hen. basedb kan
-tale med **OpenAI**, **Anthropic** og **Mistral** med din egen nøgle.
+tale med **OpenAI**, **Anthropic** og **Mistral** med din egen nøgle — og med enhver server, der
+taler OpenAIs API: **Azure**, en virksomhedsgateway, en model, der køres hos dig.
 
 ## Konfigurér en udbyder
 
 Så længe der ikke er gemt nogen indstilling i brugerfladen, læser API'et sit miljø:
 
 ```bash
-BASEDB_AI_PROVIDER=mistral      # openai, anthropic eller mistral
+BASEDB_AI_PROVIDER=mistral      # openai, anthropic, mistral eller openai_compatible
 BASEDB_AI_MODEL=mistral-small-latest
 MISTRAL_API_KEY=…               # eller BASEDB_AI_API_KEY
 ```
 
 Nøglen læses fra `BASEDB_AI_API_KEY` eller ellers fra udbyderens sædvanlige navn
 (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`).
+
+### Azure, en gateway, en lokal model
+
+`BASEDB_AI_PROVIDER=openai_compatible` sender kaldene, i OpenAIs format, til adressen i
+`BASEDB_AI_BASE_URL`: det, der står før `/chat/completions`, parametre inklusive.
+`BASEDB_AI_HEADERS` føjer til hvert kald de headere, som serveren kræver, som et JSON-objekt.
+
+```bash
+# Azure OpenAI: implementeringens navn som model, nøglen i headeren api-key
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=mon-deploiement
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/v1
+BASEDB_AI_HEADERS='{"api-key":"…"}'
+
+# Azures ældre form, pr. implementering: parameteren bliver stående efter stien
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/deployments/mon-deploiement?api-version=2024-10-21
+
+# En model, der køres af Ollama, uden nøgle
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=llama3.1
+BASEDB_AI_BASE_URL=http://ollama:11434/v1
+```
+
+Med `openai_compatible` er nøglen valgfri: hvis `BASEDB_AI_API_KEY` er angivet, sendes den som
+`Authorization: Bearer`. En header i `BASEDB_AI_HEADERS` erstatter nøglens — for eksempel en
+gateway, der vil have sin egen `Authorization`.
+
+`BASEDB_AI_BASE_URL` og `BASEDB_AI_HEADERS` gælder også de tre andre udbydere, når de nås via en
+gateway: for `anthropic` er adressen det, der står før `/messages`. De to variabler hører til
+miljøets udbyder, og kun til den: et arbejdsområde, der har valgt en anden, får hverken adressen,
+headerne eller nøglen. Når API'et starter, skriver det den valgte udbyder i loggen og advarer om en
+ugyldig adresse eller et ugyldigt JSON-objekt.
+
+En intern gateway med et selvsigneret TLS-certifikat, eller en virksomhedsproxy, der
+gensignerer trafikken, får kaldene til at fejle: `BASEDB_AI_PROVIDER_SSL_VERIFY=false` holder op
+med at kontrollere certifikatet **kun for denne udbyder** — alle instansens andre udgående kald,
+og den udbyder, et arbejdsområde måtte have valgt, bliver stadig kontrolleret. Det anføres ved
+opstart. Da nøglen følger med i hvert kald, bør du kun bruge det på et netværk, du selv
+kontrollerer.
 
 ## AI-tilvalget for et felt
 

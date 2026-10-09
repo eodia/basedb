@@ -118,9 +118,12 @@ Przy starcie log podaje, która usługa jest używana: `Géocodage : https://nom
 
 | Zmienna | Domyślnie | Rola |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | – | `openai`, `anthropic` lub `mistral` |
+| `BASEDB_AI_PROVIDER` | – | `openai`, `anthropic`, `mistral` lub `openai_compatible` (Azure, brama, model lokalny) |
 | `BASEDB_AI_MODEL` | – | model |
-| `BASEDB_AI_API_KEY` | – | klucz (w przeciwnym razie `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_API_KEY` | – | klucz (w przeciwnym razie `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`); opcjonalny dla `openai_compatible` |
+| `BASEDB_AI_BASE_URL` | adres dostawcy | to, co poprzedza `/chat/completions` (`/messages` dla `anthropic`), razem z parametrami; wymagany dla `openai_compatible` – zobacz [Sztuczna inteligencja](/basedb/pl/fonctionnalites/ia/#azure-brama-model-lokalny) |
+| `BASEDB_AI_HEADERS` | – | nagłówki dodawane do każdego wywołania, jako obiekt JSON: `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`: certyfikat TLS dostawcy nie jest sprawdzany – wewnętrzna brama z samopodpisanym certyfikatem; zobacz [Sztuczna inteligencja](/basedb/pl/fonctionnalites/ia/#azure-brama-model-lokalny) |
 | `BASEDB_AI_QUOTA` | `120` | wywołania interaktywne na godzinę i na tenanta |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | obliczenia pól AI na godzinę i na tenanta |
 | `BASEDB_AI_WORKER` | `1` | `0`: brak obliczeń w tle w tym procesie |

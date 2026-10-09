@@ -77,6 +77,11 @@ export type ProviderTransport = (request: {
   readonly baseUrl?: string
   /** Headers added to every call, lower-cased — `BASEDB_AI_HEADERS`. */
   readonly headers?: Readonly<Record<string, string>>
+  /**
+   * `false`: the provider's TLS certificate is not checked — `BASEDB_AI_PROVIDER_SSL_VERIFY`,
+   * for the environment's provider alone. Absent: checked.
+   */
+  readonly verifyCertificate?: boolean
   readonly system: string
   readonly payload: Record<string, unknown>
   readonly schema: Record<string, unknown>
@@ -421,6 +426,7 @@ export interface ProviderConfig {
   readonly keyScope: 'instance' | 'tenant'
   readonly baseUrl?: string
   readonly headers?: Readonly<Record<string, string>>
+  readonly verifyCertificate?: boolean
 }
 
 /**
@@ -470,6 +476,7 @@ export async function invoke(
         apiKey: config.apiKey,
         ...(config.baseUrl === undefined ? {} : { baseUrl: config.baseUrl }),
         ...(config.headers === undefined ? {} : { headers: config.headers }),
+        ...(config.verifyCertificate === false ? { verifyCertificate: false } : {}),
         system,
         payload,
         schema,
@@ -800,6 +807,19 @@ export function headersShape(raw: string): string {
   return raw.replace(/:[^,}\n]*/g, ': …').slice(0, 200)
 }
 
+/**
+ * `BASEDB_AI_PROVIDER_SSL_VERIFY` read: `true` when absent — a key travels in every call,
+ * and an unchecked certificate is a door for whoever sits between the instance and the
+ * provider —, `false` for `false`, `0`, `no`, `off`, and `null` for a value that says
+ * neither, which the startup reports and which keeps checking.
+ */
+export function verifiesProviderCertificate(value: string | undefined): boolean | null {
+  const text = (value ?? '').trim().toLowerCase()
+  if (['', 'true', '1', 'yes', 'on'].includes(text)) return true
+  if (['false', '0', 'no', 'off'].includes(text)) return false
+  return null
+}
+
 /** A header name as HTTP allows it (RFC 9110 §5.6.2). */
 const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/
 
@@ -810,6 +830,8 @@ const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/
  *   BASEDB_AI_BASE_URL  what comes before `/chat/completions` (`/messages` for Anthropic),
  *                       query string included: Azure's `?api-version=…` stays on the call
  *   BASEDB_AI_HEADERS   a JSON object of headers, added to every call: {"api-key":"…"}
+ *   BASEDB_AI_PROVIDER_SSL_VERIFY  `false`: the provider's TLS certificate is not checked
+ *                       — a self-signed gateway, a proxy that re-signs the traffic
  *
  * The environment and nothing else: the operator's word. An address a tenant could set
  * would let them point the API at the instance's own network, headers and all.
@@ -817,8 +839,14 @@ const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/
 export function endpointFromEnv(env: NodeJS.ProcessEnv): {
   baseUrl?: string
   headers?: Record<string, string>
+  verifyCertificate?: boolean
 } {
-  const out: { baseUrl?: string; headers?: Record<string, string> } = {}
+  const out: { baseUrl?: string; headers?: Record<string, string>; verifyCertificate?: boolean } =
+    {}
+  // A value that reads neither true nor false keeps checking: the startup says so.
+  if (verifiesProviderCertificate(env.BASEDB_AI_PROVIDER_SSL_VERIFY) === false) {
+    out.verifyCertificate = false
+  }
 
   const baseUrl = (env.BASEDB_AI_BASE_URL ?? '').trim()
   if (baseUrl !== '') {

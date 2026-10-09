@@ -12,6 +12,7 @@ import {
   parseTrusted,
   smtpMailer,
   startKernel,
+  verifiesProviderCertificate,
 } from '@basedb/core'
 import { serve } from '@hono/node-server'
 import { providerTransport } from './ai-transport.js'
@@ -341,6 +342,16 @@ if (webhookTrusted.length > 0) {
 // The environment's AI provider, read once here: a mistyped name, address or header object
 // is said at startup, not discovered later as « IA non configurée » in the interface.
 const aiProvider = setting('BASEDB_AI_PROVIDER')
+const aiCertificates = verifiesProviderCertificate(process.env.BASEDB_AI_PROVIDER_SSL_VERIFY)
+if (aiCertificates === null) {
+  console.error(
+    `IA : BASEDB_AI_PROVIDER_SSL_VERIFY « ${process.env.BASEDB_AI_PROVIDER_SSL_VERIFY} » illisible — true ou false ; les certificats restent vérifiés.`,
+  )
+} else if (!aiCertificates) {
+  console.warn(
+    'IA : certificat TLS du fournisseur de l’environnement NON vérifié (BASEDB_AI_PROVIDER_SSL_VERIFY=false) — pour un serveur interne seulement ; les autres appels sortants restent vérifiés.',
+  )
+}
 if (aiProvider !== undefined) {
   try {
     const { baseUrl } = endpointFromEnv(process.env)

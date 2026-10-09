@@ -110,9 +110,12 @@ expéditeur no-reply@exemple.fr.` サーバーが拒否したメールは、1分
 
 | 変数 | デフォルト | 役割 |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | — | `openai`、`anthropic`、`mistral` |
+| `BASEDB_AI_PROVIDER` | — | `openai`、`anthropic`、`mistral`、`openai_compatible`（Azure、ゲートウェイ、ローカルモデル） |
 | `BASEDB_AI_MODEL` | — | モデル |
-| `BASEDB_AI_API_KEY` | — | キー（なければ`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、`MISTRAL_API_KEY`） |
+| `BASEDB_AI_API_KEY` | — | キー（なければ`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、`MISTRAL_API_KEY`）。`openai_compatible`では省略可 |
+| `BASEDB_AI_BASE_URL` | プロバイダーのアドレス | `/chat/completions`の手前までの部分（`anthropic`では`/messages`）で、パラメーターも含みます。`openai_compatible`では必須。[AI](/basedb/ja/fonctionnalites/ia/#azureゲートウェイローカルモデル)を参照 |
+| `BASEDB_AI_HEADERS` | — | 各呼び出しに追加されるヘッダー（JSONオブジェクト）：`{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`：プロバイダーのTLS証明書を検証しません。自己署名証明書の社内ゲートウェイ向け。[AI](/basedb/ja/fonctionnalites/ia/#azureゲートウェイローカルモデル)を参照 |
 | `BASEDB_AI_QUOTA` | `120` | テナントごとの1時間あたりの対話的な呼び出し回数 |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | テナントごとの1時間あたりのAIフィールドの計算回数 |
 | `BASEDB_AI_WORKER` | `1` | `0`：このプロセスではバックグラウンド計算を行いません |

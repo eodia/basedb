@@ -117,9 +117,12 @@ Vid start berättar loggen vilken tjänst som används: `Géocodage : https://no
 
 | Variabel | Standard | Roll |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | – | `openai`, `anthropic` eller `mistral` |
+| `BASEDB_AI_PROVIDER` | – | `openai`, `anthropic`, `mistral` eller `openai_compatible` (Azure, en gateway, en lokal modell) |
 | `BASEDB_AI_MODEL` | – | modellen |
-| `BASEDB_AI_API_KEY` | – | nyckeln (annars `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_API_KEY` | – | nyckeln (annars `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`); valfri för `openai_compatible` |
+| `BASEDB_AI_BASE_URL` | leverantörens adress | det som står före `/chat/completions` (`/messages` för `anthropic`), parametrar inräknade; obligatorisk för `openai_compatible` – se [Artificiell intelligens](/basedb/sv/fonctionnalites/ia/#azure-en-gateway-en-lokal-modell) |
+| `BASEDB_AI_HEADERS` | – | huvuden som läggs till i varje anrop, som ett JSON-objekt: `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`: leverantörens TLS-certifikat kontrolleras inte – en intern gateway med självsignerat certifikat; se [Artificiell intelligens](/basedb/sv/fonctionnalites/ia/#azure-en-gateway-en-lokal-modell) |
 | `BASEDB_AI_QUOTA` | `120` | interaktiva anrop per timme och arbetsyta |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | beräkningar av AI-fält per timme och arbetsyta |
 | `BASEDB_AI_WORKER` | `1` | `0`: inga bakgrundsberäkningar i den här processen |

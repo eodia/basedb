@@ -3,19 +3,45 @@ title: AI
 description: フィールドのAIオプション、下書き、Copilotとダッシュボード用のCopilot、そしてプロバイダーに送られるもの。
 ---
 
-AIは**オプション**です。プロバイダーを設定しなければ、どこにも何も送られません。basedbは、お手持ちのキーを使って**OpenAI**、**Anthropic**、**Mistral**と連携できます。
+AIは**オプション**です。プロバイダーを設定しなければ、どこにも何も送られません。basedbは、お手持ちのキーを使って**OpenAI**、**Anthropic**、**Mistral**と連携できます。さらに、OpenAIのAPIに対応するあらゆるサーバー（**Azure**、社内のゲートウェイ、自前で動かすモデル）とも連携できます。
 
 ## プロバイダーを設定する
 
 インターフェースで設定が保存されていない間は、APIは環境変数を読み込みます：
 
 ```bash
-BASEDB_AI_PROVIDER=mistral      # openai、anthropic、mistralのいずれか
+BASEDB_AI_PROVIDER=mistral      # openai、anthropic、mistral、openai_compatibleのいずれか
 BASEDB_AI_MODEL=mistral-small-latest
 MISTRAL_API_KEY=…               # または BASEDB_AI_API_KEY
 ```
 
 キーは`BASEDB_AI_API_KEY`から読み込まれ、ない場合はプロバイダーの一般的な名前（`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、`MISTRAL_API_KEY`）から読み込まれます。
+
+### Azure、ゲートウェイ、ローカルモデル
+
+`BASEDB_AI_PROVIDER=openai_compatible`を指定すると、呼び出しはOpenAI形式で`BASEDB_AI_BASE_URL`のアドレスに送られます。このアドレスは`/chat/completions`の手前までの部分で、パラメーターも含みます。`BASEDB_AI_HEADERS`は、そのサーバーが求めるヘッダーを、JSONオブジェクトとして各呼び出しに追加します。
+
+```bash
+# Azure OpenAI：モデルにはデプロイ名を指定し、キーはapi-keyヘッダーに入れる
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=mon-deploiement
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/v1
+BASEDB_AI_HEADERS='{"api-key":"…"}'
+
+# Azureの従来の形式（デプロイごと）：パラメーターはパスの後ろに残す
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/deployments/mon-deploiement?api-version=2024-10-21
+
+# Ollamaで動かすモデル、キーなし
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=llama3.1
+BASEDB_AI_BASE_URL=http://ollama:11434/v1
+```
+
+`openai_compatible`では、キーは省略できます。`BASEDB_AI_API_KEY`を指定した場合は、`Authorization: Bearer`として送られます。`BASEDB_AI_HEADERS`のヘッダーは、キーによるヘッダーを置き換えます。たとえば、独自の`Authorization`を要求するゲートウェイの場合です。
+
+`BASEDB_AI_BASE_URL`と`BASEDB_AI_HEADERS`は、ゲートウェイ経由で接続する他の3つのプロバイダーにも使えます。`anthropic`の場合、アドレスは`/messages`の手前までの部分です。この2つの変数が適用されるのは、環境変数で指定したプロバイダーだけです。別のプロバイダーを選んだテナントには、アドレスもヘッダーもキーも渡されません。APIは起動時に、採用したプロバイダーを書き出し、無効なアドレスやJSONオブジェクトを通知します。
+
+TLS証明書が自己署名の社内ゲートウェイや、通信を再署名する社内プロキシがあると、呼び出しが失敗します。`BASEDB_AI_PROVIDER_SSL_VERIFY=false`を指定すると、**このプロバイダーに限って**証明書の検証を行わなくなります。インスタンスの他のすべての外向き呼び出しと、テナントが選んだプロバイダーは、引き続き検証されます。起動時にその旨が通知されます。キーはすべての呼び出しで送られるため、管理下にあるネットワークでのみ使用してください。
 
 ## フィールドのAIオプション
 

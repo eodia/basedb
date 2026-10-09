@@ -1547,6 +1547,14 @@ export default {
 		title: 'Lo que ha cambiado en basedb',
 		intro: 'El detalle de cada cambio está en <a href="https://github.com/eodia/basedb/commits/main">el historial del repositorio</a>. Lo que viene después: la <a href="/feuille-de-route/">hoja de ruta</a>.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: 'Un proveedor de IA detrás de un certificado interno',
+				tag: 'Alojamiento',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> permite llegar a una pasarela de IA con certificado autofirmado, o detrás de un proxy que vuelve a firmar el tráfico, sin desactivar la verificación de las demás llamadas de la instancia. <a href="/fonctionnalites/ia/#azure-una-pasarela-un-modelo-local">Azure, una pasarela, un modelo local</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'Un token para toda la base, con el entorno a elegir',

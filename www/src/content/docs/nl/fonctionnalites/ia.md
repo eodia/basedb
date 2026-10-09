@@ -4,20 +4,61 @@ description: De AI-optie van een veld, concepten, de Copilot en die van dashboar
 ---
 
 AI is **optioneel**. Zonder geconfigureerde provider gaat er nergens iets naartoe. basedb kan
-praten met **OpenAI**, **Anthropic** en **Mistral**, met je eigen sleutel.
+praten met **OpenAI**, **Anthropic** en **Mistral**, met je eigen sleutel — en met elke server
+die de API van OpenAI spreekt: **Azure**, een bedrijfsgateway, een model dat je zelf host.
 
 ## Een provider configureren
 
 Zolang er in de interface geen instelling is opgeslagen, leest de API zijn omgeving:
 
 ```bash
-BASEDB_AI_PROVIDER=mistral      # openai, anthropic of mistral
+BASEDB_AI_PROVIDER=mistral      # openai, anthropic, mistral of openai_compatible
 BASEDB_AI_MODEL=mistral-small-latest
 MISTRAL_API_KEY=…               # of BASEDB_AI_API_KEY
 ```
 
 De sleutel wordt gelezen uit `BASEDB_AI_API_KEY`, of anders uit de gebruikelijke naam van de provider
 (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`).
+
+### Azure, een gateway, een lokaal model
+
+`BASEDB_AI_PROVIDER=openai_compatible` stuurt de aanroepen, in het formaat van OpenAI, naar het
+adres in `BASEDB_AI_BASE_URL`: alles wat vóór `/chat/completions` komt, parameters inbegrepen.
+`BASEDB_AI_HEADERS` voegt aan elke aanroep de headers toe die die server vraagt, als JSON-object.
+
+```bash
+# Azure OpenAI: de naam van de deployment als model, de sleutel in de header api-key
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=mon-deploiement
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/v1
+BASEDB_AI_HEADERS='{"api-key":"…"}'
+
+# De oudere vorm van Azure, per deployment: de parameter blijft na het pad staan
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/deployments/mon-deploiement?api-version=2024-10-21
+
+# Een model dat door Ollama wordt geserveerd, zonder sleutel
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=llama3.1
+BASEDB_AI_BASE_URL=http://ollama:11434/v1
+```
+
+Met `openai_compatible` is de sleutel optioneel: als `BASEDB_AI_API_KEY` is opgegeven, wordt die
+verstuurd als `Authorization: Bearer`. Een header uit `BASEDB_AI_HEADERS` vervangt die van de
+sleutel — bijvoorbeeld voor een gateway die zijn eigen `Authorization` wil.
+
+`BASEDB_AI_BASE_URL` en `BASEDB_AI_HEADERS` gelden ook voor de drie andere providers, wanneer
+die via een gateway worden bereikt: voor `anthropic` is het adres alles wat vóór `/messages`
+komt. Deze twee variabelen horen bij de provider van de omgeving, en alleen bij die: een
+werkruimte die een andere provider heeft gekozen, krijgt niet het adres, niet de headers en niet
+de sleutel. Bij het opstarten van de API noteert het logboek de gekozen provider en wordt een
+ongeldig adres of JSON-object gemeld.
+
+Een interne gateway met een zelfondertekend TLS-certificaat, of een bedrijfsproxy die het verkeer
+opnieuw ondertekent, laat de aanroepen mislukken: `BASEDB_AI_PROVIDER_SSL_VERIFY=false` stopt met
+het controleren van het certificaat **van alleen deze provider** — alle andere uitgaande
+aanroepen van de instantie, en de provider die een werkruimte heeft gekozen, blijven gecontroleerd.
+Bij het opstarten wordt dit gemeld. Omdat de sleutel in elke aanroep meegaat, gebruik je dit alleen
+op een netwerk dat je zelf beheert.
 
 ## De AI-optie van een veld
 

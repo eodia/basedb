@@ -118,9 +118,12 @@ Bij het opstarten meldt het logboek welke dienst wordt gebruikt: `Géocodage : h
 
 | Variabele | Standaard | Rol |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic` of `mistral` |
+| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic`, `mistral` of `openai_compatible` (Azure, een gateway, een lokaal model) |
 | `BASEDB_AI_MODEL` | — | het model |
-| `BASEDB_AI_API_KEY` | — | de sleutel (anders `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_API_KEY` | — | de sleutel (anders `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`); optioneel voor `openai_compatible` |
+| `BASEDB_AI_BASE_URL` | het adres van de provider | alles wat vóór `/chat/completions` komt (`/messages` voor `anthropic`), parameters inbegrepen; verplicht voor `openai_compatible` — zie [Kunstmatige intelligentie](/basedb/nl/fonctionnalites/ia/#azure-een-gateway-een-lokaal-model) |
+| `BASEDB_AI_HEADERS` | — | headers die aan elke aanroep worden toegevoegd, als JSON-object: `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`: het TLS-certificaat van de provider wordt niet gecontroleerd — een interne gateway met een zelfondertekend certificaat; zie [Kunstmatige intelligentie](/basedb/nl/fonctionnalites/ia/#azure-een-gateway-een-lokaal-model) |
 | `BASEDB_AI_QUOTA` | `120` | interactieve aanroepen per uur en per werkruimte |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | berekeningen van AI-velden per uur en per werkruimte |
 | `BASEDB_AI_WORKER` | `1` | `0`: geen achtergrondberekeningen in dit proces |

@@ -23,7 +23,7 @@ basedb 以**单个镜像** [`eodia/basedb`](https://hub.docker.com/r/eodia/based
 |---|---|
 | `latest` | 最新发布的版本 |
 | `0.7` | 最新的 0.7.x 版本 |
-| `0.7.0` | 恰好是这个版本 |
+| `0.7.1` | 恰好是这个版本 |
 
 ## 服务
 

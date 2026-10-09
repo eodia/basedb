@@ -4,20 +4,59 @@ description: Opcja AI pola, szkice, Copilot i Copilot pulpitów – oraz to, co 
 ---
 
 AI jest **opcjonalna**. Bez skonfigurowanego dostawcy nic nigdzie nie wychodzi. basedb potrafi
-rozmawiać z **OpenAI**, **Anthropic** i **Mistral**, z twoim własnym kluczem.
+rozmawiać z **OpenAI**, **Anthropic** i **Mistral**, z twoim własnym kluczem – oraz z każdym
+serwerem obsługującym API OpenAI: **Azure**, firmową bramą, modelem serwowanym u ciebie.
 
 ## Konfiguracja dostawcy
 
 Dopóki w interfejsie nie zapisano żadnych ustawień, API czyta swoje środowisko:
 
 ```bash
-BASEDB_AI_PROVIDER=mistral      # openai, anthropic lub mistral
+BASEDB_AI_PROVIDER=mistral      # openai, anthropic, mistral lub openai_compatible
 BASEDB_AI_MODEL=mistral-small-latest
 MISTRAL_API_KEY=…               # lub BASEDB_AI_API_KEY
 ```
 
 Klucz jest odczytywany z `BASEDB_AI_API_KEY`, a w jego braku ze zwyczajowej nazwy dostawcy
 (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`).
+
+### Azure, brama, model lokalny
+
+`BASEDB_AI_PROVIDER=openai_compatible` wysyła wywołania, w formacie OpenAI, pod adres z
+`BASEDB_AI_BASE_URL`: to, co poprzedza `/chat/completions`, razem z parametrami.
+`BASEDB_AI_HEADERS` dodaje do każdego wywołania nagłówki, których ten serwer wymaga, jako obiekt JSON.
+
+```bash
+# Azure OpenAI: nazwa wdrożenia jako model, klucz w nagłówku api-key
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=mon-deploiement
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/v1
+BASEDB_AI_HEADERS='{"api-key":"…"}'
+
+# Starsza postać Azure, według wdrożenia: parametr zostaje po ścieżce
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/deployments/mon-deploiement?api-version=2024-10-21
+
+# Model serwowany przez Ollama, bez klucza
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=llama3.1
+BASEDB_AI_BASE_URL=http://ollama:11434/v1
+```
+
+Przy `openai_compatible` klucz jest opcjonalny: jeśli podano `BASEDB_AI_API_KEY`, jest wysyłany
+w `Authorization: Bearer`. Nagłówek z `BASEDB_AI_HEADERS` zastępuje nagłówek klucza – na
+przykład gdy brama chce własnego `Authorization`.
+
+`BASEDB_AI_BASE_URL` i `BASEDB_AI_HEADERS` obsługują też trzech pozostałych dostawców, osiąganych
+przez bramę: dla `anthropic` adresem jest to, co poprzedza `/messages`. Te dwie zmienne
+towarzyszą dostawcy ze środowiska i tylko jemu: tenant, który wybrał innego, nie otrzymuje ani
+adresu, ani nagłówków, ani klucza. Start API zapisuje w logu wybranego dostawcę i sygnalizuje
+nieprawidłowy adres lub obiekt JSON.
+
+Wewnętrzna brama z samopodpisanym certyfikatem TLS albo firmowe proxy, które na nowo podpisuje
+ruch, sprawiają, że wywołania kończą się błędem: `BASEDB_AI_PROVIDER_SSL_VERIFY=false` przestaje
+sprawdzać certyfikat **tylko tego dostawcy** – wszystkie pozostałe wywołania wychodzące instancji
+oraz dostawca wybrany przez tenanta nadal są sprawdzane. Start to sygnalizuje. Ponieważ klucz
+przechodzi w każdym wywołaniu, zarezerwuj to dla sieci, nad którą masz kontrolę.
 
 ## Opcja AI pola
 

@@ -4,20 +4,61 @@ description: Опція ШІ для поля, чернетки, Copilot і Copil
 ---
 
 ШІ — **необов’язковий**. Якщо постачальника не налаштовано, нічого нікуди не надсилається.
-basedb уміє працювати з **OpenAI**, **Anthropic** і **Mistral** з вашим власним ключем.
+basedb уміє працювати з **OpenAI**, **Anthropic** і **Mistral** з вашим власним ключем — і з
+будь-яким сервером, що розмовляє API OpenAI: **Azure**, корпоративним шлюзом, моделлю, яку ви
+розгортаєте у себе.
 
 ## Налаштування постачальника
 
 Доки в інтерфейсі не збережено жодних налаштувань, API читає своє середовище:
 
 ```bash
-BASEDB_AI_PROVIDER=mistral      # openai, anthropic або mistral
+BASEDB_AI_PROVIDER=mistral      # openai, anthropic, mistral або openai_compatible
 BASEDB_AI_MODEL=mistral-small-latest
 MISTRAL_API_KEY=…               # або BASEDB_AI_API_KEY
 ```
 
 Ключ читається з `BASEDB_AI_API_KEY` або, якщо його немає, зі змінної зі звичною для
 постачальника назвою (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`).
+
+### Azure, шлюз, локальна модель
+
+`BASEDB_AI_PROVIDER=openai_compatible` надсилає виклики у форматі OpenAI на адресу з
+`BASEDB_AI_BASE_URL`: усе, що передує `/chat/completions`, разом із параметрами.
+`BASEDB_AI_HEADERS` додає до кожного виклику заголовки, яких вимагає цей сервер, у вигляді
+JSON-об’єкта.
+
+```bash
+# Azure OpenAI: назва розгортання як модель, ключ у заголовку api-key
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=mon-deploiement
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/v1
+BASEDB_AI_HEADERS='{"api-key":"…"}'
+
+# Стара форма Azure, на кожне розгортання: параметр лишається після шляху
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/deployments/mon-deploiement?api-version=2024-10-21
+
+# Модель, яку обслуговує Ollama, без ключа
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=llama3.1
+BASEDB_AI_BASE_URL=http://ollama:11434/v1
+```
+
+З `openai_compatible` ключ необов’язковий: якщо `BASEDB_AI_API_KEY` задано, він іде в
+`Authorization: Bearer`. Заголовок із `BASEDB_AI_HEADERS` замінює заголовок ключа — наприклад,
+для шлюзу, якому потрібен власний `Authorization`.
+
+`BASEDB_AI_BASE_URL` і `BASEDB_AI_HEADERS` обслуговують також трьох інших постачальників, до яких
+звертаються через шлюз: для `anthropic` адреса — це все, що передує `/messages`. Ці дві змінні
+супроводжують постачальника із середовища, і лише його: робочий простір, який обрав іншого, не
+отримує ні адреси, ні заголовків, ні ключа. Під час запуску API записує обраного постачальника й
+повідомляє про недійсну адресу або JSON-об’єкт.
+
+Внутрішній шлюз із самопідписаним сертифікатом TLS або корпоративний проксі, що підписує трафік
+заново, призводить до помилок у викликах: `BASEDB_AI_PROVIDER_SSL_VERIFY=false` припиняє
+перевіряти сертифікат **лише цього постачальника** — усі інші вихідні виклики екземпляра та
+постачальник, якого міг обрати робочий простір, і далі перевіряються. Запуск повідомляє про це.
+Оскільки ключ іде в кожному виклику, залишайте цей параметр лише для мережі, яку ви контролюєте.
 
 ## Опція ШІ для поля
 

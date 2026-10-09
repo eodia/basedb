@@ -1547,6 +1547,14 @@ export default {
 		title: 'Hva som er endret i basedb',
 		intro: 'Detaljene i hver endring står i <a href="https://github.com/eodia/basedb/commits/main">historikken til depotet</a>. Hva som kommer videre: <a href="/feuille-de-route/">veikartet</a>.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: 'En KI-leverandør bak et internt sertifikat',
+				tag: 'Drift',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> når en KI-gateway med selvsignert sertifikat, eller en bak en proxy som signerer trafikken på nytt, uten å slå av kontrollen av instansens øvrige kall. <a href="/fonctionnalites/ia/#azure-en-gateway-en-lokal-modell">Azure, en gateway, en lokal modell</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'Ett token for hele databasen, miljøet etter valg',

@@ -4,20 +4,59 @@ description: A field’s AI option, drafts, Copilot and the dashboards’ Copilo
 ---
 
 AI is **optional**. With no provider configured, nothing goes anywhere. basedb can talk to
-**OpenAI**, **Anthropic** and **Mistral**, with your own key.
+**OpenAI**, **Anthropic** and **Mistral**, with your own key — and to any server that speaks
+OpenAI’s API: **Azure**, a company gateway, a model you host yourself.
 
 ## Configuring a provider
 
 As long as no setting is saved in the interface, the API reads its environment:
 
 ```bash
-BASEDB_AI_PROVIDER=mistral      # openai, anthropic or mistral
+BASEDB_AI_PROVIDER=mistral      # openai, anthropic, mistral or openai_compatible
 BASEDB_AI_MODEL=mistral-small-latest
 MISTRAL_API_KEY=…               # or BASEDB_AI_API_KEY
 ```
 
 The key is read from `BASEDB_AI_API_KEY`, or failing that from the provider’s usual name
 (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`).
+
+### Azure, a gateway, a local model
+
+`BASEDB_AI_PROVIDER=openai_compatible` sends the calls, in OpenAI’s format, to the address in
+`BASEDB_AI_BASE_URL`: everything that comes before `/chat/completions`, parameters included.
+`BASEDB_AI_HEADERS` adds to every call the headers this server requires, as a JSON object.
+
+```bash
+# Azure OpenAI: the deployment name as the model, the key in the api-key header
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=mon-deploiement
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/v1
+BASEDB_AI_HEADERS='{"api-key":"…"}'
+
+# Azure’s older per-deployment form: the parameter stays after the path
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/deployments/mon-deploiement?api-version=2024-10-21
+
+# A model served by Ollama, without a key
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=llama3.1
+BASEDB_AI_BASE_URL=http://ollama:11434/v1
+```
+
+With `openai_compatible`, the key is optional: if `BASEDB_AI_API_KEY` is given, it goes out as
+`Authorization: Bearer`. A header from `BASEDB_AI_HEADERS` replaces the key’s — a gateway that
+wants its own `Authorization`, for example.
+
+`BASEDB_AI_BASE_URL` and `BASEDB_AI_HEADERS` also serve the other three providers, reached
+through a gateway: for `anthropic`, the address is everything that comes before `/messages`.
+These two variables go with the environment’s provider, and only that one: a workspace that
+has chosen another one receives neither the address, nor the headers, nor the key. On startup,
+the API logs the provider it settled on, and flags an invalid address or JSON object.
+
+An internal gateway whose TLS certificate is self-signed, or a company proxy that re-signs the
+traffic, makes the calls fail: `BASEDB_AI_PROVIDER_SSL_VERIFY=false` stops verifying the
+certificate **of this provider only** — every other outgoing call of the instance, and the
+provider a workspace may have chosen, stay verified. Startup reports it. Since the key goes
+out with every call, reserve this for a network you control.
 
 ## The AI option on a field
 

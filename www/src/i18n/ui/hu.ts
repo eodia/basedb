@@ -1536,6 +1536,14 @@ export default {
 		title: 'Mi változott a basedb-ben',
 		intro: 'Minden változás részletei <a href="https://github.com/eodia/basedb/commits/main">a tároló előzményeiben</a> találhatók. Ami ezután jön: az <a href="/feuille-de-route/">ütemterv</a>.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: 'Egy MI-szolgáltató belső tanúsítvány mögött',
+				tag: 'Üzemeltetés',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> összeköti a basedb-t egy önaláírt tanúsítványú MI-átjáróval, vagy olyannal, amely a forgalmat újraaláíró proxy mögött áll, anélkül hogy a példány többi hívásának ellenőrzését kikapcsolná. <a href="/fonctionnalites/ia/#azure-egy-átjáró-egy-helyi-modell">Azure, egy átjáró, egy helyi modell</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'Egy token az egész adatbázishoz, a környezet tetszés szerint',

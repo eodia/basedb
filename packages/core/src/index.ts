@@ -749,7 +749,7 @@ export type {
   StructureDraftRequest,
   UsageKind,
 } from './ai/draft.js'
-export { endpointFromEnv, headersShape } from './ai/draft.js'
+export { endpointFromEnv, headersShape, verifiesProviderCertificate } from './ai/draft.js'
 export type {
   AiFieldInput,
   AiFieldStatus,

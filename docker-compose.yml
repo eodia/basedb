@@ -89,6 +89,8 @@ services:
       # Another address (Azure, a gateway, a local model) and the headers it asks for.
       BASEDB_AI_BASE_URL: ${BASEDB_AI_BASE_URL:-}
       BASEDB_AI_HEADERS: ${BASEDB_AI_HEADERS:-}
+      # false: the provider's TLS certificate is not checked (a self-signed gateway).
+      BASEDB_AI_PROVIDER_SSL_VERIFY: ${BASEDB_AI_PROVIDER_SSL_VERIFY:-}
       BASEDB_AI_QUOTA: ${BASEDB_AI_QUOTA:-}
       BASEDB_AI_FIELD_QUOTA: ${BASEDB_AI_FIELD_QUOTA:-}
       BASEDB_AI_WORKER: ${BASEDB_AI_WORKER:-}

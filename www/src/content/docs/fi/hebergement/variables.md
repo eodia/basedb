@@ -119,9 +119,12 @@ Käynnistyksessä loki kertoo, mitä palvelua käytetään: `Géocodage : https:
 
 | Muuttuja | Oletus | Tehtävä |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | – | `openai`, `anthropic` tai `mistral` |
+| `BASEDB_AI_PROVIDER` | – | `openai`, `anthropic`, `mistral` tai `openai_compatible` (Azure, yhdyskäytävä, paikallinen malli) |
 | `BASEDB_AI_MODEL` | – | malli |
-| `BASEDB_AI_API_KEY` | – | avain (muuten `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_API_KEY` | – | avain (muuten `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`); valinnainen arvolla `openai_compatible` |
+| `BASEDB_AI_BASE_URL` | palveluntarjoajan osoite | se, mikä edeltää polkua `/chat/completions` (`anthropic`-palveluntarjoajalla `/messages`), parametrit mukaan lukien; pakollinen arvolla `openai_compatible` – katso [Tekoäly](/basedb/fi/fonctionnalites/ia/#azure-yhdyskäytävä-paikallinen-malli) |
+| `BASEDB_AI_HEADERS` | – | jokaiseen kutsuun lisättävät otsakkeet JSON-objektina: `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`: palveluntarjoajan TLS-varmennetta ei tarkisteta – sisäinen yhdyskäytävä, jonka varmenne on itse allekirjoitettu; katso [Tekoäly](/basedb/fi/fonctionnalites/ia/#azure-yhdyskäytävä-paikallinen-malli) |
 | `BASEDB_AI_QUOTA` | `120` | vuorovaikutteiset kutsut tuntia ja työtilaa kohden |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | tekoälykenttien laskennat tuntia ja työtilaa kohden |
 | `BASEDB_AI_WORKER` | `1` | `0`: ei taustalaskentaa tässä prosessissa |

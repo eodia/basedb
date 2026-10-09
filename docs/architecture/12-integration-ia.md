@@ -339,6 +339,7 @@ principe du § 2.2 tient — rien de propre à Azure ne remonte à l'appelant.
 |---|---|
 | `BASEDB_AI_BASE_URL` | Ce qui précède `/chat/completions` (`/messages` pour `anthropic`), paramètres compris : le `?api-version=…` d'Azure reste après le chemin. Obligatoire pour `openai_compatible`, facultative pour les trois autres, joints alors par une passerelle |
 | `BASEDB_AI_HEADERS` | Objet JSON d'en-têtes ajoutés à chaque appel — l'`api-key` d'Azure, la clé d'abonnement d'une passerelle. Ils remplacent ceux de la clé, jamais le type du corps |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `false` (`0`, `no`, `off`) : le certificat TLS de ce fournisseur n'est pas vérifié — une passerelle interne au certificat auto-signé, un proxy qui re-signe le trafic. Comme l'adresse et les en-têtes, il accompagne le fournisseur de l'environnement et lui seul (`verifyCertificate` de la requête au transport) ; l'adaptateur passe alors par un agent `undici` propre à cet appel, et tout autre appel sortant reste vérifié — ce que `NODE_TLS_REJECT_UNAUTHORIZED=0` ne permettrait pas. Une valeur illisible laisse la vérification active ; le démarrage signale l'une et l'autre (0.7.1) |
 
 Trois règles :
 

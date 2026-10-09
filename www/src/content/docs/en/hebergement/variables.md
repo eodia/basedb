@@ -117,9 +117,12 @@ At startup, the log states which service is used: `Géocodage : https://nominati
 
 | Variable | Default | Role |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic` or `mistral` |
+| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic`, `mistral` or `openai_compatible` (Azure, a gateway, a local model) |
 | `BASEDB_AI_MODEL` | — | the model |
-| `BASEDB_AI_API_KEY` | — | the key (otherwise `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_API_KEY` | — | the key (otherwise `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`); optional for `openai_compatible` |
+| `BASEDB_AI_BASE_URL` | the provider’s address | everything that comes before `/chat/completions` (`/messages` for `anthropic`), parameters included; required for `openai_compatible` — see [Artificial intelligence](/basedb/en/fonctionnalites/ia/#azure-a-gateway-a-local-model) |
+| `BASEDB_AI_HEADERS` | — | headers added to every call, as a JSON object: `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`: the provider’s TLS certificate is not verified — an internal gateway with a self-signed certificate; see [Artificial intelligence](/basedb/en/fonctionnalites/ia/#azure-a-gateway-a-local-model) |
 | `BASEDB_AI_QUOTA` | `120` | interactive calls per hour and per workspace |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | AI field computations per hour and per workspace |
 | `BASEDB_AI_WORKER` | `1` | `0`: no background computation in this process |

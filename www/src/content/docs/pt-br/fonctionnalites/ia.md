@@ -4,20 +4,60 @@ description: A opção de IA de um campo, os rascunhos, o Copilot e o dos painé
 ---
 
 A IA é **opcional**. Sem provedor configurado, nada vai a lugar nenhum. O basedb sabe
-conversar com a **OpenAI**, a **Anthropic** e a **Mistral**, com a sua própria chave.
+conversar com a **OpenAI**, a **Anthropic** e a **Mistral**, com a sua própria chave — e com
+qualquer servidor que fale a API da OpenAI: **Azure**, um gateway corporativo, um modelo
+hospedado na sua infraestrutura.
 
 ## Configurar um provedor
 
 Enquanto nenhuma configuração for salva na interface, a API lê o seu ambiente:
 
 ```bash
-BASEDB_AI_PROVIDER=mistral      # openai, anthropic ou mistral
+BASEDB_AI_PROVIDER=mistral      # openai, anthropic, mistral ou openai_compatible
 BASEDB_AI_MODEL=mistral-small-latest
 MISTRAL_API_KEY=…               # ou BASEDB_AI_API_KEY
 ```
 
 A chave é lida em `BASEDB_AI_API_KEY` ou, na falta dela, no nome usual do provedor
 (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`).
+
+### Azure, um gateway, um modelo local
+
+`BASEDB_AI_PROVIDER=openai_compatible` envia as chamadas, no formato da OpenAI, para o endereço
+de `BASEDB_AI_BASE_URL`: o que vem antes de `/chat/completions`, parâmetros incluídos.
+`BASEDB_AI_HEADERS` adiciona a cada chamada os cabeçalhos que esse servidor exige, em um objeto JSON.
+
+```bash
+# Azure OpenAI: o nome da implantação como modelo, a chave no cabeçalho api-key
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=mon-deploiement
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/v1
+BASEDB_AI_HEADERS='{"api-key":"…"}'
+
+# A forma antiga do Azure, por implantação: o parâmetro permanece depois do caminho
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/deployments/mon-deploiement?api-version=2024-10-21
+
+# Um modelo servido pelo Ollama, sem chave
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=llama3.1
+BASEDB_AI_BASE_URL=http://ollama:11434/v1
+```
+
+Com `openai_compatible`, a chave é opcional: se `BASEDB_AI_API_KEY` for informada, ela é enviada
+em `Authorization: Bearer`. Um cabeçalho de `BASEDB_AI_HEADERS` substitui o da chave — um
+gateway que quer o seu próprio `Authorization`, por exemplo.
+
+`BASEDB_AI_BASE_URL` e `BASEDB_AI_HEADERS` também servem aos outros três provedores, alcançados
+por meio de um gateway: para `anthropic`, o endereço é o que vem antes de `/messages`. Essas duas
+variáveis acompanham o provedor do ambiente, e somente ele: um tenant que escolheu outro não
+recebe nem o endereço, nem os cabeçalhos, nem a chave. A inicialização da API registra o provedor
+adotado e sinaliza um endereço ou um objeto JSON inválidos.
+
+Um gateway interno cujo certificado TLS é autoassinado, ou um proxy corporativo que reassina o
+tráfego, faz as chamadas falharem: `BASEDB_AI_PROVIDER_SSL_VERIFY=false` deixa de verificar o
+certificado **somente desse provedor** — todas as outras chamadas de saída da instância, e o
+provedor que um tenant tenha escolhido, continuam verificados. A inicialização sinaliza isso. Como
+a chave passa em cada chamada, reserve essa opção para uma rede que você controla.
 
 ## A opção de IA de um campo
 

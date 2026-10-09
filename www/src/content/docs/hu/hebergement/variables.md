@@ -119,9 +119,12 @@ Induláskor a napló jelzi, melyik szolgáltatást használja: `Géocodage : htt
 
 | Változó | Alapértelmezés | Szerep |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | – | `openai`, `anthropic` vagy `mistral` |
+| `BASEDB_AI_PROVIDER` | – | `openai`, `anthropic`, `mistral` vagy `openai_compatible` (Azure, egy átjáró, egy helyi modell) |
 | `BASEDB_AI_MODEL` | – | a modell |
-| `BASEDB_AI_API_KEY` | – | a kulcs (ennek hiányában `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_API_KEY` | – | a kulcs (ennek hiányában `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`); az `openai_compatible` esetén elhagyható |
+| `BASEDB_AI_BASE_URL` | a szolgáltató címe | ami a `/chat/completions` előtt áll (`anthropic` esetén `/messages`), a paraméterekkel együtt; az `openai_compatible` esetén kötelező – lásd: [Mesterséges intelligencia](/basedb/hu/fonctionnalites/ia/#azure-egy-átjáró-egy-helyi-modell) |
+| `BASEDB_AI_HEADERS` | – | minden híváshoz hozzáadott fejlécek JSON-objektumként: `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`: a szolgáltató TLS-tanúsítványa nincs ellenőrizve – egy önaláírt tanúsítványú belső átjáró; lásd: [Mesterséges intelligencia](/basedb/hu/fonctionnalites/ia/#azure-egy-átjáró-egy-helyi-modell) |
 | `BASEDB_AI_QUOTA` | `120` | interaktív hívások óránként és munkaterületenként |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | MI-mezők számításai óránként és munkaterületenként |
 | `BASEDB_AI_WORKER` | `1` | `0`: ebben a folyamatban nincs háttérszámítás |

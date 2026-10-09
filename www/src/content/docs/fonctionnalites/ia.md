@@ -52,6 +52,12 @@ variables accompagnent le fournisseur de l’environnement, et lui seul : un ten
 choisi un autre ne reçoit ni l’adresse, ni les en-têtes, ni la clé. Le démarrage de l’API écrit
 le fournisseur retenu, et signale une adresse ou un objet JSON invalides.
 
+Une passerelle interne dont le certificat TLS est auto-signé, ou un proxy d’entreprise qui
+re-signe le trafic, fait échouer les appels : `BASEDB_AI_PROVIDER_SSL_VERIFY=false` cesse de
+vérifier le certificat **de ce fournisseur seulement** — tous les autres appels sortants de
+l’instance, et le fournisseur qu’un tenant aurait choisi, restent vérifiés. Le démarrage le
+signale. La clé passant dans chaque appel, réservez-le à un réseau que vous maîtrisez.
+
 ## L’option IA d’un champ
 
 L’IA n’est pas un type de champ mais une **option** : l’interrupteur **IA** du formulaire d’un

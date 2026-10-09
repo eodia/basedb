@@ -1540,6 +1540,14 @@ export default {
 		title: 'Hvad der er ændret i basedb',
 		intro: 'Detaljerne om hver ændring findes i <a href="https://github.com/eodia/basedb/commits/main">repositoriets historik</a>. Det, der kommer bagefter: <a href="/feuille-de-route/">køreplanen</a>.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: 'En AI-udbyder bag et internt certifikat',
+				tag: 'Hosting',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> når en AI-gateway med selvsigneret certifikat, eller en bag en proxy, der gensignerer trafikken, uden at slå kontrollen af instansens øvrige kald fra. <a href="/fonctionnalites/ia/#azure-en-gateway-en-lokal-model">Azure, en gateway, en lokal model</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'Ét token til hele databasen, miljøet efter eget valg',

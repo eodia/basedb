@@ -1539,6 +1539,14 @@ export default {
 		title: 'Co zmieniło się w basedb',
 		intro: 'Szczegóły każdej zmiany są w <a href="https://github.com/eodia/basedb/commits/main">historii repozytorium</a>. Co dalej: <a href="/feuille-de-route/">plan rozwoju</a>.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: 'Dostawca AI za wewnętrznym certyfikatem',
+				tag: 'Hosting',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> pozwala połączyć się z bramą AI z samopodpisanym certyfikatem albo z bramą za proxy, które na nowo podpisuje ruch, bez wyłączania sprawdzania pozostałych wywołań instancji. <a href="/fonctionnalites/ia/#azure-brama-model-lokalny">Azure, brama, model lokalny</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'Jeden token na całą bazę, środowisko do wyboru',

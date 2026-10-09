@@ -118,9 +118,12 @@ Al arrancar, el registro dice qué servicio se está usando: `Géocodage : https
 
 | Variable | Predeterminado | Función |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic` o `mistral` |
+| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic`, `mistral` u `openai_compatible` (Azure, una pasarela, un modelo local) |
 | `BASEDB_AI_MODEL` | — | el modelo |
-| `BASEDB_AI_API_KEY` | — | la clave (si no, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_API_KEY` | — | la clave (si no, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`); opcional con `openai_compatible` |
+| `BASEDB_AI_BASE_URL` | la dirección del proveedor | lo que precede a `/chat/completions` (`/messages` con `anthropic`), parámetros incluidos; obligatoria con `openai_compatible`; consulta [Inteligencia artificial](/basedb/es/fonctionnalites/ia/#azure-una-pasarela-un-modelo-local) |
+| `BASEDB_AI_HEADERS` | — | cabeceras que se añaden a cada llamada, como objeto JSON: `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`: no se verifica el certificado TLS del proveedor (una pasarela interna con certificado autofirmado); consulta [Inteligencia artificial](/basedb/es/fonctionnalites/ia/#azure-una-pasarela-un-modelo-local) |
 | `BASEDB_AI_QUOTA` | `120` | llamadas interactivas por hora y por tenant |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | cálculos de campos de IA por hora y por tenant |
 | `BASEDB_AI_WORKER` | `1` | `0`: sin cálculos en segundo plano en este proceso |

@@ -1536,6 +1536,14 @@ export default {
 		title: 'What changed in basedb',
 		intro: 'The details of every change are in <a href="https://github.com/eodia/basedb/commits/main">the repository history</a>. What comes next: the <a href="/feuille-de-route/">roadmap</a>.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: 'An AI provider behind an internal certificate',
+				tag: 'Hosting',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> reaches an AI gateway with a self-signed certificate, or one behind a proxy that re-signs the traffic, without switching off verification of the instance’s other calls. <a href="/fonctionnalites/ia/#azure-a-gateway-a-local-model">Azure, a gateway, a local model</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'One token for the whole base, the environment of your choice',

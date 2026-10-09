@@ -4,20 +4,62 @@ description: Opțiunea AI a unui câmp, ciornele, Copilot și cel al tablourilor
 ---
 
 AI-ul este **opțional**. Fără un furnizor configurat, nimic nu pleacă nicăieri. basedb știe
-să comunice cu **OpenAI**, **Anthropic** și **Mistral**, cu propria dumneavoastră cheie.
+să comunice cu **OpenAI**, **Anthropic** și **Mistral**, cu propria dumneavoastră cheie — și cu
+orice server care vorbește API-ul OpenAI: **Azure**, o poartă de acces de întreprindere, un
+model găzduit de dumneavoastră.
 
 ## Configurarea unui furnizor
 
 Cât timp nicio setare nu este salvată în interfață, API-ul își citește mediul:
 
 ```bash
-BASEDB_AI_PROVIDER=mistral      # openai, anthropic sau mistral
+BASEDB_AI_PROVIDER=mistral      # openai, anthropic, mistral sau openai_compatible
 BASEDB_AI_MODEL=mistral-small-latest
 MISTRAL_API_KEY=…               # sau BASEDB_AI_API_KEY
 ```
 
 Cheia se citește din `BASEDB_AI_API_KEY` sau, în lipsa ei, din numele obișnuit al furnizorului
 (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`).
+
+### Azure, o poartă de acces, un model local
+
+`BASEDB_AI_PROVIDER=openai_compatible` trimite apelurile, în formatul OpenAI, la adresa din
+`BASEDB_AI_BASE_URL`: tot ce precedă `/chat/completions`, parametrii incluși.
+`BASEDB_AI_HEADERS` adaugă la fiecare apel antetele pe care le cere acel server, sub forma unui
+obiect JSON.
+
+```bash
+# Azure OpenAI: numele implementării drept model, cheia în antetul api-key
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=mon-deploiement
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/v1
+BASEDB_AI_HEADERS='{"api-key":"…"}'
+
+# Vechea formă Azure, pe implementare: parametrul rămâne după cale
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/deployments/mon-deploiement?api-version=2024-10-21
+
+# Un model servit de Ollama, fără cheie
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=llama3.1
+BASEDB_AI_BASE_URL=http://ollama:11434/v1
+```
+
+Cu `openai_compatible`, cheia este opțională: dacă `BASEDB_AI_API_KEY` este dată, ea pleacă în
+`Authorization: Bearer`. Un antet din `BASEDB_AI_HEADERS` îl înlocuiește pe cel al cheii — de
+exemplu, pentru o poartă de acces care vrea propriul `Authorization`.
+
+`BASEDB_AI_BASE_URL` și `BASEDB_AI_HEADERS` servesc și celorlalți trei furnizori, atunci când sunt
+accesați printr-o poartă de acces: pentru `anthropic`, adresa este tot ce precedă `/messages`.
+Aceste două variabile însoțesc furnizorul din mediu, și doar pe el: un spațiu de lucru care a ales
+altul nu primește nici adresa, nici antetele, nici cheia. Pornirea API-ului scrie furnizorul
+reținut și semnalează o adresă sau un obiect JSON invalide.
+
+O poartă de acces internă al cărei certificat TLS este autosemnat, sau un proxy de întreprindere
+care semnează din nou traficul, face apelurile să eșueze: `BASEDB_AI_PROVIDER_SSL_VERIFY=false`
+încetează să verifice certificatul **doar al acestui furnizor** — toate celelalte apeluri de
+ieșire ale instanței, precum și furnizorul pe care l-ar fi ales un spațiu de lucru, rămân
+verificate. Pornirea o semnalează. Cheia trecând prin fiecare apel, rezervați această opțiune unei
+rețele pe care o controlați.
 
 ## Opțiunea AI a unui câmp
 

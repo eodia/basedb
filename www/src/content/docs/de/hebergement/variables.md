@@ -118,9 +118,12 @@ Beim Start sagt das Log, welcher Dienst verwendet wird: `Géocodage : https://no
 
 | Variable | Standard | Rolle |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | – | `openai`, `anthropic` oder `mistral` |
+| `BASEDB_AI_PROVIDER` | – | `openai`, `anthropic`, `mistral` oder `openai_compatible` (Azure, ein Gateway, ein lokales Modell) |
 | `BASEDB_AI_MODEL` | – | das Modell |
-| `BASEDB_AI_API_KEY` | – | der Schlüssel (sonst `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_API_KEY` | – | der Schlüssel (sonst `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`); optional bei `openai_compatible` |
+| `BASEDB_AI_BASE_URL` | die Adresse des Anbieters | alles, was vor `/chat/completions` steht (`/messages` bei `anthropic`), Parameter eingeschlossen; Pflicht bei `openai_compatible` – siehe [Künstliche Intelligenz](/basedb/de/fonctionnalites/ia/#azure-ein-gateway-ein-lokales-modell) |
+| `BASEDB_AI_HEADERS` | – | Header, die jedem Aufruf hinzugefügt werden, als JSON-Objekt: `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`: Das TLS-Zertifikat des Anbieters wird nicht geprüft – ein internes Gateway mit selbstsigniertem Zertifikat; siehe [Künstliche Intelligenz](/basedb/de/fonctionnalites/ia/#azure-ein-gateway-ein-lokales-modell) |
 | `BASEDB_AI_QUOTA` | `120` | interaktive Aufrufe pro Stunde und pro Arbeitsbereich |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | Berechnungen von KI-Feldern pro Stunde und pro Arbeitsbereich |
 | `BASEDB_AI_WORKER` | `1` | `0`: keine Hintergrundberechnung in diesem Prozess |

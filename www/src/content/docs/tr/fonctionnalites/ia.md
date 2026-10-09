@@ -4,20 +4,60 @@ description: Bir alanın yapay zeka seçeneği, taslaklar, Copilot ve panoların
 ---
 
 Yapay zeka **isteğe bağlıdır**. Yapılandırılmış bir sağlayıcı olmadan hiçbir yere hiçbir şey
-gitmez. basedb, kendi anahtarınızla **OpenAI**, **Anthropic** ve **Mistral** ile konuşabilir.
+gitmez. basedb, kendi anahtarınızla **OpenAI**, **Anthropic** ve **Mistral** ile konuşabilir —
+ve OpenAI API'si ile konuşan her sunucuyla da: **Azure**, kurumsal bir ağ geçidi, kendi
+altyapınızda sunulan bir model.
 
 ## Bir sağlayıcı yapılandırma
 
 Arayüzde hiçbir ayar kaydedilmediği sürece API kendi ortamını okur:
 
 ```bash
-BASEDB_AI_PROVIDER=mistral      # openai, anthropic ya da mistral
+BASEDB_AI_PROVIDER=mistral      # openai, anthropic, mistral ya da openai_compatible
 BASEDB_AI_MODEL=mistral-small-latest
 MISTRAL_API_KEY=…               # ya da BASEDB_AI_API_KEY
 ```
 
 Anahtar `BASEDB_AI_API_KEY` altında ya da, o yoksa, sağlayıcının alışılmış adı altında okunur
 (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`).
+
+### Azure, bir ağ geçidi, yerel bir model
+
+`BASEDB_AI_PROVIDER=openai_compatible`, çağrıları OpenAI biçiminde `BASEDB_AI_BASE_URL`
+adresine gönderir: `/chat/completions` öncesindeki her şey, parametreler dahil.
+`BASEDB_AI_HEADERS`, o sunucunun istediği başlıkları her çağrıya bir JSON nesnesi olarak ekler.
+
+```bash
+# Azure OpenAI: model olarak dağıtımın adı, anahtar api-key başlığında
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=mon-deploiement
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/v1
+BASEDB_AI_HEADERS='{"api-key":"…"}'
+
+# Azure'un dağıtım başına eski biçimi: parametre yolun ardından kalır
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/deployments/mon-deploiement?api-version=2024-10-21
+
+# Ollama tarafından sunulan bir model, anahtarsız
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=llama3.1
+BASEDB_AI_BASE_URL=http://ollama:11434/v1
+```
+
+`openai_compatible` ile anahtar isteğe bağlıdır: `BASEDB_AI_API_KEY` verilmişse
+`Authorization: Bearer` olarak gider. `BASEDB_AI_HEADERS`'taki bir başlık, anahtarınkinin yerini
+alır — örneğin kendi `Authorization` başlığını isteyen bir ağ geçidi için.
+
+`BASEDB_AI_BASE_URL` ve `BASEDB_AI_HEADERS`, bir ağ geçidi üzerinden ulaşılan diğer üç sağlayıcıya
+da hizmet eder: `anthropic` için adres, `/messages` öncesindeki kısımdır. Bu iki değişken ortamın
+sağlayıcısına eşlik eder, yalnızca ona: başka bir sağlayıcı seçmiş bir çalışma alanı ne adresi, ne
+başlıkları, ne de anahtarı alır. API'nin başlatılması seçilen sağlayıcıyı yazar ve geçersiz bir
+adresi ya da JSON nesnesini bildirir.
+
+Sertifikası kendinden imzalı bir iç ağ geçidi ya da trafiği yeniden imzalayan kurumsal bir proxy,
+çağrıların başarısız olmasına yol açar: `BASEDB_AI_PROVIDER_SSL_VERIFY=false`, **yalnızca bu
+sağlayıcının** sertifikasını doğrulamayı bırakır — kurulumun diğer tüm giden çağrıları ve bir
+çalışma alanının seçmiş olabileceği sağlayıcı doğrulanmaya devam eder. Başlatma bunu bildirir.
+Anahtar her çağrıda geçtiği için bunu yalnızca denetlediğiniz bir ağa ayırın.
 
 ## Bir alanın yapay zeka seçeneği
 

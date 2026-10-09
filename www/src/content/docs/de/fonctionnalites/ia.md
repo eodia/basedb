@@ -4,20 +4,63 @@ description: Die KI-Option eines Felds, die Entwürfe, der Copilot und der Copil
 ---
 
 KI ist **optional**. Ohne konfigurierten Anbieter geht nichts irgendwohin. basedb kann mit
-**OpenAI**, **Anthropic** und **Mistral** sprechen, mit Ihrem eigenen Schlüssel.
+**OpenAI**, **Anthropic** und **Mistral** sprechen, mit Ihrem eigenen Schlüssel – und mit jedem
+Server, der die API von OpenAI spricht: **Azure**, ein Unternehmens-Gateway, ein bei Ihnen
+betriebenes Modell.
 
 ## Einen Anbieter konfigurieren
 
 Solange in der Oberfläche keine Einstellung gespeichert ist, liest die API ihre Umgebung:
 
 ```bash
-BASEDB_AI_PROVIDER=mistral      # openai, anthropic oder mistral
+BASEDB_AI_PROVIDER=mistral      # openai, anthropic, mistral oder openai_compatible
 BASEDB_AI_MODEL=mistral-small-latest
 MISTRAL_API_KEY=…               # oder BASEDB_AI_API_KEY
 ```
 
 Der Schlüssel wird aus `BASEDB_AI_API_KEY` gelesen oder, falls nicht vorhanden, unter dem üblichen
 Namen des Anbieters (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`).
+
+### Azure, ein Gateway, ein lokales Modell
+
+`BASEDB_AI_PROVIDER=openai_compatible` sendet die Aufrufe im Format von OpenAI an die Adresse aus
+`BASEDB_AI_BASE_URL`: alles, was vor `/chat/completions` steht, Parameter eingeschlossen.
+`BASEDB_AI_HEADERS` fügt jedem Aufruf die Header hinzu, die dieser Server verlangt, als
+JSON-Objekt.
+
+```bash
+# Azure OpenAI: der Name des Deployments als Modell, der Schlüssel im Header api-key
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=mon-deploiement
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/v1
+BASEDB_AI_HEADERS='{"api-key":"…"}'
+
+# Die ältere Form von Azure, pro Deployment: der Parameter bleibt hinter dem Pfad
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/deployments/mon-deploiement?api-version=2024-10-21
+
+# Ein von Ollama bereitgestelltes Modell, ohne Schlüssel
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=llama3.1
+BASEDB_AI_BASE_URL=http://ollama:11434/v1
+```
+
+Mit `openai_compatible` ist der Schlüssel optional: Wird `BASEDB_AI_API_KEY` angegeben, geht er
+als `Authorization: Bearer` hinaus. Ein Header aus `BASEDB_AI_HEADERS` ersetzt den des Schlüssels –
+etwa bei einem Gateway, das seinen eigenen `Authorization`-Header verlangt.
+
+`BASEDB_AI_BASE_URL` und `BASEDB_AI_HEADERS` gelten auch für die drei anderen Anbieter, wenn sie
+über ein Gateway erreicht werden: Bei `anthropic` ist die Adresse alles, was vor `/messages`
+steht. Diese beiden Variablen gehören zum Anbieter der Umgebung, und nur zu ihm: Ein
+Arbeitsbereich, der einen anderen gewählt hat, erhält weder die Adresse noch die Header noch den
+Schlüssel. Beim Start der API wird der verwendete Anbieter ins Log geschrieben; eine ungültige
+Adresse oder ein ungültiges JSON-Objekt wird gemeldet.
+
+Ein internes Gateway mit selbstsigniertem TLS-Zertifikat oder ein Unternehmens-Proxy, der den
+Datenverkehr neu signiert, lässt die Aufrufe scheitern: `BASEDB_AI_PROVIDER_SSL_VERIFY=false`
+hört auf, das Zertifikat **nur dieses Anbieters** zu prüfen – alle anderen ausgehenden Aufrufe der
+Instanz und der Anbieter, den ein Arbeitsbereich gewählt haben könnte, werden weiterhin geprüft.
+Der Start meldet es. Da der Schlüssel bei jedem Aufruf mitgeht, setzen Sie die Einstellung nur in
+einem Netzwerk ein, das Sie selbst kontrollieren.
 
 ## Die KI-Option eines Felds
 

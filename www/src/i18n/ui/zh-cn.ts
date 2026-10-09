@@ -1525,6 +1525,14 @@ export default {
 		title: 'basedb 的变化',
 		intro: '每项变更的细节见<a href="https://github.com/eodia/basedb/commits/main">仓库的提交历史</a>。接下来要做的：<a href="/feuille-de-route/">路线图</a>。',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: '内部证书背后的 AI 服务商',
+				tag: '部署',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> 可以连接使用自签名证书的 AI 网关，或位于会对流量重新签名的代理之后的 AI 网关，同时不会关闭实例其他调用的证书验证。<a href="/fonctionnalites/ia/#azure网关本地模型">Azure、网关、本地模型</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: '一个令牌覆盖整个数据库，环境由您选择',

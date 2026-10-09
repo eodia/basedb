@@ -117,9 +117,12 @@ expéditeur no-reply@exemple.fr.` 서버가 거부한 이메일은 1분, 5분, 3
 
 | 변수 | 기본값 | 역할 |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic` 또는 `mistral` |
+| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic`, `mistral` 또는 `openai_compatible`(Azure, 게이트웨이, 로컬 모델) |
 | `BASEDB_AI_MODEL` | — | 모델 |
-| `BASEDB_AI_API_KEY` | — | 키(없으면 `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_API_KEY` | — | 키(없으면 `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`). `openai_compatible`에서는 선택 사항 |
+| `BASEDB_AI_BASE_URL` | 공급자의 주소 | `/chat/completions` 앞까지의 부분(`anthropic`은 `/messages`)이며 매개변수도 포함. `openai_compatible`에서는 필수. [인공지능](/basedb/ko/fonctionnalites/ia/#azure-게이트웨이-로컬-모델) 참고 |
+| `BASEDB_AI_HEADERS` | — | 모든 호출에 추가되는 헤더로, JSON 객체: `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`: 공급자의 TLS 인증서를 검증하지 않음. 자체 서명 인증서를 쓰는 내부 게이트웨이용. [인공지능](/basedb/ko/fonctionnalites/ia/#azure-게이트웨이-로컬-모델) 참고 |
 | `BASEDB_AI_QUOTA` | `120` | 워크스페이스별 시간당 대화형 호출 수 |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | 워크스페이스별 시간당 AI 필드 계산 수 |
 | `BASEDB_AI_WORKER` | `1` | `0`: 이 프로세스에서 백그라운드 계산을 하지 않음 |

@@ -1525,6 +1525,14 @@ export default {
 		title: 'basedb에서 바뀐 내용',
 		intro: '각 변경의 자세한 내용은 <a href="https://github.com/eodia/basedb/commits/main">저장소 기록</a>에 있습니다. 앞으로의 계획은 <a href="/feuille-de-route/">로드맵</a>에서 확인하세요.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: '내부 인증서 뒤에 있는 AI 공급자',
+				tag: '호스팅',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong>를 쓰면 자체 서명 인증서를 사용하거나 트래픽을 다시 서명하는 프록시 뒤에 있는 AI 게이트웨이에 연결할 수 있으며, 인스턴스의 다른 호출에 대한 인증서 검증은 끄지 않습니다. <a href="/fonctionnalites/ia/#azure-게이트웨이-로컬-모델">Azure, 게이트웨이, 로컬 모델</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: '토큰 하나로 데이터베이스 전체를, 환경은 원하는 대로',

@@ -109,9 +109,12 @@ expéditeur no-reply@exemple.fr.` 服务器拒绝的邮件会在 1、5、30、12
 
 | 变量 | 默认值 | 作用 |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | — | `openai`、`anthropic` 或 `mistral` |
+| `BASEDB_AI_PROVIDER` | — | `openai`、`anthropic`、`mistral` 或 `openai_compatible`（Azure、网关、本地模型） |
 | `BASEDB_AI_MODEL` | — | 模型 |
-| `BASEDB_AI_API_KEY` | — | 密钥（否则使用 `OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、`MISTRAL_API_KEY`） |
+| `BASEDB_AI_API_KEY` | — | 密钥（否则使用 `OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、`MISTRAL_API_KEY`）；对 `openai_compatible` 可不填 |
+| `BASEDB_AI_BASE_URL` | 服务商的地址 | `/chat/completions` 之前的部分（`anthropic` 为 `/messages`），包括参数；`openai_compatible` 必填——参见[人工智能](/basedb/zh-cn/fonctionnalites/ia/#azure网关本地模型) |
+| `BASEDB_AI_HEADERS` | — | 加入每次调用的标头，格式为 JSON 对象：`{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`：不验证服务商的 TLS 证书——适用于使用自签名证书的内部网关；参见[人工智能](/basedb/zh-cn/fonctionnalites/ia/#azure网关本地模型) |
 | `BASEDB_AI_QUOTA` | `120` | 每个租户每小时的交互式调用次数 |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | 每个租户每小时的 AI 字段计算次数 |
 | `BASEDB_AI_WORKER` | `1` | `0`：此进程中不执行后台计算 |

@@ -3,19 +3,45 @@ title: 人工智能
 description: 字段的 AI 选项、草稿、Copilot 以及仪表盘的 Copilot——还有哪些内容会发送给服务商。
 ---
 
-AI 是**可选的**。未配置服务商时，不会向任何地方发送任何内容。basedb 可以对接 **OpenAI**、**Anthropic** 和 **Mistral**，使用您自己的密钥。
+AI 是**可选的**。未配置服务商时，不会向任何地方发送任何内容。basedb 可以对接 **OpenAI**、**Anthropic** 和 **Mistral**，使用您自己的密钥，也可以对接任何兼容 OpenAI API 的服务器：**Azure**、企业网关，或部署在您自己环境中的模型。
 
 ## 配置服务商
 
 只要界面中还没有保存任何设置，API 就会读取其环境变量：
 
 ```bash
-BASEDB_AI_PROVIDER=mistral      # openai、anthropic 或 mistral
+BASEDB_AI_PROVIDER=mistral      # openai、anthropic、mistral 或 openai_compatible
 BASEDB_AI_MODEL=mistral-small-latest
 MISTRAL_API_KEY=…               # 或 BASEDB_AI_API_KEY
 ```
 
 密钥从 `BASEDB_AI_API_KEY` 读取；如未设置，则从服务商的常用变量名读取（`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、`MISTRAL_API_KEY`）。
+
+### Azure、网关、本地模型
+
+`BASEDB_AI_PROVIDER=openai_compatible` 会以 OpenAI 的格式，将调用发送到 `BASEDB_AI_BASE_URL` 所指的地址：即 `/chat/completions` 之前的部分，包括参数在内。`BASEDB_AI_HEADERS` 会在每次调用中加入该服务器所要求的标头，格式为 JSON 对象。
+
+```bash
+# Azure OpenAI：模型填部署名称，密钥放在 api-key 标头中
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=mon-deploiement
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/v1
+BASEDB_AI_HEADERS='{"api-key":"…"}'
+
+# Azure 的旧形式，按部署区分：参数保留在路径之后
+BASEDB_AI_BASE_URL=https://ma-ressource.openai.azure.com/openai/deployments/mon-deploiement?api-version=2024-10-21
+
+# 由 Ollama 提供的本地模型，无需密钥
+BASEDB_AI_PROVIDER=openai_compatible
+BASEDB_AI_MODEL=llama3.1
+BASEDB_AI_BASE_URL=http://ollama:11434/v1
+```
+
+使用 `openai_compatible` 时，密钥是可选的：如果提供了 `BASEDB_AI_API_KEY`，它会以 `Authorization: Bearer` 的形式发送。`BASEDB_AI_HEADERS` 中的标头会替换由密钥生成的标头——例如，要求使用自己的 `Authorization` 的网关。
+
+`BASEDB_AI_BASE_URL` 和 `BASEDB_AI_HEADERS` 同样适用于通过网关连接的另外三个服务商：对于 `anthropic`，地址是 `/messages` 之前的部分。这两个变量只跟随环境变量中指定的服务商，仅此而已：选择了其他服务商的租户，不会收到地址、标头或密钥。API 启动时会写出所采用的服务商，并在地址或 JSON 对象无效时给出提示。
+
+如果内部网关的 TLS 证书是自签名的，或者企业代理会对流量重新签名，调用就会失败：`BASEDB_AI_PROVIDER_SSL_VERIFY=false` 会停止验证**仅此服务商**的证书——实例的所有其他出站调用，以及租户可能选用的服务商，仍会照常验证。启动时会给出提示。由于密钥会随每次调用一起发送，请仅在您能掌控的网络中使用。
 
 ## 字段的 AI 选项
 

@@ -118,9 +118,12 @@ Başlatıldığında günlük hangi servisin kullanıldığını bildirir: `Géo
 
 | Değişken | Varsayılan | Rol |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic` ya da `mistral` |
+| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic`, `mistral` ya da `openai_compatible` (Azure, bir ağ geçidi, yerel bir model) |
 | `BASEDB_AI_MODEL` | — | model |
-| `BASEDB_AI_API_KEY` | — | anahtar (yoksa `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_API_KEY` | — | anahtar (yoksa `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`); `openai_compatible` için isteğe bağlı |
+| `BASEDB_AI_BASE_URL` | sağlayıcının adresi | `/chat/completions` öncesindeki kısım (`anthropic` için `/messages`), parametreler dahil; `openai_compatible` için zorunlu — bkz. [Yapay zeka](/basedb/tr/fonctionnalites/ia/#azure-bir-ağ-geçidi-yerel-bir-model) |
+| `BASEDB_AI_HEADERS` | — | her çağrıya eklenen başlıklar, bir JSON nesnesi olarak: `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`: sağlayıcının TLS sertifikası doğrulanmaz — kendinden imzalı sertifikalı bir iç ağ geçidi; bkz. [Yapay zeka](/basedb/tr/fonctionnalites/ia/#azure-bir-ağ-geçidi-yerel-bir-model) |
 | `BASEDB_AI_QUOTA` | `120` | saat ve çalışma alanı başına etkileşimli çağrılar |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | saat ve çalışma alanı başına yapay zeka alanı hesaplamaları |
 | `BASEDB_AI_WORKER` | `1` | `0`: bu süreçte arka plan hesaplaması yapılmaz |

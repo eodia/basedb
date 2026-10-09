@@ -117,9 +117,12 @@ Při spuštění protokol říká, která služba se používá: `Géocodage : h
 
 | Proměnná | Výchozí | Role |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | – | `openai`, `anthropic` nebo `mistral` |
+| `BASEDB_AI_PROVIDER` | – | `openai`, `anthropic`, `mistral` nebo `openai_compatible` (Azure, brána, místní model) |
 | `BASEDB_AI_MODEL` | – | model |
-| `BASEDB_AI_API_KEY` | – | klíč (jinak `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_API_KEY` | – | klíč (jinak `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`); pro `openai_compatible` nepovinný |
+| `BASEDB_AI_BASE_URL` | adresa poskytovatele | to, co předchází `/chat/completions` (`/messages` pro `anthropic`), včetně parametrů; pro `openai_compatible` povinná – viz [Umělá inteligence](/basedb/cs/fonctionnalites/ia/#azure-brána-místní-model) |
+| `BASEDB_AI_HEADERS` | – | hlavičky přidávané ke každému volání, jako objekt JSON: `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`: certifikát TLS poskytovatele se neověřuje – interní brána se samopodepsaným certifikátem; viz [Umělá inteligence](/basedb/cs/fonctionnalites/ia/#azure-brána-místní-model) |
 | `BASEDB_AI_QUOTA` | `120` | interaktivní volání za hodinu na pracovní prostor |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | výpočty polí AI za hodinu na pracovní prostor |
 | `BASEDB_AI_WORKER` | `1` | `0`: žádné výpočty na pozadí v tomto procesu |

@@ -118,9 +118,12 @@ OpenStreetMap (Nominatim), яку запитують один раз для ко
 
 | Змінна | Типово | Призначення |
 |---|---|---|
-| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic` або `mistral` |
+| `BASEDB_AI_PROVIDER` | — | `openai`, `anthropic`, `mistral` або `openai_compatible` (Azure, шлюз, локальна модель) |
 | `BASEDB_AI_MODEL` | — | модель |
-| `BASEDB_AI_API_KEY` | — | ключ (інакше `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) |
+| `BASEDB_AI_API_KEY` | — | ключ (інакше `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`); необов’язковий для `openai_compatible` |
+| `BASEDB_AI_BASE_URL` | адреса постачальника | усе, що передує `/chat/completions` (`/messages` для `anthropic`), разом із параметрами; обов’язкова для `openai_compatible` — див. [Штучний інтелект](/basedb/uk/fonctionnalites/ia/#azure-шлюз-локальна-модель) |
+| `BASEDB_AI_HEADERS` | — | заголовки, що додаються до кожного виклику, у вигляді JSON-об’єкта: `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false`: сертифікат TLS постачальника не перевіряється — внутрішній шлюз із самопідписаним сертифікатом; див. [Штучний інтелект](/basedb/uk/fonctionnalites/ia/#azure-шлюз-локальна-модель) |
 | `BASEDB_AI_QUOTA` | `120` | інтерактивних викликів на годину для кожного робочого простору |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | обчислень полів ШІ на годину для кожного робочого простору |
 | `BASEDB_AI_WORKER` | `1` | `0`: без фонових обчислень у цьому процесі |

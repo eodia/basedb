@@ -1549,6 +1549,14 @@ export default {
 		title: 'Що змінилося в basedb',
 		intro: 'Подробиці кожної зміни — в <a href="https://github.com/eodia/basedb/commits/main">історії репозиторію</a>. Що буде далі — на <a href="/feuille-de-route/">дорожній карті</a>.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: 'Постачальник ШІ за внутрішнім сертифікатом',
+				tag: 'Хостинг',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> дає змогу підключити шлюз ШІ із самопідписаним сертифікатом або за проксі, що підписує трафік заново, не вимикаючи перевірки решти викликів екземпляра. <a href="/fonctionnalites/ia/#azure-шлюз-локальна-модель">Azure, шлюз, локальна модель</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'Один токен на всю базу, середовище — на вибір',

@@ -1537,6 +1537,14 @@ export default {
 		title: 'Ce s-a schimbat în basedb',
 		intro: 'Detaliile fiecărei schimbări se află în <a href="https://github.com/eodia/basedb/commits/main">istoricul depozitului</a>. Ce urmează: <a href="/feuille-de-route/">foaia de parcurs</a>.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: 'Un furnizor de AI în spatele unui certificat intern',
+				tag: 'Găzduire',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> conectează o poartă de acces AI cu certificat autosemnat, sau aflată în spatele unui proxy care semnează din nou traficul, fără a opri verificarea celorlalte apeluri ale instanței. <a href="/fonctionnalites/ia/#azure-o-poartă-de-acces-un-model-local">Azure, o poartă de acces, un model local</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'Un singur token pentru toată baza, mediul la alegere',

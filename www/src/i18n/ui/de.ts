@@ -1547,6 +1547,14 @@ export default {
 		title: 'Was sich in basedb geändert hat',
 		intro: 'Jede einzelne Änderung steht im <a href="https://github.com/eodia/basedb/commits/main">Verlauf des Repositorys</a>. Was als Nächstes kommt: die <a href="/feuille-de-route/">Roadmap</a>.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: 'Ein KI-Anbieter hinter einem internen Zertifikat',
+				tag: 'Hosting',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> erreicht ein KI-Gateway mit selbstsigniertem Zertifikat oder hinter einem Proxy, der den Datenverkehr neu signiert, ohne die Prüfung der übrigen Aufrufe der Instanz abzuschalten. <a href="/fonctionnalites/ia/#azure-ein-gateway-ein-lokales-modell">Azure, ein Gateway, ein lokales Modell</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'Ein Token für die ganze Datenbank, die Umgebung nach Wahl',

@@ -122,6 +122,7 @@ Au démarrage, le journal dit quel service est employé : `Géocodage : https://
 | `BASEDB_AI_API_KEY` | — | la clé (sinon `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY`) ; facultative pour `openai_compatible` |
 | `BASEDB_AI_BASE_URL` | l’adresse du fournisseur | ce qui précède `/chat/completions` (`/messages` pour `anthropic`), paramètres compris ; obligatoire pour `openai_compatible` — voir [Intelligence artificielle](/basedb/fonctionnalites/ia/#azure-une-passerelle-un-modèle-local) |
 | `BASEDB_AI_HEADERS` | — | des en-têtes ajoutés à chaque appel, en objet JSON : `{"api-key":"…"}` |
+| `BASEDB_AI_PROVIDER_SSL_VERIFY` | `true` | `false` : le certificat TLS du fournisseur n’est pas vérifié — une passerelle interne au certificat auto-signé ; voir [Intelligence artificielle](/basedb/fonctionnalites/ia/#azure-une-passerelle-un-modèle-local) |
 | `BASEDB_AI_QUOTA` | `120` | appels interactifs par heure et par tenant |
 | `BASEDB_AI_FIELD_QUOTA` | `300` | calculs de champs IA par heure et par tenant |
 | `BASEDB_AI_WORKER` | `1` | `0` : pas de calcul de fond dans ce processus |

@@ -1540,6 +1540,14 @@ export default {
 		title: 'Co se v basedb změnilo',
 		intro: 'Podrobnosti o každé změně najdete v <a href="https://github.com/eodia/basedb/commits/main">historii repozitáře</a>. Co přijde dál: <a href="/feuille-de-route/">plán vývoje</a>.',
 		entries: {
+			aiTls: {
+				date: '2026-10-09',
+				title: 'Poskytovatel AI za interním certifikátem',
+				tag: 'Hosting',
+				items: [
+					'<strong><code>BASEDB_AI_PROVIDER_SSL_VERIFY=false</code></strong> umožní připojit se k bráně AI se samopodepsaným certifikátem nebo k bráně za proxy, která provoz podepisuje znovu, aniž by se vypnulo ověřování ostatních volání instance. <a href="/fonctionnalites/ia/#azure-brána-místní-model">Azure, brána, místní model</a>',
+				],
+			},
 			oneToken: {
 				date: '2026-10-09',
 				title: 'Jeden token pro celou databázi, prostředí podle výběru',
