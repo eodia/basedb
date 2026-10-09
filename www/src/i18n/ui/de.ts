@@ -1284,9 +1284,9 @@ export default {
 		agents: {
 			label: 'REST-API · MCP · Webhooks',
 			title: 'Ihre KI-Agenten bekommen die Daten, {nicht den Generalschlüssel.}',
-			lead: 'Der MCP-Server gibt Agenten vierzehn Tools, die REST-API Ihren Programmen dieselben Daten. Eine einzige Stelle, an der Berechtigungen geprüft werden, dieselben Protokolle.',
+			lead: 'Der MCP-Server gibt Agenten fünfzehn Tools, die REST-API Ihren Programmen dieselben Daten. Eine einzige Stelle, an der Berechtigungen geprüft werden, dieselben Protokolle.',
 			bullets: [
-				'<strong>Ein Token pro Datenbank</strong>, standardmäßig schreibgeschützt, nie mit mehr Berechtigungen als die Person, die es angelegt hat.',
+				'<strong>Ein Token für die ganze Datenbank</strong>, Produktion und Staging inbegriffen, standardmäßig schreibgeschützt, nie mit mehr Berechtigungen als die Person, die es angelegt hat.',
 				'<strong>Ein Agent löscht nur mit Ihrer Zustimmung</strong>, eine Zeile auf einmal, und ändert nicht die Struktur: Er schlägt sie vor, ein Mensch genehmigt.',
 				'<strong>Eine generierte Dokumentation</strong> für jede Datenbank, nach Ihren Berechtigungen gefiltert, mit ihrer OpenAPI-3.1-Spezifikation.',
 				'<strong>Webhooks</strong> bei jedem Schreibvorgang: signiert, geordnet und bei Fehlern wiederholt.',
@@ -1547,6 +1547,25 @@ export default {
 		title: 'Was sich in basedb geändert hat',
 		intro: 'Jede einzelne Änderung steht im <a href="https://github.com/eodia/basedb/commits/main">Verlauf des Repositorys</a>. Was als Nächstes kommt: die <a href="/feuille-de-route/">Roadmap</a>.',
 		entries: {
+			oneToken: {
+				date: '2026-10-09',
+				title: 'Ein Token für die ganze Datenbank, die Umgebung nach Wahl',
+				tag: 'Neu',
+				items: [
+					'<strong>Ein einziges Token</strong> öffnet die Produktion, das Staging und die künftigen Umgebungen einer Datenbank; bei der Erstellung lässt es sich auch auf eine einzige beschränken. Bestehende Token behalten ihre Umgebung. <a href="/fonctionnalites/environnements/#per-api-sdk-und-mcp">Per API, SDK und MCP</a>',
+					'<strong>Die Umgebung wird beim Aufruf gewählt</strong>: der Header <code>X-Basedb-Environment</code> der REST-API, <code>db.environment()</code> des SDK, das Feld Environment von n8n, die Adresse <code>…/mcp?environment=recette</code> oder das Argument <code>environment</code> eines MCP-Tools. <a href="/integrations/mcp/#die-umgebung-wählen">Die Umgebung wählen</a>',
+					'<strong>Ein Agent ohne Relay</strong>: Das Token-Fenster liefert die HTTP-Konfiguration von Claude Code und die Datei <code>.mcp.json</code>, einen Server pro Umgebung mit demselben Token, wobei das Token in einer Umgebungsvariablen bleibt.',
+				],
+			},
+			lookByAgents: {
+				date: '2026-10-09',
+				title: 'Farben und Symbole per API und MCP',
+				tag: 'Neu',
+				items: [
+					'<strong>Ein Agent gestaltet, was er vorschlägt</strong>: Farbe und Symbol einer Tabelle in <code>propose_create_table</code>, jeder Option in <code>propose_add_field</code>, und das neue Tool <code>propose_update_look</code> für eine bestehende Tabelle. Eine Person genehmigt, wie bei der gesamten Struktur. <a href="/integrations/mcp/#farben-und-symbole">Farben und Symbole</a>',
+					'<strong>Per API</strong> wird eine Tabelle mit ihrer Farbe und ihrem Symbol angelegt; <code>describe_base</code>, <code>describe_table</code> und <code>/meta</code> liefern sie zurück. <a href="/integrations/api-rest/#farben-und-symbole">Farben und Symbole</a>',
+				],
+			},
 			agentDelete: {
 				date: '2026-10-02',
 				title: 'Agenten, die löschen, wenn Sie es erlauben',

@@ -36,6 +36,24 @@ pole je zachyceno triggerem nad katalogem a lze ho číst na záložce „Strukt
 Identifikátory původu spojují pole testovacího prostředí s jeho protějškem v produkčním
 prostředí, i když bylo přejmenováno.
 
+## Přes API, SDK a MCP
+
+**Token vytvořený pro celou databázi** otevírá všechna její prostředí, ta dnešní i ta, která
+přibudou: jediný token pro produkční a testovací prostředí. Program nebo agent si prostředí vybírá
+při každém volání:
+
+| Kde | Jak |
+|---|---|
+| [REST API](/basedb/cs/integrations/api-rest/#volba-prostředí) | hlavička `X-Basedb-Environment: recette`, nebo `?environment=recette` |
+| [SDK](/basedb/cs/integrations/sdk/#prostředí) | `db.environment('recette')` |
+| [MCP](/basedb/cs/integrations/mcp/#volba-prostředí) | adresa `…/mcp?environment=recette`, nebo argument `environment` nástroje |
+| [n8n](/basedb/cs/integrations/n8n/#přihlašovací-údaje) | pole **Environment** přihlašovacích údajů |
+
+Bez čehokoli z toho označuje každá databáze své vlastní prostředí: název produkčního prostředí otevře
+produkční, název testovacího otevře testovací. Token lze také při vytvoření omezit na zobrazené
+prostředí: žádné další pak nevidí. V obou případech se jeho oprávnění porovnávají, prostředí po
+prostředí, s oprávněními osoby, která ho vytvořila.
+
 ## V SQL
 
 Každé prostředí je schéma: `b_t4z56fq_ventes` pro produkční, `b_t4z56fq_ventes_recette` pro

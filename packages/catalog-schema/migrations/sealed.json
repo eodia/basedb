@@ -118,5 +118,11 @@
     "name": "0020_automatisations_avancees.sql",
     "sha256": "0c5cf70da10a19d861e328408a0f1075149cdd6cdb90a19ce707275557963613",
     "release": "0.6.0"
+  },
+  {
+    "version": 21,
+    "name": "0021_jetons_de_toute_la_base.sql",
+    "sha256": "75dc2f877b8e5881c455fd3c62bf7667239ea46c54db47c981572e92e4b8471a",
+    "release": "0.7.0"
   }
 ]

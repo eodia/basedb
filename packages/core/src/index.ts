@@ -475,9 +475,13 @@ import { deliverMails, purgeMails, startMailLoop } from './mail/outbox.js'
 import {
   type Proposal,
   type ProposedField,
+  type ProposedLook,
+  type ProposedOption,
+  type ProposedOptionLooks,
   agentGetProposal,
   agentProposeAddField,
   agentProposeCreateTable,
+  agentProposeUpdateLook,
   approveProposal,
   listProposals,
   rejectProposal,
@@ -635,7 +639,13 @@ export type { FieldFormat, FieldFormatInput } from './catalog/formats.js'
 export type { DefaultKind, FieldDefault } from './records/defaults.js'
 export { DEFAULTS_BY_KIND } from './records/defaults.js'
 export type { Member } from './catalog/members.js'
-export type { Proposal, ProposedField } from './proposals/index.js'
+export type {
+  Proposal,
+  ProposedField,
+  ProposedLook,
+  ProposedOption,
+  ProposedOptionLooks,
+} from './proposals/index.js'
 export type { TargetPolicy } from './webhooks/target.js'
 export { parseTrusted } from './webhooks/target.js'
 export type {
@@ -1170,6 +1180,8 @@ export interface Kernel {
     readonly requestId: string
     readonly surface: Surface
     readonly timeoutMs?: number
+    /** The environment asked for, if any — see `RequestContext.environment`. */
+    readonly environment?: string | null
   }): Promise<RequestContext>
   /**
    * Believes an integration token on one surface, and opens its context — chapter 05
@@ -1186,7 +1198,15 @@ export interface Kernel {
     readonly requestId: string
     readonly timeoutMs?: number
     readonly ip?: string | null
+    /** The environment asked for, if any — see `RequestContext.environment`. */
+    readonly environment?: string | null
   }): Promise<RequestContext>
+  /**
+   * The same context, aimed at another environment — a tool's `environment` argument
+   * overriding the one of the MCP address. Same actor, same clock, same deadline: it
+   * changes which base a reference names, never who acts or what they may do.
+   */
+  inEnvironment(ctx: RequestContext, environment: string | null): RequestContext
   /**
    * Mints an integration token — chapter 08 §11. The secret is in the result and
    * nowhere else, ever. Demands a session elevated minutes ago and `manage_tokens` on
@@ -1416,6 +1436,8 @@ export interface Kernel {
       technicalName?: string
       description?: string | null
       fields: readonly FieldRequest[]
+      /** Its colour and pictogram (or image) — chapter 11 §3.1 bis. */
+      look?: { color?: string | null; icon?: string | null; image?: string | null }
     },
   ): Promise<CreateTableResult>
   createLinkField(ctx: RequestContext, request: CreateLinkFieldRequest): Promise<CreatedLinkField>
@@ -2089,6 +2111,7 @@ export interface Kernel {
       label: string
       description?: string | null
       fields: readonly ProposedField[]
+      look?: ProposedLook
     },
   ): Promise<Proposal>
   /** `propose_add_field` — a column, a list of choices or a link (09 §7.4). */
@@ -2100,9 +2123,22 @@ export interface Kernel {
       label: string
       kind: FieldKind | 'link'
       description?: string | null
-      options?: ReadonlyArray<{ value: string; label?: string }>
+      options?: ReadonlyArray<ProposedOption>
       target?: string
       onDelete?: string
+    },
+  ): Promise<Proposal>
+  /**
+   * `propose_update_look` — the colour and pictogram of a table and of the choices of its
+   * lists (09 §7, 11 §3.1 bis). Reviewed like any structure proposal.
+   */
+  agentProposeUpdateLook(
+    ctx: RequestContext,
+    request: {
+      base: string
+      table: string
+      look?: ProposedLook
+      fields?: readonly ProposedOptionLooks[]
     },
   ): Promise<Proposal>
   /** `get_proposal` — its author, and nobody else on the agent surface. */
@@ -2656,6 +2692,7 @@ export function startKernel(config: KernelConfig): Kernel {
         timestamp: now,
         deadline: new Date(now.getTime() + (credential.timeoutMs ?? DEFAULT_TIMEOUT_MS)),
         permissions: { version: '1', rowPredicate: 'TRUE' },
+        environment: credential.environment,
       })
     },
 
@@ -2673,8 +2710,11 @@ export function startKernel(config: KernelConfig): Kernel {
         timestamp: now,
         deadline: new Date(now.getTime() + (credential.timeoutMs ?? DEFAULT_TIMEOUT_MS)),
         permissions: { version: '1', rowPredicate: 'TRUE' },
+        environment: credential.environment,
       })
     },
+
+    inEnvironment: (ctx, environment) => sealContext({ ...ctx, environment }),
 
     createApiToken: (ctx, request) => createApiToken(pools, ctx, request),
     listApiTokens: (ctx, request) => listApiTokens(pools, ctx, request),
@@ -3326,6 +3366,7 @@ export function startKernel(config: KernelConfig): Kernel {
     dispatchWebhooks: () => dispatchWebhooks(pools, instanceKey(), webhookTargets),
     agentProposeCreateTable: (ctx, request) => agentProposeCreateTable(pools, ctx, request),
     agentProposeAddField: (ctx, request) => agentProposeAddField(pools, ctx, request),
+    agentProposeUpdateLook: (ctx, request) => agentProposeUpdateLook(pools, ctx, request),
     agentGetProposal: (ctx, proposalId) => agentGetProposal(pools, ctx, proposalId),
     listProposals: (ctx, request) => listProposals(pools, ctx, request),
     approveProposal: (ctx, request) => approveProposal(pools, ctx, request),

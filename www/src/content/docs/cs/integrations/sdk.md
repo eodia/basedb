@@ -72,9 +72,25 @@ běží.
   všech jazycích —, `status`, `details` a `requestId`. Žádost o zpomalení (`429`) se zopakuje
   po době, kterou basedb udá.
 
+## Prostředí
+
+Databáze, která má více [prostředí](/basedb/cs/fonctionnalites/environnements/) – produkční,
+testovací… –, si mezi prostředími zachovává své názvy a typy. S tokenem vytvořeným pro celou
+databázi míří `environment()` na jedno prostředí, přičemž tentýž kód běží jinde:
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+Volba `environment` konstruktoru dělá totéž pro celého klienta. SDK posílá hlavičku
+`X-Basedb-Environment`; bez ní každý název databáze označuje své vlastní prostředí
+(`b_t4z56fq_ventes` je produkční prostředí).
+
 ## Token
 
 **Integrační token** se vytváří v rozhraní: nabídka **⋯** databáze → **API a agenti** →
-**Tokeny API a MCP…**. Otevírá jednu databázi, čte její řádky, zapisuje je, pokud byl
-vytvořen pro zápis, nikdy nemá víc oprávnění než osoba, která ho vytvořila, a **odstraňuje jen
-tehdy, pokud byl vytvořen i k tomu** („Čtení, zápis a odstranění“): jinak je `delete()` odmítnuto.
+**Tokeny API a MCP…**. Otevírá jednu databázi – všechna její prostředí, nebo jen jedno –, čte
+její řádky, zapisuje je, pokud byl vytvořen pro zápis, nikdy nemá víc oprávnění než osoba, která
+ho vytvořila, a **odstraňuje jen tehdy, pokud byl vytvořen i k tomu** („Čtení, zápis
+a odstranění“): jinak je `delete()` odmítnuto.

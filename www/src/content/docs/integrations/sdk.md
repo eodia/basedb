@@ -74,9 +74,24 @@ programme ne tourne.
   les langues —, `status`, `details` et `requestId`. Une demande de ralentir (`429`) est
   réessayée après le délai que basedb indique.
 
+## Les environnements
+
+Une base qui a plusieurs [environnements](/basedb/fonctionnalites/environnements/) — production,
+recette… — garde ses noms et ses types d’un environnement à l’autre. Avec un jeton créé pour toute la
+base, `environment()` vise un environnement, le même code s’exécutant ailleurs :
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+L’option `environment` du constructeur fait de même pour tout le client. Le SDK envoie l’en-tête
+`X-Basedb-Environment` ; sans lui, chaque nom de base désigne son propre environnement
+(`b_t4z56fq_ventes` est la production).
+
 ## Le jeton
 
 Un **jeton d’intégration** se crée dans l’interface : menu **⋯** de la base → **API et agents**
-→ **Jetons API et MCP…**. Il ouvre une base, lit ses lignes, les écrit s’il a été créé en
+→ **Jetons API et MCP…**. Il ouvre une base — tous ses environnements, ou un seul —, lit ses lignes, les écrit s’il a été créé en
 écriture, n’a jamais plus de droits que la personne qui l’a créé, et **ne supprime que s’il a été
 créé pour cela** (« Lecture, écriture et suppression ») : sinon `delete()` est refusé.

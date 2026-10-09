@@ -568,7 +568,7 @@ no-store` :
 | `groups` | les libellés des groupes du compte | ceux de son créateur |
 | `exp` | l'échéance du jeton (15 minutes au plus) | l'échéance, absente s'il n'en a pas |
 | `iat` | — | sa création |
-| `base`, `access`, `surfaces` | — | la base qu'il ouvre (identifiant), `read` ou `write`, ses surfaces |
+| `base`, `environments`, `access`, `surfaces` | — | la base qu'il ouvre (identifiant de sa production pour un jeton de toute la base), `all` (tous ses environnements) ou `one`, `read`, `write` ou `delete`, ses surfaces |
 
 **L'appelant prouve qui il est** par un jeton d'intégration du tenant, émis pour la
 surface `rest` : sans lui, `401` avec les codes de `verifyApiToken` (chapitre 08 §11),

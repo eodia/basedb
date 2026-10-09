@@ -143,10 +143,17 @@ function TokenList({
                 <span className="truncate text-muted-foreground">
                   {token.base === null ? $t('base supprimée') : token.base.label}
                 </span>
-                {token.base !== null && !token.base.production && (
+                {token.base !== null && token.environments === 'all' ? (
                   <Badge variant="outline" className="shrink-0 font-normal">
-                    {token.base.environment}
+                    {$t('Tous les environnements')}
                   </Badge>
+                ) : (
+                  token.base !== null &&
+                  !token.base.production && (
+                    <Badge variant="outline" className="shrink-0 font-normal">
+                      {token.base.environment}
+                    </Badge>
+                  )
                 )}
               </span>
               <span className="block truncate font-mono text-[11px] text-muted-foreground">

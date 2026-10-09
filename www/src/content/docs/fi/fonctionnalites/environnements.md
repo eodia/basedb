@@ -35,6 +35,23 @@ tai poistaminen tallennetaan katalogin liipaisimella, ja sen voi lukea historian
 ”Rakenne”-välilehdeltä. Alkuperätunnisteet yhdistävät testiympäristön kentän sen
 tuotantovastineeseen, vaikka se olisi nimetty uudelleen.
 
+## API:n, SDK:n ja MCP:n kautta
+
+**Koko tietokannalle luotu tunnus** avaa kaikki sen ympäristöt, sekä nykyiset että tulevat: yksi
+tunnus tuotannolle ja testille. Ohjelma tai agentti valitsee ympäristön jokaisella kutsulla:
+
+| Missä | Miten |
+|---|---|
+| [REST API](/basedb/fi/integrations/api-rest/#ympäristön-valitseminen) | otsake `X-Basedb-Environment: recette` tai `?environment=recette` |
+| [SDK](/basedb/fi/integrations/sdk/#ympäristöt) | `db.environment('recette')` |
+| [MCP](/basedb/fi/integrations/mcp/#ympäristön-valitseminen) | osoite `…/mcp?environment=recette` tai työkalun argumentti `environment` |
+| [n8n](/basedb/fi/integrations/n8n/#tunnistetiedot) | tunnisteen **Environment**-kenttä |
+
+Ilman mitään näistä jokainen tietokanta osoittaa omaan ympäristöönsä: tuotannon nimi avaa tuotannon,
+testin nimi testin. Tunnus voidaan myös sitä luotaessa rajata näytettyyn ympäristöön: silloin se ei
+näe mitään muuta. Kummassakin tapauksessa sen oikeudet tarkistetaan ympäristö kerrallaan sen
+luoneen henkilön oikeuksia vasten.
+
 ## SQL:ssä
 
 Jokainen ympäristö on skeema: `b_t4z56fq_ventes` tuotannolle, `b_t4z56fq_ventes_recette`

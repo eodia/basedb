@@ -1273,9 +1273,9 @@ export default {
 		agents: {
 			label: 'REST API · MCP · 웹훅',
 			title: 'AI 에이전트에게 데이터는 열어 주되, {마스터키는 주지 않습니다.}',
-			lead: 'MCP 서버는 에이전트에게 열네 가지 도구를, REST API는 프로그램에 같은 데이터를 제공합니다. 권한을 확인하는 지점은 하나, 로그도 같습니다.',
+			lead: 'MCP 서버는 에이전트에게 열다섯 가지 도구를, REST API는 프로그램에 같은 데이터를 제공합니다. 권한을 확인하는 지점은 하나, 로그도 같습니다.',
 			bullets: [
-				'<strong>데이터베이스마다 토큰 하나</strong>: 기본은 읽기 전용이며, 만든 사람보다 더 많은 권한을 갖지 않습니다.',
+				'<strong>데이터베이스 전체에 토큰 하나</strong>: 운영과 스테이징을 포함하며, 기본은 읽기 전용이고, 만든 사람보다 더 많은 권한을 갖지 않습니다.',
 				'<strong>에이전트는 동의가 있을 때만 한 번에 한 행씩 삭제하고</strong>, 스키마는 바꾸지 않습니다. 변경을 제안하면 사람이 승인합니다.',
 				'<strong>자동 생성 문서</strong>: 데이터베이스마다 내 권한으로 걸러지며, OpenAPI 3.1 명세가 함께 제공됩니다.',
 				'<strong>웹훅</strong>: 모든 쓰기마다 서명하고, 순서대로 보내고, 실패하면 재시도합니다.',
@@ -1525,6 +1525,25 @@ export default {
 		title: 'basedb에서 바뀐 내용',
 		intro: '각 변경의 자세한 내용은 <a href="https://github.com/eodia/basedb/commits/main">저장소 기록</a>에 있습니다. 앞으로의 계획은 <a href="/feuille-de-route/">로드맵</a>에서 확인하세요.',
 		entries: {
+			oneToken: {
+				date: '2026-10-09',
+				title: '토큰 하나로 데이터베이스 전체를, 환경은 원하는 대로',
+				tag: '신규',
+				items: [
+					'<strong>토큰 하나</strong>로 데이터베이스의 운영, 스테이징, 앞으로 추가될 환경을 모두 엽니다. 만들 때 환경 하나로 제한할 수도 있습니다. 기존 토큰은 자신의 환경을 그대로 유지합니다. <a href="/fonctionnalites/environnements/#api-sdk-mcp에서">API, SDK, MCP에서</a>',
+					'<strong>환경은 호출할 때 선택합니다</strong>: REST API의 <code>X-Basedb-Environment</code> 헤더, SDK의 <code>db.environment()</code>, n8n의 Environment 필드, <code>…/mcp?environment=recette</code> 주소, 또는 MCP 도구의 <code>environment</code> 인자. <a href="/integrations/mcp/#환경-선택">환경 선택</a>',
+					'<strong>릴레이 없이 에이전트 연결</strong>: 토큰 창이 Claude Code의 HTTP 설정과 <code>.mcp.json</code> 파일을 제공합니다. 같은 토큰으로 환경마다 서버를 하나씩 두며, 토큰은 환경 변수에 그대로 남습니다.',
+				],
+			},
+			lookByAgents: {
+				date: '2026-10-09',
+				title: 'API와 MCP로 색상과 아이콘 지정',
+				tag: '신규',
+				items: [
+					'<strong>에이전트가 제안에 모양을 입힙니다</strong>: <code>propose_create_table</code>에서는 테이블의 색상과 아이콘을, <code>propose_add_field</code>에서는 각 선택 항목의 색상과 아이콘을 지정하고, 이미 있는 테이블에는 새 도구 <code>propose_update_look</code>을 사용합니다. 스키마 전체와 마찬가지로 사람이 승인합니다. <a href="/integrations/mcp/#색상과-아이콘">색상과 아이콘</a>',
+					'<strong>API로</strong> 테이블을 색상과 아이콘과 함께 만들 수 있으며, <code>describe_base</code>, <code>describe_table</code>, <code>/meta</code>가 이를 반환합니다. <a href="/integrations/api-rest/#색상과-아이콘">색상과 아이콘</a>',
+				],
+			},
 			agentDelete: {
 				date: '2026-10-02',
 				title: '허용하면, 에이전트도 삭제합니다',

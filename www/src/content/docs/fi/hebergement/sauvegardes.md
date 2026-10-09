@@ -47,7 +47,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` kiinnittää tietyn version (`0.6.1`) viimeisimmän (`latest`) sijaan.
+`BASEDB_VERSION` kiinnittää tietyn version (`0.7.0`) viimeisimmän (`latest`) sijaan.
 
 Käynnistyksessä basedb **päivittää katalogiaan itse**: se soveltaa järjestyksessä ja kunkin
 omassa transaktiossaan migraatiot, joita versiossasi ei vielä ole, ja kirjaa ne tauluun

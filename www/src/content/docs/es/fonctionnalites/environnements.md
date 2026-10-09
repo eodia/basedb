@@ -36,6 +36,24 @@ eliminación de una tabla o un campo la captura un disparador sobre el catálogo
 la pestaña «Estructura» del historial. Los identificadores de linaje vinculan un campo de preproducción
 con su homólogo de producción, aunque se le haya cambiado el nombre.
 
+## Por la API, el SDK y el MCP
+
+Un **token creado para toda la base** abre todos sus entornos, los de hoy y los que se añadan
+después: un solo token para la producción y la preproducción. El programa o el agente elige el
+entorno en cada llamada:
+
+| Dónde | Cómo |
+|---|---|
+| [API REST](/basedb/es/integrations/api-rest/#elegir-el-entorno) | la cabecera `X-Basedb-Environment: recette`, o `?environment=recette` |
+| [SDK](/basedb/es/integrations/sdk/#los-entornos) | `db.environment('recette')` |
+| [MCP](/basedb/es/integrations/mcp/#elegir-el-entorno) | la dirección `…/mcp?environment=recette`, o el argumento `environment` de una herramienta |
+| [n8n](/basedb/es/integrations/n8n/#las-credenciales) | el campo **Environment** de la credencial |
+
+Sin nada de esto, cada base designa su propio entorno: el nombre de la producción abre la
+producción, el de la preproducción abre la preproducción. Un token también puede, al crearlo, limitarse
+al entorno que se muestra: entonces no ve ningún otro. En ambos casos, sus permisos se cruzan,
+entorno por entorno, con los de la persona que lo creó.
+
 ## En SQL
 
 Cada entorno es un esquema: `b_t4z56fq_ventes` para la producción,

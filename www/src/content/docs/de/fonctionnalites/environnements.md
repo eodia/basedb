@@ -37,6 +37,24 @@ Tabelle oder eines Felds wird von einem Trigger auf dem Katalog erfasst und läs
 „Struktur“ des Verlaufs nachlesen. Die Abstammungskennungen verbinden ein Feld im Staging mit
 seinem Gegenstück in der Produktion, auch wenn es umbenannt wurde.
 
+## Per API, SDK und MCP
+
+Ein **für die ganze Datenbank angelegtes Token** öffnet alle ihre Umgebungen, die heutigen und die
+künftigen: ein einziges Token für die Produktion und das Staging. Das Programm oder der Agent wählt
+die Umgebung bei jedem Aufruf:
+
+| Wo | Wie |
+|---|---|
+| [REST-API](/basedb/de/integrations/api-rest/#die-umgebung-wählen) | der Header `X-Basedb-Environment: recette` oder `?environment=recette` |
+| [SDK](/basedb/de/integrations/sdk/#die-umgebungen) | `db.environment('recette')` |
+| [MCP](/basedb/de/integrations/mcp/#die-umgebung-wählen) | die Adresse `…/mcp?environment=recette` oder das Argument `environment` eines Werkzeugs |
+| [n8n](/basedb/de/integrations/n8n/#die-anmeldedaten) | das Feld **Environment** der Anmeldedaten |
+
+Ohne all das bezeichnet jede Datenbank ihre eigene Umgebung: Der Name der Produktion öffnet die
+Produktion, der des Staging das Staging. Ein Token kann bei seiner Erstellung auch auf die
+angezeigte Umgebung beschränkt werden: Es sieht dann keine andere. In beiden Fällen werden seine
+Berechtigungen – Umgebung für Umgebung – mit denen der Person abgeglichen, die es angelegt hat.
+
 ## In SQL
 
 Jede Umgebung ist ein Schema: `b_t4z56fq_ventes` für die Produktion,

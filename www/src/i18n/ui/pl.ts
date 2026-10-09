@@ -1287,9 +1287,9 @@ export default {
 		agents: {
 			label: 'API REST · MCP · webhooki',
 			title: 'Twoi agenci AI dostają dane, {a nie klucze do zamku.}',
-			lead: 'Serwer MCP daje agentom czternaście narzędzi; API REST – te same dane twoim programom. Jeden punkt kontroli uprawnień, te same dzienniki.',
+			lead: 'Serwer MCP daje agentom piętnaście narzędzi; API REST – te same dane twoim programom. Jeden punkt kontroli uprawnień, te same dzienniki.',
 			bullets: [
-				'<strong>Jeden token na bazę</strong>, domyślnie tylko do odczytu, nigdy z większymi uprawnieniami niż osoba, która go utworzyła.',
+				'<strong>Jeden token na całą bazę</strong>, łącznie ze środowiskiem produkcyjnym i testowym, domyślnie tylko do odczytu, nigdy z większymi uprawnieniami niż osoba, która go utworzyła.',
 				'<strong>Agent usuwa tylko za twoją zgodą</strong>, jeden wiersz na raz, i nie zmienia struktury: proponuje zmianę, a człowiek ją zatwierdza.',
 				'<strong>Generowana dokumentacja</strong> dla każdej bazy, filtrowana według twoich uprawnień, ze specyfikacją OpenAPI 3.1.',
 				'<strong>Webhooki</strong> podpisane, uporządkowane i ponawiane przy każdym zapisie.',
@@ -1539,6 +1539,25 @@ export default {
 		title: 'Co zmieniło się w basedb',
 		intro: 'Szczegóły każdej zmiany są w <a href="https://github.com/eodia/basedb/commits/main">historii repozytorium</a>. Co dalej: <a href="/feuille-de-route/">plan rozwoju</a>.',
 		entries: {
+			oneToken: {
+				date: '2026-10-09',
+				title: 'Jeden token na całą bazę, środowisko do wyboru',
+				tag: 'Nowość',
+				items: [
+					'<strong>Jeden token</strong> otwiera środowisko produkcyjne, testowe i przyszłe środowiska bazy; przy tworzeniu można go też ograniczyć do jednego. Istniejące tokeny zachowują swoje środowisko. <a href="/fonctionnalites/environnements/#przez-api-sdk-i-mcp">Przez API, SDK i MCP</a>',
+					'<strong>Środowisko wybiera się przy wywołaniu</strong>: nagłówek <code>X-Basedb-Environment</code> API REST, <code>db.environment()</code> w SDK, pole Environment w n8n, adres <code>…/mcp?environment=recette</code> albo argument <code>environment</code> narzędzia MCP. <a href="/integrations/mcp/#wybór-środowiska">Wybór środowiska</a>',
+					'<strong>Agent bez przekaźnika</strong>: okno tokenów podaje konfigurację HTTP dla Claude Code i plik <code>.mcp.json</code>, po jednym serwerze na środowisko z tym samym tokenem, a token pozostaje w zmiennej środowiskowej.',
+				],
+			},
+			lookByAgents: {
+				date: '2026-10-09',
+				title: 'Kolory i ikony przez API i MCP',
+				tag: 'Nowość',
+				items: [
+					'<strong>Agent nadaje wygląd temu, co proponuje</strong>: kolor i ikonę tabeli w <code>propose_create_table</code>, każdej opcji w <code>propose_add_field</code>, a dla istniejącej tabeli – nowe narzędzie <code>propose_update_look</code>. Osoba zatwierdza, jak przy całej strukturze. <a href="/integrations/mcp/#kolory-i-ikony">Kolory i ikony</a>',
+					'<strong>Przez API</strong> tabelę tworzy się z jej kolorem i ikoną; <code>describe_base</code>, <code>describe_table</code> i <code>/meta</code> je zwracają. <a href="/integrations/api-rest/#kolory-i-ikony">Kolory i ikony</a>',
+				],
+			},
 			agentDelete: {
 				date: '2026-10-02',
 				title: 'Agenci, którzy usuwają, jeśli im na to pozwolisz',

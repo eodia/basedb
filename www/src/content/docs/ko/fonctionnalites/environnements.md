@@ -34,6 +34,23 @@ description: 운영, 스테이징, 개발 — 비교하고, 마이그레이션�
 트리거가 기록하며, 기록의 “스키마” 탭에서 볼 수 있습니다. 계보 식별자는 이름이 바뀌었더라도
 스테이징의 필드를 운영의 대응 필드와 연결합니다.
 
+## API, SDK, MCP에서
+
+**데이터베이스 전체용으로 만든 토큰**은 지금 있는 환경과 앞으로 추가할 환경을 모두 엽니다. 운영과
+스테이징에 토큰 하나면 됩니다. 프로그램이나 에이전트는 호출할 때마다 환경을 선택합니다:
+
+| 위치 | 방법 |
+|---|---|
+| [REST API](/basedb/ko/integrations/api-rest/#환경-선택) | 헤더 `X-Basedb-Environment: recette` 또는 `?environment=recette` |
+| [SDK](/basedb/ko/integrations/sdk/#환경) | `db.environment('recette')` |
+| [MCP](/basedb/ko/integrations/mcp/#환경-선택) | 주소 `…/mcp?environment=recette` 또는 도구의 `environment` 인자 |
+| [n8n](/basedb/ko/integrations/n8n/#인증-정보) | 인증 정보의 **Environment** 필드 |
+
+이 중 아무것도 쓰지 않으면 각 데이터베이스 이름은 자신의 환경을 가리킵니다. 운영 환경의 이름은 운영을,
+스테이징 환경의 이름은 스테이징을 엽니다. 토큰은 만들 때 화면에 표시된 환경 하나로 제한할 수도
+있으며, 그러면 다른 환경은 전혀 보이지 않습니다. 어느 경우든 토큰의 권한은 환경마다 토큰을 만든
+사람의 권한과 대조됩니다.
+
 ## SQL에서
 
 각 환경은 스키마입니다. 운영은 `b_t4z56fq_ventes`, 스테이징은 `b_t4z56fq_ventes_recette`입니다.

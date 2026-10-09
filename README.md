@@ -134,17 +134,18 @@ bord et des automatisations. Tout est expliqué dans
 
 ## Brancher un programme ou un agent
 
-Menu **⋯** d’une base → **API et agents** → **Jetons API et MCP…** : un jeton limité à cette base, en lecture seule
-par défaut, jamais plus puissant que la personne qui l’a créé.
+Menu **⋯** d’une base → **API et agents** → **Jetons API et MCP…** : un jeton pour toute la base — sa
+production comme sa recette —, en lecture seule par défaut, jamais plus puissant que la personne qui
+l’a créé. L’environnement se choisit à l’appel.
 
 ```bash
-# Un programme
+# Un programme — ici la recette, avec le même jeton
 curl http://localhost:3000/api/v1/<tenant>/data/<base>/<table> \
-  -H "Authorization: Bearer $BASEDB_TOKEN"
+  -H "Authorization: Bearer $BASEDB_TOKEN" -H "X-Basedb-Environment: recette"
 
-# Un agent (Claude Code, ou tout client MCP)
-claude mcp add basedb -- node apps/mcp/dist/relay.js \
-  --url http://localhost:3000/mcp --token-env BASEDB_TOKEN
+# Un agent (Claude Code, ou tout client MCP qui parle HTTP)
+claude mcp add --transport http --scope project basedb http://localhost:3000/mcp \
+  --header 'Authorization: Bearer ${BASEDB_TOKEN}'
 ```
 
 Chaque base a sa page **Documentation API et MCP**, générée et filtrée par vos droits, avec sa

@@ -29,8 +29,8 @@ Imaget kjører som brukeren `node`, på Node 22, deklarerer en helsesjekk
 | Tagg | Innhold |
 |---|---|
 | `latest` | den siste publiserte versjonen |
-| `0.6` | den siste 0.6.x-versjonen |
-| `0.6.1` | nøyaktig denne versjonen |
+| `0.7` | den siste 0.7.x-versjonen |
+| `0.7.0` | nøyaktig denne versjonen |
 
 ## Tjenestene
 

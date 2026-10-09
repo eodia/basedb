@@ -97,6 +97,12 @@ export interface ActorGrants {
   readonly roles: readonly Role[]
   /** For a token: the base it is bound to, or `null` if it spans the whole tenant. */
   readonly tokenBaseId?: string | null
+  /**
+   * For a token of the whole base (`api_token.all_environments`): every environment of
+   * that base, read at each snapshot — an environment added since is in, one deleted
+   * since is out. Absent or empty: `tokenBaseId` alone.
+   */
+  readonly tokenBaseIds?: readonly string[]
   /** Surfaces on which the token is acceptable. */
   readonly tokenAllowedSurfaces?: readonly Surface[]
   /**
@@ -208,14 +214,17 @@ export function decide(
     return deny('FORBIDDEN', 'TOKEN_INVALID')
   }
 
-  // 4. Token scope: bound to one base, it sees nothing beyond it. Checked BEFORE the
-  //    instance administrator's full mask: a token keeps its scope whoever created it.
-  if (
-    grants.tokenBaseId !== undefined &&
-    grants.tokenBaseId !== null &&
-    grants.tokenBaseId !== (target.kind === 'base' ? target.id : target.baseId)
-  ) {
-    return deny('INVISIBLE', 'TOKEN_SCOPE')
+  // 4. Token scope: bound to one base — or to the environments of one base —, it sees
+  //    nothing beyond it. Checked BEFORE the instance administrator's full mask: a token
+  //    keeps its scope whoever created it.
+  if (grants.tokenBaseId !== undefined && grants.tokenBaseId !== null) {
+    const targetBase = target.kind === 'base' ? target.id : target.baseId
+    if (
+      grants.tokenBaseId !== targetBase &&
+      (targetBase === undefined || grants.tokenBaseIds?.includes(targetBase) !== true)
+    ) {
+      return deny('INVISIBLE', 'TOKEN_SCOPE')
+    }
   }
 
   // The agent surface's two markers (09 §12.2), independent of the permissions: a base

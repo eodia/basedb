@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { isLookIcon } from '@basedb/contracts'
 import {
   MAX_FIELD_NAME_BYTES,
   MAX_TABLE_NAME_BYTES,
@@ -11,8 +12,11 @@ import { writeAudit } from '../audit/journal.js'
 import { normalizeDescription } from '../catalog/description.js'
 import { addField } from '../catalog/fields.js'
 import { createLinkField } from '../catalog/links.js'
+import { normalizeLook } from '../catalog/look.js'
 import { createTable } from '../catalog/operations.js'
 import { baseTargetOf } from '../catalog/projection.js'
+import { setSelectOptions } from '../catalog/select-options.js'
+import { updateTable } from '../catalog/table-edit.js'
 import { type FieldKind, pgTypeOf } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { decide } from '../rbac/decide.js'
@@ -66,8 +70,36 @@ export interface ProposedField {
   readonly kind: FieldKind
   readonly description?: string | null
   readonly required?: boolean
-  /** The choices of a `select` or `multi_select`: values, and their labels. */
-  readonly options?: ReadonlyArray<{ readonly value: string; readonly label?: string }>
+  /** The choices of a `select` or `multi_select`: values, their labels, their look. */
+  readonly options?: ReadonlyArray<ProposedOption>
+}
+
+/** A choice of a list, as an agent proposes it: its value, its label, its look. */
+export interface ProposedOption {
+  readonly value: string
+  readonly label?: string
+  readonly color?: string | null
+  readonly icon?: string | null
+}
+
+/**
+ * A look as an agent proposes it — a colour `#rrggbb` and a pictogram of `LOOK_ICONS`
+ * (chapter 11 §3.1 bis). A key left out keeps what is there; `null` clears it. No image:
+ * an agent names pictograms, it uploads nothing.
+ */
+export interface ProposedLook {
+  readonly color?: string | null
+  readonly icon?: string | null
+}
+
+/** The look of the choices of one list, for `propose_update_look`. */
+export interface ProposedOptionLooks {
+  readonly field: string
+  readonly options: ReadonlyArray<{
+    readonly value: string
+    readonly color?: string | null
+    readonly icon?: string | null
+  }>
 }
 
 type ProposalRequest =
@@ -77,6 +109,21 @@ type ProposalRequest =
       readonly label: string
       readonly description: string | null
       readonly fields: readonly ProposedField[]
+      readonly look?: ProposedLook
+    }
+  | {
+      readonly operation: 'set_look'
+      readonly baseId: string
+      readonly tableId: string
+      readonly look?: ProposedLook
+      readonly fields: ReadonlyArray<{
+        readonly fieldId: string
+        readonly options: ReadonlyArray<{
+          readonly value: string
+          readonly color?: string | null
+          readonly icon?: string | null
+        }>
+      }>
     }
   | {
       readonly operation: 'add_field'
@@ -133,6 +180,49 @@ function checkLabel(label: unknown, field = 'label'): string {
   return text
 }
 
+/**
+ * Checks a proposed look: the colour as every look does (`normalizeLook`), the pictogram
+ * against the ones the application draws — an agent guessing a name would otherwise
+ * propose an option that shows nothing. Returns only the keys that were given.
+ */
+function checkLook(raw: ProposedLook | undefined, path: string): ProposedLook | undefined {
+  if (raw === undefined || raw === null) return undefined
+  if (typeof raw !== 'object') {
+    throw new BasedbError('REQUEST_INVALID', { details: { field: path } })
+  }
+  const out: { color?: string | null; icon?: string | null } = {}
+  if (raw.color !== undefined) {
+    if (raw.color !== null && typeof raw.color !== 'string') {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: `${path}.color` } })
+    }
+    out.color = normalizeLook(
+      { color: raw.color },
+      (reason) =>
+        new BasedbError('REQUEST_INVALID', { details: { field: `${path}.color`, reason } }),
+    ).color
+  }
+  if (raw.icon !== undefined) {
+    const icon = typeof raw.icon === 'string' ? raw.icon.trim() : raw.icon
+    if (icon !== null && icon !== '' && (typeof icon !== 'string' || !isLookIcon(icon))) {
+      throw new BasedbError('REQUEST_INVALID', {
+        details: { field: `${path}.icon`, reason: 'icone_inconnue' },
+      })
+    }
+    out.icon = icon === '' ? null : icon
+  }
+  return Object.keys(out).length === 0 ? undefined : out
+}
+
+/** The look of a summary: what the review screen draws, values the kernel checked. */
+const lookParam = (look: ProposedLook | undefined) =>
+  look === undefined
+    ? undefined
+    : {
+        ...(look.color === undefined ? {} : { color: look.color }),
+        ...(look.icon === undefined ? {} : { icon: look.icon }),
+        provenance: 'system',
+      }
+
 function checkField(field: ProposedField, path: string, allowChoices: boolean): ProposedField {
   const label = checkLabel(field.label, `${path}.label`)
   const kinds = allowChoices ? [...PLAIN_KINDS, ...CHOICE_KINDS] : PLAIN_KINDS
@@ -146,12 +236,20 @@ function checkField(field: ProposedField, path: string, allowChoices: boolean): 
       throw new BasedbError('REQUEST_INVALID', { details: { field: `${path}.options` } })
     }
   }
+  const options = field.options?.map((o, i) => {
+    const look = checkLook({ color: o.color, icon: o.icon }, `${path}.options[${i}]`)
+    return {
+      value: o.value,
+      ...(o.label === undefined ? {} : { label: o.label }),
+      ...(look ?? {}),
+    }
+  })
   return {
     label,
     kind: field.kind,
     description,
     required: field.required === true,
-    ...(field.options === undefined ? {} : { options: field.options }),
+    ...(options === undefined ? {} : { options }),
   }
 }
 
@@ -311,11 +409,13 @@ export async function agentProposeCreateTable(
     readonly label: string
     readonly description?: string | null
     readonly fields: readonly ProposedField[]
+    readonly look?: ProposedLook
   },
 ): Promise<Proposal> {
   const view = await agentView(pools, ctx)
   const base = resolveAgentBase(view, request.base)
   const label = checkLabel(request.label)
+  const look = checkLook(request.look, 'look')
   const description = normalizeDescription(request.description)
   if (!Array.isArray(request.fields) || request.fields.length === 0) {
     throw new BasedbError('REQUEST_INVALID', { details: { field: 'fields' } })
@@ -332,13 +432,21 @@ export async function agentProposeCreateTable(
     return insertProposal(
       exec,
       ctx,
-      { operation: 'create_table', baseId: base.row.id, label, description, fields },
+      {
+        operation: 'create_table',
+        baseId: base.row.id,
+        label,
+        description,
+        fields,
+        ...(look === undefined ? {} : { look }),
+      },
       {
         label: `Création de la table « ${label} »`,
         summaryTemplate: 'create_table',
         summaryParams: {
           table_label: userData(label),
           table_description: userData(description),
+          ...(look === undefined ? {} : { look: lookParam(look) }),
           fields: fields.map((f) => ({
             label: userData(f.label),
             kind: { value: f.kind, provenance: 'system' },
@@ -377,7 +485,7 @@ export async function agentProposeAddField(
     readonly label: string
     readonly kind: FieldKind | 'link'
     readonly description?: string | null
-    readonly options?: ReadonlyArray<{ readonly value: string; readonly label?: string }>
+    readonly options?: ReadonlyArray<ProposedOption>
     readonly target?: string
     readonly onDelete?: string
   },
@@ -506,7 +614,13 @@ export async function agentProposeAddField(
           },
           ...(field.options === undefined
             ? {}
-            : { options: field.options.map((o) => userData(o.label ?? o.value)) }),
+            : {
+                options: field.options.map((o) => ({
+                  ...userData(o.label ?? o.value),
+                  ...(o.color === undefined || o.color === null ? {} : { color: o.color }),
+                  ...(o.icon === undefined || o.icon === null ? {} : { icon: o.icon }),
+                })),
+              }),
         },
         affectedObjects: [
           {
@@ -521,6 +635,117 @@ export async function agentProposeAddField(
         ],
         downSql: [`ALTER TABLE ${where} DROP COLUMN ${quoteIdentifier(column)}`],
         objectKey: `add_field:${table.row.id}:${label.toLowerCase()}`,
+      },
+    )
+  })
+  return agentGetProposal(pools, ctx, id)
+}
+
+/**
+ * `propose_update_look` — the colour and pictogram of a table, and of the choices of its
+ * lists (chapter 11 §3.1 bis). A change of look emits no SQL against the user's schema: it
+ * is still a change of the base's structure, reviewed like any other (§7).
+ */
+export async function agentProposeUpdateLook(
+  pools: Pools,
+  ctx: RequestContext,
+  request: {
+    readonly base: string
+    readonly table: string
+    readonly look?: ProposedLook
+    readonly fields?: readonly ProposedOptionLooks[]
+  },
+): Promise<Proposal> {
+  const view = await agentView(pools, ctx)
+  const table = resolveAgentTable(view, request.base, request.table)
+  const base = table.base
+  const look = checkLook(request.look, 'look')
+
+  const fields = (request.fields ?? []).map((entry, i) => {
+    const path = `fields[${i}]`
+    const field = table.fields.find(
+      (f) => !f.system && (f.name === entry?.field || f.id === entry?.field),
+    )
+    if (field === undefined || field.id === null) {
+      throw new BasedbError('RESOURCE_NOT_FOUND', { details: { param: `${path}.field` } })
+    }
+    if (!CHOICE_KINDS.includes(field.kind as FieldKind)) {
+      throw new BasedbError('REQUEST_INVALID', {
+        details: { field: `${path}.field`, reason: 'pas_une_liste_de_choix' },
+      })
+    }
+    const known = new Map((view.raw.options.get(field.id) ?? []).map((o) => [o.value, o]))
+    if (!Array.isArray(entry.options) || entry.options.length === 0) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: `${path}.options` } })
+    }
+    const options = entry.options.map((o, j) => {
+      if (typeof o?.value !== 'string' || !known.has(o.value)) {
+        throw new BasedbError('RESOURCE_NOT_FOUND', {
+          details: { param: `${path}.options[${j}].value` },
+        })
+      }
+      const optionLook = checkLook({ color: o.color, icon: o.icon }, `${path}.options[${j}]`)
+      if (optionLook === undefined) {
+        throw new BasedbError('REQUEST_INVALID', { details: { field: `${path}.options[${j}]` } })
+      }
+      return { value: o.value, ...optionLook }
+    })
+    return { field, known, options }
+  })
+  if (look === undefined && fields.length === 0) {
+    throw new BasedbError('REQUEST_INVALID', { details: { field: 'look' } })
+  }
+
+  const id = await withTransaction(pools, 'catalog', ctx, async (exec) => {
+    await assertTokenWrites(exec, ctx)
+    await assertPersonManages(exec, personOf(ctx, ctx.actor.id), base.row.id, 'PERMISSION_DENIED')
+    return insertProposal(
+      exec,
+      ctx,
+      {
+        operation: 'set_look',
+        baseId: base.row.id,
+        tableId: table.row.id,
+        ...(look === undefined ? {} : { look }),
+        fields: fields.map((f) => ({ fieldId: f.field.id as string, options: f.options })),
+      },
+      {
+        label: `Apparence de la table « ${table.row.label} »`,
+        summaryTemplate: 'set_look',
+        summaryParams: {
+          table: {
+            physical: table.row.table_name,
+            label: table.row.label,
+            provenance: 'user_data',
+          },
+          ...(look === undefined ? {} : { look: lookParam(look) }),
+          fields: fields.map((f) => ({
+            label: userData(f.field.label),
+            options: f.options.map((o) => ({
+              ...userData(f.known.get(o.value)?.label ?? o.value),
+              ...(o.color === undefined ? {} : { color: o.color }),
+              ...(o.icon === undefined ? {} : { icon: o.icon }),
+            })),
+          })),
+        },
+        affectedObjects: [
+          {
+            role: 'modified',
+            kind: 'table',
+            physical: table.row.table_name,
+            effects: [
+              ...(look === undefined ? [] : ['couleur ou pictogramme de la table']),
+              ...fields.map(
+                (f) =>
+                  `couleur ou pictogramme de ${f.options.length} choix du champ ${f.field.name}`,
+              ),
+              'aucune donnée ni aucune colonne n’est touchée',
+            ],
+          },
+        ],
+        upSql: [],
+        downSql: [],
+        objectKey: `set_look:${table.row.id}`,
       },
     )
   })
@@ -810,9 +1035,13 @@ async function carryOut(
         required: f.required,
         description: f.description ?? null,
       })),
+      ...(r.look === undefined
+        ? {}
+        : { look: { color: r.look.color ?? null, icon: r.look.icon ?? null } }),
     })
     return { table_id: table.tableId, table: table.tableName }
   }
+  if (r.operation === 'set_look') return carryOutLook(pools, person, r)
   if (r.operation === 'add_field') {
     const field = await addField(pools, person, {
       tableId: r.tableId,
@@ -821,7 +1050,14 @@ async function carryOut(
       description: r.field.description ?? null,
       ...(r.field.options === undefined
         ? {}
-        : { options: r.field.options.map((o) => ({ value: o.value, label: o.label ?? o.value })) }),
+        : {
+            options: r.field.options.map((o) => ({
+              value: o.value,
+              label: o.label ?? o.value,
+              color: o.color ?? null,
+              icon: o.icon ?? null,
+            })),
+          }),
     })
     return { field_id: field.fieldId, field: field.name }
   }
@@ -833,6 +1069,65 @@ async function carryOut(
     onDelete: r.onDelete,
   })
   return { field_id: link.fieldId }
+}
+
+/**
+ * A look carried out on what the base holds NOW, not on what it held when proposed: a key
+ * the agent named replaces, a key it left out keeps, and a pictogram chosen takes the
+ * place of a picture (the two are exclusive). By the ordinary operations — `updateTable`,
+ * `setSelectOptions` —, in the name of the person the token speaks for.
+ */
+async function carryOutLook(
+  pools: Pools,
+  person: RequestContext,
+  r: Extract<ProposalRequest, { operation: 'set_look' }>,
+): Promise<Record<string, unknown>> {
+  const merge = (
+    current: { color: string | null; icon: string | null; image: string | null },
+    asked: { color?: string | null; icon?: string | null },
+  ) => ({
+    color: asked.color === undefined ? current.color : asked.color,
+    icon: asked.icon === undefined ? current.icon : asked.icon,
+    image: asked.icon === undefined || asked.icon === null ? current.image : null,
+  })
+
+  if (r.look !== undefined) {
+    const [table] = await pools.withConnection('catalog', (exec) =>
+      exec.query<{ color: string | null; icon: string | null; image: string | null }>(
+        'SELECT color, icon, image FROM _basedb.table_def WHERE id = $1 AND is_live',
+        [r.tableId],
+      ),
+    )
+    if (table === undefined) {
+      throw new BasedbError('RESOURCE_NOT_FOUND', { details: { table: r.tableId } })
+    }
+    await updateTable(pools, person, { tableId: r.tableId, look: merge(table, r.look) })
+  }
+
+  for (const field of r.fields) {
+    const current = await pools.withConnection('catalog', (exec) =>
+      exec.query<{
+        value: string
+        label: string
+        color: string | null
+        icon: string | null
+        image: string | null
+      }>(
+        `SELECT value, label, color, icon, image FROM _basedb.select_option
+          WHERE field_id = $1 AND deleted_at IS NULL ORDER BY position, value`,
+        [field.fieldId],
+      ),
+    )
+    const asked = new Map(field.options.map((o) => [o.value, o]))
+    await setSelectOptions(pools, person, {
+      fieldId: field.fieldId,
+      options: current.map((o) => {
+        const wanted = asked.get(o.value)
+        return { value: o.value, label: o.label, ...(wanted ? merge(o, wanted) : o) }
+      }),
+    })
+  }
+  return { table_id: r.tableId }
 }
 
 /** Refuses a proposal: recorded, and closed. */

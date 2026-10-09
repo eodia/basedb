@@ -15,9 +15,9 @@ the physical names — the ones you also read in SQL.
 
 In the interface, the base’s **⋯** menu → **API and agents** → **API and MCP tokens…**: whoever
 has the **Manage** level on the base, or on its project, creates an **integration token** there,
-limited to that base, read-only by default, after confirming their password — an account
-without a password, which signs in through an identity provider, cannot do so yet. It is shown
-only once; put it in an environment variable.
+limited to that base — all its environments, or just one —, read-only by default, after
+confirming their password — an account without a password, which signs in through an identity
+provider, cannot do so yet. It is shown only once; put it in an environment variable.
 
 A token reads; it creates and updates if it was created with write access, and **deletes if it
 was created for that** — “Read, write and delete” rights, except a row that a cascading relation
@@ -28,6 +28,30 @@ export BASEDB_TOKEN=bdb_…
 curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
   -H "Authorization: Bearer $BASEDB_TOKEN"
 ```
+
+## Choose the environment
+
+A base that has several [environments](/basedb/en/fonctionnalites/environnements/) — production,
+staging… — remains **one** base for a token created for the whole base. The path names the base
+by the name of its production, and the `X-Basedb-Environment` header chooses the environment:
+
+```bash
+curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  -H "X-Basedb-Environment: recette"
+```
+
+- Without the header, the environment is the one the path names: `b_t4z56fq_ventes` is production,
+  `b_t4z56fq_ventes_recette` is staging — both spellings remain valid.
+- `?environment=recette` does the same for a client that doesn’t set a header.
+- An environment is named by its badge, ignoring case and accents, or by `production`. An
+  environment the base doesn’t have answers `404`, like any missing resource.
+- `GET /api/v1/<tenant>/meta/bases` lists every environment with its `environment` block
+  (`label`, `production`); with the header, it lists only that one.
+
+A token limited to a single environment, when it was created, opens no other: the header changes
+nothing. Its permissions are always intersected, environment by environment, with those of the
+person who created it.
 
 ## Reading
 
@@ -81,6 +105,27 @@ With the same token:
 Building — creating an automation, a dashboard, an integration — remains reserved for an
 interface session: a token reads and writes rows, it does not change the base.
 
+## Colors and icons
+
+A table and each choice of a choice list have a color (`color`, `#rrggbb`) and an icon (`icon`,
+the name of a [Lucide](https://lucide.dev/icons/) icon that the interface draws: `truck`,
+`circle-check`, `flame`…). `GET …/meta/bases/<base>` returns them for the base, its tables and the
+options of its fields.
+
+To set them, use the access token of a person who can change the schema
+(`POST /auth/session/access`) — an integration token does not change the base:
+
+| Route | Body |
+|---|---|
+| `POST …/admin/bases/<base>/tables` | `{"label": "Tickets", "color": "#dc2626", "icon": "flame", "fields": […]}` |
+| `PATCH …/admin/bases/<base>/tables/<table>` | `{"color": "#2563eb", "icon": "inbox"}` — the three keys `color`, `icon`, `image` travel together: naming one replaces all three |
+| `POST …/admin/bases/<base>/tables/<table>/fields` | `{"label": "Priorité", "kind": "select", "options": [{"value": "haute", "color": "#dc2626", "icon": "flame"}, …]}` |
+| `PUT …/admin/bases/<base>/tables/<table>/fields/<champ>/options` | the whole list of options, in order, each with its color and its icon |
+
+An agent goes through the [MCP server](/basedb/en/integrations/mcp/#colors-and-icons), where it
+**proposes** these changes. A field has no icon to choose: the interface draws the one for its
+type.
+
 ## Creating a base from a template
 
 An application being installed creates its base in **a single call**: the server applies the
@@ -120,15 +165,17 @@ curl -X POST "http://localhost:3000/auth/introspect" \
 
 Any token that is not valid — unknown, expired, revoked, session closed, other workspace —
 answers `{"active": false}`, without saying why. The answer is read live: a sign-out shows up
-immediately. For an integration token, the answer also gives the base it opens (`base`), its
-access (`read` or `write`) and its surfaces.
+immediately. For an integration token, the answer also gives the base it opens (`base`, its
+production), whether it opens all its environments (`environments`: `all`) or just one (`one`),
+its access (`read`, `write` or `delete`) and its surfaces.
 
 ## The generated documentation
 
 Each base has its **API and MCP documentation** page: for each table, its endpoints, its
 columns, examples in cURL and in JavaScript. It is **filtered by your permissions** — two
 readers get two versions —, written **in the language of your screen**, and also exists as
-OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Names, paths and error codes
-stay the same in every language.
+OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`), which declares the Bearer token
+and the `X-Basedb-Environment` header. Names, paths and error codes stay the same in every
+language.
 
 ![A base’s generated documentation](../../../../assets/screens/en/documentation-api.webp)

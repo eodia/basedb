@@ -77,7 +77,7 @@ Ce chapitre n'introduit aucun objet de catalogue. Il s'appuie sur ceux-ci, défi
 
 Noms d'outils en anglais `snake_case` (convention MCP, meilleure reconnaissance par les modèles). **Descriptions rédigées en français, langue unique en v1** : l'internationalisation des descriptions d'outils n'est pas au périmètre, et deux versions linguistiques d'une même description finissent par diverger.
 
-### 2.2 Tableau normatif des quinze outils
+### 2.2 Tableau normatif des seize outils
 
 Ce tableau est **normatif**. Le test de conformité de la section 10 échoue si l'ensemble des outils déclarés à l'exécution diffère de cette liste. « Champ inscriptible » signifie `field_permission.access = 'write'` pour le rôle effectif (chapitre 05).
 
@@ -96,10 +96,15 @@ Ce tableau est **normatif**. Le test de conformité de la section 10 échoue si 
 | `restore_record` | Ramène une ligne supprimée sous son `_id`, depuis l'historique | `create` sur la table | oui | 4 |
 | `propose_create_base` | Propose la création d'une base, `description` facultative | `manage_schema` au niveau tenant | non | 3 |
 | `propose_create_table` | Propose une table et ses champs initiaux, `description` facultative de chacun | `manage_schema` sur la base | non | 3 |
-| `propose_add_field` | Propose un champ, y compris de type lien, `description` facultative | `manage_schema` sur la table ; pour un lien, `manage_schema` **et** `read` sur la cible | non | 3 |
+| `propose_add_field` | Propose un champ, y compris de type lien, `description` facultative ; la couleur et le pictogramme de chaque choix d'une liste | `manage_schema` sur la table ; pour un lien, `manage_schema` **et** `read` sur la cible | non | 3 |
+| `propose_update_look` | Propose la couleur et le pictogramme d'une table et des choix de ses listes (chapitre 11 §3.1 bis) ; aucun SQL | `manage_schema` sur la table | non | 5 |
 | `get_proposal` | Relit une proposition et son état | portée ∧ (auteur ∨ `manage_schema` sur la base) | non | 3 |
 
-**Sous-totaux : lot 1 = 6, lot 2 = 3, lot 3 = 4, lot 4 = 2. Quinze outils** — `propose_create_base` n'est pas déclaré : un jeton n'ouvre qu'une base.
+**Sous-totaux : lot 1 = 6, lot 2 = 3, lot 3 = 4, lot 4 = 2, lot 5 = 1. Seize outils, quinze déclarés** — `propose_create_base` n'est pas déclaré : un jeton n'ouvre qu'une base.
+
+**L'argument `environment`** (lot 5, chapitre 14 §1 bis) est déclaré sur `list_bases` et sur chaque outil qui nomme une base. Il désigne, pour cet appel, un autre environnement de la même base que celui que nomme `base` ; le point d'entrée le retire des arguments et refait le contexte (`inEnvironment`) avant que l'outil ne vérifie les siens — il change la base désignée, jamais l'identité ni les droits. La connexion peut fixer le sien par `?environment=` dans l'adresse du serveur ou l'en-tête `X-Basedb-Environment` ; l'argument l'emporte, pour un appel. Un outil qui ne nomme pas de base le refuse comme tout paramètre non déclaré.
+
+**Couleur et pictogramme.** `propose_create_table` accepte `color` et `icon`, `propose_add_field` les accepte sur chaque option. La couleur suit la règle de toute apparence (`#rgb` ou `#rrggbb`, rangée en `#rrggbb`) ; le pictogramme est **énuméré** dans le schéma de l'outil — la liste `LOOK_ICONS` de `@basedb/contracts`, celle que dessine l'interface, testée contre elle — et le noyau refuse un autre nom (`REQUEST_INVALID`, `icone_inconnue`) : un agent qui devine un nom proposerait sinon un choix sans pictogramme. Pas d'image : un agent nomme, il ne téléverse rien.
 
 `lookup_records` est classé au lot 2 bien qu'il soit en lecture : sa seule raison d'être est de résoudre la cible d'un lien avant une écriture. Le livrer avec le lot de lecture exposerait une primitive de recherche sans le besoin qui la justifie.
 
@@ -618,11 +623,11 @@ La raison n'est pas le confort mais la théorie de la confiance. Une confirmatio
 
 ## 9. Authentification, identité, session
 
-### 9.1 Mode stdio, seul mode livré en v1
+### 9.1 HTTP direct, ou relais stdio
 
-Le relais MCP tourne sur le poste de l'utilisateur, lancé par son client. Sa configuration comporte deux valeurs : l'origine du back et une **référence** au jeton d'intégration.
+*Décision révisée.* Le point d'entrée parle le transport HTTP de MCP (*Streamable HTTP*, réponses JSON seulement) : un client qui le sait — Claude Code, entre autres — vise directement `…/mcp` avec l'en-tête `Authorization: Bearer`. Dans le `.mcp.json` d'un projet, `${BASEDB_TOKEN}` est lu dans l'environnement du client : le fichier ne porte qu'une référence au jeton (§9.2). C'est la configuration que donnent la fenêtre des jetons et la documentation générée, un serveur par environnement sur le même jeton (`…/mcp?environment=recette`). Le **relais** stdio reste pour le client qui ne sait lancer que des programmes locaux : il tourne sur le poste de l'utilisateur, lancé par son client, et sa configuration comporte l'origine du back, une **référence** au jeton d'intégration (`--token-env`) et, au besoin, l'environnement (`--environment`).
 
-Le jeton est une ligne de `_basedb.api_token`, créée depuis l'interface par l'utilisateur lui-même, sans échéance par défaut (`expires_at` nul, durée de 1 à 365 jours au choix) et avec une portée `base_id` **obligatoire pour un jeton MCP** (la portée est une contrainte dure, §3.2 ; un jeton sans portée serait une exception permanente au filtre le plus simple du produit).
+Le jeton est une ligne de `_basedb.api_token`, créée depuis l'interface par l'utilisateur lui-même, sans échéance par défaut (`expires_at` nul, durée de 1 à 365 jours au choix) et avec une portée `base_id` **obligatoire pour un jeton MCP** (la portée est une contrainte dure, §3.2 ; un jeton sans portée serait une exception permanente au filtre le plus simple du produit). Cette portée est la base entière — tous ses environnements — par défaut, ou un seul de ses environnements (chapitre 08 §11.3).
 
 ### 9.2 Hygiène du secret
 
@@ -636,7 +641,8 @@ L'identité portée par les opérations est celle du jeton : `actor_kind = 'toke
 
 - Les permissions effectives sont l'**intersection** des permissions du rôle du jeton et des permissions effectives de l'utilisateur créateur, au moment de l'appel. Sans cette intersection, un jeton est une escalade de privilèges gelée : un utilisateur rétrogradé continuerait d'agir par son jeton. C'est une règle du chapitre 05 que ce chapitre ne fait qu'invoquer.
 - `api_token.allowed_surfaces` décide des surfaces sur lesquelles le jeton peut servir. Un jeton ne portant pas `mcp` est refusé ici, et un jeton MCP présenté à l'API REST sans `rest` y est refusé. C'est ce qui rend la colonne `audit_log.surface` vérifiable plutôt que conventionnelle.
-- Un jeton « en lecture seule » n'est pas une option du jeton mais une propriété de son rôle : un rôle ne portant que `read`. C'est le défaut proposé à la création depuis l'écran « Intégrations ».
+- Un jeton « en lecture seule » n'est pas une option du jeton mais une propriété de son rôle : un rôle ne portant que `read`. C'est le défaut proposé à la création depuis la fenêtre « Jetons API et MCP… » de la base.
+- `whoami` rend la portée : la base (sa production), `environments` (`all` ou `one`), les environnements ouverts et visibles (`available`) et celui de la connexion (`current`, ou `null`).
 
 **Quatre règles anti-usurpation, sans exception :**
 
@@ -664,9 +670,9 @@ Ces règles ne sont pas décoratives : en stdio, une session vit des heures. San
 
 Toute clé de cache de catalogue projeté inclut `(tenant, jeton, catalog_version, authz_version)`. À défaut d'un tel cache, seul le catalogue **brut** est mis en cache et la projection est refaite à chaque requête. Le point d'entrée MCP, lui, ne met rien en cache : le cache vit dans le noyau, sinon `describe_table` divergerait de la réalité juste après une migration approuvée.
 
-### 9.6 Mode distant
+### 9.6 Mode distant avec OAuth
 
-Non retenu en v1, et c'est une décision, pas un report tacite. Un MCP distant exige un serveur d'autorisation OAuth 2.1 complet — consentement par utilisateur, indicateurs de ressource (RFC 8707), rotation — pour un bénéfice nul : l'usage visé est le poste de travail, et les automatisations externes passent par l'API REST et les webhooks. Quatre conditions non négociables en v2 : jamais de jeton dans une URL ; audience du jeton liée à ce serveur ; consentement explicite par utilisateur ; aucun jeton partagé.
+Non retenu, et c'est une décision, pas un report tacite. Le point d'entrée HTTP (§9.1) accepte un jeton d'intégration créé par une personne ; il n'est pas un serveur d'autorisation. Un MCP distant au sens d'un connecteur ouvert à n'importe quel client exige un serveur d'autorisation OAuth 2.1 complet — consentement par utilisateur, indicateurs de ressource (RFC 8707), rotation — pour un bénéfice nul : l'usage visé est le poste de travail, et les automatisations externes passent par l'API REST et les webhooks. Quatre conditions non négociables en v2 : jamais de jeton dans une URL ; audience du jeton liée à ce serveur ; consentement explicite par utilisateur ; aucun jeton partagé.
 
 ---
 
@@ -963,6 +969,8 @@ opérations ordinaires du noyau au nom de cette personne ; elle finit `applied`,
 remplacement (`superseded`) d'une proposition sur le même objet, refus d'un jeton en
 lecture seule (`TOKEN_READ_ONLY`) et de `cascade` (`MCP_CASCADE_FORBIDDEN`).
 
+**Lot 5 (0.7.0).** L'argument `environment` sur chaque outil qui nomme une base, `?environment=` et `X-Basedb-Environment` sur la connexion, l'environnement dans `whoami`, `list_bases` et `describe_base` ; l'apparence dans `describe_base` (tables) et `describe_table` (choix), `color`/`icon` dans `propose_create_table` et `propose_add_field`, et `propose_update_look` (`summary_template: set_look`, sans `up_sql`) — appliqué par `updateTable` et `setSelectOptions` sur ce que la base porte au moment de l'approbation : une clé nommée remplace, une clé omise garde.
+
 **Écarts assumés.**
 
 - `propose_create_base` n'est pas déclaré : un jeton est borné à une base, et une base se
@@ -984,9 +992,11 @@ lecture seule (`TOKEN_READ_ONLY`) et de `cascade` (`MCP_CASCADE_FORBIDDEN`).
 | Décision | Raison | Alternative écartée |
 |---|---|---|
 | Point d'entrée sur le noyau, au même rang que l'API REST, sans connexion PostgreSQL | Évite de publier en HTTP public le mode plan du moteur DDL, la file de propositions et l'identité effective | Adaptateur au-dessus de l'API REST publique |
-| Relais stdio sur le poste, `POST /mcp` unique côté back, listé par le chapitre 08 | Le transport est un choix de déploiement, pas d'architecture | Serveur MCP autonome avec son propre accès aux données |
-| Treize outils, statiques, étroits, nommés d'après ce qu'ils font ; lot 1 (six lectures) livré seul, les autres non déclarés | Surface énumérable ; pas de libellé utilisateur dans la description d'outil ; un agent ne planifie pas autour d'outils indisponibles | `execute_sql` en lecture seule ; un outil par table ; tout déclarer et désactiver |
-| Aucun outil de suppression d'enregistrement en v1 | Évite un second mécanisme d'approbation, et ferme la chaîne de cascade PostgreSQL posée depuis l'interface (A14) | Demande de suppression différée avec son écran et son échéance |
+| `POST /mcp` unique côté back, listé par le chapitre 08, en HTTP direct ou par le relais stdio | Le transport est un choix de déploiement, pas d'architecture | Serveur MCP autonome avec son propre accès aux données |
+| Quinze outils déclarés, statiques, étroits, nommés d'après ce qu'ils font (§2.2) | Surface énumérable ; pas de libellé utilisateur dans la description d'outil ; un agent ne planifie pas autour d'outils indisponibles | `execute_sql` en lecture seule ; un outil par table ; tout déclarer et désactiver |
+| Suppression d'une ligne à la fois, seulement par un jeton créé pour supprimer, jamais en cascade (*décision révisée*, lot 4, §8.1) | Le geste reste borné et réversible — `restore_record` —, sans second mécanisme d'approbation | Demande de suppression différée avec son écran et son échéance |
+| L'environnement, argument de chaque outil et paramètre de la connexion — pas un outil ni un jeton par environnement (lot 5) | Un jeton de toute la base, un nom de base et des types inchangés ; le saut se fait à la résolution, avant la décision | Un jeton par environnement ; un outil `use_environment` qui rendrait l'état de la session implicite |
+| L'apparence proposée comme la structure, pictogrammes énumérés | Une table changée de couleur l'est pour tous ; une personne en décide, comme du reste | Écriture directe de l'apparence par un jeton en écriture |
 | `_id` attribué par le serveur ; idempotence par `idempotency_key`, mécanisme du chapitre 08 dans `_basedb.idempotency_key` | Une collision de clé primaire fournie par l'agent est un oracle d'existence accessible avec le seul `create` ; un troisième mécanisme d'idempotence serait une troisième vérité | `_id` fourni par l'agent ; table d'idempotence propre au MCP |
 | `filter`, `sort`, `expand`, `select` passent par la même résolution que la projection ; opérateurs et bornes d'expansion repris des chapitres 04 et 08 | Sans cela un prédicat lit par dichotomie tout champ masqué ; trois vocabulaires d'opérateurs rendraient OpenAPI et le MCP incohérents | Contraindre `select` seul ; vocabulaire d'opérateurs propre au MCP |
 | Projection explicite de `tables`, `applications`, `relations`, `inverse_links`, valeur d'affichage et expansion | Une garantie écrite pour un seul chemin est annulée par les chemins voisins | Projeter le seul graphe des relations |

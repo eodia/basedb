@@ -27,10 +27,16 @@ Opret et legitimationssæt **basedb API** i n8n:
 | **Instance URL** | adressen, hvor du åbner basedb: `https://basedb.exemple.fr` |
 | **Workspace** | arbejdsområdets reference, den i API'ets adresser (`/api/v1/<arbejdsområde>/…`): `t4z56fq`, med mindre instansen fastsætter `BASEDB_TENANT` |
 | **Token** | et **integrationstoken**: menuen **⋯** af databasen → **API og agenter** → **API- og MCP-tokens…** |
+| **Environment** | valgfrit: det miljø i databasen, der skal arbejdes i — `recette`, `production`… Tomt: produktion |
 
-Et token åbner **én** database. Det læser dens rækker, skriver dem, hvis det er oprettet med
-skriveadgang, og har aldrig flere tilladelser end den person, der oprettede det. Ved oprettelsen
-afprøver n8n forbindelsen og siger, om tokenet afvises.
+Et token åbner **én** database — alle dens miljøer, eller kun ét, hvis det blev begrænset ved
+oprettelsen. Det læser dens rækker, skriver dem, hvis det er oprettet med skriveadgang, og har
+aldrig flere tilladelser end den person, der oprettede det. Ved oprettelsen afprøver n8n
+forbindelsen og siger, om tokenet afvises.
+
+For at arbejde på produktion og på test skal du oprette to legitimationssæt med det samme token,
+det ene med **Environment** tomt, det andet med `recette`. Uden et valgt miljø viser nodens liste
+over databaser hvert miljø, med dets navn i parentes.
 
 ## Læs og skriv: noden basedb
 

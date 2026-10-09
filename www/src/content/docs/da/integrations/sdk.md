@@ -72,10 +72,25 @@ kører.
   sprog —, `status`, `details` og `requestId`. En anmodning om at sætte farten ned (`429`)
   gentages efter den ventetid, basedb angiver.
 
+## Miljøerne
+
+En database, der har flere [miljøer](/basedb/da/fonctionnalites/environnements/) — produktion,
+test… — beholder sine navne og sine typer fra det ene miljø til det andet. Med et token oprettet
+til hele databasen peger `environment()` på et miljø, så den samme kode kan køre andetsteds:
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+Indstillingen `environment` i konstruktøren gør det samme for hele klienten. SDK'et sender
+headeren `X-Basedb-Environment`; uden den betegner hvert databasenavn sit eget miljø
+(`b_t4z56fq_ventes` er produktion).
+
 ## Tokenet
 
 Et **integrationstoken** oprettes i brugerfladen: menuen **⋯** af databasen → **API og
-agenter** → **API- og MCP-tokens…**. Det åbner en database, læser dens rækker, skriver dem,
-hvis det er oprettet med skriveadgang, har aldrig flere tilladelser end den person, der
-oprettede det, og **sletter kun, hvis det er oprettet til det** (»Læse, skrive og slette«):
-ellers afvises `delete()`.
+agenter** → **API- og MCP-tokens…**. Det åbner en database — alle dens miljøer eller kun ét —,
+læser dens rækker, skriver dem, hvis det er oprettet med skriveadgang, har aldrig flere
+tilladelser end den person, der oprettede det, og **sletter kun, hvis det er oprettet til det**
+(»Læse, skrive og slette«): ellers afvises `delete()`.

@@ -1,3 +1,4 @@
+import { LOOK_COLORS, LOOK_ICONS } from '@basedb/contracts'
 import type { AgentColumn, AgentRows, Kernel, Proposal, RequestContext } from '@basedb/core'
 import { BasedbError } from '@basedb/core'
 import { RESPONSE_BUDGET_CHARS, rowsWithinBudget, sanitizeDeep, shapeRow } from './shape.js'
@@ -13,9 +14,13 @@ import { Checker, INPUT_BOUNDS } from './validate.js'
  *
  * Lots 1, 2 and 3: six reads, the lookup, the two writes, and the structure proposals —
  * which change nothing: a person decides, in the application (§7). Then the deletion of
- * one row, for a token created to delete, and its way back from the history.
+ * one row, for a token created to delete, and its way back from the history. Then the
+ * look of a table and of its choices, proposed like the rest of the structure.
  * `propose_create_base` is not declared: a token is bound to one base, and a base is
  * created from its project, by a person.
+ *
+ * Every tool that names a base also takes `environment` (chapter 14 §1 bis), declared by
+ * `declaredTools` and taken off the arguments by the entry point before the tool runs.
  */
 
 export interface ToolContext {
@@ -64,6 +69,29 @@ const BASE = {
 const TABLE = {
   type: 'string',
   description: 'La table : son nom ou son identifiant, tel que rendu par describe_base.',
+}
+
+/** Declared on every tool that names a base — see `declaredTools`. */
+export const ENVIRONMENT = {
+  type: 'string',
+  maxLength: 60,
+  description:
+    'L’environnement de la base à utiliser pour cet appel : « production », « recette »… (voir whoami, scope.available). Par défaut, celui de l’adresse du serveur MCP (?environment=), sinon celui que nomme la base (« crm » est la production).',
+}
+
+/** A colour, as every look takes it. */
+const COLOR = {
+  type: ['string', 'null'],
+  pattern: '^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$',
+  description: `Couleur « #rrggbb » (null l’efface). Celles que propose l’application : ${LOOK_COLORS.join(', ')}.`,
+}
+
+/** A pictogram, among the ones the application draws. */
+const ICON = {
+  type: ['string', 'null'],
+  enum: [...LOOK_ICONS, null],
+  description:
+    'Pictogramme, par son nom Lucide parmi ceux que dessine l’application (null l’efface).',
 }
 const FIELDS = (description: string, maxItems: number) => ({
   type: 'array',
@@ -719,7 +747,7 @@ function initialFields(c: Checker, raw: Array<Record<string, unknown>> | undefin
 const proposeCreateTable: ToolDefinition = {
   name: 'propose_create_table',
   title: 'Proposer une table',
-  description: `Propose la création d’une table dans une base, avec ses premiers champs (types : ${PLAIN_KINDS.join(', ')}) ; les relations et les listes de choix s’ajoutent ensuite avec propose_add_field. ${PROPOSES} ${DATA}`,
+  description: `Propose la création d’une table dans une base, avec ses premiers champs (types : ${PLAIN_KINDS.join(', ')}), et sa couleur et son pictogramme (color, icon) ; les relations et les listes de choix s’ajoutent ensuite avec propose_add_field. ${PROPOSES} ${DATA}`,
   inputSchema: {
     type: 'object',
     properties: {
@@ -730,6 +758,8 @@ const proposeCreateTable: ToolDefinition = {
         description: 'Le libellé de la table, ex. « Devis ».',
       },
       description: DESCRIPTION,
+      color: COLOR,
+      icon: ICON,
       fields: {
         type: 'array',
         minItems: 1,
@@ -758,14 +788,21 @@ const proposeCreateTable: ToolDefinition = {
   },
   objectKind: 'migration',
   async run(tc, args) {
-    const c = new Checker(args).only(['base', 'label', 'description', 'fields'])
+    const c = new Checker(args).only(['base', 'label', 'description', 'fields', 'color', 'icon'])
     const base = c.name('base') as string
     const label = c.string('label', 255, true) as string
     const description = c.string('description', 1000)
     const fields = initialFields(c, c.objects('fields', 50, true))
+    const look = lookArgs(c, args, '')
     c.done()
     return proposalOutcome(
-      await tc.kernel.agentProposeCreateTable(tc.ctx, { base, label, description, fields }),
+      await tc.kernel.agentProposeCreateTable(tc.ctx, {
+        base,
+        label,
+        description,
+        fields,
+        ...(look === undefined ? {} : { look }),
+      }),
     )
   },
 }
@@ -787,10 +824,16 @@ const proposeAddField: ToolDefinition = {
         maxItems: 200,
         items: {
           type: 'object',
-          properties: { value: { type: 'string' }, label: { type: 'string' } },
+          properties: {
+            value: { type: 'string' },
+            label: { type: 'string' },
+            color: COLOR,
+            icon: ICON,
+          },
           required: ['value'],
         },
-        description: 'Les choix d’un select ou d’un multi_select.',
+        description:
+          'Les choix d’un select ou d’un multi_select, chacun avec sa couleur et son pictogramme s’il en a.',
       },
       target: { type: 'string', description: 'Pour un lien : la table cible, de la même base.' },
       on_delete: { type: 'string', enum: ['restrict', 'set_null'] },
@@ -833,9 +876,11 @@ const proposeAddField: ToolDefinition = {
         `options[${i}].label`,
         o.label === undefined || (typeof o.label === 'string' && o.label.length <= 200),
       )
+      const look = lookArgs(c, o, `options[${i}].`)
       return {
         value: String(o.value ?? ''),
         ...(typeof o.label === 'string' ? { label: o.label } : {}),
+        ...(look ?? {}),
       }
     })
     const target = c.name('target', false)
@@ -857,6 +902,110 @@ const proposeAddField: ToolDefinition = {
         ...(rawOptions === undefined ? {} : { options }),
         ...(target === undefined ? {} : { target }),
         ...(onDelete === undefined ? {} : { onDelete }),
+      }),
+    )
+  },
+}
+
+/**
+ * The `color` and `icon` of an object of the arguments — stage 1 only: their JSON types.
+ * The kernel checks the colour's form and the pictogram's name, and says which one.
+ */
+function lookArgs(
+  c: Checker,
+  object: Readonly<Record<string, unknown>>,
+  path: string,
+): { color?: string | null; icon?: string | null } | undefined {
+  const out: { color?: string | null; icon?: string | null } = {}
+  for (const key of ['color', 'icon'] as const) {
+    const value = object[key]
+    if (value === undefined) continue
+    c.entry(`${path}${key}`, value === null || (typeof value === 'string' && value.length <= 64))
+    out[key] = typeof value === 'string' ? value : null
+  }
+  return Object.keys(out).length === 0 ? undefined : out
+}
+
+const proposeUpdateLook: ToolDefinition = {
+  name: 'propose_update_look',
+  title: 'Proposer une apparence',
+  description: `Propose la couleur et le pictogramme d’une table (color, icon), et ceux des choix de ses listes (fields : pour chaque champ select ou multi_select, les valeurs de describe_table et leur color, icon). Une clé omise garde ce qui est en place ; null l’efface. Aucune donnée ni aucune colonne n’est touchée. ${PROPOSES} ${DATA}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      base: BASE,
+      table: TABLE,
+      color: COLOR,
+      icon: ICON,
+      fields: {
+        type: 'array',
+        maxItems: 50,
+        items: {
+          type: 'object',
+          properties: {
+            field: { type: 'string', description: 'Le champ liste de choix, par son nom.' },
+            options: {
+              type: 'array',
+              minItems: 1,
+              maxItems: 200,
+              items: {
+                type: 'object',
+                properties: {
+                  value: { type: 'string', description: 'La valeur d’un choix existant.' },
+                  color: COLOR,
+                  icon: ICON,
+                },
+                required: ['value'],
+              },
+            },
+          },
+          required: ['field', 'options'],
+        },
+        description: 'L’apparence des choix, champ par champ.',
+      },
+    },
+    required: ['base', 'table'],
+    additionalProperties: false,
+  },
+  annotations: {
+    title: 'Proposer une apparence',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+  objectKind: 'migration',
+  async run(tc, args) {
+    const c = new Checker(args).only(['base', 'table', 'color', 'icon', 'fields'])
+    const base = c.name('base') as string
+    const table = c.name('table') as string
+    const look = lookArgs(c, args, '')
+    const fields = (c.objects('fields', 50) ?? []).map((f, i) => {
+      c.entry(`fields[${i}].field`, typeof f.field === 'string' && f.field.length <= 128)
+      const raw = Array.isArray(f.options) ? (f.options as unknown[]) : []
+      c.entry(`fields[${i}].options`, raw.length > 0 && raw.length <= 200)
+      return {
+        field: String(f.field ?? ''),
+        options: raw.map((o, j) => {
+          const option = (o !== null && typeof o === 'object' ? o : {}) as Record<string, unknown>
+          c.entry(
+            `fields[${i}].options[${j}].value`,
+            typeof option.value === 'string' && option.value.length <= 200,
+          )
+          return {
+            value: String(option.value ?? ''),
+            ...(lookArgs(c, option, `fields[${i}].options[${j}].`) ?? {}),
+          }
+        }),
+      }
+    })
+    c.done()
+    return proposalOutcome(
+      await tc.kernel.agentProposeUpdateLook(tc.ctx, {
+        base,
+        table,
+        ...(look === undefined ? {} : { look }),
+        fields,
       }),
     )
   },
@@ -899,6 +1048,7 @@ export const TOOLS: readonly ToolDefinition[] = [
   restoreRecordTool,
   proposeCreateTable,
   proposeAddField,
+  proposeUpdateLook,
   getProposal,
 ]
 
@@ -941,13 +1091,30 @@ export const RESERVED_NAMES: ReadonlySet<string> = new Set([
   'list_proposals',
 ])
 
+/**
+ * Whether a tool takes `environment`: every tool that names a base, and `list_bases`,
+ * which then lists that environment of each base.
+ */
+export function takesEnvironment(tool: ToolDefinition): boolean {
+  const properties = tool.inputSchema.properties as Record<string, unknown> | undefined
+  return tool.name === 'list_bases' || properties?.base !== undefined
+}
+
 /** The declaration of `tools/list`: name, title, description, schema, annotations. */
 export function declaredTools(): ReadonlyArray<Record<string, unknown>> {
   return TOOLS.map((t) => ({
     name: t.name,
     title: t.title,
     description: t.description,
-    inputSchema: t.inputSchema,
+    inputSchema: takesEnvironment(t)
+      ? {
+          ...t.inputSchema,
+          properties: {
+            ...(t.inputSchema.properties as Record<string, unknown>),
+            environment: ENVIRONMENT,
+          },
+        }
+      : t.inputSchema,
     annotations: t.annotations,
   }))
 }

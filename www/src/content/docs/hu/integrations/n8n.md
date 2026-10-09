@@ -27,10 +27,16 @@ Hozzon létre az n8n-ben egy **basedb API** hitelesítő adatot:
 | **Instance URL** | a cím, ahol a basedb-t megnyitja: `https://basedb.exemple.fr` |
 | **Workspace** | a munkaterület azonosítója, ugyanaz, mint az API címeiben (`/api/v1/<munkaterület>/…`): `t4z56fq`, kivéve ha a példány `BASEDB_TENANT`-ot rögzít |
 | **Token** | egy **integrációs token**: az adatbázis **⋯** menüje → **API és ügynökök** → **API- és MCP-tokenek…** |
+| **Environment** | nem kötelező: az adatbázis környezete, amelyben dolgozni kell — `recette`, `production`… Üresen: az éles |
 
-Egy token **egy** adatbázist nyit meg. Olvassa a sorait, írja is, ha íráshoz jött létre, és
-sosincs több joga, mint annak a személynek, aki létrehozta. Mentéskor az n8n kipróbálja a
-kapcsolatot, és jelzi, ha a tokent elutasítja.
+Egy token **egy** adatbázist nyit meg — az összes környezetével, vagy csak egyet, ha a
+létrehozásakor korlátozták. Olvassa a sorait, írja is, ha íráshoz jött létre, és sosincs több
+joga, mint annak a személynek, aki létrehozta. Mentéskor az n8n kipróbálja a kapcsolatot, és
+jelzi, ha a tokent elutasítja.
+
+Az éles és a teszt környezetben való munkához hozzon létre két hitelesítő adatot ugyanazzal a
+tokennel: az egyikben az **Environment** üres, a másikban `recette`. Ha nincs környezet
+kiválasztva, a csomópont adatbázislistája minden környezetet megmutat, a nevével zárójelben.
 
 ## Olvasás és írás: a basedb csomópont
 

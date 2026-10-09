@@ -215,6 +215,8 @@ export interface VisibleBase {
   readonly icon: string | null
   readonly image: string | null
   readonly project: { readonly id: string; readonly label: string }
+  /** Which environment of its base this one is (chapter 14). */
+  readonly environment: BaseEnvironment
   /** Readable tables only: the count must not betray those that are masked. */
   readonly tableCount: number
 }
@@ -929,6 +931,96 @@ export function project(
   return projected
 }
 
+/** An environment's name folded for comparison: no case, no accent, no separator. */
+const foldEnvironment = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '')
+
+/**
+ * Whether `asked` names the environment of `base` — chapter 14 §1 bis. Its badge, folded
+ * (« Recette », `recette`, `RECETTE`, « Développement » as `developpement`), the suffix of
+ * its schema (`b_t4z56fq_crm_recette` → `recette`), and `production` or `prod` for the
+ * production, whatever its badge says.
+ */
+export function namesEnvironment(
+  base: BaseRow,
+  asked: string,
+  production: BaseRow | null,
+): boolean {
+  const key = foldEnvironment(asked)
+  if (key === '') return false
+  if (key === foldEnvironment(base.environment)) return true
+  if (base.is_production) return key === 'production' || key === 'prod'
+  return (
+    production !== null &&
+    base.schema_name.startsWith(`${production.schema_name}_`) &&
+    foldEnvironment(base.schema_name.slice(production.schema_name.length + 1)) === key
+  )
+}
+
+/**
+ * The base a reference designates once `ctx.environment` is applied: the base of the
+ * SAME lineage whose environment it names. Without an environment asked, the base the
+ * reference names itself — `crm` is the production, `crm_recette` the recette, as before.
+ *
+ * `matches` says which rows the reference names, so that each surface keeps its own
+ * spelling (a schema name on REST, a logical name on MCP). An unknown reference is left
+ * to the caller's own refusal; an environment the base does not have is the same
+ * `RESOURCE_NOT_FOUND`, naming what was asked. Nothing here decides a right: the base
+ * returned goes through the decider like any other.
+ */
+export function baseInEnvironment(
+  ctx: RequestContext,
+  bases: readonly BaseRow[],
+  matches: (base: BaseRow) => boolean,
+): BaseRow | undefined {
+  const named = bases.find(matches)
+  if (named === undefined || ctx.environment === null) return named
+  const family = bases.filter((b) => b.lineage_id === named.lineage_id)
+  const production = family.find((b) => b.is_production) ?? null
+  const found = family.find((b) => namesEnvironment(b, ctx.environment as string, production))
+  if (found === undefined) {
+    throw new BasedbError('RESOURCE_NOT_FOUND', {
+      details: { base: named.schema_name, environment: ctx.environment },
+    })
+  }
+  return found
+}
+
+/** A base reference — schema name or id — resolved to an id in the asked environment. */
+export function referenceIn(
+  ctx: RequestContext,
+  bases: readonly BaseRow[],
+  reference: string,
+): string {
+  if (ctx.environment === null) return reference
+  return (
+    baseInEnvironment(ctx, bases, (b) => b.schema_name === reference || b.id === reference)?.id ??
+    reference
+  )
+}
+
+/** Keeps, when an environment is asked, the bases of that environment only. */
+export function ofEnvironment<T extends { readonly id: string }>(
+  ctx: RequestContext,
+  bases: readonly BaseRow[],
+  items: readonly T[],
+): readonly T[] {
+  if (ctx.environment === null) return items
+  const keep = new Set(
+    bases
+      .filter((b) => {
+        const production = bases.find((p) => p.lineage_id === b.lineage_id && p.is_production)
+        return namesEnvironment(b, ctx.environment as string, production ?? null)
+      })
+      .map((b) => b.id),
+  )
+  return items.filter((item) => keep.has(item.id))
+}
+
 /** A base row's environment, as every serialization names it. */
 export function environmentOf(base: BaseRow): BaseEnvironment {
   return {
@@ -1001,11 +1093,12 @@ export async function listVisibleBases(
   ctx: RequestContext,
 ): Promise<readonly VisibleBase[]> {
   const { grants, raw } = await snapshot(pools, ctx)
-  return project(ctx, grants, raw).map((base) => ({
+  return ofEnvironment(ctx, raw.bases, project(ctx, grants, raw)).map((base) => ({
     id: base.id,
     name: base.name,
     label: base.label,
     description: base.description,
+    environment: base.environment,
     color: base.color,
     icon: base.icon,
     image: base.image,
@@ -1027,7 +1120,8 @@ export async function projectBase(
   reference: string,
 ): Promise<ProjectedBase> {
   const { grants, raw } = await snapshot(pools, ctx)
-  const found = project(ctx, grants, raw).find((b) => b.name === reference || b.id === reference)
+  const ref = referenceIn(ctx, raw.bases, reference)
+  const found = project(ctx, grants, raw).find((b) => b.name === ref || b.id === ref)
   // A base with no readable table is absent from the projection, so it lands here — the
   // very same refusal as a base that does not exist, which is the point.
   if (found === undefined) {
@@ -1064,7 +1158,8 @@ export async function resolveTable(
   const { grants, raw } = await snapshot(pools, ctx)
   const bases = project(ctx, grants, raw)
 
-  const base = bases.find((b) => b.name === baseRef || b.id === baseRef)
+  const ref = referenceIn(ctx, raw.bases, baseRef)
+  const base = bases.find((b) => b.name === ref || b.id === ref)
   const table = base?.tables.find((t) => t.name === tableRef || t.id === tableRef)
   if (base === undefined || table === undefined) {
     throw new BasedbError('RESOURCE_NOT_FOUND', { details: { base: baseRef, table: tableRef } })
@@ -1091,7 +1186,11 @@ export async function resolveBase(
   reference: string,
 ): Promise<{ readonly baseId: string; readonly baseName: string }> {
   const { raw } = await snapshot(pools, ctx)
-  const base = raw.bases.find((b) => b.schema_name === reference || b.id === reference)
+  const base = baseInEnvironment(
+    ctx,
+    raw.bases,
+    (b) => b.schema_name === reference || b.id === reference,
+  )
   if (base === undefined) {
     throw new BasedbError('RESOURCE_NOT_FOUND', { details: { base: reference } })
   }

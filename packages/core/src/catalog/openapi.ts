@@ -524,6 +524,13 @@ export function toOpenApi(base: ProjectedBase, tenantRef: string): Record<string
     }
   }
 
+  // Every route of the base takes the environment to work in (chapter 14 §1 bis): the
+  // header is declared once and referenced by each path.
+  const environment = { $ref: '#/components/parameters/Environment' }
+  for (const item of Object.values(paths) as Array<{ parameters?: unknown[] }>) {
+    item.parameters = [...(item.parameters ?? []), environment]
+  }
+
   return {
     openapi: '3.1.0',
     info: {
@@ -536,7 +543,28 @@ export function toOpenApi(base: ProjectedBase, tenantRef: string): Record<string
       ].join('\n\n'),
     },
     servers: [{ url: `/api/v1/${tenantRef}` }],
+    security: [{ bearer: [] }],
     paths,
-    components: { schemas },
+    components: {
+      schemas,
+      securitySchemes: {
+        bearer: {
+          type: 'http',
+          scheme: 'bearer',
+          description:
+            'Un jeton d’intégration (bdb_…), créé depuis le menu de la base : API et agents › Jetons API et MCP.',
+        },
+      },
+      parameters: {
+        Environment: {
+          name: 'X-Basedb-Environment',
+          in: 'header',
+          required: false,
+          description:
+            'L’environnement de la base : production, recette… Absent : celui que nomme la base dans le chemin. Un jeton créé pour un seul environnement n’ouvre que le sien.',
+          schema: { type: 'string', maxLength: 60 },
+        },
+      },
+    },
   }
 }

@@ -232,3 +232,5 @@ export {
   type TemplateOperations,
   type TemplateStep,
 } from './template-apply.js'
+
+export { LOOK_COLORS, LOOK_ICONS, isLookIcon } from './look.js'

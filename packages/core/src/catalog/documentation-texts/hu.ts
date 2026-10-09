@@ -63,6 +63,8 @@ export const hu: Catalog = {
     'Egy tábla és az első mezőinek javaslása — egy személy dönt.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
     'Egy mező, egy választólista vagy egy kapcsolat javaslása — egy személy dönt.',
+  'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.':
+    'Szín és ikon javaslása egy táblához és a listái lehetőségeihez — egy személy dönt.',
   'Relire une proposition du jeton et savoir ce qu’il en est advenu.':
     'A token egy javaslatának újraolvasása, és annak megtudása, mi lett a sorsa.',
   'dépôt basedb': 'basedb-tároló',
@@ -99,22 +101,36 @@ export const hu: Catalog = {
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Ez az adatbázis nincs megnyitva ügynökök előtt.** Amíg ez így marad, egyetlen eszköz sem látja, bármelyik tokent mutatják is be.',
   'Créer un jeton': 'Token létrehozása',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'A felületen az adatbázis „⋯” menüjében → **API és ügynökök** → **API- és MCP-tokenek…**, bejelölt **MCP** hozzáféréssel. A token erre az adatbázisra korlátozódik, alapértelmezés szerint **csak olvasható**: az írás, és a törlés, kifejezetten választhatók. Csak egyszer jelenik meg, és ugyanarról a képernyőről vonható vissza. A **REST API** hozzáférés is bejelölve, ugyanaz a token szolgál egy programhoz (lásd: „Hitelesítés”).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'A felületen az adatbázis „⋯” menüjében → **API és ügynökök** → **API- és MCP-tokenek…**, bejelölt **MCP** hozzáféréssel. A token **az egész adatbázist, az összes környezetével együtt** megnyitja — éles, teszt… —, vagy csak egyet, ha korlátozza. Alapértelmezés szerint **csak olvasható**: az írás, és a törlés, kifejezetten választhatók. Csak egyszer jelenik meg, és ugyanarról a képernyőről vonható vissza. A **REST API** hozzáférés is bejelölve, ugyanaz a token szolgál egy programhoz (lásd: „Hitelesítés”).',
   'Garder le jeton hors de la configuration': 'A token távoltartása a konfigurációtól',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'A token a `BASEDB_TOKEN` környezeti változóba kerül, soha nem a kliens konfigurációs fájljába: ez utóbbi verziókezelt, szinkronizált, és a munkamenet minden programja számára olvasható.',
   'Déclarer le serveur dans le client': 'A szerver megadása a kliensben',
-  'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).':
-    'A kliens elindítja a **relét**, a `relay.js`-t, amely továbbítja az üzeneteit a szerverig. A tokent abból a változóból olvassa ki, amelyet a `--token-env` nevez meg — `BASEDB_MCP_TOKEN`, ha nincs más megadva —, a szerver címét pedig az `--url`-ből (vagy a `BASEDB_MCP_URL`-ből).',
   'Autre client MCP': 'Másik MCP-kliens',
   'votre-instance': 'on-peldanya',
-  'Sans relais': 'Közvetítő nélkül',
-  'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
-    'Egy kliens, amely HTTP-n beszél MCP-t, közvetlenül a szerver címét célozza meg, a `…/mcp`-t, a {header} fejléccel. Egy token csak a létrehozásakor bejelölt hozzáférésekre fogadható el: egy önmagában „MCP” tokent a REST API elutasít, és fordítva.',
+  recette: 'teszt',
+  'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.':
+    'Egy kliens, amely HTTP-n beszél MCP-t — például a Claude Code — közvetlenül a szerver címét célozza meg, a `…/mcp`-t, a {header} fejléccel. Egy projekt `.mcp.json` fájljában a `${BASEDB_TOKEN}` a környezetből olvasódik be: a token nem kerül bele a fájlba. Ugyanazzal a tokennel környezetenként egy-egy szerver adható meg.',
+  'Client sans HTTP : le relais': 'HTTP nélküli kliens: a közvetítő',
+  'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).':
+    'Az a kliens, amely csak helyi programokat indít (stdio), a `relay.js` **közvetítőn** keresztül csatlakozik, amely továbbítja az üzeneteit a szerverig. A tokent abból a változóból olvassa ki, amelyet a `--token-env` nevez meg — `BASEDB_MCP_TOKEN`, ha nincs más megadva —, a szerver címét az `--url`-ből (vagy a `BASEDB_MCP_URL`-ből), a környezetet pedig az `--environment`-ből (vagy a `BASEDB_MCP_ENVIRONMENT`-ből).',
+  'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
+    'Egy token csak a létrehozásakor bejelölt hozzáférésekre fogadható el: egy önmagában „MCP” tokent a REST API elutasít, és fordítva.',
+  'Choisir l’environnement': 'Környezet kiválasztása',
+  'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :':
+    'Egy adatbázisnak több környezete is lehet — éles, teszt, fejlesztői —, mindegyik saját táblákkal és sorokkal. Az egész adatbázisra szóló token mindet megnyitja; a környezet híváskor választható ki, a legáltalánosabbtól a legpontosabbig:',
+  '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.':
+    '**Az adatbázis neve**, semmi más: a {base} az éles környezet, és minden környezet a saját nevét is megtartja.',
+  '**L’adresse du serveur** : {address} — un serveur déclaré par environnement.':
+    '**A szerver címe**: {address} — környezetenként egy-egy megadott szerver.',
+  '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.':
+    '**Az `environment` argumentum** minden olyan eszközben, amely megnevez egy adatbázist, egyetlen hívásra: {example}.',
+  'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.':
+    'Egy környezet a jelvényével nevezhető meg, a kis- és nagybetűk, valamint az ékezetek figyelembevétele nélkül, vagy a `production` névvel. Egy olyan környezetre, amely az adatbázisban nincs meg, a válasz `RESOURCE_NOT_FOUND`.',
   Vérifier: 'Ellenőrzés',
-  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.':
-    'Kérje meg az ügynököt, hogy hívja meg a `whoami`-t: ez visszaadja a tokent létrehozó személyt, az érvényességi körébe tartozó adatbázist és a tényleges jogosultságait.',
+  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.':
+    'Kérje meg az ügynököt, hogy hívja meg a `whoami`-t: ez visszaadja a tokent létrehozó személyt, az érvényességi körébe tartozó adatbázist, a megnyitott környezeteket (`scope.available`) és a tényleges jogosultságait.',
   Outils: 'Eszközök',
   '{count} outils, toujours les mêmes : leur nom et leur description ne dépendent jamais de vos données. Le schéma se découvre en les appelant.':
     '{count} eszköz, mindig ugyanazok: a nevük és a leírásuk soha nem függ az Ön adataitól. A séma a meghívásukkal fedezhető fel.',
@@ -134,6 +150,11 @@ export const hu: Catalog = {
     'Egy kapcsolat írásához: `lookup_records` a céltáblán, majd `create_record` vagy `update_record` a megtalált `_id`-vel.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'A struktúra fejlesztéséhez: `propose_create_table` vagy `propose_add_field`, majd `get_proposal` a döntés nyomon követésére.',
+  'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.':
+    'A megjelenéshez: `color` és `icon` a `propose_create_table`-ben és a `propose_add_field` lehetőségeiben, vagy `propose_update_look` egy már létező táblához.',
+  'Couleurs et pictogrammes': 'Színek és ikonok',
+  'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.':
+    'Egy táblának és egy választólista minden lehetőségének van színe és ikonja, akárcsak az alkalmazásban. A `color` egy `#rrggbb` szín; az `icon` az alkalmazás által megrajzolt ikonok egyikének neve — az eszköz sémája felsorolja őket. Egy elhagyott kulcs megtartja a meglévőt, a `null` törli. A `describe_base` és a `describe_table` visszaadja az aktuális megjelenést.',
   'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
     'Törléshez: előbb `get_record`, hogy biztosan a megfelelő sorról legyen szó, majd `delete_record` — amely visszaadja azt a válaszában; a `restore_record` visszahozza.',
   'Propositions de structure': 'Struktúra-javaslatok',
@@ -245,10 +266,13 @@ export const hu: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Minden adatútvonal egy **tokent** igényel, az `Authorization` fejlécben. A munkamenet-sütit itt soha nem fogadják el: egy böngésző minden kéréssel elküldi, beleértve azokat is, amelyeket egy idegen oldal vált ki.',
   'Jeton d’intégration': 'Integrációs token',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Egy program — szkript, szinkronizálás, másik alkalmazás — egy **integrációs tokent** mutat be, amely `bdb_` előtaggal kezdődik. Csak erre az adatbázisra érvényes; olvas, létrehoz és módosít, ha írásra jött létre, és **csak akkor töröl, ha törlésre jött létre**; soha nincs több jogosultsága, mint annak a személynek, aki létrehozta, minden híváskor összevetve. Az adminisztráció, az SQL-konzol és az MI zárva marad előtte.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Egy program — szkript, szinkronizálás, másik alkalmazás — egy **integrációs tokent** mutat be, amely `bdb_` előtaggal kezdődik. Csak erre az adatbázisra érvényes — az összes környezetére, vagy csak egyre; olvas, létrehoz és módosít, ha írásra jött létre, és **csak akkor töröl, ha törlésre jött létre**; soha nincs több jogosultsága, mint annak a személynek, aki létrehozta, minden híváskor összevetve. Az adminisztráció, az SQL-konzol és az MI zárva marad előtte.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Egy létrehozásához: az adatbázis „⋯” menüje → **API és ügynökök** → **API- és MCP-tokenek…**, bejelölt **REST API** hozzáféréssel. Csak egyszer jelenik meg.',
+  Environnement: 'Környezet',
+  'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.':
+    'Az egész adatbázisra létrehozott token az összes környezetét megnyitja. Az útvonal megnevezi az adatbázist — a {base} az éles környezet —, a {header} fejléc pedig kiválasztja a környezetet; az `?environment=` ugyanezt teszi egy olyan kliensnél, amely nem küld fejlécet. Egyik megadása nélkül azt a környezetet kapja, amelyet az adatbázis neve megnevez.',
   Appel: 'Hívás',
   'Une authentification absente répond `401`, jamais `404` : vous devez pouvoir vous reconnecter.':
     'Egy hiányzó hitelesítés `401`-gyel válaszol, soha nem `404`-gyel: Önnek mindig újra be kell tudnia jelentkeznie.',

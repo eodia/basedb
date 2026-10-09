@@ -63,9 +63,12 @@ export const fi: Catalog = {
     'Taulukon ja sen ensimmäisten kenttien ehdottaminen – päätöksen tekee henkilö.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
     'Kentän, valintaluettelon tai viittauksen ehdottaminen – päätöksen tekee henkilö.',
+  'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.':
+    'Taulukon sekä sen valintaluetteloiden valintojen värin ja kuvakkeen ehdottaminen – päätöksen tekee henkilö.',
   'Relire une proposition du jeton et savoir ce qu’il en est advenu.':
     'Tunnuksen tekemän ehdotuksen tarkasteleminen uudelleen ja sen kohtalon selvittäminen.',
   'dépôt basedb': 'basedb:n tietovarasto',
+  recette: 'testi',
   'Depuis un agent (MCP)': 'Agentin kautta (MCP)',
   'Cette base n’est pas ouverte aux agents : aucun outil MCP ne voit cette table, quel que soit le jeton.':
     'Tämä tietokanta ei ole avoinna agenteille: mikään MCP-työkalu ei näe tätä taulukkoa, tunnuksesta riippumatta.',
@@ -99,22 +102,35 @@ export const fi: Catalog = {
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Tämä tietokanta ei ole avoinna agenteille.** Niin kauan kuin se ei ole, mikään työkalu ei näe sitä, esitetystä tunnuksesta riippumatta.',
   'Créer un jeton': 'Tunnuksen luominen',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'Käyttöliittymässä tietokannan ”⋯”-valikko → **API ja agentit** → **API- ja MCP-tunnukset…**, **MCP**-pääsy valittuna. Tunnus on rajattu tähän tietokantaan, ja oletuksena se on **vain luku** -oikeuksin: kirjoitusoikeus ja poisto-oikeus valitaan erikseen. Se näytetään vain kerran, ja sen voi perua samalta näytöltä. Kun myös **REST API** on valittuna, sama tunnus toimii myös ohjelmalle (katso ”Todennus”).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'Käyttöliittymässä tietokannan ”⋯”-valikko → **API ja agentit** → **API- ja MCP-tunnukset…**, **MCP**-pääsy valittuna. Tunnus avaa **koko tietokannan, kaikki sen ympäristöt** – tuotanto, testi… – tai vain yhden, jos rajaat sen. Oletuksena se on **vain luku** -oikeuksin: kirjoitusoikeus ja poisto-oikeus valitaan erikseen. Se näytetään vain kerran, ja sen voi perua samalta näytöltä. Kun myös **REST API** on valittuna, sama tunnus toimii myös ohjelmalle (katso ”Todennus”).',
   'Garder le jeton hors de la configuration': 'Tunnuksen pitäminen erillään asetuksista',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Tunnus tallennetaan ympäristömuuttujaan `BASEDB_TOKEN`, ei koskaan asiakasohjelman asetustiedostoon: se on versionhallinnassa, synkronoitu ja kaikkien istunnon ohjelmien luettavissa.',
   'Déclarer le serveur dans le client': 'Palvelimen määrittäminen asiakasohjelmaan',
-  'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).':
-    'Asiakasohjelma käynnistää **välittäjän** `relay.js`, joka kuljettaa sen viestit palvelimelle asti. Se lukee tunnuksen muuttujasta, jonka nimeää `--token-env` – oletuksena `BASEDB_MCP_TOKEN` – ja palvelimen osoitteen kohdasta `--url` (tai `BASEDB_MCP_URL`).',
+  'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.':
+    'HTTP:n yli MCP:tä puhuva asiakasohjelma – esimerkiksi Claude Code – ottaa yhteyden suoraan palvelimen osoitteeseen, `…/mcp`, otsakkeella {header}. Projektin `.mcp.json`-tiedostossa `${BASEDB_TOKEN}` luetaan ympäristöstä: tunnusta ei kirjoiteta tiedostoon. Samalla tunnuksella voi määrittää yhden palvelimen kutakin ympäristöä kohden.',
+  'Client sans HTTP : le relais': 'Asiakasohjelma ilman HTTP:tä: välittäjä',
+  'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).':
+    'Asiakasohjelma, joka käynnistää vain paikallisia ohjelmia (stdio), käyttää **välittäjää** `relay.js`, joka kuljettaa sen viestit palvelimelle asti. Se lukee tunnuksen muuttujasta, jonka nimeää `--token-env` – oletuksena `BASEDB_MCP_TOKEN` –, palvelimen osoitteen kohdasta `--url` (tai `BASEDB_MCP_URL`) ja ympäristön kohdasta `--environment` (tai `BASEDB_MCP_ENVIRONMENT`).',
   'Autre client MCP': 'Muu MCP-asiakas',
   'votre-instance': 'instanssisi',
-  'Sans relais': 'Ilman välittäjää',
-  'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
-    'HTTP:n yli MCP:tä puhuva asiakas ottaa yhteyden suoraan palvelimen osoitteeseen, `…/mcp`, otsakkeella {header}. Tunnus hyväksytään vain niillä pääsyillä, jotka valittiin sitä luotaessa: pelkän ”MCP”-tunnuksen REST API hylkää, ja päinvastoin.',
+  'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
+    'Tunnus hyväksytään vain niillä pääsyillä, jotka valittiin sitä luotaessa: pelkän ”MCP”-tunnuksen REST API hylkää, ja päinvastoin.',
+  'Choisir l’environnement': 'Ympäristön valitseminen',
+  'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :':
+    'Tietokannalla voi olla useita ympäristöjä – tuotanto, testi, kehitys – ja jokaisella on omat taulukkonsa ja rivinsä. Koko tietokannan tunnus avaa ne kaikki; ympäristö valitaan kutsun yhteydessä, laajimmasta tarkimpaan:',
+  '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.':
+    '**Tietokannan nimi** sellaisenaan: {base} on tuotanto, ja jokaisella ympäristöllä on myös oma nimensä.',
+  '**L’adresse du serveur** : {address} — un serveur déclaré par environnement.':
+    '**Palvelimen osoite**: {address} – yksi määritetty palvelin kutakin ympäristöä kohden.',
+  '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.':
+    '**Argumentti `environment`** jokaisessa työkalussa, joka nimeää tietokannan, yhtä kutsua varten: {example}.',
+  'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.':
+    'Ympäristö nimetään sen merkin nimikkeellä, kirjainkoosta ja diakriittisistä merkeistä riippumatta, tai nimellä `production`. Ympäristöön, jota tietokannalla ei ole, vastataan `RESOURCE_NOT_FOUND`.',
   Vérifier: 'Tarkistus',
-  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.':
-    'Pyydä agenttia kutsumaan `whoami`: se palauttaa tunnuksen luoneen henkilön, sen kattaman tietokannan ja sen tosiasialliset oikeudet.',
+  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.':
+    'Pyydä agenttia kutsumaan `whoami`: se palauttaa tunnuksen luoneen henkilön, sen kattaman tietokannan, ympäristöt, jotka se avaa (`scope.available`), ja sen tosiasialliset oikeudet.',
   Outils: 'Työkalut',
   '{count} outils, toujours les mêmes : leur nom et leur description ne dépendent jamais de vos données. Le schéma se découvre en les appelant.':
     '{count} työkalua, aina samat: niiden nimi ja kuvaus eivät koskaan riipu tiedoistasi. Skeema selviää niitä kutsumalla.',
@@ -134,6 +150,8 @@ export const fi: Catalog = {
     'Viittauksen kirjoittamiseksi: `lookup_records` kohdetaulukkoon, sitten `create_record` tai `update_record` löydetyllä `_id`-arvolla.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'Rakenteen muuttamiseksi: `propose_create_table` tai `propose_add_field`, sitten `get_proposal` päätöksen seuraamiseksi.',
+  'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.':
+    'Ulkoasua varten: `color` ja `icon` työkalussa `propose_create_table` ja työkalun `propose_add_field` valinnoissa, tai `propose_update_look` olemassa olevalle taulukolle.',
   'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
     'Poistamiseksi: `get_record` ensin, rivin varmistamiseksi, sitten `delete_record` — joka palauttaa sen vastauksessaan; `restore_record` palauttaa sen.',
   'Propositions de structure': 'Rakenne-ehdotukset',
@@ -143,6 +161,9 @@ export const fi: Catalog = {
     'Enintään 5 odottavaa ehdotusta tunnusta kohden; uusi ehdotus samasta kohteesta korvaa edellisen (`superseded`).',
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Ei poistoja, ei uudelleennimeämisiä, ei kaskadoituja viittauksia (`MCP_CASCADE_FORBIDDEN`).',
+  'Couleurs et pictogrammes': 'Värit ja kuvakkeet',
+  'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.':
+    'Taulukolla ja luettelon jokaisella valinnalla on väri ja kuvake, kuten sovelluksessa. `color` on väri muodossa `#rrggbb`; `icon` on sen kuvakkeen nimi, jonka sovellus piirtää – työkalun skeema luettelee ne. Pois jätetty avain säilyttää nykyisen arvon, `null` tyhjentää sen. `describe_base` ja `describe_table` palauttavat nykyisen ulkoasun.',
   'Ce qui n’existe pas': 'Mitä ei ole olemassa',
   'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
     'Mikään työkalu ei poista useita rivejä kerralla, taulukkoa tai kenttää, suorita SQL:ää eikä hallinnoi oikeuksia tai tunnuksia. Agentti, joka kutsuu tällaista nimeä – `delete_records`, `run_sql`… – saa vastauksen `MCP_OPERATION_EXCLUDED`, kohteena olevasta tietokannasta riippumatta.',
@@ -245,11 +266,14 @@ export const fi: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Kaikki data-reitit vaativat **tunnuksen** `Authorization`-otsakkeessa. Istuntoevästettä ei koskaan hyväksytä täällä: selain lähettää sen jokaisella pyynnöllä, myös niillä, jotka vieras sivu aiheuttaa.',
   'Jeton d’intégration': 'Integraatiotunnus',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Ohjelma – skripti, synkronointi, muu sovellus – esittää **integraatiotunnuksen**, joka alkaa merkeillä `bdb_`. Se on voimassa vain tälle tietokannalle; se lukee, luo ja muokkaa, jos se on luotu kirjoitusoikeuksin, ja **poistaa vain, jos se on luotu tätä varten**; eikä sillä ole koskaan enempää oikeuksia kuin sen luoneella henkilöllä, tarkistettuna joka kutsulla. Ylläpito, SQL-konsoli ja tekoäly pysyvät siltä suljettuina.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Ohjelma – skripti, synkronointi, muu sovellus – esittää **integraatiotunnuksen**, joka alkaa merkeillä `bdb_`. Se on voimassa vain tälle tietokannalle – kaikille sen ympäristöille tai vain yhdelle; se lukee, luo ja muokkaa, jos se on luotu kirjoitusoikeuksin, ja **poistaa vain, jos se on luotu tätä varten**; eikä sillä ole koskaan enempää oikeuksia kuin sen luoneella henkilöllä, tarkistettuna joka kutsulla. Ylläpito, SQL-konsoli ja tekoäly pysyvät siltä suljettuina.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Sellaisen luomiseksi: tietokannan ”⋯”-valikko → **API ja agentit** → **API- ja MCP-tunnukset…**, **REST API** -pääsy valittuna. Se näytetään vain kerran.',
   Appel: 'Kutsu',
+  Environnement: 'Ympäristö',
+  'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.':
+    'Koko tietokannalle luotu tunnus avaa kaikki sen ympäristöt. Polku nimeää tietokannan – {base} on tuotanto – ja otsake {header} valitsee ympäristön; `?environment=` tekee saman asiakasohjelmalle, joka ei aseta otsaketta. Ilman kumpaakaan ympäristö on se, jonka tietokannan nimi osoittaa.',
   'Une authentification absente répond `401`, jamais `404` : vous devez pouvoir vous reconnecter.':
     'Puuttuva todennus vastaa aina `401`, ei koskaan `404`: sinun täytyy voida kirjautua uudelleen.',
   Conventions: 'Käytännöt',

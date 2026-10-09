@@ -64,6 +64,9 @@ export const tr: Catalog = {
     'Bir alan, bir seçim listesi ya da bir ilişki önerir — kararı bir kişi verir.',
   'Relire une proposition du jeton et savoir ce qu’il en est advenu.':
     'Token’ın bir önerisini yeniden okur ve ne olduğunu öğrenir.',
+  'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.':
+    'Bir tablonun ve seçim listelerindeki seçeneklerin rengini ve simgesini önerir — kararı bir kişi verir.',
+  recette: 'test',
   'dépôt basedb': 'basedb deposu',
   'Depuis un agent (MCP)': 'Ajan üzerinden (MCP)',
   'Cette base n’est pas ouverte aux agents : aucun outil MCP ne voit cette table, quel que soit le jeton.':
@@ -97,22 +100,35 @@ export const tr: Catalog = {
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Bu veritabanı ajanlara açık değil.** Açılana kadar, sunulan token ne olursa olsun hiçbir araç onu göremez.',
   'Créer un jeton': 'Token oluşturma',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'Arayüzde, veritabanının “⋯” menüsü → **API ve ajanlar** → **API ve MCP token’ları…**, **MCP** erişimi işaretli. Token bu veritabanıyla sınırlıdır ve varsayılan olarak **salt okunur**dur: yazma izni ve silme izni açıkça seçilir. Yalnızca bir kez gösterilir ve aynı ekrandan iptal edilir. **REST API** için de işaretlenirse, aynı token bir program tarafından da kullanılır (bkz. “Kimlik doğrulama”).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'Arayüzde, veritabanının “⋯” menüsü → **API ve ajanlar** → **API ve MCP token’ları…**, **MCP** erişimi işaretli. Token **tüm veritabanını, tüm ortamlarıyla birlikte** — canlı, test… — açar; sınırlarsanız yalnızca birini açar. Varsayılan olarak **salt okunur**dur: yazma izni ve silme izni açıkça seçilir. Yalnızca bir kez gösterilir ve aynı ekrandan iptal edilir. **REST API** için de işaretlenirse, aynı token bir program tarafından da kullanılır (bkz. “Kimlik doğrulama”).',
   'Garder le jeton hors de la configuration': 'Token’ı yapılandırmanın dışında tutma',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Token, `BASEDB_TOKEN` ortam değişkenine yerleştirilir; istemcinin yapılandırma dosyasına asla konmaz: bu dosya sürüm kontrolüne alınır, senkronize edilir ve oturumdaki tüm programlar tarafından okunabilir.',
   'Déclarer le serveur dans le client': 'Sunucuyu istemcide tanımlama',
-  'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).':
-    'İstemci, mesajlarını sunucuya taşıyan **aktarıcıyı** (`relay.js`) başlatır. Token’ı `--token-env` ile adlandırılan değişkenden okur — hiçbir şey belirtilmezse `BASEDB_MCP_TOKEN` — ve sunucunun adresini `--url` içinden (ya da `BASEDB_MCP_URL`) alır.',
+  'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.':
+    'MCP’yi HTTP üzerinden konuşan bir istemci — özellikle Claude Code — doğrudan sunucunun adresini, `…/mcp`, {header} başlığıyla hedefler. Bir projenin `.mcp.json` dosyasında `${BASEDB_TOKEN}` ortam değişkeninden okunur: token dosyaya yazılmaz. Aynı token, ortam başına bir sunucu tanımlayabilir.',
+  'Client sans HTTP : le relais': 'HTTP kullanmayan istemci: aktarıcı',
+  'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).':
+    'Yalnızca yerel programları (stdio) başlatan bir istemci, mesajlarını sunucuya taşıyan **aktarıcı** `relay.js` üzerinden geçer. Token’ı `--token-env` ile adlandırılan değişkenden okur — hiçbir şey belirtilmezse `BASEDB_MCP_TOKEN` —, sunucunun adresini `--url` içinden (ya da `BASEDB_MCP_URL`), ortamı ise `--environment` içinden (ya da `BASEDB_MCP_ENVIRONMENT`) alır.',
   'Autre client MCP': 'Diğer MCP istemcisi',
   'votre-instance': 'kurulumunuz',
-  'Sans relais': 'Aktarıcı olmadan',
-  'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
-    'MCP’yi HTTP üzerinden konuşan bir istemci, doğrudan sunucunun adresini, `…/mcp`, {header} başlığıyla hedefler. Bir token yalnızca oluşturulurken işaretlenen erişimlerde kabul edilir: yalnızca “MCP” işaretli bir token REST API tarafından reddedilir, ve bunun tersi de geçerlidir.',
+  'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
+    'Bir token yalnızca oluşturulurken işaretlenen erişimlerde kabul edilir: yalnızca “MCP” işaretli bir token REST API tarafından reddedilir; bunun tersi de geçerlidir.',
+  'Choisir l’environnement': 'Ortamı seçme',
+  'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :':
+    'Bir veritabanının birden çok ortamı olabilir — canlı, test, geliştirme —, her birinin kendi tabloları ve satırları vardır. Tüm veritabanı için oluşturulmuş bir token hepsini açar; ortam çağrı sırasında seçilir, en genelden en kesine doğru:',
+  '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.':
+    '**Veritabanının adı**, başka hiçbir şey olmadan: {base} canlı ortamdır ve her ortamın ayrıca kendi adı da vardır.',
+  '**L’adresse du serveur** : {address} — un serveur déclaré par environnement.':
+    '**Sunucunun adresi**: {address} — ortam başına bir sunucu tanımlanır.',
+  '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.':
+    '**`environment` argümanı**, bir veritabanını adlandıran her araçta, tek bir çağrı için: {example}.',
+  'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.':
+    'Bir ortam, rozetinin adıyla — büyük/küçük harf ve aksan ayrımı yapılmadan — ya da `production` ile adlandırılır. Veritabanında bulunmayan bir ortam `RESOURCE_NOT_FOUND` yanıtı verir.',
   Vérifier: 'Doğrulama',
-  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.':
-    'Ajandan `whoami` çağrısını yapmasını isteyin: bu çağrı, token’ı oluşturan kişiyi, kapsamındaki veritabanını ve geçerli haklarını verir.',
+  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.':
+    'Ajandan `whoami` çağrısını yapmasını isteyin: bu çağrı, token’ı oluşturan kişiyi, kapsamındaki veritabanını, token’ın açtığı ortamları (`scope.available`) ve geçerli haklarını verir.',
   Outils: 'Araçlar',
   '{count} outils, toujours les mêmes : leur nom et leur description ne dépendent jamais de vos données. Le schéma se découvre en les appelant.':
     '{count} araç, her zaman aynı araçlar: adları ve açıklamaları asla verilerinize bağlı değildir. Şema, bu araçlar çağrılarak keşfedilir.',
@@ -130,6 +146,8 @@ export const tr: Catalog = {
     '`filter`, `sort` ve `limit` ile `list_records`; `has_more` değeri `true` olduğu sürece `cursor` ile devam edin.',
   'Pour écrire une relation : `lookup_records` sur la table cible, puis `create_record` ou `update_record` avec le `_id` trouvé.':
     'Bir ilişki yazmak için: hedef tabloda `lookup_records`, ardından bulunan `_id` ile `create_record` ya da `update_record`.',
+  'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.':
+    'Görünüş için: `propose_create_table` içinde ve `propose_add_field` seçeneklerinde `color` ile `icon`; var olan bir tablo için ise `propose_update_look`.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'Yapıyı geliştirmek için: `propose_create_table` ya da `propose_add_field`, ardından kararı izlemek için `get_proposal`.',
   'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
@@ -141,6 +159,9 @@ export const tr: Catalog = {
     'Token başına en fazla 5 bekleyen öneri; aynı nesne üzerindeki yeni bir öneri bir öncekinin yerini alır (`superseded`).',
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Silme yok, yeniden adlandırma yok, kademeli (cascade) ilişki yok (`MCP_CASCADE_FORBIDDEN`).',
+  'Couleurs et pictogrammes': 'Renkler ve simgeler',
+  'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.':
+    'Bir tablonun ve bir listenin her seçeneğinin, uygulamadaki gibi bir rengi ve bir simgesi vardır. `color`, `#rrggbb` biçiminde bir renktir; `icon`, uygulamanın çizdiği simgelerden birinin adıdır — aracın şeması bunları sıralar. Atlanan bir anahtar mevcut değeri korur, `null` onu siler. `describe_base` ve `describe_table` güncel görünüşü döndürür.',
   'Ce qui n’existe pas': 'Var olmayanlar',
   'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
     'Hiçbir araç birden fazla satırı aynı anda, bir tabloyu ya da bir alanı silmez, SQL çalıştırmaz ya da hakları veya token’ları yönetmez. Böyle bir adı çağıran bir ajan — `delete_records`, `run_sql`… — hedeflenen veritabanı ne olursa olsun `MCP_OPERATION_EXCLUDED` alır.',
@@ -243,11 +264,14 @@ export const tr: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Tüm veri yolları, `Authorization` başlığında bir **token** ister. Oturum çerezi burada asla kabul edilmez: bir tarayıcı bunu, yabancı bir sayfanın tetiklediği istekler dahil, her istekte gönderir.',
   'Jeton d’intégration': 'Entegrasyon token’ı',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Bir program — betik, senkronizasyon, başka bir uygulama — `bdb_` ile başlayan bir **entegrasyon token’ı** sunar. Bu token yalnızca bu veritabanı için geçerlidir; okur, yazma izniyle oluşturulduysa oluşturur ve değiştirir; yalnızca bunun için oluşturulduysa siler; ve onu oluşturan kişiden, her çağrıda kesiştirilerek, asla daha fazla hakka sahip olmaz. Yönetim paneli, SQL konsolu ve yapay zeka ona kapalı kalır.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Bir program — betik, senkronizasyon, başka bir uygulama — `bdb_` ile başlayan bir **entegrasyon token’ı** sunar. Bu token yalnızca bu veritabanı için geçerlidir — tüm ortamları için ya da yalnızca biri için; okur, yazma izniyle oluşturulduysa oluşturur ve değiştirir, **yalnızca bunun için oluşturulduysa siler**; onu oluşturan kişiden asla daha fazla hakka sahip olmaz, haklar her çağrıda kesiştirilir. Yönetim paneli, SQL konsolu ve yapay zeka ona kapalı kalır.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Bir tane oluşturmak için: veritabanının “⋯” menüsü → **API ve ajanlar** → **API ve MCP token’ları…**, **REST API** erişimi işaretli. Yalnızca bir kez gösterilir.',
   Appel: 'Çağrı',
+  Environnement: 'Ortam',
+  'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.':
+    'Tüm veritabanı için oluşturulmuş bir token, onun tüm ortamlarını açar. Yol veritabanını adlandırır — {base} canlı ortamdır — ve {header} başlığı ortamı seçer; başlık gönderemeyen bir istemci için `?environment=` aynı işi görür. İkisi de yoksa, veritabanının adının gösterdiği ortam kullanılır.',
   'Une authentification absente répond `401`, jamais `404` : vous devez pouvoir vous reconnecter.':
     'Eksik bir kimlik doğrulama `401` yanıtı verir, asla `404` değil: yeniden bağlanabilmeniz gerekir.',
   Conventions: 'Kurallar',

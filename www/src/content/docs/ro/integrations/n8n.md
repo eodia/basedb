@@ -27,10 +27,16 @@ Creați în n8n o dată de conectare **basedb API**:
 | **Instance URL** | adresa la care deschideți basedb: `https://basedb.exemple.fr` |
 | **Workspace** | referința spațiului de lucru, cea din adresele API-ului (`/api/v1/<spațiu>/…`): `t4z56fq`, cu excepția cazului în care instanța fixează `BASEDB_TENANT` |
 | **Token** | un **token de integrare**: meniul **⋯** al bazei → **API și agenți** → **Tokenuri API și MCP…** |
+| **Environment** | opțional: mediul bazei în care se lucrează — `recette`, `production`… Gol: producția |
 
-Un token deschide **o singură** bază. Citește rândurile ei, le scrie dacă a fost creat cu drept
-de scriere, și nu are niciodată mai multe permisiuni decât persoana care l-a creat. La salvare,
-n8n încearcă conexiunea și spune dacă tokenul este refuzat.
+Un token deschide **o singură** bază — toate mediile sale, sau doar unul dacă a fost limitat la
+crearea sa. Citește rândurile ei, le scrie dacă a fost creat cu drept de scriere, și nu are
+niciodată mai multe permisiuni decât persoana care l-a creat. La salvare, n8n încearcă conexiunea
+și spune dacă tokenul este refuzat.
+
+Pentru a lucra pe producție și pe testare, creați două date de conectare cu același token, una cu
+**Environment** gol, cealaltă cu `recette`. Fără un mediu ales, lista bazelor nodului arată fiecare
+mediu, cu numele său între paranteze.
 
 ## Citire și scriere: nodul basedb
 

@@ -35,6 +35,24 @@ tabel eller et felt fanges af en trigger på kataloget og kan læses under fanen
 historikken. Afstamnings-id'erne forbinder et felt i test med dets modstykke i produktion, også
 hvis det er omdøbt.
 
+## Via API, SDK og MCP
+
+Et **token oprettet til hele databasen** åbner alle dens miljøer, både dem, der findes i dag, og
+dem, der kommer til: ét enkelt token til produktion og test. Programmet eller agenten vælger
+miljøet ved hvert kald:
+
+| Hvor | Hvordan |
+|---|---|
+| [REST-API](/basedb/da/integrations/api-rest/#vælg-miljøet) | headeren `X-Basedb-Environment: recette` eller `?environment=recette` |
+| [SDK](/basedb/da/integrations/sdk/#miljøerne) | `db.environment('recette')` |
+| [MCP](/basedb/da/integrations/mcp/#vælg-miljøet) | adressen `…/mcp?environment=recette` eller argumentet `environment` i et værktøj |
+| [n8n](/basedb/da/integrations/n8n/#legitimationsoplysningerne) | feltet **Environment** i legitimationssættet |
+
+Uden noget af dette betegner hver database sit eget miljø: produktionens navn åbner produktion,
+testens navn åbner test. Et token kan også ved oprettelsen begrænses til det viste miljø: det ser
+så ikke noget andet. I begge tilfælde krydses dets tilladelser, miljø for miljø, med dem for den
+person, der oprettede det.
+
 ## I SQL
 
 Hvert miljø er et skema: `b_t4z56fq_ventes` for produktion,

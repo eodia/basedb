@@ -35,6 +35,24 @@ eller tas bort fångas det av en trigger på katalogen, och det kan läsas i his
 ”Struktur”. Härstamningsidentifierarna kopplar ett fält i test till dess motsvarighet i
 produktion, även om det har bytt namn.
 
+## Via API, SDK och MCP
+
+En **token som skapats för hela databasen** öppnar alla dess miljöer, både dagens och dem som
+läggs till senare: en enda token för produktionen och testmiljön. Programmet eller agenten väljer
+miljö vid varje anrop:
+
+| Var | Hur |
+|---|---|
+| [REST-API](/basedb/sv/integrations/api-rest/#välja-miljö) | huvudet `X-Basedb-Environment: recette`, eller `?environment=recette` |
+| [SDK](/basedb/sv/integrations/sdk/#miljöerna) | `db.environment('recette')` |
+| [MCP](/basedb/sv/integrations/mcp/#välja-miljö) | adressen `…/mcp?environment=recette`, eller argumentet `environment` i ett verktyg |
+| [n8n](/basedb/sv/integrations/n8n/#autentiseringsuppgifterna) | fältet **Environment** i autentiseringsuppgiften |
+
+Utan något av detta anger varje databasnamn sin egen miljö: produktionens namn öppnar
+produktionen, testmiljöns namn öppnar testmiljön. En token kan också, vid skapandet, begränsas
+till den miljö som visas: den ser då ingen annan. I båda fallen begränsas dess behörigheter till
+skärningen med personens som skapade den, miljö för miljö.
+
 ## I SQL
 
 Varje miljö är ett schema: `b_t4z56fq_ventes` för produktion, `b_t4z56fq_ventes_recette` för

@@ -1,5 +1,6 @@
 import type { FieldOption, FieldOptionInput } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
+import { LOOK_COLORS } from '@basedb/contracts'
 
 /**
  * The options of a list of choices, as an editor holds them.
@@ -111,21 +112,7 @@ export function normalizeHex(text: string): string | null {
 }
 
 /** A starting point, not a limit: the picker takes any colour. */
-export const PRESET_COLORS: readonly string[] = [
-  '#dc2626',
-  '#ea580c',
-  '#d97706',
-  '#ca8a04',
-  '#65a30d',
-  '#16a34a',
-  '#0d9488',
-  '#0891b2',
-  '#2563eb',
-  '#4f46e5',
-  '#7c3aed',
-  '#db2777',
-  '#6b7280',
-]
+export const PRESET_COLORS: readonly string[] = LOOK_COLORS
 
 // ── JSON in, JSON out ────────────────────────────────────────────────────────────────
 

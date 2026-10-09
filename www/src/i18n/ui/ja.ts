@@ -1271,9 +1271,9 @@ export default {
 		agents: {
 			label: 'REST API · MCP · Webhook',
 			title: 'AIエージェントに渡すのはデータだけ。{マスターキーは渡しません。}',
-			lead: 'MCPサーバーはエージェントに14のツールを、REST APIはプログラムに同じデータを提供します。権限の判定ポイントはひとつ、ログも共通です。',
+			lead: 'MCPサーバーはエージェントに15のツールを、REST APIはプログラムに同じデータを提供します。権限の判定ポイントはひとつ、ログも共通です。',
 			bullets: [
-				'<strong>データベースごとのトークン</strong>：デフォルトは読み取り専用で、作成した人の権限を超えることはありません。',
+				'<strong>データベース全体で1つのトークン</strong>：本番もステージングも含み、デフォルトは読み取り専用で、作成した人の権限を超えることはありません。',
 				'<strong>エージェントが削除するのは、あなたの同意があるときだけです</strong>。一度に1行で、スキーマも変更しません。変更は提案し、人が承認します。',
 				'<strong>自動生成されるドキュメント</strong>：データベースごとに、自分の権限でフィルターされ、OpenAPI 3.1仕様が付属します。',
 				'<strong>Webhook</strong>：書き込みのたびに、署名付きで、順序どおりに、再試行付きで送信されます。',
@@ -1523,6 +1523,25 @@ export default {
 		title: 'basedbの変更点',
 		intro: '変更の詳細は<a href="https://github.com/eodia/basedb/commits/main">リポジトリの履歴</a>にあります。今後の予定は<a href="/feuille-de-route/">ロードマップ</a>をご覧ください。',
 		entries: {
+			oneToken: {
+				date: '2026-10-09',
+				title: 'データベース全体に1つのトークン、環境は呼び出しごとに選択',
+				tag: '新機能',
+				items: [
+					'<strong>1つのトークン</strong>で、データベースの本番、ステージング、今後追加される環境のすべてを開けます。作成時に、1つの環境だけに限定することもできます。既存のトークンは、これまでの環境のままです。<a href="/fonctionnalites/environnements/#apisdkmcpでは">API、SDK、MCPでは</a>',
+					'<strong>環境は呼び出しごとに選びます</strong>：REST APIの<code>X-Basedb-Environment</code>ヘッダー、SDKの<code>db.environment()</code>、n8nのEnvironmentフィールド、アドレス<code>…/mcp?environment=recette</code>、またはMCPツールの<code>environment</code>引数。<a href="/integrations/mcp/#環境を選ぶ">環境を選ぶ</a>',
+					'<strong>中継プログラムなしのエージェント</strong>：トークンのウィンドウに、Claude CodeのHTTP設定と<code>.mcp.json</code>ファイルが表示されます。環境ごとに1つのサーバーを同じトークンで登録でき、トークン自体は環境変数に残ります。',
+				],
+			},
+			lookByAgents: {
+				date: '2026-10-09',
+				title: 'APIとMCPから設定できる色とアイコン',
+				tag: '新機能',
+				items: [
+					'<strong>エージェントが提案に外観を添えます</strong>：<code>propose_create_table</code>ではテーブルの色とアイコン、<code>propose_add_field</code>では各選択肢の色とアイコン、そして既存のテーブル向けの新しいツール<code>propose_update_look</code>。構造の変更と同じく、承認するのは人です。<a href="/integrations/mcp/#色とアイコン">色とアイコン</a>',
+					'<strong>APIから</strong>、テーブルを色とアイコン付きで作成できます。<code>describe_base</code>、<code>describe_table</code>、<code>/meta</code>はそれらを返します。<a href="/integrations/api-rest/#色とアイコン">色とアイコン</a>',
+				],
+			},
 			agentDelete: {
 				date: '2026-10-02',
 				title: '許可すれば削除もするエージェント',

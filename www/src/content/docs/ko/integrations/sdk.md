@@ -70,9 +70,24 @@ for await (const ligne of opportunites.all({
   `status`, `details`, `requestId`를 가집니다. 속도를 늦추라는 요청(`429`)은 basedb가 알려 준
   시간이 지난 뒤 다시 시도됩니다.
 
+## 환경
+
+[환경](/basedb/ko/fonctionnalites/environnements/)이 여러 개인 데이터베이스(운영, 스테이징…)는 환경이
+달라도 이름과 타입이 같습니다. 데이터베이스 전체용으로 만든 토큰이면 `environment()`로 환경을 지정할 수
+있으며, 같은 코드가 다른 환경에서 실행됩니다:
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+생성자의 `environment` 옵션은 클라이언트 전체에 같은 일을 합니다. SDK는 `X-Basedb-Environment`
+헤더를 보내며, 헤더가 없으면 각 데이터베이스 이름이 자신의 환경을 가리킵니다(`b_t4z56fq_ventes`는
+운영 환경입니다).
+
 ## 토큰
 
 **연동 토큰**은 인터페이스에서 만듭니다: 데이터베이스의 **⋯** 메뉴 → **API 및 에이전트** →
-**API 및 MCP 토큰…**. 토큰은 데이터베이스 하나를 열어 그 행을 읽고, 쓰기 권한으로 만들어졌다면
+**API 및 MCP 토큰…**. 토큰은 데이터베이스 하나(모든 환경 또는 환경 하나)를 열어 그 행을 읽고, 쓰기 권한으로 만들어졌다면
 쓰기도 하며, 만든 사람보다 많은 권한을 갖는 일은 없고, **그 목적으로 만들어진 경우에만
 삭제합니다**(“읽기, 쓰기 및 삭제”): 그렇지 않으면 `delete()`는 거부됩니다.

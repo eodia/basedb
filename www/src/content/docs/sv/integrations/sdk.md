@@ -72,9 +72,25 @@ körs.
   språk –, `status`, `details` och `requestId`. En begäran om att sakta ner (`429`) körs om
   efter den fördröjning som basedb anger.
 
+## Miljöerna
+
+En databas som har flera [miljöer](/basedb/sv/fonctionnalites/environnements/) – produktion,
+test … – behåller sina namn och sina typer från en miljö till en annan. Med en token som skapats
+för hela databasen riktar `environment()` sig mot en miljö, medan samma kod körs någon annanstans:
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+Alternativet `environment` i konstruktorn gör detsamma för hela klienten. Paketet skickar huvudet
+`X-Basedb-Environment`; utan det anger varje databasnamn sin egen miljö (`b_t4z56fq_ventes` är
+produktionen).
+
 ## Token
 
 En **integrationstoken** skapas i gränssnittet: databasens **⋯**-meny → **API och agenter** →
-**API- och MCP-tokens…**. Den öppnar en databas, läser dess rader, skriver dem om den skapades
-med skrivrätt, har aldrig fler behörigheter än personen som skapade den, och **tar bara bort om
-den har skapats för det** (”Läsa, skriva och ta bort”): annars avvisas `delete()`.
+**API- och MCP-tokens…**. Den öppnar en databas – alla dess miljöer, eller bara en –, läser dess
+rader, skriver dem om den skapades med skrivrätt, har aldrig fler behörigheter än personen som
+skapade den, och **tar bara bort om den har skapats för det** (”Läsa, skriva och ta bort”):
+annars avvisas `delete()`.

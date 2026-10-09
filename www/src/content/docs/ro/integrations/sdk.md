@@ -74,10 +74,26 @@ programul să ruleze.
   în toate limbile —, `status`, `details` și `requestId`. O cerere de încetinire (`429`) este
   reîncercată după intervalul indicat de basedb.
 
+## Mediile
+
+O bază cu mai multe [medii](/basedb/ro/fonctionnalites/environnements/) — producție,
+testare… — își păstrează numele și tipurile de la un mediu la altul. Cu un token creat pentru toată
+baza, `environment()` vizează un mediu, același cod rulând în altă parte:
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+Opțiunea `environment` a constructorului face la fel pentru tot clientul. SDK-ul trimite antetul
+`X-Basedb-Environment`; fără el, fiecare nume de bază desemnează propriul mediu
+(`b_t4z56fq_ventes` este producția).
+
 ## Tokenul
 
 Un **token de integrare** se creează din interfață: meniul **⋯** al bazei → **API și agenți**
-→ **Tokenuri API și MCP…**. Deschide o bază, citește rândurile ei, le scrie dacă a fost creat
-cu drept de scriere, nu are niciodată mai multe permisiuni decât persoana care l-a creat, și
+→ **Tokenuri API și MCP…**. Deschide o bază — toate mediile sale sau doar unul —, citește
+rândurile ei, le scrie dacă a fost creat cu drept de scriere, nu are niciodată mai multe
+permisiuni decât persoana care l-a creat, și
 **nu șterge decât dacă a fost creat pentru aceasta** („Citire, scriere și ștergere”): altfel
 `delete()` este refuzat.

@@ -125,13 +125,25 @@ async function loadTokenBounds(
   exec: Executor,
   userId: string,
   tokenId: string,
-): Promise<Pick<ActorGrants, 'tokenRole' | 'tokenBaseId' | 'tokenAllowedSurfaces'>> {
+): Promise<
+  Pick<ActorGrants, 'tokenRole' | 'tokenBaseId' | 'tokenBaseIds' | 'tokenAllowedSurfaces'>
+> {
   const tokens = await exec.query<{
     role_id: string
     base_id: string | null
     allowed_surfaces: Surface[]
+    environments: string[] | null
   }>(
-    `SELECT tk.role_id, tk.base_id, tk.allowed_surfaces
+    // A token of the whole base opens every live base of its base's lineage — read here,
+    // at each snapshot, so that an environment added tomorrow is opened tomorrow.
+    `SELECT tk.role_id, tk.base_id, tk.allowed_surfaces,
+            CASE WHEN tk.all_environments THEN
+              (SELECT array_agg(e.id::text) FROM _basedb.base own
+                 JOIN _basedb.base e ON e.lineage_id = own.lineage_id
+                                    AND e.tenant_id = own.tenant_id
+                                    AND e.is_live AND e.deleted_at IS NULL
+                WHERE own.id = tk.base_id)
+            END AS environments
        FROM _basedb.api_token tk
        JOIN _basedb.role r ON r.id = tk.role_id AND r.deleted_at IS NULL
       WHERE tk.id = $1 AND tk.created_by = $2
@@ -161,6 +173,7 @@ async function loadTokenBounds(
       fieldRestrictions: [],
     },
     tokenBaseId: token.base_id,
+    ...(token.environments === null ? {} : { tokenBaseIds: token.environments }),
     tokenAllowedSurfaces: token.allowed_surfaces,
   }
 }

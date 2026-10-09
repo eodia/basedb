@@ -13,6 +13,7 @@ import { loadProjectTarget, requireAction, requireOnBase } from '../rbac/require
 import type { Executor, Pools } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
 import { commentText, normalizeDescription } from './description.js'
+import { type LookInput, normalizeLook } from './look.js'
 import { addPatternCheck } from './url-field.js'
 
 /**
@@ -183,11 +184,21 @@ export async function createTable(
     readonly fields: readonly FieldRequest[]
     /** The table's lineage, when it copies a table of another environment (chapter 14). */
     readonly lineageId?: string
+    /** Its colour and pictogram (or image), set with it — chapter 11 §3.1 bis. */
+    readonly look?: LookInput
   },
 ): Promise<CreateTableResult> {
   // Every description is checked BEFORE the transaction: the third field's being too long
-  // must not be discovered after the first two have been inserted and named.
+  // must not be discovered after the first two have been inserted and named. The look
+  // too: a colour refused must not leave a table created without it.
   const tableDescription = normalizeDescription(request.description)
+  const look =
+    request.look === undefined
+      ? { color: null, icon: null, image: null }
+      : normalizeLook(
+          request.look,
+          (reason) => new BasedbError('REQUEST_INVALID', { details: { field: 'look', reason } }),
+        )
   const fieldDescriptions = request.fields.map((f, i) =>
     normalizeDescription(f.description, `fields[${i}].description`),
   )
@@ -231,9 +242,9 @@ export async function createTable(
     const [table] = await exec.query<{ id: string }>(
       `INSERT INTO _basedb.table_def
          (base_id, schema_id, name_id, label, label_key, description, position,
-          created_by, updated_by, lineage_id)
+          created_by, updated_by, lineage_id, color, icon, image)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8,
-               coalesce($9::uuid, _basedb_local.uuid_generate_v7())) RETURNING id`,
+               coalesce($9::uuid, _basedb_local.uuid_generate_v7()), $10, $11, $12) RETURNING id`,
       [
         request.baseId,
         schema.id,
@@ -244,6 +255,9 @@ export async function createTable(
         position.n,
         ctx.actor.id,
         request.lineageId ?? null,
+        look.color,
+        look.icon,
+        look.image,
       ],
       'insert',
     )

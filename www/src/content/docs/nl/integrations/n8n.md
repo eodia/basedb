@@ -27,10 +27,16 @@ Maak in n8n een identiteitsgegeven **basedb API** aan:
 | **Instance URL** | het adres waarop je basedb opent: `https://basedb.exemple.fr` |
 | **Workspace** | de referentie van de werkruimte, die van de API-adressen (`/api/v1/<werkruimte>/…`): `t4z56fq`, tenzij de instantie `BASEDB_TENANT` instelt |
 | **Token** | een **integratietoken**: menu **⋯** van de database → **API en agents** → **API- en MCP-tokens…** |
+| **Environment** | optioneel: de omgeving van de database waarin je werkt — `recette`, `production`… Leeg: productie |
 
-Een token opent **één** database. Het leest haar rijen, schrijft ze als het met schrijfrechten
-is aangemaakt, en heeft nooit meer rechten dan de persoon die het heeft aangemaakt. Bij het
-opslaan probeert n8n de verbinding en meldt het of het token wordt geweigerd.
+Een token opent **één** database — alle omgevingen ervan, of slechts één als het bij het aanmaken is
+beperkt. Het leest haar rijen, schrijft ze als het met schrijfrechten is aangemaakt, en heeft nooit
+meer rechten dan de persoon die het heeft aangemaakt. Bij het opslaan probeert n8n de verbinding en
+meldt het of het token wordt geweigerd.
+
+Om op productie en op acceptatie te werken, maak je twee identiteitsgegevens met hetzelfde token, het
+ene met **Environment** leeg, het andere met `recette`. Zonder gekozen omgeving toont de lijst met
+databases van de node elke omgeving, met haar naam tussen haakjes.
 
 ## Lezen en schrijven: de basedb-node
 

@@ -48,7 +48,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` fixa uma versão específica (`0.6.1`) em vez da mais recente (`latest`).
+`BASEDB_VERSION` fixa uma versão específica (`0.7.0`) em vez da mais recente (`latest`).
 
 Na inicialização, o basedb **atualiza o próprio catálogo sozinho**: ele aplica, em ordem e
 cada uma na sua transação, as migrações que a sua versão ainda não tem, e as registra

@@ -10,7 +10,12 @@ import { createInterface } from 'node:readline'
  * session the back end assigned, and signs nothing: it transports a secret it did not
  * make, so it cannot forge an identity it was not given (§9.3, rule 4).
  *
- *   node apps/mcp/dist/relay.js --url https://basedb.example/mcp
+ *   node apps/mcp/dist/relay.js --url https://basedb.example/mcp [--environment recette]
+ *
+ * `--environment` (or `BASEDB_MCP_ENVIRONMENT`) aims the connection at one environment of
+ * the bases — production, recette… — with a token of the whole base: two relays, one
+ * token, one per environment (chapter 14 §1 bis). Without it, each base name designates
+ * its own, and a tool's `environment` argument chooses per call.
  *
  * The token is read from an ENVIRONMENT VARIABLE — `BASEDB_MCP_TOKEN` unless
  * `--token-env` names another — never from the client's configuration file, which is
@@ -21,11 +26,13 @@ import { createInterface } from 'node:readline'
 interface Options {
   readonly url: string
   readonly tokenEnv: string
+  readonly environment: string | undefined
 }
 
 function parseArgs(argv: readonly string[]): Options {
   let url = process.env.BASEDB_MCP_URL ?? 'http://localhost:8788/mcp'
   let tokenEnv = 'BASEDB_MCP_TOKEN'
+  let environment = process.env.BASEDB_MCP_ENVIRONMENT || undefined
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     const next = argv[i + 1]
@@ -35,15 +42,19 @@ function parseArgs(argv: readonly string[]): Options {
     } else if (arg === '--token-env' && next !== undefined) {
       tokenEnv = next
       i++
+    } else if (arg === '--environment' && next !== undefined) {
+      environment = next
+      i++
     } else if (arg === '--help' || arg === '-h') {
       process.stderr.write(
-        'Usage : basedb-mcp [--url <origine>/mcp] [--token-env <VARIABLE>]\n' +
-          'Le jeton est lu dans la variable d’environnement BASEDB_MCP_TOKEN (ou celle nommée).\n',
+        'Usage : basedb-mcp [--url <origine>/mcp] [--token-env <VARIABLE>] [--environment <environnement>]\n' +
+          'Le jeton est lu dans la variable d’environnement BASEDB_MCP_TOKEN (ou celle nommée).\n' +
+          '--environment (ou BASEDB_MCP_ENVIRONMENT) : production, recette… — par défaut, celui que nomme chaque base.\n',
       )
       process.exit(0)
     }
   }
-  return { url, tokenEnv }
+  return { url, tokenEnv, environment }
 }
 
 const options = parseArgs(process.argv.slice(2))
@@ -56,6 +67,10 @@ if (token === undefined || token.trim() === '') {
 }
 
 const target = new URL(options.url)
+// The environment travels in the address, as a client without the relay would write it.
+if (options.environment !== undefined && options.environment.trim() !== '') {
+  target.searchParams.set('environment', options.environment.trim())
+}
 if (
   target.protocol !== 'https:' &&
   !['localhost', '127.0.0.1', '[::1]'].includes(target.hostname)

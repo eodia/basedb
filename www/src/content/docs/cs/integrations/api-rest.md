@@ -15,9 +15,9 @@ fyzické názvy – ty, které čtete i v SQL.
 
 V rozhraní zvolte v nabídce **⋯** databáze → **API a agenti** → **Tokeny API a MCP…**: kdo má nad
 databází nebo jejím projektem úroveň **Správa**, zde vytvoří **integrační token** omezený na
-tuto databázi, ve výchozím nastavení jen pro čtení, poté co potvrdí své heslo – účet bez hesla,
-který se přihlašuje přes poskytovatele identity, to ještě nemůže udělat. Zobrazí se jen jednou;
-uložte ho do proměnné prostředí.
+tuto databázi (všechna její prostředí, nebo jen jedno), ve výchozím nastavení jen pro čtení, poté
+co potvrdí své heslo – účet bez hesla, který se přihlašuje přes poskytovatele identity, to ještě
+nemůže udělat. Zobrazí se jen jednou; uložte ho do proměnné prostředí.
 
 Token čte, a pokud byl vytvořen pro zápis, také vytváří a upravuje, a **odstraňuje, pokud byl
 vytvořen i k tomu** — oprávnění „Čtení, zápis a odstranění“, kromě řádku, který by s sebou odnesla
@@ -28,6 +28,29 @@ export BASEDB_TOKEN=bdb_…
 curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
   -H "Authorization: Bearer $BASEDB_TOKEN"
 ```
+
+## Volba prostředí
+
+Databáze, která má více [prostředí](/basedb/cs/fonctionnalites/environnements/) – produkční,
+testovací… –, zůstává pro token vytvořený pro celou databázi **jednou** databází. Cesta jmenuje
+databázi názvem jejího produkčního prostředí a hlavička `X-Basedb-Environment` vybírá prostředí:
+
+```bash
+curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  -H "X-Basedb-Environment: recette"
+```
+
+- Bez hlavičky platí prostředí, které jmenuje cesta: `b_t4z56fq_ventes` je produkční prostředí,
+  `b_t4z56fq_ventes_recette` testovací – oba zápisy zůstávají platné.
+- `?environment=recette` dělá totéž pro klienta, který hlavičky nenastavuje.
+- Prostředí se jmenuje podle svého štítku, bez ohledu na velká písmena a diakritiku, nebo
+  podle `production`. Prostředí, které databáze nemá, odpoví `404`, jako každý chybějící zdroj.
+- `GET /api/v1/<tenant>/meta/bases` vypíše každé prostředí s jeho blokem `environment`
+  (`label`, `production`); s hlavičkou vypíše jen to jedno.
+
+Token omezený při vytvoření na jediné prostředí žádné další neotevře: hlavička na tom nic nemění.
+Jeho oprávnění se vždy porovnávají, prostředí po prostředí, s oprávněními osoby, která ho vytvořila.
 
 ## Čtení
 
@@ -81,6 +104,25 @@ Se stejným tokenem:
 Budování – vytvoření automatizace, řídicího panelu, integrace – zůstává vyhrazeno relaci
 v rozhraní: token čte a zapisuje řádky, databázi nemění.
 
+## Barvy a ikony
+
+Tabulka a každá volba seznamu voleb mají barvu (`color`, `#rrggbb`) a ikonu (`icon`, název ikony
+[Lucide](https://lucide.dev/icons/), kterou rozhraní vykresluje: `truck`, `circle-check`,
+`flame`…). `GET …/meta/bases/<base>` je vrací pro databázi, její tabulky a možnosti jejích polí.
+
+Chcete-li je nastavit, použijte přístupový token osoby, která může upravovat strukturu
+(`POST /auth/session/access`) – integrační token databázi nemění:
+
+| Cesta | Tělo |
+|---|---|
+| `POST …/admin/bases/<base>/tables` | `{"label": "Tickets", "color": "#dc2626", "icon": "flame", "fields": […]}` |
+| `PATCH …/admin/bases/<base>/tables/<table>` | `{"color": "#2563eb", "icon": "inbox"}` – tři klíče `color`, `icon`, `image` putují společně: pojmenovat jeden nahradí všechny tři |
+| `POST …/admin/bases/<base>/tables/<table>/fields` | `{"label": "Priorité", "kind": "select", "options": [{"value": "haute", "color": "#dc2626", "icon": "flame"}, …]}` |
+| `PUT …/admin/bases/<base>/tables/<table>/fields/<champ>/options` | celý seznam možností, v pořadí, každá se svou barvou a ikonou |
+
+Agent používá [server MCP](/basedb/cs/integrations/mcp/#barvy-a-ikony), kde tyto změny
+**navrhuje**. Pole nemá ikonu k výběru: rozhraní vykresluje ikonu jeho typu.
+
 ## Vytvoření databáze ze šablony
 
 Aplikace, která se instaluje, vytvoří svou databázi **jedním voláním**: server použije
@@ -119,15 +161,17 @@ curl -X POST "http://localhost:3000/auth/introspect" \
 
 Token, který neplatí — neznámý, vypršelý, odvolaný, uzavřená relace, jiný pracovní prostor —,
 odpoví `{"active": false}`, aniž by řekl proč. Odpověď se čte naživo: odhlášení se projeví
-okamžitě. U integračního tokenu odpověď navíc uvádí databázi, kterou otevírá (`base`), jeho
-přístup (`read` nebo `write`) a jeho přístupové cesty.
+okamžitě. U integračního tokenu odpověď navíc uvádí databázi, kterou otevírá (`base`, její
+produkční prostředí), zda otevírá všechna prostředí (`environments`: `all`), nebo jen jedno
+(`one`), jeho přístup (`read`, `write` nebo `delete`) a jeho přístupové cesty.
 
 ## Vygenerovaná dokumentace
 
 Každá databáze má svou stránku **Dokumentace API a MCP**: pro každou tabulku její koncové body,
 sloupce a příklady v cURL a JavaScriptu. Je **filtrovaná podle vašich oprávnění** – dva
 čtenáři dostanou dvě verze –, napsaná **v jazyce vaší obrazovky**, a existuje také ve formátu
-OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Názvy, cesty a chybové kódy
-zůstávají stejné ve všech jazycích.
+OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`), který deklaruje token Bearer
+a hlavičku `X-Basedb-Environment`. Názvy, cesty a chybové kódy zůstávají stejné ve všech
+jazycích.
 
 ![Vygenerovaná dokumentace databáze](../../../../assets/screens/cs/documentation-api.webp)

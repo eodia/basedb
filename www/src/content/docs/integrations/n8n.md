@@ -27,10 +27,15 @@ Créez dans n8n un identifiant **basedb API** :
 | **Instance URL** | l’adresse où vous ouvrez basedb : `https://basedb.exemple.fr` |
 | **Workspace** | la référence de l’espace, celle des adresses de l’API (`/api/v1/<espace>/…`) : `t4z56fq`, sauf si l’instance fixe `BASEDB_TENANT` |
 | **Token** | un **jeton d’intégration** : menu **⋯** de la base → **API et agents** → **Jetons API et MCP…** |
+| **Environment** | facultatif : l’environnement de la base où travailler — `recette`, `production`… Vide : la production |
 
-Un jeton ouvre **une** base. Il lit ses lignes, les écrit s’il a été créé en écriture, et n’a
-jamais plus de droits que la personne qui l’a créé. À l’enregistrement, n8n essaie la connexion
-et dit si le jeton est refusé.
+Un jeton ouvre **une** base — tous ses environnements, ou un seul s’il a été limité à sa création. Il
+lit ses lignes, les écrit s’il a été créé en écriture, et n’a jamais plus de droits que la personne
+qui l’a créé. À l’enregistrement, n8n essaie la connexion et dit si le jeton est refusé.
+
+Pour travailler sur la production et sur la recette, créez deux identifiants avec le même jeton, l’un
+avec **Environment** vide, l’autre avec `recette`. Sans environnement choisi, la liste des bases du
+nœud montre chaque environnement, son nom entre parenthèses.
 
 ## Lire et écrire : le nœud basedb
 

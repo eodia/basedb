@@ -18,6 +18,10 @@ import type {
  *   const deals = db.base('b_t4z56fq_ventes').table('opportunites')
  *   for await (const deal of deals.all({ filter: filter`statut eq ${'gagne'}` })) …
  *
+ * A base with several environments — production, recette… — is one base for a token made
+ * for all of them: `db.environment('recette')` (or the `environment` option) aims every
+ * call at that environment, under the same names and the same types.
+ *
  * `Schema` is what `basedb-sdk types` generates from the instance: the rows are then typed,
  * a choice list is the union of its values, and a table or a field that does not exist is
  * an error before the program runs. Without it, rows are plain records.
@@ -34,6 +38,12 @@ export interface BasedbOptions {
   readonly fetch?: (input: string, init: RequestInit) => Promise<Response>
   /** How many times a request basedb asked to slow down (429) is tried again. Default 2. */
   readonly retries?: number
+  /**
+   * The environment of the bases — `recette`, `production`… — sent as
+   * `X-Basedb-Environment` on every call. Absent: the environment each base name designates
+   * (`b_t4z56fq_ventes` is the production).
+   */
+  readonly environment?: string
 }
 
 type Query = Readonly<Record<string, string | number | boolean | undefined>>
@@ -55,6 +65,7 @@ export class Basedb<S extends { readonly [B in keyof S]: BaseTypes } = Untyped> 
   readonly #token: string
   readonly #fetch: (input: string, init: RequestInit) => Promise<Response>
   readonly #retries: number
+  readonly #options: BasedbOptions
 
   constructor(options: BasedbOptions) {
     this.#root = options.url.trim().replace(/\/+$/, '')
@@ -62,6 +73,22 @@ export class Basedb<S extends { readonly [B in keyof S]: BaseTypes } = Untyped> 
     this.#token = options.token
     this.#fetch = options.fetch ?? ((input, init) => globalThis.fetch(input, init))
     this.#retries = options.retries ?? 2
+    this.#options = options
+  }
+
+  /** The environment every call is aimed at, or `undefined`: the one each base name designates. */
+  get currentEnvironment(): string | undefined {
+    const environment = this.#options.environment?.trim()
+    return environment === undefined || environment === '' ? undefined : environment
+  }
+
+  /**
+   * The same client, aimed at one environment of the bases — `recette`, `production`… —
+   * with the same token: `db.environment('recette').base('b_t4z56fq_ventes')` reads the
+   * recette of the base. Needs a token made for every environment of the base.
+   */
+  environment(name: string): Basedb<S> {
+    return new Basedb<S>({ ...this.#options, environment: name })
   }
 
   /** A base, by its technical name (`b_t4z56fq_ventes`). */
@@ -116,9 +143,11 @@ export class Basedb<S extends { readonly [B in keyof S]: BaseTypes } = Untyped> 
     for (const [key, value] of Object.entries(call.query ?? {})) {
       if (value !== undefined) url.searchParams.set(key, String(value))
     }
+    const environment = this.currentEnvironment
     const headers: Record<string, string> = {
       authorization: `Bearer ${this.#token}`,
       accept: 'application/json',
+      ...(environment === undefined ? {} : { 'x-basedb-environment': environment }),
       ...(call.json === undefined ? {} : { 'content-type': 'application/json' }),
       ...call.headers,
     }

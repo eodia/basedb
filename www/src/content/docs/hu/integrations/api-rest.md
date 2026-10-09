@@ -15,10 +15,10 @@ fizikai neveket tartalmazzák – ugyanazokat, amelyeket SQL-ben is olvas.
 
 A felületen az adatbázis **⋯** menüje → **API és ügynökök** → **API- és MCP-tokenek…**: akinek az
 adatbázison, vagy annak projektjén, **Kezelés** szintje van, az itt hoz létre egy erre az
-adatbázisra korlátozott, alapértelmezés szerint csak olvasási **integrációs tokent**, miután
-megerősítette a jelszavát — a jelszó nélküli fiók, amely egy identitásszolgáltatón keresztül
-jelentkezik be, ezt még nem teheti meg. Csak egyszer jelenik meg; helyezze el egy környezeti
-változóban.
+adatbázisra — az összes környezetére, vagy csak egyre — korlátozott, alapértelmezés szerint
+csak olvasási **integrációs tokent**, miután megerősítette a jelszavát — a jelszó nélküli fiók,
+amely egy identitásszolgáltatón keresztül jelentkezik be, ezt még nem teheti meg. Csak egyszer
+jelenik meg; helyezze el egy környezeti változóban.
 
 Egy token olvas; létrehoz és módosít, ha írásra jött létre, és **töröl, ha erre jött létre** —
 jogosultság: „Olvasás, írás és törlés” —, kivéve egy olyan sort, amelyet egy kaszkádolt
@@ -30,6 +30,32 @@ export BASEDB_TOKEN=bdb_…
 curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
   -H "Authorization: Bearer $BASEDB_TOKEN"
 ```
+
+## Környezet kiválasztása
+
+Az az adatbázis, amelynek több [környezete](/basedb/hu/fonctionnalites/environnements/) van — éles,
+teszt… —, az egész adatbázisra létrehozott token számára **egyetlen** adatbázis marad. Az útvonal az
+adatbázist az éles környezete nevével nevezi meg, az `X-Basedb-Environment` fejléc pedig kiválasztja
+a környezetet:
+
+```bash
+curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  -H "X-Basedb-Environment: recette"
+```
+
+- A fejléc nélkül azt a környezetet kapja, amelyet az útvonal megnevez: a `b_t4z56fq_ventes` az éles,
+  a `b_t4z56fq_ventes_recette` a teszt környezet — mindkét írásmód érvényes marad.
+- Az `?environment=recette` ugyanezt teszi egy olyan kliensnél, amely nem küld fejlécet.
+- Egy környezet a jelvényével nevezhető meg, a kis- és nagybetűk, valamint az ékezetek
+  figyelembevétele nélkül, vagy a `production` névvel. Egy olyan környezet, amellyel az adatbázis nem
+  rendelkezik, `404`-gyel válaszol, mint minden hiányzó erőforrás.
+- A `GET /api/v1/<tenant>/meta/bases` minden környezetet felsorol az `environment` blokkjával
+  (`label`, `production`); a fejléccel csak azt az egyet sorolja fel.
+
+Egy olyan token, amelyet a létrehozásakor egyetlen környezetre korlátoztak, másikat nem nyit meg: a
+fejléc ezen nem változtat. A jogosultságai mindig metszetet képeznek annak a személynek a
+jogosultságaival, aki létrehozta — környezetenként külön-külön.
 
 ## Olvasás
 
@@ -83,6 +109,27 @@ A [megosztott nézetek](/basedb/hu/fonctionnalites/vues-partagees/) fiók nélk�
 Az építés – automatizálás, irányítópult, integráció létrehozása – a felületen nyitott
 munkamenetnek van fenntartva: egy token sorokat olvas és ír, az adatbázist nem változtatja meg.
 
+## Színek és ikonok
+
+Egy táblának és egy egyszeres választás mező minden lehetőségének van színe (`color`, `#rrggbb`) és
+ikonja (`icon`, egy, a felület által megrajzolt [Lucide](https://lucide.dev/icons/)-ikon neve:
+`truck`, `circle-check`, `flame`…). A `GET …/meta/bases/<base>` ezeket adja vissza az adatbázisra, a
+táblákra és a mezők lehetőségeire.
+
+Kiválasztásukhoz, egy, a struktúrát módosítani jogosult személy hozzáférési tokenjével
+(`POST /auth/session/access`) — egy integrációs token nem változtatja meg az adatbázist:
+
+| Útvonal | Törzs |
+|---|---|
+| `POST …/admin/bases/<base>/tables` | `{"label": "Tickets", "color": "#dc2626", "icon": "flame", "fields": […]}` |
+| `PATCH …/admin/bases/<base>/tables/<table>` | `{"color": "#2563eb", "icon": "inbox"}` — a három kulcs (`color`, `icon`, `image`) együtt mozog: bármelyik megnevezése mindhármat lecseréli |
+| `POST …/admin/bases/<base>/tables/<table>/fields` | `{"label": "Priorité", "kind": "select", "options": [{"value": "haute", "color": "#dc2626", "icon": "flame"}, …]}` |
+| `PUT …/admin/bases/<base>/tables/<table>/fields/<champ>/options` | a lehetőségek teljes listája, sorrendben, mindegyik a saját színével és ikonjával |
+
+Az ügynök az [MCP-szerveren](/basedb/hu/integrations/mcp/#színek-és-ikonok) keresztül dolgozik, ahol
+ezeket a módosításokat **javasolja**. Egy mezőnek nincs kiválasztható ikonja: a felület a típusáét
+rajzolja.
+
 ## Adatbázis létrehozása egy sablonból
 
 Egy települő alkalmazás **egyetlen hívással** hozza létre az adatbázisát: a szerver
@@ -124,15 +171,17 @@ curl -X POST "http://localhost:3000/auth/introspect" \
 Minden token, amely nem ér semmit — ismeretlen, lejárt, visszavont, lezárt munkamenet, másik
 munkaterület —, `{"active": false}` választ ad, anélkül hogy megmondaná, miért. A válasz
 élőben olvasott: egy kijelentkezés azonnal látható rajta. Egy integrációs token esetén a
-válasz azt is elmondja, melyik adatbázist nyitja meg (`base`), mi a hozzáférése (`read` vagy
-`write`), és melyek a felületei.
+válasz azt is elmondja, melyik adatbázist nyitja meg (`base`, az éles környezete), hogy az összes
+környezetét nyitja-e meg (`environments`: `all`), vagy csak egyet (`one`), mi a hozzáférése
+(`read`, `write` vagy `delete`), és melyek a felületei.
 
 ## A generált dokumentáció
 
 Minden adatbázisnak van egy **API- és MCP-dokumentáció** oldala: minden táblához a végpontjai,
 az oszlopai, cURL- és JavaScript-példák. **Az Ön jogosultságai szerint szűrt** – két olvasó
 két különböző változatot kap –, **az Ön képernyőjének nyelvén** íródik, és OpenAPI 3.1
-formátumban is elérhető (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). A nevek, az
-útvonalak és a hibakódok minden nyelven ugyanazok maradnak.
+formátumban is elérhető (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`), amely deklarálja a
+Bearer tokent és az `X-Basedb-Environment` fejlécet. A nevek, az útvonalak és a hibakódok minden
+nyelven ugyanazok maradnak.
 
 ![Egy adatbázis generált dokumentációja](../../../../assets/screens/hu/documentation-api.webp)

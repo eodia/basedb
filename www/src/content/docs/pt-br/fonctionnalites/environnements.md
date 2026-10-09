@@ -36,6 +36,24 @@ exclusão de tabela ou de campo é capturada por um trigger no catálogo e pode 
 aba “Estrutura” do histórico. Os identificadores de linhagem ligam um campo da homologação
 ao seu equivalente na produção, mesmo renomeado.
 
+## Pela API, pelo SDK e pelo MCP
+
+Um **token criado para toda a base** abre todos os ambientes dela, os de hoje e os que forem
+adicionados: um único token para a produção e a homologação. O programa ou o agente escolhe o
+ambiente a cada chamada:
+
+| Onde | Como |
+|---|---|
+| [API REST](/basedb/pt-br/integrations/api-rest/#escolher-o-ambiente) | o cabeçalho `X-Basedb-Environment: recette`, ou `?environment=recette` |
+| [SDK](/basedb/pt-br/integrations/sdk/#os-ambientes) | `db.environment('recette')` |
+| [MCP](/basedb/pt-br/integrations/mcp/#escolher-o-ambiente) | o endereço `…/mcp?environment=recette`, ou o argumento `environment` de uma ferramenta |
+| [n8n](/basedb/pt-br/integrations/n8n/#as-credenciais) | o campo **Environment** da credencial |
+
+Sem nada disso, cada base designa o próprio ambiente: o nome da produção abre a produção, o da
+homologação abre a homologação. Um token também pode, na criação, ser limitado ao ambiente exibido:
+ele então não vê nenhum outro. Nos dois casos, as permissões dele são intersectadas, ambiente por
+ambiente, com as da pessoa que o criou.
+
 ## Em SQL
 
 Cada ambiente é um schema: `b_t4z56fq_ventes` para a produção,

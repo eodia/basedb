@@ -36,6 +36,24 @@ sletting av en tabell eller et felt fanges opp av en trigger på katalogen, og k
 fanen «Struktur» i historikken. Avstamningsidentifikatorene kobler et felt i test
 til motstykket i produksjon, selv om det har fått nytt navn.
 
+## Via API-et, SDK-et og MCP
+
+Et **token opprettet for hele databasen** åpner alle miljøene dens, både dagens og dem som
+legges til senere: ett enkelt token for produksjon og test. Programmet eller agenten velger
+miljø ved hvert kall:
+
+| Hvor | Hvordan |
+|---|---|
+| [REST-API](/basedb/nb/integrations/api-rest/#velge-miljø) | headeren `X-Basedb-Environment: recette`, eller `?environment=recette` |
+| [SDK](/basedb/nb/integrations/sdk/#miljøene) | `db.environment('recette')` |
+| [MCP](/basedb/nb/integrations/mcp/#velge-miljø) | adressen `…/mcp?environment=recette`, eller argumentet `environment` i et verktøy |
+| [n8n](/basedb/nb/integrations/n8n/#identifikasjonen) | feltet **Environment** i identifikasjonen |
+
+Uten noe av dette peker hver database på sitt eget miljø: navnet på produksjonen åpner
+produksjon, navnet på testmiljøet åpner testmiljøet. Et token kan også, når det opprettes,
+begrenses til miljøet som vises: det ser da ingen andre. I begge tilfeller sammenlignes
+tillatelsene dets, miljø for miljø, med tillatelsene til personen som opprettet det.
+
 ## I SQL
 
 Hvert miljø er et PostgreSQL-skjema: `b_t4z56fq_ventes` for produksjon,

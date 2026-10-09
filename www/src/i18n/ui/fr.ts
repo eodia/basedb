@@ -1181,9 +1181,9 @@ const fr = {
 		agents: feature({
 			label: 'API REST · MCP · webhooks',
 			title: 'Vos agents IA accèdent aux données, {pas aux clés du château.}',
-			lead: 'Le serveur MCP donne quatorze outils aux agents ; l’API REST, les mêmes données à vos programmes. Un seul point de contrôle des droits, les mêmes journaux.',
+			lead: 'Le serveur MCP donne quinze outils aux agents ; l’API REST, les mêmes données à vos programmes. Un seul point de contrôle des droits, les mêmes journaux.',
 			bullets: [
-				'<strong>Un jeton par base</strong>, en lecture seule par défaut, jamais plus de droits que la personne qui l’a créé.',
+				'<strong>Un jeton pour toute la base</strong>, production et recette comprises, en lecture seule par défaut, jamais plus de droits que la personne qui l’a créé.',
 				'<strong>Un agent ne supprime qu’avec votre accord</strong>, une ligne à la fois, et ne change pas la structure : il la propose, une personne approuve.',
 				'<strong>Une documentation générée</strong> pour chaque base, filtrée par vos droits, avec sa spécification OpenAPI 3.1.',
 				'<strong>Des webhooks</strong> signés, ordonnés et réessayés à chaque écriture.',
@@ -1449,6 +1449,25 @@ const fr = {
 		intro: 'Le détail de chaque changement est dans <a href="https://github.com/eodia/basedb/commits/main">l’historique du dépôt</a>. Ce qui vient ensuite : la <a href="/feuille-de-route/">feuille de route</a>.',
 		/** Newest first. */
 		entries: {
+			oneToken: entry({
+				date: '2026-10-09',
+				title: 'Un jeton pour toute la base, l’environnement au choix',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Un seul jeton</strong> ouvre la production, la recette et les environnements à venir d’une base ; il peut aussi être limité à un seul, à sa création. Les jetons existants gardent leur environnement. <a href="/fonctionnalites/environnements/#par-lapi-le-sdk-et-le-mcp">Par l’API, le SDK et le MCP</a>',
+					'<strong>L’environnement se choisit à l’appel</strong> : l’en-tête <code>X-Basedb-Environment</code> de l’API REST, <code>db.environment()</code> du SDK, le champ Environment de n8n, l’adresse <code>…/mcp?environment=recette</code> ou l’argument <code>environment</code> d’un outil MCP. <a href="/integrations/mcp/#choisir-lenvironnement">Choisir l’environnement</a>',
+					'<strong>Un agent sans relais</strong> : la fenêtre des jetons donne la configuration HTTP de Claude Code et le fichier <code>.mcp.json</code>, un serveur par environnement sur le même jeton, le jeton restant dans une variable d’environnement.',
+				],
+			}),
+			lookByAgents: entry({
+				date: '2026-10-09',
+				title: 'Couleurs et pictogrammes par l’API et le MCP',
+				tag: 'Nouveau',
+				items: [
+					'<strong>Un agent habille ce qu’il propose</strong> : couleur et pictogramme d’une table dans <code>propose_create_table</code>, de chaque choix dans <code>propose_add_field</code>, et le nouvel outil <code>propose_update_look</code> pour une table existante. Une personne approuve, comme pour toute la structure. <a href="/integrations/mcp/#couleurs-et-pictogrammes">Couleurs et pictogrammes</a>',
+					'<strong>Par l’API</strong>, une table se crée avec sa couleur et son pictogramme ; <code>describe_base</code>, <code>describe_table</code> et <code>/meta</code> les rendent. <a href="/integrations/api-rest/#couleurs-et-pictogrammes">Couleurs et pictogrammes</a>',
+				],
+			}),
 			agentDelete: entry({
 				date: '2026-10-02',
 				title: 'Des agents qui suppriment, si vous le permettez',

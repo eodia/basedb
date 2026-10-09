@@ -56,9 +56,23 @@ for await (const row of deals.all({ filter: filter`statut eq ${'gagne'} and mont
 ## Tokens
 
 An integration token is created in basedb from the base's menu, **API et agents › Jetons API et
-MCP…**. It opens one base, reads its rows, writes them if it was created with write access, and
-never has more rights than the person who created it. It **deletes only if it was created to**
-(« Lecture, écriture et suppression »): otherwise `delete()` is refused.
+MCP…**. It opens one base — every environment of it, or just one —, reads its rows, writes them if
+it was created with write access, and never has more rights than the person who created it. It
+**deletes only if it was created to** (« Lecture, écriture et suppression »): otherwise `delete()`
+is refused.
+
+## Environments
+
+A base with several environments — production, staging… — keeps its names and its types from one
+to the next. With a token made for the whole base, `environment()` aims the client at one of them:
+
+```ts
+const staging = db.environment('recette')
+await staging.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+The `environment` option of the constructor does the same for the whole client; the SDK sends the
+`X-Basedb-Environment` header. Without it, each base name designates its own environment.
 
 ## License
 

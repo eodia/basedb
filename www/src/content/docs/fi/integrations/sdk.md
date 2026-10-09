@@ -72,10 +72,25 @@ käynnistyy.
   kielillä –, `status`, `details` ja `requestId`. Hidastuspyyntö (`429`) yritetään uudelleen
   basedb:n ilmoittaman viiveen jälkeen.
 
+## Ympäristöt
+
+Tietokanta, jolla on useita [ympäristöjä](/basedb/fi/fonctionnalites/environnements/) – tuotanto,
+testi… –, säilyttää nimensä ja tyyppinsä ympäristöstä toiseen. Koko tietokannalle luodulla
+tunnuksella `environment()` kohdistuu yhteen ympäristöön, ja sama koodi toimii muualla:
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+Konstruktorin `environment`-asetus tekee saman koko asiakkaalle. SDK lähettää otsakkeen
+`X-Basedb-Environment`; ilman sitä jokainen tietokannan nimi osoittaa omaan ympäristöönsä
+(`b_t4z56fq_ventes` on tuotanto).
+
 ## Tunnus
 
 **Integraatiotunnus** luodaan käyttöliittymässä: tietokannan **⋯**-valikko → **API ja agentit**
-→ **API- ja MCP-tunnukset…**. Se avaa yhden tietokannan, lukee sen rivejä, kirjoittaa niitä, jos
-se on luotu kirjoitusoikeuksin, eikä sillä ole koskaan enempää oikeuksia kuin sen luoneella
-henkilöllä, ja **poistaa vain, jos se on luotu tätä varten** (”Luku, kirjoitus ja poisto”): muuten
-`delete()` hylätään.
+→ **API- ja MCP-tunnukset…**. Se avaa yhden tietokannan – kaikki sen ympäristöt tai vain yhden –,
+lukee sen rivejä, kirjoittaa niitä, jos se on luotu kirjoitusoikeuksin, eikä sillä ole koskaan
+enempää oikeuksia kuin sen luoneella henkilöllä, ja **poistaa vain, jos se on luotu tätä varten**
+(”Luku, kirjoitus ja poisto”): muuten `delete()` hylätään.

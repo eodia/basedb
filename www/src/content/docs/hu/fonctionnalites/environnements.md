@@ -39,6 +39,24 @@ létrehozását, módosítását vagy törlését egy, a katalóguson lévő tri
 előzmények „Struktúra” lapján olvasható. A leszármazási azonosítók egy teszt környezetbeli
 mezőt az éles környezetbeli megfelelőjéhez kötnek, akkor is, ha át lett nevezve.
 
+## API, SDK és MCP
+
+Egy **az egész adatbázisra létrehozott token** az összes környezetét megnyitja, a maiakat és azokat
+is, amelyeket később adnak hozzá: egyetlen token az élesre és a tesztre. A program vagy az ügynök
+minden híváskor kiválasztja a környezetet:
+
+| Hol | Hogyan |
+|---|---|
+| [REST API](/basedb/hu/integrations/api-rest/#környezet-kiválasztása) | az `X-Basedb-Environment: recette` fejléc, vagy az `?environment=recette` |
+| [SDK](/basedb/hu/integrations/sdk/#környezetek) | `db.environment('recette')` |
+| [MCP](/basedb/hu/integrations/mcp/#környezet-kiválasztása) | a `…/mcp?environment=recette` cím, vagy egy eszköz `environment` argumentuma |
+| [n8n](/basedb/hu/integrations/n8n/#a-hitelesítő-adatok) | a hitelesítő adat **Environment** mezője |
+
+Ezek nélkül minden adatbázis a saját környezetét jelöli: az éles neve az élest nyitja meg, a teszté a
+tesztet. Egy token a létrehozásakor arra a környezetre is korlátozható, amely meg van jelenítve: ekkor
+másikat nem lát. Mindkét esetben a jogosultságai, környezetenként, metszetet képeznek annak a
+személynek a jogosultságaival, aki létrehozta.
+
 ## SQL-ben
 
 Minden környezet egy séma: `b_t4z56fq_ventes` az éles, `b_t4z56fq_ventes_recette` a teszt

@@ -15,9 +15,9 @@ Ses URL portent les noms physiques — ceux que vous lisez aussi en SQL.
 
 Dans l’interface, menu **⋯** de la base → **API et agents** → **Jetons API et MCP…** : qui a le
 niveau **Gestion** sur la base, ou sur son projet, y crée un **jeton d’intégration** limité à cette
-base, en lecture seule par défaut, après avoir confirmé son mot de passe — un compte qui se
-connecte par un fournisseur d’identité, sans mot de passe, ne le peut pas encore. Il n’est affiché
-qu’une fois ; placez-le dans une variable d’environnement.
+base — tous ses environnements, ou un seul —, en lecture seule par défaut, après avoir confirmé son
+mot de passe — un compte qui se connecte par un fournisseur d’identité, sans mot de passe, ne le peut
+pas encore. Il n’est affiché qu’une fois ; placez-le dans une variable d’environnement.
 
 Un jeton lit ; il crée et modifie s’il a été créé en écriture, et **supprime s’il a été créé pour
 cela** — droits « Lecture, écriture et suppression », sauf une ligne qu’une relation en cascade
@@ -28,6 +28,30 @@ export BASEDB_TOKEN=bdb_…
 curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
   -H "Authorization: Bearer $BASEDB_TOKEN"
 ```
+
+## Choisir l’environnement
+
+Une base qui a plusieurs [environnements](/basedb/fonctionnalites/environnements/) — production,
+recette… — reste **une** base pour un jeton créé pour toute la base. Le chemin nomme la base par le
+nom de sa production, et l’en-tête `X-Basedb-Environment` choisit l’environnement :
+
+```bash
+curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  -H "X-Basedb-Environment: recette"
+```
+
+- Sans l’en-tête, c’est l’environnement que nomme le chemin : `b_t4z56fq_ventes` est la production,
+  `b_t4z56fq_ventes_recette` la recette — les deux écritures restent valables.
+- `?environment=recette` fait de même pour un client qui ne pose pas d’en-tête.
+- Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou par
+  `production`. Un environnement que la base n’a pas répond `404`, comme toute ressource absente.
+- `GET /api/v1/<tenant>/meta/bases` liste chaque environnement avec son bloc `environment`
+  (`label`, `production`) ; avec l’en-tête, il ne liste que celui-là.
+
+Un jeton limité à un seul environnement, à sa création, n’en ouvre aucun autre : l’en-tête n’y change
+rien. Ses droits sont toujours recoupés, environnement par environnement, avec ceux de la personne qui
+l’a créé.
 
 ## Lire
 
@@ -81,6 +105,27 @@ Les [vues partagées](/basedb/fonctionnalites/vues-partagees/) se lisent sans co
 Construire — créer une automatisation, un tableau de bord, une intégration — reste réservé à
 une session de l’interface : un jeton lit et écrit des lignes, il ne change pas la base.
 
+## Couleurs et pictogrammes
+
+Une table et chaque choix d’une liste de choix ont une couleur (`color`, `#rrggbb`) et un pictogramme
+(`icon`, le nom d’une icône [Lucide](https://lucide.dev/icons/) que l’interface dessine : `truck`,
+`circle-check`, `flame`…). `GET …/meta/bases/<base>` les rend pour la base, ses tables et les options
+de ses champs.
+
+Pour les choisir, avec le jeton d’accès d’une personne qui peut modifier la structure
+(`POST /auth/session/access`) — un jeton d’intégration ne change pas la base :
+
+| Route | Corps |
+|---|---|
+| `POST …/admin/bases/<base>/tables` | `{"label": "Tickets", "color": "#dc2626", "icon": "flame", "fields": […]}` |
+| `PATCH …/admin/bases/<base>/tables/<table>` | `{"color": "#2563eb", "icon": "inbox"}` — les trois clés `color`, `icon`, `image` voyagent ensemble : en nommer une remplace les trois |
+| `POST …/admin/bases/<base>/tables/<table>/fields` | `{"label": "Priorité", "kind": "select", "options": [{"value": "haute", "color": "#dc2626", "icon": "flame"}, …]}` |
+| `PUT …/admin/bases/<base>/tables/<table>/fields/<champ>/options` | la liste entière des options, dans l’ordre, chacune avec sa couleur et son pictogramme |
+
+Un agent passe par le [serveur MCP](/basedb/integrations/mcp/#couleurs-et-pictogrammes), où il
+**propose** ces changements. Un champ n’a pas de pictogramme à choisir : l’interface dessine celui de
+son type.
+
 ## Créer une base d’un modèle
 
 Une application qui s’installe crée sa base en **un appel** : le serveur applique le modèle —
@@ -120,15 +165,17 @@ curl -X POST "http://localhost:3000/auth/introspect" \
 
 Tout jeton qui ne vaut pas — inconnu, expiré, révoqué, session fermée, autre espace — répond
 `{"active": false}`, sans dire pourquoi. La réponse est lue en direct : une déconnexion se voit
-aussitôt. Pour un jeton d’intégration, la réponse dit aussi la base qu’il ouvre (`base`), son
-accès (`read` ou `write`) et ses surfaces.
+aussitôt. Pour un jeton d’intégration, la réponse dit aussi la base qu’il ouvre (`base`, sa
+production), s’il en ouvre tous les environnements (`environments` : `all`) ou un seul (`one`), son
+accès (`read`, `write` ou `delete`) et ses surfaces.
 
 ## La documentation générée
 
 Chaque base a sa page **Documentation API et MCP** : pour chaque table, ses points d’accès, ses
 colonnes, des exemples en cURL et en JavaScript. Elle est **filtrée par vos droits** — deux
 lecteurs en obtiennent deux versions —, écrite **dans la langue de votre écran**, et existe aussi
-en OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Les noms, les chemins et les
-codes d’erreur restent les mêmes dans toutes les langues.
+en OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`), qui déclare le jeton Bearer et
+l’en-tête `X-Basedb-Environment`. Les noms, les chemins et les codes d’erreur restent les mêmes dans
+toutes les langues.
 
 ![La documentation générée d’une base](../../../assets/screens/fr/documentation-api.webp)

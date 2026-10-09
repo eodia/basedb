@@ -38,11 +38,12 @@ describe('protocol negotiation (§15)', () => {
 })
 
 describe('the tool catalog (§2)', () => {
-  it('fourteen tools, lots 1 to 3 and deletion — and no proposal that deletes or renames', () => {
-    expect(TOOLS.map((t) => t.name)).toHaveLength(14)
+  it('fifteen tools, lots 1 to 3, deletion and look — and no proposal that deletes or renames', () => {
+    expect(TOOLS.map((t) => t.name)).toHaveLength(15)
     expect(TOOLS.filter((t) => t.name.startsWith('propose_')).map((t) => t.name)).toEqual([
       'propose_create_table',
       'propose_add_field',
+      'propose_update_look',
     ])
   })
 
@@ -71,6 +72,7 @@ describe('the tool catalog (§2)', () => {
       'delete_record',
       'propose_add_field',
       'propose_create_table',
+      'propose_update_look',
       'restore_record',
       'update_record',
     ])

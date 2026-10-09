@@ -40,7 +40,7 @@ export const DOCUMENT_MAX_BYTES = 2 * 1024 * 1024
  * Without it, during a rolling deployment, one process would serve a `304` for a
  * document the other version would have generated differently.
  */
-export const APPLICATION_VERSION = '0.6.1'
+export const APPLICATION_VERSION = '0.7.0'
 
 /** The two counters, read in one query. */
 export interface CatalogVersions {
@@ -173,8 +173,20 @@ export function permissionsFingerprint(grants: ActorGrants): string {
     .map((r) => r.id)
     .sort()
     .join(',')
+  // A token narrows its creator's rights by its own role, its base — or the environments
+  // of its base — and its surfaces: two tokens of one person are two readers, and must
+  // never share a validator, nor a document.
+  const token =
+    grants.tokenRole === undefined && grants.tokenBaseId === undefined
+      ? ''
+      : [
+          grants.tokenRole?.id ?? '',
+          grants.tokenBaseId ?? '',
+          [...(grants.tokenBaseIds ?? [])].sort().join(','),
+          [...(grants.tokenAllowedSurfaces ?? [])].sort().join(','),
+        ].join('/')
   return createHash('sha256')
-    .update(`${grants.isInstanceAdmin ? 'admin' : 'user'}|${roles}`)
+    .update(`${grants.isInstanceAdmin ? 'admin' : 'user'}|${roles}|${token}`)
     .digest('hex')
     .slice(0, 16)
 }

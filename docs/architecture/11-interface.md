@@ -538,6 +538,24 @@ l'ordre de tri émis par le serveur. Une option archivée n'est plus proposée �
 mais reste affichée, marquée comme archivée, sur les lignes qui la portent : la
 contrainte l'autorise toujours. Le choix multiple n'est pas exposé.
 
+### 3.1 bis L'apparence d'une table et d'un choix
+
+Une table, une base, un projet, une vue SQL et chaque choix d'une liste portent une
+**apparence** : une couleur `#rrggbb` et un pictogramme, ou une image (jamais les deux). Les
+pictogrammes sont ceux que l'interface dessine, une liste fermée d'icônes Lucide nommées en
+kebab-case : `LOOK_ICONS` de `@basedb/contracts`, que le sélecteur et le serveur partagent
+(un test les tient égaux), avec les couleurs proposées d'abord, `LOOK_COLORS`. Le catalogue
+ne contrôle que la forme d'un nom ; un nom inconnu se garde mais ne dessine rien sur un
+choix, et le pictogramme par défaut sur une table. Un champ n'a pas d'apparence propre :
+l'interface dessine le pictogramme de son type.
+
+L'apparence se choisit dans l'interface, par l'API d'administration (chapitre 08 §1.4 : à
+la création d'une table, à sa modification, avec les options d'une liste) et, pour un agent,
+par proposition (chapitre 09 §2.2 : `propose_create_table`, `propose_add_field`,
+`propose_update_look`), où seuls les pictogrammes de la liste sont acceptés. La file des
+propositions montre l'apparence proposée — le pictogramme dans sa couleur, et le nom de
+l'une et de l'autre.
+
 ### 3.2 Texte long, et la variante HTML riche
 
 **Le texte long simple s'écrit en Markdown**, et la colonne garde la source telle qu'elle a

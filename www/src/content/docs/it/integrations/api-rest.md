@@ -15,9 +15,10 @@ I suoi URL riportano i nomi fisici — quelli che leggi anche in SQL.
 
 Nell’interfaccia, menu **⋯** del database → **API e agenti** → **Token API e MCP…**: chi ha il
 livello **Gestione** sul database, o sul suo progetto, vi crea un **token di integrazione**
-limitato a questo database, in sola lettura per impostazione predefinita, dopo aver confermato la
-propria password — un account senza password, che accede tramite un fornitore di identità, non
-può ancora farlo. Viene mostrato una sola volta; mettilo in una variabile d’ambiente.
+limitato a questo database — tutti i suoi ambienti, oppure uno solo —, in sola lettura per
+impostazione predefinita, dopo aver confermato la propria password — un account senza password,
+che accede tramite un fornitore di identità, non può ancora farlo. Viene mostrato una sola volta;
+mettilo in una variabile d’ambiente.
 
 Un token legge; crea e modifica se è stato creato in scrittura, ed **elimina se è stato creato per
 questo** — permessi «Lettura, scrittura ed eliminazione», salvo una riga che una relazione a
@@ -28,6 +29,31 @@ export BASEDB_TOKEN=bdb_…
 curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
   -H "Authorization: Bearer $BASEDB_TOKEN"
 ```
+
+## Scegliere l’ambiente
+
+Un database che ha più [ambienti](/basedb/it/fonctionnalites/environnements/) — produzione,
+collaudo… — resta **un solo** database per un token creato per tutto il database. Il percorso
+nomina il database con il nome della sua produzione, e l’intestazione `X-Basedb-Environment`
+sceglie l’ambiente:
+
+```bash
+curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  -H "X-Basedb-Environment: recette"
+```
+
+- Senza l’intestazione, vale l’ambiente che il percorso nomina: `b_t4z56fq_ventes` è la produzione,
+  `b_t4z56fq_ventes_recette` il collaudo — le due scritture restano valide.
+- `?environment=recette` fa lo stesso per un client che non imposta intestazioni.
+- Un ambiente si indica con il suo badge, senza tenere conto di maiuscole e accenti, oppure con
+  `production`. Un ambiente che il database non ha risponde `404`, come ogni risorsa assente.
+- `GET /api/v1/<tenant>/meta/bases` elenca ogni ambiente con il suo blocco `environment`
+  (`label`, `production`); con l’intestazione, elenca solo quello.
+
+Un token limitato a un solo ambiente, alla creazione, non ne apre nessun altro: l’intestazione non
+cambia nulla. I suoi permessi sono sempre incrociati, ambiente per ambiente, con quelli della
+persona che l’ha creato.
 
 ## Leggere
 
@@ -81,6 +107,27 @@ Le [viste condivise](/basedb/it/fonctionnalites/vues-partagees/) si leggono senz
 Costruire — creare un’automazione, una dashboard, un’integrazione — resta riservato a
 una sessione dell’interfaccia: un token legge e scrive righe, non modifica il database.
 
+## Colori e icone
+
+Una tabella e ogni opzione di un campo di selezione hanno un colore (`color`, `#rrggbb`) e
+un’icona (`icon`, il nome di un’icona [Lucide](https://lucide.dev/icons/) che l’interfaccia
+disegna: `truck`, `circle-check`, `flame`…). `GET …/meta/bases/<base>` li restituisce per il
+database, le sue tabelle e le opzioni dei suoi campi.
+
+Per sceglierli, con il token di accesso di una persona che può modificare la struttura
+(`POST /auth/session/access`) — un token di integrazione non modifica il database:
+
+| Route | Corpo |
+|---|---|
+| `POST …/admin/bases/<base>/tables` | `{"label": "Tickets", "color": "#dc2626", "icon": "flame", "fields": […]}` |
+| `PATCH …/admin/bases/<base>/tables/<table>` | `{"color": "#2563eb", "icon": "inbox"}` — le tre chiavi `color`, `icon`, `image` viaggiano insieme: nominarne una sostituisce tutte e tre |
+| `POST …/admin/bases/<base>/tables/<table>/fields` | `{"label": "Priorité", "kind": "select", "options": [{"value": "haute", "color": "#dc2626", "icon": "flame"}, …]}` |
+| `PUT …/admin/bases/<base>/tables/<table>/fields/<champ>/options` | l’intero elenco delle opzioni, nell’ordine, ciascuna con il suo colore e la sua icona |
+
+Un agente passa dal [server MCP](/basedb/it/integrations/mcp/#colori-e-icone), dove
+**propone** queste modifiche. Un campo non ha un’icona da scegliere: l’interfaccia disegna quella
+del suo tipo.
+
 ## Creare un database da un modello
 
 Un’applicazione che si installa crea il suo database in **una sola chiamata**: il server applica il modello —
@@ -120,15 +167,17 @@ curl -X POST "http://localhost:3000/auth/introspect" \
 
 Ogni token che non vale — sconosciuto, scaduto, revocato, sessione chiusa, altro spazio di lavoro — risponde
 `{"active": false}`, senza dire perché. La risposta è letta in diretta: una disconnessione si vede
-immediatamente. Per un token di integrazione, la risposta indica anche il database che apre (`base`), il suo
-accesso (`read` o `write`) e le sue superfici.
+immediatamente. Per un token di integrazione, la risposta indica anche il database che apre (`base`, la sua
+produzione), se ne apre tutti gli ambienti (`environments`: `all`) oppure uno solo (`one`), il suo
+accesso (`read`, `write` o `delete`) e le sue superfici.
 
 ## La documentazione generata
 
 Ogni database ha la sua pagina **Documentazione API e MCP**: per ogni tabella, i suoi endpoint, le sue
 colonne, esempi in cURL e in JavaScript. È **filtrata in base ai tuoi permessi** — due
 lettori ne ottengono due versioni —, scritta **nella lingua del tuo schermo**, ed esiste anche
-in OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). I nomi, i percorsi e i codici
-di errore restano gli stessi in tutte le lingue.
+in OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`), che dichiara il token Bearer
+e l’intestazione `X-Basedb-Environment`. I nomi, i percorsi e i codici di errore restano gli
+stessi in tutte le lingue.
 
 ![La documentazione generata di un database](../../../../assets/screens/it/documentation-api.webp)

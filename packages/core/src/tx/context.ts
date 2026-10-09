@@ -61,6 +61,13 @@ export interface RequestContext {
   readonly schemaVersion: string | null
   readonly idempotencyKey: string | null
   readonly language: string
+  /**
+   * The environment the caller asked for — `X-Basedb-Environment`, `?environment=` of the
+   * MCP address, a tool's `environment` argument — or `null`: the one the base reference
+   * names. A base reference is resolved to the base of the SAME lineage whose environment
+   * this names (chapter 14 §1 bis); it widens nothing, the decider still has the last word.
+   */
+  readonly environment: string | null
 }
 
 export interface ContextInput {
@@ -74,6 +81,14 @@ export interface ContextInput {
   readonly schemaVersion?: string | null
   readonly idempotencyKey?: string | null
   readonly language?: string
+  readonly environment?: string | null
+}
+
+/** An environment as asked: trimmed, at most 60 characters (`ck_base_environment`), or `null`. */
+function normalizeEnvironment(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') return null
+  const text = value.normalize('NFC').trim()
+  return text === '' ? null : [...text].slice(0, 60).join('')
 }
 
 /**
@@ -100,6 +115,7 @@ export function sealContext(input: ContextInput): RequestContext {
     schemaVersion: input.schemaVersion ?? null,
     idempotencyKey: input.idempotencyKey ?? null,
     language: input.language ?? 'fr',
+    environment: normalizeEnvironment(input.environment),
   }) as RequestContext
 }
 

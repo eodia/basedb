@@ -35,6 +35,24 @@ or a field is captured by a trigger on the catalog, and can be read in the “Sc
 history. Lineage identifiers link a staging field to its production counterpart, even when
 renamed.
 
+## Through the API, the SDK and MCP
+
+A **token created for the whole base** opens all its environments, today’s and those you will
+add: a single token for production and staging. The program or the agent chooses the
+environment on each call:
+
+| Where | How |
+|---|---|
+| [REST API](/basedb/en/integrations/api-rest/#choose-the-environment) | the `X-Basedb-Environment: recette` header, or `?environment=recette` |
+| [SDK](/basedb/en/integrations/sdk/#environments) | `db.environment('recette')` |
+| [MCP](/basedb/en/integrations/mcp/#choose-the-environment) | the `…/mcp?environment=recette` address, or a tool’s `environment` argument |
+| [n8n](/basedb/en/integrations/n8n/#credentials) | the **Environment** field of the credential |
+
+Without any of this, each base designates its own environment: the production’s name opens
+production, the staging’s name opens staging. A token can also, when it is created, be limited
+to the environment on display: it then sees no other. Either way, its permissions are
+intersected, environment by environment, with those of the person who created it.
+
 ## In SQL
 
 Each environment is a schema: `b_t4z56fq_ventes` for production, `b_t4z56fq_ventes_recette`

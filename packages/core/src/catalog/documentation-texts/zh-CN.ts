@@ -56,6 +56,8 @@ export const zhCN: Catalog = {
     '提议创建一个数据表及其初始字段——由人决定是否采纳。',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
     '提议添加一个字段、一个单选列表，或一个关联——由人决定是否采纳。',
+  'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.':
+    '提议数据表的颜色和图标，以及其中列表各选项的颜色和图标——由人决定是否采纳。',
   'Relire une proposition du jeton et savoir ce qu’il en est advenu.':
     '查看令牌提交的某个提议，了解其处理结果。',
   'dépôt basedb': 'basedb 仓库',
@@ -92,22 +94,41 @@ export const zhCN: Catalog = {
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**此数据库未对智能体开放。**在开放之前，无论提供何种令牌，任何工具都无法看到它。',
   'Créer un jeton': '创建令牌',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    '在界面中，依次点击数据库的“⋯”菜单 → **API 与智能体** → **API 和 MCP 令牌…**，勾选 **MCP** 访问权限。该令牌仅对此数据库有效，默认**只读**：如需写入权限或删除权限，需显式勾选。它只会显示一次，并可在同一界面中撤销。同时勾选 **REST API** 时，同一个令牌也可供程序使用（参见“身份验证”）。',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    '在界面中，依次点击数据库的“⋯”菜单 → **API 与智能体** → **API 和 MCP 令牌…**，勾选 **MCP** 访问权限。该令牌可开放**整个数据库及其所有环境**——生产、预发布……——如果您加以限制，也可以只开放其中一个环境。令牌默认**只读**：如需写入权限或删除权限，需显式勾选。它只会显示一次，并可在同一界面中撤销。同时勾选 **REST API** 时，同一个令牌也可供程序使用（参见“身份验证”）。',
   'Garder le jeton hors de la configuration': '让令牌远离配置文件',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     '令牌应保存在环境变量 `BASEDB_TOKEN` 中，绝不能放进客户端的配置文件：配置文件会被纳入版本管理、同步，并且可以被会话中的所有程序读取。',
   'Déclarer le serveur dans le client': '在客户端中声明服务器',
-  'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).':
-    '客户端会启动**中继程序** `relay.js`，由它将消息转发给服务器。它会从 `--token-env` 指定的变量中读取令牌——如果未指定，则默认使用 `BASEDB_MCP_TOKEN`——并从 `--url`（或 `BASEDB_MCP_URL`）中获取服务器地址。',
+  'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.':
+    '使用 HTTP 传输 MCP 的客户端（例如 Claude Code）可以直接访问服务器地址 `…/mcp`，并带上请求头 {header}。在项目的 `.mcp.json` 文件中，`${BASEDB_TOKEN}` 会从环境变量中读取：令牌不会写入该文件。同一个令牌可以为每个环境各声明一个服务器。',
+  'Client sans HTTP : le relais': '不支持 HTTP 的客户端：中继程序',
+  'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).':
+    '只能启动本地程序（stdio）的客户端，通过**中继程序** `relay.js` 工作，由它将消息转发给服务器。它会从 `--token-env` 指定的变量中读取令牌——如果未指定，则默认使用 `BASEDB_MCP_TOKEN`——从 `--url`（或 `BASEDB_MCP_URL`）中获取服务器地址，并从 `--environment`（或 `BASEDB_MCP_ENVIRONMENT`）中获取环境。',
   'Autre client MCP': '其他 MCP 客户端',
   'votre-instance': 'your-instance',
-  'Sans relais': '不使用中继',
-  'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
-    '使用 HTTP 传输 MCP 的客户端可以直接访问服务器地址 `…/mcp`，并带上请求头 {header}。令牌只在创建时勾选过的访问范围内有效：仅勾选“MCP”的令牌会被 REST API 拒绝，反之亦然。',
+  recette: 'staging',
+  'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
+    '令牌只在创建时勾选过的访问范围内有效：仅勾选“MCP”的令牌会被 REST API 拒绝，反之亦然。',
+  'Choisir l’environnement': '选择环境',
+  'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :':
+    '一个数据库可以有多个环境——生产、预发布、开发——每个环境都有各自的数据表和行。覆盖整个数据库的令牌可以访问所有环境；环境在调用时选择，下面按范围从大到小列出：',
+  '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.':
+    '**数据库名称**，不加任何其他内容：{base} 即生产环境，而每个环境也都有各自的名称。',
+  '**L’adresse du serveur** : {address} — un serveur déclaré par environnement.':
+    '**服务器地址**：{address}——每个环境声明一个服务器。',
+  '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.':
+    '每个需要指定数据库的工具的 **`environment` 参数**，仅对单次调用生效：{example}。',
+  'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.':
+    '环境以其徽标上的名称指定，不区分大小写和重音符号，也可以写作 `production`。数据库中不存在的环境会返回 `RESOURCE_NOT_FOUND`。',
   Vérifier: '验证',
-  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.':
-    '让智能体调用 `whoami`：它会返回创建该令牌的人、令牌所限定的数据库，以及其实际权限。',
+  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.':
+    '让智能体调用 `whoami`：它会返回创建该令牌的人、令牌所限定的数据库、令牌可访问的环境（`scope.available`），以及其实际权限。',
+  'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.':
+    '关于外观：在 `propose_create_table` 以及 `propose_add_field` 的选项中使用 `color` 和 `icon`；对已存在的数据表则使用 `propose_update_look`。',
+  'Couleurs et pictogrammes': '颜色和图标',
+  'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.':
+    '与应用中一样，数据表以及列表的每个选项都有颜色和图标。`color` 是形如 `#rrggbb` 的颜色；`icon` 是应用所绘制图标之一的名称——工具的参数结构中列出了全部名称。省略某个键则保留现有值，`null` 则将其清除。`describe_base` 和 `describe_table` 会返回当前的外观。',
   Outils: '工具',
   '{count} outils, toujours les mêmes : leur nom et leur description ne dépendent jamais de vos données. Le schéma se découvre en les appelant.':
     '{count} 个工具，且始终固定不变：它们的名称和描述从不取决于您的数据。调用它们即可发现其参数结构。',
@@ -235,11 +256,14 @@ export const zhCN: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     '所有数据路由都需要在 `Authorization` 请求头中提供**令牌**。这里绝不接受会话 Cookie：因为浏览器会在每个请求中自动带上它，包括由外部页面触发的请求。',
   'Jeton d’intégration': '集成令牌',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    '程序——脚本、同步任务、其他应用——需要出示一个**集成令牌**，其前缀为 `bdb_`。它仅对此数据库有效：可以读取，如果创建时授予了写入权限，还可以创建和修改，并且**只有在专门为删除而创建时才会删除**；它的权限永远不会超过创建它的人，且每次调用都会与此人的当前权限取交集。管理后台、SQL 控制台和 AI 功能对它始终关闭。',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    '程序——脚本、同步任务、其他应用——需要出示一个**集成令牌**，其前缀为 `bdb_`。它仅对此数据库有效——涵盖其所有环境，或仅限其中一个环境；可以读取，如果创建时授予了写入权限，还可以创建和修改，并且**只有在专门为删除而创建时才会删除**；它的权限永远不会超过创建它的人，且每次调用都会与此人的当前权限取交集。管理后台、SQL 控制台和 AI 功能对它始终关闭。',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     '创建方法：依次点击数据库的“⋯”菜单 → **API 与智能体** → **API 和 MCP 令牌…**，勾选 **REST API** 访问权限。它只会显示一次。',
   Appel: '调用',
+  Environnement: '环境',
+  'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.':
+    '为整个数据库创建的令牌可以访问其所有环境。路径指明数据库——{base} 即生产环境——请求头 {header} 用于选择环境；对于不发送请求头的客户端，`?environment=` 的作用相同。两者都未提供时，使用的是数据库名称所对应的环境。',
   'Une authentification absente répond `401`, jamais `404` : vous devez pouvoir vous reconnecter.':
     '缺少身份验证时会返回 `401`，绝不会返回 `404`：这样您才能重新登录。',
   Conventions: '约定',

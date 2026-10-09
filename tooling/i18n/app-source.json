@@ -71,7 +71,7 @@
   },
   " · utilisé le {last_used_at}": {
     "where": [
-      "components/app/token-dialog.tsx:338"
+      "components/app/token-dialog.tsx:467"
     ]
   },
   " · via le projet": {
@@ -185,7 +185,7 @@
   },
   ": les configurations ci-dessous n’en portent que le nom, jamais le jeton.": {
     "where": [
-      "components/app/token-dialog.tsx:283"
+      "components/app/token-dialog.tsx:392"
     ]
   },
   ": partagez publiquement une vue calendrier ou chronologie ; son dialogue de partage donne l’adresse de son flux iCalendar. Dans Google Agenda : « Autres agendas » → « À partir de l’URL ».": {
@@ -222,7 +222,7 @@
   },
   "· expire le {format}": {
     "where": [
-      "components/app/proposal-dialog.tsx:200"
+      "components/app/proposal-dialog.tsx:263"
     ]
   },
   "· fuseau {timezone}": {
@@ -378,6 +378,11 @@
       "lib/messages.ts:74"
     ]
   },
+  "(apparence effacée)": {
+    "where": [
+      "components/app/proposal-dialog.tsx:110"
+    ]
+  },
   "(aucun filtre)": {
     "where": [
       "components/app/copilot-panel.tsx:641"
@@ -390,7 +395,7 @@
   },
   "(MCP) · {format}": {
     "where": [
-      "components/app/proposal-dialog.tsx:199"
+      "components/app/proposal-dialog.tsx:262"
     ]
   },
   "(vous)": {
@@ -401,37 +406,37 @@
   },
   "{at} : couleur invalide (attendu #rrggbb).": {
     "where": [
-      "lib/options.ts:184"
+      "lib/options.ts:171"
     ]
   },
   "{at} : image invalide (https ou data:image).": {
     "where": [
-      "lib/options.ts:198"
+      "lib/options.ts:185"
     ]
   },
   "{at} : image trop lourde.": {
     "where": [
-      "lib/options.ts:201"
+      "lib/options.ts:188"
     ]
   },
   "{at} : ni « value » ni « label ».": {
     "where": [
-      "lib/options.ts:178"
+      "lib/options.ts:165"
     ]
   },
   "{at} : ni un texte ni un objet.": {
     "where": [
-      "lib/options.ts:172"
+      "lib/options.ts:159"
     ]
   },
   "{at} : nom de pictogramme invalide.": {
     "where": [
-      "lib/options.ts:190"
+      "lib/options.ts:177"
     ]
   },
   "{at} : un pictogramme ou une image, pas les deux.": {
     "where": [
-      "lib/options.ts:206"
+      "lib/options.ts:193"
     ]
   },
   "{attempts} tentatives": {
@@ -695,7 +700,7 @@
     "one": "{count} jour",
     "other": "{count} jours",
     "where": [
-      "components/app/token-dialog.tsx:444",
+      "components/app/token-dialog.tsx:601",
       "lib/automations.ts:1843"
     ]
   },
@@ -881,7 +886,7 @@
     "one": "{count} proposition d’agent en attente",
     "other": "{count} propositions d’agent en attente",
     "where": [
-      "components/app/sidebar.tsx:1019"
+      "components/app/sidebar.tsx:1020"
     ]
   },
   "{count} questions": {
@@ -1388,7 +1393,7 @@
   },
   "{value} par {value2}": {
     "where": [
-      "components/app/proposal-dialog.tsx:237"
+      "components/app/proposal-dialog.tsx:303"
     ]
   },
   "{value} pour {group}": {
@@ -1509,7 +1514,7 @@
   },
   "à corriger": {
     "where": [
-      "components/app/sidebar.tsx:1095"
+      "components/app/sidebar.tsx:1096"
     ]
   },
   "À corriger": {
@@ -1614,7 +1619,7 @@
   },
   "À quoi sert ce jeton ?": {
     "where": [
-      "components/app/token-dialog.tsx:388"
+      "components/app/token-dialog.tsx:517"
     ]
   },
   "À quoi sert ce projet ?": {
@@ -1701,7 +1706,7 @@
   },
   "Accès": {
     "where": [
-      "components/app/token-dialog.tsx:399"
+      "components/app/token-dialog.tsx:528"
     ]
   },
   "Accès aux données": {
@@ -1758,12 +1763,12 @@
   },
   "Actions sur {kind} {label}": {
     "where": [
-      "components/app/sidebar.tsx:1438"
+      "components/app/sidebar.tsx:1439"
     ]
   },
   "Actions sur la base {label}": {
     "where": [
-      "components/app/sidebar.tsx:1046"
+      "components/app/sidebar.tsx:1047"
     ]
   },
   "Actions sur la carte": {
@@ -1778,12 +1783,12 @@
   },
   "Actions sur la question {label}": {
     "where": [
-      "components/app/dashboards.tsx:675"
+      "components/app/dashboards.tsx:690"
     ]
   },
   "Actions sur la table {label}": {
     "where": [
-      "components/app/sidebar.tsx:1300"
+      "components/app/sidebar.tsx:1301"
     ]
   },
   "Actions sur la vue {label}": {
@@ -1803,13 +1808,13 @@
   },
   "Active": {
     "where": [
-      "components/app/automations.tsx:577",
+      "components/app/automations.tsx:585",
       "components/product-glimpse.tsx:784"
     ]
   },
   "Activer {label}": {
     "where": [
-      "components/app/automations.tsx:294"
+      "components/app/automations.tsx:302"
     ]
   },
   "Actualiser": {
@@ -2105,7 +2110,7 @@
   },
   "Agrandir le panneau": {
     "where": [
-      "components/app/sidebar.tsx:603"
+      "components/app/sidebar.tsx:604"
     ]
   },
   "Agrandir le panneau latéral": {
@@ -2198,8 +2203,8 @@
   },
   "Ajouter à": {
     "where": [
-      "components/app/proposal-dialog.tsx:117",
-      "components/app/proposal-dialog.tsx:131"
+      "components/app/proposal-dialog.tsx:155",
+      "components/app/proposal-dialog.tsx:169"
     ]
   },
   "Ajouter à l’instance": {
@@ -2339,17 +2344,17 @@
     "where": [
       "components/app/automation-flow.tsx:492",
       "components/app/automation-picker.tsx:141",
-      "components/app/automations.tsx:785"
+      "components/app/automations.tsx:793"
     ]
   },
   "Ajouter une étape à ce chemin": {
     "where": [
-      "components/app/automations.tsx:940"
+      "components/app/automations.tsx:948"
     ]
   },
   "Ajouter une étape dans la boucle": {
     "where": [
-      "components/app/automations.tsx:869"
+      "components/app/automations.tsx:877"
     ]
   },
   "Ajouter une étape ici": {
@@ -2428,7 +2433,7 @@
   },
   "Alias de compatibilité…": {
     "where": [
-      "components/app/sidebar.tsx:852"
+      "components/app/sidebar.tsx:853"
     ]
   },
   "Aligné à droite": {
@@ -2595,17 +2600,17 @@
   },
   "API et agents": {
     "where": [
-      "components/app/sidebar.tsx:797"
+      "components/app/sidebar.tsx:798"
     ]
   },
   "API REST": {
     "where": [
-      "components/app/token-dialog.tsx:67"
+      "components/app/token-dialog.tsx:71"
     ]
   },
   "API REST — JavaScript": {
     "where": [
-      "components/app/token-dialog.tsx:108"
+      "components/app/token-dialog.tsx:149"
     ]
   },
   "Appareil inconnu": {
@@ -2669,7 +2674,7 @@
   "Appliquée": {
     "where": [
       "components/app/environments-dialog.tsx:382",
-      "components/app/proposal-dialog.tsx:42"
+      "components/app/proposal-dialog.tsx:50"
     ]
   },
   "Appliquer": {
@@ -2723,12 +2728,12 @@
   },
   "Approuvée": {
     "where": [
-      "components/app/proposal-dialog.tsx:238"
+      "components/app/proposal-dialog.tsx:304"
     ]
   },
   "Approuver et appliquer": {
     "where": [
-      "components/app/proposal-dialog.tsx:259"
+      "components/app/proposal-dialog.tsx:325"
     ]
   },
   "Après {step}": {
@@ -2852,7 +2857,7 @@
   },
   "Attendu : une liste, par exemple [{ \"value\": \"actif\", \"label\": \"Actif\" }].": {
     "where": [
-      "lib/options.ts:162"
+      "lib/options.ts:149"
     ]
   },
   "attendu oui/non, vrai/faux ou 1/0": {
@@ -3103,7 +3108,7 @@
   },
   "Aucun jeton pour l’instant.": {
     "where": [
-      "components/app/token-dialog.tsx:316"
+      "components/app/token-dialog.tsx:436"
     ]
   },
   "Aucun membre.": {
@@ -3161,12 +3166,12 @@
   },
   "Aucun tableau de bord dans cette base. Vous pouvez explorer ses données avec vos droits.": {
     "where": [
-      "components/app/dashboards.tsx:481"
+      "components/app/dashboards.tsx:496"
     ]
   },
   "Aucun tableau de bord.": {
     "where": [
-      "components/app/dashboards.tsx:359"
+      "components/app/dashboards.tsx:374"
     ]
   },
   "Aucun utilisateur ne correspond.": {
@@ -3215,7 +3220,7 @@
   },
   "Aucune automatisation. Faites faire à la base ce que vous refaites à la main.": {
     "where": [
-      "components/app/automations.tsx:251"
+      "components/app/automations.tsx:259"
     ]
   },
   "Aucune autre automatisation dans cette base.": {
@@ -3245,12 +3250,12 @@
   },
   "Aucune base visible dans ce projet.": {
     "where": [
-      "components/app/sidebar.tsx:562"
+      "components/app/sidebar.tsx:563"
     ]
   },
   "Aucune base.": {
     "where": [
-      "components/app/sidebar.tsx:1243"
+      "components/app/sidebar.tsx:1244"
     ]
   },
   "Aucune carte": {
@@ -3443,12 +3448,12 @@
   },
   "Aucune proposition en attente.": {
     "where": [
-      "components/app/proposal-dialog.tsx:349"
+      "components/app/proposal-dialog.tsx:415"
     ]
   },
   "Aucune question enregistrée.": {
     "where": [
-      "components/app/dashboards.tsx:400"
+      "components/app/dashboards.tsx:415"
     ]
   },
   "Aucune question notée : donnez la bonne réponse d’au moins une question.": {
@@ -3496,7 +3501,7 @@
     "where": [
       "components/app/analytics/notebook.tsx:238",
       "components/app/environments-dialog.tsx:1174",
-      "components/app/sidebar.tsx:1143"
+      "components/app/sidebar.tsx:1144"
     ]
   },
   "Aucune valeur": {
@@ -3617,7 +3622,7 @@
     "where": [
       "app/page.tsx:101",
       "components/app/automation-copilot.tsx:252",
-      "components/app/automations.tsx:231"
+      "components/app/automations.tsx:239"
     ]
   },
   "Automatisations de « {base} »": {
@@ -3659,8 +3664,8 @@
   },
   "Autres actions": {
     "where": [
-      "components/app/automations.tsx:605",
-      "components/app/sidebar.tsx:829"
+      "components/app/automations.tsx:613",
+      "components/app/sidebar.tsx:830"
     ]
   },
   "Autres actions sur la requête": {
@@ -3691,7 +3696,7 @@
   },
   "Avec l’éditeur visuel": {
     "where": [
-      "components/app/dashboards.tsx:389"
+      "components/app/dashboards.tsx:404"
     ]
   },
   "Avec les pourcentages": {
@@ -3779,7 +3784,7 @@
   },
   "Base · {label}": {
     "where": [
-      "components/app/sidebar.tsx:574",
+      "components/app/sidebar.tsx:575",
       "components/product-glimpse.tsx:1025"
     ]
   },
@@ -3836,8 +3841,8 @@
   },
   "Bases et tables": {
     "where": [
-      "components/app/sidebar.tsx:1187",
-      "components/app/sidebar.tsx:1203"
+      "components/app/sidebar.tsx:1188",
+      "components/app/sidebar.tsx:1204"
     ]
   },
   "Bases supprimées ({deletedCount})": {
@@ -3852,12 +3857,12 @@
   },
   "bdb_{prefix}… · {surfaces} · {value}{value2}": {
     "where": [
-      "components/app/token-dialog.tsx:327"
+      "components/app/token-dialog.tsx:456"
     ]
   },
   "bdb_{prefix}… · {surfaces} · créé le {created_at} · {value} · {value2}": {
     "where": [
-      "components/app/settings/tokens-tab.tsx:153"
+      "components/app/settings/tokens-tab.tsx:160"
     ]
   },
   "Bienvenue aux nouveaux clients": {
@@ -4322,7 +4327,7 @@
   "Ce n’est pas du JSON valide.": {
     "where": [
       "components/app/template-gallery.tsx:1176",
-      "lib/options.ts:152"
+      "lib/options.ts:139"
     ]
   },
   "Ce n’est pas vous ? Changer de compte": {
@@ -4981,7 +4986,7 @@
   },
   "Changer d’environnement": {
     "where": [
-      "components/app/sidebar.tsx:974"
+      "components/app/sidebar.tsx:975"
     ]
   },
   "Changer de vue": {
@@ -4998,6 +5003,11 @@
   "Changer l’adresse du webhook ?": {
     "where": [
       "components/app/automation-steps.tsx:1001"
+    ]
+  },
+  "Changer l’apparence de": {
+    "where": [
+      "components/app/proposal-dialog.tsx:189"
     ]
   },
   "Changer le mot de passe": {
@@ -5160,7 +5170,7 @@
     "where": [
       "components/app/automation-flow.tsx:405",
       "components/app/automation-steps.tsx:2810",
-      "components/app/automations.tsx:889"
+      "components/app/automations.tsx:897"
     ]
   },
   "chemin « {detail} »": {
@@ -5171,12 +5181,12 @@
   },
   "Chemin « {label} »": {
     "where": [
-      "components/app/automations.tsx:886"
+      "components/app/automations.tsx:894"
     ]
   },
   "Chemin « Sinon »": {
     "where": [
-      "components/app/automations.tsx:888"
+      "components/app/automations.tsx:896"
     ]
   },
   "Chemin {value}": {
@@ -5383,7 +5393,7 @@
   },
   "Choisissez au moins un accès.": {
     "where": [
-      "components/app/token-dialog.tsx:414"
+      "components/app/token-dialog.tsx:543"
     ]
   },
   "Choisissez au moins un champ à écrire.": {
@@ -5499,7 +5509,7 @@
   },
   "Choisissez une automatisation, ou créez-en une.": {
     "where": [
-      "components/app/automations.tsx:305"
+      "components/app/automations.tsx:313"
     ]
   },
   "Choisissez une base": {
@@ -5514,7 +5524,7 @@
   },
   "Choisissez une étape sur le flux pour la régler.": {
     "where": [
-      "components/app/automations.tsx:948"
+      "components/app/automations.tsx:956"
     ]
   },
   "Choisissez une table": {
@@ -5534,6 +5544,11 @@
       "components/app/password-required.tsx:65"
     ]
   },
+  "choisit l’environnement ; sans lui, c’est la production.": {
+    "where": [
+      "components/app/token-dialog.tsx:404"
+    ]
+  },
   "Choix": {
     "where": [
       "components/app/schema-editor.tsx:1123",
@@ -5542,7 +5557,7 @@
   },
   "Choix :": {
     "where": [
-      "components/app/proposal-dialog.tsx:137"
+      "components/app/proposal-dialog.tsx:175"
     ]
   },
   "Choix (plusieurs par ligne)": {
@@ -5976,8 +5991,8 @@
   },
   "Comparer les environnements…": {
     "where": [
-      "components/app/sidebar.tsx:836",
-      "components/app/sidebar.tsx:1009"
+      "components/app/sidebar.tsx:837",
+      "components/app/sidebar.tsx:1010"
     ]
   },
   "Comparer une valeur": {
@@ -6381,7 +6396,7 @@
   },
   "Copiez le jeton « {label} » maintenant : il ne sera plus jamais affiché. Placez-le dans la variable d’environnement": {
     "where": [
-      "components/app/token-dialog.tsx:278"
+      "components/app/token-dialog.tsx:387"
     ]
   },
   "Copiez le secret de « {label} » maintenant : il ne sera plus jamais affiché. Il sert au système destinataire à vérifier que chaque envoi vient bien d’ici.": {
@@ -6664,7 +6679,7 @@
   },
   "créée": {
     "where": [
-      "components/app/proposal-dialog.tsx:52"
+      "components/app/proposal-dialog.tsx:60"
     ]
   },
   "Créées par moi": {
@@ -6674,7 +6689,7 @@
   },
   "Créer": {
     "where": [
-      "components/app/automations.tsx:600",
+      "components/app/automations.tsx:608",
       "components/app/command-palette.tsx:1034",
       "components/app/record-panel.tsx:458"
     ]
@@ -6687,7 +6702,7 @@
   },
   "Créer la première table": {
     "where": [
-      "components/app/sidebar.tsx:1140"
+      "components/app/sidebar.tsx:1141"
     ]
   },
   "Créer la table": {
@@ -6716,7 +6731,7 @@
   },
   "Créer le jeton": {
     "where": [
-      "components/app/token-dialog.tsx:496"
+      "components/app/token-dialog.tsx:653"
     ]
   },
   "Créer le lien": {
@@ -6752,7 +6767,7 @@
   },
   "Créer ou révoquer un jeton demande de confirmer son mot de passe, et votre compte se connecte par un fournisseur d’identité, sans mot de passe. Demandez-le à une personne qui gère cette base et se connecte avec un mot de passe.": {
     "where": [
-      "components/app/token-dialog.tsx:379"
+      "components/app/token-dialog.tsx:508"
     ]
   },
   "Créer un alias de compatibilité sous l’ancien nom": {
@@ -6767,7 +6782,7 @@
   },
   "Créer un jeton pour cette base demande le niveau Gestion sur elle, ou sur son projet. Demandez-le à une personne qui la gère, ou à un administrateur.": {
     "where": [
-      "components/app/token-dialog.tsx:152"
+      "components/app/token-dialog.tsx:218"
     ]
   },
   "Créer un jeton pour l’API REST ou le MCP": {
@@ -6782,7 +6797,7 @@
   },
   "Créer un tableau de bord": {
     "where": [
-      "components/app/dashboards.tsx:488"
+      "components/app/dashboards.tsx:503"
     ]
   },
   "Créer une base": {
@@ -7130,7 +7145,7 @@
   },
   "Décidées ou closes ({decidedCount})": {
     "where": [
-      "components/app/proposal-dialog.tsx:377"
+      "components/app/proposal-dialog.tsx:443"
     ]
   },
   "Décimales": {
@@ -7140,7 +7155,7 @@
   },
   "Déclencheur": {
     "where": [
-      "components/app/automations.tsx:767"
+      "components/app/automations.tsx:775"
     ]
   },
   "Décochez pour masquer, glissez pour ordonner.": {
@@ -7213,7 +7228,7 @@
   },
   "Demandé pour créer ou révoquer un jeton : ouvrir une porte vers l’extérieur exige une preuve récente.": {
     "where": [
-      "components/app/token-dialog.tsx:476"
+      "components/app/token-dialog.tsx:633"
     ]
   },
   "Demander à l’IA": {
@@ -7322,7 +7337,7 @@
   "Déplier {label}": {
     "where": [
       "components/app/admin/permissions-tab.tsx:410",
-      "components/app/sidebar.tsx:950"
+      "components/app/sidebar.tsx:951"
     ]
   },
   "Déplier le groupe": {
@@ -7490,7 +7505,7 @@
   },
   "Désactiver {label}": {
     "where": [
-      "components/app/automations.tsx:293"
+      "components/app/automations.tsx:301"
     ]
   },
   "Désactiver ce compte ?": {
@@ -7516,8 +7531,8 @@
   },
   "Descendre l’étape": {
     "where": [
-      "components/app/automations.tsx:815",
-      "components/app/automations.tsx:821"
+      "components/app/automations.tsx:823",
+      "components/app/automations.tsx:829"
     ]
   },
   "Descendre le chemin {label}": {
@@ -7563,7 +7578,7 @@
   },
   "Description proposée :": {
     "where": [
-      "components/app/proposal-dialog.tsx:157"
+      "components/app/proposal-dialog.tsx:220"
     ]
   },
   "Description trop longue : {maximum} caractères au maximum.": {
@@ -7750,8 +7765,8 @@
   "Documentation API et MCP": {
     "where": [
       "app/page.tsx:103",
-      "components/app/sidebar.tsx:637",
-      "components/app/sidebar.tsx:803"
+      "components/app/sidebar.tsx:638",
+      "components/app/sidebar.tsx:804"
     ]
   },
   "Documentation API et MCP de « {base} »": {
@@ -7869,7 +7884,7 @@
   },
   "Droits": {
     "where": [
-      "components/app/token-dialog.tsx:421"
+      "components/app/token-dialog.tsx:578"
     ]
   },
   "droits accès membres invitations||mots-clés de recherche": {
@@ -8011,7 +8026,7 @@
   },
   "Échec": {
     "where": [
-      "components/app/proposal-dialog.tsx:48",
+      "components/app/proposal-dialog.tsx:56",
       "components/app/webhook-dialog.tsx:47"
     ]
   },
@@ -8174,7 +8189,7 @@
     "where": [
       "components/app/analytics/sql-question.tsx:94",
       "components/app/date-picker.tsx:378",
-      "components/app/sidebar.tsx:503"
+      "components/app/sidebar.tsx:504"
     ]
   },
   "Effacer {label}": {
@@ -8209,7 +8224,7 @@
   },
   "Élément {value}": {
     "where": [
-      "lib/options.ts:169"
+      "lib/options.ts:156"
     ]
   },
   "Élément introuvable.": {
@@ -8234,7 +8249,7 @@
   },
   "Elle disparaît de vos questions.": {
     "where": [
-      "components/app/dashboards.tsx:565"
+      "components/app/dashboards.tsx:580"
     ]
   },
   "Elle disparaît de vos requêtes. Un onglet qui la montre garde son texte.": {
@@ -8249,7 +8264,7 @@
   },
   "Elle disparaît pour tous ceux qui la voient. Les tableaux de bord qui la montrent le diront.": {
     "where": [
-      "components/app/dashboards.tsx:566"
+      "components/app/dashboards.tsx:581"
     ]
   },
   "Elle disparaît pour tous ceux qui la voient. Un onglet qui la montre garde son texte.": {
@@ -8322,8 +8337,8 @@
   },
   "En attente": {
     "where": [
-      "components/app/proposal-dialog.tsx:37",
-      "components/app/proposal-dialog.tsx:346",
+      "components/app/proposal-dialog.tsx:45",
+      "components/app/proposal-dialog.tsx:412",
       "components/app/webhook-dialog.tsx:44"
     ]
   },
@@ -8354,7 +8369,7 @@
   },
   "En cours": {
     "where": [
-      "components/app/proposal-dialog.tsx:40",
+      "components/app/proposal-dialog.tsx:48",
       "components/app/webhook-dialog.tsx:45",
       "components/product-glimpse.tsx:802"
     ]
@@ -8408,7 +8423,7 @@
   },
   "En SQL": {
     "where": [
-      "components/app/dashboards.tsx:392"
+      "components/app/dashboards.tsx:407"
     ]
   },
   "En-tête": {
@@ -8490,7 +8505,7 @@
   },
   "Enregistrer comme modèle…": {
     "where": [
-      "components/app/sidebar.tsx:840"
+      "components/app/sidebar.tsx:841"
     ]
   },
   "Enregistrer comme vue": {
@@ -8563,7 +8578,7 @@
   },
   "Enregistrez d’abord : l’essai exécute ce qui est enregistré": {
     "where": [
-      "components/app/automations.tsx:1009"
+      "components/app/automations.tsx:1017"
     ]
   },
   "Enregistrez l’automatisation : son adresse apparaîtra ici.": {
@@ -8652,7 +8667,7 @@
   },
   "Environnement de {label} : {label2}": {
     "where": [
-      "components/app/sidebar.tsx:978"
+      "components/app/sidebar.tsx:979"
     ]
   },
   "Environnement source": {
@@ -8663,12 +8678,13 @@
   "Environnements": {
     "where": [
       "components/app/environments-editor.tsx:236",
-      "components/app/environments-editor.tsx:379"
+      "components/app/environments-editor.tsx:379",
+      "components/app/token-dialog.tsx:550"
     ]
   },
   "Environnements de {label}": {
     "where": [
-      "components/app/sidebar.tsx:993"
+      "components/app/sidebar.tsx:994"
     ]
   },
   "Envoi": {
@@ -8987,7 +9003,7 @@
   },
   "Exécutions": {
     "where": [
-      "components/app/automations.tsx:695"
+      "components/app/automations.tsx:703"
     ]
   },
   "Exemple :": {
@@ -9017,18 +9033,18 @@
   },
   "Expiré": {
     "where": [
-      "components/app/token-dialog.tsx:77"
+      "components/app/token-dialog.tsx:81"
     ]
   },
   "expire le {expires_at}": {
     "where": [
-      "components/app/settings/tokens-tab.tsx:160",
-      "components/app/token-dialog.tsx:333"
+      "components/app/settings/tokens-tab.tsx:167",
+      "components/app/token-dialog.tsx:462"
     ]
   },
   "Expirée": {
     "where": [
-      "components/app/proposal-dialog.tsx:46"
+      "components/app/proposal-dialog.tsx:54"
     ]
   },
   "Explique ce que fait cette automatisation": {
@@ -9048,8 +9064,8 @@
   },
   "Explorer les données": {
     "where": [
-      "components/app/dashboards.tsx:418",
-      "components/app/dashboards.tsx:492"
+      "components/app/dashboards.tsx:433",
+      "components/app/dashboards.tsx:507"
     ]
   },
   "Export écrit dans": {
@@ -9250,7 +9266,7 @@
   },
   "Fermer le message": {
     "where": [
-      "components/app/automations.tsx:631"
+      "components/app/automations.tsx:639"
     ]
   },
   "Fermer les autres": {
@@ -9461,7 +9477,7 @@
   },
   "Filtrer la navigation": {
     "where": [
-      "components/app/sidebar.tsx:494"
+      "components/app/sidebar.tsx:495"
     ]
   },
   "Filtrer le tableau : « {text} »": {
@@ -9476,7 +9492,7 @@
   },
   "Filtrer les bases, tables et requêtes": {
     "where": [
-      "components/app/sidebar.tsx:496"
+      "components/app/sidebar.tsx:497"
     ]
   },
   "Filtrer les sections": {
@@ -10295,8 +10311,8 @@
   },
   "Importer…": {
     "where": [
-      "components/app/sidebar.tsx:1314",
-      "components/app/sidebar.tsx:1343"
+      "components/app/sidebar.tsx:1315",
+      "components/app/sidebar.tsx:1344"
     ]
   },
   "Impossible de retirer {used} : ce choix est encore utilisé.": {
@@ -10394,7 +10410,7 @@
     "where": [
       "app/page.tsx:102",
       "components/app/integrations.tsx:94",
-      "components/app/sidebar.tsx:642"
+      "components/app/sidebar.tsx:643"
     ]
   },
   "Intégrations de « {base} »": {
@@ -10549,7 +10565,7 @@
   },
   "jamais utilisé": {
     "where": [
-      "components/app/settings/tokens-tab.tsx:163"
+      "components/app/settings/tokens-tab.tsx:170"
     ]
   },
   "Jauge": {
@@ -10581,17 +10597,17 @@
   },
   "Jetons API et MCP — {label}": {
     "where": [
-      "components/app/token-dialog.tsx:258"
+      "components/app/token-dialog.tsx:361"
     ]
   },
   "Jetons API et MCP…": {
     "where": [
-      "components/app/sidebar.tsx:807"
+      "components/app/sidebar.tsx:808"
     ]
   },
   "Jetons de cette base": {
     "where": [
-      "components/app/token-dialog.tsx:310"
+      "components/app/token-dialog.tsx:430"
     ]
   },
   "Joindre des données": {
@@ -10898,6 +10914,11 @@
       "components/app/automation-steps.tsx:1564"
     ]
   },
+  "L’en-tête": {
+    "where": [
+      "components/app/token-dialog.tsx:403"
+    ]
+  },
   "L’en-tête « {d} » est donné deux fois.": {
     "where": [
       "lib/automations.ts:2459"
@@ -11076,7 +11097,7 @@
   },
   "La décrire au Copilot": {
     "where": [
-      "components/app/automations.tsx:314"
+      "components/app/automations.tsx:322"
     ]
   },
   "la fiche": {
@@ -11223,7 +11244,7 @@
   },
   "La liste est vide.": {
     "where": [
-      "lib/options.ts:165"
+      "lib/options.ts:152"
     ]
   },
   "La même période l’an dernier": {
@@ -11341,7 +11362,7 @@
   },
   "la requête": {
     "where": [
-      "components/app/sidebar.tsx:1121"
+      "components/app/sidebar.tsx:1122"
     ]
   },
   "La requête a été exécutée, mais elle ne renvoie aucune ligne.": {
@@ -11440,7 +11461,7 @@
   },
   "La table est vide.": {
     "where": [
-      "components/app/automations.tsx:1075"
+      "components/app/automations.tsx:1083"
     ]
   },
   "La table n’a pas de liste de choix.": {
@@ -11460,7 +11481,7 @@
   },
   "La valeur « {value} » apparaît deux fois.": {
     "where": [
-      "lib/options.ts:227"
+      "lib/options.ts:214"
     ]
   },
   "La valeur de l’en-tête « {d} » est trop longue, ou sur plusieurs lignes.": {
@@ -11490,7 +11511,7 @@
   },
   "la vue": {
     "where": [
-      "components/app/sidebar.tsx:1100",
+      "components/app/sidebar.tsx:1101",
       "components/app/views/share-dialog.tsx:92"
     ]
   },
@@ -11609,7 +11630,7 @@
   },
   "le {format}": {
     "where": [
-      "components/app/proposal-dialog.tsx:242"
+      "components/app/proposal-dialog.tsx:308"
     ]
   },
   "Le {value} à {at}": {
@@ -11629,7 +11650,7 @@
   },
   "le champ": {
     "where": [
-      "components/app/proposal-dialog.tsx:131"
+      "components/app/proposal-dialog.tsx:169"
     ]
   },
   "Le champ « {d} » doit être un champ Document.": {
@@ -11801,14 +11822,19 @@
       "lib/messages.ts:26"
     ]
   },
+  "Le jeton n’ouvrira aucun autre environnement de la base.": {
+    "where": [
+      "components/app/token-dialog.tsx:571"
+    ]
+  },
   "Le jeton pourra aussi supprimer des lignes, une à la fois. Une ligne supprimée se restaure depuis son historique — ou par l’agent lui-même, avec restore_record.": {
     "where": [
-      "components/app/token-dialog.tsx:458"
+      "components/app/token-dialog.tsx:615"
     ]
   },
   "Le jeton pourra créer et modifier des lignes, jamais en supprimer.": {
     "where": [
-      "components/app/token-dialog.tsx:453"
+      "components/app/token-dialog.tsx:610"
     ]
   },
   "le jour même": {
@@ -12049,7 +12075,7 @@
   },
   "Lecture et écriture": {
     "where": [
-      "components/app/token-dialog.tsx:147"
+      "components/app/token-dialog.tsx:213"
     ]
   },
   "lecture seule": {
@@ -12071,7 +12097,7 @@
   },
   "Lecture, écriture et suppression": {
     "where": [
-      "components/app/token-dialog.tsx:145"
+      "components/app/token-dialog.tsx:211"
     ]
   },
   "Légende": {
@@ -12166,7 +12192,7 @@
   },
   "Les 50 dernières, gardées 30 jours. Choisissez-en une pour voir, sur le flux, le chemin qu’elle a pris.": {
     "where": [
-      "components/app/automations.tsx:1116"
+      "components/app/automations.tsx:1124"
     ]
   },
   "Les administrateurs ont tous les droits sur tous les projets, et administrent les comptes et les permissions.": {
@@ -12936,17 +12962,17 @@
   },
   "MCP": {
     "where": [
-      "components/app/token-dialog.tsx:68"
-    ]
-  },
-  "MCP — autre client": {
-    "where": [
-      "components/app/token-dialog.tsx:127"
+      "components/app/token-dialog.tsx:72"
     ]
   },
   "MCP — Claude Code": {
     "where": [
-      "components/app/token-dialog.tsx:122"
+      "components/app/token-dialog.tsx:166"
+    ]
+  },
+  "MCP — fichier .mcp.json": {
+    "where": [
+      "components/app/token-dialog.tsx:178"
     ]
   },
   "Me notifier quand…": {
@@ -13228,7 +13254,7 @@
   },
   "Modification de structure.": {
     "where": [
-      "components/app/proposal-dialog.tsx:147"
+      "components/app/proposal-dialog.tsx:210"
     ]
   },
   "modification du tableau": {
@@ -13253,7 +13279,7 @@
   },
   "Modifications non enregistrées": {
     "where": [
-      "components/app/automations.tsx:582"
+      "components/app/automations.tsx:590"
     ]
   },
   "Modifications non enregistrées.": {
@@ -13285,7 +13311,7 @@
   },
   "modifiée": {
     "where": [
-      "components/app/proposal-dialog.tsx:53",
+      "components/app/proposal-dialog.tsx:61",
       "components/app/workspace.tsx:2401"
     ]
   },
@@ -13330,7 +13356,7 @@
   },
   "Modifier la base…": {
     "where": [
-      "components/app/sidebar.tsx:789"
+      "components/app/sidebar.tsx:790"
     ]
   },
   "Modifier la description pour {subject}": {
@@ -13355,8 +13381,8 @@
   },
   "Modifier la table…": {
     "where": [
-      "components/app/sidebar.tsx:1321",
-      "components/app/sidebar.tsx:1350"
+      "components/app/sidebar.tsx:1322",
+      "components/app/sidebar.tsx:1351"
     ]
   },
   "Modifier la vue SQL": {
@@ -13366,7 +13392,7 @@
   },
   "Modifier la vue…": {
     "where": [
-      "components/app/sidebar.tsx:1103",
+      "components/app/sidebar.tsx:1104",
       "components/app/workspace.tsx:1689",
       "components/app/workspace.tsx:1964"
     ]
@@ -13473,8 +13499,8 @@
   },
   "Monter l’étape": {
     "where": [
-      "components/app/automations.tsx:804",
-      "components/app/automations.tsx:810"
+      "components/app/automations.tsx:812",
+      "components/app/automations.tsx:818"
     ]
   },
   "Monter le chemin {label}": {
@@ -13499,18 +13525,18 @@
   },
   "Montrer la liste": {
     "where": [
-      "components/app/automations.tsx:214",
-      "components/app/dashboards.tsx:308"
+      "components/app/automations.tsx:222",
+      "components/app/dashboards.tsx:323"
     ]
   },
   "Montrer la liste des automatisations": {
     "where": [
-      "components/app/automations.tsx:221"
+      "components/app/automations.tsx:229"
     ]
   },
   "Montrer la liste des tableaux et des questions": {
     "where": [
-      "components/app/dashboards.tsx:316"
+      "components/app/dashboards.tsx:331"
     ]
   },
   "Mot de passe": {
@@ -13657,7 +13683,7 @@
   },
   "Ne plus montrer cette exécution": {
     "where": [
-      "components/app/automations.tsx:669"
+      "components/app/automations.tsx:677"
     ]
   },
   "Neutre": {
@@ -13706,7 +13732,7 @@
   },
   "Nom de l’automatisation": {
     "where": [
-      "components/app/automations.tsx:567"
+      "components/app/automations.tsx:575"
     ]
   },
   "Nom de l’en-tête {n}": {
@@ -13824,8 +13850,8 @@
   "Nom et partage…": {
     "where": [
       "components/app/analytics/question-view.tsx:387",
-      "components/app/dashboards.tsx:635",
-      "components/app/sidebar.tsx:1124"
+      "components/app/dashboards.tsx:650",
+      "components/app/sidebar.tsx:1125"
     ]
   },
   "Nom et pourcentage": {
@@ -14070,7 +14096,7 @@
   },
   "Nouveau jeton": {
     "where": [
-      "components/app/token-dialog.tsx:386"
+      "components/app/token-dialog.tsx:515"
     ]
   },
   "Nouveau modèle": {
@@ -14116,8 +14142,8 @@
   },
   "Nouveau tableau de bord": {
     "where": [
-      "components/app/dashboards.tsx:341",
-      "components/app/dashboards.tsx:347"
+      "components/app/dashboards.tsx:356",
+      "components/app/dashboards.tsx:362"
     ]
   },
   "Nouveau webhook": {
@@ -14154,7 +14180,7 @@
   },
   "Nouvelle automatisation": {
     "where": [
-      "components/app/automations.tsx:240",
+      "components/app/automations.tsx:248",
       "lib/automations.ts:624"
     ]
   },
@@ -14166,8 +14192,8 @@
   "Nouvelle base": {
     "where": [
       "components/app/command-palette.tsx:1140",
-      "components/app/sidebar.tsx:518",
-      "components/app/sidebar.tsx:1250"
+      "components/app/sidebar.tsx:519",
+      "components/app/sidebar.tsx:1251"
     ]
   },
   "Nouvelle base dans {label}": {
@@ -14177,7 +14203,7 @@
   },
   "Nouvelle base dans ce projet": {
     "where": [
-      "components/app/sidebar.tsx:523"
+      "components/app/sidebar.tsx:524"
     ]
   },
   "Nouvelle conversation": {
@@ -14215,7 +14241,7 @@
   "Nouvelle table": {
     "where": [
       "components/app/schema-editor.tsx:238",
-      "components/app/sidebar.tsx:750"
+      "components/app/sidebar.tsx:751"
     ]
   },
   "Nouvelle table « {label} »": {
@@ -14256,7 +14282,7 @@
   },
   "Nouvelle vue SQL…": {
     "where": [
-      "components/app/sidebar.tsx:768"
+      "components/app/sidebar.tsx:769"
     ]
   },
   "Nouvelles tentatives": {
@@ -14583,7 +14609,7 @@
   "Ouvrir": {
     "where": [
       "components/app/analytics/dashboard-copilot.tsx:644",
-      "components/app/dashboards.tsx:623",
+      "components/app/dashboards.tsx:638",
       "components/app/field-button.tsx:61"
     ]
   },
@@ -14611,7 +14637,7 @@
   },
   "Ouvrir dans un onglet": {
     "where": [
-      "components/app/dashboards.tsx:628"
+      "components/app/dashboards.tsx:643"
     ]
   },
   "Ouvrir en PDF": {
@@ -14885,7 +14911,7 @@
   "Partager la base…": {
     "where": [
       "components/app/analytics/share-dashboard-dialog.tsx:169",
-      "components/app/sidebar.tsx:785"
+      "components/app/sidebar.tsx:786"
     ]
   },
   "Partager une question demande de gérer la structure de la base.": {
@@ -14975,7 +15001,7 @@
   },
   "Pas encore d’exécution. « Tester » en lance une sur la ligne de votre choix.": {
     "where": [
-      "components/app/automations.tsx:1109"
+      "components/app/automations.tsx:1117"
     ]
   },
   "Pas encore de compte ?": {
@@ -15441,9 +15467,14 @@
       "packages/templates/catalog/gestion-projet.json"
     ]
   },
-  "Pour un agent : déclarez le relais dans votre client MCP.": {
+  "Pour un agent : déclarez le serveur MCP dans votre client — un par environnement, tous sur ce même jeton. Un outil peut aussi viser un autre environnement avec son argument environment.": {
     "where": [
-      "components/app/token-dialog.tsx:298"
+      "components/app/token-dialog.tsx:415"
+    ]
+  },
+  "Pour un agent : déclarez le serveur MCP dans votre client.": {
+    "where": [
+      "components/app/token-dialog.tsx:418"
     ]
   },
   "Pour un atelier, une boutique ou un service généraux. Chaque entrée ou sortie est un mouvement ; le stock de chaque article en est la somme, sa valeur une formule, et les articles sous leur seuil apparaissent dans « À commander ». L'IA rédige la fiche de chaque article à partir de son nom et de sa catégorie.": {
@@ -15458,7 +15489,7 @@
   },
   "Pour un programme : l’en-tête": {
     "where": [
-      "components/app/token-dialog.tsx:289"
+      "components/app/token-dialog.tsx:398"
     ]
   },
   "Pour un service support. Les articles d'aide sont rangés par catégorie et suivis dans le temps ; les questions des clients arrivent par un formulaire public. L'IA résume chaque article et en évalue le niveau, classe chaque question et rédige un brouillon de réponse à relire.": {
@@ -15681,7 +15712,7 @@
   },
   "Proposé par un agent pour {value}, via le jeton": {
     "where": [
-      "components/app/proposal-dialog.tsx:191"
+      "components/app/proposal-dialog.tsx:254"
     ]
   },
   "Proposer avec l’IA": {
@@ -15711,17 +15742,17 @@
   },
   "Propositions des agents — {label}": {
     "where": [
-      "components/app/proposal-dialog.tsx:323"
+      "components/app/proposal-dialog.tsx:389"
     ]
   },
   "Propositions des agents…": {
     "where": [
-      "components/app/sidebar.tsx:819"
+      "components/app/sidebar.tsx:820"
     ]
   },
   "Propositions en attente sur {label} : {openProposals}": {
     "where": [
-      "components/app/sidebar.tsx:1028"
+      "components/app/sidebar.tsx:1029"
     ]
   },
   "Propre à ce navigateur.": {
@@ -15907,17 +15938,17 @@
   },
   "Question partagée avec des groupes": {
     "where": [
-      "components/app/dashboards.tsx:615"
+      "components/app/dashboards.tsx:630"
     ]
   },
   "Question partagée avec toute la base": {
     "where": [
-      "components/app/dashboards.tsx:614"
+      "components/app/dashboards.tsx:629"
     ]
   },
   "Question personnelle": {
     "where": [
-      "components/app/dashboards.tsx:612"
+      "components/app/dashboards.tsx:627"
     ]
   },
   "Question précédente": {
@@ -15938,7 +15969,7 @@
   "Questions": {
     "where": [
       "components/app/analytics/dashboard-view.tsx:1321",
-      "components/app/dashboards.tsx:372",
+      "components/app/dashboards.tsx:387",
       "components/app/views/view-dialog.tsx:1237"
     ]
   },
@@ -16040,7 +16071,7 @@
   },
   "Rassemblez sur une page les chiffres, les graphiques et les tableaux que chacun consulte, sous des filtres communs.": {
     "where": [
-      "components/app/dashboards.tsx:478"
+      "components/app/dashboards.tsx:493"
     ]
   },
   "Rattraper l’échec d’une étape par un autre chemin": {
@@ -16263,7 +16294,7 @@
   },
   "Réduire le panneau": {
     "where": [
-      "components/app/sidebar.tsx:603"
+      "components/app/sidebar.tsx:604"
     ]
   },
   "Réduire le panneau latéral": {
@@ -16290,7 +16321,7 @@
   },
   "référencée": {
     "where": [
-      "components/app/proposal-dialog.tsx:54"
+      "components/app/proposal-dialog.tsx:62"
     ]
   },
   "Réflexion, lecture des données au besoin…": {
@@ -16322,13 +16353,13 @@
   },
   "Refusée": {
     "where": [
-      "components/app/proposal-dialog.tsx:45",
-      "components/app/proposal-dialog.tsx:238"
+      "components/app/proposal-dialog.tsx:53",
+      "components/app/proposal-dialog.tsx:304"
     ]
   },
   "Refuser": {
     "where": [
-      "components/app/proposal-dialog.tsx:255"
+      "components/app/proposal-dialog.tsx:321"
     ]
   },
   "Regardez vos courriels": {
@@ -16375,7 +16406,7 @@
   },
   "Réglages||onglet d’une automatisation": {
     "where": [
-      "components/app/automations.tsx:692"
+      "components/app/automations.tsx:700"
     ]
   },
   "Réglages||pictogramme d’engrenage": {
@@ -16405,7 +16436,7 @@
   },
   "Réglez le déclencheur, puis ajoutez ce qu’elle doit faire.": {
     "where": [
-      "components/app/automations.tsx:678"
+      "components/app/automations.tsx:686"
     ]
   },
   "Regroupement de date": {
@@ -16536,7 +16567,7 @@
   },
   "Remplacée": {
     "where": [
-      "components/app/proposal-dialog.tsx:47"
+      "components/app/proposal-dialog.tsx:55"
     ]
   },
   "Remplacer": {
@@ -16614,23 +16645,23 @@
   "Replier {label}": {
     "where": [
       "components/app/admin/permissions-tab.tsx:410",
-      "components/app/sidebar.tsx:949"
+      "components/app/sidebar.tsx:950"
     ]
   },
   "Replier la liste": {
     "where": [
-      "components/app/automations.tsx:214",
-      "components/app/dashboards.tsx:308"
+      "components/app/automations.tsx:222",
+      "components/app/dashboards.tsx:323"
     ]
   },
   "Replier la liste des automatisations": {
     "where": [
-      "components/app/automations.tsx:222"
+      "components/app/automations.tsx:230"
     ]
   },
   "Replier la liste des tableaux et des questions": {
     "where": [
-      "components/app/dashboards.tsx:317"
+      "components/app/dashboards.tsx:332"
     ]
   },
   "Replier le groupe": {
@@ -16773,7 +16804,7 @@
   "Requête SQL": {
     "where": [
       "components/app/copilot-panel.tsx:596",
-      "components/app/sidebar.tsx:763",
+      "components/app/sidebar.tsx:764",
       "components/app/tab-bar.tsx:156"
     ]
   },
@@ -16789,7 +16820,7 @@
   },
   "Requêtes": {
     "where": [
-      "components/app/sidebar.tsx:1111"
+      "components/app/sidebar.tsx:1112"
     ]
   },
   "Requise. L’automatisation part quand une ligne créée ou modifiée se met à la remplir — une fois : pour repartir, la ligne doit d’abord avoir cessé de la remplir.": {
@@ -16928,7 +16959,7 @@
   },
   "Retirer « Essayer » et ses chemins": {
     "where": [
-      "components/app/automations.tsx:842"
+      "components/app/automations.tsx:850"
     ]
   },
   "Retirer {email} du groupe": {
@@ -16979,7 +17010,7 @@
   },
   "Retirer l’étape": {
     "where": [
-      "components/app/automations.tsx:843"
+      "components/app/automations.tsx:851"
     ]
   },
   "Retirer l’étape {title}": {
@@ -16994,7 +17025,7 @@
   },
   "Retirer la boucle et ses étapes": {
     "where": [
-      "components/app/automations.tsx:840"
+      "components/app/automations.tsx:848"
     ]
   },
   "Retirer la condition": {
@@ -17004,7 +17035,7 @@
   },
   "Retirer la condition et ses chemins": {
     "where": [
-      "components/app/automations.tsx:838"
+      "components/app/automations.tsx:846"
     ]
   },
   "Retirer la mesure {n}": {
@@ -17035,7 +17066,7 @@
   },
   "Retirer le chemin": {
     "where": [
-      "components/app/automations.tsx:921"
+      "components/app/automations.tsx:929"
     ]
   },
   "Retirer le chemin {label}": {
@@ -17072,7 +17103,7 @@
   "Retour": {
     "where": [
       "components/app/analytics/question-view.tsx:110",
-      "components/app/dashboards.tsx:435",
+      "components/app/dashboards.tsx:450",
       "components/app/import-dialog.tsx:591"
     ]
   },
@@ -17111,7 +17142,7 @@
   },
   "Revenir à « Essayer »": {
     "where": [
-      "components/app/automations.tsx:900"
+      "components/app/automations.tsx:908"
     ]
   },
   "Revenir à l’étape précédente": {
@@ -17137,13 +17168,13 @@
   },
   "Révoqué": {
     "where": [
-      "components/app/token-dialog.tsx:75"
+      "components/app/token-dialog.tsx:79"
     ]
   },
   "Révoquer": {
     "where": [
-      "components/app/settings/tokens-tab.tsx:180",
-      "components/app/token-dialog.tsx:363"
+      "components/app/settings/tokens-tab.tsx:187",
+      "components/app/token-dialog.tsx:492"
     ]
   },
   "Rien": {
@@ -17199,7 +17230,7 @@
   },
   "Rien ne correspond.": {
     "where": [
-      "components/app/sidebar.tsx:561"
+      "components/app/sidebar.tsx:562"
     ]
   },
   "Rien reçu ? Regardez dans les indésirables, ou demandez un nouveau lien.": {
@@ -17255,7 +17286,7 @@
   },
   "Saisissez votre mot de passe ci-dessous": {
     "where": [
-      "components/app/token-dialog.tsx:351"
+      "components/app/token-dialog.tsx:480"
     ]
   },
   "Sans date": {
@@ -17272,13 +17303,13 @@
   },
   "sans expiration": {
     "where": [
-      "components/app/settings/tokens-tab.tsx:159",
-      "components/app/token-dialog.tsx:332"
+      "components/app/settings/tokens-tab.tsx:166",
+      "components/app/token-dialog.tsx:461"
     ]
   },
   "Sans expiration": {
     "where": [
-      "components/app/token-dialog.tsx:443"
+      "components/app/token-dialog.tsx:600"
     ]
   },
   "Sans faute !": {
@@ -17627,6 +17658,11 @@
       "components/app/schema-editor.tsx:1173"
     ]
   },
+  "Seulement « {environment} »": {
+    "where": [
+      "components/app/token-dialog.tsx:560"
+    ]
+  },
   "Seulement cette valeur": {
     "where": [
       "components/app/analytics/drill-menu.tsx:162"
@@ -17892,7 +17928,7 @@
   },
   "SQL prévu": {
     "where": [
-      "components/app/proposal-dialog.tsx:227"
+      "components/app/proposal-dialog.tsx:292"
     ]
   },
   "Statut": {
@@ -18050,7 +18086,7 @@
   "Suppression…": {
     "where": [
       "components/app/base-menu.tsx:314",
-      "components/app/dashboards.tsx:580",
+      "components/app/dashboards.tsx:595",
       "components/app/grid/selection-bar.tsx:108"
     ]
   },
@@ -18061,7 +18097,7 @@
   },
   "supprimé": {
     "where": [
-      "components/app/proposal-dialog.tsx:195"
+      "components/app/proposal-dialog.tsx:258"
     ]
   },
   "supprimée": {
@@ -18140,7 +18176,7 @@
   },
   "Supprimer l’automatisation": {
     "where": [
-      "components/app/automations.tsx:616"
+      "components/app/automations.tsx:624"
     ]
   },
   "Supprimer l’environnement {environment}": {
@@ -18160,7 +18196,7 @@
   },
   "Supprimer la base…": {
     "where": [
-      "components/app/sidebar.tsx:868"
+      "components/app/sidebar.tsx:869"
     ]
   },
   "Supprimer la ligne": {
@@ -18171,12 +18207,12 @@
   "Supprimer la question": {
     "where": [
       "components/app/analytics/question-view.tsx:399",
-      "components/app/dashboards.tsx:580"
+      "components/app/dashboards.tsx:595"
     ]
   },
   "Supprimer la question « {label} » ?": {
     "where": [
-      "components/app/dashboards.tsx:561"
+      "components/app/dashboards.tsx:576"
     ]
   },
   "Supprimer la question « {label} » ? Les tableaux de bord qui la montrent le diront.": {
@@ -18202,8 +18238,8 @@
   "Supprimer la table": {
     "where": [
       "components/app/schema-editor.tsx:648",
-      "components/app/sidebar.tsx:1326",
-      "components/app/sidebar.tsx:1355"
+      "components/app/sidebar.tsx:1327",
+      "components/app/sidebar.tsx:1356"
     ]
   },
   "Supprimer la table « {label} » ?": {
@@ -18264,7 +18300,7 @@
   },
   "Supprimer une ligne visée videra ce champ dans les lignes qui la référencent.": {
     "where": [
-      "components/app/proposal-dialog.tsx:121"
+      "components/app/proposal-dialog.tsx:159"
     ]
   },
   "sur": {
@@ -18308,7 +18344,7 @@
   },
   "sur les routes de données de cette base.": {
     "where": [
-      "components/app/token-dialog.tsx:290"
+      "components/app/token-dialog.tsx:399"
     ]
   },
   "Sur un bandeau": {
@@ -18339,13 +18375,13 @@
   "Suspendu": {
     "where": [
       "components/app/analytics/share-dashboard-dialog.tsx:47",
-      "components/app/token-dialog.tsx:76",
+      "components/app/token-dialog.tsx:80",
       "components/app/views/share-dialog.tsx:65"
     ]
   },
   "Synchronisation avec la comptabilité": {
     "where": [
-      "components/app/token-dialog.tsx:393"
+      "components/app/token-dialog.tsx:522"
     ]
   },
   "synchronisation connecteurs sources||mots-clés de recherche": {
@@ -18492,7 +18528,7 @@
   },
   "Tableau de bord": {
     "where": [
-      "components/app/dashboards.tsx:435",
+      "components/app/dashboards.tsx:450",
       "packages/templates/catalog/analyse-avis.json",
       "packages/templates/catalog/demo.json"
     ]
@@ -18509,7 +18545,7 @@
   },
   "Tableau de bord {value}": {
     "where": [
-      "components/app/dashboards.tsx:291"
+      "components/app/dashboards.tsx:306"
     ]
   },
   "Tableau de bord créé.": {
@@ -18546,7 +18582,7 @@
     "where": [
       "app/page.tsx:100",
       "components/app/analytics/dashboard-copilot.tsx:328",
-      "components/app/dashboards.tsx:326"
+      "components/app/dashboards.tsx:341"
     ]
   },
   "Tableaux de bord de « {base} »": {
@@ -18581,7 +18617,7 @@
   },
   "Tables supprimées…": {
     "where": [
-      "components/app/sidebar.tsx:856"
+      "components/app/sidebar.tsx:857"
     ]
   },
   "Tables synchronisées": {
@@ -18707,13 +18743,13 @@
   },
   "Tester": {
     "where": [
-      "components/app/automations.tsx:1050",
+      "components/app/automations.tsx:1058",
       "components/app/integrations.tsx:212"
     ]
   },
   "Tester sur une ligne": {
     "where": [
-      "components/app/automations.tsx:1063"
+      "components/app/automations.tsx:1071"
     ]
   },
   "Tester une ligne": {
@@ -18922,12 +18958,18 @@
   },
   "Tous les chemins": {
     "where": [
-      "components/app/automations.tsx:900"
+      "components/app/automations.tsx:908"
     ]
   },
   "tous les droits": {
     "where": [
       "components/app/admin/users-tab.tsx:478"
+    ]
+  },
+  "Tous les environnements": {
+    "where": [
+      "components/app/settings/tokens-tab.tsx:148",
+      "components/app/token-dialog.tsx:450"
     ]
   },
   "Tous les jours": {
@@ -19038,6 +19080,11 @@
   "Toute la base": {
     "where": [
       "components/app/sql/query-dialog.tsx:48"
+    ]
+  },
+  "Toute la base — tous ses environnements": {
+    "where": [
+      "components/app/token-dialog.tsx:557"
     ]
   },
   "Toute la ligne": {
@@ -19350,12 +19397,12 @@
   },
   "un agent : Claude ou tout client MCP": {
     "where": [
-      "components/app/token-dialog.tsx:68"
+      "components/app/token-dialog.tsx:72"
     ]
   },
   "Un agent ne modifie jamais la structure d’une base : il la propose, et une personne décide ici. Approuvée, la modification est appliquée au nom de la personne pour qui l’agent agit, si elle en a toujours le droit. Sans décision, une proposition expire au bout de 24 heures.": {
     "where": [
-      "components/app/proposal-dialog.tsx:326"
+      "components/app/proposal-dialog.tsx:392"
     ]
   },
   "Un alias de compatibilité est encore utilisé.": {
@@ -19595,7 +19642,7 @@
   },
   "Un jeton d’intégration ouvre cette base à un programme, par l’API REST, ou à un agent (Claude ou tout client MCP) : il la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il ne change jamais la structure, et ne voit que ce que vous pouvez voir.": {
     "where": [
-      "components/app/token-dialog.tsx:260"
+      "components/app/token-dialog.tsx:369"
     ]
   },
   "Un JSON à composer": {
@@ -19712,7 +19759,7 @@
   },
   "un programme, un script, une synchronisation": {
     "where": [
-      "components/app/token-dialog.tsx:67"
+      "components/app/token-dialog.tsx:71"
     ]
   },
   "Un projet regroupe des bases. Les droits accordés sur un projet valent pour toutes ses bases et toutes leurs tables, y compris celles créées plus tard.": {
@@ -19743,6 +19790,11 @@
   "Un seul courriel à tous : les destinataires se voient les uns les autres.": {
     "where": [
       "components/app/automation-steps.tsx:2421"
+    ]
+  },
+  "Un seul jeton pour la production, la recette et les environnements à venir : le programme ou l’agent choisit l’environnement à chaque appel.": {
+    "where": [
+      "components/app/token-dialog.tsx:568"
     ]
   },
   "Un seul, à tous": {
@@ -20071,7 +20123,7 @@
   },
   "Une ligne visée par cette relation ne pourra plus être supprimée.": {
     "where": [
-      "components/app/proposal-dialog.tsx:122"
+      "components/app/proposal-dialog.tsx:160"
     ]
   },
   "une liste ·": {
@@ -20156,8 +20208,8 @@
   },
   "une personne supprimée": {
     "where": [
-      "components/app/proposal-dialog.tsx:192",
-      "components/app/proposal-dialog.tsx:239"
+      "components/app/proposal-dialog.tsx:255",
+      "components/app/proposal-dialog.tsx:305"
     ]
   },
   "Une petite agence, ses clients, projets, tâches, factures et avis : toutes les facettes de basedb dans une seule base.": {
@@ -20182,7 +20234,7 @@
   },
   "une relation": {
     "where": [
-      "components/app/proposal-dialog.tsx:117"
+      "components/app/proposal-dialog.tsx:155"
     ]
   },
   "Une relation de la table vers elle-même : une flèche relie chaque ligne à celles dont elle dépend.": {
@@ -20346,12 +20398,12 @@
   },
   "Utilisateurs et groupes": {
     "where": [
-      "components/app/sidebar.tsx:655"
+      "components/app/sidebar.tsx:656"
     ]
   },
   "utilisé le {last_used_at}": {
     "where": [
-      "components/app/settings/tokens-tab.tsx:164"
+      "components/app/settings/tokens-tab.tsx:171"
     ]
   },
   "Utiliser": {
@@ -20485,7 +20537,7 @@
   },
   "Validité": {
     "where": [
-      "components/app/token-dialog.tsx:434"
+      "components/app/token-dialog.tsx:591"
     ]
   },
   "Validité et délais": {
@@ -20562,7 +20614,7 @@
   },
   "vers": {
     "where": [
-      "components/app/proposal-dialog.tsx:118"
+      "components/app/proposal-dialog.tsx:156"
     ]
   },
   "Vert": {
@@ -20750,7 +20802,7 @@
   },
   "Votre mot de passe": {
     "where": [
-      "components/app/token-dialog.tsx:466"
+      "components/app/token-dialog.tsx:623"
     ]
   },
   "Votre mot de passe, et les appareils connectés.": {
@@ -20895,8 +20947,8 @@
   },
   "vue SQL": {
     "where": [
-      "components/app/sidebar.tsx:1097",
-      "components/app/sidebar.tsx:1228"
+      "components/app/sidebar.tsx:1098",
+      "components/app/sidebar.tsx:1229"
     ]
   },
   "Vue SQL": {
@@ -20956,12 +21008,12 @@
   },
   "Webhooks…": {
     "where": [
-      "components/app/sidebar.tsx:813"
+      "components/app/sidebar.tsx:814"
     ]
   },
   "Windows (PowerShell)": {
     "where": [
-      "components/app/token-dialog.tsx:90"
+      "components/app/token-dialog.tsx:127"
     ]
   },
   "Zoom arrière": {

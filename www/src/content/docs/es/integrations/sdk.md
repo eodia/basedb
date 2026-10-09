@@ -73,9 +73,24 @@ programa se ejecute.
   idiomas—, `status`, `details` y `requestId`. Una petición de ralentizar (`429`) se reintenta
   después del plazo que indica basedb.
 
+## Los entornos
+
+Una base que tiene varios [entornos](/basedb/es/fonctionnalites/environnements/) — producción,
+preproducción… — conserva sus nombres y sus tipos de un entorno a otro. Con un token creado para toda
+la base, `environment()` apunta a un entorno, y el mismo código se ejecuta en otro:
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+La opción `environment` del constructor hace lo mismo para todo el cliente. El SDK envía la cabecera
+`X-Basedb-Environment`; sin ella, cada nombre de base designa su propio entorno
+(`b_t4z56fq_ventes` es la producción).
+
 ## El token
 
 Un **token de integración** se crea en la interfaz: menú **⋯** de la base → **API y agentes** →
-**Tokens de API y MCP…**. Abre una base, lee sus filas, las escribe si se ha creado con permiso
-de escritura, nunca tiene más permisos que la persona que lo creó, y **solo elimina si se ha
-creado para ello** («Lectura, escritura y eliminación»): si no, `delete()` se rechaza.
+**Tokens de API y MCP…**. Abre una base — todos sus entornos, o uno solo —, lee sus filas, las
+escribe si se ha creado con permiso de escritura, nunca tiene más permisos que la persona que lo
+creó, y **solo elimina si se ha creado para ello** («Lectura, escritura y eliminación»): si no, `delete()` se rechaza.

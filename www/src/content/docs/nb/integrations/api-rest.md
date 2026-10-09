@@ -15,9 +15,10 @@ URL-ene bruker de fysiske navnene – de samme som du også leser i SQL.
 
 I grensesnittet, databasens **⋯**-meny → **API og agenter** → **API- og MCP-tokener…**: den som har
 nivået **Administrere** på databasen, eller på dens prosjekt, oppretter der et
-**integrasjonstoken** som er begrenset til denne databasen, skrivebeskyttet som standard, etter
-at passordet er bekreftet — en konto uten passord, som logger inn via en identitetsleverandør,
-kan ikke gjøre det ennå. Det vises bare én gang; legg det i en miljøvariabel.
+**integrasjonstoken** som er begrenset til denne databasen – alle miljøene dens, eller bare
+ett –, skrivebeskyttet som standard, etter at passordet er bekreftet – en konto uten
+passord, som logger inn via en identitetsleverandør, kan ikke gjøre det ennå. Det vises bare
+én gang; legg det i en miljøvariabel.
 
 Et token leser; det oppretter og endrer hvis det ble opprettet med skrivetilgang, og **sletter
 hvis det ble opprettet for det** – rettighetene «Lesing, skriving og sletting» – unntatt en rad
@@ -29,6 +30,30 @@ export BASEDB_TOKEN=bdb_…
 curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
   -H "Authorization: Bearer $BASEDB_TOKEN"
 ```
+
+## Velge miljø
+
+En database som har flere [miljøer](/basedb/nb/fonctionnalites/environnements/) – produksjon,
+test … – er fortsatt **én** database for et token opprettet for hele databasen. Stien navngir
+databasen med navnet på produksjonen, og headeren `X-Basedb-Environment` velger miljøet:
+
+```bash
+curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  -H "X-Basedb-Environment: recette"
+```
+
+- Uten headeren er det miljøet stien navngir, som gjelder: `b_t4z56fq_ventes` er produksjon,
+  `b_t4z56fq_ventes_recette` er test – begge skrivemåtene forblir gyldige.
+- `?environment=recette` gjør det samme for en klient som ikke setter header.
+- Et miljø navngis med merket sitt, uten hensyn til store og små bokstaver eller aksenter, eller
+  med `production`. Et miljø som databasen ikke har, svarer `404`, som enhver ressurs som mangler.
+- `GET /api/v1/<tenant>/meta/bases` viser hvert miljø med blokken `environment`
+  (`label`, `production`); med headeren viser det bare dette miljøet.
+
+Et token som ble begrenset til ett enkelt miljø da det ble opprettet, åpner ingen andre: headeren
+endrer ingenting ved det. Tillatelsene dets sammenlignes alltid, miljø for miljø, med tillatelsene
+til personen som opprettet det.
 
 ## Lese
 
@@ -82,6 +107,27 @@ Med det samme tokenet:
 Å bygge – opprette en automatisering, et instrumentbord, en integrasjon – er fortsatt forbeholdt
 en økt i grensesnittet: et token leser og skriver rader, det endrer ikke databasen.
 
+## Farger og ikoner
+
+En tabell og hvert alternativ i et enkeltvalg har en farge (`color`, `#rrggbb`) og et ikon
+(`icon`, navnet på et [Lucide](https://lucide.dev/icons/)-ikon som grensesnittet tegner: `truck`,
+`circle-check`, `flame` …). `GET …/meta/bases/<base>` gir dem tilbake for databasen, tabellene
+og alternativene til feltene.
+
+For å velge dem, med tilgangstokenet til en person som kan endre strukturen
+(`POST /auth/session/access`) – et integrasjonstoken endrer ikke databasen:
+
+| Rute | Kropp |
+|---|---|
+| `POST …/admin/bases/<base>/tables` | `{"label": "Tickets", "color": "#dc2626", "icon": "flame", "fields": […]}` |
+| `PATCH …/admin/bases/<base>/tables/<table>` | `{"color": "#2563eb", "icon": "inbox"}` – de tre nøklene `color`, `icon`, `image` følger hverandre: å nevne én erstatter alle tre |
+| `POST …/admin/bases/<base>/tables/<table>/fields` | `{"label": "Priorité", "kind": "select", "options": [{"value": "haute", "color": "#dc2626", "icon": "flame"}, …]}` |
+| `PUT …/admin/bases/<base>/tables/<table>/fields/<champ>/options` | hele listen over alternativer, i rekkefølge, hvert med sin farge og sitt ikon |
+
+En agent går via [MCP-serveren](/basedb/nb/integrations/mcp/#farger-og-ikoner), der den
+**foreslår** disse endringene. Et felt har ikke noe ikon å velge: grensesnittet tegner ikonet for
+typen dets.
+
 ## Opprette en database fra en mal
 
 En applikasjon som installerer seg, oppretter databasen sin med **ett kall**: serveren tar i
@@ -121,15 +167,16 @@ curl -X POST "http://localhost:3000/auth/introspect" \
 
 Et token som ikke er gyldig – ukjent, utløpt, tilbakekalt, avsluttet økt, annet arbeidsområde –
 svarer `{"active": false}`, uten å si hvorfor. Svaret leses i sanntid: en utlogging vises
-umiddelbart. For et integrasjonstoken forteller svaret også hvilken database det åpner (`base`),
-tilgangen dets (`read` eller `write`) og flatene dets.
+umiddelbart. For et integrasjonstoken forteller svaret også hvilken database det åpner (`base`,
+produksjonen dens), om det åpner alle miljøene (`environments`: `all`) eller bare ett (`one`),
+tilgangen dets (`read`, `write` eller `delete`) og flatene dets.
 
 ## Den genererte dokumentasjonen
 
 Hver database har sin side **API- og MCP-dokumentasjon**: for hver tabell endepunktene,
 kolonnene og eksempler i cURL og JavaScript. Den er **filtrert etter tillatelsene dine** – to
 lesere får to ulike versjoner –, skrevet **på skjermens språk**, og finnes også i OpenAPI 3.1
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Navnene, stiene og feilkodene er de samme
-på alle språk.
+(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`), som deklarerer Bearer-tokenet og
+headeren `X-Basedb-Environment`. Navnene, stiene og feilkodene er de samme på alle språk.
 
 ![Den genererte dokumentasjonen for en database](../../../../assets/screens/nb/documentation-api.webp)

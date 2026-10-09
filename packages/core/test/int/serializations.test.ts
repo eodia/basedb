@@ -480,7 +480,11 @@ describe('what OpenAPI says that /meta does not', () => {
     const paths = document.paths as Record<string, Record<string, unknown>>
     const collection = paths[`${`/data/${crmSchema}/clients`}`]
 
-    expect(Object.keys(collection)).toEqual(['get'])
+    expect(Object.keys(collection).filter((k) => k !== 'parameters')).toEqual(['get'])
+    // Every path takes the environment of the base (chapter 14 §1 bis).
+    expect(collection.parameters).toContainEqual({
+      $ref: '#/components/parameters/Environment',
+    })
     // No write schema at all: there is nothing this reader could send.
     const schemas = (document.components as { schemas: Record<string, unknown> }).schemas
     expect(Object.keys(schemas)).not.toContain('ClientsWrite')

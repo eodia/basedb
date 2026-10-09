@@ -27,10 +27,16 @@ Utwórz w n8n dane uwierzytelniające **basedb API**:
 | **Instance URL** | adres, pod którym otwierasz basedb: `https://basedb.exemple.fr` |
 | **Workspace** | identyfikator przestrzeni, ten z adresów API (`/api/v1/<przestrzeń>/…`): `t4z56fq`, o ile instancja nie ustala `BASEDB_TENANT` |
 | **Token** | **token integracji**: menu **⋯** bazy → **API i agenci** → **Tokeny API i MCP…** |
+| **Environment** | opcjonalnie: środowisko bazy, w którym pracujesz – `recette`, `production`… Puste: środowisko produkcyjne |
 
-Token otwiera **jedną** bazę. Odczytuje jej wiersze, zapisuje je, jeśli został utworzony z
-prawem zapisu, i nigdy nie ma większych uprawnień niż osoba, która go utworzyła. Przy
-zapisywaniu n8n sprawdza połączenie i informuje, jeśli token jest odrzucony.
+Token otwiera **jedną** bazę – wszystkie jej środowiska albo tylko jedno, jeśli został ograniczony
+przy tworzeniu. Odczytuje jej wiersze, zapisuje je, jeśli został utworzony z prawem zapisu, i
+nigdy nie ma większych uprawnień niż osoba, która go utworzyła. Przy zapisywaniu n8n sprawdza
+połączenie i informuje, jeśli token jest odrzucony.
+
+Aby pracować na środowisku produkcyjnym i testowym, utwórz dwa zestawy danych uwierzytelniających
+z tym samym tokenem: jeden z pustym polem **Environment**, drugi z `recette`. Gdy nie wybrano
+środowiska, lista baz w węźle pokazuje każde środowisko, a jego nazwa jest podana w nawiasie.
 
 ## Odczyt i zapis: węzeł basedb
 

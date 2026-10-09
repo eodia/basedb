@@ -36,6 +36,24 @@ verwijdering van een tabel of veld wordt door een trigger op de catalogus vastge
 het tabblad “Structuur” van de geschiedenis. De afstammings-id’s verbinden een veld in acceptatie
 met zijn tegenhanger in productie, ook als het is hernoemd.
 
+## Via de API, de SDK en MCP
+
+Een **token dat voor de hele database is aangemaakt** opent al haar omgevingen, de bestaande en
+de toekomstige: één token voor productie en acceptatie. Het programma of de agent kiest
+de omgeving bij elke aanroep:
+
+| Waar | Hoe |
+|---|---|
+| [REST-API](/basedb/nl/integrations/api-rest/#de-omgeving-kiezen) | de header `X-Basedb-Environment: recette`, of `?environment=recette` |
+| [SDK](/basedb/nl/integrations/sdk/#de-omgevingen) | `db.environment('recette')` |
+| [MCP](/basedb/nl/integrations/mcp/#de-omgeving-kiezen) | het adres `…/mcp?environment=recette`, of het argument `environment` van een tool |
+| [n8n](/basedb/nl/integrations/n8n/#de-identiteitsgegevens) | het veld **Environment** van het identiteitsgegeven |
+
+Zonder een van die middelen wijst elke database haar eigen omgeving aan: de naam van productie opent
+productie, die van acceptatie opent acceptatie. Een token kan bij het aanmaken ook worden beperkt tot
+de getoonde omgeving: het ziet er dan geen enkele andere. In beide gevallen worden zijn rechten,
+omgeving voor omgeving, gecombineerd met die van de persoon die het heeft aangemaakt.
+
 ## In SQL
 
 Elke omgeving is een schema: `b_t4z56fq_ventes` voor productie,

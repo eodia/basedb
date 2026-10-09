@@ -333,7 +333,7 @@ describe('handshake and session (§9.4)', () => {
 })
 
 describe('the tool catalog (§2)', () => {
-  it('tools/list declares exactly the fourteen tools', async () => {
+  it('tools/list declares exactly the fifteen tools', async () => {
     const session = await open(reader)
     const r = await rpc(reader, request('tools/list'), session)
     const tools = (r.body?.result as { tools: Array<{ name: string; description: string }> }).tools
@@ -350,11 +350,21 @@ describe('the tool catalog (§2)', () => {
         'lookup_records',
         'propose_add_field',
         'propose_create_table',
+        'propose_update_look',
         'restore_record',
         'update_record',
         'whoami',
       ].sort(),
     )
+    // Every tool that names a base takes `environment`; the others do not.
+    const declared = (r.body?.result as { tools: Array<Record<string, Json>> }).tools
+    const takes = declared
+      .filter((t) => t.inputSchema.properties.environment !== undefined)
+      .map((t) => t.name)
+    expect(takes).toContain('list_records')
+    expect(takes).toContain('list_bases')
+    expect(takes).not.toContain('whoami')
+    expect(takes).not.toContain('get_proposal')
     // Static, never derived from user data: no label or description of the catalog.
     const text = JSON.stringify(tools)
     for (const userText of ['Raison sociale', 'Clients', 'Factures', 'Nom légal', 'CRM']) {
@@ -1294,5 +1304,280 @@ describe('the stdio relay (§1.2)', () => {
     // The token never leaves through the relay's own output.
     expect(stderr).not.toContain(reader)
     expect(JSON.stringify(lines)).not.toContain(reader)
+  })
+})
+
+describe('the environments of a base (chapter 14 §1 bis)', () => {
+  let recette: string
+  let whole: string
+  let one: string
+
+  beforeAll(async () => {
+    const created = await kernel.createEnvironment(admin, {
+      baseId: crm.baseId,
+      environment: 'Recette',
+    })
+    recette = created.environment.name
+    const login = await kernel.login({ email: 'admin@basedb.local', password: PASSWORD })
+    const elevated = await kernel.elevate(login.sessionToken, PASSWORD)
+    const mint = async (label: string, environments: 'all' | 'one') =>
+      (
+        await kernel.createApiToken(admin, {
+          label,
+          baseId: crm.baseId,
+          access: 'write',
+          surfaces: ['mcp'],
+          environments,
+          sessionId: elevated.session.sessionId,
+        })
+      ).secret
+    whole = await mint('Toute la base', 'all')
+    one = await mint('Production seule', 'one')
+  })
+
+  /** A session opened on an address that names an environment. */
+  async function openAt(token: string, path: string): Promise<string> {
+    const r = await app.request(path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify(
+        request('initialize', {
+          protocolVersion: '2025-06-18',
+          capabilities: {},
+          clientInfo: { name: 'vitest', version: '1' },
+        }),
+      ),
+    })
+    expect(r.status).toBe(200)
+    return r.headers.get('mcp-session-id') as string
+  }
+  async function callAt(token: string, path: string, session: string, name: string, args = {}) {
+    const r = await app.request(path, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${token}`,
+        'mcp-session-id': session,
+      },
+      body: JSON.stringify(request('tools/call', { name, arguments: args })),
+    })
+    const result = ((await r.json()) as Json).result
+    return { isError: result.isError === true, payload: JSON.parse(result.content[0].text) }
+  }
+
+  it('whoami lists the environments the token opens', async () => {
+    const session = await open(whole)
+    const me = await call(whole, session, 'whoami')
+    expect(me.payload.scope.environments).toBe('all')
+    expect(me.payload.scope.current).toBeNull()
+    expect(
+      me.payload.scope.available.map((e: Json) => [e.environment, e.production]).sort(),
+    ).toEqual([
+      ['Production', true],
+      ['Recette', false],
+    ])
+    const solo = await call(one, await open(one), 'whoami')
+    expect(solo.payload.scope.environments).toBe('one')
+    expect(solo.payload.scope.available).toHaveLength(1)
+  })
+
+  it('the environment argument aims one call; the base name keeps designating its own', async () => {
+    const session = await open(whole)
+    const prod = await call(whole, session, 'list_records', { base: 'crm', table: 'clients' })
+    expect(prod.payload.records.length).toBeGreaterThan(0)
+    const rec = await call(whole, session, 'list_records', {
+      base: 'crm',
+      table: 'clients',
+      environment: 'recette',
+    })
+    expect(rec.isError, JSON.stringify(rec.payload)).toBe(false)
+    expect(rec.payload.records).toEqual([])
+    const named = await call(whole, session, 'describe_base', {
+      base: recette.split('_').slice(2).join('_'),
+    })
+    expect(named.payload.base.environment).toBe('Recette')
+    // The listing, aimed at the recette, shows the recette of each base.
+    const listed = await call(whole, session, 'list_bases', { environment: 'Recette' })
+    expect(listed.payload.bases.map((b: Json) => b.environment)).toEqual(['Recette'])
+    // An environment the base does not have is not found; a tool without a base refuses it.
+    const unknown = await call(whole, session, 'describe_base', {
+      base: 'crm',
+      environment: 'inconnu',
+    })
+    expect(unknown.payload.code).toBe('RESOURCE_NOT_FOUND')
+    const refused = await call(whole, session, 'whoami', { environment: 'recette' })
+    expect(refused.payload.code).toBe('PARAMETER_INVALID')
+  })
+
+  it('?environment= of the address aims the whole connection', async () => {
+    const path = '/mcp?environment=recette'
+    const session = await openAt(whole, path)
+    const me = await callAt(whole, path, session, 'whoami')
+    expect(me.payload.scope.current).toBe('recette')
+    const rec = await callAt(whole, path, session, 'list_records', {
+      base: 'crm',
+      table: 'clients',
+    })
+    expect(rec.payload.records).toEqual([])
+    // The argument still wins, for one call.
+    const prod = await callAt(whole, path, session, 'list_records', {
+      base: 'crm',
+      table: 'clients',
+      environment: 'production',
+    })
+    expect(prod.payload.records.length).toBeGreaterThan(0)
+  })
+
+  it('a token of one environment sees no other, by argument or by address', async () => {
+    const session = await open(one)
+    const rec = await call(one, session, 'list_records', {
+      base: 'crm',
+      table: 'clients',
+      environment: 'recette',
+    })
+    expect(rec.payload.code).toBe('RESOURCE_NOT_FOUND')
+    const listed = await call(one, session, 'list_bases')
+    expect(listed.payload.bases.map((b: Json) => b.name)).toEqual(['crm'])
+  })
+})
+
+describe('colours and pictograms (chapter 11 §3.1 bis)', () => {
+  let painter: string
+
+  beforeAll(async () => {
+    const login = await kernel.login({ email: 'admin@basedb.local', password: PASSWORD })
+    const elevated = await kernel.elevate(login.sessionToken, PASSWORD)
+    painter = (
+      await kernel.createApiToken(admin, {
+        label: 'Décorateur',
+        baseId: crm.baseId,
+        access: 'write',
+        surfaces: ['mcp'],
+        environments: 'one',
+        sessionId: elevated.session.sessionId,
+      })
+    ).secret
+  })
+
+  const tableLook = async (label: string) =>
+    (
+      await sql.query(
+        `SELECT color, icon FROM _basedb.table_def
+          WHERE base_id = $1 AND label = $2 AND deleted_at IS NULL`,
+        [crm.baseId, label],
+      )
+    ).rows[0]
+  const optionLooks = async (table: string, field: string) =>
+    Object.fromEntries(
+      (
+        await sql.query(
+          `SELECT o.value, o.color, o.icon FROM _basedb.select_option o
+             JOIN _basedb.field f ON f.id = o.field_id
+             JOIN _basedb.table_def t ON t.id = f.table_id
+            WHERE t.base_id = $1 AND t.label = $2 AND f.label = $3 AND o.deleted_at IS NULL`,
+          [crm.baseId, table, field],
+        )
+      ).rows.map((o) => [o.value, { color: o.color, icon: o.icon }]),
+    )
+
+  it('a table proposed with its colour and pictogram gets them once approved', async () => {
+    const session = await open(painter)
+    const proposed = await call(painter, session, 'propose_create_table', {
+      base: 'crm',
+      label: 'Livraisons',
+      color: '#16A34A',
+      icon: 'truck',
+      fields: [{ label: 'Référence', kind: 'short_text' }],
+    })
+    expect(proposed.isError, proposed.text).toBe(false)
+    expect(proposed.payload.summary_params.look).toMatchObject({ color: '#16a34a', icon: 'truck' })
+    await kernel.approveProposal(admin, { proposalId: proposed.payload.proposal_id })
+    expect(await tableLook('Livraisons')).toEqual({ color: '#16a34a', icon: 'truck' })
+
+    // A pictogram the application does not draw is refused, and named.
+    const unknown = await call(painter, session, 'propose_create_table', {
+      base: 'crm',
+      label: 'Licornes',
+      icon: 'licorne-volante',
+      fields: [{ label: 'Nom', kind: 'short_text' }],
+    })
+    expect(unknown.isError).toBe(true)
+    expect(unknown.text).toContain('icon')
+  })
+
+  it('choices proposed with their look keep it', async () => {
+    const session = await open(painter)
+    const proposed = await call(painter, session, 'propose_add_field', {
+      base: 'crm',
+      table: 'livraisons',
+      label: 'État',
+      kind: 'select',
+      options: [
+        { value: 'en_route', label: 'En route', color: '#2563eb', icon: 'truck' },
+        { value: 'livree', label: 'Livrée', color: '#16a34a', icon: 'circle-check' },
+        { value: 'perdue', label: 'Perdue' },
+      ],
+    })
+    expect(proposed.isError, proposed.text).toBe(false)
+    await kernel.approveProposal(admin, { proposalId: proposed.payload.proposal_id })
+    expect(await optionLooks('Livraisons', 'État')).toEqual({
+      en_route: { color: '#2563eb', icon: 'truck' },
+      livree: { color: '#16a34a', icon: 'circle-check' },
+      perdue: { color: null, icon: null },
+    })
+  })
+
+  it('propose_update_look changes what it names and keeps the rest', async () => {
+    const session = await open(painter)
+    const proposed = await call(painter, session, 'propose_update_look', {
+      base: 'crm',
+      table: 'livraisons',
+      icon: 'package',
+      fields: [
+        {
+          field: 'etat',
+          options: [
+            { value: 'perdue', color: '#dc2626', icon: 'circle-x' },
+            { value: 'en_route', color: null },
+          ],
+        },
+      ],
+    })
+    expect(proposed.isError, proposed.text).toBe(false)
+    expect(proposed.payload.summary_template).toBe('set_look')
+    expect(proposed.payload.up_sql).toEqual([])
+    // Nothing changes before a person approves.
+    expect(await tableLook('Livraisons')).toEqual({ color: '#16a34a', icon: 'truck' })
+    await kernel.approveProposal(admin, { proposalId: proposed.payload.proposal_id })
+    expect(await tableLook('Livraisons')).toEqual({ color: '#16a34a', icon: 'package' })
+    expect(await optionLooks('Livraisons', 'État')).toEqual({
+      en_route: { color: null, icon: 'truck' },
+      livree: { color: '#16a34a', icon: 'circle-check' },
+      perdue: { color: '#dc2626', icon: 'circle-x' },
+    })
+
+    // The agent reads the look back.
+    const described = await call(painter, session, 'describe_table', {
+      base: 'crm',
+      table: 'livraisons',
+    })
+    const etat = described.payload.fields.find((f: Json) => f.name === 'etat')
+    expect(etat.options.find((o: Json) => o.value === 'perdue')).toMatchObject({
+      color: '#dc2626',
+      icon: 'circle-x',
+    })
+    const base = await call(painter, session, 'describe_base', { base: 'crm' })
+    expect(base.payload.tables.find((t: Json) => t.name === 'livraisons')).toMatchObject({
+      color: '#16a34a',
+      icon: 'package',
+    })
+
+    // A choice the list does not have is not found.
+    const missing = await call(painter, session, 'propose_update_look', {
+      base: 'crm',
+      table: 'livraisons',
+      fields: [{ field: 'etat', options: [{ value: 'inconnue', color: '#000000' }] }],
+    })
+    expect(missing.payload.code).toBe('RESOURCE_NOT_FOUND')
   })
 })

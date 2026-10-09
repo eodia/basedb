@@ -1288,9 +1288,9 @@ export default {
 		agents: {
 			label: 'REST API · MCP · webhooky',
 			title: 'Vaši AI agenti mají přístup k datům, {ne ke klíčům od hradu.}',
-			lead: 'Server MCP dává agentům čtrnáct nástrojů; REST API dává vašim programům tatáž data. Jediný bod kontroly oprávnění, tytéž protokoly.',
+			lead: 'Server MCP dává agentům patnáct nástrojů; REST API dává vašim programům tatáž data. Jediný bod kontroly oprávnění, tytéž protokoly.',
 			bullets: [
-				'<strong>Jeden token na databázi</strong>, ve výchozím nastavení jen pro čtení, nikdy s většími oprávněními, než má osoba, která ho vytvořila.',
+				'<strong>Jeden token pro celou databázi</strong>, včetně produkčního i testovacího prostředí, ve výchozím nastavení jen pro čtení, nikdy s většími oprávněními, než má osoba, která ho vytvořila.',
 				'<strong>Agent odstraňuje jen s vaším souhlasem</strong>, jeden řádek po druhém, a nemění strukturu: navrhne změnu, člověk ji schválí.',
 				'<strong>Generovaná dokumentace</strong> pro každou databázi, filtrovaná podle vašich oprávnění, se specifikací OpenAPI 3.1.',
 				'<strong>Webhooky</strong> při každém zápisu: podepsané, doručované v pořadí a opakované.',
@@ -1540,6 +1540,25 @@ export default {
 		title: 'Co se v basedb změnilo',
 		intro: 'Podrobnosti o každé změně najdete v <a href="https://github.com/eodia/basedb/commits/main">historii repozitáře</a>. Co přijde dál: <a href="/feuille-de-route/">plán vývoje</a>.',
 		entries: {
+			oneToken: {
+				date: '2026-10-09',
+				title: 'Jeden token pro celou databázi, prostředí podle výběru',
+				tag: 'Novinka',
+				items: [
+					'<strong>Jediný token</strong> otevírá produkční prostředí, testovací prostředí i ta, která teprve přibudou; při vytvoření ho lze také omezit na jediné. Stávající tokeny si své prostředí ponechávají. <a href="/fonctionnalites/environnements/#přes-api-sdk-a-mcp">Přes API, SDK a MCP</a>',
+					'<strong>Prostředí se volí při volání</strong>: hlavička <code>X-Basedb-Environment</code> REST API, <code>db.environment()</code> SDK, pole Environment v n8n, adresa <code>…/mcp?environment=recette</code> nebo argument <code>environment</code> nástroje MCP. <a href="/integrations/mcp/#volba-prostředí">Volba prostředí</a>',
+					'<strong>Agent bez relé</strong>: okno tokenů nabízí konfiguraci HTTP pro Claude Code a soubor <code>.mcp.json</code>, jeden server na prostředí se stejným tokenem, přičemž token zůstává v proměnné prostředí.',
+				],
+			},
+			lookByAgents: {
+				date: '2026-10-09',
+				title: 'Barvy a ikony přes API a MCP',
+				tag: 'Novinka',
+				items: [
+					'<strong>Agent navrhuje i vzhled</strong>: barvu a ikonu tabulky v <code>propose_create_table</code>, každé volby v <code>propose_add_field</code> a nový nástroj <code>propose_update_look</code> pro existující tabulku. Osoba schvaluje, stejně jako u celé struktury. <a href="/integrations/mcp/#barvy-a-ikony">Barvy a ikony</a>',
+					'<strong>Přes API</strong> se tabulka vytváří se svou barvou a ikonou; <code>describe_base</code>, <code>describe_table</code> a <code>/meta</code> je vracejí. <a href="/integrations/api-rest/#barvy-a-ikony">Barvy a ikony</a>',
+				],
+			},
 			agentDelete: {
 				date: '2026-10-02',
 				title: 'Agenti, kteří odstraňují, pokud to dovolíte',

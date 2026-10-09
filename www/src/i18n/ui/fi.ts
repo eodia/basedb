@@ -1284,9 +1284,9 @@ export default {
 		agents: {
 			label: 'REST API · MCP · webhookit',
 			title: 'Tekoälyagenttisi saavat tiedot, {eivät avaimia valtakuntaan.}',
-			lead: 'MCP-palvelin antaa agenteille neljätoista työkalua, REST API samat tiedot ohjelmillesi. Yksi käyttöoikeuksien tarkistuspiste, samat lokit.',
+			lead: 'MCP-palvelin antaa agenteille viisitoista työkalua, REST API samat tiedot ohjelmillesi. Yksi käyttöoikeuksien tarkistuspiste, samat lokit.',
 			bullets: [
-				'<strong>Yksi tunnus tietokantaa kohden</strong>, oletuksena vain lukuoikeuksin, eikä koskaan enempää oikeuksia kuin sen luoneella henkilöllä.',
+				'<strong>Yksi tunnus koko tietokannalle</strong>, tuotanto ja testi mukaan lukien, oletuksena vain lukuoikeuksin, eikä koskaan enempää oikeuksia kuin sen luoneella henkilöllä.',
 				'<strong>Agentti poistaa vain suostumuksellasi</strong>, yksi rivi kerrallaan, eikä muuta rakennetta: se ehdottaa, ja ihminen hyväksyy.',
 				'<strong>Automaattisesti luotu dokumentaatio</strong> jokaiselle tietokannalle, käyttöoikeuksiesi mukaan suodatettuna ja OpenAPI 3.1 -määrittelyineen.',
 				'<strong>Webhookit</strong> jokaisesta kirjoituksesta: allekirjoitetut, järjestyksessä toimitetut ja tarvittaessa uudelleen yritetyt.',
@@ -1547,6 +1547,25 @@ export default {
 		title: 'Mitä basedb:ssä on muuttunut',
 		intro: 'Jokaisen muutoksen yksityiskohdat ovat <a href="https://github.com/eodia/basedb/commits/main">tietovaraston historiassa</a>. Mitä seuraavaksi: <a href="/feuille-de-route/">tiekartta</a>.',
 		entries: {
+			oneToken: {
+				date: '2026-10-09',
+				title: 'Yksi tunnus koko tietokannalle, ympäristö valittavissa',
+				tag: 'Uutta',
+				items: [
+					'<strong>Yksi ainoa tunnus</strong> avaa tietokannan tuotannon, testin ja tulevat ympäristöt; se voidaan myös rajata luotaessa yhteen ympäristöön. Olemassa olevat tunnukset säilyttävät ympäristönsä. <a href="/fonctionnalites/environnements/#apin-sdkn-ja-mcpn-kautta">API:n, SDK:n ja MCP:n kautta</a>',
+					'<strong>Ympäristö valitaan kutsun yhteydessä</strong>: REST API:n <code>X-Basedb-Environment</code>-otsake, SDK:n <code>db.environment()</code>, n8n:n Environment-kenttä, osoite <code>…/mcp?environment=recette</code> tai MCP-työkalun <code>environment</code>-argumentti. <a href="/integrations/mcp/#ympäristön-valitseminen">Ympäristön valitseminen</a>',
+					'<strong>Agentti ilman välittäjää</strong>: tunnusikkuna antaa Claude Coden HTTP-määrityksen ja <code>.mcp.json</code>-tiedoston, yksi palvelin kutakin ympäristöä kohden samalla tunnuksella, ja tunnus pysyy ympäristömuuttujassa.',
+				],
+			},
+			lookByAgents: {
+				date: '2026-10-09',
+				title: 'Värit ja kuvakkeet API:n ja MCP:n kautta',
+				tag: 'Uutta',
+				items: [
+					'<strong>Agentti antaa ehdotuksilleen ulkoasun</strong>: taulukon väri ja kuvake työkalussa <code>propose_create_table</code>, jokaisen valinnan työkalussa <code>propose_add_field</code>, ja uusi työkalu <code>propose_update_look</code> olemassa olevalle taulukolle. Henkilö hyväksyy, kuten koko rakenteen. <a href="/integrations/mcp/#värit-ja-kuvakkeet">Värit ja kuvakkeet</a>',
+					'<strong>API:n kautta</strong> taulukko luodaan väreineen ja kuvakkeineen; <code>describe_base</code>, <code>describe_table</code> ja <code>/meta</code> palauttavat ne. <a href="/integrations/api-rest/#värit-ja-kuvakkeet">Värit ja kuvakkeet</a>',
+				],
+			},
 			agentDelete: {
 				date: '2026-10-02',
 				title: 'Agentit, jotka poistavat, jos sen sallit',

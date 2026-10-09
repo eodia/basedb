@@ -74,10 +74,26 @@ programma draait.
   alle talen —, `status`, `details` en `requestId`. Een verzoek om te vertragen (`429`) wordt
   opnieuw geprobeerd na de vertraging die basedb aangeeft.
 
+## De omgevingen
+
+Een database met meerdere [omgevingen](/basedb/nl/fonctionnalites/environnements/) — productie,
+acceptatie… — behoudt haar namen en haar types van de ene omgeving naar de andere. Met een token dat
+voor de hele database is aangemaakt richt `environment()` zich op een omgeving, terwijl dezelfde code
+elders draait:
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+De optie `environment` van de constructor doet hetzelfde voor de hele client. De SDK stuurt de header
+`X-Basedb-Environment` mee; zonder die header wijst elke databasenaam zijn eigen omgeving aan
+(`b_t4z56fq_ventes` is productie).
+
 ## Het token
 
 Een **integratietoken** maak je aan in de interface: menu **⋯** van de database → **API en
-agents** → **API- en MCP-tokens…**. Het opent één database, leest haar rijen, schrijft ze als
-het met schrijfrechten is aangemaakt, heeft nooit meer rechten dan de persoon die het heeft
-aangemaakt, en **verwijdert alleen als het daarvoor is aangemaakt** (“Lezen, schrijven en
-verwijderen”): anders wordt `delete()` geweigerd.
+agents** → **API- en MCP-tokens…**. Het opent één database — alle omgevingen ervan, of slechts één —,
+leest haar rijen, schrijft ze als het met schrijfrechten is aangemaakt, heeft nooit meer rechten dan
+de persoon die het heeft aangemaakt, en **verwijdert alleen als het daarvoor is aangemaakt** (“Lezen,
+schrijven en verwijderen”): anders wordt `delete()` geweigerd.

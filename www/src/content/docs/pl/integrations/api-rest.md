@@ -15,9 +15,9 @@ Jego adresy URL zawierają nazwy fizyczne – te same, które czytasz w SQL.
 
 W interfejsie, menu **⋯** bazy → **API i agenci** → **Tokeny API i MCP…**: osoba z poziomem
 **Zarządzanie** na bazie lub na jej projekcie tworzy tam **token integracji** ograniczony do tej
-bazy, domyślnie tylko do odczytu, po potwierdzeniu swojego hasła – konto bez hasła, logujące się
-przez dostawcę tożsamości, nie może tego jeszcze zrobić. Jest wyświetlany tylko raz; umieść go w
-zmiennej środowiskowej.
+bazy (wszystkich jej środowisk albo jednego), domyślnie tylko do odczytu, po potwierdzeniu swojego
+hasła – konto bez hasła, logujące się przez dostawcę tożsamości, nie może tego jeszcze zrobić.
+Jest wyświetlany tylko raz; umieść go w zmiennej środowiskowej.
 
 Token czyta; tworzy i zmienia, jeśli został utworzony z prawem zapisu, a **usuwa, jeśli został
 utworzony do tego** — uprawnienia „Odczyt, zapis i usuwanie” — poza wierszem, który zabrałaby ze
@@ -29,6 +29,31 @@ export BASEDB_TOKEN=bdb_…
 curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
   -H "Authorization: Bearer $BASEDB_TOKEN"
 ```
+
+## Wybór środowiska
+
+Baza, która ma kilka [środowisk](/basedb/pl/fonctionnalites/environnements/) – produkcyjne,
+testowe… – pozostaje dla tokena utworzonego dla całej bazy **jedną** bazą. Ścieżka wskazuje bazę
+nazwą jej środowiska produkcyjnego, a nagłówek `X-Basedb-Environment` wybiera środowisko:
+
+```bash
+curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  -H "X-Basedb-Environment: recette"
+```
+
+- Bez nagłówka obowiązuje środowisko, które wskazuje ścieżka: `b_t4z56fq_ventes` to środowisko
+  produkcyjne, `b_t4z56fq_ventes_recette` – testowe; oba zapisy pozostają ważne.
+- `?environment=recette` robi to samo dla klienta, który nie ustawia nagłówka.
+- Środowisko wskazuje się jego plakietką, bez rozróżniania wielkości liter i znaków
+  diakrytycznych, albo słowem `production`. Środowisko, którego baza nie ma, odpowiada `404`, jak
+  każdy nieistniejący zasób.
+- `GET /api/v1/<tenant>/meta/bases` wymienia każde środowisko wraz z jego blokiem `environment`
+  (`label`, `production`); z nagłówkiem wymienia tylko to jedno.
+
+Token ograniczony przy tworzeniu do jednego środowiska nie otwiera żadnego innego: nagłówek nic tu
+nie zmienia. Jego uprawnienia są zawsze zestawiane, środowisko po środowisku, z uprawnieniami
+osoby, która go utworzyła.
 
 ## Odczyt
 
@@ -82,6 +107,25 @@ Z tym samym tokenem:
 Budowanie – tworzenie automatyzacji, pulpitu, integracji – pozostaje zarezerwowane dla sesji
 interfejsu: token czyta i zapisuje wiersze, nie zmienia bazy.
 
+## Kolory i ikony
+
+Tabela i każda opcja listy wyboru mają kolor (`color`, `#rrggbb`) i ikonę (`icon`, nazwa ikony
+[Lucide](https://lucide.dev/icons/), którą rysuje interfejs: `truck`, `circle-check`, `flame`…).
+`GET …/meta/bases/<base>` zwraca je dla bazy, jej tabel i opcji jej pól.
+
+Aby je ustawić, użyj tokena dostępu osoby, która może zmieniać strukturę
+(`POST /auth/session/access`) – token integracji nie zmienia bazy:
+
+| Ścieżka | Treść |
+|---|---|
+| `POST …/admin/bases/<base>/tables` | `{"label": "Tickets", "color": "#dc2626", "icon": "flame", "fields": […]}` |
+| `PATCH …/admin/bases/<base>/tables/<table>` | `{"color": "#2563eb", "icon": "inbox"}` – trzy klucze `color`, `icon`, `image` są traktowane łącznie: podanie jednego zastępuje wszystkie trzy |
+| `POST …/admin/bases/<base>/tables/<table>/fields` | `{"label": "Priorité", "kind": "select", "options": [{"value": "haute", "color": "#dc2626", "icon": "flame"}, …]}` |
+| `PUT …/admin/bases/<base>/tables/<table>/fields/<champ>/options` | cała lista opcji, po kolei, każda z kolorem i ikoną |
+
+Agent korzysta z [serwera MCP](/basedb/pl/integrations/mcp/#kolory-i-ikony), gdzie te zmiany
+**proponuje**. Pole nie ma ikony do wyboru: interfejs rysuje ikonę jego typu.
+
 ## Tworzenie bazy z szablonu
 
 Aplikacja, która się instaluje, tworzy swoją bazę **jednym wywołaniem**: serwer stosuje szablon
@@ -122,14 +166,17 @@ curl -X POST "http://localhost:3000/auth/introspect" \
 Każdy token, który nie jest nic wart – nieznany, wygasły, unieważniony, zamknięta sesja, inna
 przestrzeń robocza – odpowiada `{"active": false}`, bez podania przyczyny. Odpowiedź jest
 czytana na żywo: wylogowanie widać natychmiast. Dla tokenu integracji odpowiedź podaje też
-bazę, którą otwiera (`base`), jego dostęp (`read` lub `write`) oraz jego powierzchnie.
+bazę, którą otwiera (`base`, jej środowisko produkcyjne), czy otwiera wszystkie jej środowiska
+(`environments`: `all`), czy tylko jedno (`one`), jego dostęp (`read`, `write` lub `delete`) oraz
+jego powierzchnie.
 
 ## Generowana dokumentacja
 
 Każda baza ma swoją stronę **Dokumentacja API i MCP**: dla każdej tabeli jej punkty dostępowe,
 kolumny, przykłady w cURL i w JavaScripcie. Jest **filtrowana według twoich uprawnień** – dwie
 osoby czytające otrzymują dwie wersje –, napisana **w języku twojego ekranu**, i istnieje też
-w formacie OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Nazwy, ścieżki i
-kody błędów pozostają takie same we wszystkich językach.
+w formacie OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`), który deklaruje token
+Bearer i nagłówek `X-Basedb-Environment`. Nazwy, ścieżki i kody błędów pozostają takie same we
+wszystkich językach.
 
 ![Generowana dokumentacja bazy](../../../../assets/screens/pl/documentation-api.webp)

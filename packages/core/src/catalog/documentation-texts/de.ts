@@ -62,6 +62,9 @@ export const de: Catalog = {
     'Eine Tabelle und ihre ersten Felder vorschlagen — eine Person entscheidet.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
     'Ein Feld, eine Einfachauswahl oder eine Verknüpfung vorschlagen — eine Person entscheidet.',
+  'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.':
+    'Die Farbe und das Symbol einer Tabelle und der Optionen ihrer Auswahlfelder vorschlagen — eine Person entscheidet.',
+  recette: 'staging',
   'Relire une proposition du jeton et savoir ce qu’il en est advenu.':
     'Einen Vorschlag des Tokens nachlesen und erfahren, was daraus geworden ist.',
   'dépôt basedb': 'basedb-Repository',
@@ -99,22 +102,35 @@ export const de: Catalog = {
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Diese Datenbank ist nicht für Agenten geöffnet.** Solange dies so ist, sieht sie kein Werkzeug, unabhängig vom vorgelegten Token.',
   'Créer un jeton': 'Token erstellen',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'In der Oberfläche, Menü „⋯“ der Datenbank → **API und Agenten** → **API- und MCP-Token …**, Zugriff **MCP** angehakt. Das Token ist auf diese Datenbank beschränkt, standardmäßig **schreibgeschützt**: Das Schreiben, und das Löschen, werden ausdrücklich gewählt. Es wird nur einmal angezeigt und lässt sich vom selben Bildschirm aus widerrufen. Auch für die **REST-API** angehakt, dient dasselbe Token einem Programm (siehe „Authentifizierung“).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'In der Oberfläche, Menü „⋯“ der Datenbank → **API und Agenten** → **API- und MCP-Token …**, Zugriff **MCP** angehakt. Das Token öffnet **die ganze Datenbank, alle ihre Umgebungen** — Produktion, Staging … — oder nur eine, wenn Sie es darauf beschränken. Es ist standardmäßig **schreibgeschützt**: Das Schreiben, und das Löschen, werden ausdrücklich gewählt. Es wird nur einmal angezeigt und lässt sich vom selben Bildschirm aus widerrufen. Auch für die **REST-API** angehakt, dient dasselbe Token einem Programm (siehe „Authentifizierung“).',
   'Garder le jeton hors de la configuration': 'Das Token aus der Konfiguration heraushalten',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Das Token wird in der Umgebungsvariable `BASEDB_TOKEN` abgelegt, niemals in der Konfigurationsdatei des Clients: Diese ist versioniert, synchronisiert und für alle Programme der Sitzung lesbar.',
   'Déclarer le serveur dans le client': 'Den Server im Client eintragen',
-  'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).':
-    'Der Client startet das **Relay** `relay.js`, das seine Nachrichten bis zum Server transportiert. Es liest das Token aus der Variable, die `--token-env` nennt — `BASEDB_MCP_TOKEN`, wenn nichts angegeben ist — und die Adresse des Servers aus `--url` (oder `BASEDB_MCP_URL`).',
+  'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.':
+    'Ein Client, der MCP über HTTP spricht — unter anderem Claude Code —, wendet sich direkt an die Adresse des Servers, `…/mcp`, mit dem Header {header}. In der Datei `.mcp.json` eines Projekts wird `${BASEDB_TOKEN}` aus der Umgebung gelesen: Das Token wird nicht in die Datei geschrieben. Mit demselben Token lässt sich pro Umgebung ein Server eintragen.',
+  'Client sans HTTP : le relais': 'Client ohne HTTP: das Relay',
+  'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).':
+    'Ein Client, der nur lokale Programme startet (stdio), nutzt das **Relay** `relay.js`, das seine Nachrichten bis zum Server transportiert. Es liest das Token aus der Variable, die `--token-env` nennt — `BASEDB_MCP_TOKEN`, wenn nichts angegeben ist —, die Adresse des Servers aus `--url` (oder `BASEDB_MCP_URL`) und die Umgebung aus `--environment` (oder `BASEDB_MCP_ENVIRONMENT`).',
   'Autre client MCP': 'Anderer MCP-Client',
   'votre-instance': 'ihre-instanz',
-  'Sans relais': 'Ohne Relay',
-  'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
-    'Ein Client, der MCP über HTTP spricht, wendet sich direkt an die Adresse des Servers, `…/mcp`, mit dem Header {header}. Ein Token wird nur für die bei seiner Erstellung angehakten Zugriffe akzeptiert: Ein reines „MCP“-Token wird von der REST-API abgelehnt, und umgekehrt.',
+  'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
+    'Ein Token wird nur für die bei seiner Erstellung angehakten Zugriffe akzeptiert: Ein reines „MCP“-Token wird von der REST-API abgelehnt, und umgekehrt.',
+  'Choisir l’environnement': 'Die Umgebung wählen',
+  'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :':
+    'Eine Datenbank kann mehrere Umgebungen haben — Produktion, Staging, Entwicklung —, jede mit ihren eigenen Tabellen und Zeilen. Ein Token für die ganze Datenbank öffnet sie alle; die Umgebung wird beim Aufruf gewählt, vom Allgemeinsten zum Genauesten:',
+  '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.':
+    '**Der Name der Datenbank**, sonst nichts: {base} ist die Produktion, und jede Umgebung behält zusätzlich ihren eigenen Namen.',
+  '**L’adresse du serveur** : {address} — un serveur déclaré par environnement.':
+    '**Die Adresse des Servers**: {address} — pro Umgebung wird ein Server eingetragen.',
+  '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.':
+    '**Das Argument `environment`** jedes Werkzeugs, das eine Datenbank benennt, für einen einzelnen Aufruf: {example}.',
+  'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.':
+    'Eine Umgebung wird mit ihrem Badge benannt, ohne Beachtung der Groß- und Kleinschreibung und der Akzente, oder mit `production`. Eine Umgebung, die die Datenbank nicht hat, antwortet mit `RESOURCE_NOT_FOUND`.',
   Vérifier: 'Prüfen',
-  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.':
-    'Bitten Sie den Agenten, `whoami` aufzurufen: Es liefert die Person, die das Token angelegt hat, die Datenbank, für die es gilt, und seine tatsächlichen Berechtigungen.',
+  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.':
+    'Bitten Sie den Agenten, `whoami` aufzurufen: Der Aufruf liefert die Person, die das Token angelegt hat, die Datenbank, für die es gilt, die Umgebungen, die es öffnet (`scope.available`), und seine tatsächlichen Berechtigungen.',
   Outils: 'Werkzeuge',
   '{count} outils, toujours les mêmes : leur nom et leur description ne dépendent jamais de vos données. Le schéma se découvre en les appelant.':
     '{count} Werkzeuge, immer dieselben: Ihr Name und ihre Beschreibung hängen nie von Ihren Daten ab. Das Schema wird durch ihren Aufruf entdeckt.',
@@ -134,6 +150,8 @@ export const de: Catalog = {
     'Um eine Verknüpfung zu schreiben: `lookup_records` auf der Zieltabelle, dann `create_record` oder `update_record` mit der gefundenen `_id`.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'Um die Struktur weiterzuentwickeln: `propose_create_table` oder `propose_add_field`, dann `get_proposal`, um die Entscheidung zu verfolgen.',
+  'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.':
+    'Für die Darstellung: `color` und `icon` in `propose_create_table` und in den Optionen von `propose_add_field`, oder `propose_update_look` für eine bestehende Tabelle.',
   'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
     'Um zu löschen: zuerst `get_record`, um sich der Zeile sicher zu sein, dann `delete_record` — er liefert sie in seiner Antwort; `restore_record` holt sie zurück.',
   'Propositions de structure': 'Strukturvorschläge',
@@ -143,6 +161,9 @@ export const de: Catalog = {
     'Höchstens 5 ausstehende Vorschläge pro Token; ein neuer Vorschlag zum selben Objekt ersetzt den vorherigen (`superseded`).',
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Kein Löschen, kein Umbenennen, keine Verknüpfung mit Kaskade (`MCP_CASCADE_FORBIDDEN`).',
+  'Couleurs et pictogrammes': 'Farben und Symbole',
+  'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.':
+    'Eine Tabelle und jede Option eines Auswahlfelds haben eine Farbe und ein Symbol, wie in der Anwendung. `color` ist eine Farbe `#rrggbb`; `icon` ist der Name eines der Symbole, die die Anwendung zeichnet — das Schema des Werkzeugs zählt sie auf. Ein weggelassener Schlüssel behält den bestehenden Wert, `null` löscht ihn. `describe_base` und `describe_table` liefern die aktuelle Darstellung.',
   'Ce qui n’existe pas': 'Was es nicht gibt',
   'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
     'Kein Werkzeug löscht mehrere Zeilen auf einmal, eine Tabelle oder ein Feld, führt SQL aus oder verwaltet Berechtigungen oder Token. Ein Agent, der einen solchen Namen aufruft — `delete_records`, `run_sql`… — erhält `MCP_OPERATION_EXCLUDED`, unabhängig von der betroffenen Datenbank.',
@@ -245,11 +266,14 @@ export const de: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Alle Datenrouten erfordern ein **Token** im Header `Authorization`. Das Sitzungscookie wird hier nie akzeptiert: Ein Browser sendet es bei jeder Anfrage, auch bei denen, die eine fremde Seite auslöst.',
   'Jeton d’intégration': 'Integrations-Token',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Ein Programm — Skript, Synchronisierung, andere Anwendung — legt ein **Integrations-Token** vor, das mit `bdb_` beginnt. Es gilt nur für diese Datenbank; es liest, legt an und ändert, wenn es mit Schreibrecht angelegt wurde, und **löscht nur, wenn es dafür angelegt wurde**; es hat nie mehr Berechtigungen als die Person, die es angelegt hat, bei jedem Aufruf abgeglichen. Die Administration, die SQL-Konsole und die KI bleiben ihm verschlossen.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Ein Programm — Skript, Synchronisierung, andere Anwendung — legt ein **Integrations-Token** vor, das mit `bdb_` beginnt. Es gilt nur für diese Datenbank — alle ihre Umgebungen oder nur eine; es liest, legt an und ändert, wenn es mit Schreibrecht angelegt wurde, und **löscht nur, wenn es dafür angelegt wurde**; es hat nie mehr Berechtigungen als die Person, die es angelegt hat, bei jedem Aufruf abgeglichen. Die Administration, die SQL-Konsole und die KI bleiben ihm verschlossen.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Um eines zu erstellen: Menü „⋯“ der Datenbank → **API und Agenten** → **API- und MCP-Token …**, Zugriff **REST-API** angehakt. Es wird nur einmal angezeigt.',
   Appel: 'Aufruf',
+  Environnement: 'Umgebung',
+  'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.':
+    'Ein für die ganze Datenbank angelegtes Token öffnet alle ihre Umgebungen. Der Pfad nennt die Datenbank — {base} ist die Produktion — und der Header {header} wählt die Umgebung; `?environment=` bewirkt dasselbe für einen Client, der keinen Header setzt. Ohne beides gilt die Umgebung, die die Datenbank benennt.',
   'Une authentification absente répond `401`, jamais `404` : vous devez pouvoir vous reconnecter.':
     'Eine fehlende Authentifizierung antwortet mit `401`, nie mit `404`: Sie müssen sich erneut anmelden können.',
   Conventions: 'Konventionen',

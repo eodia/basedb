@@ -1285,9 +1285,9 @@ export default {
 		agents: {
 			label: 'API REST · MCP · webhookuri',
 			title: 'Agenții AI primesc acces la date, {nu cheile castelului.}',
-			lead: 'Serverul MCP le oferă agenților paisprezece instrumente; API-ul REST oferă aceleași date programelor dumneavoastră. Un singur punct de control al permisiunilor, aceleași jurnale.',
+			lead: 'Serverul MCP le oferă agenților cincisprezece instrumente; API-ul REST oferă aceleași date programelor dumneavoastră. Un singur punct de control al permisiunilor, aceleași jurnale.',
 			bullets: [
-				'<strong>Un token pentru fiecare bază</strong>, implicit doar în citire, niciodată cu mai multe permisiuni decât persoana care l-a creat.',
+				'<strong>Un token pentru toată baza</strong>, producție și testare incluse, implicit doar în citire, niciodată cu mai multe permisiuni decât persoana care l-a creat.',
 				'<strong>Un agent nu șterge decât cu acordul dumneavoastră</strong>, câte un rând, și nu schimbă structura: o propune, iar o persoană aprobă.',
 				'<strong>O documentație generată</strong> pentru fiecare bază, filtrată după permisiunile dumneavoastră, cu specificația ei OpenAPI 3.1.',
 				'<strong>Webhookuri</strong> semnate, ordonate și reîncercate, la fiecare scriere.',
@@ -1537,6 +1537,25 @@ export default {
 		title: 'Ce s-a schimbat în basedb',
 		intro: 'Detaliile fiecărei schimbări se află în <a href="https://github.com/eodia/basedb/commits/main">istoricul depozitului</a>. Ce urmează: <a href="/feuille-de-route/">foaia de parcurs</a>.',
 		entries: {
+			oneToken: {
+				date: '2026-10-09',
+				title: 'Un singur token pentru toată baza, mediul la alegere',
+				tag: 'Nou',
+				items: [
+					'<strong>Un singur token</strong> deschide producția, testarea și mediile viitoare ale unei baze; poate fi, de asemenea, limitat la unul singur, la creare. Tokenurile existente își păstrează mediul. <a href="/fonctionnalites/environnements/#prin-api-sdk-și-mcp">Prin API, SDK și MCP</a>',
+					'<strong>Mediul se alege la apel</strong>: antetul <code>X-Basedb-Environment</code> al API-ului REST, <code>db.environment()</code> din SDK, câmpul Environment din n8n, adresa <code>…/mcp?environment=recette</code> sau argumentul <code>environment</code> al unui instrument MCP. <a href="/integrations/mcp/#alegerea-mediului">Alegerea mediului</a>',
+					'<strong>Un agent fără releu</strong>: fereastra tokenurilor oferă configurația HTTP pentru Claude Code și fișierul <code>.mcp.json</code>, câte un server pentru fiecare mediu pe același token, tokenul rămânând într-o variabilă de mediu.',
+				],
+			},
+			lookByAgents: {
+				date: '2026-10-09',
+				title: 'Culori și pictograme prin API și MCP',
+				tag: 'Nou',
+				items: [
+					'<strong>Un agent stabilește aspectul propunerilor sale</strong>: culoarea și pictograma unui tabel în <code>propose_create_table</code>, ale fiecărei opțiuni în <code>propose_add_field</code>, și noul instrument <code>propose_update_look</code> pentru un tabel existent. O persoană aprobă, ca pentru toată structura. <a href="/integrations/mcp/#culori-și-pictograme">Culori și pictograme</a>',
+					'<strong>Prin API</strong>, un tabel se creează cu culoarea și pictograma sa; <code>describe_base</code>, <code>describe_table</code> și <code>/meta</code> le returnează. <a href="/integrations/api-rest/#culori-și-pictograme">Culori și pictograme</a>',
+				],
+			},
 			agentDelete: {
 				date: '2026-10-02',
 				title: 'Agenți care șterg, cu acordul dumneavoastră',

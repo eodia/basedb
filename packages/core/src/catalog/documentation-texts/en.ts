@@ -62,6 +62,9 @@ export const en: Catalog = {
     'Propose a table and its first fields — a person decides.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
     'Propose a field, a choice list or a relation — a person decides.',
+  'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.':
+    'Propose the color and icon of a table and of the choices in its lists — a person decides.',
+  recette: 'staging',
   'Relire une proposition du jeton et savoir ce qu’il en est advenu.':
     'Look up one of the token’s proposals and find out what became of it.',
   'dépôt basedb': 'basedb repository',
@@ -97,22 +100,40 @@ export const en: Catalog = {
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**This base is not open to agents.** As long as it isn’t, no tool sees it, whatever token is presented.',
   'Créer un jeton': 'Create a token',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'In the interface, the base’s “⋯” menu → **API and agents** → **API and MCP tokens…**, with **MCP** access checked. The token is limited to this base, **read-only** by default: write access, and delete access, are chosen explicitly. It is shown only once, and can be revoked from the same screen. Also checked for the **REST API**, the same token serves a program (see “Authentication”).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'In the interface, the base’s “⋯” menu → **API and agents** → **API and MCP tokens…**, with **MCP** access checked. The token opens **the whole base, all its environments** — production, staging… — or just one, if you limit it. It is **read-only** by default: write access, and delete access, are chosen explicitly. It is shown only once, and can be revoked from the same screen. Also checked for the **REST API**, the same token serves a program (see “Authentication”).',
   'Garder le jeton hors de la configuration': 'Keep the token out of the configuration',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'The token goes in the `BASEDB_TOKEN` environment variable, never in the client’s configuration file: that file is versioned, synced, and readable by every program in the session.',
   'Déclarer le serveur dans le client': 'Declare the server in the client',
-  'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).':
-    'The client launches the **relay** `relay.js`, which carries its messages to the server. It reads the token from the variable named by `--token-env` — `BASEDB_MCP_TOKEN` if nothing is said — and the server’s address from `--url` (or `BASEDB_MCP_URL`).',
+  'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.':
+    'A client that speaks MCP over HTTP — Claude Code, among others — targets the server’s address directly, `…/mcp`, with the {header} header. In a project’s `.mcp.json` file, `${BASEDB_TOKEN}` is read from the environment: the token is never written to the file. The same token can declare one server per environment.',
+  'Client sans HTTP : le relais': 'A client without HTTP: the relay',
+  'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).':
+    'A client that only launches local programs (stdio) goes through the **relay** `relay.js`, which carries its messages to the server. It reads the token from the variable named by `--token-env` (`BASEDB_MCP_TOKEN` if none is given), the server’s address from `--url` (or `BASEDB_MCP_URL`), and the environment from `--environment` (or `BASEDB_MCP_ENVIRONMENT`).',
   'Autre client MCP': 'Other MCP client',
   'votre-instance': 'your-instance',
-  'Sans relais': 'Without a relay',
-  'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
-    'A client that speaks MCP over HTTP targets the server’s address directly, `…/mcp`, with the {header} header. A token is only accepted for the access checked when it was created: an “MCP”-only token is refused by the REST API, and vice versa.',
+  'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
+    'A token is only accepted for the access checked when it was created: an “MCP”-only token is refused by the REST API, and vice versa.',
+  'Choisir l’environnement': 'Choose the environment',
+  'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :':
+    'A base can have several environments — production, staging, development — each with its own tables and rows. A whole-base token opens all of them; the environment is chosen on each call, from the broadest to the most specific:',
+  '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.':
+    '**The base name**, on its own: {base} is the production, and each environment also keeps its own name.',
+  '**L’adresse du serveur** : {address} — un serveur déclaré par environnement.':
+    '**The server address**: {address} — one server declared per environment.',
+  '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.':
+    '**The `environment` argument** of every tool that names a base, for a single call: {example}.',
+  'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.':
+    'An environment is named by its badge, ignoring case and accents, or `production`. An environment the base doesn’t have answers `RESOURCE_NOT_FOUND`.',
   Vérifier: 'Verify',
-  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.':
-    'Ask the agent to call `whoami`: it returns the person who created the token, the base it is scoped to, and its effective permissions.',
+  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.':
+    'Ask the agent to call `whoami`: it returns the person who created the token, the base it is scoped to, the environments it opens (`scope.available`), and its effective permissions.',
+  'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.':
+    'For the appearance: `color` and `icon` in `propose_create_table` and in the choices of `propose_add_field`, or `propose_update_look` for a table that already exists.',
+  'Couleurs et pictogrammes': 'Colors and icons',
+  'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.':
+    'A table and each choice of a list have a color and an icon, as in the application. `color` is a `#rrggbb` color; `icon` is the name of one of the icons the application draws — the tool’s schema lists them. An omitted key keeps what is in place, `null` clears it. `describe_base` and `describe_table` return the current appearance.',
   Outils: 'Tools',
   '{count} outils, toujours les mêmes : leur nom et leur description ne dépendent jamais de vos données. Le schéma se découvre en les appelant.':
     '{count} tools, always the same ones: their name and description never depend on your data. The schema is discovered by calling them.',
@@ -241,13 +262,16 @@ export const en: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'All data routes require a **token**, in the `Authorization` header. The session cookie is never accepted here: a browser sends it on every request, including those triggered by a foreign page.',
   'Jeton d’intégration': 'Integration token',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'A program — a script, a sync, another application — presents an **integration token**, which starts with `bdb_`. It is only valid for this base; it reads, creates and updates if it was created with write access, and **only deletes if it was created for that**; it never has more permissions than the person who created it, cross-checked on every call. Administration, the SQL console and AI remain closed to it.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'A program — a script, a sync, another application — presents an **integration token**, which starts with `bdb_`. It is only valid for this base — all its environments, or just one. It reads, creates and updates if it was created with write access, and **only deletes if it was created for that**; it never has more permissions than the person who created it, cross-checked on every call. Administration, the SQL console and AI remain closed to it.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'To create one: the base’s “⋯” menu → **API and agents** → **API and MCP tokens…**, with **REST API** access checked. It is shown only once.',
   Appel: 'Call',
   'Une authentification absente répond `401`, jamais `404` : vous devez pouvoir vous reconnecter.':
     'Missing authentication answers `401`, never `404`: you must be able to sign in again.',
+  Environnement: 'Environment',
+  'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.':
+    'A token created for the whole base opens all its environments. The path names the base — {base} is the production — and the {header} header chooses the environment; `?environment=` does the same for a client that doesn’t set a header. With neither, the environment is the one the base name designates.',
   Conventions: 'Conventions',
   Enveloppe: 'Envelope',
   'Toutes les réponses ont la même forme : {envelope}. Une erreur remplace `data` par le code, les détails et l’identifiant de requête.':

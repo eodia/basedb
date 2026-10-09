@@ -27,10 +27,16 @@ Skapa en autentiseringsuppgift **basedb API** i n8n:
 | **Instance URL** | adressen där du öppnar basedb: `https://basedb.exemple.fr` |
 | **Workspace** | arbetsytans referens, den som ingår i API:ets adresser (`/api/v1/<arbetsyta>/…`): `t4z56fq`, om inte instansen har satt `BASEDB_TENANT` |
 | **Token** | en **integrationstoken**: databasens **⋯**-meny → **API och agenter** → **API- och MCP-tokens…** |
+| **Environment** | valfritt: miljön i databasen där du arbetar – `recette`, `production` … Tomt: produktionen |
 
-En token öppnar **en** databas. Den läser dess rader, skriver dem om den skapades med
-skrivrätt, och har aldrig fler behörigheter än personen som skapade den. Vid sparandet testar
-n8n anslutningen och säger till om token avvisas.
+En token öppnar **en** databas – alla dess miljöer, eller bara en om den har begränsats vid
+skapandet. Den läser dess rader, skriver dem om den skapades med skrivrätt, och har aldrig fler
+behörigheter än personen som skapade den. Vid sparandet testar n8n anslutningen och säger till om
+token avvisas.
+
+Om du vill arbeta i både produktionen och testmiljön skapar du två autentiseringsuppgifter med
+samma token, den ena med **Environment** tom, den andra med `recette`. Om ingen miljö är vald
+visar nodens lista över databaser varje miljö, med dess namn inom parentes.
 
 ## Läsa och skriva: noden basedb
 

@@ -197,9 +197,22 @@ export async function allRows(
 
 export async function getBases(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
   const body = (await basedbRequest.call(this, 'GET', '/meta/bases')) as {
-    data: Array<{ name: string; label: string }>
+    data: Array<{
+      name: string
+      label: string
+      environment?: { label: string; production: boolean }
+    }>
   }
-  return body.data.map((b) => ({ name: b.label, value: b.name, description: b.name }))
+  // A token of the whole base lists each environment, under the same label: the
+  // environment tells them apart.
+  return body.data.map((b) => ({
+    name:
+      b.environment === undefined || b.environment.production
+        ? b.label
+        : `${b.label} (${b.environment.label})`,
+    value: b.name,
+    description: b.name,
+  }))
 }
 
 export async function getTables(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {

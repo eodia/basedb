@@ -377,6 +377,7 @@ export function Sidebar({
       <TokenDialog
         open={dialog.kind === 'mcp'}
         base={dialog.base}
+        environments={familyOf.get(dialog.base.name)}
         hasPassword={user.hasPassword}
         onClose={() => setDialog(null)}
       />

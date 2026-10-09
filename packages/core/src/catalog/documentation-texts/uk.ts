@@ -61,9 +61,12 @@ export const uk: Catalog = {
     'Запропонувати таблицю та її перші поля — рішення ухвалює людина.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
     'Запропонувати поле, список вибору або зв’язок — рішення ухвалює людина.',
+  'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.':
+    'Запропонувати колір і піктограму таблиці та варіантів її списків — рішення ухвалює людина.',
   'Relire une proposition du jeton et savoir ce qu’il en est advenu.':
     'Переглянути пропозицію токена та дізнатися, що з нею сталося.',
   'dépôt basedb': 'репозиторій basedb',
+  recette: 'staging',
   'Depuis un agent (MCP)': 'Від агента (MCP)',
   'Cette base n’est pas ouverte aux agents : aucun outil MCP ne voit cette table, quel que soit le jeton.':
     'Ця база не відкрита для агентів: жоден інструмент MCP не бачить цю таблицю, незалежно від токена.',
@@ -97,22 +100,35 @@ export const uk: Catalog = {
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Ця база не відкрита для агентів.** Поки це так, жоден інструмент її не бачить, незалежно від пред’явленого токена.',
   'Créer un jeton': 'Створити токен',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'В інтерфейсі, у меню бази «⋯» → **API та агенти** → **Токени API і MCP…**, позначте доступ **MCP**. Токен обмежено цією базою, за замовчуванням **лише читання**: запис, і видалення, вибираються явно. Він показується лише один раз і відкликається з того самого екрана. Якщо позначено також **REST API**, той самий токен слугує для програми (див. «Автентифікація»).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'В інтерфейсі, у меню бази «⋯» → **API та агенти** → **Токени API і MCP…**, позначте доступ **MCP**. Токен відкриває **всю базу, усі її середовища** — продакшн, тестування… — або лише одне, якщо ви його обмежите. За замовчуванням він **лише для читання**: запис, і видалення, вибираються явно. Він показується лише один раз і відкликається з того самого екрана. Якщо позначено також **REST API**, той самий токен слугує для програми (див. «Автентифікація»).',
   'Garder le jeton hors de la configuration': 'Тримати токен поза конфігурацією',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Токен розміщують у змінній середовища `BASEDB_TOKEN`, ніколи у файлі конфігурації клієнта: він версіонується, синхронізується і доступний для читання всім програмам сеансу.',
   'Déclarer le serveur dans le client': 'Оголосити сервер у клієнті',
-  'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).':
-    'Клієнт запускає **ретранслятор** `relay.js`, який передає його повідомлення до сервера. Він читає токен зі змінної, яку називає `--token-env` — `BASEDB_MCP_TOKEN`, якщо нічого не вказано, — і адресу сервера з `--url` (або `BASEDB_MCP_URL`).',
+  'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).':
+    'Клієнт, який запускає лише локальні програми (stdio), працює через **ретранслятор** `relay.js`, що передає його повідомлення до сервера. Токен він читає зі змінної, яку називає `--token-env` (`BASEDB_MCP_TOKEN`, якщо нічого не вказано), адресу сервера — з `--url` (або `BASEDB_MCP_URL`), а середовище — з `--environment` (або `BASEDB_MCP_ENVIRONMENT`).',
   'Autre client MCP': 'Інший клієнт MCP',
   'votre-instance': 'vasha-instantsiia',
-  'Sans relais': 'Без ретранслятора',
-  'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
-    'Клієнт, який спілкується MCP через HTTP, звертається безпосередньо до адреси сервера, `…/mcp`, із заголовком {header}. Токен приймається лише для тих доступів, що позначено під час його створення: токен лише з доступом «MCP» відхиляється REST API, і навпаки.',
+  'Client sans HTTP : le relais': 'Клієнт без HTTP: ретранслятор',
+  'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.':
+    'Клієнт, що працює з MCP через HTTP, — зокрема Claude Code, — звертається безпосередньо до адреси сервера, `…/mcp`, із заголовком {header}. У файлі `.mcp.json` проєкту `${BASEDB_TOKEN}` зчитується зі змінних середовища: токен у файл не записується. З одним токеном можна оголосити по одному серверу на кожне середовище.',
+  'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
+    'Токен приймається лише для тих доступів, що позначено під час його створення: токен лише з доступом «MCP» відхиляється REST API, і навпаки.',
   Vérifier: 'Перевірити',
-  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.':
-    'Попросіть агента викликати `whoami`: він повертає особу, яка створила токен, базу його дії та його фактичні дозволи.',
+  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.':
+    'Попросіть агента викликати `whoami`: він повертає особу, яка створила токен, базу його дії, середовища, які він відкриває (`scope.available`), та його фактичні дозволи.',
+  'Choisir l’environnement': 'Вибір середовища',
+  'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :':
+    'База може мати кілька середовищ — продакшн, тестування, розробка, — кожне зі своїми таблицями й рядками. Токен на всю базу відкриває їх усі; середовище вибирається під час виклику, від найширшого способу до найточнішого:',
+  '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.':
+    '**Назва бази** без будь-чого іншого: {base} — це продакшн, а кожне середовище зберігає ще й власну назву.',
+  '**L’adresse du serveur** : {address} — un serveur déclaré par environnement.':
+    '**Адреса сервера**: {address} — по одному оголошеному серверу на кожне середовище.',
+  '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.':
+    '**Аргумент `environment`** кожного інструмента, що називає базу, — для одного виклику: {example}.',
+  'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.':
+    'Середовище називається за його значком, без урахування регістру й діакритичних знаків, або `production`. Середовище, якого в базі немає, відповідає `RESOURCE_NOT_FOUND`.',
   Outils: 'Інструменти',
   '{count} outils, toujours les mêmes : leur nom et leur description ne dépendent jamais de vos données. Le schéma se découvre en les appelant.':
     '{count} інструментів, завжди тих самих: їхня назва та опис ніколи не залежать від ваших даних. Схему можна дізнатися, викликавши їх.',
@@ -132,6 +148,8 @@ export const uk: Catalog = {
     'Щоб записати зв’язок: `lookup_records` на цільовій таблиці, потім `create_record` або `update_record` зі знайденим `_id`.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'Щоб змінити структуру: `propose_create_table` або `propose_add_field`, потім `get_proposal`, щоб відстежити рішення.',
+  'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.':
+    'Для зовнішнього вигляду: `color` і `icon` у `propose_create_table` та у варіантах `propose_add_field`, або `propose_update_look` для наявної таблиці.',
   'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
     'Щоб видалити: спершу `get_record`, щоб переконатися в рядку, потім `delete_record` — який віддає його у своїй відповіді; `restore_record` повертає його назад.',
   'Propositions de structure': 'Пропозиції щодо структури',
@@ -139,6 +157,9 @@ export const uk: Catalog = {
     'Агент ніколи сам не змінює структуру: він **пропонує**. Пропозиція очікує в черзі «Пропозиції» бази, де людина, яка може змінювати структуру, схвалює або відхиляє її; без рішення вона спливає через 24 години. Схвалена, вона застосовується від імені особи, яка створила токен, — якщо ця особа й досі має на це право, — і з’являється в історії як будь-яка інша зміна.',
   'Au plus 5 propositions en attente par jeton ; une nouvelle proposition sur le même objet remplace la précédente (`superseded`).':
     'Не більше 5 пропозицій в очікуванні на токен; нова пропозиція щодо того самого об’єкта замінює попередню (`superseded`).',
+  'Couleurs et pictogrammes': 'Кольори та піктограми',
+  'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.':
+    'Таблиця та кожен варіант списку мають колір і піктограму, як у застосунку. `color` — це колір `#rrggbb`; `icon` — назва однієї з піктограм, які малює застосунок: схема інструмента перелічує їх. Пропущений ключ залишає наявне значення, `null` стирає його. `describe_base` і `describe_table` повертають поточний зовнішній вигляд.',
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Ніякого видалення, ніякого перейменування, ніякого каскадного зв’язку (`MCP_CASCADE_FORBIDDEN`).',
   'Ce qui n’existe pas': 'Чого не існує',
@@ -243,8 +264,11 @@ export const uk: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Усі маршрути даних вимагають **токен** у заголовку `Authorization`. Кука сеансу тут ніколи не приймається: браузер надсилає її з кожним запитом, зокрема з тими, які провокує стороння сторінка.',
   'Jeton d’intégration': 'Токен інтеграції',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Програма — скрипт, синхронізація, інший застосунок — пред’являє **токен інтеграції**, який починається з `bdb_`. Він дійсний лише для цієї бази; він читає, створює й змінює, якщо його створено з правом запису, і **видаляє лише якщо його створено для цього**; він ніколи не має більше дозволів, ніж особа, яка його створила, що звіряються при кожному виклику. Адміністрування, консоль SQL та ШІ для нього залишаються закритими.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Програма — скрипт, синхронізація, інший застосунок — пред’являє **токен інтеграції**, який починається з `bdb_`. Він дійсний лише для цієї бази — для всіх її середовищ або лише для одного; він читає, створює й змінює, якщо його створено з правом запису, і **видаляє лише якщо його створено для цього**; він ніколи не має більше дозволів, ніж особа, яка його створила, що звіряються при кожному виклику. Адміністрування, консоль SQL та ШІ для нього залишаються закритими.',
+  Environnement: 'Середовище',
+  'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.':
+    'Токен, створений для всієї бази, відкриває всі її середовища. Шлях називає базу — {base} є продакшном — а заголовок {header} вибирає середовище; `?environment=` робить те саме для клієнта, який не ставить заголовків. Без жодного з них діє середовище, яке називає база.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Щоб створити такий: у меню бази «⋯» → **API та агенти** → **Токени API і MCP…**, позначте доступ **REST API**. Він показується лише один раз.',
   Appel: 'Виклик',

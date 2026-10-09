@@ -15,9 +15,10 @@ De URL’s bevatten de fysieke namen — dezelfde die je ook in SQL leest.
 
 In de interface, menu **⋯** van de database → **API en agents** → **API- en MCP-tokens…**: wie het
 niveau **Beheren** heeft op de database, of op het project ervan, maakt daar een
-**integratietoken** aan dat beperkt is tot deze database, standaard alleen-lezen, nadat het
-wachtwoord is bevestigd — een account zonder wachtwoord, dat via een identiteitsprovider inlogt,
-kan dat nog niet. Het wordt maar één keer getoond; zet het in een omgevingsvariabele.
+**integratietoken** aan dat beperkt is tot deze database — alle omgevingen ervan, of slechts één —,
+standaard alleen-lezen, nadat het wachtwoord is bevestigd — een account zonder wachtwoord, dat via
+een identiteitsprovider inlogt, kan dat nog niet. Het wordt maar één keer getoond; zet het in een
+omgevingsvariabele.
 
 Een token leest; het maakt aan en wijzigt als het met schrijfrechten is aangemaakt, en
 **verwijdert als het daarvoor is aangemaakt** — rechten “Lezen, schrijven en verwijderen”, behalve
@@ -29,6 +30,32 @@ export BASEDB_TOKEN=bdb_…
 curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
   -H "Authorization: Bearer $BASEDB_TOKEN"
 ```
+
+## De omgeving kiezen
+
+Een database met meerdere [omgevingen](/basedb/nl/fonctionnalites/environnements/) — productie,
+acceptatie… — blijft voor een token dat voor de hele database is aangemaakt **één** database. Het pad
+noemt de database met de naam van haar productie, en de header `X-Basedb-Environment` kiest de
+omgeving:
+
+```bash
+curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  -H "X-Basedb-Environment: recette"
+```
+
+- Zonder de header is het de omgeving die het pad noemt: `b_t4z56fq_ventes` is productie,
+  `b_t4z56fq_ventes_recette` acceptatie — beide schrijfwijzen blijven geldig.
+- `?environment=recette` doet hetzelfde voor een client die geen header meestuurt.
+- Een omgeving noem je met de naam op haar badge, hoofdletters en accenten doen er niet toe, of met
+  `production`. Een omgeving die de database niet heeft, antwoordt met `404`, zoals elke ontbrekende
+  resource.
+- `GET /api/v1/<tenant>/meta/bases` toont elke omgeving met haar blok `environment`
+  (`label`, `production`); met de header toont het alleen die ene.
+
+Een token dat bij het aanmaken tot één omgeving is beperkt, opent er geen enkele andere: de header
+verandert daar niets aan. Zijn rechten worden altijd, omgeving voor omgeving, gecombineerd met die
+van de persoon die het heeft aangemaakt.
 
 ## Lezen
 
@@ -82,6 +109,27 @@ Met hetzelfde token:
 Bouwen — een automatisering, een dashboard of een integratie aanmaken — blijft voorbehouden aan
 een sessie in de interface: een token leest en schrijft rijen, het verandert de database niet.
 
+## Kleuren en pictogrammen
+
+Een tabel en elke keuze uit een keuzelijst hebben een kleur (`color`, `#rrggbb`) en een pictogram
+(`icon`, de naam van een [Lucide](https://lucide.dev/icons/)-pictogram dat de interface tekent:
+`truck`, `circle-check`, `flame`…). `GET …/meta/bases/<base>` geeft ze terug voor de database, haar
+tabellen en de opties van haar velden.
+
+Om ze te kiezen, met het toegangstoken van een persoon die de structuur mag wijzigen
+(`POST /auth/session/access`) — een integratietoken verandert de database niet:
+
+| Route | Body |
+|---|---|
+| `POST …/admin/bases/<base>/tables` | `{"label": "Tickets", "color": "#dc2626", "icon": "flame", "fields": […]}` |
+| `PATCH …/admin/bases/<base>/tables/<table>` | `{"color": "#2563eb", "icon": "inbox"}` — de drie sleutels `color`, `icon`, `image` reizen samen: één ervan noemen vervangt alle drie |
+| `POST …/admin/bases/<base>/tables/<table>/fields` | `{"label": "Priorité", "kind": "select", "options": [{"value": "haute", "color": "#dc2626", "icon": "flame"}, …]}` |
+| `PUT …/admin/bases/<base>/tables/<table>/fields/<champ>/options` | de hele lijst met opties, in volgorde, elk met zijn kleur en zijn pictogram |
+
+Een agent gaat via de [MCP-server](/basedb/nl/integrations/mcp/#kleuren-en-pictogrammen), waar hij
+deze wijzigingen **voorstelt**. Een veld heeft geen pictogram om te kiezen: de interface tekent dat
+van zijn type.
+
 ## Een database aanmaken vanuit een sjabloon
 
 Een applicatie die wordt geïnstalleerd, maakt haar database in **één aanroep**: de server past
@@ -122,14 +170,16 @@ curl -X POST "http://localhost:3000/auth/introspect" \
 Elk token dat niet geldig is — onbekend, verlopen, ingetrokken, beëindigde sessie, andere
 werkruimte — antwoordt met `{"active": false}`, zonder te zeggen waarom. Het antwoord wordt live
 gelezen: een uitloggen is meteen zichtbaar. Voor een integratietoken vermeldt het antwoord ook de
-database die het opent (`base`), zijn toegang (`read` of `write`) en zijn oppervlakken.
+database die het opent (`base`, haar productie), of het alle omgevingen ervan opent (`environments`:
+`all`) of slechts één (`one`), zijn toegang (`read`, `write` of `delete`) en zijn oppervlakken.
 
 ## De gegenereerde documentatie
 
 Elke database heeft een pagina **API- en MCP-documentatie**: voor elke tabel de endpoints, de
 kolommen, voorbeelden in cURL en in JavaScript. Ze wordt **gefilterd op jouw rechten** — twee
 lezers krijgen twee versies —, geschreven **in de taal van je scherm**, en bestaat ook in
-OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). De namen, de paden en de
-foutcodes blijven in elke taal hetzelfde.
+OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`), dat het Bearer-token en de header
+`X-Basedb-Environment` declareert. De namen, de paden en de foutcodes blijven in elke taal
+hetzelfde.
 
 ![De gegenereerde documentatie van een database](../../../../assets/screens/nl/documentation-api.webp)

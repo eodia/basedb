@@ -62,6 +62,8 @@ export const ja: Catalog = {
     'テーブルと最初のフィールドを提案します — 判断するのは人です。',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
     'フィールド、選択肢リスト、またはリレーションを提案します — 判断するのは人です。',
+  'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.':
+    'テーブルと、そのリストの各選択肢の色とアイコンを提案します — 判断するのは人です。',
   'Relire une proposition du jeton et savoir ce qu’il en est advenu.':
     'トークンが行った提案を確認し、その後どうなったかを把握します。',
   'dépôt basedb': 'basedbのリポジトリ',
@@ -97,22 +99,40 @@ export const ja: Catalog = {
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**このデータベースはエージェントに公開されていません。** 公開されるまでは、どのトークンを使ってもツールからは見えません。',
   'Créer un jeton': 'トークンを作成',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'インターフェースでは、データベースの「⋯」メニュー → **APIとエージェント** → **APIとMCPのトークン…** から、**MCP** アクセスにチェックを入れます。トークンはこのデータベースに限定され、既定では**読み取り専用**です。書き込みと削除は、それぞれ明示的に選択します。トークンは一度しか表示されず、同じ画面から取り消せます。**REST API** にもチェックを入れれば、同じトークンをプログラムから利用できます（「認証」を参照）。',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'インターフェースでは、データベースの「⋯」メニュー → **APIとエージェント** → **APIとMCPのトークン…** から、**MCP** アクセスにチェックを入れます。トークンは**データベース全体、つまりすべての環境** — 本番、ステージング… — を開きます。制限すれば、1つの環境だけに限定することもできます。既定では**読み取り専用**で、書き込みと削除は、それぞれ明示的に選択します。トークンは一度しか表示されず、同じ画面から取り消せます。**REST API** にもチェックを入れれば、同じトークンをプログラムから利用できます（「認証」を参照）。',
   'Garder le jeton hors de la configuration': 'トークンを設定ファイルの外に置く',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'トークンは環境変数 `BASEDB_TOKEN` に設定し、クライアントの設定ファイルには置きません。設定ファイルはバージョン管理され、同期され、そのセッションの全プログラムから読み取れるためです。',
   'Déclarer le serveur dans le client': 'クライアントにサーバーを登録する',
-  'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).':
-    'クライアントは**中継プログラム**の `relay.js` を起動し、これがメッセージをサーバーまで転送します。トークンは `--token-env` で指定した変数から読み込まれます — 指定がなければ `BASEDB_MCP_TOKEN` です — サーバーのアドレスは `--url`（または `BASEDB_MCP_URL`）から読み込まれます。',
+  'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.':
+    'HTTPでMCPを話すクライアント（Claude Codeなど）は、ヘッダー {header} を付けて、サーバーのアドレス `…/mcp` に直接アクセスします。プロジェクトの `.mcp.json` ファイルでは、`${BASEDB_TOKEN}` が環境変数から読み込まれるため、トークン自体をファイルに書く必要はありません。同じトークンで、環境ごとにサーバーを登録することもできます。',
+  'Client sans HTTP : le relais': 'HTTPを使えないクライアント：中継プログラム',
+  'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).':
+    'ローカルのプログラム（stdio）しか起動できないクライアントは、**中継プログラム** `relay.js` を経由します。これがメッセージをサーバーまで転送します。トークンは `--token-env` で指定した変数から読み込まれます — 指定がなければ `BASEDB_MCP_TOKEN` です。サーバーのアドレスは `--url`（または `BASEDB_MCP_URL`）から、環境は `--environment`（または `BASEDB_MCP_ENVIRONMENT`）から読み込まれます。',
   'Autre client MCP': 'その他のMCPクライアント',
   'votre-instance': 'your-instance',
-  'Sans relais': '中継プログラムを使わない場合',
-  'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
-    'HTTPでMCPを話すクライアントは、ヘッダー {header} を付けてサーバーのアドレス `…/mcp` に直接アクセスします。トークンは、作成時にチェックを入れたアクセス種別でのみ有効です。「MCP」だけのトークンはREST APIに拒否され、その逆も同様です。',
+  'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
+    'トークンは、作成時にチェックを入れたアクセス種別でのみ有効です。「MCP」だけのトークンはREST APIに拒否され、その逆も同様です。',
+  'Choisir l’environnement': '環境を選ぶ',
+  'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :':
+    'データベースには複数の環境（本番、ステージング、開発）を持たせることができ、それぞれが独自のテーブルと行を持ちます。データベース全体用のトークンはそのすべてを開き、環境は呼び出し時に、範囲の広いものから狭いものの順に選びます：',
+  '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.':
+    '**データベース名**だけを指定した場合：{base} は本番を指し、各環境にもそれぞれ固有の名前があります。',
+  '**L’adresse du serveur** : {address} — un serveur déclaré par environnement.':
+    '**サーバーのアドレス**：{address} — 環境ごとに1つのサーバーを登録します。',
+  '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.':
+    'データベースを指定する各ツールの **`environment` 引数**：1回の呼び出しにだけ適用されます。{example}。',
+  'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.':
+    '環境は、そのバッジの名前で指定します。大文字・小文字とアクセント記号は区別されません。または `production` を指定します。データベースにない環境を指定すると、`RESOURCE_NOT_FOUND` が返されます。',
   Vérifier: '確認する',
-  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.':
-    'エージェントに `whoami` を呼び出してもらってください。呼び出すと、トークンを作成した人、対象のデータベース、実効権限が返されます。',
+  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.':
+    'エージェントに `whoami` を呼び出してもらってください。呼び出すと、トークンを作成した人、対象のデータベース、トークンが開く環境（`scope.available`）、実効権限が返されます。',
+  'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.':
+    '外観を指定するには：`propose_create_table` と、`propose_add_field` の選択肢で `color` と `icon` を使います。すでにあるテーブルには `propose_update_look` を使います。',
+  'Couleurs et pictogrammes': '色とアイコン',
+  'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.':
+    'テーブルと、リストの各選択肢には、アプリケーションと同じように色とアイコンがあります。`color` は `#rrggbb` 形式の色、`icon` はアプリケーションが描画するアイコンの名前です — ツールのスキーマに一覧があります。キーを省略すると現在の設定が維持され、`null` を指定すると消去されます。`describe_base` と `describe_table` は、現在の外観を返します。',
   Outils: 'ツール',
   '{count} outils, toujours les mêmes : leur nom et leur description ne dépendent jamais de vos données. Le schéma se découvre en les appelant.':
     '{count} 個のツールがあり、常に同じ内容です。名前と説明はデータの内容によって変わることはありません。スキーマは呼び出すことで確認できます。',
@@ -241,8 +261,12 @@ export const ja: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'すべてのデータ用ルートは、`Authorization` ヘッダーに**トークン**を必要とします。セッションクッキーはここでは一切受け付けられません。ブラウザは、外部のページが引き起こしたリクエストも含め、すべてのリクエストにクッキーを送信してしまうためです。',
   'Jeton d’intégration': '連携トークン',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'プログラム — スクリプト、連携、他のアプリケーションなど — は `bdb_` で始まる**連携トークン**を提示します。これはこのデータベースだけに有効です。読み取りを行い、書き込み権限で作成されていれば作成や変更も行い、**削除は、そのために作成されている場合のみ行います**。また、権限は作成した人の権限を、呼び出しのたびに照合したうえで、常にそれ以下です。管理画面、SQLコンソール、AIへのアクセスは閉じられています。',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'プログラム — スクリプト、連携、他のアプリケーションなど — は `bdb_` で始まる**連携トークン**を提示します。これはこのデータベースだけに有効で、すべての環境、または1つの環境のみを開きます。読み取りを行い、書き込み権限で作成されていれば作成や変更も行い、**削除は、そのために作成されている場合のみ行います**。また、権限は作成した人の権限を、呼び出しのたびに照合したうえで、常にそれ以下です。管理画面、SQLコンソール、AIへのアクセスは閉じられています。',
+  Environnement: '環境',
+  'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.':
+    'データベース全体用に作成されたトークンは、そのすべての環境を開きます。パスにはデータベース名を指定します — {base} は本番です — そして、ヘッダー {header} が環境を選択します。ヘッダーを付けられないクライアントでは、`?environment=` で同じ指定ができます。どちらも指定しない場合は、パスで指定したデータベース名が表す環境になります。',
+  recette: 'staging',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     '作成するには、データベースの「⋯」メニュー → **APIとエージェント** → **APIとMCPのトークン…** から、**REST API** アクセスにチェックを入れます。表示されるのは一度きりです。',
   Appel: '呼び出し例',

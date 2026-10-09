@@ -1284,9 +1284,9 @@ export default {
 		agents: {
 			label: 'REST-API · MCP · webhooks',
 			title: 'KI-agentene dine får dataene, {ikke hele nøkkelknippet.}',
-			lead: 'MCP-serveren gir agentene fjorten verktøy; REST-API-et gir programmene dine de samme dataene. Ett enkelt kontrollpunkt for tillatelser, de samme loggene.',
+			lead: 'MCP-serveren gir agentene femten verktøy; REST-API-et gir programmene dine de samme dataene. Ett enkelt kontrollpunkt for tillatelser, de samme loggene.',
 			bullets: [
-				'<strong>Ett token per database</strong>, skrivebeskyttet som standard, aldri med flere tillatelser enn personen som opprettet det.',
+				'<strong>Ett token for hele databasen</strong>, produksjon og test inkludert, skrivebeskyttet som standard, aldri med flere tillatelser enn personen som opprettet det.',
 				'<strong>En agent sletter bare med din tillatelse</strong>, én rad om gangen, og endrer ikke strukturen: den foreslår, et menneske godkjenner.',
 				'<strong>Generert dokumentasjon</strong> for hver database, filtrert etter tillatelsene dine, med OpenAPI 3.1-spesifikasjon.',
 				'<strong>Webhooks</strong> ved hver skriving – signert, i rekkefølge og med nye forsøk.',
@@ -1547,6 +1547,25 @@ export default {
 		title: 'Hva som er endret i basedb',
 		intro: 'Detaljene i hver endring står i <a href="https://github.com/eodia/basedb/commits/main">historikken til depotet</a>. Hva som kommer videre: <a href="/feuille-de-route/">veikartet</a>.',
 		entries: {
+			oneToken: {
+				date: '2026-10-09',
+				title: 'Ett token for hele databasen, miljøet etter valg',
+				tag: 'Nytt',
+				items: [
+					'<strong>Ett enkelt token</strong> åpner produksjon, test og de kommende miljøene til en database; det kan også begrenses til ett enkelt når det opprettes. Eksisterende tokener beholder miljøet sitt. <a href="/fonctionnalites/environnements/#via-api-et-sdk-et-og-mcp">Via API-et, SDK-et og MCP</a>',
+					'<strong>Miljøet velges ved kallet</strong>: headeren <code>X-Basedb-Environment</code> i REST-API-et, <code>db.environment()</code> i SDK-et, feltet Environment i n8n, adressen <code>…/mcp?environment=recette</code> eller argumentet <code>environment</code> i et MCP-verktøy. <a href="/integrations/mcp/#velge-miljø">Velge miljø</a>',
+					'<strong>En agent uten relé</strong>: token-vinduet gir HTTP-oppsettet for Claude Code og filen <code>.mcp.json</code>, én server per miljø med det samme tokenet, mens tokenet blir værende i en miljøvariabel.',
+				],
+			},
+			lookByAgents: {
+				date: '2026-10-09',
+				title: 'Farger og ikoner via API-et og MCP',
+				tag: 'Nytt',
+				items: [
+					'<strong>En agent kler det den foreslår</strong>: farge og ikon for en tabell i <code>propose_create_table</code>, for hvert valg i <code>propose_add_field</code>, og det nye verktøyet <code>propose_update_look</code> for en eksisterende tabell. En person godkjenner, som for hele strukturen. <a href="/integrations/mcp/#farger-og-ikoner">Farger og ikoner</a>',
+					'<strong>Via API-et</strong> opprettes en tabell med farge og ikon; <code>describe_base</code>, <code>describe_table</code> og <code>/meta</code> gir dem tilbake. <a href="/integrations/api-rest/#farger-og-ikoner">Farger og ikoner</a>',
+				],
+			},
 			agentDelete: {
 				date: '2026-10-02',
 				title: 'Agenter som sletter, hvis du tillater det',

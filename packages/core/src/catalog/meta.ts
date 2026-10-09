@@ -23,6 +23,7 @@ export function toBaseList(bases: readonly VisibleBase[]): unknown {
     icon: b.icon,
     image: b.image,
     project: b.project,
+    environment: b.environment,
     table_count: b.tableCount,
   }))
 }

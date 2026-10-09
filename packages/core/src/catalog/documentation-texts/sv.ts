@@ -62,9 +62,12 @@ export const sv: Catalog = {
     'Föreslå en tabell och dess första fält – en person avgör.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
     'Föreslå ett fält, ett enkelval eller en relation – en person avgör.',
+  'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.':
+    'Föreslå färg och ikon för en tabell och för alternativen i dess listor – en person avgör.',
   'Relire une proposition du jeton et savoir ce qu’il en est advenu.':
     'Läsa om ett av tokenens förslag och se vad som blev av det.',
   'dépôt basedb': 'basedb-repot',
+  recette: 'test',
   'Depuis un agent (MCP)': 'Från en agent (MCP)',
   'Cette base n’est pas ouverte aux agents : aucun outil MCP ne voit cette table, quel que soit le jeton.':
     'Den här databasen är inte öppen för agenter: inget MCP-verktyg ser den här tabellen, oavsett vilken token som används.',
@@ -97,22 +100,35 @@ export const sv: Catalog = {
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Den här databasen är inte öppen för agenter.** Så länge den inte är det ser inget verktyg den, oavsett vilken token som visas upp.',
   'Créer un jeton': 'Skapa en token',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'I gränssnittet, databasens meny ”⋯” → **API och agenter** → **API- och MCP-tokens…**, med åtkomsten **MCP** ikryssad. Token är begränsad till den här databasen, **skrivskyddad** som standard: skrivrätt, och borttagning, väljs uttryckligen. Den visas bara en gång och återkallas från samma skärm. Kryssa även i **REST-API:et**, så används samma token av ett program (se ”Autentisering”).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'I gränssnittet, databasens meny ”⋯” → **API och agenter** → **API- och MCP-tokens…**, med åtkomsten **MCP** ikryssad. Token öppnar **hela databasen, alla dess miljöer** – produktion, test… – eller bara en, om du begränsar den. Den är **skrivskyddad** som standard: skrivrätt, och borttagning, väljs uttryckligen. Den visas bara en gång och återkallas från samma skärm. Kryssa även i **REST-API:et**, så används samma token av ett program (se ”Autentisering”).',
   'Garder le jeton hors de la configuration': 'Håll token utanför konfigurationen',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Token placeras i miljövariabeln `BASEDB_TOKEN`, aldrig i klientens konfigurationsfil: den är versionshanterad, synkroniserad och läsbar av alla program i sessionen.',
   'Déclarer le serveur dans le client': 'Ange servern i klienten',
-  'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).':
-    'Klienten startar **reläet** `relay.js`, som transporterar dess meddelanden till servern. Det läser token från variabeln som anges av `--token-env` – `BASEDB_MCP_TOKEN` om inget annat sägs – och serverns adress från `--url` (eller `BASEDB_MCP_URL`).',
+  'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.':
+    'En klient som pratar MCP över HTTP – Claude Code, bland andra – går direkt till serverns adress, `…/mcp`, med huvudet {header}. I ett projekts `.mcp.json`-fil läses `${BASEDB_TOKEN}` från miljön: token skrivs inte in i filen. Med samma token kan du ange en server per miljö.',
+  'Client sans HTTP : le relais': 'Klient utan HTTP: reläet',
+  'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).':
+    'En klient som bara startar lokala program (stdio) går via **reläet** `relay.js`, som transporterar dess meddelanden till servern. Det läser token från variabeln som anges av `--token-env` (`BASEDB_MCP_TOKEN` om inget annat sägs), serverns adress från `--url` (eller `BASEDB_MCP_URL`) och miljön från `--environment` (eller `BASEDB_MCP_ENVIRONMENT`).',
   'Autre client MCP': 'Annan MCP-klient',
   'votre-instance': 'din-instans',
-  'Sans relais': 'Utan relä',
-  'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
-    'En klient som pratar MCP över HTTP går direkt till serverns adress, `…/mcp`, med huvudet {header}. En token accepteras bara på de åtkomster som kryssades i vid dess skapande: en token som bara har ”MCP” nekas av REST-API:et, och tvärtom.',
+  'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
+    'En token accepteras bara på de åtkomster som kryssades i vid dess skapande: en token som bara har ”MCP” nekas av REST-API:et, och tvärtom.',
+  'Choisir l’environnement': 'Välja miljö',
+  'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :':
+    'En databas kan ha flera miljöer (produktion, test, utveckling), var och en med sina egna tabeller och rader. En token för hela databasen öppnar dem alla; miljön väljs vid anropet, från det bredaste till det mest precisa:',
+  '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.':
+    '**Databasens namn**, utan något annat: {base} är produktionen, och varje miljö behåller också sitt eget namn.',
+  '**L’adresse du serveur** : {address} — un serveur déclaré par environnement.':
+    '**Serverns adress**: {address} – en server angiven per miljö.',
+  '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.':
+    '**Argumentet `environment`** i varje verktyg som anger en databas, för ett enda anrop: {example}.',
+  'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.':
+    'En miljö anges med sin etikett, utan hänsyn till versaler och accenter, eller med `production`. En miljö som databasen inte har svarar med `RESOURCE_NOT_FOUND`.',
   Vérifier: 'Verifiera',
-  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.':
-    'Be agenten anropa `whoami`: den ger tillbaka personen som skapade token, databasen den gäller för och dess faktiska behörigheter.',
+  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.':
+    'Be agenten anropa `whoami`: den ger tillbaka personen som skapade token, databasen den gäller för, miljöerna den öppnar (`scope.available`) och dess faktiska behörigheter.',
   Outils: 'Verktyg',
   '{count} outils, toujours les mêmes : leur nom et leur description ne dépendent jamais de vos données. Le schéma se découvre en les appelant.':
     '{count} verktyg, alltid desamma: deras namn och beskrivning beror aldrig på dina data. Schemat upptäcks genom att anropa dem.',
@@ -132,6 +148,8 @@ export const sv: Catalog = {
     'För att skriva en relation: `lookup_records` på måltabellen, sedan `create_record` eller `update_record` med det hittade `_id`.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'För att ändra strukturen: `propose_create_table` eller `propose_add_field`, sedan `get_proposal` för att följa beslutet.',
+  'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.':
+    'För utseendet: `color` och `icon` i `propose_create_table` och i alternativen i `propose_add_field`, eller `propose_update_look` för en tabell som redan finns.',
   'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
     'För att ta bort: `get_record` först, för att vara säker på raden, sedan `delete_record` – som ger tillbaka den i sitt svar; `restore_record` återställer den.',
   'Propositions de structure': 'Förslag på strukturändringar',
@@ -141,6 +159,9 @@ export const sv: Catalog = {
     'Högst 5 väntande förslag per token; ett nytt förslag på samma objekt ersätter det föregående (`superseded`).',
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Ingen borttagning, ingen namnändring, ingen relation i kaskad (`MCP_CASCADE_FORBIDDEN`).',
+  'Couleurs et pictogrammes': 'Färger och ikoner',
+  'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.':
+    'En tabell och varje alternativ i en lista har en färg och en ikon, som i applikationen. `color` är en färg `#rrggbb`; `icon` är namnet på en av de ikoner som applikationen ritar – verktygets schema räknar upp dem. En utelämnad nyckel behåller det som redan gäller, `null` rensar det. `describe_base` och `describe_table` ger tillbaka det nuvarande utseendet.',
   'Ce qui n’existe pas': 'Det som inte finns',
   'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
     'Inget verktyg tar bort flera rader på en gång, en tabell eller ett fält, kör SQL eller hanterar behörigheter eller tokens. En agent som anropar ett sådant namn – `delete_records`, `run_sql`… – får `MCP_OPERATION_EXCLUDED`, oavsett vilken databas det gäller.',
@@ -241,11 +262,14 @@ export const sv: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Alla dataslutpunkter kräver en **token**, i huvudet `Authorization`. Sessionskakan accepteras aldrig här: en webbläsare skickar den vid varje begäran, även de som en främmande sida framkallar.',
   'Jeton d’intégration': 'Integrationstoken',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Ett program – ett skript, en synkronisering, en annan applikation – uppvisar en **integrationstoken**, som börjar med `bdb_`. Den gäller bara för den här databasen; den läser, skapar och ändrar om den har skapats med skrivrätt, och **tar bara bort om den har skapats för det**; den har aldrig fler behörigheter än personen som skapade den, kontrollerat vid varje anrop. Administrationen, SQL-konsolen och AI:n förblir stängda för den.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Ett program – ett skript, en synkronisering, en annan applikation – uppvisar en **integrationstoken**, som börjar med `bdb_`. Den gäller bara för den här databasen – alla dess miljöer, eller bara en; den läser, skapar och ändrar om den har skapats med skrivrätt, och **tar bara bort om den har skapats för det**; den har aldrig fler behörigheter än personen som skapade den, kontrollerat vid varje anrop. Administrationen, SQL-konsolen och AI:n förblir stängda för den.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'För att skapa en: databasens meny ”⋯” → **API och agenter** → **API- och MCP-tokens…**, med åtkomsten **REST-API** ikryssad. Den visas bara en gång.',
   Appel: 'Anrop',
+  Environnement: 'Miljö',
+  'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.':
+    'En token som har skapats för hela databasen öppnar alla dess miljöer. Sökvägen anger databasen – {base} är produktionen – och huvudet {header} väljer miljön; `?environment=` gör detsamma för en klient som inte sätter något huvud. Utan någotdera gäller den miljö som databasnamnet anger.',
   'Une authentification absente répond `401`, jamais `404` : vous devez pouvoir vous reconnecter.':
     'En utebliven autentisering svarar `401`, aldrig `404`: du måste kunna logga in igen.',
   Conventions: 'Konventioner',

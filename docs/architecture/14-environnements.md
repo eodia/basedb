@@ -18,8 +18,9 @@ Il ne décrit ni un moteur de fusion de lignes, ni une branche au niveau de Post
 ## 1. Ce qu'est un environnement
 
 **Un environnement est une base à part entière.** Il a son schéma PostgreSQL, ses tables,
-ses lignes, ses droits, ses jetons et son historique ; l'API l'adresse par son propre nom
-(`/data/{base}/{table}`), et psql le lit sous son propre schéma. Ce qui fait de plusieurs
+ses lignes, ses droits et son historique ; l'API l'adresse par son propre nom
+(`/data/{base}/{table}`), et psql le lit sous son propre schéma. Un jeton, lui, ouvre par
+défaut **toute la base** — tous ses environnements (§ 1 bis). Ce qui fait de plusieurs
 bases **une** base, c'est leur **lignée** : elles partagent `base.lineage_id`, leur libellé,
 leur description et leur apparence, et se distinguent par `environment`.
 
@@ -45,6 +46,36 @@ mi-chemin laisse une base qui a encore sa production. Chaque suppression est cel
 chapitre 06 §4.3 — tables reléguées, rien de détruit, restauration possible —, et se
 restaure environnement par environnement.
 
+## 1 bis. Un jeton pour toute la base
+
+Un programme ou un agent qui travaille sur la production et sur la recette d'une même base
+travaille sur **une** base : il lui faut un jeton, un nom de base, des types — pas trois.
+Depuis 0.7.0 (migration 0021), un jeton d'intégration créé avec `environments: 'all'` — le
+défaut — ouvre chaque environnement de la base, ceux d'aujourd'hui et ceux qu'on ajoutera
+(chapitre 08 §11.3) ; `environments: 'one'` le limite à l'environnement affiché à sa
+création. Les jetons d'avant 0.7.0 gardent leur seul environnement.
+
+**L'environnement se choisit à l'appel**, par le contexte de la requête
+(`RequestContext.environment`) :
+
+| Surface | Comment |
+|---|---|
+| API REST, SDK, n8n | en-tête `X-Basedb-Environment`, ou `?environment=` (chapitre 08 §1.3 bis) ; `db.environment()` du SDK ; le champ « Environment » de l'identifiant n8n |
+| MCP | `?environment=` de l'adresse du serveur, ou l'en-tête, pour la connexion ; l'argument `environment` d'un outil, pour un appel (chapitre 09 §2.2) ; `--environment` du relais |
+
+Sans rien de tout cela, chaque nom de base désigne son propre environnement, comme avant.
+L'environnement demandé se reconnaît à son badge plié (sans casse, sans accents, sans
+séparateurs : « Développement » → `developpement`), au suffixe de son schéma, ou à
+`production` / `prod` pour la production. La résolution (`baseInEnvironment`) prend la base
+que nomme la référence, saute à la base de **la même lignée** qui porte cet environnement,
+et laisse la suite — visibilité, droits — au point d'application unique. Un environnement
+que la base n'a pas répond `RESOURCE_NOT_FOUND`, comme une base inconnue.
+
+Les droits d'un jeton de toute la base sont son rôle, posé sur chaque environnement à sa
+création et recopié avec les autres droits à la création d'un environnement (§ 3.1),
+recoupé **environnement par environnement** avec ceux de son créateur : une personne qui ne
+lit pas la recette ne la fait pas lire par son jeton.
+
 ## 2. La lignée
 
 **Les tables et les champs ont eux aussi une lignée**, qui dit « c'est la même table » d'un
@@ -68,7 +99,8 @@ les lignes portent et que la contrainte `ck_…__enum` connaît.
 ### 3.1 Créer un environnement
 
 Ajouter un environnement crée une base vide de la même lignée — même projet, même libellé,
-même description, même apparence, droits de la base recopiés —, puis y **reporte la
+même description, même apparence, droits de la base recopiés, ceux des rôles de jetons
+compris : un jeton de toute la base ouvre aussitôt le nouvel environnement —, puis y **reporte la
 structure** d'un environnement existant, la production par défaut, par le même mécanisme que
 § 3.3 : chaque table, chaque champ, chaque relation, chaque liste de choix, la colonne
 d'affichage et l'ordre des champs. Les lignes ne sont pas copiées ; elles se synchronisent

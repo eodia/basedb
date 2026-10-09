@@ -36,6 +36,24 @@ suppression de table ou de champ est capturée par déclencheur sur le catalogue
 l’onglet « Structure » de l’historique. Les identifiants de lignée relient un champ de recette
 à son homologue de production, même renommé.
 
+## Par l’API, le SDK et le MCP
+
+Un **jeton créé pour toute la base** ouvre tous ses environnements, ceux d’aujourd’hui et ceux qu’on
+ajoutera : un seul jeton pour la production et la recette. Le programme ou l’agent choisit
+l’environnement à chaque appel :
+
+| Où | Comment |
+|---|---|
+| [API REST](/basedb/integrations/api-rest/#choisir-lenvironnement) | l’en-tête `X-Basedb-Environment: recette`, ou `?environment=recette` |
+| [SDK](/basedb/integrations/sdk/#les-environnements) | `db.environment('recette')` |
+| [MCP](/basedb/integrations/mcp/#choisir-lenvironnement) | l’adresse `…/mcp?environment=recette`, ou l’argument `environment` d’un outil |
+| [n8n](/basedb/integrations/n8n/#les-identifiants) | le champ **Environment** de l’identifiant |
+
+Sans rien de tout cela, chaque base désigne son propre environnement : le nom de la production ouvre
+la production, celui de la recette la recette. Un jeton peut aussi, à sa création, être limité à
+l’environnement affiché : il n’en voit alors aucun autre. Dans les deux cas, ses droits sont recoupés,
+environnement par environnement, avec ceux de la personne qui l’a créé.
+
 ## En SQL
 
 Chaque environnement est un schéma : `b_t4z56fq_ventes` pour la production,

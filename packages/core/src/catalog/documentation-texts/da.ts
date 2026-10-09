@@ -66,9 +66,12 @@ export const da: Catalog = {
     'Foreslå en tabel og dens første felter — en person beslutter.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
     'Foreslå et felt, et enkeltvalg eller en relation — en person beslutter.',
+  'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.':
+    'Foreslå farven og ikonet for en tabel og for valgmulighederne i dens lister — en person beslutter.',
   'Relire une proposition du jeton et savoir ce qu’il en est advenu.':
     'Genlæse en af tokenets forslag og finde ud af, hvad der er blevet af den.',
   'dépôt basedb': 'basedb-repository',
+  recette: 'test',
   'Depuis un agent (MCP)': 'Fra en agent (MCP)',
   'Cette base n’est pas ouverte aux agents : aucun outil MCP ne voit cette table, quel que soit le jeton.':
     'Denne database er ikke åben for agenter: intet MCP-værktøj kan se denne tabel, uanset hvilket token der bruges.',
@@ -99,22 +102,35 @@ export const da: Catalog = {
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Denne database er ikke åben for agenter.** Så længe det er tilfældet, kan intet værktøj se den, uanset hvilket token der bruges.',
   'Créer un jeton': 'Opret et token',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'I brugerfladen, databasens »⋯«-menu → **API og agenter** → **API- og MCP-tokens…**, med adgangen **MCP** markeret. Tokenet er begrænset til denne database og er som standard **skrivebeskyttet**: skriveadgang, og sletteadgang, skal vælges eksplicit. Det vises kun én gang og kan tilbagekaldes fra den samme skærm. Markeres også for **REST-API**, bruges det samme token til et program (se »Godkendelse«).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'I brugerfladen, databasens »⋯«-menu → **API og agenter** → **API- og MCP-tokens…**, med adgangen **MCP** markeret. Tokenet åbner **hele databasen, alle dens miljøer** — produktion, test… — eller kun ét, hvis du begrænser det. Det er som standard **skrivebeskyttet**: skriveadgang, og sletteadgang, skal vælges eksplicit. Det vises kun én gang og kan tilbagekaldes fra den samme skærm. Markeres også for **REST-API**, bruges det samme token til et program (se »Godkendelse«).',
   'Garder le jeton hors de la configuration': 'Hold tokenet uden for konfigurationen',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Tokenet placeres i miljøvariablen `BASEDB_TOKEN`, aldrig i klientens konfigurationsfil: den er versionsstyret, synkroniseret og læsbar for alle programmer i sessionen.',
   'Déclarer le serveur dans le client': 'Angiv serveren i klienten',
-  'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).':
-    'Klienten starter **relæet** `relay.js`, som transporterer dens beskeder til serveren. Det læser tokenet fra den variabel, som `--token-env` angiver — `BASEDB_MCP_TOKEN`, hvis intet andet er angivet — og serverens adresse fra `--url` (eller `BASEDB_MCP_URL`).',
+  'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.':
+    'En klient, der taler MCP over HTTP — blandt andre Claude Code — går direkte til serverens adresse, `…/mcp`, med headeren {header}. I filen `.mcp.json` i et projekt læses `${BASEDB_TOKEN}` fra miljøet: tokenet skrives ikke i filen. Det samme token kan angive én server pr. miljø.',
+  'Client sans HTTP : le relais': 'Klient uden HTTP: relæet',
+  'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).':
+    'En klient, der kun starter lokale programmer (stdio), går via **relæet** `relay.js`, som transporterer dens beskeder til serveren. Det læser tokenet fra den variabel, som `--token-env` angiver — `BASEDB_MCP_TOKEN`, hvis intet andet er angivet —, serverens adresse fra `--url` (eller `BASEDB_MCP_URL`) og miljøet fra `--environment` (eller `BASEDB_MCP_ENVIRONMENT`).',
   'Autre client MCP': 'Anden MCP-klient',
   'votre-instance': 'din-instans',
-  'Sans relais': 'Uden relæ',
-  'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
-    "En klient, der taler MCP over HTTP, går direkte til serverens adresse, `…/mcp`, med headeren {header}. Et token accepteres kun for de adgange, der blev markeret ved oprettelsen: et token med kun »MCP« afvises af REST-API'et, og omvendt.",
+  'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
+    "Et token accepteres kun for de adgange, der blev markeret ved oprettelsen: et token med kun »MCP« afvises af REST-API'et, og omvendt.",
+  'Choisir l’environnement': 'Vælg miljøet',
+  'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :':
+    'En database kan have flere miljøer — produktion, test, udvikling —, hver med sine tabeller og rækker. Et token til hele databasen åbner dem alle; miljøet vælges ved kaldet, fra det bredeste til det mest præcise:',
+  '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.':
+    '**Databasens navn**, uden andet: {base} er produktion, og hvert miljø har også sit eget navn.',
+  '**L’adresse du serveur** : {address} — un serveur déclaré par environnement.':
+    '**Serverens adresse:** {address} — én server angivet pr. miljø.',
+  '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.':
+    '**Argumentet `environment`** på hvert værktøj, der angiver en database, for ét enkelt kald: {example}.',
+  'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.':
+    'Et miljø angives ved sit mærke, uden hensyn til store og små bogstaver eller accenter, eller ved `production`. Et miljø, som databasen ikke har, svarer `RESOURCE_NOT_FOUND`.',
   Vérifier: 'Kontrollér',
-  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.':
-    'Bed agenten om at kalde `whoami`: den returnerer den person, der har oprettet tokenet, den database, det gælder for, og dets faktiske rettigheder.',
+  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.':
+    'Bed agenten om at kalde `whoami`: den returnerer den person, der har oprettet tokenet, den database, det gælder for, de miljøer, det åbner (`scope.available`), og dets faktiske rettigheder.',
   Outils: 'Værktøjer',
   '{count} outils, toujours les mêmes : leur nom et leur description ne dépendent jamais de vos données. Le schéma se découvre en les appelant.':
     '{count} værktøjer, altid de samme: deres navn og beskrivelse afhænger aldrig af dine data. Skemaet opdages ved at kalde dem.',
@@ -134,6 +150,8 @@ export const da: Catalog = {
     'For at skrive en relation: `lookup_records` på måltabellen, derefter `create_record` eller `update_record` med det fundne `_id`.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'For at ændre strukturen: `propose_create_table` eller `propose_add_field`, derefter `get_proposal` for at følge beslutningen.',
+  'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.':
+    'For udseendet: `color` og `icon` i `propose_create_table` og i valgmulighederne for `propose_add_field`, eller `propose_update_look` for en tabel, der allerede findes.',
   'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
     'For at slette: `get_record` først, for at være sikker på rækken, derefter `delete_record` — som gengiver den i sit svar; `restore_record` bringer den tilbage.',
   'Propositions de structure': 'Strukturforslag',
@@ -143,6 +161,9 @@ export const da: Catalog = {
     'Højst 5 ventende forslag pr. token; et nyt forslag om det samme objekt erstatter det forrige (`superseded`).',
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Ingen sletning, ingen omdøbning, ingen kaskaderelation (`MCP_CASCADE_FORBIDDEN`).',
+  'Couleurs et pictogrammes': 'Farver og ikoner',
+  'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.':
+    'En tabel og hver valgmulighed i en liste har en farve og et ikon, som i applikationen. `color` er en farve `#rrggbb`; `icon` er navnet på et ikon blandt dem, som applikationen tegner — værktøjets skema opregner dem. En udeladt nøgle beholder det, der er sat, `null` fjerner det. `describe_base` og `describe_table` gengiver det nuværende udseende.',
   'Ce qui n’existe pas': 'Det, der ikke findes',
   'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
     'Intet værktøj sletter flere rækker på én gang, en tabel eller et felt, kører SQL eller administrerer rettigheder eller tokens. En agent, der kalder et sådant navn — `delete_records`, `run_sql`… — får `MCP_OPERATION_EXCLUDED`, uanset hvilken database der er tale om.',
@@ -243,10 +264,13 @@ export const da: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Alle dataruter kræver et **token** i headeren `Authorization`. Sessionscookien accepteres aldrig her: en browser sender den med hver anmodning, også dem, en fremmed side fremkalder.',
   'Jeton d’intégration': 'Integrationstoken',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    "Et program — et script, en synkronisering, en anden applikation — fremviser et **integrationstoken**, der starter med `bdb_`. Det gælder kun for denne database; det læser, opretter og redigerer, hvis det er oprettet med skriveadgang, og **sletter kun, hvis det er oprettet til det**; det har aldrig flere rettigheder end den person, der oprettede det, krydstjekket ved hvert kald. Administration, SQL-konsollen og AI'en forbliver lukket for det.",
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    "Et program — et script, en synkronisering, en anden applikation — fremviser et **integrationstoken**, der starter med `bdb_`. Det gælder kun for denne database — alle dens miljøer eller kun ét; det læser, opretter og redigerer, hvis det er oprettet med skriveadgang, og **sletter kun, hvis det er oprettet til det**; det har aldrig flere rettigheder end den person, der oprettede det, krydstjekket ved hvert kald. Administration, SQL-konsollen og AI'en forbliver lukket for det.",
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'For at oprette et: databasens »⋯«-menu → **API og agenter** → **API- og MCP-tokens…**, med adgangen **REST-API** markeret. Det vises kun én gang.',
+  Environnement: 'Miljø',
+  'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.':
+    'Et token oprettet til hele databasen åbner alle dens miljøer. Stien angiver databasen — {base} er produktion — og headeren {header} vælger miljøet; `?environment=` gør det samme for en klient, der ikke sætter en header. Uden nogen af delene er det det miljø, som databasens navn angiver.',
   Appel: 'Kald',
   'Une authentification absente répond `401`, jamais `404` : vous devez pouvoir vous reconnecter.':
     'Manglende godkendelse svarer `401`, aldrig `404`: du skal altid kunne logge ind igen.',

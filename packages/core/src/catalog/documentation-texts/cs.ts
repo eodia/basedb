@@ -61,6 +61,8 @@ export const cs: Catalog = {
     'Návrh tabulky a jejích prvních polí — rozhoduje osoba.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
     'Návrh pole, seznamu voleb nebo vazby — rozhoduje osoba.',
+  'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.':
+    'Návrh barvy a ikony tabulky a voleb v jejích seznamech — rozhoduje osoba.',
   'Relire une proposition du jeton et savoir ce qu’il en est advenu.':
     'Zpětné přečtení návrhu tokenu a zjištění, jak o něm bylo rozhodnuto.',
   'dépôt basedb': 'repozitář basedb',
@@ -97,22 +99,36 @@ export const cs: Catalog = {
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Tato databáze není otevřená agentům.** Dokud otevřená není, žádný nástroj ji nevidí, ať je předložen jakýkoli token.',
   'Créer un jeton': 'Vytvoření tokenu',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'V rozhraní: v nabídce „⋯“ databáze → **API a agenti** → **Tokeny API a MCP…**, zaškrtnutý přístup **MCP**. Token je omezen na tuto databázi a ve výchozím nastavení je **jen pro čtení**: zápis, a odstranění, se volí výslovně. Zobrazí se jen jednou a lze ho zrušit ze stejné obrazovky. Když je zaškrtnuto i pro **REST API**, stejný token slouží programu (viz „Autentizace“).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'V rozhraní: v nabídce „⋯“ databáze → **API a agenti** → **Tokeny API a MCP…**, zaškrtnutý přístup **MCP**. Token otevírá **celou databázi, všechna její prostředí** — produkční, testovací… — nebo jen jedno, pokud ho omezíte. Je ve výchozím nastavení **jen pro čtení**: zápis, a odstranění, se volí výslovně. Zobrazí se jen jednou a lze ho zrušit ze stejné obrazovky. Když je zaškrtnuto i pro **REST API**, stejný token slouží programu (viz „Autentizace“).',
   'Garder le jeton hors de la configuration': 'Uchování tokenu mimo konfiguraci',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Token patří do proměnné prostředí `BASEDB_TOKEN`, nikdy do konfiguračního souboru klienta: ten je verzovaný, synchronizovaný a čitelný všemi programy dané relace.',
   'Déclarer le serveur dans le client': 'Nastavení serveru v klientovi',
-  'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).':
-    'Klient spouští **relé** `relay.js`, které přenáší jeho zprávy až na server. Token čte z proměnné, kterou pojmenuje `--token-env` — `BASEDB_MCP_TOKEN`, pokud není řečeno jinak — a adresu serveru z `--url` (nebo `BASEDB_MCP_URL`).',
+  'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.':
+    'Klient, který mluví MCP přes HTTP — mimo jiné Claude Code — míří přímo na adresu serveru, `…/mcp`, s hlavičkou {header}. V souboru `.mcp.json` projektu se `${BASEDB_TOKEN}` čte z proměnných prostředí: token se do souboru nepíše. Stejným tokenem lze deklarovat server pro každé prostředí.',
+  'Client sans HTTP : le relais': 'Klient bez HTTP: relé',
+  'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).':
+    'Klient, který spouští jen místní programy (stdio), používá **relé** `relay.js`, které přenáší jeho zprávy až na server. Token čte z proměnné, kterou pojmenuje `--token-env` — `BASEDB_MCP_TOKEN`, pokud není řečeno jinak —, adresu serveru z `--url` (nebo `BASEDB_MCP_URL`) a prostředí z `--environment` (nebo `BASEDB_MCP_ENVIRONMENT`).',
   'Autre client MCP': 'Jiný klient MCP',
   'votre-instance': 'vase-instance',
-  'Sans relais': 'Bez relé',
-  'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
-    'Klient, který mluví MCP přes HTTP, míří přímo na adresu serveru, `…/mcp`, s hlavičkou {header}. Token je přijat jen pro přístupy zaškrtnuté při jeho vytvoření: token jen pro „MCP“ REST API odmítne, a naopak.',
+  recette: 'testovaci',
+  'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
+    'Token je přijat jen pro přístupy zaškrtnuté při jeho vytvoření: token jen pro „MCP“ REST API odmítne, a naopak.',
+  'Choisir l’environnement': 'Volba prostředí',
+  'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :':
+    'Databáze může mít více prostředí — produkční, testovací, vývojové —, každé s vlastními tabulkami a řádky. Token celé databáze je otevírá všechna; prostředí se volí při volání, od nejširšího po nejpřesnější:',
+  '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.':
+    '**Název databáze**, bez čehokoli dalšího: {base} je produkční prostředí a každé prostředí si zachovává i svůj vlastní název.',
+  '**L’adresse du serveur** : {address} — un serveur déclaré par environnement.':
+    '**Adresa serveru**: {address} — jeden deklarovaný server na prostředí.',
+  '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.':
+    '**Argument `environment`** každého nástroje, který jmenuje databázi, pro jediné volání: {example}.',
+  'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.':
+    'Prostředí se jmenuje podle svého štítku, bez ohledu na velká písmena a diakritiku, nebo `production`. Prostředí, které databáze nemá, odpoví `RESOURCE_NOT_FOUND`.',
   Vérifier: 'Ověření',
-  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.':
-    'Požádejte agenta, aby zavolal `whoami`: vrátí osobu, která token vytvořila, databázi jeho platnosti a jeho skutečná oprávnění.',
+  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.':
+    'Požádejte agenta, aby zavolal `whoami`: vrátí osobu, která token vytvořila, databázi jeho platnosti, prostředí, která otevírá (`scope.available`), a jeho skutečná oprávnění.',
   Outils: 'Nástroje',
   '{count} outils, toujours les mêmes : leur nom et leur description ne dépendent jamais de vos données. Le schéma se découvre en les appelant.':
     '{count} nástrojů, vždy stejných: jejich název a popis nikdy nezávisí na vašich datech. Schéma se zjistí jejich zavoláním.',
@@ -132,6 +148,8 @@ export const cs: Catalog = {
     'Pro zápis vazby: `lookup_records` na cílové tabulce, poté `create_record` nebo `update_record` s nalezeným `_id`.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'Pro změnu struktury: `propose_create_table` nebo `propose_add_field`, poté `get_proposal` pro sledování rozhodnutí.',
+  'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.':
+    'Pro vzhled: `color` a `icon` v `propose_create_table` a ve volbách `propose_add_field`, nebo `propose_update_look` pro již existující tabulku.',
   'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
     'Pro odstranění: nejprve `get_record`, aby bylo jisté, o který řádek jde, poté `delete_record` — ten ho vrátí ve své odpovědi; `restore_record` ho vrátí zpět.',
   'Propositions de structure': 'Návrhy změn struktury',
@@ -141,6 +159,9 @@ export const cs: Catalog = {
     'Nejvýše 5 čekajících návrhů na token; nový návrh na stejný objekt nahradí ten předchozí (`superseded`).',
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Žádné odstraňování, žádné přejmenování, žádná kaskádová vazba (`MCP_CASCADE_FORBIDDEN`).',
+  'Couleurs et pictogrammes': 'Barvy a ikony',
+  'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.':
+    'Tabulka a každá volba seznamu mají barvu a ikonu, stejně jako v aplikaci. `color` je barva `#rrggbb`; `icon` je název jedné z ikon, které aplikace vykresluje — schéma nástroje je vyjmenovává. Vynechaný klíč ponechá to, co je nastaveno, `null` to vymaže. `describe_base` a `describe_table` vracejí aktuální vzhled.',
   'Ce qui n’existe pas': 'Co neexistuje',
   'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
     'Žádný nástroj neodstraňuje více řádků najednou, celou tabulku ani pole, nespouští SQL ani nespravuje oprávnění nebo tokeny. Agent, který zavolá takový název — `delete_records`, `run_sql`… — dostane `MCP_OPERATION_EXCLUDED`, ať je cílová databáze jakákoli.',
@@ -242,11 +263,14 @@ export const cs: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Všechny datové cesty vyžadují **token**, v hlavičce `Authorization`. Cookie relace zde není nikdy přijímána: prohlížeč ji odesílá při každém požadavku, včetně těch, které vyvolá cizí stránka.',
   'Jeton d’intégration': 'Integrační token',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Program — skript, synchronizace, jiná aplikace — předkládá **integrační token**, který začíná na `bdb_`. Platí jen pro tuto databázi; čte, a pokud byl vytvořen pro zápis, i vytváří a upravuje, a **odstraňuje jen tehdy, pokud byl vytvořen i k tomu**; nikdy nemá víc práv než osoba, která ho vytvořila, porovnávaných při každém volání. Administrace, SQL konzole a AI mu zůstávají uzavřené.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Program — skript, synchronizace, jiná aplikace — předkládá **integrační token**, který začíná na `bdb_`. Platí jen pro tuto databázi — všechna její prostředí, nebo jen jedno; čte, a pokud byl vytvořen pro zápis, i vytváří a upravuje, a **odstraňuje jen tehdy, pokud byl vytvořen i k tomu**; nikdy nemá víc práv než osoba, která ho vytvořila, porovnávaných při každém volání. Administrace, SQL konzole a AI mu zůstávají uzavřené.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Pro vytvoření: v nabídce „⋯“ databáze → **API a agenti** → **Tokeny API a MCP…**, zaškrtnutý přístup **REST API**. Zobrazí se jen jednou.',
   Appel: 'Volání',
+  Environnement: 'Prostředí',
+  'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.':
+    'Token vytvořený pro celou databázi otevírá všechna její prostředí. Cesta jmenuje databázi — {base} je produkční prostředí — a hlavička {header} vybírá prostředí; `?environment=` dělá totéž pro klienta, který hlavičky nenastavuje. Bez obojího platí prostředí, které jmenuje databáze.',
   'Une authentification absente répond `401`, jamais `404` : vous devez pouvoir vous reconnecter.':
     'Chybějící autentizace odpoví `401`, nikdy `404`: musíte se moci znovu přihlásit.',
   Conventions: 'Konvence',

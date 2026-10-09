@@ -1738,6 +1738,41 @@ describe('/data — a batch over HTTP', () => {
 
 // Last in the file on purpose: elevating ROTATES the session token, which invalidates
 // every access token minted from it, the suite's shared one included.
+describe('the look of a table, by the API', () => {
+  it('creates a table with its colour and pictogram — chapter 11 §3.1 bis', async () => {
+    const made = await app.request(`${V1}/admin/bases`, json({ label: 'Apparence par l’API' }))
+    expect(made.status, await made.clone().text()).toBe(201)
+    const base = ((await made.json()) as { data: { name: string } }).data.name
+    const r = await app.request(
+      `${V1}/admin/bases/${base}/tables`,
+      json({
+        label: 'Tickets',
+        color: '#DC2626',
+        icon: 'flame',
+        fields: [{ label: 'Sujet', kind: 'short_text' }],
+      }),
+    )
+    expect(r.status).toBe(201)
+    expect(((await r.json()) as { data: Record<string, unknown> }).data).toMatchObject({
+      color: '#DC2626',
+      icon: 'flame',
+    })
+    const meta = await GET(`${V1}/meta/bases/${base}`)
+    const tables = ((await meta.json()) as { data: { tables: Array<Record<string, unknown>> } })
+      .data.tables
+    expect(tables[0]).toMatchObject({ color: '#dc2626', icon: 'flame' })
+
+    // A colour refused leaves no table behind.
+    const refused = await app.request(
+      `${V1}/admin/bases/${base}/tables`,
+      json({ label: 'Rouge', color: 'rouge', fields: [{ label: 'Nom', kind: 'short_text' }] }),
+    )
+    expect(refused.status).toBe(400)
+    const after = await GET(`${V1}/meta/bases/${base}`)
+    expect(((await after.json()) as { data: { tables: unknown[] } }).data.tables).toHaveLength(1)
+  })
+})
+
 describe('integration tokens — chapter 08 §11', () => {
   // The session elevated by the second test, reused by the third: `/auth` is rate limited,
   // and a fresh sign-in this late in the file would meet the bucket, not the feature.
@@ -1885,5 +1920,131 @@ describe('integration tokens — chapter 08 §11', () => {
     const refused = await agentOnly('GET', `${V1}/data/${base}/contacts`)
     expect(refused.status).toBe(401)
     expect(((await refused.json()) as { code: string }).code).toBe('TOKEN_INVALID')
+  })
+
+  it('one token for the whole base, the environment chosen per request — chapter 14 §1 bis', async () => {
+    const issued = await app.request('/auth/session/access', {
+      method: 'POST',
+      headers: { cookie: elevatedSession.cookie, 'x-basedb-csrf': elevatedSession.csrf },
+    })
+    const person = ((await issued.json()) as { data: { token: string } }).data.token
+    const bearing =
+      (credential: string) =>
+      (method: string, path: string, body?: unknown, headers: Record<string, string> = {}) =>
+        app.request(path, {
+          method,
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${credential}`,
+            ...headers,
+          },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        })
+    const asPerson = bearing(person)
+
+    const made = await asPerson('POST', `${V1}/admin/bases`, { label: 'Jetons de toute la base' })
+    const base = ((await made.json()) as { data: { name: string } }).data.name
+    await asPerson('POST', `${V1}/admin/bases/${base}/tables`, {
+      label: 'Contacts',
+      fields: [{ label: 'Nom', kind: 'short_text' }],
+    })
+    const environmentOf = async (label: string) => {
+      const r = await asPerson('POST', `${V1}/admin/bases/${base}/environments`, {
+        environment: label,
+      })
+      expect(r.status).toBe(201)
+      return ((await r.json()) as { data: { environment: { name: string } } }).data.environment.name
+    }
+    const recette = await environmentOf('Recette')
+    expect(
+      (await asPerson('POST', `${V1}/data/${base}/contacts`, { values: { nom: 'Prod' } })).status,
+    ).toBe(201)
+    expect(
+      (await asPerson('POST', `${V1}/data/${recette}/contacts`, { values: { nom: 'Rec' } })).status,
+    ).toBe(201)
+
+    const mint = async (body: Record<string, unknown>) => {
+      const r = await asPerson('POST', `${V1}/admin/tokens`, { base, access: 'read', ...body })
+      expect(r.status).toBe(201)
+      return ((await r.json()) as { data: { secret: string; environments: string } }).data
+    }
+    const wholeToken = await mint({ label: 'Toute la base' })
+    expect(wholeToken.environments).toBe('all')
+    const whole = bearing(wholeToken.secret)
+    const oneToken = await mint({ label: 'Production seule', environments: 'one' })
+    expect(oneToken.environments).toBe('one')
+    const one = bearing(oneToken.secret)
+
+    const names = async (call: ReturnType<typeof bearing>, headers?: Record<string, string>) => {
+      const r = await call('GET', `${V1}/meta/bases`, undefined, headers)
+      return ((await r.json()) as { data: Array<{ name: string }> }).data.map((b) => b.name).sort()
+    }
+    const nom = async (
+      call: ReturnType<typeof bearing>,
+      path: string,
+      headers?: Record<string, string>,
+    ) => {
+      const r = await call('GET', path, undefined, headers)
+      if (r.status !== 200) return r.status
+      return ((await r.json()) as { data: Array<{ nom: string }> }).data.map((row) => row.nom)
+    }
+
+    // The whole base: every environment listed, each chosen by header, by query, by name.
+    expect(await names(whole)).toEqual([base, recette].sort())
+    expect(await names(whole, { 'x-basedb-environment': 'recette' })).toEqual([recette])
+    expect(await nom(whole, `${V1}/data/${base}/contacts`)).toEqual(['Prod'])
+    expect(
+      await nom(whole, `${V1}/data/${base}/contacts`, { 'x-basedb-environment': 'Recette' }),
+    ).toEqual(['Rec'])
+    expect(await nom(whole, `${V1}/data/${base}/contacts?environment=recette`)).toEqual(['Rec'])
+    expect(await nom(whole, `${V1}/data/${recette}/contacts`)).toEqual(['Rec'])
+    expect(
+      await nom(whole, `${V1}/data/${recette}/contacts`, { 'x-basedb-environment': 'production' }),
+    ).toEqual(['Prod'])
+    // An environment the base does not have is not found, like anything else.
+    expect(
+      await nom(whole, `${V1}/data/${base}/contacts`, { 'x-basedb-environment': 'inconnu' }),
+    ).toBe(404)
+
+    // One environment: the other does not exist for it, by name or by header.
+    expect(await names(one)).toEqual([base])
+    expect(await nom(one, `${V1}/data/${base}/contacts`)).toEqual(['Prod'])
+    expect(
+      await nom(one, `${V1}/data/${base}/contacts`, { 'x-basedb-environment': 'recette' }),
+    ).toBe(404)
+    expect(await nom(one, `${V1}/data/${recette}/contacts`)).toBe(404)
+
+    // An environment added after the token is opened by it too — and only by it.
+    const dev = await environmentOf('Développement')
+    expect(
+      await nom(whole, `${V1}/data/${base}/contacts`, { 'x-basedb-environment': 'developpement' }),
+    ).toEqual([])
+    expect(await nom(whole, `${V1}/data/${dev}/contacts`)).toEqual([])
+    expect(await nom(one, `${V1}/data/${dev}/contacts`)).toBe(404)
+
+    // The list of the base's tokens, seen from the recette, names the token of the
+    // whole base — it opens the recette too — and not the production's own.
+    const listed = await asPerson('GET', `${V1}/admin/tokens?base=${recette}`)
+    const labels = ((await listed.json()) as { data: Array<{ label: string }> }).data.map(
+      (t) => t.label,
+    )
+    expect(labels).toEqual(['Toute la base'])
+
+    // Two tokens of one person are two readers: the listing computed for one is never
+    // served to the other, whatever the cache holds.
+    const elsewhere = await asPerson('POST', `${V1}/admin/bases`, { label: 'Jetons ailleurs' })
+    const other = ((await elsewhere.json()) as { data: { name: string } }).data.name
+    await asPerson('POST', `${V1}/admin/bases/${other}/tables`, {
+      label: 'Contacts',
+      fields: [{ label: 'Nom', kind: 'short_text' }],
+    })
+    const otherToken = await asPerson('POST', `${V1}/admin/tokens`, {
+      base: other,
+      access: 'read',
+      label: 'Ailleurs',
+    })
+    const away = bearing(((await otherToken.json()) as { data: { secret: string } }).data.secret)
+    expect(await names(away)).toEqual([other])
+    expect(await names(one)).toEqual([base])
   })
 })

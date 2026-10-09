@@ -23,9 +23,13 @@ then restart n8n.
 - **Workspace** — the reference in the API addresses, `/api/v1/<workspace>/…`: `t4z56fq` unless
   your instance sets `BASEDB_TENANT`.
 - **Token** — an integration token, created in basedb from the base's menu, **API et agents ›
-  Jetons API et MCP…**. It opens one base, reads its rows, and writes them if it was created with
-  write access. It never has more rights than the person who created it, and deletes only if it
-  was created to — which this node does not do: it has no Delete operation.
+  Jetons API et MCP…**. It opens one base — every environment of it, or just one —, reads its
+  rows, and writes them if it was created with write access. It never has more rights than the
+  person who created it, and deletes only if it was created to — which this node does not do: it
+  has no Delete operation.
+- **Environment** — optional: the environment of the base to work in (`recette`, `production`…),
+  sent with every request. Empty: the production. One credential per environment, all on the same
+  token.
 
 The **basedb Webhook Trigger** takes another credential: the signing secret basedb shows once,
 when the webhook is created (**API et agents › Webhooks…**, with the node's production URL).

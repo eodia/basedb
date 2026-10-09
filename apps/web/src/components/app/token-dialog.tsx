@@ -25,8 +25,10 @@ import { Hint } from '@/components/ui/tooltip'
 import {
   ApiError,
   type ApiToken,
+  type BaseEnvironment,
   type DescribedBase,
   type TokenAccess,
+  type TokenEnvironments,
   type TokenSurface,
   api,
   mcpEndpoint,
@@ -42,14 +44,16 @@ import { useCallback, useEffect, useState } from 'react'
  *
  * ONE token for the two doors of a base: the REST API, for a program, and the MCP server,
  * for an agent — both by default, either on its own if that is all it is for. It is
- * scoped to THIS base and read-only by default: writing is a decision made here,
- * explicitly, never a default (09 §6.4). It asks for the password again, because minting
- * a door out of the instance demands a proof made seconds ago (05 §2.2).
+ * scoped to THIS base — all its environments by default, the environment being chosen per
+ * request (chapter 14 §1 bis), or the one shown alone — and read-only by default: writing
+ * is a decision made here, explicitly, never a default (09 §6.4). It asks for the password
+ * again, because minting a door out of the instance demands a proof made seconds ago
+ * (05 §2.2).
  *
  * The secret is shown ONCE, followed by what each door needs, with the token in an
  * environment variable: a configuration file is versioned and synced, so it carries only
- * the variable's name (09 §9.2). One variable, `BASEDB_TOKEN`, for both: the relay is told
- * its name with `--token-env`.
+ * the variable's name (09 §9.2). One variable, `BASEDB_TOKEN`, for both — and, for an
+ * agent, one server per environment, all on the same token.
  */
 
 /**
@@ -78,11 +82,44 @@ export function stateOf(token: ApiToken): string | null {
   return null
 }
 
-/** What each door needs, the token referenced by its variable and never written in it. */
-function configuration(secret: string, base: string, surfaces: readonly string[]) {
+/** An environment of the base, as the configurations name it. */
+interface EnvironmentChoice {
+  readonly name: string
+  readonly label: string
+  readonly production: boolean
+}
+
+/** `recette` from « Recette », `developpement` from « Développement »: a server's name. */
+const slugOf = (label: string) =>
+  label
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'env'
+
+/**
+ * What each door needs, the token referenced by its variable and never written in it.
+ * A token of the whole base gets one MCP server per environment, on the same token; the
+ * REST examples name the base by its production name and choose with the header.
+ */
+function configuration(
+  secret: string,
+  base: string,
+  surfaces: readonly string[],
+  environments: readonly EnvironmentChoice[],
+) {
   const endpoint = mcpEndpoint()
-  const relay = '<dépôt basedb>/apps/mcp/dist/relay.js'
-  const args = [relay, '--url', endpoint, '--token-env', VARIABLE]
+  // One server per environment — the production on the plain address, the others with
+  // `?environment=` — or the plain address alone for a token of one environment.
+  const servers = (environments.length === 0 ? [null] : environments).map((e) => ({
+    name: e === null || e.production ? 'basedb' : `basedb-${slugOf(e.label)}`,
+    url:
+      e === null || e.production
+        ? endpoint
+        : `${endpoint}?environment=${encodeURIComponent(e.label)}`,
+  }))
+  const other = environments.find((e) => !e.production)
   return {
     variable: [
       {
@@ -101,14 +138,21 @@ function configuration(secret: string, base: string, surfaces: readonly string[]
           {
             lang: 'bash',
             title: 'API REST — cURL',
-            body: `curl "${restRoot()}/meta/bases/${base}" \\\n  -H "Authorization: Bearer $${VARIABLE}"`,
+            body: [
+              `curl "${restRoot()}/meta/bases/${base}" \\`,
+              `  -H "Authorization: Bearer $${VARIABLE}"${other === undefined ? '' : ' \\'}`,
+              ...(other === undefined ? [] : [`  -H "X-Basedb-Environment: ${other.label}"`]),
+            ].join('\n'),
           },
           {
             lang: 'js',
             title: $t('API REST — JavaScript'),
             body: [
               `const response = await fetch('${restRoot()}/meta/bases/${base}', {`,
-              `  headers: { Authorization: \`Bearer \${process.env.${VARIABLE}}\` },`,
+              '  headers: {',
+              `    Authorization: \`Bearer \${process.env.${VARIABLE}}\`,`,
+              ...(other === undefined ? [] : [`    'X-Basedb-Environment': '${other.label}',`]),
+              '  },',
               '})',
               'const { data } = await response.json()',
             ].join('\n'),
@@ -120,12 +164,34 @@ function configuration(secret: string, base: string, surfaces: readonly string[]
           {
             lang: 'bash',
             title: $t('MCP — Claude Code'),
-            body: `claude mcp add basedb -- node ${args.join(' ')}`,
+            body: servers
+              .map(
+                (s) =>
+                  // Single quotes and the project scope: `.mcp.json` keeps `${BASEDB_TOKEN}`,
+                  // which the client reads from the environment — never the token itself.
+                  `claude mcp add --transport http --scope project ${s.name} "${s.url}" --header 'Authorization: Bearer \${${VARIABLE}}'`,
+              )
+              .join('\n'),
           },
           {
             lang: 'json',
-            title: $t('MCP — autre client'),
-            body: JSON.stringify({ mcpServers: { basedb: { command: 'node', args } } }, null, 2),
+            title: $t('MCP — fichier .mcp.json'),
+            body: JSON.stringify(
+              {
+                mcpServers: Object.fromEntries(
+                  servers.map((s) => [
+                    s.name,
+                    {
+                      type: 'http',
+                      url: s.url,
+                      headers: { Authorization: `Bearer \${${VARIABLE}}` },
+                    },
+                  ]),
+                ),
+              },
+              null,
+              2,
+            ),
           },
         ]
       : [],
@@ -161,11 +227,21 @@ export function TokenDialog({
   open,
   base,
   hasPassword = true,
+  environments: family = [],
   onClose,
 }: {
   readonly open: boolean
   /** Its verbs, when known: without `manage_tokens`, the dialog says why instead of failing. */
-  readonly base: Pick<DescribedBase, 'name' | 'label'> & { readonly actions?: readonly string[] }
+  readonly base: Pick<DescribedBase, 'name' | 'label'> & {
+    readonly actions?: readonly string[]
+    /** The environment shown: a token may be limited to it. */
+    readonly environment?: BaseEnvironment
+  }
+  /** Every environment of the base, when known: one MCP server each in the configurations. */
+  readonly environments?: readonly {
+    readonly name: string
+    readonly environment: BaseEnvironment
+  }[]
   /** An account signed in through a provider only cannot prove a password (chapter 13 §5). */
   readonly hasPassword?: boolean
   readonly onClose: () => void
@@ -176,12 +252,26 @@ export function TokenDialog({
   const [access, setAccess] = useState<TokenAccess>('read')
   const [surfaces, setSurfaces] = useState<ReadonlySet<TokenSurface>>(new Set(['rest', 'mcp']))
   const [days, setDays] = useState<Duration>('never')
+  const [scope, setScope] = useState<TokenEnvironments>('all')
   const [password, setPassword] = useState('')
   const [issued, setIssued] = useState<{
     secret: string
     label: string
     surfaces: readonly string[]
+    environments: TokenEnvironments
   } | null>(null)
+  // The environments a configuration names: all of the base's, production first, for a
+  // token of the whole base; the one shown for a token of one environment.
+  const environment = base.environment
+  const several = family.length > 1
+  const choices: readonly EnvironmentChoice[] = [...family]
+    .sort((a, b) => Number(b.environment.production) - Number(a.environment.production))
+    .map((e) => ({
+      name: e.name,
+      label: e.environment.label,
+      production: e.environment.production,
+    }))
+  const production = choices.find((e) => e.production)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -200,6 +290,7 @@ export function TokenDialog({
     setAccess('read')
     setSurfaces(new Set(['rest', 'mcp']))
     setDays('never')
+    setScope('all')
     setPassword('')
     setIssued(null)
     setError(null)
@@ -234,8 +325,14 @@ export function TokenDialog({
         access,
         surfaces: SURFACES.map((s) => s.id).filter((id) => surfaces.has(id)),
         expiresInDays: days === 'never' ? null : Number(days),
+        environments: scope,
       })
-      setIssued({ secret: token.secret, label: token.label, surfaces: token.surfaces })
+      setIssued({
+        secret: token.secret,
+        label: token.label,
+        surfaces: token.surfaces,
+        environments: token.environments,
+      })
       setLabel('')
     })
 
@@ -249,13 +346,25 @@ export function TokenDialog({
       return next
     })
 
-  const snippets = issued === null ? null : configuration(issued.secret, base.name, issued.surfaces)
+  const snippets =
+    issued === null
+      ? null
+      : issued.environments === 'all'
+        ? configuration(issued.secret, production?.name ?? base.name, issued.surfaces, choices)
+        : configuration(issued.secret, base.name, issued.surfaces, [])
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{$t('Jetons API et MCP — {label}', { label: base.label })}</DialogTitle>
+          <DialogTitle className="flex flex-wrap items-center gap-2">
+            {$t('Jetons API et MCP — {label}', { label: base.label })}
+            {several && environment !== undefined && (
+              <Badge variant="outline" className="font-normal">
+                {environment.label}
+              </Badge>
+            )}
+          </DialogTitle>
           <DialogDescription>
             {$t(
               'Un jeton d’intégration ouvre cette base à un programme, par l’API REST, ou à un agent (Claude ou tout client MCP) : il la lit et, si vous le décidez, y crée, modifie et supprime des lignes. Il ne change jamais la structure, et ne voit que ce que vous pouvez voir.',
@@ -288,6 +397,13 @@ export function TokenDialog({
                 <p className="text-sm text-muted-foreground">
                   {$t('Pour un programme : l’en-tête')} <code>Authorization: Bearer</code>{' '}
                   {$t('sur les routes de données de cette base.')}
+                  {issued.environments === 'all' && several && (
+                    <>
+                      {' '}
+                      {$t('L’en-tête')} <code>X-Basedb-Environment</code>{' '}
+                      {$t('choisit l’environnement ; sans lui, c’est la production.')}
+                    </>
+                  )}
                 </p>
                 <CodeGroup blocks={snippets.rest} />
               </>
@@ -295,7 +411,11 @@ export function TokenDialog({
             {snippets.mcp.length > 0 && (
               <>
                 <p className="text-sm text-muted-foreground">
-                  {$t('Pour un agent : déclarez le relais dans votre client MCP.')}
+                  {issued.environments === 'all' && several
+                    ? $t(
+                        'Pour un agent : déclarez le serveur MCP dans votre client — un par environnement, tous sur ce même jeton. Un outil peut aussi viser un autre environnement avec son argument environment.',
+                      )
+                    : $t('Pour un agent : déclarez le serveur MCP dans votre client.')}
                 </p>
                 <CodeGroup blocks={snippets.mcp} />
               </>
@@ -322,7 +442,16 @@ export function TokenDialog({
                       <li key={token.id} className="flex items-center gap-3 px-3 py-2 text-sm">
                         <KeyRound className="size-4 shrink-0 text-muted-foreground" />
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate font-medium">{token.label}</span>
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            <span className="truncate font-medium">{token.label}</span>
+                            {several && (
+                              <Badge variant="outline" className="shrink-0 font-normal">
+                                {token.environments === 'all'
+                                  ? $t('Tous les environnements')
+                                  : (environment?.label ?? '')}
+                              </Badge>
+                            )}
+                          </span>
                           <span className="block truncate font-mono text-[11px] text-muted-foreground">
                             {$t('bdb_{prefix}… · {surfaces} · {value}{value2}', {
                               prefix: token.prefix,
@@ -415,6 +544,34 @@ export function TokenDialog({
                       </p>
                     )}
                   </fieldset>
+
+                  {several && environment !== undefined && (
+                    <div className="space-y-1.5">
+                      <Label>{$t('Environnements')}</Label>
+                      <Select value={scope} onValueChange={(v) => setScope(v as TokenEnvironments)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">
+                            {$t('Toute la base — tous ses environnements')}
+                          </SelectItem>
+                          <SelectItem value="one">
+                            {$t('Seulement « {environment} »', {
+                              environment: environment.label,
+                            })}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        {scope === 'all'
+                          ? $t(
+                              'Un seul jeton pour la production, la recette et les environnements à venir : le programme ou l’agent choisit l’environnement à chaque appel.',
+                            )
+                          : $t('Le jeton n’ouvrira aucun autre environnement de la base.')}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5">

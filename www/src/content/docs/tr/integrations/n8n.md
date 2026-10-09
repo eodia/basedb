@@ -27,10 +27,16 @@ n8n'de bir **basedb API** kimlik bilgisi oluşturun:
 | **Instance URL** | basedb'yi açtığınız adres: `https://basedb.exemple.fr` |
 | **Workspace** | çalışma alanının referansı, API adreslerindeki (`/api/v1/<espace>/…`) referans: `t4z56fq`, kurulum `BASEDB_TENANT`'ı belirlemediyse |
 | **Token** | bir **entegrasyon token'ı**: veritabanının **⋯** menüsü → **API ve ajanlar** → **API ve MCP token'ları…** |
+| **Environment** | isteğe bağlı: veritabanında çalışılacak ortam — `recette`, `production`… Boş: canlı ortam |
 
-Bir token **bir** veritabanını açar. Satırlarını okur, yazma yetkisiyle oluşturulduysa yazar ve
-onu oluşturan kişiden asla daha fazla izne sahip olmaz. Kaydedilirken n8n bağlantıyı dener ve
-token reddedilirse bunu bildirir.
+Bir token **bir** veritabanını açar — tüm ortamlarıyla ya da, oluşturulurken sınırlandıysa,
+yalnızca biriyle. Satırlarını okur, yazma yetkisiyle oluşturulduysa yazar ve onu oluşturan kişiden
+asla daha fazla izne sahip olmaz. Kaydedilirken n8n bağlantıyı dener ve token reddedilirse bunu
+bildirir.
+
+Canlı ortamda ve test ortamında çalışmak için, aynı token ile iki kimlik bilgisi oluşturun:
+birinde **Environment** boş, diğerinde `recette`. Hiçbir ortam seçilmediğinde, düğümün veritabanı
+listesi her ortamı gösterir, adı parantez içinde.
 
 ## Okumak ve yazmak: basedb düğümü
 

@@ -27,10 +27,16 @@ Legen Sie in n8n Anmeldedaten **basedb API** an:
 | **Instance URL** | die Adresse, unter der Sie basedb öffnen: `https://basedb.exemple.fr` |
 | **Workspace** | die Kennung des Arbeitsbereichs, die der API-Adressen (`/api/v1/<espace>/…`): `t4z56fq`, außer die Instanz legt `BASEDB_TENANT` fest |
 | **Token** | ein **Integrationstoken**: Menü **⋯** der Datenbank → **API und Agenten** → **API- und MCP-Token …** |
+| **Environment** | optional: die Umgebung der Datenbank, in der gearbeitet wird – `recette`, `production` … Leer: die Produktion |
 
-Ein Token öffnet **eine** Datenbank. Es liest ihre Zeilen, schreibt sie, wenn es mit Schreibrecht
-angelegt wurde, und hat nie mehr Berechtigungen als die Person, die es angelegt hat. Beim
-Speichern testet n8n die Verbindung und sagt, ob das Token abgelehnt wird.
+Ein Token öffnet **eine** Datenbank – alle ihre Umgebungen oder nur eine, wenn es bei seiner
+Erstellung beschränkt wurde. Es liest ihre Zeilen, schreibt sie, wenn es mit Schreibrecht angelegt
+wurde, und hat nie mehr Berechtigungen als die Person, die es angelegt hat. Beim Speichern testet
+n8n die Verbindung und sagt, ob das Token abgelehnt wird.
+
+Um mit der Produktion und mit dem Staging zu arbeiten, legen Sie zwei Anmeldedaten mit demselben
+Token an: eines mit leerem **Environment**, das andere mit `recette`. Ohne gewählte Umgebung zeigt die
+Liste der Datenbanken des Nodes jede Umgebung, mit ihrem Namen in Klammern.
 
 ## Lesen und schreiben: der Node basedb
 

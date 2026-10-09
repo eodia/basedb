@@ -43,7 +43,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`BASEDB_VERSION` 可以固定一个具体版本（`0.6.1`），而不是使用最新版本（`latest`）。
+`BASEDB_VERSION` 可以固定一个具体版本（`0.7.0`），而不是使用最新版本（`latest`）。
 
 启动时，basedb 会**自动更新其目录（catalog）**：它会按顺序应用您的版本尚未包含的迁移，每个迁移都在各自的事务中执行，并记录在 `_basedb.catalog_migration` 中。您的数据保持不变。日志会显示这一过程：
 

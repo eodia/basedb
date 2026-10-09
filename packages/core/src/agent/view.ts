@@ -5,6 +5,7 @@ import {
   type LinkRow,
   type RawCatalog,
   type TableRow,
+  baseInEnvironment,
   fieldsByTableOf,
   snapshot,
   targetFactory,
@@ -201,9 +202,18 @@ const notFound = (details: Record<string, unknown> = {}) =>
  * land here, on the same refusal.
  */
 export function resolveAgentBase(view: AgentView, reference: string): AgentBase {
-  const base = view.bases.find(
-    (b) => b.row.id === reference || b.name === reference || b.row.schema_name === reference,
+  // The environment asked — the MCP address's, or the tool's argument — names the base
+  // of the same lineage: `crm` with `recette` is `crm_recette` (chapter 14 §1 bis). The
+  // hop is made on the whole catalog, the visibility check on the visible bases after.
+  const row = baseInEnvironment(
+    view.ctx,
+    view.raw.bases,
+    (b) =>
+      b.id === reference ||
+      b.schema_name === reference ||
+      logicalName(b.schema_name, view.ctx.tenantId) === reference,
   )
+  const base = row === undefined ? undefined : view.bases.find((b) => b.row.id === row.id)
   if (base === undefined) throw notFound()
   return base
 }

@@ -36,6 +36,24 @@ eliminazione di una tabella o di un campo viene catturata da un trigger sul cata
 tab «Struttura» della cronologia. Gli identificativi di lignaggio collegano un campo di collaudo
 al suo omologo di produzione, anche se rinominato.
 
+## Tramite API, SDK e MCP
+
+Un **token creato per tutto il database** apre tutti i suoi ambienti, quelli di oggi e quelli che
+si aggiungeranno: un solo token per la produzione e il collaudo. Il programma o l’agente sceglie
+l’ambiente a ogni chiamata:
+
+| Dove | Come |
+|---|---|
+| [API REST](/basedb/it/integrations/api-rest/#scegliere-lambiente) | l’intestazione `X-Basedb-Environment: recette`, oppure `?environment=recette` |
+| [SDK](/basedb/it/integrations/sdk/#gli-ambienti) | `db.environment('recette')` |
+| [MCP](/basedb/it/integrations/mcp/#scegliere-lambiente) | l’indirizzo `…/mcp?environment=recette`, oppure l’argomento `environment` di uno strumento |
+| [n8n](/basedb/it/integrations/n8n/#le-credenziali) | il campo **Environment** della credenziale |
+
+Senza nulla di tutto ciò, ogni database indica il proprio ambiente: il nome della produzione apre
+la produzione, quello del collaudo il collaudo. Un token può anche, alla creazione, essere limitato
+all’ambiente mostrato: non ne vede allora nessun altro. In entrambi i casi, i suoi permessi vengono
+incrociati, ambiente per ambiente, con quelli della persona che l’ha creato.
+
 ## In SQL
 
 Ogni ambiente è uno schema: `b_t4z56fq_ventes` per la produzione,

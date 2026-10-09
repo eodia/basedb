@@ -27,10 +27,16 @@ Opprett en identifikasjon **basedb API** i n8n:
 | **Instance URL** | adressen der du åpner basedb: `https://basedb.exemple.fr` |
 | **Workspace** | arbeidsområdets referanse, den i API-ets adresser (`/api/v1/<espace>/…`): `t4z56fq`, med mindre instansen setter `BASEDB_TENANT` |
 | **Token** | et **integrasjonstoken**: menyen **⋯** på basen → **API og agenter** → **API- og MCP-tokener…** |
+| **Environment** | valgfritt: miljøet i databasen å arbeide i – `recette`, `production` … Tomt: produksjon |
 
-Et token åpner **én** base. Det leser radene, skriver dem hvis det ble opprettet med
-skriverettighet, og har aldri flere tillatelser enn personen som opprettet det. Ved lagring
-prøver n8n forbindelsen og sier om tokenet blir avvist.
+Et token åpner **én** base – alle miljøene dens, eller bare ett hvis det ble begrenset da det ble
+opprettet. Det leser radene, skriver dem hvis det ble opprettet med skriverettighet, og har aldri
+flere tillatelser enn personen som opprettet det. Ved lagring prøver n8n forbindelsen og sier om
+tokenet blir avvist.
+
+For å arbeide på både produksjon og test oppretter du to identifikasjoner med det samme tokenet,
+én med **Environment** tom, én med `recette`. Uten valgt miljø viser listen over databaser i noden
+hvert miljø, med navnet i parentes.
 
 ## Lese og skrive: basedb-noden
 

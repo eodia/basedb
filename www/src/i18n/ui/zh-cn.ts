@@ -1273,9 +1273,9 @@ export default {
 		agents: {
 			label: 'REST API · MCP · Webhook',
 			title: '您的 AI 智能体能访问数据，{却拿不到万能钥匙。}',
-			lead: 'MCP 服务器为智能体提供十四种工具；REST API 为您的程序提供同样的数据。唯一的权限检查点，同一套日志。',
+			lead: 'MCP 服务器为智能体提供十五种工具；REST API 为您的程序提供同样的数据。唯一的权限检查点，同一套日志。',
 			bullets: [
-				'<strong>每个数据库一个令牌</strong>，默认只读，权限绝不会超过创建它的人。',
+				'<strong>一个令牌覆盖整个数据库</strong>，包括生产和预发布，默认只读，权限绝不会超过创建它的人。',
 				'<strong>智能体只在您同意时才会删除</strong>，一次一行，也不会修改结构：它只提议，由人来批准。',
 				'<strong>自动生成的文档</strong>，每个数据库一份，按您的权限过滤，并附带 OpenAPI 3.1 规范。',
 				'<strong>Webhook</strong>：每次写入都会触发，带签名、按顺序、失败重试。',
@@ -1525,6 +1525,25 @@ export default {
 		title: 'basedb 的变化',
 		intro: '每项变更的细节见<a href="https://github.com/eodia/basedb/commits/main">仓库的提交历史</a>。接下来要做的：<a href="/feuille-de-route/">路线图</a>。',
 		entries: {
+			oneToken: {
+				date: '2026-10-09',
+				title: '一个令牌覆盖整个数据库，环境由您选择',
+				tag: '新功能',
+				items: [
+					'<strong>一个令牌</strong>即可开放数据库的生产、预发布以及今后新增的环境；创建时也可以将其限定为单个环境。已有的令牌保持其原有的环境。<a href="/fonctionnalites/environnements/#通过-apisdk-和-mcp">通过 API、SDK 和 MCP</a>',
+					'<strong>环境在调用时选择</strong>：REST API 的 <code>X-Basedb-Environment</code> 请求头、SDK 的 <code>db.environment()</code>、n8n 的 Environment 字段、地址 <code>…/mcp?environment=recette</code>，或 MCP 工具的 <code>environment</code> 参数。<a href="/integrations/mcp/#选择环境">选择环境</a>',
+					'<strong>无需中继的智能体</strong>：令牌窗口会给出 Claude Code 的 HTTP 配置和 <code>.mcp.json</code> 文件，每个环境一个服务器、共用同一个令牌，令牌本身仍保存在环境变量中。',
+				],
+			},
+			lookByAgents: {
+				date: '2026-10-09',
+				title: '通过 API 和 MCP 设置颜色和图标',
+				tag: '新功能',
+				items: [
+					'<strong>智能体为它提议的内容配上外观</strong>：<code>propose_create_table</code> 中数据表的颜色和图标、<code>propose_add_field</code> 中每个选项的颜色和图标，以及用于现有数据表的新工具 <code>propose_update_look</code>。与整个结构一样，由人来批准。<a href="/integrations/mcp/#颜色和图标">颜色和图标</a>',
+					'<strong>通过 API</strong> 创建数据表时可以同时设置颜色和图标；<code>describe_base</code>、<code>describe_table</code> 和 <code>/meta</code> 会返回它们。<a href="/integrations/api-rest/#颜色和图标">颜色和图标</a>',
+				],
+			},
 			agentDelete: {
 				date: '2026-10-02',
 				title: '智能体也能删除——如果您允许',

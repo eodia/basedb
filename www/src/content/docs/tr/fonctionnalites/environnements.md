@@ -37,6 +37,24 @@ değiştirilmesi ya da silinmesi, katalog üzerindeki bir tetikleyici tarafında
 geçmişin “Yapı” sekmesinde okunur. Köken kimlikleri, test ortamındaki bir alanı — yeniden
 adlandırılmış olsa bile — canlı ortamdaki karşılığına bağlar.
 
+## API, SDK ve MCP üzerinden
+
+**Tüm veritabanı için oluşturulmuş bir token**, tüm ortamlarını açar; bugün olanları da,
+sonradan ekleyeceklerinizi de: canlı ortam ve test için tek bir token. Program ya da ajan
+ortamı her çağrıda seçer:
+
+| Nerede | Nasıl |
+|---|---|
+| [REST API](/basedb/tr/integrations/api-rest/#ortamı-seçme) | `X-Basedb-Environment: recette` başlığı ya da `?environment=recette` |
+| [SDK](/basedb/tr/integrations/sdk/#ortamlar) | `db.environment('recette')` |
+| [MCP](/basedb/tr/integrations/mcp/#ortamı-seçme) | `…/mcp?environment=recette` adresi ya da bir aracın `environment` argümanı |
+| [n8n](/basedb/tr/integrations/n8n/#kimlik-bilgileri) | kimlik bilgisinin **Environment** alanı |
+
+Bunların hiçbiri yoksa, her veritabanı kendi ortamını belirtir: canlı ortamın adı canlı ortamı,
+test ortamının adı test ortamını açar. Bir token ayrıca, oluşturulurken, gösterilen ortamla
+sınırlanabilir: o zaman başka hiçbirini görmez. Her iki durumda da izinleri, ortam ortam, onu
+oluşturan kişinin izinleriyle kesiştirilir.
+
 ## SQL'de
 
 Her ortam bir şemadır: canlı ortam için `b_t4z56fq_ventes`, test ortamı için

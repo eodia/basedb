@@ -60,11 +60,14 @@ export const ro: Catalog = {
     'Readucerea unui rând șters, sub `_id`-ul său, din istoric.',
   'Proposer une table et ses premiers champs — une personne décide.':
     'Propunerea unui tabel și a primelor sale câmpuri — o persoană decide.',
+  'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.':
+    'Propunerea culorii și a pictogramei unui tabel și a opțiunilor din listele sale de selecție — o persoană decide.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
     'Propunerea unui câmp, a unei selecții unice sau a unei relații — o persoană decide.',
   'Relire une proposition du jeton et savoir ce qu’il en est advenu.':
     'Recitirea unei propuneri a tokenului și aflarea rezultatului ei.',
   'dépôt basedb': 'depozit basedb',
+  recette: 'testare',
   'Depuis un agent (MCP)': 'De la un agent (MCP)',
   'Cette base n’est pas ouverte aux agents : aucun outil MCP ne voit cette table, quel que soit le jeton.':
     'Această bază nu este deschisă agenților: niciun instrument MCP nu vede acest tabel, indiferent de token.',
@@ -99,22 +102,35 @@ export const ro: Catalog = {
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**Această bază nu este deschisă agenților.** Cât timp nu este, niciun instrument nu o vede, indiferent de tokenul prezentat.',
   'Créer un jeton': 'Crearea unui token',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    'În interfață, meniul „⋯” al bazei → **API și agenți** → **Tokenuri API și MCP…**, cu accesul **MCP** bifat. Tokenul este limitat la această bază, **doar în citire** în mod implicit: scrierea, și ștergerea, se aleg explicit. Este afișat o singură dată și se revocă din același ecran. Bifat și pentru **API REST**, același token servește pentru un program (vezi „Autentificare”).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    'În interfață, meniul „⋯” al bazei → **API și agenți** → **Tokenuri API și MCP…**, cu accesul **MCP** bifat. Tokenul deschide **toată baza, toate mediile sale** — producție, testare… — sau doar unul, dacă îl limitați. Este **doar în citire** în mod implicit: scrierea, și ștergerea, se aleg explicit. Este afișat o singură dată și se revocă din același ecran. Bifat și pentru **API REST**, același token servește pentru un program (vezi „Autentificare”).',
   'Garder le jeton hors de la configuration': 'Păstrarea tokenului în afara configurației',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     'Tokenul se pune în variabila de mediu `BASEDB_TOKEN`, niciodată în fișierul de configurare al clientului: acesta este versionat, sincronizat și lizibil de toate programele sesiunii.',
   'Déclarer le serveur dans le client': 'Declararea serverului în client',
-  'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).':
-    'Clientul lansează **releul** `relay.js`, care transportă mesajele sale până la server. Acesta citește tokenul din variabila numită de `--token-env` — `BASEDB_MCP_TOKEN` dacă nu se specifică nimic — și adresa serverului din `--url` (sau `BASEDB_MCP_URL`).',
+  'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.':
+    'Un client care vorbește MCP prin HTTP — Claude Code, printre altele — vizează direct adresa serverului, `…/mcp`, cu antetul {header}. În fișierul `.mcp.json` al unui proiect, `${BASEDB_TOKEN}` este citit din variabilele de mediu: tokenul nu se scrie în fișier. Același token poate declara câte un server pentru fiecare mediu.',
+  'Client sans HTTP : le relais': 'Client fără HTTP: releul',
+  'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).':
+    'Un client care lansează doar programe locale (stdio) trece prin **releul** `relay.js`, care transportă mesajele sale până la server. Acesta citește tokenul din variabila numită de `--token-env` — `BASEDB_MCP_TOKEN` dacă nu se specifică nimic —, adresa serverului din `--url` (sau `BASEDB_MCP_URL`) și mediul din `--environment` (sau `BASEDB_MCP_ENVIRONMENT`).',
   'Autre client MCP': 'Alt client MCP',
   'votre-instance': 'instanta-dvs',
-  'Sans relais': 'Fără releu',
-  'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
-    'Un client care vorbește MCP prin HTTP vizează direct adresa serverului, `…/mcp`, cu antetul {header}. Un token este acceptat doar pe accesurile bifate la crearea sa: un token doar „MCP” este refuzat de API REST, și invers.',
+  'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
+    'Un token este acceptat doar pe accesurile bifate la crearea sa: un token doar „MCP” este refuzat de API REST, și invers.',
+  'Choisir l’environnement': 'Alegerea mediului',
+  'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :':
+    'O bază poate avea mai multe medii — producție, testare, dezvoltare —, fiecare cu tabelele și rândurile sale. Un token pentru toată baza le deschide pe toate; mediul se alege la apel, de la cel mai larg la cel mai precis:',
+  '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.':
+    '**Numele bazei**, fără nimic altceva: {base} este producția, iar fiecare mediu își păstrează și propriul nume.',
+  '**L’adresse du serveur** : {address} — un serveur déclaré par environnement.':
+    '**Adresa serverului**: {address} — un server declarat pentru fiecare mediu.',
+  '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.':
+    '**Argumentul `environment`** al fiecărui instrument care numește o bază, pentru un singur apel: {example}.',
+  'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.':
+    'Un mediu se numește prin insigna sa, fără a ține cont de majuscule sau de diacritice, sau `production`. Un mediu pe care baza nu îl are răspunde cu `RESOURCE_NOT_FOUND`.',
   Vérifier: 'Verificarea',
-  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.':
-    'Cereți agentului să apeleze `whoami`: acesta returnează persoana care a creat tokenul, baza aflată în domeniul său și permisiunile sale efective.',
+  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.':
+    'Cereți agentului să apeleze `whoami`: acesta returnează persoana care a creat tokenul, baza aflată în domeniul său, mediile pe care le deschide (`scope.available`) și permisiunile sale efective.',
   Outils: 'Instrumente',
   '{count} outils, toujours les mêmes : leur nom et leur description ne dépendent jamais de vos données. Le schéma se découvre en les appelant.':
     '{count} instrumente, mereu aceleași: numele și descrierea lor nu depind niciodată de datele dumneavoastră. Schema se descoperă apelându-le.',
@@ -134,6 +150,8 @@ export const ro: Catalog = {
     'Pentru a scrie o relație: `lookup_records` pe tabelul țintă, apoi `create_record` sau `update_record` cu `_id`-ul găsit.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     'Pentru a modifica structura: `propose_create_table` sau `propose_add_field`, apoi `get_proposal` pentru a urmări decizia.',
+  'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.':
+    'Pentru aspect: `color` și `icon` în `propose_create_table` și în opțiunile din `propose_add_field`, sau `propose_update_look` pentru un tabel existent.',
   'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
     'Pentru a șterge: `get_record` întâi, pentru a fi sigur de rând, apoi `delete_record` — care îl redă în răspunsul său; `restore_record` îl readuce.',
   'Propositions de structure': 'Propuneri de structură',
@@ -143,6 +161,9 @@ export const ro: Catalog = {
     'Cel mult 5 propuneri în așteptare per token; o propunere nouă pe același obiect o înlocuiește pe cea precedentă (`superseded`).',
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     'Nicio ștergere, nicio redenumire, nicio relație în cascadă (`MCP_CASCADE_FORBIDDEN`).',
+  'Couleurs et pictogrammes': 'Culori și pictograme',
+  'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.':
+    'Un tabel și fiecare opțiune a unei liste de selecție au o culoare și o pictogramă, ca în aplicație. `color` este o culoare `#rrggbb`; `icon` este numele unei pictograme dintre cele pe care aplicația le desenează — schema instrumentului le enumeră. O cheie omisă păstrează ce există deja, `null` o șterge. `describe_base` și `describe_table` returnează aspectul actual.',
   'Ce qui n’existe pas': 'Ce nu există',
   'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
     'Niciun instrument nu șterge mai multe rânduri deodată, un tabel sau un câmp, nu execută SQL și nu gestionează permisiunile sau tokenurile. Un agent care apelează un astfel de nume — `delete_records`, `run_sql`… — primește `MCP_OPERATION_EXCLUDED`, indiferent de baza vizată.',
@@ -244,8 +265,11 @@ export const ro: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     'Toate rutele de date necesită un **token**, în antetul `Authorization`. Cookie-ul de sesiune nu este niciodată acceptat aici: un browser îl trimite la fiecare cerere, inclusiv cele provocate de o pagină străină.',
   'Jeton d’intégration': 'Token de integrare',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    'Un program — script, sincronizare, altă aplicație — prezintă un **token de integrare**, care începe cu `bdb_`. Este valabil doar pentru această bază; citește, creează și modifică dacă a fost creat cu drept de scriere, și **nu șterge decât dacă a fost creat pentru aceasta**; nu are niciodată mai multe permisiuni decât persoana care l-a creat, verificate încrucișat la fiecare apel. Administrarea, consola SQL și AI-ul îi rămân închise.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    'Un program — script, sincronizare, altă aplicație — prezintă un **token de integrare**, care începe cu `bdb_`. Este valabil doar pentru această bază — toate mediile sale sau doar unul; citește, creează și modifică dacă a fost creat cu drept de scriere, și **nu șterge decât dacă a fost creat pentru aceasta**; nu are niciodată mai multe permisiuni decât persoana care l-a creat, verificate încrucișat la fiecare apel. Administrarea, consola SQL și AI-ul îi rămân închise.',
+  Environnement: 'Mediu',
+  'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.':
+    'Un token creat pentru toată baza deschide toate mediile sale. Calea numește baza — {base} este producția — iar antetul {header} alege mediul; `?environment=` face același lucru pentru un client care nu trimite antet. Fără niciunul dintre ele, este mediul pe care îl numește baza.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     'Pentru a crea unul: meniul „⋯” al bazei → **API și agenți** → **Tokenuri API și MCP…**, cu accesul **API REST** bifat. Este afișat o singură dată.',
   Appel: 'Apel',

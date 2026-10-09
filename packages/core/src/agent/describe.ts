@@ -1,4 +1,5 @@
 import { qualify, quoteIdentifier } from '@basedb/naming'
+import { namesEnvironment } from '../catalog/projection.js'
 import { INVERSE_BUDGETS } from '../records/inverse-links.js'
 import type { Pools } from '../runtime/pool.js'
 import type { RequestContext } from '../tx/context.js'
@@ -113,6 +114,21 @@ function displayBlock(table: AgentTable) {
 
 const businessCount = (table: AgentTable) => table.fields.filter((f) => !f.system).length
 
+/**
+ * The environment of a base, as an agent reads it: its badge, and whether it is the
+ * production (chapter 14). `environment` is what the `environment` argument of every
+ * tool, or `?environment=` of the MCP address, accepts.
+ */
+function environmentBlock(base: AgentBase) {
+  return { environment: base.row.environment, production: base.row.is_production }
+}
+
+/** How the base looks in the application: the colour and pictogram of its tables (§4.1). */
+const lookOf = (row: { color: string | null; icon: string | null }) => ({
+  ...(row.color === null ? {} : { color: row.color }),
+  ...(row.icon === null ? {} : { icon: row.icon }),
+})
+
 /** One line of `list_bases`. */
 function baseSummary(base: AgentBase, exposed: boolean) {
   return {
@@ -120,16 +136,29 @@ function baseSummary(base: AgentBase, exposed: boolean) {
     name: base.name,
     label: base.row.label,
     description: base.row.description,
+    ...environmentBlock(base),
     ...(exposed ? { schema: base.row.schema_name } : {}),
     table_count: base.tables.length,
   }
+}
+
+/** The visible bases — of the environment asked, when one is. */
+function basesOf(view: AgentView): readonly AgentBase[] {
+  const asked = view.ctx.environment
+  if (asked === null) return view.bases
+  return view.bases.filter((b) => {
+    const production = view.raw.bases.find(
+      (p) => p.lineage_id === b.row.lineage_id && p.is_production,
+    )
+    return namesEnvironment(b.row, asked, production ?? null)
+  })
 }
 
 export async function agentListBases(pools: Pools, ctx: RequestContext) {
   const view = await agentView(pools, ctx)
   const exposed = await physicalNamesExposed(pools, ctx)
   return {
-    bases: view.bases.map((b) => baseSummary(b, exposed)),
+    bases: basesOf(view).map((b) => baseSummary(b, exposed)),
     has_more: false,
     provenance: 'user_data' as const,
   }
@@ -181,6 +210,7 @@ export async function agentDescribeBase(pools: Pools, ctx: RequestContext, baseR
       name: base.name,
       label: base.row.label,
       description: base.row.description,
+      ...environmentBlock(base),
       ...(exposed ? { schema: base.row.schema_name } : {}),
       catalog_version: Number(base.row.catalog_version),
     },
@@ -189,6 +219,7 @@ export async function agentDescribeBase(pools: Pools, ctx: RequestContext, baseR
       name: t.row.table_name,
       label: t.row.label,
       description: t.row.description,
+      ...lookOf(t.row),
       ...(displayBlock(t) === undefined ? {} : { display_field: displayBlock(t) }),
       field_count: businessCount(t),
       row_count_estimate: estimateOf(counts, t),
@@ -239,7 +270,9 @@ function describeField(
   }
 
   const options = field.id === null ? undefined : view.raw.options.get(field.id)
-  if (options !== undefined) out.options = options.map((o) => ({ value: o.value, label: o.label }))
+  if (options !== undefined) {
+    out.options = options.map((o) => ({ value: o.value, label: o.label, ...lookOf(o) }))
+  }
 
   if (field.kind === 'formula' && row !== null) {
     // The expression names the fields it reads. If one of them is withheld from this
@@ -396,10 +429,11 @@ export async function agentWhoAmI(
       prefix: string | null
       expires_at: Date | null
       base_id: string | null
+      all_environments: boolean | null
       display_name: string
     }>(
       `SELECT tk.id AS token_id, tk.label, tk.token_prefix AS prefix, tk.expires_at,
-              tk.base_id, u.display_name
+              tk.base_id, tk.all_environments, u.display_name
          FROM _basedb.app_user u
          LEFT JOIN _basedb.api_token tk ON tk.id = $2::uuid AND tk.created_by = u.id
         WHERE u.id = $1`,
@@ -409,7 +443,18 @@ export async function agentWhoAmI(
   const me = rows[0]
   // The scope base is named only if the bearer can see it: a token with no right on its
   // own base answers normally, with an empty scope (§10, point 5).
-  const scopeBase = view.bases.find((b) => b.row.id === me?.base_id) ?? null
+  const scopeRow = view.raw.bases.find((b) => b.id === me?.base_id)
+  const allEnvironments = me?.all_environments === true
+  // Every environment the token opens and the bearer sees: the whole lineage for a token
+  // of the whole base, its one base otherwise.
+  const environments = view.bases.filter((b) =>
+    allEnvironments ? b.row.lineage_id === scopeRow?.lineage_id : b.row.id === me?.base_id,
+  )
+  const scopeBase =
+    environments.find((b) => b.row.is_production) ??
+    view.bases.find((b) => b.row.id === me?.base_id) ??
+    environments[0] ??
+    null
   const tables = view.bases.flatMap((b) => b.tables)
 
   return {
@@ -433,6 +478,12 @@ export async function agentWhoAmI(
         scopeBase === null
           ? null
           : { id: scopeBase.row.id, name: scopeBase.name, label: scopeBase.row.label },
+      // `all`: every environment of the base, chosen per call; `one`: this base alone.
+      environments: allEnvironments ? ('all' as const) : ('one' as const),
+      available: environments.map((b) => ({ name: b.name, ...environmentBlock(b) })),
+      // The environment of this connection — `?environment=` of the address — or `null`:
+      // the one each base name designates (`crm` is the production).
+      current: ctx.environment,
     },
     access: {
       read: tables.length > 0,

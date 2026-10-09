@@ -6,7 +6,7 @@ import { DOCUMENT_MAX_BYTES, documentCache, etagFor } from './cache.js'
 import { toDocumentation } from './documentation.js'
 import { toBaseList, toMeta } from './meta.js'
 import { toOpenApi } from './openapi.js'
-import { project, snapshot } from './projection.js'
+import { ofEnvironment, project, referenceIn, snapshot } from './projection.js'
 
 /**
  * Serving the catalog projections, with validator — chapter 08 §9.2.
@@ -42,7 +42,8 @@ export interface ServedMeta {
  */
 export const CACHE_CONTROL = 'private, max-age=0, must-revalidate'
 /** The documentation is written in the language of the screen that asks for it. */
-export const VARY = 'Authorization, Accept-Encoding, X-Basedb-Locale, Accept-Language'
+export const VARY =
+  'Authorization, Accept-Encoding, X-Basedb-Locale, Accept-Language, X-Basedb-Environment'
 
 /**
  * Serves one of the four catalog documents.
@@ -66,17 +67,15 @@ export async function serveMeta(
   // The validator is computed from the counters alone — never from the bytes. That is
   // what lets the next two lines end the request. Two languages are two documents, so
   // the documentation's validator — and its place in the cache — includes the language,
-  // and a base's description's, the language of its formulas.
+  // and a base's description's, the language of its formulas. An environment asked
+  // names another base, or another listing: it is part of the key too.
+  const where = ctx.environment === null ? reference : `${reference}@${ctx.environment}`
   const etag = etagFor(
     ctx,
     versions,
     grants,
     kind === 'bases' ? 'meta' : kind,
-    kind === 'doc'
-      ? `${reference}|${language}`
-      : kind === 'meta'
-        ? `${reference}|${dialect}`
-        : reference,
+    kind === 'doc' ? `${where}|${language}` : kind === 'meta' ? `${where}|${dialect}` : where,
   )
 
   if (ifNoneMatch !== undefined && matches(ifNoneMatch, etag)) {
@@ -88,7 +87,8 @@ export async function serveMeta(
     return { etag, notModified: false, body: JSON.parse(cached), bytes: cached.length }
   }
 
-  const bases = project(ctx, grants, raw, dialect)
+  // With an environment asked, the listing shows that environment of each base.
+  const bases = ofEnvironment(ctx, raw.bases, project(ctx, grants, raw, dialect))
 
   let body: unknown
   if (kind === 'bases') {
@@ -102,11 +102,13 @@ export async function serveMeta(
         icon: b.icon,
         image: b.image,
         project: b.project,
+        environment: b.environment,
         tableCount: b.tables.length,
       })),
     )
   } else {
-    const found = bases.find((b) => b.name === reference || b.id === reference)
+    const ref = referenceIn(ctx, raw.bases, reference)
+    const found = bases.find((b) => b.name === ref || b.id === ref)
     // A base with no readable table is absent from the projection, so it lands here —
     // the same refusal as a base that does not exist, which is the point.
     if (found === undefined) {

@@ -27,10 +27,15 @@ V n8n vytvořte přihlašovací údaj **basedb API**:
 | **Instance URL** | adresa, na které otevíráte basedb: `https://basedb.exemple.fr` |
 | **Workspace** | reference pracovního prostoru, ta z adres API (`/api/v1/<prostor>/…`): `t4z56fq`, pokud instance nenastavuje `BASEDB_TENANT` |
 | **Token** | **integrační token**: nabídka **⋯** databáze → **API a agenti** → **Tokeny API a MCP…** |
+| **Environment** | nepovinné: prostředí databáze, ve kterém se pracuje – `recette`, `production`… Prázdné: produkční prostředí |
 
-Token otevírá **jednu** databázi. Čte její řádky, zapisuje je, pokud byl vytvořen pro zápis,
-a nikdy nemá víc oprávnění než osoba, která ho vytvořila. Při uložení n8n vyzkouší spojení
-a řekne, zda je token odmítnut.
+Token otevírá **jednu** databázi – všechna její prostředí, nebo jen jedno, pokud byl při vytvoření
+omezen. Čte její řádky, zapisuje je, pokud byl vytvořen pro zápis, a nikdy nemá víc oprávnění než
+osoba, která ho vytvořila. Při uložení n8n vyzkouší spojení a řekne, zda je token odmítnut.
+
+Chcete-li pracovat s produkčním i testovacím prostředím, vytvořte dva přihlašovací údaje se stejným
+tokenem, jedny s prázdným polem **Environment**, druhé s `recette`. Bez zvoleného prostředí ukazuje
+seznam databází uzlu každé prostředí, s jeho názvem v závorkách.
 
 ## Čtení a zápis: uzel basedb
 

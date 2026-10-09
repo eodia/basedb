@@ -15,9 +15,10 @@ URL-urile lui poartă numele fizice — cele pe care le citiți și în SQL.
 
 În interfață, meniul **⋯** al bazei → **API și agenți** → **Tokenuri API și MCP…**: cine are
 nivelul **Gestionare** pe bază, sau pe proiectul ei, creează acolo un **token de integrare**
-limitat la această bază, doar în citire în mod implicit, după confirmarea parolei — un cont fără
-parolă, care se conectează printr-un furnizor de identitate, nu poate încă face asta. Este
-afișat o singură dată; puneți-l într-o variabilă de mediu.
+limitat la această bază — toate mediile sale sau doar unul —, doar în citire în mod implicit,
+după confirmarea parolei — un cont fără parolă, care se conectează printr-un furnizor de
+identitate, nu poate încă face asta. Este afișat o singură dată; puneți-l într-o variabilă de
+mediu.
 
 Un token citește; creează și modifică dacă a fost creat cu drept de scriere, și **șterge dacă a
 fost creat pentru aceasta** — drepturile „Citire, scriere și ștergere” —, cu excepția unui rând
@@ -29,6 +30,30 @@ export BASEDB_TOKEN=bdb_…
 curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
   -H "Authorization: Bearer $BASEDB_TOKEN"
 ```
+
+## Alegerea mediului
+
+O bază cu mai multe [medii](/basedb/ro/fonctionnalites/environnements/) — producție,
+testare… — rămâne **o singură** bază pentru un token creat pentru toată baza. Calea numește baza
+prin numele producției sale, iar antetul `X-Basedb-Environment` alege mediul:
+
+```bash
+curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  -H "X-Basedb-Environment: recette"
+```
+
+- Fără antet, este mediul pe care îl numește calea: `b_t4z56fq_ventes` este producția,
+  `b_t4z56fq_ventes_recette` testarea — ambele forme rămân valabile.
+- `?environment=recette` face același lucru pentru un client care nu trimite antet.
+- Un mediu se numește prin insigna sa, fără a ține cont de majuscule sau de diacritice, sau prin
+  `production`. Un mediu pe care baza nu îl are răspunde `404`, ca orice resursă absentă.
+- `GET /api/v1/<tenant>/meta/bases` listează fiecare mediu cu blocul său `environment`
+  (`label`, `production`); cu antetul, îl listează doar pe acesta.
+
+Un token limitat la un singur mediu, la crearea sa, nu le deschide pe celelalte: antetul nu
+schimbă nimic. Permisiunile sale sunt întotdeauna verificate încrucișat, mediu cu mediu, cu cele
+ale persoanei care l-a creat.
 
 ## Citire
 
@@ -82,6 +107,27 @@ Cu același token:
 Construirea — crearea unei automatizări, a unui tablou de bord, a unei integrări — rămâne
 rezervată unei sesiuni din interfață: un token citește și scrie rânduri, nu schimbă baza.
 
+## Culori și pictograme
+
+Un tabel și fiecare opțiune a unei liste de selecție au o culoare (`color`, `#rrggbb`) și o
+pictogramă (`icon`, numele unei icoane [Lucide](https://lucide.dev/icons/) pe care interfața o
+desenează: `truck`, `circle-check`, `flame`…). `GET …/meta/bases/<base>` le returnează pentru
+bază, pentru tabelele ei și pentru opțiunile câmpurilor ei.
+
+Pentru a le alege, cu token-ul de acces al unei persoane care poate modifica structura
+(`POST /auth/session/access`) — un token de integrare nu schimbă baza:
+
+| Rută | Corp |
+|---|---|
+| `POST …/admin/bases/<base>/tables` | `{"label": "Tickets", "color": "#dc2626", "icon": "flame", "fields": […]}` |
+| `PATCH …/admin/bases/<base>/tables/<table>` | `{"color": "#2563eb", "icon": "inbox"}` — cele trei chei `color`, `icon`, `image` circulă împreună: a numi una le înlocuiește pe toate trei |
+| `POST …/admin/bases/<base>/tables/<table>/fields` | `{"label": "Priorité", "kind": "select", "options": [{"value": "haute", "color": "#dc2626", "icon": "flame"}, …]}` |
+| `PUT …/admin/bases/<base>/tables/<table>/fields/<champ>/options` | lista întreagă a opțiunilor, în ordine, fiecare cu culoarea și pictograma ei |
+
+Un agent trece prin [serverul MCP](/basedb/ro/integrations/mcp/#culori-și-pictograme), unde
+**propune** aceste modificări. Un câmp nu are o pictogramă de ales: interfața o desenează pe cea a
+tipului său.
+
 ## Crearea unei baze dintr-un model
 
 O aplicație care se instalează își creează baza într-**un singur apel**: serverul aplică
@@ -122,14 +168,16 @@ curl -X POST "http://localhost:3000/auth/introspect" \
 Orice token care nu este valid — necunoscut, expirat, revocat, sesiune închisă, alt spațiu de
 lucru — răspunde `{"active": false}`, fără să spună de ce. Răspunsul este citit în direct: o
 deconectare se vede imediat. Pentru un token de integrare, răspunsul indică și baza pe care o
-deschide (`base`), accesul lui (`read` sau `write`) și suprafețele lui.
+deschide (`base`, producția ei), dacă îi deschide toate mediile (`environments`: `all`) sau doar
+unul (`one`), accesul lui (`read`, `write` sau `delete`) și suprafețele lui.
 
 ## Documentația generată
 
 Fiecare bază are pagina sa **Documentație API și MCP**: pentru fiecare tabel, punctele de acces,
 coloanele, exemple în cURL și în JavaScript. Este **filtrată după permisiunile dumneavoastră** —
 doi cititori obțin două versiuni —, scrisă **în limba ecranului dumneavoastră**, și există și în
-OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Numele, căile și codurile de
-eroare rămân aceleași în toate limbile.
+OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`), care declară tokenul Bearer și
+antetul `X-Basedb-Environment`. Numele, căile și codurile de eroare rămân aceleași în toate
+limbile.
 
 ![Documentația generată a unei baze](../../../../assets/screens/ro/documentation-api.webp)

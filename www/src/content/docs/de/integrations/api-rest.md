@@ -15,10 +15,10 @@ Ihre URLs tragen die physischen Namen – dieselben, die Sie auch in SQL lesen.
 
 In der Oberfläche, Menü **⋯** der Datenbank → **API und Agenten** → **API- und MCP-Token …**: Wer
 die Stufe **Verwalten** auf der Datenbank oder ihrem Projekt hat, legt dort ein
-**Integrationstoken** an, das auf diese Datenbank beschränkt und standardmäßig schreibgeschützt
-ist, nachdem das Passwort bestätigt wurde – ein Konto ohne Passwort, das sich über einen
-Identitätsanbieter anmeldet, kann das noch nicht. Es wird nur einmal angezeigt; legen Sie es in
-einer Umgebungsvariablen ab.
+**Integrationstoken** an, das auf diese Datenbank beschränkt ist (alle ihre Umgebungen oder nur
+eine) und standardmäßig schreibgeschützt, nachdem das Passwort bestätigt wurde – ein Konto ohne
+Passwort, das sich über einen Identitätsanbieter anmeldet, kann das noch nicht. Es wird nur einmal
+angezeigt; legen Sie es in einer Umgebungsvariablen ab.
 
 Ein Token liest; es legt an und ändert, wenn es mit Schreibrecht angelegt wurde, und **löscht,
 wenn es dafür angelegt wurde** — Rechte „Lesen, Schreiben und Löschen“ —, außer einer Zeile, die
@@ -30,6 +30,32 @@ export BASEDB_TOKEN=bdb_…
 curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
   -H "Authorization: Bearer $BASEDB_TOKEN"
 ```
+
+## Die Umgebung wählen
+
+Eine Datenbank mit mehreren [Umgebungen](/basedb/de/fonctionnalites/environnements/) – Produktion,
+Staging … – bleibt für ein Token, das für die ganze Datenbank angelegt wurde, **eine** Datenbank. Der
+Pfad nennt die Datenbank mit dem Namen ihrer Produktion, und der Header `X-Basedb-Environment` wählt
+die Umgebung:
+
+```bash
+curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  -H "X-Basedb-Environment: recette"
+```
+
+- Ohne den Header gilt die Umgebung, die der Pfad nennt: `b_t4z56fq_ventes` ist die Produktion,
+  `b_t4z56fq_ventes_recette` das Staging – beide Schreibweisen bleiben gültig.
+- `?environment=recette` bewirkt dasselbe für einen Client, der keinen Header setzt.
+- Eine Umgebung wird mit ihrem Badge benannt, ohne Beachtung der Groß- und Kleinschreibung und der
+  Akzente, oder mit `production`. Eine Umgebung, die die Datenbank nicht hat, antwortet mit `404`,
+  wie jede fehlende Ressource.
+- `GET /api/v1/<tenant>/meta/bases` listet jede Umgebung mit ihrem Block `environment`
+  (`label`, `production`) auf; mit dem Header listet es nur diese.
+
+Ein Token, das bei seiner Erstellung auf eine einzige Umgebung beschränkt wurde, öffnet keine
+andere: Der Header ändert daran nichts. Seine Berechtigungen werden stets – Umgebung für Umgebung –
+mit denen der Person abgeglichen, die es angelegt hat.
 
 ## Lesen
 
@@ -83,6 +109,27 @@ lesen: `GET /api/v1/views/<jeton>` und `…/rows` als JSON, `…/calendar.ics` a
 Aufbauen – eine Automatisierung, ein Dashboard, eine Integration anlegen – bleibt einer Sitzung in
 der Oberfläche vorbehalten: Ein Token liest und schreibt Zeilen, es ändert nicht die Datenbank.
 
+## Farben und Symbole
+
+Eine Tabelle und jede Option eines Auswahlfelds haben eine Farbe (`color`, `#rrggbb`) und ein Symbol
+(`icon`, der Name eines [Lucide](https://lucide.dev/icons/)-Symbols, das die Oberfläche zeichnet:
+`truck`, `circle-check`, `flame` …). `GET …/meta/bases/<base>` liefert sie für die Datenbank, ihre
+Tabellen und die Optionen ihrer Felder.
+
+Um sie zu wählen, verwenden Sie das Zugriffstoken einer Person, die die Struktur ändern darf
+(`POST /auth/session/access`) – ein Integrationstoken ändert die Datenbank nicht:
+
+| Route | Body |
+|---|---|
+| `POST …/admin/bases/<base>/tables` | `{"label": "Tickets", "color": "#dc2626", "icon": "flame", "fields": […]}` |
+| `PATCH …/admin/bases/<base>/tables/<table>` | `{"color": "#2563eb", "icon": "inbox"}` – die drei Schlüssel `color`, `icon`, `image` gehören zusammen: Wird einer genannt, ersetzt das alle drei |
+| `POST …/admin/bases/<base>/tables/<table>/fields` | `{"label": "Priorité", "kind": "select", "options": [{"value": "haute", "color": "#dc2626", "icon": "flame"}, …]}` |
+| `PUT …/admin/bases/<base>/tables/<table>/fields/<champ>/options` | die ganze Liste der Optionen, in ihrer Reihenfolge, jede mit ihrer Farbe und ihrem Symbol |
+
+Ein Agent geht über den [MCP-Server](/basedb/de/integrations/mcp/#farben-und-symbole), wo er diese
+Änderungen **vorschlägt**. Ein Feld hat kein Symbol zur Auswahl: Die Oberfläche zeichnet das seines
+Typs.
+
 ## Eine Datenbank aus einer Vorlage anlegen
 
 Eine Anwendung, die sich installiert, legt ihre Datenbank in **einem Aufruf** an: Der Server
@@ -123,14 +170,17 @@ curl -X POST "http://localhost:3000/auth/introspect" \
 Jedes Token, das nichts wert ist – unbekannt, abgelaufen, widerrufen, Sitzung beendet, anderer
 Arbeitsbereich –, antwortet mit `{"active": false}`, ohne den Grund zu nennen. Die Antwort wird
 live gelesen: Eine Abmeldung zeigt sich sofort. Für ein Integrationstoken sagt die Antwort auch,
-welche Datenbank es öffnet (`base`), seinen Zugriff (`read` oder `write`) und seine Oberflächen.
+welche Datenbank es öffnet (`base`, ihre Produktion), ob es alle ihre Umgebungen (`environments`:
+`all`) oder nur eine (`one`) öffnet, seinen Zugriff (`read`, `write` oder `delete`) und seine
+Oberflächen.
 
 ## Die generierte Dokumentation
 
 Jede Datenbank hat ihre Seite **API- und MCP-Dokumentation**: für jede Tabelle ihre Endpunkte, ihre
 Spalten, Beispiele in cURL und JavaScript. Sie ist **nach Ihren Berechtigungen gefiltert** – zwei
 Lesende erhalten zwei Fassungen –, geschrieben **in der Sprache Ihres Bildschirms**, und existiert
-auch als OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Die Namen, die Pfade und
-die Fehlercodes bleiben in allen Sprachen gleich.
+auch als OpenAPI 3.1 (`/api/v1/<tenant>/meta/bases/<base>/openapi.json`), das das Bearer-Token und
+den Header `X-Basedb-Environment` deklariert. Die Namen, die Pfade und die Fehlercodes bleiben in
+allen Sprachen gleich.
 
 ![Die generierte Dokumentation einer Datenbank](../../../../assets/screens/de/documentation-api.webp)

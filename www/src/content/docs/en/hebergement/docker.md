@@ -29,8 +29,8 @@ volume, `/data`, for the files of File and Image fields.
 | Tag | Content |
 |---|---|
 | `latest` | the latest published version |
-| `0.6` | the latest 0.6.x version |
-| `0.6.1` | exactly this version |
+| `0.7` | the latest 0.7.x version |
+| `0.7.0` | exactly this version |
 
 ## The services
 

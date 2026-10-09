@@ -1,6 +1,7 @@
 'use client'
 
 import { KIND_LABELS } from '@/components/app/field-icon'
+import { LookIcon, OptionGlyph } from '@/components/app/option-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,11 +11,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { type Proposal, type ProposalTable, type UserData, api } from '@/lib/api/client'
+import {
+  type Proposal,
+  type ProposalTable,
+  type ProposedChoice,
+  type ProposedLook,
+  type UserData,
+  api,
+} from '@/lib/api/client'
 import { $t, intlLocale } from '@/lib/i18n'
 import { messageFor, sentenceFor } from '@/lib/messages'
 import { cn } from '@/lib/utils'
-import { Bot, Check, ChevronDown, Loader2, X } from 'lucide-react'
+import { Bot, Check, ChevronDown, Loader2, Table2, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 /**
@@ -84,6 +92,36 @@ function TableName({ table }: { readonly table: ProposalTable | undefined }) {
   )
 }
 
+/** A look proposed for a table: its pictogram in its colour, and the colour named. */
+function LookPreview({ look }: { readonly look: ProposedLook | undefined }) {
+  if (look === undefined) return null
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <LookIcon
+        look={{ color: look.color ?? null, icon: look.icon ?? null, image: null }}
+        fallback={Table2}
+      />
+      {look.color !== undefined && look.color !== null && (
+        <code className="font-mono">{look.color}</code>
+      )}
+      {look.icon !== undefined && look.icon !== null && (
+        <code className="font-mono">{look.icon}</code>
+      )}
+      {(look.color === null || look.icon === null) && $t('(apparence effacée)')}
+    </span>
+  )
+}
+
+/** A choice of a list: its glyph in its colour, then its label as data. */
+function Choice({ choice }: { readonly choice: ProposedChoice }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <OptionGlyph look={{ color: choice.color ?? null, icon: choice.icon ?? null, image: null }} />
+      <Data value={choice.value} className="text-xs" />
+    </span>
+  )
+}
+
 const kindOf = (kind: UserData | undefined) =>
   KIND_LABELS[String(kind?.value ?? '')] ?? String(kind?.value ?? '')
 
@@ -97,7 +135,7 @@ function Summary({ proposal }: { readonly proposal: Proposal }) {
         <p>
           {$t('Créer la table')}{' '}
           <code className="font-mono text-[0.85em]">{created?.physical}</code>{' '}
-          <Data value={p.table_label?.value} />
+          <Data value={p.table_label?.value} /> <LookPreview look={p.look} />
         </p>
         <ul className="space-y-1 pl-4 text-sm">
           {(p.fields ?? []).map((f, i) => (
@@ -137,9 +175,34 @@ function Summary({ proposal }: { readonly proposal: Proposal }) {
             {$t('Choix :')}
             {p.options.map((o, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: the list is fixed, its order is its identity
-              <Data key={i} value={o.value} className="text-xs" />
+              <Choice key={i} choice={o} />
             ))}
           </p>
+        )}
+      </div>
+    )
+  }
+  if (proposal.summary_template === 'set_look') {
+    return (
+      <div className="space-y-1.5">
+        <p>
+          {$t('Changer l’apparence de')} <TableName table={p.table} /> <LookPreview look={p.look} />
+        </p>
+        {(p.fields ?? []).length > 0 && (
+          <ul className="space-y-1 pl-4 text-sm">
+            {(p.fields ?? []).map((f, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: the list is fixed, its order is its identity
+              <li key={i} className="list-disc">
+                <Data value={f.label.value} className="text-xs" />{' '}
+                <span className="inline-flex flex-wrap items-center gap-1 text-muted-foreground">
+                  {(f.options ?? []).map((o, j) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: the list is fixed, its order is its identity
+                    <Choice key={j} choice={o} />
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     )
@@ -217,15 +280,18 @@ function ProposalCard({
         ))}
       </ul>
 
-      <button
-        type="button"
-        onClick={() => setSql((v) => !v)}
-        aria-expanded={sql}
-        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <ChevronDown className={cn('size-3.5 transition-transform', sql && 'rotate-180')} />
-        {$t('SQL prévu')}
-      </button>
+      {/* A change of look emits no SQL: nothing to unfold. */}
+      {proposal.up_sql.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setSql((v) => !v)}
+          aria-expanded={sql}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <ChevronDown className={cn('size-3.5 transition-transform', sql && 'rotate-180')} />
+          {$t('SQL prévu')}
+        </button>
+      )}
       {sql && (
         <pre className="max-h-48 overflow-auto rounded-md border bg-muted px-3 py-2 font-mono text-xs whitespace-pre-wrap [overflow-wrap:anywhere]">
           {proposal.up_sql.join(';\n\n')}

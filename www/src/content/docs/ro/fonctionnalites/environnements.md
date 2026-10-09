@@ -35,6 +35,24 @@ de tabel ori de câmp este captată de un trigger pe catalog și se citește în
 istoricului. Identificatorii de filiație leagă un câmp din testare de omologul său din
 producție, chiar dacă a fost redenumit.
 
+## Prin API, SDK și MCP
+
+Un **token creat pentru toată baza** deschide toate mediile ei, cele de azi și cele care se vor
+adăuga: un singur token pentru producție și testare. Programul sau agentul alege mediul la fiecare
+apel:
+
+| Unde | Cum |
+|---|---|
+| [API REST](/basedb/ro/integrations/api-rest/#alegerea-mediului) | antetul `X-Basedb-Environment: recette`, sau `?environment=recette` |
+| [SDK](/basedb/ro/integrations/sdk/#mediile) | `db.environment('recette')` |
+| [MCP](/basedb/ro/integrations/mcp/#alegerea-mediului) | adresa `…/mcp?environment=recette`, sau argumentul `environment` al unui instrument |
+| [n8n](/basedb/ro/integrations/n8n/#datele-de-conectare) | câmpul **Environment** al datelor de conectare |
+
+Fără nimic din toate acestea, fiecare bază desemnează propriul mediu: numele producției deschide
+producția, cel al testării testarea. Un token poate fi, de asemenea, limitat la crearea sa la
+mediul afișat: nu vede atunci niciun altul. În ambele cazuri, permisiunile sale sunt verificate
+încrucișat, mediu cu mediu, cu cele ale persoanei care l-a creat.
+
 ## În SQL
 
 Fiecare mediu este o schemă: `b_t4z56fq_ventes` pentru producție, `b_t4z56fq_ventes_recette`

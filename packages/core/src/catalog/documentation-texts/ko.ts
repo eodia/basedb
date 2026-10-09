@@ -62,6 +62,8 @@ export const ko: Catalog = {
     '테이블과 그 첫 필드들을 제안합니다 — 결정은 사람이 합니다.',
   'Proposer un champ, une liste de choix ou une relation — une personne décide.':
     '필드, 선택 목록 또는 관계를 제안합니다 — 결정은 사람이 합니다.',
+  'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.':
+    '테이블과 선택 목록의 선택 항목에 쓸 색상과 아이콘을 제안합니다 — 결정은 사람이 합니다.',
   'Relire une proposition du jeton et savoir ce qu’il en est advenu.':
     '토큰이 제출한 제안을 다시 확인하고 그 결과를 확인합니다.',
   'dépôt basedb': 'basedb 저장소',
@@ -96,22 +98,36 @@ export const ko: Catalog = {
   '**Cette base n’est pas ouverte aux agents.** Tant qu’elle ne l’est pas, aucun outil ne la voit, quel que soit le jeton présenté.':
     '**이 데이터베이스는 에이전트에 열려 있지 않습니다.** 열리기 전까지는 어떤 토큰을 제시하더라도 어떤 도구도 이 데이터베이스를 볼 수 없습니다.',
   'Créer un jeton': '토큰 만들기',
-  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
-    '인터페이스에서 데이터베이스의 “⋯” 메뉴 → **API 및 에이전트** → **API 및 MCP 토큰…**에서 **MCP** 액세스를 체크하세요. 토큰은 이 데이터베이스로 범위가 제한되며 기본적으로 **읽기 전용**이고, 쓰기 권한과 삭제 권한은 명시적으로 선택해야 합니다. 토큰은 한 번만 표시되며, 같은 화면에서 해지할 수 있습니다. **REST API**도 체크하면 같은 토큰을 프로그램에서도 사용할 수 있습니다(“인증” 참고).',
+  'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).':
+    '인터페이스에서 데이터베이스의 “⋯” 메뉴 → **API 및 에이전트** → **API 및 MCP 토큰…** 화면에서 **MCP** 액세스를 체크하세요. 토큰은 **데이터베이스 전체, 모든 환경**(운영, 스테이징…)을 엽니다. 원하면 환경 하나로만 제한할 수도 있습니다. 기본적으로 **읽기 전용**이고, 쓰기 권한과 삭제 권한은 명시적으로 선택해야 합니다. 토큰은 한 번만 표시되며, 같은 화면에서 해지할 수 있습니다. **REST API**도 체크하면 같은 토큰을 프로그램에서도 사용할 수 있습니다(“인증” 참고).',
   'Garder le jeton hors de la configuration': '토큰을 설정 파일 밖에 두기',
   'Le jeton se place dans la variable d’environnement `BASEDB_TOKEN`, jamais dans le fichier de configuration du client : celui-ci est versionné, synchronisé, et lisible par tous les programmes de la session.':
     '토큰은 환경 변수 `BASEDB_TOKEN`에 저장하고, 클라이언트의 설정 파일에는 절대 넣지 마세요. 설정 파일은 버전 관리되고 동기화되며, 세션의 모든 프로그램이 읽을 수 있습니다.',
   'Déclarer le serveur dans le client': '클라이언트에 서버 등록',
-  'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).':
-    '클라이언트는 **릴레이** `relay.js`를 실행해 메시지를 서버까지 전달합니다. 릴레이는 `--token-env`로 지정한 변수(지정하지 않으면 `BASEDB_MCP_TOKEN`)에서 토큰을 읽고, `--url`(또는 `BASEDB_MCP_URL`)에서 서버 주소를 읽습니다.',
+  'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.':
+    'HTTP로 MCP와 통신하는 클라이언트(예: Claude Code)는 서버 주소 `…/mcp`에 직접 접속하며, 헤더는 {header}입니다. 프로젝트의 `.mcp.json` 파일에서 `${BASEDB_TOKEN}`은 환경 변수에서 읽습니다. 토큰 자체는 파일에 쓰지 않습니다. 같은 토큰으로 환경마다 서버를 하나씩 등록할 수 있습니다.',
+  'Client sans HTTP : le relais': 'HTTP를 쓰지 않는 클라이언트: 릴레이',
+  'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).':
+    '로컬 프로그램(stdio)만 실행하는 클라이언트는 메시지를 서버까지 전달하는 **릴레이** `relay.js`를 거칩니다. 릴레이는 `--token-env`로 지정한 변수(지정하지 않으면 `BASEDB_MCP_TOKEN`)에서 토큰을, `--url`(또는 `BASEDB_MCP_URL`)에서 서버 주소를, `--environment`(또는 `BASEDB_MCP_ENVIRONMENT`)에서 환경을 읽습니다.',
   'Autre client MCP': '다른 MCP 클라이언트',
   'votre-instance': 'your-instance',
-  'Sans relais': '릴레이 없이',
-  'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
-    'HTTP로 MCP와 통신하는 클라이언트는 헤더 {header}와 함께 서버 주소 `…/mcp`로 직접 접속합니다. 토큰은 만들 때 체크한 액세스에서만 허용됩니다. “MCP”만 체크된 토큰은 REST API에서 거부되며, 그 반대도 마찬가지입니다.',
+  recette: 'staging',
+  'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.':
+    '토큰은 만들 때 체크한 액세스에서만 허용됩니다. “MCP”만 체크된 토큰은 REST API에서 거부되며, 그 반대도 마찬가지입니다.',
+  'Choisir l’environnement': '환경 선택',
+  'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :':
+    '데이터베이스에는 운영, 스테이징, 개발 등 여러 환경을 둘 수 있으며, 환경마다 고유한 테이블과 행이 있습니다. 데이터베이스 전체용 토큰은 모든 환경을 열고, 환경은 호출할 때 선택합니다. 범위가 넓은 방법부터 구체적인 방법 순서입니다:',
+  '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.':
+    '**데이터베이스 이름**만 사용합니다. 이 이름({base})은 운영 환경을 가리키며, 각 환경은 자신의 이름도 따로 가집니다.',
+  '**L’adresse du serveur** : {address} — un serveur déclaré par environnement.':
+    '**서버 주소**: {address} — 환경마다 서버를 하나씩 등록합니다.',
+  '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.':
+    '데이터베이스를 지정하는 모든 도구의 **`environment` 인자**로, 호출 한 번에만 적용됩니다: {example}.',
+  'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.':
+    '환경은 배지에 표시된 이름으로 지정하며, 대소문자와 악센트 기호는 구분하지 않습니다. `production`으로도 지정할 수 있습니다. 데이터베이스에 없는 환경을 지정하면 `RESOURCE_NOT_FOUND`가 반환됩니다.',
   Vérifier: '확인',
-  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.':
-    '에이전트에게 `whoami`를 호출하도록 요청하세요. 토큰을 만든 사람, 범위가 되는 데이터베이스, 실제 권한을 알려줍니다.',
+  'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.':
+    '에이전트에게 `whoami`를 호출하도록 요청하세요. 토큰을 만든 사람, 범위가 되는 데이터베이스, 토큰이 여는 환경(`scope.available`), 실제 권한을 알려줍니다.',
   Outils: '도구',
   '{count} outils, toujours les mêmes : leur nom et leur description ne dépendent jamais de vos données. Le schéma se découvre en les appelant.':
     '도구는 항상 같은 {count}개이며, 이름과 설명은 데이터에 따라 달라지지 않습니다. 스키마는 도구를 호출해야 알 수 있습니다.',
@@ -131,6 +147,8 @@ export const ko: Catalog = {
     '관계를 기록하려면: 대상 테이블에 `lookup_records`를 사용한 다음, 찾은 `_id`로 `create_record` 또는 `update_record`를 호출합니다.',
   'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.':
     '스키마를 변경하려면: `propose_create_table` 또는 `propose_add_field`를 사용한 다음, `get_proposal`로 결정 상황을 확인합니다.',
+  'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.':
+    '모양을 정하려면: `propose_create_table`과 `propose_add_field`의 선택 항목에 `color`와 `icon`을 쓰고, 이미 있는 테이블에는 `propose_update_look`을 사용합니다.',
   'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.':
     '삭제하려면: 먼저 `get_record`로 행을 확인한 다음 `delete_record`를 호출합니다 — 응답이 그 행을 돌려줍니다. `restore_record`로 다시 가져올 수 있습니다.',
   'Propositions de structure': '스키마 변경 제안',
@@ -140,6 +158,9 @@ export const ko: Catalog = {
     '토큰당 대기 중인 제안은 최대 5개이며, 같은 대상에 대한 새 제안은 이전 제안을 대체합니다(`superseded`).',
   'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).':
     '삭제, 이름 변경, 연쇄 관계는 제안할 수 없습니다(`MCP_CASCADE_FORBIDDEN`).',
+  'Couleurs et pictogrammes': '색상과 아이콘',
+  'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.':
+    '테이블과 선택 목록의 각 선택 항목에는 애플리케이션에서와 같이 색상과 아이콘이 있습니다. `color`는 `#rrggbb` 형식의 색상이고, `icon`은 애플리케이션이 표시하는 아이콘 중 하나의 이름이며, 가능한 값은 도구의 스키마에 나열되어 있습니다. 키를 생략하면 현재 값이 유지되고 `null`은 값을 지웁니다. `describe_base`와 `describe_table`은 현재 모양을 반환합니다.',
   'Ce qui n’existe pas': '존재하지 않는 기능',
   'Aucun outil ne supprime plusieurs lignes à la fois, une table ou un champ, n’exécute de SQL ni ne gère les droits ou les jetons. Un agent qui appelle un tel nom — `delete_records`, `run_sql`… — reçoit `MCP_OPERATION_EXCLUDED`, quelle que soit la base visée.':
     '어떤 도구도 여러 행을 한 번에 삭제하거나, 테이블이나 필드를 삭제하거나, SQL을 실행하거나, 권한·토큰을 관리하지 않습니다. 에이전트가 `delete_records`, `run_sql`… 같은 이름을 호출하면 대상 데이터베이스와 관계없이 `MCP_OPERATION_EXCLUDED`를 받습니다.',
@@ -240,11 +261,14 @@ export const ko: Catalog = {
   'Toutes les routes de données demandent un **jeton**, dans l’en-tête `Authorization`. Le cookie de session n’est jamais accepté ici : un navigateur l’envoie sur chaque requête, y compris celles qu’une page étrangère provoque.':
     '모든 데이터 경로는 `Authorization` 헤더에 **토큰**을 요구합니다. 세션 쿠키는 여기서 절대 허용되지 않습니다. 브라우저는 다른 사이트가 유발한 요청을 포함해 모든 요청에 쿠키를 보내기 때문입니다.',
   'Jeton d’intégration': '연동 토큰',
-  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
-    '스크립트, 동기화, 다른 애플리케이션 등 프로그램은 `bdb_`로 시작하는 **연동 토큰**을 사용합니다. 이 토큰은 해당 데이터베이스에만 유효합니다. 읽기를 하며, 쓰기 권한으로 만들어졌다면 생성과 수정도 하고, **그 목적으로 만들어진 경우에만 삭제**하며, 만든 사람의 권한을 호출할 때마다 대조하여 그보다 많은 권한을 갖지 않습니다. 관리, SQL 콘솔, AI 기능은 사용할 수 없습니다.',
+  'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.':
+    '스크립트, 동기화, 다른 애플리케이션 등 프로그램은 `bdb_`로 시작하는 **연동 토큰**을 사용합니다. 이 토큰은 해당 데이터베이스에만 유효하며(모든 환경 또는 하나의 환경), 읽기를 하고, 쓰기 권한으로 만들어졌다면 생성과 수정도 하며, **그 목적으로 만들어진 경우에만 삭제**합니다. 만든 사람보다 많은 권한을 갖지 않으며, 호출할 때마다 그 사람의 권한과 대조됩니다. 관리, SQL 콘솔, AI 기능은 사용할 수 없습니다.',
   'Pour en créer un : menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **API REST** coché. Il n’est affiché qu’une fois.':
     '토큰을 만들려면: 데이터베이스의 “⋯” 메뉴 → **API 및 에이전트** → **API 및 MCP 토큰…**에서 **REST API** 액세스를 체크하세요. 토큰은 한 번만 표시됩니다.',
   Appel: '호출',
+  Environnement: '환경',
+  'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.':
+    '데이터베이스 전체용으로 만든 토큰은 모든 환경을 엽니다. 경로에는 데이터베이스 이름을 쓰며 — 운영 환경은 {base}입니다 — 환경은 헤더로 선택합니다: {header}. 헤더를 보내지 않는 클라이언트는 `?environment=`로 같은 일을 할 수 있습니다. 둘 다 없으면 경로에 쓴 이름이 가리키는 환경이 사용됩니다.',
   'Une authentification absente répond `401`, jamais `404` : vous devez pouvoir vous reconnecter.':
     '인증이 없으면 `404`가 아니라 항상 `401`이 반환됩니다. 다시 로그인할 수 있어야 하기 때문입니다.',
   Conventions: '규칙',

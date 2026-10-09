@@ -312,6 +312,19 @@ describe('§2.3 — a token: its role, intersected with its creator', () => {
     const inScope = decide(tokenContext, { ...grants, tokenBaseId: BASE }, 'update', target)
     expect(inScope.reason).toBe('TOKEN_ACTION_NOT_GRANTED')
   })
+
+  it('a token of the whole base opens each of its environments, and nothing else', () => {
+    const grants: ActorGrants = {
+      isInstanceAdmin: true,
+      roles: [],
+      tokenRole: role(['read']),
+      tokenBaseId: 'the-production',
+      tokenBaseIds: ['the-production', BASE],
+    }
+    expect(decide(tokenContext, grants, 'read', target).verdict).toBe('ALLOWED')
+    const elsewhere = { ...grants, tokenBaseIds: ['the-production', 'the-recette'] }
+    expect(decide(tokenContext, elsewhere, 'read', target).reason).toBe('TOKEN_SCOPE')
+  })
 })
 
 describe('chapter 09 §12.2 — what is withheld from agents', () => {

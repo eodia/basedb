@@ -72,10 +72,26 @@ uruchomi.
   wszystkich językach —, `status`, `details` i `requestId`. Żądanie zwolnienia tempa (`429`)
   jest powtarzane po czasie, który wskaże basedb.
 
+## Środowiska
+
+Baza, która ma kilka [środowisk](/basedb/pl/fonctionnalites/environnements/) – produkcyjne,
+testowe… – zachowuje swoje nazwy i typy w każdym środowisku. Z tokenem utworzonym dla całej bazy
+`environment()` wskazuje środowisko, dzięki czemu ten sam kod może działać gdzie indziej:
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+Opcja `environment` konstruktora robi to samo dla całego klienta. SDK wysyła nagłówek
+`X-Basedb-Environment`; bez niego każda nazwa bazy wskazuje jej własne środowisko
+(`b_t4z56fq_ventes` to środowisko produkcyjne).
+
 ## Token
 
 **Token integracji** tworzy się w interfejsie: menu **⋯** bazy → **API i agenci**
-→ **Tokeny API i MCP…**. Otwiera on jedną bazę, odczytuje jej wiersze, zapisuje je, jeśli
-został utworzony z prawem zapisu, nigdy nie ma większych uprawnień niż osoba, która go
+→ **Tokeny API i MCP…**. Otwiera on jedną bazę – wszystkie jej środowiska albo tylko jedno –,
+odczytuje jej wiersze, zapisuje je, jeśli został utworzony z prawem zapisu, nigdy nie ma
+większych uprawnień niż osoba, która go
 utworzyła, i **usuwa tylko wtedy, gdy został do tego utworzony** („Odczyt, zapis i usuwanie”):
 w przeciwnym razie `delete()` jest odrzucane.

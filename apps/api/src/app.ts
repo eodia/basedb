@@ -170,6 +170,7 @@ export function createApp(options: AppOptions) {
         'authorization',
         'x-basedb-csrf',
         'x-basedb-locale',
+        'x-basedb-environment',
       ],
       exposeHeaders: ['x-request-id', 'x-basedb-transaction'],
       // The session cookie travels between two ports of the same site; without this the
@@ -232,11 +233,13 @@ export function createApp(options: AppOptions) {
   const contextFor = async (
     c: { get: (k: 'requestId') => string; req: { param: (k: string) => string | undefined } },
     userId: string,
+    environment?: string | null,
   ): Promise<RequestContext> => {
     const ctx = await options.kernel.openContext({
       userId,
       requestId: c.get('requestId'),
       surface: 'rest',
+      environment,
     })
     const tenantRef = c.req.param('tenantRef')
     if (tenantRef !== undefined && tenantRef !== ctx.tenantId) {
@@ -273,12 +276,18 @@ export function createApp(options: AppOptions) {
   const dataContext = async (c: Context<{ Variables: Variables }, string>) => {
     const header = c.req.header('authorization')
     const secret = header?.toLowerCase().startsWith('bearer ') ? header.slice(7).trim() : undefined
-    if (secret?.startsWith(INTEGRATION_TOKEN_PREFIX) !== true) return contextFor(c, await bearer(c))
+    // The environment of the base the path names — production, recette… (chapter 14 §1
+    // bis): one token for the whole base, the environment chosen per request.
+    const environment = askedEnvironment(c)
+    if (secret?.startsWith(INTEGRATION_TOKEN_PREFIX) !== true) {
+      return contextFor(c, await bearer(c), environment)
+    }
 
     const ctx = await options.kernel.openTokenContext({
       secret,
       surface: 'rest',
       requestId: c.get('requestId'),
+      environment,
     })
     // The same check as a person's: a token carried onto another tenant finds nothing.
     const tenantRef = c.req.param('tenantRef')
@@ -287,6 +296,14 @@ export function createApp(options: AppOptions) {
     }
     return ctx
   }
+
+  /**
+   * The environment a data request asks for: the `X-Basedb-Environment` header, or
+   * `?environment=` for a client that cannot set one — a link, a spreadsheet. Neither:
+   * the environment the base name designates (`b_…_crm` is the production).
+   */
+  const askedEnvironment = (c: Context<{ Variables: Variables }, string>): string | null =>
+    c.req.header('x-basedb-environment') ?? c.req.query('environment') ?? null
 
   /** The credential of `/auth/*`: the session cookie, and it alone. */
   const cookieHolder = async (c: Context<{ Variables: Variables }, string>) =>
@@ -3669,17 +3686,19 @@ export function createApp(options: AppOptions) {
   })
 
   app.post('/api/v1/:tenantRef/admin/bases/:base/tables', async (c) => {
-    const body = await c.req.json<{
-      label?: string
-      description?: string | null
-      actor?: string
-      fields?: ReadonlyArray<{
-        label: string
-        kind: string
-        required?: boolean
+    const body = await c.req.json<
+      {
+        label?: string
         description?: string | null
-      }>
-    }>()
+        actor?: string
+        fields?: ReadonlyArray<{
+          label: string
+          kind: string
+          required?: boolean
+          description?: string | null
+        }>
+      } & LookBody
+    >()
     if (typeof body.label !== 'string' || body.label.trim() === '') {
       throw new BasedbError('LABEL_EMPTY')
     }
@@ -3688,11 +3707,13 @@ export function createApp(options: AppOptions) {
     // resolved WITHOUT the visibility rule of §9.1: a base that has just been created
     // has no table yet, and that rule would make its first one impossible to add.
     const base = await options.kernel.resolveBase(ctx, c.req.param('base'))
+    const look = lookOf(body)
     const table = await options.kernel.createTable(ctx, {
       baseId: base.baseId,
       label: body.label,
       description: body.description,
       fields: (body.fields ?? []) as never,
+      ...(look === undefined ? {} : { look }),
     })
     return c.json(
       {
@@ -3702,6 +3723,8 @@ export function createApp(options: AppOptions) {
           base: table.schemaName,
           sql: table.qualifiedName,
           description: table.description,
+          color: look?.color ?? null,
+          icon: look?.icon ?? null,
           fields: table.fields.map((f) => ({
             id: f.fieldId,
             label: f.label,
@@ -4610,6 +4633,7 @@ export function createApp(options: AppOptions) {
     label: string
     prefix: string
     baseId: string | null
+    allEnvironments: boolean
     access: string
     surfaces: readonly string[]
     createdAt: string
@@ -4622,6 +4646,7 @@ export function createApp(options: AppOptions) {
     label: t.label,
     prefix: t.prefix,
     base_id: t.baseId,
+    environments: t.allEnvironments ? 'all' : 'one',
     access: t.access,
     surfaces: t.surfaces,
     created_at: t.createdAt,
@@ -4670,9 +4695,17 @@ export function createApp(options: AppOptions) {
       access?: unknown
       surfaces?: unknown
       expires_in_days?: unknown
+      environments?: unknown
     }>()
     if (typeof body.base !== 'string' || body.base === '') {
       throw new BasedbError('REQUEST_INVALID', { details: { field: 'base' } })
+    }
+    if (
+      body.environments !== undefined &&
+      body.environments !== 'all' &&
+      body.environments !== 'one'
+    ) {
+      throw new BasedbError('REQUEST_INVALID', { details: { field: 'environments' } })
     }
     // Absent or `null`: no expiry. Anything else must be a number of days — a `"90"` sent
     // as text must not quietly become a token that never expires.
@@ -4686,6 +4719,9 @@ export function createApp(options: AppOptions) {
     const issued = await options.kernel.createApiToken(ctx, {
       label: typeof body.label === 'string' ? body.label : '',
       baseId: base.baseId,
+      // Absent: every environment of the base — one token, the environment chosen per
+      // request. `one`: the environment `base` names, and it alone.
+      environments: body.environments ?? 'all',
       // Checked by the kernel, which refuses anything but `read`, `write` and `delete`, and
       // any surface but `rest` and `mcp`. Absent: both doors — the API for a program, MCP
       // for an agent — since one base's integration usually wants both.

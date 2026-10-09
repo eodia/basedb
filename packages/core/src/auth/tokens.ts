@@ -64,6 +64,12 @@ export interface CreateApiTokenRequest {
   /** What the token is FOR — the screen asks "à quoi sert ce jeton ?" (06 §4). */
   readonly label: string
   readonly baseId: string
+  /**
+   * `all` (the default): every environment of the base — production, recette… —, the
+   * environment being chosen at each request; `one`: the environment `baseId` names, and
+   * it alone (chapter 14 §1 bis).
+   */
+  readonly environments?: 'all' | 'one'
   readonly access: TokenAccess
   readonly surfaces: readonly Surface[]
   /** A lifetime in days, 1 to 365 — or none, absent or `null`: the token lives until revoked. */
@@ -78,6 +84,8 @@ export interface ApiTokenSummary {
   /** The eight characters after `bdb_`, enough to recognize a token without holding it. */
   readonly prefix: string
   readonly baseId: string | null
+  /** Every environment of the base (`baseId` is then its production), or `baseId` alone. */
+  readonly allEnvironments: boolean
   readonly access: TokenAccess
   readonly surfaces: readonly Surface[]
   readonly createdAt: string
@@ -166,6 +174,7 @@ function summaryOf(row: TokenRow): ApiTokenSummary {
     label: row.label,
     prefix: row.token_prefix,
     baseId: row.base_id,
+    allEnvironments: row.all_environments,
     access: row.can_delete ? 'delete' : row.can_write ? 'write' : 'read',
     surfaces: row.allowed_surfaces,
     createdAt: new Date(row.created_at).toISOString(),
@@ -182,6 +191,7 @@ interface TokenRow extends Record<string, unknown> {
   readonly label: string
   readonly token_prefix: string
   readonly base_id: string | null
+  readonly all_environments: boolean
   readonly allowed_surfaces: Surface[]
   readonly created_at: string | Date
   readonly expires_at: string | Date | null
@@ -193,7 +203,8 @@ interface TokenRow extends Record<string, unknown> {
   readonly can_delete: boolean
 }
 
-const SUMMARY_COLUMNS = `tk.id, tk.label, tk.token_prefix, tk.base_id, tk.allowed_surfaces,
+const SUMMARY_COLUMNS = `tk.id, tk.label, tk.token_prefix, tk.base_id, tk.all_environments,
+       tk.allowed_surfaces,
        tk.created_at, tk.expires_at, tk.last_used_at, tk.revoked_at, tk.suspended_at,
        tk.created_by,
        EXISTS (SELECT 1 FROM _basedb.permission p
@@ -226,6 +237,10 @@ export async function createApiToken(
   }
   if (!Object.hasOwn(ACTIONS_OF, request.access)) {
     throw new BasedbError('REQUEST_INVALID', { details: { field: 'access' } })
+  }
+  const environments = request.environments ?? 'all'
+  if (environments !== 'all' && environments !== 'one') {
+    throw new BasedbError('REQUEST_INVALID', { details: { field: 'environments' } })
   }
   const surfaces = [...new Set(request.surfaces)]
   if (surfaces.length === 0 || surfaces.some((s) => s !== 'rest' && s !== 'mcp')) {
@@ -261,6 +276,25 @@ export async function createApiToken(
       throw new BasedbError('ROLE_NOT_DELEGABLE', { details: { missing } })
     }
 
+    // A token of the whole base is bound to its production and opens each environment
+    // of its lineage — today's, and those added later (the loader reads them at each
+    // snapshot). Its role is granted on each of them, as a new environment's grants are
+    // copied from its source: what it may do there is still intersected, environment by
+    // environment, with what its creator may do.
+    const family =
+      environments === 'one'
+        ? [{ id: target.id, is_production: true }]
+        : await exec.query<{ id: string; is_production: boolean }>(
+            `SELECT e.id::text, e.is_production
+               FROM _basedb.base own
+               JOIN _basedb.base e ON e.lineage_id = own.lineage_id AND e.tenant_id = own.tenant_id
+                                  AND e.is_live AND e.deleted_at IS NULL
+              WHERE own.id = $1
+              ORDER BY e.is_production DESC, e.environment_position`,
+            [target.id],
+          )
+    const boundTo = family.find((b) => b.is_production)?.id ?? target.id
+
     const { secret, prefix } = newSecret()
     const [tenant] = await exec.query<{ id: string }>(
       'SELECT id FROM _basedb.tenant WHERE ref = $1',
@@ -276,26 +310,39 @@ export async function createApiToken(
       [tenant.id, roleLabel, `jeton_${prefix}`, ctx.actor.id],
       'insert',
     )
-    for (const action of actions) {
-      await exec.query(
-        `INSERT INTO _basedb.permission (role_id, scope_kind, scope_base_id, action, granted_by)
-         VALUES ($1, 'base', $2, $3, $4)`,
-        [role.id, target.id, action, ctx.actor.id],
-        'insert',
-      )
+    for (const base of family) {
+      for (const action of actions) {
+        await exec.query(
+          `INSERT INTO _basedb.permission (role_id, scope_kind, scope_base_id, action, granted_by)
+           VALUES ($1, 'base', $2, $3, $4)`,
+          [role.id, base.id, action, ctx.actor.id],
+          'insert',
+        )
+      }
     }
 
     const [row] = await exec.query<TokenRow>(
       `WITH inserted AS (
          INSERT INTO _basedb.api_token
            (tenant_id, label, token_prefix, token_hash, role_id, base_id, allowed_surfaces,
-            expires_at, created_by)
+            expires_at, created_by, all_environments)
          VALUES ($1, $2, $3, $4, $5, $6, $7::text[],
-                 clock_timestamp() + make_interval(days => $8::int), $9)
+                 clock_timestamp() + make_interval(days => $8::int), $9, $10)
          -- A NULL lifetime makes the sum NULL: no expiry, spelled by the column itself.
          RETURNING *)
        SELECT ${SUMMARY_COLUMNS} FROM inserted tk`,
-      [tenant.id, label, prefix, sha256(secret), role.id, target.id, surfaces, days, ctx.actor.id],
+      [
+        tenant.id,
+        label,
+        prefix,
+        sha256(secret),
+        role.id,
+        boundTo,
+        surfaces,
+        days,
+        ctx.actor.id,
+        environments === 'all',
+      ],
       'insert',
     )
 
@@ -306,7 +353,7 @@ export async function createApiToken(
       objectId: row.id,
       objectName: label,
       baseId: target.id,
-      payload: { prefix, access: request.access, surfaces, expires_in_days: days },
+      payload: { prefix, access: request.access, surfaces, expires_in_days: days, environments },
     })
 
     return { ...summaryOf(row), access: request.access, secret }
@@ -329,10 +376,15 @@ export async function listApiTokens(
     async (exec) => {
       const target = await baseTarget(exec, ctx, request.baseId)
       await requireManageTokens(exec, ctx, target)
+      // The tokens of this environment, and those of the whole base, which open it too.
       const rows = await exec.query<TokenRow>(
         `SELECT ${SUMMARY_COLUMNS}
            FROM _basedb.api_token tk
           WHERE tk.base_id = $1
+             OR (tk.all_environments AND tk.base_id IN (
+                   SELECT e.id FROM _basedb.base own
+                     JOIN _basedb.base e ON e.lineage_id = own.lineage_id
+                    WHERE own.id = $1))
           ORDER BY tk.created_at DESC`,
         [target.id],
       )

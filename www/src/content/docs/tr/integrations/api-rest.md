@@ -15,9 +15,9 @@ adları taşır — SQL'de de okuduğunuz adları.
 
 Arayüzde, veritabanının **⋯** menüsü → **API ve ajanlar** → **API ve MCP token'ları…**: veritabanı
 ya da projesi üzerinde **Yönetim** düzeyine sahip olan kişi, şifresini doğruladıktan sonra
-burada bu veritabanıyla sınırlı, varsayılan olarak salt okunur bir **entegrasyon token'ı**
-oluşturur — bir kimlik sağlayıcısıyla giriş yapan şifresiz bir hesap bunu henüz yapamaz. Token
-yalnızca bir kez gösterilir; onu bir ortam değişkenine koyun.
+burada bu veritabanıyla sınırlı — tüm ortamlarıyla ya da yalnızca biriyle —, varsayılan olarak
+salt okunur bir **entegrasyon token'ı** oluşturur — bir kimlik sağlayıcısıyla giriş yapan şifresiz
+bir hesap bunu henüz yapamaz. Token yalnızca bir kez gösterilir; onu bir ortam değişkenine koyun.
 
 Bir token okur; yazma yetkisiyle oluşturulduysa oluşturur ve değiştirir, bunun için
 oluşturulduysa da **siler** — “Okuma, yazma ve silme” hakları, kademeli (cascade) bir ilişkinin
@@ -29,6 +29,31 @@ export BASEDB_TOKEN=bdb_…
 curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites?limit=20" \
   -H "Authorization: Bearer $BASEDB_TOKEN"
 ```
+
+## Ortamı seçme
+
+Birden çok [ortamı](/basedb/tr/fonctionnalites/environnements/) — canlı, test… — olan bir
+veritabanı, tüm veritabanı için oluşturulmuş bir token açısından **tek** bir veritabanı olarak
+kalır. Yol, veritabanını canlı ortamının adıyla adlandırır ve `X-Basedb-Environment` başlığı
+ortamı seçer:
+
+```bash
+curl "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites" \
+  -H "Authorization: Bearer $BASEDB_TOKEN" \
+  -H "X-Basedb-Environment: recette"
+```
+
+- Başlık yoksa, yolun adlandırdığı ortam kullanılır: `b_t4z56fq_ventes` canlı,
+  `b_t4z56fq_ventes_recette` test ortamıdır — iki yazım da geçerli kalır.
+- `?environment=recette`, başlık göndermeyen bir istemci için aynı işi görür.
+- Bir ortam, rozetinin adıyla — büyük/küçük harf ve aksan ayrımı yapılmadan — ya da
+  `production` ile adlandırılır. Veritabanında bulunmayan bir ortam, var olmayan her kaynak gibi
+  `404` yanıtı verir.
+- `GET /api/v1/<tenant>/meta/bases`, her ortamı `environment` bloğuyla (`label`, `production`)
+  listeler; başlıkla yalnızca o ortamı listeler.
+
+Oluşturulurken tek bir ortamla sınırlanmış bir token başka hiçbirini açmaz: başlık bunu
+değiştirmez. İzinleri her zaman, ortam ortam, onu oluşturan kişinin izinleriyle kesiştirilir.
 
 ## Okuma
 
@@ -82,6 +107,26 @@ JSON olarak `GET /api/v1/views/<jeton>` ve `…/rows`, iCalendar olarak `…/cal
 İnşa etmek — bir otomasyon, bir pano, bir entegrasyon oluşturmak — arayüzde açılmış bir
 oturuma ayrılmıştır: bir token satırları okur ve yazar, veritabanını değiştirmez.
 
+## Renkler ve simgeler
+
+Bir tablonun ve bir seçim listesinin her seçeneğinin bir rengi (`color`, `#rrggbb`) ve bir simgesi
+(`icon`, arayüzün çizdiği bir [Lucide](https://lucide.dev/icons/) simgesinin adı: `truck`,
+`circle-check`, `flame`…) vardır. `GET …/meta/bases/<base>` bunları veritabanı, tabloları ve
+alanlarının seçenekleri için döndürür.
+
+Bunları seçmek için, yapıyı değiştirebilen bir kişinin erişim token'ıyla
+(`POST /auth/session/access`) — bir entegrasyon token'ı veritabanını değiştirmez:
+
+| Yol | Gövde |
+|---|---|
+| `POST …/admin/bases/<base>/tables` | `{"label": "Tickets", "color": "#dc2626", "icon": "flame", "fields": […]}` |
+| `PATCH …/admin/bases/<base>/tables/<table>` | `{"color": "#2563eb", "icon": "inbox"}` — `color`, `icon`, `image` anahtarları birlikte gider: birini yazmak üçünü de değiştirir |
+| `POST …/admin/bases/<base>/tables/<table>/fields` | `{"label": "Priorité", "kind": "select", "options": [{"value": "haute", "color": "#dc2626", "icon": "flame"}, …]}` |
+| `PUT …/admin/bases/<base>/tables/<table>/fields/<champ>/options` | seçeneklerin tüm listesi, sırasıyla, her biri rengi ve simgesiyle |
+
+Bir ajan, bu değişiklikleri **önerdiği** [MCP sunucusu](/basedb/tr/integrations/mcp/#renkler-ve-simgeler)
+üzerinden geçer. Bir alanın seçilecek bir simgesi yoktur: arayüz, türünün simgesini çizer.
+
 ## Bir şablondan veritabanı oluşturmak
 
 Kurulan bir uygulama veritabanını **tek bir çağrıyla** oluşturur: sunucu şablonu uygular —
@@ -122,14 +167,16 @@ curl -X POST "http://localhost:3000/auth/introspect" \
 Değeri olmayan her token — bilinmeyen, süresi dolmuş, iptal edilmiş, oturumu kapanmış, başka bir
 çalışma alanına ait — nedenini söylemeden `{"active": false}` yanıtını verir. Yanıt canlı olarak
 okunur: bir çıkış hemen görülür. Bir entegrasyon token'ı için yanıt, açtığı veritabanını
-(`base`), erişimini (`read` ya da `write`) ve yüzeylerini de söyler.
+(`base`, canlı ortamı), tüm ortamlarını mı (`environments`: `all`) yoksa yalnızca birini mi
+(`one`) açtığını, erişimini (`read`, `write` ya da `delete`) ve yüzeylerini de söyler.
 
 ## Oluşturulan belgeler
 
 Her veritabanının bir **API ve MCP belgeleri** sayfası vardır: her tablo için uç noktaları,
 sütunları, cURL ve JavaScript örnekleri. Sayfa **izinlerinize göre filtrelenir** — iki okuyucu
 iki farklı sürüm görür —, **ekranınızın dilinde** yazılır ve OpenAPI 3.1 olarak da sunulur
-(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`). Adlar, yollar ve hata kodları tüm
-dillerde aynı kalır.
+(`/api/v1/<tenant>/meta/bases/<base>/openapi.json`); bu belge Bearer token'ını ve
+`X-Basedb-Environment` başlığını tanımlar. Adlar, yollar ve hata kodları tüm dillerde aynı
+kalır.
 
 ![Bir veritabanının oluşturulan belgeleri](../../../../assets/screens/tr/documentation-api.webp)

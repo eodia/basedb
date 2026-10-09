@@ -27,10 +27,15 @@ Crea en n8n una credencial **basedb API**:
 | **Instance URL** | la dirección donde abres basedb: `https://basedb.exemple.fr` |
 | **Workspace** | la referencia del espacio, la de las direcciones de la API (`/api/v1/<espacio>/…`): `t4z56fq`, salvo que la instancia fije `BASEDB_TENANT` |
 | **Token** | un **token de integración**: menú **⋯** de la base → **API y agentes** → **Tokens de API y MCP…** |
+| **Environment** | opcional: el entorno de la base en el que trabajar — `recette`, `production`… Vacío: la producción |
 
-Un token abre **una** base. Lee sus filas, las escribe si se ha creado con permiso de
-escritura, y nunca tiene más permisos que la persona que lo creó. Al guardarlo, n8n prueba la
-conexión y dice si el token se rechaza.
+Un token abre **una** base — todos sus entornos, o uno solo si se limitó al crearlo. Lee sus
+filas, las escribe si se ha creado con permiso de escritura, y nunca tiene más permisos que la persona
+que lo creó. Al guardarlo, n8n prueba la conexión y dice si el token se rechaza.
+
+Para trabajar en la producción y en la preproducción, crea dos credenciales con el mismo token, una
+con **Environment** vacío y otra con `recette`. Si no se elige ningún entorno, la lista de bases del
+nodo muestra cada entorno, con su nombre entre paréntesis.
 
 ## Leer y escribir: el nodo basedb
 

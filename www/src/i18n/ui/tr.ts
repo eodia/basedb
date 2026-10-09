@@ -1288,9 +1288,9 @@ export default {
 		agents: {
 			label: 'REST API · MCP · webhook’lar',
 			title: 'Yapay zeka ajanlarınız verilere erişir, {kasanın anahtarlarına değil.}',
-			lead: 'MCP sunucusu ajanlara on dört araç verir; REST API ise aynı verileri programlarınıza. Tek bir izin denetim noktası, aynı günlükler.',
+			lead: 'MCP sunucusu ajanlara on beş araç verir; REST API ise aynı verileri programlarınıza. Tek bir izin denetim noktası, aynı günlükler.',
 			bullets: [
-				'<strong>Veritabanı başına bir token</strong>: varsayılan olarak salt okunur, onu oluşturan kişiden asla daha fazla izne sahip değil.',
+				'<strong>Tüm veritabanı için tek bir token</strong>: canlı ve test ortamı dahil, varsayılan olarak salt okunur, onu oluşturan kişiden asla daha fazla izne sahip değil.',
 				'<strong>Bir ajan yalnızca sizin onayınızla siler</strong>, bir kerede bir satır, ve yapıyı değiştirmez: değişikliği önerir, bir kişi onaylar.',
 				'Her veritabanı için <strong>otomatik oluşturulan belgeler</strong>: izinlerinize göre filtrelenmiş, OpenAPI 3.1 belirtimiyle birlikte.',
 				'Her yazmada imzalı, sıralı ve yeniden denenen <strong>webhook’lar</strong>.',
@@ -1551,6 +1551,25 @@ export default {
 		title: 'basedb’de neler değişti',
 		intro: 'Her değişikliğin ayrıntısı <a href="https://github.com/eodia/basedb/commits/main">deponun geçmişinde</a>. Sırada ne var: <a href="/feuille-de-route/">yol haritası</a>.',
 		entries: {
+			oneToken: {
+				date: '2026-10-09',
+				title: 'Tüm veritabanı için tek token, ortamı siz seçin',
+				tag: 'Yeni',
+				items: [
+					'<strong>Tek bir token</strong>, bir veritabanının canlı ortamını, test ortamını ve ileride ekleyeceğiniz ortamları açar; oluşturulurken tek bir ortamla da sınırlanabilir. Mevcut token’lar ortamlarını korur. <a href="/fonctionnalites/environnements/#api-sdk-ve-mcp-üzerinden">API, SDK ve MCP üzerinden</a>',
+					'<strong>Ortam çağrıda seçilir</strong>: REST API’nin <code>X-Basedb-Environment</code> başlığı, SDK’nın <code>db.environment()</code> çağrısı, n8n’in Environment alanı, <code>…/mcp?environment=recette</code> adresi ya da bir MCP aracının <code>environment</code> argümanı. <a href="/integrations/mcp/#ortamı-seçme">Ortamı seçme</a>',
+					'<strong>Aktarıcısız bir ajan</strong>: token penceresi Claude Code’un HTTP yapılandırmasını ve <code>.mcp.json</code> dosyasını verir; aynı token üzerinde ortam başına bir sunucu tanımlanır, token ise bir ortam değişkeninde kalır.',
+				],
+			},
+			lookByAgents: {
+				date: '2026-10-09',
+				title: 'API ve MCP ile renkler ve simgeler',
+				tag: 'Yeni',
+				items: [
+					'<strong>Bir ajan önerdiklerine görünüş verir</strong>: <code>propose_create_table</code> içinde bir tablonun, <code>propose_add_field</code> içinde her seçeneğin rengi ve simgesi, ayrıca var olan bir tablo için yeni <code>propose_update_look</code> aracı. Tüm yapıda olduğu gibi bir kişi onaylar. <a href="/integrations/mcp/#renkler-ve-simgeler">Renkler ve simgeler</a>',
+					'<strong>API ile</strong> bir tablo rengi ve simgesiyle oluşturulur; <code>describe_base</code>, <code>describe_table</code> ve <code>/meta</code> bunları döndürür. <a href="/integrations/api-rest/#renkler-ve-simgeler">Renkler ve simgeler</a>',
+				],
+			},
 			agentDelete: {
 				date: '2026-10-02',
 				title: 'İzninizle silen ajanlar',

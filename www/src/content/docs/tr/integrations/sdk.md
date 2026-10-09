@@ -70,10 +70,25 @@ Var olmayan bir tablo, alan ya da seçim, program çalışmadan önce bile bir *
   dillerde aynı —, `status`'ü, `details`'i ve `requestId`'si. Bir yavaşlama isteği (`429`)
   basedb'nin belirttiği süre sonra yeniden denenir.
 
+## Ortamlar
+
+Birden çok [ortamı](/basedb/tr/fonctionnalites/environnements/) — canlı, test… — olan bir
+veritabanı, adlarını ve türlerini bir ortamdan diğerine korur. Tüm veritabanı için oluşturulmuş
+bir token ile `environment()` bir ortamı hedefler; aynı kod başka bir ortamda çalışır:
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+Oluşturucunun `environment` seçeneği, tüm istemci için aynı işi görür. SDK
+`X-Basedb-Environment` başlığını gönderir; başlık yoksa her veritabanı adı kendi ortamını belirtir
+(`b_t4z56fq_ventes` canlı ortamdır).
+
 ## Token
 
 Bir **entegrasyon token'ı** arayüzde oluşturulur: veritabanının **⋯** menüsü → **API ve
-ajanlar** → **API ve MCP token'ları…**. Bir veritabanını açar, satırlarını okur, yazma
-yetkisiyle oluşturulduysa yazar, onu oluşturan kişiden asla daha fazla izne sahip olmaz ve
-**yalnızca bunun için oluşturulduysa siler** (“Okuma, yazma ve silme”): aksi hâlde `delete()`
-reddedilir.
+ajanlar** → **API ve MCP token'ları…**. Bir veritabanını — tüm ortamlarıyla ya da yalnızca
+biriyle — açar, satırlarını okur, yazma yetkisiyle oluşturulduysa yazar, onu oluşturan kişiden
+asla daha fazla izne sahip olmaz ve **yalnızca bunun için oluşturulduysa siler** (“Okuma, yazma
+ve silme”): aksi hâlde `delete()` reddedilir.

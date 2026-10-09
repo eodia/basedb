@@ -413,11 +413,28 @@ export const DOCUMENTED_MCP_TOOLS: ReadonlyArray<{
     needs: 'propose',
   },
   {
+    name: 'propose_update_look',
+    summary: phrase(
+      'Proposer la couleur et le pictogramme d’une table et des choix de ses listes — une personne décide.',
+    ),
+    needs: 'propose',
+  },
+  {
     name: 'get_proposal',
     summary: phrase('Relire une proposition du jeton et savoir ce qu’il en est advenu.'),
     needs: 'read',
   },
 ]
+
+/**
+ * The environment an example names: this base's own when it is not the production —
+ * the reader is looking at it —, otherwise a placeholder.
+ */
+const environmentExample = (base: ProjectedBase, t: Say): string =>
+  // A base described without its environment — a test's — is a production.
+  base.environment === undefined || base.environment.production
+    ? t('recette')
+    : base.environment.label
 
 /** Where the relay lives in a checkout, as the connection dialog also says it. */
 const relay = (t: Say): string => `<${t('dépôt basedb')}>/apps/mcp/dist/relay.js`
@@ -565,6 +582,8 @@ function agentSections(base: ProjectedBase, t: Say): DocSection[] {
   )
   const mintsTokens = base.baseActions.includes('manage_tokens')
   const token = t('<jeton>')
+  const environment = environmentExample(base, t)
+  const instance = `https://${t('votre-instance')}`
 
   const connect: DocSection = {
     id: 'mcp-connexion',
@@ -591,7 +610,7 @@ function agentSections(base: ProjectedBase, t: Say): DocSection[] {
       ...(mintsTokens
         ? [
             t(
-              'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton est limité à cette base, en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).',
+              'Dans l’interface, menu « ⋯ » de la base → **API et agents** → **Jetons API et MCP…**, accès **MCP** coché. Le jeton ouvre **toute la base, tous ses environnements** — production, recette… — ou un seul, si vous le limitez. Il est en **lecture seule** par défaut : l’écriture, et la suppression, se choisissent explicitement. Il n’est affiché qu’une fois, et se révoque depuis le même écran. Coché aussi pour l’**API REST**, le même jeton sert à un programme (voir « Authentification »).',
             ),
           ]
         : noTokenForYou(t)),
@@ -611,11 +630,42 @@ function agentSections(base: ProjectedBase, t: Say): DocSection[] {
       `### ${t('Déclarer le serveur dans le client')}`,
       '',
       t(
-        'Le client lance le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit — et l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`).',
+        'Un client qui parle MCP en HTTP — Claude Code, entre autres — vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Dans le fichier `.mcp.json` d’un projet, `${BASEDB_TOKEN}` est lu dans l’environnement : le jeton ne s’écrit pas dans le fichier. Le même jeton peut déclarer un serveur par environnement.',
+        { header: code(`Authorization: Bearer ${token}`) },
+      ),
+      '',
+      ...fence(
+        'json',
+        '.mcp.json',
+        JSON.stringify(
+          {
+            mcpServers: {
+              basedb: {
+                type: 'http',
+                url: `${instance}/mcp`,
+                headers: { Authorization: 'Bearer ${BASEDB_TOKEN}' },
+              },
+              [`basedb-${environment}`]: {
+                type: 'http',
+                url: `${instance}/mcp?environment=${encodeURIComponent(environment)}`,
+                headers: { Authorization: 'Bearer ${BASEDB_TOKEN}' },
+              },
+            },
+          },
+          null,
+          2,
+        ).split('\n'),
+      ),
+      '',
+      `### ${t('Client sans HTTP : le relais')}`,
+      '',
+      t(
+        'Un client qui ne lance que des programmes locaux (stdio) passe par le **relais** `relay.js`, qui transporte ses messages jusqu’au serveur. Il lit le jeton dans la variable que nomme `--token-env` — `BASEDB_MCP_TOKEN` si rien n’est dit —, l’adresse du serveur dans `--url` (ou `BASEDB_MCP_URL`), et l’environnement dans `--environment` (ou `BASEDB_MCP_ENVIRONMENT`).',
       ),
       '',
       ...fence('bash', 'Claude Code', [
-        `claude mcp add basedb -- node ${relay(t)} --url "$BASEDB_MCP_URL" --token-env BASEDB_TOKEN`,
+        `claude mcp add basedb -- node ${relay(t)} --url "${instance}/mcp" --token-env BASEDB_TOKEN`,
+        `claude mcp add basedb-${environment} -- node ${relay(t)} --url "${instance}/mcp" --token-env BASEDB_TOKEN --environment ${environment}`,
       ]),
       '',
       ...fence(
@@ -626,13 +676,7 @@ function agentSections(base: ProjectedBase, t: Say): DocSection[] {
             mcpServers: {
               basedb: {
                 command: 'node',
-                args: [
-                  relay(t),
-                  '--url',
-                  `https://${t('votre-instance')}/mcp`,
-                  '--token-env',
-                  'BASEDB_TOKEN',
-                ],
+                args: [relay(t), '--url', `${instance}/mcp`, '--token-env', 'BASEDB_TOKEN'],
               },
             },
           },
@@ -641,17 +685,36 @@ function agentSections(base: ProjectedBase, t: Say): DocSection[] {
         ).split('\n'),
       ),
       '',
-      `### ${t('Sans relais')}`,
+      t(
+        'Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.',
+      ),
+      '',
+      `### ${t('Choisir l’environnement')}`,
       '',
       t(
-        'Un client qui parle MCP en HTTP vise directement l’adresse du serveur, `…/mcp`, avec l’en-tête {header}. Un jeton n’est accepté que sur les accès cochés à sa création : un jeton « MCP » seul est refusé par l’API REST, et inversement.',
-        { header: code(`Authorization: Bearer ${token}`) },
+        'Une base peut avoir plusieurs environnements — production, recette, développement —, chacun avec ses tables et ses lignes. Un jeton de toute la base les ouvre tous ; l’environnement se choisit à l’appel, du plus large au plus précis :',
+      ),
+      '',
+      `- ${t(
+        '**Le nom de la base**, sans rien d’autre : {base} est la production, et chaque environnement garde aussi son propre nom.',
+        { base: code(base.name) },
+      )}`,
+      `- ${t('**L’adresse du serveur** : {address} — un serveur déclaré par environnement.', {
+        address: code(`…/mcp?environment=${environment}`),
+      })}`,
+      `- ${t(
+        '**L’argument `environment`** de chaque outil qui nomme une base, pour un seul appel : {example}.',
+        { example: code(`{"base": "…", "environment": "${environment}"}`) },
+      )}`,
+      '',
+      t(
+        'Un environnement se nomme par son badge, sans tenir compte des majuscules ni des accents, ou `production`. Un environnement que la base n’a pas répond `RESOURCE_NOT_FOUND`.',
       ),
       '',
       `### ${t('Vérifier')}`,
       '',
       t(
-        'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée et ses droits effectifs.',
+        'Demandez à l’agent d’appeler `whoami` : il rend la personne qui a créé le jeton, la base de sa portée, les environnements qu’il ouvre (`scope.available`) et ses droits effectifs.',
       ),
     ].join('\n'),
   }
@@ -695,6 +758,9 @@ function agentSections(base: ProjectedBase, t: Say): DocSection[] {
         'Pour faire évoluer la structure : `propose_create_table` ou `propose_add_field`, puis `get_proposal` pour suivre la décision.',
       )}`,
       `- ${t(
+        'Pour l’apparence : `color` et `icon` dans `propose_create_table` et dans les choix de `propose_add_field`, ou `propose_update_look` pour une table qui existe.',
+      )}`,
+      `- ${t(
         'Pour supprimer : `get_record` d’abord, pour être sûr de la ligne, puis `delete_record` — qui la rend dans sa réponse ; `restore_record` la ramène.',
       )}`,
       '',
@@ -710,6 +776,12 @@ function agentSections(base: ProjectedBase, t: Say): DocSection[] {
       `- ${t(
         'Pas de suppression, pas de renommage, pas de relation en cascade (`MCP_CASCADE_FORBIDDEN`).',
       )}`,
+      '',
+      `### ${t('Couleurs et pictogrammes')}`,
+      '',
+      t(
+        'Une table et chaque choix d’une liste ont une couleur et un pictogramme, comme dans l’application. `color` est une couleur `#rrggbb` ; `icon` est le nom d’un pictogramme parmi ceux que l’application dessine — le schéma de l’outil les énumère. Une clé omise garde ce qui est en place, `null` l’efface. `describe_base` et `describe_table` rendent l’apparence actuelle.',
+      ),
       '',
       `### ${t('Ce qui n’existe pas')}`,
       '',
@@ -1069,7 +1141,7 @@ export function toDocumentation(
       `### ${t('Jeton d’intégration')}`,
       '',
       t(
-        'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.',
+        'Un programme — script, synchronisation, autre application — présente un **jeton d’intégration**, qui commence par `bdb_`. Il ne vaut que pour cette base — tous ses environnements, ou un seul ; il lit, crée et modifie s’il a été créé en écriture, et **ne supprime que s’il a été créé pour cela** ; il n’a jamais plus de droits que la personne qui l’a créé, recoupés à chaque appel. L’administration, la console SQL et l’IA lui restent fermées.',
       ),
       '',
       ...(base.baseActions.includes('manage_tokens')
@@ -1088,6 +1160,22 @@ export function toDocumentation(
         '',
         `curl "$BASEDB_URL${prefix}/meta/bases" \\`,
         '  -H "Authorization: Bearer $BASEDB_TOKEN"',
+      ]),
+      '',
+      `### ${t('Environnement')}`,
+      '',
+      t(
+        'Un jeton créé pour toute la base ouvre tous ses environnements. Le chemin nomme la base — {base} est la production — et l’en-tête {header} choisit l’environnement ; `?environment=` fait de même pour un client qui ne pose pas d’en-tête. Sans l’un ni l’autre, c’est l’environnement que nomme la base.',
+        {
+          base: code(base.name),
+          header: code(`X-Basedb-Environment: ${environmentExample(base, t)}`),
+        },
+      ),
+      '',
+      ...fence('bash', 'cURL', [
+        `curl "$BASEDB_URL${prefix}/meta/bases/${base.name}" \\`,
+        '  -H "Authorization: Bearer $BASEDB_TOKEN" \\',
+        `  -H "X-Basedb-Environment: ${environmentExample(base, t)}"`,
       ]),
       '',
       ...callout(

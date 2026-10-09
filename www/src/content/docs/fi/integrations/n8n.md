@@ -27,10 +27,16 @@ Luo n8n:ssä **basedb API**-tunniste:
 | **Instance URL** | osoite, jossa avaat basedb:n: `https://basedb.exemple.fr` |
 | **Workspace** | työtilan tunniste, se, jota API:n osoitteet käyttävät (`/api/v1/<työtila>/…`): `t4z56fq`, paitsi jos instanssi asettaa `BASEDB_TENANT`:n |
 | **Token** | **integraatiotunnus**: tietokannan **⋯**-valikko → **API ja agentit** → **API- ja MCP-tunnukset…** |
+| **Environment** | valinnainen: tietokannan ympäristö, jossa työskentelet – `recette`, `production`… Tyhjänä: tuotanto |
 
-Tunnus avaa **yhden** tietokannan. Se lukee sen rivejä, kirjoittaa niitä, jos se on luotu
-kirjoitusoikeuksin, eikä sillä ole koskaan enempää oikeuksia kuin sen luoneella henkilöllä.
-Tallennettaessa n8n kokeilee yhteyttä ja kertoo, jos tunnus hylätään.
+Tunnus avaa **yhden** tietokannan – kaikki sen ympäristöt tai vain yhden, jos se on rajattu
+luotaessa. Se lukee sen rivejä, kirjoittaa niitä, jos se on luotu kirjoitusoikeuksin, eikä sillä ole
+koskaan enempää oikeuksia kuin sen luoneella henkilöllä. Tallennettaessa n8n kokeilee yhteyttä ja
+kertoo, jos tunnus hylätään.
+
+Jos haluat työskennellä sekä tuotannossa että testiympäristössä, luo kaksi tunnistetta samalla
+tunnuksella: toisessa **Environment** on tyhjä, toisessa `recette`. Kun ympäristöä ei ole valittu,
+solmun tietokantaluettelo näyttää jokaisen ympäristön, sen nimi suluissa.
 
 ## Lukeminen ja kirjoittaminen: solmu basedb
 

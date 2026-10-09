@@ -73,10 +73,26 @@ bevor das Programm läuft.
   allen Sprachen —, `status`, `details` und `requestId`. Eine Bitte, langsamer zu senden
   (`429`), wird nach der von basedb angegebenen Frist erneut versucht.
 
+## Die Umgebungen
+
+Eine Datenbank mit mehreren [Umgebungen](/basedb/de/fonctionnalites/environnements/) – Produktion,
+Staging … – behält ihre Namen und ihre Typen von einer Umgebung zur anderen. Mit einem Token, das für
+die ganze Datenbank angelegt wurde, zielt `environment()` auf eine Umgebung, wobei derselbe Code
+anderswo läuft:
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+Die Option `environment` des Konstruktors tut dasselbe für den ganzen Client. Das SDK sendet den
+Header `X-Basedb-Environment`; ohne ihn bezeichnet jeder Datenbankname seine eigene Umgebung
+(`b_t4z56fq_ventes` ist die Produktion).
+
 ## Das Token
 
 Ein **Integrationstoken** wird in der Oberfläche angelegt: Menü **⋯** der Datenbank →
-**API und Agenten** → **API- und MCP-Token …**. Es öffnet eine Datenbank, liest ihre Zeilen,
-schreibt sie, wenn es mit Schreibrecht angelegt wurde, hat nie mehr Berechtigungen als die
-Person, die es angelegt hat, und **löscht nur, wenn es dafür angelegt wurde** („Lesen, Schreiben
-und Löschen“): Andernfalls wird `delete()` abgelehnt.
+**API und Agenten** → **API- und MCP-Token …**. Es öffnet eine Datenbank — alle ihre Umgebungen oder
+nur eine —, liest ihre Zeilen, schreibt sie, wenn es mit Schreibrecht angelegt wurde, hat nie mehr
+Berechtigungen als die Person, die es angelegt hat, und **löscht nur, wenn es dafür angelegt wurde**
+(„Lesen, Schreiben und Löschen“): Andernfalls wird `delete()` abgelehnt.

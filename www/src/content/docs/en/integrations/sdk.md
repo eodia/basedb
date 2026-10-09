@@ -71,10 +71,25 @@ runs.
   language —, `status`, `details` and `requestId`. A request to slow down (`429`) is retried
   after the delay basedb indicates.
 
+## Environments
+
+A base that has several [environments](/basedb/en/fonctionnalites/environnements/) — production,
+staging… — keeps its names and its types from one environment to the next. With a token created
+for the whole base, `environment()` targets an environment, the same code running elsewhere:
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+The `environment` option of the constructor does the same for the whole client. The SDK sends the
+`X-Basedb-Environment` header; without it, each base name designates its own environment
+(`b_t4z56fq_ventes` is production).
+
 ## The token
 
 An **integration token** is created in the interface: the base’s **⋯** menu → **API and
-agents** → **API and MCP tokens…**. It opens one base, reads its rows, writes them if it was
-created with write access, never has more permissions than the person who created it, and
-**only deletes if it was created for that** (“Read, write and delete”): otherwise `delete()`
-is refused.
+agents** → **API and MCP tokens…**. It opens one base — all its environments, or just one —,
+reads its rows, writes them if it was created with write access, never has more permissions than
+the person who created it, and **only deletes if it was created for that** (“Read, write and
+delete”): otherwise `delete()` is refused.

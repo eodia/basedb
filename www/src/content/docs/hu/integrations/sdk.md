@@ -73,10 +73,25 @@ Egy nem létező tábla, mező vagy választás **típushiba**, még mielőtt a 
   ugyanaz –, `status`, `details` és `requestId`. Egy lassításra kérő válasz (`429`) a basedb
   által jelzett várakozás után újrapróbálkozik.
 
+## Környezetek
+
+Egy adatbázis, amelynek több [környezete](/basedb/hu/fonctionnalites/environnements/) van — éles,
+teszt… —, a neveit és a típusait környezetről környezetre megtartja. Az egész adatbázisra létrehozott
+tokennel az `environment()` egy környezetet céloz meg, ugyanazzal a kóddal, amely máshol fut:
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+A konstruktor `environment` opciója ugyanezt teszi az egész klienssel. Az SDK elküldi az
+`X-Basedb-Environment` fejlécet; nélküle minden adatbázisnév a saját környezetét jelöli
+(a `b_t4z56fq_ventes` az éles).
+
 ## A token
 
 Egy **integrációs token** a felületen jön létre: az adatbázis **⋯** menüje → **API és
-ügynökök** → **API- és MCP-tokenek…**. Egy adatbázist nyit meg, olvassa a sorait, írja is, ha
-íráshoz jött létre, sosincs több joga, mint annak a személynek, aki létrehozta, és **csak akkor
-töröl, ha erre jött létre** („Olvasás, írás és törlés”): egyébként a `delete()` meghívása
-elutasításra kerül.
+ügynökök** → **API- és MCP-tokenek…**. Egy adatbázist nyit meg — az összes környezetével, vagy
+csak egyet —, olvassa a sorait, írja is, ha íráshoz jött létre, sosincs több joga, mint annak a
+személynek, aki létrehozta, és **csak akkor töröl, ha erre jött létre** („Olvasás, írás és
+törlés”): egyébként a `delete()` meghívása elutasításra kerül.

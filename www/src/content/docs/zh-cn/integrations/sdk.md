@@ -59,6 +59,17 @@ for await (const ligne of opportunites.all({
 - **关联**读取为 `{ id, display }`，写入时使用关联行的 `_id`；`links: 'id'` 只读取 `_id`。
 - **拒绝**是一个 `BasedbError`：它的 `code`——每种原因对应一个稳定的值，在所有语言中相同——、`status`、`details` 和 `requestId`。请求过快（`429`）会在 basedb 给出的延迟之后自动重试。
 
+## 环境
+
+如果数据库有多个[环境](/basedb/zh-cn/fonctionnalites/environnements/)——生产、预发布……——那么各个环境之间的名称和类型保持不变。使用为整个数据库创建的令牌时，`environment()` 可以指向某个环境，同样的代码即可在其他环境中运行：
+
+```ts
+const recette = db.environment('recette')
+await recette.base('b_t4z56fq_ventes').table('opportunites').first()
+```
+
+构造函数的 `environment` 选项对整个客户端起同样的作用。SDK 会发送请求头 `X-Basedb-Environment`；不带它时，每个数据库名称各自指向自己的环境（`b_t4z56fq_ventes` 是生产环境）。
+
 ## 令牌
 
-**集成令牌**在界面中创建：打开数据库的 **⋯** 菜单 → **API 与智能体** → **API 和 MCP 令牌…**。它能打开一个数据库，读取其中的行，如果创建时选择了可写就能写入，权限永远不会超过创建它的人，并且**只有在专门为删除而创建时才会删除**（“读写和删除”）：否则 `delete()` 会被拒绝。
+**集成令牌**在界面中创建：打开数据库的 **⋯** 菜单 → **API 与智能体** → **API 和 MCP 令牌…**。它能打开一个数据库（其所有环境，或仅一个环境），读取其中的行，如果创建时选择了可写就能写入，权限永远不会超过创建它的人，并且**只有在专门为删除而创建时才会删除**（“读写和删除”）：否则 `delete()` 会被拒绝。

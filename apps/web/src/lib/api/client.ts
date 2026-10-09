@@ -1367,6 +1367,8 @@ export type TokenSurface = 'rest' | 'mcp'
 /** An integration token as the administration shows it: never its secret. */
 /** What a token may do on its base's rows: read; read and write; or all that, and delete. */
 export type TokenAccess = 'read' | 'write' | 'delete'
+/** Every environment of the base, chosen per request — or the one environment it was made in. */
+export type TokenEnvironments = 'all' | 'one'
 
 export interface ApiToken {
   readonly id: string
@@ -1374,6 +1376,8 @@ export interface ApiToken {
   /** The eight characters after `bdb_`, enough to recognize a token. */
   readonly prefix: string
   readonly base_id: string | null
+  /** `all`: every environment of the base (`base_id` is its production); `one`: `base_id` alone. */
+  readonly environments: TokenEnvironments
   readonly access: TokenAccess
   readonly surfaces: readonly string[]
   readonly created_at: string
@@ -1528,6 +1532,18 @@ export interface UserData {
   readonly provenance: 'user_data' | 'system'
 }
 
+/** A choice of a list in a proposal: its label as data, its look as the kernel checked it. */
+export interface ProposedChoice extends UserData {
+  readonly color?: string | null
+  readonly icon?: string | null
+}
+
+/** A look in a proposal: a key absent is left as it is, `null` clears it. */
+export interface ProposedLook {
+  readonly color?: string | null
+  readonly icon?: string | null
+}
+
 /** A table named in a proposal: its physical name first, its label as data. */
 export interface ProposalTable {
   readonly physical: string
@@ -1555,16 +1571,19 @@ export interface Proposal {
   readonly summary_params: {
     readonly table_label?: UserData
     readonly table_description?: UserData
+    /** `create_table`: its fields; `set_look`: the lists whose choices change look. */
     readonly fields?: ReadonlyArray<{
       readonly label: UserData
-      readonly kind: UserData
-      readonly description: UserData
+      readonly kind?: UserData
+      readonly description?: UserData
+      readonly options?: readonly ProposedChoice[]
     }>
+    readonly look?: ProposedLook
     readonly field_label?: UserData
     readonly field_description?: UserData
     readonly kind?: UserData
     readonly table?: ProposalTable
-    readonly options?: readonly UserData[]
+    readonly options?: readonly ProposedChoice[]
     readonly source_table?: ProposalTable
     readonly target_table?: ProposalTable
     readonly on_delete?: UserData
@@ -2895,6 +2914,8 @@ export const api = {
     readonly surfaces: readonly TokenSurface[]
     /** 1 to 365 days, or `null`: no expiry. */
     readonly expiresInDays: number | null
+    /** Every environment of the base (the default), or the one `base` names. */
+    readonly environments?: TokenEnvironments
   }) =>
     data<ApiToken & { readonly secret: string }>(`${v1()}/admin/tokens`, {
       method: 'POST',
@@ -2904,6 +2925,7 @@ export const api = {
         access: request.access,
         surfaces: request.surfaces,
         expires_in_days: request.expiresInDays,
+        environments: request.environments ?? 'all',
       }),
     }),
 

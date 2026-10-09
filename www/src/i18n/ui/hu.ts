@@ -1284,9 +1284,9 @@ export default {
 		agents: {
 			label: 'REST API · MCP · webhookok',
 			title: 'Az MI-ügynökei az adatokat kapják meg, {nem a kulcsot mindenhez.}',
-			lead: 'Az MCP-szerver tizennégy eszközt ad az ügynököknek; a REST API ugyanazokat az adatokat a programjainak. Egyetlen jogosultság-ellenőrzési pont, ugyanazok a naplók.',
+			lead: 'Az MCP-szerver tizenöt eszközt ad az ügynököknek; a REST API ugyanazokat az adatokat a programjainak. Egyetlen jogosultság-ellenőrzési pont, ugyanazok a naplók.',
 			bullets: [
-				'<strong>Adatbázisonként egy token</strong>, alapértelmezés szerint csak olvasható, és soha nem kap több jogosultságot, mint a létrehozója.',
+				'<strong>Egyetlen token az egész adatbázishoz</strong>, az éles és a teszt környezetet is beleértve, alapértelmezés szerint csak olvasható, és soha nem kap több jogosultságot, mint a létrehozója.',
 				'<strong>Az ügynök csak az Ön jóváhagyásával töröl</strong>, egyszerre egy sort, és nem módosítja a struktúrát: javaslatot tesz, egy ember jóváhagyja.',
 				'<strong>Generált dokumentáció</strong> minden adatbázishoz, az Ön jogosultságai szerint szűrve, OpenAPI 3.1-specifikációval.',
 				'<strong>Webhookok</strong> minden írásnál: aláírva, sorrendben, újrapróbálva.',
@@ -1536,6 +1536,25 @@ export default {
 		title: 'Mi változott a basedb-ben',
 		intro: 'Minden változás részletei <a href="https://github.com/eodia/basedb/commits/main">a tároló előzményeiben</a> találhatók. Ami ezután jön: az <a href="/feuille-de-route/">ütemterv</a>.',
 		entries: {
+			oneToken: {
+				date: '2026-10-09',
+				title: 'Egy token az egész adatbázishoz, a környezet tetszés szerint',
+				tag: 'Új',
+				items: [
+					'<strong>Egyetlen token</strong> megnyitja egy adatbázis éles és teszt környezetét, valamint a későbbi környezeteit; a létrehozásakor egyetlenre is korlátozható. A meglévő tokenek megtartják a környezetüket. <a href="/fonctionnalites/environnements/#api-sdk-és-mcp">API, SDK és MCP</a>',
+					'<strong>A környezet híváskor választható ki</strong>: a REST API <code>X-Basedb-Environment</code> fejléce, az SDK <code>db.environment()</code> hívása, az n8n Environment mezője, a <code>…/mcp?environment=recette</code> cím vagy egy MCP-eszköz <code>environment</code> argumentuma. <a href="/integrations/mcp/#környezet-kiválasztása">Környezet kiválasztása</a>',
+					'<strong>Közvetítő nélküli ügynök</strong>: a tokenablak megadja a Claude Code HTTP-konfigurációját és a <code>.mcp.json</code> fájlt, környezetenként egy szervert ugyanazon a tokenen, a token pedig egy környezeti változóban marad.',
+				],
+			},
+			lookByAgents: {
+				date: '2026-10-09',
+				title: 'Színek és ikonok az API-n és az MCP-n keresztül',
+				tag: 'Új',
+				items: [
+					'<strong>Az ügynök megjelenéssel is ellátja, amit javasol</strong>: egy tábla színe és ikonja a <code>propose_create_table</code>-ben, az egyes lehetőségeké a <code>propose_add_field</code>-ben, és az új <code>propose_update_look</code> eszköz egy meglévő táblához. Egy személy jóváhagyja, mint az egész struktúrát. <a href="/integrations/mcp/#színek-és-ikonok">Színek és ikonok</a>',
+					'<strong>Az API-n</strong> egy tábla a színével és az ikonjával hozható létre; a <code>describe_base</code>, a <code>describe_table</code> és a <code>/meta</code> visszaadja őket. <a href="/integrations/api-rest/#színek-és-ikonok">Színek és ikonok</a>',
+				],
+			},
 			agentDelete: {
 				date: '2026-10-02',
 				title: 'Ügynökök, amelyek törölnek, ha Ön megengedi',

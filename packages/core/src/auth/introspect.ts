@@ -38,6 +38,8 @@ export interface Introspection {
   readonly iat?: number
   /** For an integration token: the base it opens (its id), what it may do, its doors. */
   readonly base?: string | null
+  /** `all`: every environment of that base (`base` is its production); `one`: `base` alone. */
+  readonly environments?: 'all' | 'one'
   readonly access?: 'read' | 'write' | 'delete'
   readonly surfaces?: readonly string[]
 }
@@ -93,13 +95,14 @@ async function integrationToken(pools: Pools, secret: string, now: Date) {
     exec.query<{
       created_by: string
       base: string | null
+      all_environments: boolean
       can_write: boolean
       can_delete: boolean
       allowed_surfaces: string[]
       created_at: Date
       expires_at: Date | null
     }>(
-      `SELECT tk.created_by::text, tk.base_id::text AS base, tk.allowed_surfaces,
+      `SELECT tk.created_by::text, tk.base_id::text AS base, tk.all_environments, tk.allowed_surfaces,
               tk.created_at, tk.expires_at,
               EXISTS (SELECT 1 FROM _basedb.permission p
                        WHERE p.role_id = tk.role_id AND p.action IN ('create', 'update')) AS can_write,
@@ -154,6 +157,7 @@ export async function introspectToken(
       iat: seconds(found.created_at),
       ...(found.expires_at === null ? {} : { exp: seconds(found.expires_at) }),
       base: found.base,
+      environments: found.all_environments ? 'all' : 'one',
       access: found.can_delete ? 'delete' : found.can_write ? 'write' : 'read',
       surfaces: found.allowed_surfaces,
     }
