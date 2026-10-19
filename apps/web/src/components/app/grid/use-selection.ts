@@ -16,6 +16,9 @@ import { useCallback, useEffect, useRef } from 'react'
  *   Origine / Fin        bord de la ligne ; avec Ctrl, coin de la grille
  *   Ctrl + A             tout
  *   Ctrl + C             copie le rectangle en TSV
+ *   Ctrl + V             colle un texte tabulé depuis la cellule en haut à gauche (§2.4)
+ *   Entrée, F2, un signe ouvre l'édition ; sur plusieurs cellules, elle vaut pour toutes
+ *   Suppr, Retour arrière vide les cellules
  *   Échap                annule la sélection
  *
  * Two references rather than two states, and that is deliberate: the anchor and the
@@ -46,6 +49,17 @@ interface Options {
   /** True while a cell editor is open: every shortcut then belongs to the editor. */
   readonly editing: boolean
   readonly onCopy: () => void
+  /**
+   * The grid's own area. A key aimed at a button of the toolbar, or at a page that is not
+   * the grid, is not the grid's: Entrée there must press the button, not edit a cell.
+   */
+  readonly scope?: React.RefObject<HTMLElement | null>
+  /** A text pasted over the selection. */
+  readonly onPaste?: (text: string) => void
+  /** Entrée, F2 or a sign typed: starts editing the selection. True when it did. */
+  readonly onEdit?: (seed?: string) => boolean
+  /** Suppr or Retour arrière: empties the selection. True when it did. */
+  readonly onClear?: () => boolean
 }
 
 export function useCellSelection({
@@ -56,6 +70,10 @@ export function useCellSelection({
   pageJump,
   editing,
   onCopy,
+  scope,
+  onPaste,
+  onEdit,
+  onClear,
 }: Options) {
   const anchor = useRef<CellRef | null>(null)
   const cursor = useRef<CellRef | null>(null)
@@ -138,6 +156,42 @@ export function useCellSelection({
     }
   }, [])
 
+  /** True for what is typed into, or opened over, the grid: a key then is not the grid's. */
+  const isTyping = useCallback((target: HTMLElement | null) => {
+    return (
+      target !== null &&
+      (target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable ||
+        target.closest('[role="dialog"]') !== null)
+    )
+  }, [])
+
+  /** True when the event came from the grid, or from nowhere in particular (the page body). */
+  const fromGrid = useCallback(
+    (target: HTMLElement | null) => {
+      const area = scope?.current
+      if (area === undefined || area === null) return true
+      return target === null || target === document.body || area.contains(target)
+    },
+    [scope],
+  )
+
+  // Ctrl+V, the Edit menu, the context menu: all arrive as a `paste` event on the page.
+  useEffect(() => {
+    if (editing || onPaste === undefined) return
+    const handler = (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (selected.size === 0 || isTyping(target) || !fromGrid(target)) return
+      const text = e.clipboardData?.getData('text/plain')
+      if (text === undefined || text === '') return
+      e.preventDefault()
+      onPaste(text)
+    }
+    window.addEventListener('paste', handler)
+    return () => window.removeEventListener('paste', handler)
+  }, [editing, onPaste, selected, isTyping, fromGrid])
+
   useEffect(() => {
     if (editing) return
 
@@ -157,15 +211,7 @@ export function useCellSelection({
       // label or a password. The grid has no focus of its own to check against, so the
       // target's nature is what decides.
       const target = e.target as HTMLElement | null
-      if (
-        target !== null &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable ||
-          target.closest('[role="dialog"]') !== null)
-      ) {
-        return
-      }
+      if (isTyping(target)) return
 
       if (rowCount === 0 || columns.length === 0) return
 
@@ -192,6 +238,31 @@ export function useCellSelection({
         anchor.current = null
         cursor.current = null
         return
+      }
+
+      // Editing: Entrée and F2 open the editor, a sign typed opens it with that sign, and
+      // Suppr empties. Not with a modifier (Ctrl+S is the browser's), and not for a control
+      // of the grid that has its own use of the key (`data-grid-action`).
+      if (
+        selected.size > 0 &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        fromGrid(target) &&
+        target?.closest('[data-grid-action]') == null
+      ) {
+        if (e.key === 'Enter' || e.key === 'F2') {
+          if (onEdit?.() === true) e.preventDefault()
+          return
+        }
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+          if (onClear?.() === true) e.preventDefault()
+          return
+        }
+        if (e.key.length === 1) {
+          if (onEdit?.(e.key) === true) e.preventDefault()
+          return
+        }
       }
 
       if (!NAVIGATION.has(e.key)) return
@@ -258,7 +329,20 @@ export function useCellSelection({
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [rowCount, columns, selected, setSelected, pageJump, editing, onCopy, rectangle])
+  }, [
+    rowCount,
+    columns,
+    selected,
+    setSelected,
+    pageJump,
+    editing,
+    onCopy,
+    rectangle,
+    isTyping,
+    fromGrid,
+    onEdit,
+    onClear,
+  ])
 
   /** Drops the selection — called when the underlying rows change. */
   const clear = useCallback(() => {

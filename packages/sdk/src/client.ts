@@ -380,6 +380,24 @@ export class Table<T extends TableTypes> {
     return answer.results.map((r) => r.id ?? '')
   }
 
+  /**
+   * Changes fields of many rows, all or none (1 000 at most): each row names its own
+   * fields, one refused and nothing is written. Answers the ids, in the order given.
+   */
+  async updateMany(
+    rows: ReadonlyArray<{ readonly id: string; readonly values: T['update'] }>,
+  ): Promise<string[]> {
+    const answer = await this.#db.json<{
+      results: Array<{ index: number; status: string; id?: string }>
+    }>('POST', `${this.#path}/batch`, {
+      json: {
+        atomic: true,
+        operations: rows.map(({ id, values }) => ({ op: 'update', id, data: values })),
+      },
+    })
+    return answer.results.map((r) => r.id ?? '')
+  }
+
   /** Changes fields of a row; a field left out stays as it is, `null` empties it. */
   update(id: string, values: T['update']): Promise<WithLinkIds<Read<T>>> {
     return this.#db.write('PATCH', `${this.#path}/${encodeURIComponent(id)}`, {

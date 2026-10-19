@@ -12,6 +12,13 @@ import { labelKey } from './operations.js'
  * Saved queries — chapter 11 §1.7: a SQL text kept under a base, where the navigation
  * lists it beneath the tables.
  *
+ * **A saved query is a SQL question** (migration 0023, chapter 18 §1): the same row of
+ * `_basedb.question`, of kind `sql`, drawn as a table until its author chooses another
+ * drawing. The routes of the queries stay for whoever wrote against them — deprecated, the
+ * interface no longer uses them — and read and write those rows: a query written through
+ * them is a question the interface opens, and the other way round. `_basedb.saved_query`
+ * is kept one more version for whoever wants to read what it held; nothing writes it.
+ *
  * Three audiences. `personal`: its author alone sees it, with the mere right to read the
  * base. `base`: whoever reads the base. `groups`: the members of chosen groups. Sharing
  * one is building the base, as a collaborative view is (05 §9): `manage_schema` on it.
@@ -76,29 +83,33 @@ interface Row extends Record<string, unknown> {
   readonly groups: ReadonlyArray<{ readonly id: string; readonly label: string }>
 }
 
+/** The SQL questions are the queries: those of kind `sql` that have not been deleted. */
+const SQL_QUESTION = `q.kind = 'sql' AND q.deleted_at IS NULL`
+
 const SELECT = `
-  SELECT q.id::text, q.base_id::text, q.label, q.description, q.statement, q.audience,
-         q.owner_id::text, u.display_name AS owner_name, q.updated_at::text,
+  SELECT q.id::text, q.base_id::text, q.label, q.description, q.query->>'sql' AS statement,
+         q.audience, q.created_by::text AS owner_id, u.display_name AS owner_name,
+         q.updated_at::text,
          coalesce((SELECT jsonb_agg(jsonb_build_object('id', r.id::text, 'label', r.label)
                                     ORDER BY r.label)
-                     FROM _basedb.saved_query_role qr
+                     FROM _basedb.question_role qr
                      JOIN _basedb.role r ON r.id = qr.role_id AND r.deleted_at IS NULL
-                    WHERE qr.query_id = q.id), '[]'::jsonb) AS groups
-    FROM _basedb.saved_query q
-    JOIN _basedb.app_user u ON u.id = q.owner_id`
+                    WHERE qr.question_id = q.id), '[]'::jsonb) AS groups
+    FROM _basedb.question q
+    JOIN _basedb.app_user u ON u.id = q.created_by`
 
 /**
  * Who may see a query of a base they see — the one rule, written once in SQL: its author,
  * then according to its audience. `$2` is the caller, `$3` whether they manage the base.
  */
 const VISIBLE = `
-  (q.owner_id = $2::uuid
+  (q.created_by = $2::uuid
    OR q.audience = 'base'
    OR (q.audience = 'groups'
        AND ($3::boolean OR EXISTS (
-             SELECT 1 FROM _basedb.saved_query_role qr
+             SELECT 1 FROM _basedb.question_role qr
                JOIN _basedb.role_member m ON m.role_id = qr.role_id
-              WHERE qr.query_id = q.id AND m.user_id = $2::uuid))))`
+              WHERE qr.question_id = q.id AND m.user_id = $2::uuid))))`
 
 function shaped(row: Row, ctx: RequestContext, manages: boolean): SavedQuery {
   const mine = row.owner_id === ctx.actor.id
@@ -154,8 +165,8 @@ export async function listQueries(
       const { manages } = await accessTo(exec, ctx, request.baseId)
       const rows = await exec.query<Row>(
         `${SELECT}
-          WHERE q.base_id = $1::uuid AND ${VISIBLE}
-          ORDER BY q.audience = 'personal', q.label_key`,
+          WHERE q.base_id = $1::uuid AND ${SQL_QUESTION} AND ${VISIBLE}
+          ORDER BY q.audience = 'personal', lower(q.label), q.created_at`,
         [request.baseId, ctx.actor.id, manages],
       )
       return rows.map((row) => shaped(row, ctx, manages))
@@ -183,11 +194,11 @@ export async function querySummaries(
     audience: QueryAudience
     owner_id: string
   }>(
-    `SELECT q.id::text, q.base_id::text, q.label, q.audience, q.owner_id::text
-       FROM _basedb.saved_query q
-      WHERE q.base_id = ANY($1::uuid[])
+    `SELECT q.id::text, q.base_id::text, q.label, q.audience, q.created_by::text AS owner_id
+       FROM _basedb.question q
+      WHERE q.base_id = ANY($1::uuid[]) AND ${SQL_QUESTION}
         AND ${VISIBLE.replace('$3::boolean', '(q.base_id = ANY($3::uuid[]))')}
-      ORDER BY q.audience = 'personal', q.label_key`,
+      ORDER BY q.audience = 'personal', lower(q.label), q.created_at`,
     [baseIds, ctx.actor.id, [...managed]],
   )
   for (const row of rows) {
@@ -267,18 +278,29 @@ export async function createQuery(
     }
     const groupIds = audience === 'groups' ? await checkGroups(exec, ctx, input.groupIds) : []
     await assertLabelFree(exec, ctx, request.baseId, label, audience, null)
+    // Drawn as a table until its author chooses another drawing.
     const [row] = await exec.query<{ id: string }>(
-      `INSERT INTO _basedb.saved_query
-         (base_id, label, label_key, description, statement, audience, owner_id, updated_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
+      `INSERT INTO _basedb.question
+         (base_id, label, description, kind, query, visualization, position, audience,
+          created_by, updated_by)
+       SELECT $1, $2, $3, 'sql', $4::jsonb, '{"type":"table"}'::jsonb,
+              coalesce(max(position), 0) + 1, $5, $6, $6
+         FROM _basedb.question WHERE base_id = $1 AND deleted_at IS NULL
        RETURNING id::text`,
-      [request.baseId, label, labelKey(label), description, statement, audience, ctx.actor.id],
+      [
+        request.baseId,
+        label,
+        description,
+        JSON.stringify({ kind: 'sql', sql: statement }),
+        audience,
+        ctx.actor.id,
+      ],
       'insert',
     )
     await writeGroups(exec, row.id, groupIds)
     await writeAudit(exec, ctx, {
       action: 'query.create',
-      objectKind: 'saved_query',
+      objectKind: 'question',
       objectId: row.id,
       objectName: label,
       baseId: request.baseId,
@@ -335,18 +357,19 @@ export async function updateQuery(
           ? await checkGroups(exec, ctx, input.groupIds)
           : null
 
+    // The text goes into the question's query; its variables, if it has any, stay.
     await exec.query(
-      `UPDATE _basedb.saved_query
-          SET label = $2, label_key = $3,
-              description = CASE WHEN $4::boolean THEN $5::text ELSE description END,
-              statement = coalesce($6::text, statement),
-              audience = $7,
-              updated_at = pg_catalog.clock_timestamp(), updated_by = $8
+      `UPDATE _basedb.question
+          SET label = $2,
+              description = CASE WHEN $3::boolean THEN $4::text ELSE description END,
+              query = CASE WHEN $5::text IS NULL THEN query
+                           ELSE jsonb_set(query, '{sql}', to_jsonb($5::text)) END,
+              audience = $6,
+              updated_at = pg_catalog.clock_timestamp(), updated_by = $7
         WHERE id = $1`,
       [
         current.id,
         nextLabel,
-        labelKey(nextLabel),
         setsDescription,
         description,
         statement ?? null,
@@ -357,7 +380,7 @@ export async function updateQuery(
     )
     if (groupIds !== null) {
       await exec.query(
-        'DELETE FROM _basedb.saved_query_role WHERE query_id = $1',
+        'DELETE FROM _basedb.question_role WHERE question_id = $1',
         [current.id],
         'delete',
       )
@@ -365,7 +388,7 @@ export async function updateQuery(
     }
     await writeAudit(exec, ctx, {
       action: 'query.update',
-      objectKind: 'saved_query',
+      objectKind: 'question',
       objectId: current.id,
       objectName: nextLabel,
       baseId: request.baseId,
@@ -390,11 +413,15 @@ export async function deleteQuery(
     if (!current.editable) {
       throw new BasedbError('ADMIN_REQUIRED', { details: { query: request.queryId } })
     }
-    await exec.query('DELETE FROM _basedb.saved_query WHERE id = $1', [current.id], 'delete')
-    // The text goes into the journal: deleting it is the one step that cannot be undone.
+    await exec.query(
+      'UPDATE _basedb.question SET deleted_at = pg_catalog.clock_timestamp() WHERE id = $1',
+      [current.id],
+      'update',
+    )
+    // The text goes into the journal, as a question's does.
     await writeAudit(exec, ctx, {
       action: 'query.delete',
-      objectKind: 'saved_query',
+      objectKind: 'question',
       objectId: current.id,
       objectName: current.label,
       baseId: request.baseId,
@@ -412,7 +439,7 @@ async function visibleRow(
 ): Promise<Row> {
   const [row] = await exec.query<Row>(
     `${SELECT}
-      WHERE q.id::text = $4 AND q.base_id = $1::uuid AND ${VISIBLE}`,
+      WHERE q.id::text = $4 AND q.base_id = $1::uuid AND ${SQL_QUESTION} AND ${VISIBLE}`,
     [request.baseId, ctx.actor.id, manages, request.queryId],
   )
   if (row === undefined) {
@@ -424,7 +451,7 @@ async function visibleRow(
 async function writeGroups(exec: Executor, queryId: string, groupIds: readonly string[]) {
   if (groupIds.length === 0) return
   await exec.query(
-    `INSERT INTO _basedb.saved_query_role (query_id, role_id)
+    `INSERT INTO _basedb.question_role (question_id, role_id)
      SELECT $1::uuid, g::uuid FROM unnest($2::text[]) AS g
      ON CONFLICT DO NOTHING`,
     [queryId, groupIds],
@@ -468,15 +495,18 @@ async function assertLabelFree(
   except: string | null,
   owner: string = ctx.actor.id,
 ): Promise<void> {
-  const clash = await exec.query<{ id: string }>(
-    `SELECT id FROM _basedb.saved_query
-      WHERE base_id = $1::uuid AND label_key = $2
-        AND ($3::uuid IS NULL OR id <> $3::uuid)
-        AND CASE WHEN $4 = 'personal' THEN audience = 'personal' AND owner_id = $5::uuid
-                 ELSE audience <> 'personal' END`,
-    [baseId, labelKey(label), except, audience, owner],
+  const same = await exec.query<{ label: string }>(
+    `SELECT q.label FROM _basedb.question q
+      WHERE q.base_id = $1::uuid AND ${SQL_QUESTION}
+        AND ($2::uuid IS NULL OR q.id <> $2::uuid)
+        AND CASE WHEN $3 = 'personal' THEN q.audience = 'personal' AND q.created_by = $4::uuid
+                 ELSE q.audience <> 'personal' END`,
+    [baseId, except, audience, owner],
   )
-  if (clash.length > 0) throw new BasedbError('LABEL_DUPLICATE', { details: { label } })
+  const key = labelKey(label)
+  if (same.some((row) => labelKey(row.label) === key)) {
+    throw new BasedbError('LABEL_DUPLICATE', { details: { label } })
+  }
 }
 
 function checkLabel(value: unknown): string {

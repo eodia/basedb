@@ -29,7 +29,8 @@ import { useEffect, useRef } from 'react'
  * One chart, drawn by echarts — only the pieces the dashboards use, rendered in SVG: crisp
  * text at any zoom, and light enough for a dashboard of twenty cards. The options come
  * whole from `lib/analytics/charts.ts`; this only draws them, follows its box's size, and
- * hands a click back.
+ * hands a click back — a right click too, on a mark or in the band of its category: the
+ * browser's own menu then gives way to the one the screen opens.
  */
 
 echarts.use([
@@ -60,15 +61,18 @@ export function registerMap(name: string, geo: unknown): void {
 export function EChart({
   option,
   onClick,
+  onContextMenu,
   onBandClick,
   className,
   label,
 }: {
   readonly option: EChartsOption
   readonly onClick?: (event: ECElementEvent) => void
+  /** A right click on a mark. */
+  readonly onContextMenu?: (event: ECElementEvent) => void
   /**
-   * A click beside the marks, in the band of a category: its rank on the axis — `y` for
-   * horizontal bars. A thin bar is a small target; its whole band is not.
+   * A click — or a right click — beside the marks, in the band of a category: its rank on
+   * the axis — `y` for horizontal bars. A thin bar is a small target; its whole band is not.
    */
   readonly onBandClick?: {
     readonly axis: 'x' | 'y'
@@ -82,6 +86,8 @@ export function EChart({
   const chart = useRef<echarts.ECharts | null>(null)
   const click = useRef(onClick)
   click.current = onClick
+  const menu = useRef(onContextMenu)
+  menu.current = onContextMenu
   const band = useRef(onBandClick)
   band.current = onBandClick
 
@@ -91,9 +97,21 @@ export function EChart({
     const instance = echarts.init(element, undefined, { renderer: 'svg' })
     chart.current = instance
     instance.on('click', (event) => click.current?.(event as ECElementEvent))
-    instance.getZr().on('click', (event) => {
+    instance.on('contextmenu', (event) => {
+      const open = menu.current
+      if (open === undefined) return
+      ;(event.event?.event as unknown as MouseEvent | undefined)?.preventDefault()
+      // The tooltip would cover the menu.
+      instance.dispatchAction({ type: 'hideTip' })
+      open(event as ECElementEvent)
+    })
+    // The band of the category under the pointer, for a click or a right click beside the marks.
+    const inBand = (
+      event: { target?: unknown; offsetX: number; offsetY: number; event: unknown },
+      rightClick: boolean,
+    ) => {
       const current = band.current
-      // A mark answers through `click`; only the empty band is read here.
+      // A mark answers through `click` and `contextmenu`; only the empty band is read here.
       if (current === undefined || (event.target !== undefined && event.target !== null)) return
       const point = [event.offsetX, event.offsetY]
       if (!instance.containPixel({ gridIndex: 0 }, point)) return
@@ -101,9 +119,15 @@ export function EChart({
       const index = Array.isArray(values) ? values[current.axis === 'x' ? 0 : 1] : values
       const native = event.event as unknown as MouseEvent
       if (typeof index === 'number' && Number.isFinite(index)) {
+        if (rightClick) {
+          native.preventDefault()
+          instance.dispatchAction({ type: 'hideTip' })
+        }
         current.handle(Math.round(index), { x: native.clientX, y: native.clientY })
       }
-    })
+    }
+    instance.getZr().on('click', (event) => inBand(event, false))
+    instance.getZr().on('contextmenu', (event) => inBand(event, true))
     const observer = new ResizeObserver(() => instance.resize())
     observer.observe(element)
     return () => {

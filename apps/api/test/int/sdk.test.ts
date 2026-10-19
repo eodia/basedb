@@ -157,6 +157,14 @@ describe('the SDK, against the API', () => {
       Array.from({ length: 5 }, (_, i) => ({ titre: `Lot ${i}`, montant: String(i * 100) })),
     )
     expect(ids).toHaveLength(5)
+
+    // Many rows changed at once, a different field on each.
+    const changed = await deals.updateMany([
+      { id: ids[0] as string, values: { titre: 'Lot 0' } },
+      { id: ids[1] as string, values: { montant: '150' } },
+    ])
+    expect(changed).toEqual([ids[0], ids[1]])
+    expect(Number((await deals.get(ids[1] as string)).montant)).toBe(150)
     const titles: string[] = []
     for await (const row of deals.all({
       filter: filter`titre starts_with ${'Lot'}`,
@@ -172,7 +180,7 @@ describe('the SDK, against the API', () => {
       filter: filter`titre starts_with ${'Lot'}`,
     })
     expect(summary.total).toBe(5)
-    expect(Number(Object.values(summary.values)[0])).toBe(1000)
+    expect(Number(Object.values(summary.values)[0])).toBe(1050)
   })
 
   it('comments, deposits a file and serves it through its signed link', async () => {

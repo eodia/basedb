@@ -29,8 +29,8 @@ taltion `/data` Tiedosto- ja Kuva-kenttien tiedostoille.
 | Tunniste | Sisältö |
 |---|---|
 | `latest` | viimeisin julkaistu versio |
-| `0.7` | viimeisin 0.7.x-versio |
-| `0.7.1` | täsmälleen tämä versio |
+| `0.8` | viimeisin 0.8.x-versio |
+| `0.8.0` | täsmälleen tämä versio |
 
 ## Palvelut
 

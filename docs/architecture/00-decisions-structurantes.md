@@ -314,14 +314,25 @@ Cela fige la surface nécessaire sans rien implémenter, et rend écrivable le t
 non-régression qui garantit qu'aucune requête ne se construit hors du point
 d'application unique.
 
-### A21 — Pas de point d'entrée d'export en v1
+### A21 — Pas de point d'entrée d'export en v1 — levée
 
-Aucune route d'export. Un flux illimité percerait le plafond que toutes les autres
-règles construisent. Le chapitre 05 est corrigé : l'export n'est pas un chemin de
-lecture ordinaire, il n'existe pas.
+*Décision d'origine.* Aucune route d'export. Un flux illimité percerait le plafond que
+toutes les autres règles construisent. L'extraction de volume se fait par la pagination
+par curseur, qui est bornée, paginée et soumise aux mêmes permissions.
 
-L'extraction de volume se fait par la pagination par curseur, qui est bornée,
-paginée et soumise aux mêmes permissions.
+**Levée par le propriétaire du produit.** La raison : l'utilisateur doit pouvoir **sortir
+toutes ses données** — la table entière, ou la vue entière avec son filtre, son tri et ses
+colonnes —, pas seulement la page affichée. Une base dont on ne peut pas repartir avec ses
+lignes sans écrire un programme n'est pas ouverte, et c'est la promesse du produit.
+
+*Ce que la décision protégeait est tenu autrement, par construction et non par l'absence de
+la route.* Le flux n'est plus illimité ni hors-piste : `GET /data/{base}/{table}/export`
+(chapitre 08 §3.7) parcourt la table **par le chemin de lecture d'une liste** — page à page,
+par curseur, avec la même décision, le même masque de champs, le même prédicat de lignes —,
+si bien qu'aucun second masque n'existe à tenir à jour. Il est plafonné (un million de lignes,
+refusé avant le premier octet), limité en simultanéité par acteur, borné en durée, soumis au
+`statement_timeout` à chaque page, réservé aux jetons (jamais le cookie seul) et journalisé
+dans `audit_log` (`records.export`). La pagination par curseur reste la voie des programmes.
 
 ### A22 — La purge conserve la ligne de catalogue
 

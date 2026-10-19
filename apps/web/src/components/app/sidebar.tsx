@@ -85,9 +85,7 @@ import {
   Puzzle,
   Search,
   Shield,
-  SquareTerminal,
   Table2,
-  Terminal,
   Trash2,
   TriangleAlert,
   Upload,
@@ -128,21 +126,12 @@ export type Section =
   | 'settings'
 
 /** What a base's menu asks of the page: each makes the base the current one first. */
-export type BaseIntent =
-  | 'open'
-  | 'structure'
-  | 'history'
-  | 'doc'
-  | 'sql'
-  | 'question'
-  | 'question-sql'
-  | 'new-table'
-  | 'new-sql-view'
+export type BaseIntent = 'open' | 'structure' | 'history' | 'doc' | 'question' | 'new-table'
 
 /** What a table's menu asks of the page. */
-export type TableIntent = 'open' | 'import' | 'edit' | 'delete'
+export type TableIntent = 'open' | 'structure' | 'import' | 'edit' | 'delete'
 
-/** What the menu of a SQL view, or of a saved query, asks of the page. */
+/** What the menu of a SQL view, or of a SQL question listed as a query, asks of the page. */
 export type SavedIntent = 'open' | 'edit' | 'delete'
 
 interface Props {
@@ -164,7 +153,7 @@ interface Props {
   readonly onTable: (base: string, table: string, intent: TableIntent) => void
   /** A SQL view of a base, opened or edited (chapter 11 §1.8). */
   readonly onSqlView: (base: string, view: SqlViewSummary, intent: SavedIntent) => void
-  /** A saved query of a base, opened, or renamed and shared (chapter 11 §1.7). */
+  /** A SQL question of a base, listed under its tables, opened, or renamed and shared (§1.7). */
   readonly onQuery: (base: string, query: QuerySummary, intent: SavedIntent) => void
   readonly onSection: (section: Section) => void
   readonly onAdmin: (tab: AdminTab) => void
@@ -239,14 +228,14 @@ export function Sidebar({
     section === 'data' && active?.kind === 'table' && active.table !== null
       ? { base: active.base, table: active.table }
       : null
-  // The SQL view, or the saved query, the active tab shows — ticked like a table.
+  // The SQL view, or the SQL question, the active tab shows — ticked like a table.
   const activeSaved =
     section !== 'data' || active === null
       ? null
       : active.kind === 'sqlview' && active.sqlViewId !== null
         ? { base: active.base, id: active.sqlViewId }
-        : active.kind === 'sql' && active.queryId !== null
-          ? { base: active.base, id: active.queryId }
+        : active.kind === 'question' && active.questionId !== null
+          ? { base: active.base, id: active.questionId }
           : null
 
   // One line per base, whatever its number of environments (chapter 14): the line shows
@@ -303,14 +292,14 @@ export function Sidebar({
 
   // Declared once and placed twice: under their group titles in full, one after the other
   // in the reduced column, which has no room for titles.
-  // No « Nouvelle requête SQL » here: the tab bar's « + » opens one, and a base's menu too.
+  // No « Nouvelle question » here: the tab bar's « + » opens one, and a base's menu too.
   // Nor « Structure » and « Historique » in full: the base's own menu holds them. The
   // reduced column has no tree, hence no such menu, and keeps them.
   const screenItems = (
     <>
       <Item
         icon={Layers}
-        label={$t('Structure')}
+        label={$t('Tables et champs')}
         active={section === 'structure'}
         onClick={() => onSection('structure')}
         disabled={base === null}
@@ -755,24 +744,10 @@ function BaseMenuEntries({
         <Workflow className="size-4" />
         {$t('Nouvelle question')}
       </M.Item>
-      <M.Item onSelect={() => onIntent('question-sql')}>
-        <SquareTerminal className="size-4" />
-        {$t('Nouvelle question SQL')}
-      </M.Item>
-      <M.Item onSelect={() => onIntent('sql')}>
-        <Terminal className="size-4" />
-        {$t('Requête SQL')}
-      </M.Item>
-      {manages && (
-        <M.Item onSelect={() => onIntent('new-sql-view')} disabled={busy}>
-          <Eye className="size-4" />
-          {$t('Nouvelle vue SQL…')}
-        </M.Item>
-      )}
       <M.Separator />
       <M.Item onSelect={() => onIntent('structure')}>
         <Layers className="size-4" />
-        {$t('Structure')}
+        {$t('Tables et champs')}
       </M.Item>
       <M.Item onSelect={() => onIntent('history')}>
         <Clock className="size-4" />
@@ -911,9 +886,9 @@ function BaseNode({
   readonly tables: ProjectBase['tables']
   /** Its SQL views, listed among the tables, each marked as a view. */
   readonly sqlViews: readonly SqlViewSummary[]
-  /** Its saved queries, listed beneath the tables. */
+  /** Its SQL questions, listed beneath the tables as its queries. */
   readonly queries: readonly QuerySummary[]
-  /** The SQL view or saved query the active tab shows, by its id. */
+  /** The SQL view or SQL question the active tab shows, by its id. */
   readonly activeSaved: string | null
   readonly onSqlView: (view: SqlViewSummary, intent: SavedIntent) => void
   readonly onQuery: (query: QuerySummary, intent: SavedIntent) => void
@@ -1268,6 +1243,9 @@ function BasesMenu({
  * « Supprimer » leads to the same confirmation as the structure screen — the table is
  * renamed, not destroyed, and the dialog says so — and « Importer » to the assistant that
  * the grid's toolbar also opens: a verb reachable only from a menu is one nobody finds.
+ * « Modifier la table et ses champs » opens the base's structure on THIS table — its name,
+ * its look, its description and its fields are all changed there, so there is no second
+ * entry for a dialog that would do a part of it. Who may not change it reads it there.
  */
 function TableRow({
   table,
@@ -1304,10 +1282,14 @@ function TableRow({
                 <Ellipsis className="size-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-52">
+            <DropdownMenuContent align="start" className="w-64">
               <DropdownMenuItem onSelect={() => onIntent('open')}>
                 <FolderOpen className="size-4" />
                 {$t('Ouvrir')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => onIntent('structure')}>
+                {manages ? <Pencil className="size-4" /> : <Layers className="size-4" />}
+                {manages ? $t('Modifier la table et ses champs') : $t('Voir ses champs')}
               </DropdownMenuItem>
               {imports && (
                 <DropdownMenuItem onSelect={() => onIntent('import')}>
@@ -1317,10 +1299,6 @@ function TableRow({
               )}
               {manages && (
                 <>
-                  <DropdownMenuItem onSelect={() => onIntent('edit')}>
-                    <Pencil className="size-4" />
-                    {$t('Modifier la table…')}
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => onIntent('delete')} variant="destructive">
                     <Trash2 className="size-4" />
@@ -1333,10 +1311,14 @@ function TableRow({
         </div>
       </ContextMenuTrigger>
 
-      <ContextMenuContent className="w-52">
+      <ContextMenuContent className="w-64">
         <ContextMenuItem onSelect={() => onIntent('open')}>
           <FolderOpen className="size-4" />
           {$t('Ouvrir')}
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={() => onIntent('structure')}>
+          {manages ? <Pencil className="size-4" /> : <Layers className="size-4" />}
+          {manages ? $t('Modifier la table et ses champs') : $t('Voir ses champs')}
         </ContextMenuItem>
         {imports && (
           <ContextMenuItem onSelect={() => onIntent('import')}>
@@ -1346,10 +1328,6 @@ function TableRow({
         )}
         {manages && (
           <>
-            <ContextMenuItem onSelect={() => onIntent('edit')}>
-              <Pencil className="size-4" />
-              {$t('Modifier la table…')}
-            </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem onSelect={() => onIntent('delete')} variant="destructive">
               <Trash2 className="size-4" />
@@ -1363,7 +1341,7 @@ function TableRow({
 }
 
 /**
- * A SQL view among the tables, or a saved query beneath them: the click opens it, the
+ * A SQL view among the tables, or a SQL question beneath them: the click opens it, the
  * « ⋯ » and the right-click open it or change it. A small mark at the right says what it
  * is — a view, whatever look it wears; a query, and who sees it —, and gives its place to
  * the « ⋯ » on hover.

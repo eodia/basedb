@@ -1968,8 +1968,8 @@ export default {
 						text: 'Furnizor, model și cheie pentru fiecare spațiu de lucru, fără a trece prin mediul API-ului.',
 					},
 					mail: {
-						title: 'Notificări și invitații prin e-mail',
-						text: 'Mențiunile, răspunsurile și desemnările sosesc azi în basedb, iar invitațiile printr-un link pe care îl trimiteți chiar dumneavoastră; vor putea pleca și prin e-mail.',
+						title: 'Invitații prin e-mail',
+						text: 'Notificările pleacă deja prin e-mail către cine le cere; o invitație rămâne un link pe care îl transmiți singur. Va putea pleca și ea prin e-mail.',
 					},
 				},
 			},

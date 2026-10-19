@@ -108,6 +108,8 @@ const BY_SQLSTATE: ReadonlyMap<string, ErrorCode> = new Map<string, ErrorCode>([
   ['23514', 'VALUE_OUT_OF_CONSTRAINT'],
   ['23502', 'REQUIRED_VALUE_MISSING'],
   ['22001', 'VALUE_TOO_LONG'],
+  // An entry too large for an index — a text far beyond what a unique field indexes.
+  ['54000', 'VALUE_TOO_LONG'],
   ['22003', 'VALUE_OUT_OF_RANGE'],
   ['22P02', 'VALUE_INVALID'],
   ['40001', 'SERIALIZATION_CONFLICT'],

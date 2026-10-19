@@ -1967,8 +1967,8 @@ export default {
 						text: 'Leverantör, modell och nyckel per arbetsyta, utan att gå via API:ets miljö.',
 					},
 					mail: {
-						title: 'Aviseringar och inbjudningar via e-post',
-						text: 'Omnämnanden, svar och tilldelningar kommer i dag in i basedb, och inbjudningar som en länk du skickar själv; de ska också kunna skickas via e-post.',
+						title: 'Inbjudningar via e-post',
+						text: 'Aviseringar skickas redan via e-post till den som ber om det; en inbjudan är fortfarande en länk du själv skickar vidare. Den ska också kunna skickas via e-post.',
 					},
 				},
 			},

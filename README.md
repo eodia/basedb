@@ -74,7 +74,7 @@ est historisé. Vos données restent exploitables sans basedb.
   courbes, aires, tableaux croisés, cartes… — sur une grille en onglets, sous des filtres qui
   pilotent les cartes qu’on leur relie ; un clic sur un point ouvre ce qu’il représente ; un lien
   public ou réservé aux membres le partage, intégrable à un autre site.
-- **Du SQL pour chacun, avec ses propres droits** : des requêtes enregistrées sous les tables —
+- **Du SQL pour chacun, avec ses propres droits** : des questions SQL enregistrées sous les tables —
   pour soi, pour toute la base ou pour des groupes — et de vraies **vues SQL** PostgreSQL rangées
   parmi elles, que `psql` lit aussi. PostgreSQL lui-même tient chacun à ses tables et à ses champs.
 - **Des droits par groupe**, sur un projet, une base ou une table, jusqu’au champ ; un

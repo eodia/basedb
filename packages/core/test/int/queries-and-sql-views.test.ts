@@ -222,6 +222,60 @@ describe('SQL with the reader’s own rights', () => {
   })
 })
 
+describe('the row cap, read through a cursor', () => {
+  const series = 'SELECT g AS n FROM generate_series(1, 1200) AS g ORDER BY g'
+  const capped = (userId: string, sql: string, limit: number) =>
+    ctxOf(userId).then((ctx) => kernel.runSql(ctx, { baseId: rh.baseId, sql, limit }))
+
+  it('returns the rows asked for, and counts the others', async () => {
+    for (const userId of [admin.actor.id, alice]) {
+      const page = await capped(userId, series, 10)
+      expect(page.rows.map((r) => r.n)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+      expect(page.truncated).toBe(true)
+      expect(page.rowCount).toBe(1200)
+      expect(page.columns).toEqual([{ name: 'n', dataType: 'integer' }])
+    }
+    const whole = await capped(admin.actor.id, 'SELECT 1 AS a, 2 AS a', 10)
+    expect(whole.truncated).toBe(false)
+    expect(whole.rowCount).toBe(1)
+    expect(Object.keys(whole.rows[0] ?? {})).toHaveLength(2)
+  })
+
+  it('reads a query past its comments, and its WITH', async () => {
+    const page = await capped(
+      admin.actor.id,
+      '-- les premiers\n/* trois */ (WITH s AS (SELECT g FROM generate_series(1, 50) g) SELECT g FROM s ORDER BY g);',
+      3,
+    )
+    expect(page.rows.map((r) => r.g)).toEqual([1, 2, 3])
+    expect(page.rowCount).toBe(50)
+  })
+
+  it('runs as before what a cursor cannot hold', async () => {
+    const both = await capped(
+      admin.actor.id,
+      "UPDATE employes SET poste = poste WHERE nom = 'Dupont'; SELECT nom FROM employes ORDER BY nom",
+      1,
+    )
+    expect(both.rows).toEqual([{ nom: 'Dupont' }])
+    expect(both.truncated).toBe(true)
+    const writes = await capped(
+      admin.actor.id,
+      "WITH w AS (UPDATE employes SET poste = poste WHERE nom = 'Martin' RETURNING nom) SELECT nom FROM w",
+      5,
+    )
+    expect(writes.rows).toEqual([{ nom: 'Martin' }])
+  })
+
+  it('places a mistake in the text as it was typed', async () => {
+    const error = await failure(capped(admin.actor.id, 'SELECT nom, inconnue FROM employes', 5))
+    expect(error.code).toBe('REQUEST_INVALID')
+    expect((error.details as { position: number }).position).toBe(13)
+    const read = await failure(capped(alice, 'SELECT nom, inconnue FROM employes', 5))
+    expect((read.details as { position: number }).position).toBe(13)
+  })
+})
+
 describe('saved queries', () => {
   it('keeps a personal query to its author', async () => {
     const asAlice = await ctxOf(alice)
@@ -314,6 +368,94 @@ describe('saved queries', () => {
 
 const sql = (text: string) => ({ kind: 'sql' as const, sql: text })
 
+describe('saved queries, as SQL questions', () => {
+  it('written through the queries, are questions the interface opens — and the other way round', async () => {
+    const asAlice = await ctxOf(alice)
+    const query = await kernel.createQuery(asAlice, {
+      baseId: rh.baseId,
+      input: {
+        label: 'Mes embauches',
+        statement: 'SELECT nom FROM employes',
+        description: 'Les nouveaux',
+      },
+    })
+    // Same identifier, a SQL question drawn as a table, its author's.
+    const question = await kernel.getQuestion(asAlice, { baseId: rh.baseId, id: query.id })
+    expect(question).toMatchObject({
+      kind: 'sql',
+      label: 'Mes embauches',
+      description: 'Les nouveaux',
+      audience: 'personal',
+      mine: true,
+      editable: true,
+      query: { kind: 'sql', sql: 'SELECT nom FROM employes' },
+      visualization: { type: 'table' },
+    })
+    const listed = await kernel.listProjects(asAlice)
+    const base = listed.flatMap((p) => p.bases).find((b) => b.id === rh.baseId)
+    expect(base?.queries.map((q) => q.id)).toContain(query.id)
+
+    // The text changed through the query is the question's, and its variables stay.
+    await kernel.updateQuestion(asAlice, {
+      baseId: rh.baseId,
+      id: query.id,
+      input: {
+        query: {
+          kind: 'sql',
+          sql: 'SELECT nom FROM employes WHERE nom = {{nom}}',
+          variables: [{ name: 'nom', label: 'Nom', type: 'text' }],
+        },
+      },
+    })
+    const changed = await kernel.updateQuery(asAlice, {
+      baseId: rh.baseId,
+      queryId: query.id,
+      input: { statement: 'SELECT nom, poste FROM employes WHERE nom = {{nom}}' },
+    })
+    expect(changed.statement).toBe('SELECT nom, poste FROM employes WHERE nom = {{nom}}')
+    expect((await kernel.getQuestion(asAlice, { baseId: rh.baseId, id: query.id })).query).toEqual({
+      kind: 'sql',
+      sql: 'SELECT nom, poste FROM employes WHERE nom = {{nom}}',
+      variables: [{ name: 'nom', label: 'Nom', type: 'text' }],
+    })
+
+    // A SQL question written as one is a query to the old routes; a built one is not.
+    const written = await kernel.createQuestion(asAlice, {
+      baseId: rh.baseId,
+      input: { label: 'Écrite en question', query: sql('SELECT 2') },
+    })
+    expect(
+      (await kernel.getQuery(asAlice, { baseId: rh.baseId, queryId: written.id })).statement,
+    ).toBe('SELECT 2')
+    const built = await kernel.createQuestion(asAlice, {
+      baseId: rh.baseId,
+      input: { label: 'Construite', query: { kind: 'builder', source: employes } },
+    })
+    expect(await codeOf(kernel.getQuery(asAlice, { baseId: rh.baseId, queryId: built.id }))).toBe(
+      'RESOURCE_NOT_FOUND',
+    )
+    expect(
+      (await kernel.listQueries(asAlice, { baseId: rh.baseId })).map((q) => q.id),
+    ).not.toContain(built.id)
+
+    // Deleting the query deletes the question, and nothing ever wrote the old table.
+    await kernel.deleteQuery(asAlice, { baseId: rh.baseId, queryId: query.id })
+    expect(await codeOf(kernel.getQuestion(asAlice, { baseId: rh.baseId, id: query.id }))).toBe(
+      'RESOURCE_NOT_FOUND',
+    )
+    await kernel.deleteQuestion(asAlice, { baseId: rh.baseId, id: written.id })
+    await kernel.deleteQuestion(asAlice, { baseId: rh.baseId, id: built.id })
+    const client = new pg.Client({ connectionString: container.getConnectionUri() })
+    await client.connect()
+    try {
+      const { rows } = await client.query('SELECT 1 FROM _basedb.saved_query')
+      expect(rows).toEqual([])
+    } finally {
+      await client.end()
+    }
+  })
+})
+
 describe('questions of one’s own', () => {
   it('keeps a personal question to its author', async () => {
     const asAlice = await ctxOf(alice)
@@ -322,10 +464,13 @@ describe('questions of one’s own', () => {
       input: { label: 'Mes relances', query: sql('SELECT nom FROM employes') },
     })
     expect(mine).toMatchObject({ audience: 'personal', mine: true, editable: true, kind: 'sql' })
+    // The saved queries of the base are questions too (migration 0023): what Alice keeps to
+    // herself is hers, and the manager does not see it.
+    const own = (await kernel.listQuestions(asAlice, { baseId: rh.baseId })).filter((q) => q.mine)
+    expect(own.map((q) => q.label)).toEqual(['Mes relances'])
     expect(
-      (await kernel.listQuestions(asAlice, { baseId: rh.baseId })).map((q) => q.label),
-    ).toEqual(['Mes relances'])
-    expect(await kernel.listQuestions(admin, { baseId: rh.baseId })).toEqual([])
+      (await kernel.listQuestions(admin, { baseId: rh.baseId })).map((q) => q.id),
+    ).not.toContain(mine.id)
     // Sharing is building the base.
     expect(
       await codeOf(
@@ -345,7 +490,9 @@ describe('questions of one’s own', () => {
       ),
     ).toBe('ADMIN_REQUIRED')
     await kernel.deleteQuestion(asAlice, { baseId: rh.baseId, id: mine.id })
-    expect(await kernel.listQuestions(asAlice, { baseId: rh.baseId })).toEqual([])
+    expect(
+      (await kernel.listQuestions(asAlice, { baseId: rh.baseId })).filter((q) => q.mine),
+    ).toEqual([])
   })
 
   it('shares a question with the base, or with groups — the question, not its reach', async () => {
@@ -379,7 +526,12 @@ describe('questions of one’s own', () => {
 
     const asAlice = await ctxOf(alice)
     const seen = await kernel.listQuestions(asAlice, { baseId: rh.baseId })
-    expect(seen.map((q) => q.id).sort()).toEqual([shared.id, forLecteurs.id].sort())
+    // Alice sees the questions made for the base and for her group — and, as questions, the
+    // queries saved above for the same: a saved query is a SQL question.
+    const ids = seen.map((q) => q.id)
+    expect(ids).toContain(shared.id)
+    expect(ids).toContain(forLecteurs.id)
+    expect(ids).not.toContain(forPaie.id)
     expect(seen.every((q) => !q.editable)).toBe(true)
     expect(await codeOf(kernel.getQuestion(asAlice, { baseId: rh.baseId, id: forPaie.id }))).toBe(
       'RESOURCE_NOT_FOUND',
@@ -393,12 +545,13 @@ describe('questions of one’s own', () => {
       await codeOf(kernel.runQuestion(asAlice, { baseId: rh.baseId, question: shared.id })),
     ).toBe('REQUEST_INVALID')
 
-    // The navigation lists the saved queries, not the questions: those are the dashboards'.
+    // The navigation lists the SQL questions under the base, queries saved before included.
     const projects = await kernel.listProjects(asAlice)
     const base = projects.flatMap((p) => p.bases).find((b) => b.id === rh.baseId)
     const listed = base?.queries.map((q) => q.id) ?? []
-    expect(listed).not.toContain(shared.id)
-    expect(listed).not.toContain(forLecteurs.id)
+    expect(listed).toContain(shared.id)
+    expect(listed).toContain(forLecteurs.id)
+    expect(listed).not.toContain(forPaie.id)
 
     expect(await codeOf(kernel.listQuestions(await ctxOf(bob), { baseId: rh.baseId }))).toBe(
       'RESOURCE_NOT_FOUND',

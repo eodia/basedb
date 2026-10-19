@@ -11,13 +11,6 @@ import {
   ContextMenuShortcut,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { BaseEnvironment, Table } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
@@ -33,7 +26,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Eye, FileCode2, Plus, SquareTerminal, Table2, Terminal, Workflow, X } from 'lucide-react'
+import { Eye, Plus, SquareTerminal, Table2, Workflow, X } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 
 /**
@@ -49,8 +42,8 @@ import { useEffect, useMemo } from 'react'
  */
 
 interface Props {
-  /** A new question — built with the mouse, or in SQL —, or a SQL statement to run. */
-  readonly onNew: (kind: 'builder' | 'sql' | 'statement') => void
+  /** A new question: built with the mouse, or written in SQL — its own switch says which. */
+  readonly onNew: () => void
   /** The tables whose look a tab wears; a tab of a table not listed keeps the plain glyph. */
   readonly tables?: readonly Table[]
   /**
@@ -126,37 +119,19 @@ export function TabBar({ onNew, tables = [], environments }: Props) {
               />
             ))}
 
-            <DropdownMenu>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex shrink-0 items-center justify-center px-2.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                      aria-label={$t('Nouvel onglet')}
-                    >
-                      <Plus className="size-3.5" />
-                    </button>
-                  </DropdownMenuTrigger>
-                </TooltipTrigger>
-                <TooltipContent>{$t('Nouvel onglet')}</TooltipContent>
-              </Tooltip>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuItem onSelect={() => onNew('builder')}>
-                  <Workflow className="size-4" />
-                  {$t('Nouvelle question')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onNew('sql')}>
-                  <SquareTerminal className="size-4" />
-                  {$t('Nouvelle question SQL')}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => onNew('statement')}>
-                  <Terminal className="size-4" />
-                  {$t('Requête SQL')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={onNew}
+                  className="flex shrink-0 items-center justify-center px-2.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  aria-label={$t('Nouvelle question')}
+                >
+                  <Plus className="size-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{$t('Nouvelle question')}</TooltipContent>
+            </Tooltip>
           </div>
         </SortableContext>
       </DndContext>
@@ -193,23 +168,18 @@ function SortableTab({
     id: tab.id,
   })
 
-  // A table, a SQL view, a question — its chart, or how it is built —, a saved query, a
-  // statement being written.
+  // A table, a SQL view, a question — its chart, or how it is written.
   const chart = tab.question?.visualization?.type
   const Icon =
     tab.kind === 'table'
       ? Table2
       : tab.kind === 'sqlview'
         ? Eye
-        : tab.kind === 'question'
-          ? chart !== undefined && chart !== 'table'
-            ? VIZ_ICONS[chart]
-            : tab.question?.query?.kind === 'sql'
-              ? SquareTerminal
-              : Workflow
-          : tab.queryId !== null
-            ? FileCode2
-            : Terminal
+        : chart !== undefined && chart !== 'table'
+          ? VIZ_ICONS[chart]
+          : tab.question?.query?.kind === 'sql'
+            ? SquareTerminal
+            : Workflow
 
   return (
     <ContextMenu>

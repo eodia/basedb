@@ -19,8 +19,8 @@ partager une question demandent le niveau **Gestion**.
 
 Une question enregistrée est **personnelle** — vous seul la voyez —, à **toute la base** ou à
 **des groupes**. Son menu, d’un clic droit ou par **⋯**, l’ouvre dans un onglet à côté des
-tables, change son nom et son partage, ou la supprime. Le **+** de la barre d’onglets propose
-aussi **Nouvelle question** et **Nouvelle question SQL**.
+tables, change son nom et son partage, ou la supprime. Le **+** de la barre d’onglets ouvre
+une **Nouvelle question** : l’en-tête a une bascule **Éditeur visuel | SQL**.
 
 **Enregistrer**, dans l’en-tête d’une question, la garde ; une question que vous ne pouvez pas
 modifier propose à la place **Enregistrer une copie**, qui devient la vôtre. **⋯** (Plus

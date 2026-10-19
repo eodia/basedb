@@ -97,7 +97,7 @@ partir d'une position. Ce qui change est ce que l'interface cesse d'offrir :
 | Total exact | `count_is_capped` ; affichage « 100 000+ » |
 | Tri ou filtre non indexé | Refusé par le garde-fou de coût ; l'écran affiche le refus, la suggestion d'index et le tri indexé de repli |
 | Saut de page | N'existe pas, quel que soit le volume |
-| « Tout charger » | N'existe pas : pas de mode dégradé, pas de route d'export (A21) |
+| « Tout charger » | N'existe pas : pas de mode dégradé. La table entière se **sort** (« Exporter toute la vue », chapitre 08 §3.7, A21 levée), elle ne se charge pas à l'écran |
 
 ### 1.6 Les vues enregistrées
 
@@ -288,7 +288,7 @@ tri, sans rien permettre de modifier ; « Autoriser l'intégration » y ajoute l
   colonnes en lecture seule, une date et heure ou une personne (chapitre 04 §2.10). Elles
   sont **masquées tant qu'on ne les demande pas**, à l'inverse d'un champ, affiché tant
   qu'on ne le masque pas : présentes sur chaque table, elles ne sont voulues que sur
-  quelques-unes. Le menu des colonnes les propose à part, sous « Informations système ».
+  quelques-unes. Le menu « Affichage » les propose à part, sous « Informations système ».
   Une vue peut trier, filtrer, grouper (par auteur) et résumer sur elles, que tout lecteur
   de la table lit (A18) ; un formulaire ne les demande jamais. `_id` n'en est pas : un
   identifiant est pour les programmes, et la fiche le donne.
@@ -296,6 +296,45 @@ tri, sans rien permettre de modifier ; « Autoriser l'intégration » y ajoute l
 Tous ces réglages, sauf la recherche, font partie du `spec` d'une grille enregistrée
 (`group_by`, `summaries`, `color_field`, `color_rules`, `color_style`, `row_height`,
 `system_columns`).
+
+**La barre d'outils de la grille** garde en vue ce qui explique où se trouve une ligne :
+le sélecteur de vues, « Filtrer », « Grouper » et les pastilles du tri. Le reste de la
+présentation tient dans **un seul menu, « Affichage »** : la hauteur des lignes, les
+couleurs (un second panneau du même menu), les colonnes masquées à réafficher et les
+colonnes système à montrer. Le bouton du menu se teinte dès qu'un de ces réglages s'écarte
+du défaut, et compte les colonnes masquées.
+
+**Les boutons de la table.** Une table porte jusqu'à douze **boutons de barre d'outils**
+(`_basedb.table_button`, migration 0022), affichés après « Affichage » dans toutes ses
+grilles, pour quiconque lit la table ; qui détient `manage_schema` les règle au bas du menu
+« Affichage » (« Boutons de la barre », « Ajouter un bouton… »). Un bouton a un libellé,
+une couleur facultative et une action :
+
+- **Ouvrir une adresse** — `https://` ou `mailto:`, dans un nouvel onglet ; jamais un
+  script, comme le champ Bouton (chapitre 04).
+- **Lancer une automatisation**, sur une **cible choisie avec le bouton** :
+  - **les lignes cochées** — une exécution par ligne ; le bouton est grisé tant que rien
+    n'est coché, et il passe dans la barre de sélection, qui remplace la barre d'outils dès
+    qu'une ligne l'est ;
+  - **toutes les lignes de la vue** — son filtre et sa recherche compris ; une
+    confirmation est toujours demandée ;
+  - **aucune ligne** — une seule exécution, pour une automatisation sans table (planifiée,
+    ou appelée par son adresse).
+
+  Les deux premières cibles demandent une automatisation déclenchée **par un bouton** sur
+  cette table, la troisième une automatisation **sans table** ; le serveur le vérifie à
+  l'écriture. Appuyer ne demande que de lire la table : comme pour un champ Bouton,
+  l'automatisation agit avec l'autorité de sa propriétaire (chapitre 17), et la personne
+  ne choisit que le moment et des lignes qu'elle lit — `POST …/data/<base>/<table>/buttons/<id>/press`
+  relit la sélection ou la vue avec ses droits, une ligne qu'elle ne lit pas comptant
+  pour absente. **Un appui vaut un clic** (dix par minute et par personne) et lance au
+  plus 100 exécutions ; au-delà, ou au-delà de ce qu'il reste du budget horaire de
+  l'automatisation (`RUNS_PER_HOUR`), il est refusé **en entier** plutôt qu'appliqué à une
+  partie des lignes sans dire lesquelles. « Demander confirmation » ajoute la question à
+  toute autre cible.
+
+Les boutons ne suivent pas encore une table d'un environnement à l'autre, ni dans les
+modèles de base.
 
 **Modifiée, non enregistrée.** Changer le filtre, le tri ou les colonnes d'une vue
 enregistrée ne l'écrit pas : la barre dit « Vue modifiée » et offre « Enregistrer » —
@@ -308,23 +347,40 @@ pivot masqué — ou supprimé, ce qui doit se lire de même — fait dire à la
 peut pas être dessinée. Une vue dont le **filtre** cite un tel champ n'est pas montrée du
 tout : montrée sans filtre, elle montrerait plus qu'elle n'a été faite pour montrer.
 
-### 1.7 Le SQL de chacun, et les requêtes enregistrées
+### 1.7 Le SQL de chacun : une question SQL
 
-Un onglet SQL s'ouvre sur toute base qu'on voit — « Requête SQL », au « + » de la barre
-d'onglets ou dans le menu de la base. **Ce qu'il lit dépend de qui le lance**,
-et le résultat le dit :
+Du SQL s'écrit dans une **question** (chapitre 18 §1.8). « Nouvelle question » — au « + » de la
+barre d'onglets, dans le menu de la base, dans la palette Ctrl+K — ouvre un onglet dont
+l'en-tête porte une bascule **Éditeur visuel | SQL**. Il n'y a plus d'onglet « Requête SQL »
+ni de « Nouvelle question SQL » : la console et les requêtes enregistrées des versions
+d'avant sont ce mode SQL — le même éditeur (autocomplétion des tables et des champs, mise
+en forme, Maj+Alt+F), le panneau des variables de la question, le graphique. Passer de
+l'éditeur visuel au SQL est libre sur une question vide ; sur une question construite,
+l'éditeur demande d'abord, et de même dans l'autre sens : le SQL ne se convertit pas en
+étapes, ni les étapes en SQL.
 
-- qui gère la structure de la base (`manage_schema`) a la **console** : tout le schéma,
-  écritures comprises, sur le rôle `basedb_console` (chapitre 09 §1, exception assumée) ;
-- tout autre lecteur écrit du SQL **en lecture seule, avec ses propres droits** : sur un
-  rôle PostgreSQL qui lui est propre (`basedb_reader_<id>`), dont les `GRANT` sont, colonne
-  par colonne, le verdict du décideur au moment de l'appel. Une table qu'il ne lit pas
-  n'existe pas pour sa requête ; un champ masqué est une colonne absente de `SELECT *` et
-  refusée si on la nomme. Le résultat porte alors la pastille « Vos droits ».
+**Ce qu'une exécution lit dépend de qui la lance et de ce qu'elle est**, et l'éditeur le dit
+sous le texte :
 
-**Une requête s'enregistre** — « Enregistrer » dans la barre de l'onglet, ou « Enregistrer
-sous… » — et se range dans la navigation, sous les tables de sa base, rubrique
-« Requêtes » (`_basedb.saved_query`, chapitre 02). Trois portées, qu'une icône rappelle :
+- un **brouillon** — une question SQL pas encore enregistrée — de qui gère la structure de la
+  base (`manage_schema`) garde la **console** : tout le schéma, écritures et plusieurs
+  instructions comprises, sur le rôle `basedb_console` (chapitre 09 §1, exception assumée) ;
+  le texte sélectionné s'exécute seul. Quand l'exécution a écrit, elle le dit — un bandeau
+  « UPDATE · 6 lignes modifiées » au lieu du résultat — et un brouillon ne s'exécute jamais de
+  lui-même à l'ouverture d'un onglet : personne n'a décidé d'en lancer le texte pour de bon ;
+- toute autre exécution est **en lecture seule, avec les droits de la personne**, sur un rôle
+  PostgreSQL qui lui est propre (`basedb_reader_<id>`), dont les `GRANT` sont, colonne par
+  colonne, le verdict du décideur au moment de l'appel. C'est celle de tout lecteur qui ne
+  gère pas la base, d'un texte à variables `{{…}}` — fait pour être partagé, et filtré par un
+  tableau de bord — et de **toute question enregistrée, même par qui gère la base** : ce qu'on
+  partage ne doit pas pouvoir écrire le jour où quelqu'un l'ouvre. Une table qu'on ne lit pas
+  n'existe pas pour la requête ; un champ masqué est une colonne absente de `SELECT *` et
+  refusée si on la nomme.
+
+**Une question s'enregistre** — « Enregistrer » dans l'en-tête, qui demande son nom et sa
+portée, comme pour toute question — et une question SQL se range dans la navigation, sous les
+tables de sa base, rubrique « Requêtes » ; les questions construites se listent avec les
+tableaux de bord (§5.5) : chacune a une seule place. Trois portées, qu'une icône rappelle :
 
 | Portée | Qui la voit | Qui la crée ou la modifie |
 |---|---|---|
@@ -332,13 +388,21 @@ sous… » — et se range dans la navigation, sous les tables de sa base, rubri
 | Toute la base | quiconque voit la base | qui gère la structure de la base |
 | Des groupes | les membres des groupes choisis, et qui gère la base | qui gère la structure de la base |
 
-**Partager une requête partage son texte, jamais ce que son auteur lit** : chacun l'exécute
-avec ses propres droits, comme ci-dessus. Ouverte depuis la navigation, elle s'exécute
-aussitôt **en lecture seule** — personne n'a encore décidé d'en lancer le texte pour de
-bon, et une requête partagée peut contenir une écriture que son lecteur n'a pas lue ;
-« Exécuter » la lance ensuite telle qu'elle est. L'onglet retient la requête qu'il montre :
-un point signale un texte modifié depuis l'enregistrement, et « Enregistrer » l'y range si
-l'on peut la modifier, sinon propose d'en faire une nouvelle.
+**Partager une question SQL partage son texte, jamais ce que son auteur lit** : chacun
+l'exécute avec ses propres droits, comme ci-dessus. Ouverte depuis la navigation, elle
+s'exécute aussitôt, en lecture seule. L'onglet retient la question qu'il montre : « Modifiée »
+signale un texte changé depuis l'enregistrement, et « Enregistrer » l'y range si l'on peut la
+modifier, sinon propose d'en faire une copie. Pour qui gère la base, « Enregistrer » est
+aussi un menu : **« Enregistrer comme vue SQL… »** ouvre le dialogue d'une vue (§1.8) rempli
+du texte de la question.
+
+**Les requêtes enregistrées des versions d'avant sont des questions SQL** (migration 0023) :
+chacune est passée dans `_basedb.question`, de la sorte `sql`, **sous le même identifiant** —
+son texte, sa portée, son auteur, ses groupes, ses dates, montrée en tableau —, si bien que son
+adresse (`/bases/<base>/requetes/<id>`), un signet, un onglet resté ouvert la retrouvent, et
+qu'un onglet SQL d'un navigateur rouvre une question. L'ancienne table
+(`_basedb.saved_query`) reste une version, que plus rien n'écrit ; les routes `/queries` de
+l’API répondent encore, sur les mêmes lignes, et se disent dépréciées (chapitre 08 §1.4).
 
 ### 1.8 Les vues SQL
 
@@ -349,9 +413,9 @@ habillée comme elles — couleur, pictogramme ou image —, un petit œil à dr
 c'est une vue ; un onglet de vue montre ses lignes dans la grille, en lecture, avec
 « Actualiser ».
 
-Elle se crée par « Nouvelle vue SQL… » dans le menu de la base, ou « Créer une vue SQL… »
-depuis un onglet SQL, dont le texte devient sa définition ; construire une vue est
-construire la base : `manage_schema`. Le dialogue donne son libellé, son apparence, son nom
+Elle se crée depuis une question SQL — « Enregistrer comme vue SQL… », sous « Enregistrer »,
+dont le texte devient sa définition ; construire une vue est construire la base :
+`manage_schema`. Une vue existante se modifie depuis son menu et son onglet. Le dialogue donne son libellé, son apparence, son nom
 technique — tiré du libellé, alloué comme celui d'une table (chapitre 01) — et sa requête ;
 PostgreSQL refuse ce qu'il refuse, et l'éditeur pointe l'endroit.
 
@@ -481,6 +545,87 @@ cellule, un déplacement de carte ou de barre, une ligne créée ou supprimée, 
 un import. Ce n'est pas une seconde écriture déguisée : le serveur revient sur la
 transaction par l'historique, et refuse si quelqu'un a écrit depuis — l'écran le dit, au
 lieu d'écraser. Ctrl+Z dans un champ en cours de saisie reste celui du champ.
+
+Un collage, un remplissage de sélection ou une suppression de contenu sur plusieurs
+cellules (§2.4 bis) est **une seule étape** de cette pile, quel que soit le nombre de
+cellules : c'est une seule transaction côté serveur, une seule demande d'annulation.
+
+### 2.4 bis Écrire plusieurs cellules à la fois
+
+La grille écrit une plage comme un tableur : coller, saisir une valeur pour toutes les
+cellules sélectionnées, les vider. Tout passe par **le même lot de mises à jour**
+(`POST …/batch` d'opérations `update`, chapitre 08 §3.5) : une seule transaction, tout ou
+rien, un seul pas d'annulation. Rien de ce qui suit n'ouvre une seconde voie d'écriture : les
+masques de champs, le prédicat de lignes, la mise en forme des valeurs et les refus sont ceux
+du `PATCH` d'une ligne, par construction (une seule fonction de planification).
+
+**Coller (Ctrl+V, ⌘V, ou « Coller » du menu contextuel).** Quand une cellule ou une plage est
+sélectionnée et qu'aucune cellule n'est en cours de saisie. Le texte est lu comme un tableur
+l'écrit : colonnes séparées par une tabulation, lignes par `\r\n`, `\n` ou `\r` ; une cellule
+qui contient une tabulation, un retour à la ligne ou un guillemet est entre guillemets, ses
+guillemets doublés ; un guillemet n'ouvre une cellule qu'à son début (`5" large` est du texte) ;
+une ligne vide est une ligne d'une cellule vide, seul le dernier saut de ligne n'en est pas une.
+La copie (Ctrl+C) écrit la même convention — cellules citées, nombres et dates tels que la
+personne les lit, personnes par leur nom — pour que le va-et-vient avec un tableur, ou avec une
+autre grille, ne perde rien.
+
+- **Où ça tombe.** *Une seule valeur* sur plusieurs cellules les remplit toutes. Sinon le texte
+  tombe **à partir du coin haut gauche du rectangle sélectionné**, ligne à ligne et colonne à
+  colonne parmi les colonnes affichées, dans leur ordre. Ce qui dépasse la dernière colonne est
+  ignoré et compté.
+- **Lignes manquantes.** Un collage qui dépasse la dernière ligne chargée propose de **créer**
+  les lignes manquantes avec les valeurs collées (une seule question : *Créer / Ne pas créer /
+  Annuler*). Sans le droit de créer, elles sont ignorées et comptées. Les cellules vides d'une
+  ligne à créer ne créent rien, et une ligne qui n'aurait que des cellules vides n'est pas créée.
+  Les créations partent **avant** les modifications, dans le même pas d'annulation : ce qui peut
+  échouer pour une raison de structure (un champ obligatoire absent) échoue avant qu'une ligne
+  existante ait été touchée.
+- **Conversion par le type du champ**, comme si le texte était saisi dans la cellule — les
+  mêmes lecteurs que l'éditeur, pour que coller et taper donnent la même valeur :
+
+  | Type | Lu comme |
+  |---|---|
+  | Texte, adresse web, e-mail | Le texte, rogné ; l'e-mail vérifié (`mailto:` retiré) ; un texte riche prend des paragraphes, ou du HTML tel quel |
+  | Nombre | `1 234,5`, `1.234,5`, `1,234.5`, `12,50 €`, `12 %`, durée `1:30` ; une note entière dans ses étoiles |
+  | Date, date-heure | jour d'abord (`25/09/2026`) ou ISO ; une heure sans fuseau est celle du lecteur |
+  | Case à cocher | `oui/non`, `vrai/faux`, `true/false`, `1/0`, `x` |
+  | Liste de choix, choix multiple | Par **valeur ou libellé**, accents et casse ignorés ; plusieurs choix séparés par `;` ou `,`. Un libellé inconnu : la cellule est refusée |
+  | Relation, relation multiple | Par le **libellé de la ligne liée** (colonne d'affichage de la cible), ou par identifiant ; les lignes déjà chargées d'abord, puis une recherche serveur par libellé inconnu (500 au plus par collage). Deux lignes de même libellé : refusé, jamais choisi au hasard. Un libellé qui contient une virgule est cherché en entier avant d'être découpé |
+  | Personne | Nom, adresse ou identifiant ; un compte désactivé n'est pas attribué par un collage |
+  | Fichier, image, champ calculé, IA, bouton, colonne système | Jamais écrit : ignoré, avec sa raison |
+
+  Une cellule vide **vide** la cellule, comme dans un tableur ; un champ obligatoire la refuse
+  ici, avant l'envoi.
+- **Compte rendu.** Une notification donne le résultat — « 12 cellules collées », puis « 2
+  cellules ignorées » avec les raisons les plus fréquentes par colonne (« Statut : valeur
+  absente de la liste (2) ») — et offre *Annuler*. Ce que le serveur seul peut juger (valeur
+  en double, règle métier) fait échouer le collage entier : la bannière nomme la ligne et la
+  colonne (`details.index`), et rien n'est écrit.
+
+**Une valeur pour toute la plage.** Sur plusieurs cellules sélectionnées, *Entrée*, *F2* ou un
+signe tapé ouvre l'éditeur de la cellule active (la première de la sélection, en lecture
+ligne à ligne) et la valeur validée est écrite dans **toutes** les cellules sélectionnées,
+comme Ctrl+Entrée dans un tableur — même si elle est celle que la cellule active avait déjà.
+Pour un type qui s'édite avec un sélecteur (liste de choix, personne, relation, case, étoiles),
+l'éditeur est la boîte « Modifier un champ » (ci-dessous). *Suppr* et *Retour arrière* vident
+toute la sélection. Une plage qui mêle des types incompatibles (autre type, autres choix, autre
+table cible, autre format de nombre) n'est pas modifiée : la grille le dit. Les colonnes en
+lecture seule d'une plage sont ignorées et comptées. Sur une seule cellule, *Entrée* et *F2*
+commencent l'édition ; sur un sélecteur, ils l'ouvrent ; sur une case à cocher, ils la
+basculent.
+
+**Modifier un champ sur les lignes cochées.** La barre de sélection offre « Modifier un champ… »
+dès qu'une ligne est cochée et que la personne peut modifier la table : une petite boîte
+(champ, puis l'éditeur de la valeur — celui de la fiche —, « Appliquer » ou « Vider le champ »)
+qui écrit la valeur dans les lignes cochées.
+
+**Bornes.** 1 000 lignes par écriture (le plafond d'un lot, et celui d'une annulation :
+chapitre 16 §4.2). Le serveur ne reçoit que des valeurs déjà converties : il ne devine
+jamais un type.
+
+**Concurrence.** Comme le `PATCH` d'une ligne, le lot écrit sans `If-Match` : dernier
+écrivain gagne. Ce qui protège le travail d'un autre est l'annulation, qui **refuse** si une
+des cellules a été réécrite depuis (`REVISION_SUPERSEDED`), sans rien défaire du reste.
 
 ### 2.5 Créer et supprimer une ligne
 
@@ -752,24 +897,41 @@ l'a été.
 
 « Tableaux de bord », dans le bloc de la base ouverte en bas de la barre latérale, ouvre
 les tableaux de bord de la base (chapitre 18) : à gauche, ses tableaux de bord, les questions
-enregistrées qu'on peut ouvrir et « Explorer les données » ; au centre, le tableau choisi, ses onglets, ses
+construites qu'on peut ouvrir et « Explorer les données » ; au centre, le tableau choisi, ses onglets, ses
 filtres et ses cartes sur une grille de vingt-quatre colonnes. Qui construit la base passe en
 mode édition — placer une question, un titre, un texte, une page intégrée, déplacer et
 redimensionner les cartes, ajouter un onglet ou un filtre et le relier aux cartes. Chaque carte
 lit avec les droits de qui regarde ; celle dont la donnée n'est pas lisible dit « Donnée
 inaccessible », et une ligne d'un tableau ouvre sa fiche. « Partager », pour qui construit la
 base, invite à la base ou donne un lien vers ce seul tableau (chapitre 18 §2.5), lu en lecture
-seule avec les droits de qui l'a publié. Une question n'est pas une requête enregistrée (§1.7) :
-elle vit dans les tableaux de bord, avec sa visualisation.
+seule avec les droits de qui l'a publié. Une question SQL est ce qu'était une requête
+enregistrée (§1.7) : la navigation la range sous les tables de la base, rubrique « Requêtes » ;
+une question construite vit avec les tableaux de bord, avec sa visualisation.
 
 Chacun enregistre ses questions, que lui seul voit ; qui construit la base les partage avec
-toute la base ou avec des groupes — les trois portées des requêtes enregistrées (§1.7), et le
+toute la base ou avec des groupes — les trois portées d'une question SQL (§1.7), et le
 même dialogue « Nom et partage ». Un tableau de bord ne cite qu'une question de toute la base :
 une autre y entre recopiée dans la carte. Le menu d'une question de la liste — clic droit, ou
 « ⋯ » au survol — l'ouvre, l'ouvre dans un onglet de l'espace de travail, change son nom et sa
-portée, ou la supprime ; « Nouvelle question » et « Nouvelle question SQL », au « + » de la
-barre d'onglets et dans le menu de la base, en ouvrent une dans un onglet. Un onglet de question
-garde ce qu'on y a laissé, modifications comprises.
+portée, ou la supprime ; « Nouvelle question », au « + » de la barre d'onglets, dans le menu de
+la base et dans la palette, en ouvre une dans un onglet — construite ou écrite en SQL, la
+bascule de l'en-tête dit laquelle. Un onglet de question garde ce qu'on y a laissé,
+modifications comprises.
+
+**L'éditeur d'une question** (chapitre 18 §1.8) tient en **trois volets redimensionnables** côte
+à côte, dans l'onglet comme dans la fenêtre d'une carte : le carnet à gauche (300 à 760 px), le
+résultat au centre — onglets « Visualisation » et « Données » —, les réglages à droite —
+onglets « Visualisation » et « Détails ». Il n'y a ni bouton « Visualiser » ni va-et-vient
+entre le carnet et le résultat : une question construite se relance d'elle-même 350 ms après
+chaque changement. Le carnet propose, à chaque étape, les colonnes des tables que la source
+cible par un lien — en choisir une ajoute la jointure, la retirer l'enlève — ; « Joindre des
+données » dessine la jointure en deux cercles (à gauche, interne, à droite, complète), dit quelles
+lignes elle garde, et propose la condition que la relation désigne ; l'étape « Colonnes » dit
+par table « 3 sur 8 » et coche une à une. Un clic, ou un clic droit, sur une barre, une part ou une
+ligne groupée ouvre le menu du point (chapitre 18 §1.7) : « Voir les lignes » les ouvre dans un
+nouvel onglet de question — d'un tableau de bord aussi, sans le quitter —, les autres entrées
+font un pas de plus, dont on revient. Les tailles des
+volets sont une préférence du navigateur, comme la largeur des panneaux de la fiche et du Copilot.
 
 **La galerie de modèles** (chapitre 20) s'ouvre du dialogue « Nouvelle base » et d'un
 projet vide. En tête, une phrase à l'IA — « Décrivez ce que vous voulez gérer » — ; à
@@ -1254,8 +1416,6 @@ l'écran sur ce qu'il peut montrer, et l'adresse le dit.
 
 ## Questions ouvertes
 
-1. **Groupement et totaux de colonne** en grille : aucun contrat d'agrégat n'existe dans
-   l'API, et un agrégat sur champ masqué est refusé.
-2. **Import de fichier** : traité au §6.7 pour Excel (`.xlsx`), le CSV, le TSV, le TXT et le JSON.
+1. **Import de fichier** : traité au §6.7 pour Excel (`.xlsx`), le CSV, le TSV, le TXT et le JSON.
    Restent ouverts l'ancien `.xls`, le XML, l'import des champs lien (par la colonne d'affichage de leur cible),
    les lots partiels (`atomic: false`) et un import asynchrone au-delà de 50 000 lignes.

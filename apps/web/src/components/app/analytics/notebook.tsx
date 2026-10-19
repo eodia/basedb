@@ -6,8 +6,10 @@ import {
   FilterEditor,
   useValueLabel,
 } from '@/components/app/analytics/filter-editor'
-import { Button } from '@/components/ui/button'
-import { Choice } from '@/components/ui/choice'
+import { JoinEditor } from '@/components/app/analytics/join-editor'
+import { JoinGlyph } from '@/components/app/analytics/join-glyph'
+import { TableColumns } from '@/components/app/analytics/table-columns'
+import { TableList } from '@/components/app/analytics/table-picker'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Hint } from '@/components/ui/tooltip'
@@ -17,17 +19,20 @@ import {
   aggregationsFor,
   breakoutOn,
   columnsOf,
+  compactQuery,
   describeAggregation,
   describeBreakout,
   describeFilter,
   findColumn,
   groupable,
-  joinAlias,
-  joinSuggestions,
+  reachableColumns,
+  settleQuery,
   tableOf,
+  withJoinFor,
+  withoutJoin,
 } from '@/lib/analytics/model'
 import type { DescribedBase, Table } from '@/lib/api/client'
-import { $t, $tp } from '@/lib/i18n'
+import { $t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import {
   type Aggregation,
@@ -37,122 +42,104 @@ import {
   COLUMNLESS_FNS,
   type Filter,
   type Join,
-  type JoinKind,
   type OrderBy,
+  QUERY_LIMITS,
   columnName,
 } from '@basedb/contracts'
 import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
+  ArrowDownAZ,
+  ArrowUpAZ,
   Columns3,
-  Combine,
+  Database,
+  Filter as FilterIcon,
+  Link2,
   ListOrdered,
-  Loader2,
-  Play,
   Plus,
-  Search,
+  Sigma,
   Table2,
   X,
 } from 'lucide-react'
-import { type ButtonHTMLAttributes, type ReactNode, useEffect, useMemo, useState } from 'react'
+import { type ComponentProps, type ReactNode, useEffect, useMemo, useState } from 'react'
 
 /**
- * The builder of questions — chapter 18 §3, with the mouse: the data, the tables joined to
- * it, the filters, the aggregates by groups, the order and the bound, one step under the
- * other, each coloured by what it does. What it builds is a query of `@basedb/contracts`;
- * the kernel runs it with the rights of whoever looks.
+ * The notebook of a question — chapter 18 §3, with the mouse: the data and the tables joined
+ * to it, the filters, the aggregates by groups, the columns, the order and the bound, one
+ * step under the other, each coloured by what it does. It is the left pane of the editor, and
+ * the question runs again by itself as it changes: there is no button to press.
+ *
+ * Every column of a table the source links to is offered at every step. Choosing one adds the
+ * join (marked `implicit`, in the query); the last step citing it takes it away again.
  */
 
-type Tone = 'data' | 'filter' | 'summarize' | 'neutral'
+type Tone = 'data' | 'filter' | 'summarize' | 'sort'
 
-const TONES: Readonly<Record<Tone, { title: string; panel: string; chip: string; empty: string }>> =
-  {
-    data: {
-      title: 'text-sky-600 dark:text-sky-400',
-      panel: 'bg-sky-500/[0.07] dark:bg-sky-400/[0.08]',
-      chip: 'bg-sky-600 text-white hover:bg-sky-600/90 dark:bg-sky-500',
-      empty: 'border-sky-500/40 text-sky-700 dark:text-sky-300 hover:bg-sky-500/10',
-    },
-    filter: {
-      title: 'text-violet-600 dark:text-violet-400',
-      panel: 'bg-violet-500/[0.07] dark:bg-violet-400/[0.08]',
-      chip: 'bg-violet-600 text-white hover:bg-violet-600/90 dark:bg-violet-500',
-      empty: 'border-violet-500/40 text-violet-700 dark:text-violet-300 hover:bg-violet-500/10',
-    },
-    summarize: {
-      title: 'text-emerald-600 dark:text-emerald-400',
-      panel: 'bg-emerald-500/[0.07] dark:bg-emerald-400/[0.08]',
-      chip: 'bg-emerald-600 text-white hover:bg-emerald-600/90 dark:bg-emerald-600',
-      empty: 'border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10',
-    },
-    neutral: {
-      title: 'text-muted-foreground',
-      panel: 'bg-muted/60',
-      chip: 'bg-foreground/80 text-background hover:bg-foreground/70',
-      empty: 'border-border text-muted-foreground hover:bg-accent',
-    },
-  }
+const TONES: Readonly<Record<Tone, string>> = {
+  data: 'bg-sky-500/10 text-sky-700 dark:text-sky-300',
+  filter: 'bg-violet-500/10 text-violet-700 dark:text-violet-300',
+  summarize: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  sort: 'bg-muted text-foreground/80',
+}
 
 function Step({
-  tone,
+  icon: Icon,
   title,
+  tone,
   children,
-  onRemove,
 }: {
-  readonly tone: Tone
+  readonly icon: typeof Database
   readonly title: string
+  readonly tone: Tone
   readonly children: ReactNode
-  readonly onRemove?: () => void
 }) {
   return (
-    <section className="space-y-1.5">
-      <div className="flex items-center gap-2">
-        <h3 className={cn('text-sm font-semibold', TONES[tone].title)}>{title}</h3>
-        {onRemove !== undefined && (
-          <button
-            type="button"
-            onClick={onRemove}
-            aria-label={$t('Retirer l’étape {title}', { title })}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="size-3.5" />
-          </button>
-        )}
+    <section className="space-y-2">
+      <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        <span
+          className={cn('inline-flex size-5 items-center justify-center rounded-md', TONES[tone])}
+        >
+          <Icon className="size-3" />
+        </span>
+        <span className="flex-1">{title}</span>
       </div>
-      <div className={cn('flex flex-wrap items-center gap-2 rounded-lg p-3', TONES[tone].panel)}>
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border bg-card p-2.5">
         {children}
       </div>
     </section>
   )
 }
 
-function Chip({
+function Pill({
   tone,
   children,
+  onClick,
   onRemove,
-  ...props
 }: {
   readonly tone: Tone
   readonly children: ReactNode
+  readonly onClick?: () => void
   readonly onRemove?: () => void
-} & ButtonHTMLAttributes<HTMLButtonElement>) {
+}) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-md text-sm font-medium transition-colors',
-        TONES[tone].chip,
+        'inline-flex h-8 max-w-full items-center gap-1.5 rounded-lg pl-2.5 text-sm font-medium',
+        onRemove === undefined ? 'pr-2.5' : 'pr-1',
+        TONES[tone],
       )}
     >
-      <button type="button" className="flex items-center gap-1.5 px-2.5 py-1.5" {...props}>
+      <button type="button" onClick={onClick} className="truncate text-left">
         {children}
       </button>
       {onRemove !== undefined && (
         <button
           type="button"
-          onClick={onRemove}
+          // The pill is often the trigger of a popover: removing it must not open that one.
+          onClick={(e) => {
+            e.stopPropagation()
+            onRemove()
+          }}
           aria-label={$t('Retirer')}
-          className="border-l border-white/25 px-1.5 py-1.5 opacity-80 hover:opacity-100"
+          className="rounded p-0.5 opacity-60 hover:bg-foreground/10 hover:opacity-100"
         >
           <X className="size-3.5" />
         </button>
@@ -161,99 +148,67 @@ function Chip({
   )
 }
 
+/**
+ * The trigger of a popover that adds a step: a dashed button, its label after a plus. It is
+ * the child of a `PopoverTrigger asChild`, which hands it the props — and the ref — of a button.
+ */
 function AddButton({
-  tone,
-  children,
+  label,
+  className,
   ...props
-}: {
-  readonly tone: Tone
-  readonly children: ReactNode
-} & ButtonHTMLAttributes<HTMLButtonElement>) {
+}: { readonly label?: string } & ComponentProps<'button'>) {
   return (
     <button
       type="button"
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors',
-        TONES[tone].empty,
+        'inline-flex h-8 items-center gap-1 rounded-lg border border-dashed px-2.5 text-sm text-muted-foreground hover:border-primary hover:text-primary',
+        className,
       )}
       {...props}
     >
-      {children}
+      <Plus className="size-3.5" />
+      {label}
     </button>
   )
 }
 
-function StepAction({
-  icon: Icon,
-  label,
-  onClick,
+/** A popover opened by a pill, a chip or a dashed button, and closed by what it picks. */
+function Picker({
+  trigger,
+  width = 'w-72',
+  open,
+  onOpenChange,
+  children,
 }: {
-  readonly icon: typeof Plus
-  readonly label: string
-  readonly onClick: () => void
+  readonly trigger: ReactNode
+  readonly width?: string
+  readonly open?: boolean
+  readonly onOpenChange?: (open: boolean) => void
+  readonly children: ReactNode
 }) {
+  const [own, setOwn] = useState(false)
+  const shown = open ?? own
+  const change = onOpenChange ?? setOwn
   return (
-    <Button variant="secondary" size="sm" onClick={onClick} className="h-8 gap-1.5 px-2.5 text-xs">
-      <Icon className="size-3.5" />
-      {label}
-    </Button>
+    <Popover modal open={shown} onOpenChange={change}>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <PopoverContent align="start" className={width}>
+        {children}
+      </PopoverContent>
+    </Popover>
   )
 }
 
-// ── Tables ──────────────────────────────────────────────────────────────────
+// ── The data ────────────────────────────────────────────────────────────────
 
-function TableList({
-  tables,
-  onPick,
-}: { readonly tables: readonly Table[]; readonly onPick: (table: Table) => void }) {
-  const [query, setQuery] = useState('')
-  const q = query.trim().toLowerCase()
-  const shown = q === '' ? tables : tables.filter((t) => t.label.toLowerCase().includes(q))
-  return (
-    <div className="flex max-h-80 flex-col">
-      <div className="relative mb-2">
-        <Search className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={$t('Chercher une table')}
-          aria-label={$t('Chercher une table')}
-          className="h-8 pl-7 text-sm"
-          autoFocus
-        />
-      </div>
-      <div className="-mx-1 min-h-0 flex-1 overflow-y-auto scroll-discret">
-        {shown.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => onPick(t)}
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
-          >
-            <Table2 className="size-3.5 shrink-0 text-muted-foreground" />
-            <span className="truncate">{t.label}</span>
-          </button>
-        ))}
-        {shown.length === 0 && (
-          <p className="px-2 py-2 text-sm text-muted-foreground">{$t('Aucune table.')}</p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function TablePicker({
+function SourcePicker({
   base,
   value,
   onPick,
-  tone,
-  placeholder,
 }: {
   readonly base: DescribedBase
   readonly value: string | null
   readonly onPick: (table: Table) => void
-  readonly tone: Tone
-  readonly placeholder: string
 }) {
   const [open, setOpen] = useState(false)
   const table = value === null ? undefined : tableOf(base, value)
@@ -266,149 +221,32 @@ function TablePicker({
     return () => clearTimeout(timer)
   }, [])
   return (
-    <Popover modal open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        {table === undefined ? (
-          <AddButton tone={tone}>{placeholder}</AddButton>
-        ) : (
-          <Chip tone={tone}>
-            <Table2 className="size-4" />
-            {table.label}
-          </Chip>
-        )}
-      </PopoverTrigger>
-      <PopoverContent className="w-72">
-        <TableList
-          tables={base.tables}
-          onPick={(t) => {
-            onPick(t)
-            setOpen(false)
-          }}
-        />
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-// ── Joins ───────────────────────────────────────────────────────────────────
-
-const JOIN_LABELS: Readonly<Record<JoinKind, string>> = {
-  left: $t('Jointure à gauche'),
-  inner: $t('Jointure interne'),
-  right: $t('Jointure à droite'),
-  full: $t('Jointure complète'),
-}
-
-function ColumnButton({
-  columns,
-  value,
-  onPick,
-  tone,
-  placeholder,
-}: {
-  readonly columns: readonly ColumnOption[]
-  readonly value: ColumnOption | undefined
-  readonly onPick: (column: ColumnOption) => void
-  readonly tone: Tone
-  readonly placeholder: string
-}) {
-  const [open, setOpen] = useState(false)
-  return (
-    <Popover modal open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        {value === undefined ? (
-          <AddButton tone={tone}>{placeholder}</AddButton>
-        ) : (
-          <Chip tone={tone}>{value.label}</Chip>
-        )}
-      </PopoverTrigger>
-      <PopoverContent className="w-72">
-        <ColumnList
-          columns={columns}
-          onPick={(c) => {
-            onPick(c)
-            setOpen(false)
-          }}
-        />
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-function JoinStep({
-  base,
-  query,
-  index,
-  onChange,
-  onRemove,
-}: {
-  readonly base: DescribedBase
-  readonly query: BuilderQuery
-  readonly index: number
-  readonly onChange: (join: Join) => void
-  readonly onRemove: () => void
-}) {
-  const join = (query.joins ?? [])[index] as Join
-  const earlier: BuilderQuery = { ...query, joins: (query.joins ?? []).slice(0, index) }
-  const leftColumns = columnsOf(base, earlier)
-  const all = columnsOf(base, query)
-  const rightColumns = all.filter((c) => c.ref.join === join.alias)
-  const source = tableOf(base, query.source)
-  return (
-    <Step tone="data" title={$t('Joindre des données')} onRemove={onRemove}>
-      {source !== undefined && (
-        <Chip tone="data" disabled>
-          {source.label}
-        </Chip>
-      )}
-      <Choice
-        value={join.kind}
-        onValueChange={(kind) => onChange({ ...join, kind: kind as JoinKind })}
-        options={Object.entries(JOIN_LABELS).map(([value, label]) => ({ value, label }))}
-        aria-label={$t('Sorte de jointure')}
-        className="w-auto min-w-36 bg-background"
-      />
-      <TablePicker
-        base={base}
-        value={join.table}
-        tone="data"
-        placeholder={$t('Choisir une table')}
-        onPick={(table) => {
-          const suggestion =
-            source === undefined
-              ? undefined
-              : joinSuggestions(base, source).find((s) => s.table.id === table.id)
-          onChange({
-            ...join,
-            table: table.id,
-            alias:
-              join.table === table.id
-                ? join.alias
-                : joinAlias(
-                    { ...query, joins: (query.joins ?? []).filter((_, i) => i !== index) },
-                    table,
-                  ),
-            ...(suggestion === undefined ? {} : { left: suggestion.left, right: suggestion.right }),
-          })
+    <Picker
+      open={open}
+      onOpenChange={setOpen}
+      trigger={
+        <button
+          type="button"
+          className={cn(
+            'inline-flex h-8 items-center gap-2 rounded-lg px-2.5 text-sm font-semibold',
+            table === undefined
+              ? 'border border-dashed border-sky-500/50 text-sky-700 dark:text-sky-300'
+              : TONES.data,
+          )}
+        >
+          <Table2 className="size-4" />
+          {table === undefined ? $t('Choisir une table') : table.label}
+        </button>
+      }
+    >
+      <TableList
+        tables={base.tables}
+        onPick={(t) => {
+          onPick(t)
+          setOpen(false)
         }}
       />
-      <span className="text-sm text-muted-foreground">{$t('sur')}</span>
-      <ColumnButton
-        columns={leftColumns}
-        value={findColumn(leftColumns, join.left)}
-        tone="data"
-        placeholder={$t('Colonne')}
-        onPick={(c) => onChange({ ...join, left: c.ref })}
-      />
-      <span className="text-sm text-muted-foreground">=</span>
-      <ColumnButton
-        columns={rightColumns}
-        value={findColumn(rightColumns, { join: join.alias, field: join.right })}
-        tone="data"
-        placeholder={$t('Colonne')}
-        onPick={(c) => onChange({ ...join, right: c.ref.field })}
-      />
-    </Step>
+    </Picker>
   )
 }
 
@@ -426,7 +264,7 @@ function FilterPopover({
   readonly query: BuilderQuery
   readonly columns: readonly ColumnOption[]
   readonly filter?: Filter
-  readonly onDone: (filter: Filter) => void
+  readonly onDone: (filter: Filter, column?: ColumnOption) => void
   readonly children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -434,8 +272,8 @@ function FilterPopover({
     filter !== undefined && 'column' in filter ? findColumn(columns, filter.column) : undefined
   const [column, setColumn] = useState<ColumnOption | undefined>(initialColumn)
   const [expression, setExpression] = useState(filter !== undefined && 'expression' in filter)
-  const done = (f: Filter) => {
-    onDone(f)
+  const done = (f: Filter, picked?: ColumnOption) => {
+    onDone(f, picked)
     setOpen(false)
   }
   return (
@@ -451,7 +289,7 @@ function FilterPopover({
       }}
     >
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-auto min-w-72">
+      <PopoverContent align="start" className="w-auto min-w-72">
         {expression ? (
           <ExpressionFilterEditor
             base={base}
@@ -473,10 +311,11 @@ function FilterPopover({
         ) : (
           <FilterEditor
             base={base}
-            query={query}
+            // The values offered are read through the join the column comes by, not yet in.
+            query={withJoinFor(query, column)}
             column={column}
             initial={filter}
-            onDone={done}
+            onDone={(f) => done(f, column)}
             onBack={filter === undefined ? () => setColumn(undefined) : undefined}
           />
         )}
@@ -508,7 +347,7 @@ function AggregationPopover({
 }: {
   readonly columns: readonly ColumnOption[]
   readonly value?: Aggregation
-  readonly onDone: (aggregation: Aggregation) => void
+  readonly onDone: (aggregation: Aggregation, column?: ColumnOption) => void
   readonly children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -524,7 +363,7 @@ function AggregationPopover({
       }}
     >
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-72">
+      <PopoverContent align="start" className="w-72">
         {fn === null ? (
           <div className="-mx-1 flex flex-col">
             <p className="px-2 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
@@ -569,7 +408,7 @@ function AggregationPopover({
             <ColumnList
               columns={eligible}
               onPick={(c) => {
-                onDone({ fn, column: c.ref })
+                onDone({ fn, column: c.ref }, c)
                 setOpen(false)
               }}
             />
@@ -586,14 +425,14 @@ function BreakoutPopover({
   children,
 }: {
   readonly columns: readonly ColumnOption[]
-  readonly onDone: (breakout: Breakout) => void
+  readonly onDone: (breakout: Breakout, column: ColumnOption) => void
   readonly children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
   return (
     <Popover modal open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-80">
+      <PopoverContent align="start" className="w-80">
         <ColumnList
           grouping
           columns={columns.filter((c) => groupable(c.kind))}
@@ -607,6 +446,7 @@ function BreakoutPopover({
                     ...(how.unit === undefined ? {} : { unit: how.unit }),
                     ...(how.bin === undefined ? {} : { bin: how.bin }),
                   },
+              c,
             )
             setOpen(false)
           }}
@@ -618,6 +458,8 @@ function BreakoutPopover({
 
 // ── Sort ────────────────────────────────────────────────────────────────────
 
+const UNSORTABLE = ['long_text', 'multi_select', 'multi_link', 'lookup', 'file', 'image']
+
 function SortPopover({
   query,
   columns,
@@ -626,7 +468,7 @@ function SortPopover({
 }: {
   readonly query: BuilderQuery
   readonly columns: readonly ColumnOption[]
-  readonly onDone: (order: OrderBy) => void
+  readonly onDone: (order: OrderBy, column?: ColumnOption) => void
   readonly children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -634,7 +476,7 @@ function SortPopover({
   return (
     <Popover modal open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-72">
+      <PopoverContent align="start" className="w-72">
         {grouped ? (
           <div className="-mx-1 flex flex-col">
             {(query.breakouts ?? []).map((b, index) => (
@@ -668,14 +510,9 @@ function SortPopover({
           </div>
         ) : (
           <ColumnList
-            columns={columns.filter(
-              (c) =>
-                !['long_text', 'multi_select', 'multi_link', 'lookup', 'file', 'image'].includes(
-                  c.kind,
-                ),
-            )}
+            columns={columns.filter((c) => !UNSORTABLE.includes(c.kind))}
             onPick={(c) => {
-              onDone({ target: { kind: 'column', column: c.ref } })
+              onDone({ target: { kind: 'column', column: c.ref } }, c)
               setOpen(false)
             }}
           />
@@ -704,123 +541,134 @@ export function Notebook({
   base,
   query,
   onChange,
-  onRun,
-  running,
 }: {
   readonly base: DescribedBase
   /** `null` before a table is picked. */
   readonly query: BuilderQuery | null
   readonly onChange: (query: BuilderQuery) => void
-  readonly onRun: () => void
-  readonly running: boolean
 }) {
-  const columns = useMemo(() => (query === null ? [] : columnsOf(base, query)), [base, query])
+  const columns = useMemo(
+    () => (query === null ? [] : reachableColumns(base, query)),
+    [base, query],
+  )
   const valueLabel = useValueLabel()
-  const [showSort, setShowSort] = useState((query?.sort ?? []).length > 0)
-  const [showLimit, setShowLimit] = useState(query?.limit !== undefined && query?.limit !== null)
+  const [joinOpen, setJoinOpen] = useState<string | 'new' | null>(null)
   const source = query === null ? undefined : tableOf(base, query.source)
 
-  const update = (patch: Partial<BuilderQuery>) => {
-    if (query === null) return
-    const next: Record<string, unknown> = { ...query, ...patch }
-    for (const key of [
-      'joins',
-      'filters',
-      'aggregations',
-      'breakouts',
-      'fields',
-      'sort',
-    ] as const) {
-      const list = next[key]
-      if (Array.isArray(list) && list.length === 0) next[key] = undefined
-    }
-    const { limit, ...rest } = next
-    onChange((limit === null || limit === undefined ? rest : next) as unknown as BuilderQuery)
+  /**
+   * The question after a change: the joins the columns chosen need added, the lists left
+   * empty and the bound left out dropped, the joins nothing cites any more taken away.
+   */
+  const commit = (next: BuilderQuery, ...chosen: Array<ColumnOption | undefined>) => {
+    let full = next
+    for (const column of chosen) full = withJoinFor(full, column)
+    onChange(settleQuery(base, compactQuery(full)))
   }
+  const update = (patch: Partial<BuilderQuery>, ...chosen: Array<ColumnOption | undefined>) => {
+    if (query !== null) commit({ ...query, ...patch }, ...chosen)
+  }
+
+  const joins = query?.joins ?? []
   const filters = query?.filters ?? []
   const aggregations = query?.aggregations ?? []
   const breakouts = query?.breakouts ?? []
-  const raw = aggregations.length === 0 && breakouts.length === 0
+  const sort = query?.sort ?? []
+  const listing = aggregations.length === 0 && breakouts.length === 0
+
+  const sourceColumns = columns.filter((c) => c.join === undefined)
+  const written = joins.filter((j) => j.implicit !== true)
+  const related = columns.filter((c) => c.join?.implicit === true)
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-5 px-4 py-6">
-      <Step tone="data" title={$t('Données')}>
-        <TablePicker
+    <div className="space-y-5 p-4">
+      <Step icon={Database} title={$t('Données')} tone="data">
+        <SourcePicker
           base={base}
           value={query?.source ?? null}
-          tone="data"
-          placeholder={$t('Choisir une table')}
           onPick={(table) => onChange({ kind: 'builder', source: table.id })}
         />
-        {query !== null && raw && source !== undefined && (
-          <FieldsPicker
-            columns={columns}
-            fields={query.fields}
-            onChange={(fields) => update({ fields: fields ?? [] })}
-          />
+        {joins.map((j) => {
+          const joined = tableOf(base, j.table)
+          const name = joined?.label ?? j.alias
+          if (j.implicit === true) {
+            return (
+              <Hint key={j.alias} label={$t('Jointure ajoutée par une colonne choisie.')}>
+                <span className="inline-flex h-8 items-center gap-1 rounded-lg bg-muted px-2.5 text-xs text-muted-foreground">
+                  <Link2 className="size-3" />
+                  {name}
+                </span>
+              </Hint>
+            )
+          }
+          return (
+            <Picker
+              key={j.alias}
+              width="w-auto"
+              open={joinOpen === j.alias}
+              onOpenChange={(o) => setJoinOpen(o ? j.alias : null)}
+              trigger={
+                <span>
+                  <Pill
+                    tone="data"
+                    onRemove={() => {
+                      if (query !== null) commit(withoutJoin(query, j.alias))
+                    }}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <JoinGlyph kind={j.kind} className="h-3.5 w-[22px]" />
+                      {name}
+                    </span>
+                  </Pill>
+                </span>
+              }
+            >
+              {query !== null && (
+                <JoinEditor
+                  base={base}
+                  query={query}
+                  initial={j}
+                  onApply={(next: Join) => {
+                    update({ joins: joins.map((x) => (x.alias === j.alias ? next : x)) })
+                    setJoinOpen(null)
+                  }}
+                  onRemove={() => {
+                    commit(withoutJoin(query, j.alias))
+                    setJoinOpen(null)
+                  }}
+                />
+              )}
+            </Picker>
+          )
+        })}
+        {query !== null && source !== undefined && joins.length < QUERY_LIMITS.joins && (
+          <Picker
+            width="w-auto"
+            open={joinOpen === 'new'}
+            onOpenChange={(o) => setJoinOpen(o ? 'new' : null)}
+            trigger={<AddButton label={$t('Joindre des données')} />}
+          >
+            <JoinEditor
+              base={base}
+              query={query}
+              onApply={(next) => {
+                // Columns chosen one by one take the new table's in, as they would have by default.
+                const added = columnsOf(base, { ...query, joins: [...joins, next] })
+                  .filter((c) => c.join?.alias === next.alias && c.field.system !== true)
+                  .map((c) => c.ref)
+                update({
+                  joins: [...joins, next],
+                  ...(query.fields === undefined ? {} : { fields: [...query.fields, ...added] }),
+                })
+                setJoinOpen(null)
+              }}
+            />
+          </Picker>
         )}
       </Step>
 
       {query !== null && (
         <>
-          {(query.joins ?? []).map((_, index) => (
-            <JoinStep
-              // biome-ignore lint/suspicious/noArrayIndexKey: joins are edited in place, by position
-              key={index}
-              base={base}
-              query={query}
-              index={index}
-              onChange={(join) =>
-                update({
-                  joins: (query.joins ?? []).map((j, i) => (i === index ? join : j)),
-                })
-              }
-              onRemove={() => {
-                const alias = (query.joins ?? [])[index]?.alias
-                const keep = <T extends { join?: string }>(list: readonly T[] | undefined) =>
-                  (list ?? []).filter((x) => x.join !== alias)
-                update({
-                  joins: (query.joins ?? []).filter((_, i) => i !== index),
-                  filters: filters.filter((f) =>
-                    'column' in f ? f.column.join !== alias : f.join !== alias,
-                  ),
-                  aggregations: aggregations.filter((a) => a.column?.join !== alias),
-                  breakouts: keep(breakouts),
-                  ...(query.fields === undefined ? {} : { fields: keep(query.fields) }),
-                  sort: [],
-                })
-              }}
-            />
-          ))}
-          <div className="flex gap-2">
-            {source !== undefined && (query.joins ?? []).length < 4 && (
-              <StepAction
-                icon={Combine}
-                label={$t('Joindre des données')}
-                onClick={() => {
-                  const suggestion = joinSuggestions(base, source).find(
-                    (s) => !(query.joins ?? []).some((j) => j.table === s.table.id),
-                  )
-                  const table =
-                    suggestion?.table ?? base.tables.find((t) => t.id !== source.id) ?? source
-                  update({
-                    joins: [
-                      ...(query.joins ?? []),
-                      {
-                        alias: joinAlias(query, table),
-                        table: table.id,
-                        kind: 'left',
-                        left: suggestion?.left ?? { field: '_id' },
-                        right: suggestion?.right ?? '_id',
-                      },
-                    ],
-                  })
-                }}
-              />
-            )}
-          </div>
-
-          <Step tone="filter" title={$t('Filtre')}>
+          <Step icon={FilterIcon} title={$t('Filtrer')} tone="filter">
             {filters.map((f, index) => (
               <FilterPopover
                 // biome-ignore lint/suspicious/noArrayIndexKey: filters are edited in place, by position
@@ -829,310 +677,203 @@ export function Notebook({
                 query={query}
                 columns={columns}
                 filter={f}
-                onDone={(next) =>
-                  update({ filters: filters.map((x, i) => (i === index ? next : x)) })
+                onDone={(next, column) =>
+                  update({ filters: filters.map((x, i) => (i === index ? next : x)) }, column)
                 }
               >
-                <Chip
-                  tone="filter"
-                  onRemove={() => update({ filters: filters.filter((_, i) => i !== index) })}
-                >
-                  {describeFilter(f, columns, valueLabel)}
-                </Chip>
+                <span>
+                  <Pill
+                    tone="filter"
+                    onRemove={() => update({ filters: filters.filter((_, i) => i !== index) })}
+                  >
+                    {describeFilter(f, columns, valueLabel)}
+                  </Pill>
+                </span>
               </FilterPopover>
             ))}
             <FilterPopover
               base={base}
               query={query}
               columns={columns}
-              onDone={(f) => update({ filters: [...filters, f] })}
+              onDone={(f, column) => update({ filters: [...filters, f] }, column)}
             >
-              {filters.length === 0 ? (
-                <AddButton tone="filter">
-                  {$t('Ajouter des filtres pour préciser votre réponse')}
-                </AddButton>
-              ) : (
-                <AddButton tone="filter" aria-label={$t('Ajouter un filtre')}>
-                  <Plus className="size-4" />
-                </AddButton>
-              )}
+              <AddButton label={$t('Filtre')} />
             </FilterPopover>
           </Step>
 
-          <section className="space-y-1.5">
-            <h3 className={cn('text-sm font-semibold', TONES.summarize.title)}>{$t('Résumer')}</h3>
-            <div className="grid items-stretch gap-2 md:grid-cols-[1fr_auto_1fr]">
-              <div
-                className={cn(
-                  'flex flex-wrap items-center gap-2 rounded-lg p-3',
-                  TONES.summarize.panel,
-                )}
+          <Step icon={Sigma} title={$t('Résumer')} tone="summarize">
+            {aggregations.map((a, index) => (
+              <AggregationPopover
+                // biome-ignore lint/suspicious/noArrayIndexKey: aggregates are edited in place, by position
+                key={index}
+                columns={columns}
+                value={a}
+                onDone={(next, column) =>
+                  update(
+                    { aggregations: aggregations.map((x, i) => (i === index ? next : x)) },
+                    column,
+                  )
+                }
               >
-                {aggregations.map((a, index) => (
-                  <AggregationPopover
-                    // biome-ignore lint/suspicious/noArrayIndexKey: aggregates are edited in place, by position
-                    key={index}
-                    columns={columns}
-                    value={a}
-                    onDone={(next) =>
-                      update({ aggregations: aggregations.map((x, i) => (i === index ? next : x)) })
+                <span>
+                  <Pill
+                    tone="summarize"
+                    onRemove={() =>
+                      update({
+                        aggregations: aggregations.filter((_, i) => i !== index),
+                        sort: sort.filter((s) => s.target.kind !== 'aggregation'),
+                      })
                     }
                   >
-                    <Chip
-                      tone="summarize"
-                      onRemove={() =>
-                        update({
-                          aggregations: aggregations.filter((_, i) => i !== index),
-                          sort: (query.sort ?? []).filter((s) => s.target.kind !== 'aggregation'),
-                        })
-                      }
-                    >
-                      {describeAggregation(a, columns)}
-                    </Chip>
-                  </AggregationPopover>
-                ))}
-                <AggregationPopover
-                  columns={columns}
-                  onDone={(a) => update({ aggregations: [...aggregations, a] })}
-                >
-                  {aggregations.length === 0 ? (
-                    <AddButton tone="summarize">
-                      {$t('Choisir une fonction ou une métrique')}
-                    </AddButton>
-                  ) : (
-                    <AddButton tone="summarize" aria-label={$t('Ajouter un agrégat')}>
-                      <Plus className="size-4" />
-                    </AddButton>
-                  )}
-                </AggregationPopover>
-              </div>
-              <span className="self-center text-center text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                {$t('par')}
-              </span>
-              <div
-                className={cn(
-                  'flex flex-wrap items-center gap-2 rounded-lg p-3',
-                  TONES.summarize.panel,
-                )}
-              >
-                {breakouts.map((b, index) => (
-                  <BreakoutPopover
-                    // biome-ignore lint/suspicious/noArrayIndexKey: groupings are edited in place, by position
-                    key={index}
-                    columns={columns}
-                    onDone={(next) =>
-                      update({ breakouts: breakouts.map((x, i) => (i === index ? next : x)) })
-                    }
-                  >
-                    <Chip
-                      tone="summarize"
-                      onRemove={() =>
-                        update({
-                          breakouts: breakouts.filter((_, i) => i !== index),
-                          sort: (query.sort ?? []).filter((s) => s.target.kind !== 'breakout'),
-                        })
-                      }
-                    >
-                      {describeBreakout(b, columns)}
-                    </Chip>
-                  </BreakoutPopover>
-                ))}
-                {breakouts.length < 3 && (
-                  <BreakoutPopover
-                    columns={columns}
-                    onDone={(b) => update({ breakouts: [...breakouts, b] })}
-                  >
-                    {breakouts.length === 0 ? (
-                      <AddButton tone="summarize">
-                        {$t('Choisissez une colonne de regroupement')}
-                      </AddButton>
-                    ) : (
-                      <AddButton tone="summarize" aria-label={$t('Ajouter un regroupement')}>
-                        <Plus className="size-4" />
-                      </AddButton>
-                    )}
-                  </BreakoutPopover>
-                )}
-              </div>
-            </div>
-          </section>
-
-          <div className="flex gap-2">
-            {!showSort && (
-              <StepAction
-                icon={ArrowUpDown}
-                label={$t('Trier')}
-                onClick={() => setShowSort(true)}
-              />
-            )}
-            {!showLimit && (
-              <StepAction
-                icon={ListOrdered}
-                label={$t('Limiter')}
-                onClick={() => setShowLimit(true)}
-              />
-            )}
-          </div>
-
-          {showSort && (
-            <Step
-              tone="neutral"
-              title={$t('Trier')}
-              onRemove={() => {
-                setShowSort(false)
-                update({ sort: [] })
-              }}
+                    {describeAggregation(a, columns)}
+                  </Pill>
+                </span>
+              </AggregationPopover>
+            ))}
+            <AggregationPopover
+              columns={columns}
+              onDone={(a, column) => update({ aggregations: [...aggregations, a] }, column)}
             >
-              {(query.sort ?? []).map((order, index) => (
-                <Hint
-                  // biome-ignore lint/suspicious/noArrayIndexKey: sort terms are edited in place, by position
-                  key={index}
-                  label={$t('Inverser l’ordre')}
-                >
-                  {/* Chip forwards props onto its inner button, not its outer span. */}
-                  <span className="inline-flex">
-                    <Chip
-                      tone="neutral"
-                      onClick={() =>
-                        update({
-                          sort: (query.sort ?? []).map((s, i) =>
-                            i === index ? { ...s, desc: s.desc !== true } : s,
-                          ),
-                        })
-                      }
-                      onRemove={() =>
-                        update({ sort: (query.sort ?? []).filter((_, i) => i !== index) })
-                      }
-                    >
+              <AddButton label={$t('Mesure')} />
+            </AggregationPopover>
+            <span className="self-center px-1 text-sm text-muted-foreground">{$t('par')}</span>
+            {breakouts.map((b, index) => (
+              <BreakoutPopover
+                // biome-ignore lint/suspicious/noArrayIndexKey: groupings are edited in place, by position
+                key={index}
+                columns={columns}
+                onDone={(next, column) =>
+                  update({ breakouts: breakouts.map((x, i) => (i === index ? next : x)) }, column)
+                }
+              >
+                <span>
+                  <Pill
+                    tone="summarize"
+                    onRemove={() =>
+                      update({
+                        breakouts: breakouts.filter((_, i) => i !== index),
+                        sort: sort.filter((s) => s.target.kind !== 'breakout'),
+                      })
+                    }
+                  >
+                    {describeBreakout(b, columns)}
+                  </Pill>
+                </span>
+              </BreakoutPopover>
+            ))}
+            {breakouts.length < QUERY_LIMITS.breakouts && (
+              <BreakoutPopover
+                columns={columns}
+                onDone={(b, column) => update({ breakouts: [...breakouts, b] }, column)}
+              >
+                <AddButton label={$t('Regroupement')} />
+              </BreakoutPopover>
+            )}
+          </Step>
+
+          <Step icon={Columns3} title={$t('Colonnes')} tone="sort">
+            {listing ? (
+              <>
+                <TableColumns
+                  base={base}
+                  query={query}
+                  label={source?.label ?? query.source}
+                  icon={<Table2 className="size-4 shrink-0" />}
+                  options={sourceColumns}
+                  tone={TONES.data}
+                  onChange={commit}
+                />
+                {written.map((j) => (
+                  <TableColumns
+                    key={j.alias}
+                    base={base}
+                    query={query}
+                    label={tableOf(base, j.table)?.label ?? j.alias}
+                    icon={<JoinGlyph kind={j.kind} className="h-3.5 w-[22px]" />}
+                    options={columns.filter((c) => c.join?.alias === j.alias)}
+                    tone={TONES.data}
+                    onChange={commit}
+                  />
+                ))}
+                {related.length > 0 && (
+                  <TableColumns
+                    base={base}
+                    query={query}
+                    label={$t('Tables liées')}
+                    icon={<Link2 className="size-4 shrink-0" />}
+                    options={related}
+                    tone={TONES.sort}
+                    onChange={commit}
+                  />
+                )}
+              </>
+            ) : (
+              <span className="self-center text-sm text-muted-foreground">
+                {$t('Le résumé décide des colonnes du résultat.')}
+              </span>
+            )}
+          </Step>
+
+          <Step icon={ListOrdered} title={$t('Trier et limiter')} tone="sort">
+            {sort.map((order, index) => (
+              <Hint
+                // biome-ignore lint/suspicious/noArrayIndexKey: sort terms are edited in place, by position
+                key={index}
+                label={$t('Inverser l’ordre')}
+              >
+                <span className="inline-flex">
+                  <Pill
+                    tone="sort"
+                    onClick={() =>
+                      update({
+                        sort: sort.map((s, i) =>
+                          i === index ? { ...s, desc: s.desc !== true } : s,
+                        ),
+                      })
+                    }
+                    onRemove={() => update({ sort: sort.filter((_, i) => i !== index) })}
+                  >
+                    <span className="inline-flex items-center gap-1">
                       {order.desc === true ? (
-                        <ArrowDown className="size-3.5" />
+                        <ArrowDownAZ className="size-3.5" />
                       ) : (
-                        <ArrowUp className="size-3.5" />
+                        <ArrowUpAZ className="size-3.5" />
                       )}
                       {sortLabel(order, query, columns)}
-                    </Chip>
-                  </span>
-                </Hint>
-              ))}
+                    </span>
+                  </Pill>
+                </span>
+              </Hint>
+            ))}
+            {sort.length < QUERY_LIMITS.sort && (
               <SortPopover
                 query={query}
                 columns={columns}
-                onDone={(o) => update({ sort: [...(query.sort ?? []), o] })}
+                onDone={(o, column) => update({ sort: [...sort, o] }, column)}
               >
-                <AddButton tone="neutral">
-                  <Plus className="size-4" />
-                  {(query.sort ?? []).length === 0 && $t('Choisir une colonne')}
-                </AddButton>
+                <AddButton label={$t('Tri')} />
               </SortPopover>
-            </Step>
-          )}
-
-          {showLimit && (
-            <Step
-              tone="neutral"
-              title={$t('Limite')}
-              onRemove={() => {
-                setShowLimit(false)
-                update({ limit: null })
-              }}
-            >
+            )}
+            <span className="flex items-center gap-1.5 pl-2 text-sm text-muted-foreground">
+              {$t('Limite')}
               <Input
                 type="number"
                 min={1}
-                max={2000}
+                max={QUERY_LIMITS.rows}
                 value={query.limit ?? ''}
                 onChange={(e) =>
                   update({
                     limit: e.target.value === '' ? null : Math.max(1, Number(e.target.value)),
                   })
                 }
-                placeholder={$t('Nombre de lignes')}
+                placeholder={$t('aucune')}
                 aria-label={$t('Nombre de lignes au plus')}
-                className="h-9 w-40 bg-background"
+                className="h-8 w-24"
               />
-            </Step>
-          )}
-
-          <Button onClick={onRun} disabled={running} className="h-10 w-full max-w-xs">
-            {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-            {$t('Visualiser')}
-          </Button>
+            </span>
+          </Step>
         </>
       )}
     </div>
-  )
-}
-
-/** The columns a question reads as they are: all of them, or those ticked. */
-function FieldsPicker({
-  columns,
-  fields,
-  onChange,
-}: {
-  readonly columns: readonly ColumnOption[]
-  readonly fields: BuilderQuery['fields']
-  readonly onChange: (fields: BuilderQuery['fields'] | undefined) => void
-}) {
-  const business = columns.filter((c) => c.field.system !== true)
-  const chosen = fields ?? business.map((c) => c.ref)
-  const has = (c: ColumnOption) =>
-    chosen.some((f) => f.field === c.ref.field && (f.join ?? '') === (c.ref.join ?? ''))
-  return (
-    <Popover modal>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-sky-700 hover:bg-sky-500/10 dark:text-sky-300"
-        >
-          <Columns3 className="size-4" />
-          {fields === undefined
-            ? $t('Toutes les colonnes')
-            : $tp(fields.length, '{count} colonne', '{count} colonnes')}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-72">
-        <div className="mb-2 flex justify-between text-xs">
-          <button
-            type="button"
-            onClick={() => onChange(undefined)}
-            className="text-primary hover:underline"
-          >
-            {$t('Toutes')}
-          </button>
-          <button
-            type="button"
-            onClick={() => onChange([])}
-            className="text-muted-foreground hover:underline"
-          >
-            {$t('Aucune')}
-          </button>
-        </div>
-        <div className="max-h-72 space-y-0.5 overflow-y-auto scroll-discret">
-          {columns.map((c) => (
-            <label
-              key={`${c.ref.join ?? ''}.${c.ref.field}`}
-              className="flex items-center gap-2 rounded px-1 py-0.5 text-sm hover:bg-accent"
-            >
-              <input
-                type="checkbox"
-                className="accent-primary"
-                checked={has(c)}
-                onChange={() =>
-                  onChange(
-                    has(c)
-                      ? chosen.filter(
-                          (f) =>
-                            !(f.field === c.ref.field && (f.join ?? '') === (c.ref.join ?? '')),
-                        )
-                      : [...chosen, c.ref],
-                  )
-                }
-              />
-              <span className="truncate">{c.label}</span>
-            </label>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
   )
 }

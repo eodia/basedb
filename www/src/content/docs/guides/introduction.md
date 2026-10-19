@@ -49,7 +49,7 @@ l’écriture.
 - Des [automatisations](/basedb/fonctionnalites/automatisations/) et des
   [tableaux de bord](/basedb/fonctionnalites/tableaux-de-bord/) et leurs questions, construites à la souris ou en SQL.
 - Du [SQL pour chacun](/basedb/fonctionnalites/requetes-et-vues-sql/), avec ses propres droits :
-  des requêtes enregistrées sous les tables, et de vraies vues PostgreSQL rangées parmi elles.
+  des questions SQL enregistrées sous les tables, et de vraies vues PostgreSQL rangées parmi elles.
 - Des [modèles de base](/basedb/fonctionnalites/modeles/), à prendre dans une galerie ou à
   demander à l’IA.
 - Des [environnements](/basedb/fonctionnalites/environnements/) — production, recette — que

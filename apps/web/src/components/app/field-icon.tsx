@@ -117,6 +117,7 @@ export const KIND_LABELS: Readonly<Record<string, string>> = {
   formula: 'Formule',
   file: $t('Document'),
   image: $t('Image'),
+  button: $t('Bouton'),
   system: $t('Colonne système'),
 }
 

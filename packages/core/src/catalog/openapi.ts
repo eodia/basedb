@@ -10,6 +10,7 @@ const UNSORTED: ReadonlySet<string> = new Set([
   'multi_select',
   'file',
   'image',
+  'button',
 ])
 
 /**
@@ -436,17 +437,61 @@ export function toOpenApi(base: ProjectedBase, tenantRef: string): Record<string
       }
     }
 
-    // The batch, chapter 08 §3.5: described where — and only where — a single `POST` is,
+    // The batch, chapter 08 §3.5: described where — and only where — a single write is,
     // since it is the same right repeated. Only what is implemented is promised: creations,
-    // all or nothing.
-    if (table.actions.includes('create')) {
+    // or modifications, all or nothing — one kind per batch.
+    const canCreate = table.actions.includes('create')
+    const canUpdate = table.actions.includes('update')
+    if (canCreate || canUpdate) {
+      const operations = [
+        ...(canCreate
+          ? [
+              {
+                type: 'object',
+                required: ['op', 'data'],
+                properties: {
+                  op: { type: 'string', enum: ['create'] },
+                  data: { $ref: `#/components/schemas/${name}Write` },
+                },
+              },
+            ]
+          : []),
+        ...(canUpdate
+          ? [
+              {
+                type: 'object',
+                required: ['op', 'id', 'data'],
+                properties: {
+                  op: { type: 'string', enum: ['update'] },
+                  id: { type: 'string', format: 'uuid', description: 'La ligne à modifier.' },
+                  data: {
+                    type: 'object',
+                    description:
+                      'Les champs à modifier : un champ absent reste tel qu’il est, `null` le vide. ' +
+                      'Chaque ligne peut nommer des champs différents.',
+                    properties: (schemas[`${name}Write`] as { properties: Record<string, unknown> })
+                      .properties,
+                  },
+                },
+              },
+            ]
+          : []),
+      ]
       paths[`${root}/batch`] = {
         post: {
-          summary: `Créer plusieurs lignes dans ${escapeLabel(table.label)}`,
+          summary:
+            canCreate && canUpdate
+              ? `Créer ou modifier plusieurs lignes dans ${escapeLabel(table.label)}`
+              : canCreate
+                ? `Créer plusieurs lignes dans ${escapeLabel(table.label)}`
+                : `Modifier plusieurs lignes dans ${escapeLabel(table.label)}`,
           description:
-            'Tout ou rien : une seule transaction, et si une ligne est refusée aucune n’est créée. ' +
+            'Tout ou rien : une seule transaction, et si une ligne est refusée aucune n’est écrite. ' +
             'Le refus porte `details.index`, la position de la ligne fautive. ' +
-            'Seules les opérations `create` sont prises en charge, avec `atomic: true`.',
+            'Seules les opérations `create` et `update` sont prises en charge, avec `atomic: true`, ' +
+            'et un lot n’en contient qu’un genre. Un lot de modifications est annulable d’un seul ' +
+            'geste : `X-Basedb-Transaction` nomme sa transaction, que `POST /history/undo` défait. ' +
+            'Une ligne n’y figure qu’une fois.',
           requestBody: {
             content: {
               'application/json': {
@@ -459,14 +504,7 @@ export function toOpenApi(base: ProjectedBase, tenantRef: string): Record<string
                       type: 'array',
                       // Chapter 08 §3.6 — the same bound as the kernel's own.
                       maxItems: 1000,
-                      items: {
-                        type: 'object',
-                        required: ['op', 'data'],
-                        properties: {
-                          op: { type: 'string', enum: ['create'] },
-                          data: { $ref: `#/components/schemas/${name}Write` },
-                        },
-                      },
+                      items: operations.length === 1 ? operations[0] : { oneOf: operations },
                     },
                   },
                 },
@@ -475,7 +513,7 @@ export function toOpenApi(base: ProjectedBase, tenantRef: string): Record<string
           },
           responses: {
             '200': {
-              description: 'Toutes les lignes ont été créées, dans l’ordre.',
+              description: 'Toutes les lignes ont été écrites, dans l’ordre.',
               content: {
                 'application/json': {
                   schema: {
@@ -488,7 +526,7 @@ export function toOpenApi(base: ProjectedBase, tenantRef: string): Record<string
                           type: 'object',
                           properties: {
                             index: { type: 'integer' },
-                            status: { type: 'string', enum: ['created'] },
+                            status: { type: 'string', enum: ['created', 'updated'] },
                             id: { type: 'string', format: 'uuid' },
                           },
                         },
@@ -503,6 +541,75 @@ export function toOpenApi(base: ProjectedBase, tenantRef: string): Record<string
               description: 'Plus de 1 000 opérations.',
               content: { 'application/json': { schema: ERROR_RESPONSE } },
             },
+            ...commonResponses(),
+          },
+        },
+      }
+    }
+
+    // The whole table, or a whole view, as a file (chapter 08 §3.7): described where a
+    // list is, since it is that list read to the end — same mask, same filter grammar.
+    if (table.actions.includes('read')) {
+      const error = { content: { 'application/json': { schema: ERROR_RESPONSE } } }
+      paths[`${root}/export`] = {
+        get: {
+          summary: `Exporter ${escapeLabel(table.label)}`,
+          description:
+            'Toutes les lignes que le filtre retient — pas seulement une page —, envoyées au fur et à mesure ' +
+            'de la lecture. Les colonnes que vous ne lisez pas n’y sont jamais, comme dans une liste. ' +
+            'Au-delà de 1 000 000 de lignes, l’export est refusé avant son premier octet (`400`, ' +
+            '`details.reason: export_trop_gros`) : filtrez.',
+          parameters: [
+            {
+              name: 'format',
+              in: 'query',
+              required: true,
+              schema: { type: 'string', enum: ['csv', 'xlsx', 'json'] },
+              description:
+                '`csv` (UTF-8 avec BOM, séparateur `,`), `xlsx` (Excel) ou `json`. Un libellé de relation, ' +
+                'un nom de personne, un nom de fichier, une date ISO : ce qu’un écran affiche.',
+            },
+            {
+              name: 'filter',
+              in: 'query',
+              schema: { type: 'string' },
+              description: 'Expression de filtrage — la même que pour une liste.',
+            },
+            { name: 'sort', in: 'query', schema: { type: 'string', enum: sortable } },
+            {
+              name: 'fields',
+              in: 'query',
+              schema: { type: 'string' },
+              description:
+                'Les colonnes à écrire, par nom physique et dans cet ordre, séparées par des virgules. ' +
+                'Absent : toutes celles que vous lisez, colonnes système comprises.',
+            },
+            {
+              name: 'headers',
+              in: 'query',
+              schema: { type: 'string', enum: ['name', 'label'] },
+              description:
+                'Ce que dit la ligne d’en-tête d’un CSV ou d’un classeur : le nom physique (par défaut) ou le libellé. ' +
+                'Les clés d’un JSON sont toujours les noms physiques.',
+            },
+          ],
+          responses: {
+            '200': {
+              description: 'Le fichier, en pièce jointe.',
+              content: {
+                'text/csv': { schema: { type: 'string' } },
+                'application/json': { schema: { type: 'array', items: { type: 'object' } } },
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+                  schema: { type: 'string', format: 'binary' },
+                },
+              },
+            },
+            '400': {
+              description:
+                'Format, filtre, tri ou colonne refusés — ou plus de lignes que le plafond.',
+              ...error,
+            },
+            '429': { description: 'Trois exports sont déjà en cours pour vous.', ...error },
             ...commonResponses(),
           },
         },

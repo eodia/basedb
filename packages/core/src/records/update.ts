@@ -1,5 +1,5 @@
 import { qualify, quoteIdentifier } from '@basedb/naming'
-import { loadAiDependents, staleAiAssignments } from '../ai/field.js'
+import { type AiDependent, loadAiDependents, staleAiAssignments } from '../ai/field.js'
 import { isFileKind } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { type Action, type ActorGrants, SYSTEM_COLUMNS, decide } from '../rbac/decide.js'
@@ -8,7 +8,7 @@ import { ROW_ALIAS } from '../rbac/rows.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { refuseSynced } from '../sync/guard.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
-import { assertLinkScope, linkScopeChecks } from './link-scope.js'
+import { type LinkScopeCheck, assertLinkScope, linkScopeChecks } from './link-scope.js'
 import { type ShapedField, shapeValues, shapedFields } from './values.js'
 
 /**
@@ -40,7 +40,7 @@ export interface UpdatedRecord {
 }
 
 /** Physical location and mask, resolved once for any row operation. */
-interface RowContext {
+export interface RowContext {
   readonly relation: string
   readonly names: Map<string, string>
   readonly readable: readonly string[]
@@ -59,7 +59,7 @@ interface RowContext {
   readonly links: ReadonlyMap<string, string>
 }
 
-async function prepare(
+export async function prepare(
   exec: Executor,
   ctx: RequestContext,
   tableId: string,
@@ -118,6 +118,81 @@ async function prepare(
   }
 }
 
+/** One row's update, planned in the catalog transaction and run in the data one. */
+export interface UpdatePlan {
+  readonly sql: string
+  readonly params: unknown[]
+  /** The rows the links written name, to be checked against the author's rows. */
+  readonly links: LinkScopeCheck[]
+}
+
+/**
+ * The statement that changes one row under the write mask — shared by the update of one
+ * row and by a batch of them, so that the two can never judge a value differently.
+ *
+ * `returning` is the projection of the READ mask for a single update, and the bare
+ * identifier for a batch, which answers no row.
+ */
+export async function planUpdate(
+  exec: Executor,
+  ctx: RequestContext,
+  c: RowContext,
+  request: {
+    readonly dependents: readonly AiDependent[]
+    readonly recordId: string
+    readonly values: Readonly<Record<string, unknown>>
+    readonly returning: string
+  },
+): Promise<UpdatePlan> {
+  const assignments: string[] = []
+  const params: unknown[] = []
+  /** The parameter holding each assigned column's new value. */
+  const placeholders = new Map<string, string>()
+  const values = await shapeValues(exec, c.shaped, c.writable, request.values)
+
+  for (const [name, value] of Object.entries(values)) {
+    // Unknown field and invisible field: same response. Without this, an update
+    // would become a way to enumerate hidden columns.
+    if (!c.readableNames.has(name)) {
+      throw new BasedbError('FILTER_FIELD_UNKNOWN', { details: { field: name } })
+    }
+    if (!c.writable.has(name)) {
+      throw new BasedbError('FIELD_NOT_WRITABLE', { details: { field: name } })
+    }
+    params.push(value)
+    placeholders.set(name, `$${params.length}`)
+    assignments.push(`${quoteIdentifier(name)} = $${params.length}`)
+  }
+
+  if (assignments.length === 0) {
+    throw new BasedbError('REQUIRED_VALUE_MISSING', {
+      details: { reason: 'no writable value supplied' },
+    })
+  }
+
+  // An AI cell answers for the values its prompt cites: change one, and the cell is
+  // emptied for the worker to compute again (chapter 12 §1.5).
+  assignments.push(...staleAiAssignments(request.dependents, placeholders))
+
+  // `_updated_at` and `_updated_by` are held by the kernel, never by the caller.
+  params.push(ctx.actor.id)
+  assignments.push(`"_updated_by" = $${params.length}`)
+  assignments.push('"_updated_at" = pg_catalog.clock_timestamp()')
+
+  params.push(request.recordId)
+  const links = await linkScopeChecks(exec, ctx, c.grants, c.links, values)
+
+  return {
+    links,
+    sql: `UPDATE ${c.relation} AS ${quoteIdentifier(ROW_ALIAS)}
+   SET ${assignments.join(',\n       ')}
+ WHERE "_id" = $${params.length}
+   AND ( /*predicat_lignes*/ ${c.rows} )
+RETURNING ${request.returning};`,
+    params,
+  }
+}
+
 /** Partially updates a record, under the write mask. */
 export async function updateRecord(
   pools: Pools,
@@ -130,55 +205,16 @@ export async function updateRecord(
     ctx,
     async (exec) => {
       const c = await prepare(exec, ctx, options.tableId, 'update')
-
-      const assignments: string[] = []
-      const params: unknown[] = []
-      /** The parameter holding each assigned column's new value. */
-      const placeholders = new Map<string, string>()
-      const values = await shapeValues(exec, c.shaped, c.writable, options.values)
-
-      for (const [name, value] of Object.entries(values)) {
-        // Unknown field and invisible field: same response. Without this, an update
-        // would become a way to enumerate hidden columns.
-        if (!c.readableNames.has(name)) {
-          throw new BasedbError('FILTER_FIELD_UNKNOWN', { details: { field: name } })
-        }
-        if (!c.writable.has(name)) {
-          throw new BasedbError('FIELD_NOT_WRITABLE', { details: { field: name } })
-        }
-        params.push(value)
-        placeholders.set(name, `$${params.length}`)
-        assignments.push(`${quoteIdentifier(name)} = $${params.length}`)
-      }
-
-      if (assignments.length === 0) {
-        throw new BasedbError('REQUIRED_VALUE_MISSING', {
-          details: { reason: 'no writable value supplied' },
-        })
-      }
-
-      // An AI cell answers for the values its prompt cites: change one, and the cell is
-      // emptied for the worker to compute again (chapter 12 §1.5).
       const dependents = await loadAiDependents(exec, options.tableId)
-      assignments.push(...staleAiAssignments(dependents, placeholders))
-
-      // `_updated_at` and `_updated_by` are held by the kernel, never by the caller.
-      params.push(ctx.actor.id)
-      assignments.push(`"_updated_by" = $${params.length}`)
-      assignments.push('"_updated_at" = pg_catalog.clock_timestamp()')
-
-      params.push(options.recordId)
-      const returning = [...SYSTEM_COLUMNS, ...c.readable].map((x) => quoteIdentifier(x)).join(', ')
-      const links = await linkScopeChecks(exec, ctx, c.grants, c.links, values)
+      const planned = await planUpdate(exec, ctx, c, {
+        dependents,
+        recordId: options.recordId,
+        values: options.values,
+        returning: [...SYSTEM_COLUMNS, ...c.readable].map((x) => quoteIdentifier(x)).join(', '),
+      })
 
       return {
-        links,
-        sql: `UPDATE ${c.relation} AS ${quoteIdentifier(ROW_ALIAS)}
-   SET ${assignments.join(',\n       ')}
- WHERE "_id" = $${params.length}
-   AND ( /*predicat_lignes*/ ${c.rows} )
-RETURNING ${returning};`,
-        params,
+        ...planned,
         fileColumns: c.fileColumns,
       }
     },

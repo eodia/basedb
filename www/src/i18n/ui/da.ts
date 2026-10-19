@@ -1971,8 +1971,8 @@ export default {
 						text: 'Udbyder, model og nøgle pr. arbejdsområde uden at gå via API’ets miljø.',
 					},
 					mail: {
-						title: 'Notifikationer og invitationer via e-mail',
-						text: 'Omtaler, svar og udpegninger kommer i dag ind i basedb, og invitationer som et link, du selv sender; de vil også kunne sendes via e-mail.',
+						title: 'Invitationer via e-mail',
+						text: 'Notifikationer sendes allerede via e-mail til dem, der beder om det; en invitation er stadig et link, du selv giver videre. Den vil også kunne sendes via e-mail.',
 					},
 				},
 			},

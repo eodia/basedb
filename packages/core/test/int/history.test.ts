@@ -207,6 +207,31 @@ describe('what the capture records', () => {
     )
   })
 
+  it('undoing a change leaves out the formula it moved: PostgreSQL computes it again', async () => {
+    const t = await kernel.createTable(admin, {
+      baseId: crm.baseId,
+      label: 'Lignes',
+      fields: [{ label: 'Prix', kind: 'number' }],
+    })
+    await kernel.addField(admin, {
+      tableId: t.tableId,
+      label: 'Double',
+      kind: 'formula',
+      formula: { expression: '[Prix] * 2' },
+    })
+    const id = String(
+      (await kernel.createRecord(admin, { tableId: t.tableId, values: { prix: '10' } })).row._id,
+    )
+    await kernel.updateRecord(admin, { tableId: t.tableId, recordId: id, values: { prix: '20' } })
+    const page = await kernel.recordHistory(admin, { tableId: t.tableId, recordId: id })
+    // The change carries the formula's move too…
+    expect(page.revisions[0]?.changes.map((c) => c.label).sort()).toEqual(['Double', 'Prix'])
+    // …and undoing it puts Prix back, the formula following.
+    await kernel.revertRevision(admin, { revisionId: page.revisions[0]?.id as string })
+    const row = (await kernel.listRecords(admin, { tableId: t.tableId })).rows[0]
+    expect([Number(row?.prix), Number(row?.double)]).toEqual([10, 20])
+  })
+
   it('a deletion keeps the whole row, and the row comes back under its own identifier', async () => {
     await kernel.deleteRecord(admin, { tableId: factures.tableId, recordId: invoice })
     const [deletion] = (

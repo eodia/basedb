@@ -10,8 +10,9 @@ import { useEffect, useState } from 'react'
 
 /**
  * A question in a tab of the workspace (chapter 18 §1): built with the mouse or written in
- * SQL, shown as a table or a chart, run read only with the reader's own rights — the same
- * question as on a dashboard. The tab keeps its draft: another tab and back finds it as left.
+ * SQL — what the SQL tab and the saved queries of earlier versions are now —, shown as a table
+ * or a chart, run with the reader's own rights, read only once saved — the same question as on
+ * a dashboard. The tab keeps its draft: another tab and back finds it as left.
  */
 export function QuestionTab({
   base,
@@ -82,6 +83,16 @@ export function QuestionTab({
       question={saved !== null && saved.id === tab.question.id ? saved : null}
       manages={manages}
       onDraftChange={(draft) => setQuestionDraft(tab.id, draft)}
+      onSqlViewSaved={(view) => {
+        // The view the text became opens in a tab of its own, read with the reader's reach.
+        useWorkspace.getState().openSqlView(base.name, view)
+        onNavigationChanged?.()
+      }}
+      onOpenRows={(draft) => {
+        // The rows behind a point, in a tab of their own: this one stays as it was.
+        const store = useWorkspace.getState()
+        store.setQuestionDraft(store.openNewQuestion(base.name, 'builder', draft.label), draft)
+      }}
       onSaved={(question) => {
         setSaved(question)
         attachQuestion(tab.id, question.id, question.label)

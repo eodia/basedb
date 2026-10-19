@@ -1,7 +1,7 @@
 'use client'
 
 import { ApiError, type Write, api, onWrite } from '@/lib/api/client'
-import { $t } from '@/lib/i18n'
+import { $t, $tp } from '@/lib/i18n'
 import { reasonFor } from '@/lib/messages'
 import { toast } from 'sonner'
 import { create } from 'zustand'
@@ -47,7 +47,23 @@ export function configureJournal(options: {
 /** The gesture a write was, in words. */
 export function describeWrite(write: Write, label: (name: string) => string = labelOf): string {
   if (write.method === 'DELETE') return $t('suppression d’une ligne')
-  if (write.path.endsWith('/batch')) return $t('import de lignes')
+  if (write.path.endsWith('/batch')) {
+    // The same route creates rows (an import) and changes them (a pasted range).
+    try {
+      const body = JSON.parse(write.body ?? '{}') as { operations?: Array<{ op?: unknown }> }
+      const operations = body.operations ?? []
+      if (operations[0]?.op === 'update') {
+        return $tp(
+          operations.length,
+          'modification de {count} ligne',
+          'modification de {count} lignes',
+        )
+      }
+    } catch {
+      // An unreadable body is still an import.
+    }
+    return $t('import de lignes')
+  }
   if (write.method === 'POST') return $t('création d’une ligne')
   try {
     const values = (JSON.parse(write.body ?? '{}') as { values?: Record<string, unknown> }).values

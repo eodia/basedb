@@ -148,6 +148,8 @@ export function checkBuilderQuery(raw: unknown, at = 'query'): BuilderQuery {
       kind: kind as Join['kind'],
       left: columnRef(item.left, `${where}.left`),
       right: item.right,
+      // Only the editor's own mark is kept, and only when it is the one it writes.
+      ...(item.implicit === true ? { implicit: true as const } : {}),
     }
   })
 

@@ -116,7 +116,8 @@ export function operatorsFor(kind: FieldKind): readonly Operator[] {
 
 /**
  * True if the type can be ordered at all. Long text is searched, never compared; a list —
- * of choices or of files — has no order a reader would recognise as one.
+ * of choices or of files — has no order a reader would recognise as one; a button has no
+ * value to order by.
  */
 export function sortableKind(kind: FieldKind): boolean {
   return !UNSORTABLE.has(kind)
@@ -129,6 +130,7 @@ const UNSORTABLE: ReadonlySet<FieldKind> = new Set([
   'lookup',
   'file',
   'image',
+  'button',
 ])
 
 /** The five system columns, filterable and sortable as soon as `read` is granted (A18). */

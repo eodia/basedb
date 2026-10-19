@@ -10,6 +10,7 @@ import {
   type SqlVariable,
   addDays,
   resolveDateExpression,
+  sqlColumnType,
   sqlVariableNames,
 } from '@basedb/contracts'
 import { quoteLiteral } from '../ddl/emit.js'
@@ -215,19 +216,6 @@ export function renderSql(
   })
 }
 
-const NUMERIC_TYPES =
-  /^(smallint|integer|bigint|numeric|real|double precision|money|int\d|float\d|decimal)/
-
-/** What a PostgreSQL type reads as on screen. */
-function typeOf(dataType: string): string {
-  if (NUMERIC_TYPES.test(dataType)) return 'number'
-  if (dataType === 'date') return 'date'
-  if (dataType.startsWith('timestamp')) return 'datetime'
-  if (dataType === 'boolean') return 'boolean'
-  if (dataType === 'json' || dataType === 'jsonb') return 'json'
-  return 'text'
-}
-
 export interface RunSqlQuestionRequest {
   readonly baseId: string
   readonly query: SqlQuery
@@ -274,7 +262,7 @@ export async function runSqlQuestion(
     return key
   })
   const columns: ResultColumn[] = result.columns.map((column) => {
-    const type = typeOf(column.dataType)
+    const type = sqlColumnType(column.dataType)
     return {
       name: column.name,
       label: column.name,

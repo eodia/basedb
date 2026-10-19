@@ -9,6 +9,7 @@ import { loadBaseTarget } from '../rbac/require.js'
 import type { Executor, Pools } from '../runtime/pool.js'
 import { startupOptions, survive } from '../runtime/pool.js'
 import { type RequestContext, withTransaction } from '../tx/context.js'
+import { readCapped } from './cursor.js'
 
 /**
  * The SQL console.
@@ -205,26 +206,41 @@ export async function runConsoleSql(
       [ctx.actor.id],
     )
 
-    // No transaction wrapper: a console must be able to run `BEGIN` / `COMMIT` itself,
-    // and wrapping would make the submitted text a nested transaction it cannot control.
+    // No transaction wrapper around the text itself: a console must be able to run
+    // `BEGIN` / `COMMIT`, and wrapping would make the submitted text a nested transaction
+    // it cannot control.
     //
     // Except in READ ONLY mode — a statement no person typed, the copilot's. There the
     // wrapper IS the guarantee: a `READ ONLY` transaction refuses any write, down to one
     // hidden in a CTE or a function, and the EXTENDED protocol refuses a second statement,
     // so a `COMMIT; DELETE …` cannot step out of it. The `ROLLBACK` below closes it.
-    if (request.readOnly === true) await client.query('BEGIN TRANSACTION READ ONLY')
-    const raw = (await client.query({
-      text: sql,
-      rowMode: 'array' as const,
-      ...(request.readOnly === true ? { queryMode: 'extended' as const } : {}),
-    })) as unknown as ConsoleQueryResult | ConsoleQueryResult[]
-    const results: ConsoleQueryResult[] = Array.isArray(raw) ? raw : [raw]
-    // Several statements separated by `;` come back as several results. The LAST one
-    // carrying columns is the one shown — that is what a console user expects from
-    // `DELETE …; SELECT …;`.
-    const last = [...results].reverse().find((r) => (r.fields?.length ?? 0) > 0) ?? results.at(-1)
-    if (last === undefined) {
-      throw new BasedbError('INTERNAL_ERROR', { details: { reason: 'aucun résultat' } })
+    //
+    // A query alone is the exception: read through a cursor (`sql/cursor.ts`), so that
+    // only the rows shown leave the server, in a transaction of its own committed after —
+    // what it called keeps its effects, as when it ran bare.
+    await client.query(request.readOnly === true ? 'BEGIN TRANSACTION READ ONLY' : 'BEGIN')
+    const capped = await readCapped(client, sql, limit)
+    let last: ConsoleQueryResult
+    if (capped !== null) {
+      if (request.readOnly !== true) await client.query('COMMIT')
+      last = { fields: capped.fields, rows: capped.rows, rowCount: capped.total, command: 'SELECT' }
+    } else {
+      if (request.readOnly !== true) await client.query('ROLLBACK')
+      const raw = (await client.query({
+        text: sql,
+        rowMode: 'array' as const,
+        ...(request.readOnly === true ? { queryMode: 'extended' as const } : {}),
+      })) as unknown as ConsoleQueryResult | ConsoleQueryResult[]
+      const results: ConsoleQueryResult[] = Array.isArray(raw) ? raw : [raw]
+      // Several statements separated by `;` come back as several results. The LAST one
+      // carrying columns is the one shown — that is what a console user expects from
+      // `DELETE …; SELECT …;`.
+      const found =
+        [...results].reverse().find((r) => (r.fields?.length ?? 0) > 0) ?? results.at(-1)
+      if (found === undefined) {
+        throw new BasedbError('INTERNAL_ERROR', { details: { reason: 'aucun résultat' } })
+      }
+      last = found
     }
 
     const fields = last.fields ?? []

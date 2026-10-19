@@ -918,7 +918,7 @@ async function matched(
   })
 }
 
-async function usedThisHour(pools: Pools, automationId: string): Promise<number> {
+export async function usedThisHour(pools: Pools, automationId: string): Promise<number> {
   const [used] = await pools.withConnection('catalog', (exec) =>
     exec.query<{ n: number }>(
       `SELECT count(*)::int AS n FROM _basedb.automation_run

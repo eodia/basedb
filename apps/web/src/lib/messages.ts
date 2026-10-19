@@ -9,6 +9,10 @@ import { ApiError } from './api/client'
  * for display — which is why these strings are the only French ones in this file.
  */
 const EXPLANATIONS: Readonly<Record<string, string>> = {
+  // Not a code of the API: the screen's own, for a route the API in service does not know.
+  ROUTE_UNKNOWN: $t(
+    'L’API en service ne connaît pas cette action : elle est plus ancienne que l’écran. Relancez-la.',
+  ),
   // Chapter 13 §2.5 fixes this sentence, and it is deliberately vague: unknown address,
   // wrong password, disabled, locked or deleted account all reach it, because none of
   // them is something a stranger may learn.
@@ -41,7 +45,7 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
     'Une formule ne cite pas une autre formule : réécrivez l’expression complète.',
   ),
   FORMULA_FUNCTION_NOT_IMMUTABLE: $t(
-    'Une date ne se convertit pas en texte dans une formule : passez par ANNEE, MOIS, JOUR.',
+    'Une date ne se convertit en texte qu’avec un format : écrivez TEXTE(date; "jj/mm/aaaa"), ou passez par ANNEE, MOIS, JOUR.',
   ),
   COMPUTED_FIELD_READ_ONLY: $t('Ce champ est calculé : il ne s’écrit pas.'),
   REQUIRED_VALUE_MISSING: $t('Un champ obligatoire est vide.'),
@@ -54,7 +58,7 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   FILTER_TOO_COMPLEX: $t('Filtre trop complexe : trop de conditions ou de parenthèses.'),
   FILTER_TOO_LONG: $t('Filtre trop long.'),
   FILTER_NOT_SUPPORTED: $t('Ce filtre n’est pas encore pris en charge.'),
-  FILTER_DISPLAY_UNAVAILABLE: $t('La table visée n’a pas de colonne d’affichage.'),
+  FILTER_DISPLAY_UNAVAILABLE: $t('La table visée n’a pas de titre des lignes.'),
   EXPAND_TOO_DEEP: $t('Un chemin ne peut traverser qu’une seule relation.'),
   // A cursor is bound to its reader and to its query (ch. 08 §6.2), so these two say
   // what to DO rather than what went wrong: one is unrecoverable, the other reloads.
@@ -87,6 +91,11 @@ const EXPLANATIONS: Readonly<Record<string, string>> = {
   BASE_NOT_EMPTY: $t('Cette base contient encore des tables vivantes.'),
   BASE_STRUCTURE_FROZEN: $t('La structure de cette base est gelée : une dérive a été détectée.'),
   TABLE_REFERENCED: $t('Cette table est encore visée par une relation active.'),
+  DISPLAY_FIELD_IN_USE: $t(
+    'Ce champ nomme les lignes de sa table : choisissez-en un autre avant de le supprimer.',
+  ),
+  FIELD_USED_BY_FORMULA: $t('D’autres champs ou règles lisent encore ce champ.'),
+  COLUMN_HAS_VIEW_DEPENDENCIES: $t('Un alias de compatibilité expose encore cette colonne.'),
   DEPENDENT_OBJECT: $t('Un objet créé en SQL (une vue, par exemple) en dépend encore.'),
   ALIAS_DEPENDENT: $t('Un alias de compatibilité est encore utilisé.'),
   TARGET_PURGED: $t('Cet objet a été purgé : il n’est plus restaurable.'),
@@ -285,6 +294,22 @@ function explain(e: ApiError): string {
 
   // A choice that rows still carry cannot leave the list. The count is the whole point of
   // the refusal: it says how much data stands in the way.
+  // No duplicate asked of a field that has some: the values in the way, and how often.
+  if (e.code === 'DUPLICATE_VALUE' && Array.isArray(e.details.duplicates)) {
+    const repeated = (e.details.duplicates as Array<{ value?: unknown; count?: unknown }>)
+      .slice(0, 5)
+      .map(
+        (d) =>
+          `« ${String(d.value)} » (${$tp(Number(d.count), '{count} ligne', '{count} lignes')})`,
+      )
+      .join(', ')
+    return $t('Des valeurs sont en double : {repeated}. Corrigez-les, puis réessayez.', {
+      repeated,
+    })
+  }
+  if (e.code === 'INDEX_LENGTH_EXCEEDED') {
+    return $t('Certaines valeurs sont trop longues pour être garanties sans doublon.')
+  }
   if (e.code === 'OPTION_IN_USE' && Array.isArray(e.details.options)) {
     const used = (e.details.options as Array<{ value?: unknown; count?: unknown }>)
       .map(
@@ -418,6 +443,21 @@ function explain(e: ApiError): string {
   if (e.code === 'VALUE_INVALID' && typeof e.details.reason === 'string') {
     const known = VALUE_REASONS[e.details.reason]
     if (known !== undefined) return known
+  }
+  // Taking a whole view out (`GET …/export`): refused before the first byte.
+  if (
+    e.code === 'REQUEST_INVALID' &&
+    e.details.reason === 'export_trop_gros' &&
+    typeof e.details.maximum === 'number'
+  ) {
+    return $t('Cette vue compte plus de {maximum} lignes : filtrez-la pour l’exporter.', {
+      maximum: e.details.maximum.toLocaleString(intlLocale()),
+    })
+  }
+  if (e.code === 'CONCURRENCY_LIMIT_EXCEEDED' && typeof e.details.exports === 'number') {
+    return $t('{count} exports sont déjà en cours : attendez la fin de l’un d’eux.', {
+      count: e.details.exports,
+    })
   }
   if (e.code === 'BODY_TOO_LARGE' && typeof e.details.maximum === 'number') {
     return $t('Fichier trop lourd : {floor} Mo au maximum.', {

@@ -416,7 +416,7 @@ VALUES (${quoteLiteral(nameId)}::uuid, 'schema', ${quoteLiteral(table.schema_id)
 }
 
 /** A live multi-link, with what dropping its triggers and index needs (04 §4 bis). */
-interface MultiLinkRow extends Record<string, unknown> {
+export interface MultiLinkRow extends Record<string, unknown> {
   readonly field_id: string
   readonly column: string
   readonly index_id: string
@@ -428,7 +428,7 @@ interface MultiLinkRow extends Record<string, unknown> {
   readonly target_label: string
 }
 
-async function loadMultiLinks(
+export async function loadMultiLinks(
   exec: Executor,
   where: string,
   parameter: string,
@@ -456,7 +456,7 @@ async function loadMultiLinks(
 }
 
 /** The statements that detach multi-links: as `fk_dropped_at` does for a link's key. */
-function dropMultiLinks(links: readonly MultiLinkRow[], stamp: string): string[] {
+export function dropMultiLinks(links: readonly MultiLinkRow[], stamp: string): string[] {
   return links.flatMap((link) => {
     const triggers = multiLinkTriggers(
       { schemaName: link.schema_name, tableName: link.table_name },
@@ -1113,9 +1113,13 @@ VALUES (${quoteLiteral(nameId)}::uuid, 'schema', ${quoteLiteral(schema.id)}::uui
    SET deleted_at = NULL, deleted_by = NULL, is_live = true,
        name_id = ${quoteLiteral(nameId)}::uuid
  WHERE id = ${quoteLiteral(table.id)}::uuid;`)
-      statements.push(`UPDATE _basedb.field
+      // Only the fields that went down WITH the table: one deleted on its own before
+      // carries a relegated name, its column is `zz_supprime_…`, and it stays deleted.
+      statements.push(`UPDATE _basedb.field f
    SET deleted_at = NULL, deleted_by = NULL, is_live = true
- WHERE table_id = ${quoteLiteral(table.id)}::uuid AND is_purged = false;`)
+ WHERE f.table_id = ${quoteLiteral(table.id)}::uuid AND f.is_purged = false
+   AND NOT EXISTS (SELECT 1 FROM _basedb.physical_name n
+                    WHERE n.id = f.name_id AND n.state = 'relegated');`)
     }
 
     steps.push({

@@ -85,6 +85,44 @@ Chaque écriture renvoie l’en-tête `x-basedb-transaction` : le passer à
 `POST /api/v1/<tenant>/history/undo` (`{"transaction": "…"}`) l’annule, comme Ctrl+Z dans
 l’interface — refusé si la ligne a été modifiée depuis.
 
+## Exporter une table
+
+Pour sortir **toutes** les lignes d’une table — ou d’une vue, avec son filtre, son tri et ses colonnes —
+et non une page, une seule requête suffit :
+
+```bash
+curl -OJ "http://localhost:3000/api/v1/t4z56fq/data/b_t4z56fq_ventes/opportunites/export?format=xlsx&filter=statut%20eq%20%22gagne%22&sort=-montant&headers=label" \
+  -H "Authorization: Bearer $BASEDB_TOKEN"
+```
+
+| Paramètre | Rôle |
+|---|---|
+| `format` | **obligatoire** : `csv`, `xlsx` (un classeur Excel) ou `json` |
+| `filter`, `sort` | ceux d’une lecture : mêmes expressions, mêmes refus |
+| `fields` | les colonnes à écrire, par nom physique et dans cet ordre : `fields=nom,montant`. Sans lui, toutes celles que vous lisez, colonnes système comprises |
+| `headers` | `name` (défaut) ou `label` : ce que dit la ligne d’en-tête d’un CSV ou d’un classeur — le nom physique, ou le libellé qu’on lit à l’écran. Les clés d’un JSON sont toujours les noms physiques |
+
+Le fichier arrive **au fur et à mesure** que la table est lue, page après page : rien ne tient la
+table entière en mémoire, et un client lent ne fait qu’attendre. Il porte ce que l’écran montre — un
+choix par son libellé, une relation par le libellé de la ligne liée, une personne par son nom, un
+fichier par son nom, les dates en ISO 8601. Le CSV est en UTF-8 avec BOM, pour qu’Excel garde les
+accents ; un texte qu’un tableur exécuterait comme une formule (`=…`, `@…`) y est précédé d’une apostrophe.
+Le JSON a la forme de l’API : une relation y est `{ "id", "display" }`.
+
+L’export lit **comme une liste** : un champ que vous ne lisez pas n’y est pas, une ligne que vos droits
+cachent n’y est pas, et un filtre ou un tri sur l’un d’eux est refusé comme une faute de frappe
+(`FILTER_FIELD_UNKNOWN`). Il est borné :
+
+- au-delà de **1 000 000 de lignes** — `BASEDB_EXPORT_MAX_ROWS` —, il est refusé avant le premier octet
+  (`400 REQUEST_INVALID`, `details.reason: export_trop_gros`) : ajoutez un filtre ;
+- **trois exports** à la fois par personne ou par jeton (`429 CONCURRENCY_LIMIT_EXCEEDED`) ;
+- trente minutes au plus.
+
+Ce n’est pas un instantané : une ligne écrite pendant l’export peut manquer. Chaque export est écrit
+dans le journal d’audit — qui, quelle table, quel format, combien de lignes, jamais une valeur. Comme
+toute route de données, il demande un jeton (le cookie d’une session ne suffit pas) ; dans l’interface,
+le menu de la barre du bas propose **Exporter toute la vue**.
+
 ## Au-delà des lignes
 
 Avec le même jeton :
@@ -92,6 +130,7 @@ Avec le même jeton :
 | Route | Rôle |
 |---|---|
 | `GET …/data/<base>/<table>/aggregate` | des résumés sur toutes les lignes d’un filtre : `aggregates=montant:sum,nom:filled`, `group=statut` |
+| `GET …/data/<base>/<table>/export` | la table, ou une vue, **en entier**, en CSV, Excel ou JSON : voir [Exporter une table](#exporter-une-table) |
 | `GET …/data/<base>/<table>/<_id>/comments`, `POST` | lire et écrire les commentaires d’une ligne |
 | `POST /api/v1/<tenant>/automations/<id>/run` | lancer une automatisation déclenchée par un bouton, sur une ligne (`{"record": "…"}`) |
 | `GET /api/v1/<tenant>/meta/bases/<base>/dashboards` | les tableaux de bord d’une base |

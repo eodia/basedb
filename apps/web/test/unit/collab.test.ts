@@ -111,6 +111,19 @@ describe('the undo journal', () => {
     )
     expect(describeWrite(write('POST', '/x'), label)).toBe('création d’une ligne')
     expect(describeWrite(write('POST', '/x/batch'), label)).toBe('import de lignes')
+    // The same route changes rows: a pasted range, a field filled over a selection.
+    const changes = (n: number) => ({
+      operations: Array.from({ length: n }, () => ({ op: 'update', id: 'x', data: {} })),
+    })
+    expect(describeWrite(write('POST', '/x/batch', changes(1)), label)).toBe(
+      'modification de 1 ligne',
+    )
+    expect(describeWrite(write('POST', '/x/batch', changes(40)), label)).toBe(
+      'modification de 40 lignes',
+    )
+    expect(
+      describeWrite(write('POST', '/x/batch', { operations: [{ op: 'create', data: {} }] }), label),
+    ).toBe('import de lignes')
     expect(describeWrite(write('DELETE', '/x/1'), label)).toBe('suppression d’une ligne')
   })
 

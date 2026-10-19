@@ -1978,8 +1978,8 @@ export default {
 						text: 'Anbieter, Modell und Schlüssel pro Arbeitsbereich, ohne Umweg über die Umgebung der API.',
 					},
 					mail: {
-						title: 'Benachrichtigungen und Einladungen per E-Mail',
-						text: 'Erwähnungen, Antworten und Zuweisungen kommen heute in basedb an, Einladungen als Link, den Sie selbst verschicken; künftig können sie auch per E-Mail hinausgehen.',
+						title: 'Einladungen per E-Mail',
+						text: 'Benachrichtigungen gehen auf Wunsch bereits per E-Mail hinaus; eine Einladung bleibt ein Link, den Sie selbst weitergeben. Auch sie wird per E-Mail verschickt werden können.',
 					},
 				},
 			},

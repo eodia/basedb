@@ -1967,8 +1967,8 @@ export default {
 						text: 'Provider, model en sleutel per werkruimte, zonder via de omgeving van de API te gaan.',
 					},
 					mail: {
-						title: 'Meldingen en uitnodigingen per e-mail',
-						text: 'Vermeldingen, antwoorden en toewijzingen komen vandaag binnen in basedb, uitnodigingen als een link die je zelf verstuurt; straks kunnen ze ook per e-mail vertrekken.',
+						title: 'Uitnodigingen per e-mail',
+						text: 'Meldingen gaan al per e-mail naar wie erom vraagt; een uitnodiging is nog een link die je zelf doorgeeft. Ook die kan straks per e-mail.',
 					},
 				},
 			},

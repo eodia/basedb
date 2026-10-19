@@ -45,8 +45,8 @@ import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useStat
 /**
  * A result, drawn — chapter 18 §3. The same result reads as a table, a pivot, a number, a
  * trend against its previous period, a bar towards its goal, or a chart; a click on a
- * point of a grouped result opens what it stands for (`onDrill`), a click on a row read as
- * it is opens that row (`onRecord`).
+ * point of a grouped result — or a right click on it — opens what it stands for (`onDrill`),
+ * a click on a row read as it is opens that row (`onRecord`).
  */
 
 export interface DrillEvent {
@@ -189,6 +189,7 @@ function ChartViz({
         <EChart
           option={option}
           onClick={onDrill === undefined ? undefined : click}
+          onContextMenu={onDrill === undefined ? undefined : click}
           onBandClick={
             onDrill === undefined || !AXIS_TYPES.has(type)
               ? undefined
@@ -671,6 +672,17 @@ function TableViz({
                                   point: { values: [{ column: c, value }] },
                                   at: { x: e.clientX, y: e.clientY },
                                 })
+                            : undefined
+                        }
+                        onContextMenu={
+                          grouped && c.role === 'dimension' && onDrill !== undefined
+                            ? (e) => {
+                                e.preventDefault()
+                                onDrill({
+                                  point: { values: [{ column: c, value }] },
+                                  at: { x: e.clientX, y: e.clientY },
+                                })
+                              }
                             : undefined
                         }
                         onKeyDown={

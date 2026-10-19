@@ -835,6 +835,32 @@ export function citedFields(filter: string): string[] {
   return cited
 }
 
+/** The keys without which a view has nothing to lay its rows on. */
+const PIVOT_KEYS = [
+  'group_by',
+  'date_field',
+  'start_field',
+  'address_field',
+  'latitude_field',
+  'longitude_field',
+]
+
+/**
+ * What a view loses with one field gone: its pivot — the columns of a kanban, the dates of a
+ * calendar or a timeline, the places of a map: the view is then empty until another is
+ * chosen —, its filter — the view then hidden rather than widened —, or a setting (a colour,
+ * a title, a cover) that simply goes. A column shown, a sort, just drop out: `null`.
+ */
+export function viewLoss(
+  spec: Readonly<Record<string, unknown>>,
+  name: string,
+): 'pivot' | 'filter' | 'setting' | null {
+  if (PIVOT_KEYS.some((key) => spec[key] === name)) return 'pivot'
+  if (typeof spec.filter === 'string' && citedFields(spec.filter).includes(name)) return 'filter'
+  if (SINGLE_FIELD_KEYS.some((key) => spec[key] === name)) return 'setting'
+  return null
+}
+
 /**
  * The spec as ONE reader may see it (chapter 11 §7): what names a field they do not see —
  * or a field deleted since, which must read the same — disappears. A pivot that vanishes

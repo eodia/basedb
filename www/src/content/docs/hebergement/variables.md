@@ -67,6 +67,12 @@ Voir [Comptes et connexion](/basedb/hebergement/connexion/).
 | `BASEDB_S3_ACCESS_KEY_ID`, `BASEDB_S3_SECRET_ACCESS_KEY` | — | identifiants |
 | `BASEDB_S3_FORCE_PATH_STYLE` | `1` | `0` pour l’adressage par hôte |
 
+## Exports
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `BASEDB_EXPORT_MAX_ROWS` | `1000000` | le plus de lignes qu’un export de table ou de vue peut contenir ; au-delà, il est refusé avant d’avoir commencé, et il faut filtrer |
+
 ## Courriels
 
 Sans serveur d’envoi, basedb n’envoie aucun courriel. Avec lui partent les notifications restées

@@ -1693,6 +1693,13 @@ Un **partage de tableau de bord** suit le modèle des vues partagées (chapitre 
 
 Migration de catalogue 0004 (chapitre 11 §1.7 et §1.8).
 
+**Les requêtes enregistrées sont, depuis la migration 0023, des questions SQL** (chapitre 18 §1) :
+chaque ligne de `saved_query` est copiée dans `_basedb.question` — sorte `sql`, `{"kind":"sql","sql":<statement>}`,
+visualisation `table`, **même identifiant**, son auteur (`owner_id` → `created_by`), ses dates, sa portée —
+et `saved_query_role` dans `question_role`, sans rien écraser (`ON CONFLICT DO NOTHING`). `saved_query` reste
+une version, que plus rien n'écrit ; elle sera retirée par une migration à venir. La contrainte d'unicité d'un
+libellé (`uq_saved_query_label`) n'a pas de pendant : une question peut en porter un autre.
+
 ```sql
 -- Un texte SQL range sous une base. personal : son auteur seul ; base : quiconque lit la
 -- base ; groups : les groupes de saved_query_role, et qui gere la base.

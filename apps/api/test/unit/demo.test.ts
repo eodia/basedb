@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { demoAccountFor, demoRefusal, demoTransport, isDemoAddress } from '../../src/demo.js'
+import {
+  demoAccountFor,
+  demoAllowsBatch,
+  demoRefusal,
+  demoTransport,
+  isDemoAddress,
+} from '../../src/demo.js'
 
 /**
  * The public demo — what a visitor may do. Reading and editing what exists pass; creating
@@ -59,6 +65,21 @@ describe('demoRefusal', () => {
       expect([path, refused('POST', path)]).toEqual([path, 'ACTION_FORBIDDEN'])
       expect(reason('POST', path)).toBe('demo')
     }
+  })
+
+  it('lets a batch through only when it changes rows — a pasted range, never a creation', () => {
+    const batch = `${T}/data/ventes/clients/batch`
+    const update = { op: 'update', id: '0190', data: { nom: 'x' } }
+    expect(demoAllowsBatch('POST', batch, [update, update])).toBe(true)
+    // One creation among the updates, an empty batch, a body that is no list: refused.
+    expect(demoAllowsBatch('POST', batch, [update, { op: 'create', data: {} }])).toBe(false)
+    expect(demoAllowsBatch('POST', batch, [{ op: 'create', data: {} }])).toBe(false)
+    expect(demoAllowsBatch('POST', batch, [])).toBe(false)
+    expect(demoAllowsBatch('POST', batch, 'update')).toBe(false)
+    expect(demoAllowsBatch('POST', batch, [null])).toBe(false)
+    // Only that route: the same body elsewhere changes nothing about what is refused.
+    expect(demoAllowsBatch('POST', `${T}/data/ventes/clients`, [update])).toBe(false)
+    expect(demoAllowsBatch('PUT', batch, [update])).toBe(false)
   })
 
   it('refuses every deletion, and the account’s own settings', () => {

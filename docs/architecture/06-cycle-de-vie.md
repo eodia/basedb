@@ -785,9 +785,29 @@ laissé en place et signalé (`RESIDUAL_SCHEMA`).
 - **Un renommage de base est une seule migration** de 64 étapes au plus, soit 630 tables,
   plutôt qu'une suite de migrations chaînées de dix tables.
 
+**Suppression d'un champ (§4.1, chapitre 04 §1.11), faite.** Une migration d'une étape sous
+verrou court : clé étrangère ou déclencheurs de la relation, contraintes et index dont le champ
+est membre, `DROP EXPRESSION`, `DROP IDENTITY`, `DROP NOT NULL`, puis `RENAME COLUMN` vers
+`zz_supprime_<date>_<nom>` (collision testée au registre et dans `pg_attribute`) ; registre
+`retired` → `relegated`. Un champ sans colonne (recherche, cumul, décompte, bouton) reçoit le
+même nom relégué au registre. Refus nommés, annoncés par un aperçu avant le clic : colonne
+d'affichage (`DISPLAY_FIELD_IN_USE`) ; formule, recherche, cumul ou décompte qui le lit,
+consigne d'IA ou adresse de bouton qui le cite, **règle de lignes qui le cite** — compilée sans
+lui, elle échouerait fermée et son groupe ne verrait plus aucune ligne — (`FIELD_USED_BY_FORMULA`,
+`details.by`) ; vue d'alias (`COLUMN_HAS_VIEW_DEPENDENCIES`) ; vue SQL du produit ou tierce
+construite sur la colonne (`DEPENDENT_OBJECT`). Les vues enregistrées ne sont pas marquées
+`is_invalid` : leur spec est reprojetée à la lecture (pivot à `null`, filtre qui masque la
+vue) ; l'aperçu les annonce. La restauration d'une base ne ramène que les champs tombés avec
+leur table (nom non relégué).
+
+**Écarts assumés de la suppression d'un champ.** L'index de lien est supprimé dans l'étape
+même, comme pour une table, et non `CONCURRENTLY` à une étape 3 ; une vue d'alias qui projette
+la colonne est un refus (chapitre 04 §1.11, 3), non une régénération (§3.4) ; les
+automatisations qui citent le champ ne sont pas encore détectées.
+
 **Pas encore faits.** La restauration d'une table supprimée seule (celle d'une base
-existe) ; la régénération des vues d'alias à la suppression d'un champ (§3.4), sans objet
-tant que le produit ne supprime pas de champ ; le commentaire « anciennement » des colonnes
+existe) ; celle d'un champ supprimé ; la régénération des vues d'alias à la suppression d'un
+champ (§3.4) ; le commentaire « anciennement » des colonnes
 de lien désalignées (§2.6) ; la liste des lecteurs de schéma dans l'écran d'impact ; les
 rappels de coupure et le rapport hebdomadaire ; l'épuration de second niveau des pierres
 tombales (§5.4).

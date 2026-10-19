@@ -18,14 +18,14 @@ import { create } from 'zustand'
  */
 
 /**
- * `table`: a grid of a table. `sql`: a statement and its result — a saved query's when
- * `queryId` says so. `question`: a question (chapter 18 §1), built or written in SQL, with
- * its chart — a saved one when `questionId` says so. `sqlview`: the rows of a SQL view of
- * the base (chapter 11 §1.8).
+ * `table`: a grid of a table. `question`: a question (chapter 18 §1), built with the mouse or
+ * written in SQL, with its chart — a saved one when `questionId` says so; it is also what
+ * the SQL tab of earlier versions, and a saved query, became. `sqlview`: the rows of a SQL
+ * view of the base (chapter 11 §1.8).
  */
-export type TabKind = 'table' | 'sql' | 'question' | 'sqlview'
+export type TabKind = 'table' | 'question' | 'sqlview'
 
-const TAB_KINDS: readonly TabKind[] = ['table', 'sql', 'question', 'sqlview']
+const TAB_KINDS: readonly TabKind[] = ['table', 'question', 'sqlview']
 
 /** A question as a tab holds it while it is edited: saved or not, run or not. */
 export interface QuestionDraft {
@@ -39,7 +39,7 @@ export interface QuestionDraft {
   readonly visualization: Visualization | null
 }
 
-/** A new question: to build with the mouse, or to write in SQL. */
+/** A new question: to build with the mouse, or — the editor's switch — to write in SQL. */
 export const newQuestionDraft = (kind: 'builder' | 'sql'): QuestionDraft => ({
   id: null,
   label: '',
@@ -134,11 +134,11 @@ export interface Tab {
   readonly kind: TabKind
   /** Base name — the schema, as one writes it in psql. */
   readonly base: string
-  /** Table name, for a `table` tab. A `sql` tab carries none: it names its own. */
+  /** Table name, for a `table` tab; the others carry none. */
   readonly table: string | null
   readonly label: string
   readonly view: ViewState
-  /** The statement being written, for a `sql` tab. */
+  /** The filter being written, for a `table` tab. */
   readonly draft: string
   /**
    * The saved view the tab shows (`_basedb.view_def`), `null` for the table's own grid —
@@ -150,8 +150,6 @@ export interface Tab {
    * it finds the columns as they were dragged, not reset.
    */
   readonly ownView: ViewState | null
-  /** For a `sql` tab: the saved query it shows (`_basedb.saved_query`), `null` when unsaved. */
-  readonly queryId: string | null
   /** For a `question` tab: the saved question it shows (`_basedb.question`), `null` when unsaved. */
   readonly questionId: string | null
   /**
@@ -202,23 +200,8 @@ interface WorkspaceState {
   readonly reloadTick: number
 
   openTable: (table: Table, label: string) => string
-  openSql: (base: string, table: string | null, label: string) => string
-  /**
-   * Opens a saved query: the tab already showing it if there is one — its text as it was
-   * left there, edits included —, else a new one holding its statement.
-   */
-  openQuery: (
-    base: string,
-    query: { readonly id: string; readonly label: string; readonly statement: string },
-  ) => { readonly id: string; readonly created: boolean }
   /** Opens a SQL view: the tab already showing it, else a new one. */
   openSqlView: (base: string, view: { readonly id: string; readonly label: string }) => string
-  /** A SQL tab's statement was just saved as a query, or saved again under a new name. */
-  attachQuery: (id: string, queryId: string, label: string) => void
-  /** A saved query is gone: its tabs keep their text, as statements no longer saved. */
-  detachQuery: (queryId: string) => void
-  /** A saved query was renamed: its tabs take its new name. */
-  renameQuery: (queryId: string, label: string) => void
   /**
    * Opens a saved question: the tab already showing it if there is one — as it was left
    * there, edits included —, else a new one that reads it.
@@ -304,6 +287,38 @@ const STORAGE_KEY = 'basedb.workspace.v1'
  * a screen that fails to mount. Selections are deliberately NOT restored — a row
  * selected yesterday is not a row anyone means to delete today.
  */
+/**
+ * A SQL tab of an earlier version, as the question it became (migration 0023). A saved
+ * query keeps its identifier — it is the question's — and the text left in the tab; an unsaved
+ * statement is a new SQL question holding it.
+ */
+export function questionOfSqlTab(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null || (raw as { kind?: unknown }).kind !== 'sql') {
+    return raw
+  }
+  const { queryId, draft, ...t } = raw as Record<string, unknown>
+  const statement = typeof draft === 'string' ? draft : ''
+  const id = typeof queryId === 'string' ? queryId : null
+  return {
+    ...t,
+    kind: 'question',
+    table: null,
+    draft: '',
+    questionId: id,
+    // A saved query whose text was not touched is read again from the server.
+    question:
+      id !== null && statement === ''
+        ? null
+        : {
+            id,
+            label: typeof t.label === 'string' ? t.label : '',
+            description: null,
+            query: { kind: 'sql', sql: statement },
+            visualization: null,
+          },
+  }
+}
+
 function restore(): { tabs: readonly Tab[]; activeId: string | null } {
   if (typeof window === 'undefined') return { tabs: [], activeId: null }
   try {
@@ -312,6 +327,7 @@ function restore(): { tabs: readonly Tab[]; activeId: string | null } {
     const parsed = JSON.parse(raw) as { tabs?: unknown; activeId?: unknown }
     if (!Array.isArray(parsed.tabs)) return { tabs: [], activeId: null }
     const tabs = parsed.tabs
+      .map(questionOfSqlTab)
       .filter((t): t is Tab => typeof t === 'object' && t !== null && 'id' in t)
       .map((t) => ({
         ...t,
@@ -323,8 +339,7 @@ function restore(): { tabs: readonly Tab[]; activeId: string | null } {
           typeof t.ownView === 'object' && t.ownView !== null
             ? { ...emptyView(), ...t.ownView }
             : null,
-        // Nor one saved before saved queries, SQL views and questions existed.
-        queryId: typeof t.queryId === 'string' ? t.queryId : null,
+        // Nor one saved before SQL views and questions existed.
         sqlViewId: typeof t.sqlViewId === 'string' ? t.sqlViewId : null,
         questionId: typeof t.questionId === 'string' ? t.questionId : null,
         question:
@@ -387,7 +402,6 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       draft: '',
       viewId: null,
       ownView: null,
-      queryId: null,
       sqlViewId: null,
       questionId: null,
       question: null,
@@ -396,58 +410,6 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
     set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
     persist(tabs, tab.id)
     return tab.id
-  },
-
-  openSql: (base, table, label) => {
-    const tab: Tab = {
-      id: nextId(),
-      kind: 'sql',
-      base,
-      table,
-      label,
-      view: emptyView(),
-      draft: '',
-      viewId: null,
-      ownView: null,
-      queryId: null,
-      sqlViewId: null,
-      questionId: null,
-      question: null,
-    }
-    const tabs = [...get().tabs, tab]
-    set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
-    persist(tabs, tab.id)
-    return tab.id
-  },
-
-  openQuery: (base, query) => {
-    const existing = get().tabs.find(
-      (t) => t.kind === 'sql' && t.base === base && t.queryId === query.id,
-    )
-    if (existing !== undefined) {
-      set({ activeId: existing.id, checked: new Set(), cells: new Set() })
-      persist(get().tabs, existing.id)
-      return { id: existing.id, created: false }
-    }
-    const tab: Tab = {
-      id: nextId(),
-      kind: 'sql',
-      base,
-      table: null,
-      label: query.label,
-      view: emptyView(),
-      draft: query.statement,
-      viewId: null,
-      ownView: null,
-      queryId: query.id,
-      sqlViewId: null,
-      questionId: null,
-      question: null,
-    }
-    const tabs = [...get().tabs, tab]
-    set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
-    persist(tabs, tab.id)
-    return { id: tab.id, created: true }
   },
 
   openSqlView: (base, view) => {
@@ -469,7 +431,6 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       draft: '',
       viewId: null,
       ownView: null,
-      queryId: null,
       sqlViewId: view.id,
       questionId: null,
       question: null,
@@ -478,24 +439,6 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
     set({ tabs, activeId: tab.id, checked: new Set(), cells: new Set() })
     persist(tabs, tab.id)
     return tab.id
-  },
-
-  attachQuery: (id, queryId, label) => {
-    const tabs = get().tabs.map((t) => (t.id === id ? { ...t, queryId, label } : t))
-    set({ tabs })
-    persist(tabs, get().activeId)
-  },
-
-  detachQuery: (queryId) => {
-    const tabs = get().tabs.map((t) => (t.queryId === queryId ? { ...t, queryId: null } : t))
-    set({ tabs })
-    persist(tabs, get().activeId)
-  },
-
-  renameQuery: (queryId, label) => {
-    const tabs = get().tabs.map((t) => (t.queryId === queryId ? { ...t, label } : t))
-    set({ tabs })
-    persist(tabs, get().activeId)
   },
 
   openQuestion: (base, question) => {
@@ -517,7 +460,6 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       draft: '',
       viewId: null,
       ownView: null,
-      queryId: null,
       sqlViewId: null,
       questionId: question.id,
       question: null,
@@ -539,7 +481,6 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
       draft: '',
       viewId: null,
       ownView: null,
-      queryId: null,
       sqlViewId: null,
       questionId: null,
       question: newQuestionDraft(kind),

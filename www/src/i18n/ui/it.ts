@@ -1978,8 +1978,8 @@ export default {
 						text: 'Fornitore, modello e chiave per spazio di lavoro, senza passare dall’ambiente dell’API.',
 					},
 					mail: {
-						title: 'Notifiche e inviti via email',
-						text: 'Le menzioni, le risposte e le assegnazioni oggi arrivano in basedb, gli inviti tramite un link da inviare di persona; potranno partire anche via email.',
+						title: 'Inviti via email',
+						text: 'Le notifiche partono già via email per chi le chiede; un invito resta un link da inoltrare di persona. Anche lui potrà partire via email.',
 					},
 				},
 			},

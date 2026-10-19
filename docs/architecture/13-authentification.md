@@ -96,7 +96,8 @@ la sémantique « secret à usage unique, lié à un acteur et à un objet, expi
 
 **Le canal est le courriel, par SMTP configuré par l'exploitant (`BASEDB_SMTP_*`, chapitre 16 §2.5).** Pas d'autre en v1 :
 ni SMS, ni question secrète, ni code hors bande. Sans SMTP configuré, l'étape 1 répond
-`202` et rien ne part ; la voie de secours est la commande d'exploitation du §7.
+`202` et rien ne part ; un administrateur donne alors un mot de passe temporaire, et
+l'administrateur lui-même reprend la main par l'hôte (§7).
 `GET /auth/password/reset` dit si la réinitialisation est offerte (`404` sans transport) :
 l'écran de connexion ne montre « Mot de passe oublié ? » que si elle l'est.
 
@@ -472,11 +473,20 @@ domaine. Les colonnes `bootstrap_secret_*` du catalogue restent sans usage, et
 désactivation, la suppression ou la rétrogradation du dernier administrateur vivant
 (`LAST_INSTANCE_ADMIN`) : le produit ne peut pas créer cette situation. Si elle survient
 tout de même — restauration partielle, correctif SQL appliqué avec le rôle propriétaire
-— la sortie de secours est **une commande d'exploitation exécutée sur l'hôte**, exigeant
-l'accès direct à la base et la clé d'instance. Elle promeut un utilisateur désigné,
-force `must_change_password`, révoque ses sessions et écrit une entrée `audit_log` avec
-`actor_kind = 'system'`. Aucune route HTTP ne l'expose : une porte de secours joignable
-depuis Internet est une porte dérobée.
+— la sortie de secours passe **par l'hôte, jamais par HTTP** : une porte de secours
+joignable depuis Internet est une porte dérobée.
+
+Ce qui existe aujourd'hui couvre le mot de passe perdu, pas l'administrateur perdu.
+Démarré avec `BASEDB_BOOTSTRAP=1` et `BASEDB_ADMIN_PASSWORD`, le serveur réapplique ce
+mot de passe à l'administrateur du tenant (`BASEDB_TENANT`) à **chaque** démarrage, et
+remet à zéro ses échecs et son verrouillage (`apps/api/src/server.ts`, `setPassword`) ;
+la variable est à retirer une fois la main reprise. S'il n'y a plus d'administrateur
+vivant, le démarrage le dit dans le journal (« aucun administrateur dans le tenant ») et
+s'arrête là : il n'existe **pas encore** de commande qui promeuve un utilisateur désigné.
+En attendant, la promotion se fait en SQL avec le rôle propriétaire, sur
+`_basedb.app_user`, et l'opération n'est pas tracée dans `audit_log`. La commande prévue
+— promouvoir un utilisateur, forcer `must_change_password`, révoquer ses sessions,
+écrire une entrée `audit_log` avec `actor_kind = 'system'` — reste à écrire.
 
 Si l'accès direct à la base est lui aussi perdu, il ne reste que la restauration depuis
 sauvegarde, `BASEDB_ENCRYPTION_KEY` comprise (A25) : sans elle, les mots de passe
@@ -602,7 +612,7 @@ consentement, clés tournantes) reste hors v1.
 | Jeton d'accès dérivé de `session.token_hash` par HMAC, instantané relu à chaque requête | Révocation globale par rotation, effet en 30 s, sans table ni parcours | JWT autoporteur non révocable ; confiance jusqu'à l'échéance |
 | 10 sessions vivantes par utilisateur | Borne une table chaude et rend l'écran de révocation lisible | Sessions illimitées |
 | Élévation de 5 min, portée session, non prolongeable | Une élévation glissante ne se termine jamais | Élévation par objet ; prolongation à l'usage |
-| Sortie de secours par commande locale seulement | Une récupération joignable depuis Internet est une porte dérobée | Route HTTP de récupération |
+| Sortie de secours par l'hôte seulement (variable de démarrage ; commande de promotion à venir) | Une récupération joignable depuis Internet est une porte dérobée | Route HTTP de récupération |
 | 2FA, WebAuthn, SAML, LDAP, SCIM hors v1 | Recouvrement fonctionnel avec OIDC, ou ajout additif ultérieur | Les inscrire en v1 |
 
 ## Risques et limites connues

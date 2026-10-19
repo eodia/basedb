@@ -1,6 +1,6 @@
 import type { DescribedBase, Field, Table } from '@/lib/api/client'
 import { effectiveKind } from '@/lib/computed'
-import { $t, $tp, dayLabel, monthLabel } from '@/lib/i18n'
+import { $t, $tp, dayLabel, monthLabel, msg } from '@/lib/i18n'
 import {
   type Aggregation,
   type AggregationFn,
@@ -11,6 +11,8 @@ import {
   type Filter,
   type FilterOp,
   type Join,
+  type JoinKind,
+  QUERY_LIMITS,
   type QueryResult,
   type QuestionQuery,
   type ResultColumn,
@@ -38,12 +40,19 @@ export interface ColumnOption {
   /** What its values are: a computed field's result, `user` for who wrote a row. */
   readonly kind: string
   readonly table: Table
-  /** The join it comes through; absent for the source table. */
+  /**
+   * The join it comes through; absent for the source table. For a column of a related table
+   * not yet joined, the join choosing it adds (`reached`).
+   */
   readonly join?: Join
   /** The title it is listed under: its table's label. */
   readonly group: string
   /** How a chip names it: the field, prefixed by its table when it comes from a join. */
   readonly label: string
+  /** The link field of the source it is reached through, for a column of a related table. */
+  readonly via?: Field
+  /** Offered by a relation of the source, and not in the query yet: choosing it joins. */
+  readonly reached?: boolean
 }
 
 export const tableOf = (base: DescribedBase, key: string): Table | undefined =>
@@ -66,43 +75,289 @@ const SYSTEM_LABELS: Readonly<Record<string, string>> = {
   _updated_by: $t('Modifié par'),
 }
 
-/** Every column the query can cite: its source's fields, then each join's. */
-export function columnsOf(base: DescribedBase, query: BuilderQuery): ColumnOption[] {
+/** The columns of one table of a query, as options: its fields, then the system columns. */
+function tableColumns(
+  table: Table,
+  join: Join | undefined,
+  via: Field | undefined,
+  reached: boolean,
+): ColumnOption[] {
   const out: ColumnOption[] = []
-  const add = (table: Table, join?: Join) => {
-    const fields = [
-      ...table.fields.filter((f) => f.system !== true),
-      ...table.fields.filter((f) => f.system === true),
-    ]
-    for (const raw of fields) {
-      if (raw.kind === 'button') continue
-      const own = SYSTEM_LABELS[raw.name]
-      const field =
-        own !== undefined && (raw.label === '' || raw.label === raw.name)
-          ? { ...raw, label: own }
-          : raw
-      out.push({
-        ref: join === undefined ? { field: field.name } : { join: join.alias, field: field.name },
-        field,
-        kind: kindOf(field),
-        table,
-        ...(join === undefined ? {} : { join }),
-        group: join === undefined ? table.label : `${table.label} (jointure)`,
-        label: join === undefined ? field.label : `${table.label} → ${field.label}`,
-      })
-    }
+  const fields = [
+    ...table.fields.filter((f) => f.system !== true),
+    ...table.fields.filter((f) => f.system === true),
+  ]
+  for (const raw of fields) {
+    if (raw.kind === 'button') continue
+    const own = SYSTEM_LABELS[raw.name]
+    const field =
+      own !== undefined && (raw.label === '' || raw.label === raw.name)
+        ? { ...raw, label: own }
+        : raw
+    out.push({
+      ref: join === undefined ? { field: field.name } : { join: join.alias, field: field.name },
+      field,
+      kind: kindOf(field),
+      table,
+      ...(join === undefined ? {} : { join }),
+      group:
+        join === undefined
+          ? table.label
+          : via === undefined
+            ? `${table.label} (jointure)`
+            : $t('{label} (par {label2})', { label: table.label, label2: via.label }),
+      // Through a relation, the column is named by it — « Client → Nom » — for two relations
+      // to one table must not read the same.
+      label:
+        join === undefined
+          ? field.label
+          : `${via === undefined ? table.label : via.label} → ${field.label}`,
+      ...(via === undefined ? {} : { via }),
+      ...(reached ? { reached: true } : {}),
+    })
   }
+  return out
+}
+
+/** The link field of the source an implicit join goes through. */
+function viaOf(source: Table | undefined, join: Join): Field | undefined {
+  if (join.implicit !== true || join.left.join !== undefined) return undefined
+  return source?.fields.find((f) => f.name === join.left.field)
+}
+
+/**
+ * Every column the query cites already: its source's fields, then each join's. A column of
+ * a related table, not joined yet, is not here — `reachableColumns` has it.
+ */
+export function columnsOf(base: DescribedBase, query: BuilderQuery): ColumnOption[] {
   const source = tableOf(base, query.source)
-  if (source !== undefined) add(source)
+  const out = source === undefined ? [] : tableColumns(source, undefined, undefined, false)
   for (const join of query.joins ?? []) {
     const table = tableOf(base, join.table)
-    if (table !== undefined) add(table, join)
+    if (table !== undefined) out.push(...tableColumns(table, join, viaOf(source, join), false))
   }
   return out
 }
 
 export const findColumn = (columns: readonly ColumnOption[], ref: ColumnRef) =>
   columns.find((c) => sameColumnRef(c.ref, ref))
+
+// ── Relations ───────────────────────────────────────────────────────────────
+
+/** A link of a table to another one of the base. */
+export interface Relation {
+  readonly field: Field
+  readonly target: Table
+}
+
+/** The tables a table links to: each `link` and `multi_link` field whose target is in the base. */
+export function relationsOf(base: DescribedBase, table: Table): Relation[] {
+  const out: Relation[] = []
+  for (const field of table.fields) {
+    if ((field.kind !== 'link' && field.kind !== 'multi_link') || field.link?.target === undefined)
+      continue
+    const target = base.tables.find((t) => t.name === field.link?.target)
+    if (target !== undefined) out.push({ field, target })
+  }
+  return out
+}
+
+const sameTable = (base: DescribedBase, key: string, table: Table) =>
+  tableOf(base, key)?.id === table.id
+
+/** The alias a relation's join takes: its link field's name, which is stable. */
+function relationStem(field: Field): string {
+  const stem = field.name
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '_')
+    .replace(/^[^a-z]+/, '')
+    .slice(0, 24)
+  return stem === '' ? 'lien' : stem
+}
+
+/** A free alias, numbered past the first. */
+function freeAlias(stem: string, taken: ReadonlySet<string>): string {
+  if (!taken.has(stem)) return stem
+  for (let i = 2; ; i++) if (!taken.has(`${stem}${i}`)) return `${stem}${i}`
+}
+
+/**
+ * Whether a join of the query is the one a relation of the source makes: the same table,
+ * reached by the same link, on the target's identifier. A join the person wrote on the same
+ * terms is that join: its columns are not offered a second time.
+ */
+function joinsRelation(base: DescribedBase, join: Join, relation: Relation): boolean {
+  return (
+    join.left.join === undefined &&
+    join.left.field === relation.field.name &&
+    join.right === '_id' &&
+    sameTable(base, join.table, relation.target)
+  )
+}
+
+/**
+ * Every column the query can cite: those it cites already, and those of the tables the source
+ * links to — a link is a relation, and a column of what it points to is one choosing adds the
+ * join for (`implicit`), no join step to write first. Past the bound of joins, only the first.
+ */
+export function reachableColumns(base: DescribedBase, query: BuilderQuery): ColumnOption[] {
+  const out = columnsOf(base, query)
+  const source = tableOf(base, query.source)
+  const joins = query.joins ?? []
+  if (source === undefined || joins.length >= QUERY_LIMITS.joins) return out
+  const taken = new Set(joins.map((j) => j.alias))
+  for (const relation of relationsOf(base, source)) {
+    if (joins.some((j) => joinsRelation(base, j, relation))) continue
+    const alias = freeAlias(relationStem(relation.field), taken)
+    taken.add(alias)
+    const join: Join = {
+      alias,
+      table: relation.target.id,
+      kind: 'left',
+      left: { field: relation.field.name },
+      right: '_id',
+      implicit: true,
+    }
+    out.push(...tableColumns(relation.target, join, relation.field, true))
+  }
+  return out
+}
+
+/** The query with the join a column needs, when it comes from a relation not joined yet. */
+export function withJoinFor(query: BuilderQuery, column: ColumnOption | undefined): BuilderQuery {
+  if (column?.join === undefined || column.reached !== true) return query
+  const alias = column.join.alias
+  if ((query.joins ?? []).some((j) => j.alias === alias)) return query
+  return { ...query, joins: [...(query.joins ?? []), column.join] }
+}
+
+/** The query without its empty lists and its missing bound: a step taken away leaves no trace. */
+export function compactQuery(query: BuilderQuery): BuilderQuery {
+  const kept = Object.entries(query).filter(
+    ([, value]) =>
+      value !== undefined && value !== null && !(Array.isArray(value) && value.length === 0),
+  )
+  return Object.fromEntries(kept) as unknown as BuilderQuery
+}
+
+/**
+ * The query without the joins it added on its own that no step cites any more. A join the
+ * person wrote stays, and so does every join an enduring join starts from.
+ */
+export function pruneJoins(query: BuilderQuery): BuilderQuery {
+  const joins = query.joins ?? []
+  if (!joins.some((j) => j.implicit === true)) return query
+  const used = new Set<string>()
+  const cite = (ref: ColumnRef | undefined) => {
+    if (ref?.join !== undefined) used.add(ref.join)
+  }
+  for (const f of query.filters ?? []) {
+    if ('column' in f) cite(f.column)
+    else if (f.join !== undefined) used.add(f.join)
+  }
+  for (const a of query.aggregations ?? []) cite(a.column)
+  for (const b of query.breakouts ?? []) cite(b)
+  for (const f of query.fields ?? []) cite(f)
+  for (const s of query.sort ?? []) if (s.target.kind === 'column') cite(s.target.column)
+  const stays = (j: Join) => j.implicit !== true || used.has(j.alias)
+  // A join that stays keeps the joins its condition starts from.
+  for (let size = -1; size !== used.size; ) {
+    size = used.size
+    for (const j of joins) if (stays(j)) cite(j.left)
+  }
+  const kept = joins.filter(stays)
+  if (kept.length === joins.length) return query
+  const { joins: _joins, ...rest } = query
+  return kept.length === 0 ? rest : { ...rest, joins: kept }
+}
+
+/**
+ * The query without a join and everything that cites it: the joins that start from it, the
+ * filters, the aggregates, the groupings, the columns and the sorts on its columns. A sort on
+ * an aggregate or a grouping goes with the first it counts by rank.
+ */
+export function withoutJoin(query: BuilderQuery, alias: string): BuilderQuery {
+  const gone = new Set([alias])
+  const joins = query.joins ?? []
+  // The joins that start from a join going go too, however far down.
+  for (let size = -1; size !== gone.size; ) {
+    size = gone.size
+    for (const j of joins) if (j.left.join !== undefined && gone.has(j.left.join)) gone.add(j.alias)
+  }
+  const cites = (ref: ColumnRef | undefined) => ref?.join !== undefined && gone.has(ref.join)
+  const aggregations = (query.aggregations ?? []).filter((a) => !cites(a.column))
+  const breakouts = (query.breakouts ?? []).filter((b) => !cites(b))
+  const sort = (query.sort ?? []).filter(
+    (s) =>
+      (s.target.kind !== 'column' || !cites(s.target.column)) &&
+      (s.target.kind !== 'aggregation' ||
+        aggregations.length === (query.aggregations ?? []).length) &&
+      (s.target.kind !== 'breakout' || breakouts.length === (query.breakouts ?? []).length),
+  )
+  const filters = (query.filters ?? []).filter((f) =>
+    'column' in f ? !cites(f.column) : f.join === undefined || !gone.has(f.join),
+  )
+  const fields = (query.fields ?? []).filter((f) => !cites(f))
+  const {
+    joins: _joins,
+    filters: _filters,
+    aggregations: _aggregations,
+    breakouts: _breakouts,
+    fields: _fields,
+    sort: _sort,
+    ...rest
+  } = query
+  const kept = joins.filter((j) => !gone.has(j.alias))
+  return {
+    ...rest,
+    ...(kept.length === 0 ? {} : { joins: kept }),
+    ...(filters.length === 0 ? {} : { filters }),
+    ...(aggregations.length === 0 ? {} : { aggregations }),
+    ...(breakouts.length === 0 ? {} : { breakouts }),
+    ...(fields.length === 0 ? {} : { fields }),
+    ...(sort.length === 0 ? {} : { sort }),
+  }
+}
+
+const sameRefs = (a: readonly ColumnRef[], b: readonly ColumnRef[]) =>
+  a.length === b.length && a.every((ref) => b.some((other) => sameColumnRef(ref, other)))
+
+/**
+ * The columns a question that only lists rows reads when it chooses none: the source's and
+ * those of the joins written by hand, the system columns left out — what the kernel reads
+ * for a question without `fields` — but not a related table's, which a column of it chosen
+ * brings along.
+ */
+export function defaultFields(base: DescribedBase, query: BuilderQuery): ColumnRef[] {
+  const written = (query.joins ?? []).filter((j) => j.implicit !== true)
+  return columnsOf(base, { ...query, joins: written })
+    .filter((c) => c.field.system !== true)
+    .map((c) => c.ref)
+}
+
+/** The columns a question reads row by row: those chosen, or by default all. */
+export const chosenFields = (base: DescribedBase, query: BuilderQuery): readonly ColumnRef[] =>
+  query.fields !== undefined && query.fields.length > 0 ? query.fields : defaultFields(base, query)
+
+/**
+ * The query as the editor keeps it after a change: the joins no step cites any more gone,
+ * and the columns of a question that lists rows fixed when a join was added on its own —
+ * without them the kernel would read every column of the table joined —, then freed again
+ * when they are back to the default.
+ */
+export function settleQuery(base: DescribedBase, query: BuilderQuery): BuilderQuery {
+  const pruned = pruneJoins(query)
+  const listing = (pruned.aggregations ?? []).length === 0 && (pruned.breakouts ?? []).length === 0
+  if (!listing) return pruned
+  const related = (pruned.joins ?? []).some((j) => j.implicit === true)
+  const defaults = defaultFields(base, pruned)
+  if (related && pruned.fields === undefined) return { ...pruned, fields: defaults }
+  if (!related && pruned.fields !== undefined && sameRefs(pruned.fields, defaults)) {
+    const { fields: _fields, ...rest } = pruned
+    return rest
+  }
+  return pruned
+}
 
 // ── What each kind offers ───────────────────────────────────────────────────
 
@@ -183,9 +438,9 @@ export const FN_LABELS: Readonly<Record<AggregationFn, string>> = {
 }
 
 export const OP_LABELS: Readonly<Record<FilterOp, string>> = {
-  is: 'est',
+  is: $t('est||opérateur de filtre'),
   is_not: $t('n’est pas'),
-  contains: 'contient',
+  contains: $t('contient||opérateur de filtre'),
   not_contains: $t('ne contient pas'),
   starts_with: $t('commence par'),
   ends_with: $t('finit par'),
@@ -195,7 +450,7 @@ export const OP_LABELS: Readonly<Record<FilterOp, string>> = {
   gte: '≥',
   lt: '<',
   lte: '≤',
-  between: 'entre',
+  between: $t('entre||opérateur de filtre'),
   date: $t('période'),
   before: $t('avant le'),
   after: $t('après le'),
@@ -253,7 +508,7 @@ export const PERIOD_UNITS: readonly TemporalTruncation[] = [
 ]
 
 export const VIZ_LABELS: Readonly<Record<VisualizationType, string>> = {
-  table: 'Tableau',
+  table: $t('Tableau'),
   scalar: $t('Chiffre'),
   trend: $t('Tendance'),
   progress: $t('Progression'),
@@ -262,7 +517,7 @@ export const VIZ_LABELS: Readonly<Record<VisualizationType, string>> = {
   row: $t('Barres'),
   line: $t('Courbe'),
   area: $t('Aires'),
-  combo: 'Combiné',
+  combo: $t('Combiné'),
   pie: $t('Secteurs'),
   scatter: $t('Nuage de points'),
   funnel: $t('Entonnoir'),
@@ -432,6 +687,49 @@ export function describeFilter(
 
 // ── Joins ───────────────────────────────────────────────────────────────────
 
+/** The words for how two tables meet. */
+export const JOIN_LABELS: Readonly<Record<JoinKind, string>> = {
+  left: msg('Jointure à gauche'),
+  inner: msg('Jointure interne'),
+  right: msg('Jointure à droite'),
+  full: msg('Jointure complète'),
+}
+
+/** The same, in one word, under its glyph. */
+export const JOIN_SHORT: Readonly<Record<JoinKind, string>> = {
+  left: msg('À gauche'),
+  inner: msg('Interne'),
+  right: msg('À droite'),
+  full: msg('Complète'),
+}
+
+/** Which rows a join keeps, said for the two tables it joins. */
+export function joinSentence(kind: JoinKind, source: string, table: string): string {
+  switch (kind) {
+    case 'inner':
+      return $t('Seulement les lignes présentes des deux côtés.')
+    case 'full':
+      return $t('Toutes les lignes des deux côtés, qu’elles se correspondent ou non.')
+    case 'left':
+      return $t(
+        'Toutes les lignes de {source}, complétées par {table} quand elles se correspondent.',
+        {
+          source,
+          table,
+        },
+      )
+    case 'right':
+      return $t(
+        'Toutes les lignes de {source}, complétées par {table} quand elles se correspondent.',
+        {
+          source: table,
+          table: source,
+        },
+      )
+  }
+}
+
+/** A table another can be joined to, and the condition its relation suggests. */
 export interface JoinSuggestion {
   readonly table: Table
   readonly left: ColumnRef
@@ -439,41 +737,113 @@ export interface JoinSuggestion {
   readonly label: string
 }
 
-/**
- * The joins the base's relations suggest: each link of the source to its target, and each
- * table linking to the source, back.
- */
-export function joinSuggestions(base: DescribedBase, source: Table): JoinSuggestion[] {
-  const out: JoinSuggestion[] = []
-  for (const field of source.fields) {
-    if ((field.kind !== 'link' && field.kind !== 'multi_link') || field.link?.target === undefined)
-      continue
-    const target = base.tables.find((t) => t.name === field.link?.target)
-    if (target === undefined) continue
-    out.push({
-      table: target,
-      left: { field: field.name },
-      right: '_id',
-      label: $t('{label} (par {label2})', { label: target.label, label2: field.label }),
-    })
+/** The tables a query reads from by hand: its source, then the joins the person wrote. */
+function origins(
+  base: DescribedBase,
+  query: BuilderQuery,
+): Array<{ table: Table; alias?: string }> {
+  const out: Array<{ table: Table; alias?: string }> = []
+  const source = tableOf(base, query.source)
+  if (source !== undefined) out.push({ table: source })
+  for (const join of query.joins ?? []) {
+    if (join.implicit === true) continue
+    const table = tableOf(base, join.table)
+    if (table !== undefined) out.push({ table, alias: join.alias })
   }
-  for (const table of base.tables) {
-    if (table.id === source.id) continue
-    for (const field of table.fields) {
-      if (
-        (field.kind === 'link' || field.kind === 'multi_link') &&
-        field.link?.target === source.name
-      ) {
-        out.push({
-          table,
-          left: { field: '_id' },
-          right: field.name,
-          label: $t('{label} (qui citent {label2})', { label: table.label, label2: source.label }),
-        })
+  return out
+}
+
+/**
+ * The joins the base's relations suggest: for the source and each join written by hand, the
+ * table a link of it points to, and each table linking to it, back — the condition that
+ * makes the rows meet already written. Several make a question about the same table; the
+ * first is the one proposed.
+ */
+export function joinSuggestions(base: DescribedBase, query: BuilderQuery): JoinSuggestion[] {
+  const out: JoinSuggestion[] = []
+  for (const { table: origin, alias } of origins(base, query)) {
+    const ref = (field: string): ColumnRef =>
+      alias === undefined ? { field } : { join: alias, field }
+    for (const { field, target } of relationsOf(base, origin)) {
+      out.push({
+        table: target,
+        left: ref(field.name),
+        right: '_id',
+        label: $t('{label} (par {label2})', { label: target.label, label2: field.label }),
+      })
+    }
+    for (const table of base.tables) {
+      if (table.id === origin.id) continue
+      for (const field of table.fields) {
+        if (
+          (field.kind === 'link' || field.kind === 'multi_link') &&
+          field.link?.target === origin.name
+        ) {
+          out.push({
+            table,
+            left: ref('_id'),
+            right: field.name,
+            label: $t('{label} (qui citent {label2})', {
+              label: table.label,
+              label2: origin.label,
+            }),
+          })
+        }
       }
     }
   }
   return out
+}
+
+/** The condition a join on `table` most likely takes, when a relation says so. */
+export function suggestedCondition(
+  base: DescribedBase,
+  query: BuilderQuery,
+  table: Table,
+): { readonly left: ColumnRef; readonly right: string } | null {
+  const found = joinSuggestions(base, query).find((s) => s.table.id === table.id)
+  return found === undefined ? null : { left: found.left, right: found.right }
+}
+
+/**
+ * What two columns must share to be compared in a join — the kernel refuses otherwise
+ * (`jointure_incompatible`): identifiers with identifiers, text with text, numbers with
+ * numbers. `null` where the kind says too little (a lookup), and the pair is then left to the
+ * kernel.
+ */
+export function joinFamily(kind: string): string | null {
+  switch (kind) {
+    case 'id':
+    case 'link':
+    case 'multi_link':
+    case 'user':
+      return 'uuid'
+    case 'short_text':
+    case 'long_text':
+    case 'select':
+    case 'multi_select':
+    case 'email':
+    case 'url':
+      return 'text'
+    case 'number':
+    case 'autonumber':
+    case 'count':
+    case 'rollup':
+      return 'number'
+    case 'date':
+    case 'datetime':
+    case 'boolean':
+      return kind
+    default:
+      return null
+  }
+}
+
+/** Whether a join may compare two columns of these kinds. */
+export function joinable(a: string, b: string): boolean {
+  const left = joinFamily(a)
+  const right = joinFamily(b)
+  return left === null || right === null || left === right
 }
 
 /** A free alias for a join of `table`: its name, numbered past the first. */
@@ -483,9 +853,7 @@ export function joinAlias(query: BuilderQuery, table: Table): string {
       .replace(/[^a-z0-9_]/g, '_')
       .replace(/^[^a-z]+/, 't')
       .slice(0, 24) || 't'
-  const taken = new Set((query.joins ?? []).map((j) => j.alias))
-  if (!taken.has(stem)) return stem
-  for (let i = 2; ; i++) if (!taken.has(`${stem}${i}`)) return `${stem}${i}`
+  return freeAlias(stem, new Set((query.joins ?? []).map((j) => j.alias)))
 }
 
 // ── The chart a result reads best as ────────────────────────────────────────

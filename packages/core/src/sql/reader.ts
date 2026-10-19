@@ -20,6 +20,7 @@ import {
   resolveTypes,
   uniqueKey,
 } from './console.js'
+import { readCapped } from './cursor.js'
 import { readerPolicies } from './row-security.js'
 
 /**
@@ -396,14 +397,19 @@ export async function runReaderSql(
     // After the shadows — creating them is a write — and before the statement. A
     // transaction may always turn read only; it cannot turn back once it has read.
     await client.query('SET TRANSACTION READ ONLY')
+    // Through a cursor when the text is a query: only the rows shown leave the server.
+    const capped = await readCapped(client, sql, limit)
     // `queryMode` is not in `pg`'s types; the driver honours it all the same.
     const statement = { text: sql, rowMode: 'array' as const, queryMode: 'extended' as const }
-    const result = (await client.query(statement)) as unknown as {
-      fields?: ReadonlyArray<{ name: string; dataTypeID: number }>
-      rows?: unknown[][]
-      rowCount?: number | null
-      command?: string
-    }
+    const result =
+      capped !== null
+        ? { fields: capped.fields, rows: capped.rows, rowCount: capped.total, command: 'SELECT' }
+        : ((await client.query(statement)) as unknown as {
+            fields?: ReadonlyArray<{ name: string; dataTypeID: number }>
+            rows?: unknown[][]
+            rowCount?: number | null
+            command?: string
+          })
 
     const fields = result.fields ?? []
     const typeNames = await resolveTypes(

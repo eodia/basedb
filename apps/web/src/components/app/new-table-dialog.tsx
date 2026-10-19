@@ -1,6 +1,7 @@
 'use client'
 
 import { DescriptionField, isTooLong } from '@/components/app/description'
+import { LookButton, type LookValue, lookOf } from '@/components/app/look-picker'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -15,8 +16,9 @@ import { $t } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 
 /**
- * Names a table and says what it is for — its first column is added, and the others are
- * added from the structure editor.
+ * Names a table, says what it is for and how it looks — its first column is added, and the
+ * others are added from the structure editor. The look is picked here with the same button
+ * as when the table is edited: choosing it at birth spares a second trip.
  *
  * Shared by the sidebar and the structure editor: both create a table in the open base,
  * and having each carry its own copy of the form is how the description box would have
@@ -33,11 +35,12 @@ export function NewTableDialog({
   readonly base: Pick<DescribedBase, 'label'>
   readonly busy: boolean
   readonly onClose: () => void
-  /** `description` is absent, not empty, when the box was left blank. */
-  readonly onSubmit: (label: string, description?: string) => Promise<void>
+  /** `description` is absent, not empty, when the box was left blank; so is an unset look. */
+  readonly onSubmit: (label: string, description?: string, look?: LookValue) => Promise<void>
 }) {
   const [label, setLabel] = useState('')
   const [description, setDescription] = useState('')
+  const [look, setLook] = useState<LookValue>(lookOf({}))
   const ready = label.trim() !== '' && !isTooLong(description) && !busy
 
   // Reopening the dialog opens an empty one: the name of the table created a minute ago
@@ -46,12 +49,18 @@ export function NewTableDialog({
     if (open) {
       setLabel('')
       setDescription('')
+      setLook(lookOf({}))
     }
   }, [open])
 
   const submit = () => {
-    if (ready)
-      void onSubmit(label.trim(), description.trim() === '' ? undefined : description.trim())
+    if (!ready) return
+    const chosen = look.color !== null || look.icon !== null || look.image !== null
+    void onSubmit(
+      label.trim(),
+      description.trim() === '' ? undefined : description.trim(),
+      chosen ? look : undefined,
+    )
   }
 
   return (
@@ -66,14 +75,26 @@ export function NewTableDialog({
             <label htmlFor="table-label" className="text-sm text-muted-foreground">
               {$t('Libellé')}
             </label>
-            <Input
-              id="table-label"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && submit()}
-              placeholder={$t('Factures')}
-              autoFocus
-            />
+            <div className="flex items-center gap-2">
+              <LookButton
+                look={look}
+                label={$t('Apparence de la table {label}', { label }).trim()}
+                onChange={(patch) => setLook((current) => ({ ...current, ...patch }))}
+                disabled={busy}
+                className="size-9"
+              />
+              <Input
+                id="table-label"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && submit()}
+                placeholder={$t('Factures')}
+                autoFocus
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {$t('Couleur, pictogramme ou image : ce qui distingue la table dans la navigation.')}
+            </p>
           </div>
 
           <DescriptionField

@@ -63,7 +63,6 @@ import {
   CornerDownLeft,
   Database,
   Eye,
-  FileCode2,
   FolderKanban,
   FolderPlus,
   History,
@@ -89,7 +88,6 @@ import {
   SquareTerminal,
   Sun,
   Table2,
-  Terminal,
   Undo2,
   Upload,
   Users,
@@ -778,26 +776,6 @@ function Palette({
             run: go(place),
           })
         }
-        for (const q of b.queries ?? []) {
-          const place: Place = { kind: 'query', base: b.name, id: q.id }
-          items.push({
-            key: `query:${q.id}`,
-            group: 'objects',
-            title: q.label,
-            subtitle: $t('Requête enregistrée · {base}', { base: where }),
-            icon: <FileCode2 className="size-4" />,
-            searchable: prepare({
-              title: q.label,
-              keywords: KIND_WORDS.query,
-              context: `${b.label} ${p.label}`,
-            }),
-            base: b.name,
-            weight: 2,
-            place,
-            memorable: true,
-            run: go(place),
-          })
-        }
       }
     }
     return items
@@ -881,11 +859,15 @@ function Palette({
           key: `question:${q.id}`,
           group: 'analytics',
           title: q.label,
-          subtitle: $t('Question · {base}', { base: b.label }),
+          // A SQL question is what a saved query was: it still answers to « requête ».
+          subtitle:
+            q.kind === 'sql'
+              ? $t('Requête enregistrée · {base}', { base: b.label })
+              : $t('Question · {base}', { base: b.label }),
           icon: <Icon className="size-4" />,
           searchable: prepare({
             title: q.label,
-            keywords: `${KIND_WORDS.question} ${q.description ?? ''}`,
+            keywords: `${KIND_WORDS.question} ${q.kind === 'sql' ? KIND_WORDS.query : ''} ${q.description ?? ''}`,
             context: b.label,
           }),
           base: name,
@@ -980,11 +962,7 @@ function Palette({
     () =>
       tabItems.filter((item) => {
         const tab = tabs.find((t) => `tab:${t.id}` === item.key)
-        return (
-          tab !== undefined &&
-          ((tab.kind === 'sql' && tab.queryId === null) ||
-            (tab.kind === 'question' && tab.questionId === null))
-        )
+        return tab !== undefined && tab.kind === 'question' && tab.questionId === null
       }),
     [tabItems, tabs],
   )
@@ -1042,7 +1020,7 @@ function Palette({
         add(id, title, category, Icon, run, { ...options, base: name })
       here(
         `structure:${name}`,
-        $t('Structure de « {base} »', { base: label }),
+        $t('Tables et champs de « {base} »', { base: label }),
         goTo,
         Layers,
         at({ kind: 'section', base: name, section: 'structure' }),
@@ -1108,15 +1086,18 @@ function Palette({
           place: { kind: 'section', base: name, section: 'doc' },
         },
       )
-      here(`sql:${name}`, $t('Nouvelle requête SQL'), create, Terminal, () => onBase(name, 'sql'), {
-        keywords: $t('console select||mots-clés de recherche'),
-        weight: 4,
-      })
-      here(`question:${name}`, $t('Nouvelle question'), create, Workflow, () =>
-        onBase(name, 'question'),
-      )
-      here(`question-sql:${name}`, $t('Nouvelle question SQL'), create, SquareTerminal, () =>
-        onBase(name, 'question-sql'),
+      // One entry for what were three: a question is built with the mouse or written in SQL,
+      // and its own switch says which — what one types here for SQL still finds it.
+      here(
+        `question:${name}`,
+        $t('Nouvelle question'),
+        create,
+        Workflow,
+        () => onBase(name, 'question'),
+        {
+          keywords: $t('sql console select requête texte||mots-clés de recherche'),
+          weight: 4,
+        },
       )
       if (manages) {
         here(
@@ -1126,13 +1107,6 @@ function Palette({
           Plus,
           () => onBase(name, 'new-table'),
           { keywords: $t('ajouter créer table||mots-clés de recherche'), weight: 4 },
-        )
-        here(
-          `new-sql-view:${name}`,
-          $t('Nouvelle vue SQL dans « {base} »', { base: label }),
-          create,
-          Eye,
-          () => onBase(name, 'new-sql-view'),
         )
       }
     }
@@ -2068,15 +2042,11 @@ function TabIcon({ tab }: { readonly tab: Tab }) {
       ? Table2
       : tab.kind === 'sqlview'
         ? Eye
-        : tab.kind === 'question'
-          ? chart !== undefined && chart !== 'table'
-            ? VIZ_ICONS[chart]
-            : tab.question?.query?.kind === 'sql'
-              ? SquareTerminal
-              : Workflow
-          : tab.queryId !== null
-            ? FileCode2
-            : Terminal
+        : chart !== undefined && chart !== 'table'
+          ? VIZ_ICONS[chart]
+          : tab.question?.query?.kind === 'sql'
+            ? SquareTerminal
+            : Workflow
   return <Icon className="size-4" />
 }
 

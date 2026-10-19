@@ -12,8 +12,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import type { ExportFormat } from '@/lib/export'
-import { $t, intlLocale } from '@/lib/i18n'
+import { type TableRef, api } from '@/lib/api/client'
+import { type ExportFormat, saveBlob } from '@/lib/export'
+import { $t, $tp, intlLocale } from '@/lib/i18n'
+import { messageFor } from '@/lib/messages'
 import { PAGE_SIZES } from '@/lib/store/workspace'
 import {
   ChevronDown,
@@ -25,6 +27,8 @@ import {
   Loader2,
   RefreshCw,
 } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 /**
  * The bottom bar — page size, count, exports, refresh, pagination.
@@ -39,6 +43,20 @@ import {
  * button emits `count=exact`, and a capped result reads "100 000+" — never a rounded
  * number invented to fill the slot.
  */
+
+/**
+ * What "Exporter toute la vue" sends the server: the table, and the view's own filter (the
+ * quick search included), sort and visible columns — the server reads every row they keep,
+ * not the page.
+ */
+export interface ExportViewSpec {
+  readonly table: TableRef
+  readonly filter: string
+  readonly sort: string
+  readonly fields: readonly string[]
+}
+
+type WholeFormat = 'csv' | 'xlsx' | 'json'
 
 interface Props {
   readonly rowCount: number
@@ -58,6 +76,8 @@ interface Props {
   readonly onRefresh: () => void
   readonly onCount: () => void
   readonly onExport: (format: ExportFormat) => void
+  /** Absent on a SQL result, which is not a table: only the page exports there. */
+  readonly exportView?: ExportViewSpec
 }
 
 const format = (n: number) => n.toLocaleString(intlLocale())
@@ -79,9 +99,43 @@ export function PaginationBar({
   onRefresh,
   onCount,
   onExport,
+  exportView,
 }: Props) {
   const first = pageIndex * pageSize + 1
   const last = pageIndex * pageSize + rowCount
+  const [exporting, setExporting] = useState(false)
+
+  /**
+   * The whole view as a file. The server streams it; the browser holds the bytes until the
+   * last one has come, then offers the file. A toast says it is under way — a long table
+   * takes a while — and a refusal (too many rows, too many exports at once) is read there.
+   */
+  const exportWhole = (kind: WholeFormat) => {
+    if (exportView === undefined || exporting) return
+    setExporting(true)
+    const done = api
+      .exportView(exportView.table, {
+        format: kind,
+        filter: exportView.filter,
+        sort: exportView.sort,
+        fields: exportView.fields,
+        // A workbook is read by a person: the labels. A CSV keeps the physical names, as
+        // the page's CSV does — the ones that match the column in psql.
+        headers: kind === 'xlsx' ? 'label' : 'name',
+      })
+      .then(({ blob, filename }) => {
+        saveBlob(blob, filename ?? `${exportView.table.name}.${kind}`)
+      })
+      .finally(() => setExporting(false))
+    toast.promise(done, {
+      loading:
+        total !== null && !totalCapped
+          ? $tp(total, 'Export de {count} ligne en cours…', 'Export de {count} lignes en cours…')
+          : $t('Export en cours…'),
+      success: $t('Export terminé'),
+      error: (e) => messageFor(e),
+    })
+  }
 
   return (
     // A CONTAINER query, not a window one: the panel on the right can be widened until the
@@ -156,7 +210,11 @@ export function PaginationBar({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm" className="h-7 gap-1 px-2" disabled={rowCount === 0}>
-            <Download className="size-3.5" />
+            {exporting ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Download className="size-3.5" />
+            )}
             <ChevronDown className="size-3 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
@@ -166,6 +224,21 @@ export function PaginationBar({
           <DropdownMenuItem onSelect={() => onExport('csv')}>{$t('CSV')}</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => onExport('json')}>{$t('JSON')}</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => onExport('sql')}>INSERT SQL</DropdownMenuItem>
+          {exportView !== undefined && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>{$t('Exporter toute la vue')}</DropdownMenuLabel>
+              <DropdownMenuItem disabled={exporting} onSelect={() => exportWhole('csv')}>
+                {$t('CSV')}
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={exporting} onSelect={() => exportWhole('xlsx')}>
+                Excel (.xlsx)
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={exporting} onSelect={() => exportWhole('json')}>
+                {$t('JSON')}
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

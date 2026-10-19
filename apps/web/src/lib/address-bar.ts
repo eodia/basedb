@@ -12,7 +12,7 @@
  * of the old name then names nothing. A base's name is its schema's, `b_<tenant>_<base>`
  * (chapter 01 §5): the address writes the part after the tenant, which every base of the
  * instance shares, and reading it puts it back. What has no name of its own — a view, a
- * dashboard, a saved query — goes by its identifier.
+ * dashboard, a question — goes by its identifier.
  *
  * Everything sits under a word of its own (`/bases/…`, `/parametres/…`): a base may be
  * called `v`, `api` or `mcp`, which already lead elsewhere at the root. The words are
@@ -21,12 +21,16 @@
  *   /bases/<base>                               the base: the tab open on it, else its first table
  *   /bases/<base>/tables/<table>[?vue=…&ligne=…] a table, a saved view of it, a row in the panel
  *   /bases/<base>/vues-sql/<id>                 a SQL view
- *   /bases/<base>/requetes/<id>                 a saved query
  *   /bases/<base>/questions/<id>                a saved question, in a tab
+ *   /bases/<base>/requetes/<id>                 what the address of a saved query was: that query
+ *                                               is a SQL question now, under the same identifier,
+ *                                               and this opens it
  *   /bases/<base>/tableaux-de-bord[/<id>]       the dashboards, one of them
  *   /bases/<base>/tableaux-de-bord/questions/<id>  a question, beside the dashboards
  *   /bases/<base>/automatisations[/<id>]        the automations, one of them
- *   /bases/<base>/structure | historique | integrations | documentation
+ *   /bases/<base>/tables-et-champs[/<table>]   the tables and fields, open on one table
+ *                                               (`/structure` was its word, and still leads there)
+ *   /bases/<base>/historique | integrations | documentation
  *   /projets/<id>                               a project with no base yet
  *   /administration/<tab>                       the administration
  *   /parametres/<tab>                           the settings
@@ -54,8 +58,14 @@ export type Place =
       /** The row open in the panel. */
       readonly record: string | null
     }
-  | { readonly kind: 'sqlview' | 'query' | 'question'; readonly base: string; readonly id: string }
-  | { readonly kind: 'section'; readonly base: string; readonly section: BaseSection }
+  | { readonly kind: 'sqlview' | 'question'; readonly base: string; readonly id: string }
+  | {
+      readonly kind: 'section'
+      readonly base: string
+      readonly section: BaseSection
+      /** For the tables and fields: the table shown — absent or `null`, the screen's choice. */
+      readonly table?: string | null
+    }
   | { readonly kind: 'dashboards'; readonly base: string; readonly focus: DashboardFocus | null }
   | { readonly kind: 'automations'; readonly base: string; readonly automation: string | null }
   /** `tab`: the slug of a tab, as the panel names it — `null` for its first. */
@@ -63,13 +73,13 @@ export type Place =
   | { readonly kind: 'settings'; readonly tab: string | null }
 
 const SECTION_WORDS: Readonly<Record<BaseSection, string>> = {
-  structure: 'structure',
+  structure: 'tables-et-champs',
   history: 'historique',
   integrations: 'integrations',
   doc: 'documentation',
 }
 
-const TAB_WORDS = { sqlview: 'vues-sql', query: 'requetes', question: 'questions' } as const
+const TAB_WORDS = { sqlview: 'vues-sql', question: 'questions' } as const
 
 const path = (...parts: readonly string[]): string =>
   `/${parts.map((part) => encodeURIComponent(part)).join('/')}`
@@ -100,11 +110,12 @@ export function addressOf(place: Place): string {
       return `${path('bases', base, 'tables', place.table)}${query === '' ? '' : `?${query}`}`
     }
     case 'sqlview':
-    case 'query':
     case 'question':
       return path('bases', base, TAB_WORDS[place.kind], place.id)
     case 'section':
-      return path('bases', base, SECTION_WORDS[place.section])
+      return place.section === 'structure' && place.table != null
+        ? path('bases', base, SECTION_WORDS.structure, place.table)
+        : path('bases', base, SECTION_WORDS[place.section])
     case 'dashboards':
       return place.focus === null
         ? path('bases', base, 'tableaux-de-bord')
@@ -171,11 +182,17 @@ function basePlace(base: string, parts: readonly string[], params: URLSearchPara
   }
   if (more.length > 0) return null
   if (word === 'automatisations') return { kind: 'automations', base, automation: id ?? null }
+  // The tables and fields name the table they show; the section's former word still leads there.
+  if (word === SECTION_WORDS.structure || word === 'structure') {
+    return { kind: 'section', base, section: 'structure', table: id ?? null }
+  }
   const section = (Object.keys(SECTION_WORDS) as BaseSection[]).find(
     (s) => SECTION_WORDS[s] === word,
   )
   if (section !== undefined) return id === undefined ? { kind: 'section', base, section } : null
   if (id === undefined) return null
+  // The address of a saved query, kept: the query is a SQL question, of the same identifier.
+  if (word === 'requetes') return { kind: 'question', base, id }
   if (word === 'tables') {
     return {
       kind: 'table',

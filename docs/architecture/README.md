@@ -41,7 +41,7 @@ disponibles, aucune dépendance externe hors PostgreSQL.
 | [08](08-api-rest-webhooks.md) | API REST et webhooks | Le plan d'URL, les filtres, la pagination par curseur, l'expansion des liens, OpenAPI, les jetons |
 | [09](09-serveur-mcp.md) | Serveur MCP | Les outils exposés aux agents, les migrations proposées, la confirmation humaine |
 | [10](10-architecture-logicielle.md) | Architecture logicielle | Le monorepo, la frontière du noyau, les pools, les transactions, la stratégie de test |
-| [11](11-interface.md) | Interface | La grille, l'édition en ligne, la cellule de lien, la vue détail, l'éditeur de schéma ; le SQL de chacun, les requêtes enregistrées et les vues SQL ; les paramètres de la personne |
+| [11](11-interface.md) | Interface | La grille, l'édition en ligne, la cellule de lien, la vue détail, l'éditeur de schéma ; le SQL de chacun — une question SQL — et les vues SQL ; les paramètres de la personne |
 | [12](12-integration-ia.md) | Intégration IA | OpenAI, Anthropic, Mistral et les serveurs compatibles (Azure, modèle local), la configuration par tenant, les clés côté serveur |
 | [13](13-authentification.md) | Authentification | Mot de passe, OAuth/OIDC, sessions, élévation, amorçage |
 | [14](14-environnements.md) | Environnements | Production, recette, développement : la lignée, la comparaison, le report de structure, la synchronisation des lignes |

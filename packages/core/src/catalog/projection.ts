@@ -72,6 +72,8 @@ export interface ProjectedField {
   readonly description: string | null
   readonly kind: string
   readonly required: boolean
+  /** No two rows hold the same value — a `uq_` constraint of its own (chapter 04 §1.6). */
+  readonly unique?: true
   /** Readable but not writable. System columns are ALWAYS read-only (A18). */
   readonly readOnly: boolean
   readonly system: boolean
@@ -474,7 +476,8 @@ async function loadCatalog(exec: Executor, ctx: RequestContext): Promise<RawCata
        JOIN _basedb.table_def t ON t.id = c.table_id
        JOIN _basedb.base b      ON b.id = t.base_id
        JOIN _basedb.tenant te   ON te.id = b.tenant_id
-      WHERE te.ref = $1 AND c.kind = 'unique' AND c.dropped_at IS NULL AND t.is_live
+      WHERE te.ref = $1 AND c.kind = 'unique' AND c.dropped_at IS NULL AND c.state = 'active'
+        AND t.is_live
       GROUP BY c.id
      HAVING count(*) = 1`,
     tenant,
@@ -847,6 +850,7 @@ export function project(
           description: field.description,
           kind: field.kind,
           required: field.is_required,
+          ...(raw.unique.has(field.id) ? { unique: true as const } : {}),
           readOnly: !writable.has(field.id),
           system: false,
           unsafeHtml: field.is_rich,

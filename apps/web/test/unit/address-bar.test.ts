@@ -25,9 +25,15 @@ const PLACES: ReadonlyArray<readonly [Place, string]> = [
     `/bases/crm/tables/contacts?ligne=${OTHER}`,
   ],
   [{ kind: 'sqlview', base: CRM, id: ID }, `/bases/crm/vues-sql/${ID}`],
-  [{ kind: 'query', base: CRM, id: ID }, `/bases/crm/requetes/${ID}`],
   [{ kind: 'question', base: CRM, id: ID }, `/bases/crm/questions/${ID}`],
-  [{ kind: 'section', base: CRM, section: 'structure' }, '/bases/crm/structure'],
+  [
+    { kind: 'section', base: CRM, section: 'structure', table: null },
+    '/bases/crm/tables-et-champs',
+  ],
+  [
+    { kind: 'section', base: CRM, section: 'structure', table: 'contacts' },
+    '/bases/crm/tables-et-champs/contacts',
+  ],
   [{ kind: 'section', base: CRM, section: 'history' }, '/bases/crm/historique'],
   [{ kind: 'section', base: CRM, section: 'integrations' }, '/bases/crm/integrations'],
   [{ kind: 'section', base: CRM, section: 'doc' }, '/bases/crm/documentation'],
@@ -63,6 +69,14 @@ describe('placeOf', () => {
     expect(placeOf(...split(address), TENANT)).toEqual(place)
   })
 
+  it('opens, as the SQL question it became, the address of a saved query', () => {
+    expect(placeOf(`/bases/crm/requetes/${ID}`, '', TENANT)).toEqual({
+      kind: 'question',
+      base: CRM,
+      id: ID,
+    })
+  })
+
   it('reads a trailing slash as the same place', () => {
     expect(placeOf('/bases/crm/tables/contacts/', '', TENANT)).toEqual(
       placeOf('/bases/crm/tables/contacts', '', TENANT),
@@ -86,7 +100,8 @@ describe('placeOf', () => {
       '/bases/crm/tables',
       '/bases/crm/inconnu',
       '/bases/crm/tables/contacts/en-trop',
-      '/bases/crm/structure/en-trop',
+      '/bases/crm/tables-et-champs/contacts/en-trop',
+      '/bases/crm/historique/en-trop',
       '/bases/crm/tableaux-de-bord/questions',
       '/bases/crm/tableaux-de-bord/un/deux',
       '/projets',
@@ -112,9 +127,22 @@ describe('placeOf', () => {
       kind: 'table',
       table: 'structure',
     })
-    expect(placeOf('/bases/crm/structure', '', TENANT)).toMatchObject({
+    expect(placeOf('/bases/crm/tables-et-champs', '', TENANT)).toMatchObject({
       kind: 'section',
       section: 'structure',
+    })
+  })
+
+  it('still leads the former address of the tables and fields there, table included', () => {
+    expect(placeOf('/bases/crm/structure', '', TENANT)).toEqual({
+      kind: 'section',
+      base: CRM,
+      section: 'structure',
+      table: null,
+    })
+    expect(placeOf('/bases/crm/structure/contacts', '', TENANT)).toMatchObject({
+      section: 'structure',
+      table: 'contacts',
     })
   })
 })

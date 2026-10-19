@@ -17,7 +17,7 @@ export function formulaDialect(language: string): FormulaDialect {
 
 /**
  * The English spelling of each word of the language whose French one differs. ABS, MIN,
- * MAX, DATE and NULL are the same in both.
+ * MAX, DATE, NULL, REPT, CONCAT, MINUTE and DATEDIF are the same in both.
  */
 export const FORMULA_ENGLISH: Readonly<Record<string, string>> = {
   SI: 'IF',
@@ -34,12 +34,29 @@ export const FORMULA_ENGLISH: Readonly<Record<string, string>> = {
   LONGUEUR: 'LEN',
   TEXTE: 'TEXT',
   NOMBRE: 'VALUE',
+  STXT: 'MID',
+  SUBSTITUE: 'SUBSTITUTE',
+  TROUVE: 'FIND',
+  CHERCHE: 'SEARCH',
+  CONTIENT: 'CONTAINS',
+  COMMENCEPAR: 'STARTSWITH',
+  FINITPAR: 'ENDSWITH',
+  NOMPROPRE: 'PROPER',
+  JOINDRE_TEXTE: 'TEXTJOIN',
+  REGEX_CORRESPOND: 'REGEXMATCH',
+  REGEX_EXTRAIRE: 'REGEXEXTRACT',
+  REGEX_REMPLACER: 'REGEXREPLACE',
   ANNEE: 'YEAR',
   MOIS: 'MONTH',
   JOUR: 'DAY',
+  HEURE: 'HOUR',
+  SECONDE: 'SECOND',
   JOURSEMAINE: 'WEEKDAY',
+  NO_SEMAINE_ISO: 'ISOWEEKNUM',
   JOURS: 'DAYS',
   AJOUTER_JOURS: 'ADD_DAYS',
+  AJOUTER_MOIS: 'ADD_MONTHS',
+  FIN_MOIS: 'EOMONTH',
   AUJOURDHUI: 'TODAY',
   MAINTENANT: 'NOW',
   VRAI: 'TRUE',

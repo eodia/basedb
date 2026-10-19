@@ -2,18 +2,17 @@ import type { Field } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
 
 /**
- * Exporting what is ON SCREEN — and only that.
+ * Exporting what is ON SCREEN — the page, or the selection of it.
  *
- * Decision A21 of chapter 00 refuses an export ENTRY POINT: "un flux illimité percerait
- * le plafond que toutes les autres règles construisent", and chapter 08 §1 repeats that
- * extraction happens through cursor pagination, bounded and subject to the same
- * permissions. Nothing here contradicts it: these functions serialize the rows the
- * browser already holds — the page the reader was allowed to read, masked fields absent
- * because they were never projected. No route is called, no second read happens, and a
- * million rows cannot be pulled by widening a parameter.
+ * These functions serialize the rows the browser already holds: the page the reader was
+ * allowed to read, masked fields absent because they were never projected. No route is
+ * called, no second read happens. That is the bottom bar's "Exporter la page".
  *
- * That is also why the bottom bar's button says "Exporter la page" rather than
- * "Exporter la table".
+ * The WHOLE table, or the whole view — its filter, its sort, its visible columns — is
+ * another thing: the server reads it to the end, page after page, with the reader's own
+ * rights, and sends a file (`api.exportView`, decision A21 lifted: a person must be able
+ * to leave with all their data). This file only hands the bytes to the browser
+ * (`saveBlob`).
  */
 
 export type ExportFormat = 'csv' | 'json' | 'sql' | 'tsv'
@@ -144,11 +143,20 @@ const MIME: Readonly<Record<ExportFormat, string>> = {
  */
 export function download(format: ExportFormat, content: string, baseName: string): void {
   const payload = format === 'csv' ? `﻿${content}` : content
-  const blob = new Blob([payload], { type: MIME[format] })
+  saveBlob(new Blob([payload], { type: MIME[format] }), `${baseName}.${format}`)
+}
+
+/**
+ * Hands a file to the browser, under the name it proposes.
+ *
+ * An object URL, revoked right after: a `data:` URI would cap out on a page of a few
+ * thousand rows, and Chrome refuses those over 2 MB from a click.
+ */
+export function saveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `${baseName}.${format}`
+  anchor.download = filename
   document.body.append(anchor)
   anchor.click()
   anchor.remove()

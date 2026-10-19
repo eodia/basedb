@@ -22,15 +22,16 @@ les descriptions (`COMMENT ON`).
 
 ## Dans l’interface
 
-Le **+** de la barre d’onglets, ou menu **⋯** de la base → **Requête SQL** : un éditeur
-avec coloration et complétion, dont le résultat s’affiche dans la même grille que vos tables.
+Le **+** de la barre d’onglets, ou menu **⋯** de la base → **Nouvelle question**, puis **SQL** dans
+l’en-tête : un éditeur avec coloration et complétion, dont le résultat s’affiche en tableau ou en
+graphique.
 
 ![Une requête enregistrée, et deux vues SQL rangées parmi les tables](../../../assets/screens/fr/requete-sql.webp)
 
-- **Chacun y lit avec ses droits** : le niveau Gestion a toute la base, écritures comprises ; les
-  autres membres écrivent du SQL en lecture seule, où une table fermée n’existe pas et un champ
-  masqué disparaît.
-- Une requête **s’enregistre** sous les tables — pour soi, pour toute la base ou pour des
+- **Chacun y lit avec ses droits** : un brouillon de qui a le niveau Gestion a toute la base,
+  écritures comprises ; une question enregistrée, et les autres membres, lisent en lecture seule,
+  où une table fermée n’existe pas et un champ masqué disparaît.
+- Une question **s’enregistre** sous les tables — pour soi, pour toute la base ou pour des
   groupes —, et devient, si l’on veut, une **vue SQL** : une vraie vue PostgreSQL, rangée parmi
   les tables et lisible depuis `psql`.
 

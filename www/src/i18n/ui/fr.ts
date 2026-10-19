@@ -1882,8 +1882,8 @@ const fr = {
 						text: 'Fournisseur, modèle et clé par tenant, sans passer par l’environnement de l’API.',
 					}),
 					mail: item({
-						title: 'Notifications et invitations par courriel',
-						text: 'Les mentions, les réponses et les désignations arrivent aujourd’hui dans basedb, les invitations par un lien à envoyer soi-même ; elles pourront aussi partir par courriel.',
+						title: 'Invitations par courriel',
+						text: 'Les notifications partent déjà par courriel pour qui le demande ; une invitation reste un lien à transmettre soi-même. Elle pourra partir par courriel elle aussi.',
 					}),
 				},
 			},

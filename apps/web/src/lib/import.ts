@@ -268,7 +268,9 @@ export function parseText(
 const TRUE_WORDS = ['true', 'vrai', 'oui', 'yes', 'y', 'o', 'x']
 const FALSE_WORDS = ['false', 'faux', 'non', 'no', 'n']
 
-const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim()
+/** Case, accents and edge spaces aside: how two labels are told to be the same. */
+export const fold = (text: string) =>
+  text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim()
 
 /** `1 234,56`, `1.234,56`, `1,234.56` and `-3` all read as numbers; `12abc` does not. */
 export function parseNumber(raw: Cell): number | null {

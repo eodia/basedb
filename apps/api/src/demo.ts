@@ -92,6 +92,24 @@ const ALLOWED: ReadonlyArray<readonly [string, RegExp]> = (
   ] as const
 ).map(([method, path]) => [method, new RegExp(`^${path}$`)] as const)
 
+/** A batch of rows: one route for creating and for changing, told apart by its operations. */
+const BATCH = new RegExp(`^${T}/data/${SEGMENT}/${SEGMENT}/batch$`)
+
+/**
+ * Whether a request is a batch that only CHANGES rows — a range pasted, a field filled
+ * over a selection. The path alone cannot say: the same route creates rows, which the
+ * demo refuses, so the body is what decides. `operations` is whatever the caller sent.
+ */
+export function demoAllowsBatch(method: string, path: string, operations: unknown): boolean {
+  return (
+    method === 'POST' &&
+    BATCH.test(path) &&
+    Array.isArray(operations) &&
+    operations.length > 0 &&
+    operations.every((o) => (o as { op?: unknown } | null)?.op === 'update')
+  )
+}
+
 /** The routes that call the AI: refused with the AI's own sentence. */
 const AI_ROUTES: readonly RegExp[] = [
   new RegExp(`^${T}/ai/`),

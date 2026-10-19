@@ -1,4 +1,5 @@
 import { qualify, quoteIdentifier } from '@basedb/naming'
+import { COMPUTED_KINDS } from '../ddl/emit.js'
 import { BasedbError } from '../errors/index.js'
 import { type ActorGrants, type Decision, decide } from '../rbac/decide.js'
 import { loadGrants, loadTarget } from '../rbac/loader.js'
@@ -567,10 +568,27 @@ export async function revertIn(
     throw new BasedbError('RESOURCE_NOT_FOUND', { details: { revision: header.id } })
   }
   const fields = new Map(table.fields.map((f) => [f.id, f]))
-  const changes = revision.fields.filter((f) => read.readableFields.has(f.field_id))
+  // A revision carries what PostgreSQL recomputed with the change — a stored formula —
+  // and the AI cells the change emptied. The first comes back by itself once the values
+  // it reads do: it is left out. The second is put back as the worker had computed it,
+  // for the values about to return: nobody's write mask covers it, and none needs to.
+  const [ai] = await exec.query<{ ids: string[] }>(
+    `SELECT coalesce(array_agg(c.field_id::text), '{}') AS ids
+       FROM _basedb.field_ai_config c
+       JOIN _basedb.field f ON f.id = c.field_id
+      WHERE f.table_id = $1`,
+    [header.table_id],
+  )
+  const computedByAi = new Set(ai?.ids ?? [])
+  const changes = revision.fields.filter(
+    (f) =>
+      read.readableFields.has(f.field_id) &&
+      !COMPUTED_KINDS.has(fields.get(f.field_id)?.kind ?? ''),
+  )
   for (const change of changes) {
     const field = fields.get(change.field_id)
-    if (field === undefined || !field.isLive || !update.writableFields.has(change.field_id)) {
+    const writable = update.writableFields.has(change.field_id) || computedByAi.has(change.field_id)
+    if (field === undefined || !field.isLive || !writable) {
       throw new BasedbError('FIELD_NOT_WRITABLE', { details: { field: change.field_id } })
     }
   }

@@ -378,29 +378,71 @@ export interface ResolvedFormula {
   /** The fields it cites, by catalog key. */
   readonly dependencies: readonly string[]
   /**
-   * False when it cannot be a generated column: it reads the clock, or a field computed
-   * at read time (04 §7.1).
+   * False when it cannot be a generated column: it reads the clock, a day or an hour out of
+   * a date and time, or a field computed at read time (04 §7.1).
    */
   readonly stored: boolean
-  /** It calls AUJOURDHUI() — the field then carries a time zone. */
+  /** It calls AUJOURDHUI(). */
   readonly usesToday: boolean
+  /**
+   * It reads a day or an hour out of a date and time, or calls AUJOURDHUI() — the field
+   * then carries a time zone, and a formula over a date and time is computed at read time.
+   */
+  readonly usesTimezone: boolean
+  /**
+   * The regular expressions it writes, which only the database can say are well formed:
+   * the catalog asks it before the formula is saved (see `checkRegexPatterns`).
+   */
+  readonly patterns: readonly RegexPattern[]
+}
+
+/** A regular expression written in a formula, with where and in which function. */
+export interface RegexPattern {
+  readonly pattern: string
+  readonly fn: string
+  readonly position: number
 }
 
 function mismatch(at: number, detail: string): BasedbError {
   return new BasedbError('FORMULA_TYPE_MISMATCH', { details: { position: at, detail } })
 }
 
+/** What a function's own checks see, once the types of its arguments agree. */
+interface CallCheck {
+  readonly nodes: readonly Node[]
+  readonly types: readonly FormulaType[]
+  /** Where each argument starts, and where the call does. */
+  readonly ats: readonly number[]
+  readonly at: number
+}
+
+interface FunctionSpec {
+  /** How many arguments it takes — at least this many, and at most `max`, which defaults to it. */
+  readonly arity: number
+  readonly max?: number
+  readonly type: (args: readonly FormulaType[], at: number) => FormulaType
+  /** It reads the clock: the formula is computed at read time. */
+  readonly volatile?: boolean
+  /**
+   * The arguments read as a day. A date and time given there is read in the time zone of
+   * the formula, and the formula is then computed at read time: a generated column depends
+   * on no time zone (§7.3).
+   */
+  readonly days?: readonly number[]
+  /** The argument that is a regular expression, which must be written in the formula. */
+  readonly pattern?: number
+  /** The checks that need the written value of an argument: a format, a unit, a pattern. */
+  readonly check?: (call: CallCheck) => void
+}
+
+/** How many texts CONCAT and JOINDRE_TEXTE join. */
+const MAX_JOINED = 32
+
+/** What a function that reads a day accepts: a date, or a date and time read in the zone. */
+const DAYS: readonly FormulaType[] = ['date', 'datetime']
+
 /** The functions of §7.3: arity, and the typing of their result from their arguments. */
-const FUNCTIONS: Readonly<
-  Record<
-    string,
-    {
-      readonly arity: number
-      readonly type: (args: readonly FormulaType[], at: number) => FormulaType
-      readonly volatile?: boolean
-    }
-  >
-> = {
+const FUNCTIONS: Readonly<Record<string, FunctionSpec>> = {
   SI: {
     arity: 3,
     type: ([c, a, b], at) => {
@@ -428,17 +470,83 @@ const FUNCTIONS: Readonly<
   },
   GAUCHE: { arity: 2, type: ([x, n], at) => textAndCount(x, n, at, 'GAUCHE') },
   DROITE: { arity: 2, type: ([x, n], at) => textAndCount(x, n, at, 'DROITE') },
+  STXT: {
+    arity: 3,
+    type: ([x, start, length], at) => {
+      expectType(x, ['text'], at, 'STXT')
+      expectType(start, ['number'], at, 'STXT')
+      expectType(length, ['number'], at, 'STXT')
+      return 'text'
+    },
+  },
+  SUBSTITUE: { arity: 3, type: (args, at) => texts(args, at, 'SUBSTITUE') },
+  TROUVE: { arity: 2, type: (args, at) => position(args, at, 'TROUVE') },
+  CHERCHE: { arity: 2, type: (args, at) => position(args, at, 'CHERCHE') },
+  CONTIENT: { arity: 2, type: (args, at) => test(args, at, 'CONTIENT') },
+  COMMENCEPAR: { arity: 2, type: (args, at) => test(args, at, 'COMMENCEPAR') },
+  FINITPAR: { arity: 2, type: (args, at) => test(args, at, 'FINITPAR') },
+  NOMPROPRE: { arity: 1, type: (args, at) => texts(args, at, 'NOMPROPRE') },
+  REPT: { arity: 2, type: ([x, n], at) => textAndCount(x, n, at, 'REPT') },
+  CONCAT: { arity: 1, max: MAX_JOINED, type: (args, at) => joined(args, at, 'CONCAT') },
+  JOINDRE_TEXTE: {
+    arity: 3,
+    max: MAX_JOINED + 2,
+    type: ([separator, ignore, ...parts], at) => {
+      expectType(separator, ['text'], at, 'JOINDRE_TEXTE')
+      expectType(ignore, ['boolean'], at, 'JOINDRE_TEXTE')
+      return joined(parts, at, 'JOINDRE_TEXTE')
+    },
+    check: ({ nodes, at, ats }) => {
+      // The separator is repeated between the parts and the ignoring is a choice of the
+      // formula's author, not of a row: both are written, never read from a field.
+      writtenText(nodes[0], ats[0] ?? at, 'JOINDRE_TEXTE:separateur')
+      if (nodes[1]?.t !== 'boolean') {
+        throw syntax(ats[1] ?? at, 'valeur_ecrite_attendue:JOINDRE_TEXTE:ignorer_vides')
+      }
+    },
+  },
+  REGEX_CORRESPOND: {
+    arity: 2,
+    pattern: 1,
+    type: (args, at) => {
+      texts(args, at, 'REGEX_CORRESPOND')
+      return 'boolean'
+    },
+  },
+  REGEX_EXTRAIRE: { arity: 2, pattern: 1, type: (args, at) => texts(args, at, 'REGEX_EXTRAIRE') },
+  REGEX_REMPLACER: {
+    arity: 3,
+    pattern: 1,
+    type: (args, at) => texts(args, at, 'REGEX_REMPLACER'),
+  },
   TEXTE: {
     arity: 1,
-    type: ([x], at) => {
-      // Every date-to-text conversion of PostgreSQL depends on the session: refused (§7.3).
-      if (x === 'date' || x === 'datetime') {
-        throw new BasedbError('FORMULA_FUNCTION_NOT_IMMUTABLE', {
-          details: { position: at, function: 'TEXTE' },
-        })
+    max: 2,
+    days: [0],
+    type: ([x, format], at) => {
+      if (format === undefined) {
+        // Every date-to-text conversion of PostgreSQL depends on the session: refused (§7.3).
+        // A date is written with a format, which the formula spells out itself.
+        if (x === 'date' || x === 'datetime') {
+          throw new BasedbError('FORMULA_FUNCTION_NOT_IMMUTABLE', {
+            details: { position: at, function: 'TEXTE', reason: 'date_en_texte' },
+          })
+        }
+        expectType(x, ['number', 'boolean', 'text'], at, 'TEXTE')
+        return 'text'
       }
-      expectType(x, ['number', 'boolean', 'text'], at, 'TEXTE')
+      expectType(x, ['date', 'datetime'], at, 'TEXTE')
+      expectType(format, ['text'], at, 'TEXTE')
       return 'text'
+    },
+    check: ({ nodes, types, at, ats }) => {
+      if (nodes.length < 2) return
+      const format = writtenText(nodes[1], ats[1] ?? at, 'TEXTE:format')
+      const parts = parseDateFormat(format, ats[1] ?? at)
+      // A date has no hour: the format that asks for one is refused, not printed as zeros.
+      if (types[0] === 'date' && parts.some((p) => TIME_UNITS.has(p.k))) {
+        throw mismatch(at, 'TEXTE:heure_sur_date')
+      }
     },
   },
   NOMBRE: {
@@ -448,24 +556,62 @@ const FUNCTIONS: Readonly<
       return 'number'
     },
   },
-  ANNEE: { arity: 1, type: (args, at) => datePart(args, at, 'ANNEE') },
-  MOIS: { arity: 1, type: (args, at) => datePart(args, at, 'MOIS') },
-  JOUR: { arity: 1, type: (args, at) => datePart(args, at, 'JOUR') },
-  JOURSEMAINE: { arity: 1, type: (args, at) => datePart(args, at, 'JOURSEMAINE') },
+  ANNEE: { arity: 1, days: [0], type: (args, at) => datePart(args, at, 'ANNEE') },
+  MOIS: { arity: 1, days: [0], type: (args, at) => datePart(args, at, 'MOIS') },
+  JOUR: { arity: 1, days: [0], type: (args, at) => datePart(args, at, 'JOUR') },
+  JOURSEMAINE: { arity: 1, days: [0], type: (args, at) => datePart(args, at, 'JOURSEMAINE') },
+  NO_SEMAINE_ISO: { arity: 1, days: [0], type: (args, at) => datePart(args, at, 'NO_SEMAINE_ISO') },
+  HEURE: { arity: 1, days: [0], type: (args, at) => timePart(args, at, 'HEURE') },
+  MINUTE: { arity: 1, days: [0], type: (args, at) => timePart(args, at, 'MINUTE') },
+  SECONDE: { arity: 1, days: [0], type: (args, at) => timePart(args, at, 'SECONDE') },
   JOURS: {
     arity: 2,
+    days: [0, 1],
     type: ([a, b], at) => {
-      expectType(a, ['date'], at, 'JOURS')
-      expectType(b, ['date'], at, 'JOURS')
+      expectType(a, DAYS, at, 'JOURS')
+      expectType(b, DAYS, at, 'JOURS')
       return 'number'
     },
   },
   AJOUTER_JOURS: {
     arity: 2,
+    days: [0],
     type: ([d, n], at) => {
-      expectType(d, ['date'], at, 'AJOUTER_JOURS')
+      expectType(d, DAYS, at, 'AJOUTER_JOURS')
       expectType(n, ['number'], at, 'AJOUTER_JOURS')
       return 'date'
+    },
+  },
+  AJOUTER_MOIS: {
+    arity: 2,
+    days: [0],
+    type: ([d, n], at) => {
+      expectType(d, DAYS, at, 'AJOUTER_MOIS')
+      expectType(n, ['number'], at, 'AJOUTER_MOIS')
+      return 'date'
+    },
+  },
+  FIN_MOIS: {
+    arity: 1,
+    max: 2,
+    days: [0],
+    type: ([d, n], at) => {
+      expectType(d, DAYS, at, 'FIN_MOIS')
+      if (n !== undefined) expectType(n, ['number'], at, 'FIN_MOIS')
+      return 'date'
+    },
+  },
+  DATEDIF: {
+    arity: 3,
+    days: [0, 1],
+    type: ([start, end, unit], at) => {
+      expectType(start, DAYS, at, 'DATEDIF')
+      expectType(end, DAYS, at, 'DATEDIF')
+      expectType(unit, ['text'], at, 'DATEDIF')
+      return 'number'
+    },
+    check: ({ nodes, at, ats }) => {
+      dateDifUnit(writtenText(nodes[2], ats[2] ?? at, 'DATEDIF:unite'), ats[2] ?? at)
     },
   },
   DATE: {
@@ -526,16 +672,161 @@ function ordered(args: readonly FormulaType[], at: number, where: string): Formu
   return unify(a, b, at)
 }
 
-function datePart(args: readonly FormulaType[], at: number, where: string): FormulaType {
-  const [d] = args
-  // On a date and time, the day depends on the time zone: refused, as §7.3 says.
-  if (d === 'datetime') {
-    throw new BasedbError('FORMULA_FUNCTION_NOT_IMMUTABLE', {
-      details: { position: at, function: where, reason: 'date_et_heure' },
-    })
-  }
-  expectType(d, ['date'], at, where)
+/** The position of a text in another, or nothing: two texts in, a number out. */
+function position(args: readonly FormulaType[], at: number, where: string): FormulaType {
+  texts(args, at, where)
   return 'number'
+}
+
+/** A question asked of two texts. */
+function test(args: readonly FormulaType[], at: number, where: string): FormulaType {
+  texts(args, at, where)
+  return 'boolean'
+}
+
+/**
+ * Values joined into one text, as `&` joins them: a date goes through a conversion that
+ * depends on the session, and is refused (§7.3).
+ */
+function joined(args: readonly FormulaType[], at: number, where: string): FormulaType {
+  for (const a of args) {
+    if (a === 'date' || a === 'datetime') {
+      throw new BasedbError('FORMULA_FUNCTION_NOT_IMMUTABLE', {
+        details: { position: at, function: where, reason: 'date_en_texte' },
+      })
+    }
+  }
+  return 'text'
+}
+
+/**
+ * A part of a date. On a date and time the day depends on the time zone: the formula is
+ * then read in the zone it carries and computed at read time (§7.3).
+ */
+function datePart(args: readonly FormulaType[], at: number, where: string): FormulaType {
+  expectType(args[0], DAYS, at, where)
+  return 'number'
+}
+
+/** A part of the time of day: only a date and time has one. */
+function timePart(args: readonly FormulaType[], at: number, where: string): FormulaType {
+  expectType(args[0], ['datetime'], at, where)
+  return 'number'
+}
+
+/** A text the formula writes itself — a format, a unit, a pattern — not one read from a field. */
+function writtenText(node: Node | undefined, at: number, where: string): string {
+  if (node?.t !== 'text') throw syntax(at, `texte_ecrit_attendu:${where}`)
+  return node.v
+}
+
+// ── What a formula writes in a text: a date format, a unit, a pattern ──────────────
+
+type TimeUnit = 'hour' | 'minute' | 'second'
+
+type FormatPart =
+  | { readonly k: 'text'; readonly v: string }
+  | { readonly k: 'year'; readonly digits: 2 | 4 }
+  | { readonly k: 'month' | 'day' | TimeUnit; readonly digits: 1 | 2 }
+
+const TIME_UNITS: ReadonlySet<string> = new Set<TimeUnit>(['hour', 'minute', 'second'])
+
+/** The letters of a format, French and English alike: `jj/mm/aaaa` and `dd/mm/yyyy`. */
+const FORMAT_LETTERS: Readonly<Record<string, 'year' | 'month' | 'day' | 'hour' | 'second'>> = {
+  y: 'year',
+  a: 'year',
+  m: 'month',
+  d: 'day',
+  j: 'day',
+  h: 'hour',
+  s: 'second',
+}
+
+/**
+ * Reads the format of `TEXTE(date; format)`. It is spelled out in SQL from numeric parts
+ * only — never `to_char`, which depends on the session — so month and day names, which
+ * would depend on a language, are not part of it. A letter that is not a code is refused
+ * rather than printed; `\` writes the next character as it is.
+ *
+ * As in a spreadsheet, `m` is a minute right after the hour or right before the second,
+ * and a month everywhere else.
+ */
+function parseDateFormat(format: string, at: number): FormatPart[] {
+  const chars = [...format]
+  const parts: FormatPart[] = []
+  const literal = (v: string) => {
+    const last = parts[parts.length - 1]
+    if (last?.k === 'text') parts[parts.length - 1] = { k: 'text', v: last.v + v }
+    else parts.push({ k: 'text', v })
+  }
+  let i = 0
+  while (i < chars.length) {
+    const ch = chars[i] as string
+    if (ch === '\\') {
+      const next = chars[i + 1]
+      if (next === undefined) throw syntax(at, 'format_inconnu:\\')
+      literal(next)
+      i += 2
+      continue
+    }
+    if (!/^[A-Za-z]$/.test(ch)) {
+      literal(ch)
+      i++
+      continue
+    }
+    const unit = FORMAT_LETTERS[ch.toLowerCase()]
+    let run = 1
+    while (chars[i + run]?.toLowerCase() === ch.toLowerCase()) run++
+    const code = chars.slice(i, i + run).join('')
+    if (unit === undefined) throw syntax(at, `format_inconnu:${ch}`)
+    if (unit === 'year') {
+      if (run !== 2 && run !== 4) throw syntax(at, `format_inconnu:${code}`)
+      parts.push({ k: 'year', digits: run })
+    } else {
+      // Three or four letters would be a name — « lun. », « septembre » — which a column
+      // cannot give in every language.
+      if (run > 2) throw syntax(at, `format_inconnu:${code}`)
+      parts.push({ k: unit, digits: run as 1 | 2 })
+    }
+    i += run
+  }
+  // A month between an hour and a second is a minute.
+  const codes = parts.filter((p) => p.k !== 'text')
+  return parts.map((p) => {
+    if (p.k !== 'month') return p
+    const index = codes.indexOf(p)
+    return codes[index - 1]?.k === 'hour' || codes[index + 1]?.k === 'second'
+      ? ({ k: 'minute', digits: p.digits } as const)
+      : p
+  })
+}
+
+/** What `DATEDIF` counts between two dates: whole years, whole months, days, or the months left over after the years. */
+const DATEDIF_UNITS: ReadonlySet<string> = new Set(['Y', 'M', 'D', 'YM'])
+
+function dateDifUnit(unit: string, at: number): string {
+  const upper = unit.toUpperCase()
+  if (!DATEDIF_UNITS.has(upper)) throw syntax(at, `unite_inconnue:${unit}`)
+  return upper
+}
+
+/**
+ * A regular expression that must be written in the formula, never read from a field: a
+ * pattern that varied by row could be invalid for one of them and make that row unwritable
+ * for good. A back-reference makes PostgreSQL's matcher exponential, which a generated
+ * column would pay on every write: refused.
+ */
+function regexPattern(node: Node | undefined, at: number, where: string): string {
+  const pattern = writtenText(node, at, `${where}:motif`)
+  for (let i = 0; i < pattern.length; i++) {
+    if (pattern[i] !== '\\') continue
+    const next = pattern[i + 1]
+    if (next !== undefined && next >= '1' && next <= '9') {
+      throw syntax(at, `motif_refuse:${where}:reference_arriere`)
+    }
+    i++
+  }
+  return pattern
 }
 
 /**
@@ -549,8 +840,10 @@ export function resolveFormula(
   keyOf: (label: string) => string,
 ): ResolvedFormula {
   const dependencies = new Set<string>()
+  const patterns: RegexPattern[] = []
   let stored = true
   let usesToday = false
+  let zoned = false
 
   const walk = (node: RawNode): { node: Node; type: FormulaType } => {
     switch (node.t) {
@@ -593,19 +886,35 @@ export function resolveFormula(
       case 'call': {
         const spec = FUNCTIONS[node.fn]
         if (spec === undefined) throw syntax(node.at, `fonction_inconnue:${node.fn}`)
-        if (node.args.length !== spec.arity) {
-          throw syntax(node.at, `arguments:${node.fn}:${spec.arity}`)
+        const max = spec.max ?? spec.arity
+        if (node.args.length < spec.arity || node.args.length > max) {
+          const expected = max === spec.arity ? `${spec.arity}` : `${spec.arity}-${max}`
+          throw syntax(node.at, `arguments:${node.fn}:${expected}`)
         }
         const args = node.args.map(walk)
         if (spec.volatile === true) {
           stored = false
           if (node.fn === 'AUJOURDHUI') usesToday = true
         }
-        const type = spec.type(
-          args.map((a) => a.type),
-          node.at,
-        )
-        return { node: { t: 'call', fn: node.fn, args: args.map((a) => a.node) }, type }
+        const types = args.map((a) => a.type)
+        const type = spec.type(types, node.at)
+        const nodes = args.map((a) => a.node)
+        const ats = node.args.map((a) => a.at)
+        spec.check?.({ nodes, types, ats, at: node.at })
+        if (spec.pattern !== undefined) {
+          patterns.push({
+            pattern: regexPattern(nodes[spec.pattern], ats[spec.pattern] ?? node.at, node.fn),
+            fn: node.fn,
+            position: ats[spec.pattern] ?? node.at,
+          })
+        }
+        // A date and time read as a day takes the zone of the formula, which no generated
+        // column can carry (§7.3): the formula is computed at read time, like AUJOURDHUI().
+        if (spec.days?.some((i) => types[i] === 'datetime') === true) {
+          stored = false
+          zoned = true
+        }
+        return { node: { t: 'call', fn: node.fn, args: nodes }, type }
       }
       case 'binary': {
         const left = walk(node.left)
@@ -668,7 +977,15 @@ export function resolveFormula(
 
   const { node, type } = walk(raw)
   if (type === 'null') throw mismatch(0, 'resultat_toujours_vide')
-  return { ast: node, type, dependencies: [...dependencies], stored, usesToday }
+  return {
+    ast: node,
+    type,
+    dependencies: [...dependencies],
+    stored,
+    usesToday,
+    usesTimezone: usesToday || zoned,
+    patterns,
+  }
 }
 
 // ── 3. Emitting SQL ───────────────────────────────────────────────────────────────
@@ -678,7 +995,7 @@ export interface EmitContext {
   readonly field: (id: string) => string
   /** The type of a field's value, to emit the conversions `&` and `TEXTE` need. */
   readonly typeOf: (id: string) => FormulaType
-  /** Where AUJOURDHUI() is read. */
+  /** Where AUJOURDHUI() is read, and where a date and time is read as a day or an hour. */
   readonly timezone: string
 }
 
@@ -693,6 +1010,77 @@ function literal(value: string): string {
 /** `least(greatest(x, lo), hi)::int`: every cast to int is bounded (§7.3, first rule). */
 function boundedInt(sql: string, lo: number, hi: number): string {
   return `least(greatest(${sql}, ${lo}), ${hi})::int`
+}
+
+/**
+ * A number turned into an `int` between two bounds, and empty when it is: `greatest` and
+ * `least` ignore an absent value, which would turn « vide » into a bound. A number written
+ * in the formula becomes the bounded integer itself. Fractions are cut, as a spreadsheet does.
+ */
+function intArg(node: Node, sql: string, lo: number, hi: number): string {
+  if (node.t === 'number') return String(Math.min(Math.max(Math.trunc(Number(node.v)), lo), hi))
+  return `(CASE WHEN ${sql} IS NULL THEN NULL ELSE trunc(least(greatest(${sql}, ${lo}), ${hi}))::int END)`
+}
+
+/**
+ * The SQL a formula may reach before it is refused. A function that repeats an argument —
+ * a format, a division — repeats what the argument holds, and nesting such calls multiplies
+ * the text: a ceiling answers that with an error, not with the memory of the server.
+ */
+const MAX_SQL_CHARS = 200_000
+
+/** The bounds of the integers a formula passes to PostgreSQL: characters, repeats, months. */
+const MAX_CHARS = 1_000_000
+const MAX_REPEATED = 32_767
+const MAX_MONTHS = 12_000
+
+/** A regular expression as a literal, checked again at emission: a stored tree is not trusted. */
+function regexLiteral(node: Node, where: string): string {
+  return `${literal(regexPattern(node, 0, where))}::text`
+}
+
+/**
+ * A date within the years a date is written in. A date column also holds `infinity` and
+ * years past 294 276, which a timestamp does not: the conversions below would raise on them,
+ * and a row that raises is a row nobody can write again. Outside the years: empty.
+ */
+function withinYears(sql: string): string {
+  return `(CASE WHEN ${sql} BETWEEN '0001-01-01'::date AND '9999-12-31'::date THEN ${sql} END)`
+}
+
+/**
+ * `TEXTE(date; format)` in SQL: numeric parts only, so that the text is the same everywhere.
+ * `local` is the date, or the wall-clock time of a date and time; it is read once per code,
+ * and empty outside the years 1 to 9999.
+ */
+function dateFormatSql(
+  parts: readonly FormatPart[],
+  local: string,
+  kind: 'date' | 'datetime',
+): string {
+  const pad = (sql: string, digits: number) =>
+    digits === 2 ? `lpad(${sql}::text, 2, '0')` : `${sql}::text`
+  const pieces = parts.map((p) => {
+    switch (p.k) {
+      case 'text':
+        return literal(p.v)
+      case 'year':
+        return p.digits === 4
+          ? `lpad(extract(year from ${local})::int::text, 4, '0')`
+          : `lpad((extract(year from ${local})::int % 100)::text, 2, '0')`
+      case 'second':
+        // `extract(second …)` carries the fraction.
+        return pad(`floor(extract(second from ${local}))::int`, p.digits)
+      default:
+        return pad(`extract(${p.k} from ${local})::int`, p.digits)
+    }
+  })
+  const [first, last] =
+    kind === 'date'
+      ? [`'0001-01-01'::date`, `'9999-12-31'::date`]
+      : [`'0001-01-01'::timestamp`, `'9999-12-31 23:59:59.999999'::timestamp`]
+  const text = pieces.length === 0 ? `''::text` : pieces.join(' || ')
+  return `(CASE WHEN ${local} BETWEEN ${first} AND ${last} THEN ${text} END)`
 }
 
 /** A value as text, for `&` and `TEXTE`: numbers without their trailing zeros. */
@@ -742,6 +1130,22 @@ export function emitFormula(ast: Node, context: EmitContext): string {
   }
 
   const emit = (node: Node): string => {
+    const sql = emitNode(node)
+    if (sql.length > MAX_SQL_CHARS) {
+      throw new BasedbError('FORMULA_SYNTAX', { details: { detail: 'formule_trop_complexe' } })
+    }
+    return sql
+  }
+
+  /** The zone a date and time is read in: validated here, as AUJOURDHUI() has always done. */
+  const zone = (): string => {
+    if (!TIMEZONE.test(context.timezone)) {
+      throw new BasedbError('FORMULA_SYNTAX', { details: { timezone: context.timezone } })
+    }
+    return literal(context.timezone)
+  }
+
+  const emitNode = (node: Node): string => {
     switch (node.t) {
       case 'number':
         // Re-validated at emission: the tree is stored, and a stored tree is not trusted.
@@ -791,6 +1195,14 @@ export function emitFormula(ast: Node, context: EmitContext): string {
       case 'call': {
         const a = node.args.map(emit)
         const t = node.args.map(typeOf)
+        // The SQL of the nth argument, and of its node when it is written in the formula.
+        const arg = (i: number) => a[i] as string
+        const written = (i: number) => node.args[i] as Node
+        // A date and time read as a day is that day in the zone of the formula.
+        const wall = (i: number) => `(${arg(i)} AT TIME ZONE ${zone()})`
+        const day = (i: number) => (t[i] === 'datetime' ? `${wall(i)}::date` : arg(i))
+        const fold = (i: number) => `_basedb_local.fold_v1(${arg(i)})`
+        const months = (i: number) => intArg(written(i), arg(i), -MAX_MONTHS, MAX_MONTHS)
         switch (node.fn) {
           case 'SI':
             return `(CASE WHEN ${a[0]} THEN ${a[1]} ELSE ${a[2]} END)`
@@ -822,30 +1234,124 @@ export function emitFormula(ast: Node, context: EmitContext): string {
             return `left(${a[0]}, ${boundedInt(a[1] as string, 0, 1000000)})`
           case 'DROITE':
             return `right(${a[0]}, ${boundedInt(a[1] as string, 0, 1000000)})`
-          case 'TEXTE':
-            return asText(a[0] as string, t[0] as FormulaType)
+          case 'STXT':
+            return `substr(${a[0]}, ${intArg(written(1), arg(1), 1, MAX_CHARS)}, ${intArg(written(2), arg(2), 0, MAX_CHARS)})`
+          case 'SUBSTITUE':
+            return `replace(${a[0]}, ${a[1]}, ${a[2]})`
+          case 'TROUVE':
+            return `nullif(strpos(${a[1]}, ${a[0]}), 0)::numeric`
+          case 'CHERCHE': {
+            // A text written in the formula is lowered here: PostgreSQL cannot apply a collation to
+            // a constant inside a generated column.
+            const lowered = (i: number) => {
+              const n = written(i)
+              return n.t === 'text'
+                ? `${literal(n.v.toLowerCase())}::text`
+                : `lower(${arg(i)} COLLATE "und-x-icu")`
+            }
+            return `nullif(strpos(${lowered(1)}, ${lowered(0)}), 0)::numeric`
+          }
+          // These three read as the grid's filters do: case and accents do not count.
+          case 'CONTIENT':
+            return `(strpos(${fold(0)}, ${fold(1)}) > 0)`
+          case 'COMMENCEPAR':
+            return `starts_with(${fold(0)}, ${fold(1)})`
+          case 'FINITPAR':
+            return `starts_with(reverse(${fold(0)}), reverse(${fold(1)}))`
+          case 'NOMPROPRE':
+            return `initcap(${a[0]} COLLATE "und-x-icu")`
+          case 'REPT': {
+            // A text that would pass the spreadsheet's 32 767 characters is empty, not an
+            // error: `repeat` refuses past 1 GB, and the row would not be written.
+            const count = intArg(written(1), arg(1), 0, MAX_REPEATED)
+            return `(CASE WHEN length(${a[0]})::bigint * ${count} > ${MAX_REPEATED} THEN NULL ELSE repeat(${a[0]}, ${count}) END)`
+          }
+          case 'CONCAT':
+            return `(${node.args.map((_, i) => `coalesce(${asText(arg(i), t[i] as FormulaType)}, '')`).join(' || ')})`
+          case 'JOINDRE_TEXTE': {
+            const separator = writtenText(written(0), 0, 'JOINDRE_TEXTE:separateur')
+            const flag = written(1)
+            const ignore = flag.t === 'boolean' && flag.v
+            const parts = node.args
+              .slice(2)
+              .map((_, i) => asText(arg(i + 2), t[i + 2] as FormulaType))
+            const sep = literal(separator)
+            if (!ignore) {
+              return `(${parts.map((p) => `coalesce(${p}, '')`).join(` || ${sep} || `)})`
+            }
+            // Each part brings the separator before it when it is not empty, and the first
+            // separator is cut. Emptiness is a length, never a comparison with '': PostgreSQL
+            // cannot compare two texts when it has no collation for them, as in a constant.
+            const all = parts
+              .map((p, i) => {
+                const part = written(i + 2)
+                if (part.t === 'text')
+                  return part.v === '' ? "''" : `(${sep} || ${literal(part.v)})`
+                return `(CASE WHEN length(${p}) > 0 THEN ${sep} || ${p} ELSE '' END)`
+              })
+              .join(' || ')
+            return `substr(${all}, ${[...separator].length + 1})`
+          }
+          case 'REGEX_CORRESPOND':
+            return `((${a[0]}) COLLATE "und-x-icu" ~ ${regexLiteral(written(1), 'REGEX_CORRESPOND')})`
+          case 'REGEX_EXTRAIRE':
+            return `substring((${a[0]}) COLLATE "und-x-icu", ${regexLiteral(written(1), 'REGEX_EXTRAIRE')})`
+          case 'REGEX_REMPLACER':
+            return `regexp_replace((${a[0]}) COLLATE "und-x-icu", ${regexLiteral(written(1), 'REGEX_REMPLACER')}, ${a[2]}, 'g')`
+          case 'TEXTE': {
+            if (node.args.length === 1) return asText(arg(0), t[0] as FormulaType)
+            const format = parseDateFormat(writtenText(written(1), 0, 'TEXTE:format'), 0)
+            return t[0] === 'datetime'
+              ? dateFormatSql(format, wall(0), 'datetime')
+              : dateFormatSql(format, `(${arg(0)})`, 'date')
+          }
           case 'NOMBRE':
             return `(CASE WHEN ${a[0]} ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (${a[0]})::numeric ELSE NULL END)`
           case 'ANNEE':
-            return `extract(year from ${a[0]})::numeric`
+            return `extract(year from ${day(0)})::numeric`
           case 'MOIS':
-            return `extract(month from ${a[0]})::numeric`
+            return `extract(month from ${day(0)})::numeric`
           case 'JOUR':
-            return `extract(day from ${a[0]})::numeric`
+            return `extract(day from ${day(0)})::numeric`
           case 'JOURSEMAINE':
-            return `extract(isodow from ${a[0]})::numeric`
+            return `extract(isodow from ${day(0)})::numeric`
+          case 'NO_SEMAINE_ISO':
+            return `extract(week from ${day(0)})::numeric`
+          case 'HEURE':
+            return `extract(hour from ${wall(0)})::numeric`
+          case 'MINUTE':
+            return `extract(minute from ${wall(0)})::numeric`
+          case 'SECONDE':
+            return `floor(extract(second from ${wall(0)}))::numeric`
           case 'JOURS':
-            return `((${a[0]} - ${a[1]})::numeric)`
+            return `((${day(0)} - ${day(1)})::numeric)`
           case 'AJOUTER_JOURS':
-            return `(${a[0]} + ${boundedInt(a[1] as string, -100000, 100000)})`
+            return `(${day(0)} + ${boundedInt(arg(1), -100000, 100000)})`
+          case 'AJOUTER_MOIS':
+            return `(${withinYears(day(0))} + make_interval(months => ${months(1)}))::date`
+          case 'FIN_MOIS': {
+            const shift = node.args.length === 2 ? months(1) : '0'
+            return `(date_trunc('month', ${withinYears(day(0))} + make_interval(months => ${shift})) + interval '1 month' - interval '1 day')::date`
+          }
+          case 'DATEDIF': {
+            const unit = dateDifUnit(writtenText(written(2), 0, 'DATEDIF:unite'), 0)
+            // `age` of timestamps, not of dates: the date version resolves to a STABLE one.
+            const age = `age(${withinYears(day(1))}::timestamp, ${withinYears(day(0))}::timestamp)`
+            switch (unit) {
+              case 'Y':
+                return `extract(year from ${age})::numeric`
+              case 'M':
+                return `(extract(year from ${age}) * 12 + extract(month from ${age}))::numeric`
+              case 'YM':
+                return `extract(month from ${age})::numeric`
+              default:
+                return `((${withinYears(day(1))} - ${withinYears(day(0))})::numeric)`
+            }
+          }
           case 'DATE':
             return `_basedb_local.safe_date_v1(${a[0]}, ${a[1]}, ${a[2]})`
-          case 'AUJOURDHUI': {
-            if (!TIMEZONE.test(context.timezone)) {
-              throw new BasedbError('FORMULA_SYNTAX', { details: { timezone: context.timezone } })
-            }
-            return `(pg_catalog.now() AT TIME ZONE ${literal(context.timezone)})::date`
-          }
+          case 'AUJOURDHUI':
+            return `(pg_catalog.now() AT TIME ZONE ${zone()})::date`
           case 'MAINTENANT':
             return 'pg_catalog.now()'
         }

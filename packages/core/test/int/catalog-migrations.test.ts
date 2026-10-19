@@ -386,3 +386,137 @@ describe('the questions of 0.3.0', () => {
     })
   })
 })
+
+describe('the saved queries of 0.7.0', () => {
+  it('become SQL questions of the same identifier, their text, scope, author and groups kept', async () => {
+    const uri = await installation('0.7.0')
+    const made = await withClient(uri, async (client) => {
+      const { rows } = await client.query<{ tenant: string; admin: string; project: string }>(
+        `SELECT t.id AS tenant, t.created_by AS admin, p.id AS project
+           FROM _basedb.tenant t JOIN _basedb.project p ON p.tenant_id = t.id`,
+      )
+      const at = rows[0] as { tenant: string; admin: string; project: string }
+      const insert = async (sql: string, values: unknown[]) =>
+        ((await client.query<{ id: string }>(sql, values)).rows[0] as { id: string }).id
+      const lea = await insert(
+        `INSERT INTO _basedb.app_user
+           (tenant_id, email, display_name, created_by, updated_by)
+         VALUES ($1, 'lea@exemple.fr', 'Léa Martin', $2, $2) RETURNING id`,
+        [at.tenant, at.admin],
+      )
+      const base = await insert(
+        `INSERT INTO _basedb.base (tenant_id, project_id, label, label_key, created_by, updated_by)
+         VALUES ($1, $2, 'Ventes', 'ventes', $3, $3) RETURNING id`,
+        [at.tenant, at.project, at.admin],
+      )
+      const group = await insert(
+        `INSERT INTO _basedb.role (tenant_id, label, label_key, name, created_by)
+         VALUES ($1, 'Compta', 'compta', 'compta', $2) RETURNING id`,
+        [at.tenant, at.admin],
+      )
+      // A question of the base already there: the queries come after it.
+      const existing = await insert(
+        `INSERT INTO _basedb.question (base_id, label, kind, query, position, created_by, updated_by)
+         VALUES ($1, 'Déjà là', 'sql', '{"kind":"sql","sql":"SELECT 0"}', 7, $2, $2) RETURNING id`,
+        [base, at.admin],
+      )
+      const query = (label: string, statement: string, audience: string, owner: string) =>
+        insert(
+          `INSERT INTO _basedb.saved_query
+             (base_id, label, label_key, description, statement, audience, owner_id, updated_by)
+           VALUES ($1, $2, lower($2), $3, $4, $5, $6, $6) RETURNING id`,
+          [base, label, `Ce que montre « ${label} »`, statement, audience, owner],
+        )
+      const mine = await query('Mes relances', 'SELECT nom FROM clients', 'personal', lea)
+      const shared = await query(
+        'Chiffre du mois',
+        'SELECT sum(montant) FROM ventes',
+        'base',
+        at.admin,
+      )
+      const forGroup = await query('Paie', 'SELECT 1', 'groups', at.admin)
+      await client.query(
+        'INSERT INTO _basedb.saved_query_role (query_id, role_id) VALUES ($1, $2)',
+        [forGroup, group],
+      )
+      return { base, admin: at.admin, lea, group, existing, mine, shared, forGroup }
+    })
+
+    const kernel = startKernel({ connectionString: uri, encryptionKey: 'cle-de-test-0123456789' })
+    try {
+      await kernel.migrateCatalog()
+    } finally {
+      await kernel.close()
+    }
+
+    await withClient(uri, async (client) => {
+      const { rows } = await client.query<{
+        id: string
+        label: string
+        description: string | null
+        kind: string
+        query: unknown
+        visualization: unknown
+        audience: string
+        position: number
+        created_by: string
+        updated_by: string
+      }>(
+        `SELECT id::text, label, description, kind, query, visualization, audience, position,
+                created_by::text, updated_by::text
+           FROM _basedb.question WHERE base_id = $1 ORDER BY position`,
+        [made.base],
+      )
+      // The question that was there stays first; the queries follow, in the order they were written.
+      expect(rows.map((r) => r.id)).toEqual([made.existing, made.mine, made.shared, made.forGroup])
+      expect(rows.map((r) => r.position)).toEqual([7, 8, 9, 10])
+      const [, mine, shared] = rows
+      expect(mine).toMatchObject({
+        label: 'Mes relances',
+        description: 'Ce que montre « Mes relances »',
+        kind: 'sql',
+        query: { kind: 'sql', sql: 'SELECT nom FROM clients' },
+        // Shown as a table until someone chooses another drawing.
+        visualization: { type: 'table' },
+        audience: 'personal',
+        created_by: made.lea,
+        updated_by: made.lea,
+      })
+      expect(shared).toMatchObject({ audience: 'base', created_by: made.admin })
+
+      const roles = await client.query<{ question_id: string; role_id: string }>(
+        'SELECT question_id::text, role_id::text FROM _basedb.question_role',
+      )
+      expect(roles.rows).toEqual([{ question_id: made.forGroup, role_id: made.group }])
+
+      // The old table is still there, as it was: nothing is taken from it.
+      const old = await client.query<{ n: string }>('SELECT count(*) AS n FROM _basedb.saved_query')
+      expect(old.rows[0]?.n).toBe('3')
+
+      // Run again — the migration is replayable —, it changes nothing: not even a question
+      // that was changed since.
+      await client.query(
+        "UPDATE _basedb.question SET label = 'Renommée', audience = 'base' WHERE id = $1",
+        [made.mine],
+      )
+      await client.query('DELETE FROM _basedb.question_role WHERE question_id = $1', [
+        made.forGroup,
+      ])
+      await client.query('INSERT INTO _basedb.question_role VALUES ($1, $2)', [
+        made.forGroup,
+        made.group,
+      ])
+      const again = shipped.find((m) => m.name.startsWith('0023_'))
+      expect(again).toBeDefined()
+      await client.query((again as CatalogMigration).sql)
+      const after = await client.query<{ id: string; label: string; audience: string }>(
+        'SELECT id::text, label, audience FROM _basedb.question WHERE base_id = $1 ORDER BY position',
+        [made.base],
+      )
+      expect(after.rows).toHaveLength(4)
+      expect(after.rows[1]).toMatchObject({ id: made.mine, label: 'Renommée', audience: 'base' })
+      const roles2 = await client.query('SELECT 1 FROM _basedb.question_role')
+      expect(roles2.rowCount).toBe(1)
+    })
+  })
+})

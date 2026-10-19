@@ -7,6 +7,7 @@ import {
   adminTabOfSlug,
   slugOfAdminTab,
 } from '@/components/app/admin/admin-panel'
+import { QuestionDialog } from '@/components/app/analytics/question-dialog'
 import { AutomationsPanel } from '@/components/app/automations'
 import { BaseIllustration } from '@/components/app/base-illustration'
 import { NewBaseDialog } from '@/components/app/base-menu'
@@ -16,6 +17,7 @@ import { ElevationProvider } from '@/components/app/elevation'
 import { EnvironmentBadge } from '@/components/app/environment-badge'
 import { HistoryPanel } from '@/components/app/history'
 import { IntegrationsPanel } from '@/components/app/integrations'
+import type { LookValue } from '@/components/app/look-picker'
 import { NewTableDialog } from '@/components/app/new-table-dialog'
 import { PasswordRequired } from '@/components/app/password-required'
 import { ProjectIllustration } from '@/components/app/project-illustration'
@@ -36,7 +38,7 @@ import {
   SidebarToggle,
   type TableIntent,
 } from '@/components/app/sidebar'
-import { DeleteQueryDialog, QueryDialog } from '@/components/app/sql/query-dialog'
+import { DeleteQueryDialog } from '@/components/app/sql/query-dialog'
 import { DeleteSqlViewDialog, SqlViewDialog } from '@/components/app/sql/sql-view-dialog'
 import { TableDialogs, useTableActions } from '@/components/app/table-actions'
 import { TemplateGallery } from '@/components/app/template-gallery'
@@ -54,7 +56,7 @@ import {
   type Me,
   type Project,
   type QuerySummary,
-  type SavedQuery,
+  type Question,
   type SqlView,
   type SqlViewSummary,
   api,
@@ -95,7 +97,7 @@ import { Toaster } from 'sonner'
 /** What each section is called, in the tab strip as on screen. */
 const SECTION_TITLES: Readonly<Record<Section, string | undefined>> = {
   data: undefined,
-  structure: $t('Structure'),
+  structure: $t('Tables et champs'),
   history: $t('Historique'),
   dashboards: $t('Tableaux de bord'),
   automations: $t('Automatisations'),
@@ -141,6 +143,14 @@ export default function App() {
   const [described, setDescribed] = useState<Readonly<Record<string, DescribedBase>>>({})
   const [baseName, setBaseName] = useState<string | null>(null)
   const [section, setSection] = useState<Section>('data')
+  // The table the structure opens on, when it is asked for from a table's own menu. The
+  // instant makes asking twice for the same table a new request.
+  const [structureFocus, setStructureFocus] = useState<StructureFocus | null>(null)
+  // The table the tables and fields show — what their address names.
+  const [structureShown, setStructureShown] = useState<{
+    readonly base: string
+    readonly table: string | null
+  } | null>(null)
   const [adminTab, setAdminTab] = useState<AdminTab>('users')
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('profile')
   /** What a provider answered to a link asked for from the settings (chapter 13 §3.5). */
@@ -174,17 +184,17 @@ export default function App() {
     readonly base: string
     readonly view: SqlView | null
   } | null>(null)
-  /** A saved query being renamed or shared — from the navigation. */
+  /** A SQL question, listed as a query, being renamed or shared — from the navigation. */
   const [queryEdit, setQueryEdit] = useState<{
     readonly base: string
-    readonly query: SavedQuery
+    readonly question: Question
   } | null>(null)
   /** A SQL view about to be deleted — from its menu in the navigation. */
   const [viewDelete, setViewDelete] = useState<{
     readonly base: string
     readonly view: SqlViewSummary
   } | null>(null)
-  /** A saved query about to be deleted — from its menu in the navigation. */
+  /** A SQL question about to be deleted — from its menu in the navigation. */
   const [queryDelete, setQueryDelete] = useState<{
     readonly base: string
     readonly query: QuerySummary
@@ -193,15 +203,14 @@ export default function App() {
   const [doc, setDoc] = useState<ApiDocumentation | null>(null)
 
   const openTable = useWorkspace((s) => s.openTable)
-  const openSql = useWorkspace((s) => s.openSql)
-  const openQueryTab = useWorkspace((s) => s.openQuery)
+  const openQuestionTab = useWorkspace((s) => s.openQuestion)
   const openSqlViewTab = useWorkspace((s) => s.openSqlView)
   const activate = useWorkspace((s) => s.activate)
   const dropBase = useWorkspace((s) => s.dropBase)
   const dropTable = useWorkspace((s) => s.dropTable)
   const tabs = useWorkspace((s) => s.tabs)
   const activeTab = useActiveTab()
-  const { importInto, deleteTable, editTable } = useTableActions()
+  const { importInto, deleteTable } = useTableActions()
 
   const base = baseName === null ? null : (described[baseName] ?? null)
   const project = projects.find((p) => p.id === projectId) ?? null
@@ -321,7 +330,11 @@ export default function App() {
     async (
       name: string,
       intent: BaseIntent | 'dashboards' | 'automations' | 'integrations',
-      options: { readonly keepSection?: boolean } = {},
+      options: {
+        readonly keepSection?: boolean
+        /** For the tables and fields: the table to open them on, as an address names it. */
+        readonly structureTable?: string
+      } = {},
     ) => {
       setError(null)
       setMissing(false)
@@ -345,6 +358,13 @@ export default function App() {
             break
           }
           case 'structure':
+            setStructureFocus(
+              options.structureTable === undefined
+                ? null
+                : { base: name, table: options.structureTable, at: Date.now() },
+            )
+            setSection(intent)
+            break
           case 'history':
           case 'doc':
           case 'dashboards':
@@ -352,35 +372,22 @@ export default function App() {
           case 'integrations':
             setSection(intent)
             break
-          case 'sql': {
-            setSection('data')
-            const count = state.tabs.filter((t) => t.kind === 'sql').length + 1
-            openSql(name, null, $t('Requête {count}', { count }))
-            break
-          }
-          case 'question':
-          case 'question-sql': {
+          case 'question': {
+            // One entry for the questions, built or written: the editor's own switch says which.
             setSection('data')
             const count = state.tabs.filter((t) => t.kind === 'question').length + 1
-            state.openNewQuestion(
-              name,
-              intent === 'question' ? 'builder' : 'sql',
-              $t('Question {count}', { count }),
-            )
+            state.openNewQuestion(name, 'builder', $t('Question {count}', { count }))
             break
           }
           case 'new-table':
             setNaming(name)
-            break
-          case 'new-sql-view':
-            setViewEdit({ base: name, view: null })
             break
         }
       } catch (e) {
         setError(messageFor(e))
       }
     },
-    [activate, describe, openSql, openTable, refreshDoc, selectProject],
+    [activate, describe, openTable, refreshDoc, selectProject],
   )
 
   /**
@@ -551,8 +558,10 @@ export default function App() {
           deleteTable(target)
           return
         }
-        if (intent === 'edit') {
-          editTable(target)
+        // A table is changed where its fields are: « Modifier » leads to the structure too.
+        if (intent === 'structure' || intent === 'edit') {
+          setStructureFocus({ base: name, table: target.name, at: Date.now() })
+          setSection('structure')
           return
         }
         setSection('data')
@@ -562,16 +571,7 @@ export default function App() {
         setError(messageFor(e))
       }
     },
-    [
-      described,
-      describe,
-      deleteTable,
-      editTable,
-      importInto,
-      openTable,
-      refreshBase,
-      selectProject,
-    ],
+    [described, describe, deleteTable, importInto, openTable, refreshBase, selectProject],
   )
 
   /**
@@ -604,8 +604,8 @@ export default function App() {
   )
 
   /**
-   * A saved query of the navigation: its text opened in a SQL tab — the one already showing
-   * it, if any — or its name and audience changed in its dialog.
+   * A query of the navigation — a SQL question — opened in a tab of its own, the one already
+   * showing it if any, or its name and audience changed in its dialog.
    */
   const onQuery = useCallback(
     async (name: string, summary: QuerySummary, intent: SavedIntent) => {
@@ -617,15 +617,15 @@ export default function App() {
       }
       try {
         const found = described[name] ?? (await describe(name))
-        const query = await api.query(name, summary.id)
+        const question = await api.question(name, summary.id)
         setBaseName(name)
         selectProject(found.project.id)
         if (intent === 'edit') {
-          setQueryEdit({ base: name, query })
+          setQueryEdit({ base: name, question })
           return
         }
         setSection('data')
-        openQueryTab(name, query)
+        openQuestionTab(name, question)
       } catch (e) {
         setError(messageFor(e))
         // Gone, or no longer shared: the navigation says so by no longer listing it.
@@ -634,7 +634,7 @@ export default function App() {
         }
       }
     },
-    [described, describe, loadProjects, openQueryTab, selectProject],
+    [described, describe, loadProjects, openQuestionTab, selectProject],
   )
 
   // A notification's row in another base: its table is opened here, the workspace then
@@ -685,6 +685,11 @@ export default function App() {
           await focusBase(place.base, 'open')
           return true
         case 'section':
+          if (place.section === 'structure' && place.table != null) {
+            if (!listed.tables.some((t) => t.name === place.table)) return false
+            await focusBase(place.base, 'structure', { structureTable: place.table })
+            return true
+          }
           await focusBase(place.base, place.section)
           return true
         case 'dashboards':
@@ -720,12 +725,6 @@ export default function App() {
           await onSqlView(place.base, view, 'open')
           return true
         }
-        case 'query': {
-          const query = listed.queries.find((q) => q.id === place.id)
-          if (query === undefined) return false
-          await onQuery(place.base, query, 'open')
-          return true
-        }
         case 'question': {
           const question = await api.question(place.base, place.id).catch(() => null)
           if (question === null) return false
@@ -738,18 +737,7 @@ export default function App() {
         }
       }
     },
-    [
-      described,
-      describe,
-      focusBase,
-      me,
-      onQuery,
-      onSqlView,
-      onTable,
-      openProject,
-      section,
-      selectProject,
-    ],
+    [described, describe, focusBase, me, onSqlView, onTable, openProject, section, selectProject],
   )
   goTo.current = followAddress
 
@@ -759,11 +747,11 @@ export default function App() {
    * order it appears in.
    */
   const createTable = useCallback(
-    async (name: string, label: string, description?: string) => {
+    async (name: string, label: string, description?: string, look?: LookValue) => {
       setCreating(true)
       setError(null)
       try {
-        const created = await api.createTableIn(name, label, description)
+        const created = await api.createTableIn(name, label, description, look)
         const refreshed = await describe(name)
         setBaseName(name)
         refreshDoc(name)
@@ -828,6 +816,7 @@ export default function App() {
             shownRecord,
             dashboardFocus,
             automationFocus,
+            structureShown,
           }),
         )
   useAddressBar(address, async () => {
@@ -1098,6 +1087,14 @@ export default function App() {
                 setSection('data')
                 useWorkspace.getState().openQuestion(base.name, question)
               }}
+              onOpenDraftInTab={(draft) => {
+                setSection('data')
+                const store = useWorkspace.getState()
+                store.setQuestionDraft(
+                  store.openNewQuestion(base.name, 'builder', draft.label),
+                  draft,
+                )
+              }}
             />
           ) : section === 'automations' ? (
             <AutomationsPanel
@@ -1121,6 +1118,8 @@ export default function App() {
               administers={me.isAdmin}
               hasPassword={me.hasPassword}
               buildable={buildableTables(projects, base.name)}
+              focus={structureFocus?.base === base.name ? structureFocus : null}
+              onShown={setStructureShown}
             />
           )}
 
@@ -1130,8 +1129,8 @@ export default function App() {
               base={namingBase}
               busy={creating}
               onClose={() => setNaming(null)}
-              onSubmit={async (label, description) => {
-                await createTable(namingBase.name, label, description)
+              onSubmit={async (label, description, look) => {
+                await createTable(namingBase.name, label, description, look)
                 setNaming(null)
               }}
             />
@@ -1193,21 +1192,16 @@ export default function App() {
           )}
 
           {queryEdit !== null && (
-            <QueryDialog
+            <QuestionDialog
               open
               base={queryEdit.base}
               manages={described[queryEdit.base]?.actions.includes('manage_schema') === true}
-              query={queryEdit.query}
-              statement={queryEdit.query.statement}
+              question={queryEdit.question}
               onClose={() => setQueryEdit(null)}
               onSaved={(saved) => {
-                useWorkspace.getState().renameQuery(saved.id, saved.label)
+                useWorkspace.getState().renameQuestion(saved.id, saved.label)
                 // Its open tab reads it again: who sees it may have changed too.
                 useWorkspace.getState().reload()
-                void loadProjects().catch(() => undefined)
-              }}
-              onDeleted={(id) => {
-                useWorkspace.getState().detachQuery(id)
                 void loadProjects().catch(() => undefined)
               }}
             />
@@ -1231,7 +1225,7 @@ export default function App() {
               query={queryDelete.query}
               onClose={() => setQueryDelete(null)}
               onDeleted={(id) => {
-                useWorkspace.getState().detachQuery(id)
+                useWorkspace.getState().detachQuestion(id)
                 void loadProjects().catch(() => undefined)
               }}
             />
@@ -1401,6 +1395,7 @@ function placeOnScreen(screen: {
   readonly shownRecord: string | null
   readonly dashboardFocus: { readonly base: string; readonly focus: DashboardFocus | null } | null
   readonly automationFocus: { readonly base: string; readonly id: string | null } | null
+  readonly structureShown: { readonly base: string; readonly table: string | null } | null
 }): Place {
   const { section, project, base, activeTab } = screen
   if (section === 'settings') return { kind: 'settings', tab: slugOfTab(screen.settingsTab) }
@@ -1416,6 +1411,10 @@ function placeOnScreen(screen: {
       const id = screen.automationFocus?.base === base.name ? screen.automationFocus.id : null
       return { kind: 'automations', base: base.name, automation: id }
     }
+    if (section === 'structure') {
+      const table = screen.structureShown?.base === base.name ? screen.structureShown.table : null
+      return { kind: 'section', base: base.name, section, table }
+    }
     return { kind: 'section', base: base.name, section }
   }
   // A project with no base to show the tab with draws itself, whatever tab is open.
@@ -1428,7 +1427,7 @@ function placeOnScreen(screen: {
   return { kind: 'home' }
 }
 
-/** A tab's address: what it shows when that was saved — an unsaved statement has none. */
+/** A tab's address: what it shows when that was saved — an unsaved question has none. */
 function placeOfTab(tab: Tab, record: string | null): Place {
   const base: Place = { kind: 'base', base: tab.base }
   switch (tab.kind) {
@@ -1438,13 +1437,18 @@ function placeOfTab(tab: Tab, record: string | null): Place {
         : { kind: 'table', base: tab.base, table: tab.table, view: tab.viewId, record }
     case 'sqlview':
       return tab.sqlViewId === null ? base : { kind: 'sqlview', base: tab.base, id: tab.sqlViewId }
-    case 'sql':
-      return tab.queryId === null ? base : { kind: 'query', base: tab.base, id: tab.queryId }
     case 'question':
       return tab.questionId === null
         ? base
         : { kind: 'question', base: tab.base, id: tab.questionId }
   }
+}
+
+/** A table to open the structure on, asked for at an instant. */
+interface StructureFocus {
+  readonly base: string
+  readonly table: string
+  readonly at: number
 }
 
 /** The sections of a base: its structure, its documentation, and what is not written yet. */
@@ -1457,6 +1461,8 @@ function SectionPanel({
   administers,
   hasPassword,
   buildable,
+  focus,
+  onShown,
 }: {
   readonly section: Section
   readonly base: DescribedBase
@@ -1466,6 +1472,8 @@ function SectionPanel({
   readonly administers: boolean
   readonly hasPassword: boolean
   readonly buildable: ReadonlySet<string>
+  readonly focus: StructureFocus | null
+  readonly onShown: (shown: { readonly base: string; readonly table: string | null }) => void
 }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
@@ -1500,6 +1508,8 @@ function SectionPanel({
             onChanged={onChanged}
             administers={administers}
             buildable={buildable}
+            focus={focus}
+            onShown={(table) => onShown({ base: base.name, table })}
           />
         ) : (
           <ApiDocs base={base} doc={doc} hasPassword={hasPassword} />

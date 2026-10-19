@@ -55,6 +55,7 @@ export {
   ruleHolds,
   sameColumnRef,
   sortTerms,
+  sqlColumnType,
   sqlVariableNames,
   startOfPeriod,
   tiesItself,

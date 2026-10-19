@@ -124,5 +124,17 @@
     "name": "0021_jetons_de_toute_la_base.sql",
     "sha256": "75dc2f877b8e5881c455fd3c62bf7667239ea46c54db47c981572e92e4b8471a",
     "release": "0.7.0"
+  },
+  {
+    "version": 22,
+    "name": "0022_boutons_de_table.sql",
+    "sha256": "fa34dfc48ad5b5dcf00eb692dba37453077ed928664bad060065f2d34a2208f4",
+    "release": "0.8.0"
+  },
+  {
+    "version": 23,
+    "name": "0023_requetes_en_questions.sql",
+    "sha256": "950040eb4fd34dbeea4b18cd55f1e9999cfda019f9ca3f0cfb49ecbf914faad2",
+    "release": "0.8.0"
   }
 ]

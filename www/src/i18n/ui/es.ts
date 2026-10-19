@@ -1978,8 +1978,8 @@ export default {
 						text: 'Proveedor, modelo y clave por espacio de trabajo, sin pasar por el entorno de la API.',
 					},
 					mail: {
-						title: 'Notificaciones e invitaciones por correo electrónico',
-						text: 'Las menciones, las respuestas y las asignaciones llegan hoy dentro de basedb, y las invitaciones como un enlace que envías tú mismo; también podrán enviarse por correo electrónico.',
+						title: 'Invitaciones por correo electrónico',
+						text: 'Las notificaciones ya salen por correo a quien las pide; una invitación sigue siendo un enlace que compartes tú mismo. También podrá salir por correo.',
 					},
 				},
 			},

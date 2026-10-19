@@ -53,9 +53,7 @@ import {
   PanelTop,
   Pencil,
   Plus,
-  SquareTerminal,
   Trash2,
-  Workflow,
 } from 'lucide-react'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -118,6 +116,7 @@ export function DashboardsPanel({
   focus = null,
   onFocus,
   onOpenInTab,
+  onOpenDraftInTab,
 }: {
   readonly base: DescribedBase
   /** What the address names: a dashboard, or a saved question — shown once they are read. */
@@ -126,10 +125,18 @@ export function DashboardsPanel({
   readonly onFocus?: (focus: DashboardFocus | null) => void
   /** A question opened in a tab of the workspace, among the tables. */
   readonly onOpenInTab?: (question: Question) => void
+  /** A question not saved — the rows behind a point — opened in a tab of the workspace. */
+  readonly onOpenDraftInTab?: (draft: QuestionDraft) => void
 }) {
   return (
     <MembersProvider>
-      <Panel base={base} focus={focus} onFocus={onFocus} onOpenInTab={onOpenInTab} />
+      <Panel
+        base={base}
+        focus={focus}
+        onFocus={onFocus}
+        onOpenInTab={onOpenInTab}
+        onOpenDraftInTab={onOpenDraftInTab}
+      />
     </MembersProvider>
   )
 }
@@ -141,11 +148,13 @@ function Panel({
   focus,
   onFocus,
   onOpenInTab,
+  onOpenDraftInTab,
 }: {
   readonly base: DescribedBase
   readonly focus: DashboardFocus | null
   readonly onFocus?: ((focus: DashboardFocus | null) => void) | undefined
   readonly onOpenInTab?: ((question: Question) => void) | undefined
+  readonly onOpenDraftInTab?: ((draft: QuestionDraft) => void) | undefined
 }) {
   const builds = base.actions.includes('manage_schema')
   const [dashboards, setDashboards] = useState<readonly Dashboard[] | null>(null)
@@ -272,14 +281,12 @@ function Panel({
     opened += 1
     setView({ kind: 'question', draft, from, key: opened })
   }
-  const newQuestion = (kind: 'builder' | 'sql') =>
-    openQuestion({
-      id: null,
-      label: '',
-      description: null,
-      query: kind === 'sql' ? { kind: 'sql', sql: '' } : null,
-      visualization: null,
-    })
+  // One entry, built or written: the editor's own switch says which.
+  const newQuestion = () =>
+    openQuestion({ id: null, label: '', description: null, query: null, visualization: null })
+  // The questions of the list are those built with the mouse: a SQL question is a query, and
+  // the navigation lists it beneath the tables of the base — one place, not two.
+  const builtQuestions = questions.filter((q) => q.kind === 'builder')
 
   /** A question gone from the list: its view closes, its tabs keep what they were editing. */
   const remove = async (question: Question) => {
@@ -386,36 +393,25 @@ function Panel({
           <Group
             title={$t('Questions')}
             action={
-              <DropdownMenu>
-                <Hint label={$t('Nouvelle question')}>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="size-6"
-                      aria-label={$t('Nouvelle question')}
-                    >
-                      <Plus className="size-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                </Hint>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem onSelect={() => newQuestion('builder')}>
-                    <Workflow /> {$t('Avec l’éditeur visuel')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => newQuestion('sql')}>
-                    <SquareTerminal /> {$t('En SQL')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Hint label={$t('Nouvelle question')}>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="size-6"
+                  aria-label={$t('Nouvelle question')}
+                  onClick={newQuestion}
+                >
+                  <Plus className="size-3.5" />
+                </Button>
+              </Hint>
             }
           >
-            {questions.length === 0 && dashboards !== null && (
+            {builtQuestions.length === 0 && dashboards !== null && (
               <p className="px-2 text-xs text-muted-foreground">
                 {$t('Aucune question enregistrée.')}
               </p>
             )}
-            {questions.map((q) => (
+            {builtQuestions.map((q) => (
               <QuestionEntry
                 key={q.id}
                 question={q}
@@ -432,7 +428,7 @@ function Panel({
               icon={Compass}
               label={$t('Explorer les données')}
               active={false}
-              onClick={() => newQuestion('builder')}
+              onClick={newQuestion}
             />
           </div>
         </aside>
@@ -446,6 +442,7 @@ function Panel({
               initial={view.draft}
               question={view.draft.id === null ? null : (byId.get(view.draft.id) ?? null)}
               manages={builds}
+              {...(onOpenDraftInTab === undefined ? {} : { onOpenRows: onOpenDraftInTab })}
               onBack={view.from === null ? undefined : () => setView(view.from ?? { kind: 'none' })}
               backLabel={view.from?.kind === 'dashboard' ? $t('Tableau de bord') : $t('Retour')}
               onSaved={(saved) => {
@@ -480,6 +477,7 @@ function Panel({
                 void load().then(() => openDashboard(copy.id))
               }}
               onExplore={(draft) => openQuestion(draft, view)}
+              {...(onOpenDraftInTab === undefined ? {} : { onOpenRows: onOpenDraftInTab })}
               onQuestionsChanged={loadQuestions}
               onScreen={setScreen}
               incoming={incoming}
@@ -503,7 +501,7 @@ function Panel({
                     {$t('Créer un tableau de bord')}
                   </Button>
                 )}
-                <Button size="sm" variant="outline" onClick={() => newQuestion('builder')}>
+                <Button size="sm" variant="outline" onClick={newQuestion}>
                   <Compass className="size-4" /> {$t('Explorer les données')}
                 </Button>
               </div>

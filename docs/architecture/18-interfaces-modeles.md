@@ -37,12 +37,13 @@ construit, et les deux calculent les mêmes dates relatives.
 Elle appartient à une base (`_basedb.question`, chapitre 02) : un nom, une description, une
 requête (`query`, jsonb), une visualisation (`visualization`, jsonb), un auteur (`created_by`)
 et une portée (`audience`) — personnelle, toute la base, ou des groupes (`question_role`),
-comme au chapitre 11 §1.7. Elle est de deux sortes :
+comme au chapitre 11 §1.7. Elle est de deux sortes — et c'est tout : la requête enregistrée
+des versions d'avant en est une, du SQL (migration 0023) :
 
 | Sorte | Requête | Exécution |
 |---|---|---|
 | `builder` | une table source, des jointures, des filtres, des agrégats par groupes, un tri, une limite | le noyau compose une requête sur les plans de lecture du lecteur (§1.3) |
-| `sql` | un `SELECT` et ses variables | le lecteur SQL de la personne, en lecture seule (§1.4) |
+| `sql` | un `SELECT` et ses variables | le lecteur SQL de la personne, en lecture seule — sauf le brouillon de qui gère la base (§1.4) |
 
 Une question peut aussi n'exister que dans une carte (`cards[].query`) : c'est le cas des
 blocs des premiers tableaux de bord (§2.4), et de ce qu'on ajoute à un tableau sans
@@ -52,7 +53,7 @@ l'enregistrer.
 
 ```ts
 { kind: 'builder', source: '<table>',
-  joins?:        [{ alias, table, kind: 'left'|'inner'|'right'|'full', left: {join?, field}, right: '<champ>' }],
+  joins?:        [{ alias, table, kind: 'left'|'inner'|'right'|'full', left: {join?, field}, right: '<champ>', implicit?: true }],
   filters?:      [{ column: {join?, field}, op, values } | { expression: '<grammaire 08 §4>', join? }],
   aggregations?: [{ fn: 'count'|'distinct'|'sum'|'avg'|'median'|'min'|'max'|'stddev'|'cum_count'|'cum_sum', column? }],
   breakouts?:    [{ join?, field, unit?: 'day'|'week'|'month'|'quarter'|'year'|'hour'|'minute'|'day_of_week'|…, bin?: number|'auto' }],
@@ -65,6 +66,16 @@ Bornes (`QUERY_LIMITS`) : 4 jointures, 24 filtres, 12 agrégats, 3 groupes, 80 c
 6 termes de tri, 2 000 lignes rendues. Une jointure cite une colonne de la source ou d'une
 jointure déclarée avant elle ; ses deux colonnes doivent être de même famille (identifiants,
 textes, nombres, dates…), et une relation multiple se joint élément par élément (`= ANY`).
+
+**Une jointure implicite** est celle que l'éditeur ajoute de lui-même (§1.8) : une étape cite
+la colonne d'une table que la source cible par un lien (`link`, `multi_link`), et la jointure
+suit, sur l'identifiant de la cible. Elle porte `implicit: true` — rien d'autre que cette
+marque : le noyau l'exécute comme toute jointure (même plan de lecture par table, même
+`= ANY` pour une liste de liens), la garde à l'enregistrement — `checkBuilderQuery` ne retient
+que la valeur `true` — et ne la lit jamais autrement. La marque sert à l'éditeur seul, qui
+retire une jointure implicite quand plus aucune étape ne la cite. Une jointure écrite à la
+main n'en porte pas et n'est jamais retirée de lui-même ; il en va de même de toute question
+enregistrée avant l'existence de la marque : le champ est facultatif, aucune migration.
 
 Les opérateurs du constructeur (`est`, `n'est pas`, `contient`, `entre`, `période`, `avant`,
 `après`, `vide`…) sont **traduits en expressions de la grammaire** puis confiés à son
@@ -107,11 +118,22 @@ pour ouvrir sa fiche.
 
 ### 1.4 Les questions SQL
 
-Une question SQL passe **toujours par le lecteur** (`sql/reader.ts`), jamais par la console :
-lecture seule, rôle de la personne, ses tables et ses champs — gestionnaire compris. Une
-question se pose sur un tableau que d'autres ouvrent : si elle s'exécutait avec la portée de la
-console pour qui gère la base, un `DELETE` enregistré comme question s'exécuterait le jour où
-un gestionnaire regarderait le tableau.
+Une question SQL **enregistrée** passe **toujours par le lecteur** (`sql/reader.ts`), jamais par
+la console : lecture seule, rôle de la personne, ses tables et ses champs — gestionnaire
+compris. Une question se pose sur un tableau que d'autres ouvrent : si elle s'exécutait avec la
+portée de la console pour qui gère la base, un `DELETE` enregistré comme question s'exécuterait
+le jour où un gestionnaire regarderait le tableau. Le noyau n'a qu'une exécution pour elle
+(`runSqlQuestion`), et c'est celle-là.
+
+Le **brouillon** est une autre chose, et ce n'est pas le noyau qui la décide : une question
+écrite dans l'éditeur, pas encore enregistrée, que lance une personne qui gère la structure de
+la base, est exécutée par l'interface comme l'était l'onglet SQL — par la route `/sql/{base}`,
+qui choisit la console ou le lecteur selon les droits (chapitre 11 §1.7) : écritures et
+plusieurs instructions permises, le texte sélectionné s'exécutant seul. Rien de ce qui est
+partagé n'en profite : un texte à variables, un brouillon enregistré, une carte de tableau de
+bord, un lecteur ordinaire passent par `runSqlQuestion`. L'interface dit, sous le texte, laquelle
+des deux exécutions va avoir lieu, et un résultat qui a écrit s'annonce comme tel — la commande
+et le nombre de lignes touchées — au lieu d'un tableau.
 
 Variables : `{{nom}}` ; une partie à retirer quand une variable n'a pas de valeur, entre `[[`
 et `]]`. Une variable est `text` (un littéral quoté ; plusieurs valeurs deviennent une liste,
@@ -162,11 +184,24 @@ suit d'une exécution à l'autre, quel que soit son rang.
 
 ### 1.7 Explorer
 
-Un clic sur un point d'une question construite propose : les lignes qu'il représente, une
-période plus fine, une autre répartition du même point, la valeur seule ou exclue — et, sur un
-tableau de bord, le filtre relié à cette colonne réglé sur cette valeur. Chaque pas est une
-question non enregistrée, calculée par l'écran à partir de la requête (`drillRows`,
-`drillFiner`, `drillBy`, `drillKeep`) et exécutée comme toute autre, avec les droits du lecteur.
+Un clic sur un point d'une question construite — une barre, une part, une ligne d'un tableau
+groupé —, ou un **clic droit** dessus, ouvre le même menu, posé là où l'on a cliqué (le menu du
+navigateur lui cède la place) : **Voir les lignes** qu'il représente, **Filtrer sur cette
+valeur**, **Exclure cette valeur**, **Détailler par** la période plus fine, **Ventiler par…**
+une autre colonne, **Copier la valeur** — et, sur un tableau de bord, le filtre relié à cette
+colonne réglé sur cette valeur. Un clic droit dans la bande d'une catégorie, à côté de sa barre
+ou du point d'une courbe, vaut un clic sur la barre. Chaque pas est une question non
+enregistrée, calculée par l'écran à partir de la requête (`drillRows`, `drillFiner`, `drillBy`,
+`drillKeep`) et exécutée comme toute autre, avec les droits du lecteur ; elle remplace la
+question affichée, qu'un retour arrière (« Revenir à l'étape précédente ») retrouve. Les
+colonnes de « Ventiler par… » sont celles du carnet, tables liées comprises : en choisir une
+ajoute la jointure implicite (§1.2), et les lignes d'un point la gardent tant que leur filtre
+la cite.
+
+**Voir les lignes**, dans l'espace de travail, ouvre **un nouvel onglet de question** — un
+tableau, sans agrégat ni groupe, filtré par ce que le point représente : l'onglet d'où l'on
+vient reste comme on l'a laissé. Hors de l'espace de travail (un tableau de bord qu'on
+édite), les lignes remplacent la question, le retour arrière gardé.
 
 Quand aucun filtre du tableau n'est relié à la colonne du point, le clic propose de **filtrer
 tout le tableau** par sa valeur, dès qu'au moins une autre carte lit la même colonne : un
@@ -176,6 +211,86 @@ dont la question construite lit ce champ — par sa table source ou par une join
 une contrainte ordinaire (§2.2). Il n'est pas enregistré : il disparaît quand on le retire ou
 qu'on quitte le tableau ; un autre clic sur la même colonne le remplace. Une question SQL,
 qui ne dit pas d'où viennent ses colonnes, n'est pas filtrée ainsi.
+
+### 1.8 L'éditeur de questions
+
+Une question s'ouvre dans l'éditeur — un onglet de l'espace de travail, la liste des questions
+d'un tableau de bord, ou la fenêtre d'une carte qu'on modifie — sur **trois volets côte à
+côte**, que la personne élargit en tirant leur bord (flèches du clavier, double-clic pour la
+taille par défaut ; la taille est une préférence du navigateur) :
+
+| Volet | Largeur | Contenu |
+|---|---|---|
+| Le carnet, à gauche | 300 à 760 px | les étapes de la question (ci-dessous) ; absent d'une question SQL, dont l'éditeur de texte prend le haut du volet central |
+| Le résultat, au centre | le reste, 280 px au moins | deux onglets : **Visualisation** (la question dessinée) et **Données** (son résultat en tableau) ; le nombre de lignes et la durée, « Télécharger en CSV », « Relancer » ou « Annuler » |
+| Les réglages, à droite | 260 à 600 px | deux onglets : **Visualisation** (le type, puis les réglages de ce type) et **Détails** (la description, la sorte de requête, la portée, la dernière modification) |
+
+Les volets de gauche et de droite se masquent depuis l'en-tête ; celui de droite ne s'ouvre de
+lui-même que sur un écran assez large. Il n'y a plus de bouton « Visualiser » : **une question
+construite s'exécute de nouveau d'elle-même, 350 ms après la dernière modification**, et la
+requête encore en vol est abandonnée (`AbortController`) — le résultat qu'on voit est toujours
+celui de ce qu'on voit. Une question SQL attend « Exécuter » (Ctrl+Entrée), comme avant ; à
+l'ouverture, une question qui peut l'être s'exécute aussitôt — mais jamais un brouillon qui
+passerait par la console (§1.4).
+
+**Une seule façon d'ouvrir une question** : « Nouvelle question », au « + » de la barre
+d'onglets, dans le menu de la base, dans la palette, dans la fenêtre « Ajouter une question »
+d'un tableau de bord. L'en-tête porte une bascule **Éditeur visuel | SQL** : le SQL réunit
+l'éditeur de texte (autocomplétion des tables et des champs, mise en forme), le panneau des
+variables (§1.4) et le graphique, et prend le haut du volet central ; l'éditeur visuel, le
+carnet ci-dessous. Passer de l'un à l'autre se fait librement sur une question vide, et après
+confirmation sur une question qui a des étapes ou du texte : ni l'un ni l'autre ne se convertit.
+« Enregistrer » est un menu pour qui gère la structure de la base, en SQL : **« Enregistrer
+comme vue SQL… »** ouvre le dialogue d'une vue SQL (chapitre 11 §1.8) rempli du texte.
+
+**Le carnet** se lit de haut en bas, chaque étape dans sa couleur :
+
+- **Données** — la table, et les jointures. « Joindre des données » ouvre une fenêtre qui
+  propose d'abord les tables que les relations de la question relient (« Clients (par
+  Client) », « Factures (qui citent Clients) »), puis toutes les autres. La jointure se règle
+  d'un coup : son type en quatre glyphes — deux cercles dont on remplit ce que la jointure
+  garde : à gauche, interne, à droite, complète —, la phrase qui dit quelles lignes restent
+  (« Toutes les lignes de Projets, complétées par Clients quand elles se correspondent »), et la
+  condition, **proposée d'office** quand une relation la désigne : « Lignes reliées quand
+  `Projets · Client` égale `Clients · Identifiant` ». Le côté gauche peut être une colonne de
+  la source ou d'une jointure écrite plus haut ; les colonnes de droite se limitent à celles
+  que le noyau accepte de comparer (même famille : identifiants, textes, nombres…).
+- **Filtrer** — un filtre par colonne, dont les opérateurs et les valeurs suivent le genre de la
+  colonne, ou une expression de la grammaire (chapitre 08 §4) écrite à la main.
+- **Résumer** — les mesures « par » les regroupements ; une date se regroupe par période, un
+  nombre par tranches.
+- **Colonnes** — pour une question qui liste des lignes : une pastille par table, « 3 sur 8 »
+  (« toutes » quand rien n'est écarté), et sa liste à cocher avec **Toutes** et **Aucune** ;
+  une question garde au moins une colonne. Avec toutes les colonnes de la source cochées, la
+  question n'en choisit aucune : une colonne ajoutée à la table plus tard apparaît d'elle-même.
+  Une question qui résume laisse le choix au résumé.
+- **Trier et limiter** — le tri, que le clic sur sa pastille inverse, et la borne (2 000
+  lignes au plus).
+
+**Les colonnes des tables liées sont proposées à chaque étape.** Chaque champ `link` ou
+`multi_link` de la source fait de sa table cible une table dont les colonnes se choisissent
+comme celles de la source — dans les filtres, les mesures, les regroupements, le tri, les
+colonnes —, rangées sous « Clients (par Client) » et nommées par leur lien : « Client → Nom ».
+En choisir une **ajoute la jointure** à la question, marquée `implicit` (§1.2) ; l'étape
+« Données » la montre comme une pastille discrète ; la retirer — enlever le filtre, la mesure,
+la colonne — **l'enlève** : le carnet retire toute jointure implicite que plus rien ne cite
+(`pruneJoins`). Une question qui liste des lignes fixe alors ses colonnes (`fields`) : sans
+cela le noyau lirait toutes les colonnes de chaque table de la requête, et la table liée
+viendrait d'elle-même au tableau. Une jointure écrite à la main qui fait déjà la même relation
+(la même table par le même lien) est celle dont les colonnes sont proposées, jamais une
+seconde.
+
+Les jointures implicites ne partent que de la source et ne vont qu'un lien loin, dans le sens
+du lien — de la ligne vers ce qu'elle cible : le sens inverse (les factures d'un client)
+multiplie les lignes de la source, et l'on ne s'y engage qu'en l'écrivant, par « Joindre des
+données ». Elles comptent dans la borne de quatre jointures ; au-delà, leurs colonnes ne sont
+plus proposées.
+
+**Ce que l'éditeur garde** d'avant : les variables d'une question SQL (type, libellé,
+obligatoire, valeur par défaut, et leur essai), l'expression de filtre écrite à la main, les
+trois portées d'une question enregistrée (personnelle, toute la base, des groupes — « Nom et
+partage… »), le dégroupement des listes (un choix multiple compte une ligne par choix) et le
+fuseau du lecteur pour les périodes.
 
 ---
 
@@ -414,13 +529,20 @@ enregistrée : une carte ne peut pas lui faire dire autre chose.
 - **Une question construite n'est pas du SQL** : le noyau la compose sur les plans des routes
   de données, et ses filtres sont ceux de la grammaire ; aucun texte fourni n'atteint le SQL
   sans passer par un résolveur de noms ou une valeur liée.
-- **Le SQL d'une question, toujours en lecture** : même pour qui gère la base.
+- **Le SQL d'une question enregistrée, toujours en lecture** : même pour qui gère la base ; seul son brouillon, de qui gère la base, garde la console (§1.4).
 - **Les filtres d'un tableau sont des contraintes, pas du texte** : l'écran dit « cette carte,
   cette colonne, cette valeur » ; le noyau en fait un filtre vérifié.
 - **Pas de cache de résultats** : une carte coûte la requête qu'elle fait, lue à chaque
   affichage avec les droits du moment.
 - **Les anciens blocs lus, pas migrés** : la migration ne réécrit aucune donnée ; le noyau
   traduit, et l'enregistrement suivant remplace.
+- **Une jointure implicite est une marque, pas un autre chemin** : `implicit?: true` ne change
+  rien à l'exécution ni aux droits (chaque table reste lue par le plan de son lecteur) ; elle dit
+  à l'éditeur ce qu'il peut retirer de lui-même. Un champ facultatif, donc aucune migration des
+  questions enregistrées, dont aucune jointure n'est implicite.
+- **L'éditeur exécute pour montrer** : une question construite se relance 350 ms après chaque
+  changement, la requête précédente abandonnée, plutôt que derrière un bouton ; le coût est celui
+  d'une lecture bornée à 2 000 lignes, avec les droits du moment.
 
 ## Risques et limites connues
 
@@ -428,6 +550,9 @@ enregistrée : une carte ne peut pas lui faire dire autre chose.
   filtre de catégorie relié à une colonne libre.
 - Une question rend 2 000 lignes au plus ; le délai des requêtes de données la borne aussi.
 - Pas de colonnes calculées propres à une question ni de métriques partagées entre questions.
+- Les colonnes des tables liées ne sont proposées qu'à un lien de la source, dans le sens du lien
+  (§1.8) ; une relation inverse ou à deux liens de distance se joint à la main, dans la borne
+  de quatre jointures.
 - Une question SQL n'est pas explorable d'un clic : son résultat ne dit pas d'où viennent ses
   colonnes.
 - Un tableau partagé par lien ne s'explore pas, et ses cartes ne s'exportent pas en CSV.

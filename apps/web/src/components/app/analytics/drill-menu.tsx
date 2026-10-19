@@ -7,12 +7,14 @@ import { valueText } from '@/lib/analytics/format'
 import {
   UNIT_LABELS,
   breakoutOn,
-  columnsOf,
   drillBy,
   drillFiner,
   drillKeep,
   drillRows,
   groupable,
+  reachableColumns,
+  settleQuery,
+  withJoinFor,
 } from '@/lib/analytics/model'
 import type { DescribedBase } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
@@ -20,13 +22,25 @@ import { useMembers } from '@/lib/members'
 import { weekStart } from '@/lib/preferences'
 import type { BuilderQuery, VisualizationType } from '@basedb/contracts'
 import { finerUnit } from '@basedb/contracts'
-import { ChevronLeft, Filter, FilterX, LayoutDashboard, Rows3, Split, ZoomIn } from 'lucide-react'
+import {
+  ChevronLeft,
+  Copy,
+  Filter,
+  FilterX,
+  LayoutDashboard,
+  Rows3,
+  Split,
+  ZoomIn,
+} from 'lucide-react'
 import { type ReactNode, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 /**
- * A click on a point of a chart — chapter 18 §3.4: the rows behind it, a finer period,
- * another way to split it, the value kept alone or left out, the dashboard filtered by it.
- * Each leads to a question of its own, unsaved, the way back kept.
+ * A click on a point of a chart, or a right click on it — chapter 18 §3.4: the rows behind
+ * it, the value kept alone or left out, a finer period, another way to split it, the value
+ * copied, the dashboard filtered by it. Each step but the last leads to a question of its
+ * own, unsaved, the way back kept; the rows behind the point open in a tab of their own,
+ * where the editor is able to open one.
  */
 
 export interface DashboardFilterAction {
@@ -71,6 +85,7 @@ export function DrillMenu({
   query,
   event,
   onDrill,
+  onOpenRows,
   dashboardFilters = [],
   onClose,
 }: {
@@ -79,6 +94,8 @@ export function DrillMenu({
   readonly query: BuilderQuery | null
   readonly event: DrillEvent
   readonly onDrill: (query: BuilderQuery, type?: VisualizationType) => void
+  /** Opens the rows behind the point in a tab of their own; absent, they replace the question. */
+  readonly onOpenRows?: (query: BuilderQuery, label: string) => void
   readonly dashboardFilters?: readonly DashboardFilterAction[]
   readonly onClose: () => void
 }) {
@@ -92,15 +109,35 @@ export function DrillMenu({
   const title = point.values.map((v) => valueText(v.column, v.value, { base, members })).join(' · ')
   const go = (next: BuilderQuery | null, type?: VisualizationType) => {
     if (next === null) return
-    onDrill(next, type)
+    onDrill(settleQuery(base, next), type)
     onClose()
   }
-  const columns = query === null ? [] : columnsOf(base, query).filter((c) => groupable(c.kind))
+  const columns =
+    query === null ? [] : reachableColumns(base, query).filter((c) => groupable(c.kind))
   const { x, y } = event.at
   const anchor = useMemo(
     () => ({ current: { getBoundingClientRect: () => new DOMRect(x, y, 0, 0) } }),
     [x, y],
   )
+  const copy = () => {
+    const text =
+      single === undefined ? title : valueText(single.column, single.value, { base, members })
+    navigator.clipboard.writeText(text).then(
+      () => toast($t('Copié')),
+      () => toast.error($t('Non copié')),
+    )
+    onClose()
+  }
+  const rows = () => {
+    if (query === null) return
+    const next = settleQuery(base, drillRows(query, point, start))
+    if (onOpenRows === undefined) {
+      onDrill(next, 'table')
+    } else {
+      onOpenRows(next, $t('Lignes · {point}', { point: title }))
+    }
+    onClose()
+  }
 
   return (
     <Popover modal open onOpenChange={(open) => !open && onClose()}>
@@ -115,18 +152,21 @@ export function DrillMenu({
               onClick={() => setSplitting(false)}
               className="mb-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
             >
-              <ChevronLeft className="size-3.5" /> {$t('Répartir par…')}
+              <ChevronLeft className="size-3.5" /> {$t('Ventiler par…')}
             </button>
             <ColumnList
               grouping
               columns={columns}
               onPick={(c, how) =>
                 go(
-                  drillBy(
-                    query,
-                    point,
-                    how === undefined ? breakoutOn(c) : { ...c.ref, ...how },
-                    start,
+                  withJoinFor(
+                    drillBy(
+                      query,
+                      point,
+                      how === undefined ? breakoutOn(c) : { ...c.ref, ...how },
+                      start,
+                    ),
+                    c,
                   ),
                 )
               }
@@ -142,16 +182,8 @@ export function DrillMenu({
             </p>
             {query !== null && (
               <>
-                <Item icon={Rows3} onClick={() => go(drillRows(query, point, start), 'table')}>
-                  {$t('Voir ces lignes')}
-                </Item>
-                {finer !== null && (
-                  <Item icon={ZoomIn} onClick={() => go(drillFiner(query, point, start))}>
-                    {$t('Détailler par {unitLabels}', { unitLabels: UNIT_LABELS[finer] })}
-                  </Item>
-                )}
-                <Item icon={Split} onClick={() => setSplitting(true)}>
-                  {$t('Répartir par…')}
+                <Item icon={Rows3} onClick={rows}>
+                  {$t('Voir les lignes')}
                 </Item>
                 {single !== undefined && (
                   <>
@@ -159,7 +191,7 @@ export function DrillMenu({
                       icon={Filter}
                       onClick={() => go(drillKeep(query, single.column, single.value, true))}
                     >
-                      {$t('Seulement cette valeur')}
+                      {$t('Filtrer sur cette valeur')}
                     </Item>
                     <Item
                       icon={FilterX}
@@ -169,8 +201,19 @@ export function DrillMenu({
                     </Item>
                   </>
                 )}
+                {finer !== null && (
+                  <Item icon={ZoomIn} onClick={() => go(drillFiner(query, point, start))}>
+                    {$t('Détailler par {unitLabels}', { unitLabels: UNIT_LABELS[finer] })}
+                  </Item>
+                )}
+                <Item icon={Split} onClick={() => setSplitting(true)}>
+                  {$t('Ventiler par…')}
+                </Item>
               </>
             )}
+            <Item icon={Copy} onClick={copy}>
+              {$t('Copier la valeur')}
+            </Item>
             {dashboardFilters.map((action) => (
               <Item
                 key={action.label}
@@ -185,7 +228,7 @@ export function DrillMenu({
                 {action.label}
               </Item>
             ))}
-            {query === null && dashboardFilters.length === 0 && (
+            {query === null && (
               <p className="px-2 py-1.5 text-sm text-muted-foreground">
                 {$t('Rien à explorer depuis une question SQL.')}
               </p>

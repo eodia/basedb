@@ -107,6 +107,13 @@ export interface Join {
   readonly kind: JoinKind
   readonly left: ColumnRef
   readonly right: string
+  /**
+   * Added by the editor on its own, because a step cites a column of a table the source
+   * links to: it goes when no step cites that table any more. A join the person wrote —
+   * and every one of the questions saved before this field existed — never carries it, and
+   * the editor never removes it by itself.
+   */
+  readonly implicit?: true
 }
 
 /**
@@ -213,6 +220,26 @@ export interface SqlQuery {
   readonly kind: 'sql'
   readonly sql: string
   readonly variables?: readonly SqlVariable[]
+}
+
+const SQL_NUMERIC_TYPES =
+  /^(smallint|integer|bigint|numeric|real|double precision|money|int\d|float\d|decimal)/
+
+/**
+ * What a PostgreSQL type reads as on screen — the `type` of a column of a SQL result: `number`,
+ * `date`, `datetime`, `boolean`, `json`, else `text`. The kernel gives a SQL question's
+ * columns their type with it, and the interface gives the same to those of a statement run in
+ * the console.
+ */
+export function sqlColumnType(
+  dataType: string,
+): 'number' | 'date' | 'datetime' | 'boolean' | 'json' | 'text' {
+  if (SQL_NUMERIC_TYPES.test(dataType)) return 'number'
+  if (dataType === 'date') return 'date'
+  if (dataType.startsWith('timestamp')) return 'datetime'
+  if (dataType === 'boolean') return 'boolean'
+  if (dataType === 'json' || dataType === 'jsonb') return 'json'
+  return 'text'
 }
 
 export type QuestionQuery = BuilderQuery | SqlQuery

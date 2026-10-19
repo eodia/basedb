@@ -7,6 +7,7 @@ import { Choice } from '@/components/ui/choice'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
+import { Hint } from '@/components/ui/tooltip'
 import { describeDate } from '@/lib/analytics/model'
 import type { DescribedBase } from '@/lib/api/client'
 import { $t } from '@/lib/i18n'
@@ -17,13 +18,18 @@ import {
   type SqlVariableType,
   sqlVariableNames,
 } from '@basedb/contracts'
-import { CalendarDays, Loader2, Play } from 'lucide-react'
+import { CalendarDays, Loader2, Play, Wand2 } from 'lucide-react'
+import { useRef } from 'react'
 
 /**
- * A SQL question — chapter 18 §3.3: one `SELECT`, run read only with the reader's rights,
- * its variables written `{{nom}}`, a part to drop when one has no value between `[[` and
- * `]]`. A variable is text, a number, a day, or a whole condition on a column — what lets a
- * dashboard's filter narrow a SQL question like any other.
+ * A SQL question — chapter 18 §3.3: a statement, its variables written `{{nom}}`, a part to
+ * drop when one has no value between `[[` and `]]`. A variable is text, a number, a day, or a
+ * whole condition on a column — what lets a dashboard's filter narrow a SQL question like any
+ * other.
+ *
+ * Saved, it runs read only with the reader's rights. A draft, for whoever manages the base,
+ * keeps the console's reach — writes, several statements — and the editor says which of the two
+ * the next run will be (`console`).
  */
 
 const TYPE_LABELS: Readonly<Record<SqlVariableType, string>> = {
@@ -116,6 +122,7 @@ export function SqlQuestionEditor({
   onChange,
   onRun,
   running,
+  console: inConsole,
   error,
   values,
   onValues,
@@ -123,13 +130,17 @@ export function SqlQuestionEditor({
   readonly base: DescribedBase
   readonly query: SqlQuery
   readonly onChange: (query: SqlQuery) => void
-  readonly onRun: () => void
+  /** Run; with the text selected in the editor, that text alone — what the console did. */
+  readonly onRun: (selection?: string) => void
   readonly running: boolean
+  /** The next run is the console's — writes allowed — and not the reader's, read only. */
+  readonly console: boolean
   readonly error: { message: string; position: number | null } | null
   readonly values: Readonly<Record<string, string>>
   readonly onValues: (values: Record<string, string>) => void
 }) {
   const variables = variablesOf(query)
+  const formatRef = useRef<(() => void) | null>(null)
   const setVariable = (name: string, patch: Partial<SqlVariable>) => {
     const next = variables.map((v) => {
       if (v.name !== name) return v
@@ -155,8 +166,11 @@ export function SqlQuestionEditor({
                 ...(variables.length === 0 ? {} : { variables: variablesOf({ ...query, sql }) }),
               })
             }
-            onRun={() => onRun()}
+            onRun={(statement) => onRun(statement === query.sql ? undefined : statement)}
             serverError={error}
+            onReady={(editor) => {
+              formatRef.current = editor.format
+            }}
           />
         </div>
         <div className="flex flex-wrap items-center gap-2 px-3 py-2">
@@ -169,7 +183,24 @@ export function SqlQuestionEditor({
             />
           ))}
           <div className="flex-1" />
-          <Button size="sm" onClick={onRun} disabled={running || query.sql.trim() === ''}>
+          <span className="text-xs text-muted-foreground">
+            {inConsole
+              ? $t('Console : les écritures sont permises.')
+              : $t('Lecture seule, avec vos droits.')}
+          </span>
+          <Hint label={$t('Maj+Alt+F')}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1 px-2 text-xs"
+              onClick={() => formatRef.current?.()}
+              disabled={query.sql.trim() === ''}
+            >
+              <Wand2 className="size-3.5" />
+              {$t('Mettre en forme')}
+            </Button>
+          </Hint>
+          <Button size="sm" onClick={() => onRun()} disabled={running || query.sql.trim() === ''}>
             {running ? (
               <Loader2 className="size-3.5 animate-spin" />
             ) : (

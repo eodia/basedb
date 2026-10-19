@@ -108,6 +108,10 @@ describe('filters and sorting on files', () => {
     expect(codeOf(() => buildSort('tags', COLUMNS))).toBe('SORT_UNAVAILABLE')
     expect(codeOf(() => buildSort('-photos', COLUMNS))).toBe('SORT_UNAVAILABLE')
   })
+
+  it('a button is not sortable: it has no value', () => {
+    expect(sortableKind('button')).toBe(false)
+  })
 })
 
 describe('writing a multiple choice', () => {

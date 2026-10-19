@@ -12,7 +12,7 @@ import {
 import { $t, intlLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { Breakout, TemporalUnit } from '@basedb/contracts'
-import { ChevronRight, Search } from 'lucide-react'
+import { ChevronRight, Link2, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 /**
@@ -75,7 +75,9 @@ export function ColumnList({
         {groups.map(([group, list]) => (
           <div key={group} className="mb-1">
             {groups.length > 1 && (
-              <p className="px-2 pt-1 pb-0.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+              <p className="flex items-center gap-1.5 px-2 pt-1 pb-0.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                {/* A table reached through a relation, not the source's own. */}
+                {list[0]?.join !== undefined && <Link2 className="size-3 shrink-0" />}
                 {group}
               </p>
             )}

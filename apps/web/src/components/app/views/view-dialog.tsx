@@ -349,7 +349,7 @@ export function ViewDialog({
                     fields={fields}
                     value={get('title_field')}
                     onChange={(v) => set('title_field', v)}
-                    placeholder={$t('Colonne d’affichage de la table')}
+                    placeholder={$t('Titre des lignes de la table')}
                   />
                   <Pivot
                     label={$t('Image de couverture')}
@@ -404,7 +404,7 @@ export function ViewDialog({
                     fields={fields}
                     value={get('title_field')}
                     onChange={(v) => set('title_field', v)}
-                    placeholder={$t('Colonne d’affichage de la table')}
+                    placeholder={$t('Titre des lignes de la table')}
                   />
                   <Pivot
                     label={$t('Couleur selon')}
@@ -439,7 +439,7 @@ export function ViewDialog({
                     fields={fields}
                     value={get('title_field')}
                     onChange={(v) => set('title_field', v)}
-                    placeholder={$t('Colonne d’affichage de la table')}
+                    placeholder={$t('Titre des lignes de la table')}
                   />
                   <Pivot
                     label={$t('Couleur selon')}
@@ -490,7 +490,7 @@ export function ViewDialog({
                     fields={fields}
                     value={get('title_field')}
                     onChange={(v) => set('title_field', v)}
-                    placeholder={$t('Colonne d’affichage de la table')}
+                    placeholder={$t('Titre des lignes de la table')}
                   />
                   <Pivot
                     label={$t('Couleur selon')}
@@ -529,7 +529,7 @@ export function ViewDialog({
                     fields={fields}
                     value={get('title_field')}
                     onChange={(v) => set('title_field', v)}
-                    placeholder={$t('Colonne d’affichage de la table')}
+                    placeholder={$t('Titre des lignes de la table')}
                   />
                   <Pivot
                     label={$t('Image de couverture')}
@@ -580,7 +580,7 @@ export function ViewDialog({
                     fields={fields}
                     value={get('title_field')}
                     onChange={(v) => set('title_field', v)}
-                    placeholder={$t('Colonne d’affichage de la table')}
+                    placeholder={$t('Titre des lignes de la table')}
                   />
                   <Pivot
                     label={$t('Regrouper par')}

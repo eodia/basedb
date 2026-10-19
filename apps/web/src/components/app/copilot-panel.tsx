@@ -593,7 +593,7 @@ function ActionCard({
       case 'filter':
         return [$t('Filtrer {table}', { table: labelOf(action.table) }), $t('Appliquer le filtre')]
       case 'sql':
-        return [$t('Requête SQL'), $t('Ouvrir dans la console')]
+        return [$t('Requête SQL'), $t('Ouvrir dans une question')]
       case 'add_fields':
         return [
           $tp(

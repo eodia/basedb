@@ -1967,8 +1967,8 @@ export default {
 						text: 'Provider, model and key per workspace, without going through the API’s environment.',
 					},
 					mail: {
-						title: 'Notifications and invitations by email',
-						text: 'Mentions, replies and assignments arrive in basedb today, and invitations as a link you send yourself; they will also be able to go out by email.',
+						title: 'Invitations by email',
+						text: 'Notifications already go out by email to whoever asks for them; an invitation is still a link you pass on yourself. It will be able to go out by email too.',
 					},
 				},
 			},

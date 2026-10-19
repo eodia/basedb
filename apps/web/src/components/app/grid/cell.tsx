@@ -75,6 +75,16 @@ interface CellProps {
   readonly onStartEdit: () => void
   readonly onEndEdit: () => void
   readonly onCommit: (value: unknown) => Promise<void>
+  /**
+   * The sign that opened the editor from the keyboard: the editor starts with it, in place
+   * of the cell's text, as a spreadsheet does.
+   */
+  readonly seed?: string
+  /**
+   * The editor's value is written to a whole selection, not to this cell alone: it is then
+   * written even when it is the one the cell already has.
+   */
+  readonly broadcast?: boolean
   /** Deposits files for a `file` or `image` cell. Absent, such a cell only shows its files. */
   readonly onUpload?: Upload
   /** Opens the row a link points at — Ctrl+click, or Cmd+click, on a link cell. */
@@ -97,6 +107,8 @@ export function Cell({
   onStartEdit,
   onEndEdit,
   onCommit,
+  seed,
+  broadcast = false,
   onUpload,
   onFollowLink,
 }: CellProps) {
@@ -381,13 +393,13 @@ export function Cell({
     const shown = display(initial, field)
     return (
       <DateEditor
-        initial={shown}
+        initial={seed ?? shown}
         kind={field.kind}
         field={field}
         onCancel={onEndEdit}
         onCommit={async (next) => {
           onEndEdit()
-          if (next === shown) return
+          if (!broadcast && next === shown) return
           await onCommit(next === '' ? null : convert(next, field))
         }}
       />
@@ -398,12 +410,12 @@ export function Cell({
     const typed = editText(value, field)
     return (
       <TextEditor
-        initial={typed}
+        initial={seed ?? typed}
         field={field}
         onCancel={onEndEdit}
         onCommit={async (next) => {
           onEndEdit()
-          if (next === typed) return
+          if (!broadcast && next === typed) return
           await onCommit(next === '' ? null : convert(next, field))
         }}
       />

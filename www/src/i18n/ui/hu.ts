@@ -1967,8 +1967,8 @@ export default {
 						text: 'Szolgáltató, modell és kulcs munkaterületenként, az API környezetének érintése nélkül.',
 					},
 					mail: {
-						title: 'Értesítések és meghívások e-mailben',
-						text: 'Az említések, a válaszok és a kijelölések ma a basedb-n belül érkeznek, a meghívások pedig egy hivatkozással, amelyet Önnek kell elküldenie; később e-mailben is kimehetnek.',
+						title: 'Meghívók e-mailben',
+						text: 'Az értesítések már e-mailben is mennek annak, aki kéri; a meghívó egyelőre egy hivatkozás, amelyet saját magának kell továbbítania. Hamarosan az is mehet e-mailben.',
 					},
 				},
 			},

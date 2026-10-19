@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { checkBuilderQuery, filterExpression, niceWidth } from '../../src/analytics/query.js'
 import { renderSql } from '../../src/analytics/sql.js'
 import { todayIn, zonedMidnight } from '../../src/analytics/time.js'
+import { checkedQuery } from '../../src/catalog/dashboards.js'
 import { buildFilter } from '../../src/records/filter.js'
 
 /**
@@ -75,6 +76,57 @@ describe('a query received', () => {
         joins: [{ alias: 'a', table: 'u', left: { join: 'b', field: 'x' }, right: '_id' }],
       }),
     ).toThrow()
+  })
+
+  it('keeps the mark of a join the editor added on its own — and only that mark', () => {
+    const join = {
+      alias: 'client',
+      table: 'c',
+      kind: 'left',
+      left: { field: 'client' },
+      right: '_id',
+    }
+    const read = (extra: Record<string, unknown>) =>
+      checkBuilderQuery({
+        source: 't',
+        joins: [{ ...join, ...extra }],
+        breakouts: [{ join: 'client', field: 'nom' }],
+      }).joins?.[0]
+    expect(read({ implicit: true })).toEqual({ ...join, implicit: true })
+    // A join the person wrote — every question saved before the mark existed — stays as it is.
+    expect(read({})).toEqual(join)
+    for (const odd of [false, 'true', 1, null]) expect(read({ implicit: odd })).toEqual(join)
+  })
+
+  it('keeps the mark through the check against the base’s tables', () => {
+    const tables = new Map([
+      ['t1', { id: 't1', name: 'factures', fields: new Set(['_id', 'client', 'montant']) }],
+      ['t2', { id: 't2', name: 'clients', fields: new Set(['_id', 'nom']) }],
+    ])
+    const checked = checkedQuery(
+      {
+        kind: 'builder',
+        source: 'factures',
+        joins: [
+          {
+            alias: 'client',
+            table: 'clients',
+            kind: 'left',
+            left: { field: 'client' },
+            right: '_id',
+            implicit: true,
+          },
+        ],
+        breakouts: [{ join: 'client', field: 'nom' }],
+        aggregations: [{ fn: 'sum', column: { field: 'montant' } }],
+      },
+      tables,
+      'query',
+    )
+    expect(checked).toMatchObject({
+      source: 't1',
+      joins: [{ alias: 'client', table: 't2', implicit: true }],
+    })
   })
 
   it('keeps what it knows and bounds the rest', () => {

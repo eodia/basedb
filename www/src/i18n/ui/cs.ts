@@ -1971,8 +1971,8 @@ export default {
 						text: 'Poskytovatel, model a klíč pro každý pracovní prostor, bez nastavování prostředí API.',
 					},
 					mail: {
-						title: 'Oznámení a pozvánky e-mailem',
-						text: 'Zmínky, odpovědi a přiřazení dnes přicházejí v basedb, pozvánky jako odkaz, který pošlete sami; budou moci odcházet i e-mailem.',
+						title: 'Pozvánky e-mailem',
+						text: 'Oznámení už odcházejí e-mailem každému, kdo o ně požádá; pozvánka je zatím odkaz, který předáte sami. I ji bude možné poslat e-mailem.',
 					},
 				},
 			},

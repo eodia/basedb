@@ -44,9 +44,51 @@ const FUNCTIONS: ReadonlyArray<readonly [french: string, english: string, meanin
     'TEXT(number) · VALUE(text)',
     $t('d’un nombre en texte, et l’inverse'),
   ],
+  ['STXT(texte; début; longueur)', 'MID(text, start, length)', $t('un extrait d’un texte')],
+  [
+    'SUBSTITUE(texte; ancien; nouveau)',
+    'SUBSTITUTE(text, old, new)',
+    $t('remplace toutes les occurrences'),
+  ],
+  [
+    'TROUVE(cherché; texte) · CHERCHE(cherché; texte)',
+    'FIND(search, text) · SEARCH(search, text)',
+    $t('position d’un extrait, avec la casse ou sans'),
+  ],
+  [
+    'CONTIENT · COMMENCEPAR · FINITPAR (texte; extrait)',
+    'CONTAINS · STARTSWITH · ENDSWITH (text, part)',
+    $t('vrai si le texte contient l’extrait, ou commence ou finit par lui, sans casse ni accents'),
+  ],
+  ['NOMPROPRE(texte)', 'PROPER(text)', $t('chaque mot avec une capitale')],
+  ['REPT(texte; n)', 'REPT(text, n)', $t('un texte répété n fois')],
+  [
+    'CONCAT(a; b; …) · JOINDRE_TEXTE(séparateur; VRAI; a; b; …)',
+    'CONCAT(a, b, …) · TEXTJOIN(separator, TRUE, a, b, …)',
+    $t('des textes mis bout à bout, ou séparés ; VRAI laisse de côté les vides'),
+  ],
+  [
+    'REGEX_CORRESPOND(texte; motif) · REGEX_EXTRAIRE(texte; motif) · REGEX_REMPLACER(texte; motif; par)',
+    'REGEXMATCH(text, pattern) · REGEXEXTRACT(text, pattern) · REGEXREPLACE(text, pattern, with)',
+    $t('expression régulière : le motif s’écrit dans la formule, entre guillemets'),
+  ],
+  [
+    'TEXTE(date; "jj/mm/aaaa")',
+    'TEXT(date, "dd/mm/yyyy")',
+    $t('une date en texte, selon un format'),
+  ],
   ['ANNEE · MOIS · JOUR · JOURSEMAINE', 'YEAR · MONTH · DAY · WEEKDAY', $t('parties d’une date')],
+  ['HEURE · MINUTE · SECONDE', 'HOUR · MINUTE · SECOND', $t('parties d’une date et heure')],
+  ['NO_SEMAINE_ISO(date)', 'ISOWEEKNUM(date)', $t('numéro de semaine ISO')],
   ['JOURS(fin; début)', 'DAYS(end, start)', $t('jours entre deux dates')],
+  [
+    'DATEDIF(début; fin; "Y", "M", "D" ou "YM")',
+    'DATEDIF(start, end, "Y", "M", "D" or "YM")',
+    $t('années, mois ou jours entiers entre deux dates'),
+  ],
   ['AJOUTER_JOURS(date; n)', 'ADD_DAYS(date, n)', $t('une date déplacée')],
+  ['AJOUTER_MOIS(date; n)', 'ADD_MONTHS(date, n)', $t('une date déplacée de n mois')],
+  ['FIN_MOIS(date; n)', 'EOMONTH(date, n)', $t('dernier jour du mois, n mois plus tard')],
   ['DATE(année; mois; jour)', 'DATE(year, month, day)', $t('une date')],
   ['AUJOURDHUI() · MAINTENANT()', 'TODAY() · NOW()', $t('calculée à chaque lecture')],
 ]
@@ -149,6 +191,12 @@ export function FormulaEditor({
           {$t('. Le séparateur d’arguments est')} <code>{FRENCH ? ';' : ','}</code>
           {$t(', le décimal est le point.')}
         </p>
+        <p className="mt-2">
+          {$t(
+            'Format de date : {codes} (un mm après l’heure est la minute). Pas de nom de mois ni de jour : une colonne ne parle pas toutes les langues.',
+            { codes: FRENCH ? 'jj, mm, aaaa, aa, hh, mm, ss' : 'dd, mm, yyyy, yy, hh, mm, ss' },
+          )}
+        </p>
       </details>
       <p className="text-xs text-muted-foreground">
         {$t(
@@ -156,6 +204,15 @@ export function FormulaEditor({
           {
             today: FRENCH ? 'AUJOURDHUI()' : 'TODAY()',
             now: FRENCH ? 'MAINTENANT()' : 'NOW()',
+          },
+        )}
+      </p>
+      <p className="text-xs text-muted-foreground">
+        {$t(
+          'Sur un champ date et heure, {functions} lisent l’instant dans le fuseau Europe/Paris : la formule est alors calculée à chaque lecture, comme avec {today}.',
+          {
+            functions: FRENCH ? 'ANNEE, HEURE, TEXTE…' : 'YEAR, HOUR, TEXT…',
+            today: FRENCH ? 'AUJOURDHUI()' : 'TODAY()',
           },
         )}
       </p>

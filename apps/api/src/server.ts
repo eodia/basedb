@@ -178,6 +178,10 @@ function fileStorage(): FileStorageConfig {
 
 const maxFileMb = Number(setting('BASEDB_FILES_MAX_MB') ?? '')
 
+// The most rows one export of a table may hold (`GET …/data/<base>/<table>/export`): one
+// million by default, refused before the first byte when a filter keeps more.
+const maxExportRows = Number(setting('BASEDB_EXPORT_MAX_ROWS') ?? '')
+
 // Webhooks go to public HTTPS addresses only (chapter 08 §10.8). `BASEDB_WEBHOOK_DEV=1`
 // relaxes that for a consumer on this machine — development only, and said at startup.
 const webhookDev = setting('BASEDB_WEBHOOK_DEV') === '1'
@@ -312,6 +316,9 @@ const kernel = startKernel({
   files: {
     storage: fileStorage(),
     maxBytes: Number.isFinite(maxFileMb) && maxFileMb > 0 ? maxFileMb * 1024 * 1024 : undefined,
+  },
+  exports: {
+    maxRows: Number.isInteger(maxExportRows) && maxExportRows > 0 ? maxExportRows : undefined,
   },
 })
 console.log(`Fichiers : ${kernel.files.storage}.`)

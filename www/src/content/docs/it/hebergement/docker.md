@@ -29,8 +29,8 @@ L’immagine gira con l’utente `node`, su Node 22, dichiara un controllo di in
 | Tag | Contenuto |
 |---|---|
 | `latest` | l’ultima versione pubblicata |
-| `0.7` | l’ultima versione 0.7.x |
-| `0.7.1` | esattamente questa versione |
+| `0.8` | l’ultima versione 0.8.x |
+| `0.8.0` | esattamente questa versione |
 
 ## I servizi
 

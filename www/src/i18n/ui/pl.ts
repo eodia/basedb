@@ -1970,8 +1970,8 @@ export default {
 						text: 'Dostawca, model i klucz dla każdej przestrzeni roboczej, bez przechodzenia przez zmienne środowiskowe API.',
 					},
 					mail: {
-						title: 'Powiadomienia i zaproszenia e-mailem',
-						text: 'Wzmianki, odpowiedzi i wskazania trafiają dziś do basedb, a zaproszenia – jako link do samodzielnego wysłania; będą mogły też wychodzić e-mailem.',
+						title: 'Zaproszenia e-mailem',
+						text: 'Powiadomienia już wychodzą e-mailem do każdego, kto o nie poprosi; zaproszenie to wciąż link, który przekazujesz sam. Ono także będzie mogło wyjść e-mailem.',
 					},
 				},
 			},

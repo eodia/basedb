@@ -253,7 +253,7 @@ export async function createRecords(
 }
 
 /** The same refusal, now carrying the position of the row that caused it. */
-function withIndex(error: unknown, index: number): unknown {
+export function withIndex(error: unknown, index: number): unknown {
   if (!(error instanceof BasedbError)) return error
   return new BasedbError(error.code, {
     details: { ...error.details, index },

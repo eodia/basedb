@@ -5,6 +5,7 @@ import {
   type FormulaField,
   type FormulaType,
   type Node,
+  type RegexPattern,
   emitFormula,
   kindOfType,
   parseFormula,
@@ -29,7 +30,10 @@ import { detachSqlViews, reattachSqlViews } from './sql-views.js'
 
 export interface FormulaInput {
   readonly expression: string
-  /** Where AUJOURDHUI() is read; `Europe/Paris` when the formula uses it and says nothing. */
+  /**
+   * Where AUJOURDHUI() is read, and where a date and time is read as a day or an hour;
+   * `Europe/Paris` when the formula needs a zone and says nothing.
+   */
   readonly timezone?: string | null
 }
 
@@ -97,6 +101,56 @@ function typeOfField(field: FormulaField | undefined): FormulaType {
   }
 }
 
+/**
+ * The regular expressions a formula writes, tried against PostgreSQL itself: its flavour is
+ * not JavaScript's, and a pattern it refuses would otherwise fail on the first row written.
+ * A pattern is written in the formula (never read from a field), so this one test is enough.
+ */
+async function checkRegexPatterns(
+  exec: Executor,
+  patterns: readonly RegexPattern[],
+): Promise<void> {
+  for (const { pattern, fn, position } of patterns) {
+    try {
+      await exec.query('SELECT (\'\'::text COLLATE "und-x-icu") ~ $1::text AS ok', [pattern])
+    } catch (error) {
+      // 2201B: invalid_regular_expression — too complex, unbalanced, a bad escape.
+      if (error instanceof BasedbError && error.details.sqlstate === '2201B') {
+        const reason = (error.cause as { message?: string } | undefined)?.message
+        throw new BasedbError('FORMULA_SYNTAX', {
+          details: {
+            position,
+            detail: `motif_invalide:${fn}`,
+            ...(reason === undefined ? {} : { reason }),
+          },
+        })
+      }
+      throw error
+    }
+  }
+}
+
+/**
+ * `ALTER TABLE … ADD COLUMN … GENERATED`. PostgreSQL gives a constant no collation when it
+ * checks a generated expression, so a function that needs one — `MAJUSCULE("a")`, a regular
+ * expression over a text written in the formula — fails there with « could not determine
+ * which collation ». That is the formula's fault, not the engine's: it is told as such.
+ */
+async function addGeneratedColumn(exec: Executor, sql: string): Promise<void> {
+  try {
+    await exec.query(sql, [], 'ddl')
+  } catch (error) {
+    // 42P22: indeterminate_collation.
+    if (error instanceof BasedbError && error.details.sqlstate === '42P22') {
+      throw new BasedbError('FORMULA_SYNTAX', {
+        cause: error,
+        details: { position: 0, detail: 'texte_ecrit_seul' },
+      })
+    }
+    throw error
+  }
+}
+
 /** The formula of a field, read and typed against the table's fields of the day. */
 async function compile(
   exec: Executor,
@@ -116,7 +170,11 @@ async function compile(
   const byId = new Map(fields.map((f) => [f.id, f]))
   const resolved = resolveFormula(parseFormula(input.expression), byKey, labelKey)
 
-  const timezone = resolved.usesToday ? (input.timezone ?? 'Europe/Paris') : null
+  await checkRegexPatterns(exec, resolved.patterns)
+
+  // The zone is the formula's when it reads the day (AUJOURDHUI()) or a day out of a date
+  // and time; a formula that does neither carries none.
+  const timezone = resolved.usesTimezone ? (input.timezone ?? 'Europe/Paris') : null
   if (timezone !== null) {
     const [known] = await exec.query<{ ok: boolean }>(
       'SELECT true AS ok FROM pg_timezone_names WHERE name = $1 LIMIT 1',
@@ -192,7 +250,7 @@ export async function addFormulaField(
   const relation = qualify(where.schemaName, where.tableName)
   const add = `ALTER TABLE ${relation} ADD COLUMN ${quoteIdentifier(field.name)} ${PG_TYPE[compiled.type]}
   GENERATED ALWAYS AS (${compiled.generated}) STORED;`
-  await exec.query(add, [], 'ddl')
+  await addGeneratedColumn(exec, add)
   const comment = sqlCommentOnColumn(
     where.schemaName,
     where.tableName,
@@ -249,7 +307,7 @@ export async function setFormula(
     if (compiled.stored) {
       const add = `ALTER TABLE ${relation} ADD COLUMN ${column} ${PG_TYPE[compiled.type]}
   GENERATED ALWAYS AS (${compiled.generated}) STORED;`
-      await exec.query(add, [], 'ddl')
+      await addGeneratedColumn(exec, add)
       sql.push(add)
       const comment = sqlCommentOnColumn(
         where.schemaName,

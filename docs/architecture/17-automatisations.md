@@ -506,6 +506,13 @@ l'interface avec les valeurs que le lecteur voit : un champ masqué y est vide.
 Un bouton n'a pas de valeur : il n'apparaît pas dans les lignes lues par l'API, ne se
 filtre pas, ne se trie pas, ne s'importe pas et ne se demande pas dans un formulaire.
 
+**Les boutons de la barre d'outils** d'une table (chapitre 11 §1.6, `_basedb.table_button`)
+lancent les mêmes automatisations, sur une cible choisie avec le bouton : les lignes
+cochées ou les lignes de la vue — automatisation à déclencheur `button` sur la table, une
+exécution par ligne — ou aucune ligne — automatisation sans table, une exécution. Un appui
+compte pour un clic, lance au plus 100 exécutions, et est refusé en entier s'il dépasse ce
+nombre ou le budget horaire qu'il reste à l'automatisation.
+
 ---
 
 ## 5. Routes
@@ -516,6 +523,9 @@ filtre pas, ne se trie pas, ne s'importe pas et ne se demande pas dans un formul
 | `PATCH` `DELETE` | `/admin/bases/{base}/automations/{id}` | la modifier (qui enregistre en devient propriétaire) ; la supprimer | `manage_schema` | session seule |
 | `GET` | `/admin/bases/{base}/automations/{id}/runs` | ses 50 dernières exécutions, étape par étape | `manage_schema` | session seule |
 | `POST` | `/automations/{id}/run` | l'exécuter pour une ligne : un clic sur un bouton (`read` sur la ligne), ou un essai depuis l'écran (`manage_schema`) | selon le cas | session, jeton |
+| `GET` `POST` | `/data/{base}/{table}/buttons` | les boutons de la barre d'outils de la table ; en créer un | `read` ; `manage_schema` pour créer | session, jeton |
+| `PATCH` `DELETE` | `/data/{base}/{table}/buttons/{id}` | modifier un bouton ; le supprimer | `manage_schema` | session, jeton |
+| `POST` | `/data/{base}/{table}/buttons/{id}/press` | appuyer : `{records}` (lignes cochées) ou `{filter}` (la vue) ; `202 {runs}` | `read` sur la table, les lignes relues avec ses droits | session, jeton |
 | `POST` | `/api/v1/hooks/{secret}` | l'adresse propre d'une automatisation à webhook entrant (§1.1) : `202 {run}` | le secret | aucun compte |
 | `POST` | `/ai/bases/{base}/automation-copilot` | un tour du Copilot des automatisations : `{messages, automation?, draft?, read_data}` ; propose, n'enregistre rien (§6) | `manage_schema` | session seule |
 

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { citedFields, normalizeViewSpec, projectViewSpec } from '../../src/catalog/views.js'
+import {
+  citedFields,
+  normalizeViewSpec,
+  projectViewSpec,
+  viewLoss,
+} from '../../src/catalog/views.js'
 import { BasedbError } from '../../src/errors/index.js'
 
 /**
@@ -304,6 +309,16 @@ describe('citedFields', () => {
     expect(
       citedFields('statut eq "nom eq x" and (not debut is_null or client.nom contains a)'),
     ).toEqual(['statut', 'debut', 'client'])
+  })
+})
+
+describe('viewLoss', () => {
+  it('says what a view loses with a field gone: its pivot, its filter, or nothing', () => {
+    expect(viewLoss({ group_by: 'statut' }, 'statut')).toBe('pivot')
+    expect(viewLoss({ filter: 'statut eq "actif" and montant gt 3' }, 'montant')).toBe('filter')
+    expect(viewLoss({ filter: 'ville eq "statut eq"' }, 'statut')).toBeNull()
+    expect(viewLoss({ hidden: ['statut'], sorts: [{ field: 'statut' }] }, 'statut')).toBeNull()
+    expect(viewLoss({ start_field: 'debut', color_field: 'statut' }, 'statut')).toBe('setting')
   })
 })
 

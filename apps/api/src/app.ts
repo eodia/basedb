@@ -40,6 +40,7 @@ import {
   type SqlConsoleResult,
   type SqlView,
   type SyncedTable,
+  type TableButton,
   type TokenAccess,
   VARY,
   wireSteps,
@@ -54,10 +55,12 @@ import { providerTransport } from './ai-transport.js'
 import {
   type DemoConfig,
   demoAccountFor,
+  demoAllowsBatch,
   demoRefusal,
   demoTransport,
   isDemoAddress,
 } from './demo.js'
+import { mountExport } from './export-route.js'
 import { RateLimiter } from './rate-limit.js'
 
 /**
@@ -172,7 +175,7 @@ export function createApp(options: AppOptions) {
         'x-basedb-locale',
         'x-basedb-environment',
       ],
-      exposeHeaders: ['x-request-id', 'x-basedb-transaction'],
+      exposeHeaders: ['x-request-id', 'x-basedb-transaction', 'content-disposition'],
       // The session cookie travels between two ports of the same site; without this the
       // browser sends it on no cross-origin request at all.
       credentials: true,
@@ -193,7 +196,16 @@ export function createApp(options: AppOptions) {
   if (demo !== undefined) {
     app.use('*', async (c, next) => {
       const refusal = demoRefusal(c.req.method, c.req.path)
-      if (refusal !== null) throw refusal
+      if (refusal !== null) {
+        // Editing what exists includes a pasted range: a batch of updates passes, a batch
+        // that creates does not. The body is read once and kept for the route.
+        const operations =
+          c.req.method === 'POST' && c.req.path.endsWith('/batch')
+            ? ((await c.req.json().catch(() => null)) as { operations?: unknown } | null)
+                ?.operations
+            : undefined
+        if (!demoAllowsBatch(c.req.method, c.req.path, operations)) throw refusal
+      }
       await next()
     })
   }
@@ -1026,6 +1038,9 @@ export function createApp(options: AppOptions) {
     })
   })
 
+  // A whole table, or a whole view, as a CSV, a workbook or JSON (chapter 08 §3.7).
+  mountExport(app, { kernel: options.kernel, dataContext })
+
   // Aggregates over every row the filter keeps — a grid's summary bar, the counts of its
   // groups (chapter 11 §1.6). `aggregates=montant:sum,nom:filled`, `group=statut`. Declared
   // before `/:id`, whose pattern it would otherwise be.
@@ -1090,6 +1105,83 @@ export function createApp(options: AppOptions) {
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
     const templates = await options.kernel.listDocumentTemplates(ctx, { tableId: table.tableId })
     return c.json({ data: templates.map(documentTemplateJson) })
+  })
+
+  /** Ten presses a minute per person, as a Button field's clicks (§4). */
+  const buttonPresses = new RateLimiter(10, 60_000)
+
+  // The buttons of the table's toolbar (chapter 11 §1.6): read by whoever reads the table,
+  // set by whoever builds it, pressed in one call whatever the rows. Declared before `/:id`.
+  const tableButtonJson = (b: TableButton) => ({
+    id: b.id,
+    label: b.label,
+    color: b.color,
+    action: b.action,
+    url: b.url,
+    automation: b.automation,
+    target: b.target,
+    confirm: b.confirm,
+    position: b.position,
+  })
+
+  app.get('/api/v1/:tenantRef/data/:base/:table/buttons', async (c) => {
+    const ctx = await dataContext(c)
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const buttons = await options.kernel.listTableButtons(ctx, { tableId: table.tableId })
+    return c.json({ data: buttons.map(tableButtonJson) })
+  })
+
+  app.post('/api/v1/:tenantRef/data/:base/:table/buttons', async (c) => {
+    const input = await c.req.json<Record<string, unknown>>()
+    const ctx = await dataContext(c)
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const created = await options.kernel.createTableButton(ctx, { tableId: table.tableId, input })
+    return c.json({ data: tableButtonJson(created) }, 201)
+  })
+
+  app.patch('/api/v1/:tenantRef/data/:base/:table/buttons/:button', async (c) => {
+    const input = await c.req.json<Record<string, unknown>>()
+    const ctx = await dataContext(c)
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const updated = await options.kernel.updateTableButton(ctx, {
+      tableId: table.tableId,
+      buttonId: c.req.param('button'),
+      input,
+    })
+    return c.json({ data: tableButtonJson(updated) })
+  })
+
+  app.delete('/api/v1/:tenantRef/data/:base/:table/buttons/:button', async (c) => {
+    const ctx = await dataContext(c)
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    await options.kernel.deleteTableButton(ctx, {
+      tableId: table.tableId,
+      buttonId: c.req.param('button'),
+    })
+    return c.body(null, 204)
+  })
+
+  app.post('/api/v1/:tenantRef/data/:base/:table/buttons/:button/press', async (c) => {
+    const body = await c.req
+      .json<{ records?: unknown; filter?: unknown }>()
+      .catch(() => ({}) as { records?: unknown; filter?: unknown })
+    const ctx = await dataContext(c)
+    // A press is a click, whatever the rows it starts: the limit of a Button field's.
+    const verdict = buttonPresses.check(ctx.actor.tokenId ?? ctx.actor.id, Date.now())
+    if (!verdict.allowed) {
+      c.header('retry-after', String(verdict.retryAfter))
+      throw new BasedbError('RATE_LIMIT_EXCEEDED', { details: { retry_after: verdict.retryAfter } })
+    }
+    const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
+    const pressed = await options.kernel.pressTableButton(ctx, {
+      tableId: table.tableId,
+      buttonId: c.req.param('button'),
+      records: Array.isArray(body.records)
+        ? body.records.filter((r): r is string => typeof r === 'string')
+        : undefined,
+      filter: typeof body.filter === 'string' ? body.filter : undefined,
+    })
+    return c.json({ data: { runs: pressed.runs } }, 202)
   })
 
   // A row as a PDF: with a template, or `fiche` — every field the caller reads.
@@ -1169,10 +1261,12 @@ export function createApp(options: AppOptions) {
     return c.json({ data: created.row }, 201)
   })
 
-  // A batch, chapter 08 §3.5 — for now the part a file import needs: `create` operations,
-  // all or nothing. What the spec also describes (`update`, `delete`, `atomic: false`,
-  // `Idempotency-Key`) is refused by name rather than half-honoured: an `update` quietly
-  // ignored would answer as if it had been done.
+  // A batch, chapter 08 §3.5 — for now the parts a file import and a grid need: `create`
+  // operations (an import), or `update` operations (a pasted range, a field filled over a
+  // selection), all or nothing, one kind per batch. What the spec also describes (`delete`,
+  // a batch that mixes kinds, `atomic: false`, `if_match`, `Idempotency-Key`) is refused
+  // by name rather than half-honoured: an `update` quietly ignored would answer as if it
+  // had been done.
   app.post('/api/v1/:tenantRef/data/:base/:table/batch', async (c) => {
     const body = await c.req.json<{ atomic?: unknown; operations?: unknown }>()
     if (!Array.isArray(body.operations)) {
@@ -1184,12 +1278,28 @@ export function createApp(options: AppOptions) {
       })
     }
 
+    const kind = (body.operations[0] as { op?: unknown } | null | undefined)?.op
     const records: Array<Record<string, unknown>> = []
+    const updates: Array<{ recordId: string; values: Record<string, unknown> }> = []
     for (const [index, operation] of body.operations.entries()) {
-      const { op, data } = (operation ?? {}) as { op?: unknown; data?: unknown }
-      if (op !== 'create') {
+      const { op, id, data, if_match } = (operation ?? {}) as {
+        op?: unknown
+        id?: unknown
+        data?: unknown
+        if_match?: unknown
+      }
+      if (op !== 'create' && op !== 'update') {
         throw new BasedbError('REQUEST_INVALID', {
-          details: { field: 'operations', index, reason: 'seul_create_est_pris_en_charge' },
+          details: {
+            field: 'operations',
+            index,
+            reason: 'seuls_create_et_update_sont_pris_en_charge',
+          },
+        })
+      }
+      if (op !== kind) {
+        throw new BasedbError('REQUEST_INVALID', {
+          details: { field: 'operations', index, reason: 'un_seul_genre_d_operation_par_lot' },
         })
       }
       if (typeof data !== 'object' || data === null || Array.isArray(data)) {
@@ -1197,15 +1307,39 @@ export function createApp(options: AppOptions) {
           details: { field: 'operations', index, reason: 'data_attendu' },
         })
       }
-      records.push(data as Record<string, unknown>)
+      if (op === 'create') {
+        records.push(data as Record<string, unknown>)
+        continue
+      }
+      if (typeof id !== 'string' || id === '') {
+        throw new BasedbError('REQUEST_INVALID', {
+          details: { field: 'operations', index, reason: 'id_attendu' },
+        })
+      }
+      if (if_match !== undefined) {
+        throw new BasedbError('REQUEST_INVALID', {
+          details: { field: 'operations', index, reason: 'if_match_n_est_pas_pris_en_charge' },
+        })
+      }
+      updates.push({ recordId: id, values: data as Record<string, unknown> })
     }
 
     const ctx = await dataContext(c)
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
-    const created = await options.kernel.createRecords(ctx, { tableId: table.tableId, records })
-    c.header('x-basedb-transaction', created.xact)
 
     // 200, with the shape of §3.5: a caller reads `summary` to know what happened.
+    if (kind === 'update') {
+      const changed = await options.kernel.updateRecords(ctx, { tableId: table.tableId, updates })
+      c.header('x-basedb-transaction', changed.xact)
+      return c.json({
+        atomic: true,
+        results: changed.ids.map((id, index) => ({ index, status: 'updated', id })),
+        summary: { created: 0, updated: changed.ids.length, deleted: 0, failed: 0 },
+      })
+    }
+
+    const created = await options.kernel.createRecords(ctx, { tableId: table.tableId, records })
+    c.header('x-basedb-transaction', created.xact)
     return c.json({
       atomic: true,
       results: created.ids.map((id, index) => ({ index, status: 'created', id })),
@@ -2763,6 +2897,25 @@ export function createApp(options: AppOptions) {
   // runs no SQL, and keeps no query.
   // ---------------------------------------------------------------------------------
 
+  // The routes of the saved queries are DEPRECATED: a saved query is a SQL question (chapter 18
+  // §1), the same row, and the routes of the questions read and write it. They keep answering
+  // as before for whoever wrote against them, and say so — `Deprecation`, and the successor.
+  for (const prefix of ['meta', 'admin']) {
+    for (const path of [
+      `/api/v1/:tenantRef/${prefix}/bases/:base/queries`,
+      `/api/v1/:tenantRef/${prefix}/bases/:base/queries/:query`,
+    ]) {
+      app.use(path, async (c, next) => {
+        c.header('Deprecation', 'true')
+        c.header(
+          'Link',
+          `</api/v1/${c.req.param('tenantRef')}/${prefix}/bases/${c.req.param('base')}/questions>; rel="successor-version"`,
+        )
+        await next()
+      })
+    }
+  }
+
   const serializeQuery = (q: SavedQuery) => ({
     id: q.id,
     label: q.label,
@@ -3668,6 +3821,48 @@ export function createApp(options: AppOptions) {
     const ctx = await contextFor(c, await bearer(c))
     const table = await options.kernel.resolveTable(ctx, c.req.param('base'), c.req.param('table'))
     const migration = await options.kernel.deleteTable(ctx, { tableId: table.tableId })
+    return c.json({ data: serializeMigration(migration) })
+  })
+
+  // What deleting a field would do, and what stands in its way (chapter 04 §1.11): the
+  // screen names the blockers before the click rather than after it.
+  app.get(
+    '/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field/deletion',
+    async (c) => {
+      const ctx = await contextFor(c, await bearer(c))
+      const field = await options.kernel.resolveField(
+        ctx,
+        c.req.param('base'),
+        c.req.param('table'),
+        c.req.param('field'),
+      )
+      const preview = await options.kernel.previewFieldDeletion(ctx, field.fieldId)
+      return c.json({
+        data: {
+          label: preview.label,
+          kind: preview.kind,
+          is_display: preview.isDisplay,
+          used_by: preview.usedBy,
+          views: preview.views,
+          saved_views: preview.savedViews,
+          locked_tables: preview.lockedTables,
+          cascade_lost: preview.cascadeLost,
+          relegated_name: preview.relegatedName,
+        },
+      })
+    },
+  )
+
+  // Logical deletion of ONE field (chapter 06 §4.1): its column relegated, its values kept.
+  app.delete('/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field', async (c) => {
+    const ctx = await contextFor(c, await bearer(c))
+    const field = await options.kernel.resolveField(
+      ctx,
+      c.req.param('base'),
+      c.req.param('table'),
+      c.req.param('field'),
+    )
+    const migration = await options.kernel.deleteField(ctx, { fieldId: field.fieldId })
     return c.json({ data: serializeMigration(migration) })
   })
 
@@ -4620,6 +4815,24 @@ export function createApp(options: AppOptions) {
       return c.json({ data: { required: result.required }, meta: { sql: result.sql } })
     },
   )
+
+  // No duplicate in a field (chapter 04 §1.6): refused with the values in the way, then an
+  // index built without blocking writes — a route of its own, like the obligation.
+  app.post('/api/v1/:tenantRef/admin/bases/:base/tables/:table/fields/:field/unique', async (c) => {
+    const body = await c.req.json<{ unique?: boolean }>()
+    const ctx = await contextFor(c, await bearer(c))
+    const field = await options.kernel.resolveField(
+      ctx,
+      c.req.param('base'),
+      c.req.param('table'),
+      c.req.param('field'),
+    )
+    const result = await options.kernel.setFieldUnique(ctx, {
+      fieldId: field.fieldId,
+      unique: body.unique !== false,
+    })
+    return c.json({ data: { unique: result.unique }, meta: { sql: result.sql } })
+  })
 
   // ---------------------------------------------------------------------------------
   // /admin/tokens — integration tokens, chapter 08 §11. SESSION ONLY: the access token

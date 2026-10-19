@@ -66,6 +66,8 @@ services:
       BASEDB_WEBHOOK_ALLOW: ${BASEDB_WEBHOOK_ALLOW:-}
       # Files of `file` and `image` fields: the /data volume, or an S3-compatible store.
       BASEDB_FILES_MAX_MB: ${BASEDB_FILES_MAX_MB:-}
+      # The most rows one export of a table or a view may hold; refused beyond, before it starts.
+      BASEDB_EXPORT_MAX_ROWS: ${BASEDB_EXPORT_MAX_ROWS:-}
       BASEDB_S3_BUCKET: ${BASEDB_S3_BUCKET:-}
       BASEDB_S3_ENDPOINT: ${BASEDB_S3_ENDPOINT:-}
       BASEDB_S3_REGION: ${BASEDB_S3_REGION:-}

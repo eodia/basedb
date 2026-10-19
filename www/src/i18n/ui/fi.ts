@@ -1978,8 +1978,8 @@ export default {
 						text: 'Palveluntarjoaja, malli ja avain työtilakohtaisesti ilman API:n ympäristömuuttujia.',
 					},
 					mail: {
-						title: 'Ilmoitukset ja kutsut sähköpostilla',
-						text: 'Maininnat, vastaukset ja osoitukset saapuvat nyt basedb:hen, kutsut linkkinä, jonka lähetät itse; jatkossa ne voivat lähteä myös sähköpostilla.',
+						title: 'Kutsut sähköpostilla',
+						text: 'Ilmoitukset lähtevät jo sähköpostilla niitä pyytäville; kutsu on vielä linkki, jonka välität itse. Sekin voidaan jatkossa lähettää sähköpostilla.',
 					},
 				},
 			},

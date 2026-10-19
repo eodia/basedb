@@ -1982,8 +1982,8 @@ export default {
 						text: 'Çalışma alanı başına sağlayıcı, model ve anahtar; API’nin ortamından geçmeden.',
 					},
 					mail: {
-						title: 'E-postayla bildirimler ve davetler',
-						text: 'Bahsetmeler, yanıtlar ve atamalar bugün basedb’ye, davetler ise sizin göndereceğiniz bir bağlantı olarak gelir; bunlar e-postayla da gönderilebilecek.',
+						title: 'E-postayla davetler',
+						text: 'Bildirimler isteyene zaten e-postayla gidiyor; davet ise hâlâ sizin ilettiğiniz bir bağlantı. O da e-postayla gönderilebilecek.',
 					},
 				},
 			},

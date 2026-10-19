@@ -1978,8 +1978,8 @@ export default {
 						text: 'Leverandør, modell og nøkkel per arbeidsområde, uten å gå via API-ets miljø.',
 					},
 					mail: {
-						title: 'Varsler og invitasjoner på e-post',
-						text: 'Omtaler, svar og tildelinger kommer i dag i basedb, og invitasjoner som en lenke du sender selv; de skal også kunne sendes på e-post.',
+						title: 'Invitasjoner på e-post',
+						text: 'Varsler sendes allerede på e-post til den som ber om det; en invitasjon er fortsatt en lenke du sender videre selv. Den skal også kunne sendes på e-post.',
 					},
 				},
 			},

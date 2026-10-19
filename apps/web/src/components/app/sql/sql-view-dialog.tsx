@@ -41,7 +41,7 @@ export function SqlViewDialog({
   readonly base: DescribedBase
   /** The view being changed; `null` creates one. */
   readonly view: SqlView | null
-  /** The text a new view starts with — the statement of a SQL tab, say. */
+  /** The text a new view starts with — the text of a SQL question, say. */
   readonly definition?: string
   readonly onClose: () => void
   readonly onSaved: (view: SqlView) => void

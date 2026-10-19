@@ -248,7 +248,17 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 
   // A success with nothing to say — the `202` of a reset asked for — has no body to read.
   const text = await r.text()
-  const body = (text === '' ? {} : JSON.parse(text)) as Record<string, unknown>
+  const body = parsed(text)
+  // An answer that is not the API's JSON: a route the server in service does not know —
+  // an API older than this screen, started before the route was added — answers a bare
+  // `404 Not Found`. Said as such, not as an API out of reach: it is there, and outdated.
+  if (body === null) {
+    throw new ApiError(
+      r.status === 404 ? 'ROUTE_UNKNOWN' : 'INTERNAL_ERROR',
+      r.status,
+      r.headers.get('x-request-id') ?? '',
+    )
+  }
   if (!r.ok) {
     throw new ApiError(
       String(body.code ?? 'INTERNAL_ERROR'),
@@ -260,6 +270,16 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     )
   }
   return body as T
+}
+
+/** The body as JSON, `{}` when empty — `null` when it is not JSON at all. */
+function parsed(text: string): Record<string, unknown> | null {
+  if (text === '') return {}
+  try {
+    return JSON.parse(text) as Record<string, unknown>
+  } catch {
+    return null
+  }
 }
 
 /** Unwraps the `{data: …}` envelope every catalog and data route uses. */
@@ -749,6 +769,8 @@ export interface Field {
   /** The type comes from the CATALOG: converting an input is never guessed. */
   readonly kind: string
   readonly required?: boolean
+  /** No two rows hold the same value — guaranteed by the database (ch. 04 §1.6). */
+  readonly unique?: boolean
   readonly read_only?: boolean
   /**
    * A long text holding HTML — the rich variant (chapter 04 §2.2): edited in a rich editor,
@@ -1108,6 +1130,32 @@ export interface DocumentSpec {
 }
 
 /** A document template of a table; its definition only for whoever builds the table. */
+/** A button of a table's toolbar (chapter 11 §1.6). */
+export interface TableButton {
+  readonly id: string
+  readonly label: string
+  /** `#rrggbb`, or `null` for the toolbar's own. */
+  readonly color: string | null
+  readonly action: 'url' | 'automation'
+  readonly url: string | null
+  readonly automation: { readonly id: string; readonly label: string } | null
+  /** The rows ticked, the rows of the view on screen, or none. */
+  readonly target: 'selection' | 'view' | 'none'
+  /** Ask before starting. */
+  readonly confirm: boolean
+  readonly position: number
+}
+
+export interface TableButtonInput {
+  readonly label: string
+  readonly color: string | null
+  readonly action: 'url' | 'automation'
+  readonly url?: string
+  readonly automation?: string
+  readonly target?: 'selection' | 'view' | 'none'
+  readonly confirm: boolean
+}
+
 export interface DocumentTemplate {
   readonly id: string
   readonly label: string
@@ -1358,6 +1406,35 @@ export interface Migration {
   readonly requested_at: string
   readonly finished_at: string | null
   readonly duration_ms: number | null
+}
+
+/** What deleting a field would do (ch. 04 §1.11) — and what stands in its way. */
+export interface FieldDeletionPreview {
+  readonly label: string
+  readonly kind: string
+  /** The display column of its table: another one must be chosen first. */
+  readonly is_display: boolean
+  /** What reads the field and would stop working: a formula, a lookup, a row rule… */
+  readonly used_by: ReadonlyArray<{
+    readonly kind: 'formula' | 'lookup' | 'rollup' | 'count' | 'ai' | 'button' | 'row_rule'
+    readonly label: string
+    readonly table: string | null
+  }>
+  /** Views of PostgreSQL built on the column. */
+  readonly views: ReadonlyArray<{
+    readonly kind: 'alias' | 'sql_view' | 'other'
+    readonly name: string
+  }>
+  /** Saved views that lose their pivot (left empty) or their filter (hidden) with it. */
+  readonly saved_views: ReadonlyArray<{
+    readonly label: string
+    readonly loses: 'pivot' | 'filter' | 'setting'
+  }>
+  readonly locked_tables: readonly string[]
+  /** A link in cascade: deleting a target row will no longer take the rows here. */
+  readonly cascade_lost: boolean
+  /** `null` for a field without a column (a lookup, a count, a button). */
+  readonly relegated_name: string | null
 }
 
 /** A base the tenant deleted logically, and can bring back (ch. 06 §6). */
@@ -3454,7 +3531,20 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ required }) },
     ),
 
-  createTableIn: (base: string, label: string, description?: string) =>
+  /** No duplicate in the field, or no longer — refused with the values in the way. */
+  setFieldUnique: (table: TableRef, field: string, unique: boolean) =>
+    data<{ unique: boolean }>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}/unique`,
+      { method: 'POST', body: JSON.stringify({ unique }) },
+    ),
+
+  createTableIn: (
+    base: string,
+    label: string,
+    description?: string,
+    /** How it looks in the navigation, chosen with its name. */
+    look?: { color: string | null; icon: string | null; image: string | null },
+  ) =>
     data<{ id: string; name: string; description: string | null }>(
       `${v1()}/admin/bases/${base}/tables`,
       {
@@ -3462,6 +3552,7 @@ export const api = {
         body: JSON.stringify({
           label,
           description,
+          ...look,
           fields: [{ label: $t('Nom'), kind: 'short_text' }],
         }),
       },
@@ -3548,6 +3639,59 @@ export const api = {
     if (view.after !== undefined && view.after !== '') q.set('after', view.after)
     if (view.count === true) q.set('count', 'exact')
     return call<Page>(`${path(table)}?${q}`)
+  },
+
+  /**
+   * A whole table, or a whole view, as a file: every row the filter keeps, not the page —
+   * sorted as the view is, with its visible columns. Read to the end by the server with this
+   * reader's rights, then handed to the browser as a blob. Refused as a whole BEFORE the
+   * first byte when the filter keeps more rows than an export may hold.
+   */
+  exportView: async (
+    table: TableRef,
+    request: {
+      readonly format: 'csv' | 'xlsx' | 'json'
+      readonly filter?: string
+      readonly sort?: string
+      readonly fields?: readonly string[]
+      /** The header row of a CSV or a workbook: physical names, or the labels one reads. */
+      readonly headers?: 'name' | 'label'
+    },
+  ): Promise<{ readonly blob: Blob; readonly filename: string | null }> => {
+    const q = new URLSearchParams({ format: request.format })
+    if (request.filter !== undefined && request.filter.trim() !== '')
+      q.set('filter', request.filter)
+    if (request.sort !== undefined && request.sort !== '') q.set('sort', request.sort)
+    if (request.fields !== undefined && request.fields.length > 0)
+      q.set('fields', request.fields.join(','))
+    if (request.headers !== undefined) q.set('headers', request.headers)
+    const send = async () =>
+      fetch(`${BASE}${path(table)}/export?${q}`, {
+        headers: { authorization: `Bearer ${await accessToken()}`, 'x-basedb-locale': locale() },
+        credentials: 'include',
+        cache: 'no-store',
+      })
+    let r = await send()
+    // As `call` does: one retry on a 401, with a token minted again.
+    if (r.status === 401) {
+      access = null
+      r = await send()
+    }
+    if (!r.ok) {
+      const body = (await r.json().catch(() => ({}))) as Record<string, unknown>
+      throw new ApiError(
+        String(body.code ?? 'INTERNAL_ERROR'),
+        r.status,
+        String(body.request_id ?? ''),
+        typeof body.details === 'object' && body.details !== null
+          ? (body.details as Record<string, unknown>)
+          : {},
+      )
+    }
+    return {
+      blob: await r.blob(),
+      filename: /filename="([^"]+)"/.exec(r.headers.get('content-disposition') ?? '')?.[1] ?? null,
+    }
   },
 
   /**
@@ -3660,6 +3804,18 @@ export const api = {
       relegated_name: string
     }>(`${v1()}/admin/bases/${table.base}/tables/${table.name}/deletion`),
 
+  /** What deleting a field would do, and what stands in its way — asked before the click. */
+  fieldDeletionPreview: (table: TableRef, field: string) =>
+    data<FieldDeletionPreview>(
+      `${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}/deletion`,
+    ),
+
+  /** Deletes one field logically. Its values stay, readable in SQL under the new name. */
+  deleteField: (table: TableRef, field: string) =>
+    data<Migration>(`${v1()}/admin/bases/${table.base}/tables/${table.name}/fields/${field}`, {
+      method: 'DELETE',
+    }),
+
   /** Deletes one table logically. Its rows stay, readable in SQL under the new name. */
   deleteTable: (table: TableRef) =>
     data<Migration>(`${v1()}/admin/bases/${table.base}/tables/${table.name}`, {
@@ -3764,6 +3920,29 @@ export const api = {
     }>(`${path(table)}/batch`, {
       method: 'POST',
       body: JSON.stringify({ operations: rows.map((data) => ({ op: 'create', data })) }),
+    }),
+
+  /**
+   * Changes many rows in ONE all-or-nothing batch — chapter 08 §3.5, at most 1 000 per
+   * call: each row names its own fields, and a field it leaves out stays as it is. What a
+   * pasted range and a field filled over a selection send; one transaction, so one step
+   * for Ctrl+Z.
+   *
+   * A refusal names the row: `ApiError.details.index` is its position in `updates`.
+   */
+  updateRecords: (
+    table: TableRef,
+    updates: ReadonlyArray<{ readonly id: string; readonly values: Record<string, unknown> }>,
+  ) =>
+    call<{
+      readonly atomic: true
+      readonly results: ReadonlyArray<{ index: number; status: string; id: string }>
+      readonly summary: { readonly updated: number }
+    }>(`${path(table)}/batch`, {
+      method: 'POST',
+      body: JSON.stringify({
+        operations: updates.map(({ id, values }) => ({ op: 'update', id, data: values })),
+      }),
     }),
 
   updateRecord: (table: TableRef, recordId: string, values: Record<string, unknown>) =>
@@ -4358,6 +4537,40 @@ export const api = {
     data<readonly AutomationRun[]>(
       `${v1()}/admin/bases/${encodeURIComponent(base)}/automations/${encodeURIComponent(id)}/runs`,
     ),
+
+  /** The buttons of a table's toolbar, for whoever reads it. */
+  tableButtons: (table: TableRef) =>
+    data<readonly TableButton[]>(`${v1()}/data/${table.base}/${table.name}/buttons`),
+
+  createTableButton: (table: TableRef, input: TableButtonInput) =>
+    data<TableButton>(`${v1()}/data/${table.base}/${table.name}/buttons`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
+  updateTableButton: (
+    table: TableRef,
+    id: string,
+    input: Partial<TableButtonInput> & { position?: number },
+  ) =>
+    data<TableButton>(`${v1()}/data/${table.base}/${table.name}/buttons/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    }),
+
+  deleteTableButton: (table: TableRef, id: string) =>
+    call<void>(`${v1()}/data/${table.base}/${table.name}/buttons/${id}`, { method: 'DELETE' }),
+
+  /** Presses a toolbar button: one run per row ticked, per row of the view, or one. */
+  pressTableButton: (
+    table: TableRef,
+    id: string,
+    body: { records?: readonly string[]; filter?: string },
+  ) =>
+    data<{ runs: number }>(`${v1()}/data/${table.base}/${table.name}/buttons/${id}/press`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 
   /** Runs an automation for a row — a button clicked, or a test. */
   runAutomation: (id: string, record: string | null) =>

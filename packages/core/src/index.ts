@@ -218,8 +218,14 @@ import {
 import { DESCRIPTION_MAX_CHARS } from './catalog/description.js'
 import { setFieldDescription, setTableDescription } from './catalog/descriptions.js'
 import { type Documentation, toDocumentation } from './catalog/documentation.js'
+import {
+  type FieldDeletionPreview,
+  deleteField,
+  previewFieldDeletion,
+} from './catalog/field-deletion.js'
 import { setFieldLabel } from './catalog/field-label.js'
 import { type ReorderedFields, reorderFields } from './catalog/field-order.js'
+import { type UniqueResult, setFieldUnique } from './catalog/field-unique.js'
 import {
   type AddFieldRequest,
   type AddedField,
@@ -327,6 +333,14 @@ import {
   sqlViewStatement,
   updateSqlView,
 } from './catalog/sql-views.js'
+import {
+  type TableButton,
+  createTableButton,
+  deleteTableButton,
+  listTableButtons,
+  pressTableButton,
+  updateTableButton,
+} from './catalog/table-buttons.js'
 import { type UpdatedTable, updateTable } from './catalog/table-edit.js'
 import {
   type SavedView,
@@ -501,11 +515,22 @@ import {
 } from './records/create.js'
 import { type FieldDefault, setFieldDefault } from './records/defaults.js'
 import {
+  type ExportOptions,
+  RECORD_EXPORT_MAX_ROWS,
+  type RecordExport,
+  exportRecords,
+} from './records/export.js'
+import {
   type InverseLinkBlock,
   type InverseLinks,
   listInverseLinks,
 } from './records/inverse-links.js'
 import { type ListOptions, type ListResult, listRecords } from './records/list.js'
+import {
+  type UpdateRecordsOptions,
+  type UpdatedRecords,
+  updateRecords,
+} from './records/update-many.js'
 import {
   type DeleteRecordOptions,
   type UpdateRecordOptions,
@@ -583,6 +608,12 @@ import { STRICT_TARGETS, type TargetPolicy } from './webhooks/target.js'
 export { BasedbError, businessError, type ErrorClass } from './errors/index.js'
 export type { WebhookDelivery, WebhookEvent, WebhookSummary } from './webhooks/manage.js'
 export type { SavedView, ViewKind } from './catalog/views.js'
+export type {
+  ColumnView,
+  FieldDeletionPreview,
+  FieldUser,
+  SavedViewLoss,
+} from './catalog/field-deletion.js'
 export type { Comment } from './collab/comments.js'
 export type { Notification, NotificationPage } from './collab/notifications.js'
 export type { Viewer } from './collab/presence.js'
@@ -627,6 +658,7 @@ export type {
 } from './analytics/shared-dashboard.js'
 export type { QueryAudience, QueryInput, QuerySummary, SavedQuery } from './catalog/queries.js'
 export type { SqlView, SqlViewInput, SqlViewSummary } from './catalog/sql-views.js'
+export type { ButtonTarget, TableButton } from './catalog/table-buttons.js'
 export type { Integration } from './integrations/slack.js'
 export type { SyncedTable } from './sync/tables.js'
 export type { CatalogEntry, CatalogListing, TemplateSource } from './templates/catalog.js'
@@ -691,6 +723,8 @@ export {
   MAX_OPTION_CHARS,
 } from './catalog/select-options.js'
 export type { ListOptions, ListResult } from './records/list.js'
+export { RECORD_EXPORT_FORMATS, RECORD_EXPORT_MAX_ROWS } from './records/export.js'
+export type { ExportFormat, ExportOptions, RecordExport } from './records/export.js'
 export type { Aggregate, AggregateRequest, AggregateResult } from './records/aggregate.js'
 export { COUNT_CEILING } from './records/list.js'
 export type { BaseSummary } from './catalog/lifecycle.js'
@@ -801,6 +835,11 @@ export { BATCH_MAX_OPERATIONS } from './records/create.js'
 export { COMMENT_MAX_LENGTH, MENTIONS_MAX } from './collab/comments.js'
 export { UNDO_MAX_REVISIONS, UNDO_WINDOW_HOURS } from './history/undo.js'
 export type { DeleteRecordOptions, UpdateRecordOptions, UpdatedRecord } from './records/update.js'
+export type {
+  RecordUpdate,
+  UpdateRecordsOptions,
+  UpdatedRecords,
+} from './records/update-many.js'
 export type { Action, Decision, Verdict } from './rbac/decide.js'
 export type {
   Authenticated,
@@ -954,6 +993,11 @@ export interface KernelConfig {
    * environment: nothing of them is written to the database.
    */
   readonly oidcProviders?: readonly OidcProvider[]
+  /**
+   * Taking a whole table out (`exportRecords`): the most rows one export may hold, by
+   * default {@link RECORD_EXPORT_MAX_ROWS}. An export over it is refused before its first byte.
+   */
+  readonly exports?: { readonly maxRows?: number }
 }
 
 /**
@@ -1801,6 +1845,23 @@ export interface Kernel {
     readonly lockedTables: readonly string[]
     readonly relegatedName: string
   }>
+  /**
+   * Deletes ONE field, logically — chapter 04 §1.11, chapter 06 §4.1. Its column is
+   * stripped of what it imposed (constraints, indexes, `NOT NULL`) and relegated as
+   * `zz_supprime_<date>_<nom>`, its values kept. Refused, and named, when something still
+   * reads it: the display column, a computed field, a row rule, a view in PostgreSQL.
+   */
+  deleteField(ctx: RequestContext, request: { fieldId: string }): Promise<Migration>
+  /** What that deletion would do and what stands in its way — for the confirmation. */
+  previewFieldDeletion(ctx: RequestContext, fieldId: string): Promise<FieldDeletionPreview>
+  /**
+   * No duplicate in a field, or no longer — chapter 04 §1.6: refused with the values in the
+   * way, then a unique index built without blocking writes and a constraint over it.
+   */
+  setFieldUnique(
+    ctx: RequestContext,
+    request: { fieldId: string; unique: boolean },
+  ): Promise<UniqueResult>
   /** Brings a logically deleted base back — chapter 06 §6. */
   restoreBase(ctx: RequestContext, request: { baseId: string }): Promise<Migration>
   /** The tenant's deleted bases. Empty for an actor without the administration role. */
@@ -1993,6 +2054,16 @@ export interface Kernel {
   ): Promise<SqlConsoleResult>
   listRecords(ctx: RequestContext, options: ListOptions): Promise<ListResult>
   /**
+   * A whole table, or a whole view — its filter, its sort, its columns — as a CSV, an Excel
+   * workbook or JSON, produced page by page as it is read.
+   *
+   * Every page is read by `listRecords`, so the reader's mask and row rules hold exactly as
+   * for a page of the grid. Refused before the first byte when the rows exceed the bound
+   * (`REQUEST_INVALID`, `reason: export_trop_gros`); written to `audit_log`
+   * (`records.export`). The caller pulls `body` and calls `close()` when it stops.
+   */
+  exportRecords(ctx: RequestContext, options: ExportOptions): Promise<RecordExport>
+  /**
    * Aggregates over every row a filter keeps — a grid's summary bar and the counts of its
    * groups (chapter 11 §1.6). Same mask and row predicate as a page.
    */
@@ -2009,6 +2080,12 @@ export interface Kernel {
    */
   createRecords(ctx: RequestContext, options: CreateRecordsOptions): Promise<CreatedRecords>
   updateRecord(ctx: RequestContext, options: UpdateRecordOptions): Promise<UpdatedRecord>
+  /**
+   * Changes many records, ALL OR NOTHING — chapter 08 §3.5 (`update` operations, `atomic:
+   * true`): each row names its own fields, under the masks of the single update. One
+   * transaction, so one step for Ctrl+Z. Every refusal carries `details.index`.
+   */
+  updateRecords(ctx: RequestContext, options: UpdateRecordsOptions): Promise<UpdatedRecords>
   deleteRecord(
     ctx: RequestContext,
     options: DeleteRecordOptions,
@@ -2355,6 +2432,28 @@ export interface Kernel {
     request: { baseId: string; id: string },
   ): Promise<AutomationRun[]>
   /** Queues a run for a row: a button clicked, or a test (chapter 17 §4). */
+  /** The buttons of a table's toolbar (chapter 11 §1.6), for whoever reads the table. */
+  listTableButtons(
+    ctx: RequestContext,
+    request: { tableId: string },
+  ): Promise<readonly TableButton[]>
+  createTableButton(
+    ctx: RequestContext,
+    request: { tableId: string; input: Record<string, unknown> },
+  ): Promise<TableButton>
+  updateTableButton(
+    ctx: RequestContext,
+    request: { tableId: string; buttonId: string; input: Record<string, unknown> },
+  ): Promise<TableButton>
+  deleteTableButton(
+    ctx: RequestContext,
+    request: { tableId: string; buttonId: string },
+  ): Promise<void>
+  /** Queues the runs of a toolbar button: the rows ticked, the view's, or none. */
+  pressTableButton(
+    ctx: RequestContext,
+    request: { tableId: string; buttonId: string; records?: readonly string[]; filter?: string },
+  ): Promise<{ runs: number }>
   requestAutomationRun(
     ctx: RequestContext,
     request: { automationId: string; recordId: string | null },
@@ -3045,6 +3144,9 @@ export function startKernel(config: KernelConfig): Kernel {
     },
     deleteTable: (ctx, request) => deleteTable(pools, ctx, request),
     previewTableDeletion: (ctx, tableId) => previewTableDeletion(pools, ctx, tableId),
+    deleteField: (ctx, request) => deleteField(pools, ctx, request),
+    previewFieldDeletion: (ctx, fieldId) => previewFieldDeletion(pools, ctx, fieldId),
+    setFieldUnique: (ctx, request) => setFieldUnique(pools, ctx, request),
     restoreBase: (ctx, request) => restoreBase(pools, ctx, request),
     renameImpact: (ctx, request) => renameImpact(pools, ctx, request),
     renamePhysical: async (ctx, request) => {
@@ -3142,11 +3244,14 @@ export function startKernel(config: KernelConfig): Kernel {
         ? result
         : { ...result, rows: withFileLinks(files.linkKey, ctx, result.rows, result.fileColumns) }
     },
+    exportRecords: (ctx, options) =>
+      exportRecords(pools, ctx, options, config.exports?.maxRows ?? RECORD_EXPORT_MAX_ROWS),
     aggregateRecords: (ctx, request) => aggregateRecords(pools, ctx, request),
     listInverseLinks: (ctx, options) => listInverseLinks(pools, ctx, options),
     createRecord: async (ctx, options) => linked(ctx, await createRecord(pools, ctx, options)),
     createRecords: (ctx, options) => createRecords(pools, ctx, options),
     updateRecord: async (ctx, options) => linked(ctx, await updateRecord(pools, ctx, options)),
+    updateRecords: (ctx, options) => updateRecords(pools, ctx, options),
     uploadFile: (ctx, request) => uploadFile(files, ctx, request),
     openFile: (request) => openFile(files, request, new Date()),
     files: { storage: storage.description, maxBytes: files.maxBytes },
@@ -3318,6 +3423,11 @@ export function startKernel(config: KernelConfig): Kernel {
       updateAutomation(pools, ctx, webhookTargets, request, instanceKey),
     deleteAutomation: (ctx, request) => deleteAutomation(pools, ctx, request),
     listAutomationRuns: (ctx, request) => listAutomationRuns(pools, ctx, request),
+    listTableButtons: (ctx, request) => listTableButtons(pools, ctx, request),
+    createTableButton: (ctx, request) => createTableButton(pools, ctx, request),
+    updateTableButton: (ctx, request) => updateTableButton(pools, ctx, request),
+    deleteTableButton: (ctx, request) => deleteTableButton(pools, ctx, request),
+    pressTableButton: (ctx, request) => pressTableButton(pools, ctx, request),
     requestAutomationRun: (ctx, request) => requestRun(pools, ctx, request),
     runAutomations: (options) =>
       runAutomations(pools, {

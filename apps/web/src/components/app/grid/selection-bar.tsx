@@ -11,7 +11,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import type { ExportFormat } from '@/lib/export'
 import { $t, $tp } from '@/lib/i18n'
-import { ChevronDown, Copy, Download, Trash2, X } from 'lucide-react'
+import { ChevronDown, Copy, Download, Pencil, Trash2, X } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 /**
  * The bar that appears when rows are selected — chapter 11 §2.5.
@@ -32,8 +33,12 @@ interface Props {
   readonly editable: boolean
   readonly onClear: () => void
   readonly onDelete: () => void
+  /** Opens « Modifier un champ » for the rows ticked; absent when the reader may not update. */
+  readonly onEditField?: () => void
   readonly onCopy: (format: ExportFormat) => void
   readonly onExport: (format: ExportFormat) => void
+  /** The table's own buttons, after the count: those that act on the rows ticked. */
+  readonly actions?: ReactNode
 }
 
 export function SelectionBar({
@@ -43,8 +48,10 @@ export function SelectionBar({
   editable,
   onClear,
   onDelete,
+  onEditField,
   onCopy,
   onExport,
+  actions,
 }: Props) {
   return (
     <div className="flex h-11 shrink-0 items-center gap-2 border-b bg-primary/5 px-4">
@@ -64,6 +71,15 @@ export function SelectionBar({
           <>{$tp(cellCount, '{count} cellule sélectionnée', '{count} cellules sélectionnées')}</>
         )}
       </span>
+
+      {count > 0 && onEditField !== undefined && (
+        <Button variant="outline" size="sm" onClick={onEditField}>
+          <Pencil className="size-4" />
+          {$t('Modifier un champ…')}
+        </Button>
+      )}
+
+      {count > 0 && actions}
 
       <div className="flex-1" />
 

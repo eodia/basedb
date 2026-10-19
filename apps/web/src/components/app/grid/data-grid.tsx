@@ -4,6 +4,15 @@ import { DateInput } from '@/components/app/date-picker'
 import type { Upload } from '@/components/app/files'
 import { Cell, ROW_HEIGHT, type Row, isTextual, rawText } from '@/components/app/grid/cell'
 import { ColumnHeader } from '@/components/app/grid/column-header'
+import {
+  clipboardText,
+  compatible,
+  editMode,
+  formatClipboard,
+  refsOf,
+  targetsOf,
+} from '@/components/app/grid/paste'
+import type { BulkEdit } from '@/components/app/grid/use-bulk-edit'
 import { cellKey, useCellSelection } from '@/components/app/grid/use-selection'
 import { EnumPicker, LinkPicker, MultiEnumPicker, type SearchLink } from '@/components/app/pickers'
 import { CardValue } from '@/components/app/views/card'
@@ -32,6 +41,7 @@ import { isDateKind, storedFromText } from '@/lib/dates'
 import { copy as copyText } from '@/lib/export'
 import { AGGREGATE_LABELS, type Aggregate, aggregatesFor, formatAggregate } from '@/lib/grid'
 import { $t, intlLocale } from '@/lib/i18n'
+import { useMembers } from '@/lib/members'
 import {
   type ColorStyle,
   DEFAULT_COLUMN_WIDTH,
@@ -55,6 +65,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   ChevronDown,
   ChevronRight,
+  ClipboardPaste,
   Copy,
   ExternalLink,
   Maximize2,
@@ -62,6 +73,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 
 /**
  * The grid — chapter 11 §1 and §2.
@@ -130,6 +142,21 @@ interface Props {
   readonly pointers?: readonly RemotePointer[]
   /** This screen's pointer: the cell it is over, `null` when it leaves the rows. */
   readonly onPointer?: (at: PointerAt | null) => void
+  /**
+   * Writing many cells at once: paste, one value over a selection, Suppr. Absent, the grid
+   * edits one cell at a time.
+   */
+  readonly bulk?: BulkEdit
+}
+
+/** The cell being edited, and what opened it. */
+interface Editing {
+  readonly rowIndex: number
+  readonly column: string
+  /** The sign typed to open it: the editor starts with it. */
+  readonly seed?: string
+  /** The selection the value will be written to, when the editor was opened over several cells. */
+  readonly fanOut?: ReadonlySet<string>
 }
 
 /** A row's colour, and how it shows: a stripe at its left, a tinted background, or both. */
@@ -331,10 +358,11 @@ export function DataGrid({
   rowColor,
   pointers = [],
   onPointer,
+  bulk,
 }: Props) {
   const scroller = useRef<HTMLDivElement>(null)
   const body = useRef<HTMLDivElement>(null)
-  const [editing, setEditing] = useState<{ rowIndex: number; column: string } | null>(null)
+  const [editing, setEditing] = useState<Editing | null>(null)
   const [draft, setDraft] = useState<Record<string, string>>({})
   const [adding, setAdding] = useState(false)
 
@@ -478,26 +506,39 @@ export function DataGrid({
 
   // ── Selection ────────────────────────────────────────────────────────────────
 
+  const members = useMembers()
+
   const copySelection = useCallback(() => {
-    const entries = [...cells].map((key) => {
-      const cut = key.indexOf(':')
-      return { rowIndex: Number.parseInt(key.slice(0, cut), 10), column: key.slice(cut + 1) }
-    })
+    const entries = refsOf(cells)
     const rowIndexes = [...new Set(entries.map((c) => c.rowIndex))].sort((a, b) => a - b)
     const chosen = new Set(entries.map((c) => c.column))
     const columns = fields.filter((f) => chosen.has(f.name))
     // Laid out as a GRID, not as a list of values: a rectangle copied from here is
-    // pasted into a spreadsheet, and the shape is the point.
-    const text = rowIndexes
-      .map((r) => {
+    // pasted into a spreadsheet, and the shape is the point. A cell holding a tab or a line
+    // break is quoted, as a spreadsheet does, or it would break the grid it is pasted into.
+    const text = formatClipboard(
+      rowIndexes.map((r) => {
         const row = rows[r]
-        return columns
-          .map((f) => (row === undefined || !cells.has(cellKey(r, f.name)) ? '' : rawText(row, f)))
-          .join('\t')
-      })
-      .join('\n')
+        return columns.map((f) =>
+          row === undefined || !cells.has(cellKey(r, f.name))
+            ? ''
+            : clipboardText(row, f, members, rawText),
+        )
+      }),
+    )
     void copyText(text)
-  }, [cells, fields, rows])
+  }, [cells, fields, rows, members])
+
+  // What the selection does with the keyboard beyond moving — set below, once the rows'
+  // layout is known; the selection hook only calls through these.
+  const actions = useRef({
+    edit: (_seed?: string): boolean => false,
+    clear: (): boolean => false,
+    paste: (_text: string): void => {},
+  })
+  const onEdit = useCallback((seed?: string) => actions.current.edit(seed), [])
+  const onClear = useCallback(() => actions.current.clear(), [])
+  const onPaste = useCallback((text: string) => actions.current.paste(text), [])
 
   const { onCellPointerDown, onCellPointerEnter, endDrag, clear } = useCellSelection({
     rowCount: rows.length,
@@ -507,14 +548,22 @@ export function DataGrid({
     pageJump: view.pageSize,
     editing: editing !== null,
     onCopy: copySelection,
+    scope: scroller,
+    onEdit: editable && bulk !== undefined ? onEdit : undefined,
+    onClear: editable && bulk !== undefined ? onClear : undefined,
+    onPaste: editable && bulk !== undefined ? onPaste : undefined,
   })
 
   // Rows changed under the selection — a reload, a page turn, a new sort. Keeping the
   // old coordinates would leave a rectangle over rows nobody chose.
   const previousRows = useRef(rows)
   useEffect(() => {
-    if (previousRows.current === rows) return
+    const before = previousRows.current
+    if (before === rows) return
     previousRows.current = rows
+    // The same rows in the same order — a value written, a reload — leave the selection
+    // meaning what it did; a paste or a fill is followed by the next one.
+    if (before.length === rows.length && before.every((row, i) => row._id === rows[i]?._id)) return
     clear()
     setEditing(null)
   }, [rows, clear])
@@ -603,6 +652,98 @@ export function DataGrid({
   // Heights are estimated, never measured: they change with the setting and the groups.
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-measured when what sizes the items changes
   useEffect(() => virtualizer.measure(), [rowHeight, items])
+
+  // ── Writing many cells ───────────────────────────────────────────────────────
+
+  /** Brings a row into the window the list draws; false when it is in a folded group. */
+  const showRow = useCallback(
+    (rowIndex: number) => {
+      const at = items.findIndex((item) => item.type === 'row' && item.index === rowIndex)
+      if (at === -1) return false
+      virtualizer.scrollToIndex(at)
+      return true
+    },
+    [items, virtualizer],
+  )
+
+  /** Presses the control of a cell that is not typed into: a picker opens, a box ticks. */
+  const press = useCallback((rowIndex: number, name: string) => {
+    // Two frames: the row may have to be drawn first.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        document
+          .querySelector<HTMLElement>(
+            `[data-cell="${CSS.escape(cellKey(rowIndex, name))}"] :is(button, [role="combobox"], [role="checkbox"]):not([data-grid-action])`,
+          )
+          ?.click()
+      }),
+    )
+  }, [])
+
+  actions.current = {
+    // Entrée, F2 or a sign typed on the selection (chapter 11 §2.4).
+    edit: (seed) => {
+      if (!editable || bulk === undefined) return false
+      const writable = targetsOf(refsOf(cells), fields, rows).filter(
+        (t) => editMode(t.field) !== 'none',
+      )
+      const active = writable[0]
+      if (active === undefined || !showRow(active.rowIndex)) return false
+      const mode = editMode(active.field)
+      const column = active.field.name
+      // A picker or a box answers to Entrée, F2 and Espace — not to every letter typed over it.
+      if (mode !== 'text' && seed !== undefined && seed !== ' ') return false
+      const kinds = ['select', 'multi_select', 'link', 'multi_link', 'user', 'boolean']
+
+      if (writable.length === 1) {
+        if (mode === 'text') {
+          setEditing({ rowIndex: active.rowIndex, column, ...(seed === undefined ? {} : { seed }) })
+        } else if (kinds.includes(active.field.kind)) press(active.rowIndex, column)
+        else bulk.editCells(cells, active.field)
+        return true
+      }
+
+      // Several cells: what is entered goes to all of them, and so must fit all of them.
+      if (!writable.every((t) => compatible(active.field, t.field))) {
+        toast.error(
+          $t(
+            'La sélection mêle des champs de types différents : choisissez des colonnes du même type.',
+          ),
+        )
+        return true
+      }
+      if (mode === 'text') {
+        setEditing({
+          rowIndex: active.rowIndex,
+          column,
+          fanOut: cells,
+          ...(seed === undefined ? {} : { seed }),
+        })
+      } else bulk.editCells(cells, active.field)
+      return true
+    },
+    // Suppr or Retour arrière: the selection is emptied.
+    clear: () => {
+      if (!editable || bulk === undefined) return false
+      if (!targetsOf(refsOf(cells), fields, rows).some((t) => editMode(t.field) !== 'none')) {
+        return false
+      }
+      void bulk.clear(cells)
+      return true
+    },
+    paste: (text) => {
+      if (editable && bulk !== undefined) void bulk.paste(cells, text, members)
+    },
+  }
+
+  /** « Coller » of the context menu: the browser may refuse to read the clipboard unasked. */
+  const pasteFromClipboard = useCallback(async () => {
+    try {
+      actions.current.paste(await navigator.clipboard.readText())
+    } catch {
+      toast.error($t('Le navigateur refuse de lire le presse-papiers : utilisez Ctrl+V.'))
+    }
+  }, [])
 
   const totalWidth = GUTTER_WIDTH + fields.reduce((sum, f) => sum + widthOf(f.name), 0)
   const lines = linesAt(rowHeight)
@@ -880,11 +1021,18 @@ export function DataGrid({
                             onSearchLink={onSearchLink}
                             emphasis={columnIndex === 0}
                             editing={isEditing}
+                            seed={isEditing ? editing?.seed : undefined}
+                            broadcast={isEditing && editing?.fanOut !== undefined}
                             onStartEdit={() =>
                               editable && setEditing({ rowIndex: rowIndex, column: field.name })
                             }
                             onEndEdit={() => setEditing(null)}
-                            onCommit={(value) => onCommit(id, field, value)}
+                            onCommit={(value) =>
+                              // Opened over several cells, the value goes to all of them.
+                              isEditing && editing?.fanOut !== undefined && bulk !== undefined
+                                ? bulk.fill(editing.fanOut, field, value)
+                                : onCommit(id, field, value)
+                            }
                             onUpload={editable ? onUpload : undefined}
                             onFollowLink={onFollowLink}
                           />
@@ -903,6 +1051,8 @@ export function DataGrid({
                                 // The grid starts a selection on mousedown; this one is a
                                 // button, not a cell, and must not drag a rectangle out.
                                 onMouseDown={(e) => e.stopPropagation()}
+                                // Entrée on it opens the record: it is not the grid's key.
+                                data-grid-action=""
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   onOpenRecord(row)
@@ -927,7 +1077,9 @@ export function DataGrid({
                   </ContextMenuItem>
                   <ContextMenuItem
                     onSelect={() => {
-                      const text = fields.map((f) => rawText(row, f)).join('\t')
+                      const text = formatClipboard([
+                        fields.map((f) => clipboardText(row, f, members, rawText)),
+                      ])
                       void copyText(text)
                     }}
                   >
@@ -935,6 +1087,16 @@ export function DataGrid({
                     {$t('Copier la ligne')}
                     <ContextMenuShortcut>{$t('Ctrl+C')}</ContextMenuShortcut>
                   </ContextMenuItem>
+                  {editable && bulk !== undefined && (
+                    <ContextMenuItem
+                      disabled={cells.size === 0}
+                      onSelect={() => void pasteFromClipboard()}
+                    >
+                      <ClipboardPaste className="size-4" />
+                      {$t('Coller')}
+                      <ContextMenuShortcut>{$t('Ctrl+V')}</ContextMenuShortcut>
+                    </ContextMenuItem>
+                  )}
                   {editable && canDelete && (
                     <>
                       <ContextMenuSeparator />

@@ -68,6 +68,7 @@ export function toMeta(base: ProjectedBase): unknown {
         description: f.description,
         kind: f.kind,
         required: f.required,
+        ...(f.unique === true ? { unique: true } : {}),
         read_only: f.readOnly,
         system: f.system,
         // The operators this field accepts, and whether it can be ordered. Published so

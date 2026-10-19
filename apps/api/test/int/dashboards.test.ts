@@ -1000,3 +1000,49 @@ describe('a shared dashboard', () => {
     expect((await visit(renewed.share.token)).status).toBe(404)
   })
 })
+
+describe('the routes of the saved queries', () => {
+  const QUERIES = () => `${V1}/admin/bases/${base}/queries`
+
+  it('say they are deprecated, and read and write the SQL questions', async () => {
+    const created = await call(admin, QUERIES(), 'POST', {
+      label: 'Visites du mois',
+      description: 'Ce qui s’est fait',
+      statement: 'SELECT count(*)::int AS n FROM visites',
+      audience: 'base',
+    })
+    expect(created.status).toBe(201)
+    // A deprecated route says so, and where to go.
+    expect(created.headers.get('deprecation')).toBe('true')
+    expect(created.headers.get('link')).toBe(
+      `</api/v1/${TENANT_REF}/admin/bases/${base}/questions>; rel="successor-version"`,
+    )
+    const query = await data<{ id: string; statement: string; audience: string }>(created)
+    expect(query).toMatchObject({
+      statement: 'SELECT count(*)::int AS n FROM visites',
+      audience: 'base',
+    })
+
+    // The same identifier, a SQL question the interface opens, drawn as a table.
+    const question = await call(admin, `${V1}/meta/bases/${base}/questions/${query.id}`)
+    expect(question.headers.get('deprecation')).toBeNull()
+    expect(await data<Record<string, unknown>>(question)).toMatchObject({
+      id: query.id,
+      label: 'Visites du mois',
+      kind: 'sql',
+      query: { kind: 'sql', sql: 'SELECT count(*)::int AS n FROM visites' },
+      visualization: { type: 'table' },
+    })
+    expect((await run(alice, { question: query.id })).status).toBe(200)
+
+    // Read through the old routes, a question written as a question is a query too.
+    const listed = await call(alice, `${V1}/meta/bases/${base}/queries`)
+    expect(listed.headers.get('deprecation')).toBe('true')
+    expect((await data<Array<{ id: string }>>(listed)).map((q) => q.id)).toContain(query.id)
+
+    // Deleting the query deletes the question.
+    const removed = await call(admin, `${QUERIES()}/${query.id}`, 'DELETE')
+    expect(removed.status).toBe(204)
+    expect((await call(admin, `${V1}/meta/bases/${base}/questions/${query.id}`)).status).toBe(404)
+  })
+})

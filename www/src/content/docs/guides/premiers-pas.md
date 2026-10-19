@@ -73,7 +73,8 @@ répond. Détails dans [Formulaires partagés](/basedb/fonctionnalites/formulair
 
 ## 6. Lire en SQL
 
-Menu **⋯** de la base → **Requête SQL** : vos tables sont là, sous leur vrai nom.
+Le **+** de la barre d’onglets → **Nouvelle question**, puis **SQL** dans l’en-tête : vos tables sont
+là, sous leur vrai nom.
 
 ```sql
 SELECT nom, statut, montant

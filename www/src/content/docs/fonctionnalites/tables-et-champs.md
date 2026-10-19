@@ -108,17 +108,84 @@ la sienne : en français sur un écran en français, en anglais dans toutes les 
 |---|---|---|
 | Logique | `SI`, `SIVIDE`, `ESTVIDE`, `ET`, `OU`, `NON`, `VRAI`, `FAUX` | `IF`, `IFBLANK`, `ISBLANK`, `AND`, `OR`, `NOT`, `TRUE`, `FALSE` |
 | Nombres | `ARRONDI`, `ABS`, `PLAFOND`, `PLANCHER`, `MIN`, `MAX` | `ROUND`, `ABS`, `CEILING`, `FLOOR`, `MIN`, `MAX` |
-| Texte | `MAJUSCULE`, `MINUSCULE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `LONGUEUR`, `TEXTE`, `NOMBRE` | `UPPER`, `LOWER`, `TRIM`, `LEFT`, `RIGHT`, `LEN`, `TEXT`, `VALUE` |
-| Dates | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `JOURS`, `AJOUTER_JOURS`, `DATE`, `AUJOURDHUI`, `MAINTENANT` | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DAYS`, `ADD_DAYS`, `DATE`, `TODAY`, `NOW` |
+| Texte | `MAJUSCULE`, `MINUSCULE`, `NOMPROPRE`, `SANSESPACES`, `GAUCHE`, `DROITE`, `STXT`, `LONGUEUR`, `SUBSTITUE`, `TROUVE`, `CHERCHE`, `CONTIENT`, `COMMENCEPAR`, `FINITPAR`, `REPT`, `CONCAT`, `JOINDRE_TEXTE`, `TEXTE`, `NOMBRE` | `UPPER`, `LOWER`, `PROPER`, `TRIM`, `LEFT`, `RIGHT`, `MID`, `LEN`, `SUBSTITUTE`, `FIND`, `SEARCH`, `CONTAINS`, `STARTSWITH`, `ENDSWITH`, `REPT`, `CONCAT`, `TEXTJOIN`, `TEXT`, `VALUE` |
+| Expressions régulières | `REGEX_CORRESPOND`, `REGEX_EXTRAIRE`, `REGEX_REMPLACER` | `REGEXMATCH`, `REGEXEXTRACT`, `REGEXREPLACE` |
+| Dates | `ANNEE`, `MOIS`, `JOUR`, `JOURSEMAINE`, `NO_SEMAINE_ISO`, `JOURS`, `DATEDIF`, `AJOUTER_JOURS`, `AJOUTER_MOIS`, `FIN_MOIS`, `DATE`, `TEXTE` | `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `ISOWEEKNUM`, `DAYS`, `DATEDIF`, `ADD_DAYS`, `ADD_MONTHS`, `EOMONTH`, `DATE`, `TEXT` |
+| Dates et heures | `HEURE`, `MINUTE`, `SECONDE`, `AUJOURDHUI`, `MAINTENANT` | `HOUR`, `MINUTE`, `SECOND`, `TODAY`, `NOW` |
 | Opérateurs | `+ - * /`, `&` pour joindre du texte, `= <> < <= > >=` | les mêmes |
 
 Une formule devient une **colonne générée** par PostgreSQL : `psql` et vos outils la lisent
-comme les autres. Celle qui dépend du jour (`AUJOURDHUI()`, `MAINTENANT()`) ou qui cite une
-recherche ou un cumul est **calculée à la lecture** : elle se filtre et se trie dans basedb, mais
-n’existe pas en SQL direct.
+comme les autres. Celle qui dépend du jour (`AUJOURDHUI()`, `MAINTENANT()`), qui lit un jour ou une
+heure dans un champ date et heure, ou qui cite une recherche ou un cumul est **calculée à la
+lecture** : elle se filtre et se trie dans basedb, mais n’existe pas en SQL direct.
 
 Une formule ne cite ni une autre formule, ni une relation directement — une recherche le fait.
-Extraire ou remplacer une partie d’un texte viendra ensuite.
+
+### Extraire, chercher, remplacer du texte
+
+```text
+STXT([Référence]; 4; 3)                      → les trois caractères qui suivent le troisième
+SUBSTITUE([Téléphone]; " "; "")              → les espaces retirés
+SI(CONTIENT([Courriel]; "@exemple.fr"); "interne"; "externe")
+STXT([Courriel]; TROUVE("@"; [Courriel]) + 1; 100)   → le domaine d’une adresse
+JOINDRE_TEXTE(", "; VRAI; [Rue]; [Code postal]; [Ville])
+```
+
+- `STXT(texte; début; longueur)` compte à partir de 1. `SUBSTITUE` remplace **toutes** les
+  occurrences, casse comprise.
+- `TROUVE(cherché; texte)` rend la position de la première occurrence, ou rien si le texte n’y
+  est pas. `TROUVE` distingue les capitales, `CHERCHE` non (les accents, eux, comptent).
+- `CONTIENT`, `COMMENCEPAR` et `FINITPAR` rendent vrai ou faux, **sans tenir compte de la casse
+  ni des accents** — comme les filtres de la grille.
+- `CONCAT(a; b; …)` met des valeurs bout à bout, comme `&`. `JOINDRE_TEXTE(séparateur; VRAI; a;
+  b; …)` les sépare, et avec `VRAI` laisse de côté celles qui sont vides : pas de virgule en trop
+  quand le code postal manque. Le séparateur et `VRAI` ou `FAUX` s’écrivent dans la formule.
+- `NOMPROPRE` met une capitale à chaque mot, `REPT(texte; n)` répète un texte (au-delà de 32 767
+  caractères, le résultat est vide).
+- Un nombre vide reste vide : `STXT([Nom]; [Rang]; 3)` n’a pas de valeur tant que `Rang` est
+  vide.
+
+### Expressions régulières
+
+```text
+REGEX_CORRESPOND([Référence]; "^[A-Z]{2}-[0-9]+$")           → vrai ou faux
+REGEX_EXTRAIRE([Description]; "[0-9]+ €")                    → la première correspondance
+REGEX_EXTRAIRE([Courriel]; "@(.+)$")                         → le premier groupe entre parenthèses
+REGEX_REMPLACER([Téléphone]; "[^0-9]"; "")                   → seuls les chiffres restent
+```
+
+Ce sont les expressions régulières de PostgreSQL. Le **motif s’écrit dans la formule**, entre
+guillemets — jamais dans un champ — et basedb le fait essayer par PostgreSQL avant d’enregistrer
+la formule : un motif refusé est signalé tout de suite, pas à la première ligne écrite. Les
+références arrière (`\1` dans le motif) sont refusées. `(?i)` en tête du motif ignore la casse ;
+dans le remplacement, `\1` désigne le premier groupe et `\&` toute la correspondance.
+
+### Dates et heures
+
+```text
+TEXTE([Échéance]; "jj/mm/aaaa")                 → 31/01/2026
+AJOUTER_MOIS([Début]; 3)                         → trois mois plus tard
+FIN_MOIS([Facture]; 1)                           → dernier jour du mois suivant
+DATEDIF([Naissance]; AUJOURDHUI(); "Y")          → des années entières
+NO_SEMAINE_ISO([Livraison])                      → la semaine ISO, de 1 à 53
+SI(HEURE([Reçu le]) < 12; "matin"; "après-midi")
+```
+
+- `TEXTE(date; format)` écrit une date selon un format : `aaaa` (année), `mm` (mois), `jj`
+  (jour), `hh`, `mm` (minute, juste après l’heure) et `ss` ; `yyyy` et `dd` se lisent aussi. Les
+  autres caractères s’écrivent tels quels ; une lettre qui n’est pas un code s’écrit après un
+  `\`. Il n’y a pas de nom de mois ni de jour : une colonne ne parle pas toutes les langues.
+  Une date seule n’a pas d’heure, `hh` n’y a donc pas de sens.
+- `AJOUTER_MOIS` garde la fin de mois : le 31 janvier plus un mois est le 28 février. `FIN_MOIS`
+  sans second argument donne la fin du mois de la date.
+- `DATEDIF(début; fin; unité)` compte des années (`"Y"`), des mois (`"M"`) ou des jours (`"D"`)
+  **entiers** ; `"YM"` donne les mois qui restent après les années. Le résultat est négatif si la
+  fin précède le début.
+- Appliquées à un champ **date et heure**, `ANNEE`, `MOIS`, `JOUR`, `HEURE`, `MINUTE`, `SECONDE`,
+  `TEXTE` et leurs pareilles lisent l’instant dans le fuseau **Europe/Paris** : minuit et demi à
+  Paris est déjà le lendemain, quoi qu’en dise l’heure UTC. Comme `AUJOURDHUI()`, la formule est
+  alors calculée à la lecture.
+- La formule `TEXTE([Échéance])`, sans format, est refusée : écrivez le format que vous voulez lire.
 
 ## Recherches, cumuls et décomptes
 

@@ -45,6 +45,7 @@ import {
   shownFormat,
 } from '@/components/app/field-icon'
 import { usePhysicalRename } from '@/components/app/lifecycle-dialogs'
+import { LookButton, type LookValue, lookOf } from '@/components/app/look-picker'
 import { NewTableDialog } from '@/components/app/new-table-dialog'
 import { LookIcon, OptionBadge } from '@/components/app/option-badge'
 import { OptionsEditor } from '@/components/app/options-editor'
@@ -73,9 +74,11 @@ import { Hint, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/t
 import {
   type AiFieldInput,
   type AiFieldStatus,
+  type AutomationHttpMethod,
   type DescribedBase,
   type Field,
   type FieldDefault,
+  type FieldDeletionPreview,
   type FieldOptionInput,
   type Table,
   api,
@@ -87,8 +90,8 @@ import { messageFor } from '@/lib/messages'
 import { type OptionDraft, draftsOf, emptyDraft, optionsOf } from '@/lib/options'
 import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
-import { Check, Key, Link2, Pencil, Plus, Sparkles, Star, Table2, Trash2, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Check, Key, Link2, Pencil, Plus, Sparkles, Table2, Tag, Trash2, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * The schema editor — chapter 11 §6.
@@ -119,12 +122,29 @@ function formatInputOf(field: Field): FormatInput | null {
   }
 }
 
+/**
+ * The kinds a value of which the database can demand: not a computed one — a formula, a
+ * lookup, a button have no value of their own — nor a number the database gives itself.
+ */
+const acceptsRequired = (kind: string) =>
+  !['formula', 'autonumber', 'lookup', 'rollup', 'count', 'button'].includes(kind)
+
+/** The kinds the kernel holds without duplicate (ch. 04 §1.6) — its own list, mirrored. */
+const UNIQUE_KINDS: ReadonlySet<string> = new Set([
+  'short_text',
+  'email',
+  'url',
+  'number',
+  'date',
+  'datetime',
+])
+
 /** The kinds whose values come from a list of choices, edited in the same way. */
 const hasChoices = (kind: string | undefined) => kind === 'select' || kind === 'multi_select'
 
 /**
  * The kinds that cannot be a table's display column — the catalog's `can_be_display`
- * says no, so the star is not offered rather than refused after a click.
+ * says no, so they are not offered rather than refused after a choice.
  */
 const NOT_DISPLAYABLE = new Set([
   'link',
@@ -151,12 +171,29 @@ interface Props {
    * alone is known from the navigation's projects and handed in here.
    */
   readonly buildable?: ReadonlySet<string>
+  /**
+   * The table to show, asked for from that table's menu in the navigation. Each request
+   * carries its instant: asking again for the same table, after wandering off, brings it
+   * back.
+   */
+  readonly focus?: { readonly table: string; readonly at: number } | null
+  /** The table now shown, for the address bar to name it. */
+  readonly onShown?: (table: string | null) => void
 }
 
 const NOTHING: ReadonlySet<string> = new Set()
 
-export function SchemaEditor({ base, onChanged, administers = false, buildable = NOTHING }: Props) {
-  const [openTable, setOpenTable] = useState<string | null>(base.tables[0]?.name ?? null)
+export function SchemaEditor({
+  base,
+  onChanged,
+  administers = false,
+  buildable = NOTHING,
+  focus = null,
+  onShown,
+}: Props) {
+  const [openTable, setOpenTable] = useState<string | null>(
+    focus?.table ?? base.tables[0]?.name ?? null,
+  )
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [adding, setAdding] = useState(false)
@@ -164,8 +201,21 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
   const [deleting, setDeleting] = useState<Table | null>(null)
   const [renaming, setRenaming] = useState<Table | null>(null)
   const [editing, setEditing] = useState<Field | null>(null)
+  const [removing, setRemoving] = useState<Field | null>(null)
 
   const table = base.tables.find((t) => t.name === openTable) ?? base.tables[0] ?? null
+
+  // Said upward each time it changes — through a ref: the caller's function is a new one at
+  // every render, and the table is what moves the address, not the render.
+  const shown = useRef(onShown)
+  shown.current = onShown
+  const shownName = table?.name ?? null
+  useEffect(() => shown.current?.(shownName), [shownName])
+
+  // A new request from the navigation wins over the table chosen here since.
+  useEffect(() => {
+    if (focus !== null) setOpenTable(focus.table)
+  }, [focus])
 
   // What the server demands (chapter 05 §8): a table is added to a base, or deleted from it,
   // with `manage_schema` on the base; its fields are built with `manage_schema` on the table.
@@ -194,7 +244,7 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
     <div className="mx-auto max-w-5xl">
       <div className="mb-6">
         <h1 className="text-xl font-semibold tracking-tight">
-          {$t('Structure de {label}', { label: base.label })}
+          {$t('Tables et champs de {label}', { label: base.label })}
         </h1>
         {!buildsBase && !builds && (
           <p className="mt-1 text-sm text-muted-foreground">
@@ -244,26 +294,34 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
         {table !== null && (
           <div className="min-w-0 flex-1">
             <div className="mb-3 flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <h2 className="truncate text-base font-semibold">{table.label}</h2>
-                <p className="truncate font-mono text-xs text-muted-foreground">{table.name}</p>
-              </div>
+              <TableHeading
+                key={`heading:${table.name}`}
+                table={table}
+                busy={busy}
+                builds={builds}
+                onSaved={async (label) => {
+                  if (label !== undefined) relabelTabs(table, label)
+                  await onChanged()
+                }}
+              />
               {builds && (
-                <>
-                  <Button size="sm" onClick={() => setAdding(true)} disabled={busy}>
-                    <Plus className="size-4" />
-                    {$t('Champ')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setRenaming(table)}
-                    disabled={busy}
-                  >
-                    <Pencil className="size-4" />
-                    {$t('Modifier')}
-                  </Button>
-                </>
+                <Button size="sm" onClick={() => setAdding(true)} disabled={busy}>
+                  <Plus className="size-4" />
+                  {$t('Champ')}
+                </Button>
+              )}
+              {/* The name in the database is the administration's (chapter 06 §2): the one
+                  thing of the table that still needs a dialog, for what it touches. */}
+              {builds && administers && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRenaming(table)}
+                  disabled={busy}
+                >
+                  <Pencil className="size-4" />
+                  {$t('Nom en base…')}
+                </Button>
               )}
               {buildsBase && (
                 <Button
@@ -289,9 +347,33 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
               onChanged={onChanged}
             />
 
+            <RowTitle
+              table={table}
+              busy={busy}
+              builds={builds}
+              onChange={(name) => void run(() => api.setDisplayColumn(table, name))}
+            />
+
             <div key={table.name} className="overflow-hidden rounded-xl border">
               <SortableFields
                 table={table}
+                // Where the eye lands after the last field: adding the next one, right there.
+                after={
+                  builds ? (
+                    <button
+                      type="button"
+                      onClick={() => setAdding(true)}
+                      disabled={busy}
+                      className={cn(
+                        'flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground disabled:opacity-50',
+                        table.fields.some((f) => f.system !== true) && 'border-t',
+                      )}
+                    >
+                      <Plus className="size-4" />
+                      {$t('Ajouter un champ')}
+                    </button>
+                  ) : undefined
+                }
                 disabled={busy || !builds}
                 onReorder={(names) =>
                   run(async () => {
@@ -316,11 +398,8 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
                     busy={busy}
                     builds={builds}
                     handle={handle}
-                    onRequired={(required) =>
-                      void run(() => api.setFieldRequired(table, field.name, required))
-                    }
-                    onDisplay={() => void run(() => api.setDisplayColumn(table, field.name))}
                     onEdit={() => setEditing(field)}
+                    onDelete={() => setRemoving(field)}
                     onDescription={async (next) => {
                       // Not through `run`: it locks the whole screen, and rewriting a sentence
                       // is no reason to. The editor shows its own refusal, in place.
@@ -350,27 +429,54 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
                       field.multiple,
                     )
                   } else {
-                    await api.addField(table, {
-                      label: field.label,
-                      kind: field.kind,
-                      rich: field.rich,
-                      description: field.description,
-                      options: field.options,
-                      ai: field.ai,
-                      format: field.format,
-                      formula: field.formula,
-                      rollup: field.rollup,
-                      button:
-                        field.button === undefined
-                          ? undefined
-                          : {
-                              label: field.button.label,
-                              action: field.button.action,
-                              ...(field.button.action === 'url'
-                                ? { url: field.button.url }
-                                : { automation: field.button.automation }),
-                            },
-                    })
+                    // A webhook is an automation of one step, made here and named after
+                    // the button: its runs, its retries, its headers are the automations'.
+                    const hook =
+                      field.button?.action === 'webhook'
+                        ? await api.createAutomation(base.name, {
+                            label: $t('Bouton « {label} » de {table}', {
+                              label: field.label,
+                              table: table.label,
+                            }),
+                            enabled: true,
+                            trigger: { kind: 'button', table: table.id },
+                            actions: [
+                              {
+                                kind: 'webhook',
+                                url: field.button.webhookUrl.trim(),
+                                method: field.button.webhookMethod,
+                              },
+                            ],
+                          })
+                        : null
+                    try {
+                      await api.addField(table, {
+                        label: field.label,
+                        kind: field.kind,
+                        rich: field.rich,
+                        description: field.description,
+                        options: field.options,
+                        ai: field.ai,
+                        format: field.format,
+                        formula: field.formula,
+                        rollup: field.rollup,
+                        button:
+                          field.button === undefined
+                            ? undefined
+                            : {
+                                label: field.button.label,
+                                action: field.button.action === 'url' ? 'url' : 'automation',
+                                ...(field.button.action === 'url'
+                                  ? { url: field.button.url }
+                                  : { automation: hook?.id ?? field.button.automation }),
+                              },
+                      })
+                    } catch (e) {
+                      // The field refused, its automation goes too: nothing left half-made.
+                      if (hook !== null)
+                        await api.deleteAutomation(base.name, hook.id).catch(() => {})
+                      throw e
+                    }
                   }
                 } catch (e) {
                   return messageFor(e)
@@ -390,6 +496,16 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
               onSaved={onChanged}
             />
 
+            <DeleteFieldDialog
+              field={removing}
+              table={table}
+              onClose={() => setRemoving(null)}
+              onDeleted={async () => {
+                setRemoving(null)
+                await onChanged()
+              }}
+            />
+
             <EditTableDialog
               table={renaming}
               administers={administers}
@@ -403,20 +519,7 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
                 await onChanged()
               }}
               onSaved={async (label) => {
-                // The tabs open on it carry the label they were opened with.
-                const renamed = renaming
-                if (renamed !== null) {
-                  const { tabs, rename } = useWorkspace.getState()
-                  for (const tab of tabs) {
-                    if (
-                      tab.kind === 'table' &&
-                      tab.base === renamed.base &&
-                      tab.table === renamed.name
-                    ) {
-                      rename(tab.id, label)
-                    }
-                  }
-                }
+                if (renaming !== null) relabelTabs(renaming, label)
                 await onChanged()
               }}
             />
@@ -441,9 +544,9 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
         base={base}
         busy={busy}
         onClose={() => setNaming(false)}
-        onSubmit={async (label, description) => {
+        onSubmit={async (label, description, look) => {
           await run(async () => {
-            const created = await api.createTableIn(base.name, label, description)
+            const created = await api.createTableIn(base.name, label, description, look)
             // Land on the table just made: it is what was asked for, and its description
             // is one click away instead of behind a search for the right table.
             setOpenTable(created.name)
@@ -451,6 +554,123 @@ export function SchemaEditor({ base, onChanged, administers = false, buildable =
           setNaming(false)
         }}
       />
+    </div>
+  )
+}
+
+/** The tabs open on a table carry the label they were opened with: they follow a new one. */
+function relabelTabs(table: Table, label: string) {
+  const { tabs, rename } = useWorkspace.getState()
+  for (const tab of tabs) {
+    if (tab.kind === 'table' && tab.base === table.base && tab.table === table.name) {
+      rename(tab.id, label)
+    }
+  }
+}
+
+/**
+ * The open table's name and look, changed where they are read — what « Modifier la table »
+ * used to ask for in a dialog. Both are catalog writes that touch no row: the look is saved
+ * as soon as it is picked, the label on Entrée or when the box is left, Échap giving it up.
+ */
+function TableHeading({
+  table,
+  busy,
+  builds,
+  onSaved,
+}: {
+  readonly table: Table
+  readonly busy: boolean
+  readonly builds: boolean
+  /** Called once saved, with the new label when it changed. */
+  readonly onSaved: (label?: string) => Promise<void>
+}) {
+  const [look, setLook] = useState<LookValue>(() => lookOf(table))
+  const [label, setLabel] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => setLook(lookOf(table)), [table])
+
+  const save = async (patch: { label?: string } & Partial<LookValue>) => {
+    setSaving(true)
+    setError(null)
+    try {
+      await api.updateTable(table, patch)
+      setLabel(null)
+      await onSaved(patch.label)
+    } catch (e) {
+      setError(messageFor(e))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const commit = () => {
+    if (label === null) return
+    const next = label.trim()
+    if (next === '' || next === table.label) setLabel(null)
+    else void save({ label: next })
+  }
+
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-2.5">
+      {builds ? (
+        <LookButton
+          look={look}
+          label={$t('Apparence de la table {label}', { label: table.label })}
+          onChange={(patch) => {
+            // The look is one value: what was picked a moment ago is sent with this choice.
+            const next = { ...look, ...patch }
+            setLook(next)
+            void save(next)
+          }}
+          disabled={busy || saving}
+          className="size-9"
+        />
+      ) : (
+        <LookIcon look={table} fallback={Table2} className="size-5 text-muted-foreground" />
+      )}
+      <div className="min-w-0 flex-1">
+        {label !== null ? (
+          <Input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commit()
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                setLabel(null)
+              }
+            }}
+            aria-label={$t('Libellé de la table')}
+            disabled={saving}
+            autoFocus
+            className="h-8 max-w-sm text-base font-semibold"
+          />
+        ) : builds ? (
+          <Hint label={$t('Renommer la table')}>
+            <button
+              type="button"
+              onClick={() => setLabel(table.label)}
+              disabled={busy || saving}
+              className="group/title flex max-w-full items-center gap-1.5 rounded-md text-left"
+            >
+              <h2 className="truncate text-base font-semibold">{table.label}</h2>
+              <Pencil className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/title:opacity-100 group-focus-visible/title:opacity-100 [@media(hover:none)]:opacity-100" />
+            </button>
+          </Hint>
+        ) : (
+          <h2 className="truncate text-base font-semibold">{table.label}</h2>
+        )}
+        <p className="truncate font-mono text-xs text-muted-foreground">{table.name}</p>
+        {error !== null && (
+          <p role="alert" className="text-xs text-destructive">
+            {error}
+          </p>
+        )}
+      </div>
     </div>
   )
 }
@@ -509,6 +729,303 @@ function TableDescription({
         )
       )}
     </div>
+  )
+}
+
+/**
+ * What names a row of the table — the catalog's display column (chapter 04 §5).
+ *
+ * A setting of the TABLE, so it is chosen at the table's level, in words, with what it is
+ * for: a star on one field row said neither. Only the kinds the catalog accepts are
+ * offered, and « Aucun » is a valid answer (A15) — the rows are then named by their number.
+ */
+function RowTitle({
+  table,
+  busy,
+  builds,
+  onChange,
+}: {
+  readonly table: Table
+  readonly busy: boolean
+  readonly builds: boolean
+  readonly onChange: (name: string | null) => void
+}) {
+  const current = table.fields.find((f) => f.name === table.display_field) ?? null
+  const choices = table.fields.filter((f) => f.system !== true && !NOT_DISPLAYABLE.has(f.kind))
+
+  return (
+    <div className="mb-4 rounded-lg border bg-muted/30 px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <span className="flex items-center gap-1.5 text-sm font-medium">
+          <Tag className="size-4 text-muted-foreground" />
+          {$t('Titre des lignes')}
+        </span>
+        {builds ? (
+          <Choice
+            value={current?.name ?? ''}
+            onValueChange={(name) => onChange(name === '' ? null : name)}
+            options={[
+              { value: '', label: $t('Aucun') },
+              ...choices.map((f) => ({
+                value: f.name,
+                label: f.label,
+                render: (
+                  <span className="flex items-center gap-2">
+                    <FieldIcon kind={f.kind} format={shownFormat(f)} />
+                    {f.label}
+                  </span>
+                ),
+              })),
+            ]}
+            aria-label={$t('Titre des lignes')}
+            disabled={busy}
+            className="w-60"
+          />
+        ) : (
+          <span className="text-sm">{current?.label ?? $t('Aucun')}</span>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {$t(
+          'Ce qui désigne une ligne de « {table} » ailleurs : dans les relations qui la citent, les recherches et les listes où on la choisit.',
+          { table: table.label },
+        )}
+      </p>
+    </div>
+  )
+}
+
+/** A reader of a field, as the confirmation names it — one whole sentence per kind. */
+function userOf(user: FieldDeletionPreview['used_by'][number]): string {
+  const label = user.label
+  const what =
+    user.kind === 'formula'
+      ? $t('La formule « {label} »', { label })
+      : user.kind === 'lookup'
+        ? $t('La recherche « {label} »', { label })
+        : user.kind === 'rollup'
+          ? $t('Le cumul « {label} »', { label })
+          : user.kind === 'count'
+            ? $t('Le décompte « {label} »', { label })
+            : user.kind === 'ai'
+              ? $t('La consigne d’IA du champ « {label} »', { label })
+              : user.kind === 'button'
+                ? $t('Le bouton « {label} »', { label })
+                : $t('La règle de lignes du groupe « {label} »', { label })
+  return user.table === null
+    ? what
+    : $t('{what}, dans la table « {table} »', { what, table: user.table })
+}
+
+/**
+ * The preview as this screen reads it. An API older than the screen answers without the
+ * lists it added since — the saved views were the last — and an absent list is an empty
+ * one, not a reason for the dialog to fail.
+ */
+function completePreview(read: Partial<FieldDeletionPreview>): FieldDeletionPreview {
+  return {
+    label: read.label ?? '',
+    kind: read.kind ?? '',
+    is_display: read.is_display ?? false,
+    used_by: read.used_by ?? [],
+    views: read.views ?? [],
+    saved_views: read.saved_views ?? [],
+    locked_tables: read.locked_tables ?? [],
+    cascade_lost: read.cascade_lost ?? false,
+    relegated_name: read.relegated_name ?? null,
+  }
+}
+
+/**
+ * The confirmation for deleting a field — chapter 04 §1.11, chapter 06 §4.1.
+ *
+ * Like the table's, it asks the server first: what reads the field — a formula, a lookup
+ * in another table, a row rule, a view built in SQL — is the server's to know, and a
+ * screen that learned it from a refusal after the click would have nothing to say before.
+ * Whatever stands in the way is named, with the place to remedy it; nothing is offered
+ * while it stands.
+ *
+ * It also says what deletion is NOT: the values stay, in a renamed column, readable in SQL.
+ */
+function DeleteFieldDialog({
+  field,
+  table,
+  onClose,
+  onDeleted,
+}: {
+  readonly field: Field | null
+  readonly table: Table
+  readonly onClose: () => void
+  readonly onDeleted: () => Promise<void>
+}) {
+  const [preview, setPreview] = useState<FieldDeletionPreview | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (field === null) return
+    let current = true
+    setError(null)
+    setPreview(null)
+    api
+      .fieldDeletionPreview(table, field.name)
+      .then((read) => current && setPreview(completePreview(read)))
+      .catch((e) => current && setError(messageFor(e)))
+    return () => {
+      current = false
+    }
+  }, [field, table])
+
+  const blocked =
+    preview !== null &&
+    (preview.is_display || preview.used_by.length > 0 || preview.views.length > 0)
+  const ready = field !== null && preview !== null && !blocked && !busy
+
+  const submit = async () => {
+    if (!ready || field === null) return
+    setBusy(true)
+    setError(null)
+    try {
+      const migration = await api.deleteField(table, field.name)
+      if (migration.status !== 'applied') {
+        setError(
+          `${$t('La migration s’est arrêtée à l’étape « {value} » ', {
+            value: migration.step_label ?? '?',
+          })}(${migration.error_code ?? 'inconnue'}).`,
+        )
+        return
+      }
+      await onDeleted()
+    } catch (e) {
+      setError(messageFor(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog open={field !== null} onOpenChange={(o) => !o && !busy && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {$t('Supprimer le champ « {label} » ?', { label: field?.label })}
+          </DialogTitle>
+          <DialogDescription>
+            {preview === null
+              ? $t('Vérification de ce qui lit ce champ…')
+              : preview.relegated_name !== null
+                ? $t(
+                    'Il disparaît de la table, des vues, de l’API et des formulaires. Ses valeurs restent lisibles en SQL, dans la colonne {column}.',
+                    { column: preview.relegated_name },
+                  )
+                : $t(
+                    'Il disparaît de la table, des vues, de l’API et des formulaires. C’est un champ calculé : aucune valeur n’est perdue.',
+                  )}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 text-sm">
+          {preview !== null && blocked && (
+            <div className="space-y-1.5 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-destructive">
+              {preview.is_display && (
+                <p>
+                  {$t(
+                    'C’est le titre des lignes de « {table} » : choisissez-en un autre au-dessus de la liste des champs.',
+                    { table: table.label },
+                  )}
+                </p>
+              )}
+              {preview.used_by.length > 0 && (
+                <>
+                  <p>
+                    {$t('D’autres éléments le lisent : modifiez-les ou supprimez-les d’abord.')}
+                  </p>
+                  <ul className="list-disc space-y-0.5 pl-5">
+                    {preview.used_by.map((u) => (
+                      <li key={`${u.kind}:${u.table ?? ''}:${u.label}`}>{userOf(u)}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              {preview.views.length > 0 && (
+                <>
+                  <p>{$t('Des vues SQL sont construites sur sa colonne :')}</p>
+                  <ul className="list-disc space-y-0.5 pl-5">
+                    {preview.views.map((v) => (
+                      <li key={`${v.kind}:${v.name}`}>
+                        {v.kind === 'alias'
+                          ? $t('l’alias de compatibilité {name}', { name: v.name })
+                          : v.kind === 'sql_view'
+                            ? $t('la vue SQL « {name} »', { name: v.name })
+                            : $t('{name}, créée hors de basedb', { name: v.name })}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          )}
+
+          {preview !== null && !blocked && preview.saved_views.length > 0 && (
+            <div className="space-y-1 text-muted-foreground">
+              <p>{$t('Des vues enregistrées s’en servent :')}</p>
+              <ul className="list-disc space-y-0.5 pl-5">
+                {preview.saved_views.map((v) => (
+                  <li key={v.label}>
+                    {v.loses === 'pivot'
+                      ? $t(
+                          '« {label} » se range sur ce champ : elle restera vide jusqu’à ce que vous en choisissiez un autre.',
+                          { label: v.label },
+                        )
+                      : v.loses === 'filter'
+                        ? $t(
+                            '« {label} » le filtre : elle sera masquée jusqu’à ce que son filtre soit corrigé.',
+                            { label: v.label },
+                          )
+                        : $t(
+                            '« {label} » s’en sert pour un réglage (couleur, titre, image…), qui sera retiré.',
+                            { label: v.label },
+                          )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {preview !== null && !blocked && preview.cascade_lost && (
+            <p className="text-muted-foreground">
+              {$t(
+                'Supprimer une ligne liée n’emportera plus les lignes de « {table} » qui la citent.',
+                { table: table.label },
+              )}
+            </p>
+          )}
+
+          {preview !== null && !blocked && preview.locked_tables.length > 0 && (
+            <p className="text-muted-foreground">
+              {$t('Tables verrouillées brièvement : {locked_tables}.', {
+                locked_tables: preview.locked_tables.join(', '),
+              })}
+            </p>
+          )}
+
+          {error !== null && (
+            <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-destructive">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            {$t('Annuler')}
+          </Button>
+          <Button variant="destructive" onClick={() => void submit()} disabled={!ready}>
+            {busy ? $t('Suppression…') : $t('Supprimer le champ')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -659,9 +1176,8 @@ function FieldRow({
   first,
   busy,
   builds,
-  onRequired,
-  onDisplay,
   onEdit,
+  onDelete,
   onDescription,
   handle,
 }: {
@@ -673,9 +1189,8 @@ function FieldRow({
   readonly builds: boolean
   /** The grip that moves the row — a blank of its width for a row that does not move. */
   readonly handle?: React.ReactNode
-  readonly onRequired: (required: boolean) => void
-  readonly onDisplay: () => void
   readonly onEdit: () => void
+  readonly onDelete: () => void
   /** Renaming the COLUMN — administration only, and without an alias (chapter 06 §3.1). */
   readonly onDescription: (next: string | null) => Promise<void>
 }) {
@@ -695,6 +1210,15 @@ function FieldRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="truncate text-sm font-medium">{field.label}</span>
+          {/* Said where the field is read, in words: what names a row of the table. */}
+          {isDisplay && (
+            <Hint label={$t('Le titre des lignes : c’est lui qu’on lit dans les relations')}>
+              <Badge variant="outline" className="gap-1 border-primary/40 font-normal text-primary">
+                <Tag className="size-3" />
+                {$t('Titre||titre des lignes d’une table')}
+              </Badge>
+            </Hint>
+          )}
           {field.link?.target !== undefined && (
             <Badge variant="secondary" className="gap-1 font-normal">
               <Link2 className="size-3" />
@@ -704,6 +1228,24 @@ function FieldRow({
           {field.link?.masked === true && (
             <Badge variant="outline" className="font-normal text-muted-foreground">
               {$t('cible non visible')}
+            </Badge>
+          )}
+          {/* The rules of the column, said and not switched here: they are changed in the
+              field's dialog, where what a refusal names can be read. */}
+          {field.system === true && (
+            <Badge variant="outline" className="gap-1 font-normal text-muted-foreground">
+              <Key className="size-3" />
+              {$t('système')}
+            </Badge>
+          )}
+          {field.required === true && field.system !== true && (
+            <Badge variant="outline" className="font-normal text-muted-foreground">
+              {$t('Obligatoire')}
+            </Badge>
+          )}
+          {field.unique === true && (
+            <Badge variant="outline" className="font-normal text-muted-foreground">
+              {$t('Sans doublon')}
             </Badge>
           )}
         </div>
@@ -779,53 +1321,6 @@ function FieldRow({
         )}
       </span>
 
-      {/* Required — a switch on the row, because it is an act on the table and not a
-          property one ticks while creating a column. */}
-      {field.system === true ? (
-        <Badge variant="outline" className="w-28 shrink-0 justify-center font-normal">
-          <Key className="size-3" />
-          {$t('système')}
-        </Badge>
-      ) : !builds ? (
-        // Said, not offered: making a field required is building the table.
-        <Badge variant="outline" className="w-28 shrink-0 justify-center font-normal">
-          {field.required === true ? <Check className="size-3" /> : <X className="size-3" />}
-          {field.required === true ? $t('Obligatoire') : $t('Facultatif')}
-        </Badge>
-      ) : (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant={field.required === true ? 'secondary' : 'ghost'}
-              size="sm"
-              className="w-28 shrink-0"
-              // A computed value is always there: formula, AI, autonumber are never « required ».
-              disabled={
-                busy || field.kind === 'formula' || field.kind === 'autonumber' || field.ai === true
-              }
-              onClick={() => onRequired(field.required !== true)}
-            >
-              {field.required === true ? (
-                <>
-                  <Check className="size-3.5" />
-                  {$t('Obligatoire')}
-                </>
-              ) : (
-                <>
-                  <X className="size-3.5" />
-                  {$t('Facultatif')}
-                </>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            {field.required === true
-              ? $t('Rendre facultatif')
-              : $t('Rendre obligatoire (refusé si une ligne est vide)')}
-          </TooltipContent>
-        </Tooltip>
-      )}
-
       {/* A system column is the server's own: nothing here to edit, and no button that would
           only ever be disabled. The slot is kept so the columns of the list stay aligned. */}
       {editable ? (
@@ -852,35 +1347,32 @@ function FieldRow({
         <span className="size-8 shrink-0" />
       )}
 
-      {builds ? (
+      {/* Deleting: the title of the rows is refused by the server (A15), so it is said here
+          rather than offered and refused — the remedy is one choice above the list. */}
+      {editable ? (
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              disabled={busy || field.system === true || NOT_DISPLAYABLE.has(field.kind)}
-              onClick={onDisplay}
-              aria-label={$t('Désigner comme colonne d’affichage')}
-            >
-              <Star className={cn('size-4', isDisplay && 'fill-primary text-primary')} />
-            </Button>
+            <span className="shrink-0">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={busy || isDisplay}
+                onClick={onDelete}
+                aria-label={$t('Supprimer le champ {label}', { label: field.label })}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </span>
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
-            {$t('Colonne d’affichage, montrée dans les relations')}
+            {isDisplay
+              ? $t('C’est le titre des lignes : choisissez-en un autre avant de le supprimer.')
+              : $t('Supprimer le champ')}
           </TooltipContent>
         </Tooltip>
       ) : (
-        // The display column is still worth knowing; only the designation is withheld.
-        <Hint label={isDisplay ? $t('Colonne d’affichage, montrée dans les relations') : undefined}>
-          <span
-            className="flex size-8 shrink-0 items-center justify-center"
-            aria-label={
-              isDisplay ? $t('Colonne d’affichage, montrée dans les relations') : undefined
-            }
-          >
-            {isDisplay && <Star className="size-4 fill-primary text-primary" />}
-          </span>
-        </Hint>
+        <span className="size-8 shrink-0" />
       )}
     </div>
   )
@@ -948,6 +1440,9 @@ function EditFieldDialog({
   const [expression, setExpression] = useState('')
   // What a row created without the field takes (ch. 04 §1.5).
   const [byDefault, setByDefault] = useState<FieldDefault | null>(null)
+  // The rules of the column: an obligation, no duplicate.
+  const [required, setRequired] = useState(false)
+  const [unique, setUnique] = useState(false)
 
   const isAi = aiOn
   const columns = useMemo(() => citable(table, field?.name), [table, field])
@@ -968,6 +1463,8 @@ function EditFieldDialog({
     setFormat(formatInputOf(field))
     setExpression(field.computed?.expression ?? '')
     setByDefault(field.default ?? null)
+    setRequired(field.required === true)
+    setUnique(field.unique === true)
     if (field.ai !== true) return
     let current = true
     api
@@ -1007,6 +1504,10 @@ function EditFieldDialog({
     expression.trim() !== '' &&
     expression.trim() !== (field.computed?.expression ?? '')
   const takesDefault = field !== null && acceptsDefault(field) && !aiOn
+  const takesRequired = field !== null && acceptsRequired(field.kind) && !aiOn
+  const takesUnique = field !== null && UNIQUE_KINDS.has(field.kind) && !aiOn
+  const requiredChanged = takesRequired && field !== null && required !== (field.required === true)
+  const uniqueChanged = takesUnique && field !== null && unique !== (field.unique === true)
   const defaultChanged =
     takesDefault && field !== null && !sameDefault(byDefault, field.default ?? null)
   const ready =
@@ -1022,6 +1523,8 @@ function EditFieldDialog({
       formatChanged ||
       formulaChanged ||
       defaultChanged ||
+      requiredChanged ||
+      uniqueChanged ||
       physical.asked) &&
     physical.ready &&
     !busy
@@ -1064,6 +1567,16 @@ function EditFieldDialog({
       }
       if (formatChanged && format !== null) {
         await api.setFieldFormat(table, field.name, format)
+        await onSaved()
+      }
+      // The rules last among the catalog's: each may be refused for the rows as they are —
+      // an empty one, a value in double — and says which.
+      if (uniqueChanged) {
+        await api.setFieldUnique(table, field.name, unique)
+        await onSaved()
+      }
+      if (requiredChanged) {
+        await api.setFieldRequired(table, field.name, required)
         await onSaved()
       }
       if (formulaChanged) {
@@ -1200,6 +1713,50 @@ function EditFieldDialog({
               onChange={setByDefault}
               disabled={busy}
             />
+          )}
+
+          {(takesRequired || takesUnique) && (
+            <fieldset className="space-y-2.5">
+              <legend className="mb-1.5 text-sm text-muted-foreground">{$t('Règles')}</legend>
+              {takesRequired && (
+                <div className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    id="field-required"
+                    checked={required}
+                    onCheckedChange={(checked) => setRequired(checked === true)}
+                    disabled={busy}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="field-required" className="cursor-pointer">
+                    {$t('Obligatoire')}
+                    <span className="block text-xs text-muted-foreground">
+                      {$t(
+                        'Chaque ligne doit le remplir. Refusé tant qu’une ligne existante est vide.',
+                      )}
+                    </span>
+                  </label>
+                </div>
+              )}
+              {takesUnique && (
+                <div className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    id="field-unique"
+                    checked={unique}
+                    onCheckedChange={(checked) => setUnique(checked === true)}
+                    disabled={busy}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="field-unique" className="cursor-pointer">
+                    {$t('Pas de doublon')}
+                    <span className="block text-xs text-muted-foreground">
+                      {$t(
+                        'Deux lignes ne peuvent pas avoir la même valeur, même écrite en SQL. Les lignes vides restent permises ; « Dupont » et « dupont » sont deux valeurs.',
+                      )}
+                    </span>
+                  </label>
+                </div>
+              )}
+            </fieldset>
           )}
 
           {field !== null && acceptsAi(field.kind) && field.unsafe_html !== true && (
@@ -1393,22 +1950,30 @@ const KIND_NOTES: Readonly<Record<string, string>> = {
   ),
   email: $t('Une adresse vérifiée à l’écriture, qui s’ouvre dans la messagerie en un clic.'),
   button: $t(
-    'Un bouton dans chaque ligne, sans valeur : il ouvre une adresse composée avec la ligne, ou lance une automatisation de la base déclenchée par un bouton.',
+    'Un bouton dans chaque ligne, sans valeur : il ouvre une adresse composée avec la ligne, appelle un webhook avec la ligne, ou lance une automatisation de la base déclenchée par un bouton.',
   ),
 }
 
 interface ButtonDraft {
   readonly label: string
-  readonly action: 'url' | 'automation'
+  /** `webhook`: an automation of one webhook step, created with the button. */
+  readonly action: 'url' | 'automation' | 'webhook'
   readonly url: string
   readonly automation: string
+  readonly webhookUrl: string
+  readonly webhookMethod: AutomationHttpMethod
 }
+
+/** The methods a webhook step accepts, POST first: what a button sends most often. */
+const HTTP_METHODS: readonly AutomationHttpMethod[] = ['POST', 'PUT', 'PATCH', 'GET', 'DELETE']
 
 const emptyButton = (): ButtonDraft => ({
   label: '',
   action: 'url',
   url: 'https://',
   automation: '',
+  webhookUrl: 'https://',
+  webhookMethod: 'POST',
 })
 
 /** A button's settings: its label, and an address or an automation. */
@@ -1458,7 +2023,7 @@ function ButtonForm({
         className="h-8"
       />
       <div className="flex gap-1 rounded-md border p-0.5 text-xs">
-        {(['url', 'automation'] as const).map((a) => (
+        {(['url', 'webhook', 'automation'] as const).map((a) => (
           <button
             key={a}
             type="button"
@@ -1469,7 +2034,11 @@ function ButtonForm({
               value.action === a ? 'bg-secondary font-medium' : 'text-muted-foreground',
             )}
           >
-            {a === 'url' ? $t('Ouvrir une adresse') : $t('Lancer une automatisation')}
+            {a === 'url'
+              ? $t('Ouvrir une adresse')
+              : a === 'webhook'
+                ? $t('Appeler un webhook')
+                : $t('Lancer une automatisation')}
           </button>
         ))}
       </div>
@@ -1484,6 +2053,33 @@ function ButtonForm({
           />
           <p className="text-xs text-muted-foreground">
             Citez la ligne avec {'{{champ}}'} : https://exemple.fr/devis/{'{{numero}}'}
+          </p>
+        </>
+      ) : value.action === 'webhook' ? (
+        <>
+          <div className="flex gap-2">
+            <Choice
+              value={value.webhookMethod}
+              onValueChange={(method) =>
+                onChange({ ...value, webhookMethod: method as AutomationHttpMethod })
+              }
+              options={HTTP_METHODS.map((m) => ({ value: m, label: m }))}
+              aria-label={$t('Méthode du webhook')}
+              disabled={disabled}
+              className="w-28 shrink-0"
+            />
+            <Input
+              value={value.webhookUrl}
+              onChange={(e) => onChange({ ...value, webhookUrl: e.target.value })}
+              aria-label={$t('Adresse du webhook')}
+              disabled={disabled}
+              className="h-8 font-mono text-xs"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {$t(
+              'Chaque clic envoie la ligne en JSON à cette adresse. Une automatisation est créée pour l’appeler : ses exécutions, ses en-têtes et son corps se règlent dans « Automatisations ».',
+            )}
           </p>
         </>
       ) : automations !== null && automations.length === 0 ? (
@@ -1557,7 +2153,11 @@ function AddFieldDialog({
     (!readsThrough || rollupReady(kind, rollup)) &&
     (kind !== 'button' ||
       (button.label.trim() !== '' &&
-        (button.action === 'url' ? button.url.trim().length > 8 : button.automation !== ''))) &&
+        (button.action === 'url'
+          ? button.url.trim().length > 8
+          : button.action === 'webhook'
+            ? button.webhookUrl.trim().length > 8
+            : button.automation !== ''))) &&
     (!withAi || aiReady(ai, columns)) &&
     !isTooLong(description) &&
     !busy

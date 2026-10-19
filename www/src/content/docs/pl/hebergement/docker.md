@@ -29,8 +29,8 @@ wolumen `/data` na pliki z pól Plik i Obraz.
 | Tag | Zawartość |
 |---|---|
 | `latest` | najnowsza opublikowana wersja |
-| `0.7` | najnowsza wersja 0.7.x |
-| `0.7.1` | dokładnie ta wersja |
+| `0.8` | najnowsza wersja 0.8.x |
+| `0.8.0` | dokładnie ta wersja |
 
 ## Usługi
 

@@ -1694,11 +1694,11 @@ describe('/data — a batch over HTTP', () => {
   })
 
   it('refuses by name what it does not do yet, instead of answering as if it had', async () => {
-    const update = await batch({ operations: [{ op: 'update', id: 'x', data: { nom: 'y' } }] })
-    expect(update.status).toBe(400)
-    await expect(update.json()).resolves.toMatchObject({
+    const removal = await batch({ operations: [{ op: 'delete', id: 'x' }] })
+    expect(removal.status).toBe(400)
+    await expect(removal.json()).resolves.toMatchObject({
       code: 'REQUEST_INVALID',
-      details: { index: 0, reason: 'seul_create_est_pris_en_charge' },
+      details: { index: 0, reason: 'seuls_create_et_update_sont_pris_en_charge' },
     })
 
     const partial = await batch({ atomic: false, ...created([{ nom: 'x' }]) })

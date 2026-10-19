@@ -70,6 +70,7 @@ import { weekStart } from '@/lib/preferences'
 import { useWorkspace } from '@/lib/store/workspace'
 import { cn } from '@/lib/utils'
 import {
+  type BuilderQuery,
   DASHBOARD_COLUMNS,
   DASHBOARD_ROW_HEIGHT,
   type DashboardCard,
@@ -103,7 +104,6 @@ import {
   RefreshCw,
   Search,
   Share2,
-  SquareTerminal,
   Trash2,
   Type,
   X,
@@ -149,6 +149,7 @@ export function DashboardView({
   onDeleted,
   onDuplicated,
   onExplore,
+  onOpenRows,
   onQuestionsChanged,
   onScreen,
   incoming,
@@ -162,6 +163,11 @@ export function DashboardView({
   readonly onDuplicated: (dashboard: Dashboard) => void
   /** Opens a question derived from a card — a click on its title or on one of its points. */
   readonly onExplore: (draft: QuestionDraft) => void
+  /**
+   * The rows behind a point of a card open in a tab of the workspace, this screen staying as
+   * it was. Absent, they replace the screen, like any other exploration.
+   */
+  readonly onOpenRows?: (draft: QuestionDraft) => void
   readonly onQuestionsChanged: () => Promise<void>
   /** What is on screen — the tab, the filters' values —, for the copilot beside it. */
   readonly onScreen?: (screen: { tab: string | null; values: Values }) => void
@@ -654,6 +660,7 @@ export function DashboardView({
                           selected={null}
                           refresh={refresh}
                           onExplore={onExplore}
+                          {...(onOpenRows === undefined ? {} : { onOpenRows })}
                           onValues={setValues}
                           pointFilters={pointFilters}
                           onPointFilter={setPoint}
@@ -695,6 +702,7 @@ export function DashboardView({
                         selected={selectedParameter}
                         refresh={refresh}
                         onExplore={onExplore}
+                        {...(onOpenRows === undefined ? {} : { onOpenRows })}
                         onValues={setValues}
                         pointFilters={pointFilters}
                         onPointFilter={setPoint}
@@ -807,17 +815,11 @@ export function DashboardView({
             )
             setAdding(false)
           }}
-          onNew={(kind) => {
+          onNew={() => {
             setAdding(false)
             setEditor({
               card: null,
-              draft: {
-                id: null,
-                label: '',
-                description: null,
-                query: kind === 'sql' ? { kind: 'sql', sql: '' } : null,
-                visualization: null,
-              },
+              draft: { id: null, label: '', description: null, query: null, visualization: null },
             })
           }}
         />
@@ -1035,6 +1037,7 @@ interface CardProps {
   readonly selected: DashboardParameter | null
   readonly refresh: number
   readonly onExplore: (draft: QuestionDraft) => void
+  readonly onOpenRows?: (draft: QuestionDraft) => void
   readonly onValues: (change: (values: Values) => Values) => void
   /** The filters set by clicks, and the way to set one. */
   readonly pointFilters?: readonly PointFilter[]
@@ -1714,6 +1717,18 @@ function QuestionCard(props: CardProps) {
               visualization: type === undefined ? null : { type },
             })
           }
+          {...(props.onOpenRows === undefined
+            ? {}
+            : {
+                onOpenRows: (rows: BuilderQuery, label: string) =>
+                  props.onOpenRows?.({
+                    id: null,
+                    label,
+                    description: null,
+                    query: rows,
+                    visualization: { type: 'table' },
+                  }),
+              })}
           onClose={() => setDrill(null)}
         />
       )}
@@ -1780,7 +1795,7 @@ function AddQuestionDialog({
   readonly questions: readonly Question[]
   readonly onClose: () => void
   readonly onPick: (question: Question) => void
-  readonly onNew: (kind: 'builder' | 'sql') => void
+  readonly onNew: () => void
 }) {
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
@@ -1791,30 +1806,13 @@ function AddQuestionDialog({
         <DialogHeader>
           <DialogTitle>{$t('Ajouter une question')}</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            variant="outline"
-            className="h-auto flex-col gap-1 py-3"
-            onClick={() => onNew('builder')}
-          >
-            <Plus className="size-5" />
-            {$t('Nouvelle question')}
-            <span className="text-xs font-normal text-muted-foreground">
-              {$t('avec l’éditeur visuel')}
-            </span>
-          </Button>
-          <Button
-            variant="outline"
-            className="h-auto flex-col gap-1 py-3"
-            onClick={() => onNew('sql')}
-          >
-            <SquareTerminal className="size-5" />
-            {$t('Nouvelle question SQL')}
-            <span className="text-xs font-normal text-muted-foreground">
-              {$t('en lecture seule')}
-            </span>
-          </Button>
-        </div>
+        <Button variant="outline" className="h-auto flex-col gap-1 py-3" onClick={onNew}>
+          <Plus className="size-5" />
+          {$t('Nouvelle question')}
+          <span className="text-xs font-normal text-muted-foreground">
+            {$t('avec l’éditeur visuel, ou en SQL')}
+          </span>
+        </Button>
         {questions.length > 0 && (
           <div className="space-y-2">
             <div className="relative">
