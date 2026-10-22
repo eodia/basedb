@@ -80,6 +80,10 @@ export const tr: Catalog = {
   'Modifier une ligne': 'Satırı düzenle',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Satırı sil — silmek için oluşturulmuş bir token’la',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Bir satırın dosya alanına belge veya görsel koymak — içeriği base64 olarak ya da adresiyle.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Bir dosya alanına belge veya görsel koymak',
   'Ramener une ligne supprimée': 'Silinen satırı geri yükle',
   'Aucun outil ne vous est ouvert sur cette table.': 'Bu tabloda size açık hiçbir araç yok.',
   'Un jeton que vous créez n’a jamais plus de droits que vous : ces outils sont un maximum.':

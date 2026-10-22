@@ -80,6 +80,10 @@ export const en: Catalog = {
   'Modifier une ligne': 'Update a row',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Delete a row — with a token created to delete',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Put a document or a picture into a file field of a row — its content in base64, or its address.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Put a document or a picture into a file field',
   'Ramener une ligne supprimée': 'Restore a deleted row',
   'Aucun outil ne vous est ouvert sur cette table.': 'No tool is open to you on this table.',
   'Un jeton que vous créez n’a jamais plus de droits que vous : ces outils sont un maximum.':

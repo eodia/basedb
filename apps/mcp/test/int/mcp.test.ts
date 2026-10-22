@@ -352,6 +352,7 @@ describe('the tool catalog (§2)', () => {
         'propose_create_table',
         'propose_update_look',
         'restore_record',
+        'attach_file',
         'update_record',
         'whoami',
       ].sort(),
@@ -1579,5 +1580,123 @@ describe('colours and pictograms (chapter 11 §3.1 bis)', () => {
       fields: [{ field: 'etat', options: [{ value: 'inconnue', color: '#000000' }] }],
     })
     expect(missing.payload.code).toBe('RESOURCE_NOT_FOUND')
+  })
+})
+
+describe('attach_file — a document or a picture into a file field (§6)', () => {
+  /** The smallest PNG there is: one transparent pixel. */
+  const PNG = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    'base64',
+  )
+  const PDF = Buffer.from('%PDF-1.4\n%basedb\n1 0 obj << >> endobj\ntrailer << >>\n%%EOF\n')
+  let dossiers: string
+  let row: string
+
+  beforeAll(async () => {
+    const t = await kernel.createTable(admin, {
+      baseId: crm.baseId,
+      label: 'Dossiers',
+      fields: [{ label: 'Titre', kind: 'short_text' }],
+    })
+    dossiers = t.tableName
+    await kernel.addField(admin, { tableId: t.tableId, label: 'Pièces', kind: 'file' })
+    await kernel.addField(admin, { tableId: t.tableId, label: 'Photo', kind: 'image' })
+    const r = await kernel.createRecord(admin, {
+      tableId: t.tableId,
+      values: { titre: 'Dossier Dupont' },
+    })
+    row = String(r.row._id)
+    clearCaches()
+  })
+
+  const attach = (token: string, session: string, args: Record<string, unknown>) =>
+    call(token, session, 'attach_file', { base: 'crm', table: dossiers, _id: row, ...args })
+
+  it('adds a document to the field, then another, then replaces them', async () => {
+    const session = await open(writer)
+    const described = await call(writer, session, 'describe_table', {
+      base: 'crm',
+      table: dossiers,
+    })
+    const pieces = described.payload.fields.find((f: { name: string }) => f.name === 'pieces')
+    expect(pieces.write_with).toBe('attach_file')
+    const first = await attach(writer, session, {
+      field: 'pieces',
+      name: 'contrat.pdf',
+      content_type: 'application/pdf',
+      content_base64: PDF.toString('base64'),
+    })
+    expect(first.isError).toBe(false)
+    expect(first.payload.file).toMatchObject({ name: 'contrat.pdf', type: 'application/pdf' })
+    expect(first.payload.record.pieces).toHaveLength(1)
+
+    const second = await attach(writer, session, {
+      field: 'pieces',
+      name: 'annexe.pdf',
+      content_base64: `data:application/pdf;base64,${PDF.toString('base64')}`,
+    })
+    expect(second.payload.record.pieces.map((f: { name: string }) => f.name)).toEqual([
+      'contrat.pdf',
+      'annexe.pdf',
+    ])
+
+    const replaced = await attach(writer, session, {
+      field: 'pieces',
+      name: 'seul.pdf',
+      mode: 'replace',
+      content_base64: PDF.toString('base64'),
+    })
+    expect(replaced.payload.record.pieces.map((f: { name: string }) => f.name)).toEqual([
+      'seul.pdf',
+    ])
+  })
+
+  it('takes a picture into an image field, recognised from its bytes', async () => {
+    const session = await open(writer)
+    const done = await attach(writer, session, {
+      field: 'photo',
+      name: 'pixel.png',
+      content_base64: PNG.toString('base64'),
+    })
+    expect(done.payload.file).toMatchObject({ type: 'image/png' })
+    const refused = await attach(writer, session, {
+      field: 'photo',
+      name: 'faux.png',
+      content_base64: PDF.toString('base64'),
+    })
+    expect(refused.payload.code).toBe('CONTENT_TYPE_INVALID')
+  })
+
+  it('refuses a field that holds no file, two sources or none, an address inside', async () => {
+    const session = await open(writer)
+    const text = await attach(writer, session, {
+      field: 'titre',
+      content_base64: PDF.toString('base64'),
+    })
+    expect(text.payload.code).toBe('PARAMETER_INVALID')
+    const both = await attach(writer, session, {
+      field: 'pieces',
+      url: 'https://exemple.fr/a.pdf',
+      content_base64: PDF.toString('base64'),
+    })
+    expect(both.payload.code).toBe('PARAMETER_INVALID')
+    const none = await attach(writer, session, { field: 'pieces' })
+    expect(none.payload.code).toBe('PARAMETER_INVALID')
+    const inside = await attach(writer, session, {
+      field: 'pieces',
+      url: 'https://127.0.0.1/secret.pdf',
+    })
+    expect(inside.payload.code).toBe('PARAMETER_INVALID')
+  })
+
+  it('is refused to a token that only reads', async () => {
+    const session = await open(reader)
+    const refused = await attach(reader, session, {
+      field: 'pieces',
+      content_base64: PDF.toString('base64'),
+    })
+    expect(refused.isError).toBe(true)
+    expect(['TOKEN_READ_ONLY', 'PERMISSION_DENIED']).toContain(refused.payload.code)
   })
 })

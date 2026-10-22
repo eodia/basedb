@@ -1,4 +1,10 @@
-import { startKernel } from '@basedb/core'
+import { fileURLToPath } from 'node:url'
+import {
+  fileStorageFromEnvironment,
+  maxFileBytesFromEnvironment,
+  startKernel,
+  webhookTargetsFromEnvironment,
+} from '@basedb/core'
 import { serve } from '@hono/node-server'
 import { createMcpApp } from './app.js'
 
@@ -28,10 +34,30 @@ if (connectionString === undefined) {
 
 const AGENT_POOL = { statementTimeoutMs: 5_000, lockTimeoutMs: 1_000 } as const
 
+// The files and the addresses the API reads, read the same way: `attach_file` deposits
+// where the API will look for the file, and fetches only what a webhook could reach.
+let files: { storage: ReturnType<typeof fileStorageFromEnvironment>; maxBytes?: number }
+let webhookTargets: ReturnType<typeof webhookTargetsFromEnvironment>
+try {
+  files = {
+    storage: fileStorageFromEnvironment(
+      setting,
+      fileURLToPath(new URL('../../../.basedb/files', import.meta.url)),
+    ),
+    maxBytes: maxFileBytesFromEnvironment(setting),
+  }
+  webhookTargets = webhookTargetsFromEnvironment(setting)
+} catch (error) {
+  console.error((error as Error).message)
+  process.exit(1)
+}
+
 const kernel = startKernel({
   connectionString,
   encryptionKey: setting('BASEDB_ENCRYPTION_KEY'),
   poolSettings: { catalog: AGENT_POOL, data: AGENT_POOL },
+  files,
+  webhookTargets,
 })
 
 /**

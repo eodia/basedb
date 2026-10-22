@@ -80,6 +80,10 @@ export const it: Catalog = {
   'Modifier une ligne': 'Modificare una riga',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Eliminare una riga — con un token creato per eliminare',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Caricare un documento o un’immagine in un campo file di una riga — il contenuto in base64, o il suo indirizzo.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Caricare un documento o un’immagine in un campo file',
   'Ramener une ligne supprimée': 'Ripristinare una riga eliminata',
   'Aucun outil ne vous est ouvert sur cette table.':
     'Nessuno strumento è aperto per te su questa tabella.',

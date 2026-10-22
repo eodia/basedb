@@ -80,6 +80,10 @@ export const ptBR: Catalog = {
   'Modifier une ligne': 'Editar uma linha',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Excluir uma linha — com um token criado para excluir',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Depositar um documento ou uma imagem em um campo de arquivo de uma linha — o conteúdo em base64, ou o endereço.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Depositar um documento ou uma imagem em um campo de arquivo',
   'Ramener une ligne supprimée': 'Restaurar uma linha excluída',
   'Aucun outil ne vous est ouvert sur cette table.':
     'Nenhuma ferramenta está disponível para você nesta tabela.',

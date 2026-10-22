@@ -630,7 +630,7 @@ function writableValues(
  * `PERMISSION_DENIED` when the bearer can read but not do; `TOKEN_READ_ONLY` if the token
  * is why — or, for a token that writes but was not made to delete, a refusal that says so.
  */
-function requireWrite(table: AgentTable, action: 'create' | 'update' | 'delete'): void {
+export function requireWrite(table: AgentTable, action: 'create' | 'update' | 'delete'): void {
   const decision = table.decisions[action]
   if (decision.verdict === 'ALLOWED') return
   const object = { kind: 'table', name: table.row.table_name }
@@ -680,7 +680,7 @@ async function idempotent(
 }
 
 /** Reads back what was just written, under the READ mask, as `get_record` would. */
-async function readBack(
+export async function readBack(
   pools: Pools,
   ctx: RequestContext,
   view: AgentView,
@@ -745,7 +745,10 @@ export interface AgentWriteResult {
   readonly columns: readonly AgentColumn[]
 }
 
-function writeResult(table: AgentTable, response: Record<string, unknown>): AgentWriteResult {
+export function writeResult(
+  table: AgentTable,
+  response: Record<string, unknown>,
+): AgentWriteResult {
   const names = ['_id', ...table.fields.filter((f) => !f.system).map((f) => f.name)]
   return {
     table: { id: table.row.id, name: table.row.table_name, baseId: table.base.row.id },

@@ -80,6 +80,10 @@ export const nl: Catalog = {
   'Modifier une ligne': 'Rij wijzigen',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Een rij verwijderen — met een token dat voor verwijderen is aangemaakt',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Een document of afbeelding in een bestandsveld van een rij plaatsen — de inhoud in base64, of het adres.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Een document of afbeelding in een bestandsveld plaatsen',
   'Ramener une ligne supprimée': 'Een verwijderde rij terughalen',
   'Aucun outil ne vous est ouvert sur cette table.':
     'Op deze tabel staat geen enkele tool voor je open.',

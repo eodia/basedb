@@ -38,8 +38,8 @@ describe('protocol negotiation (§15)', () => {
 })
 
 describe('the tool catalog (§2)', () => {
-  it('fifteen tools, lots 1 to 3, deletion and look — and no proposal that deletes or renames', () => {
-    expect(TOOLS.map((t) => t.name)).toHaveLength(15)
+  it('sixteen tools, lots 1 to 3, deletion, look and files — and no proposal that deletes or renames', () => {
+    expect(TOOLS.map((t) => t.name)).toHaveLength(16)
     expect(TOOLS.filter((t) => t.name.startsWith('propose_')).map((t) => t.name)).toEqual([
       'propose_create_table',
       'propose_add_field',
@@ -68,6 +68,7 @@ describe('the tool catalog (§2)', () => {
   it('a tool is read-only exactly when its name says it reads', () => {
     const writes = TOOLS.filter((t) => t.annotations.readOnlyHint === false).map((t) => t.name)
     expect(writes.sort()).toEqual([
+      'attach_file',
       'create_record',
       'delete_record',
       'propose_add_field',

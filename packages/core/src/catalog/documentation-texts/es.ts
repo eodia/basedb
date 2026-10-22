@@ -85,6 +85,10 @@ export const es: Catalog = {
     'Restaurar una fila eliminada, con su `_id`, desde el historial.',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Eliminar una fila — con un token creado para eliminar',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Depositar un documento o una imagen en un campo de archivo de una fila — su contenido en base64, o su dirección.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Depositar un documento o una imagen en un campo de archivo',
   'Ramener une ligne supprimée': 'Restaurar una fila eliminada',
   'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
     'Un agente solo elimina con un token creado «Lectura, escritura y eliminación», una fila a la vez; la fila eliminada vuelve mediante `restore_record` o desde el historial.',

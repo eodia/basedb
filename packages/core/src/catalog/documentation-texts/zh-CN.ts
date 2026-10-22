@@ -79,6 +79,9 @@ export const zhCN: Catalog = {
   'Ramener une ligne supprimée, sous son `_id`, depuis l’historique.':
     '按 `_id` 从历史记录中恢复已删除的行。',
   'Supprimer une ligne — avec un jeton créé pour supprimer': '删除一行——使用专门为删除创建的令牌',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    '将文档或图片存入某一行的文件字段——以 base64 内容或其地址提供。',
+  'Déposer un document ou une image dans un champ fichier': '将文档或图片存入文件字段',
   'Ramener une ligne supprimée': '恢复已删除的行',
   'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
     '智能体只有在令牌被创建为“读写和删除”权限时才会删除，且一次只删除一行；已删除的行可以通过 `restore_record` 或从历史记录中恢复。',

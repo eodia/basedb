@@ -80,6 +80,10 @@ export const nb: Catalog = {
   'Modifier une ligne': 'Endre en rad',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Slette en rad – med et token opprettet for å slette',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Legge et dokument eller et bilde i et filfelt på en rad — innholdet i base64, eller adressen.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Legge et dokument eller et bilde i et filfelt',
   'Ramener une ligne supprimée': 'Gjenopprette en slettet rad',
   'Aucun outil ne vous est ouvert sur cette table.':
     'Ingen verktøy er tilgjengelige for deg på denne tabellen.',

@@ -94,6 +94,7 @@ Ce tableau est **normatif**. Le test de conformité de la section 10 échoue si 
 | `update_record` | Modifie les champs nommés d'une ligne | `update` sur la table ; chaque champ écrit inscriptible | oui | 2 |
 | `delete_record` | Supprime une ligne par son `_id`, et la rend dans sa réponse | `delete` sur la table — que seul porte un jeton créé pour supprimer ; aucun lien en cascade vers la table (§8.1) | oui | 4 |
 | `restore_record` | Ramène une ligne supprimée sous son `_id`, depuis l'historique | `create` sur la table | oui | 4 |
+| `attach_file` | Dépose un document ou une image dans un champ `file` ou `image` d'une ligne existante — contenu en base64, ou adresse https téléchargée par le serveur sous la règle des webhooks (chapitre 08 §10.8) ; ajoute ou remplace | `update` sur la table ; le champ inscriptible par les droits | oui | 6 |
 | `propose_create_base` | Propose la création d'une base, `description` facultative | `manage_schema` au niveau tenant | non | 3 |
 | `propose_create_table` | Propose une table et ses champs initiaux, `description` facultative de chacun | `manage_schema` sur la base | non | 3 |
 | `propose_add_field` | Propose un champ, y compris de type lien, `description` facultative ; la couleur et le pictogramme de chaque choix d'une liste | `manage_schema` sur la table ; pour un lien, `manage_schema` **et** `read` sur la cible | non | 3 |
@@ -708,7 +709,7 @@ Un agent qui construit ses arguments peut les construire démesurés, par erreur
 
 | Borne | Valeur |
 |---|---|
-| Taille d'un message MCP | 1 MiB |
+| Taille d'un message MCP | 16 MiB (*décision révisée*, lot 6 : `attach_file` porte un fichier en base64, ~12 Mo ; chaque autre paramètre garde sa borne) |
 | Clés de `values` | 100 |
 | Longueur d'une valeur texte en entrée | 32 KiB (les limites de type du champ s'appliquent ensuite, celle d'une `description` de proposition comprise : 1 000 caractères, §7.3) |
 | Prédicats de `filter` | 10, profondeur 1 |

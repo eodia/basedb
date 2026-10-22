@@ -81,6 +81,10 @@ export const ro: Catalog = {
   'Modifier une ligne': 'Modificarea unui rând',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Ștergerea unui rând — cu un token creat pentru ștergere',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Depunerea unui document sau a unei imagini într-un câmp de fișier al unui rând — conținutul în base64 sau adresa sa.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Depunerea unui document sau a unei imagini într-un câmp de fișier',
   'Ramener une ligne supprimée': 'Readucerea unui rând șters',
   'Aucun outil ne vous est ouvert sur cette table.':
     'Niciun instrument nu vă este deschis pe acest tabel.',

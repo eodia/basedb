@@ -403,6 +403,13 @@ export const DOCUMENTED_MCP_TOOLS: ReadonlyArray<{
     needs: 'create',
   },
   {
+    name: 'attach_file',
+    summary: phrase(
+      'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.',
+    ),
+    needs: 'update',
+  },
+  {
     name: 'propose_create_table',
     summary: phrase('Proposer une table et ses premiers champs — une personne décide.'),
     needs: 'propose',
@@ -494,6 +501,15 @@ function agentUsage(base: ProjectedBase, table: ProjectedTable, t: Say): string[
   }
   if (table.actions.includes('create')) {
     rows.push([code('restore_record'), t('Ramener une ligne supprimée')])
+  }
+  if (
+    table.actions.includes('update') &&
+    table.fields.some(
+      (f) =>
+        (f.kind === 'file' || f.kind === 'image') && !f.readOnly && f.hiddenFromAgents !== true,
+    )
+  ) {
+    rows.push([code('attach_file'), t('Déposer un document ou une image dans un champ fichier')])
   }
 
   if (rows.length === 0) {

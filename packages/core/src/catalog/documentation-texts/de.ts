@@ -81,6 +81,10 @@ export const de: Catalog = {
   'Modifier une ligne': 'Eine Zeile ändern',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Eine Zeile löschen — mit einem zum Löschen angelegten Token',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Ein Dokument oder ein Bild in ein Dateifeld einer Zeile legen — als Base64-Inhalt oder über seine Adresse.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Ein Dokument oder ein Bild in ein Dateifeld legen',
   'Ramener une ligne supprimée': 'Eine gelöschte Zeile zurückholen',
   'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
     'Ein Agent löscht nur mit einem für „Lesen, Schreiben und Löschen“ angelegten Token, eine Zeile auf einmal; die gelöschte Zeile kommt über `restore_record` oder aus dem Verlauf zurück.',

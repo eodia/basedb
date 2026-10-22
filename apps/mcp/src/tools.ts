@@ -5,6 +5,12 @@ import { RESPONSE_BUDGET_CHARS, rowsWithinBudget, sanitizeDeep, shapeRow } from 
 import { Checker, INPUT_BOUNDS } from './validate.js'
 
 /**
+ * The longest `content_base64` a call may carry: what a message holds (`MAX_MESSAGE_BYTES`
+ * of the entry point), less room for the rest of the envelope. Past it, `url`.
+ */
+export const MAX_FILE_IN_MESSAGE = 16 * 1024 * 1024 - 64 * 1024
+
+/**
  * The tool catalog — chapter 09 §2.
  *
  * STATIC, and never derived from user data: no label and no description of a base, a
@@ -661,6 +667,104 @@ const restoreRecordTool: ToolDefinition = {
   },
 }
 
+/** Base64, optionally behind a `data:` prefix, line breaks allowed. */
+const BASE64 = /^[A-Za-z0-9+/\s]*={0,2}\s*$/
+
+const attachFileTool: ToolDefinition = {
+  name: 'attach_file',
+  title: 'Déposer un fichier dans un champ',
+  description: `Dépose un document ou une image dans un champ de type fichier (file) ou image d’une ligne existante, désignée par son _id. Le fichier vient soit de content_base64 (son contenu encodé en base64, ${Math.floor((MAX_FILE_IN_MESSAGE * 3) / 4 / 1024 / 1024)} Mo au plus), soit de url (une adresse https publique que le serveur télécharge, dans la limite de taille de l’instance). mode « append » (par défaut) l’ajoute aux fichiers du champ, « replace » le laisse seul. Un champ image n’accepte que PNG, JPEG, GIF, WebP ou AVIF, reconnus d’après leur contenu ; un champ fichier accepte tout type. Demande le droit de modifier la ligne ; l’écriture est historisée au nom du jeton. ${DATA}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      base: BASE,
+      table: TABLE,
+      _id: { type: 'string', description: 'L’identifiant de la ligne.' },
+      field: {
+        type: 'string',
+        description: 'Le champ fichier ou image : son nom, tel que rendu par describe_table.',
+      },
+      name: {
+        type: 'string',
+        maxLength: 255,
+        description:
+          'Le nom du fichier, avec son extension (« devis.pdf »). Avec url, celui de l’adresse par défaut.',
+      },
+      content_base64: {
+        type: 'string',
+        description: 'Le contenu du fichier, encodé en base64. Exclusif de url.',
+      },
+      url: {
+        type: 'string',
+        maxLength: 2048,
+        description: 'Une adresse https d’où télécharger le fichier. Exclusif de content_base64.',
+      },
+      content_type: {
+        type: 'string',
+        maxLength: 255,
+        description:
+          'Le type MIME (« application/pdf »), pour un document ; celui d’une image est lu dans son contenu.',
+      },
+      mode: {
+        type: 'string',
+        enum: ['append', 'replace'],
+        description:
+          'append (par défaut) : s’ajoute aux fichiers du champ ; replace : les remplace.',
+      },
+    },
+    required: ['base', 'table', '_id', 'field'],
+    additionalProperties: false,
+  },
+  annotations: {
+    title: 'Déposer un fichier dans un champ',
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
+  objectKind: 'record',
+  async run(tc, args) {
+    const c = new Checker(args).only([
+      'base',
+      'table',
+      '_id',
+      'field',
+      'name',
+      'content_base64',
+      'url',
+      'content_type',
+      'mode',
+    ])
+    const base = c.name('base') as string
+    const table = c.name('table') as string
+    const id = c.uuid('_id') as string
+    const field = c.name('field') as string
+    const name = c.string('name', 255)
+    const contentType = c.string('content_type', 255)
+    const url = c.string('url', 2048)
+    const raw = c.string('content_base64', MAX_FILE_IN_MESSAGE)
+    const mode = c.string('mode', 16)
+    // One source, and only one: the bytes, or where to fetch them.
+    c.entry('content_base64', (raw === undefined) !== (url === undefined))
+    const encoded = raw?.replace(/^data:[^,]*;base64,/, '')
+    c.entry('content_base64', encoded === undefined || BASE64.test(encoded))
+    c.entry('mode', mode === undefined || mode === 'append' || mode === 'replace')
+    c.done()
+    const result = await tc.kernel.agentAttachFile(tc.ctx, {
+      base,
+      table,
+      id,
+      field,
+      ...(name === undefined ? {} : { name }),
+      ...(contentType === undefined ? {} : { contentType }),
+      ...(url === undefined ? {} : { url }),
+      ...(encoded === undefined ? {} : { bytes: new Uint8Array(Buffer.from(encoded, 'base64')) }),
+      mode: mode === 'replace' ? 'replace' : 'append',
+    })
+    return writeOutcome(result)
+  },
+}
+
 // ── Lot 3: proposals (§7) ──────────────────────────────────────────────────────
 
 /** Where a person decides — a fixed sentence, never a link (§7.7, rule 5). */
@@ -1046,6 +1150,7 @@ export const TOOLS: readonly ToolDefinition[] = [
   updateRecordTool,
   deleteRecordTool,
   restoreRecordTool,
+  attachFileTool,
   proposeCreateTable,
   proposeAddField,
   proposeUpdateLook,

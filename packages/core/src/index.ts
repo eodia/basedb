@@ -65,6 +65,7 @@ import {
   agentListBases,
   agentWhoAmI,
 } from './agent/describe.js'
+import { type AgentAttachRequest, type AgentAttachResult, agentAttachFile } from './agent/files.js'
 import {
   type AgentListRequest,
   type AgentRowRequest,
@@ -680,6 +681,11 @@ export type {
 } from './proposals/index.js'
 export type { TargetPolicy } from './webhooks/target.js'
 export { parseTrusted } from './webhooks/target.js'
+export {
+  fileStorageFromEnvironment,
+  maxFileBytesFromEnvironment,
+  webhookTargetsFromEnvironment,
+} from './files/environment.js'
 export type {
   Deletion,
   Revision,
@@ -899,6 +905,7 @@ export type {
   AgentWriteResult,
 } from './agent/records.js'
 export { AGENT_BOUNDS } from './agent/records.js'
+export type { AgentAttachRequest, AgentAttachResult } from './agent/files.js'
 export { OPERATORS } from './records/filter.js'
 export { parseAddress, smtpMailer } from './mail/transport.js'
 export type { GeocoderConfig, Place } from './geo/geocode.js'
@@ -1322,6 +1329,12 @@ export interface Kernel {
   agentDeleteRecord(ctx: RequestContext, request: AgentRowRequest): Promise<AgentWrite>
   /** `restore_record` — a deleted row back under its own `_id`, from the history. */
   agentRestoreRecord(ctx: RequestContext, request: AgentRowRequest): Promise<AgentWrite>
+  /**
+   * `attach_file` — a document or a picture into a file field of an existing row: the
+   * deposit's checks, then the row's ordinary write. The bytes come with the call, or from
+   * an address held to the webhooks' rule.
+   */
+  agentAttachFile(ctx: RequestContext, request: AgentAttachRequest): Promise<AgentAttachResult>
   /** The audit line of one agent call — the shape of its parameters, never their values. */
   recordAgentCall(ctx: RequestContext, call: AgentCall): Promise<void>
   createBase(
@@ -2832,6 +2845,7 @@ export function startKernel(config: KernelConfig): Kernel {
     agentUpdateRecord: (ctx, request) => agentUpdateRecord(pools, ctx, request),
     agentDeleteRecord: (ctx, request) => agentDeleteRecord(pools, ctx, request),
     agentRestoreRecord: (ctx, request) => agentRestoreRecord(pools, ctx, request),
+    agentAttachFile: (ctx, request) => agentAttachFile(pools, files, webhookTargets, ctx, request),
     recordAgentCall: (ctx, call) => recordAgentCall(pools, ctx, digestKey, call),
 
     login: (request) => login(pools, instanceKey(), request),

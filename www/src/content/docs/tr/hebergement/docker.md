@@ -30,7 +30,7 @@ ile Görsel alanlarının dosyaları için bir birim, `/data`, tanımlar.
 |---|---|
 | `latest` | yayımlanan son sürüm |
 | `0.8` | son 0.8.x sürümü |
-| `0.8.0` | tam olarak bu sürüm |
+| `0.8.1` | tam olarak bu sürüm |
 
 ## Servisler
 

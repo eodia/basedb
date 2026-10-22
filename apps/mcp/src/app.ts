@@ -49,8 +49,12 @@ export interface McpAppOptions {
   readonly timeoutMs?: number
 }
 
-/** §11.1: the size of one MCP message. */
-export const MAX_MESSAGE_BYTES = 1024 * 1024
+/**
+ * §11.1: the size of one MCP message. 16 MiB, not 1: `attach_file` carries a file in
+ * base64 — about 12 MB of document. Every other parameter keeps its own bound (§11.1),
+ * checked before anything is read.
+ */
+export const MAX_MESSAGE_BYTES = 16 * 1024 * 1024
 
 /**
  * What the server tells an agent at the handshake — fixed text, naming no object. The

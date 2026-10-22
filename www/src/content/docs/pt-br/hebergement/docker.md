@@ -30,7 +30,7 @@ A imagem roda com o usuário `node`, no Node 22, declara uma verificação de sa
 |---|---|
 | `latest` | a última versão publicada |
 | `0.8` | a última versão 0.8.x |
-| `0.8.0` | exatamente esta versão |
+| `0.8.1` | exatamente esta versão |
 
 ## Os serviços
 

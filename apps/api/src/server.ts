@@ -7,12 +7,14 @@ import {
   OIDC_PRESETS,
   type OidcProvider,
   endpointFromEnv,
+  fileStorageFromEnvironment,
   headersShape,
+  maxFileBytesFromEnvironment,
   parseAddress,
-  parseTrusted,
   smtpMailer,
   startKernel,
   verifiesProviderCertificate,
+  webhookTargetsFromEnvironment,
 } from '@basedb/core'
 import { serve } from '@hono/node-server'
 import { providerTransport } from './ai-transport.js'
@@ -144,39 +146,18 @@ const geocoder = {
  * SeaweedFS… Otherwise a directory, `BASEDB_FILES_DIR`, by default `.basedb/files` at the
  * root of the repository: enough for one host, and said at startup.
  */
+/** Read once, in the kernel, for the API and the MCP server alike (`files/environment.ts`). */
 function fileStorage(): FileStorageConfig {
-  const bucket = setting('BASEDB_S3_BUCKET')
-  if (bucket !== undefined) {
-    const missing = [
-      'BASEDB_S3_ENDPOINT',
-      'BASEDB_S3_ACCESS_KEY_ID',
-      'BASEDB_S3_SECRET_ACCESS_KEY',
-    ].filter((name) => setting(name) === undefined)
-    if (missing.length > 0) {
-      console.error(
-        `BASEDB_S3_BUCKET is set, but ${missing.join(', ')} ${missing.length > 1 ? 'are' : 'is'} not.`,
-      )
-      process.exit(1)
-    }
-    return {
-      driver: 's3',
-      endpoint: setting('BASEDB_S3_ENDPOINT') as string,
-      bucket,
-      region: setting('BASEDB_S3_REGION') ?? 'us-east-1',
-      accessKeyId: setting('BASEDB_S3_ACCESS_KEY_ID') as string,
-      secretAccessKey: setting('BASEDB_S3_SECRET_ACCESS_KEY') as string,
-      forcePathStyle: setting('BASEDB_S3_FORCE_PATH_STYLE') !== '0',
-    }
-  }
-  return {
-    driver: 'local',
-    directory:
-      setting('BASEDB_FILES_DIR') ??
+  try {
+    return fileStorageFromEnvironment(
+      setting,
       fileURLToPath(new URL('../../../.basedb/files', import.meta.url)),
+    )
+  } catch (error) {
+    console.error((error as Error).message)
+    process.exit(1)
   }
 }
-
-const maxFileMb = Number(setting('BASEDB_FILES_MAX_MB') ?? '')
 
 // The most rows one export of a table may hold (`GET …/data/<base>/<table>/export`): one
 // million by default, refused before the first byte when a filter keeps more.
@@ -184,19 +165,19 @@ const maxExportRows = Number(setting('BASEDB_EXPORT_MAX_ROWS') ?? '')
 
 // Webhooks go to public HTTPS addresses only (chapter 08 §10.8). `BASEDB_WEBHOOK_DEV=1`
 // relaxes that for a consumer on this machine — development only, and said at startup.
-const webhookDev = setting('BASEDB_WEBHOOK_DEV') === '1'
-
 // The servers of the operator's own network a webhook, an automation or a synced table may
 // reach all the same — names, `*.` domains, addresses, ranges (chapter 08 §10.8).
-function webhookAllow(): readonly string[] {
+function webhookPolicy() {
   try {
-    return parseTrusted(setting('BASEDB_WEBHOOK_ALLOW') ?? '')
+    return webhookTargetsFromEnvironment(setting)
   } catch (error) {
-    console.error(`BASEDB_WEBHOOK_ALLOW : ${(error as Error).message}.`)
+    console.error((error as Error).message)
     process.exit(1)
   }
 }
-const webhookTrusted = webhookAllow()
+const webhookTargets = webhookPolicy()
+const webhookDev = webhookTargets.allowPrivate
+const webhookTrusted = webhookTargets.trusted ?? []
 
 // Where a purge writes its export first (chapter 06 §5.2): on this host, never on the
 // database server. `BASEDB_EXPORT_DIR`, by default `.basedb/exports` beside the files.
@@ -305,7 +286,7 @@ function oidcProviders(): OidcProvider[] {
 
 const kernel = startKernel({
   oidcProviders: oidcProviders(),
-  webhookTargets: { allowHttp: webhookDev, allowPrivate: webhookDev, trusted: webhookTrusted },
+  webhookTargets,
   exportDir,
   templatesUrl,
   connectionString,
@@ -315,7 +296,7 @@ const kernel = startKernel({
   geocoder,
   files: {
     storage: fileStorage(),
-    maxBytes: Number.isFinite(maxFileMb) && maxFileMb > 0 ? maxFileMb * 1024 * 1024 : undefined,
+    maxBytes: maxFileBytesFromEnvironment(setting),
   },
   exports: {
     maxRows: Number.isInteger(maxExportRows) && maxExportRows > 0 ? maxExportRows : undefined,

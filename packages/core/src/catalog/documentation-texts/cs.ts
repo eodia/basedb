@@ -78,6 +78,10 @@ export const cs: Catalog = {
   'Modifier une ligne': 'Upravit řádek',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Odstranit řádek — s tokenem vytvořeným k odstranění',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Vložit dokument nebo obrázek do souborového pole řádku — jeho obsah v base64, nebo jeho adresu.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Vložit dokument nebo obrázek do souborového pole',
   'Ramener une ligne supprimée': 'Vrátit odstraněný řádek',
   'Aucun outil ne vous est ouvert sur cette table.':
     'K této tabulce pro vás není otevřený žádný nástroj.',

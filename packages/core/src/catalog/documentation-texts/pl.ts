@@ -79,6 +79,10 @@ export const pl: Catalog = {
   'Modifier une ligne': 'Edycja wiersza',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Usuwanie wiersza — tokenem utworzonym do usuwania',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Umieścić dokument lub obraz w polu pliku wiersza — jego zawartość w base64 albo jego adres.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Umieścić dokument lub obraz w polu pliku',
   'Ramener une ligne supprimée': 'Przywrócenie usuniętego wiersza',
   'Aucun outil ne vous est ouvert sur cette table.':
     'Żadne narzędzie nie jest dla ciebie dostępne w tej tabeli.',

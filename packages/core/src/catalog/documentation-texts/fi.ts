@@ -87,6 +87,10 @@ export const fi: Catalog = {
   Pour: 'Tarkoitus',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Poista rivi — tunnuksella, joka on luotu poistamista varten',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Tallenna asiakirja tai kuva rivin tiedostokenttään — sisältö base64-muodossa tai sen osoite.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Tallenna asiakirja tai kuva tiedostokenttään',
   'Ramener une ligne supprimée': 'Palauta poistettu rivi',
   'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
     'Agentti poistaa vain tunnuksella, joka on luotu oikeuksin ”Luku, kirjoitus ja poisto”, yhden rivin kerrallaan; poistettu rivi palautuu työkalulla `restore_record` tai historiasta.',

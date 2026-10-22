@@ -78,6 +78,10 @@ export const ja: Catalog = {
   'Modifier une ligne': '行を変更する',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     '行を削除する — 削除用に作成されたトークンで',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    '行のファイル フィールドに文書や画像を登録する — 内容を base64 で、またはそのアドレスで。',
+  'Déposer un document ou une image dans un champ fichier':
+    'ファイル フィールドに文書や画像を登録する',
   'Ramener une ligne supprimée': '削除された行を復元する',
   'Aucun outil ne vous est ouvert sur cette table.':
     'このテーブルに対して使えるツールはありません。',

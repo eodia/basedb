@@ -30,7 +30,7 @@ Avbildningen körs som användaren `node`, på Node 22, och deklarerar en hälso
 |---|---|
 | `latest` | den senaste publicerade versionen |
 | `0.8` | den senaste versionen 0.8.x |
-| `0.8.0` | exakt den versionen |
+| `0.8.1` | exakt den versionen |
 
 ## Tjänsterna
 

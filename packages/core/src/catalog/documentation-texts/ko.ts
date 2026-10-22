@@ -77,6 +77,9 @@ export const ko: Catalog = {
   'Modifier une ligne': '행 수정',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     '행 삭제 — 삭제 권한으로 만들어진 토큰 필요',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    '행의 파일 필드에 문서나 이미지를 넣기 — 내용을 base64로, 또는 그 주소로.',
+  'Déposer un document ou une image dans un champ fichier': '파일 필드에 문서나 이미지를 넣기',
   'Ramener une ligne supprimée': '삭제된 행 복원',
   'Aucun outil ne vous est ouvert sur cette table.':
     '이 테이블에서 사용할 수 있는 도구가 없습니다.',

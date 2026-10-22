@@ -39,6 +39,10 @@ export const da: Catalog = {
   'Créer une ligne': 'Opret en række',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Slet en række — med et token oprettet til at slette',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Lægge et dokument eller et billede i et filfelt på en række — indholdet i base64 eller dets adresse.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Lægge et dokument eller et billede i et filfelt',
   'Ramener une ligne supprimée': 'Bring en slettet række tilbage',
   'Déposer un fichier': 'Upload en fil',
   'Le corps est le fichier lui-même. La réponse donne un `id`, à écrire ensuite dans {field} : {write}.':

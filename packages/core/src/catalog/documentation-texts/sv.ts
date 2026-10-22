@@ -79,6 +79,10 @@ export const sv: Catalog = {
   'Modifier une ligne': 'Ändra en rad',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Ta bort en rad – med en token skapad för att ta bort',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Lägga ett dokument eller en bild i ett filfält på en rad — innehållet i base64, eller dess adress.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Lägga ett dokument eller en bild i ett filfält',
   'Ramener une ligne supprimée': 'Återställa en borttagen rad',
   'Aucun outil ne vous est ouvert sur cette table.':
     'Inget verktyg är öppet för dig på den här tabellen.',

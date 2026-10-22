@@ -86,6 +86,10 @@ export const hu: Catalog = {
   Pour: 'Cél',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Egy sor törlése — egy törlésre létrehozott tokennel',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Dokumentum vagy kép feltöltése egy sor fájlmezőjébe — a tartalma base64-ben, vagy a címe.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Dokumentum vagy kép feltöltése egy fájlmezőbe',
   'Ramener une ligne supprimée': 'Egy törölt sor visszahozása',
   'Un agent ne supprime qu’avec un jeton créé « Lecture, écriture et suppression », une ligne à la fois ; la ligne supprimée revient par `restore_record` ou depuis l’historique.':
     'Egy ügynök csak egy „Olvasás, írás és törlés” jogosultsággal létrehozott tokennel töröl, egyszerre egy sort; a törölt sor a `restore_record` segítségével vagy az előzményekből kerül vissza.',

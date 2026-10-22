@@ -79,6 +79,10 @@ export const uk: Catalog = {
   'Modifier une ligne': 'Змінити рядок',
   'Supprimer une ligne — avec un jeton créé pour supprimer':
     'Видалити рядок — токеном, створеним для видалення',
+  'Déposer un document ou une image dans un champ fichier d’une ligne — son contenu en base64, ou son adresse.':
+    'Покласти документ або зображення у файлове поле рядка — його вміст у base64 або його адресу.',
+  'Déposer un document ou une image dans un champ fichier':
+    'Покласти документ або зображення у файлове поле',
   'Ramener une ligne supprimée': 'Повернути видалений рядок',
   'Aucun outil ne vous est ouvert sur cette table.':
     'Жоден інструмент не відкритий вам для цієї таблиці.',

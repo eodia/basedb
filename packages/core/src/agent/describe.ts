@@ -259,6 +259,10 @@ function describeField(
     required: row?.is_required ?? false,
   }
   if (field.id !== null && view.raw.unique.has(field.id)) out.unique = true
+  // A file field is not written through `values`: `attach_file` deposits into it.
+  if ((field.kind === 'file' || field.kind === 'image') && field.grantedWrite) {
+    out.write_with = 'attach_file'
+  }
   if (row?.max_length !== null && row?.max_length !== undefined) out.max_length = row.max_length
   if (row?.is_rich === true) out.rich_text = true
   // What a row created without it takes (04 §1.5): the agent may leave the field out.
