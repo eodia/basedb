@@ -1700,3 +1700,53 @@ describe('attach_file — a document or a picture into a file field (§6)', () =
     expect(['TOKEN_READ_ONLY', 'PERMISSION_DENIED']).toContain(refused.payload.code)
   })
 })
+
+describe('an empty base — its first table proposed through MCP (§4.1, §7)', () => {
+  let empty: { baseId: string; schemaName: string }
+  let token: string
+
+  beforeAll(async () => {
+    empty = await kernel.createBase(admin, { label: 'Atelier' })
+    const login = await kernel.login({ email: 'admin@basedb.local', password: PASSWORD })
+    const elevated = await kernel.elevate(login.sessionToken, PASSWORD)
+    token = (
+      await kernel.createApiToken(admin, {
+        label: 'Agent Atelier',
+        baseId: empty.baseId,
+        access: 'write',
+        surfaces: ['mcp'],
+        sessionId: elevated.session.sessionId,
+      })
+    ).secret
+    clearCaches()
+  })
+
+  it('is listed, empty, to the token of that base, and says how a table comes', async () => {
+    const session = await open(token)
+    const listed = await call(token, session, 'list_bases', {})
+    const atelier = listed.payload.bases.find((b: { name: string }) => b.name === 'atelier')
+    expect(atelier).toMatchObject({ table_count: 0 })
+    const described = await call(token, session, 'describe_base', { base: 'atelier' })
+    expect(described.payload.tables).toEqual([])
+    expect(described.payload.notices.map((n: { kind: string }) => n.kind)).toContain('empty_base')
+  })
+
+  it('takes a proposal for its first table', async () => {
+    const session = await open(token)
+    const proposed = await call(token, session, 'propose_create_table', {
+      base: 'atelier',
+      label: 'Commandes',
+      fields: [{ label: 'Numéro', kind: 'short_text' }],
+    })
+    expect(proposed.isError).toBe(false)
+    expect(proposed.payload.status).toBe('proposed')
+  })
+
+  it('stays absent for a token of another base', async () => {
+    const session = await open(rhToken)
+    const listed = await call(rhToken, session, 'list_bases', {})
+    expect(listed.payload.bases.map((b: { name: string }) => b.name)).not.toContain('atelier')
+    const described = await call(rhToken, session, 'describe_base', { base: 'atelier' })
+    expect(described.payload.code).toBe('RESOURCE_NOT_FOUND')
+  })
+})

@@ -227,7 +227,16 @@ export async function agentDescribeBase(pools: Pools, ctx: RequestContext, baseR
     relations,
     applications,
     provenance: 'user_data' as const,
-    notices: [] as AgentNotice[],
+    // An empty base says how it gets its first table — a fixed sentence, naming no object.
+    notices: (base.tables.length === 0
+      ? [
+          {
+            kind: 'empty_base',
+            message:
+              'Cette base n’a encore aucune table que vous puissiez lire : proposez-en une avec propose_create_table ; une personne qui gère la base l’approuve dans l’application.',
+          },
+        ]
+      : []) as AgentNotice[],
   }
 }
 

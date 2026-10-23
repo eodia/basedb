@@ -30,7 +30,7 @@ volumen, `/data`, til filerne i felterne Fil og Billede.
 |---|---|
 | `latest` | den senest udgivne version |
 | `0.8` | den seneste version 0.8.x |
-| `0.8.1` | præcis denne version |
+| `0.8.2` | præcis denne version |
 
 ## Tjenesterne
 

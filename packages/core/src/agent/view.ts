@@ -6,6 +6,7 @@ import {
   type RawCatalog,
   type TableRow,
   baseInEnvironment,
+  baseTargetOf,
   fieldsByTableOf,
   snapshot,
   targetFactory,
@@ -80,7 +81,10 @@ export interface AgentView {
   readonly ctx: RequestContext
   readonly grants: ActorGrants
   readonly raw: RawCatalog
-  /** Visible bases only: at least one readable table, open to agents. */
+  /**
+   * Visible bases only, open to agents: at least one readable table — or none yet, for a
+   * base the bearer reaches as a whole (its token's base), where a first table is proposed.
+   */
   readonly bases: readonly AgentBase[]
   readonly tableById: ReadonlyMap<string, AgentTable>
 }
@@ -184,8 +188,15 @@ export function buildView(ctx: RequestContext, grants: ActorGrants, raw: RawCata
       tableById.set(tableRow.id, table)
     }
 
-    // A base with no visible table is absent, never empty (§4.1).
-    if (base.tables.length > 0) bases.push(base)
+    // A base with no visible table is absent (§4.1) — unless the bearer reaches the base
+    // itself: the token of this very base, open to agents, sees it EMPTY, so that its
+    // first table can be proposed. Nothing is learnt: that token was made for this base.
+    if (
+      base.tables.length > 0 ||
+      decide(ctx, grants, 'read', baseTargetOf(ctx, baseRow)).verdict === 'ALLOWED'
+    ) {
+      bases.push(base)
+    }
   }
 
   return { ctx, grants, raw, bases, tableById }

@@ -30,7 +30,7 @@ wolumen `/data` na pliki z pól Plik i Obraz.
 |---|---|
 | `latest` | najnowsza opublikowana wersja |
 | `0.8` | najnowsza wersja 0.8.x |
-| `0.8.1` | dokładnie ta wersja |
+| `0.8.2` | dokładnie ta wersja |
 
 ## Usługi
 

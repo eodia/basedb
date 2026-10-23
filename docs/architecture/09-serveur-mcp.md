@@ -197,7 +197,7 @@ Objectif : après un `describe_base` et un `describe_table`, un agent connaît l
 - `description` — celle de la base, celle de chaque table — est **celle du catalogue, jamais un repli** : `null` quand personne n'en a écrit, sans que le libellé la remplace. Elle est rendue exactement quand son objet l'est (§4.3) ; ses règles de confiance sont celles du §4.2.
 - `applications[].tables` est filtré par la même liste ; une application dont plus aucune table n'est visible **disparaît** du tableau, sans marqueur ni compteur.
 - `relations` ne contient une arête que si le porteur peut lire **les deux** tables.
-- Une base dont **aucune** table n'est visible est `RESOURCE_NOT_FOUND`, jamais une base vide : une base vide et une base interdite doivent être indiscernables.
+- Une base dont **aucune** table n'est visible est `RESOURCE_NOT_FOUND`, jamais une base vide : une base vide et une base interdite doivent être indiscernables. *Décision révisée (0.8.2)* : sauf pour le porteur qui atteint **la base elle-même** — `read` décidé sur la base, c'est-à-dire le jeton de cette base, ouverte aux agents. Il la voit vide, avec la notice `empty_base`, pour y proposer sa première table (`propose_create_table`) ; il n'apprend rien, ce jeton ayant été créé pour elle. Pour tout autre porteur, la règle reste entière.
 
 `relations` est dérivée de la requête de référence « quels champs lien pointent vers cette table ? » du chapitre 02, servie par `idx_link_target`. Le graphe est calculé après projection, jamais avant.
 
